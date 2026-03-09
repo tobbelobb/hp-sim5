@@ -82,5 +82,6 @@ const baseRadius = 0.03;
 const halfWidth = 0.001;
 const rampLength = baseRadius*KNOT_SPAN;
 const {radius, theta, layer, phi, inRamp} = _storedToRadiusAndTheta(stored, baseRadius, halfWidth, rampLength);
+const smoothRadius = radius - halfWidth + phi/Math.PI * halfWidth;
 
-console.log(`radius: ${radius}, theta: ${theta}, layer: ${layer}, phi: ${phi}, inRamp: ${inRamp}`);
+console.log(`radius: ${radius}, smoothRadius: ${smoothRadius}, theta: ${theta}, layer: ${layer}, phi: ${phi}, inRamp: ${inRamp}`);

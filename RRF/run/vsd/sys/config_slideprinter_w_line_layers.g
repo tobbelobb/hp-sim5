@@ -15,13 +15,13 @@ M669 A0.0:-1900.0:0.0 B1645.44826719:950.0:0.0 C-1645.44826719:950.0:0.0
 
 ; Buildup compensation
 ; This one makes the most theoretical sense if line halfWidth = 0.001 m (that is 1 mm).
-M666 Q0.6366197723675814 R38.715:38.715:38.715
+M666 Q0.6366197723675814 R39.1845:39.1845:39.1845
 
 ; This one has no dynamic buildup compensation, just the adjusted radii
-; M666 Q0.0 R38.715:38.715:38.715
+; M666 Q0.0 R39.1845:39.1845:39.1845
 
 ; With super thin lines (halfWidth 0.000059396 m) that simulate 1.1 mm lines on a 8 mm high spool.
-; M666 Q0.037813 R30.534564:30.534564:30.534564
+; M666 Q0.037813 R30.623665:30.623665:30.623665
 
 ; Explanation:
 ; ; M669 defines the positions of the anchors, expressed as X:Y:Z distances between a line's pivot points, when the machine is homed.
