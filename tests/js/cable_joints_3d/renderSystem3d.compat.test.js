@@ -143,8 +143,8 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
     try {
       system.setReferencePaths([
         {
-          start: [0, 0, 0],
-          end: [1, 1, 0],
+          start: [0, 0, -0.001],
+          end: [1, 1, 0.002],
         },
       ], {
         visible: true,
@@ -155,6 +155,8 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
       expect(system.referenceLines.visible).toBe(true);
       expect(system.referenceMaterial.color.getHexString()).toBe('ff7a18');
       expect(system.referenceLines.geometry.getAttribute('position').count).toBe(2);
+      expect(system.referenceLines.geometry.getAttribute('position').getZ(0)).toBeCloseTo(-0.001, 6);
+      expect(system.referenceLines.geometry.getAttribute('position').getZ(1)).toBeCloseTo(0.002, 6);
     } finally {
       disposeCompatStub(system);
     }

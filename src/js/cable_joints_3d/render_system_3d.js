@@ -47,11 +47,10 @@ const BUMPER_FX_MIN_RADIUS = 0.03;
 const DEFAULT_REFERENCE_COLOR = '#1e90ff';
 const DEFAULT_TRACE_COLOR = '#ffffff';
 const DEFAULT_TRACE_MARKER_COLOR = '#2dd4bf';
-const DEFAULT_TRACE_POINT_SIZE = 2;
-const DEFAULT_EXTRUSION_POINT_SIZE = 1;
+const DEFAULT_TRACE_POINT_SIZE = 3;
+const DEFAULT_EXTRUSION_POINT_SIZE = 2;
 const DEFAULT_TRACE_Z = 0.0025;
 const DEFAULT_MARKER_Z = 0.005;
-const DEFAULT_REFERENCE_Z = 0.004;
 const DEFAULT_ORBIT_AZIMUTH = -Math.PI * 0.25;
 const DEFAULT_ORBIT_POLAR = 1.05;
 
@@ -1006,8 +1005,16 @@ export class RenderSystem3D {
         continue;
       }
       pointPairs.push(
-        { x: segment.start[0] || 0.0, y: segment.start[1] || 0.0, z: DEFAULT_REFERENCE_Z },
-        { x: segment.end[0] || 0.0, y: segment.end[1] || 0.0, z: DEFAULT_REFERENCE_Z }
+        {
+          x: finiteOr(segment.start[0], 0.0),
+          y: finiteOr(segment.start[1], 0.0),
+          z: finiteOr(segment.start[2], 0.0)
+        },
+        {
+          x: finiteOr(segment.end[0], 0.0),
+          y: finiteOr(segment.end[1], 0.0),
+          z: finiteOr(segment.end[2], 0.0)
+        }
       );
     }
     const geometry = new THREE.BufferGeometry();
