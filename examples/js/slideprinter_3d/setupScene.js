@@ -624,6 +624,8 @@ export function setupScene(world, stage, canvas, options = {}) {
           targetX: 0.0,
           targetY: 0.0,
           cameraZ: 2.2 / Math.max(0.2, inputSys.scaleMultiplier),
+          initialOrbitAzimuth: -Math.PI * 0.25,
+          initialOrbitPolar: 1.05,
           controlsEnabled: false,
           renderOnSimulationStep: false
       });

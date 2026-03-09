@@ -89,7 +89,9 @@ function createCompatStub() {
   system.clearPositionTrace = RenderSystem3D.prototype.clearPositionTrace;
   system.clearPositionTraceMarkers = RenderSystem3D.prototype.clearPositionTraceMarkers;
   system.clearExtrusions = RenderSystem3D.prototype.clearExtrusions;
-  system._setOrbitFromOffset(new THREE.Vector3(0.0, 0.04, 2.2));
+  system._baseCameraDistance = 2.2;
+  system.orbitAzimuth = -Math.PI * 0.25;
+  system.orbitPolar = 1.05;
   system._applyCameraFromViewTransform();
   return system;
 }
@@ -243,6 +245,7 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
       const after = system.camera.position.clone();
 
       expect(after.distanceTo(before)).toBeGreaterThan(0.02);
+      expect(system.camera.up.z).toBeCloseTo(1.0, 6);
       expect(system.camera.position.z).toBeGreaterThan(0.0);
     } finally {
       disposeCompatStub(system);

@@ -52,6 +52,8 @@ const DEFAULT_EXTRUSION_POINT_SIZE = 7;
 const DEFAULT_TRACE_Z = 0.0025;
 const DEFAULT_MARKER_Z = 0.005;
 const DEFAULT_REFERENCE_Z = 0.004;
+const DEFAULT_ORBIT_AZIMUTH = -Math.PI * 0.25;
+const DEFAULT_ORBIT_POLAR = 1.05;
 
 function buildPlaneBasis(planeNormal) {
   const n = planeNormal.clone();
@@ -383,17 +385,27 @@ export class RenderSystem3D {
     const targetY = Number.isFinite(options.targetY) ? options.targetY : 0.0;
     const camZ = Number.isFinite(options.cameraZ) ? options.cameraZ : 2.2;
     this.camera.position.set(targetX, targetY + 0.04, camZ);
+    this.camera.up.set(0, 0, 1);
     this.camera.lookAt(targetX, targetY, 0);
     this._baseViewTarget = new THREE.Vector3(targetX, targetY, 0);
     this._baseCameraOffset = this.camera.position.clone().sub(this._baseViewTarget);
-    this._baseCameraDistance = Math.max(0.1, this._baseCameraOffset.length());
+    this._baseCameraDistance = Math.max(
+      0.1,
+      Number.isFinite(options.cameraDistance) ? options.cameraDistance : this._baseCameraOffset.length()
+    );
     this.viewScaleMultiplier = 1.0;
     this.viewOffsetX = 0.0;
     this.viewOffsetY = 0.0;
     this.orbitMinPolarAngle = Number.isFinite(options.minOrbitPolarAngle) ? options.minOrbitPolarAngle : 1e-6;
     this.orbitMaxPolarAngle = Number.isFinite(options.maxOrbitPolarAngle) ? options.maxOrbitPolarAngle : (Math.PI - 1e-6);
     this.orbitRotateSpeed = Number.isFinite(options.orbitRotateSpeed) ? options.orbitRotateSpeed : 1.0;
-    this._setOrbitFromOffset(this._baseCameraOffset);
+    this.orbitAzimuth = Number.isFinite(options.initialOrbitAzimuth) ? options.initialOrbitAzimuth : DEFAULT_ORBIT_AZIMUTH;
+    this.orbitPolar = THREE.MathUtils.clamp(
+      Number.isFinite(options.initialOrbitPolar) ? options.initialOrbitPolar : DEFAULT_ORBIT_POLAR,
+      this.orbitMinPolarAngle,
+      this.orbitMaxPolarAngle
+    );
+    this._applyCameraFromViewTransform();
 
     this.debugEnabled = options.debugEnabled ?? (typeof window !== 'undefined' && Boolean(window._flipper3dDebug));
     this._debugFrame = 0;
@@ -2144,6 +2156,7 @@ export class RenderSystem3D {
     target.y += this.viewOffsetY;
 
     const cameraOffset = this._buildOrbitOffset(this._cameraDistanceForScale());
+    this.camera.up.set(0, 0, 1);
     this.camera.position.copy(target).add(cameraOffset);
     this.camera.lookAt(target);
     this.camera.updateMatrixWorld();

@@ -124,6 +124,8 @@ describe('slideprinter 3D setupScene', () => {
     expect(renderSystem).toBeInstanceOf(RenderSystem3D);
     expect(renderSystem.options.targetX).toBe(0.0);
     expect(renderSystem.options.targetY).toBe(0.0);
+    expect(renderSystem.options.initialOrbitAzimuth).toBeCloseTo(-Math.PI * 0.25, 6);
+    expect(renderSystem.options.initialOrbitPolar).toBeCloseTo(1.05, 6);
     expect(renderSystem.setViewTransform).toHaveBeenCalledWith({
       scaleMultiplier: 1.1,
       offsetX: 0.0,
