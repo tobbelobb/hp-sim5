@@ -252,11 +252,24 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
     }
   });
 
+  test('dragging up tilts the camera downward', () => {
+    const system = createCompatStub();
+
+    try {
+      const before = system.camera.position.z;
+      system.rotateOrbitByPixels(0, -80);
+
+      expect(system.camera.position.z).toBeLessThan(before);
+    } finally {
+      disposeCompatStub(system);
+    }
+  });
+
   test('allows orbiting below the z=0 print plane', () => {
     const system = createCompatStub();
 
     try {
-      system.rotateOrbitByPixels(0, 420);
+      system.rotateOrbitByPixels(0, -420);
 
       expect(system.camera.position.z).toBeLessThan(0.0);
     } finally {

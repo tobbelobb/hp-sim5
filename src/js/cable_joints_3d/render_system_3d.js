@@ -2178,7 +2178,7 @@ export class RenderSystem3D {
     const width = Math.max(1, this.canvas.clientWidth || this.canvas.width || 1);
     const height = Math.max(1, this.canvas.clientHeight || this.canvas.height || 1);
     const azimuthDelta = (deltaX / width) * Math.PI * this.orbitRotateSpeed;
-    const polarDelta = (deltaY / height) * Math.PI * this.orbitRotateSpeed;
+    const polarDelta = (-deltaY / height) * Math.PI * this.orbitRotateSpeed;
 
     this.orbitAzimuth -= azimuthDelta;
     this.orbitPolar = THREE.MathUtils.clamp(
