@@ -26,6 +26,13 @@ const KNOT_MARKER_COLOR = '#ff3b30';
 const KNOT_MARKER_RADIUS = 0.01;
 const KNOT_SPAN = Math.PI / 30.0;
 const DEFAULT_BACKGROUND_COLOR = 0x1b2b3c;
+const BORDER_FLOOR_OFFSET_Z = -0.035;
+const BORDER_FLOOR_COLOR = 0x1d2434;
+const BORDER_FLOOR_COLOR_HEX = '#1d2434';
+const BORDER_WALL_HEIGHT = 0.08;
+const BORDER_WALL_THICKNESS = 0.012;
+const BORDER_WALL_COLOR = 0x0c111f;
+const BORDER_WALL_COLOR_HEX = '#0c111f';
 
 function buildPlaneBasis(planeNormal) {
   const n = planeNormal.clone();
@@ -290,17 +297,40 @@ function disposeObject(obj) {
 export class RenderSystem3D {
   static createDefaultLightingGroup() {
     const lights = new THREE.Group();
-    lights.add(new THREE.AmbientLight(0x7a92b0, 1.1));
-    const key = new THREE.DirectionalLight(0xf1f9ff, 1.1);
+    lights.add(new THREE.AmbientLight(0x7a92b0, 1.35));
+    const key = new THREE.DirectionalLight(0xf6fbff, 1.35);
     key.position.set(1.8, 2.6, 2.8);
     lights.add(key);
-    const skyLight = new THREE.HemisphereLight(0xa6caff, 0x27303c, 0.35);
+    const skyLight = new THREE.HemisphereLight(0xa6caff, 0x27303c, 0.45);
     lights.add(skyLight);
     return lights;
   }
 
+  static buildBorderShape(points) {
+    if (!points || points.length < 3) {
+      return null;
+    }
+
+    const shape = new THREE.Shape();
+    shape.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i += 1) {
+      shape.lineTo(points[i].x, points[i].y);
+    }
+    shape.closePath();
+    return shape;
+  }
+
   static get DEFAULT_BACKGROUND_COLOR() {
     return DEFAULT_BACKGROUND_COLOR;
+  }
+  static get DEFAULT_BORDER_FLOOR_COLOR() {
+    return BORDER_FLOOR_COLOR;
+  }
+  static get DEFAULT_BORDER_WALL_COLOR() {
+    return BORDER_WALL_COLOR;
+  }
+  static get DEFAULT_BORDER_FLOOR_Z() {
+    return BORDER_FLOOR_OFFSET_Z;
   }
   runInPause = true;
 
@@ -390,7 +420,7 @@ export class RenderSystem3D {
     this.scene.add(lights);
 
     this.boardMaterial = new THREE.MeshStandardMaterial({
-      color: 0x212c3a,
+      color: 0x27334a,
       roughness: 0.92,
       metalness: 0.04
     });
@@ -400,6 +430,34 @@ export class RenderSystem3D {
     this.board.userData.ownsGeometry = true;
     this.board.userData.ownsMaterial = true;
     this.scene.add(this.board);
+
+    this.borderFloorMaterial = new THREE.MeshStandardMaterial({
+      color: BORDER_FLOOR_COLOR,
+      roughness: 0.92,
+      metalness: 0.02
+    });
+    this.borderFloorMaterial.polygonOffset = true;
+    this.borderFloorMaterial.polygonOffsetFactor = 1;
+    this.borderFloorMaterial.polygonOffsetUnits = 2;
+    this.borderFloor = new THREE.Mesh(new THREE.BufferGeometry(), this.borderFloorMaterial);
+    this.borderFloor.position.z = BORDER_FLOOR_OFFSET_Z;
+    this.borderFloor.visible = false;
+    this.borderFloor.frustumCulled = false;
+    this.borderFloor.userData.ownsGeometry = true;
+    this.borderFloor.userData.ownsMaterial = true;
+    this.scene.add(this.borderFloor);
+
+    this.borderWallMaterial = new THREE.MeshStandardMaterial({
+      color: BORDER_WALL_COLOR,
+      roughness: 0.92,
+      metalness: 0.08
+    });
+    this.borderWallMaterial.polygonOffset = true;
+    this.borderWallMaterial.polygonOffsetFactor = 1;
+    this.borderWallMaterial.polygonOffsetUnits = 2;
+    this.borderWallGroup = new THREE.Group();
+    this.borderWallGroup.frustumCulled = false;
+    this.scene.add(this.borderWallGroup);
 
     this.root = new THREE.Group();
     this.scene.add(this.root);
@@ -632,6 +690,8 @@ export class RenderSystem3D {
       this.borderLine = null;
       this.borderVertexCount = 0;
     }
+    this._hideBorderFloor();
+    this._clearBorderWalls();
   }
 
   dispose() {
@@ -660,6 +720,18 @@ export class RenderSystem3D {
     this.sharedFlipperBarGeometry.dispose();
 
     disposeObject(this.board);
+
+    if (this.borderFloor) {
+      this.scene.remove(this.borderFloor);
+      disposeObject(this.borderFloor);
+    }
+    if (this.borderWallGroup) {
+      this._clearBorderWalls();
+      this.scene.remove(this.borderWallGroup);
+      disposeObject(this.borderWallGroup);
+    }
+    this.borderFloorMaterial.dispose();
+    this.borderWallMaterial.dispose();
 
     if (this.controls) {
       this.controls.dispose();
@@ -724,10 +796,21 @@ export class RenderSystem3D {
     const points = borderComp?.points ?? [];
 
     if (points.length < 2) {
+      this._hideBorderFloor();
+      this._clearBorderWalls();
       if (this.borderLine) {
         this.borderLine.visible = false;
       }
       return;
+    }
+
+    const shape = RenderSystem3D.buildBorderShape(points);
+    if (shape) {
+      this._updateBorderFloor(shape, renderComp);
+      this._updateBorderWalls(points);
+    } else {
+      this._hideBorderFloor();
+      this._clearBorderWalls();
     }
 
     if (!this.borderLine || this.borderVertexCount !== points.length) {
@@ -764,6 +847,70 @@ export class RenderSystem3D {
       arr[idx + 2] = p.z;
     }
     attr.needsUpdate = true;
+  }
+
+  _updateBorderFloor(shape, renderComp) {
+    if (!shape || !this.borderFloor) {
+      this._hideBorderFloor();
+      return;
+    }
+
+    const geometry = new THREE.ShapeGeometry(shape);
+    if (this.borderFloor.geometry) {
+      this.borderFloor.geometry.dispose();
+    }
+    this.borderFloor.geometry = geometry;
+    this.borderFloor.visible = true;
+    setMaterialColor(this.borderFloorMaterial, renderComp?.color ?? BORDER_FLOOR_COLOR_HEX);
+  }
+
+  _hideBorderFloor() {
+    if (!this.borderFloor) return;
+    this.borderFloor.visible = false;
+    if (this.borderFloor.geometry) {
+      this.borderFloor.geometry.dispose();
+      this.borderFloor.geometry = new THREE.BufferGeometry();
+    }
+  }
+
+  _updateBorderWalls(points) {
+    if (!this.borderWallGroup) return;
+    this._clearBorderWalls();
+    if (!points || points.length < 2) {
+      return;
+    }
+
+    for (let i = 0; i < points.length; i += 1) {
+      const start = points[i];
+      const end = points[(i + 1) % points.length];
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      const length = Math.hypot(dx, dy);
+      if (length <= EPSILON) {
+        continue;
+      }
+
+      const geometry = new THREE.BoxGeometry(length, BORDER_WALL_THICKNESS, BORDER_WALL_HEIGHT);
+      const wall = new THREE.Mesh(geometry, this.borderWallMaterial);
+      wall.userData.ownsGeometry = true;
+      wall.userData.ownsMaterial = false;
+      wall.position.set(
+        (start.x + end.x) * 0.5,
+        (start.y + end.y) * 0.5,
+        BORDER_FLOOR_OFFSET_Z + (BORDER_WALL_HEIGHT / 2)
+      );
+      wall.rotation.set(0, 0, Math.atan2(dy, dx));
+      wall.frustumCulled = false;
+      this.borderWallGroup.add(wall);
+    }
+  }
+
+  _clearBorderWalls() {
+    if (!this.borderWallGroup) return;
+    while (this.borderWallGroup.children.length > 0) {
+      const child = this.borderWallGroup.children.pop();
+      disposeObject(child);
+    }
   }
 
   _syncCircles(world) {
