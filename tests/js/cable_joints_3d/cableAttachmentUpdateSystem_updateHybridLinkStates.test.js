@@ -4,7 +4,8 @@ import {
   World,
   PositionComponent,
   RadiusComponent,
-  OrientationComponent
+  OrientationComponent,
+  HybridKnotAngleComponent
 } from '../../../src/js/cable_joints_3d/ecs.js';
 
 import {
@@ -81,6 +82,43 @@ describe('_updateHybridLinkStates (3D)', () => {
     expect(j.restLength).toBeCloseTo(initialRest - 0.2, 8);
   });
 
+  test('first link: tiny negative stored stays hybrid (hysteresis)', () => {
+    const world = new World();
+    const wheel = addWheel(world, new Vector3(0, 0, 0), 1);
+    const anchor = addAnchor(world, new Vector3(0, 3, 0));
+
+    const joint = world.createEntity();
+    const initialRest = 3;
+    world.addComponent(
+      joint,
+      new CableJointComponent(
+        wheel, anchor, initialRest,
+        new Vector3(1, 0, 0),
+        new Vector3(0, 3, 0),
+      ),
+    );
+
+    const path = world.createEntity();
+    const pathComp = new CablePathComponent(
+      world,
+      [joint],
+      ['hybrid', 'attachment'],
+      [false, false],
+      1e6,
+      null,
+      0.01
+    );
+    world.addComponent(path, pathComp);
+    pathComp.stored[0] = -0.001;
+
+    _updateHybridLinkStates(world);
+
+    expect(pathComp.linkTypes[0]).toBe('hybrid');
+    expect(pathComp.stored[0]).toBeCloseTo(-0.001, 12);
+    const j = world.getComponent(joint, CableJointComponent);
+    expect(j.restLength).toBeCloseTo(initialRest, 12);
+  });
+
   test('last link: hybrid -> hybrid-attachment when stored is negative', () => {
     const world  = new World();
 
@@ -149,12 +187,17 @@ describe('_updateHybridLinkStates (3D)', () => {
 
     //  switched back to hybrid
     expect(pathComp.linkTypes[0]).toBe('hybrid');
+    expect(pathComp.cw[0]).toBe(true);
     // some positive arc was added
     expect(pathComp.stored[0]).toBeGreaterThan(0);
     // restLength reduced by exactly that arc
     const arc = pathComp.stored[0];
     const j = world.getComponent(joint, CableJointComponent);
     expect(j.restLength).toBeCloseTo(initialRest - arc, 8);
+    expect(world.hasComponent(wheel, HybridKnotAngleComponent)).toBe(true);
+    const knotAngle = world.getComponent(wheel, HybridKnotAngleComponent).angle;
+    expect(Number.isFinite(knotAngle)).toBe(true);
+    expect(Math.abs(knotAngle)).toBeLessThanOrEqual(Math.PI);
   });
 
   test('last link: hybrid-attachment -> hybrid when rope wraps onto wheel again', () => {
@@ -192,5 +235,105 @@ describe('_updateHybridLinkStates (3D)', () => {
     const arc = pathComp.stored[1];
     const j = world.getComponent(joint, CableJointComponent);
     expect(j.restLength).toBeCloseTo(initialRest - arc, 8);
+  });
+
+  test('first link: tiny re-wrap arc stays hybrid-attachment (hysteresis)', () => {
+    const baselineWorld = new World();
+    const baselineWheel = addWheel(baselineWorld, new Vector3(0, 0, 0), 1);
+    const baselineAnchor = addAnchor(baselineWorld, new Vector3(0, 2, 0));
+    const baselineJoint = baselineWorld.createEntity();
+    const initialRest = 3.0;
+    const tinyArcAttach = new Vector3(0.8771471956617061, 0.4802216125319691, 0.0);
+    baselineWorld.addComponent(
+      baselineJoint,
+      new CableJointComponent(
+        baselineWheel, baselineAnchor, initialRest,
+        tinyArcAttach.clone(),
+        new Vector3(0, 2, 0),
+      ),
+    );
+    const baselinePath = baselineWorld.createEntity();
+    const baselinePathComp = new CablePathComponent(
+      baselineWorld,
+      [baselineJoint],
+      ['hybrid-attachment', 'attachment'],
+      [false, false],
+      1e6,
+      null,
+      0.0
+    );
+    baselineWorld.addComponent(baselinePath, baselinePathComp);
+    _updateHybridLinkStates(baselineWorld);
+    expect(baselinePathComp.linkTypes[0]).toBe('hybrid');
+    expect(baselinePathComp.stored[0]).toBeGreaterThan(1e-4);
+
+    const world = new World();
+    const wheel = addWheel(world, new Vector3(0, 0, 0), 1);
+    const anchor = addAnchor(world, new Vector3(0, 2, 0));
+    const layeredTinyArcAttach = new Vector3(0.8351686186228515, 0.5499939803921475, 0.0);
+    const joint = world.createEntity();
+    world.addComponent(
+      joint,
+      new CableJointComponent(
+        wheel, anchor, initialRest,
+        layeredTinyArcAttach.clone(),
+        new Vector3(0, 2, 0),
+      ),
+    );
+    const path = world.createEntity();
+    const pathComp = new CablePathComponent(
+      world,
+      [joint],
+      ['hybrid-attachment', 'attachment'],
+      [false, false],
+      1e6,
+      null,
+      0.1
+    );
+    world.addComponent(path, pathComp);
+
+    _updateHybridLinkStates(world);
+
+    expect(pathComp.linkTypes[0]).toBe('hybrid-attachment');
+    expect(pathComp.stored[0]).toBeCloseTo(0.0, 12);
+    const j = world.getComponent(joint, CableJointComponent);
+    expect(j.restLength).toBeCloseTo(initialRest, 12);
+  });
+
+  test('hybrid-attachment endpoint keeps cw stable for near-degenerate endpoint geometry', () => {
+    const world = new World();
+    const wheel = addWheel(world, new Vector3(0, 0, 0), 1);
+    const anchor = addAnchor(world, new Vector3(0.001, 0.0, 0.0));
+
+    const joint = world.createEntity();
+    const initialRest = 1.0;
+    world.addComponent(
+      joint,
+      new CableJointComponent(
+        wheel, anchor, initialRest,
+        new Vector3(1.0, 0.0, 0.0),
+        new Vector3(1.0005, 0.0, 0.0),
+      ),
+    );
+
+    const path = world.createEntity();
+    const pathComp = new CablePathComponent(
+      world,
+      [joint],
+      ['hybrid-attachment', 'attachment'],
+      [true, false],
+      1e6,
+      null,
+      0.01
+    );
+    world.addComponent(path, pathComp);
+
+    _updateHybridLinkStates(world);
+
+    expect(pathComp.linkTypes[0]).toBe('hybrid-attachment');
+    expect(pathComp.cw[0]).toBe(true);
+    expect(pathComp.stored[0]).toBeCloseTo(0.0, 12);
+    const j = world.getComponent(joint, CableJointComponent);
+    expect(j.restLength).toBeCloseTo(initialRest, 12);
   });
 });

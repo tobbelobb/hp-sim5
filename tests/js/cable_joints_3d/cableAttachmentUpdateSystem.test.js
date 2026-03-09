@@ -23,6 +23,25 @@ import {
 
 
 describe('CableAttachmentUpdateSystem (3D)', () => {
+  test('increments the hybrid transition step and records phase summaries', () => {
+    const world = new World();
+    world.setResource('debugRenderPoints', {});
+    world.setResource('cableHybridTransitionStep', 10);
+    world.setResource('cableEventTrace', true);
+
+    const system = new CableAttachmentUpdateSystem();
+    system.update(world);
+
+    expect(world.getResource('cableHybridTransitionStep')).toBe(11);
+    expect(world.getResource('cableEventTraceBuffer')).toEqual([
+      expect.objectContaining({ type: 'summary', phase: 'begin', step: 11 }),
+      expect.objectContaining({ type: 'summary', phase: 'afterAttachment', step: 11 }),
+      expect.objectContaining({ type: 'summary', phase: 'afterMerge', step: 11 }),
+      expect.objectContaining({ type: 'summary', phase: 'afterSplit', step: 11 }),
+      expect.objectContaining({ type: 'summary', phase: 'afterHybrid', step: 11 })
+    ]);
+  });
+
   test('Merge joints when positions opposite vertically, conserving rest length', () => {
     const world = new World();
     const center = new Vector3(0, 0, 0);

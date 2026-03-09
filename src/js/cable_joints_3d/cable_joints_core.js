@@ -150,8 +150,186 @@ export const linecolor1 = '#FFFF00';
 const EPSILON = 1e-9;
 const MIN_JOINT_REST_LENGTH = 1e-6;
 const KNOT_SPAN = Math.PI / 30.0;
+const CABLE_DEBUG_PREFIX = '[CableJointsDebug]';
+const CABLE_HYBRID_TRACE_PREFIX = '[CableHybridTrace]';
 
 const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
+
+function _debugCable(world, message) {
+  if (world?.getResource('cableDebugLogs') === true) {
+    console.debug(`${CABLE_DEBUG_PREFIX} ${message}`);
+  }
+}
+
+function _readFiniteResource(world, key, fallback) {
+  const value = world?.getResource?.(key);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function _vecSnapshot(v) {
+  if (!v) {
+    return null;
+  }
+  return { x: v.x, y: v.y, z: v.z };
+}
+
+function _hybridTransitionTraceEnabled(world, step) {
+  if (world?.getResource?.('cableHybridTransitionTrace') !== true) {
+    return false;
+  }
+  const minStep = _readFiniteResource(world, 'cableHybridTransitionTraceStepMin', -Infinity);
+  const maxStep = _readFiniteResource(world, 'cableHybridTransitionTraceStepMax', Infinity);
+  const resolvedStep = Number.isFinite(step)
+    ? Math.floor(step)
+    : Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
+  return resolvedStep >= minStep && resolvedStep <= maxStep;
+}
+
+function _recordHybridTransitionTrace(world, step, event) {
+  if (!_hybridTransitionTraceEnabled(world, step)) {
+    return;
+  }
+
+  let traceBuffer = world.getResource('cableHybridTransitionTraceBuffer');
+  if (!Array.isArray(traceBuffer)) {
+    traceBuffer = [];
+    world.setResource('cableHybridTransitionTraceBuffer', traceBuffer);
+  }
+
+  const maxTraceEvents = Math.max(
+    1,
+    Math.floor(_readFiniteResource(world, 'cableHybridTransitionTraceLimit', 256))
+  );
+  if (traceBuffer.length >= maxTraceEvents) {
+    world.setResource('cableHybridTransitionTraceTruncated', true);
+    return;
+  }
+
+  const entry = {
+    step: Number.isFinite(step) ? Math.floor(step) : Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0)),
+    ...event
+  };
+  traceBuffer.push(entry);
+
+  if (world.getResource('cableHybridTransitionTraceConsole') === true) {
+    console.debug(`${CABLE_HYBRID_TRACE_PREFIX} ${JSON.stringify(entry)}`);
+  }
+}
+
+function _cableEventTraceEnabled(world, step) {
+  if (world?.getResource?.('cableEventTrace') !== true) {
+    return false;
+  }
+  const minStep = _readFiniteResource(world, 'cableEventTraceStepMin', -Infinity);
+  const maxStep = _readFiniteResource(world, 'cableEventTraceStepMax', Infinity);
+  const resolvedStep = Number.isFinite(step)
+    ? Math.floor(step)
+    : Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
+  return resolvedStep >= minStep && resolvedStep <= maxStep;
+}
+
+function _recordCableEventTrace(world, step, event) {
+  if (!_cableEventTraceEnabled(world, step)) {
+    return;
+  }
+
+  let traceBuffer = world.getResource('cableEventTraceBuffer');
+  if (!Array.isArray(traceBuffer)) {
+    traceBuffer = [];
+    world.setResource('cableEventTraceBuffer', traceBuffer);
+  }
+
+  const maxTraceEvents = Math.max(
+    1,
+    Math.floor(_readFiniteResource(world, 'cableEventTraceLimit', 4096))
+  );
+  if (traceBuffer.length >= maxTraceEvents) {
+    world.setResource('cableEventTraceTruncated', true);
+    return;
+  }
+
+  const entry = {
+    step: Number.isFinite(step) ? Math.floor(step) : Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0)),
+    ...event
+  };
+  traceBuffer.push(entry);
+
+  if (world.getResource('cableEventTraceConsole') === true) {
+    console.debug(`[CableEventTrace] ${JSON.stringify(entry)}`);
+  }
+}
+
+function _recordCableStepSummary(world, step, phase) {
+  if (!_cableEventTraceEnabled(world, step)) {
+    return;
+  }
+  const jointEntities = world.query([CableJointComponent]);
+  const pathEntities = world.query([CablePathComponent]);
+
+  let minRestLength = Infinity;
+  let maxRestLength = -Infinity;
+  let tinyRestCount = 0;
+  let negativeRestCount = 0;
+  let nonFiniteRestCount = 0;
+  for (const jointId of jointEntities) {
+    const joint = world.getComponent(jointId, CableJointComponent);
+    const rest = joint?.restLength;
+    if (!Number.isFinite(rest)) {
+      nonFiniteRestCount += 1;
+      continue;
+    }
+    if (rest < minRestLength) minRestLength = rest;
+    if (rest > maxRestLength) maxRestLength = rest;
+    if (rest < MIN_JOINT_REST_LENGTH) tinyRestCount += 1;
+    if (rest < 0.0) negativeRestCount += 1;
+  }
+  if (jointEntities.length < 1) {
+    minRestLength = 0.0;
+    maxRestLength = 0.0;
+  }
+
+  let minStored = Infinity;
+  let maxStored = -Infinity;
+  let negativeStoredCount = 0;
+  let nonFiniteStoredCount = 0;
+  let maxPathJoints = 0;
+  for (const pathId of pathEntities) {
+    const path = world.getComponent(pathId, CablePathComponent);
+    maxPathJoints = Math.max(maxPathJoints, path?.jointEntities?.length ?? 0);
+    for (const stored of path?.stored ?? []) {
+      if (!Number.isFinite(stored)) {
+        nonFiniteStoredCount += 1;
+        continue;
+      }
+      if (stored < minStored) minStored = stored;
+      if (stored > maxStored) maxStored = stored;
+      if (stored < 0.0) negativeStoredCount += 1;
+    }
+  }
+  if (pathEntities.length < 1) {
+    minStored = 0.0;
+    maxStored = 0.0;
+  }
+  if (!Number.isFinite(minStored)) minStored = 0.0;
+  if (!Number.isFinite(maxStored)) maxStored = 0.0;
+
+  _recordCableEventTrace(world, step, {
+    type: 'summary',
+    phase,
+    pathCount: pathEntities.length,
+    jointCount: jointEntities.length,
+    maxPathJoints,
+    minRestLength,
+    maxRestLength,
+    tinyRestCount,
+    negativeRestCount,
+    nonFiniteRestCount,
+    minStored,
+    maxStored,
+    negativeStoredCount,
+    nonFiniteStoredCount
+  });
+}
 
 function getMachineId(world, entityId) {
   if (entityId == null) {
@@ -875,8 +1053,11 @@ export function calculateAttachmentPoints(world, joint, path, i, radiusA, radius
 }
 
 export function _updateAttachmentPoints(world) {
+  const logDiffA = false;
+  const logDiffB = false;
   const allowRestLengthClamp = true;
   const enforceKnotPhase = true;
+  const step = Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
   const pathEntities = world.query([CablePathComponent]);
 
   for (const pathId of pathEntities) {
@@ -962,9 +1143,49 @@ export function _updateAttachmentPoints(world) {
       const knotCompB = world.getComponent(entityB, HybridKnotAngleComponent);
       const knotAngleB = _hybridKnotAngleForPath(knotCompB, pathId);
 
+      if (
+        logDiffA &&
+        i === 0 &&
+        isHybridA &&
+        knotAngleA !== null &&
+        posA &&
+        attachmentA_current &&
+        Number.isFinite(thetaA)
+      ) {
+        const basisA = _planeBasisForAxis(planeNormalA);
+        const relA = attachmentA_current.clone().subtract(posA);
+        const attachmentAngleWorldA = Math.atan2(relA.dot(basisA.v), relA.dot(basisA.u));
+        const attachmentRelOrientationA = _normalizeAngleSigned(attachmentAngleWorldA - angleA);
+        const thetaSignedA = (cwA ? -1.0 : 1.0) * thetaA;
+        const knotAngleFromAttachmentA = _normalizeAngleSigned(attachmentRelOrientationA - thetaSignedA);
+        const diffA = _normalizeAngleSigned(knotAngleFromAttachmentA - knotAngleA);
+        console.log(`diffA: ${diffA}`);
+      }
+
+      if (
+        logDiffB &&
+        i === path.jointEntities.length - 1 &&
+        isHybridB &&
+        knotAngleB !== null &&
+        posB &&
+        attachmentB_current &&
+        Number.isFinite(thetaB)
+      ) {
+        const basisB = _planeBasisForAxis(planeNormalB);
+        const relB = attachmentB_current.clone().subtract(posB);
+        const attachmentAngleWorldB = Math.atan2(relB.dot(basisB.v), relB.dot(basisB.u));
+        const attachmentRelOrientationB = _normalizeAngleSigned(attachmentAngleWorldB - angleB);
+        const thetaSignedB = (cwB ? 1.0 : -1.0) * thetaB;
+        const knotAngleFromAttachmentB = _normalizeAngleSigned(attachmentRelOrientationB - thetaSignedB);
+        const diffB = _normalizeAngleSigned(knotAngleFromAttachmentB - knotAngleB);
+        console.log(`diffB: ${diffB}`);
+      }
+
       let sA = 0.0;
       let sB = 0.0;
       const restBefore = joint.restLength;
+      const storedA_before = path.stored[A] ?? 0.0;
+      const storedB_before = path.stored[B] ?? 0.0;
 
       if (rollingLinkA && attachmentA_previous && attachmentA_current && prevPosA && posA && radiusA !== undefined) {
         sA = signedArcLengthOnWheel(
@@ -1012,8 +1233,11 @@ export function _updateAttachmentPoints(world) {
         }
       }
 
+      const sA_raw = sA;
+      const sB_raw = sB;
       let sAEffective = sA;
       let sBEffective = sB;
+      let clampApplied = false;
       const clampEnabled = allowRestLengthClamp && _featureFlag(world, 'layeringClampJointRestLength', true);
       if (clampEnabled && Number.isFinite(restBefore)) {
         const unclampedRest = restBefore - sAEffective + sBEffective;
@@ -1089,6 +1313,31 @@ export function _updateAttachmentPoints(world) {
               }
             }
           }
+
+          const stillLowRest = restBefore - sAEffective + sBEffective;
+          if (stillLowRest + EPSILON < MIN_JOINT_REST_LENGTH) {
+            console.warn('Still low rest');
+          }
+          clampApplied = true;
+
+          _recordCableEventTrace(world, step, {
+            type: 'rest-length-clamp',
+            stage: 'updateAttachmentPoints',
+            pathId,
+            jointId,
+            jointIndex: i,
+            entityA,
+            entityB,
+            linkTypeA: path.linkTypes[A],
+            linkTypeB: path.linkTypes[B],
+            restBefore,
+            unclampedRest,
+            clampedRest: restBefore - sAEffective + sBEffective,
+            sA_raw,
+            sB_raw,
+            sA_effective: sAEffective,
+            sB_effective: sBEffective
+          });
         }
       }
 
@@ -1117,7 +1366,8 @@ export function _updateAttachmentPoints(world) {
           const thetaTargetA = thetaSignA * thetaSignedTargetA;
           const storedTargetA = _thetaToStoredLength(thetaTargetA, baseRadiusA, pathHalfWidth, rampLengthA);
           if (Number.isFinite(storedTargetA)) {
-            const storedDeltaA = storedTargetA - (path.stored[A] ?? 0.0);
+            const storedBeforeProjectionA = path.stored[A] ?? 0.0;
+            const storedDeltaA = storedTargetA - storedBeforeProjectionA;
             if (Math.abs(storedDeltaA) > 1e-3) {
               path.stored[A] = storedTargetA;
               joint.restLength -= storedDeltaA;
@@ -1146,13 +1396,60 @@ export function _updateAttachmentPoints(world) {
           const thetaTargetB = thetaSignB * thetaSignedTargetB;
           const storedTargetB = _thetaToStoredLength(thetaTargetB, baseRadiusB, pathHalfWidth, rampLengthB);
           if (Number.isFinite(storedTargetB)) {
-            const storedDeltaB = storedTargetB - (path.stored[B] ?? 0.0);
+            const storedBeforeProjectionB = path.stored[B] ?? 0.0;
+            const storedDeltaB = storedTargetB - storedBeforeProjectionB;
             if (Math.abs(storedDeltaB) > 1e-3) {
               path.stored[B] = storedTargetB;
               joint.restLength -= storedDeltaB;
             }
           }
         }
+      }
+
+      const restAfter = joint.restLength;
+      if (
+        !Number.isFinite(restAfter) ||
+        restAfter < MIN_JOINT_REST_LENGTH
+      ) {
+        const centerDistance = (posA && posB) ? posA.distanceTo(posB) : null;
+        const overlap = (
+          Number.isFinite(radiusA) &&
+          Number.isFinite(radiusB) &&
+          Number.isFinite(centerDistance)
+        )
+          ? (radiusA + radiusB - centerDistance)
+          : null;
+        const bothEndsHybrid = _isHybrid(path.linkTypes[A]) && _isHybrid(path.linkTypes[B]);
+        _recordCableEventTrace(world, step, {
+          type: 'rest-length-anomaly',
+          stage: 'updateAttachmentPoints',
+          pathId,
+          jointId,
+          jointIndex: i,
+          entityA,
+          entityB,
+          linkTypeA: path.linkTypes[A],
+          linkTypeB: path.linkTypes[B],
+          sameJointPath: path.jointEntities.length === 1,
+          bothEndsHybrid,
+          centerDistance,
+          overlap,
+          attachmentDistance: (attachmentA_current && attachmentB_current)
+            ? attachmentA_current.distanceTo(attachmentB_current)
+            : null,
+          restBefore,
+          restAfter,
+          restDelta: restAfter - restBefore,
+          clampApplied,
+          sA_raw,
+          sB_raw,
+          sA_effective: sAEffective,
+          sB_effective: sBEffective,
+          storedA_before,
+          storedB_before,
+          storedA_after: path.stored[A] ?? 0.0,
+          storedB_after: path.stored[B] ?? 0.0
+        });
       }
 
       if (attachmentA_current) {
@@ -1166,10 +1463,12 @@ export function _updateAttachmentPoints(world) {
 }
 
 export function _mergeJoints(world) {
+  const step = Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
   const pathEntities = world.query([CablePathComponent]);
   for (const pathId of pathEntities) {
     const path = world.getComponent(pathId, CablePathComponent);
     if (path.jointEntities.length < 2) continue;
+    const jointsInPath = path.jointEntities;
     let reRunMerge = true;
     while (reRunMerge) {
       reRunMerge = false;
@@ -1191,6 +1490,12 @@ export function _mergeJoints(world) {
           continue;
         }
         if (path.stored[i + 1] < 0.0) {
+          const storedLeftBefore = path.stored[i] ?? 0.0;
+          const storedMiddleBefore = path.stored[i + 1] ?? 0.0;
+          const storedRightBefore = path.stored[i + 2] ?? 0.0;
+          const restLeftBefore = joint_i.restLength;
+          const restRightBefore = joint_i_plus_1.restLength;
+          const pathJointCountBefore = path.jointEntities.length;
           const pA1 = joint_i.attachmentPointA_world;
           const pB2 = joint_i_plus_1.attachmentPointB_world;
           const posA = world.getComponent(joint_i.entityA, PositionComponent).pos;
@@ -1238,6 +1543,30 @@ export function _mergeJoints(world) {
           joint_i.restLength += sB;
           reRunMerge = path.stored[i] < 0.0 || path.stored[i + 2] < 0.0;
 
+          _recordCableEventTrace(world, step, {
+            type: 'merge',
+            pathId,
+            mergeIndex: i,
+            jointKeptId: jointId_i,
+            jointRemovedId: jointId_i_plus_1,
+            pathJointCountBefore,
+            pathJointCountAfter: pathJointCountBefore - 1,
+            storedLeftBefore,
+            storedMiddleBefore,
+            storedRightBefore,
+            storedLeftAfter: path.stored[i] ?? 0.0,
+            storedRightAfter: path.stored[i + 2] ?? 0.0,
+            restLeftBefore,
+            restRightBefore,
+            restAfter: joint_i.restLength,
+            sA,
+            sB,
+            resultingEntityA: joint_i.entityA,
+            resultingEntityB: joint_i.entityB,
+            resultingTinyRest: Number.isFinite(joint_i.restLength) && joint_i.restLength < MIN_JOINT_REST_LENGTH,
+            rerunMergeTriggered: reRunMerge
+          });
+
           joint_i.attachmentPointA_world.set(attachmentA_current);
           joint_i.attachmentPointB_world.set(attachmentB_current);
 
@@ -1253,6 +1582,7 @@ export function _mergeJoints(world) {
 }
 
 export function _splitJoints(world) {
+  const step = Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
   const potentialSplitters = world.query([PositionComponent, RadiusComponent, CableLinkComponent]);
   const pathEntities = world.query([CablePathComponent]);
   for (const pathId of pathEntities) {
@@ -1347,10 +1677,29 @@ export function _splitJoints(world) {
               planeNormalSplitter
           );
           if (s <= 0.0) {
+              _recordCableEventTrace(world, step, {
+                type: 'split-abort',
+                reason: 'nonpositive-wrap',
+                pathId,
+                jointId,
+                splitterId,
+                splitIndex: i,
+                s
+              });
               console.warn(`Nothing wraps around splitter. Aborting split.`);
               continue;
           }
           if ((s + 1e-9) >= 2.0*Math.PI * radiusSplitter) {
+              _recordCableEventTrace(world, step, {
+                type: 'split-abort',
+                reason: 'full-wrap',
+                pathId,
+                jointId,
+                splitterId,
+                splitIndex: i,
+                s,
+                radiusSplitter
+              });
               console.warn(`Split resulted a full wrap around splitter. Aborting split.`);
               continue;
           }
@@ -1359,18 +1708,46 @@ export function _splitJoints(world) {
           const dSB = attachmentPointAForNewJoint.clone().subtract(attachmentPointBForNewJoint).length();
           const originalRestLength = joint.restLength + sB - sA;
           const totalDist = dAS + dSB;
+          const availableRestLength = originalRestLength - s;
+          const storedA_before = path.stored[i] ?? 0.0;
+          const storedB_before = path.stored[i + 1] ?? 0.0;
+          const restBefore = joint.restLength;
+          const pathJointCountBefore = path.jointEntities.length;
 
           let newRestLengthAS = 0;
           let newRestLengthSB = 0;
           if (totalDist > EPSILON) {
-              const availableRestLength = originalRestLength - s;
               if (availableRestLength < EPSILON) {
+                  _recordCableEventTrace(world, step, {
+                    type: 'split-abort',
+                    reason: 'insufficient-rest',
+                    pathId,
+                    jointId,
+                    splitterId,
+                    splitIndex: i,
+                    availableRestLength,
+                    originalRestLength,
+                    s,
+                    sA,
+                    sB
+                  });
                   console.warn(`Split resulted in < ${EPSILON.toFixed(4)} available rest length (${availableRestLength.toFixed(4)}). Aborting split.`);
                   continue;
               }
               newRestLengthAS = availableRestLength * dAS / totalDist;
               newRestLengthSB = availableRestLength * dSB / totalDist;
           } else {
+              _recordCableEventTrace(world, step, {
+                type: 'split-abort',
+                reason: 'degenerate-distances',
+                pathId,
+                jointId,
+                splitterId,
+                splitIndex: i,
+                totalDist,
+                dAS,
+                dSB
+              });
               console.warn("Split occurred with near-zero distance between new segments:", totalDist);
           }
           path.stored[i + 1] -= sB;
@@ -1389,14 +1766,51 @@ export function _splitJoints(world) {
 
           world.addComponent(newJointId, new CableJointComponent(
               splitterId, entityB, newRestLengthSB, attachmentPointAForNewJoint, attachmentPointBForNewJoint));
+
+          _recordCableEventTrace(world, step, {
+            type: 'split',
+            pathId,
+            splitIndex: i,
+            originalJointId: jointId,
+            newJointId,
+            splitterId,
+            pathJointCountBefore,
+            pathJointCountAfter: pathJointCountBefore + 1,
+            originalRestLength,
+            availableRestLength,
+            restBefore,
+            newRestLengthAS,
+            newRestLengthSB,
+            minNewRestLength: Math.min(newRestLengthAS, newRestLengthSB),
+            storedA_before,
+            storedB_before,
+            storedA_after: path.stored[i] ?? 0.0,
+            storedSplitter_after: path.stored[i + 1] ?? 0.0,
+            storedB_after: path.stored[i + 2] ?? 0.0,
+            sA,
+            sB,
+            s,
+            dAS,
+            dSB,
+            totalDist,
+            cw,
+            cwA,
+            cwB,
+            tinyRestProduced:
+              (Number.isFinite(newRestLengthAS) && newRestLengthAS < MIN_JOINT_REST_LENGTH) ||
+              (Number.isFinite(newRestLengthSB) && newRestLengthSB < MIN_JOINT_REST_LENGTH)
+          });
         }
       }
     }
   }
 }
 
-export function _updateHybridLinkStates(world) {
+export function _updateHybridLinkStates(world, traceStep = null) {
   const pathEntities = world.query([CablePathComponent]);
+  const step = Number.isFinite(traceStep)
+    ? Math.floor(traceStep)
+    : Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
 
   for (const pathId of pathEntities) {
     const path = world.getComponent(pathId, CablePathComponent);
@@ -1404,46 +1818,120 @@ export function _updateHybridLinkStates(world) {
       if (path.linkTypes[i] === 'hybrid') {
         const transitionArcThreshold = _hybridTransitionArcThreshold(path);
         if (path.stored[i] < -transitionArcThreshold) {
+          const endpointJointId = (i === 0 ? path.jointEntities[i] : path.jointEntities[i - 1]);
+          const oldLinkType = path.linkTypes[i];
+          const oldCw = path.cw[i];
+          const oldStored = path.stored[i] ?? 0.0;
           path.linkTypes[i] = 'hybrid-attachment';
-          const joint = (i === 0 ? world.getComponent(path.jointEntities[i], CableJointComponent) : world.getComponent(path.jointEntities[i - 1], CableJointComponent));
+          const joint = (
+            i === 0
+              ? world.getComponent(path.jointEntities[i], CableJointComponent)
+              : world.getComponent(path.jointEntities[i - 1], CableJointComponent)
+          );
           const linkEntity = (i === 0 ? joint.entityA : joint.entityB);
+          const pos = world.getComponent(linkEntity, PositionComponent)?.pos;
           const radius = _effectiveRollingRadius(
             world,
             path,
             i,
             world.getComponent(linkEntity, RadiusComponent)?.radius
           ).radius;
-          const pos = world.getComponent(linkEntity, PositionComponent).pos;
           const planeNormal = _getPlaneNormal(world, linkEntity);
-          const stored = path.stored[i];
-          joint.restLength += stored;
-          const rotAng = -stored / radius;
-          if (i === 0) {
-            const rotated = _rotateAroundAxis(joint.attachmentPointA_world, pos, planeNormal, rotAng, path.cw[i]);
-            joint.attachmentPointA_world.set(rotated);
-          } else if (i === path.linkTypes.length - 1) {
-            const rotated = _rotateAroundAxis(joint.attachmentPointB_world, pos, planeNormal, rotAng, path.cw[i]);
-            joint.attachmentPointB_world.set(rotated);
-          }
+          const oldRestLength = joint.restLength;
+          const attachmentBefore = i === 0
+            ? joint.attachmentPointA_world.clone()
+            : joint.attachmentPointB_world.clone();
+          const neighborAttachmentPoint = i === 0
+            ? joint.attachmentPointB_world
+            : joint.attachmentPointA_world;
+          joint.restLength += oldStored;
           path.stored[i] = 0;
+          const rotationApplied = Boolean(pos && Number.isFinite(radius) && radius > EPSILON);
+          if (pos && Number.isFinite(radius) && radius > EPSILON) {
+            const rotAng = -oldStored / radius;
+            if (i === 0) {
+              const rotated = _rotateAroundAxis(joint.attachmentPointA_world, pos, planeNormal, rotAng, path.cw[i]);
+              joint.attachmentPointA_world.set(rotated);
+            } else if (i === path.linkTypes.length - 1) {
+              const rotated = _rotateAroundAxis(joint.attachmentPointB_world, pos, planeNormal, rotAng, path.cw[i]);
+              joint.attachmentPointB_world.set(rotated);
+            }
+          }
+
+          const attachmentAfter = i === 0
+            ? joint.attachmentPointA_world.clone()
+            : joint.attachmentPointB_world.clone();
+          _recordHybridTransitionTrace(world, step, {
+            transition: 'hybrid->hybrid-attachment',
+            pathId,
+            endpointIndex: i,
+            jointId: endpointJointId,
+            linkEntityId: linkEntity,
+            neighborEntityId: i === 0 ? joint.entityB : joint.entityA,
+            oldLinkType,
+            newLinkType: path.linkTypes[i],
+            oldCW: oldCw,
+            newCW: path.cw[i],
+            oldStored,
+            newStored: path.stored[i] ?? 0.0,
+            restLengthDelta: joint.restLength - oldRestLength,
+            oldRestLength,
+            newRestLength: joint.restLength,
+            effectiveRadius: radius,
+            rotationApplied,
+            attachmentBefore: _vecSnapshot(attachmentBefore),
+            attachmentAfter: _vecSnapshot(attachmentAfter),
+            neighborAttachment: _vecSnapshot(neighborAttachmentPoint)
+          });
+          _recordCableEventTrace(world, step, {
+            type: 'hybrid-transition',
+            direction: 'hybrid->hybrid-attachment',
+            pathId,
+            endpointIndex: i,
+            jointId: endpointJointId,
+            linkEntityId: linkEntity,
+            neighborEntityId: i === 0 ? joint.entityB : joint.entityA,
+            oldStored,
+            newStored: path.stored[i] ?? 0.0,
+            oldRestLength,
+            newRestLength: joint.restLength,
+            restLengthDelta: joint.restLength - oldRestLength,
+            oldCW: oldCw,
+            newCW: path.cw[i],
+            effectiveRadius: radius,
+            transitionArcThreshold
+          });
+        } else if (path.stored[i] < 0.0) {
+          const endpointJointId = (i === 0 ? path.jointEntities[i] : path.jointEntities[i - 1]);
+          const joint = world.getComponent(endpointJointId, CableJointComponent);
+          _recordCableEventTrace(world, step, {
+            type: 'hybrid-transition-suppressed',
+            direction: 'hybrid->hybrid-attachment',
+            pathId,
+            endpointIndex: i,
+            jointId: endpointJointId,
+            linkEntityId: i === 0 ? joint?.entityA : joint?.entityB,
+            neighborEntityId: i === 0 ? joint?.entityB : joint?.entityA,
+            stored: path.stored[i],
+            threshold: transitionArcThreshold,
+            reason: 'negative-stored-within-hysteresis'
+          });
         }
-      }
-      else if (path.linkTypes[i] === 'hybrid-attachment') {
+      } else if (path.linkTypes[i] === 'hybrid-attachment') {
         let jointId, joint, entityId, attachmentPoint, neighborId, neighborAttachmentPoint;
         if (i === 0) {
           jointId = path.jointEntities[0];
-          joint   = world.getComponent(jointId, CableJointComponent);
-          entityId        = joint.entityA;
+          joint = world.getComponent(jointId, CableJointComponent);
+          entityId = joint.entityA;
           attachmentPoint = joint.attachmentPointA_world;
-          neighborId      = joint.entityB;
+          neighborId = joint.entityB;
           neighborAttachmentPoint = joint.attachmentPointB_world;
-        }
-        else if (i === path.linkTypes.length - 1) {
+        } else if (i === path.linkTypes.length - 1) {
           jointId = path.jointEntities[path.jointEntities.length - 1];
-          joint   = world.getComponent(jointId, CableJointComponent);
-          entityId        = joint.entityB;
+          joint = world.getComponent(jointId, CableJointComponent);
+          entityId = joint.entityB;
           attachmentPoint = joint.attachmentPointB_world;
-          neighborId      = joint.entityA;
+          neighborId = joint.entityA;
           neighborAttachmentPoint = joint.attachmentPointA_world;
         }
 
@@ -1454,44 +1942,283 @@ export function _updateHybridLinkStates(world) {
           i,
           world.getComponent(entityId, RadiusComponent)?.radius
         ).radius;
-        const planeNormal = _getPlaneNormal(world, entityId);
+        const lastEndpointIndex = path.linkTypes.length - 1;
+        const neighborLinkIndex = i === 0 ? 1 : Math.max(0, lastEndpointIndex - 1);
+        const neighborPos = world.getComponent(neighborId, PositionComponent)?.pos;
+        const neighborRadius = _effectiveRollingRadius(
+          world,
+          path,
+          neighborLinkIndex,
+          world.getComponent(neighborId, RadiusComponent)?.radius
+        ).radius;
         const attachmentDistance = attachmentPoint?.distanceTo?.(neighborAttachmentPoint) ?? Infinity;
-        const degenerateThreshold = Math.max(1e-6, 2.0 * (path.cableHalfWidth ?? 0.0) + 1e-6);
-        if (attachmentDistance <= degenerateThreshold) {
+        const centerDistance = (
+          C &&
+          neighborPos &&
+          Number.isFinite(C.x) &&
+          Number.isFinite(C.y) &&
+          Number.isFinite(C.z) &&
+          Number.isFinite(neighborPos.x) &&
+          Number.isFinite(neighborPos.y) &&
+          Number.isFinite(neighborPos.z)
+        )
+          ? C.distanceTo(neighborPos)
+          : Infinity;
+        const centerOverlap = (
+          Number.isFinite(centerDistance) &&
+          Number.isFinite(R) &&
+          Number.isFinite(neighborRadius)
+        )
+          ? (R + neighborRadius - centerDistance)
+          : null;
+        const sameJointPath = path.jointEntities.length === 1;
+        const bothEndpointsHybridLike = (
+          _isHybrid(path.linkTypes[0]) &&
+          _isHybrid(path.linkTypes[lastEndpointIndex])
+        );
+
+        if (!C || !Number.isFinite(R) || R <= EPSILON) {
+          _recordCableEventTrace(world, step, {
+            type: 'hybrid-rub-check',
+            pathId,
+            endpointIndex: i,
+            jointId,
+            linkEntityId: entityId,
+            neighborEntityId: neighborId,
+            sameJointPath,
+            bothEndpointsHybridLike,
+            centerDistance,
+            centerOverlap,
+            attachmentDistance,
+            reason: 'invalid-center-or-radius'
+          });
           continue;
         }
 
-        const tanCW  = tangentFromSphereToPoint(neighborAttachmentPoint, C, R, planeNormal, true).a_sphere;
-        const tanCCW = tangentFromSphereToPoint(neighborAttachmentPoint, C, R, planeNormal, false).a_sphere;
+        const planeNormal = _getPlaneNormal(world, entityId);
+        const degenerateThreshold = Math.max(1e-6, 2.0 * (path.cableHalfWidth ?? 0.0) + 1e-6);
+        if (attachmentDistance <= degenerateThreshold) {
+          _recordCableEventTrace(world, step, {
+            type: 'hybrid-rub-check',
+            pathId,
+            endpointIndex: i,
+            jointId,
+            linkEntityId: entityId,
+            neighborEntityId: neighborId,
+            sameJointPath,
+            bothEndpointsHybridLike,
+            centerDistance,
+            centerOverlap,
+            attachmentDistance,
+            degenerateThreshold,
+            reason: 'attachment-degenerate-skip'
+          });
+          continue;
+        }
 
-        const crossedCW  = signedArcLengthOnWheel(attachmentPoint, tanCW,  C, R, true, planeNormal);
-        const crossedCCW  = signedArcLengthOnWheel(attachmentPoint, tanCCW,  C, R, false, planeNormal);
+        const neighborAttachmentDistSq = neighborAttachmentPoint.distanceToSq(C);
+        const neighborAttachmentInsideCircle = neighborAttachmentDistSq <= (R * R + 1e-9);
+        const tanCW = tangentFromSphereToPoint(neighborAttachmentPoint, C, R, planeNormal, true).a_sphere;
+        const tanCCW = tangentFromSphereToPoint(neighborAttachmentPoint, C, R, planeNormal, false).a_sphere;
+        const tangentFinite = (
+          tanCW &&
+          tanCCW &&
+          Number.isFinite(tanCW.x) &&
+          Number.isFinite(tanCW.y) &&
+          Number.isFinite(tanCW.z) &&
+          Number.isFinite(tanCCW.x) &&
+          Number.isFinite(tanCCW.y) &&
+          Number.isFinite(tanCCW.z)
+        );
+
+        const crossedCW = signedArcLengthOnWheel(attachmentPoint, tanCW, C, R, true, planeNormal);
+        const crossedCCW = signedArcLengthOnWheel(attachmentPoint, tanCCW, C, R, false, planeNormal);
         const distSqCW = attachmentPoint.distanceToSq(tanCW);
         const distSqCCW = attachmentPoint.distanceToSq(tanCCW);
 
         const transitionArcThreshold = _hybridTransitionArcThreshold(path);
-        let newCW = null, crossingTangent = null, candidateStored = null;
+        let newCW = null;
+        let crossingTangent = null;
+        let candidateStored = null;
+        let noTransitionReason = 'no-transition';
         if (crossedCCW > 0.0 && distSqCCW < distSqCW) {
-            newCW = true;
-            crossingTangent = tanCCW;
-            candidateStored = crossedCCW;
+          newCW = true;
+          crossingTangent = tanCCW;
+          candidateStored = crossedCCW;
         } else if (crossedCW > 0.0 && distSqCW < distSqCCW) {
-            newCW = false;
-            crossingTangent = tanCW;
-            candidateStored = crossedCW;
+          newCW = false;
+          crossingTangent = tanCW;
+          candidateStored = crossedCW;
+        }
+        if (newCW !== null && !(candidateStored > transitionArcThreshold)) {
+          noTransitionReason = 'candidate-below-hysteresis';
+          newCW = null;
+          crossingTangent = null;
+          candidateStored = null;
         }
 
-        if (newCW !== null && candidateStored > transitionArcThreshold) {
+        if (newCW !== null) {
+          const oldStored = path.stored[i] ?? 0.0;
+          const oldLinkType = path.linkTypes[i];
+          const oldCw = path.cw[i];
+          const newStored = candidateStored ?? oldStored;
+          const oldRestLength = joint.restLength;
+          const attachmentBefore = attachmentPoint.clone();
           path.linkTypes[i] = 'hybrid';
-          path.cw[i]        = newCW;
-          path.stored[i] = candidateStored;
-          joint.restLength -= candidateStored;
+          path.cw[i] = newCW;
+          path.stored[i] = newStored;
+          joint.restLength -= (newStored - oldStored);
           attachmentPoint.set(crossingTangent);
           _ensureHybridKnotAngleComponentForEndpoint(world, path, i, pathId, {
             attachmentPoint,
             createIfMissing: true
           });
+          _recordHybridTransitionTrace(world, step, {
+            transition: 'hybrid-attachment->hybrid',
+            pathId,
+            endpointIndex: i,
+            jointId,
+            linkEntityId: entityId,
+            neighborEntityId: neighborId,
+            oldLinkType,
+            newLinkType: path.linkTypes[i],
+            oldCW: oldCw,
+            newCW: path.cw[i],
+            oldStored,
+            newStored: path.stored[i] ?? 0.0,
+            restLengthDelta: joint.restLength - oldRestLength,
+            oldRestLength,
+            newRestLength: joint.restLength,
+            effectiveRadius: R,
+            crossedCW,
+            crossedCCW,
+            distSqCW,
+            distSqCCW,
+            candidateStored,
+            selectedTangent: _vecSnapshot(crossingTangent),
+            attachmentBefore: _vecSnapshot(attachmentBefore),
+            attachmentAfter: _vecSnapshot(attachmentPoint),
+            neighborAttachment: _vecSnapshot(neighborAttachmentPoint)
+          });
+          _recordCableEventTrace(world, step, {
+            type: 'hybrid-transition',
+            direction: 'hybrid-attachment->hybrid',
+            pathId,
+            endpointIndex: i,
+            jointId,
+            linkEntityId: entityId,
+            neighborEntityId: neighborId,
+            oldStored,
+            newStored: path.stored[i] ?? 0.0,
+            oldRestLength,
+            newRestLength: joint.restLength,
+            restLengthDelta: joint.restLength - oldRestLength,
+            oldCW: oldCw,
+            newCW: path.cw[i],
+            effectiveRadius: R,
+            crossedCW,
+            crossedCCW,
+            transitionArcThreshold
+          });
+          _recordCableEventTrace(world, step, {
+            type: 'hybrid-rub-check',
+            pathId,
+            endpointIndex: i,
+            jointId,
+            linkEntityId: entityId,
+            neighborEntityId: neighborId,
+            sameJointPath,
+            bothEndpointsHybridLike,
+            centerDistance,
+            centerOverlap,
+            attachmentDistance,
+            degenerateThreshold,
+            neighborAttachmentInsideCircle,
+            tangentFinite,
+            crossedCW,
+            crossedCCW,
+            distSqCW,
+            distSqCCW,
+            reason: 'transition'
+          });
+        } else {
+          _recordCableEventTrace(world, step, {
+            type: 'hybrid-rub-check',
+            pathId,
+            endpointIndex: i,
+            jointId,
+            linkEntityId: entityId,
+            neighborEntityId: neighborId,
+            sameJointPath,
+            bothEndpointsHybridLike,
+            centerDistance,
+            centerOverlap,
+            attachmentDistance,
+            degenerateThreshold,
+            neighborAttachmentInsideCircle,
+            tangentFinite,
+            crossedCW,
+            crossedCCW,
+            distSqCW,
+            distSqCCW,
+            transitionArcThreshold,
+            reason: noTransitionReason
+          });
         }
+      }
+    }
+
+    for (let linkIndex = 1; linkIndex < path.linkTypes.length - 1; linkIndex++) {
+      if (!_isRolling(path.linkTypes[linkIndex])) {
+        continue;
+      }
+      const leftJointId = path.jointEntities[linkIndex - 1];
+      const rightJointId = path.jointEntities[linkIndex];
+      const leftJoint = world.getComponent(leftJointId, CableJointComponent);
+      const rightJoint = world.getComponent(rightJointId, CableJointComponent);
+      if (!leftJoint || !rightJoint || leftJoint.entityB !== rightJoint.entityA) {
+        continue;
+      }
+      const bodyId = leftJoint.entityB;
+      const center = world.getComponent(bodyId, PositionComponent)?.pos;
+      const radius = _effectiveRollingRadius(
+        world,
+        path,
+        linkIndex,
+        world.getComponent(bodyId, RadiusComponent)?.radius
+      ).radius;
+      if (!center || !Number.isFinite(radius) || radius <= EPSILON) {
+        continue;
+      }
+
+      const cw = path.cw[linkIndex];
+      const planeNormal = _getPlaneNormal(world, bodyId);
+      const arc = signedArcLengthOnWheel(
+        leftJoint.attachmentPointB_world,
+        rightJoint.attachmentPointA_world,
+        center,
+        radius,
+        cw,
+        planeNormal,
+        true
+      );
+      const altArc = signedArcLengthOnWheel(
+        leftJoint.attachmentPointB_world,
+        rightJoint.attachmentPointA_world,
+        center,
+        radius,
+        !cw,
+        planeNormal,
+        true
+      );
+      const stored = path.stored[linkIndex] ?? 0.0;
+      if (arc <= 1e-6 && altArc > arc + 1e-4 && stored > 1e-6) {
+        _debugCable(
+          world,
+          `rolling-arc-mismatch path=${pathId} link=${linkIndex} body=${bodyId} ` +
+          `cw=${cw} arc=${arc.toFixed(6)} altArc=${altArc.toFixed(6)} stored=${stored.toFixed(6)} ` +
+          `leftJoint=${leftJointId} rightJoint=${rightJointId}`
+        );
       }
     }
   }
@@ -1501,19 +2228,31 @@ export class CableAttachmentUpdateSystem {
   runInPause = false;
 
   update(world, _dt_unused) {
+    const prevHybridStep = Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
+    const nextHybridStep = prevHybridStep + 1;
+    world.setResource('cableHybridTransitionStep', nextHybridStep);
+    _recordCableStepSummary(world, nextHybridStep, 'begin');
     _clearDebugPoints(world);
+
     if (_featureFlag(world, 'layeringAttachmentUpdatePoints', true)) {
       _updateAttachmentPoints(world);
     }
+    _recordCableStepSummary(world, nextHybridStep, 'afterAttachment');
+
     if (_featureFlag(world, 'layeringMergeJoints', true)) {
       _mergeJoints(world);
     }
+    _recordCableStepSummary(world, nextHybridStep, 'afterMerge');
+
     if (_featureFlag(world, 'layeringSplitJoints', true)) {
       _splitJoints(world);
     }
+    _recordCableStepSummary(world, nextHybridStep, 'afterSplit');
+
     if (_featureFlag(world, 'layeringHybridLinkStates', true)) {
-      _updateHybridLinkStates(world);
+      _updateHybridLinkStates(world, nextHybridStep);
     }
+    _recordCableStepSummary(world, nextHybridStep, 'afterHybrid');
   }
 }
 
@@ -1523,10 +2262,110 @@ export class PBDCableConstraintSolver {
   update(world, _dt_unused) {
     const pathEntities = world.query([CablePathComponent]);
     const dt = world.getResource('dt');
-
     const ITERATIONS = 2;
 
     const jointLocals = new Map();
+    const computeLocal = (entityId, worldPoint) => {
+      const posComp = world.getComponent(entityId, PositionComponent);
+      const orientComp = world.getComponent(entityId, OrientationComponent);
+      if (!posComp) return new Vector3(0, 0, 0);
+
+      const rel = worldPoint.clone().subtract(posComp.pos);
+      if (orientComp && orientComp.quaternion) {
+        const inv = orientComp.quaternion.clone().conjugate().normalize();
+        return inv.transformVector(rel);
+      }
+      return rel;
+    };
+
+    const applyConstraint = (
+      entityA,
+      entityB,
+      pointA_world,
+      pointB_world,
+      gradPosA,
+      gradPosB,
+      constraintError,
+      compliance
+    ) => {
+      if (constraintError <= EPSILON) {
+        return;
+      }
+
+      const massAComp = world.getComponent(entityA, MassComponent);
+      const invMassA = (massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
+      const moiAComp = world.getComponent(entityA, MomentOfInertiaComponent);
+      const invInertiaA = moiAComp ? moiAComp.invInertia : 0.0;
+
+      const massBComp = world.getComponent(entityB, MassComponent);
+      const invMassB = (massBComp && massBComp.mass > 0) ? 1.0 / massBComp.mass : 0.0;
+      const moiBComp = world.getComponent(entityB, MomentOfInertiaComponent);
+      const invInertiaB = moiBComp ? moiBComp.invInertia : 0.0;
+
+      if (invMassA + invMassB + invInertiaA + invInertiaB <= EPSILON) {
+        return;
+      }
+
+      const posAComp = world.getComponent(entityA, PositionComponent);
+      const posBComp = world.getComponent(entityB, PositionComponent);
+      if (!posAComp || !posBComp) {
+        return;
+      }
+
+      const rA = new Vector3().subtractVectors(pointA_world, posAComp.pos);
+      const rB = new Vector3().subtractVectors(pointB_world, posBComp.pos);
+      const gradAngA = rA.cross(gradPosA);
+      const gradAngB = rB.cross(gradPosB);
+
+      let denom = 0.0;
+      denom += invMassA * gradPosA.lengthSq();
+      denom += invInertiaA * gradAngA.lengthSq();
+      denom += invMassB * gradPosB.lengthSq();
+      denom += invInertiaB * gradAngB.lengthSq();
+      if (Number.isFinite(dt) && dt > EPSILON) {
+        denom += (compliance ?? 0.0) / (dt * dt);
+      }
+
+      if (denom <= EPSILON) {
+        return;
+      }
+
+      const lambda = -constraintError / denom;
+
+      if (invMassA > 0.0) {
+        const deltaPosA = gradPosA.clone().scale(-invMassA * lambda);
+        posAComp.pos.add(deltaPosA);
+      }
+      if (invInertiaA > 0.0) {
+        const deltaAngA = gradAngA.clone().scale(-invInertiaA * lambda);
+        const orientationAComp = world.getComponent(entityA, OrientationComponent);
+        if (orientationAComp) {
+          const angle = deltaAngA.length();
+          if (angle > EPSILON) {
+            const axis = deltaAngA.clone().scale(1.0 / angle);
+            const dq = new Quaternion().setFromAxisAngle(axis, angle);
+            orientationAComp.quaternion.multiplyQuaternions(dq, orientationAComp.quaternion).normalize();
+          }
+        }
+      }
+
+      if (invMassB > 0.0) {
+        const deltaPosB = gradPosB.clone().scale(-invMassB * lambda);
+        posBComp.pos.add(deltaPosB);
+      }
+      if (invInertiaB > 0.0) {
+        const deltaAngB = gradAngB.clone().scale(-invInertiaB * lambda);
+        const orientationBComp = world.getComponent(entityB, OrientationComponent);
+        if (orientationBComp) {
+          const angle = deltaAngB.length();
+          if (angle > EPSILON) {
+            const axis = deltaAngB.clone().scale(1.0 / angle);
+            const dq = new Quaternion().setFromAxisAngle(axis, angle);
+            orientationBComp.quaternion.multiplyQuaternions(dq, orientationBComp.quaternion).normalize();
+          }
+        }
+      }
+    };
 
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
@@ -1534,8 +2373,8 @@ export class PBDCableConstraintSolver {
       for (const jointId of path.jointEntities) {
         const joint = world.getComponent(jointId, CableJointComponent);
         jointLocals.set(jointId, {
-          localA: _computeLocalAttachment(world, joint.entityA, joint.attachmentPointA_world),
-          localB: _computeLocalAttachment(world, joint.entityB, joint.attachmentPointB_world)
+          localA: computeLocal(joint.entityA, joint.attachmentPointA_world),
+          localB: computeLocal(joint.entityB, joint.attachmentPointB_world)
         });
       }
     }
@@ -1568,89 +2407,31 @@ export class PBDCableConstraintSolver {
           const pB = _computeWorldAttachment(world, entityB, locals.localB);
 
           const currentSegmentLength = pA.distanceTo(pB);
-          const constraintError = currentSegmentLength - joint.restLength;
-          if (constraintError > EPSILON) {
-            const massAComp = world.getComponent(entityA, MassComponent);
-            const invMassA = (massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
-            const moiAComp = world.getComponent(entityA, MomentOfInertiaComponent);
-            // Scalar inertia here is treated as effective inertia about the constraint axis.
-            const invInertiaA = moiAComp ? moiAComp.invInertia : 0.0;
-
-            const massBComp = world.getComponent(entityB, MassComponent);
-            const invMassB = (massBComp && massBComp.mass > 0) ? 1.0 / massBComp.mass : 0.0;
-            const moiBComp = world.getComponent(entityB, MomentOfInertiaComponent);
-            // Scalar inertia here is treated as effective inertia about the constraint axis.
-            const invInertiaB = moiBComp ? moiBComp.invInertia : 0.0;
-
-            if (invMassA + invMassB + invInertiaA + invInertiaB <= EPSILON) {
-              continue;
-            }
-
-            const diff = new Vector3().subtractVectors(pB, pA);
-            const len = diff.length();
-            if (len <= EPSILON) continue;
-            const dir = diff.clone().scale(1.0 / len);
-
-            const gradPosA = dir.clone();
-            const gradPosB = dir.clone().scale(-1.0);
-
-            const posAComp = world.getComponent(entityA, PositionComponent);
-            const rA = new Vector3().subtractVectors(pA, posAComp.pos);
-            const gradAngA = rA.cross(dir);
-
-            const posBComp = world.getComponent(entityB, PositionComponent);
-            const rB = new Vector3().subtractVectors(pB, posBComp.pos);
-            const gradAngB = rB.cross(dir.clone().scale(-1.0));
-
-            let denom = 0.0;
-            denom += invMassA * gradPosA.lengthSq();
-            denom += invInertiaA * gradAngA.lengthSq();
-            denom += invMassB * gradPosB.lengthSq();
-            denom += invInertiaB * gradAngB.lengthSq();
-            if (dt !== undefined && dt > EPSILON) {
-              denom += path.compliance / (dt * dt);
-            }
-
-            if (denom <= EPSILON) {
-              continue;
-            }
-
-            const lambda = -constraintError / denom;
-
-            if (invMassA > 0.0) {
-              const deltaPosA = gradPosA.clone().scale(-invMassA * lambda);
-              posAComp.pos.add(deltaPosA);
-            }
-            if (invInertiaA > 0.0) {
-              const deltaAngA = gradAngA.clone().scale(-invInertiaA * lambda);
-              const orientationAComp = world.getComponent(entityA, OrientationComponent);
-              if (orientationAComp) {
-                const angle = deltaAngA.length();
-                if (angle > EPSILON) {
-                  const axis = deltaAngA.clone().scale(1.0 / angle);
-                  const dq = new Quaternion().setFromAxisAngle(axis, angle);
-                  orientationAComp.quaternion.multiplyQuaternions(dq, orientationAComp.quaternion).normalize();
-                }
-              }
-            }
-
-            if (invMassB > 0.0) {
-              const deltaPosB = gradPosB.clone().scale(-invMassB * lambda);
-              posBComp.pos.add(deltaPosB);
-            }
-            if (invInertiaB > 0.0) {
-              const deltaAngB = gradAngB.clone().scale(-invInertiaB * lambda);
-              const orientationBComp = world.getComponent(entityB, OrientationComponent);
-              if (orientationBComp) {
-                const angle = deltaAngB.length();
-                if (angle > EPSILON) {
-                  const axis = deltaAngB.clone().scale(1.0 / angle);
-                  const dq = new Quaternion().setFromAxisAngle(axis, angle);
-                  orientationBComp.quaternion.multiplyQuaternions(dq, orientationBComp.quaternion).normalize();
-                }
-              }
-            }
+          let dir = null;
+          if (currentSegmentLength > EPSILON) {
+            dir = new Vector3().subtractVectors(pB, pA).scale(1.0 / currentSegmentLength);
           }
+          if (!dir || dir.lengthSq() <= EPSILON) {
+            continue;
+          }
+
+          const constraintError = currentSegmentLength - joint.restLength;
+          if (constraintError <= EPSILON) {
+            continue;
+          }
+
+          const gradPosA = dir.clone();
+          const gradPosB = dir.clone().scale(-1.0);
+          applyConstraint(
+            entityA,
+            entityB,
+            pA,
+            pB,
+            gradPosA,
+            gradPosB,
+            constraintError,
+            path.compliance
+          );
         }
       }
     }

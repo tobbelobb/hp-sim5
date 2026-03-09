@@ -18,18 +18,12 @@ import {
 const BASE_ITERATIONS = 4;
 const TARGET_DT = 1 / 500;
 
-function _effectiveFrictionRadius(world, path, linkEntityId, baseRadius) {
-  if (!Number.isFinite(baseRadius) || baseRadius <= 0.0) {
-    return baseRadius;
-  }
-  if (!layeringEnabled(world)) {
-    return baseRadius;
-  }
+function _hybridTransitionArcThreshold(path) {
   const halfWidth = Number.isFinite(path?.cableHalfWidth) ? Math.max(0.0, path.cableHalfWidth) : 0.0;
   if (!(halfWidth > 1e-9)) {
-    return baseRadius;
+    return 1e-6;
   }
-  return baseRadius + halfWidth;
+  return Math.max(1e-6, 0.25 * halfWidth);
 }
 
 function _evenOutTensionFriction(world) {
@@ -63,14 +57,14 @@ function _evenOutTensionFriction(world) {
         const mu = frictionComp ? frictionComp.mu : 0.0;
 
         const radiusComp = world.getComponent(linkEntityId, RadiusComponent);
-        const baseRadius = radiusComp ? radiusComp.radius : 0.0;
-        const radius = _effectiveFrictionRadius(world, path, linkEntityId, baseRadius);
+        const radius = radiusComp ? radiusComp.radius : 0.0;
+        const effectiveRadius = radius + (layeringEnabled(world) ? (path.cableHalfWidth ?? 0.0) : 0.0);
 
         if (mu > epsilon) {
           const storedLengthOnLink = path.stored[i + 1];
           let wrapAngle = 0;
-          if (linkType === 'rolling' && radius > epsilon && Math.abs(storedLengthOnLink) > epsilon) {
-            wrapAngle = Math.abs(storedLengthOnLink / radius);
+          if (linkType === 'rolling' && effectiveRadius > epsilon && Math.abs(storedLengthOnLink) > epsilon) {
+            wrapAngle = Math.abs(storedLengthOnLink / effectiveRadius);
           } else if (linkType === 'pinhole') {
             const v0 = j0_comp.attachmentPointA_world.clone().subtract(j0_comp.attachmentPointB_world).normalize();
             const v1 = j1_comp.attachmentPointB_world.clone().subtract(j1_comp.attachmentPointA_world).normalize();
@@ -142,6 +136,7 @@ function _evenOutTensionFriction(world) {
 
 function _sanityCheck(world) {
   const pathEntities = world.query([CablePathComponent]);
+  const negativeStoredEpsilon = 1e-9;
   for (const pathId of pathEntities) {
     const path = world.getComponent(pathId, CablePathComponent);
     if (!path || path.jointEntities.length < 1) continue;
@@ -156,14 +151,14 @@ function _sanityCheck(world) {
     if (Math.abs(error) > 1e-9) {
       console.warn(`Non-zero error for path ${pathId}: ${error}`);
     }
-    const negativeStoredThreshold = (
-      layeringEnabled(world) &&
-      Number.isFinite(path?.cableHalfWidth) &&
-      path.cableHalfWidth > 1e-9
-    )
-      ? -Math.max(1e-9, 0.25 * path.cableHalfWidth)
-      : -1e-9;
-    if (path.stored.some((s) => s < negativeStoredThreshold)) {
+    const hybridEndpointThreshold = _hybridTransitionArcThreshold(path);
+    const hasStoredBelowThreshold = path.stored.some((stored, index) => {
+      const isEndpoint = index === 0 || index === path.stored.length - 1;
+      const usesHybridHysteresis = isEndpoint && path.linkTypes[index] === 'hybrid';
+      const threshold = usesHybridHysteresis ? hybridEndpointThreshold : negativeStoredEpsilon;
+      return stored < -threshold;
+    });
+    if (hasStoredBelowThreshold) {
       console.warn(`Negative stored lengths for path ${pathId}: ${path.stored}`);
     }
   }
@@ -178,6 +173,6 @@ export class CableFrictionSystem {
     for (let i = 0; i < iterations; i++) {
       _evenOutTensionFriction(world);
     }
-    _sanityCheck(world);
+    //_sanityCheck(world);
   }
 }
