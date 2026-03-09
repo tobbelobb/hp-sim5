@@ -6,6 +6,7 @@ import {
   PositionComponent,
   RadiusComponent,
   OrientationComponent,
+  HybridKnotAngleComponent,
   layeringEnabled
 } from './ecs.js';
 import { RenderableComponent } from '../cable_joints/ecs.js';
@@ -21,6 +22,9 @@ const SLACK_COLOR = '#ff9f43';
 const DEFAULT_CABLE_COLOR = '#ffd34d';
 const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
 const ORIENTATION_BACK_COLOR = '#2a3542';
+const KNOT_MARKER_COLOR = '#ff3b30';
+const KNOT_MARKER_RADIUS = 0.01;
+const KNOT_SPAN = Math.PI / 30.0;
 
 function buildPlaneBasis(planeNormal) {
   const n = planeNormal.clone();
@@ -166,6 +170,85 @@ function setMaterialColor(material, color) {
   if (material.userData.__color === color) return;
   material.color.set(color);
   material.userData.__color = color;
+}
+
+function orientationAngleAroundAxis(quaternion, axis) {
+  if (!quaternion) {
+    return 0.0;
+  }
+  const basis = buildPlaneBasis(axis);
+  const rotatedU = quaternion.transformVector(basis.u);
+  const projected = rotatedU.clone().subtract(basis.n, rotatedU.dot(basis.n));
+  if (projected.lengthSq() <= EPSILON) {
+    return 0.0;
+  }
+  projected.normalize();
+  return Math.atan2(projected.dot(basis.v), projected.dot(basis.u));
+}
+
+function layerWrapParams(r0, dr, rampLength, layerIndex) {
+  const twoPi = 2.0 * Math.PI;
+  const rn = r0 + dr * layerIndex;
+
+  let dPhiRamp = 0.0;
+  if (rampLength > EPSILON) {
+    dPhiRamp = rampLength / (rn + 0.5 * dr);
+    if (dPhiRamp > twoPi) dPhiRamp = twoPi;
+    if (dPhiRamp < 0.0) dPhiRamp = 0.0;
+  }
+
+  const phiConst = twoPi - dPhiRamp;
+  const Lconst = rn * phiConst;
+  const Lwrap = Lconst + dPhiRamp * (rn + 0.5 * dr);
+  return { rn, dPhiRamp, phiConst, Lconst, Lwrap };
+}
+
+function storedToRadiusAndTheta(storedLength, baseRadius, halfWidth, rampLength) {
+  const stored = Math.max(0.0, storedLength ?? 0.0);
+  const twoPi = 2.0 * Math.PI;
+  const r0 = baseRadius + halfWidth;
+  const dr = 2.0 * halfWidth;
+  const ramp = Math.max(0.0, rampLength ?? 0.0);
+
+  if (!(r0 > EPSILON) || !(dr > EPSILON)) {
+    const linearRadius = Number.isFinite(baseRadius) ? Math.max(baseRadius, 0.0) : 0.0;
+    const theta = linearRadius > EPSILON ? (stored / linearRadius) : 0.0;
+    return { radius: linearRadius, theta };
+  }
+
+  let remaining = stored;
+  let thetaBase = 0.0;
+  let layerIndex = 0;
+  const MAX_LAYERS = 2048;
+
+  while (layerIndex < MAX_LAYERS) {
+    const wrap = layerWrapParams(r0, dr, ramp, layerIndex);
+    if (remaining > wrap.Lwrap + EPSILON) {
+      remaining -= wrap.Lwrap;
+      thetaBase += twoPi;
+      layerIndex += 1;
+      continue;
+    }
+
+    if (remaining <= wrap.Lconst + EPSILON || !(wrap.dPhiRamp > EPSILON)) {
+      const phi = wrap.rn > EPSILON ? Math.min(wrap.phiConst, remaining / wrap.rn) : 0.0;
+      return { radius: wrap.rn, theta: thetaBase + phi };
+    }
+
+    const sRamp = Math.max(0.0, remaining - wrap.Lconst);
+    const a = dr / (2.0 * wrap.dPhiRamp);
+    const b = wrap.rn;
+    const disc = b * b + 4.0 * a * sRamp;
+    const x = (-b + Math.sqrt(Math.max(0.0, disc))) / (2.0 * a);
+    const xClamped = Math.max(0.0, Math.min(wrap.dPhiRamp, x));
+    return {
+      radius: wrap.rn + dr * (xClamped / wrap.dPhiRamp),
+      theta: thetaBase + wrap.phiConst + xClamped
+    };
+  }
+
+  const rn = r0 + dr * MAX_LAYERS;
+  return { radius: rn, theta: thetaBase };
 }
 
 function createDualColorSphereGeometry(baseGeometry, primaryColor, secondaryColor = ORIENTATION_BACK_COLOR) {
@@ -321,12 +404,14 @@ export class RenderSystem3D {
       roughness: 0.42,
       metalness: 0.1
     });
+    this.knotMarkerMaterial = new THREE.MeshBasicMaterial({ color: KNOT_MARKER_COLOR });
 
     this.circleMeshes = new Map();
     this.flipperMeshes = new Map();
 
     this.jointLines = [];
     this.wrapArcs = [];
+    this.knotMarkers = [];
 
     this.borderLine = null;
     this.borderVertexCount = 0;
@@ -525,6 +610,11 @@ export class RenderSystem3D {
     }
     this.wrapArcs.length = 0;
 
+    for (const marker of this.knotMarkers) {
+      this.root.remove(marker);
+    }
+    this.knotMarkers.length = 0;
+
     if (this.borderLine) {
       this.root.remove(this.borderLine);
       disposeObject(this.borderLine);
@@ -553,6 +643,7 @@ export class RenderSystem3D {
     this.orientedSphereGeometryCache.clear();
 
     this.orientedSphereMaterial.dispose();
+    this.knotMarkerMaterial.dispose();
 
     this.sharedSphereGeometry.dispose();
     this.sharedFlipperBarGeometry.dispose();
@@ -799,11 +890,13 @@ export class RenderSystem3D {
     if (pathEntities.length === 0) {
       this._hideLines(this.jointLines);
       this._hideLines(this.wrapArcs);
+      this._hideMeshes(this.knotMarkers);
       return;
     }
 
     const jointSpecs = [];
     const arcSpecs = [];
+    const knotSpecs = [];
 
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
@@ -900,6 +993,11 @@ export class RenderSystem3D {
         }
       }
 
+      const startKnotSpec = this._buildKnotMarkerSpec(world, path, pathId, 0);
+      if (startKnotSpec) {
+        knotSpecs.push(startKnotSpec);
+      }
+
       if (path.linkTypes[nLinks - 1] === 'hybrid' && path.jointEntities.length > 0) {
         const jointN = world.getComponent(path.jointEntities[nLinks - 2], CableJointComponent);
         if (jointN) {
@@ -926,10 +1024,18 @@ export class RenderSystem3D {
           }
         }
       }
+
+      if (nLinks > 1) {
+        const endKnotSpec = this._buildKnotMarkerSpec(world, path, pathId, nLinks - 1);
+        if (endKnotSpec) {
+          knotSpecs.push(endKnotSpec);
+        }
+      }
     }
 
     this._ensureLineCapacity(this.jointLines, jointSpecs.length, false);
     this._ensureLineCapacity(this.wrapArcs, arcSpecs.length, true);
+    this._ensureKnotMarkerCapacity(knotSpecs.length);
 
     for (let i = 0; i < this.jointLines.length; i++) {
       const line = this.jointLines[i];
@@ -972,6 +1078,84 @@ export class RenderSystem3D {
         spec.cw
       );
     }
+
+    for (let i = 0; i < this.knotMarkers.length; i++) {
+      const marker = this.knotMarkers[i];
+      const spec = knotSpecs[i];
+      if (!spec) {
+        marker.visible = false;
+        continue;
+      }
+
+      marker.visible = true;
+      marker.position.set(spec.position.x, spec.position.y, spec.position.z);
+      marker.scale.setScalar(spec.radius);
+    }
+  }
+
+  _buildKnotMarkerSpec(world, path, pathId, endpointIndex) {
+    if (!path || !Array.isArray(path.linkTypes) || !Array.isArray(path.jointEntities) || path.jointEntities.length < 1) {
+      return null;
+    }
+    if (endpointIndex !== 0 && endpointIndex !== path.linkTypes.length - 1) {
+      return null;
+    }
+
+    const linkType = path.linkTypes[endpointIndex];
+    if (linkType !== 'hybrid' && linkType !== 'hybrid-attachment') {
+      return null;
+    }
+
+    const isStart = endpointIndex === 0;
+    const jointId = isStart ? path.jointEntities[0] : path.jointEntities[path.jointEntities.length - 1];
+    const joint = world.getComponent(jointId, CableJointComponent);
+    if (!joint) {
+      return null;
+    }
+
+    const entityId = isStart ? joint.entityA : joint.entityB;
+    const attachmentPoint = isStart ? joint.attachmentPointA_world : joint.attachmentPointB_world;
+    if (!attachmentPoint) {
+      return null;
+    }
+    if (linkType === 'hybrid-attachment') {
+      return { position: attachmentPoint.clone(), radius: KNOT_MARKER_RADIUS };
+    }
+
+    const center = world.getComponent(entityId, PositionComponent)?.pos;
+    const baseRadius = world.getComponent(entityId, RadiusComponent)?.radius;
+    if (!center || !Number.isFinite(baseRadius) || !(baseRadius > EPSILON)) {
+      return null;
+    }
+
+    const knotComp = world.getComponent(entityId, HybridKnotAngleComponent);
+    const pathAngle = knotComp?.pathAngles?.[String(pathId)];
+    const knotAngle = Number.isFinite(pathAngle) ? pathAngle : knotComp?.angle;
+    if (!Number.isFinite(knotAngle)) {
+      return null;
+    }
+
+    const planeNormal = world.getComponent(entityId, CableLinkComponent)?.cablePlaneNormal || this.defaultPlaneNormal;
+    const orientation = orientationAngleAroundAxis(
+      world.getComponent(entityId, OrientationComponent)?.quaternion,
+      planeNormal
+    );
+    const basis = buildPlaneBasis(planeNormal);
+    const halfWidth = layeringEnabled(world) ? Math.max(0.0, path.cableHalfWidth ?? 0.0) : 0.0;
+    const stored = Math.max(0.0, path.stored?.[endpointIndex] ?? 0.0);
+    const { radius } = storedToRadiusAndTheta(stored, baseRadius, halfWidth, baseRadius * KNOT_SPAN);
+    const worldAngle = orientation + knotAngle;
+    const cos = Math.cos(worldAngle);
+    const sin = Math.sin(worldAngle);
+
+    return {
+      position: new Vector3(
+        center.x + basis.u.x * radius * cos + basis.v.x * radius * sin,
+        center.y + basis.u.y * radius * cos + basis.v.y * radius * sin,
+        center.z + basis.u.z * radius * cos + basis.v.z * radius * sin
+      ),
+      radius: KNOT_MARKER_RADIUS
+    };
   }
 
   _ensureLineCapacity(target, count, isArc) {
@@ -979,6 +1163,15 @@ export class RenderSystem3D {
       const line = isArc ? this._createArcLine() : this._createLine();
       target.push(line);
       this.root.add(line);
+    }
+  }
+
+  _ensureKnotMarkerCapacity(count) {
+    while (this.knotMarkers.length < count) {
+      const marker = new THREE.Mesh(this.sharedSphereGeometry, this.knotMarkerMaterial);
+      marker.frustumCulled = false;
+      this.knotMarkers.push(marker);
+      this.root.add(marker);
     }
   }
 
@@ -1014,6 +1207,12 @@ export class RenderSystem3D {
   _hideLines(lines) {
     for (const line of lines) {
       line.visible = false;
+    }
+  }
+
+  _hideMeshes(meshes) {
+    for (const mesh of meshes) {
+      mesh.visible = false;
     }
   }
 

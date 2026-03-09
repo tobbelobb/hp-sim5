@@ -9,9 +9,16 @@ import {
   World,
   PositionComponent,
   RadiusComponent,
-  OrientationComponent
+  OrientationComponent,
+  HybridKnotAngleComponent
 } from '../../../src/js/cable_joints_3d/ecs.js';
+import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
 import { RenderableComponent } from '../../../src/js/cable_joints/ecs.js';
+import {
+  CableJointComponent,
+  CableLinkComponent,
+  CablePathComponent
+} from '../../../src/js/cable_joints_3d/cable_joints_core.js';
 
 const ORIENTATION_BACK_COLOR = new THREE.Color('#2a3542');
 const ORIENTATION_FRONT_COLOR = new THREE.Color('#dddddd');
@@ -28,11 +35,23 @@ function createRenderSystemStub() {
     roughness: 0.42,
     metalness: 0.1
   });
+  system.knotMarkerMaterial = new THREE.MeshBasicMaterial({ color: '#ff3b30' });
   system.circleMeshes = new Map();
+  system.jointLines = [];
+  system.wrapArcs = [];
+  system.knotMarkers = [];
   system._activeCircleIds = new Set();
+  system.defaultPlaneNormal = new Vector3(0, 0, 1);
 
   system._getSphereMaterial = RenderSystem3D.prototype._getSphereMaterial;
   system._getOrientedSphereGeometry = RenderSystem3D.prototype._getOrientedSphereGeometry;
+  system._createLine = RenderSystem3D.prototype._createLine;
+  system._createArcLine = RenderSystem3D.prototype._createArcLine;
+  system._ensureLineCapacity = RenderSystem3D.prototype._ensureLineCapacity;
+  system._ensureKnotMarkerCapacity = RenderSystem3D.prototype._ensureKnotMarkerCapacity;
+  system._hideLines = RenderSystem3D.prototype._hideLines;
+  system._hideMeshes = RenderSystem3D.prototype._hideMeshes;
+  system._buildKnotMarkerSpec = RenderSystem3D.prototype._buildKnotMarkerSpec;
 
   return system;
 }
@@ -51,6 +70,7 @@ function disposeRenderSystemStub(system) {
   system.orientedSphereGeometryCache.clear();
 
   system.orientedSphereMaterial.dispose();
+  system.knotMarkerMaterial.dispose();
   system.sharedSphereGeometry.dispose();
 }
 
@@ -124,6 +144,69 @@ describe('RenderSystem3D oriented circles', () => {
       expect(meshA.geometry).toBe(system.sharedSphereGeometry);
       expect(meshA.material).not.toBe(system.orientedSphereMaterial);
       expect(meshB.geometry).toBe(geometryB);
+    } finally {
+      disposeRenderSystemStub(system);
+    }
+  });
+});
+
+describe('RenderSystem3D cable knot markers', () => {
+  test('renders a small red knot marker at the hybrid endpoint knot position', () => {
+    const system = createRenderSystemStub();
+
+    try {
+      const world = new World();
+      world.setResource('enableLayering', true);
+
+      const spool = world.createEntity();
+      world.addComponent(spool, new PositionComponent(1.0, 2.0, 0.0));
+      world.addComponent(spool, new RadiusComponent(0.5));
+      world.addComponent(spool, new CableLinkComponent(1.0, 2.0, 0.0, null, new Vector3(0, 0, 1)));
+      world.addComponent(spool, new OrientationComponent(0, 0, 0, 1));
+      world.addComponent(spool, new HybridKnotAngleComponent(Math.PI / 4));
+
+      const anchor = world.createEntity();
+      const jointId = world.createEntity();
+      world.addComponent(
+        jointId,
+        new CableJointComponent(
+          spool,
+          anchor,
+          0.2,
+          new Vector3(1.6, 2.0, 0.0),
+          new Vector3(2.0, 2.0, 0.0)
+        )
+      );
+      world.addComponent(jointId, new RenderableComponent('line', '#ffd34d'));
+
+      const pathId = world.createEntity();
+      const path = new CablePathComponent(
+        world,
+        [jointId],
+        ['hybrid', 'attachment'],
+        [false, false],
+        1e6,
+        [0.25, 0.0],
+        0.1
+      );
+      world.addComponent(pathId, path);
+
+      RenderSystem3D.prototype._syncCable.call(system, world);
+
+      expect(system.knotMarkers).toHaveLength(1);
+
+      const marker = system.knotMarkers[0];
+      const expectedRadius = 0.6;
+      const expectedCoord = expectedRadius / Math.sqrt(2.0);
+
+      expect(marker.visible).toBe(true);
+      expect(marker.material).toBe(system.knotMarkerMaterial);
+      expect(marker.position.x).toBeCloseTo(1.0 + expectedCoord, 6);
+      expect(marker.position.y).toBeCloseTo(2.0 + expectedCoord, 6);
+      expect(marker.position.z).toBeCloseTo(0.0, 6);
+      expect(marker.scale.x).toBeCloseTo(0.01, 8);
+      expect(marker.scale.y).toBeCloseTo(0.01, 8);
+      expect(marker.scale.z).toBeCloseTo(0.01, 8);
     } finally {
       disposeRenderSystemStub(system);
     }
