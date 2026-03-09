@@ -111,6 +111,9 @@ export class ExtruderSystem {
       return sum.clone().scale(1.0 / count);
     };
 
+    const extruderOffsets = extruderComp.extruderOffsets && typeof extruderComp.extruderOffsets === 'object'
+      ? extruderComp.extruderOffsets
+      : {};
     const machineCenters = {};
     for (const machineId of sourceMachineIds) {
       const entityIds = centerSources[machineId];
@@ -119,6 +122,10 @@ export class ExtruderSystem {
         center = sumByMachine[machineId].clone().scale(1.0 / countByMachine[machineId]);
       }
       if (center) {
+        const offset = extruderOffsets[machineId];
+        if (offset && Number.isFinite(offset.x) && Number.isFinite(offset.y) && Number.isFinite(offset.z)) {
+          center = center.clone().add(offset);
+        }
         machineCenters[machineId] = center;
       }
     }
@@ -127,7 +134,12 @@ export class ExtruderSystem {
       for (const machineId of Object.keys(sumByMachine)) {
         const count = countByMachine[machineId] ?? 0;
         if (count > 0) {
-          machineCenters[machineId] = sumByMachine[machineId].clone().scale(1.0 / count);
+          const center = sumByMachine[machineId].clone().scale(1.0 / count);
+          const offset = extruderOffsets[machineId];
+          if (offset && Number.isFinite(offset.x) && Number.isFinite(offset.y) && Number.isFinite(offset.z)) {
+            center.add(offset);
+          }
+          machineCenters[machineId] = center;
         }
       }
     } else {
@@ -137,7 +149,12 @@ export class ExtruderSystem {
         }
         const count = countByMachine[machineId] ?? 0;
         if (count > 0) {
-          machineCenters[machineId] = sumByMachine[machineId].clone().scale(1.0 / count);
+          const center = sumByMachine[machineId].clone().scale(1.0 / count);
+          const offset = extruderOffsets[machineId];
+          if (offset && Number.isFinite(offset.x) && Number.isFinite(offset.y) && Number.isFinite(offset.z)) {
+            center.add(offset);
+          }
+          machineCenters[machineId] = center;
         }
       }
     }

@@ -47,13 +47,17 @@ const BUMPER_FX_MIN_RADIUS = 0.03;
 const DEFAULT_REFERENCE_COLOR = '#1e90ff';
 const DEFAULT_TRACE_COLOR = '#ffffff';
 const DEFAULT_TRACE_MARKER_COLOR = '#2dd4bf';
-const DEFAULT_TRACE_POINT_SIZE = 6;
-const DEFAULT_EXTRUSION_POINT_SIZE = 7;
+const DEFAULT_TRACE_POINT_SIZE = 2;
+const DEFAULT_EXTRUSION_POINT_SIZE = 1;
 const DEFAULT_TRACE_Z = 0.0025;
 const DEFAULT_MARKER_Z = 0.005;
 const DEFAULT_REFERENCE_Z = 0.004;
 const DEFAULT_ORBIT_AZIMUTH = -Math.PI * 0.25;
 const DEFAULT_ORBIT_POLAR = 1.05;
+
+function finiteOr(value, fallback) {
+  return Number.isFinite(value) ? value : fallback;
+}
 
 function buildPlaneBasis(planeNormal) {
   const n = planeNormal.clone();
@@ -1046,10 +1050,13 @@ export class RenderSystem3D {
       if (!Array.isArray(extrusion?.pos) || extrusion.pos.length < 2) {
         continue;
       }
+      const machineCenter = extrusion?.machineId
+        ? extruderComp?.machineCenters?.[extrusion.machineId]
+        : extruderComp?.centerPos;
       points.push({
-        x: extrusion.pos[0] || 0.0,
-        y: extrusion.pos[1] || 0.0,
-        z: (extrusion.pos[2] || 0.0) + DEFAULT_TRACE_Z
+        x: finiteOr(extrusion.pos[0], finiteOr(machineCenter?.x, 0.0)),
+        y: finiteOr(extrusion.pos[1], finiteOr(machineCenter?.y, 0.0)),
+        z: finiteOr(extrusion.pos[2], finiteOr(machineCenter?.z, DEFAULT_TRACE_Z))
       });
       colors.push(extrusion.color || DEFAULT_CABLE_COLOR);
     }
@@ -1069,10 +1076,16 @@ export class RenderSystem3D {
     if (extruderEntities.length > 0) {
       const extruderComp = world.getComponent(extruderEntities[0], ExtruderComponent);
       const center = extruderComp?.centerPos;
+      const centerZ = finiteOr(center?.z, DEFAULT_TRACE_Z);
       if (center && Number.isFinite(center.x) && Number.isFinite(center.y)) {
         const last = this.positionTracePoints[this.positionTracePoints.length - 1];
-        if (!last || Math.abs(last.x - center.x) > 1e-9 || Math.abs(last.y - center.y) > 1e-9) {
-          this.positionTracePoints.push({ x: center.x, y: center.y, z: DEFAULT_TRACE_Z });
+        if (
+          !last
+          || Math.abs(last.x - center.x) > 1e-9
+          || Math.abs(last.y - center.y) > 1e-9
+          || Math.abs((last.z ?? DEFAULT_TRACE_Z) - centerZ) > 1e-9
+        ) {
+          this.positionTracePoints.push({ x: center.x, y: center.y, z: centerZ });
         }
       }
     }

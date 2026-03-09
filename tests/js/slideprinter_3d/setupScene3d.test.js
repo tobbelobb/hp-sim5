@@ -55,6 +55,44 @@ jest.mock('../../../src/js/usd/stage.js', () => ({
 const { World } = require('../../../src/js/cable_joints_3d/ecs.js');
 const { setupScene } = require('../../../examples/js/slideprinter_3d/setupScene.js');
 const { RenderSystem3D } = require('../../../src/js/cable_joints_3d/render_system_3d.js');
+const { ExtruderComponent } = require('../../../examples/js/slideprinter_3d/slideprinter_common.js');
+const usdStage = require('../../../src/js/usd/stage.js');
+
+function installDefaultUsdStageMocks() {
+  usdStage.getAttribute.mockImplementation((prim, attr) => {
+    if (prim?.path === '/World/PhysicsScene') {
+      if (attr === 'physics:gravityDirection') return [0.0, -1.0, 0.0];
+      if (attr === 'physics:gravityMagnitude') return 9.82;
+    }
+    if (prim?.path === '/World/SlideprinterScene/SpoolA') {
+      if (attr === 'ecs:tags') return ['Spool'];
+      if (attr === 'xformOp:translate') return [0.2, 0.3, 0.0];
+      if (attr === 'radius') return 0.05;
+      if (attr === 'physics:mass') return 1.0;
+      if (attr === 'physics:inertiaTensor') return [[0, 0, 0], [0, 0, 0], [0, 0, 0.01]];
+      if (attr === 'physics:velocity') return [0.0, 0.0, 0.0];
+      if (attr === 'physics:angularVelocity') return [0.0, 0.0, 0.0];
+      if (attr === 'stepper:holdingTorque') return 0.7;
+      if (attr === 'stepper:numPolePairs') return 50;
+      if (attr === 'stepper:dampingCoeff') return 0.01;
+      if (attr === 'stepper:maxSpeedRad') return 600;
+      if (attr === 'cable:linkable') return true;
+    }
+    return null;
+  });
+  usdStage.getChildren.mockImplementation((prim) => {
+    if (prim?.path === '/World/SlideprinterScene') {
+      return [{
+        path: '/World/SlideprinterScene/SpoolA',
+        name: 'SpoolA',
+        type: 'definition',
+        defType: 'Sphere'
+      }];
+    }
+    return [];
+  });
+  usdStage.getRelationship.mockImplementation(() => []);
+}
 
 function createCanvas() {
   return {
@@ -83,6 +121,7 @@ describe('slideprinter 3D setupScene', () => {
   const originalWindow = global.window;
 
   beforeEach(() => {
+    installDefaultUsdStageMocks();
     global.document = {
       getElementById() {
         return { textContent: 'Pause' };
@@ -142,5 +181,97 @@ describe('slideprinter 3D setupScene', () => {
     expect(systemNames).toContain('XPBDDistanceConstraintSystem');
     expect(systemNames).toContain('ExtruderSystem');
     expect(systemNames).toContain('StepperMotorSystem');
+  });
+
+  test('captures ExtruderOffset and applies it to the resolved extruder point', () => {
+    usdStage.getChildren.mockImplementation((prim) => {
+      if (prim?.path === '/World/SlideprinterScene') {
+        return [
+          {
+            path: '/World/SlideprinterScene/SpoolA',
+            name: 'SpoolA',
+            type: 'definition',
+            defType: 'Sphere'
+          },
+          {
+            path: '/World/SlideprinterScene/AttachA',
+            name: 'AttachA',
+            type: 'definition',
+            defType: 'Circle'
+          },
+          {
+            path: '/World/SlideprinterScene/ExtruderOffset',
+            name: 'ExtruderOffset',
+            type: 'definition',
+            defType: 'Xform'
+          }
+        ];
+      }
+      return [];
+    });
+    usdStage.getAttribute.mockImplementation((prim, attr) => {
+      if (prim?.path === '/World/PhysicsScene') {
+        if (attr === 'physics:gravityDirection') return [0.0, -1.0, 0.0];
+        if (attr === 'physics:gravityMagnitude') return 9.82;
+      }
+      if (prim?.path === '/World/SlideprinterScene/SpoolA') {
+        if (attr === 'ecs:tags') return ['Spool'];
+        if (attr === 'xformOp:translate') return [0.2, 0.3, 0.0];
+        if (attr === 'radius') return 0.05;
+        if (attr === 'physics:mass') return 1.0;
+        if (attr === 'physics:inertiaTensor') return [[0, 0, 0], [0, 0, 0], [0, 0, 0.01]];
+        if (attr === 'physics:velocity') return [0.0, 0.0, 0.0];
+        if (attr === 'physics:angularVelocity') return [0.0, 0.0, 0.0];
+        if (attr === 'stepper:holdingTorque') return 0.7;
+        if (attr === 'stepper:numPolePairs') return 50;
+        if (attr === 'stepper:dampingCoeff') return 0.01;
+        if (attr === 'stepper:maxSpeedRad') return 600;
+        if (attr === 'cable:linkable') return true;
+      }
+      if (prim?.path === '/World/SlideprinterScene/AttachA') {
+        if (attr === 'ecs:tags') return ['Attachment'];
+        if (attr === 'xformOp:translate') return [0.1, 0.2, 0.003];
+        if (attr === 'radius') return 0.01;
+        if (attr === 'physics:mass') return 0.027;
+        if (attr === 'physics:velocity') return [0.0, 0.0, 0.0];
+      }
+      if (prim?.path === '/World/SlideprinterScene/ExtruderOffset') {
+        if (attr === 'ecs:tags') return ['ExtruderOffset'];
+        if (attr === 'xformOp:translate') return [0.0, 0.0, -0.001];
+      }
+      return null;
+    });
+    usdStage.getRelationship.mockImplementation((prim, rel) => {
+      if (prim?.path === '/World/SlideprinterScene' && rel === 'machine:extrusionCenters') {
+        return ['/World/SlideprinterScene/AttachA'];
+      }
+      return [];
+    });
+
+    const world = new World();
+    const stage = {
+      GetPrimAtPath(path) {
+        return { path, name: path.split('/').pop() };
+      },
+      ast: {
+        descriptor: {
+          assignments: [
+            { type: 'assignment', identifier: 'timeCodesPerSecond', value: 500 }
+          ]
+        }
+      }
+    };
+
+    setupScene(world, stage, createCanvas());
+
+    const extruderEntity = world.query([ExtruderComponent])[0];
+    const extruder = world.getComponent(extruderEntity, ExtruderComponent);
+    const extruderSystem = world.systems.find((system) => system.constructor.name === 'ExtruderSystem');
+    extruderSystem.update(world, 0);
+
+    expect(extruder.extruderOffsets.default.z).toBeCloseTo(-0.001, 6);
+    expect(extruder.centerPos.x).toBeCloseTo(0.1, 6);
+    expect(extruder.centerPos.y).toBeCloseTo(0.2, 6);
+    expect(extruder.centerPos.z).toBeCloseTo(0.002, 6);
   });
 });

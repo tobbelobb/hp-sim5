@@ -37,6 +37,43 @@ function distancePointToSegment(px, py, ax, ay, bx, by) {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
+function distancePointToSegment3D(px, py, pz, ax, ay, az, bx, by, bz) {
+  const abx = bx - ax;
+  const aby = by - ay;
+  const abz = bz - az;
+  const apx = px - ax;
+  const apy = py - ay;
+  const apz = pz - az;
+  const abLenSq = abx * abx + aby * aby + abz * abz;
+  if (abLenSq <= 1e-16) {
+    const dx = px - ax;
+    const dy = py - ay;
+    const dz = pz - az;
+    return Math.sqrt(dx * dx + dy * dy + dz * dz);
+  }
+  let t = (apx * abx + apy * aby + apz * abz) / abLenSq;
+  t = Math.max(0, Math.min(1, t));
+  const cx = ax + t * abx;
+  const cy = ay + t * aby;
+  const cz = az + t * abz;
+  const dx = px - cx;
+  const dy = py - cy;
+  const dz = pz - cz;
+  return Math.sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+function angleBetweenUnitVectors3D(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length < 3 || b.length < 3) {
+    return 0;
+  }
+  const dot = clamp(a[0] * b[0] + a[1] * b[1] + a[2] * b[2], -1, 1);
+  return Math.acos(dot);
+}
+
+function voxelIndex(grid, ix, iy, iz) {
+  return ((iz * grid.height) + iy) * grid.width + ix;
+}
+
 function formatLengthMm(lengthMeters) {
   if (!Number.isFinite(lengthMeters)) {
     return '--';
@@ -235,6 +272,7 @@ export class QualityMonitor {
     this.pendingExtrusionCapacity = 0;
     this.pendingExtrusionsX = new Float64Array(0);
     this.pendingExtrusionsY = new Float64Array(0);
+    this.pendingExtrusionsZ = new Float64Array(0);
     this.pendingExtrusionsLength = new Float64Array(0);
     this.enabled = true;
     this.projectionHintValid = false;
@@ -435,7 +473,7 @@ export class QualityMonitor {
     if (!this.enabled) {
       const normalized = this._normalizeExtrusionEvent(extrusionEvent);
       if (normalized) {
-        this._queueNormalizedExtrusion(normalized.x, normalized.y, normalized.length);
+        this._queueNormalizedExtrusion(normalized.x, normalized.y, normalized.z, normalized.length);
       }
       return;
     }
@@ -482,30 +520,32 @@ export class QualityMonitor {
     if (typeof extrusionEvent.x === 'number' && typeof extrusionEvent.y === 'number') {
       const x = Number(extrusionEvent.x);
       const y = Number(extrusionEvent.y);
+      const z = Number.isFinite(extrusionEvent.z) ? Number(extrusionEvent.z) : 0;
       if (!Number.isFinite(x) || !Number.isFinite(y)) {
         return null;
       }
       const length = Number.isFinite(extrusionEvent.length) ? Number(extrusionEvent.length) : 0;
-      return { x, y, length };
+      return { x, y, z, length };
     }
 
     const posSource = Array.isArray(extrusionEvent.pos)
       ? extrusionEvent.pos
       : extrusionEvent.pos && typeof extrusionEvent.pos === 'object'
-        ? [extrusionEvent.pos.x, extrusionEvent.pos.y]
+        ? [extrusionEvent.pos.x, extrusionEvent.pos.y, extrusionEvent.pos.z]
         : null;
     if (!posSource || posSource.length < 2) {
       return null;
     }
     const x = Number(posSource[0]);
     const y = Number(posSource[1]);
+    const z = Number.isFinite(posSource[2]) ? Number(posSource[2]) : 0;
     if (!Number.isFinite(x) || !Number.isFinite(y)) {
       return null;
     }
     const length = Number.isFinite(extrusionEvent.length)
       ? Number(extrusionEvent.length)
       : 0;
-    return { x, y, length };
+    return { x, y, z, length };
   }
 
   _ensurePendingExtrusionCapacity(minCount) {
@@ -518,20 +558,23 @@ export class QualityMonitor {
     }
     const nextX = new Float64Array(nextCapacity);
     const nextY = new Float64Array(nextCapacity);
+    const nextZ = new Float64Array(nextCapacity);
     const nextLength = new Float64Array(nextCapacity);
     if (this.pendingExtrusionCount > 0) {
       nextX.set(this.pendingExtrusionsX.subarray(0, this.pendingExtrusionCount));
       nextY.set(this.pendingExtrusionsY.subarray(0, this.pendingExtrusionCount));
+      nextZ.set(this.pendingExtrusionsZ.subarray(0, this.pendingExtrusionCount));
       nextLength.set(this.pendingExtrusionsLength.subarray(0, this.pendingExtrusionCount));
     }
     this.pendingExtrusionsX = nextX;
     this.pendingExtrusionsY = nextY;
+    this.pendingExtrusionsZ = nextZ;
     this.pendingExtrusionsLength = nextLength;
     this.pendingExtrusionCapacity = nextCapacity;
   }
 
-  _queueNormalizedExtrusion(x, y, length) {
-    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+  _queueNormalizedExtrusion(x, y, z, length) {
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
       return;
     }
     const safeLength = Number.isFinite(length) ? length : 0;
@@ -539,12 +582,13 @@ export class QualityMonitor {
     this._ensurePendingExtrusionCapacity(index + 1);
     this.pendingExtrusionsX[index] = x;
     this.pendingExtrusionsY[index] = y;
+    this.pendingExtrusionsZ[index] = z;
     this.pendingExtrusionsLength[index] = safeLength;
     this.pendingExtrusionCount = index + 1;
   }
 
-  _recordNormalizedExtrusion(x, y, length, sourceEvent = null) {
-    const projection = this._projectToPath(x, y);
+  _recordNormalizedExtrusion(x, y, z, length, sourceEvent = null) {
+    const projection = this._projectToPath(x, y, z);
     if (!projection) {
       return;
     }
@@ -554,7 +598,7 @@ export class QualityMonitor {
     this._applyPenaltyToExtrusion(sourceEvent, penalty);
 
     this._accumulateStraightError(projection);
-    this._updateCoverageForExtrusion(x, y, length);
+    this._updateCoverageForExtrusion(x, y, z, length);
 
     this.metricsDirty = true;
     this.extrusionsSinceHud += 1;
@@ -572,7 +616,7 @@ export class QualityMonitor {
     if (!normalized) {
       return;
     }
-    this._recordNormalizedExtrusion(normalized.x, normalized.y, normalized.length, extrusionEvent);
+    this._recordNormalizedExtrusion(normalized.x, normalized.y, normalized.z, normalized.length, extrusionEvent);
   }
 
   _drainPendingExtrusions() {
@@ -582,9 +626,10 @@ export class QualityMonitor {
     const count = this.pendingExtrusionCount;
     const xs = this.pendingExtrusionsX;
     const ys = this.pendingExtrusionsY;
+    const zs = this.pendingExtrusionsZ;
     const lengths = this.pendingExtrusionsLength;
     for (let i = 0; i < count; i += 1) {
-      this._recordNormalizedExtrusion(xs[i], ys[i], lengths[i]);
+      this._recordNormalizedExtrusion(xs[i], ys[i], zs[i], lengths[i]);
     }
     this.pendingExtrusionCount = 0;
   }
@@ -662,7 +707,7 @@ export class QualityMonitor {
   _prepareSegmentData() {
     this.segmentData = [];
     let cumulative = 0;
-    let prevAngle = null;
+    let prevTangent = null;
     for (const segment of this.referenceSegments) {
       if (!segment || !Array.isArray(segment.start) || !Array.isArray(segment.end)) {
         continue;
@@ -671,39 +716,42 @@ export class QualityMonitor {
       const end = segment.end;
       const sx = Number(start[0]);
       const sy = Number(start[1]);
+      const sz = Number.isFinite(start[2]) ? Number(start[2]) : 0;
       const ex = Number(end[0]);
       const ey = Number(end[1]);
-      if (!Number.isFinite(sx) || !Number.isFinite(sy) || !Number.isFinite(ex) || !Number.isFinite(ey)) {
+      const ez = Number.isFinite(end[2]) ? Number(end[2]) : 0;
+      if (!Number.isFinite(sx) || !Number.isFinite(sy) || !Number.isFinite(sz) || !Number.isFinite(ex) || !Number.isFinite(ey) || !Number.isFinite(ez)) {
         continue;
       }
       const dx = ex - sx;
       const dy = ey - sy;
-      const length = Math.hypot(dx, dy);
+      const dz = ez - sz;
+      const length = Math.hypot(dx, dy, dz);
       if (!(length > 1e-9)) {
         continue;
       }
       const tangentX = dx / length;
       const tangentY = dy / length;
+      const tangentZ = dz / length;
       const normalX = -tangentY;
       const normalY = tangentX;
-      const angle = Math.atan2(dy, dx);
-      const deltaAngle = prevAngle == null ? 0 : normalizeAngle(angle - prevAngle);
-      const isStraight = prevAngle == null || Math.abs(deltaAngle) < this.straightAngleThreshold;
+      const tangent = [tangentX, tangentY, tangentZ];
+      const deltaAngle = prevTangent == null ? 0 : angleBetweenUnitVectors3D(prevTangent, tangent);
+      const isStraight = prevTangent == null || Math.abs(deltaAngle) < this.straightAngleThreshold;
 
       this.segmentData.push({
-        start: [sx, sy],
-        end: [ex, ey],
+        start: [sx, sy, sz],
+        end: [ex, ey, ez],
         length,
-        tangent: [tangentX, tangentY],
+        tangent,
         normal: [normalX, normalY],
-        angle,
         deltaAngle,
         isStraight,
         cumulativeStart: cumulative,
         cumulativeEnd: cumulative + length,
       });
       cumulative += length;
-      prevAngle = angle;
+      prevTangent = tangent;
     }
   }
 
@@ -731,19 +779,25 @@ export class QualityMonitor {
     }
     let minX = Infinity;
     let minY = Infinity;
+    let minZ = Infinity;
     let maxX = -Infinity;
     let maxY = -Infinity;
+    let maxZ = -Infinity;
     for (const seg of this.segmentData) {
       minX = Math.min(minX, seg.start[0], seg.end[0]);
       minY = Math.min(minY, seg.start[1], seg.end[1]);
+      minZ = Math.min(minZ, seg.start[2], seg.end[2]);
       maxX = Math.max(maxX, seg.start[0], seg.end[0]);
       maxY = Math.max(maxY, seg.start[1], seg.end[1]);
+      maxZ = Math.max(maxZ, seg.start[2], seg.end[2]);
     }
     return {
       minX,
       minY,
+      minZ,
       maxX,
       maxY,
+      maxZ,
     };
   }
 
@@ -758,17 +812,22 @@ export class QualityMonitor {
     const maxX = bounds.maxX + margin;
     const minY = bounds.minY - margin;
     const maxY = bounds.maxY + margin;
+    const minZ = (Number.isFinite(bounds.minZ) ? bounds.minZ : 0) - margin;
+    const maxZ = (Number.isFinite(bounds.maxZ) ? bounds.maxZ : 0) + margin;
     const step = this.coverageStep;
     const width = Math.max(1, Math.ceil((maxX - minX) / step) + 1);
     const height = Math.max(1, Math.ceil((maxY - minY) / step) + 1);
-    const refMask = new Uint8Array(width * height);
-    const extrMask = new Uint8Array(width * height);
+    const depth = Math.max(1, Math.ceil((maxZ - minZ) / step) + 1);
+    const refMask = new Uint8Array(width * height * depth);
+    const extrMask = new Uint8Array(width * height * depth);
     this.coverageGrid = {
       step,
       originX: minX,
       originY: minY,
+      originZ: minZ,
       width,
       height,
+      depth,
       refMask,
       extrMask,
     };
@@ -787,32 +846,43 @@ export class QualityMonitor {
     const grid = this.coverageGrid;
     const stats = this.coverageStats;
     const beadRadius = this.assumedBeadWidth * 0.5;
+    const effectiveRadius = beadRadius + (Math.sqrt(3) * grid.step * 0.5);
     for (const seg of this.segmentData) {
       const minX = Math.min(seg.start[0], seg.end[0]) - beadRadius;
       const maxX = Math.max(seg.start[0], seg.end[0]) + beadRadius;
       const minY = Math.min(seg.start[1], seg.end[1]) - beadRadius;
       const maxY = Math.max(seg.start[1], seg.end[1]) + beadRadius;
+      const minZ = Math.min(seg.start[2], seg.end[2]) - beadRadius;
+      const maxZ = Math.max(seg.start[2], seg.end[2]) + beadRadius;
       const ix0 = clamp(Math.floor((minX - grid.originX) / grid.step), 0, grid.width - 1);
       const ix1 = clamp(Math.ceil((maxX - grid.originX) / grid.step), 0, grid.width - 1);
       const iy0 = clamp(Math.floor((minY - grid.originY) / grid.step), 0, grid.height - 1);
       const iy1 = clamp(Math.ceil((maxY - grid.originY) / grid.step), 0, grid.height - 1);
+      const iz0 = clamp(Math.floor((minZ - grid.originZ) / grid.step), 0, grid.depth - 1);
+      const iz1 = clamp(Math.ceil((maxZ - grid.originZ) / grid.step), 0, grid.depth - 1);
       for (let ix = ix0; ix <= ix1; ix += 1) {
         const cx = grid.originX + (ix + 0.5) * grid.step;
         for (let iy = iy0; iy <= iy1; iy += 1) {
           const cy = grid.originY + (iy + 0.5) * grid.step;
-          const dist = distancePointToSegment(
-            cx,
-            cy,
-            seg.start[0],
-            seg.start[1],
-            seg.end[0],
-            seg.end[1],
-          );
-          if (dist <= beadRadius) {
-            const index = iy * grid.width + ix;
-            if (grid.refMask[index] === 0) {
-              grid.refMask[index] = 1;
-              stats.referenceCount += 1;
+          for (let iz = iz0; iz <= iz1; iz += 1) {
+            const cz = grid.originZ + (iz + 0.5) * grid.step;
+            const dist = distancePointToSegment3D(
+              cx,
+              cy,
+              cz,
+              seg.start[0],
+              seg.start[1],
+              seg.start[2],
+              seg.end[0],
+              seg.end[1],
+              seg.end[2],
+            );
+            if (dist <= effectiveRadius) {
+              const index = voxelIndex(grid, ix, iy, iz);
+              if (grid.refMask[index] === 0) {
+                grid.refMask[index] = 1;
+                stats.referenceCount += 1;
+              }
             }
           }
         }
@@ -830,34 +900,43 @@ export class QualityMonitor {
     );
   }
 
-  _updateCoverageForExtrusion(x, y, length) {
+  _updateCoverageForExtrusion(x, y, z, length) {
     if (!this.coverageGrid || !this.coverageStats) {
       return;
     }
     const radius = this._estimateExtrusionRadius(length);
     const grid = this.coverageGrid;
     const stats = this.coverageStats;
+    const effectiveRadius = radius + (Math.sqrt(3) * grid.step * 0.5);
     const minX = x - radius;
     const maxX = x + radius;
     const minY = y - radius;
     const maxY = y + radius;
+    const minZ = z - radius;
+    const maxZ = z + radius;
     const ix0 = clamp(Math.floor((minX - grid.originX) / grid.step), 0, grid.width - 1);
     const ix1 = clamp(Math.ceil((maxX - grid.originX) / grid.step), 0, grid.width - 1);
     const iy0 = clamp(Math.floor((minY - grid.originY) / grid.step), 0, grid.height - 1);
     const iy1 = clamp(Math.ceil((maxY - grid.originY) / grid.step), 0, grid.height - 1);
+    const iz0 = clamp(Math.floor((minZ - grid.originZ) / grid.step), 0, grid.depth - 1);
+    const iz1 = clamp(Math.ceil((maxZ - grid.originZ) / grid.step), 0, grid.depth - 1);
     for (let ix = ix0; ix <= ix1; ix += 1) {
       const cx = grid.originX + (ix + 0.5) * grid.step;
       for (let iy = iy0; iy <= iy1; iy += 1) {
         const cy = grid.originY + (iy + 0.5) * grid.step;
-        const dx = cx - x;
-        const dy = cy - y;
-        if (dx * dx + dy * dy <= radius * radius) {
-          const index = iy * grid.width + ix;
-          if (grid.extrMask[index] === 0) {
-            grid.extrMask[index] = 1;
-            stats.extruderCount += 1;
-            if (grid.refMask[index] === 1) {
-              stats.intersectionCount += 1;
+        for (let iz = iz0; iz <= iz1; iz += 1) {
+          const cz = grid.originZ + (iz + 0.5) * grid.step;
+          const dx = cx - x;
+          const dy = cy - y;
+          const dz = cz - z;
+          if (dx * dx + dy * dy + dz * dz <= effectiveRadius * effectiveRadius) {
+            const index = voxelIndex(grid, ix, iy, iz);
+            if (grid.extrMask[index] === 0) {
+              grid.extrMask[index] = 1;
+              stats.extruderCount += 1;
+              if (grid.refMask[index] === 1) {
+                stats.intersectionCount += 1;
+              }
             }
           }
         }
@@ -865,7 +944,7 @@ export class QualityMonitor {
     }
   }
 
-  _projectToPath(x, y) {
+  _projectToPath(x, y, z = 0) {
     if (this.segmentData.length === 0) {
       return null;
     }
@@ -881,30 +960,39 @@ export class QualityMonitor {
       const seg = segments[index];
       const sx = seg.start[0];
       const sy = seg.start[1];
+      const sz = seg.start[2];
       const ex = seg.end[0];
       const ey = seg.end[1];
+      const ez = seg.end[2];
       const vx = ex - sx;
       const vy = ey - sy;
+      const vz = ez - sz;
       const lengthSq = seg.length * seg.length;
       if (!(lengthSq > 1e-16)) {
         return;
       }
-      let t = ((x - sx) * vx + (y - sy) * vy) / lengthSq;
+      let t = ((x - sx) * vx + (y - sy) * vy + (z - sz) * vz) / lengthSq;
       t = Math.max(0, Math.min(1, t));
       const nx = sx + t * vx;
       const ny = sy + t * vy;
+      const nz = sz + t * vz;
       const dx = x - nx;
       const dy = y - ny;
-      const distSq = dx * dx + dy * dy;
+      const dz = z - nz;
+      const distSq = dx * dx + dy * dy + dz * dz;
       if (distSq < bestDistSq) {
-        const normalError = dx * seg.normal[0] + dy * seg.normal[1];
-        const tangentialError = dx * seg.tangent[0] + dy * seg.tangent[1];
+        const planarNormalError = dx * seg.normal[0] + dy * seg.normal[1];
+        const tangentialError = dx * seg.tangent[0] + dy * seg.tangent[1] + dz * seg.tangent[2];
+        const radialError = Math.sqrt(distSq);
+        const sign = Math.abs(planarNormalError) > 1e-12
+          ? Math.sign(planarNormalError)
+          : (Math.abs(dz) > 1e-12 ? Math.sign(dz) : 1);
         bestDistSq = distSq;
         best = {
           segmentIndex: index,
-          normalError,
+          normalError: radialError * sign,
           tangentialError,
-          point: [nx, ny],
+          point: [nx, ny, nz],
           t,
           arcLength: seg.cumulativeStart + t * seg.length,
           isStraight: seg.isStraight,

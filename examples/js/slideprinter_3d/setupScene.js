@@ -250,6 +250,7 @@ export function setupScene(world, stage, canvas, options = {}) {
         const pathPrims = [];
         const distanceJointPrims = [];
         const rigidGroupPrims = [];
+        let extruderOffset = null;
 
         // Discover prims and create body entities in a single pass
         for (const prim of getChildren(sceneRoot)) {
@@ -285,6 +286,11 @@ export function setupScene(world, stage, canvas, options = {}) {
                 const pos = new Vector3(posArr[0], posArr[1], posArr[2] || 0);
                 const { color, friction, restitution } = materialProperties(stage, prim);
                 const primKey = scopedKey(prim.name);
+
+                if (tags.includes("ExtruderOffset")) {
+                    extruderOffset = pos.clone();
+                    continue;
+                }
 
                 if (tags.includes("Spool")) {
                     const ent = world.createEntity();
@@ -549,10 +555,18 @@ export function setupScene(world, stage, canvas, options = {}) {
                 if (!extruderComp.centerSources || typeof extruderComp.centerSources !== 'object') {
                     extruderComp.centerSources = {};
                 }
+                if (!extruderComp.extruderOffsets || typeof extruderComp.extruderOffsets !== 'object') {
+                    extruderComp.extruderOffsets = {};
+                }
                 if (extruderCenterEntityIds.length > 0) {
                     extruderComp.centerSources[machineId] = extruderCenterEntityIds.slice();
                 } else if (extruderComp.centerSources[machineId]) {
                     delete extruderComp.centerSources[machineId];
+                }
+                if (extruderOffset) {
+                    extruderComp.extruderOffsets[machineId] = extruderOffset.clone();
+                } else if (extruderComp.extruderOffsets[machineId]) {
+                    delete extruderComp.extruderOffsets[machineId];
                 }
             }
         }

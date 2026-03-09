@@ -579,7 +579,7 @@ export class RemoteSpoolSystem {
                         continue;
                     }
                     const extrusionEvent = {
-                        pos: [center.x, center.y, 0],
+                        pos: [center.x, center.y, Number.isFinite(center.z) ? center.z : 0],
                         length: command.E,
                         machineId,
                         color,

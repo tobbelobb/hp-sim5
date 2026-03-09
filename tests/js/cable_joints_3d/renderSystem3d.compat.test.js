@@ -168,22 +168,28 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
       const extruderEntity = world.createEntity();
       const extruder = new ExtruderComponent();
       extruder.extrusions.push({
-        pos: [0.25, 0.75, 0.0],
+        pos: [0.25, 0.75, -0.001],
         color: '#ffaa00',
         length: 0.02,
       });
-      extruder.centerPos = { x: 0.5, y: 0.6, z: 0.0 };
+      extruder.centerPos = { x: 0.5, y: 0.6, z: -0.001 };
       world.addComponent(extruderEntity, extruder);
 
       system._syncExtrusions(world);
       expect(system.drawnExtrusionCount).toBe(1);
       expect(system.extrusionPoints.geometry.getAttribute('position').count).toBe(1);
+      expect(system.extrusionPoints.geometry.getAttribute('position').getZ(0)).toBeCloseTo(-0.001, 6);
 
       system.setPositionTraceEnabled(true);
       system._syncPositionTrace(world);
+      expect(system.positionTracePointsObject.geometry.getAttribute('position').getZ(0)).toBeCloseTo(-0.001, 6);
+
+      extruder.centerPos = { x: 0.5, y: 0.6, z: -0.003 };
+      system._syncPositionTrace(world);
       system.addPositionTraceMarker(0.1, 0.2, 'A');
 
-      expect(system.positionTracePoints).toHaveLength(1);
+      expect(system.positionTracePoints).toHaveLength(2);
+      expect(system.positionTracePointsObject.geometry.getAttribute('position').getZ(1)).toBeCloseTo(-0.003, 6);
       expect(system.positionTracePointsObject.visible).toBe(true);
       expect(system.positionTraceMarkersObject.visible).toBe(true);
     } finally {

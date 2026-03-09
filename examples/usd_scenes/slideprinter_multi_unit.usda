@@ -159,6 +159,13 @@ def Xform "World"
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
+        def Xform "ExtruderOffset" ()
+        {
+            token[] ecs:tags = ["ExtruderOffset"]
+            double3 xformOp:translate = (0, 0.0, -0.001)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
         # Group the three attachment points into a rigid cluster for simulation
         def RigidGroup "SpoolTriangle"
         {
