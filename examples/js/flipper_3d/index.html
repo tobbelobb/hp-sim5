@@ -36,21 +36,40 @@
       font-family: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
       touch-action: none;
       -webkit-tap-highlight-color: transparent;
-      display: grid;
-      place-items: center;
     }
 
     #gameContainer {
-      width: min(96vw, 1020px);
-      height: min(96dvh, 940px);
+      width: 100vw;
+      height: 100dvh;
+      padding: clamp(8px, 1.2vw, 14px);
+      box-sizing: border-box;
       display: grid;
-      grid-template-rows: auto 1fr;
-      gap: 10px;
+      grid-template-rows: min-content minmax(0, 1fr);
+      gap: 8px;
       min-height: 0;
       overflow: hidden;
     }
 
+    #playfield {
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      position: relative;
+    }
+
+    #fxLayer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      border-radius: var(--radius);
+    }
+
     #controls {
+      width: min(980px, 100%);
+      justify-self: center;
       padding: 10px 12px;
       border-radius: var(--radius);
       border: 1px solid var(--panel-border);
@@ -76,6 +95,19 @@
       font-size: 0.88rem;
       font-weight: 600;
       transition: transform 0.1s ease, filter 0.1s ease;
+    }
+
+    #cableFeatureFlags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 10px;
+      align-items: center;
+      font-size: 0.76rem;
+      color: var(--text-dim);
+    }
+
+    #cableFeatureFlags label {
+      white-space: nowrap;
     }
 
     #controls button:hover,
@@ -114,9 +146,11 @@
         width: 100vw;
         height: 100dvh;
         gap: 0;
+        padding: 0;
       }
 
       #controls {
+        width: auto;
         border-radius: 0;
         border-inline: 0;
         border-top: 0;
@@ -125,7 +159,6 @@
       canvas {
         border-radius: 0;
         border-inline: 0;
-        border-bottom: 0;
       }
 
       #stats {
@@ -142,13 +175,16 @@
     }
   }
   </script>
-  <script type="module" crossorigin src="/hp-sim5/assets/examples/js/flipper_3d/index.html-Dbsf040I.js"></script>
+  <script type="module" crossorigin src="/hp-sim5/assets/examples/js/flipper_3d/index.html-DXaYSerJ.js"></script>
   <link rel="modulepreload" crossorigin href="/hp-sim5/assets/modulepreload-polyfill-B5Qt9EMX.js">
-  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/stage-BsBYxQSu.js">
-  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_joints_core-Bj9-T_sd.js">
-  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/geometry3-CFLETKI_.js">
-  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/flipper_common-Byq0HXmr.js">
-  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/ball_obstacle_bump_system-CW-GYRle.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/stage-DI1mhFse.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_joints_core-B3WK4P77.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/OrbitControls-rEq1aDTX.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/commonSystems-T24OYY2h.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/flipper_common-vWZvTkQ3.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/slideprinter_common-DQp4m4O_.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/render_system_3d-CcuUB_7R.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/ball_obstacle_bump_system-DLv5uYgA.js">
 </head>
 <body>
   <div id="gameContainer">
@@ -157,13 +193,17 @@
       <button id="resetBtn" tabindex="-1">Reset</button>
       <button id="stepBtn">Step</button>
       <button id="dumpBtn" tabindex="-1">Dump State</button>
+      <div id="cableFeatureFlags"></div>
       <span>Score: <span id="score">0</span></span>
       <div id="stats">
         <span>dt: <span id="dt">N/A</span></span>
         <span>Speed: <span id="speed">N/A</span></span>
       </div>
     </div>
-    <canvas id="myCanvas"></canvas>
+    <div id="playfield">
+      <canvas id="myCanvas"></canvas>
+      <canvas id="fxLayer" aria-hidden="true"></canvas>
+    </div>
   </div>
 
 </body>
