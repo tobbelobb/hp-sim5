@@ -425,6 +425,7 @@ export function setupScene(world, stage, canvas, options = {}) {
                 const groupComponent = new RigidGroupComponent(memberEntities, 1.0, renderSegments);
                 world.addComponent(groupEnt, groupComponent);
                 world.addComponent(groupEnt, new MachineTagComponent(machineId));
+                world.addComponent(groupEnt, new RenderableComponent('line', palette?.rigidGroup ?? palette?.distanceConstraint ?? '#55ff88'));
                 for (const e of memberEntities) {
                     entityToRigidGroup[e] = groupEnt;
                 }

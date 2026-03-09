@@ -248,6 +248,10 @@ export class RemoteInputSystem {
     this.panPointerId = null;
     this.panLastX = 0;
     this.panLastY = 0;
+    this.isOrbiting = false;
+    this.orbitPointerId = null;
+    this.orbitLastX = 0;
+    this.orbitLastY = 0;
     this.onViewChange = null;
 
     this.handlePointerDown = this.handlePointerDown.bind(this);
@@ -264,7 +268,25 @@ export class RemoteInputSystem {
     if (this.interactionMode !== 'pan') {
       this.isPanning = false;
       this.panPointerId = null;
+    } else if (this.isOrbiting) {
+      this.isOrbiting = false;
+      this.orbitPointerId = null;
     }
+  }
+
+  getRenderSystem() {
+    return this.world.getResource('renderSystem') || null;
+  }
+
+  projectClientToSim(clientX, clientY) {
+    const renderSystem = this.getRenderSystem();
+    if (renderSystem && typeof renderSystem.projectClientToSim === 'function') {
+      const projected = renderSystem.projectClientToSim(clientX, clientY);
+      if (projected && Number.isFinite(projected.x) && Number.isFinite(projected.y)) {
+        return { x: projected.x, y: projected.y };
+      }
+    }
+    return null;
   }
 
   setViewTransform({ scaleMultiplier, offsetX, offsetY }) {
@@ -284,6 +306,10 @@ export class RemoteInputSystem {
   }
 
   toSimCoords(canvasX, canvasY) {
+    const projected = this.projectClientToSim(canvasX, canvasY);
+    if (projected) {
+      return projected;
+    }
     const rect = this.canvas.getBoundingClientRect();
     const baseScale = this.canvas.height / this.world.getResource('simHeight');
     const scale = baseScale * this.scaleMultiplier;
@@ -334,6 +360,27 @@ export class RemoteInputSystem {
         }
       }
 
+      const shouldOrbit = !isGrabClick
+        && event.pointerType === 'mouse'
+        && event.button === 0
+        && this.interactionMode !== 'pan'
+        && typeof this.getRenderSystem()?.rotateOrbitByPixels === 'function';
+
+      if (shouldOrbit) {
+        this.isOrbiting = true;
+        this.orbitPointerId = event.pointerId;
+        this.orbitLastX = event.clientX;
+        this.orbitLastY = event.clientY;
+        if (typeof this.canvas.setPointerCapture === 'function') {
+          try {
+            this.canvas.setPointerCapture(event.pointerId);
+          } catch (_err) {
+            // Ignore pointer capture failures.
+          }
+        }
+        return;
+      }
+
       if (isGrabClick) {
         const pauseState = this.world.getResource('pauseState');
         if (pauseState && pauseState.paused) {
@@ -357,6 +404,20 @@ export class RemoteInputSystem {
   }
 
   handlePointerMove(event) {
+    if (this.isOrbiting && this.orbitPointerId === event.pointerId) {
+      event.preventDefault();
+      const renderSystem = this.getRenderSystem();
+      if (renderSystem && typeof renderSystem.rotateOrbitByPixels === 'function') {
+        renderSystem.rotateOrbitByPixels(
+          event.clientX - this.orbitLastX,
+          event.clientY - this.orbitLastY
+        );
+      }
+      this.orbitLastX = event.clientX;
+      this.orbitLastY = event.clientY;
+      return;
+    }
+
     if (this.interactionMode === 'pan') {
       if (!this.isPanning || this.panPointerId !== event.pointerId) {
         return;
@@ -396,6 +457,18 @@ export class RemoteInputSystem {
 
   handlePointerUp(event) {
     event.preventDefault();
+    if (this.isOrbiting && this.orbitPointerId === event.pointerId) {
+      this.isOrbiting = false;
+      this.orbitPointerId = null;
+      if (typeof this.canvas.releasePointerCapture === 'function') {
+        try {
+          this.canvas.releasePointerCapture(event.pointerId);
+        } catch (_err) {
+          // Ignore pointer release failures.
+        }
+      }
+      return;
+    }
     if (this.interactionMode === 'pan') {
       if (this.isPanning && this.panPointerId === event.pointerId) {
         this.isPanning = false;
@@ -451,6 +524,10 @@ export class InputSystem {
     this.panPointerId = null;
     this.panLastX = 0;
     this.panLastY = 0;
+    this.isOrbiting = false;
+    this.orbitPointerId = null;
+    this.orbitLastX = 0;
+    this.orbitLastY = 0;
     this.onViewChange = null;
     this.canvas.setAttribute('tabindex', '0');
     this.canvas.style.outline = 'none';
@@ -480,6 +557,31 @@ export class InputSystem {
     if (this.interactionMode !== 'pan' && this.isPanning) {
       this.cancelPan();
     }
+    if (this.interactionMode === 'pan' && this.isOrbiting) {
+      this.cancelOrbit();
+    }
+  }
+
+  getRenderSystem() {
+    return this.world.getResource('renderSystem') || null;
+  }
+
+  projectClientToSim(clientX, clientY) {
+    const renderSystem = this.getRenderSystem();
+    if (renderSystem && typeof renderSystem.projectClientToSim === 'function') {
+      const projected = renderSystem.projectClientToSim(clientX, clientY);
+      if (projected && Number.isFinite(projected.x) && Number.isFinite(projected.y)) {
+        return { x: projected.x, y: projected.y };
+      }
+    }
+
+    const rect = this.canvas.getBoundingClientRect();
+    const baseScale = this.canvas.height / this.world.getResource('simHeight');
+    const scale = baseScale * this.scaleMultiplier;
+    return {
+      x: (clientX - rect.left - this.canvas.width / 2) / scale + this.viewOffsetX,
+      y: (this.canvas.height / 2 - (clientY - rect.top)) / scale + this.viewOffsetY,
+    };
   }
 
   setViewTransform({ scaleMultiplier, offsetX, offsetY }) {
@@ -505,6 +607,10 @@ export class InputSystem {
     this.frame = 0;
     this.isPanning = false;
     this.panPointerId = null;
+    this.isOrbiting = false;
+    this.orbitPointerId = null;
+    this.orbitLastX = 0;
+    this.orbitLastY = 0;
     this.activeGrabPointerId = null;
     this.setTouchScrollBlockActive(false);
     this.activePointers.clear();
@@ -603,6 +709,13 @@ export class InputSystem {
     this.panLastY = event.clientY;
   }
 
+  beginOrbit(event) {
+    this.isOrbiting = true;
+    this.orbitPointerId = event.pointerId;
+    this.orbitLastX = event.clientX;
+    this.orbitLastY = event.clientY;
+  }
+
   cancelPan() {
     if (!this.isPanning) {
       return;
@@ -616,6 +729,21 @@ export class InputSystem {
     }
     this.isPanning = false;
     this.panPointerId = null;
+  }
+
+  cancelOrbit() {
+    if (!this.isOrbiting) {
+      return;
+    }
+    if (typeof this.canvas.releasePointerCapture === 'function' && this.orbitPointerId !== null) {
+      try {
+        this.canvas.releasePointerCapture(this.orbitPointerId);
+      } catch (_err) {
+        // Ignore pointer release failures.
+      }
+    }
+    this.isOrbiting = false;
+    this.orbitPointerId = null;
   }
 
   trackPointerDown(event) {
@@ -719,8 +847,9 @@ export class InputSystem {
     }
     const pixelX = centerX - rect.left;
     const pixelY = centerY - rect.top;
-    const simX = (pixelX - this.canvas.width / 2) / prevScale + this.viewOffsetX;
-    const simY = (this.canvas.height / 2 - pixelY) / prevScale + this.viewOffsetY;
+    const projected = this.projectClientToSim(centerX, centerY);
+    const simX = projected?.x ?? ((pixelX - this.canvas.width / 2) / prevScale + this.viewOffsetX);
+    const simY = projected?.y ?? ((this.canvas.height / 2 - pixelY) / prevScale + this.viewOffsetY);
     const nextScaleMultiplier = this.scaleMultiplier * delta;
     const nextScale = baseScale * nextScaleMultiplier;
     if (!(nextScale > 0)) {
@@ -779,13 +908,7 @@ export class InputSystem {
       return;
     }
 
-    const rect = this.canvas.getBoundingClientRect();
-    const baseScale = this.canvas.height / this.world.getResource('simHeight');
-    const scale = baseScale * this.scaleMultiplier;
-    const pixelX = event.clientX - rect.left;
-    const pixelY = event.clientY - rect.top;
-    const simX = (pixelX - this.canvas.width / 2) / scale + this.viewOffsetX;
-    const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
+    const { x: simX, y: simY } = this.projectClientToSim(event.clientX, event.clientY);
 
     const cmOnScreen = (event.pointerType === 'touch' || event.pointerType === 'pen') ? 1.5 : 1.0;
     const dpi = 96;
@@ -810,6 +933,17 @@ export class InputSystem {
         closestBall = entityId;
         closestDistSq = distSq;
       }
+    }
+
+    const shouldOrbit = closestBall === null
+      && event.pointerType === 'mouse'
+      && event.button === 0
+      && this.interactionMode !== 'pan'
+      && typeof this.getRenderSystem()?.rotateOrbitByPixels === 'function';
+
+    if (shouldOrbit) {
+      this.beginOrbit(event);
+      return;
     }
 
     if (closestBall === null) {
@@ -864,6 +998,7 @@ export class InputSystem {
 
   handlePointerUp(event) {
     const wasPanPointer = this.isPanning && this.panPointerId === event.pointerId;
+    const wasOrbitPointer = this.isOrbiting && this.orbitPointerId === event.pointerId;
     this.trackPointerEnd(event);
     if (wasPanPointer) {
       event.preventDefault();
@@ -878,6 +1013,11 @@ export class InputSystem {
         );
       }
       this.cancelPan();
+      return;
+    }
+    if (wasOrbitPointer) {
+      event.preventDefault();
+      this.cancelOrbit();
       return;
     }
     if (event.target !== this.canvas) {
@@ -940,6 +1080,7 @@ export class InputSystem {
       this.trackPointerMove(event);
     }
     const isPanPointer = this.isPanning && this.panPointerId === event.pointerId;
+    const isOrbitPointer = this.isOrbiting && this.orbitPointerId === event.pointerId;
     if (this.pinchActive) {
       event.preventDefault();
       this.updatePinchGesture();
@@ -967,18 +1108,25 @@ export class InputSystem {
       }
       return;
     }
+    if (isOrbitPointer) {
+      event.preventDefault();
+      const renderSystem = this.getRenderSystem();
+      if (renderSystem && typeof renderSystem.rotateOrbitByPixels === 'function') {
+        renderSystem.rotateOrbitByPixels(
+          event.clientX - this.orbitLastX,
+          event.clientY - this.orbitLastY
+        );
+      }
+      this.orbitLastX = event.clientX;
+      this.orbitLastY = event.clientY;
+      return;
+    }
     if (event.target !== this.canvas || this.interactionMode === 'pan' || this.grabSpring === null) {
       return;
     }
 
     event.preventDefault();
-    const rect = this.canvas.getBoundingClientRect();
-    const baseScale = this.canvas.height / this.world.getResource('simHeight');
-    const scale = baseScale * this.scaleMultiplier;
-    const pixelX = event.clientX - rect.left;
-    const pixelY = event.clientY - rect.top;
-    const simX = (pixelX - this.canvas.width / 2) / scale + this.viewOffsetX;
-    const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
+    const { x: simX, y: simY } = this.projectClientToSim(event.clientX, event.clientY);
     const { ptrE } = this.grabSpring;
     const pos = this.world.getComponent(ptrE, PositionComponent)?.pos;
     if (pos) {

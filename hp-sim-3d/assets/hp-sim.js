@@ -1633,6 +1633,7 @@ function initHpSim() {
       pinhole: mixColors('#cccccc', tintHex, 0.5),
       cable: mixColors('#ffff00', tintHex, 0.6),
       distanceConstraint: mixColors('#00ff00', tintHex, 0.55),
+      rigidGroup: mixColors('#55ff88', tintHex, 0.55),
     };
   }
 

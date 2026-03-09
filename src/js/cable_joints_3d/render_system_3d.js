@@ -8,6 +8,7 @@ import {
   OrientationComponent,
   ObstaclePushComponent,
   RenderableComponent,
+  RigidGroupComponent,
   layeringEnabled
 } from './ecs.js';
 import {
@@ -26,6 +27,12 @@ const ORIENTATION_BACK_COLOR = '#2a3542';
 const KNOT_MARKER_COLOR = '#ff3b30';
 const KNOT_MARKER_RADIUS = 0.002;
 const DEFAULT_BACKGROUND_COLOR = 0x1b2b3c;
+const PRINT_SURFACE_Z = -0.0005;
+const PRINT_SURFACE_OUTLINE_Z = 0.0008;
+const PRINT_SURFACE_MIN_HALF_EXTENT = 0.18;
+const PRINT_SURFACE_MARGIN = 0.08;
+const PRINT_SURFACE_COLOR = 0x243248;
+const PRINT_SURFACE_OUTLINE_COLOR = 0x5f7492;
 const BORDER_FLOOR_OFFSET_Z = -0.035;
 const BORDER_FLOOR_COLOR = 0x1d2434;
 const BORDER_FLOOR_COLOR_HEX = '#1d2434';
@@ -33,6 +40,8 @@ const BORDER_WALL_HEIGHT = 0.08;
 const BORDER_WALL_THICKNESS = 0.012;
 const BORDER_WALL_COLOR = 0x0c111f;
 const BORDER_WALL_COLOR_HEX = '#0c111f';
+const DEFAULT_RIGID_GROUP_COLOR = '#55ff88';
+const DEFAULT_RIGID_GROUP_Z_OFFSET = 0.0015;
 const BUMPER_FX_MAX_BURSTS = 96;
 const BUMPER_FX_MIN_RADIUS = 0.03;
 const DEFAULT_REFERENCE_COLOR = '#1e90ff';
@@ -254,6 +263,53 @@ function disposeObject(obj) {
   });
 }
 
+export function collectRigidGroupEdges(memberCount, renderSegments) {
+  if (!Number.isInteger(memberCount) || memberCount < 2) {
+    return [];
+  }
+
+  const edges = [];
+  const seen = new Set();
+  const addEdge = (aIdx, bIdx) => {
+    if (!Number.isInteger(aIdx) || !Number.isInteger(bIdx)) {
+      return;
+    }
+    if (aIdx < 0 || bIdx < 0 || aIdx >= memberCount || bIdx >= memberCount || aIdx === bIdx) {
+      return;
+    }
+    const key = aIdx < bIdx ? `${aIdx}:${bIdx}` : `${bIdx}:${aIdx}`;
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    edges.push([aIdx, bIdx]);
+  };
+
+  if (Array.isArray(renderSegments) && renderSegments.length > 0) {
+    for (const segment of renderSegments) {
+      if (!Array.isArray(segment) || segment.length < 2) {
+        continue;
+      }
+      for (let i = 0; i < segment.length - 1; i += 1) {
+        addEdge(segment[i], segment[i + 1]);
+      }
+      const first = segment[0];
+      const last = segment[segment.length - 1];
+      if (segment.length > 2 && first !== last) {
+        addEdge(last, first);
+      }
+    }
+    return edges;
+  }
+
+  for (let aIdx = 0; aIdx < memberCount; aIdx += 1) {
+    for (let bIdx = aIdx + 1; bIdx < memberCount; bIdx += 1) {
+      addEdge(aIdx, bIdx);
+    }
+  }
+  return edges;
+}
+
 export class RenderSystem3D {
   static createDefaultLightingGroup() {
     const lights = new THREE.Group();
@@ -330,9 +386,14 @@ export class RenderSystem3D {
     this.camera.lookAt(targetX, targetY, 0);
     this._baseViewTarget = new THREE.Vector3(targetX, targetY, 0);
     this._baseCameraOffset = this.camera.position.clone().sub(this._baseViewTarget);
+    this._baseCameraDistance = Math.max(0.1, this._baseCameraOffset.length());
     this.viewScaleMultiplier = 1.0;
     this.viewOffsetX = 0.0;
     this.viewOffsetY = 0.0;
+    this.orbitMinPolarAngle = Number.isFinite(options.minOrbitPolarAngle) ? options.minOrbitPolarAngle : 0.01;
+    this.orbitMaxPolarAngle = Number.isFinite(options.maxOrbitPolarAngle) ? options.maxOrbitPolarAngle : (Math.PI * 0.48);
+    this.orbitRotateSpeed = Number.isFinite(options.orbitRotateSpeed) ? options.orbitRotateSpeed : 1.0;
+    this._setOrbitFromOffset(this._baseCameraOffset);
 
     this.debugEnabled = options.debugEnabled ?? (typeof window !== 'undefined' && Boolean(window._flipper3dDebug));
     this._debugFrame = 0;
@@ -401,16 +462,50 @@ export class RenderSystem3D {
     this.scene.add(lights);
 
     this.boardMaterial = new THREE.MeshStandardMaterial({
-      color: 0x27334a,
-      roughness: 0.92,
-      metalness: 0.04
+      color: PRINT_SURFACE_COLOR,
+      roughness: 0.94,
+      metalness: 0.02,
+      transparent: true,
+      opacity: 0.32,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      toneMapped: false
     });
     this.boardGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
     this.board = new THREE.Mesh(this.boardGeometry, this.boardMaterial);
-    this.board.position.z = -0.03;
+    this.board.position.z = PRINT_SURFACE_Z;
+    this.board.renderOrder = 40;
     this.board.userData.ownsGeometry = true;
     this.board.userData.ownsMaterial = true;
     this.scene.add(this.board);
+
+    this.boardOutlineMaterial = new THREE.LineBasicMaterial({
+      color: PRINT_SURFACE_OUTLINE_COLOR,
+      transparent: true,
+      opacity: 0.95,
+      depthWrite: false,
+      toneMapped: false
+    });
+    this.boardOutlineGeometry = new THREE.BufferGeometry();
+    this.boardOutlineGeometry.setAttribute(
+      'position',
+      new THREE.BufferAttribute(
+        new Float32Array([
+          -0.5, -0.5, 0.0,
+          0.5, -0.5, 0.0,
+          0.5, 0.5, 0.0,
+          -0.5, 0.5, 0.0
+        ]),
+        3
+      )
+    );
+    this.boardOutline = new THREE.LineLoop(this.boardOutlineGeometry, this.boardOutlineMaterial);
+    this.boardOutline.position.z = PRINT_SURFACE_OUTLINE_Z;
+    this.boardOutline.renderOrder = 50;
+    this.boardOutline.frustumCulled = false;
+    this.boardOutline.userData.ownsGeometry = true;
+    this.boardOutline.userData.ownsMaterial = true;
+    this.scene.add(this.boardOutline);
 
     this.borderFloorMaterial = new THREE.MeshStandardMaterial({
       color: BORDER_FLOOR_COLOR,
@@ -534,6 +629,7 @@ export class RenderSystem3D {
     this.jointLines = [];
     this.wrapArcs = [];
     this.knotMarkers = [];
+    this.rigidGroupLines = [];
 
     this.borderLine = null;
     this.borderVertexCount = 0;
@@ -673,23 +769,7 @@ export class RenderSystem3D {
       this.viewOffsetY = offsetY;
     }
 
-    const target = this._baseViewTarget.clone();
-    target.x += this.viewOffsetX;
-    target.y += this.viewOffsetY;
-
-    const scale = Math.max(0.05, this.viewScaleMultiplier);
-    const cameraOffset = this._baseCameraOffset.clone().multiplyScalar(1.0 / scale);
-    this.camera.position.copy(target).add(cameraOffset);
-    this.camera.lookAt(target);
-    this.camera.updateMatrixWorld();
-
-    if (this.controls) {
-      this.controls.target.copy(target);
-      this.controls.update();
-    }
-
-    this._fixedCameraPosition = this.camera.position.clone();
-    this._fixedCameraQuaternion = this.camera.quaternion.clone();
+    this._applyCameraFromViewTransform();
   }
 
   setReferencePaths(segments, options = {}) {
@@ -958,6 +1038,7 @@ export class RenderSystem3D {
     this._syncBorder(world);
     this._syncCircles(world);
     this._syncFlippers(world);
+    this._syncRigidGroups(world);
     this._syncCable(world);
     this._syncReferencePaths();
     this._syncExtrusions(world);
@@ -1012,6 +1093,12 @@ export class RenderSystem3D {
     }
     this.knotMarkers.length = 0;
 
+    for (const line of this.rigidGroupLines) {
+      this.root.remove(line);
+      disposeObject(line);
+    }
+    this.rigidGroupLines.length = 0;
+
     this._clearBumperFx();
 
     if (this.borderLine) {
@@ -1056,7 +1143,14 @@ export class RenderSystem3D {
     this.sharedSphereGeometry.dispose();
     this.sharedFlipperBarGeometry.dispose();
 
-    disposeObject(this.board);
+    if (this.board && this.scene) {
+      this.scene.remove(this.board);
+      disposeObject(this.board);
+    }
+    if (this.boardOutline && this.scene) {
+      this.scene.remove(this.boardOutline);
+      disposeObject(this.boardOutline);
+    }
 
     if (this.borderFloor) {
       this.scene.remove(this.borderFloor);
@@ -1267,11 +1361,12 @@ export class RenderSystem3D {
   }
 
   _syncBoard(world) {
-    const simWidth = Number.isFinite(world.getResource('simWidth')) ? world.getResource('simWidth') : 1.0;
-    const simHeight = Number.isFinite(world.getResource('simHeight')) ? world.getResource('simHeight') : 1.7;
-
-    this.board.scale.set(simWidth, simHeight, 1);
-    this.board.position.set(simWidth * 0.5, simHeight * 0.5, -0.03);
+    const halfExtent = this._computePrintSurfaceHalfExtent(world);
+    const surfaceSize = halfExtent * 2.0;
+    this.board.scale.set(surfaceSize, surfaceSize, 1);
+    this.board.position.set(0.0, 0.0, PRINT_SURFACE_Z);
+    this.boardOutline.scale.set(surfaceSize, surfaceSize, 1);
+    this.boardOutline.position.set(0.0, 0.0, PRINT_SURFACE_OUTLINE_Z);
   }
 
   _syncBorder(world) {
@@ -1416,6 +1511,59 @@ export class RenderSystem3D {
     while (this.borderWallGroup.children.length > 0) {
       const child = this.borderWallGroup.children.pop();
       disposeObject(child);
+    }
+  }
+
+  _syncRigidGroups(world) {
+    const rigidGroups = world.query([RigidGroupComponent]);
+    if (!rigidGroups || rigidGroups.length === 0) {
+      this._hideLines(this.rigidGroupLines);
+      return;
+    }
+
+    const lineSpecs = [];
+    for (const groupId of rigidGroups) {
+      const group = world.getComponent(groupId, RigidGroupComponent);
+      const members = Array.isArray(group?.members) ? group.members : [];
+      if (members.length < 2) {
+        continue;
+      }
+
+      const memberPositions = members.map((entityId) => world.getComponent(entityId, PositionComponent)?.pos || null);
+      const edges = collectRigidGroupEdges(members.length, group?.renderSegments);
+      const renderComp = world.getComponent(groupId, RenderableComponent);
+      const color = renderComp?.color || DEFAULT_RIGID_GROUP_COLOR;
+
+      for (const [aIdx, bIdx] of edges) {
+        const pA = memberPositions[aIdx];
+        const pB = memberPositions[bIdx];
+        if (!pA || !pB) {
+          continue;
+        }
+        lineSpecs.push({ pA, pB, color });
+      }
+    }
+
+    this._ensureLineCapacity(this.rigidGroupLines, lineSpecs.length, false);
+    for (let i = 0; i < this.rigidGroupLines.length; i += 1) {
+      const line = this.rigidGroupLines[i];
+      const spec = lineSpecs[i];
+      if (!spec) {
+        line.visible = false;
+        continue;
+      }
+
+      line.visible = true;
+      setMaterialColor(line.material, spec.color);
+
+      const positions = line.geometry.attributes.position.array;
+      positions[0] = spec.pA.x;
+      positions[1] = spec.pA.y;
+      positions[2] = (spec.pA.z || 0.0) + DEFAULT_RIGID_GROUP_Z_OFFSET;
+      positions[3] = spec.pB.x;
+      positions[4] = spec.pB.y;
+      positions[5] = (spec.pB.z || 0.0) + DEFAULT_RIGID_GROUP_Z_OFFSET;
+      line.geometry.attributes.position.needsUpdate = true;
     }
   }
 
@@ -1930,5 +2078,101 @@ export class RenderSystem3D {
     group.userData.color = typeof color === 'string' && color.length > 0 ? color : '#ff0000';
 
     return group;
+  }
+
+  _computePrintSurfaceHalfExtent(world) {
+    let maxAbs = PRINT_SURFACE_MIN_HALF_EXTENT;
+
+    const entities = world.query([PositionComponent, RadiusComponent]);
+    for (const entityId of entities) {
+      const pos = world.getComponent(entityId, PositionComponent)?.pos;
+      if (!pos) {
+        continue;
+      }
+      const radius = world.getComponent(entityId, RadiusComponent)?.radius;
+      const pad = Number.isFinite(radius) && radius > 0 ? radius : 0.0;
+      maxAbs = Math.max(
+        maxAbs,
+        Math.abs(pos.x) + pad,
+        Math.abs(pos.y) + pad
+      );
+    }
+
+    if (this.borderComponentClass) {
+      const borderEntities = world.query([this.borderComponentClass]);
+      for (const entityId of borderEntities) {
+        const border = world.getComponent(entityId, this.borderComponentClass);
+        const points = Array.isArray(border?.points) ? border.points : [];
+        for (const point of points) {
+          maxAbs = Math.max(maxAbs, Math.abs(point.x || 0.0), Math.abs(point.y || 0.0));
+        }
+      }
+    }
+
+    return maxAbs + PRINT_SURFACE_MARGIN;
+  }
+
+  _setOrbitFromOffset(offset) {
+    const distance = Math.max(0.1, offset.length());
+    const radialXY = Math.hypot(offset.x, offset.y);
+    this.orbitAzimuth = Math.atan2(offset.y, offset.x);
+    this.orbitPolar = THREE.MathUtils.clamp(
+      Math.atan2(radialXY, offset.z),
+      this.orbitMinPolarAngle,
+      this.orbitMaxPolarAngle
+    );
+    this._baseCameraDistance = distance;
+  }
+
+  _cameraDistanceForScale() {
+    const scale = Math.max(0.05, this.viewScaleMultiplier);
+    return Math.max(0.08, this._baseCameraDistance / scale);
+  }
+
+  _buildOrbitOffset(distance) {
+    const radialXY = Math.sin(this.orbitPolar) * distance;
+    return new THREE.Vector3(
+      Math.cos(this.orbitAzimuth) * radialXY,
+      Math.sin(this.orbitAzimuth) * radialXY,
+      Math.cos(this.orbitPolar) * distance
+    );
+  }
+
+  _applyCameraFromViewTransform() {
+    const target = this._baseViewTarget.clone();
+    target.x += this.viewOffsetX;
+    target.y += this.viewOffsetY;
+
+    const cameraOffset = this._buildOrbitOffset(this._cameraDistanceForScale());
+    this.camera.position.copy(target).add(cameraOffset);
+    this.camera.lookAt(target);
+    this.camera.updateMatrixWorld();
+
+    if (this.controls) {
+      this.controls.target.copy(target);
+      this.controls.update();
+    }
+
+    this._fixedCameraPosition = this.camera.position.clone();
+    this._fixedCameraQuaternion = this.camera.quaternion.clone();
+  }
+
+  rotateOrbitByPixels(deltaX, deltaY) {
+    if (!Number.isFinite(deltaX) || !Number.isFinite(deltaY)) {
+      return;
+    }
+
+    const width = Math.max(1, this.canvas.clientWidth || this.canvas.width || 1);
+    const height = Math.max(1, this.canvas.clientHeight || this.canvas.height || 1);
+    const azimuthDelta = (deltaX / width) * Math.PI * this.orbitRotateSpeed;
+    const polarDelta = (deltaY / height) * Math.PI * this.orbitRotateSpeed;
+
+    this.orbitAzimuth -= azimuthDelta;
+    this.orbitPolar = THREE.MathUtils.clamp(
+      this.orbitPolar + polarDelta,
+      this.orbitMinPolarAngle,
+      this.orbitMaxPolarAngle
+    );
+    this._applyCameraFromViewTransform();
   }
 }
