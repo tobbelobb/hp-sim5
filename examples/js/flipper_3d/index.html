@@ -187,7 +187,9 @@
     import { RenderSystem3D } from '../../../src/js/cable_joints_3d/render_system_3d.js';
     import {
       bindCableFeatureFlagCheckboxes,
-      ensureCableFeatureFlags
+      ensureCableFeatureFlags,
+      getCableFeatureFlags,
+      setCableFeatureFlags
     } from './cable_feature_flags.js';
 
     const canvas = document.getElementById('myCanvas');
@@ -234,6 +236,17 @@
         dt: targetWorld.getResource('dt'),
         entityCount: targetWorld.entities.size
       });
+    };
+
+    window.getCableFeatureFlags = () => {
+      return getCableFeatureFlags(world);
+    };
+
+    window.setCableFeatureFlags = (partial = {}) => {
+      const next = setCableFeatureFlags(world, partial);
+      cableFlagUi.syncFromWorld();
+      console.log('Cable feature flags:', next);
+      return next;
     };
 
     const usdaPath = new URL('../../usd_scenes/flipper_scene.usda', import.meta.url).href;

@@ -12,6 +12,7 @@ export function runGame(world, setupScene, sceneData) {
   let lastTime = 0;
   let accumulator = 0.0;
   let doStep = false;
+  let stepWhileKeyHeld = false;
   let speedSamples = [];
   const numSpeedSamples = 60;
   let frameCounter = 0;
@@ -20,6 +21,13 @@ export function runGame(world, setupScene, sceneData) {
   function getRenderSystem() {
     return world.systems.find((system) => system instanceof RenderSystem3D);
   }
+
+  const requestSingleStep = () => {
+    const pauseState = world.getResource('pauseState');
+    if (pauseState && pauseState.paused) {
+      doStep = true;
+    }
+  };
 
   function gameLoop(currentTime) {
     const dt = world.getResource('dt');
@@ -44,18 +52,17 @@ export function runGame(world, setupScene, sceneData) {
       accumulator = Math.min(accumulator + frameSec, maxAccum);
 
       while (accumulator >= dt) {
-        if (!pauseState.paused || doStep) {
-          if (doStep) pauseState.paused = false;
+        const shouldStepWhilePaused = doStep || stepWhileKeyHeld;
+        if (!pauseState.paused || shouldStepWhilePaused) {
+          const steppingWhilePaused = pauseState.paused && shouldStepWhilePaused;
+          if (steppingWhilePaused) pauseState.paused = false;
           world.update(dt);
           simTimeProcessed += dt;
-
-          if (doStep) {
-            pauseState.paused = true;
-            doStep = false;
-          }
+          if (steppingWhilePaused) pauseState.paused = true;
+          if (doStep) doStep = false;
         }
 
-        if (pauseState.paused) {
+        if (pauseState.paused && !stepWhileKeyHeld) {
           accumulator = 0;
           break;
         }
@@ -131,6 +138,7 @@ export function runGame(world, setupScene, sceneData) {
 
     pauseBtn.textContent = 'Start';
     doStep = false;
+    stepWhileKeyHeld = false;
     if (debugEnabled) {
       console.debug('[flipper3d] reset', { paused: true });
     }
@@ -138,12 +146,35 @@ export function runGame(world, setupScene, sceneData) {
 
   stepBtn.addEventListener('click', (event) => {
     event.preventDefault();
-    const pauseState = world.getResource('pauseState');
-    if (pauseState && pauseState.paused) {
-      doStep = true;
-      if (debugEnabled) {
-        console.debug('[flipper3d] step requested');
-      }
+    requestSingleStep();
+    if (debugEnabled) {
+      console.debug('[flipper3d] step requested');
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    const targetTag = event.target && event.target.tagName;
+    const isEditableTarget = targetTag === 'INPUT' || targetTag === 'TEXTAREA' || targetTag === 'SELECT' || event.target?.isContentEditable;
+    if (isEditableTarget || event.repeat) {
+      return;
+    }
+    const key = typeof event.key === 'string' ? event.key.toLowerCase() : '';
+    if (key === 's' || key === 't') {
+      event.preventDefault();
+      stepWhileKeyHeld = true;
+      requestSingleStep();
+    }
+  });
+
+  document.addEventListener('keyup', (event) => {
+    const targetTag = event.target && event.target.tagName;
+    const isEditableTarget = targetTag === 'INPUT' || targetTag === 'TEXTAREA' || targetTag === 'SELECT' || event.target?.isContentEditable;
+    if (isEditableTarget) {
+      return;
+    }
+    const key = typeof event.key === 'string' ? event.key.toLowerCase() : '';
+    if (key === 's' || key === 't') {
+      stepWhileKeyHeld = false;
     }
   });
 

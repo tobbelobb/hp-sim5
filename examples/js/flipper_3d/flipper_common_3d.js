@@ -1520,8 +1520,8 @@ export class PBDUnifiedContactManifoldSystem {
         let pinchShared = false;
         if (betweenHalfWidth > 1e-9) {
           pinchShared = true;
-          const baseBall = getRawCollisionRadius(world, ballId);
-          const baseObs = getRawCollisionRadius(world, obsId);
+          const baseBall = _getBaseCollisionRadius(world, ballId);
+          const baseObs = _getBaseCollisionRadius(world, obsId);
           const sharedProjectionBall = baseBall + betweenHalfWidth;
           const sharedProjectionObs = baseObs + betweenHalfWidth;
           resolvedSupportBall = {
@@ -1646,8 +1646,8 @@ export class PBDUnifiedContactManifoldSystem {
         let pinchShared = false;
         if (betweenHalfWidth > 1e-9) {
           pinchShared = true;
-          const baseA = getRawCollisionRadius(world, ballId);
-          const baseB = getRawCollisionRadius(world, otherId);
+          const baseA = _getBaseCollisionRadius(world, ballId);
+          const baseB = _getBaseCollisionRadius(world, otherId);
           const sharedProjectionA = baseA + betweenHalfWidth;
           const sharedProjectionB = baseB + betweenHalfWidth;
           resolvedSupportA = {

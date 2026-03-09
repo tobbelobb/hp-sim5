@@ -1,75 +1,31 @@
-const puppeteer = require('puppeteer');
-const path = require('path');
+const {
+  launchFlipperPage,
+  closeFlipperPage,
+  resetGame,
+  runAutonomousScoreExpectation
+} = require('../flipper/flipperIntegrationTestUtils.cjs');
 
 describe.skip('Flipper 3D Integration', () => {
-  let browser;
-  let page;
-  let server;
-  let port;
+  let harness;
 
   jest.setTimeout(120000);
 
   beforeAll(async () => {
-    const projectRoot = path.resolve(__dirname, '../../..');
-    const { spawn } = require('child_process');
-    const serverScript = path.join(projectRoot, 'tests/startViteServer.mjs');
-
-    server = spawn(process.execPath, [serverScript, projectRoot], {
-      stdio: ['pipe', 'pipe', 'inherit']
+    harness = await launchFlipperPage({
+      pagePath: '/examples/js/flipper_3d/index.html',
+      speedScale: 10.0,
+      viewport: { width: 1200, height: 900 },
+      newDocumentVars: { _flipper3dDebug: true },
+      waitForRenderSystem: true
     });
-
-    port = await new Promise((resolve, reject) => {
-      server.stdout.once('data', (data) => {
-        const match = /PORT:(\d+)/.exec(data.toString());
-        resolve(match ? Number(match[1]) : NaN);
-      });
-      server.once('error', reject);
-    });
-
-    browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-
-    page = await browser.newPage();
-    await page.setViewport({ width: 1200, height: 900 });
-
-    page.on('pageerror', (error) => {
-      // Surface page crashes to CI logs.
-      console.error(`PAGE ERROR: ${error.message}`);
-    });
-
-    await page.evaluateOnNewDocument(() => {
-      window._flipper3dDebug = true;
-      window._flipperSpeedScale = 2.0;
-      window._flipperMaxSubSteps = 500;
-    });
-
-    await page.goto(`http://127.0.0.1:${port}/examples/js/flipper_3d/index.html`, {
-      waitUntil: 'domcontentloaded',
-      timeout: 60000
-    });
-
-    await page.waitForFunction(
-      () => {
-        if (!window.world || !window.world.systems) return false;
-        return window.world.systems.some((system) => system?.constructor?.name === 'RenderSystem3D');
-      },
-      { timeout: 30000 }
-    );
   });
 
   afterAll(async () => {
-    if (server) {
-      server.kill('SIGTERM');
-    }
-    if (browser) {
-      await browser.close();
-    }
+    await closeFlipperPage(harness);
   });
 
   async function readFrameState() {
-    return page.evaluate(() => {
+    return harness.page.evaluate(() => {
       const world = window.world;
       const renderSystem = world.systems.find((system) => system?.constructor?.name === 'RenderSystem3D');
       const camera = renderSystem?.camera;
@@ -107,9 +63,9 @@ describe.skip('Flipper 3D Integration', () => {
     expect(pausedLater.camera.z).toBeCloseTo(initial.camera.z, 6);
     expect(pausedLater.maxAbsZ).toBeLessThan(1e-6);
 
-    await page.click('#pauseBtn');
+    await harness.page.click('#pauseBtn');
 
-    await page.waitForFunction(() => window.world.getResource('pauseState')?.paused === false, { timeout: 5000 });
+    await harness.page.waitForFunction(() => window.world.getResource('pauseState')?.paused === false, { timeout: 5000 });
     await new Promise((resolve) => setTimeout(resolve, 2500));
 
     const running = await readFrameState();
@@ -118,5 +74,10 @@ describe.skip('Flipper 3D Integration', () => {
     expect(running.camera.y).toBeCloseTo(initial.camera.y, 6);
     expect(running.camera.z).toBeCloseTo(initial.camera.z, 6);
     expect(running.maxAbsZ).toBeLessThan(1e-5);
+  });
+
+  test('should run autonomously and reach a score of 4 when balls settle below flippers', async () => {
+    await resetGame(harness.page);
+    await runAutonomousScoreExpectation(harness.page, { expectedScore: 4 });
   });
 });
