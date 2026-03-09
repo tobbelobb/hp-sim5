@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HP Simulation</title>
+    <link rel="icon" type="image/svg+xml"
+      href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNiIgZmlsbD0iZ3JleSIvPjwvc3ZnPg==" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="layout">
+      <section class="sim-shell">
+        <div class="sim-app" aria-live="polite">
+          <div id="controls" class="sim-controls">
+            <div class="sim-buttons">
+              <div class="sim-start-buttons">
+                <button id="printLogoBtn" type="button" class="sim-play sim-start">Print Logo</button>
+                <button id="printSquareBtn" type="button" class="sim-start">Print Squares</button>
+                <button id="uploadBtn" type="button" class="sim-upload sim-start">Upload File</button>
+              </div>
+              <div class="sim-machines" data-open="false">
+                <button
+                  id="machinesToggle"
+                  type="button"
+                  class="sim-secondary sim-machines-toggle"
+                  aria-haspopup="true"
+                  aria-expanded="false"
+                  aria-controls="machinesMenu"
+                >
+                  Machines
+                </button>
+                <div id="machinesMenu" class="sim-machines-menu sim-hidden" aria-labelledby="machinesToggle">
+                  <div class="sim-machines-section">
+                    <span class="sim-machines-section-title">Preset Scenes</span>
+                    <ul id="presetMachinesList" class="sim-machines-options"></ul>
+                  </div>
+                  <div id="customMachinesSection" class="sim-machines-section sim-machines-section-custom sim-hidden">
+                    <span class="sim-machines-section-title">Uploads</span>
+                    <ul id="customMachinesList" class="sim-machines-custom"></ul>
+                  </div>
+                  <button id="machinesRemoveAllBtn" type="button" class="sim-tertiary sim-machines-remove-all">Remove All</button>
+                </div>
+              </div>
+              <button id="fullscreenBtn" type="button" class="sim-secondary sim-fullscreen" aria-pressed="false">Fullscreen</button>
+              <button id="referenceToggleBtn" type="button" class="sim-secondary sim-reference-toggle" aria-pressed="false">Show Reference Path</button>
+              <label id="qualityToggleWrapper" class="sim-toggle" for="qualityToggle">
+                <input id="qualityToggle" type="checkbox">
+                <span>Live Quality Checks</span>
+              </label>
+              <label id="lineLayeringToggleWrapper" class="sim-toggle" for="lineLayeringToggle">
+                <input id="lineLayeringToggle" type="checkbox" checked>
+                <span>Line Layering</span>
+              </label>
+            </div>
+            <input
+              type="file"
+              id="gcodeFile"
+              accept=".gcode,.txt,.serial,.usda,.csv,.can"
+              data-reference-presets="Hangprinter_logo6=hangprinterLogo,draw_squares_bigger=straightMovesBigger,draw_squares=straightMoves"
+              data-reference-extensions=".txt,.serial,.csv,.can"
+              hidden
+            >
+          </div>
+
+          <div class="canvas-frame">
+            <canvas id="myCanvas" role="img" aria-label="Hangprinter simulation"></canvas>
+            <div id="qualityHud" class="quality-hud sim-hidden" role="status" aria-live="polite"></div>
+            <div id="qualityHistoryHud" class="quality-history sim-hidden" role="status" aria-live="polite">
+              <button
+                id="qualityHistoryToggle"
+                type="button"
+                class="quality-history__toggle"
+                aria-expanded="false"
+                aria-controls="qualityHistoryList"
+              >
+                Quality History ▼
+              </button>
+              <div id="qualityHistoryList" class="quality-history__list sim-hidden"></div>
+            </div>
+            <button
+              id="secondaryToggleBtn"
+              type="button"
+              class="sim-secondary-toggle"
+              aria-expanded="false"
+              aria-controls="simSecondaryControls"
+            >
+              ▼
+            </button>
+            <div id="simSecondaryControls" class="sim-secondary-group sim-hidden" aria-label="Simulation controls">
+              <button id="pauseBtn" type="button" class="sim-secondary">Pause</button>
+              <button id="resetBtn" type="button" class="sim-secondary">Reset</button>
+              <button id="finishAsapBtn" type="button" class="sim-secondary">Finish ASAP</button>
+              <button id="positionTraceBtn" type="button" class="sim-secondary" aria-pressed="false" title="Toggle position trace mode">Trace</button>
+              <div id="viewTools" class="sim-zoom" role="group" aria-label="View controls">
+                <button id="zoomInBtn" type="button" class="sim-secondary sim-zoom-btn" aria-label="Zoom in">+</button>
+                <button id="zoomOutBtn" type="button" class="sim-secondary sim-zoom-btn" aria-label="Zoom out">−</button>
+                <button id="panModeBtn" type="button" class="sim-secondary sim-zoom-btn" aria-pressed="false">Pan</button>
+              </div>
+              <div id="speedControls" class="sim-speed" role="group" aria-label="Playback speed">
+                <button id="speedSlowerBtn" type="button" class="sim-secondary sim-speed-btn" aria-label="Set playback to half speed">
+                  <span aria-hidden="true" class="sim-speed-icon">&gt;&gt;</span>
+                  <span class="sim-speed-text">0.5x</span>
+                </button>
+                <button id="speedFasterBtn" type="button" class="sim-secondary sim-speed-btn" aria-label="Double the playback speed">
+                  <span aria-hidden="true" class="sim-speed-icon">&gt;&gt;</span>
+                  <span class="sim-speed-text">2x</span>
+                </button>
+              </div>
+            </div>
+            <div id="speedStatus" class="sim-speed-status sim-hidden" role="status" aria-live="polite"></div>
+            <div id="printStatus" class="sim-print-status sim-hidden" role="status" aria-live="polite"></div>
+            <div id="replayStatus" class="sim-print-status sim-hidden" role="status" aria-live="polite"></div>
+            <div id="asapStatus" class="sim-print-status sim-hidden" role="status" aria-live="polite"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./assets/hp-sim.js"></script>
+  </body>
+</html>
