@@ -1,10 +1,10 @@
 import { Open as UsdOpen, getAttribute } from '../../src/js/usd/stage.js';
-import { World, OrientationComponent } from '../../src/js/cable_joints/ecs.js';
-import { runGame } from '../../examples/js/slideprinter/runner.js';
-import { setupScene } from '../../examples/js/slideprinter/setupScene.js';
-import { RemoteSpoolSystem, InputSystem, ExtruderComponent } from '../../examples/js/slideprinter/slideprinter_common.js';
+import { World, OrientationComponent } from '../../src/js/cable_joints_3d/ecs.js';
+import { runGame } from '../../examples/js/slideprinter_3d/runner.js';
+import { setupScene } from '../../examples/js/slideprinter_3d/setupScene.js';
+import { RemoteSpoolSystem, InputSystem, ExtruderComponent } from '../../examples/js/slideprinter_3d/slideprinter_common.js';
 import { detectFileFormat, FileFormat, isMcuFormat, isRrfFormat } from '../../examples/js/slideprinter/fileFormatUtils.js';
-import { _updateAttachmentPoints } from '../../src/js/cable_joints/cable_joints_core.js';
+import { _updateAttachmentPoints } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import { QualityMonitor } from './quality-monitor.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
 
@@ -652,10 +652,6 @@ function initHpSim() {
     if (width <= 0 || height <= 0) {
       return;
     }
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      return;
-    }
     let snapshot = sceneChangeState.frameSnapshot;
     if (!snapshot) {
       snapshot = document.createElement('canvas');
@@ -674,8 +670,12 @@ function initHpSim() {
       return;
     }
     snapshotCtx.clearRect(0, 0, snapshot.width, snapshot.height);
-    snapshotCtx.drawImage(canvas, 0, 0, width, height);
-    sceneChangeState.frameSnapshotNeedsApply = true;
+    try {
+      snapshotCtx.drawImage(canvas, 0, 0, width, height);
+      sceneChangeState.frameSnapshotNeedsApply = true;
+    } catch (_err) {
+      sceneChangeState.frameSnapshotNeedsApply = false;
+    }
   }
 
   function applySceneFrameSnapshot() {
@@ -690,15 +690,6 @@ function initHpSim() {
     if (!snapshot) {
       sceneChangeState.frameSnapshotNeedsApply = false;
       return;
-    }
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      sceneChangeState.frameSnapshotNeedsApply = false;
-      return;
-    }
-    if (canvas.width > 0 && canvas.height > 0) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(snapshot, 0, 0, canvas.width, canvas.height);
     }
     sceneChangeState.frameSnapshotNeedsApply = false;
   }
@@ -2509,11 +2500,10 @@ function initHpSim() {
       clearQualityMonitors();
       updateQualityHudVisibility();
       world.clear();
-      if (canvas) {
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
+      const renderSystem = world.getResource('renderSystem');
+      if (renderSystem && typeof renderSystem.resetVisuals === 'function') {
+        renderSystem.resetVisuals();
+        renderSystem.update?.(world, 0);
       }
       clearSceneFrameSnapshot();
       resetViewStateDefaults();
@@ -3107,28 +3097,8 @@ function initHpSim() {
       canvas.height = height;
     }
     const renderSystem = world.getResource('renderSystem');
-    const simHeight = world.getResource('simHeight');
-    if (renderSystem && simHeight) {
-      renderSystem.baseCScale = canvas.height / simHeight;
-      if (renderSystem.extrusionCanvas) {
-        if (renderSystem.extrusionCanvas.width !== canvas.width) {
-          renderSystem.extrusionCanvas.width = canvas.width;
-        }
-        if (renderSystem.extrusionCanvas.height !== canvas.height) {
-          renderSystem.extrusionCanvas.height = canvas.height;
-        }
-        renderSystem.referenceDirty = true;
-      }
-      if (renderSystem.referenceCanvas) {
-        if (renderSystem.referenceCanvas.width !== canvas.width) {
-          renderSystem.referenceCanvas.width = canvas.width;
-          renderSystem.referenceDirty = true;
-        }
-        if (renderSystem.referenceCanvas.height !== canvas.height) {
-          renderSystem.referenceCanvas.height = canvas.height;
-          renderSystem.referenceDirty = true;
-        }
-      }
+    if (renderSystem && typeof renderSystem.setCanvasSize === 'function') {
+      renderSystem.setCanvasSize(canvas.width, canvas.height);
     }
     if (resized) {
       reapplyViewState({ clearExtrusions: true });
@@ -4147,8 +4117,11 @@ function initHpSim() {
       const rect = canvas.getBoundingClientRect();
       const px = event.clientX - rect.left;
       const py = event.clientY - rect.top;
-      const simX = renderSystem.simXFromCanvas(px);
-      const simY = renderSystem.simYFromCanvas(py);
+      const projected = typeof renderSystem.projectCanvasToSim === 'function'
+        ? renderSystem.projectCanvasToSim(px, py)
+        : null;
+      const simX = projected?.x ?? renderSystem.simXFromCanvas(px, py);
+      const simY = projected?.y ?? renderSystem.simYFromCanvas(py, px);
       if (!Number.isFinite(simX) || !Number.isFinite(simY)) {
         return;
       }

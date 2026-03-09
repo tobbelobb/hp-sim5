@@ -8,14 +8,15 @@ import {
   OrientationComponent,
   HybridKnotAngleComponent,
   ObstaclePushComponent,
+  RenderableComponent,
   layeringEnabled
 } from './ecs.js';
-import { RenderableComponent } from '../cable_joints/ecs.js';
 import {
   CablePathComponent,
   CableJointComponent,
   CableLinkComponent
 } from './cable_joints_core.js';
+import { ExtruderComponent } from '../../../examples/js/slideprinter/slideprinter_common.js';
 
 const EPSILON = 1e-9;
 const ARC_SEGMENTS = 48;
@@ -36,6 +37,14 @@ const BORDER_WALL_COLOR = 0x0c111f;
 const BORDER_WALL_COLOR_HEX = '#0c111f';
 const BUMPER_FX_MAX_BURSTS = 96;
 const BUMPER_FX_MIN_RADIUS = 0.03;
+const DEFAULT_REFERENCE_COLOR = '#1e90ff';
+const DEFAULT_TRACE_COLOR = '#ffffff';
+const DEFAULT_TRACE_MARKER_COLOR = '#2dd4bf';
+const DEFAULT_TRACE_POINT_SIZE = 6;
+const DEFAULT_EXTRUSION_POINT_SIZE = 7;
+const DEFAULT_TRACE_Z = 0.0025;
+const DEFAULT_MARKER_Z = 0.005;
+const DEFAULT_REFERENCE_Z = 0.004;
 
 function buildPlaneBasis(planeNormal) {
   const n = planeNormal.clone();
@@ -355,8 +364,10 @@ export class RenderSystem3D {
       powerPreference: 'high-performance'
     });
 
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2));
+    const userAgent = typeof navigator !== 'undefined' ? (navigator.userAgent || '') : '';
+    const devicePixelRatio = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1;
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(userAgent);
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio, isMobile ? 1.5 : 2));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     const width = Math.max(1, canvas.clientWidth || canvas.width || 1);
@@ -369,10 +380,29 @@ export class RenderSystem3D {
     const camZ = Number.isFinite(options.cameraZ) ? options.cameraZ : 2.2;
     this.camera.position.set(targetX, targetY + 0.04, camZ);
     this.camera.lookAt(targetX, targetY, 0);
+    this._baseViewTarget = new THREE.Vector3(targetX, targetY, 0);
+    this._baseCameraOffset = this.camera.position.clone().sub(this._baseViewTarget);
+    this.viewScaleMultiplier = 1.0;
+    this.viewOffsetX = 0.0;
+    this.viewOffsetY = 0.0;
 
-    this.debugEnabled = options.debugEnabled ?? Boolean(window._flipper3dDebug);
+    this.debugEnabled = options.debugEnabled ?? (typeof window !== 'undefined' && Boolean(window._flipper3dDebug));
     this._debugFrame = 0;
     this.renderOnSimulationStep = options.renderOnSimulationStep ?? false;
+    this.drawingSuspended = false;
+    this.referencePaths = [];
+    this.referenceMetadata = null;
+    this.referenceColor = DEFAULT_REFERENCE_COLOR;
+    this.referenceRequestedVisible = false;
+    this.referenceVisible = false;
+    this.referenceDirty = false;
+    this.positionTraceEnabled = false;
+    this.positionTraceColor = DEFAULT_TRACE_COLOR;
+    this.positionTraceRadiusPx = 1.25;
+    this.positionTracePoints = [];
+    this.positionTraceMarkers = [];
+    this.drawnPositionTraceCount = 0;
+    this.drawnExtrusionCount = 0;
 
     this.controls = null;
     this.controlsEnabled = options.controlsEnabled ?? true;
@@ -464,6 +494,69 @@ export class RenderSystem3D {
 
     this.root = new THREE.Group();
     this.scene.add(this.root);
+
+    this.referenceMaterial = new THREE.LineBasicMaterial({
+      color: DEFAULT_REFERENCE_COLOR,
+      transparent: true,
+      opacity: 0.95,
+      depthWrite: false,
+      toneMapped: false
+    });
+    this.referenceLines = new THREE.LineSegments(new THREE.BufferGeometry(), this.referenceMaterial);
+    this.referenceLines.visible = false;
+    this.referenceLines.renderOrder = 900;
+    this.referenceLines.frustumCulled = false;
+    this.referenceLines.userData.ownsGeometry = true;
+    this.referenceLines.userData.ownsMaterial = true;
+    this.scene.add(this.referenceLines);
+
+    this.extrusionPointsMaterial = new THREE.PointsMaterial({
+      size: DEFAULT_EXTRUSION_POINT_SIZE,
+      sizeAttenuation: false,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.95,
+      depthWrite: false,
+      toneMapped: false
+    });
+    this.extrusionPoints = new THREE.Points(new THREE.BufferGeometry(), this.extrusionPointsMaterial);
+    this.extrusionPoints.frustumCulled = false;
+    this.extrusionPoints.renderOrder = 850;
+    this.extrusionPoints.userData.ownsGeometry = true;
+    this.extrusionPoints.userData.ownsMaterial = true;
+    this.scene.add(this.extrusionPoints);
+
+    this.positionTraceMaterial = new THREE.PointsMaterial({
+      color: DEFAULT_TRACE_COLOR,
+      size: DEFAULT_TRACE_POINT_SIZE,
+      sizeAttenuation: false,
+      transparent: true,
+      opacity: 0.92,
+      depthWrite: false,
+      toneMapped: false
+    });
+    this.positionTracePointsObject = new THREE.Points(new THREE.BufferGeometry(), this.positionTraceMaterial);
+    this.positionTracePointsObject.frustumCulled = false;
+    this.positionTracePointsObject.renderOrder = 920;
+    this.positionTracePointsObject.userData.ownsGeometry = true;
+    this.positionTracePointsObject.userData.ownsMaterial = true;
+    this.scene.add(this.positionTracePointsObject);
+
+    this.positionTraceMarkerMaterial = new THREE.PointsMaterial({
+      color: DEFAULT_TRACE_MARKER_COLOR,
+      size: DEFAULT_TRACE_POINT_SIZE + 2,
+      sizeAttenuation: false,
+      transparent: true,
+      opacity: 0.98,
+      depthWrite: false,
+      toneMapped: false
+    });
+    this.positionTraceMarkersObject = new THREE.Points(new THREE.BufferGeometry(), this.positionTraceMarkerMaterial);
+    this.positionTraceMarkersObject.frustumCulled = false;
+    this.positionTraceMarkersObject.renderOrder = 930;
+    this.positionTraceMarkersObject.userData.ownsGeometry = true;
+    this.positionTraceMarkersObject.userData.ownsMaterial = true;
+    this.scene.add(this.positionTraceMarkersObject);
 
     this._bumperFxGroup = new THREE.Group();
     this._bumperFxGroup.frustumCulled = false;
@@ -617,6 +710,115 @@ export class RenderSystem3D {
     this._lastHeight = height;
   }
 
+  setDrawingSuspended(suspended) {
+    this.drawingSuspended = Boolean(suspended);
+  }
+
+  setViewTransform({ scaleMultiplier, offsetX, offsetY } = {}) {
+    if (typeof scaleMultiplier === 'number' && Number.isFinite(scaleMultiplier) && scaleMultiplier > 0) {
+      this.viewScaleMultiplier = scaleMultiplier;
+    }
+    if (typeof offsetX === 'number' && Number.isFinite(offsetX)) {
+      this.viewOffsetX = offsetX;
+    }
+    if (typeof offsetY === 'number' && Number.isFinite(offsetY)) {
+      this.viewOffsetY = offsetY;
+    }
+
+    const target = this._baseViewTarget.clone();
+    target.x += this.viewOffsetX;
+    target.y += this.viewOffsetY;
+
+    const scale = Math.max(0.05, this.viewScaleMultiplier);
+    const cameraOffset = this._baseCameraOffset.clone().multiplyScalar(1.0 / scale);
+    this.camera.position.copy(target).add(cameraOffset);
+    this.camera.lookAt(target);
+    this.camera.updateMatrixWorld();
+
+    if (this.controls) {
+      this.controls.target.copy(target);
+      this.controls.update();
+    }
+
+    this._fixedCameraPosition = this.camera.position.clone();
+    this._fixedCameraQuaternion = this.camera.quaternion.clone();
+  }
+
+  setReferencePaths(segments, options = {}) {
+    this.referencePaths = Array.isArray(segments) ? segments : [];
+    if (options && typeof options === 'object') {
+      if (options.metadata !== undefined) {
+        this.referenceMetadata = options.metadata || null;
+      }
+      if (typeof options.visible === 'boolean') {
+        this.referenceRequestedVisible = options.visible;
+      }
+      if (typeof options.color === 'string' && options.color.length > 0) {
+        this.referenceColor = options.color;
+      }
+    }
+    this.referenceVisible = Boolean(this.referenceRequestedVisible) && this.referencePaths.length > 0;
+    this.referenceDirty = true;
+  }
+
+  setPositionTraceEnabled(enabled, options = {}) {
+    this.positionTraceEnabled = Boolean(enabled);
+    if (typeof options.color === 'string' && options.color.length > 0) {
+      this.positionTraceColor = options.color;
+    }
+    if (Number.isFinite(options.radiusPx) && options.radiusPx > 0) {
+      this.positionTraceRadiusPx = options.radiusPx;
+    }
+    this.positionTraceMaterial.color.set(this.positionTraceColor);
+    if (!this.positionTraceEnabled) {
+      this.clearPositionTrace();
+    }
+  }
+
+  clearPositionTrace({ keepMarkers = false } = {}) {
+    this.positionTracePoints = [];
+    this.drawnPositionTraceCount = 0;
+    this._updatePointObject(this.positionTracePointsObject, [], null, DEFAULT_TRACE_Z);
+    if (!keepMarkers) {
+      this.clearPositionTraceMarkers();
+    }
+  }
+
+  clearPositionTracePoints() {
+    this.clearPositionTrace({ keepMarkers: true });
+  }
+
+  clearPositionTraceMarkers() {
+    this.positionTraceMarkers = [];
+    this._updatePointObject(this.positionTraceMarkersObject, [], null, DEFAULT_MARKER_Z);
+  }
+
+  addPositionTraceMarker(simX, simY, label = '') {
+    if (!Number.isFinite(simX) || !Number.isFinite(simY)) {
+      return;
+    }
+    this.positionTraceMarkers.push({
+      x: simX,
+      y: simY,
+      z: DEFAULT_MARKER_Z,
+      label
+    });
+    this._syncPositionTraceMarkers();
+  }
+
+  clearExtrusions() {
+    this.drawnExtrusionCount = 0;
+    this._updatePointObject(this.extrusionPoints, [], [], DEFAULT_TRACE_Z);
+  }
+
+  simXFromCanvas(pixelX, pixelY = this.canvas.height * 0.5) {
+    return this._projectCanvasToSim(pixelX, pixelY)?.x ?? Number.NaN;
+  }
+
+  simYFromCanvas(pixelY, pixelX = this.canvas.width * 0.5) {
+    return this._projectCanvasToSim(pixelX, pixelY)?.y ?? Number.NaN;
+  }
+
   setComponentClasses(classes = {}) {
     if (classes.BorderComponent !== undefined) this.borderComponentClass = classes.BorderComponent;
     if (classes.FlipperTagComponent !== undefined) this.flipperTagComponentClass = classes.FlipperTagComponent;
@@ -628,18 +830,178 @@ export class RenderSystem3D {
     if (!rect || rect.width <= 0 || rect.height <= 0) {
       return null;
     }
+    return this._projectCanvasToSim(clientX - rect.left, clientY - rect.top);
+  }
 
-    this._rayNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-    this._rayNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+  projectCanvasToSim(pixelX, pixelY) {
+    return this._projectCanvasToSim(pixelX, pixelY);
+  }
+
+  _projectCanvasToSim(pixelX, pixelY) {
+    const width = Math.max(1, this.canvas.width || this.canvas.clientWidth || 1);
+    const height = Math.max(1, this.canvas.height || this.canvas.clientHeight || 1);
+    this._rayNdc.x = (pixelX / width) * 2 - 1;
+    this._rayNdc.y = -(pixelY / height) * 2 + 1;
     this._raycaster.setFromCamera(this._rayNdc, this.camera);
 
     const hit = this._raycaster.ray.intersectPlane(this._rayPlane, this._rayHit);
-    if (!hit) return null;
-
+    if (!hit) {
+      return null;
+    }
     return new Vector3(hit.x, hit.y, hit.z);
   }
 
+  _updatePointObject(object, points, colors = null, defaultZ = 0.0) {
+    if (!object) {
+      return;
+    }
+
+    const safePoints = Array.isArray(points) ? points : [];
+    const positionArray = new Float32Array(safePoints.length * 3);
+    for (let index = 0; index < safePoints.length; index += 1) {
+      const point = safePoints[index];
+      const base = index * 3;
+      positionArray[base] = point?.x ?? 0.0;
+      positionArray[base + 1] = point?.y ?? 0.0;
+      positionArray[base + 2] = point?.z ?? defaultZ;
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positionArray, 3));
+
+    if (Array.isArray(colors) && colors.length === safePoints.length) {
+      const colorArray = new Float32Array(colors.length * 3);
+      for (let index = 0; index < colors.length; index += 1) {
+        const color = new THREE.Color(colors[index] || '#ffffff');
+        const base = index * 3;
+        colorArray[base] = color.r;
+        colorArray[base + 1] = color.g;
+        colorArray[base + 2] = color.b;
+      }
+      geometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+      if (object.material) {
+        object.material.vertexColors = true;
+      }
+    } else if (object.material) {
+      object.material.vertexColors = false;
+    }
+
+    const previous = object.geometry;
+    object.geometry = geometry;
+    object.visible = safePoints.length > 0;
+    if (previous) {
+      previous.dispose();
+    }
+  }
+
+  _syncReferencePaths() {
+    if (!this.referenceDirty) {
+      return;
+    }
+    this.referenceVisible = Boolean(this.referenceRequestedVisible) && this.referencePaths.length > 0;
+    this.referenceMaterial.color.set(this.referenceColor);
+    if (!this.referenceVisible) {
+      this.referenceLines.visible = false;
+      this.referenceDirty = false;
+      return;
+    }
+
+    const pointPairs = [];
+    for (const segment of this.referencePaths) {
+      if (!Array.isArray(segment?.start) || !Array.isArray(segment?.end)) {
+        continue;
+      }
+      pointPairs.push(
+        { x: segment.start[0] || 0.0, y: segment.start[1] || 0.0, z: DEFAULT_REFERENCE_Z },
+        { x: segment.end[0] || 0.0, y: segment.end[1] || 0.0, z: DEFAULT_REFERENCE_Z }
+      );
+    }
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(pointPairs.length * 3);
+    for (let index = 0; index < pointPairs.length; index += 1) {
+      const point = pointPairs[index];
+      const base = index * 3;
+      positions[base] = point.x;
+      positions[base + 1] = point.y;
+      positions[base + 2] = point.z;
+    }
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const previous = this.referenceLines.geometry;
+    this.referenceLines.geometry = geometry;
+    this.referenceLines.visible = pointPairs.length > 0;
+    if (previous) {
+      previous.dispose();
+    }
+    this.referenceDirty = false;
+  }
+
+  _syncExtrusions(world) {
+    const extruderEntities = world.query([ExtruderComponent]);
+    if (extruderEntities.length === 0) {
+      if (this.drawnExtrusionCount !== 0 || this.extrusionPoints.visible) {
+        this.clearExtrusions();
+      }
+      return;
+    }
+
+    const extruderComp = world.getComponent(extruderEntities[0], ExtruderComponent);
+    const extrusions = Array.isArray(extruderComp?.extrusions) ? extruderComp.extrusions : [];
+    if (extrusions.length === this.drawnExtrusionCount && this.extrusionPoints.visible === (extrusions.length > 0)) {
+      return;
+    }
+
+    const points = [];
+    const colors = [];
+    for (const extrusion of extrusions) {
+      if (!Array.isArray(extrusion?.pos) || extrusion.pos.length < 2) {
+        continue;
+      }
+      points.push({
+        x: extrusion.pos[0] || 0.0,
+        y: extrusion.pos[1] || 0.0,
+        z: (extrusion.pos[2] || 0.0) + DEFAULT_TRACE_Z
+      });
+      colors.push(extrusion.color || DEFAULT_CABLE_COLOR);
+    }
+    this.drawnExtrusionCount = extrusions.length;
+    this._updatePointObject(this.extrusionPoints, points, colors, DEFAULT_TRACE_Z);
+  }
+
+  _syncPositionTrace(world) {
+    if (!this.positionTraceEnabled) {
+      if (this.positionTracePointsObject.visible) {
+        this._updatePointObject(this.positionTracePointsObject, [], null, DEFAULT_TRACE_Z);
+      }
+      return;
+    }
+
+    const extruderEntities = world.query([ExtruderComponent]);
+    if (extruderEntities.length > 0) {
+      const extruderComp = world.getComponent(extruderEntities[0], ExtruderComponent);
+      const center = extruderComp?.centerPos;
+      if (center && Number.isFinite(center.x) && Number.isFinite(center.y)) {
+        const last = this.positionTracePoints[this.positionTracePoints.length - 1];
+        if (!last || Math.abs(last.x - center.x) > 1e-9 || Math.abs(last.y - center.y) > 1e-9) {
+          this.positionTracePoints.push({ x: center.x, y: center.y, z: DEFAULT_TRACE_Z });
+        }
+      }
+    }
+
+    if (this.positionTracePoints.length !== this.drawnPositionTraceCount) {
+      this.drawnPositionTraceCount = this.positionTracePoints.length;
+      this.positionTraceMaterial.color.set(this.positionTraceColor);
+      this._updatePointObject(this.positionTracePointsObject, this.positionTracePoints, null, DEFAULT_TRACE_Z);
+    }
+  }
+
+  _syncPositionTraceMarkers() {
+    this._updatePointObject(this.positionTraceMarkersObject, this.positionTraceMarkers, null, DEFAULT_MARKER_Z);
+  }
+
   update(world, dt = 0) {
+    if (this.drawingSuspended) {
+      return;
+    }
     if (!this.renderOnSimulationStep && Number.isFinite(dt) && dt > 0) {
       return;
     }
@@ -649,6 +1011,10 @@ export class RenderSystem3D {
     this._syncCircles(world);
     this._syncFlippers(world);
     this._syncCable(world);
+    this._syncReferencePaths();
+    this._syncExtrusions(world);
+    this._syncPositionTrace(world);
+    this._syncPositionTraceMarkers();
 
     this._updateBumperHitFx(world);
 
@@ -708,6 +1074,14 @@ export class RenderSystem3D {
     }
     this._hideBorderFloor();
     this._clearBorderWalls();
+    this.clearExtrusions();
+    this.clearPositionTrace();
+    this.clearPositionTraceMarkers();
+    this.referencePaths = [];
+    this.referenceVisible = false;
+    this.referenceRequestedVisible = false;
+    this.referenceDirty = true;
+    this._syncReferencePaths();
   }
 
   dispose() {
@@ -731,7 +1105,6 @@ export class RenderSystem3D {
 
     this.orientedSphereMaterial.dispose();
     this.knotMarkerMaterial.dispose();
-
     this.sharedSphereGeometry.dispose();
     this.sharedFlipperBarGeometry.dispose();
 
@@ -769,6 +1142,22 @@ export class RenderSystem3D {
     }
     if (this._bumperFxGroup && this.scene) {
       this.scene.remove(this._bumperFxGroup);
+    }
+    if (this.referenceLines && this.scene) {
+      this.scene.remove(this.referenceLines);
+      disposeObject(this.referenceLines);
+    }
+    if (this.extrusionPoints && this.scene) {
+      this.scene.remove(this.extrusionPoints);
+      disposeObject(this.extrusionPoints);
+    }
+    if (this.positionTracePointsObject && this.scene) {
+      this.scene.remove(this.positionTracePointsObject);
+      disposeObject(this.positionTracePointsObject);
+    }
+    if (this.positionTraceMarkersObject && this.scene) {
+      this.scene.remove(this.positionTraceMarkersObject);
+      disposeObject(this.positionTraceMarkersObject);
     }
   }
 

@@ -21,6 +21,9 @@ export {
   SimulationErrorStateComponent,
   MachineTagComponent,
   CoefficientOfFrictionComponent,
+  RenderableComponent,
+  DistanceConstraintComponent,
+  RigidGroupComponent,
 } from '../cable_joints/ecs.js';
 
 export {
