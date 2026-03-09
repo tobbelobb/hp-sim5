@@ -6,7 +6,6 @@ import {
   PositionComponent,
   RadiusComponent,
   OrientationComponent,
-  HybridKnotAngleComponent,
   ObstaclePushComponent,
   RenderableComponent,
   layeringEnabled
@@ -26,7 +25,6 @@ const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
 const ORIENTATION_BACK_COLOR = '#2a3542';
 const KNOT_MARKER_COLOR = '#ff3b30';
 const KNOT_MARKER_RADIUS = 0.002;
-const KNOT_SPAN = Math.PI / 30.0;
 const DEFAULT_BACKGROUND_COLOR = 0x1b2b3c;
 const BORDER_FLOOR_OFFSET_Z = -0.035;
 const BORDER_FLOOR_COLOR = 0x1d2434;
@@ -192,83 +190,33 @@ function setMaterialColor(material, color) {
   material.userData.__color = color;
 }
 
-function orientationAngleAroundAxis(quaternion, axis) {
-  if (!quaternion) {
-    return 0.0;
-  }
-  const basis = buildPlaneBasis(axis);
-  const rotatedU = quaternion.transformVector(basis.u);
-  const projected = rotatedU.clone().subtract(basis.n, rotatedU.dot(basis.n));
-  if (projected.lengthSq() <= EPSILON) {
-    return 0.0;
-  }
-  projected.normalize();
-  return Math.atan2(projected.dot(basis.v), projected.dot(basis.u));
-}
-
-function layerWrapParams(r0, dr, rampLength, layerIndex) {
-  const twoPi = 2.0 * Math.PI;
-  const rn = r0 + dr * layerIndex;
-
-  let dPhiRamp = 0.0;
-  if (rampLength > EPSILON) {
-    dPhiRamp = rampLength / (rn + 0.5 * dr);
-    if (dPhiRamp > twoPi) dPhiRamp = twoPi;
-    if (dPhiRamp < 0.0) dPhiRamp = 0.0;
-  }
-
-  const phiConst = twoPi - dPhiRamp;
-  const Lconst = rn * phiConst;
-  const Lwrap = Lconst + dPhiRamp * (rn + 0.5 * dr);
-  return { rn, dPhiRamp, phiConst, Lconst, Lwrap };
-}
-
-function storedToRadiusAndTheta(storedLength, baseRadius, halfWidth, rampLength) {
+function knotMarkerDeltaAngle(storedLength, baseRadius, halfWidth, layering) {
   const stored = Math.max(0.0, storedLength ?? 0.0);
-  const twoPi = 2.0 * Math.PI;
-  const r0 = baseRadius + halfWidth;
-  const dr = 2.0 * halfWidth;
-  const ramp = Math.max(0.0, rampLength ?? 0.0);
-
-  if (!(r0 > EPSILON) || !(dr > EPSILON)) {
-    const linearRadius = Number.isFinite(baseRadius) ? Math.max(baseRadius, 0.0) : 0.0;
-    const theta = linearRadius > EPSILON ? (stored / linearRadius) : 0.0;
-    return { radius: linearRadius, theta };
+  if (!(stored > EPSILON) || !(baseRadius > EPSILON)) {
+    return 0.0;
   }
 
-  let remaining = stored;
-  let thetaBase = 0.0;
-  let layerIndex = 0;
-  const MAX_LAYERS = 2048;
-
-  while (layerIndex < MAX_LAYERS) {
-    const wrap = layerWrapParams(r0, dr, ramp, layerIndex);
-    if (remaining > wrap.Lwrap + EPSILON) {
-      remaining -= wrap.Lwrap;
-      thetaBase += twoPi;
-      layerIndex += 1;
-      continue;
-    }
-
-    if (remaining <= wrap.Lconst + EPSILON || !(wrap.dPhiRamp > EPSILON)) {
-      const phi = wrap.rn > EPSILON ? Math.min(wrap.phiConst, remaining / wrap.rn) : 0.0;
-      return { radius: wrap.rn, theta: thetaBase + phi };
-    }
-
-    const sRamp = Math.max(0.0, remaining - wrap.Lconst);
-    const a = dr / (2.0 * wrap.dPhiRamp);
-    const b = wrap.rn;
-    const disc = b * b + 4.0 * a * sRamp;
-    const x = (-b + Math.sqrt(Math.max(0.0, disc))) / (2.0 * a);
-    const xClamped = Math.max(0.0, Math.min(wrap.dPhiRamp, x));
-    return {
-      radius: wrap.rn + dr * (xClamped / wrap.dPhiRamp),
-      theta: thetaBase + wrap.phiConst + xClamped
-    };
+  if (!layering || !(halfWidth > EPSILON)) {
+    return stored / baseRadius;
   }
 
-  const rn = r0 + dr * MAX_LAYERS;
-  return { radius: rn, theta: thetaBase };
+  const fullWidth = 2.0 * halfWidth;
+  let layerRadius = baseRadius;
+  let remainingLength = stored;
+  let layerCount = 0;
+  const MAX_LAYERS = 128;
+
+  while (fullWidth > EPSILON && layerCount < MAX_LAYERS) {
+    const layerCircumference = 2.0 * Math.PI * layerRadius;
+    if (!(remainingLength > layerCircumference + EPSILON)) {
+      break;
+    }
+    remainingLength -= layerCircumference;
+    layerCount += 1;
+    layerRadius = baseRadius + fullWidth * layerCount;
+  }
+
+  return layerRadius > EPSILON ? (remainingLength / layerRadius) : 0.0;
 }
 
 function createDualColorSphereGeometry(baseGeometry, primaryColor, secondaryColor = ORIENTATION_BACK_COLOR) {
@@ -1844,31 +1792,24 @@ export class RenderSystem3D {
       return null;
     }
 
-    const knotComp = world.getComponent(entityId, HybridKnotAngleComponent);
-    const pathAngle = knotComp?.pathAngles?.[String(pathId)];
-    const knotAngle = Number.isFinite(pathAngle) ? pathAngle : knotComp?.angle;
-    if (!Number.isFinite(knotAngle)) {
-      return null;
-    }
-
     const planeNormal = world.getComponent(entityId, CableLinkComponent)?.cablePlaneNormal || this.defaultPlaneNormal;
-    const orientation = orientationAngleAroundAxis(
-      world.getComponent(entityId, OrientationComponent)?.quaternion,
-      planeNormal
-    );
     const basis = buildPlaneBasis(planeNormal);
     const halfWidth = layeringEnabled(world) ? Math.max(0.0, path.cableHalfWidth ?? 0.0) : 0.0;
     const stored = Math.max(0.0, path.stored?.[endpointIndex] ?? 0.0);
-    const { radius } = storedToRadiusAndTheta(stored, baseRadius, halfWidth, baseRadius * KNOT_SPAN);
-    const worldAngle = orientation + knotAngle;
+    const baseRenderRadius = baseRadius + halfWidth;
+    const tangentAngle = angleOnPlane(attachmentPoint, center, basis);
+    const deltaAngle = knotMarkerDeltaAngle(stored, baseRenderRadius, halfWidth, layeringEnabled(world));
+    const worldAngle = Boolean(path.cw?.[endpointIndex])
+      ? (tangentAngle - deltaAngle)
+      : (tangentAngle + deltaAngle);
     const cos = Math.cos(worldAngle);
     const sin = Math.sin(worldAngle);
 
     return {
       position: new Vector3(
-        center.x + basis.u.x * radius * cos + basis.v.x * radius * sin,
-        center.y + basis.u.y * radius * cos + basis.v.y * radius * sin,
-        center.z + basis.u.z * radius * cos + basis.v.z * radius * sin
+        center.x + basis.u.x * baseRenderRadius * cos + basis.v.x * baseRenderRadius * sin,
+        center.y + basis.u.y * baseRenderRadius * cos + basis.v.y * baseRenderRadius * sin,
+        center.z + basis.u.z * baseRenderRadius * cos + basis.v.z * baseRenderRadius * sin
       ),
       radius: KNOT_MARKER_RADIUS
     };

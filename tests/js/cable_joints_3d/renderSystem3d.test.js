@@ -9,8 +9,7 @@ import {
   World,
   PositionComponent,
   RadiusComponent,
-  OrientationComponent,
-  HybridKnotAngleComponent
+  OrientationComponent
 } from '../../../src/js/cable_joints_3d/ecs.js';
 import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
 import { RenderableComponent } from '../../../src/js/cable_joints/ecs.js';
@@ -292,7 +291,6 @@ describe('RenderSystem3D cable knot markers', () => {
       world.addComponent(spool, new RadiusComponent(0.5));
       world.addComponent(spool, new CableLinkComponent(1.0, 2.0, 0.0, null, new Vector3(0, 0, 1)));
       world.addComponent(spool, new OrientationComponent(0, 0, 0, 1));
-      world.addComponent(spool, new HybridKnotAngleComponent(Math.PI / 4));
 
       const anchor = world.createEntity();
       const jointId = world.createEntity();
@@ -325,17 +323,18 @@ describe('RenderSystem3D cable knot markers', () => {
       expect(system.knotMarkers).toHaveLength(1);
 
       const marker = system.knotMarkers[0];
-      const expectedRadius = 0.6;
-      const expectedCoord = expectedRadius / Math.sqrt(2.0);
+      const expectedAngle = 0.25 / 0.6;
+      const expectedX = 1.0 + (0.6 * Math.cos(expectedAngle));
+      const expectedY = 2.0 + (0.6 * Math.sin(expectedAngle));
 
       expect(marker.visible).toBe(true);
       expect(marker.material).toBe(system.knotMarkerMaterial);
-      expect(marker.position.x).toBeCloseTo(1.0 + expectedCoord, 6);
-      expect(marker.position.y).toBeCloseTo(2.0 + expectedCoord, 6);
+      expect(marker.position.x).toBeCloseTo(expectedX, 6);
+      expect(marker.position.y).toBeCloseTo(expectedY, 6);
       expect(marker.position.z).toBeCloseTo(0.0, 6);
-      expect(marker.scale.x).toBeCloseTo(0.01, 8);
-      expect(marker.scale.y).toBeCloseTo(0.01, 8);
-      expect(marker.scale.z).toBeCloseTo(0.01, 8);
+      expect(marker.scale.x).toBeCloseTo(0.002, 8);
+      expect(marker.scale.y).toBeCloseTo(0.002, 8);
+      expect(marker.scale.z).toBeCloseTo(0.002, 8);
     } finally {
       disposeRenderSystemStub(system);
     }
