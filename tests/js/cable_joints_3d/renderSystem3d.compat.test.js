@@ -61,8 +61,8 @@ function createCompatStub() {
   system.viewScaleMultiplier = 1.0;
   system.viewOffsetX = 0.0;
   system.viewOffsetY = 0.0;
-  system.orbitMinPolarAngle = 0.01;
-  system.orbitMaxPolarAngle = Math.PI * 0.48;
+  system.orbitMinPolarAngle = 1e-6;
+  system.orbitMaxPolarAngle = Math.PI - 1e-6;
   system.orbitRotateSpeed = 1.0;
   system._baseViewTarget = new THREE.Vector3(0.0, 0.0, 0.0);
   system._fixedCameraPosition = new THREE.Vector3();
@@ -244,6 +244,18 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
 
       expect(after.distanceTo(before)).toBeGreaterThan(0.02);
       expect(system.camera.position.z).toBeGreaterThan(0.0);
+    } finally {
+      disposeCompatStub(system);
+    }
+  });
+
+  test('allows orbiting below the z=0 print plane', () => {
+    const system = createCompatStub();
+
+    try {
+      system.rotateOrbitByPixels(0, 420);
+
+      expect(system.camera.position.z).toBeLessThan(0.0);
     } finally {
       disposeCompatStub(system);
     }

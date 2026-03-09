@@ -379,8 +379,8 @@ export class RenderSystem3D {
     this.renderer.setSize(width, height, false);
 
     this.camera = new THREE.PerspectiveCamera(48, width / height, 0.01, 30.0);
-    const targetX = Number.isFinite(options.targetX) ? options.targetX : 0.5;
-    const targetY = Number.isFinite(options.targetY) ? options.targetY : 0.85;
+    const targetX = Number.isFinite(options.targetX) ? options.targetX : 0.0;
+    const targetY = Number.isFinite(options.targetY) ? options.targetY : 0.0;
     const camZ = Number.isFinite(options.cameraZ) ? options.cameraZ : 2.2;
     this.camera.position.set(targetX, targetY + 0.04, camZ);
     this.camera.lookAt(targetX, targetY, 0);
@@ -390,8 +390,8 @@ export class RenderSystem3D {
     this.viewScaleMultiplier = 1.0;
     this.viewOffsetX = 0.0;
     this.viewOffsetY = 0.0;
-    this.orbitMinPolarAngle = Number.isFinite(options.minOrbitPolarAngle) ? options.minOrbitPolarAngle : 0.01;
-    this.orbitMaxPolarAngle = Number.isFinite(options.maxOrbitPolarAngle) ? options.maxOrbitPolarAngle : (Math.PI * 0.48);
+    this.orbitMinPolarAngle = Number.isFinite(options.minOrbitPolarAngle) ? options.minOrbitPolarAngle : 1e-6;
+    this.orbitMaxPolarAngle = Number.isFinite(options.maxOrbitPolarAngle) ? options.maxOrbitPolarAngle : (Math.PI - 1e-6);
     this.orbitRotateSpeed = Number.isFinite(options.orbitRotateSpeed) ? options.orbitRotateSpeed : 1.0;
     this._setOrbitFromOffset(this._baseCameraOffset);
 

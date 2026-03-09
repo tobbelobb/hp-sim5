@@ -621,8 +621,8 @@ export function setupScene(world, stage, canvas, options = {}) {
 
       const renderSystem = new RenderSystem3D(canvas, {
           planeNormal: DEFAULT_PLANE_NORMAL,
-          targetX: 0.5 + inputSys.viewOffsetX,
-          targetY: 0.85 + inputSys.viewOffsetY,
+          targetX: 0.0,
+          targetY: 0.0,
           cameraZ: 2.2 / Math.max(0.2, inputSys.scaleMultiplier),
           controlsEnabled: false,
           renderOnSimulationStep: false

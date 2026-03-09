@@ -122,6 +122,8 @@ describe('slideprinter 3D setupScene', () => {
 
     const renderSystem = world.getResource('renderSystem');
     expect(renderSystem).toBeInstanceOf(RenderSystem3D);
+    expect(renderSystem.options.targetX).toBe(0.0);
+    expect(renderSystem.options.targetY).toBe(0.0);
     expect(renderSystem.setViewTransform).toHaveBeenCalledWith({
       scaleMultiplier: 1.1,
       offsetX: 0.0,
