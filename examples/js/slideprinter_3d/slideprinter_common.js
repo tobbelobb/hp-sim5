@@ -423,17 +423,33 @@ export class RemoteInputSystem {
         return;
       }
       event.preventDefault();
-      const baseScale = this.canvas.height / this.world.getResource('simHeight');
-      const scale = baseScale * this.scaleMultiplier;
-      if (scale <= 0) {
-        return;
+      const renderSystem = this.getRenderSystem();
+      const prevPoint = renderSystem?.projectClientToSim?.(this.panLastX, this.panLastY) ?? null;
+      const nextPoint = renderSystem?.projectClientToSim?.(event.clientX, event.clientY) ?? null;
+      let nextOffsetX = this.viewOffsetX;
+      let nextOffsetY = this.viewOffsetY;
+      if (
+        prevPoint && nextPoint
+        && Number.isFinite(prevPoint.x) && Number.isFinite(prevPoint.y)
+        && Number.isFinite(nextPoint.x) && Number.isFinite(nextPoint.y)
+      ) {
+        nextOffsetX += prevPoint.x - nextPoint.x;
+        nextOffsetY += prevPoint.y - nextPoint.y;
+      } else {
+        const baseScale = this.canvas.height / this.world.getResource('simHeight');
+        const scale = baseScale * this.scaleMultiplier;
+        if (scale <= 0) {
+          return;
+        }
+        const deltaX = event.clientX - this.panLastX;
+        const deltaY = event.clientY - this.panLastY;
+        nextOffsetX -= deltaX / scale;
+        nextOffsetY += deltaY / scale;
       }
-      const deltaX = event.clientX - this.panLastX;
-      const deltaY = event.clientY - this.panLastY;
       this.panLastX = event.clientX;
       this.panLastY = event.clientY;
-      this.viewOffsetX -= deltaX / scale;
-      this.viewOffsetY += deltaY / scale;
+      this.viewOffsetX = nextOffsetX;
+      this.viewOffsetY = nextOffsetY;
       if (this.onViewChange) {
         this.onViewChange({
           scale: this.scaleMultiplier,
@@ -1088,17 +1104,33 @@ export class InputSystem {
     }
     if (isPanPointer) {
       event.preventDefault();
-      const baseScale = this.canvas.height / this.world.getResource('simHeight');
-      const scale = baseScale * this.scaleMultiplier;
-      if (scale <= 0) {
-        return;
+      const renderSystem = this.getRenderSystem();
+      const prevPoint = renderSystem?.projectClientToSim?.(this.panLastX, this.panLastY) ?? null;
+      const nextPoint = renderSystem?.projectClientToSim?.(event.clientX, event.clientY) ?? null;
+      let nextOffsetX = this.viewOffsetX;
+      let nextOffsetY = this.viewOffsetY;
+      if (
+        prevPoint && nextPoint
+        && Number.isFinite(prevPoint.x) && Number.isFinite(prevPoint.y)
+        && Number.isFinite(nextPoint.x) && Number.isFinite(nextPoint.y)
+      ) {
+        nextOffsetX += prevPoint.x - nextPoint.x;
+        nextOffsetY += prevPoint.y - nextPoint.y;
+      } else {
+        const baseScale = this.canvas.height / this.world.getResource('simHeight');
+        const scale = baseScale * this.scaleMultiplier;
+        if (scale <= 0) {
+          return;
+        }
+        const deltaX = event.clientX - this.panLastX;
+        const deltaY = event.clientY - this.panLastY;
+        nextOffsetX -= deltaX / scale;
+        nextOffsetY += deltaY / scale;
       }
-      const deltaX = event.clientX - this.panLastX;
-      const deltaY = event.clientY - this.panLastY;
       this.panLastX = event.clientX;
       this.panLastY = event.clientY;
-      this.viewOffsetX -= deltaX / scale;
-      this.viewOffsetY += deltaY / scale;
+      this.viewOffsetX = nextOffsetX;
+      this.viewOffsetY = nextOffsetY;
       if (this.onViewChange) {
         this.onViewChange({
           scale: this.scaleMultiplier,

@@ -77,4 +77,39 @@ describe('slideprinter 3D InputSystem orbit interaction', () => {
     inputSystem.handlePointerUp(createPointerEvent(canvas, { clientX: 135, clientY: 150, pointerId: 7 }));
     expect(inputSystem.isOrbiting).toBe(false);
   });
+
+  test('pan mode follows the projected screen-plane motion', () => {
+    const world = new World();
+    const renderSystem = {
+      projectClientToSim: jest.fn((clientX, clientY) => {
+        if (clientX === 100 && clientY === 120) {
+          return { x: 1.0, y: 2.0 };
+        }
+        if (clientX === 140 && clientY === 150) {
+          return { x: -2.0, y: 5.0 };
+        }
+        return { x: 0.0, y: 0.0 };
+      }),
+      rotateOrbitByPixels: jest.fn(),
+    };
+    world.setResource('simHeight', 1.7);
+    world.setResource('renderSystem', renderSystem);
+
+    const canvas = createCanvas();
+    const inputSystem = new InputSystem(canvas, world, null);
+    const onViewChange = jest.fn();
+    inputSystem.setInteractionMode('pan');
+    inputSystem.setViewChangeListener(onViewChange);
+
+    inputSystem.handlePointerDown(createPointerEvent(canvas, { clientX: 100, clientY: 120, pointerId: 9 }));
+    inputSystem.handlePointerMove(createPointerEvent(canvas, { clientX: 140, clientY: 150, pointerId: 9 }));
+
+    expect(inputSystem.viewOffsetX).toBeCloseTo(3.0, 6);
+    expect(inputSystem.viewOffsetY).toBeCloseTo(-3.0, 6);
+    expect(onViewChange).toHaveBeenCalledWith({
+      scale: 1.0,
+      offsetX: 3.0,
+      offsetY: -3.0,
+    });
+  });
 });
