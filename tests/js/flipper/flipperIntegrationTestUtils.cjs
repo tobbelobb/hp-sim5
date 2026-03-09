@@ -47,6 +47,7 @@ async function launchFlipperPage({
   await page.evaluateOnNewDocument((vars) => {
     Object.assign(window, vars);
   }, {
+    _flipperDisableAutoLoop: true,
     _flipperSpeedScale: speedScale,
     _flipperMaxSubSteps: 500,
     ...newDocumentVars
@@ -113,7 +114,8 @@ async function runAutonomousScoreExpectation(page, {
   expectedScore = 25,
   maxSimulationSteps = 250000,
   stepChunk = 5000,
-  flipperYLine = 0.05
+  flipperYLine = 0.05,
+  stableScoreChunksRequired = 0
 } = {}) {
   await page.waitForFunction(
     () => {
@@ -138,6 +140,7 @@ async function runAutonomousScoreExpectation(page, {
 
   let settled = false;
   let stepsTaken = 0;
+  let stableScoreChunks = 0;
 
   while (stepsTaken < maxSimulationSteps) {
     const gameState = await page.evaluate(({ chunkSize }) => {
@@ -170,6 +173,16 @@ async function runAutonomousScoreExpectation(page, {
       throw new Error(`Test failed: Score exceeded ${expectedScore}. Current score: ${score}`);
     }
 
+    if (score === expectedScore) {
+      stableScoreChunks += 1;
+      if (stableScoreChunksRequired > 0 && stableScoreChunks >= stableScoreChunksRequired) {
+        settled = true;
+        break;
+      }
+    } else {
+      stableScoreChunks = 0;
+    }
+
     let allBallsBelowFlippers = balls.length > 0;
     if (balls.length > 0) {
       for (const ball of balls) {
@@ -196,7 +209,7 @@ async function runAutonomousScoreExpectation(page, {
   if (!settled) {
     const finalGameState = await page.evaluate(() => window.getGameStateForTest());
     throw new Error(
-      `Test failed: Balls did not settle below flippers within ${maxSimulationSteps} simulation steps. Final score: ${finalGameState.score}`
+      `Test failed: Balls did not settle below flippers or hold the expected score within ${maxSimulationSteps} simulation steps. Final score: ${finalGameState.score}`
     );
   }
 

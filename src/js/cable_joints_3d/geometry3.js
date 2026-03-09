@@ -55,9 +55,9 @@ export function closestPointOnSegment(p, a, b) {
   return a.clone().add(ab, t);
 }
 
-export function lineSegmentSphereIntersection(p1, p2, center, radius) {
+export function lineSegmentSphereIntersection(p1, p2, center, radius, isAPierceAnIntersection = false) {
   if (p1.distanceTo(center) <= radius || p2.distanceTo(center) <= radius) {
-    return true;
+    return isAPierceAnIntersection;
   }
   const d = new Vector3().subtractVectors(p2, p1);
   const lc = new Vector3().subtractVectors(center, p1);

@@ -18,12 +18,37 @@ export function runGame(world, setupScene, sceneData) {
     let speedSamples = [];
     const numSpeedSamples = 60;
     let frameCounter = 0;
+    const manualLoopMode = Boolean(window._flipperDisableAutoLoop);
+
+    const renderCurrentState = () => {
+        const renderSystem = world.systems.find(s => s instanceof RenderSystem);
+        if (renderSystem) {
+            renderSystem.update(world, 0);
+        }
+    };
+
+    const stepPausedFrame = () => {
+        const pauseState = world.getResource('pauseState');
+        const dt = world.getResource('dt');
+        if (!pauseState || !pauseState.paused) {
+            return;
+        }
+        pauseState.paused = false;
+        world.update(dt);
+        pauseState.paused = true;
+        doStep = false;
+        renderCurrentState();
+    };
 
     const requestSingleStep = () => {
         const pauseState = world.getResource('pauseState');
         if (pauseState && pauseState.paused) {
             doStep = true;
-            requestAnimationFrame(gameLoop);
+            if (manualLoopMode) {
+                stepPausedFrame();
+            } else {
+                requestAnimationFrame(gameLoop);
+            }
         }
     };
 
@@ -83,12 +108,10 @@ export function runGame(world, setupScene, sceneData) {
 
 
         // Always render, even if paused or if no physics step was taken.
-        const renderSystem = world.systems.find(s => s instanceof RenderSystem);
-        if (renderSystem) {
-            renderSystem.update(world, 0); // dt=0 as we only want to render
+        renderCurrentState();
+        if (!manualLoopMode) {
+            requestAnimationFrame(gameLoop);
         }
-
-        requestAnimationFrame(gameLoop);
     }
 
     pauseBtn.addEventListener('click', (e) => {
@@ -99,7 +122,9 @@ export function runGame(world, setupScene, sceneData) {
             pauseBtn.textContent = pauseState.paused ? "Resume" : "Pause";
             if (!pauseState.paused) {
                 lastTime = performance.now();
-                requestAnimationFrame(gameLoop);
+                if (!manualLoopMode) {
+                    requestAnimationFrame(gameLoop);
+                }
             }
         }
     });
@@ -122,7 +147,11 @@ export function runGame(world, setupScene, sceneData) {
         if (pauseState) pauseState.paused = true;
         pauseBtn.textContent = "Start";
         doStep = true;
-        requestAnimationFrame(gameLoop); // to render the reset state
+        if (manualLoopMode) {
+            renderCurrentState();
+        } else {
+            requestAnimationFrame(gameLoop); // to render the reset state
+        }
     });
 
     stepBtn.addEventListener('click', (e) => {
@@ -164,5 +193,9 @@ export function runGame(world, setupScene, sceneData) {
     setupScene(sceneData);
     const pauseState = world.getResource('pauseState');
     pauseBtn.textContent = pauseState.paused ? "Start" : "Pause";
-    requestAnimationFrame(gameLoop);
+    if (manualLoopMode) {
+        renderCurrentState();
+    } else {
+        requestAnimationFrame(gameLoop);
+    }
 }

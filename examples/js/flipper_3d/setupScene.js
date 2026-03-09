@@ -370,7 +370,6 @@ export function setupScene(world, stage, canvas) {
     world.registerSystem(new GravitySystem());
     world.registerSystem(new MovementSystem());
     world.registerSystem(new AngularMovementSystem());
-    world.registerSystem(new PlanarConstraintSystem3D(FLIPPER_PLANE_NORMAL, 0.0));
 
     world.registerSystem(new FlipperTipLinkSystem());
     world.registerSystem(new CableAttachmentUpdateSystem());
@@ -382,7 +381,6 @@ export function setupScene(world, stage, canvas) {
     world.registerSystem(new PBDResolveCableOverCorrections());
     world.registerSystem(new PBDUnifiedContactManifoldSystem());
     world.registerSystem(new LayerContactStaticFrictionSystem3D());
-    world.registerSystem(new PlanarConstraintSystem3D(FLIPPER_PLANE_NORMAL, 0.0));
 
     world.registerSystem(new CableFrictionSystem());
 

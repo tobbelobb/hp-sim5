@@ -17,15 +17,39 @@ export function runGame(world, setupScene, sceneData) {
   const numSpeedSamples = 60;
   let frameCounter = 0;
   const debugEnabled = Boolean(window._flipper3dDebug);
+  const manualLoopMode = Boolean(window._flipperDisableAutoLoop);
 
   function getRenderSystem() {
     return world.systems.find((system) => system instanceof RenderSystem3D);
+  }
+
+  function renderCurrentState() {
+    const renderSystem = getRenderSystem();
+    if (renderSystem) {
+      renderSystem.update(world, 0);
+    }
+  }
+
+  function stepPausedFrame() {
+    const pauseState = world.getResource('pauseState');
+    const dt = world.getResource('dt');
+    if (!pauseState || !pauseState.paused) {
+      return;
+    }
+    pauseState.paused = false;
+    world.update(dt);
+    pauseState.paused = true;
+    doStep = false;
+    renderCurrentState();
   }
 
   const requestSingleStep = () => {
     const pauseState = world.getResource('pauseState');
     if (pauseState && pauseState.paused) {
       doStep = true;
+      if (manualLoopMode) {
+        stepPausedFrame();
+      }
     }
   };
 
@@ -85,10 +109,7 @@ export function runGame(world, setupScene, sceneData) {
       speedEl.textContent = `${avgSpeed.toFixed(2)}x`;
     }
 
-    const renderSystem = getRenderSystem();
-    if (renderSystem) {
-      renderSystem.update(world, 0);
-    }
+    renderCurrentState();
   }
 
   function resetLoopTiming() {
@@ -139,6 +160,9 @@ export function runGame(world, setupScene, sceneData) {
     pauseBtn.textContent = 'Start';
     doStep = false;
     stepWhileKeyHeld = false;
+    if (manualLoopMode) {
+      renderCurrentState();
+    }
     if (debugEnabled) {
       console.debug('[flipper3d] reset', { paused: true });
     }
@@ -192,14 +216,20 @@ export function runGame(world, setupScene, sceneData) {
   const pauseState = world.getResource('pauseState');
   pauseBtn.textContent = pauseState.paused ? 'Start' : 'Pause';
 
+  if (manualLoopMode) {
+    renderCurrentState();
+    return;
+  }
+
   const renderSystem = getRenderSystem();
   if (renderSystem && typeof renderSystem.setAnimationLoop === 'function') {
     renderSystem.setAnimationLoop(gameLoop);
-  } else {
-    const rafLoop = (time) => {
-      gameLoop(time);
-      requestAnimationFrame(rafLoop);
-    };
-    requestAnimationFrame(rafLoop);
+    return;
   }
+
+  const rafLoop = (time) => {
+    gameLoop(time);
+    requestAnimationFrame(rafLoop);
+  };
+  requestAnimationFrame(rafLoop);
 }

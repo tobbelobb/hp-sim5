@@ -83,6 +83,19 @@ describe('Flipper Node Simulation', () => {
     return { balls, score };
   }
 
+  function debugStepsConfig() {
+    const maxStepsRaw = Number(process.env.FLIPPER_NODE_MAX_STEPS);
+    const maxSteps = Number.isFinite(maxStepsRaw) && maxStepsRaw > 0 ? Math.floor(maxStepsRaw) : 30000;
+    const checkpointsRaw = process.env.FLIPPER_NODE_CHECKPOINTS;
+    const checkpoints = checkpointsRaw
+      ? checkpointsRaw
+        .split(',')
+        .map((value) => Number(value.trim()))
+        .filter((value) => Number.isFinite(value) && value > 0)
+      : [500, 1000, 1500, 2000, 2500];
+    return { maxSteps, checkpoints };
+  }
+
   test('balls settle below flippers with expected score', async () => {
     const originalWarn = console.warn;
     console.warn = jest.fn(); // suppress warnings
@@ -99,13 +112,24 @@ describe('Flipper Node Simulation', () => {
     const dt = world.getResource('dt');
     let state;
     let settled = false;
-    for (let i = 0; i < 30000; i++) {
+    const checkpoints = [];
+    const { maxSteps, checkpoints: checkpointSteps } = debugStepsConfig();
+    for (let i = 0; i < maxSteps; i++) {
       world.update(dt);
       state = getGameState(world);
+      const step = i + 1;
+      if (checkpointSteps.includes(step)) {
+        checkpoints.push({ step, score: state.score });
+      }
       if (state.balls.every(b => b.y < 0.05)) {
         settled = true;
         break;
       }
+    }
+
+    if (process.env.FLIPPER_NODE_DEBUG_LOGS === '1') {
+      // eslint-disable-next-line no-console
+      console.log(JSON.stringify({ checkpoints, final: state }, null, 2));
     }
 
     console.warn = originalWarn; // restore after test

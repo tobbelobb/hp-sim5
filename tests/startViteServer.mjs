@@ -6,7 +6,16 @@ const server = await createServer({
   root: projectRoot,
   configFile: false,
   logLevel: 'error',
-  server: { port: 0, host: '127.0.0.1' },
+  server: {
+    port: 0,
+    host: '127.0.0.1',
+    watch: {
+      ignored: [
+        '**/autocal/**',
+        '**/dist-hangprinter-org/**'
+      ]
+    }
+  },
   optimizeDeps: { entries: [] }
 });
 await server.listen();

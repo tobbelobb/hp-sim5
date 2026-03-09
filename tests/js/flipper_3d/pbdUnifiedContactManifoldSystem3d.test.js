@@ -12,10 +12,13 @@ import {
 } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
 import {
   BallTagComponent,
+  FlipperTagComponent,
+  FlipperStateComponent,
   ObstacleTagComponent,
   ObstaclePushComponent,
   OverlayRadiusComponent,
-  PBDUnifiedContactManifoldSystem
+  PBDUnifiedContactManifoldSystem,
+  ScoredTagComponent
 } from '../../../examples/js/flipper_3d/flipper_common_3d.js';
 
 function makeWorld() {
@@ -133,5 +136,55 @@ describe('PBDUnifiedContactManifoldSystem (3D) pinch-share layering', () => {
     expect(contacts[0].obstacle_contact_radius).toBeCloseTo(overlayRadius + cableHalfWidth, 9);
     expect(contacts[0].raw_hit).toBe(false);
     expect(world.getComponent(ballId, PositionComponent).pos.x).toBeLessThan(0.0);
+  });
+
+  test('ball-ball exact center overlap is ignored instead of using a fallback normal', () => {
+    const world = makeWorld();
+    const leftId = addBall(world, 0.0, 0.0, 0.02);
+    const rightId = addBall(world, 0.0, 0.0, 0.02);
+
+    runManifold(world);
+
+    expect(world.getResource('ball_ball_contacts') || []).toHaveLength(0);
+    expect(world.getComponent(leftId, PositionComponent).pos.x).toBeCloseTo(0.0, 12);
+    expect(world.getComponent(leftId, PositionComponent).pos.y).toBeCloseTo(0.0, 12);
+    expect(world.getComponent(rightId, PositionComponent).pos.x).toBeCloseTo(0.0, 12);
+    expect(world.getComponent(rightId, PositionComponent).pos.y).toBeCloseTo(0.0, 12);
+  });
+
+  test('ball-obstacle exact center overlap is ignored instead of using a fallback normal', () => {
+    const world = makeWorld();
+    const ballId = addBall(world, 0.0, 0.0, 0.02);
+
+    const obstacleId = world.createEntity();
+    world.addComponent(obstacleId, new ObstacleTagComponent());
+    world.addComponent(obstacleId, new PositionComponent(0.0, 0.0, 0.0));
+    world.addComponent(obstacleId, new RadiusComponent(0.02));
+    world.addComponent(obstacleId, new ObstaclePushComponent(2.0));
+    world.addComponent(obstacleId, new CableLinkComponent(0.0, 0.0, 0.0));
+
+    runManifold(world);
+
+    expect(world.getResource('ball_obstacle_contacts') || []).toHaveLength(0);
+    expect(world.hasComponent(ballId, ScoredTagComponent)).toBe(false);
+    expect(world.getComponent(ballId, PositionComponent).pos.x).toBeCloseTo(0.0, 12);
+    expect(world.getComponent(ballId, PositionComponent).pos.y).toBeCloseTo(0.0, 12);
+  });
+
+  test('ball on flipper centerline exact closest-point overlap is ignored', () => {
+    const world = makeWorld();
+    const ballId = addBall(world, 0.5, 0.0, 0.02);
+
+    const flipperId = world.createEntity();
+    world.addComponent(flipperId, new FlipperTagComponent());
+    world.addComponent(flipperId, new PositionComponent(0.0, 0.0, 0.0));
+    world.addComponent(flipperId, new RadiusComponent(0.02));
+    world.addComponent(flipperId, new FlipperStateComponent(1.0, 0.0, Math.PI * 0.5, 1.0));
+
+    runManifold(world);
+
+    expect(world.getResource('ball_flipper_contacts') || []).toHaveLength(0);
+    expect(world.getComponent(ballId, PositionComponent).pos.x).toBeCloseTo(0.5, 12);
+    expect(world.getComponent(ballId, PositionComponent).pos.y).toBeCloseTo(0.0, 12);
   });
 });

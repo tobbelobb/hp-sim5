@@ -1492,9 +1492,14 @@ export class PBDUnifiedContactManifoldSystem {
         if (!pObs) {
           continue;
         }
+        const delta = pBall.clone().subtract(pObs);
+        const dSq = delta.lengthSq();
+        if (dSq <= 1e-12) {
+          continue;
+        }
         const planeNormal = entityPlaneNormal(world, ballId);
-        const normal = _normalizedDirection(pBall.clone().subtract(pObs), planeNormal);
-        const d = pBall.distanceTo(pObs);
+        const d = Math.sqrt(dSq);
+        const normal = delta.scale(1.0 / d);
         const betweenHalfWidth = (
           pinchShareEnabled &&
           cableJointSegments &&
@@ -1578,9 +1583,14 @@ export class PBDUnifiedContactManifoldSystem {
         }
         const tip = _flipperTipFromState(pFlip, flipperState);
         const closest = closestPointOnSegment(pBall, pFlip, tip);
+        const delta = pBall.clone().subtract(closest);
+        const dSq = delta.lengthSq();
+        if (dSq <= 1e-12) {
+          continue;
+        }
         const planeNormal = flipperState.planeNormal ?? DEFAULT_PLANE_NORMAL;
-        const normal = _normalizedDirection(pBall.clone().subtract(closest), planeNormal);
-        const d = pBall.distanceTo(closest);
+        const d = Math.sqrt(dSq);
+        const normal = delta.scale(1.0 / d);
         const broadBall = useSectorSupports ? getMaxCollisionRadius(world, ballId) : _getBaseCollisionRadius(world, ballId);
         const broadFlipper = useSectorSupports ? getMaxCollisionRadius(world, flipId) : _getBaseCollisionRadius(world, flipId);
         if (d > broadBall + broadFlipper + 1e-9) {
@@ -1618,9 +1628,14 @@ export class PBDUnifiedContactManifoldSystem {
         if (!pOther) {
           continue;
         }
+        const normalAB = pOther.clone().subtract(pBall);
+        const dSq = normalAB.lengthSq();
+        if (dSq <= 1e-12) {
+          continue;
+        }
         const planeNormal = entityPlaneNormal(world, ballId);
-        const normalAB = _normalizedDirection(pOther.clone().subtract(pBall), planeNormal);
-        const d = pBall.distanceTo(pOther);
+        const d = Math.sqrt(dSq);
+        normalAB.scale(1.0 / d);
         const betweenHalfWidth = (
           pinchShareEnabled &&
           cableJointSegments &&

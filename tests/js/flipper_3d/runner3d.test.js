@@ -118,4 +118,45 @@ describe('runGame 3D paused stepping', () => {
 
     expect(world.update.mock.calls.length).toBe(callsWhileHeld);
   });
+
+  test('manual loop mode skips auto animation loop setup and steps immediately', () => {
+    const elements = {
+      pauseBtn: createEventTarget('Pause'),
+      resetBtn: createEventTarget('Reset'),
+      stepBtn: createEventTarget('Step'),
+      dumpBtn: createEventTarget('Dump State'),
+      dt: createEventTarget('N/A'),
+      speed: createEventTarget('N/A')
+    };
+    const documentMock = createDocument(elements);
+    global.document = documentMock;
+    global.window = { _flipper3dDebug: false, _flipperDisableAutoLoop: true };
+    global.performance = { now: () => 1000 };
+
+    const renderSystem = Object.create(RenderSystem3D.prototype);
+    renderSystem.update = jest.fn();
+    renderSystem.setAnimationLoop = jest.fn();
+
+    const resources = new Map([
+      ['dt', 0.01],
+      ['pauseState', { paused: true }]
+    ]);
+    const world = {
+      systems: [renderSystem],
+      getResource(key) {
+        return resources.get(key);
+      },
+      update: jest.fn()
+    };
+
+    runGame(world, () => {}, null);
+
+    expect(renderSystem.setAnimationLoop).not.toHaveBeenCalled();
+    expect(renderSystem.update).toHaveBeenCalledTimes(1);
+
+    elements.stepBtn.emit('click');
+
+    expect(world.update).toHaveBeenCalledTimes(1);
+    expect(world.getResource('pauseState').paused).toBe(true);
+  });
 });
