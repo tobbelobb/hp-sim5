@@ -33,4 +33,4 @@ autocal/data/old_data/
 human_docs/old_debugging_conversations/
 autocal/data/.regress_parallel_runs/
 autocal/data/.analysis/
-
+autocal/data/fine_old_datasets/
