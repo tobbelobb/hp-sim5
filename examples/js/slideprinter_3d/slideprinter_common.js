@@ -545,6 +545,8 @@ export class InputSystem {
     this.orbitLastX = 0;
     this.orbitLastY = 0;
     this.onViewChange = null;
+    this.grabPlanePoint = null;
+    this.grabPlaneNormal = null;
     this.canvas.setAttribute('tabindex', '0');
     this.canvas.style.outline = 'none';
     this.canvas.focus();
@@ -600,6 +602,42 @@ export class InputSystem {
     };
   }
 
+  getCameraPlaneNormal() {
+    const renderSystem = this.getRenderSystem();
+    if (renderSystem && typeof renderSystem.getCameraPlaneNormal === 'function') {
+      const normal = renderSystem.getCameraPlaneNormal();
+      if (normal && Number.isFinite(normal.x) && Number.isFinite(normal.y) && Number.isFinite(normal.z)) {
+        return new Vector3(normal.x, normal.y, normal.z);
+      }
+    }
+    return DEFAULT_PLANE_NORMAL.clone();
+  }
+
+  projectClientToPlane(clientX, clientY, planePoint, planeNormal = null) {
+    const renderSystem = this.getRenderSystem();
+    if (renderSystem && typeof renderSystem.projectClientToPlane === 'function') {
+      const projected = renderSystem.projectClientToPlane(clientX, clientY, planePoint, planeNormal);
+      if (
+        projected
+        && Number.isFinite(projected.x)
+        && Number.isFinite(projected.y)
+        && Number.isFinite(projected.z)
+      ) {
+        return new Vector3(projected.x, projected.y, projected.z);
+      }
+    }
+
+    const projected = this.projectClientToSim(clientX, clientY);
+    if (!projected) {
+      return null;
+    }
+    return new Vector3(
+      projected.x,
+      projected.y,
+      Number.isFinite(planePoint?.z) ? planePoint.z : 0.0
+    );
+  }
+
   setViewTransform({ scaleMultiplier, offsetX, offsetY }) {
     if (typeof scaleMultiplier === 'number') {
       this.scaleMultiplier = scaleMultiplier;
@@ -636,6 +674,8 @@ export class InputSystem {
       this.canvas.style.touchAction = this.touchActionBeforeGrab;
       this.touchActionBeforeGrab = null;
     }
+    this.grabPlanePoint = null;
+    this.grabPlaneNormal = null;
     if (this.grabSpring) {
       const { ptrE, jointE, pathE } = this.grabSpring;
       this.world.destroyEntity(pathE);
@@ -925,6 +965,7 @@ export class InputSystem {
     }
 
     const { x: simX, y: simY } = this.projectClientToSim(event.clientX, event.clientY);
+    const cameraPlaneNormal = this.getCameraPlaneNormal();
 
     const cmOnScreen = (event.pointerType === 'touch' || event.pointerType === 'pen') ? 1.5 : 1.0;
     const dpi = 96;
@@ -935,19 +976,26 @@ export class InputSystem {
 
     let closestBall = null;
     let closestDistSq = Infinity;
+    let closestPointerPos = null;
     for (const entityId of this.world.query([SpoolTagComponent, PositionComponent, RadiusComponent])) {
       const pos = this.world.getComponent(entityId, PositionComponent)?.pos;
       const radius = this.world.getComponent(entityId, RadiusComponent)?.radius;
       if (!pos || !Number.isFinite(radius)) {
         continue;
       }
-      const dx = simX - pos.x;
-      const dy = simY - pos.y;
-      const distSq = dx * dx + dy * dy;
+      const pointerPos = this.projectClientToPlane(event.clientX, event.clientY, pos, cameraPlaneNormal);
+      if (!pointerPos) {
+        continue;
+      }
+      const dx = pointerPos.x - pos.x;
+      const dy = pointerPos.y - pos.y;
+      const dz = pointerPos.z - pos.z;
+      const distSq = dx * dx + dy * dy + dz * dz;
       const limit = radius + extraClickableRadius;
       if (distSq <= limit * limit && distSq < closestDistSq) {
         closestBall = entityId;
         closestDistSq = distSq;
+        closestPointerPos = pointerPos;
       }
     }
 
@@ -973,8 +1021,12 @@ export class InputSystem {
       this.canvas.style.touchAction = 'none';
     }
 
-    const ptrPos = new Vector3(simX, simY, 0.0);
     const ballPos = this.world.getComponent(closestBall, PositionComponent).pos.clone();
+    const ptrPos = closestPointerPos
+      ? closestPointerPos.clone()
+      : new Vector3(simX, simY, ballPos.z);
+    this.grabPlanePoint = ballPos.clone();
+    this.grabPlaneNormal = cameraPlaneNormal.clone();
 
     const ptrE = this.world.createEntity();
     this.world.addComponent(ptrE, new PositionComponent(ptrPos.x, ptrPos.y, ptrPos.z));
@@ -983,7 +1035,7 @@ export class InputSystem {
     const jointE = this.world.createEntity();
     this.world.addComponent(
       jointE,
-      CableJointComponent.fromWorld(this.world, closestBall, ptrE, 0.1, ballPos, ptrPos)
+      CableJointComponent.fromWorld(closestBall, ptrE, 0.1, ballPos, ptrPos)
     );
     this.world.addComponent(jointE, new RenderableComponent('line', '#888888'));
 
@@ -1073,6 +1125,8 @@ export class InputSystem {
       this.world.destroyEntity(jointE);
       this.world.destroyEntity(ptrE);
       this.grabSpring = null;
+      this.grabPlanePoint = null;
+      this.grabPlaneNormal = null;
       this.world.setResource('grabbedBall', null);
       if (this.touchActionBeforeGrab !== null && this.interactionMode !== 'pan') {
         this.canvas.style.touchAction = this.touchActionBeforeGrab;
@@ -1158,11 +1212,17 @@ export class InputSystem {
     }
 
     event.preventDefault();
-    const { x: simX, y: simY } = this.projectClientToSim(event.clientX, event.clientY);
+    const projected = this.grabPlanePoint && this.grabPlaneNormal
+      ? this.projectClientToPlane(event.clientX, event.clientY, this.grabPlanePoint, this.grabPlaneNormal)
+      : null;
+    const nextPos = projected ?? (() => {
+      const { x, y } = this.projectClientToSim(event.clientX, event.clientY);
+      return new Vector3(x, y, this.grabPlanePoint?.z ?? 0.0);
+    })();
     const { ptrE } = this.grabSpring;
     const pos = this.world.getComponent(ptrE, PositionComponent)?.pos;
     if (pos) {
-      pos.set(new Vector3(simX, simY, 0.0));
+      pos.set(nextPos);
     }
   }
 }

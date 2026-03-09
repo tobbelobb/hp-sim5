@@ -652,6 +652,8 @@ export class RenderSystem3D {
     this._raycaster = new THREE.Raycaster();
     this._rayNdc = new THREE.Vector2();
     this._rayPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    this._rayPlaneNormal = new THREE.Vector3(0, 0, 1);
+    this._rayPlanePoint = new THREE.Vector3();
     this._rayHit = new THREE.Vector3();
 
     this._lastWidth = width;
@@ -873,16 +875,64 @@ export class RenderSystem3D {
     return this._projectCanvasToSim(clientX - rect.left, clientY - rect.top);
   }
 
+  getCameraPlaneNormal() {
+    this.camera.getWorldDirection(this._rayPlaneNormal);
+    return new Vector3(
+      this._rayPlaneNormal.x,
+      this._rayPlaneNormal.y,
+      this._rayPlaneNormal.z
+    );
+  }
+
+  projectClientToPlane(clientX, clientY, planePoint, planeNormal = null) {
+    const rect = this.canvas.getBoundingClientRect();
+    if (!rect || rect.width <= 0 || rect.height <= 0) {
+      return null;
+    }
+    return this._projectCanvasToPlane(clientX - rect.left, clientY - rect.top, planePoint, planeNormal);
+  }
+
+  projectCanvasToPlane(pixelX, pixelY, planePoint, planeNormal = null) {
+    return this._projectCanvasToPlane(pixelX, pixelY, planePoint, planeNormal);
+  }
+
   projectCanvasToSim(pixelX, pixelY) {
     return this._projectCanvasToSim(pixelX, pixelY);
   }
 
   _projectCanvasToSim(pixelX, pixelY) {
+    return this._projectCanvasToPlane(
+      pixelX,
+      pixelY,
+      { x: 0.0, y: 0.0, z: 0.0 },
+      { x: 0.0, y: 0.0, z: 1.0 }
+    );
+  }
+
+  _projectCanvasToPlane(pixelX, pixelY, planePoint, planeNormal = null) {
+    if (!planePoint) {
+      return null;
+    }
     const width = Math.max(1, this.canvas.width || this.canvas.clientWidth || 1);
     const height = Math.max(1, this.canvas.height || this.canvas.clientHeight || 1);
     this._rayNdc.x = (pixelX / width) * 2 - 1;
     this._rayNdc.y = -(pixelY / height) * 2 + 1;
     this._raycaster.setFromCamera(this._rayNdc, this.camera);
+
+    const normalX = planeNormal?.x ?? 0.0;
+    const normalY = planeNormal?.y ?? 0.0;
+    const normalZ = planeNormal?.z ?? 1.0;
+    this._rayPlaneNormal.set(normalX, normalY, normalZ);
+    if (this._rayPlaneNormal.lengthSq() <= EPSILON) {
+      return null;
+    }
+    this._rayPlaneNormal.normalize();
+    this._rayPlanePoint.set(
+      planePoint.x ?? 0.0,
+      planePoint.y ?? 0.0,
+      planePoint.z ?? 0.0
+    );
+    this._rayPlane.setFromNormalAndCoplanarPoint(this._rayPlaneNormal, this._rayPlanePoint);
 
     const hit = this._raycaster.ray.intersectPlane(this._rayPlane, this._rayHit);
     if (!hit) {

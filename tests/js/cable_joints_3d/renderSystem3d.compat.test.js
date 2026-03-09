@@ -21,6 +21,14 @@ function createCompatStub() {
     clientHeight: 480,
     width: 640,
     height: 480,
+    getBoundingClientRect() {
+      return {
+        left: 0,
+        top: 0,
+        width: this.clientWidth,
+        height: this.clientHeight,
+      };
+    },
   };
   system.referenceColor = '#1e90ff';
   system.referencePaths = [];
@@ -89,9 +97,22 @@ function createCompatStub() {
   system.clearPositionTrace = RenderSystem3D.prototype.clearPositionTrace;
   system.clearPositionTraceMarkers = RenderSystem3D.prototype.clearPositionTraceMarkers;
   system.clearExtrusions = RenderSystem3D.prototype.clearExtrusions;
+  system.getCameraPlaneNormal = RenderSystem3D.prototype.getCameraPlaneNormal;
+  system.projectClientToPlane = RenderSystem3D.prototype.projectClientToPlane;
+  system.projectCanvasToPlane = RenderSystem3D.prototype.projectCanvasToPlane;
+  system.projectClientToSim = RenderSystem3D.prototype.projectClientToSim;
+  system.projectCanvasToSim = RenderSystem3D.prototype.projectCanvasToSim;
+  system._projectCanvasToSim = RenderSystem3D.prototype._projectCanvasToSim;
+  system._projectCanvasToPlane = RenderSystem3D.prototype._projectCanvasToPlane;
   system._baseCameraDistance = 2.2;
   system.orbitAzimuth = -Math.PI * 0.25;
   system.orbitPolar = 1.05;
+  system._raycaster = new THREE.Raycaster();
+  system._rayNdc = new THREE.Vector2();
+  system._rayPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+  system._rayPlaneNormal = new THREE.Vector3(0, 0, 1);
+  system._rayPlanePoint = new THREE.Vector3();
+  system._rayHit = new THREE.Vector3();
   system._applyCameraFromViewTransform();
   return system;
 }
@@ -272,6 +293,24 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
       system.rotateOrbitByPixels(0, -420);
 
       expect(system.camera.position.z).toBeLessThan(0.0);
+    } finally {
+      disposeCompatStub(system);
+    }
+  });
+
+  test('projects client rays onto a camera-parallel drag plane', () => {
+    const system = createCompatStub();
+
+    try {
+      const planeNormal = system.getCameraPlaneNormal();
+      const centerRayDirection = new THREE.Vector3(planeNormal.x, planeNormal.y, planeNormal.z);
+      const planePoint = system.camera.position.clone().add(centerRayDirection.clone().multiplyScalar(1.25));
+      const projected = system.projectClientToPlane(320, 240, planePoint, planeNormal);
+
+      expect(projected).not.toBeNull();
+      expect(projected.x).toBeCloseTo(planePoint.x, 6);
+      expect(projected.y).toBeCloseTo(planePoint.y, 6);
+      expect(projected.z).toBeCloseTo(planePoint.z, 6);
     } finally {
       disposeCompatStub(system);
     }

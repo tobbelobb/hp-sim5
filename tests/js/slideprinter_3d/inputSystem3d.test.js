@@ -1,5 +1,12 @@
-import { InputSystem } from '../../../examples/js/slideprinter_3d/slideprinter_common.js';
-import { World } from '../../../src/js/cable_joints_3d/ecs.js';
+import {
+  InputSystem,
+  SpoolTagComponent,
+} from '../../../examples/js/slideprinter_3d/slideprinter_common.js';
+import {
+  World,
+  PositionComponent,
+  RadiusComponent,
+} from '../../../src/js/cable_joints_3d/ecs.js';
 
 function createCanvas() {
   return {
@@ -111,5 +118,55 @@ describe('slideprinter 3D InputSystem orbit interaction', () => {
       offsetX: 3.0,
       offsetY: -3.0,
     });
+  });
+
+  test('grabs a spool without orbiting and moves it on a camera-parallel drag plane', () => {
+    const world = new World();
+    const renderSystem = {
+      getCameraPlaneNormal: jest.fn(() => ({ x: 0.0, y: 0.0, z: 1.0 })),
+      projectClientToPlane: jest.fn((clientX, clientY, planePoint) => {
+        if (clientX === 100 && clientY === 120) {
+          return { x: planePoint.x + 0.01, y: planePoint.y - 0.02, z: planePoint.z };
+        }
+        if (clientX === 140 && clientY === 160) {
+          return { x: planePoint.x + 0.08, y: planePoint.y + 0.03, z: planePoint.z + 0.15 };
+        }
+        return { x: planePoint.x, y: planePoint.y, z: planePoint.z };
+      }),
+      projectClientToSim: jest.fn(() => ({ x: 0.0, y: 0.0 })),
+      rotateOrbitByPixels: jest.fn(),
+    };
+    world.setResource('simHeight', 1.7);
+    world.setResource('renderSystem', renderSystem);
+    world.setResource('grabbedBall', null);
+
+    const spoolId = world.createEntity();
+    world.addComponent(spoolId, new SpoolTagComponent());
+    world.addComponent(spoolId, new PositionComponent(0.4, 0.5, 0.2));
+    world.addComponent(spoolId, new RadiusComponent(0.05));
+
+    const canvas = createCanvas();
+    const inputSystem = new InputSystem(canvas, world, null);
+
+    expect(() => {
+      inputSystem.handlePointerDown(createPointerEvent(canvas, { clientX: 100, clientY: 120, pointerId: 11 }));
+    }).not.toThrow();
+
+    expect(inputSystem.isOrbiting).toBe(false);
+    expect(inputSystem.grabSpring?.ballE).toBe(spoolId);
+    expect(world.getResource('grabbedBall')).toBe(spoolId);
+    expect(inputSystem.grabPlanePoint).toEqual(expect.objectContaining({ x: 0.4, y: 0.5, z: 0.2 }));
+
+    const ptrPos = world.getComponent(inputSystem.grabSpring.ptrE, PositionComponent)?.pos;
+    expect(ptrPos?.x).toBeCloseTo(0.41, 6);
+    expect(ptrPos?.y).toBeCloseTo(0.48, 6);
+    expect(ptrPos?.z).toBeCloseTo(0.2, 6);
+
+    inputSystem.handlePointerMove(createPointerEvent(canvas, { clientX: 140, clientY: 160, pointerId: 11 }));
+
+    expect(renderSystem.rotateOrbitByPixels).not.toHaveBeenCalled();
+    expect(ptrPos?.x).toBeCloseTo(0.48, 6);
+    expect(ptrPos?.y).toBeCloseTo(0.53, 6);
+    expect(ptrPos?.z).toBeCloseTo(0.35, 6);
   });
 });
