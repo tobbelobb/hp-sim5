@@ -25,6 +25,7 @@ const ORIENTATION_BACK_COLOR = '#2a3542';
 const KNOT_MARKER_COLOR = '#ff3b30';
 const KNOT_MARKER_RADIUS = 0.01;
 const KNOT_SPAN = Math.PI / 30.0;
+const DEFAULT_BACKGROUND_COLOR = 0x1b2b3c;
 
 function buildPlaneBasis(planeNormal) {
   const n = planeNormal.clone();
@@ -287,6 +288,20 @@ function disposeObject(obj) {
 }
 
 export class RenderSystem3D {
+  static createDefaultLightingGroup() {
+    const lights = new THREE.Group();
+    lights.add(new THREE.AmbientLight(0x7a92b0, 1.1));
+    const key = new THREE.DirectionalLight(0xf1f9ff, 1.1);
+    key.position.set(1.8, 2.6, 2.8);
+    lights.add(key);
+    const skyLight = new THREE.HemisphereLight(0xa6caff, 0x27303c, 0.35);
+    lights.add(skyLight);
+    return lights;
+  }
+
+  static get DEFAULT_BACKGROUND_COLOR() {
+    return DEFAULT_BACKGROUND_COLOR;
+  }
   runInPause = true;
 
   constructor(canvas, options = {}) {
@@ -299,7 +314,7 @@ export class RenderSystem3D {
     this.defaultPlaneNormal = options.planeNormal ? options.planeNormal.clone().normalize() : DEFAULT_PLANE_NORMAL.clone();
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(options.backgroundColor ?? 0x0f141c);
+    this.scene.background = new THREE.Color(options.backgroundColor ?? RenderSystem3D.DEFAULT_BACKGROUND_COLOR);
 
     this.renderer = new THREE.WebGLRenderer({
       canvas,
@@ -371,15 +386,11 @@ export class RenderSystem3D {
     this._fixedCameraPosition = this.camera.position.clone();
     this._fixedCameraQuaternion = this.camera.quaternion.clone();
 
-    const lights = new THREE.Group();
-    lights.add(new THREE.AmbientLight(0x5f7389, 0.8));
-    const key = new THREE.DirectionalLight(0xe8f5ff, 1.0);
-    key.position.set(1.8, 2.6, 2.8);
-    lights.add(key);
+    const lights = RenderSystem3D.createDefaultLightingGroup();
     this.scene.add(lights);
 
     this.boardMaterial = new THREE.MeshStandardMaterial({
-      color: 0x1c2430,
+      color: 0x212c3a,
       roughness: 0.92,
       metalness: 0.04
     });
