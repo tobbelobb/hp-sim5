@@ -43,16 +43,16 @@
       font-family: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
       touch-action: none;
       -webkit-tap-highlight-color: transparent;
-      display: grid;
-      place-items: center;
     }
 
     #gameContainer {
-      width: min(96vw, 1020px);
-      height: min(96dvh, 940px);
+      width: 100vw;
+      height: 100dvh;
+      padding: clamp(8px, 1.2vw, 14px);
+      box-sizing: border-box;
       display: grid;
-      grid-template-rows: auto 1fr;
-      gap: 10px;
+      grid-template-rows: min-content minmax(0, 1fr);
+      gap: 8px;
       min-height: 0;
       overflow: hidden;
     }
@@ -134,6 +134,7 @@
         width: 100vw;
         height: 100dvh;
         gap: 0;
+        padding: 0;
       }
 
       #controls {

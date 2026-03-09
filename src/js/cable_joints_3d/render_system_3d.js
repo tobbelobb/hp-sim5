@@ -20,10 +20,7 @@ const ARC_SEGMENTS = 48;
 const SLACK_COLOR = '#ff9f43';
 const DEFAULT_CABLE_COLOR = '#ffd34d';
 const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
-const ORIENTATION_HELPER_LENGTH = 1.5;
-const ORIENTATION_HELPER_DARK_COLOR = '#111111';
-const ORIENTATION_HELPER_LIGHT_COLOR = '#f5f8ff';
-const ORIENTATION_HELPER_COLOR_SAMPLE = new THREE.Color();
+const ORIENTATION_BACK_COLOR = '#2a3542';
 
 function buildPlaneBasis(planeNormal) {
   const n = planeNormal.clone();
@@ -171,6 +168,25 @@ function setMaterialColor(material, color) {
   material.userData.__color = color;
 }
 
+function createDualColorSphereGeometry(baseGeometry, primaryColor, secondaryColor = ORIENTATION_BACK_COLOR) {
+  const geometry = baseGeometry.clone();
+  const positions = geometry.attributes.position;
+  const colors = new Float32Array(positions.count * 3);
+  const primary = new THREE.Color(primaryColor);
+  const secondary = new THREE.Color(secondaryColor);
+
+  for (let i = 0; i < positions.count; i += 1) {
+    const source = positions.getX(i) >= 0 ? primary : secondary;
+    const idx = i * 3;
+    colors[idx] = source.r;
+    colors[idx + 1] = source.g;
+    colors[idx + 2] = source.b;
+  }
+
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  return geometry;
+}
+
 function disposeObject(obj) {
   if (!obj) return;
   obj.traverse((child) => {
@@ -296,11 +312,15 @@ export class RenderSystem3D {
 
     this.sharedSphereGeometry = new THREE.SphereGeometry(1, 24, 16);
     this.sharedFlipperBarGeometry = new THREE.BoxGeometry(1, 1, 1);
-    this.sharedOrientationGeometry = this._createOrientationHelperGeometry();
+    this.orientedSphereGeometryCache = new Map();
 
     this.sphereMaterialCache = new Map();
     this.flipperMaterialCache = new Map();
-    this.orientationHelperMaterialCache = new Map();
+    this.orientedSphereMaterial = new THREE.MeshStandardMaterial({
+      vertexColors: true,
+      roughness: 0.42,
+      metalness: 0.1
+    });
 
     this.circleMeshes = new Map();
     this.flipperMeshes = new Map();
@@ -527,14 +547,15 @@ export class RenderSystem3D {
     }
     this.flipperMaterialCache.clear();
 
-    for (const material of this.orientationHelperMaterialCache.values()) {
-      material.dispose();
+    for (const geometry of this.orientedSphereGeometryCache.values()) {
+      geometry.dispose();
     }
-    this.orientationHelperMaterialCache.clear();
+    this.orientedSphereGeometryCache.clear();
+
+    this.orientedSphereMaterial.dispose();
 
     this.sharedSphereGeometry.dispose();
     this.sharedFlipperBarGeometry.dispose();
-    this.sharedOrientationGeometry.dispose();
 
     disposeObject(this.board);
 
@@ -668,7 +689,17 @@ export class RenderSystem3D {
         this.root.add(mesh);
       }
 
-      const material = this._getSphereMaterial(renderComp.color);
+      const orientationComp = world.getComponent(entityId, OrientationComponent);
+      const geometry = orientationComp?.quaternion
+        ? this._getOrientedSphereGeometry(renderComp?.color)
+        : this.sharedSphereGeometry;
+      if (mesh.geometry !== geometry) {
+        mesh.geometry = geometry;
+      }
+
+      const material = orientationComp?.quaternion
+        ? this.orientedSphereMaterial
+        : this._getSphereMaterial(renderComp.color);
       if (mesh.material !== material) {
         mesh.material = material;
       }
@@ -676,17 +707,11 @@ export class RenderSystem3D {
       mesh.position.set(pos.x, pos.y, pos.z);
       mesh.scale.set(radius, radius, radius);
 
-      const orientationComp = world.getComponent(entityId, OrientationComponent);
       if (orientationComp?.quaternion) {
         const q = orientationComp.quaternion;
         mesh.quaternion.set(q.x, q.y, q.z, q.w);
-        this._ensureOrientationHelper(mesh, renderComp?.color);
       } else {
         mesh.quaternion.identity();
-        const helper = mesh.userData.orientationHelper;
-        if (helper) {
-          helper.visible = false;
-        }
       }
     }
 
@@ -992,50 +1017,14 @@ export class RenderSystem3D {
     }
   }
 
-  _createOrientationHelperGeometry() {
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute(
-      'position',
-      new THREE.BufferAttribute(new Float32Array([0, 0, 0, ORIENTATION_HELPER_LENGTH, 0, 0]), 3)
-    );
+  _getOrientedSphereGeometry(color) {
+    const key = typeof color === 'string' && color.length > 0 ? color : '#a0a0a0';
+    let geometry = this.orientedSphereGeometryCache.get(key);
+    if (!geometry) {
+      geometry = createDualColorSphereGeometry(this.sharedSphereGeometry, key);
+      this.orientedSphereGeometryCache.set(key, geometry);
+    }
     return geometry;
-  }
-
-  _getOrientationHelperMaterial(color) {
-    ORIENTATION_HELPER_COLOR_SAMPLE.set(typeof color === 'string' && color.length > 0 ? color : '#a0a0a0');
-    const luminance = (
-      (0.2126 * ORIENTATION_HELPER_COLOR_SAMPLE.r) +
-      (0.7152 * ORIENTATION_HELPER_COLOR_SAMPLE.g) +
-      (0.0722 * ORIENTATION_HELPER_COLOR_SAMPLE.b)
-    );
-    const key = luminance > 0.58 ? 'dark' : 'light';
-
-    let material = this.orientationHelperMaterialCache.get(key);
-    if (!material) {
-      material = new THREE.LineBasicMaterial({
-        color: key === 'dark' ? ORIENTATION_HELPER_DARK_COLOR : ORIENTATION_HELPER_LIGHT_COLOR
-      });
-      this.orientationHelperMaterialCache.set(key, material);
-    }
-    return material;
-  }
-
-  _ensureOrientationHelper(mesh, color) {
-    let helper = mesh.userData.orientationHelper;
-    const material = this._getOrientationHelperMaterial(color);
-
-    if (!helper) {
-      helper = new THREE.Line(this.sharedOrientationGeometry, material);
-      helper.frustumCulled = false;
-      helper.userData.isOrientationHelper = true;
-      mesh.add(helper);
-      mesh.userData.orientationHelper = helper;
-    } else if (helper.material !== material) {
-      helper.material = material;
-    }
-
-    helper.visible = true;
-    return helper;
   }
 
   _getSphereMaterial(color) {

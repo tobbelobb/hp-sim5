@@ -13,19 +13,26 @@ import {
 } from '../../../src/js/cable_joints_3d/ecs.js';
 import { RenderableComponent } from '../../../src/js/cable_joints/ecs.js';
 
+const ORIENTATION_BACK_COLOR = new THREE.Color('#2a3542');
+const ORIENTATION_FRONT_COLOR = new THREE.Color('#dddddd');
+
 function createRenderSystemStub() {
   const system = Object.create(RenderSystem3D.prototype);
   system.root = new THREE.Group();
   system.sharedSphereGeometry = new THREE.SphereGeometry(1, 12, 8);
-  system.sharedOrientationGeometry = RenderSystem3D.prototype._createOrientationHelperGeometry.call(system);
   system.sphereMaterialCache = new Map();
-  system.orientationHelperMaterialCache = new Map();
+  system.flipperMaterialCache = new Map();
+  system.orientedSphereGeometryCache = new Map();
+  system.orientedSphereMaterial = new THREE.MeshStandardMaterial({
+    vertexColors: true,
+    roughness: 0.42,
+    metalness: 0.1
+  });
   system.circleMeshes = new Map();
   system._activeCircleIds = new Set();
 
   system._getSphereMaterial = RenderSystem3D.prototype._getSphereMaterial;
-  system._getOrientationHelperMaterial = RenderSystem3D.prototype._getOrientationHelperMaterial;
-  system._ensureOrientationHelper = RenderSystem3D.prototype._ensureOrientationHelper;
+  system._getOrientedSphereGeometry = RenderSystem3D.prototype._getOrientedSphereGeometry;
 
   return system;
 }
@@ -38,17 +45,32 @@ function disposeRenderSystemStub(system) {
   }
   system.sphereMaterialCache.clear();
 
-  for (const material of system.orientationHelperMaterialCache.values()) {
-    material.dispose();
+  for (const geometry of system.orientedSphereGeometryCache.values()) {
+    geometry.dispose();
   }
-  system.orientationHelperMaterialCache.clear();
+  system.orientedSphereGeometryCache.clear();
 
+  system.orientedSphereMaterial.dispose();
   system.sharedSphereGeometry.dispose();
-  system.sharedOrientationGeometry.dispose();
 }
 
-describe('RenderSystem3D orientation helpers', () => {
-  test('adds a shared visible line helper only for circles with OrientationComponent', () => {
+function findVertexColor(geometry, predicate) {
+  const positionAttr = geometry.attributes.position;
+  const colorAttr = geometry.attributes.color;
+  for (let i = 0; i < positionAttr.count; i += 1) {
+    if (predicate(positionAttr.getX(i))) {
+      return new THREE.Color(
+        colorAttr.getX(i),
+        colorAttr.getY(i),
+        colorAttr.getZ(i)
+      );
+    }
+  }
+  return null;
+}
+
+describe('RenderSystem3D oriented circles', () => {
+  test('renders OrientationComponent circles with cached half-and-half surface colors', () => {
     const system = createRenderSystemStub();
 
     try {
@@ -76,25 +98,32 @@ describe('RenderSystem3D orientation helpers', () => {
       const meshA = system.circleMeshes.get(orientedA);
       const meshB = system.circleMeshes.get(orientedB);
       const plainMesh = system.circleMeshes.get(plainCircle);
-      const helperA = meshA.userData.orientationHelper;
-      const helperB = meshB.userData.orientationHelper;
+      const geometryA = meshA.geometry;
+      const geometryB = meshB.geometry;
+      const positiveXColor = findVertexColor(geometryA, (x) => x > 0.01);
+      const negativeXColor = findVertexColor(geometryA, (x) => x < -0.01);
 
-      expect(helperA).toBeInstanceOf(THREE.Line);
-      expect(helperB).toBeInstanceOf(THREE.Line);
-      expect(helperA.visible).toBe(true);
-      expect(helperB.visible).toBe(true);
-      expect(helperA.geometry).toBe(system.sharedOrientationGeometry);
-      expect(helperB.geometry).toBe(system.sharedOrientationGeometry);
-      expect(helperA.material).toBe(helperB.material);
-      expect(meshA.children).toContain(helperA);
-      expect(meshB.children).toContain(helperB);
-      expect(plainMesh.userData.orientationHelper).toBeUndefined();
+      expect(meshA.material).toBe(system.orientedSphereMaterial);
+      expect(meshB.material).toBe(system.orientedSphereMaterial);
+      expect(geometryA).toBe(geometryB);
+      expect(geometryA).not.toBe(system.sharedSphereGeometry);
+      expect(geometryA.attributes.color).toBeDefined();
+      expect(positiveXColor.r).toBeCloseTo(ORIENTATION_FRONT_COLOR.r, 6);
+      expect(positiveXColor.g).toBeCloseTo(ORIENTATION_FRONT_COLOR.g, 6);
+      expect(positiveXColor.b).toBeCloseTo(ORIENTATION_FRONT_COLOR.b, 6);
+      expect(negativeXColor.r).toBeCloseTo(ORIENTATION_BACK_COLOR.r, 6);
+      expect(negativeXColor.g).toBeCloseTo(ORIENTATION_BACK_COLOR.g, 6);
+      expect(negativeXColor.b).toBeCloseTo(ORIENTATION_BACK_COLOR.b, 6);
+
+      expect(plainMesh.geometry).toBe(system.sharedSphereGeometry);
+      expect(plainMesh.material).not.toBe(system.orientedSphereMaterial);
 
       world.removeComponent(orientedA, OrientationComponent);
       RenderSystem3D.prototype._syncCircles.call(system, world);
 
-      expect(meshA.userData.orientationHelper.visible).toBe(false);
-      expect(meshB.userData.orientationHelper.visible).toBe(true);
+      expect(meshA.geometry).toBe(system.sharedSphereGeometry);
+      expect(meshA.material).not.toBe(system.orientedSphereMaterial);
+      expect(meshB.geometry).toBe(geometryB);
     } finally {
       disposeRenderSystemStub(system);
     }
