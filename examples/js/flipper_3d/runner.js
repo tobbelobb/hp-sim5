@@ -27,6 +27,9 @@ export function runGame(world, setupScene, sceneData) {
     const renderSystem = getRenderSystem();
     if (renderSystem) {
       renderSystem.update(world, 0);
+      if (sceneData?.bumperFxOverlay) {
+        sceneData.bumperFxOverlay.update(world, renderSystem);
+      }
     }
   }
 

@@ -7,6 +7,7 @@ import {
   RadiusComponent,
   OrientationComponent,
   HybridKnotAngleComponent,
+  ObstaclePushComponent,
   layeringEnabled
 } from './ecs.js';
 import { RenderableComponent } from '../cable_joints/ecs.js';
@@ -33,6 +34,8 @@ const BORDER_WALL_HEIGHT = 0.08;
 const BORDER_WALL_THICKNESS = 0.012;
 const BORDER_WALL_COLOR = 0x0c111f;
 const BORDER_WALL_COLOR_HEX = '#0c111f';
+const BUMPER_FX_MAX_BURSTS = 96;
+const BUMPER_FX_MIN_RADIUS = 0.03;
 
 function buildPlaneBasis(planeNormal) {
   const n = planeNormal.clone();
@@ -462,6 +465,15 @@ export class RenderSystem3D {
     this.root = new THREE.Group();
     this.scene.add(this.root);
 
+    this._bumperFxGroup = new THREE.Group();
+    this._bumperFxGroup.frustumCulled = false;
+    this._bumperFxGroup.renderOrder = 1000;
+    this.scene.add(this._bumperFxGroup);
+
+    this._bumperFxGeometry = new THREE.SphereGeometry(1, 12, 10);
+    this._bumperFxBursts = [];
+    this._bumperFxLastTimeSec = Number.NaN;
+
     this.sharedSphereGeometry = new THREE.SphereGeometry(1, 24, 16);
     this.sharedFlipperBarGeometry = new THREE.BoxGeometry(1, 1, 1);
     this.orientedSphereGeometryCache = new Map();
@@ -638,6 +650,8 @@ export class RenderSystem3D {
     this._syncFlippers(world);
     this._syncCable(world);
 
+    this._updateBumperHitFx(world);
+
     if (this.controlsEnabled && this.controls) {
       this.controls.update();
     } else {
@@ -683,6 +697,8 @@ export class RenderSystem3D {
       this.root.remove(marker);
     }
     this.knotMarkers.length = 0;
+
+    this._clearBumperFx();
 
     if (this.borderLine) {
       this.root.remove(this.borderLine);
@@ -746,6 +762,14 @@ export class RenderSystem3D {
       window.removeEventListener('keyup', this._onShiftKeyUp);
     }
     this.renderer.dispose();
+
+    this._clearBumperFx();
+    if (this._bumperFxGeometry) {
+      this._bumperFxGeometry.dispose();
+    }
+    if (this._bumperFxGroup && this.scene) {
+      this.scene.remove(this._bumperFxGroup);
+    }
   }
 
   _resizeToDisplaySize() {
@@ -758,6 +782,151 @@ export class RenderSystem3D {
     }
 
     this.setCanvasSize(width, height);
+  }
+
+  _nowSeconds() {
+    if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+      return performance.now() / 1000;
+    }
+    return Date.now() / 1000;
+  }
+
+  _spawnBumperHitFx(world, contact, pushVel) {
+    const obsPosComp = world.getComponent(contact.obs_id, PositionComponent);
+    if (!obsPosComp) {
+      return;
+    }
+    const obsRadiusComp = world.getComponent(contact.obs_id, RadiusComponent);
+    const obsRadius = obsRadiusComp && Number.isFinite(obsRadiusComp.radius)
+      ? Math.max(0.0, obsRadiusComp.radius)
+      : 0.04;
+    const direction = new Vector3(1.0, 0.0, 0.0);
+    if (contact?.direction && contact.direction.lengthSq() > EPSILON) {
+      direction.set(contact.direction);
+    }
+
+    const deltaLambda = Number.isFinite(contact?.delta_lambda) ? Math.max(0.0, contact.delta_lambda) : 0.0;
+    const intensity = Math.max(
+      0.7,
+      Math.min(2.8, 0.85 + (0.2 * pushVel) + (0.32 * Math.sqrt(deltaLambda + 1e-9)))
+    );
+    const effectRadius = Math.max(BUMPER_FX_MIN_RADIUS, obsRadius * (0.7 + 0.12 * intensity));
+    const renderComp = world.getComponent(contact.obs_id, RenderableComponent);
+    const color = renderComp?.color ?? '#ffd34d';
+    const material = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 0.0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false
+    });
+    const mesh = new THREE.Mesh(this._bumperFxGeometry, material);
+    mesh.frustumCulled = false;
+    mesh.renderOrder = 1000;
+    mesh.position.copy(obsPosComp.pos);
+    mesh.scale.setScalar(0.001);
+    mesh.userData.ownsMaterial = true;
+    mesh.userData.ownsGeometry = false;
+    this._bumperFxGroup.add(mesh);
+
+    const burst = {
+      mesh,
+      origin: obsPosComp.pos.clone(),
+      direction,
+      age: 0.0,
+      life: 0.32 + (0.05 * intensity),
+      targetScale: effectRadius,
+      intensity
+    };
+    this._bumperFxBursts.push(burst);
+
+    if (this._bumperFxBursts.length > BUMPER_FX_MAX_BURSTS) {
+      const overflow = this._bumperFxBursts.length - BUMPER_FX_MAX_BURSTS;
+      for (let i = 0; i < overflow; i += 1) {
+        const oldest = this._bumperFxBursts.shift();
+        if (oldest) {
+          this._removeBurst(oldest);
+        }
+      }
+    }
+  }
+
+  _removeBurst(burst) {
+    if (!burst || !burst.mesh) {
+      return;
+    }
+    this._bumperFxGroup.remove(burst.mesh);
+    disposeObject(burst.mesh);
+    burst.mesh = null;
+  }
+
+  _clearBumperFx() {
+    for (const burst of this._bumperFxBursts) {
+      this._removeBurst(burst);
+    }
+    this._bumperFxBursts.length = 0;
+    this._bumperFxLastTimeSec = Number.NaN;
+  }
+
+  _updateBumperHitFx(world) {
+    const enabled = world?.getResource?.('renderBumperHitFx') === true;
+    if (!enabled) {
+      this._clearBumperFx();
+      return;
+    }
+
+    const nowSec = this._nowSeconds();
+    if (!Number.isFinite(this._bumperFxLastTimeSec)) {
+      this._bumperFxLastTimeSec = nowSec;
+    }
+    let dtSec = nowSec - this._bumperFxLastTimeSec;
+    this._bumperFxLastTimeSec = nowSec;
+    if (!Number.isFinite(dtSec) || dtSec < 0.0) {
+      dtSec = 0.0;
+    }
+    dtSec = Math.min(dtSec, 0.05);
+
+    const contacts = Array.isArray(world.getResource('ball_obstacle_contacts'))
+      ? world.getResource('ball_obstacle_contacts')
+      : [];
+    for (const contact of contacts) {
+      if (!contact || contact.raw_hit !== true) {
+        continue;
+      }
+      const pushComp = world.getComponent(contact.obs_id, ObstaclePushComponent);
+      if (!pushComp) {
+        continue;
+      }
+      this._spawnBumperHitFx(world, contact, pushComp.pushVel);
+    }
+
+    const survivingBursts = [];
+    for (const burst of this._bumperFxBursts) {
+      burst.age += dtSec;
+      const progress = burst.life > 0 ? Math.min(1.0, burst.age / burst.life) : 1.0;
+      const ease = Math.min(1.0, progress * 1.2);
+      const scale = THREE.MathUtils.lerp(0.01 * burst.targetScale, burst.targetScale, ease);
+      if (burst.mesh) {
+        burst.mesh.scale.set(scale, scale, scale);
+        if (burst.mesh.material) {
+          burst.mesh.material.opacity = Math.max(0.0, Math.min(1.0, (1.0 - progress) * 0.85));
+        }
+        const offset = Math.min(0.15, scale * 0.35) * (1.0 - progress);
+        if (!burst._offset) {
+          burst._offset = new Vector3();
+        }
+        burst._offset.set(burst.direction);
+        burst._offset.scale(offset);
+        burst.mesh.position.copy(burst.origin).add(burst._offset);
+      }
+      if (burst.age < burst.life) {
+        survivingBursts.push(burst);
+      } else {
+        this._removeBurst(burst);
+      }
+    }
+    this._bumperFxBursts = survivingBursts;
   }
 
   _syncBoard(world) {

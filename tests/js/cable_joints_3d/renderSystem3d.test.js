@@ -19,6 +19,7 @@ import {
   CableLinkComponent,
   CablePathComponent
 } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
+import { ObstaclePushComponent } from '../../../examples/js/flipper/flipper_common.js';
 
 const ORIENTATION_BACK_COLOR = new THREE.Color('#2a3542');
 const ORIENTATION_FRONT_COLOR = new THREE.Color('#dddddd');
@@ -42,6 +43,12 @@ function createRenderSystemStub() {
   system.knotMarkers = [];
   system._activeCircleIds = new Set();
   system.defaultPlaneNormal = new Vector3(0, 0, 1);
+  system._bumperFxGroup = new THREE.Group();
+  system._bumperFxBursts = [];
+  system._bumperFxActivePairs = new Set();
+  system._bumperFxLastTimeSec = Number.NaN;
+  system._bumperFxGeometry = new THREE.SphereGeometry(1, 12, 10);
+  system._lastObstacleActivePairs = new Set();
 
   system._getSphereMaterial = RenderSystem3D.prototype._getSphereMaterial;
   system._getOrientedSphereGeometry = RenderSystem3D.prototype._getOrientedSphereGeometry;
@@ -72,6 +79,12 @@ function disposeRenderSystemStub(system) {
   system.orientedSphereMaterial.dispose();
   system.knotMarkerMaterial.dispose();
   system.sharedSphereGeometry.dispose();
+  if (typeof RenderSystem3D.prototype._clearBumperFx === 'function') {
+    RenderSystem3D.prototype._clearBumperFx.call(system);
+  }
+  if (system._bumperFxGeometry) {
+    system._bumperFxGeometry.dispose();
+  }
 }
 
 function findVertexColor(geometry, predicate) {
@@ -148,6 +161,122 @@ describe('RenderSystem3D oriented circles', () => {
       disposeRenderSystemStub(system);
     }
   });
+});
+
+describe('RenderSystem3D bumper hit fx', () => {
+  test('spawns a burst when render bumper fx is enabled', () => {
+    const system = createRenderSystemStub();
+
+    try {
+      const world = new World();
+      const ball = world.createEntity();
+      world.addComponent(ball, new PositionComponent(0.1, 0.1, 0.0));
+      world.addComponent(ball, new RadiusComponent(0.04));
+
+      const obstacle = world.createEntity();
+      world.addComponent(obstacle, new PositionComponent(0.3, 0.1, 0.0));
+      world.addComponent(obstacle, new RadiusComponent(0.05));
+      world.addComponent(obstacle, new RenderableComponent('circle', '#ff9000'));
+      world.addComponent(obstacle, new ObstaclePushComponent(1.8));
+
+      world.setResource('renderBumperHitFx', true);
+      world.setResource('ball_obstacle_contacts', [{
+        ball_id: ball,
+        obs_id: obstacle,
+        raw_hit: true,
+        delta_lambda: 0.42,
+        direction: new Vector3(1, 0, 0)
+      }]);
+
+      let currentTime = 0;
+      system._nowSeconds = () => currentTime;
+      RenderSystem3D.prototype._updateBumperHitFx.call(system, world);
+
+      expect(system._bumperFxBursts).toHaveLength(1);
+      expect(system._bumperFxGroup.children).toHaveLength(1);
+      const burst = system._bumperFxBursts[0];
+      expect(burst.targetScale).toBeGreaterThanOrEqual(0.03);
+      expect(burst.mesh?.material?.opacity).toBeGreaterThanOrEqual(0);
+    } finally {
+      disposeRenderSystemStub(system);
+    }
+  });
+
+  test('clears bursts when the render flag is turned off', () => {
+    const system = createRenderSystemStub();
+
+    try {
+      const world = new World();
+      const ball = world.createEntity();
+      world.addComponent(ball, new PositionComponent(0.1, 0.1, 0.0));
+      world.addComponent(ball, new RadiusComponent(0.04));
+
+      const obstacle = world.createEntity();
+      world.addComponent(obstacle, new PositionComponent(0.3, 0.1, 0.0));
+      world.addComponent(obstacle, new RadiusComponent(0.05));
+      world.addComponent(obstacle, new RenderableComponent('circle', '#ff9000'));
+      world.addComponent(obstacle, new ObstaclePushComponent(1.8));
+
+      world.setResource('renderBumperHitFx', true);
+      world.setResource('ball_obstacle_contacts', [{
+        ball_id: ball,
+        obs_id: obstacle,
+        raw_hit: true,
+        delta_lambda: 0.2,
+        direction: new Vector3(1, 0, 0)
+      }]);
+
+      let currentTime = 0;
+      system._nowSeconds = () => currentTime;
+      RenderSystem3D.prototype._updateBumperHitFx.call(system, world);
+      expect(system._bumperFxBursts).toHaveLength(1);
+
+      world.setResource('renderBumperHitFx', false);
+      currentTime += 0.01;
+      RenderSystem3D.prototype._updateBumperHitFx.call(system, world);
+
+      expect(system._bumperFxBursts).toHaveLength(0);
+      expect(system._bumperFxGroup.children).toHaveLength(0);
+    } finally {
+      disposeRenderSystemStub(system);
+    }
+  });
+
+  test('does not spawn bursts for overlay-only contacts (raw_hit false)', () => {
+    const system = createRenderSystemStub();
+
+    try {
+      const world = new World();
+      const ball = world.createEntity();
+      world.addComponent(ball, new PositionComponent(0.1, 0.1, 0.0));
+      world.addComponent(ball, new RadiusComponent(0.04));
+
+      const obstacle = world.createEntity();
+      world.addComponent(obstacle, new PositionComponent(0.3, 0.1, 0.0));
+      world.addComponent(obstacle, new RadiusComponent(0.05));
+      world.addComponent(obstacle, new RenderableComponent('circle', '#ff9000'));
+      world.addComponent(obstacle, new ObstaclePushComponent(1.8));
+
+      world.setResource('renderBumperHitFx', true);
+      world.setResource('ball_obstacle_contacts', [{
+        ball_id: ball,
+        obs_id: obstacle,
+        raw_hit: false,
+        delta_lambda: 0.48,
+        direction: new Vector3(1, 0, 0)
+      }]);
+
+      let currentTime = 0;
+      system._nowSeconds = () => currentTime;
+      RenderSystem3D.prototype._updateBumperHitFx.call(system, world);
+
+      expect(system._bumperFxBursts).toHaveLength(0);
+      expect(system._bumperFxGroup.children).toHaveLength(0);
+    } finally {
+      disposeRenderSystemStub(system);
+    }
+  });
+
 });
 
 describe('RenderSystem3D cable knot markers', () => {
