@@ -6,6 +6,7 @@ import { RemoteSpoolSystem, InputSystem, ExtruderComponent } from '../../example
 import { detectFileFormat, FileFormat, isMcuFormat, isRrfFormat } from '../../examples/js/slideprinter/fileFormatUtils.js';
 import { _updateAttachmentPoints } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import { QualityMonitor } from './quality-monitor.js';
+import { cloneExtrusionList, restoreReplayExtrusions } from './replay_state.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
 
 const COMMAND_PRESET_VARIANTS = Object.freeze({
@@ -641,6 +642,24 @@ function initHpSim() {
       return [];
     }
     return list.map((cmd) => ({ ...cmd }));
+  }
+
+  function getExtruderComponent() {
+    const extruderEntities = world.query([ExtruderComponent]);
+    if (extruderEntities.length === 0) {
+      return null;
+    }
+    return world.getComponent(extruderEntities[0], ExtruderComponent) || null;
+  }
+
+  function replayExtrusionsIntoQualityMonitors(extrusions) {
+    const snapshot = Array.isArray(extrusions) ? extrusions : [];
+    resetQualityMonitors({ keepReference: true });
+    for (const extrusion of snapshot) {
+      forEachQualityMonitor((monitor) => monitor.recordExtrusion(extrusion));
+    }
+    runFinalQualityChecks();
+    refreshAllQualityMonitors(true);
   }
 
   function captureSceneFrameSnapshot() {
@@ -2329,10 +2348,12 @@ function initHpSim() {
         console.warn('hp-sim: unable to capture playback state before scene change.', err);
       }
     }
+    const extrusionSnapshot = cloneExtrusionList(getExtruderComponent()?.extrusions);
 
     const context = {
       wasPrinting,
       playbackState,
+      extrusionSnapshot,
       worker: remoteSystem ? remoteSystem.worker : null,
       newMachineAdded: Boolean(newMachineAdded),
       targetHistoryLength: sceneChangeState.targetHistoryLength,
@@ -2430,13 +2451,12 @@ function initHpSim() {
     const playbackState = sceneChange.playbackState || { history: [], queue: [] };
     const historyClone = cloneCommandList(playbackState.history);
     const queueClone = cloneCommandList(playbackState.queue);
-    const extruderEntities = world.query([ExtruderComponent]);
-    if (extruderEntities.length > 0) {
-      const extruderComp = world.getComponent(extruderEntities[0], ExtruderComponent);
-      if (extruderComp && Array.isArray(extruderComp.extrusions)) {
-        extruderComp.extrusions = [];
-      }
+    const extruderComp = getExtruderComponent();
+    if (extruderComp && Array.isArray(extruderComp.extrusions)) {
+      extruderComp.extrusions = [];
     }
+    const extrusionSnapshot = cloneExtrusionList(sceneChange.extrusionSnapshot);
+    let restoredExtrusions = [];
     const showReplay = Boolean(sceneChange.wasPrinting && historyClone.length > 0);
     if (showReplay) {
       showReplayStatus();
@@ -2465,9 +2485,16 @@ function initHpSim() {
     remoteSystem.commands = queueClone;
     remoteSystem.worker = sceneChange.worker || null;
     remoteSystem.wasPaused = false;
+    if (extruderComp && extrusionSnapshot.length > 0) {
+      restoredExtrusions = restoreReplayExtrusions(extruderComp, extrusionSnapshot);
+    }
     if (shouldResetQuality) {
-      runFinalQualityChecks();
-      refreshAllQualityMonitors(true);
+      if (restoredExtrusions.length > 0) {
+        replayExtrusionsIntoQualityMonitors(restoredExtrusions);
+      } else {
+        runFinalQualityChecks();
+        refreshAllQualityMonitors(true);
+      }
     }
 
     if (renderSystem) {

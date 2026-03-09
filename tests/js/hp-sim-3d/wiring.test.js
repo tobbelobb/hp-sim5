@@ -14,6 +14,7 @@ describe('hp-sim-3d wiring', () => {
     expect(source).toContain("../../examples/js/slideprinter_3d/runner.js");
     expect(source).toContain("../../examples/js/slideprinter_3d/setupScene.js");
     expect(source).toContain("../../examples/js/slideprinter_3d/slideprinter_common.js");
+    expect(source).toContain("./replay_state.js");
   });
 
   test('declares a Three.js import map in the 3D html entrypoint', () => {
