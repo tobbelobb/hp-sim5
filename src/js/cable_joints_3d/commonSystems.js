@@ -89,104 +89,147 @@ function negateQuaternion(quaternion) {
   return quaternion;
 }
 
-function normalizeVector4(vector) {
-  const length = Math.hypot(vector[0], vector[1], vector[2], vector[3]);
-  if (length <= 1e-12) {
-    vector[0] = 1.0;
-    vector[1] = 0.0;
-    vector[2] = 0.0;
-    vector[3] = 0.0;
-    return vector;
+function chooseReferenceTriangle(restLocal) {
+  if (!Array.isArray(restLocal) || restLocal.length < 3) {
+    return null;
   }
-  vector[0] /= length;
-  vector[1] /= length;
-  vector[2] /= length;
-  vector[3] /= length;
-  return vector;
-}
-
-function dominantEigenQuaternion(matrix, initialQuaternion = null) {
-  const vector = initialQuaternion
-    ? [initialQuaternion.w, initialQuaternion.x, initialQuaternion.y, initialQuaternion.z]
-    : [1.0, 0.0, 0.0, 0.0];
-  normalizeVector4(vector);
-
-  for (let iteration = 0; iteration < 32; iteration += 1) {
-    const next = [
-      matrix[0][0] * vector[0] + matrix[0][1] * vector[1] + matrix[0][2] * vector[2] + matrix[0][3] * vector[3],
-      matrix[1][0] * vector[0] + matrix[1][1] * vector[1] + matrix[1][2] * vector[2] + matrix[1][3] * vector[3],
-      matrix[2][0] * vector[0] + matrix[2][1] * vector[1] + matrix[2][2] * vector[2] + matrix[2][3] * vector[3],
-      matrix[3][0] * vector[0] + matrix[3][1] * vector[1] + matrix[3][2] * vector[2] + matrix[3][3] * vector[3],
-    ];
-    normalizeVector4(next);
-    vector[0] = next[0];
-    vector[1] = next[1];
-    vector[2] = next[2];
-    vector[3] = next[3];
-  }
-
-  return new Quaternion(vector[1], vector[2], vector[3], vector[0]).normalize();
-}
-
-function bestFitRigidRotation(members, group, world, com) {
-  let sxx = 0.0;
-  let sxy = 0.0;
-  let sxz = 0.0;
-  let syx = 0.0;
-  let syy = 0.0;
-  let syz = 0.0;
-  let szx = 0.0;
-  let szy = 0.0;
-  let szz = 0.0;
-
-  for (let index = 0; index < members.length; index += 1) {
-    const entityId = members[index];
-    const pos = world.getComponent(entityId, PositionComponent)?.pos;
-    const mass = world.getComponent(entityId, MassComponent)?.mass ?? 0.0;
-    if (!pos || !(mass > 0.0)) {
-      continue;
+  const epsilon = 1e-12;
+  for (let i = 0; i < restLocal.length - 2; i += 1) {
+    const a = restLocal[i];
+    if (!a) continue;
+    for (let j = i + 1; j < restLocal.length - 1; j += 1) {
+      const b = restLocal[j];
+      if (!b) continue;
+      const edge = b.clone().subtract(a);
+      if (edge.lengthSq() <= epsilon) continue;
+      for (let k = j + 1; k < restLocal.length; k += 1) {
+        const c = restLocal[k];
+        if (!c) continue;
+        const span = c.clone().subtract(a);
+        if (edge.clone().cross(span).lengthSq() > epsilon) {
+          return [i, j, k];
+        }
+      }
     }
-
-    const currentRel = pos.clone().subtract(com);
-    const restRel = group.restLocal[index] || new Vector3(0, 0, 0);
-
-    sxx += mass * currentRel.x * restRel.x;
-    sxy += mass * currentRel.x * restRel.y;
-    sxz += mass * currentRel.x * restRel.z;
-    syx += mass * currentRel.y * restRel.x;
-    syy += mass * currentRel.y * restRel.y;
-    syz += mass * currentRel.y * restRel.z;
-    szx += mass * currentRel.z * restRel.x;
-    szy += mass * currentRel.z * restRel.y;
-    szz += mass * currentRel.z * restRel.z;
   }
+  return null;
+}
 
-  const covarianceMagnitude = Math.abs(sxx) + Math.abs(sxy) + Math.abs(sxz)
-    + Math.abs(syx) + Math.abs(syy) + Math.abs(syz)
-    + Math.abs(szx) + Math.abs(szy) + Math.abs(szz);
-  if (covarianceMagnitude <= 1e-12) {
+function buildOrthonormalFrame(a, b, c) {
+  const x = b.clone().subtract(a);
+  if (x.lengthSq() <= 1e-12) {
+    return null;
+  }
+  x.normalize();
+  const span = c.clone().subtract(a);
+  const z = x.clone().cross(span);
+  if (z.lengthSq() <= 1e-12) {
+    return null;
+  }
+  z.normalize();
+  const y = z.clone().cross(x).normalize();
+  return { x, y, z };
+}
+
+function quaternionFromRotationMatrix(m00, m01, m02, m10, m11, m12, m20, m21, m22) {
+  const trace = m00 + m11 + m22;
+  if (trace > 0.0) {
+    const s = Math.sqrt(trace + 1.0) * 2.0;
+    return new Quaternion(
+      (m21 - m12) / s,
+      (m02 - m20) / s,
+      (m10 - m01) / s,
+      0.25 * s
+    ).normalize();
+  }
+  if (m00 > m11 && m00 > m22) {
+    const s = Math.sqrt(1.0 + m00 - m11 - m22) * 2.0;
+    return new Quaternion(
+      0.25 * s,
+      (m01 + m10) / s,
+      (m02 + m20) / s,
+      (m21 - m12) / s
+    ).normalize();
+  }
+  if (m11 > m22) {
+    const s = Math.sqrt(1.0 + m11 - m00 - m22) * 2.0;
+    return new Quaternion(
+      (m01 + m10) / s,
+      0.25 * s,
+      (m12 + m21) / s,
+      (m02 - m20) / s
+    ).normalize();
+  }
+  const s = Math.sqrt(1.0 + m22 - m00 - m11) * 2.0;
+  return new Quaternion(
+    (m02 + m20) / s,
+    (m12 + m21) / s,
+    0.25 * s,
+    (m10 - m01) / s
+  ).normalize();
+}
+
+function estimateGroupRotation(world, members, group) {
+  const referenceTriangle = Array.isArray(group.referenceTriangle) ? group.referenceTriangle : null;
+  if (!referenceTriangle) {
     return group.prevRotation?.clone?.().normalize?.() || new Quaternion();
   }
 
-  const trace = sxx + syy + szz;
-  const d0 = syz - szy;
-  const d1 = szx - sxz;
-  const d2 = sxy - syx;
-  const matrix = [
-    [trace, d0, d1, d2],
-    [d0, sxx - syy - szz, sxy + syx, szx + sxz],
-    [d1, sxy + syx, -sxx + syy - szz, syz + szy],
-    [d2, szx + sxz, syz + szy, -sxx - syy + szz],
-  ];
+  const [i, j, k] = referenceTriangle;
+  const restA = group.restLocal?.[i];
+  const restB = group.restLocal?.[j];
+  const restC = group.restLocal?.[k];
+  const currentA = world.getComponent(members[i], PositionComponent)?.pos;
+  const currentB = world.getComponent(members[j], PositionComponent)?.pos;
+  const currentC = world.getComponent(members[k], PositionComponent)?.pos;
+  if (!restA || !restB || !restC || !currentA || !currentB || !currentC) {
+    return group.prevRotation?.clone?.().normalize?.() || new Quaternion();
+  }
 
-  const initialRotation = group.prevRotation instanceof Quaternion
-    ? group.prevRotation.clone().conjugate().normalize()
-    : null;
-  const rotation = dominantEigenQuaternion(matrix, initialRotation).conjugate().normalize();
+  const restFrame = buildOrthonormalFrame(restA, restB, restC);
+  const currentFrame = buildOrthonormalFrame(currentA, currentB, currentC);
+  if (!restFrame || !currentFrame) {
+    return group.prevRotation?.clone?.().normalize?.() || new Quaternion();
+  }
+
+  const m00 = currentFrame.x.x * restFrame.x.x + currentFrame.y.x * restFrame.y.x + currentFrame.z.x * restFrame.z.x;
+  const m01 = currentFrame.x.x * restFrame.x.y + currentFrame.y.x * restFrame.y.y + currentFrame.z.x * restFrame.z.y;
+  const m02 = currentFrame.x.x * restFrame.x.z + currentFrame.y.x * restFrame.y.z + currentFrame.z.x * restFrame.z.z;
+  const m10 = currentFrame.x.y * restFrame.x.x + currentFrame.y.y * restFrame.y.x + currentFrame.z.y * restFrame.z.x;
+  const m11 = currentFrame.x.y * restFrame.x.y + currentFrame.y.y * restFrame.y.y + currentFrame.z.y * restFrame.z.y;
+  const m12 = currentFrame.x.y * restFrame.x.z + currentFrame.y.y * restFrame.y.z + currentFrame.z.y * restFrame.z.z;
+  const m20 = currentFrame.x.z * restFrame.x.x + currentFrame.y.z * restFrame.y.x + currentFrame.z.z * restFrame.z.x;
+  const m21 = currentFrame.x.z * restFrame.x.y + currentFrame.y.z * restFrame.y.y + currentFrame.z.z * restFrame.z.y;
+  const m22 = currentFrame.x.z * restFrame.x.z + currentFrame.y.z * restFrame.y.z + currentFrame.z.z * restFrame.z.z;
+
+  const rotation = quaternionFromRotationMatrix(m00, m01, m02, m10, m11, m12, m20, m21, m22);
   if (group.prevRotation instanceof Quaternion && quaternionDot(rotation, group.prevRotation) < 0.0) {
     negateQuaternion(rotation);
   }
   return rotation;
+}
+
+function estimatePlanarGroupAngle(world, members, group, com, planeNormal) {
+  const basis = planeBasisForAxis(planeNormal);
+  let sumX = 0.0;
+  let sumY = 0.0;
+  for (let index = 0; index < members.length; index += 1) {
+    const entityId = members[index];
+    const pos = world.getComponent(entityId, PositionComponent)?.pos;
+    const mass = world.getComponent(entityId, MassComponent)?.mass ?? 0.0;
+    const restRel = group.restLocal?.[index];
+    if (!pos || !restRel || !(mass > 0.0)) {
+      continue;
+    }
+    const currentRel = pos.clone().subtract(com);
+    const restU = restRel.dot(basis.u);
+    const restV = restRel.dot(basis.v);
+    const currentU = currentRel.dot(basis.u);
+    const currentV = currentRel.dot(basis.v);
+    sumX += mass * (restU * currentU + restV * currentV);
+    sumY += mass * (restU * currentV - restV * currentU);
+  }
+  return Math.atan2(sumY, sumX);
 }
 
 export class GravitySystem {
@@ -340,6 +383,7 @@ export class RigidGroupSystem {
   }
 
   update(world, dt) {
+    const planeNormal = getDefaultPlaneNormal(world);
     const groupEntities = world.query([RigidGroupComponent]);
     if (!groupEntities || groupEntities.length === 0) {
       return;
@@ -358,27 +402,64 @@ export class RigidGroupSystem {
           const pos = world.getComponent(entityId, PositionComponent)?.pos;
           return pos ? pos.clone().subtract(com) : new Vector3(0, 0, 0);
         });
+        group.referenceTriangle = chooseReferenceTriangle(group.restLocal);
+        group.restPairs = [];
+        for (let i = 0; i < group.restLocal.length - 1; i += 1) {
+          const restA = group.restLocal[i];
+          if (!restA) continue;
+          for (let j = i + 1; j < group.restLocal.length; j += 1) {
+            const restB = group.restLocal[j];
+            if (!restB) continue;
+            group.restPairs.push({
+              indexA: i,
+              indexB: j,
+              restLength: restA.distanceTo(restB),
+            });
+          }
+        }
+      }
+
+      const stiffness = Math.max(0.0, Math.min(1.0, group.stiffness ?? 1.0));
+      const epsilon = 1e-9;
+      for (const pair of group.restPairs || []) {
+        const entityA = members[pair.indexA];
+        const entityB = members[pair.indexB];
+        const posAComp = world.getComponent(entityA, PositionComponent);
+        const posBComp = world.getComponent(entityB, PositionComponent);
+        if (!posAComp?.pos || !posBComp?.pos) {
+          continue;
+        }
+
+        const massAComp = world.getComponent(entityA, MassComponent);
+        const massBComp = world.getComponent(entityB, MassComponent);
+        const invMassA = massAComp && massAComp.mass > 0 ? 1.0 / massAComp.mass : 0.0;
+        const invMassB = massBComp && massBComp.mass > 0 ? 1.0 / massBComp.mass : 0.0;
+        if (invMassA + invMassB <= epsilon) {
+          continue;
+        }
+
+        const diff = new Vector3().subtractVectors(posBComp.pos, posAComp.pos);
+        const currentLength = diff.length();
+        if (currentLength <= epsilon) {
+          continue;
+        }
+
+        const deltaLambda = (pair.restLength - currentLength) / (invMassA + invMassB);
+        const correction = diff.scale((deltaLambda * stiffness) / currentLength);
+        if (invMassA > 0.0) {
+          posAComp.pos.add(correction, -invMassA);
+        }
+        if (invMassB > 0.0) {
+          posBComp.pos.add(correction, invMassB);
+        }
       }
 
       const { com, sumMass } = this._computeCOM(world, members);
       if (!(sumMass > 0.0)) {
         continue;
       }
-      const rotation = bestFitRigidRotation(members, group, world, com);
-      const stiffness = Math.max(0.0, Math.min(1.0, group.stiffness ?? 1.0));
 
-      for (let index = 0; index < members.length; index += 1) {
-        const entityId = members[index];
-        const posComp = world.getComponent(entityId, PositionComponent);
-        if (!posComp?.pos) {
-          continue;
-        }
-        const restRel = group.restLocal[index] || new Vector3(0, 0, 0);
-        const target = rotation.transformVector(restRel).add(com);
-        const delta = new Vector3().subtractVectors(target, posComp.pos);
-        posComp.pos.add(delta, stiffness);
-      }
-
+      const rotation = estimateGroupRotation(world, members, group);
       const previousRotation = group.prevRotation instanceof Quaternion
         ? group.prevRotation.clone().normalize()
         : new Quaternion();
@@ -393,6 +474,7 @@ export class RigidGroupSystem {
         }
       }
       group.prevRotation = rotation.clone();
+      group.prevAngle = estimatePlanarGroupAngle(world, members, group, com, planeNormal);
     }
   }
 }

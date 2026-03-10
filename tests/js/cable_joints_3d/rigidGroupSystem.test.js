@@ -75,4 +75,41 @@ describe('RigidGroupSystem (3D)', () => {
     const expectedZ = tilt.transformVector(new Vector3(0, 0, 1));
     expectVectorClose(rotatedZ, expectedZ);
   });
+
+  test('tracks planar group angle for stepper control compatibility', () => {
+    const world = new World();
+    const restPositions = [
+      new Vector3(-1.0, 0.0, 0.0),
+      new Vector3(1.0, 0.0, 0.0),
+      new Vector3(0.0, 1.0, 0.0),
+    ];
+
+    const members = restPositions.map((position) => {
+      const entityId = world.createEntity();
+      world.addComponent(entityId, new PositionComponent(position.x, position.y, position.z));
+      world.addComponent(entityId, new MassComponent(1.0));
+      world.addComponent(entityId, new OrientationComponent());
+      return entityId;
+    });
+
+    const groupId = world.createEntity();
+    world.addComponent(groupId, new RigidGroupComponent(members, 1.0));
+
+    const system = new RigidGroupSystem();
+    system.update(world, 1 / 120);
+
+    const yaw = Math.PI / 4.0;
+    const rotation = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), yaw).normalize();
+    const restCom = restPositions.reduce((sum, position) => sum.add(position), new Vector3(0, 0, 0)).scale(1.0 / restPositions.length);
+    const translatedCom = new Vector3(0.3, -0.2, 0.4);
+    members.forEach((entityId, index) => {
+      const rotatedPos = rotation.transformVector(restPositions[index].clone().subtract(restCom)).add(translatedCom);
+      world.getComponent(entityId, PositionComponent).pos.set(rotatedPos);
+    });
+
+    system.update(world, 1 / 120);
+
+    const group = world.getComponent(groupId, RigidGroupComponent);
+    expect(group.prevAngle).toBeCloseTo(yaw, 8);
+  });
 });
