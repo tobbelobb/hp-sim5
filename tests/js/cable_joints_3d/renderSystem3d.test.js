@@ -340,3 +340,110 @@ describe('RenderSystem3D cable knot markers', () => {
     }
   });
 });
+
+describe('RenderSystem3D cable sag', () => {
+  test('renders slack cable joints as a sagging catenary polyline', () => {
+    const system = createRenderSystemStub();
+
+    try {
+      const world = new World();
+      world.setResource('gravity', new Vector3(0.0, 0.0, -9.81));
+
+      const jointId = world.createEntity();
+      world.addComponent(
+        jointId,
+        new CableJointComponent(
+          world.createEntity(),
+          world.createEntity(),
+          1.2,
+          new Vector3(0.0, 0.0, 0.0),
+          new Vector3(1.0, 0.0, 0.0)
+        )
+      );
+      world.addComponent(jointId, new RenderableComponent('line', '#ffd34d'));
+
+      const pathId = world.createEntity();
+      world.addComponent(
+        pathId,
+        new CablePathComponent(
+          world,
+          [jointId],
+          ['attachment', 'attachment'],
+          [false, false],
+          1e6,
+          [0.0, 0.0],
+          0.0
+        )
+      );
+
+      RenderSystem3D.prototype._syncCable.call(system, world);
+
+      expect(system.jointLines).toHaveLength(1);
+      const line = system.jointLines[0];
+      const positions = line.geometry.attributes.position;
+      const midpointIndex = Math.floor(positions.count / 2);
+
+      expect(line.visible).toBe(true);
+      expect(positions.count).toBeGreaterThan(2);
+      expect(positions.getX(0)).toBeCloseTo(0.0, 6);
+      expect(positions.getY(0)).toBeCloseTo(0.0, 6);
+      expect(positions.getZ(0)).toBeCloseTo(0.0, 6);
+      expect(positions.getX(positions.count - 1)).toBeCloseTo(1.0, 6);
+      expect(positions.getY(positions.count - 1)).toBeCloseTo(0.0, 6);
+      expect(positions.getZ(positions.count - 1)).toBeCloseTo(0.0, 6);
+      expect(positions.getX(midpointIndex)).toBeCloseTo(0.5, 2);
+      expect(positions.getY(midpointIndex)).toBeCloseTo(0.0, 6);
+      expect(positions.getZ(midpointIndex)).toBeLessThan(-0.05);
+    } finally {
+      disposeRenderSystemStub(system);
+    }
+  });
+
+  test('keeps taut cable joints straight', () => {
+    const system = createRenderSystemStub();
+
+    try {
+      const world = new World();
+      world.setResource('gravity', new Vector3(0.0, 0.0, -9.81));
+
+      const jointId = world.createEntity();
+      world.addComponent(
+        jointId,
+        new CableJointComponent(
+          world.createEntity(),
+          world.createEntity(),
+          1.0,
+          new Vector3(0.0, 0.0, 0.2),
+          new Vector3(1.0, 0.0, 0.2)
+        )
+      );
+      world.addComponent(jointId, new RenderableComponent('line', '#ffd34d'));
+
+      const pathId = world.createEntity();
+      world.addComponent(
+        pathId,
+        new CablePathComponent(
+          world,
+          [jointId],
+          ['attachment', 'attachment'],
+          [false, false],
+          1e6,
+          [0.0, 0.0],
+          0.0
+        )
+      );
+
+      RenderSystem3D.prototype._syncCable.call(system, world);
+
+      const line = system.jointLines[0];
+      const positions = line.geometry.attributes.position;
+      const midpointIndex = Math.floor(positions.count / 2);
+
+      expect(positions.getX(midpointIndex)).toBeCloseTo(0.5, 6);
+      expect(positions.getY(midpointIndex)).toBeCloseTo(0.0, 6);
+      expect(positions.getZ(midpointIndex)).toBeCloseTo(0.2, 6);
+    } finally {
+      disposeRenderSystemStub(system);
+    }
+  });
+});
