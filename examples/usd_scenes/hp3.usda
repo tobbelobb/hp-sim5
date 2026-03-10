@@ -209,7 +209,7 @@ def Xform "World"
         {
             token[] ecs:tags = ["Extruder"]
             double radius = 0.01
-            double3 xformOp:translate = (0.0, 0.0, 0.1)
+            double3 xformOp:translate = (0.0, 0.0, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel machine:centerSources = [
                 </World/HangprinterScene/AttachAL>,
@@ -537,7 +537,7 @@ def Xform "World"
         }
 
         custom color3f machine:tintColor = (0.1, 0.1, 1.0)
-        custom color3f machine:extrusionColor = (1.0, 1.0, 0.1)
+        custom color3f machine:extrusionColor = (1.0, 1.0, 0.5)
     }
 
     def PhysicsScene "PhysicsScene"

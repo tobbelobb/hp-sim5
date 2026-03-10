@@ -12,7 +12,7 @@ M669 S130 T0.5                  ; Segments per second and min segment length
 
 ; Anchor Location
 M669 A0.0:-1900.0:-280.0 B1645.44826719:950.0:-280.0 C-1645.44826719:950.0:-280.0 D0.0:0.0:1900.0
-M666 Q0.0 R30.0:30.0:30.0
+M666 Q0.0 R30.0:30.0:30.0:30.0
 ; Explanation:
 ; ; M669 defines the positions of the anchors, expressed as X:Y:Z distances between a line's pivot points, when the machine is homed.
 ; ; M666 sets Q=spool buildup, R=spool radii (incl buildup, when homed)
