@@ -26,6 +26,7 @@ export class ExtruderComponent {
         this.centerPos = new Vector2(0.0, 0.0);
         this.machineCenters = {};
         this.centerSources = {};
+        this.centerOffsets = {};
     }
 }
 
@@ -65,7 +66,18 @@ export class ExtruderSystem {
         const centerSources = extruderComp.centerSources && typeof extruderComp.centerSources === 'object'
             ? extruderComp.centerSources
             : {};
+        const centerOffsets = extruderComp.centerOffsets && typeof extruderComp.centerOffsets === 'object'
+            ? extruderComp.centerOffsets
+            : {};
         const sourceMachineIds = Object.keys(centerSources);
+
+        const applyOffset = (center, machineId) => {
+            const offset = centerOffsets[machineId];
+            if (offset && Number.isFinite(offset.x) && Number.isFinite(offset.y)) {
+                center.add(offset);
+            }
+            return center;
+        };
 
         const resolveAverage = (entityIds) => {
             if (!Array.isArray(entityIds) || entityIds.length === 0) {
@@ -93,7 +105,7 @@ export class ExtruderSystem {
                 center = sumByMachine[machineId].clone().scale(1 / countByMachine[machineId]);
             }
             if (center) {
-                machineCenters[machineId] = center;
+                machineCenters[machineId] = applyOffset(center, machineId);
             }
         }
 
@@ -101,7 +113,8 @@ export class ExtruderSystem {
             for (const machineId of Object.keys(sumByMachine)) {
                 const count = countByMachine[machineId] ?? 0;
                 if (count > 0) {
-                    machineCenters[machineId] = sumByMachine[machineId].clone().scale(1 / count);
+                    const center = sumByMachine[machineId].clone().scale(1 / count);
+                    machineCenters[machineId] = applyOffset(center, machineId);
                 }
             }
         } else {
@@ -111,7 +124,8 @@ export class ExtruderSystem {
                 }
                 const count = countByMachine[machineId] ?? 0;
                 if (count > 0) {
-                    machineCenters[machineId] = sumByMachine[machineId].clone().scale(1 / count);
+                    const center = sumByMachine[machineId].clone().scale(1 / count);
+                    machineCenters[machineId] = applyOffset(center, machineId);
                 }
             }
         }

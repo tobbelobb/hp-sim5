@@ -165,11 +165,19 @@ def Xform "World"
             custom double stiffness = 20000.0
         }
 
-        rel machine:extrusionCenters = [
-            </World/SlideprinterScene/SpoolA>,
-            </World/SlideprinterScene/SpoolB>,
-            </World/SlideprinterScene/SpoolC>
-        ]
+        def Sphere "Extruder" ()
+        {
+            token[] ecs:tags = ["Extruder"]
+            double radius = 0.01
+            double3 xformOp:translate = (0.0, 0.0, 0.0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            rel machine:centerSources = [
+                </World/SlideprinterScene/SpoolA>,
+                </World/SlideprinterScene/SpoolB>,
+                </World/SlideprinterScene/SpoolC>
+            ]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+        }
         custom color3f machine:tintColor = (0.5, 0.0, 0.5)
         custom color3f machine:extrusionColor = (0.7, 0.0, 0.7)
     }

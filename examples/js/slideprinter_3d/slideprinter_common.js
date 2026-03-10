@@ -111,8 +111,10 @@ export class ExtruderSystem {
       return sum.clone().scale(1.0 / count);
     };
 
-    const extruderOffsets = extruderComp.extruderOffsets && typeof extruderComp.extruderOffsets === 'object'
-      ? extruderComp.extruderOffsets
+    const centerOffsets = extruderComp.centerOffsets && typeof extruderComp.centerOffsets === 'object'
+      ? extruderComp.centerOffsets
+      : extruderComp.extruderOffsets && typeof extruderComp.extruderOffsets === 'object'
+        ? extruderComp.extruderOffsets
       : {};
     const machineCenters = {};
     for (const machineId of sourceMachineIds) {
@@ -122,7 +124,7 @@ export class ExtruderSystem {
         center = sumByMachine[machineId].clone().scale(1.0 / countByMachine[machineId]);
       }
       if (center) {
-        const offset = extruderOffsets[machineId];
+        const offset = centerOffsets[machineId];
         if (offset && Number.isFinite(offset.x) && Number.isFinite(offset.y) && Number.isFinite(offset.z)) {
           center = center.clone().add(offset);
         }
@@ -135,7 +137,7 @@ export class ExtruderSystem {
         const count = countByMachine[machineId] ?? 0;
         if (count > 0) {
           const center = sumByMachine[machineId].clone().scale(1.0 / count);
-          const offset = extruderOffsets[machineId];
+          const offset = centerOffsets[machineId];
           if (offset && Number.isFinite(offset.x) && Number.isFinite(offset.y) && Number.isFinite(offset.z)) {
             center.add(offset);
           }
@@ -150,7 +152,7 @@ export class ExtruderSystem {
         const count = countByMachine[machineId] ?? 0;
         if (count > 0) {
           const center = sumByMachine[machineId].clone().scale(1.0 / count);
-          const offset = extruderOffsets[machineId];
+          const offset = centerOffsets[machineId];
           if (offset && Number.isFinite(offset.x) && Number.isFinite(offset.y) && Number.isFinite(offset.z)) {
             center.add(offset);
           }

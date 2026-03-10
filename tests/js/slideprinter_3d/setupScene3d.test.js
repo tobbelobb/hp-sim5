@@ -184,7 +184,7 @@ describe('slideprinter 3D setupScene', () => {
     expect(systemNames).toContain('StepperMotorSystem');
   });
 
-  test('captures ExtruderOffset and applies it to the resolved extruder point', () => {
+  test('derives extruder offset from authored Extruder prim position and center sources', () => {
     usdStage.getChildren.mockImplementation((prim) => {
       if (prim?.path === '/World/SlideprinterScene') {
         return [
@@ -201,10 +201,10 @@ describe('slideprinter 3D setupScene', () => {
             defType: 'Circle'
           },
           {
-            path: '/World/SlideprinterScene/ExtruderOffset',
-            name: 'ExtruderOffset',
+            path: '/World/SlideprinterScene/Extruder',
+            name: 'Extruder',
             type: 'definition',
-            defType: 'Xform'
+            defType: 'Sphere'
           }
         ];
       }
@@ -236,14 +236,14 @@ describe('slideprinter 3D setupScene', () => {
         if (attr === 'physics:mass') return 0.027;
         if (attr === 'physics:velocity') return [0.0, 0.0, 0.0];
       }
-      if (prim?.path === '/World/SlideprinterScene/ExtruderOffset') {
-        if (attr === 'ecs:tags') return ['ExtruderOffset'];
-        if (attr === 'xformOp:translate') return [0.0, 0.0, -0.001];
+      if (prim?.path === '/World/SlideprinterScene/Extruder') {
+        if (attr === 'ecs:tags') return ['Extruder'];
+        if (attr === 'xformOp:translate') return [0.12, 0.18, 0.002];
       }
       return null;
     });
     usdStage.getRelationship.mockImplementation((prim, rel) => {
-      if (prim?.path === '/World/SlideprinterScene' && rel === 'machine:extrusionCenters') {
+      if (prim?.path === '/World/SlideprinterScene/Extruder' && rel === 'machine:centerSources') {
         return ['/World/SlideprinterScene/AttachA'];
       }
       return [];
@@ -270,9 +270,11 @@ describe('slideprinter 3D setupScene', () => {
     const extruderSystem = world.systems.find((system) => system.constructor.name === 'ExtruderSystem');
     extruderSystem.update(world, 0);
 
-    expect(extruder.extruderOffsets.default.z).toBeCloseTo(-0.001, 6);
-    expect(extruder.centerPos.x).toBeCloseTo(0.1, 6);
-    expect(extruder.centerPos.y).toBeCloseTo(0.2, 6);
+    expect(extruder.centerOffsets.default.x).toBeCloseTo(0.02, 6);
+    expect(extruder.centerOffsets.default.y).toBeCloseTo(-0.02, 6);
+    expect(extruder.centerOffsets.default.z).toBeCloseTo(-0.001, 6);
+    expect(extruder.centerPos.x).toBeCloseTo(0.12, 6);
+    expect(extruder.centerPos.y).toBeCloseTo(0.18, 6);
     expect(extruder.centerPos.z).toBeCloseTo(0.002, 6);
   });
 });

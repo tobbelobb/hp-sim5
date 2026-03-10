@@ -5,6 +5,7 @@ import { setupScene } from '../../../examples/js/slideprinter/setupScene.js';
 import {
   StepperMotorComponent,
   SpoolTagComponent,
+  ExtruderComponent,
 } from '../../../examples/js/slideprinter/slideprinter_common.js';
 import { Open as UsdOpen } from '../../../src/js/usd/stage.js';
 
@@ -151,5 +152,27 @@ describe('Stepper attributes from USD', () => {
       expect(stepper.numPolePairs).toBe(50);
       expect(stepper.dampingCoeff).toBeCloseTo(0.01);
     }
+  });
+
+  test('setupScene resolves extruder center sources from the authored Extruder prim', () => {
+    const world = new World();
+    const canvas = createCanvasStub();
+
+    setupScene(world, stage, canvas, { append: false });
+
+    const extruderEntity = world.query([ExtruderComponent])[0];
+    expect(extruderEntity).toBeDefined();
+
+    const extruder = world.getComponent(extruderEntity, ExtruderComponent);
+    const extruderSystem = world.systems.find((system) => system.constructor.name === 'ExtruderSystem');
+    expect(extruderSystem).toBeDefined();
+
+    extruderSystem.update(world, 0);
+
+    expect(extruder.centerSources.default).toHaveLength(3);
+    expect(extruder.centerOffsets.default.x).toBeCloseTo(0.0, 9);
+    expect(extruder.centerOffsets.default.y).toBeCloseTo(0.0, 9);
+    expect(extruder.centerPos.x).toBeCloseTo(0.0, 9);
+    expect(extruder.centerPos.y).toBeCloseTo(0.0, 9);
   });
 });

@@ -82,8 +82,6 @@ export function setupScene(world, stage, canvas, options = {}) {
         console.warn(`setupScene: Unable to find scene root at ${scenePrimPath}.`);
         return;
     }
-    const extruderCenterPaths = !isRemote ? getRelationship(sceneRoot, 'machine:extrusionCenters') : null;
-
     const machineId = namespace || 'default';
 
     let machineColors = world.getResource('machineColors');
@@ -238,6 +236,9 @@ export function setupScene(world, stage, canvas, options = {}) {
         const pathPrims = [];
         const distanceJointPrims = [];
         const rigidGroupPrims = [];
+        let extruderPrim = null;
+        let extruderAuthoredPos = null;
+        let extruderCenterPaths = [];
 
         // Discover prims and create body entities in a single pass
         for (const prim of getChildren(sceneRoot)) {
@@ -271,6 +272,13 @@ export function setupScene(world, stage, canvas, options = {}) {
                 const posArr = getAttribute(prim, "xformOp:translate");
                 if (!posArr) continue;
                 const pos = new Vector2(posArr[0], posArr[1]);
+                const centerPaths = getRelationship(prim, 'machine:centerSources');
+                if (tags.includes("Extruder") || centerPaths.length > 0) {
+                    extruderPrim = prim;
+                    extruderAuthoredPos = pos.clone();
+                    extruderCenterPaths = centerPaths;
+                    continue;
+                }
                 const { color, friction, restitution } = materialProperties(stage, prim);
                 const primKey = scopedKey(prim.name);
 
@@ -395,6 +403,34 @@ export function setupScene(world, stage, canvas, options = {}) {
             return rels
                 .map((path) => nameToEntityId[scopedKeyFromPath(path)])
                 .filter((id) => id !== undefined);
+        })();
+        const resolveAveragePosition = (entityIds) => {
+            if (!Array.isArray(entityIds) || entityIds.length === 0) {
+                return null;
+            }
+            const sum = new Vector2();
+            let count = 0;
+            for (const entityId of entityIds) {
+                const pos = world.getComponent(entityId, PositionComponent)?.pos;
+                if (pos) {
+                    sum.add(pos);
+                    count += 1;
+                }
+            }
+            if (count === 0) {
+                return null;
+            }
+            return sum.scale(1 / count);
+        };
+        const extruderCenterOffset = (() => {
+            if (!extruderPrim || !extruderAuthoredPos || extruderCenterEntityIds.length === 0) {
+                return null;
+            }
+            const averagePos = resolveAveragePosition(extruderCenterEntityIds);
+            if (!averagePos) {
+                return null;
+            }
+            return extruderAuthoredPos.clone().subtract(averagePos);
         })();
         for (const prim of rigidGroupPrims) {
             const memberPaths = getRelationship(prim, 'rigidGroup:members');
@@ -532,10 +568,18 @@ export function setupScene(world, stage, canvas, options = {}) {
                 if (!extruderComp.centerSources || typeof extruderComp.centerSources !== 'object') {
                     extruderComp.centerSources = {};
                 }
+                if (!extruderComp.centerOffsets || typeof extruderComp.centerOffsets !== 'object') {
+                    extruderComp.centerOffsets = {};
+                }
                 if (extruderCenterEntityIds.length > 0) {
                     extruderComp.centerSources[machineId] = extruderCenterEntityIds.slice();
                 } else if (extruderComp.centerSources[machineId]) {
                     delete extruderComp.centerSources[machineId];
+                }
+                if (extruderCenterOffset) {
+                    extruderComp.centerOffsets[machineId] = extruderCenterOffset.clone();
+                } else if (extruderComp.centerOffsets[machineId]) {
+                    delete extruderComp.centerOffsets[machineId];
                 }
             }
         }
