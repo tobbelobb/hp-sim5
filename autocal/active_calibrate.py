@@ -8101,7 +8101,7 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         "--r0-bounds",
         type=str,
         default=None,
-        help="Bounds for fitted r0 in mm as 'min,max'.",
+        help="Bounds for fitted r0 in mm as 'min,max' (default [base_radius, 1.5*base_radius]).",
     )
     parser.add_argument(
         "--b-bounds",
@@ -8142,16 +8142,16 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--scale-fix",
         type=str,
-        default="2",
-        help="Enable scale-coupling fixes by id (comma-separated): 1,2,3 (default: 2). Use 'off' to disable.",
+        default="3",
+        help="Enable scale-coupling fixes by id (comma-separated): 1,2,3 (default: 3). Use 'off' to disable.",
     )
     parser.add_argument(
         "--fit-structure",
         type=str,
-        default="off",
+        default="3",
         help=(
             "Enable fit-structure rank penalties by id (comma-separated): "
-            "1=tail_ratio, 2=sweep_bias_directionality, 3=tail_factor (default: off)."
+            "1=tail_ratio, 2=sweep_bias_directionality, 3=tail_factor (default: 3)."
         ),
     )
     parser.add_argument(
