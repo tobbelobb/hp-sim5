@@ -163,7 +163,7 @@ def Xform "World"
         {
             token[] ecs:tags = ["Extruder"]
             double radius = 0.01
-            double3 xformOp:translate = (0.0, 0.0, -0.001)
+            double3 xformOp:translate = (0.0, 0.0, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel machine:centerSources = [
                 </World/SlideprinterScene/AttachAL>,
