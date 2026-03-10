@@ -245,12 +245,21 @@ function initHpSim() {
   const MOBILE_SECONDARY_CONTROLS_INTERACTION_DELAY_MS = 150;
   const MOBILE_MACHINES_MENU_MARGIN_PX = 12;
   const MACHINE_MENU_HOVER_CLOSE_DELAY_MS = 3000;
+  const DOUBLE_TAP_MAX_DELAY_MS = 320;
+  const DOUBLE_TAP_MAX_DURATION_MS = 280;
+  const DOUBLE_TAP_MAX_DISTANCE_PX = 24;
+  const DOUBLE_TAP_MAX_MOVEMENT_PX = 18;
   let secondaryControlsHideTimeout = null;
   let secondaryControlsInteractionEnableTimeout = null;
   let lastMobileLayoutMatches = isMobileLayout();
   let positionTraceRightClickCount = 0;
   let positionTraceFirstRightClickMs = 0;
   let positionTraceDoubleClickTimer = null;
+  const touchTapStarts = new Map();
+  const activeCanvasTouchPointers = new Set();
+  let touchGestureHadMultiplePointers = false;
+  let lastCanvasTap = null;
+  let lastTouchNavigationCursorFocusMs = Number.NEGATIVE_INFINITY;
 
   if (qualityToggle) {
     qualityToggle.checked = false;
@@ -295,6 +304,7 @@ function initHpSim() {
   let currentViewOffsetX = 0;
   let currentViewOffsetY = 0;
   let currentViewOffsetZ = 0;
+  let navigationCursorActive = false;
   let panModeActive = false;
   let viewListenerSystem = null;
   let printActive = false;
@@ -2570,6 +2580,8 @@ function initHpSim() {
       }
       clearSceneFrameSnapshot();
       resetViewStateDefaults();
+      setNavigationCursorActive(false);
+      resetCanvasTapTracking();
       setPanMode(false);
       if (panModeBtn) {
         panModeBtn.disabled = true;
@@ -2943,6 +2955,7 @@ function initHpSim() {
       return;
     }
     renderSystem.setViewTransform(viewState);
+    renderSystem.setNavigationCursorVisible?.(navigationCursorActive);
     syncReferenceOverlayToRenderSystem({ force: true });
     if (clearExtrusions && typeof renderSystem.clearExtrusions === 'function') {
       renderSystem.clearExtrusions();
@@ -3209,6 +3222,12 @@ function initHpSim() {
     currentViewOffsetZ = 0;
   }
 
+  function setNavigationCursorActive(active) {
+    navigationCursorActive = Boolean(active);
+    const renderSystem = world.getResource('renderSystem');
+    renderSystem?.setNavigationCursorVisible?.(navigationCursorActive);
+  }
+
   function handleFullscreenChange() {
     const fullscreenElement =
       document.fullscreenElement ||
@@ -3368,6 +3387,164 @@ function initHpSim() {
     };
   }
 
+  function getCurrentViewTarget() {
+    const target = getViewPlaneMetrics(currentViewScale)?.target;
+    if (
+      target
+      && Number.isFinite(target.x)
+      && Number.isFinite(target.y)
+      && Number.isFinite(target.z)
+    ) {
+      return target;
+    }
+    return {
+      x: currentViewOffsetX,
+      y: currentViewOffsetY,
+      z: currentViewOffsetZ,
+    };
+  }
+
+  function isPointOnPrintSurface(renderSystem, point) {
+    if (
+      !point
+      || !Number.isFinite(point.x)
+      || !Number.isFinite(point.y)
+    ) {
+      return false;
+    }
+    const board = renderSystem?.board;
+    if (!board?.scale) {
+      return true;
+    }
+    const halfWidth = Math.abs(board.scale.x || 0) * 0.5 + 1e-6;
+    const halfHeight = Math.abs(board.scale.y || 0) * 0.5 + 1e-6;
+    const centerX = Number.isFinite(board.position?.x) ? board.position.x : 0;
+    const centerY = Number.isFinite(board.position?.y) ? board.position.y : 0;
+    return Math.abs(point.x - centerX) <= halfWidth && Math.abs(point.y - centerY) <= halfHeight;
+  }
+
+  function focusNavigationCursorAtPoint(point) {
+    if (
+      !point
+      || !Number.isFinite(point.x)
+      || !Number.isFinite(point.y)
+      || !Number.isFinite(point.z)
+    ) {
+      return false;
+    }
+    const currentTarget = getCurrentViewTarget();
+    applyViewStateFromController(
+      {
+        offsetX: currentViewOffsetX + point.x - currentTarget.x,
+        offsetY: currentViewOffsetY + point.y - currentTarget.y,
+        offsetZ: currentViewOffsetZ + point.z - currentTarget.z,
+      },
+      { clearExtrusions: true }
+    );
+    setNavigationCursorActive(true);
+    return true;
+  }
+
+  function focusNavigationCursorAtClientPoint(clientX, clientY) {
+    if (!stageReady || machines.length === 0) {
+      return false;
+    }
+    const renderSystem = world.getResource('renderSystem');
+    if (!renderSystem || typeof renderSystem.projectClientToSim !== 'function') {
+      return false;
+    }
+    const point = renderSystem.projectClientToSim(clientX, clientY);
+    if (!isPointOnPrintSurface(renderSystem, point)) {
+      return false;
+    }
+    return focusNavigationCursorAtPoint(point);
+  }
+
+  function resetCanvasTapTracking() {
+    touchTapStarts.clear();
+    activeCanvasTouchPointers.clear();
+    touchGestureHadMultiplePointers = false;
+    lastCanvasTap = null;
+  }
+
+  function handleCanvasTouchPointerDown(event) {
+    if (event.pointerType !== 'touch') {
+      return;
+    }
+    activeCanvasTouchPointers.add(event.pointerId);
+    touchTapStarts.set(event.pointerId, {
+      clientX: event.clientX,
+      clientY: event.clientY,
+      timeMs: performance.now(),
+    });
+    if (activeCanvasTouchPointers.size > 1) {
+      touchGestureHadMultiplePointers = true;
+      lastCanvasTap = null;
+    }
+  }
+
+  function finalizeCanvasTouchPointer(pointerId) {
+    activeCanvasTouchPointers.delete(pointerId);
+    touchTapStarts.delete(pointerId);
+    if (activeCanvasTouchPointers.size === 0) {
+      touchGestureHadMultiplePointers = false;
+    }
+  }
+
+  function handleCanvasTouchPointerUp(event) {
+    if (event.pointerType !== 'touch') {
+      return;
+    }
+    const tapStart = touchTapStarts.get(event.pointerId);
+    const hadMultiplePointers = touchGestureHadMultiplePointers;
+    finalizeCanvasTouchPointer(event.pointerId);
+    if (!tapStart) {
+      return;
+    }
+    const nowMs = performance.now();
+    const movementPx = Math.hypot(event.clientX - tapStart.clientX, event.clientY - tapStart.clientY);
+    const durationMs = nowMs - tapStart.timeMs;
+    if (hadMultiplePointers || movementPx > DOUBLE_TAP_MAX_MOVEMENT_PX || durationMs > DOUBLE_TAP_MAX_DURATION_MS) {
+      if (activeCanvasTouchPointers.size === 0) {
+        lastCanvasTap = null;
+      }
+      return;
+    }
+    const matchesPreviousTap =
+      lastCanvasTap
+      && nowMs - lastCanvasTap.timeMs <= DOUBLE_TAP_MAX_DELAY_MS
+      && Math.hypot(event.clientX - lastCanvasTap.clientX, event.clientY - lastCanvasTap.clientY) <= DOUBLE_TAP_MAX_DISTANCE_PX;
+    if (matchesPreviousTap) {
+      if (focusNavigationCursorAtClientPoint(event.clientX, event.clientY)) {
+        event.preventDefault();
+        lastTouchNavigationCursorFocusMs = nowMs;
+      }
+      lastCanvasTap = null;
+      return;
+    }
+    lastCanvasTap = {
+      clientX: event.clientX,
+      clientY: event.clientY,
+      timeMs: nowMs,
+    };
+  }
+
+  function handleCanvasTouchPointerCancel(event) {
+    if (event.pointerType !== 'touch') {
+      return;
+    }
+    finalizeCanvasTouchPointer(event.pointerId);
+  }
+
+  function handleCanvasDoubleClick(event) {
+    if (performance.now() - lastTouchNavigationCursorFocusMs <= DOUBLE_TAP_MAX_DELAY_MS) {
+      return;
+    }
+    if (focusNavigationCursorAtClientPoint(event.clientX, event.clientY)) {
+      event.preventDefault();
+    }
+  }
+
   function applyZoomAtScale(targetScale, anchor = null) {
     if (!stageReady || machines.length === 0) {
       return;
@@ -3480,6 +3657,8 @@ function initHpSim() {
       handleTimeScaleChange(1.0);
     }
     resetViewStateDefaults();
+    setNavigationCursorActive(false);
+    resetCanvasTapTracking();
     setPanMode(false);
     reapplyViewState({ clearExtrusions: true });
     resetQualityMonitors({ keepReference: true });
@@ -4184,11 +4363,15 @@ function initHpSim() {
   }
 
   if (canvas) {
-    canvas.addEventListener('pointerdown', () => {
+    canvas.addEventListener('pointerdown', (event) => {
       if (isMobileLayout() && secondaryControlsUserPreference !== false) {
         showSecondaryControlsForMobile({ persist: secondaryControlsUserPreference === true });
       }
+      handleCanvasTouchPointerDown(event);
     });
+    canvas.addEventListener('pointerup', handleCanvasTouchPointerUp);
+    canvas.addEventListener('pointercancel', handleCanvasTouchPointerCancel);
+    canvas.addEventListener('dblclick', handleCanvasDoubleClick);
     canvas.addEventListener('wheel', handleCanvasWheel, { passive: false });
     canvas.addEventListener('contextmenu', (event) => {
       const renderSystem = world.getResource('renderSystem');
@@ -4521,6 +4704,8 @@ function initHpSim() {
       gameControls.reset({ autoPause: true });
     }
     resetViewStateDefaults();
+    setNavigationCursorActive(false);
+    resetCanvasTapTracking();
     reapplyViewState({ clearExtrusions: true });
     setPanMode(false);
     syncCanvasDimensions();

@@ -48,10 +48,13 @@ const BUMPER_FX_MIN_RADIUS = 0.03;
 const DEFAULT_REFERENCE_COLOR = '#1e90ff';
 const DEFAULT_TRACE_COLOR = '#ffffff';
 const DEFAULT_TRACE_MARKER_COLOR = '#2dd4bf';
+const DEFAULT_NAV_CURSOR_COLOR = '#ffd34d';
 const DEFAULT_TRACE_POINT_SIZE = 3;
 const DEFAULT_EXTRUSION_POINT_SIZE = 2;
 const DEFAULT_TRACE_Z = 0.0025;
 const DEFAULT_MARKER_Z = 0.005;
+const DEFAULT_NAV_CURSOR_MIN_SIZE = 0.012;
+const DEFAULT_NAV_CURSOR_PIXEL_SIZE = 18;
 const DEFAULT_ORBIT_AZIMUTH = -Math.PI * 0.25;
 const DEFAULT_ORBIT_POLAR = 1.05;
 const CATENARY_HORIZONTAL_EPSILON = 1e-5;
@@ -780,6 +783,38 @@ export class RenderSystem3D {
     this.positionTraceMarkersObject.userData.ownsMaterial = true;
     this.scene.add(this.positionTraceMarkersObject);
 
+    this.navigationCursorVisible = false;
+    this.navigationCursorMaterial = new THREE.LineBasicMaterial({
+      color: DEFAULT_NAV_CURSOR_COLOR,
+      transparent: true,
+      opacity: 0.95,
+      depthWrite: false,
+      depthTest: false,
+      toneMapped: false
+    });
+    this.navigationCursorGeometry = new THREE.BufferGeometry();
+    this.navigationCursorGeometry.setAttribute(
+      'position',
+      new THREE.BufferAttribute(
+        new Float32Array([
+          -1, 0, 0,
+          1, 0, 0,
+          0, -1, 0,
+          0, 1, 0,
+          0, 0, -1,
+          0, 0, 1,
+        ]),
+        3
+      )
+    );
+    this.navigationCursorObject = new THREE.LineSegments(this.navigationCursorGeometry, this.navigationCursorMaterial);
+    this.navigationCursorObject.visible = false;
+    this.navigationCursorObject.renderOrder = 940;
+    this.navigationCursorObject.frustumCulled = false;
+    this.navigationCursorObject.userData.ownsGeometry = true;
+    this.navigationCursorObject.userData.ownsMaterial = true;
+    this.scene.add(this.navigationCursorObject);
+
     this._bumperFxGroup = new THREE.Group();
     this._bumperFxGroup.frustumCulled = false;
     this._bumperFxGroup.renderOrder = 1000;
@@ -998,6 +1033,13 @@ export class RenderSystem3D {
   clearPositionTracePoints() {
     this.positionTracePoints = [];
     this.clearPositionTrace({ keepMarkers: true });
+  }
+
+  setNavigationCursorVisible(visible) {
+    this.navigationCursorVisible = Boolean(visible);
+    if (this.navigationCursorObject) {
+      this.navigationCursorObject.visible = this.navigationCursorVisible;
+    }
   }
 
   clearPositionTraceMarkers() {
@@ -1449,6 +1491,10 @@ export class RenderSystem3D {
     if (this.positionTraceMarkersObject && this.scene) {
       this.scene.remove(this.positionTraceMarkersObject);
       disposeObject(this.positionTraceMarkersObject);
+    }
+    if (this.navigationCursorObject && this.scene) {
+      this.scene.remove(this.navigationCursorObject);
+      disposeObject(this.navigationCursorObject);
     }
   }
 
@@ -2426,6 +2472,16 @@ export class RenderSystem3D {
     if (this.controls) {
       this.controls.target.copy(target);
       this.controls.update();
+    }
+
+    if (this.navigationCursorObject) {
+      const size = Math.max(
+        DEFAULT_NAV_CURSOR_MIN_SIZE,
+        this.getViewPlaneMetrics().worldUnitsPerPixel * DEFAULT_NAV_CURSOR_PIXEL_SIZE
+      );
+      this.navigationCursorObject.position.copy(target);
+      this.navigationCursorObject.scale.setScalar(size);
+      this.navigationCursorObject.visible = this.navigationCursorVisible;
     }
 
     this._fixedCameraPosition = this.camera.position.clone();

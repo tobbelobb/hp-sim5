@@ -16,6 +16,7 @@ import { ExtruderComponent } from '../../../examples/js/slideprinter/slideprinte
 
 function createCompatStub() {
   const system = Object.create(RenderSystem3D.prototype);
+  system.scene = new THREE.Scene();
   system.canvas = {
     clientWidth: 640,
     clientHeight: 480,
@@ -50,6 +51,17 @@ function createCompatStub() {
   system.positionTracePointsObject = new THREE.Points(new THREE.BufferGeometry(), system.positionTraceMaterial);
   system.positionTraceMarkerMaterial = new THREE.PointsMaterial({ color: '#2dd4bf', size: 8, sizeAttenuation: false });
   system.positionTraceMarkersObject = new THREE.Points(new THREE.BufferGeometry(), system.positionTraceMarkerMaterial);
+  system.navigationCursorVisible = false;
+  system.navigationCursorMaterial = new THREE.LineBasicMaterial({ color: '#ffd34d' });
+  system.navigationCursorGeometry = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(-1, 0, 0),
+    new THREE.Vector3(1, 0, 0),
+    new THREE.Vector3(0, -1, 0),
+    new THREE.Vector3(0, 1, 0),
+    new THREE.Vector3(0, 0, -1),
+    new THREE.Vector3(0, 0, 1),
+  ]);
+  system.navigationCursorObject = new THREE.LineSegments(system.navigationCursorGeometry, system.navigationCursorMaterial);
   system.root = new THREE.Group();
   system.board = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial());
   system.boardOutline = new THREE.LineLoop(
@@ -69,6 +81,7 @@ function createCompatStub() {
   system.viewScaleMultiplier = 1.0;
   system.viewOffsetX = 0.0;
   system.viewOffsetY = 0.0;
+  system.viewOffsetZ = 0.0;
   system.orbitMinPolarAngle = 1e-6;
   system.orbitMaxPolarAngle = Math.PI - 1e-6;
   system.orbitRotateSpeed = 1.0;
@@ -77,6 +90,8 @@ function createCompatStub() {
   system._fixedCameraQuaternion = new THREE.Quaternion();
   system._setOrbitFromOffset = RenderSystem3D.prototype._setOrbitFromOffset;
   system._cameraDistanceForScale = RenderSystem3D.prototype._cameraDistanceForScale;
+  system._getViewTarget = RenderSystem3D.prototype._getViewTarget;
+  system.getViewPlaneMetrics = RenderSystem3D.prototype.getViewPlaneMetrics;
   system._buildOrbitOffset = RenderSystem3D.prototype._buildOrbitOffset;
   system._applyCameraFromViewTransform = RenderSystem3D.prototype._applyCameraFromViewTransform;
   system.rotateOrbitByPixels = RenderSystem3D.prototype.rotateOrbitByPixels;
@@ -93,6 +108,7 @@ function createCompatStub() {
   system._hideLines = RenderSystem3D.prototype._hideLines;
   system.setReferencePaths = RenderSystem3D.prototype.setReferencePaths;
   system.setPositionTraceEnabled = RenderSystem3D.prototype.setPositionTraceEnabled;
+  system.setNavigationCursorVisible = RenderSystem3D.prototype.setNavigationCursorVisible;
   system.addPositionTraceMarker = RenderSystem3D.prototype.addPositionTraceMarker;
   system.clearPositionTrace = RenderSystem3D.prototype.clearPositionTrace;
   system.clearPositionTraceMarkers = RenderSystem3D.prototype.clearPositionTraceMarkers;
@@ -113,6 +129,14 @@ function createCompatStub() {
   system._rayPlaneNormal = new THREE.Vector3(0, 0, 1);
   system._rayPlanePoint = new THREE.Vector3();
   system._rayHit = new THREE.Vector3();
+  system.scene.add(system.referenceLines);
+  system.scene.add(system.extrusionPoints);
+  system.scene.add(system.positionTracePointsObject);
+  system.scene.add(system.positionTraceMarkersObject);
+  system.scene.add(system.root);
+  system.scene.add(system.board);
+  system.scene.add(system.boardOutline);
+  system.scene.add(system.navigationCursorObject);
   system._applyCameraFromViewTransform();
   return system;
 }
@@ -126,6 +150,8 @@ function disposeCompatStub(system) {
   system.positionTraceMaterial.dispose();
   system.positionTraceMarkersObject.geometry.dispose();
   system.positionTraceMarkerMaterial.dispose();
+  system.navigationCursorObject.geometry.dispose();
+  system.navigationCursorMaterial.dispose();
   system.board.geometry.dispose();
   system.board.material.dispose();
   system.boardOutline.geometry.dispose();
@@ -228,6 +254,28 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
       expect(system.positionTracePointsObject.visible).toBe(true);
       expect(system.positionTracePointsObject.geometry.getAttribute('position').count).toBe(2);
       expect(system.drawnPositionTraceCount).toBe(2);
+    } finally {
+      disposeCompatStub(system);
+    }
+  });
+
+  test('keeps the navigation cursor pinned to the current view target', () => {
+    const system = createCompatStub();
+
+    try {
+      system.viewOffsetX = 0.22;
+      system.viewOffsetY = -0.14;
+      system.viewOffsetZ = 0.08;
+      system.setNavigationCursorVisible(true);
+      system._applyCameraFromViewTransform();
+
+      expect(system.navigationCursorObject.visible).toBe(true);
+      expect(system.navigationCursorObject.position.x).toBeCloseTo(0.22, 6);
+      expect(system.navigationCursorObject.position.y).toBeCloseTo(-0.14, 6);
+      expect(system.navigationCursorObject.position.z).toBeCloseTo(0.08, 6);
+      expect(system.navigationCursorObject.scale.x).toBeGreaterThan(0.0);
+      expect(system.navigationCursorObject.scale.x).toBeCloseTo(system.navigationCursorObject.scale.y, 6);
+      expect(system.navigationCursorObject.scale.x).toBeCloseTo(system.navigationCursorObject.scale.z, 6);
     } finally {
       disposeCompatStub(system);
     }
