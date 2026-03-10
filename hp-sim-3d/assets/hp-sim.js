@@ -9,6 +9,8 @@ import { QualityMonitor } from './quality-monitor.js';
 import { cloneExtrusionList, restoreReplayExtrusions } from './replay_state.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
 
+const HP3_USDA_KEY = 'hp3.usda';
+
 const COMMAND_PRESET_VARIANTS = Object.freeze({
   hangprinterLogo: Object.freeze({
     default: Object.freeze({
@@ -20,6 +22,20 @@ const COMMAND_PRESET_VARIANTS = Object.freeze({
       url: new URL('../../public/examples/RRF_CAN_commands/Hangprinter_logo6_w_line_layers.can', import.meta.url).href,
       format: FileFormat.RRF_CAN_BINARY,
       referencePresetKey: 'hangprinterLogo',
+    }),
+    machineOverrides: Object.freeze({
+      [HP3_USDA_KEY]: Object.freeze({
+        default: Object.freeze({
+          url: new URL('../../public/examples/RRF_CAN_commands/Hangprinter_logo6_hp3.can', import.meta.url).href,
+          format: FileFormat.RRF_CAN_BINARY,
+          referencePresetKey: 'hangprinterLogo',
+        }),
+        lineLayered: Object.freeze({
+          url: new URL('../../public/examples/RRF_CAN_commands/Hangprinter_logo6_hp3_w_line_layers.can', import.meta.url).href,
+          format: FileFormat.RRF_CAN_BINARY,
+          referencePresetKey: 'hangprinterLogo',
+        }),
+      }),
     }),
   }),
   straightMoves: Object.freeze({
@@ -33,22 +49,40 @@ const COMMAND_PRESET_VARIANTS = Object.freeze({
       format: FileFormat.RRF_CAN_BINARY,
       referencePresetKey: 'straightMovesBigger',
     }),
+    machineOverrides: Object.freeze({
+      [HP3_USDA_KEY]: Object.freeze({
+        default: Object.freeze({
+          url: new URL('../../public/examples/RRF_CAN_commands/draw_squares_bigger_hp3.can', import.meta.url).href,
+          format: FileFormat.RRF_CAN_BINARY,
+          referencePresetKey: 'straightMovesBigger',
+        }),
+        lineLayered: Object.freeze({
+          url: new URL('../../public/examples/RRF_CAN_commands/draw_squares_bigger_hp3_w_line_layers.can', import.meta.url)
+            .href,
+          format: FileFormat.RRF_CAN_BINARY,
+          referencePresetKey: 'straightMovesBigger',
+        }),
+      }),
+    }),
   }),
 });
 
-function resolvePresetCommand(presetKey, lineLayeringEnabled) {
+function resolvePresetCommand(presetKey, lineLayeringEnabled, activeSourceKeys = []) {
   const variants = COMMAND_PRESET_VARIANTS[presetKey];
   if (variants === null || variants === undefined) {
     return null;
   }
-  if (lineLayeringEnabled === true && variants.lineLayered?.url) {
-    return variants.lineLayered;
+  const sourceKeys = Array.isArray(activeSourceKeys) ? activeSourceKeys : [];
+  const selectedVariants =
+    sourceKeys.map((sourceKey) => variants.machineOverrides?.[sourceKey]).find((override) => override) || variants;
+  if (lineLayeringEnabled === true && selectedVariants.lineLayered?.url) {
+    return selectedVariants.lineLayered;
   }
-  if (variants.default?.url) {
-    return variants.default;
+  if (selectedVariants.default?.url) {
+    return selectedVariants.default;
   }
-  if (variants.lineLayered?.url) {
-    return variants.lineLayered;
+  if (selectedVariants.lineLayered?.url) {
+    return selectedVariants.lineLayered;
   }
   return null;
 }
@@ -133,7 +167,7 @@ const ZOOM_EPSILON = 1e-3;
 const QUALITY_HISTORY_MAX_ENTRIES = 20;
 
 const AVAILABLE_USDAS = Object.freeze([
-  { file: 'hp3.usda', label: 'Hangprinter v3 (default)' },
+  { file: HP3_USDA_KEY, label: 'Hangprinter v3 (default)' },
   { file: 'slideprinter_multi_unit.usda', label: 'Slideprinter Multi Unit' },
   { file: 'slideprinter.usda', label: 'Slideprinter Original' },
   { file: 'slideprinter_hexagon.usda', label: 'Slideprinter (hexagon)' },
@@ -237,7 +271,7 @@ function initHpSim() {
       },
     ])
   );
-  const defaultUsdaKey = 'hp3.usda';
+  const defaultUsdaKey = HP3_USDA_KEY;
   const presetOptionInputs = new Map();
   const presetOptionLabels = new Map();
   const presetOptionColorChips = new Map();
@@ -3890,7 +3924,8 @@ function initHpSim() {
     if (!stageReady) {
       return;
     }
-    const preset = resolvePresetCommand(presetKey, lineLayeringEnabled);
+    const activeSourceKeys = machines.map((machine) => machine.sourceKey).filter(Boolean);
+    const preset = resolvePresetCommand(presetKey, lineLayeringEnabled, activeSourceKeys);
     if (!preset || !preset.url) {
       console.warn('Slideprinter demo: unknown preset', presetKey);
       return;
