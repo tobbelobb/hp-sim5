@@ -11,6 +11,7 @@ import {
   VelocityComponent,
   RadiusComponent,
   MassComponent,
+  GravityAffectedComponent,
   EncoderComponent,
   OrientationComponent,
   AngularVelocityComponent,
@@ -184,6 +185,12 @@ export function setupScene(world, stage, canvas, options = {}) {
         return Number.isFinite(parsed) ? parsed : null;
     }
 
+    function addGravityIfDynamic(entityId, mass) {
+        if (typeof mass === 'number' && Number.isFinite(mass) && mass > 0.0) {
+            world.addComponent(entityId, new GravityAffectedComponent());
+        }
+    }
+
     function scopedKey(relativeName) {
         const key = relativeName || '';
         return namespace ? `${namespace}::${key}` : key;
@@ -342,6 +349,7 @@ export function setupScene(world, stage, canvas, options = {}) {
                     }
                     world.addComponent(ent, new RadiusComponent(radius));
                     world.addComponent(ent, new MassComponent(mass));
+                    addGravityIfDynamic(ent, mass);
                     const spoolColor = palette?.spool ?? color ?? '#a0a0a0';
                     world.addComponent(ent, new RenderableComponent('circle', spoolColor));
                     world.addComponent(ent, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
@@ -389,6 +397,7 @@ export function setupScene(world, stage, canvas, options = {}) {
                         world.addComponent(ent, new RadiusComponent(radius));
                     }
                     world.addComponent(ent, new MassComponent(mass));
+                    addGravityIfDynamic(ent, mass);
                     const pinholeColor = palette?.pinhole ?? color ?? '#cccccc';
                     world.addComponent(ent, new RenderableComponent('circle', pinholeColor));
                     if (angVelArr !== null) {
