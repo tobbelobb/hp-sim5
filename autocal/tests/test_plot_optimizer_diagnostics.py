@@ -77,7 +77,7 @@ def test_parse_summary_model_accepts_new_anchor_and_spool_labels():
 Wrote to console:
 Wrote to console: == Calibration summary ==
 Wrote to console: Found parameters of good quality
-Wrote to console: Fit/UI quality score (lower is better): 4.037
+Wrote to console: Fit quality score (lower is better): 4.037
 Wrote to console: Anchors (M669): M669 A0.00:-1901.21:0.00 B1647.09:951.03:0.00 C-1647.44:950.90:0.00
 Wrote to console: Spools (M666): M666 R39.13:39.13:39.13 Q0.636619
 """.strip()

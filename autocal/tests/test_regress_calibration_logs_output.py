@@ -96,7 +96,7 @@ def test_parse_summary_accepts_new_anchors_and_spools_labels():
     text = """
 == Calibration summary ==
 Found parameters of ideal quality
-Fit/UI quality score (lower is better): 1.23
+Fit quality score (lower is better): 1.23
 Anchors (M669): M669 A0.00:-1901.07:0.00 B1645.75:950.54:0.00 C-1645.55:950.06:0.00
 Spools (M666): M666 R39.09:39.09:39.09 Q0.636619
 """.strip()

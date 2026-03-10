@@ -6689,7 +6689,7 @@ def full_auto_loop(
         _log_console("")
         _log_console("== Calibration summary ==")
         _log_console(f"Found parameters of {quality_label} quality")
-        _log_console(f"Fit/UI quality score (lower is better): {_fmt_float(summary_fit_score_for_quality)}")
+        _log_console(f"Fit quality score (lower is better): {_fmt_float(summary_fit_score_for_quality)}")
         if m669:
             _log_console(f"Anchors (M669): {m669}")
         elif anchor_str:
@@ -7474,7 +7474,6 @@ def full_auto_loop(
                 if score_rank is not None:
                     rank_label = "best" if score_rank == 1 else _ordinal(score_rank) + " best"
                     _log_console(f"The {rank_label} try so far.")
-                _log_console("Ranking: fit quality first, retained data second.")
                 if history_improved:
                     _log_console("Patience reset.")
             if selected_underconstrained:

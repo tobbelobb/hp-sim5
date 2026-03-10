@@ -621,7 +621,6 @@ def test_full_auto_accepts_best_historical_replay_plan_after_patience(tmp_path, 
     assert "Rank score:" not in out
     assert "Fit score:" not in out
     assert "try so far." in out
-    assert "Ranking: fit quality first, retained data second." in out
     assert "Replaying next sweep to try and beat it." in out
     assert "Still has patience for 2 more attempts." in out
     assert "Patience reset." in out
@@ -790,7 +789,6 @@ def test_full_auto_history_selector_can_prefer_mid_late_replay_plan(tmp_path, mo
     assert "Rank score:" not in out
     assert "Fit score:" not in out
     assert "try so far." in out
-    assert "Ranking: fit quality first, retained data second." in out
     assert "Replaying next sweep to try and beat it." in out
     assert out.count("Patience reset.") >= 2
     assert out.count("Still has patience for 3 more attempts.") >= 2

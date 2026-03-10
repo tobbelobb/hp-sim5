@@ -528,5 +528,5 @@ def test_full_auto_loop_ranks_variants_by_score_ui_not_primary_cost(
     assert rc == 0
     out = capsys.readouterr().out
     assert "; selected run=run_02" in out
-    assert "Fit/UI quality score (lower is better):" in out
+    assert "Fit quality score (lower is better):" in out
     assert "Quality score below 2 indicates a near-perfect fit." in out
