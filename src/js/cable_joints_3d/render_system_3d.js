@@ -1079,12 +1079,25 @@ export class RenderSystem3D {
     if (classes.FlipperStateComponent !== undefined) this.flipperStateComponentClass = classes.FlipperStateComponent;
   }
 
-  projectClientToSim(clientX, clientY) {
+  _clientToCanvasPixels(clientX, clientY) {
     const rect = this.canvas.getBoundingClientRect();
     if (!rect || rect.width <= 0 || rect.height <= 0) {
       return null;
     }
-    return this._projectCanvasToSim(clientX - rect.left, clientY - rect.top);
+    const width = Math.max(1, this.canvas.width || this.canvas.clientWidth || 1);
+    const height = Math.max(1, this.canvas.height || this.canvas.clientHeight || 1);
+    return {
+      x: (clientX - rect.left) * (width / rect.width),
+      y: (clientY - rect.top) * (height / rect.height),
+    };
+  }
+
+  projectClientToSim(clientX, clientY) {
+    const pixel = this._clientToCanvasPixels(clientX, clientY);
+    if (!pixel) {
+      return null;
+    }
+    return this._projectCanvasToSim(pixel.x, pixel.y);
   }
 
   getCameraPlaneNormal() {
@@ -1097,11 +1110,11 @@ export class RenderSystem3D {
   }
 
   projectClientToPlane(clientX, clientY, planePoint, planeNormal = null) {
-    const rect = this.canvas.getBoundingClientRect();
-    if (!rect || rect.width <= 0 || rect.height <= 0) {
+    const pixel = this._clientToCanvasPixels(clientX, clientY);
+    if (!pixel) {
       return null;
     }
-    return this._projectCanvasToPlane(clientX - rect.left, clientY - rect.top, planePoint, planeNormal);
+    return this._projectCanvasToPlane(pixel.x, pixel.y, planePoint, planeNormal);
   }
 
   projectCanvasToPlane(pixelX, pixelY, planePoint, planeNormal = null) {

@@ -14,7 +14,7 @@ import {
 } from '../../../src/js/cable_joints_3d/ecs.js';
 import { ExtruderComponent } from '../../../examples/js/slideprinter/slideprinter_common.js';
 
-function createCompatStub() {
+function createCompatStub(canvasOverrides = {}) {
   const system = Object.create(RenderSystem3D.prototype);
   system.scene = new THREE.Scene();
   system.canvas = {
@@ -30,6 +30,7 @@ function createCompatStub() {
         height: this.clientHeight,
       };
     },
+    ...canvasOverrides,
   };
   system.referenceColor = '#1e90ff';
   system.referencePaths = [];
@@ -91,6 +92,7 @@ function createCompatStub() {
   system._setOrbitFromOffset = RenderSystem3D.prototype._setOrbitFromOffset;
   system._cameraDistanceForScale = RenderSystem3D.prototype._cameraDistanceForScale;
   system._getViewTarget = RenderSystem3D.prototype._getViewTarget;
+  system._clientToCanvasPixels = RenderSystem3D.prototype._clientToCanvasPixels;
   system.getViewPlaneMetrics = RenderSystem3D.prototype.getViewPlaneMetrics;
   system._buildOrbitOffset = RenderSystem3D.prototype._buildOrbitOffset;
   system._applyCameraFromViewTransform = RenderSystem3D.prototype._applyCameraFromViewTransform;
@@ -183,6 +185,28 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
       expect(system.referenceLines.geometry.getAttribute('position').count).toBe(2);
       expect(system.referenceLines.geometry.getAttribute('position').getZ(0)).toBeCloseTo(-0.001, 6);
       expect(system.referenceLines.geometry.getAttribute('position').getZ(1)).toBeCloseTo(0.002, 6);
+    } finally {
+      disposeCompatStub(system);
+    }
+  });
+
+  test('projects client coordinates using the canvas backing-store scale', () => {
+    const system = createCompatStub({
+      clientWidth: 640,
+      clientHeight: 480,
+      width: 960,
+      height: 720,
+    });
+
+    try {
+      const center = system.projectClientToSim(320, 240);
+      const clientProjected = system.projectClientToSim(160, 120);
+      const canvasProjected = system.projectCanvasToSim(240, 180);
+
+      expect(center?.x).toBeCloseTo(0.0, 6);
+      expect(center?.y).toBeCloseTo(0.0, 6);
+      expect(clientProjected?.x).toBeCloseTo(canvasProjected?.x ?? Number.NaN, 6);
+      expect(clientProjected?.y).toBeCloseTo(canvasProjected?.y ?? Number.NaN, 6);
     } finally {
       disposeCompatStub(system);
     }

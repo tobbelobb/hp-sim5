@@ -3370,8 +3370,13 @@ function initHpSim() {
       return null;
     }
     const rect = canvas.getBoundingClientRect();
-    const pixelX = clientX - rect.left - canvas.width / 2;
-    const pixelY = canvas.height / 2 - (clientY - rect.top);
+    if (!rect || rect.width <= 0 || rect.height <= 0) {
+      return null;
+    }
+    const canvasPixelX = (clientX - rect.left) * (canvas.width / rect.width);
+    const canvasPixelY = (clientY - rect.top) * (canvas.height / rect.height);
+    const pixelX = canvasPixelX - canvas.width / 2;
+    const pixelY = canvas.height / 2 - canvasPixelY;
     return {
       x: pixelX * metrics.worldUnitsPerPixel * (metrics.right?.x ?? 0) + pixelY * metrics.worldUnitsPerPixel * (metrics.up?.x ?? 0),
       y: pixelX * metrics.worldUnitsPerPixel * (metrics.right?.y ?? 0) + pixelY * metrics.worldUnitsPerPixel * (metrics.up?.y ?? 0),
@@ -4468,14 +4473,11 @@ function initHpSim() {
         return;
       }
 
-      const rect = canvas.getBoundingClientRect();
-      const px = event.clientX - rect.left;
-      const py = event.clientY - rect.top;
-      const projected = typeof renderSystem.projectCanvasToSim === 'function'
-        ? renderSystem.projectCanvasToSim(px, py)
+      const projected = typeof renderSystem.projectClientToSim === 'function'
+        ? renderSystem.projectClientToSim(event.clientX, event.clientY)
         : null;
-      const simX = projected?.x ?? renderSystem.simXFromCanvas(px, py);
-      const simY = projected?.y ?? renderSystem.simYFromCanvas(py, px);
+      const simX = projected?.x;
+      const simY = projected?.y;
       if (!Number.isFinite(simX) || !Number.isFinite(simY)) {
         return;
       }

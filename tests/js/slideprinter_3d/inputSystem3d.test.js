@@ -8,7 +8,7 @@ import {
   RadiusComponent,
 } from '../../../src/js/cable_joints_3d/ecs.js';
 
-function createCanvas() {
+function createCanvas(overrides = {}) {
   return {
     clientWidth: 640,
     clientHeight: 480,
@@ -27,6 +27,7 @@ function createCanvas() {
         height: this.clientHeight,
       };
     },
+    ...overrides,
   };
 }
 
@@ -330,6 +331,33 @@ describe('slideprinter 3D InputSystem orbit interaction', () => {
     expect(inputSystem.viewOffsetY).toBeCloseTo(30.0, 6);
     const [viewState] = onViewChange.mock.calls.at(-1);
     expect(viewState.scale).toBeCloseTo(1.0, 6);
+    expect(viewState.offsetX).toBeCloseTo(-40.0, 6);
+    expect(viewState.offsetY).toBeCloseTo(30.0, 6);
+    expect(viewState.offsetZ).toBeCloseTo(0.0, 6);
+  });
+
+  test('pan fallback respects client-to-canvas scaling on high-DPR canvases', () => {
+    const world = new World();
+    world.setResource('simHeight', 480);
+
+    const canvas = createCanvas({
+      clientWidth: 640,
+      clientHeight: 480,
+      width: 960,
+      height: 720,
+    });
+    const inputSystem = new InputSystem(canvas, world, null);
+    const onViewChange = jest.fn();
+    inputSystem.setInteractionMode('pan');
+    inputSystem.setViewChangeListener(onViewChange);
+
+    inputSystem.handlePointerDown(createPointerEvent(canvas, { clientX: 100, clientY: 120, pointerId: 13 }));
+    inputSystem.handlePointerMove(createPointerEvent(canvas, { clientX: 140, clientY: 150, pointerId: 13 }));
+
+    expect(inputSystem.viewOffsetX).toBeCloseTo(-40.0, 6);
+    expect(inputSystem.viewOffsetY).toBeCloseTo(30.0, 6);
+    expect(inputSystem.viewOffsetZ).toBeCloseTo(0.0, 6);
+    const [viewState] = onViewChange.mock.calls.at(-1);
     expect(viewState.offsetX).toBeCloseTo(-40.0, 6);
     expect(viewState.offsetY).toBeCloseTo(30.0, 6);
     expect(viewState.offsetZ).toBeCloseTo(0.0, 6);

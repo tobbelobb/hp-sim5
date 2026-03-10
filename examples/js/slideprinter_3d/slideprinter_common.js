@@ -351,13 +351,27 @@ export class RemoteInputSystem {
     };
   }
 
+  clientToCanvasPixels(clientX, clientY) {
+    const rect = this.canvas.getBoundingClientRect();
+    if (!rect || rect.width <= 0 || rect.height <= 0) {
+      return null;
+    }
+    return {
+      x: (clientX - rect.left) * (this.canvas.width / rect.width),
+      y: (clientY - rect.top) * (this.canvas.height / rect.height),
+    };
+  }
+
   getViewPlaneOffsetVector(clientX, clientY, metrics) {
     if (!metrics || !(metrics.worldUnitsPerPixel > 0)) {
       return null;
     }
-    const rect = this.canvas.getBoundingClientRect();
-    const pixelX = clientX - rect.left - this.canvas.width / 2;
-    const pixelY = this.canvas.height / 2 - (clientY - rect.top);
+    const pixel = this.clientToCanvasPixels(clientX, clientY);
+    if (!pixel) {
+      return null;
+    }
+    const pixelX = pixel.x - this.canvas.width / 2;
+    const pixelY = this.canvas.height / 2 - pixel.y;
     return metrics.right.clone().scale(pixelX * metrics.worldUnitsPerPixel).add(
       metrics.up.clone().scale(pixelY * metrics.worldUnitsPerPixel)
     );
@@ -379,13 +393,14 @@ export class RemoteInputSystem {
     if (projected) {
       return projected;
     }
-    const rect = this.canvas.getBoundingClientRect();
+    const pixel = this.clientToCanvasPixels(canvasX, canvasY);
+    if (!pixel) {
+      return { x: Number.NaN, y: Number.NaN };
+    }
     const baseScale = this.canvas.height / this.world.getResource('simHeight');
     const scale = baseScale * this.scaleMultiplier;
-    const pixelX = canvasX - rect.left;
-    const pixelY = canvasY - rect.top;
-    const simX = (pixelX - this.canvas.width / 2) / scale + this.viewOffsetX;
-    const simY = (this.canvas.height / 2 - pixelY) / scale + this.viewOffsetY;
+    const simX = (pixel.x - this.canvas.width / 2) / scale + this.viewOffsetX;
+    const simY = (this.canvas.height / 2 - pixel.y) / scale + this.viewOffsetY;
     return { x: simX, y: simY };
   }
 
@@ -662,12 +677,15 @@ export class InputSystem {
       }
     }
 
-    const rect = this.canvas.getBoundingClientRect();
+    const pixel = this.clientToCanvasPixels(clientX, clientY);
+    if (!pixel) {
+      return { x: Number.NaN, y: Number.NaN };
+    }
     const baseScale = this.canvas.height / this.world.getResource('simHeight');
     const scale = baseScale * this.scaleMultiplier;
     return {
-      x: (clientX - rect.left - this.canvas.width / 2) / scale + this.viewOffsetX,
-      y: (this.canvas.height / 2 - (clientY - rect.top)) / scale + this.viewOffsetY,
+      x: (pixel.x - this.canvas.width / 2) / scale + this.viewOffsetX,
+      y: (this.canvas.height / 2 - pixel.y) / scale + this.viewOffsetY,
     };
   }
 
@@ -749,13 +767,27 @@ export class InputSystem {
     };
   }
 
+  clientToCanvasPixels(clientX, clientY) {
+    const rect = this.canvas.getBoundingClientRect();
+    if (!rect || rect.width <= 0 || rect.height <= 0) {
+      return null;
+    }
+    return {
+      x: (clientX - rect.left) * (this.canvas.width / rect.width),
+      y: (clientY - rect.top) * (this.canvas.height / rect.height),
+    };
+  }
+
   getViewPlaneOffsetVector(clientX, clientY, metrics) {
     if (!metrics || !(metrics.worldUnitsPerPixel > 0)) {
       return null;
     }
-    const rect = this.canvas.getBoundingClientRect();
-    const pixelX = clientX - rect.left - this.canvas.width / 2;
-    const pixelY = this.canvas.height / 2 - (clientY - rect.top);
+    const pixel = this.clientToCanvasPixels(clientX, clientY);
+    if (!pixel) {
+      return null;
+    }
+    const pixelX = pixel.x - this.canvas.width / 2;
+    const pixelY = this.canvas.height / 2 - pixel.y;
     return metrics.right.clone().scale(pixelX * metrics.worldUnitsPerPixel).add(
       metrics.up.clone().scale(pixelY * metrics.worldUnitsPerPixel)
     );
