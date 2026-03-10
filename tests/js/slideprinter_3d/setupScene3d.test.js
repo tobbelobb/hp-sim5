@@ -180,6 +180,7 @@ describe('slideprinter 3D setupScene', () => {
     expect(systemNames).toContain('RigidGroupSystem');
     expect(systemNames).toContain('XPBDDistanceConstraintSystem');
     expect(systemNames).toContain('ExtruderSystem');
+    expect(systemNames).toContain('EncoderUpdateSystem');
     expect(systemNames).toContain('StepperMotorSystem');
   });
 

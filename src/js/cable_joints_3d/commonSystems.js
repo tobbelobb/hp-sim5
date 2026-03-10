@@ -193,31 +193,24 @@ export class EncoderUpdateSystem {
   update(world, dt) {
     const entities = world.query([
       OrientationComponent,
-      PrevFinalOrientationComponent,
       EncoderComponent,
     ]);
 
     for (const entityId of entities) {
       const orientationComp = world.getComponent(entityId, OrientationComponent);
-      const prevFinalOrientationComp = world.getComponent(entityId, PrevFinalOrientationComponent);
       const encoderComp = world.getComponent(entityId, EncoderComponent);
-      if (!orientationComp?.quaternion || !prevFinalOrientationComp?.quaternion || !encoderComp) {
+      if (!orientationComp?.quaternion || !encoderComp) {
         continue;
       }
 
       const axis = getEncoderAxis(encoderComp, world);
-      const prevWrapped = orientationAngleAroundAxis(prevFinalOrientationComp.quaternion, axis);
-      const currWrapped = orientationAngleAroundAxis(orientationComp.quaternion, axis);
-      const currUnwrapped = unwrapAngleNear(prevWrapped, currWrapped);
-      const deltaAngle = currUnwrapped - prevWrapped;
-
-      if (!Number.isFinite(deltaAngle) || Math.abs(deltaAngle) <= 1e-12) {
+      const wrappedAngle = orientationAngleAroundAxis(orientationComp.quaternion, axis);
+      if (!Number.isFinite(wrappedAngle)) {
         continue;
       }
-      if (!Number.isFinite(encoderComp.angle)) {
-        encoderComp.angle = 0.0;
-      }
-      encoderComp.angle += deltaAngle;
+      encoderComp.angle = Number.isFinite(encoderComp.angle)
+        ? unwrapAngleNear(encoderComp.angle, wrappedAngle)
+        : wrappedAngle;
     }
   }
 }
