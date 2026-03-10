@@ -6,6 +6,12 @@ import { RemoteSpoolSystem, InputSystem, ExtruderComponent } from '../../example
 import { detectFileFormat, FileFormat, isMcuFormat, isRrfFormat } from '../../examples/js/slideprinter/fileFormatUtils.js';
 import { _updateAttachmentPoints } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import { QualityMonitor } from './quality-monitor.js';
+import {
+  createTapRecord,
+  resolveNavigationCursorZoomAnchor,
+  resolveTouchNavigationCursorTapAction,
+  shouldHideNavigationCursorOnClick,
+} from './navigation_cursor_interactions.js';
 import { cloneExtrusionList, restoreReplayExtrusions } from './replay_state.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
 
@@ -259,6 +265,7 @@ function initHpSim() {
   const activeCanvasTouchPointers = new Set();
   let touchGestureHadMultiplePointers = false;
   let lastCanvasTap = null;
+  let lastNavigationCursorTouchTap = null;
   let lastTouchNavigationCursorFocusMs = Number.NEGATIVE_INFINITY;
 
   if (qualityToggle) {
@@ -3226,6 +3233,9 @@ function initHpSim() {
     navigationCursorActive = Boolean(active);
     const renderSystem = world.getResource('renderSystem');
     renderSystem?.setNavigationCursorVisible?.(navigationCursorActive);
+    if (!navigationCursorActive) {
+      lastNavigationCursorTouchTap = null;
+    }
   }
 
   function handleFullscreenChange() {
@@ -3465,6 +3475,7 @@ function initHpSim() {
     activeCanvasTouchPointers.clear();
     touchGestureHadMultiplePointers = false;
     lastCanvasTap = null;
+    lastNavigationCursorTouchTap = null;
   }
 
   function handleCanvasTouchPointerDown(event) {
@@ -3504,29 +3515,51 @@ function initHpSim() {
     const nowMs = performance.now();
     const movementPx = Math.hypot(event.clientX - tapStart.clientX, event.clientY - tapStart.clientY);
     const durationMs = nowMs - tapStart.timeMs;
-    if (hadMultiplePointers || movementPx > DOUBLE_TAP_MAX_MOVEMENT_PX || durationMs > DOUBLE_TAP_MAX_DURATION_MS) {
+    if (hadMultiplePointers) {
       if (activeCanvasTouchPointers.size === 0) {
         lastCanvasTap = null;
       }
       return;
     }
-    const matchesPreviousTap =
-      lastCanvasTap
-      && nowMs - lastCanvasTap.timeMs <= DOUBLE_TAP_MAX_DELAY_MS
-      && Math.hypot(event.clientX - lastCanvasTap.clientX, event.clientY - lastCanvasTap.clientY) <= DOUBLE_TAP_MAX_DISTANCE_PX;
-    if (matchesPreviousTap) {
+    const action = resolveTouchNavigationCursorTapAction({
+      navigationCursorActive,
+      lastCanvasTap,
+      lastNavigationCursorTap: lastNavigationCursorTouchTap,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      nowMs,
+      movementPx,
+      durationMs,
+      maxDelayMs: DOUBLE_TAP_MAX_DELAY_MS,
+      maxDistancePx: DOUBLE_TAP_MAX_DISTANCE_PX,
+      maxMovementPx: DOUBLE_TAP_MAX_MOVEMENT_PX,
+      maxDurationMs: DOUBLE_TAP_MAX_DURATION_MS,
+    });
+    if (action === 'hide') {
+      setNavigationCursorActive(false);
+      event.preventDefault();
+      lastTouchNavigationCursorFocusMs = nowMs;
+      lastCanvasTap = null;
+      return;
+    }
+    if (action === 'focus') {
       if (focusNavigationCursorAtClientPoint(event.clientX, event.clientY)) {
         event.preventDefault();
         lastTouchNavigationCursorFocusMs = nowMs;
+        lastNavigationCursorTouchTap = createTapRecord(event.clientX, event.clientY, nowMs);
+      } else {
+        lastNavigationCursorTouchTap = null;
       }
       lastCanvasTap = null;
       return;
     }
-    lastCanvasTap = {
-      clientX: event.clientX,
-      clientY: event.clientY,
-      timeMs: nowMs,
-    };
+    if (action === 'remember') {
+      lastCanvasTap = createTapRecord(event.clientX, event.clientY, nowMs);
+      return;
+    }
+    if (activeCanvasTouchPointers.size === 0) {
+      lastCanvasTap = null;
+    }
   }
 
   function handleCanvasTouchPointerCancel(event) {
@@ -3543,6 +3576,17 @@ function initHpSim() {
     if (focusNavigationCursorAtClientPoint(event.clientX, event.clientY)) {
       event.preventDefault();
     }
+  }
+
+  function handleCanvasClick(event) {
+    if (performance.now() - lastTouchNavigationCursorFocusMs <= DOUBLE_TAP_MAX_DELAY_MS) {
+      return;
+    }
+    if (!shouldHideNavigationCursorOnClick({ navigationCursorActive, clickDetail: event.detail })) {
+      return;
+    }
+    setNavigationCursorActive(false);
+    event.preventDefault();
   }
 
   function applyZoomAtScale(targetScale, anchor = null) {
@@ -3600,7 +3644,10 @@ function initHpSim() {
     const intensity = Math.min(4, Math.max(0.05, Math.abs(normalized) / 240));
     const factor = Math.pow(ZOOM_FACTOR, intensity);
     const multiplier = normalized < 0 ? factor : 1 / factor;
-    applyZoomAtScale(currentViewScale * multiplier, { x: event.clientX, y: event.clientY });
+    applyZoomAtScale(
+      currentViewScale * multiplier,
+      resolveNavigationCursorZoomAnchor({ x: event.clientX, y: event.clientY }, navigationCursorActive)
+    );
   }
 
   function adjustZoom(multiplier) {
@@ -4371,6 +4418,7 @@ function initHpSim() {
     });
     canvas.addEventListener('pointerup', handleCanvasTouchPointerUp);
     canvas.addEventListener('pointercancel', handleCanvasTouchPointerCancel);
+    canvas.addEventListener('click', handleCanvasClick);
     canvas.addEventListener('dblclick', handleCanvasDoubleClick);
     canvas.addEventListener('wheel', handleCanvasWheel, { passive: false });
     canvas.addEventListener('contextmenu', (event) => {
