@@ -94,7 +94,8 @@ from autocal.spool_model import (
     sweep_configs_with_modeled_lengths,
     validate_dataset_has_raw_angles,
 )
-from autocal.sweep_types import MachineType
+from autocal.sweep_config_generator import generate_sweep_configs, select_representative_configs
+from autocal.sweep_types import MachineConfig, MachineType
 
 GeometryWeights = Tuple[float, float, float]
 MACHINE_TYPE_CHOICES = tuple(machine.value for machine in MachineType)
@@ -4358,6 +4359,30 @@ def _write_sweep_config_file(path: Path, cfg: SweepConfig) -> None:
     path.write_text(content, encoding="utf-8")
 
 
+def _write_bootstrap_sweep_config(
+    path: Path,
+    *,
+    machine_type: str,
+    max_sweeps: int = 3,
+) -> int:
+    config = MachineConfig.from_type(MachineType(str(machine_type)))
+    all_configs = generate_sweep_configs(config)
+    selected = select_representative_configs(
+        all_configs,
+        config,
+        max_sweeps=max(1, int(max_sweeps)),
+    )
+    if not selected:
+        raise ValueError(f"Unable to generate bootstrap sweep config for machine type '{machine_type}'")
+    lines = []
+    for cfg in selected:
+        fixed = ",".join(str(int(v)) for v in cfg["fixed_anchors"])
+        lines.append(f"[{fixed}] {int(cfg['drive_anchor'])} {int(cfg['sensor_anchor'])}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return len(lines)
+
+
 def _fixed_targets_spec(cfg: SweepConfig) -> str:
     if len(cfg.fixed_deltas_mm) == 1:
         return str(float(cfg.fixed_deltas_mm[0]))
@@ -6796,10 +6821,9 @@ def full_auto_loop(
     if not dataset_path.exists():
         dataset_path.parent.mkdir(parents=True, exist_ok=True)
         bootstrap_cfg = dataset_path.with_suffix(".bootstrap_cfg.txt")
-        bootstrap_cfg.parent.mkdir(parents=True, exist_ok=True)
-        bootstrap_cfg.write_text(
-            "[0] 1 2\n[1] 0 2\n[2] 0 1\n",
-            encoding="utf-8",
+        bootstrap_sweep_count = _write_bootstrap_sweep_config(
+            bootstrap_cfg,
+            machine_type=str(machine_type),
         )
 
         def _strip_conflicts(argv: Sequence[str]) -> List[str]:
@@ -6850,7 +6874,7 @@ def full_auto_loop(
             str(dataset_path),
             *argv_eff,
         ]
-        _log_line("; bootstrapping dataset (3 sweeps, auto size-tune):")
+        _log_line(f"; bootstrapping dataset ({bootstrap_sweep_count} sweeps, auto size-tune):")
         _log_line(";   " + " ".join(cmd))
         with _log_context():
             subprocess.run(cmd, check=True, stdout=log_handle, stderr=log_handle)
@@ -7779,10 +7803,9 @@ def ellipse_loop(
     if not work_path.exists():
         work_path.parent.mkdir(parents=True, exist_ok=True)
         bootstrap_cfg = work_path.with_suffix(".bootstrap_cfg.txt")
-        bootstrap_cfg.parent.mkdir(parents=True, exist_ok=True)
-        bootstrap_cfg.write_text(
-            "[0] 1 2\n[1] 0 2\n[2] 0 1\n",
-            encoding="utf-8",
+        bootstrap_sweep_count = _write_bootstrap_sweep_config(
+            bootstrap_cfg,
+            machine_type=str(machine_type),
         )
 
         def _strip_conflicts(argv: Sequence[str]) -> List[str]:
@@ -7833,7 +7856,7 @@ def ellipse_loop(
             str(work_path),
             *argv_eff,
         ]
-        print("; bootstrapping dataset (3 sweeps, auto size-tune):")
+        print(f"; bootstrapping dataset ({bootstrap_sweep_count} sweeps, auto size-tune):")
         print(";   " + " ".join(cmd))
         subprocess.run(cmd, check=True)
         reset_pending = False

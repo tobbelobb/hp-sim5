@@ -3,6 +3,7 @@ import shlex
 import numpy as np
 
 from autocal import active_calibrate as ac
+from autocal.sweep_types import DataPoint, MachineConfig, MachineType, Sweep
 
 
 def _valid_sweep(idx: int) -> dict:
@@ -479,6 +480,30 @@ def test_full_auto_loop_logs_invoked_command_near_top(tmp_path, monkeypatch):
     log_text = (tmp_path / "full_dataset.full_auto.log").read_text(encoding="utf-8")
     first_two_lines = log_text.splitlines()[:2]
     assert f"; command: {shlex.join(fake_argv)}" in first_two_lines
+
+
+def test_write_bootstrap_sweep_config_uses_machine_specific_constraints(tmp_path):
+    cfg_path = tmp_path / "hangprinter_4.bootstrap_cfg.txt"
+
+    written = ac._write_bootstrap_sweep_config(cfg_path, machine_type="hangprinter_4")
+
+    config = MachineConfig.from_type(MachineType.HANGPRINTER_4)
+    lines = [line for line in cfg_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    assert written == 3
+    assert len(lines) == 3
+
+    for idx, line in enumerate(lines, start=1):
+        fixed_token, drive_token, sensor_token = line.split()
+        fixed_anchors = [int(value) for value in fixed_token.strip("[]").split(",") if value]
+        sweep = Sweep(
+            id=f"sweep_{idx:03d}",
+            fixed_anchors=fixed_anchors,
+            fixed_lengths=[10.0] * len(fixed_anchors),
+            drive_anchor=int(drive_token),
+            sensor_anchor=int(sensor_token),
+            data_points=[DataPoint(0.0, 0.0) for _ in range(5)],
+        )
+        assert sweep.validate(config) == []
 
 
 def test_full_auto_accepts_best_historical_replay_plan_after_patience(tmp_path, monkeypatch, capsys):
