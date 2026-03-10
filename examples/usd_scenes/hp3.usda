@@ -20,7 +20,7 @@ def Xform "World"
             custom bool cable:linkable = 1
             double radius = 0.03
             quatf xformOp:orient = (1, 0, 0, 0)
-            double3 xformOp:translate = (0.0, -2.5, -1.8)
+            double3 xformOp:translate = (0.0, -2.5, -0.18)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = -1.0
             float3 physics:angularVelocity = (0, 0, 0)
@@ -35,7 +35,7 @@ def Xform "World"
         def Xform "AnchorAL" ()
         {
             token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (-0.346410161513775, -2.1, -1.8)
+            double3 xformOp:translate = (-0.346410161513775, -2.1, -0.18)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
@@ -43,7 +43,7 @@ def Xform "World"
         def Xform "AnchorAR" ()
         {
             token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (0.346410161513775, -2.1, -1.8)
+            double3 xformOp:translate = (0.346410161513775, -2.1, -0.18)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
@@ -54,7 +54,7 @@ def Xform "World"
         {
             token[] ecs:tags = ["Attachment"]
             double radius = 0.01
-            double3 xformOp:translate = (-0.346410161513775, -0.2, 1.0)
+            double3 xformOp:translate = (-0.346410161513775, -0.2, 0.1)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.027
             vector3f physics:velocity = (0.0, 0.0, 0.0)
@@ -67,7 +67,7 @@ def Xform "World"
         {
             token[] ecs:tags = ["Attachment"]
             double radius = 0.01
-            double3 xformOp:translate = (0.346410161513775, -0.2, 1.0)
+            double3 xformOp:translate = (0.346410161513775, -0.2, 0.1)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.027
             vector3f physics:velocity = (0.0, 0.0, 0.0)
@@ -83,7 +83,7 @@ def Xform "World"
             custom bool cable:linkable = 1
             double radius = 0.03
             quatf xformOp:orient = (1, 0, 0, 0)
-            double3 xformOp:translate = (2.165063509461097, 1.25, -1.8)
+            double3 xformOp:translate = (2.165063509461097, 1.25, -0.18)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = -1.0
             float3 physics:angularVelocity = (0, 0, 0)
@@ -97,7 +97,7 @@ def Xform "World"
         def Xform "AnchorBL" ()
         {
             token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (1.991858428704209, 0.75, -1.8)
+            double3 xformOp:translate = (1.991858428704209, 0.75, -0.18)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
@@ -105,7 +105,7 @@ def Xform "World"
         def Xform "AnchorBR" ()
         {
             token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (1.645448267190434, 1.35, -1.8)
+            double3 xformOp:translate = (1.645448267190434, 1.35, -0.18)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
@@ -116,7 +116,7 @@ def Xform "World"
         {
             token[] ecs:tags = ["Attachment"]
             double radius = 0.01
-            double3 xformOp:translate = (0.0, 0.4, 1.0)
+            double3 xformOp:translate = (0.0, 0.4, 0.1)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = 0.027
             vector3f physics:velocity = (0.0, 0.0, 0.0)
@@ -132,7 +132,7 @@ def Xform "World"
             custom bool cable:linkable = 1
             double radius = 0.03
             quatf xformOp:orient = (1, 0, 0, 0)
-            double3 xformOp:translate = (-2.165063509461097, 1.25, -1.8)
+            double3 xformOp:translate = (-2.165063509461097, 1.25, -0.18)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = -1.0
             float3 physics:angularVelocity = (0, 0, 0)
@@ -146,7 +146,7 @@ def Xform "World"
         def Xform "AnchorCL" ()
         {
             token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (-1.645448267190433, 1.35, -1.8)
+            double3 xformOp:translate = (-1.645448267190433, 1.35, -0.18)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
@@ -154,7 +154,7 @@ def Xform "World"
         def Xform "AnchorCR" ()
         {
             token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (-1.991858428704209, 0.75, -1.8)
+            double3 xformOp:translate = (-1.991858428704209, 0.75, -0.18)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
@@ -163,7 +163,7 @@ def Xform "World"
         {
             token[] ecs:tags = ["Extruder"]
             double radius = 0.01
-            double3 xformOp:translate = (0.0, 0.0, 1.0)
+            double3 xformOp:translate = (0.0, 0.0, 0.1)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel machine:centerSources = [
                 </World/HangprinterScene/AttachAL>,
