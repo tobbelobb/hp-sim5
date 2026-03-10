@@ -4,6 +4,7 @@ import { runGame } from '../../examples/js/slideprinter_3d/runner.js';
 import { setupScene } from '../../examples/js/slideprinter_3d/setupScene.js';
 import { RemoteSpoolSystem, InputSystem, ExtruderComponent } from '../../examples/js/slideprinter_3d/slideprinter_common.js';
 import { detectFileFormat, FileFormat, isMcuFormat, isRrfFormat } from '../../examples/js/slideprinter/fileFormatUtils.js';
+import { orientationToDegrees } from './encoder_angles.js';
 import { _updateAttachmentPoints } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import { QualityMonitor } from './quality-monitor.js';
 import { cloneExtrusionList, restoreReplayExtrusions } from './replay_state.js';
@@ -1046,8 +1047,9 @@ function initHpSim() {
       const entityIds = Array.isArray(mapping) ? mapping : (mapping != null ? [mapping] : []);
       for (const entityId of entityIds) {
         const orient = world.getComponent(entityId, OrientationComponent);
-        if (orient && Number.isFinite(orient.angle)) {
-          return orient.angle * (180 / Math.PI);
+        const angleDeg = orientationToDegrees(orient);
+        if (Number.isFinite(angleDeg)) {
+          return angleDeg;
         }
       }
       return null;
