@@ -294,6 +294,7 @@ function initHpSim() {
   let currentViewScale = DEFAULT_VIEW_SCALE;
   let currentViewOffsetX = 0;
   let currentViewOffsetY = 0;
+  let currentViewOffsetZ = 0;
   let panModeActive = false;
   let viewListenerSystem = null;
   let printActive = false;
@@ -3054,6 +3055,9 @@ function initHpSim() {
     if (typeof partial.offsetY === 'number') {
       currentViewOffsetY = partial.offsetY;
     }
+    if (typeof partial.offsetZ === 'number') {
+      currentViewOffsetZ = partial.offsetZ;
+    }
 
     const inputSystem = getInputSystem();
     if (inputSystem && typeof inputSystem.setViewTransform === 'function') {
@@ -3061,6 +3065,7 @@ function initHpSim() {
         scaleMultiplier: currentViewScale,
         offsetX: currentViewOffsetX,
         offsetY: currentViewOffsetY,
+        offsetZ: currentViewOffsetZ,
       });
     }
 
@@ -3069,6 +3074,7 @@ function initHpSim() {
         scaleMultiplier: currentViewScale,
         offsetX: currentViewOffsetX,
         offsetY: currentViewOffsetY,
+        offsetZ: currentViewOffsetZ,
       },
       options
     );
@@ -3081,26 +3087,37 @@ function initHpSim() {
     const nextScale = typeof viewState.scale === 'number' ? clamp(viewState.scale, MIN_VIEW_SCALE, MAX_VIEW_SCALE) : currentViewScale;
     const nextOffsetX = typeof viewState.offsetX === 'number' ? viewState.offsetX : currentViewOffsetX;
     const nextOffsetY = typeof viewState.offsetY === 'number' ? viewState.offsetY : currentViewOffsetY;
+    const nextOffsetZ = typeof viewState.offsetZ === 'number' ? viewState.offsetZ : currentViewOffsetZ;
 
     const forceRedraw = options?.forceRedraw || false;
     const scaleChanged = Math.abs(nextScale - currentViewScale) > ZOOM_EPSILON;
     const dOffsetX = nextOffsetX - currentViewOffsetX;
     const dOffsetY = nextOffsetY - currentViewOffsetY;
+    const dOffsetZ = nextOffsetZ - currentViewOffsetZ;
+    const offsetDepthChanged = Math.abs(dOffsetZ) > ZOOM_EPSILON;
 
     // Update internal state first
     currentViewScale = nextScale;
     currentViewOffsetX = nextOffsetX;
     currentViewOffsetY = nextOffsetY;
+    currentViewOffsetZ = nextOffsetZ;
 
     const renderSystem = world.getResource('renderSystem');
 
-    if (!scaleChanged && !forceRedraw && renderSystem && typeof renderSystem.shiftExtrusionsForPan === 'function') {
+    if (
+      !scaleChanged
+      && !forceRedraw
+      && !offsetDepthChanged
+      && renderSystem
+      && typeof renderSystem.shiftExtrusionsForPan === 'function'
+    ) {
       // Fast path for pure panning: update transform without clearing and shift cached extrusions
       syncRenderSystem(
         {
           scaleMultiplier: currentViewScale,
           offsetX: currentViewOffsetX,
           offsetY: currentViewOffsetY,
+          offsetZ: currentViewOffsetZ,
         },
         { clearExtrusions: false }
       );
@@ -3119,6 +3136,7 @@ function initHpSim() {
           scaleMultiplier: currentViewScale,
           offsetX: currentViewOffsetX,
           offsetY: currentViewOffsetY,
+          offsetZ: currentViewOffsetZ,
         },
         { clearExtrusions: true }
       );
@@ -3174,6 +3192,7 @@ function initHpSim() {
         scale: currentViewScale,
         offsetX: currentViewOffsetX,
         offsetY: currentViewOffsetY,
+        offsetZ: currentViewOffsetZ,
       },
       options
     );
@@ -3187,6 +3206,7 @@ function initHpSim() {
     currentViewScale = DEFAULT_VIEW_SCALE;
     currentViewOffsetX = 0;
     currentViewOffsetY = 0;
+    currentViewOffsetZ = 0;
   }
 
   function handleFullscreenChange() {
@@ -3297,6 +3317,57 @@ function initHpSim() {
     return canvas.height / simHeight;
   }
 
+  function getViewPlaneMetrics(scaleMultiplier = currentViewScale) {
+    const renderSystem = world.getResource('renderSystem');
+    if (renderSystem && typeof renderSystem.getViewPlaneMetrics === 'function') {
+      const metrics = renderSystem.getViewPlaneMetrics(scaleMultiplier);
+      if (metrics && Number.isFinite(metrics.worldUnitsPerPixel) && metrics.worldUnitsPerPixel > 0) {
+        return metrics;
+      }
+    }
+    const baseScale = getCanvasBaseScale();
+    if (!baseScale || !(scaleMultiplier > 0)) {
+      return null;
+    }
+    return {
+      right: { x: 1, y: 0, z: 0 },
+      up: { x: 0, y: 1, z: 0 },
+      worldUnitsPerPixel: 1 / (baseScale * scaleMultiplier),
+    };
+  }
+
+  function getViewPlaneOffsetVector(clientX, clientY, metrics) {
+    if (!canvas || !metrics || !(metrics.worldUnitsPerPixel > 0)) {
+      return null;
+    }
+    const rect = canvas.getBoundingClientRect();
+    const pixelX = clientX - rect.left - canvas.width / 2;
+    const pixelY = canvas.height / 2 - (clientY - rect.top);
+    return {
+      x: pixelX * metrics.worldUnitsPerPixel * (metrics.right?.x ?? 0) + pixelY * metrics.worldUnitsPerPixel * (metrics.up?.x ?? 0),
+      y: pixelX * metrics.worldUnitsPerPixel * (metrics.right?.y ?? 0) + pixelY * metrics.worldUnitsPerPixel * (metrics.up?.y ?? 0),
+      z: pixelX * metrics.worldUnitsPerPixel * (metrics.right?.z ?? 0) + pixelY * metrics.worldUnitsPerPixel * (metrics.up?.z ?? 0),
+    };
+  }
+
+  function computeViewPlaneShift(previousAnchor, nextAnchor, nextScaleMultiplier = currentViewScale) {
+    if (!previousAnchor || !nextAnchor) {
+      return null;
+    }
+    const previousMetrics = getViewPlaneMetrics(currentViewScale);
+    const nextMetrics = getViewPlaneMetrics(nextScaleMultiplier);
+    const previousOffset = getViewPlaneOffsetVector(previousAnchor.x, previousAnchor.y, previousMetrics);
+    const nextOffset = getViewPlaneOffsetVector(nextAnchor.x, nextAnchor.y, nextMetrics);
+    if (!previousOffset || !nextOffset) {
+      return null;
+    }
+    return {
+      x: previousOffset.x - nextOffset.x,
+      y: previousOffset.y - nextOffset.y,
+      z: previousOffset.z - nextOffset.z,
+    };
+  }
+
   function applyZoomAtScale(targetScale, anchor = null) {
     if (!stageReady || machines.length === 0) {
       return;
@@ -3307,22 +3378,13 @@ function initHpSim() {
     }
     let nextOffsetX = currentViewOffsetX;
     let nextOffsetY = currentViewOffsetY;
+    let nextOffsetZ = currentViewOffsetZ;
     if (anchor && canvas) {
-      const baseScale = getCanvasBaseScale();
-      if (baseScale && baseScale > 0) {
-        const rect = canvas.getBoundingClientRect();
-        const pixelX = anchor.x - rect.left;
-        const pixelY = anchor.y - rect.top;
-        const prevScale = baseScale * currentViewScale;
-        if (prevScale > 0) {
-          const worldX = (pixelX - canvas.width / 2) / prevScale + currentViewOffsetX;
-          const worldY = (canvas.height / 2 - pixelY) / prevScale + currentViewOffsetY;
-          const nextScale = baseScale * clampedScale;
-          if (nextScale > 0) {
-            nextOffsetX = worldX - (pixelX - canvas.width / 2) / nextScale;
-            nextOffsetY = worldY - (canvas.height / 2 - pixelY) / nextScale;
-          }
-        }
+      const shift = computeViewPlaneShift(anchor, anchor, clampedScale);
+      if (shift) {
+        nextOffsetX += shift.x;
+        nextOffsetY += shift.y;
+        nextOffsetZ += shift.z;
       }
     }
     applyViewStateFromController(
@@ -3330,6 +3392,7 @@ function initHpSim() {
         scale: clampedScale,
         offsetX: nextOffsetX,
         offsetY: nextOffsetY,
+        offsetZ: nextOffsetZ,
       },
       { clearExtrusions: true }
     );

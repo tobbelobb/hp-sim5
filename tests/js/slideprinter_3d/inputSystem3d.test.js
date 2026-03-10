@@ -200,6 +200,62 @@ describe('slideprinter 3D InputSystem orbit interaction', () => {
     expect(viewState.scale).toBeCloseTo(1.0, 6);
     expect(viewState.offsetX).toBeCloseTo(-20.0, 6);
     expect(viewState.offsetY).toBeCloseTo(0.0, 6);
+    expect(viewState.offsetZ).toBeCloseTo(0.0, 6);
+    expect(options).toEqual({ gesture: 'pinch' });
+  });
+
+  test('two-finger drag pans along the camera-parallel plane basis', () => {
+    const diagonal = Math.SQRT1_2;
+    const world = new World();
+    const renderSystem = {
+      rotateOrbitByPixels: jest.fn(),
+      getViewPlaneMetrics: jest.fn(() => ({
+        right: { x: diagonal, y: 0.0, z: diagonal },
+        up: { x: 0.0, y: 1.0, z: 0.0 },
+        worldUnitsPerPixel: 1.0,
+      })),
+    };
+    world.setResource('simHeight', 480);
+    world.setResource('renderSystem', renderSystem);
+
+    const canvas = createCanvas();
+    const inputSystem = new InputSystem(canvas, world, null);
+    const onViewChange = jest.fn();
+    inputSystem.setViewChangeListener(onViewChange);
+
+    inputSystem.handlePointerDown(createPointerEvent(canvas, {
+      clientX: 100,
+      clientY: 120,
+      pointerId: 35,
+      pointerType: 'touch',
+    }));
+    inputSystem.handlePointerDown(createPointerEvent(canvas, {
+      clientX: 200,
+      clientY: 120,
+      pointerId: 36,
+      pointerType: 'touch',
+    }));
+
+    inputSystem.handlePointerMove(createPointerEvent(canvas, {
+      clientX: 120,
+      clientY: 120,
+      pointerId: 35,
+      pointerType: 'touch',
+    }));
+    inputSystem.handlePointerMove(createPointerEvent(canvas, {
+      clientX: 220,
+      clientY: 120,
+      pointerId: 36,
+      pointerType: 'touch',
+    }));
+
+    expect(inputSystem.viewOffsetX).toBeCloseTo(-20.0 * diagonal, 6);
+    expect(inputSystem.viewOffsetY).toBeCloseTo(0.0, 6);
+    expect(inputSystem.viewOffsetZ).toBeCloseTo(-20.0 * diagonal, 6);
+    const [viewState, options] = onViewChange.mock.calls.at(-1);
+    expect(viewState.offsetX).toBeCloseTo(-20.0 * diagonal, 6);
+    expect(viewState.offsetY).toBeCloseTo(0.0, 6);
+    expect(viewState.offsetZ).toBeCloseTo(-20.0 * diagonal, 6);
     expect(options).toEqual({ gesture: 'pinch' });
   });
 
@@ -249,24 +305,16 @@ describe('slideprinter 3D InputSystem orbit interaction', () => {
     expect(viewState.scale).toBeCloseTo(1.2, 6);
     expect(viewState.offsetX).toBeCloseTo(-28.333333333333343, 6);
     expect(viewState.offsetY).toBeCloseTo(20.0, 6);
+    expect(viewState.offsetZ).toBeCloseTo(0.0, 6);
     expect(options).toEqual({ gesture: 'pinch' });
   });
 
-  test('pan mode follows the projected screen-plane motion', () => {
+  test('pan mode uses the axis-aligned camera-plane fallback when no metrics are available', () => {
     const world = new World();
     const renderSystem = {
-      projectClientToSim: jest.fn((clientX, clientY) => {
-        if (clientX === 100 && clientY === 120) {
-          return { x: 1.0, y: 2.0 };
-        }
-        if (clientX === 140 && clientY === 150) {
-          return { x: -2.0, y: 5.0 };
-        }
-        return { x: 0.0, y: 0.0 };
-      }),
       rotateOrbitByPixels: jest.fn(),
     };
-    world.setResource('simHeight', 1.7);
+    world.setResource('simHeight', 480);
     world.setResource('renderSystem', renderSystem);
 
     const canvas = createCanvas();
@@ -278,13 +326,45 @@ describe('slideprinter 3D InputSystem orbit interaction', () => {
     inputSystem.handlePointerDown(createPointerEvent(canvas, { clientX: 100, clientY: 120, pointerId: 9 }));
     inputSystem.handlePointerMove(createPointerEvent(canvas, { clientX: 140, clientY: 150, pointerId: 9 }));
 
-    expect(inputSystem.viewOffsetX).toBeCloseTo(3.0, 6);
-    expect(inputSystem.viewOffsetY).toBeCloseTo(-3.0, 6);
-    expect(onViewChange).toHaveBeenCalledWith({
-      scale: 1.0,
-      offsetX: 3.0,
-      offsetY: -3.0,
-    });
+    expect(inputSystem.viewOffsetX).toBeCloseTo(-40.0, 6);
+    expect(inputSystem.viewOffsetY).toBeCloseTo(30.0, 6);
+    const [viewState] = onViewChange.mock.calls.at(-1);
+    expect(viewState.scale).toBeCloseTo(1.0, 6);
+    expect(viewState.offsetX).toBeCloseTo(-40.0, 6);
+    expect(viewState.offsetY).toBeCloseTo(30.0, 6);
+    expect(viewState.offsetZ).toBeCloseTo(0.0, 6);
+  });
+
+  test('pan mode can move along the camera-parallel plane instead of only XY', () => {
+    const diagonal = Math.SQRT1_2;
+    const world = new World();
+    const renderSystem = {
+      getViewPlaneMetrics: jest.fn(() => ({
+        right: { x: diagonal, y: 0.0, z: diagonal },
+        up: { x: 0.0, y: 1.0, z: 0.0 },
+        worldUnitsPerPixel: 1.0,
+      })),
+      rotateOrbitByPixels: jest.fn(),
+    };
+    world.setResource('simHeight', 480);
+    world.setResource('renderSystem', renderSystem);
+
+    const canvas = createCanvas();
+    const inputSystem = new InputSystem(canvas, world, null);
+    const onViewChange = jest.fn();
+    inputSystem.setInteractionMode('pan');
+    inputSystem.setViewChangeListener(onViewChange);
+
+    inputSystem.handlePointerDown(createPointerEvent(canvas, { clientX: 100, clientY: 120, pointerId: 61 }));
+    inputSystem.handlePointerMove(createPointerEvent(canvas, { clientX: 120, clientY: 120, pointerId: 61 }));
+
+    expect(inputSystem.viewOffsetX).toBeCloseTo(-20.0 * diagonal, 6);
+    expect(inputSystem.viewOffsetY).toBeCloseTo(0.0, 6);
+    expect(inputSystem.viewOffsetZ).toBeCloseTo(-20.0 * diagonal, 6);
+    const [viewState] = onViewChange.mock.calls.at(-1);
+    expect(viewState.offsetX).toBeCloseTo(-20.0 * diagonal, 6);
+    expect(viewState.offsetY).toBeCloseTo(0.0, 6);
+    expect(viewState.offsetZ).toBeCloseTo(-20.0 * diagonal, 6);
   });
 
   test('grabs a spool without orbiting and moves it on a camera-parallel drag plane', () => {

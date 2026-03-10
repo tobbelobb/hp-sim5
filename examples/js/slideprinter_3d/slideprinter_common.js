@@ -262,6 +262,7 @@ export class RemoteInputSystem {
     this.scaleMultiplier = 1.0;
     this.viewOffsetX = 0.0;
     this.viewOffsetY = 0.0;
+    this.viewOffsetZ = 0.0;
     this.interactionMode = 'select';
     this.isPanning = false;
     this.panPointerId = null;
@@ -308,7 +309,7 @@ export class RemoteInputSystem {
     return null;
   }
 
-  setViewTransform({ scaleMultiplier, offsetX, offsetY }) {
+  setViewTransform({ scaleMultiplier, offsetX, offsetY, offsetZ }) {
     if (typeof scaleMultiplier === 'number') {
       this.scaleMultiplier = scaleMultiplier;
     }
@@ -318,10 +319,59 @@ export class RemoteInputSystem {
     if (typeof offsetY === 'number') {
       this.viewOffsetY = offsetY;
     }
+    if (typeof offsetZ === 'number') {
+      this.viewOffsetZ = offsetZ;
+    }
   }
 
   setViewChangeListener(listener) {
     this.onViewChange = typeof listener === 'function' ? listener : null;
+  }
+
+  getViewPlaneMetrics(scaleMultiplier = this.scaleMultiplier) {
+    const renderSystem = this.getRenderSystem();
+    if (renderSystem && typeof renderSystem.getViewPlaneMetrics === 'function') {
+      const metrics = renderSystem.getViewPlaneMetrics(scaleMultiplier);
+      if (metrics && Number.isFinite(metrics.worldUnitsPerPixel) && metrics.worldUnitsPerPixel > 0) {
+        return {
+          right: new Vector3(metrics.right?.x ?? 1.0, metrics.right?.y ?? 0.0, metrics.right?.z ?? 0.0),
+          up: new Vector3(metrics.up?.x ?? 0.0, metrics.up?.y ?? 1.0, metrics.up?.z ?? 0.0),
+          worldUnitsPerPixel: metrics.worldUnitsPerPixel,
+        };
+      }
+    }
+
+    const simHeight = this.world.getResource('simHeight');
+    const baseScale = this.canvas.height / simHeight;
+    const worldUnitsPerPixel = baseScale > 0 && scaleMultiplier > 0 ? 1.0 / (baseScale * scaleMultiplier) : 0.0;
+    return {
+      right: new Vector3(1.0, 0.0, 0.0),
+      up: new Vector3(0.0, 1.0, 0.0),
+      worldUnitsPerPixel,
+    };
+  }
+
+  getViewPlaneOffsetVector(clientX, clientY, metrics) {
+    if (!metrics || !(metrics.worldUnitsPerPixel > 0)) {
+      return null;
+    }
+    const rect = this.canvas.getBoundingClientRect();
+    const pixelX = clientX - rect.left - this.canvas.width / 2;
+    const pixelY = this.canvas.height / 2 - (clientY - rect.top);
+    return metrics.right.clone().scale(pixelX * metrics.worldUnitsPerPixel).add(
+      metrics.up.clone().scale(pixelY * metrics.worldUnitsPerPixel)
+    );
+  }
+
+  computeViewPlaneShift(prevClientX, prevClientY, nextClientX, nextClientY, nextScaleMultiplier = this.scaleMultiplier) {
+    const prevMetrics = this.getViewPlaneMetrics(this.scaleMultiplier);
+    const nextMetrics = this.getViewPlaneMetrics(nextScaleMultiplier);
+    const prevOffset = this.getViewPlaneOffsetVector(prevClientX, prevClientY, prevMetrics);
+    const nextOffset = this.getViewPlaneOffsetVector(nextClientX, nextClientY, nextMetrics);
+    if (!prevOffset || !nextOffset) {
+      return null;
+    }
+    return prevOffset.subtract(nextOffset);
   }
 
   toSimCoords(canvasX, canvasY) {
@@ -442,38 +492,27 @@ export class RemoteInputSystem {
         return;
       }
       event.preventDefault();
-      const renderSystem = this.getRenderSystem();
-      const prevPoint = renderSystem?.projectClientToSim?.(this.panLastX, this.panLastY) ?? null;
-      const nextPoint = renderSystem?.projectClientToSim?.(event.clientX, event.clientY) ?? null;
-      let nextOffsetX = this.viewOffsetX;
-      let nextOffsetY = this.viewOffsetY;
-      if (
-        prevPoint && nextPoint
-        && Number.isFinite(prevPoint.x) && Number.isFinite(prevPoint.y)
-        && Number.isFinite(nextPoint.x) && Number.isFinite(nextPoint.y)
-      ) {
-        nextOffsetX += prevPoint.x - nextPoint.x;
-        nextOffsetY += prevPoint.y - nextPoint.y;
-      } else {
-        const baseScale = this.canvas.height / this.world.getResource('simHeight');
-        const scale = baseScale * this.scaleMultiplier;
-        if (scale <= 0) {
-          return;
-        }
-        const deltaX = event.clientX - this.panLastX;
-        const deltaY = event.clientY - this.panLastY;
-        nextOffsetX -= deltaX / scale;
-        nextOffsetY += deltaY / scale;
+      const shift = this.computeViewPlaneShift(
+        this.panLastX,
+        this.panLastY,
+        event.clientX,
+        event.clientY,
+        this.scaleMultiplier
+      );
+      if (!shift) {
+        return;
       }
       this.panLastX = event.clientX;
       this.panLastY = event.clientY;
-      this.viewOffsetX = nextOffsetX;
-      this.viewOffsetY = nextOffsetY;
+      this.viewOffsetX += shift.x;
+      this.viewOffsetY += shift.y;
+      this.viewOffsetZ += shift.z;
       if (this.onViewChange) {
         this.onViewChange({
           scale: this.scaleMultiplier,
           offsetX: this.viewOffsetX,
           offsetY: this.viewOffsetY,
+          offsetZ: this.viewOffsetZ,
         });
       }
       return;
@@ -508,6 +547,14 @@ export class RemoteInputSystem {
       if (this.isPanning && this.panPointerId === event.pointerId) {
         this.isPanning = false;
         this.panPointerId = null;
+        if (this.onViewChange) {
+          this.onViewChange({
+            scale: this.scaleMultiplier,
+            offsetX: this.viewOffsetX,
+            offsetY: this.viewOffsetY,
+            offsetZ: this.viewOffsetZ,
+          });
+        }
         if (typeof this.canvas.releasePointerCapture === 'function') {
           try {
             this.canvas.releasePointerCapture(event.pointerId);
@@ -554,6 +601,7 @@ export class InputSystem {
     this.scaleMultiplier = 1.0;
     this.viewOffsetX = 0.0;
     this.viewOffsetY = 0.0;
+    this.viewOffsetZ = 0.0;
     this.interactionMode = 'select';
     this.isPanning = false;
     this.panPointerId = null;
@@ -659,7 +707,7 @@ export class InputSystem {
     );
   }
 
-  setViewTransform({ scaleMultiplier, offsetX, offsetY }) {
+  setViewTransform({ scaleMultiplier, offsetX, offsetY, offsetZ }) {
     if (typeof scaleMultiplier === 'number') {
       this.scaleMultiplier = scaleMultiplier;
     }
@@ -669,10 +717,59 @@ export class InputSystem {
     if (typeof offsetY === 'number') {
       this.viewOffsetY = offsetY;
     }
+    if (typeof offsetZ === 'number') {
+      this.viewOffsetZ = offsetZ;
+    }
   }
 
   setViewChangeListener(listener) {
     this.onViewChange = typeof listener === 'function' ? listener : null;
+  }
+
+  getViewPlaneMetrics(scaleMultiplier = this.scaleMultiplier) {
+    const renderSystem = this.getRenderSystem();
+    if (renderSystem && typeof renderSystem.getViewPlaneMetrics === 'function') {
+      const metrics = renderSystem.getViewPlaneMetrics(scaleMultiplier);
+      if (metrics && Number.isFinite(metrics.worldUnitsPerPixel) && metrics.worldUnitsPerPixel > 0) {
+        return {
+          right: new Vector3(metrics.right?.x ?? 1.0, metrics.right?.y ?? 0.0, metrics.right?.z ?? 0.0),
+          up: new Vector3(metrics.up?.x ?? 0.0, metrics.up?.y ?? 1.0, metrics.up?.z ?? 0.0),
+          worldUnitsPerPixel: metrics.worldUnitsPerPixel,
+        };
+      }
+    }
+
+    const simHeight = this.world.getResource('simHeight');
+    const baseScale = this.canvas.height / simHeight;
+    const worldUnitsPerPixel = baseScale > 0 && scaleMultiplier > 0 ? 1.0 / (baseScale * scaleMultiplier) : 0.0;
+    return {
+      right: new Vector3(1.0, 0.0, 0.0),
+      up: new Vector3(0.0, 1.0, 0.0),
+      worldUnitsPerPixel,
+    };
+  }
+
+  getViewPlaneOffsetVector(clientX, clientY, metrics) {
+    if (!metrics || !(metrics.worldUnitsPerPixel > 0)) {
+      return null;
+    }
+    const rect = this.canvas.getBoundingClientRect();
+    const pixelX = clientX - rect.left - this.canvas.width / 2;
+    const pixelY = this.canvas.height / 2 - (clientY - rect.top);
+    return metrics.right.clone().scale(pixelX * metrics.worldUnitsPerPixel).add(
+      metrics.up.clone().scale(pixelY * metrics.worldUnitsPerPixel)
+    );
+  }
+
+  computeViewPlaneShift(prevClientX, prevClientY, nextClientX, nextClientY, nextScaleMultiplier = this.scaleMultiplier) {
+    const prevMetrics = this.getViewPlaneMetrics(this.scaleMultiplier);
+    const nextMetrics = this.getViewPlaneMetrics(nextScaleMultiplier);
+    const prevOffset = this.getViewPlaneOffsetVector(prevClientX, prevClientY, prevMetrics);
+    const nextOffset = this.getViewPlaneOffsetVector(nextClientX, nextClientY, nextMetrics);
+    if (!prevOffset || !nextOffset) {
+      return null;
+    }
+    return prevOffset.subtract(nextOffset);
   }
 
   reset() {
@@ -921,48 +1018,31 @@ export class InputSystem {
       rememberGestureState();
       return;
     }
-    const simHeight = this.world.getResource('simHeight');
-    if (!Number.isFinite(simHeight) || simHeight === 0) {
-      rememberGestureState();
-      return;
-    }
-    const baseScale = this.canvas.height / simHeight;
-    if (!Number.isFinite(baseScale) || baseScale <= 0) {
-      rememberGestureState();
-      return;
-    }
-    const rect = this.canvas.getBoundingClientRect();
-    const prevScale = baseScale * this.scaleMultiplier;
-    if (!(prevScale > 0)) {
-      rememberGestureState();
-      return;
-    }
     const previousCenterX = this.pinchLastCenterX;
     const previousCenterY = this.pinchLastCenterY;
-    const previousPixelX = previousCenterX - rect.left;
-    const previousPixelY = previousCenterY - rect.top;
-    const pixelX = centerX - rect.left;
-    const pixelY = centerY - rect.top;
-    const projected = this.projectClientToSim(previousCenterX, previousCenterY);
-    const simX = projected?.x ?? ((previousPixelX - this.canvas.width / 2) / prevScale + this.viewOffsetX);
-    const simY = projected?.y ?? ((this.canvas.height / 2 - previousPixelY) / prevScale + this.viewOffsetY);
     const nextScaleMultiplier = this.scaleMultiplier * delta;
-    const nextScale = baseScale * nextScaleMultiplier;
-    if (!(nextScale > 0)) {
+    const shift = this.computeViewPlaneShift(
+      previousCenterX,
+      previousCenterY,
+      centerX,
+      centerY,
+      nextScaleMultiplier
+    );
+    if (!shift) {
       rememberGestureState();
       return;
     }
-    const nextOffsetX = simX - (pixelX - this.canvas.width / 2) / nextScale;
-    const nextOffsetY = simY - (this.canvas.height / 2 - pixelY) / nextScale;
     this.scaleMultiplier = nextScaleMultiplier;
-    this.viewOffsetX = nextOffsetX;
-    this.viewOffsetY = nextOffsetY;
+    this.viewOffsetX += shift.x;
+    this.viewOffsetY += shift.y;
+    this.viewOffsetZ += shift.z;
     if (this.onViewChange) {
       this.onViewChange(
         {
           scale: nextScaleMultiplier,
-          offsetX: nextOffsetX,
-          offsetY: nextOffsetY,
+          offsetX: this.viewOffsetX,
+          offsetY: this.viewOffsetY,
+          offsetZ: this.viewOffsetZ,
         },
         { gesture: 'pinch' }
       );
@@ -1167,6 +1247,7 @@ export class InputSystem {
             scale: this.scaleMultiplier,
             offsetX: this.viewOffsetX,
             offsetY: this.viewOffsetY,
+            offsetZ: this.viewOffsetZ,
           },
           { forceRedraw: true }
         );
@@ -1224,38 +1305,27 @@ export class InputSystem {
     }
     if (isPanPointer) {
       event.preventDefault();
-      const renderSystem = this.getRenderSystem();
-      const prevPoint = renderSystem?.projectClientToSim?.(this.panLastX, this.panLastY) ?? null;
-      const nextPoint = renderSystem?.projectClientToSim?.(event.clientX, event.clientY) ?? null;
-      let nextOffsetX = this.viewOffsetX;
-      let nextOffsetY = this.viewOffsetY;
-      if (
-        prevPoint && nextPoint
-        && Number.isFinite(prevPoint.x) && Number.isFinite(prevPoint.y)
-        && Number.isFinite(nextPoint.x) && Number.isFinite(nextPoint.y)
-      ) {
-        nextOffsetX += prevPoint.x - nextPoint.x;
-        nextOffsetY += prevPoint.y - nextPoint.y;
-      } else {
-        const baseScale = this.canvas.height / this.world.getResource('simHeight');
-        const scale = baseScale * this.scaleMultiplier;
-        if (scale <= 0) {
-          return;
-        }
-        const deltaX = event.clientX - this.panLastX;
-        const deltaY = event.clientY - this.panLastY;
-        nextOffsetX -= deltaX / scale;
-        nextOffsetY += deltaY / scale;
+      const shift = this.computeViewPlaneShift(
+        this.panLastX,
+        this.panLastY,
+        event.clientX,
+        event.clientY,
+        this.scaleMultiplier
+      );
+      if (!shift) {
+        return;
       }
       this.panLastX = event.clientX;
       this.panLastY = event.clientY;
-      this.viewOffsetX = nextOffsetX;
-      this.viewOffsetY = nextOffsetY;
+      this.viewOffsetX += shift.x;
+      this.viewOffsetY += shift.y;
+      this.viewOffsetZ += shift.z;
       if (this.onViewChange) {
         this.onViewChange({
           scale: this.scaleMultiplier,
           offsetX: this.viewOffsetX,
           offsetY: this.viewOffsetY,
+          offsetZ: this.viewOffsetZ,
         });
       }
       return;

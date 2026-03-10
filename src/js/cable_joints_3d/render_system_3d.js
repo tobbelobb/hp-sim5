@@ -562,6 +562,7 @@ export class RenderSystem3D {
     this.viewScaleMultiplier = 1.0;
     this.viewOffsetX = 0.0;
     this.viewOffsetY = 0.0;
+    this.viewOffsetZ = 0.0;
     this.orbitMinPolarAngle = Number.isFinite(options.minOrbitPolarAngle) ? options.minOrbitPolarAngle : 1e-6;
     this.orbitMaxPolarAngle = Number.isFinite(options.maxOrbitPolarAngle) ? options.maxOrbitPolarAngle : (Math.PI - 1e-6);
     this.orbitRotateSpeed = Number.isFinite(options.orbitRotateSpeed) ? options.orbitRotateSpeed : 1.0;
@@ -938,7 +939,7 @@ export class RenderSystem3D {
     this.drawingSuspended = Boolean(suspended);
   }
 
-  setViewTransform({ scaleMultiplier, offsetX, offsetY } = {}) {
+  setViewTransform({ scaleMultiplier, offsetX, offsetY, offsetZ } = {}) {
     if (typeof scaleMultiplier === 'number' && Number.isFinite(scaleMultiplier) && scaleMultiplier > 0) {
       this.viewScaleMultiplier = scaleMultiplier;
     }
@@ -947,6 +948,9 @@ export class RenderSystem3D {
     }
     if (typeof offsetY === 'number' && Number.isFinite(offsetY)) {
       this.viewOffsetY = offsetY;
+    }
+    if (typeof offsetZ === 'number' && Number.isFinite(offsetZ)) {
+      this.viewOffsetZ = offsetZ;
     }
 
     this._applyCameraFromViewTransform();
@@ -2372,9 +2376,33 @@ export class RenderSystem3D {
     this._baseCameraDistance = distance;
   }
 
-  _cameraDistanceForScale() {
-    const scale = Math.max(0.05, this.viewScaleMultiplier);
+  _cameraDistanceForScale(scaleMultiplier = this.viewScaleMultiplier) {
+    const scale = Math.max(0.05, scaleMultiplier);
     return Math.max(0.08, this._baseCameraDistance / scale);
+  }
+
+  _getViewTarget() {
+    const target = this._baseViewTarget.clone();
+    target.x += finiteOr(this.viewOffsetX, 0.0);
+    target.y += finiteOr(this.viewOffsetY, 0.0);
+    target.z += finiteOr(this.viewOffsetZ, 0.0);
+    return target;
+  }
+
+  getViewPlaneMetrics(scaleMultiplier = this.viewScaleMultiplier) {
+    const height = Math.max(1, this.canvas.height || this.canvas.clientHeight || 1);
+    const distance = this._cameraDistanceForScale(scaleMultiplier);
+    const worldUnitsPerPixel = (2 * distance * Math.tan(THREE.MathUtils.degToRad(this.camera.fov) * 0.5)) / height;
+    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion).normalize();
+    const up = new THREE.Vector3(0, 1, 0).applyQuaternion(this.camera.quaternion).normalize();
+    const target = this._getViewTarget();
+
+    return {
+      target: new Vector3(target.x, target.y, target.z),
+      right: new Vector3(right.x, right.y, right.z),
+      up: new Vector3(up.x, up.y, up.z),
+      worldUnitsPerPixel,
+    };
   }
 
   _buildOrbitOffset(distance) {
@@ -2387,9 +2415,7 @@ export class RenderSystem3D {
   }
 
   _applyCameraFromViewTransform() {
-    const target = this._baseViewTarget.clone();
-    target.x += this.viewOffsetX;
-    target.y += this.viewOffsetY;
+    const target = this._getViewTarget();
 
     const cameraOffset = this._buildOrbitOffset(this._cameraDistanceForScale());
     this.camera.up.set(0, 0, 1);
