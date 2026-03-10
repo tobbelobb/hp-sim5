@@ -397,7 +397,7 @@ def Xform "World"
             custom double cablePath:halfWidth = 0.001
         }
         custom color3f machine:tintColor = (0.1, 0.1, 1.0)
-        custom color3f machine:extrusionColor = (0.1, 0.1, 1.0)
+        custom color3f machine:extrusionColor = (1.0, 1.0, 0.1)
     }
 
     def PhysicsScene "PhysicsScene"
