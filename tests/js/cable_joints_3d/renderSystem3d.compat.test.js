@@ -262,13 +262,17 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
       expect(system.rigidGroupLines).toHaveLength(4);
       expect(system.rigidGroupLines.every((line) => line.visible)).toBe(true);
       expect(system.rigidGroupLines[0].material.color.getHexString()).toBe('33ff66');
-      const positions = Array.from(system.rigidGroupLines[0].geometry.getAttribute('position').array);
-      expect(positions[0]).toBeCloseTo(-0.3, 6);
-      expect(positions[1]).toBeCloseTo(0.0, 6);
-      expect(positions[2]).toBeCloseTo(0.0015, 6);
-      expect(positions[3]).toBeCloseTo(-0.1, 6);
-      expect(positions[4]).toBeCloseTo(0.3, 6);
-      expect(positions[5]).toBeCloseTo(0.0015, 6);
+      const positions = system.rigidGroupLines[0].geometry.getAttribute('position');
+      const midpointIndex = Math.floor(positions.count / 2);
+      expect(positions.getX(0)).toBeCloseTo(-0.3, 6);
+      expect(positions.getY(0)).toBeCloseTo(0.0, 6);
+      expect(positions.getZ(0)).toBeCloseTo(0.0015, 6);
+      expect(positions.getX(midpointIndex)).toBeCloseTo(-0.2, 6);
+      expect(positions.getY(midpointIndex)).toBeCloseTo(0.15, 6);
+      expect(positions.getZ(midpointIndex)).toBeCloseTo(0.0015, 6);
+      expect(positions.getX(positions.count - 1)).toBeCloseTo(-0.1, 6);
+      expect(positions.getY(positions.count - 1)).toBeCloseTo(0.3, 6);
+      expect(positions.getZ(positions.count - 1)).toBeCloseTo(0.0015, 6);
     } finally {
       disposeCompatStub(system);
     }

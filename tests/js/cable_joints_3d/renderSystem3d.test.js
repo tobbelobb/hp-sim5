@@ -9,7 +9,8 @@ import {
   World,
   PositionComponent,
   RadiusComponent,
-  OrientationComponent
+  OrientationComponent,
+  RigidGroupComponent
 } from '../../../src/js/cable_joints_3d/ecs.js';
 import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
 import { RenderableComponent } from '../../../src/js/cable_joints/ecs.js';
@@ -40,6 +41,7 @@ function createRenderSystemStub() {
   system.jointLines = [];
   system.wrapArcs = [];
   system.knotMarkers = [];
+  system.rigidGroupLines = [];
   system._activeCircleIds = new Set();
   system.defaultPlaneNormal = new Vector3(0, 0, 1);
   system._bumperFxGroup = new THREE.Group();
@@ -442,6 +444,46 @@ describe('RenderSystem3D cable sag', () => {
       expect(positions.getX(midpointIndex)).toBeCloseTo(0.5, 6);
       expect(positions.getY(midpointIndex)).toBeCloseTo(0.0, 6);
       expect(positions.getZ(midpointIndex)).toBeCloseTo(0.2, 6);
+    } finally {
+      disposeRenderSystemStub(system);
+    }
+  });
+});
+
+describe('RenderSystem3D rigid group overlays', () => {
+  test('does not leave trailing vertices at the origin when drawing rigid group lines', () => {
+    const system = createRenderSystemStub();
+
+    try {
+      const world = new World();
+
+      const a = world.createEntity();
+      world.addComponent(a, new PositionComponent(-0.25, 0.1, 0.1));
+
+      const b = world.createEntity();
+      world.addComponent(b, new PositionComponent(0.25, 0.1, 0.1));
+
+      const rigidGroup = world.createEntity();
+      world.addComponent(rigidGroup, new RigidGroupComponent([a, b], 1.0));
+      world.addComponent(rigidGroup, new RenderableComponent('line', '#55ff88'));
+
+      RenderSystem3D.prototype._syncRigidGroups.call(system, world);
+
+      expect(system.rigidGroupLines).toHaveLength(1);
+      const line = system.rigidGroupLines[0];
+      const positions = line.geometry.attributes.position;
+      const midpointIndex = Math.floor(positions.count / 2);
+
+      expect(line.visible).toBe(true);
+      expect(positions.getX(0)).toBeCloseTo(-0.25, 6);
+      expect(positions.getY(0)).toBeCloseTo(0.1, 6);
+      expect(positions.getZ(0)).toBeCloseTo(0.1015, 6);
+      expect(positions.getX(midpointIndex)).toBeCloseTo(0.0, 6);
+      expect(positions.getY(midpointIndex)).toBeCloseTo(0.1, 6);
+      expect(positions.getZ(midpointIndex)).toBeCloseTo(0.1015, 6);
+      expect(positions.getX(positions.count - 1)).toBeCloseTo(0.25, 6);
+      expect(positions.getY(positions.count - 1)).toBeCloseTo(0.1, 6);
+      expect(positions.getZ(positions.count - 1)).toBeCloseTo(0.1015, 6);
     } finally {
       disposeRenderSystemStub(system);
     }

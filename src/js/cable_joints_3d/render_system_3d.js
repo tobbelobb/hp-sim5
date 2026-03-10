@@ -1802,12 +1802,10 @@ export class RenderSystem3D {
       setMaterialColor(line.material, spec.color);
 
       const positions = line.geometry.attributes.position.array;
-      positions[0] = spec.pA.x;
-      positions[1] = spec.pA.y;
-      positions[2] = (spec.pA.z || 0.0) + DEFAULT_RIGID_GROUP_Z_OFFSET;
-      positions[3] = spec.pB.x;
-      positions[4] = spec.pB.y;
-      positions[5] = (spec.pB.z || 0.0) + DEFAULT_RIGID_GROUP_Z_OFFSET;
+      const segments = line.userData.lineSegments ?? JOINT_LINE_SEGMENTS;
+      const lineStart = new Vector3(spec.pA.x, spec.pA.y, (spec.pA.z || 0.0) + DEFAULT_RIGID_GROUP_Z_OFFSET);
+      const lineEnd = new Vector3(spec.pB.x, spec.pB.y, (spec.pB.z || 0.0) + DEFAULT_RIGID_GROUP_Z_OFFSET);
+      writeStraightCablePositions(positions, lineStart, lineEnd, segments);
       line.geometry.attributes.position.needsUpdate = true;
     }
   }
