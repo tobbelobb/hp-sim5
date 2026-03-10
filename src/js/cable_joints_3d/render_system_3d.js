@@ -821,7 +821,6 @@ export class RenderSystem3D {
   }
 
   clearPositionTrace({ keepMarkers = false } = {}) {
-    this.positionTracePoints = [];
     this.drawnPositionTraceCount = 0;
     this._updatePointObject(this.positionTracePointsObject, [], null, DEFAULT_TRACE_Z);
     if (!keepMarkers) {
@@ -830,6 +829,7 @@ export class RenderSystem3D {
   }
 
   clearPositionTracePoints() {
+    this.positionTracePoints = [];
     this.clearPositionTrace({ keepMarkers: true });
   }
 

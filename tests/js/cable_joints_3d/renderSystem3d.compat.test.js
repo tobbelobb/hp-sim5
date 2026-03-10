@@ -199,6 +199,40 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
     }
   });
 
+  test('clearPositionTrace preserves stored trace history for redraw after view changes', () => {
+    const system = createCompatStub();
+
+    try {
+      const world = new World();
+      const extruderEntity = world.createEntity();
+      const extruder = new ExtruderComponent();
+      extruder.centerPos = { x: 0.5, y: 0.6, z: -0.001 };
+      world.addComponent(extruderEntity, extruder);
+
+      system.setPositionTraceEnabled(true);
+      system._syncPositionTrace(world);
+      extruder.centerPos = { x: 0.55, y: 0.65, z: -0.001 };
+      system._syncPositionTrace(world);
+
+      expect(system.positionTracePoints).toHaveLength(2);
+      expect(system.positionTracePointsObject.geometry.getAttribute('position').count).toBe(2);
+
+      system.clearPositionTrace({ keepMarkers: true });
+
+      expect(system.positionTracePoints).toHaveLength(2);
+      expect(system.drawnPositionTraceCount).toBe(0);
+      expect(system.positionTracePointsObject.visible).toBe(false);
+
+      system._syncPositionTrace(world);
+
+      expect(system.positionTracePointsObject.visible).toBe(true);
+      expect(system.positionTracePointsObject.geometry.getAttribute('position').count).toBe(2);
+      expect(system.drawnPositionTraceCount).toBe(2);
+    } finally {
+      disposeCompatStub(system);
+    }
+  });
+
   test('renders rigid-group beam edges from renderSegments', () => {
     const system = createCompatStub();
 
