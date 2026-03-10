@@ -30,14 +30,14 @@ function createCanvas() {
   };
 }
 
-function createPointerEvent(canvas, { clientX, clientY, pointerId = 1 } = {}) {
+function createPointerEvent(canvas, { clientX, clientY, pointerId = 1, pointerType = 'mouse', button = 0 } = {}) {
   return {
     target: canvas,
     clientX,
     clientY,
     pointerId,
-    pointerType: 'mouse',
-    button: 0,
+    pointerType,
+    button,
     preventDefault() {},
   };
 }
@@ -83,6 +83,173 @@ describe('slideprinter 3D InputSystem orbit interaction', () => {
 
     inputSystem.handlePointerUp(createPointerEvent(canvas, { clientX: 135, clientY: 150, pointerId: 7 }));
     expect(inputSystem.isOrbiting).toBe(false);
+  });
+
+  test('single-finger touch drag on empty canvas orbits the 3D render system', () => {
+    const world = new World();
+    const renderSystem = {
+      rotateOrbitByPixels: jest.fn(),
+    };
+    world.setResource('simHeight', 480);
+    world.setResource('renderSystem', renderSystem);
+
+    const canvas = createCanvas();
+    const inputSystem = new InputSystem(canvas, world, null);
+
+    inputSystem.handlePointerDown(createPointerEvent(canvas, {
+      clientX: 100,
+      clientY: 120,
+      pointerId: 17,
+      pointerType: 'touch',
+    }));
+    expect(inputSystem.isOrbiting).toBe(true);
+    expect(inputSystem.isPanning).toBe(false);
+
+    inputSystem.handlePointerMove(createPointerEvent(canvas, {
+      clientX: 135,
+      clientY: 150,
+      pointerId: 17,
+      pointerType: 'touch',
+    }));
+    expect(renderSystem.rotateOrbitByPixels).toHaveBeenCalledWith(35, 30);
+
+    inputSystem.handlePointerUp(createPointerEvent(canvas, {
+      clientX: 135,
+      clientY: 150,
+      pointerId: 17,
+      pointerType: 'touch',
+    }));
+    expect(inputSystem.isOrbiting).toBe(false);
+    expect(inputSystem.activeGrabPointerId).toBe(null);
+  });
+
+  test('a second touch cancels orbit and starts the pinch gesture state', () => {
+    const world = new World();
+    const renderSystem = {
+      rotateOrbitByPixels: jest.fn(),
+    };
+    world.setResource('simHeight', 480);
+    world.setResource('renderSystem', renderSystem);
+
+    const canvas = createCanvas();
+    const inputSystem = new InputSystem(canvas, world, null);
+
+    inputSystem.handlePointerDown(createPointerEvent(canvas, {
+      clientX: 100,
+      clientY: 120,
+      pointerId: 21,
+      pointerType: 'touch',
+    }));
+    expect(inputSystem.isOrbiting).toBe(true);
+
+    inputSystem.handlePointerDown(createPointerEvent(canvas, {
+      clientX: 200,
+      clientY: 120,
+      pointerId: 22,
+      pointerType: 'touch',
+    }));
+
+    expect(inputSystem.isOrbiting).toBe(false);
+    expect(inputSystem.pinchActive).toBe(true);
+    expect(inputSystem.activePointers.size).toBe(2);
+  });
+
+  test('two-finger drag pans by translating the gesture midpoint', () => {
+    const world = new World();
+    const renderSystem = {
+      rotateOrbitByPixels: jest.fn(),
+    };
+    world.setResource('simHeight', 480);
+    world.setResource('renderSystem', renderSystem);
+
+    const canvas = createCanvas();
+    const inputSystem = new InputSystem(canvas, world, null);
+    const onViewChange = jest.fn();
+    inputSystem.setViewChangeListener(onViewChange);
+
+    inputSystem.handlePointerDown(createPointerEvent(canvas, {
+      clientX: 100,
+      clientY: 120,
+      pointerId: 31,
+      pointerType: 'touch',
+    }));
+    inputSystem.handlePointerDown(createPointerEvent(canvas, {
+      clientX: 200,
+      clientY: 120,
+      pointerId: 32,
+      pointerType: 'touch',
+    }));
+
+    inputSystem.handlePointerMove(createPointerEvent(canvas, {
+      clientX: 120,
+      clientY: 120,
+      pointerId: 31,
+      pointerType: 'touch',
+    }));
+    inputSystem.handlePointerMove(createPointerEvent(canvas, {
+      clientX: 220,
+      clientY: 120,
+      pointerId: 32,
+      pointerType: 'touch',
+    }));
+
+    expect(inputSystem.scaleMultiplier).toBeCloseTo(1.0, 6);
+    expect(inputSystem.viewOffsetX).toBeCloseTo(-20.0, 6);
+    expect(inputSystem.viewOffsetY).toBeCloseTo(0.0, 6);
+    const [viewState, options] = onViewChange.mock.calls.at(-1);
+    expect(viewState.scale).toBeCloseTo(1.0, 6);
+    expect(viewState.offsetX).toBeCloseTo(-20.0, 6);
+    expect(viewState.offsetY).toBeCloseTo(0.0, 6);
+    expect(options).toEqual({ gesture: 'pinch' });
+  });
+
+  test('pinch zoom scales around the gesture midpoint', () => {
+    const world = new World();
+    const renderSystem = {
+      rotateOrbitByPixels: jest.fn(),
+    };
+    world.setResource('simHeight', 480);
+    world.setResource('renderSystem', renderSystem);
+
+    const canvas = createCanvas();
+    const inputSystem = new InputSystem(canvas, world, null);
+    const onViewChange = jest.fn();
+    inputSystem.setViewChangeListener(onViewChange);
+
+    inputSystem.handlePointerDown(createPointerEvent(canvas, {
+      clientX: 100,
+      clientY: 120,
+      pointerId: 41,
+      pointerType: 'touch',
+    }));
+    inputSystem.handlePointerDown(createPointerEvent(canvas, {
+      clientX: 200,
+      clientY: 120,
+      pointerId: 42,
+      pointerType: 'touch',
+    }));
+
+    inputSystem.handlePointerMove(createPointerEvent(canvas, {
+      clientX: 90,
+      clientY: 120,
+      pointerId: 41,
+      pointerType: 'touch',
+    }));
+    inputSystem.handlePointerMove(createPointerEvent(canvas, {
+      clientX: 210,
+      clientY: 120,
+      pointerId: 42,
+      pointerType: 'touch',
+    }));
+
+    expect(inputSystem.scaleMultiplier).toBeCloseTo(1.2, 6);
+    expect(inputSystem.viewOffsetX).toBeCloseTo(-28.333333, 6);
+    expect(inputSystem.viewOffsetY).toBeCloseTo(20.0, 6);
+    const [viewState, options] = onViewChange.mock.calls.at(-1);
+    expect(viewState.scale).toBeCloseTo(1.2, 6);
+    expect(viewState.offsetX).toBeCloseTo(-28.333333333333343, 6);
+    expect(viewState.offsetY).toBeCloseTo(20.0, 6);
+    expect(options).toEqual({ gesture: 'pinch' });
   });
 
   test('pan mode follows the projected screen-plane motion', () => {

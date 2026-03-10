@@ -577,6 +577,8 @@ export class InputSystem {
     this.activePointers = new Map();
     this.pinchActive = false;
     this.pinchLastDistance = 0;
+    this.pinchLastCenterX = 0;
+    this.pinchLastCenterY = 0;
     this.globalTouchOverrides = null;
     this.preventScrollDuringGrab = (event) => {
       if (this.activeGrabPointerId !== null && event.cancelable) {
@@ -689,6 +691,8 @@ export class InputSystem {
     this.activePointers.clear();
     this.pinchActive = false;
     this.pinchLastDistance = 0;
+    this.pinchLastCenterX = 0;
+    this.pinchLastCenterY = 0;
     if (this.touchActionBeforeGrab !== null) {
       this.canvas.style.touchAction = this.touchActionBeforeGrab;
       this.touchActionBeforeGrab = null;
@@ -775,6 +779,10 @@ export class InputSystem {
       return false;
     }
     return event.button === 1;
+  }
+
+  isTouchLikePointer(event) {
+    return event?.pointerType === 'touch' || event?.pointerType === 'pen';
   }
 
   beginPan(event) {
@@ -879,8 +887,12 @@ export class InputSystem {
       return;
     }
     this.cancelPan();
+    this.cancelOrbit();
+    this.releaseGrabSpring();
     this.pinchActive = true;
     this.pinchLastDistance = metrics.distance;
+    this.pinchLastCenterX = metrics.centerX;
+    this.pinchLastCenterY = metrics.centerY;
   }
 
   updatePinchGesture() {
@@ -892,43 +904,52 @@ export class InputSystem {
       return;
     }
     const { distance, centerX, centerY } = metrics;
+    const rememberGestureState = () => {
+      this.pinchLastDistance = distance;
+      this.pinchLastCenterX = centerX;
+      this.pinchLastCenterY = centerY;
+    };
     if (!(distance > 0)) {
       return;
     }
     if (this.pinchLastDistance <= 0) {
-      this.pinchLastDistance = distance;
+      rememberGestureState();
       return;
     }
     const delta = distance / this.pinchLastDistance;
     if (!Number.isFinite(delta) || delta <= 0) {
-      this.pinchLastDistance = distance;
+      rememberGestureState();
       return;
     }
     const simHeight = this.world.getResource('simHeight');
     if (!Number.isFinite(simHeight) || simHeight === 0) {
-      this.pinchLastDistance = distance;
+      rememberGestureState();
       return;
     }
     const baseScale = this.canvas.height / simHeight;
     if (!Number.isFinite(baseScale) || baseScale <= 0) {
-      this.pinchLastDistance = distance;
+      rememberGestureState();
       return;
     }
     const rect = this.canvas.getBoundingClientRect();
     const prevScale = baseScale * this.scaleMultiplier;
     if (!(prevScale > 0)) {
-      this.pinchLastDistance = distance;
+      rememberGestureState();
       return;
     }
+    const previousCenterX = this.pinchLastCenterX;
+    const previousCenterY = this.pinchLastCenterY;
+    const previousPixelX = previousCenterX - rect.left;
+    const previousPixelY = previousCenterY - rect.top;
     const pixelX = centerX - rect.left;
     const pixelY = centerY - rect.top;
-    const projected = this.projectClientToSim(centerX, centerY);
-    const simX = projected?.x ?? ((pixelX - this.canvas.width / 2) / prevScale + this.viewOffsetX);
-    const simY = projected?.y ?? ((this.canvas.height / 2 - pixelY) / prevScale + this.viewOffsetY);
+    const projected = this.projectClientToSim(previousCenterX, previousCenterY);
+    const simX = projected?.x ?? ((previousPixelX - this.canvas.width / 2) / prevScale + this.viewOffsetX);
+    const simY = projected?.y ?? ((this.canvas.height / 2 - previousPixelY) / prevScale + this.viewOffsetY);
     const nextScaleMultiplier = this.scaleMultiplier * delta;
     const nextScale = baseScale * nextScaleMultiplier;
     if (!(nextScale > 0)) {
-      this.pinchLastDistance = distance;
+      rememberGestureState();
       return;
     }
     const nextOffsetX = simX - (pixelX - this.canvas.width / 2) / nextScale;
@@ -946,7 +967,7 @@ export class InputSystem {
         { gesture: 'pinch' }
       );
     }
-    this.pinchLastDistance = distance;
+    rememberGestureState();
   }
 
   endPinch() {
@@ -955,6 +976,52 @@ export class InputSystem {
     }
     this.pinchActive = false;
     this.pinchLastDistance = 0;
+    this.pinchLastCenterX = 0;
+    this.pinchLastCenterY = 0;
+  }
+
+  releaseGrabSpring() {
+    if (!this.grabSpring) {
+      return;
+    }
+    const { ptrE, jointE, pathE, ballE } = this.grabSpring;
+
+    const posComp = this.world.getComponent(ballE, PositionComponent);
+    const velComp = this.world.getComponent(ballE, VelocityComponent);
+    const prevFinalPosComp = this.world.getComponent(ballE, PrevFinalPosComponent);
+    const dt = this.world.getResource('dt');
+
+    if (velComp && posComp && prevFinalPosComp && dt > 1e-9) {
+      velComp.vel.set(posComp.pos.clone().subtract(prevFinalPosComp.pos).scale(1.0 / dt));
+    } else if (velComp) {
+      velComp.vel.set(new Vector3(0.0, 0.0, 0.0));
+    }
+
+    this.world.destroyEntity(pathE);
+    this.world.destroyEntity(jointE);
+    this.world.destroyEntity(ptrE);
+    this.grabSpring = null;
+    this.grabPlanePoint = null;
+    this.grabPlaneNormal = null;
+    this.world.setResource('grabbedBall', null);
+    if (this.touchActionBeforeGrab !== null && this.interactionMode !== 'pan') {
+      this.canvas.style.touchAction = this.touchActionBeforeGrab;
+      this.touchActionBeforeGrab = null;
+    }
+  }
+
+  endTouchInteraction(event) {
+    if (!this.isTouchLikePointer(event) || this.activeGrabPointerId === null) {
+      return;
+    }
+    if (event.pointerType === 'touch' && this.activePointers.size > 0) {
+      return;
+    }
+    if (event.pointerType !== 'touch' && this.activeGrabPointerId !== event.pointerId) {
+      return;
+    }
+    this.activeGrabPointerId = null;
+    this.setTouchScrollBlockActive(false);
   }
 
   handlePointerDown(event) {
@@ -968,11 +1035,14 @@ export class InputSystem {
       }
     }
     this.trackPointerDown(event);
+    const isTouchLikePointer = this.isTouchLikePointer(event);
     const pinchEngaged = this.pinchActive;
     const wantsAuxPan = this.shouldStartAuxPan(event);
     const usePanMode = this.interactionMode === 'pan' || wantsAuxPan;
-    if ((event.pointerType === 'touch' || event.pointerType === 'pen') && this.interactionMode !== 'pan') {
-      this.activeGrabPointerId = event.pointerId;
+    if (isTouchLikePointer && this.interactionMode !== 'pan') {
+      if (this.activeGrabPointerId === null) {
+        this.activeGrabPointerId = event.pointerId;
+      }
       this.setTouchScrollBlockActive(true);
     }
     if (pinchEngaged) {
@@ -1019,8 +1089,10 @@ export class InputSystem {
     }
 
     const shouldOrbit = closestBall === null
-      && event.pointerType === 'mouse'
-      && event.button === 0
+      && (
+        (event.pointerType === 'mouse' && event.button === 0)
+        || (isTouchLikePointer && (event.pointerType !== 'touch' || this.activePointers.size === 1))
+      )
       && this.interactionMode !== 'pan'
       && typeof this.getRenderSystem()?.rotateOrbitByPixels === 'function';
 
@@ -1100,11 +1172,13 @@ export class InputSystem {
         );
       }
       this.cancelPan();
+      this.endTouchInteraction(event);
       return;
     }
     if (wasOrbitPointer) {
       event.preventDefault();
       this.cancelOrbit();
+      this.endTouchInteraction(event);
       return;
     }
     if (event.target !== this.canvas) {
@@ -1115,6 +1189,7 @@ export class InputSystem {
           // Ignore errors if capture was never set.
         }
       }
+      this.endTouchInteraction(event);
       return;
     }
     event.preventDefault();
@@ -1126,36 +1201,8 @@ export class InputSystem {
       }
     }
 
-    if (this.grabSpring) {
-      const { ptrE, jointE, pathE, ballE } = this.grabSpring;
-
-      const posComp = this.world.getComponent(ballE, PositionComponent);
-      const velComp = this.world.getComponent(ballE, VelocityComponent);
-      const prevFinalPosComp = this.world.getComponent(ballE, PrevFinalPosComponent);
-      const dt = this.world.getResource('dt');
-
-      if (velComp && posComp && prevFinalPosComp && dt > 1e-9) {
-        velComp.vel.set(posComp.pos.clone().subtract(prevFinalPosComp.pos).scale(1.0 / dt));
-      } else if (velComp) {
-        velComp.vel.set(new Vector3(0.0, 0.0, 0.0));
-      }
-
-      this.world.destroyEntity(pathE);
-      this.world.destroyEntity(jointE);
-      this.world.destroyEntity(ptrE);
-      this.grabSpring = null;
-      this.grabPlanePoint = null;
-      this.grabPlaneNormal = null;
-      this.world.setResource('grabbedBall', null);
-      if (this.touchActionBeforeGrab !== null && this.interactionMode !== 'pan') {
-        this.canvas.style.touchAction = this.touchActionBeforeGrab;
-        this.touchActionBeforeGrab = null;
-      }
-    }
-    if (this.activeGrabPointerId === event.pointerId) {
-      this.activeGrabPointerId = null;
-      this.setTouchScrollBlockActive(false);
-    }
+    this.releaseGrabSpring();
+    this.endTouchInteraction(event);
   }
 
   handlePointerCancel(event) {

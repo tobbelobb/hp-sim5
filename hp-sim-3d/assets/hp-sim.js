@@ -2569,7 +2569,7 @@ function initHpSim() {
       }
       clearSceneFrameSnapshot();
       resetViewStateDefaults();
-      setPanMode(isMobileLayout());
+      setPanMode(false);
       if (panModeBtn) {
         panModeBtn.disabled = true;
         panModeBtn.setAttribute('aria-disabled', 'true');
@@ -2910,11 +2910,8 @@ function initHpSim() {
     const matches = isMobileLayout();
     updateQualityToggleLabel();
     updateReferenceToggleUI();
-    if (matches) {
-      if (!lastMobileLayoutMatches && !panModeActive) {
-        setPanMode(true);
-      }
-    } else {
+    setPanMode(panModeActive);
+    if (!matches) {
       if (secondaryControlsHideTimeout) {
         clearTimeout(secondaryControlsHideTimeout);
         secondaryControlsHideTimeout = null;
@@ -3276,7 +3273,7 @@ function initHpSim() {
       panModeBtn.classList.toggle('is-active', panModeActive);
     }
     if (canvas) {
-      canvas.style.touchAction = panModeActive ? 'none' : initialTouchAction;
+      canvas.style.touchAction = panModeActive || isMobileLayout() ? 'none' : initialTouchAction;
     }
     // Show a hand cursor over the sim-app when panning is enabled
     if (simApp) {
@@ -3420,7 +3417,7 @@ function initHpSim() {
       handleTimeScaleChange(1.0);
     }
     resetViewStateDefaults();
-    setPanMode(isMobileLayout());
+    setPanMode(false);
     reapplyViewState({ clearExtrusions: true });
     resetQualityMonitors({ keepReference: true });
     setReferenceVisibility(false);
@@ -4462,7 +4459,7 @@ function initHpSim() {
     }
     resetViewStateDefaults();
     reapplyViewState({ clearExtrusions: true });
-    setPanMode(isMobileLayout());
+    setPanMode(false);
     syncCanvasDimensions();
   };
 
