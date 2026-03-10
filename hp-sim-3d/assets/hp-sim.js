@@ -133,7 +133,8 @@ const ZOOM_EPSILON = 1e-3;
 const QUALITY_HISTORY_MAX_ENTRIES = 20;
 
 const AVAILABLE_USDAS = Object.freeze([
-  { file: 'slideprinter_multi_unit.usda', label: 'Slideprinter Multi Unit (default)' },
+  { file: 'hp3.usda', label: 'Hangprinter v3 (default)' },
+  { file: 'slideprinter_multi_unit.usda', label: 'Slideprinter Multi Unit' },
   { file: 'slideprinter.usda', label: 'Slideprinter Original' },
   { file: 'slideprinter_hexagon.usda', label: 'Slideprinter (hexagon)' },
   { file: 'slideprinter_hexagon_pure_distancejoints.usda', label: 'Slideprinter (hexagon, pure distance joints)' },
@@ -236,7 +237,7 @@ function initHpSim() {
       },
     ])
   );
-  const defaultUsdaKey = 'slideprinter_multi_unit.usda';
+  const defaultUsdaKey = 'hp3.usda';
   const presetOptionInputs = new Map();
   const presetOptionLabels = new Map();
   const presetOptionColorChips = new Map();
