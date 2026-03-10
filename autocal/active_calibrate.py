@@ -26,6 +26,8 @@ RRF_SIM_BINARY = REPO_ROOT / "RRF" / "build" / "rrf_simulator"
 RRF_SIM_VSD_PATH = "RRF/run/vsd"
 RRF_SIM_DEFAULT_CONFIG = "sys/config_slideprinter.g"
 RRF_SIM_LINE_LAYER_CONFIG = "sys/config_slideprinter_w_line_layers.g"
+RRF_SIM_HP3_CONFIG = "sys/config_hp3.g"
+RRF_SIM_HP3_LINE_LAYER_CONFIG = "sys/config_hp3_w_line_layers.g"
 DEFAULT_NOISE_SIGMA_FLOOR_DEG = 0.01
 DEFAULT_NOISE_MIN_SAMPLES = 10
 DEFAULT_LAYER_LINE_WIDTH_MM = 1.0
@@ -98,8 +100,23 @@ from autocal.sweep_config_generator import generate_sweep_configs, select_repres
 from autocal.sweep_types import MachineConfig, MachineType
 
 GeometryWeights = Tuple[float, float, float]
+_MACHINE_TYPE_ALIASES = {
+    "hp3": "hangprinter_4",
+    "hp4": "hangprinter_4",
+    "hangprinter_3": "hangprinter_4",
+}
 MACHINE_TYPE_CHOICES = tuple(machine.value for machine in MachineType)
-MACHINE_TYPE_CHOICES_STR = " | ".join(MACHINE_TYPE_CHOICES)
+MACHINE_TYPE_INPUT_CHOICES = tuple(dict.fromkeys((*MACHINE_TYPE_CHOICES, *_MACHINE_TYPE_ALIASES.keys())))
+MACHINE_TYPE_CHOICES_STR = " | ".join(MACHINE_TYPE_INPUT_CHOICES)
+
+
+def _normalize_machine_type(machine_type: Optional[str]) -> Optional[str]:
+    if machine_type is None:
+        return None
+    normalized = str(machine_type).strip().lower()
+    if not normalized:
+        return normalized
+    return _MACHINE_TYPE_ALIASES.get(normalized, normalized)
 
 
 def _require_machine_type(
@@ -114,12 +131,13 @@ def _require_machine_type(
         raise ValueError(
             f"{context} missing machine_type. Expected one of: {MACHINE_TYPE_CHOICES_STR}"
         )
-    machine_type = str(raw_machine_type)
+    machine_type = _normalize_machine_type(str(raw_machine_type))
     if machine_type not in MACHINE_TYPE_CHOICES:
         raise ValueError(
             f"{context} machine_type '{machine_type}' is not supported. Expected one of: {MACHINE_TYPE_CHOICES_STR}"
         )
-    if expected is not None and str(expected) != machine_type:
+    expected_machine_type = _normalize_machine_type(expected)
+    if expected_machine_type is not None and expected_machine_type != machine_type:
         message = (
             f"{context} machine_type '{machine_type}' does not match --machine-type '{expected}'. "
             f"Using '{machine_type}'. Expected one of: {MACHINE_TYPE_CHOICES_STR}"
@@ -3280,8 +3298,16 @@ def _resolve_sim_config(
     if isinstance(env_cfg, str) and env_cfg.strip():
         return env_cfg.strip()
 
+    machine_type = _normalize_machine_type(machine_type) or ""
     search_spool = _spool_mode_enabled(find_radii_mode) or _spool_mode_enabled(find_buildup_mode)
-    if str(machine_type) == "slideprinter" and search_spool:
+    if machine_type == "hangprinter_4":
+        if search_spool:
+            candidate = REPO_ROOT / RRF_SIM_VSD_PATH / RRF_SIM_HP3_LINE_LAYER_CONFIG
+            if candidate.exists():
+                return RRF_SIM_HP3_LINE_LAYER_CONFIG
+        return RRF_SIM_HP3_CONFIG
+
+    if machine_type == "slideprinter" and search_spool:
         candidate = REPO_ROOT / RRF_SIM_VSD_PATH / RRF_SIM_LINE_LAYER_CONFIG
         if candidate.exists():
             return RRF_SIM_LINE_LAYER_CONFIG
@@ -3377,7 +3403,8 @@ def _format_m669_command(anchors: np.ndarray, machine_type: str) -> Optional[str
         pad = np.zeros((anchors.shape[0], 3), dtype=float)
         pad[:, : anchors.shape[1]] = anchors
         anchors = pad
-    if str(machine_type) in ("hangprinter_4", "hangprinter_5"):
+    machine_type = _normalize_machine_type(machine_type) or ""
+    if machine_type in ("hangprinter_4", "hangprinter_5"):
         labels = ["A", "B", "C", "D", "I"]
     else:
         labels = ["A", "B", "C", "D", "I", "J", "K", "L", "O"]
@@ -4365,6 +4392,7 @@ def _write_bootstrap_sweep_config(
     machine_type: str,
     max_sweeps: int = 3,
 ) -> int:
+    machine_type = _normalize_machine_type(machine_type) or str(machine_type)
     config = MachineConfig.from_type(MachineType(str(machine_type)))
     all_configs = generate_sweep_configs(config)
     selected = select_representative_configs(
@@ -8352,7 +8380,7 @@ def build_ellipse_parser() -> argparse.ArgumentParser:
     parser.add_argument("dataset", type=Path, help="Existing sweep dataset JSON")
     parser.add_argument(
         "--machine-type",
-        choices=MACHINE_TYPE_CHOICES,
+        choices=MACHINE_TYPE_INPUT_CHOICES,
         required=True,
         help=f"Machine type ({MACHINE_TYPE_CHOICES_STR})",
     )
@@ -8405,7 +8433,7 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--machine-type",
-        choices=MACHINE_TYPE_CHOICES,
+        choices=MACHINE_TYPE_INPUT_CHOICES,
         required=True,
         help=f"Machine type ({MACHINE_TYPE_CHOICES_STR})",
     )
@@ -9280,6 +9308,7 @@ def ellipse_cli(argv: Optional[Sequence[str]] = None) -> int:
     args = parser.parse_args(argv)
     _apply_optimizer_mode_env(str(args.optimizer_mode))
     spool_opts = _resolve_spool_cli_options(parser, args)
+    machine_type = _normalize_machine_type(str(args.machine_type))
     collector_args = _clean_collector_args(args.collector_args)
     if bool(args.project_zero_tension) and not _arg_has_flag(collector_args, "--project-zero-tension"):
         collector_args.append("--project-zero-tension")
@@ -9287,7 +9316,7 @@ def ellipse_cli(argv: Optional[Sequence[str]] = None) -> int:
         collector_args.append("--debug-sweep-actions")
     return ellipse_active(
         args.dataset,
-        machine_type=str(args.machine_type),
+        machine_type=str(machine_type),
         solve_restarts=int(args.solve_restarts),
         solve_iterations=int(args.solve_iterations),
         solve_optimizer=str(args.solve_optimizer),
@@ -9363,6 +9392,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
     args = parser.parse_args(argv)
     _apply_optimizer_mode_env(str(args.optimizer_mode))
     spool_opts = _resolve_spool_cli_options(parser, args)
+    machine_type = _normalize_machine_type(str(args.machine_type))
     if bool(args.shotgun) and not bool(args.full_auto):
         parser.error("--shotgun requires --full-auto")
     full_auto_runs = list(args.full_auto_run or [])
@@ -9379,7 +9409,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
     if bool(args.full_auto):
         return full_auto_loop(
             work_dataset=args.dataset,
-            machine_type=str(args.machine_type),
+            machine_type=str(machine_type),
             max_steps=int(args.max_steps),
             stop_cost=args.stop_cost,
             stop_std_mm=args.stop_std_mm,
@@ -9449,7 +9479,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
         )
     return ellipse_loop(
         work_dataset=args.dataset,
-        machine_type=str(args.machine_type),
+        machine_type=str(machine_type),
         max_steps=int(args.max_steps),
         stop_cost=args.stop_cost,
         stop_std_mm=args.stop_std_mm,

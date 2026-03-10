@@ -2,6 +2,7 @@ import os
 
 import pytest
 
+import autocal.active_calibrate as ac
 from autocal.active_calibrate import (
     _apply_optimizer_mode_env,
     _parse_filter_schedule,
@@ -322,3 +323,26 @@ def test_apply_optimizer_mode_env_sets_solver_variables(monkeypatch):
     assert os.environ.get("AUTOCAL_OPTIMIZER_MODE") == "fast-fd"
     assert os.environ.get("AUTOCAL_JAX_LBFGSB_MODE") == "fun"
     assert os.environ.get("AUTOCAL_DISABLE_JAX_OBJECTIVE") is None
+
+
+def test_semi_auto_cli_normalizes_hangprinter_alias_for_full_auto(monkeypatch, tmp_path):
+    captured = {}
+
+    def fake_full_auto_loop(**kwargs):
+        captured["machine_type"] = kwargs["machine_type"]
+        return 0
+
+    monkeypatch.setattr(ac, "full_auto_loop", fake_full_auto_loop)
+
+    rc = ac.semi_auto_cli(
+        [
+            "--machine-type",
+            "hp3",
+            "--full-auto",
+            "--dataset",
+            str(tmp_path / "dummy.json"),
+        ]
+    )
+
+    assert rc == 0
+    assert captured["machine_type"] == "hangprinter_4"

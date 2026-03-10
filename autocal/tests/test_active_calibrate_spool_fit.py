@@ -927,6 +927,29 @@ def test_resolve_sim_config_prefers_line_layer_config_for_spool_search(monkeypat
     assert cfg == ac.RRF_SIM_LINE_LAYER_CONFIG
 
 
+@pytest.mark.parametrize("machine_type", ["hangprinter_4", "hp4", "hp3", "hangprinter_3"])
+def test_resolve_sim_config_uses_hp3_configs_for_hangprinter_aliases(monkeypatch, machine_type):
+    monkeypatch.delenv("AUTOCAL_RRF_SIM_CONFIG", raising=False)
+
+    cfg_default = ac._resolve_sim_config(
+        machine_type=machine_type,
+        find_radii_mode="off",
+        find_buildup_mode="off",
+    )
+    assert cfg_default == ac.RRF_SIM_HP3_CONFIG
+
+    candidate = ac.REPO_ROOT / ac.RRF_SIM_VSD_PATH / ac.RRF_SIM_HP3_LINE_LAYER_CONFIG
+    if not candidate.exists():
+        pytest.skip(f"missing simulator config: {candidate}")
+
+    cfg_spool = ac._resolve_sim_config(
+        machine_type=machine_type,
+        find_radii_mode="global",
+        find_buildup_mode="off",
+    )
+    assert cfg_spool == ac.RRF_SIM_HP3_LINE_LAYER_CONFIG
+
+
 def test_resolve_sim_config_uses_env_override(monkeypatch):
     monkeypatch.setenv("AUTOCAL_RRF_SIM_CONFIG", "sys/custom_config.g")
     cfg = ac._resolve_sim_config(
