@@ -50,6 +50,13 @@ export class VelocityComponent {
   }
 }
 
+export class EncoderComponent {
+    constructor(angle = 0.0, x = 0.0, y = 0.0, z = 1.0) {
+        this.angle = angle; // Radians
+        this.axis = new Vector3(x, y, z);
+    }
+}
+
 export class OrientationComponent {
   constructor(x = 0, y = 0, z = 0, w = 1) {
     this.quaternion = new Quaternion(x, y, z, w);

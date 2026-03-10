@@ -11,6 +11,7 @@ import {
   VelocityComponent,
   RadiusComponent,
   MassComponent,
+  EncoderComponent,
   OrientationComponent,
   AngularVelocityComponent,
   MomentOfInertiaComponent,
@@ -57,6 +58,7 @@ import { RenderSystem3D } from '../../../src/js/cable_joints_3d/render_system_3d
 import {
   PrevFinalPosSystem,
   PrevFinalOrientationSystem,
+  EncoderUpdateSystem,
   GravitySystem,
   MovementSystem,
   AngularMovementSystem,
@@ -341,6 +343,7 @@ export function setupScene(world, stage, canvas, options = {}) {
                     const spoolColor = palette?.spool ?? color ?? '#a0a0a0';
                     world.addComponent(ent, new RenderableComponent('circle', spoolColor));
                     world.addComponent(ent, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
+                    world.addComponent(ent, new EncoderComponent());
                     world.addComponent(ent, new AngularVelocityComponent(0.0, 0.0, angVel));
                     world.addComponent(ent, new MomentOfInertiaComponent(inertia));
                     world.addComponent(ent, new PrevFinalOrientationComponent(0.0, 0.0, 0.0, 1.0));
@@ -631,6 +634,7 @@ export function setupScene(world, stage, canvas, options = {}) {
 
           // 9. Game Logic or similar. Counters and stuff
           world.registerSystem(new ExtruderSystem());
+          world.registerSystem(new EncoderUpdateSystem());
       }
 
       const renderSystem = new RenderSystem3D(canvas, {

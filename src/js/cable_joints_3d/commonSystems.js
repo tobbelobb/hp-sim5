@@ -2,6 +2,7 @@ import Vector3 from './vector3.js';
 import Quaternion from './quaternion.js';
 
 import {
+  EncoderComponent,
   OrientationComponent,
   PrevFinalOrientationComponent,
   AngularVelocityComponent,
@@ -30,6 +31,49 @@ function normalizeAngle(angle) {
   while (result > Math.PI) result -= Math.PI * 2.0;
   while (result < -Math.PI) result += Math.PI * 2.0;
   return result;
+}
+
+function unwrapAngleNear(reference, wrappedValue) {
+  let value = wrappedValue;
+  while (value - reference > Math.PI) value -= Math.PI * 2.0;
+  while (value - reference < -Math.PI) value += Math.PI * 2.0;
+  return value;
+}
+
+function getEncoderAxis(encoderComp, world) {
+  const axis = encoderComp?.axis;
+  if (axis && typeof axis.lengthSq === 'function' && axis.lengthSq() > 1e-12) {
+    return axis.clone().normalize();
+  }
+  return getDefaultPlaneNormal(world);
+}
+
+function planeBasisForAxis(axis) {
+  const n = axis.clone().normalize();
+  let reference = Math.abs(n.x) < 0.9 ? new Vector3(1, 0, 0) : new Vector3(0, 1, 0);
+  const nDotRef = n.dot(reference);
+  let u = reference.clone().subtract(n, nDotRef);
+  if (u.lengthSq() <= 1e-12) {
+    reference = new Vector3(0, 0, 1);
+    u = reference.clone().subtract(n, n.dot(reference));
+  }
+  u.normalize();
+  const v = n.cross(u);
+  return { n, u, v };
+}
+
+function orientationAngleAroundAxis(quaternion, axis) {
+  if (!quaternion) {
+    return 0.0;
+  }
+  const basis = planeBasisForAxis(axis);
+  const rotatedU = quaternion.transformVector(basis.u);
+  const projected = rotatedU.clone().subtract(basis.n, rotatedU.dot(basis.n));
+  if (projected.lengthSq() <= 1e-12) {
+    return 0.0;
+  }
+  projected.normalize();
+  return Math.atan2(projected.dot(basis.v), projected.dot(basis.u));
 }
 
 function applyPlanarOrientationDelta(world, entityId, deltaAngle, planeNormal) {
@@ -139,6 +183,41 @@ export class PrevFinalOrientationSystem {
       const orientationComp = world.getComponent(entityId, OrientationComponent);
       const prevFinalOrientationComp = world.getComponent(entityId, PrevFinalOrientationComponent);
       prevFinalOrientationComp.quaternion.set(orientationComp.quaternion);
+    }
+  }
+}
+
+export class EncoderUpdateSystem {
+  runInPause = false;
+
+  update(world, dt) {
+    const entities = world.query([
+      OrientationComponent,
+      PrevFinalOrientationComponent,
+      EncoderComponent,
+    ]);
+
+    for (const entityId of entities) {
+      const orientationComp = world.getComponent(entityId, OrientationComponent);
+      const prevFinalOrientationComp = world.getComponent(entityId, PrevFinalOrientationComponent);
+      const encoderComp = world.getComponent(entityId, EncoderComponent);
+      if (!orientationComp?.quaternion || !prevFinalOrientationComp?.quaternion || !encoderComp) {
+        continue;
+      }
+
+      const axis = getEncoderAxis(encoderComp, world);
+      const prevWrapped = orientationAngleAroundAxis(prevFinalOrientationComp.quaternion, axis);
+      const currWrapped = orientationAngleAroundAxis(orientationComp.quaternion, axis);
+      const currUnwrapped = unwrapAngleNear(prevWrapped, currWrapped);
+      const deltaAngle = currUnwrapped - prevWrapped;
+
+      if (!Number.isFinite(deltaAngle) || Math.abs(deltaAngle) <= 1e-12) {
+        continue;
+      }
+      if (!Number.isFinite(encoderComp.angle)) {
+        encoderComp.angle = 0.0;
+      }
+      encoderComp.angle += deltaAngle;
     }
   }
 }

@@ -1,10 +1,9 @@
 import { Open as UsdOpen, getAttribute } from '../../src/js/usd/stage.js';
-import { World, OrientationComponent } from '../../src/js/cable_joints_3d/ecs.js';
+import { World, EncoderComponent } from '../../src/js/cable_joints_3d/ecs.js';
 import { runGame } from '../../examples/js/slideprinter_3d/runner.js';
 import { setupScene } from '../../examples/js/slideprinter_3d/setupScene.js';
 import { RemoteSpoolSystem, InputSystem, ExtruderComponent } from '../../examples/js/slideprinter_3d/slideprinter_common.js';
 import { detectFileFormat, FileFormat, isMcuFormat, isRrfFormat } from '../../examples/js/slideprinter/fileFormatUtils.js';
-import { orientationToDegrees } from './encoder_angles.js';
 import { _updateAttachmentPoints } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import { QualityMonitor } from './quality-monitor.js';
 import { cloneExtrusionList, restoreReplayExtrusions } from './replay_state.js';
@@ -292,7 +291,6 @@ function initHpSim() {
   const EXTERNAL_WS_RECONNECT_INITIAL_DELAY_MS = 1000;
   const EXTERNAL_WS_RECONNECT_MAX_DELAY_MS = 5000;
   let externalWsReconnectDelayMs = EXTERNAL_WS_RECONNECT_INITIAL_DELAY_MS;
-
   function forEachQualityMonitor(callback) {
     if (typeof callback !== 'function') {
       return;
@@ -1046,10 +1044,9 @@ function initHpSim() {
       const mapping = remoteSystem.axisToEntity ? remoteSystem.axisToEntity[axis] : null;
       const entityIds = Array.isArray(mapping) ? mapping : (mapping != null ? [mapping] : []);
       for (const entityId of entityIds) {
-        const orient = world.getComponent(entityId, OrientationComponent);
-        const angleDeg = orientationToDegrees(orient);
-        if (Number.isFinite(angleDeg)) {
-          return angleDeg;
+        const encoder = world.getComponent(entityId, EncoderComponent);
+        if (encoder && Number.isFinite(encoder.angle)) {
+          return encoder.angle * (180 / Math.PI);
         }
       }
       return null;
