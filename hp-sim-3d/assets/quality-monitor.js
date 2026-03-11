@@ -291,7 +291,11 @@ export class QualityMonitor {
     this.motorDiagnosticsProvider = null;
     this.qualityDetailsExpanded = false;
     this.missedStepsExpanded = false;
+    this.boundHudPointerDown = (event) => this._handleHudPointerDown(event);
     this.boundHudClick = (event) => this._handleHudClick(event);
+    if (this.hudElement && typeof this.hudElement.addEventListener === 'function') {
+      this.hudElement.addEventListener('pointerdown', this.boundHudPointerDown);
+    }
     if (this.hudElement && typeof this.hudElement.addEventListener === 'function') {
       this.hudElement.addEventListener('click', this.boundHudClick);
     }
@@ -449,6 +453,7 @@ export class QualityMonitor {
     this.detachRemoteSystem();
     this.setVisibilityCallback(null);
     if (this.hudElement && typeof this.hudElement.removeEventListener === 'function') {
+      this.hudElement.removeEventListener('pointerdown', this.boundHudPointerDown);
       this.hudElement.removeEventListener('click', this.boundHudClick);
     }
     this.hudElement = null;
@@ -789,21 +794,40 @@ export class QualityMonitor {
       .join('');
   }
 
-  _handleHudClick(event) {
-    const button = event?.target?.closest?.('.quality-hud__toggle');
-    if (!button) {
-      return;
-    }
-    const section = button.dataset?.section;
+  _toggleHudSection(section) {
     if (section === 'quality-details') {
       this.qualityDetailsExpanded = !this.qualityDetailsExpanded;
     } else if (section === 'missed-steps') {
       this.missedStepsExpanded = !this.missedStepsExpanded;
     } else {
+      return false;
+    }
+    this.refreshHud(true);
+    return true;
+  }
+
+  _handleHudPointerDown(event) {
+    const button = event?.target?.closest?.('.quality-hud__toggle');
+    if (!button) {
+      return;
+    }
+    if (Number.isFinite(event.button) && event.button !== 0) {
       return;
     }
     event.preventDefault?.();
-    this.refreshHud(true);
+    this._toggleHudSection(button.dataset?.section);
+  }
+
+  _handleHudClick(event) {
+    const button = event?.target?.closest?.('.quality-hud__toggle');
+    if (!button) {
+      return;
+    }
+    if ((event?.detail ?? 0) > 0) {
+      return;
+    }
+    event.preventDefault?.();
+    this._toggleHudSection(button.dataset?.section);
   }
 
   _prepareSegmentData() {
