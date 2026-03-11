@@ -22,10 +22,12 @@ import { FORCE_TUNING_DEFAULTS, tuneForce } from './force_tuning.mjs';
 
 export const MACHINE_CONFIGS = {
   slideprinter: { numAnchors: 3, dimensions: 2, axes: ['X', 'Y', 'Z'], forbiddenSensors: [] },
-  hangprinter_4: { numAnchors: 4, dimensions: 3, axes: ['A', 'B', 'C', 'D'], forbiddenSensors: [3] },
-  hangprinter_5: { numAnchors: 5, dimensions: 3, axes: ['A', 'B', 'C', 'D', 'I'], forbiddenSensors: [4] },
-  cubecorners: { numAnchors: 8, dimensions: 3, axes: ['A', 'B', 'C', 'D', 'I', 'J', 'K', 'L'], forbiddenSensors: [] },
-  skycam: { numAnchors: 4, dimensions: 3, axes: ['A', 'B', 'C', 'D'], forbiddenSensors: [] },
+  // These are the visible G-code axes exposed by the active RRF configs, not the
+  // physical anchor labels used in M669/M666 replies.
+  hangprinter_4: { numAnchors: 4, dimensions: 3, axes: ['X', 'Y', 'Z', 'U'], forbiddenSensors: [3] },
+  hangprinter_5: { numAnchors: 5, dimensions: 3, axes: ['X', 'Y', 'Z', 'U', 'V'], forbiddenSensors: [4] },
+  cubecorners: { numAnchors: 8, dimensions: 3, axes: ['X', 'Y', 'Z', 'U', 'V', 'W', 'A', 'B'], forbiddenSensors: [] },
+  skycam: { numAnchors: 4, dimensions: 3, axes: ['X', 'Y', 'Z', 'U'], forbiddenSensors: [] },
 };
 
 export const MOTOR_IDS_BY_MACHINE = {

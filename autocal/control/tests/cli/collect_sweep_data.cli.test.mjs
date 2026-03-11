@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import {
   angleToLength,
 } from '../../primitives/uncalibrated_actions.mjs';
@@ -41,6 +43,26 @@ describe('collect_sweep_data CLI helpers', () => {
     expect(buildRrfSimulatorArgs(8081, { machineType: 'hangprinter_4', preferLineLayerConfig: true })).toEqual([
       '--vsd', 'RRF/run/vsd', '-c', 'sys/config_hp3_w_line_layers.g', '--server', '-p', '8081',
     ]);
+  });
+
+  test('hangprinter_4 uses the visible axes from the selected hp3 simulator config', () => {
+    const configPath = path.resolve(
+      process.cwd(),
+      'RRF',
+      'run',
+      'vsd',
+      resolveRrfSimulatorConfig('hangprinter_4'),
+    );
+    const configText = readFileSync(configPath, 'utf8');
+    const m584Line = configText
+      .split(/\r?\n/)
+      .find((line) => line.trim().startsWith('M584 '));
+
+    expect(m584Line).toContain('X40.0');
+    expect(m584Line).toContain('Y41.0');
+    expect(m584Line).toContain('Z42.0');
+    expect(m584Line).toContain('U43.0');
+    expect(MACHINE_CONFIGS.hangprinter_4.axes).toEqual(['X', 'Y', 'Z', 'U']);
   });
 
   test('generateSweepConfigs', () => {
