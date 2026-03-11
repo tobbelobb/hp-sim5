@@ -10,7 +10,14 @@ import os
 import numpy as np
 
 from autocal.ellipse_cost import EllipseCostFunction
-from autocal.theoretical_ellipse import anchor_opt_vector_size
+from autocal.theoretical_ellipse import (
+    _ANCHOR_OPT_MODE_FULL,
+    _ANCHOR_OPT_MODE_HP4_AX0_FIXED_LOW_Z,
+    _ANCHOR_OPT_MODE_HP4_AX0_SHARED_LOW_Z,
+    _ANCHOR_OPT_MODE_SLIDEPRINTER_AX0,
+    anchor_opt_constraint_mode,
+    anchor_opt_vector_size,
+)
 
 # Always force CPU backend for reproducible behavior and consistent user performance.
 os.environ["JAX_PLATFORMS"] = "cpu"
@@ -57,8 +64,10 @@ _SMOOTH_INLIER_BLEND_BAND = 0.50
 
 @dataclass(frozen=True)
 class _PackedSweeps:
-    fixed_anchor: np.ndarray
-    fixed_delta: np.ndarray
+    fixed_anchor_primary: np.ndarray
+    fixed_delta_primary: np.ndarray
+    fixed_anchor_secondary: np.ndarray
+    fixed_delta_secondary: np.ndarray
     drive_anchor: np.ndarray
     sensor_anchor: np.ndarray
     l_drive: np.ndarray
@@ -82,7 +91,15 @@ def _metric_mode_code(mode: str) -> int:
 def _can_use_jax_objective(cost_fn: EllipseCostFunction) -> bool:
     if not _JAX_AVAILABLE:
         return False
-    if int(cost_fn.dimensions) != 2:
+    dims = int(cost_fn.dimensions)
+    machine_type = str(cost_fn.machine_type or "").strip().lower()
+    if dims == 2:
+        if machine_type != "slideprinter":
+            return False
+    elif dims == 3:
+        if machine_type != "hangprinter_4":
+            return False
+    else:
         return False
     if str(cost_fn.pointwise_residual_mode or "").strip().lower() not in ("sampson", ""):
         return False
@@ -92,7 +109,11 @@ def _can_use_jax_objective(cost_fn: EllipseCostFunction) -> bool:
 
 
 def _prepare_sweeps(cost_fn: EllipseCostFunction) -> Optional[_PackedSweeps]:
-    rows: List[Tuple[int, float, int, int, np.ndarray, np.ndarray, np.ndarray, np.ndarray, bool]] = []
+    expected_fixed = 1 if int(cost_fn.dimensions) == 2 else 2 if int(cost_fn.dimensions) == 3 else 0
+    if expected_fixed <= 0:
+        return None
+
+    rows: List[Tuple[List[int], List[float], int, int, np.ndarray, np.ndarray, np.ndarray, np.ndarray, bool]] = []
     max_points = 0
 
     for sweep in cost_fn.sweeps:
@@ -108,7 +129,7 @@ def _prepare_sweeps(cost_fn: EllipseCostFunction) -> Optional[_PackedSweeps]:
             sigma_sensor,
         ) = cost_fn._extract_sweep_arrays(sweep)
 
-        if len(fixed_indices) != 1 or len(fixed_deltas) != 1:
+        if len(fixed_indices) != expected_fixed or len(fixed_deltas) != expected_fixed:
             return None
 
         l_drive_arr = np.asarray(l_drive, dtype=float).reshape(-1)
@@ -136,8 +157,8 @@ def _prepare_sweeps(cost_fn: EllipseCostFunction) -> Optional[_PackedSweeps]:
         max_points = max(max_points, int(l_drive_arr.size))
         rows.append(
             (
-                int(fixed_indices[0]),
-                float(fixed_deltas[0]),
+                [int(v) for v in fixed_indices],
+                [float(v) for v in fixed_deltas],
                 int(drive_idx),
                 int(sensor_idx),
                 l_drive_arr,
@@ -152,8 +173,10 @@ def _prepare_sweeps(cost_fn: EllipseCostFunction) -> Optional[_PackedSweeps]:
         return None
 
     n_sweeps = len(rows)
-    fixed_anchor = np.zeros(n_sweeps, dtype=np.int32)
-    fixed_delta = np.zeros(n_sweeps, dtype=float)
+    fixed_anchor_primary = np.zeros(n_sweeps, dtype=np.int32)
+    fixed_delta_primary = np.zeros(n_sweeps, dtype=float)
+    fixed_anchor_secondary = np.zeros(n_sweeps, dtype=np.int32)
+    fixed_delta_secondary = np.zeros(n_sweeps, dtype=float)
     drive_anchor = np.zeros(n_sweeps, dtype=np.int32)
     sensor_anchor = np.zeros(n_sweeps, dtype=np.int32)
     l_drive = np.zeros((n_sweeps, max_points), dtype=float)
@@ -166,8 +189,8 @@ def _prepare_sweeps(cost_fn: EllipseCostFunction) -> Optional[_PackedSweeps]:
 
     for i, row in enumerate(rows):
         (
-            fixed_i,
-            fixed_d,
+            fixed_indices,
+            fixed_deltas,
             drive_i,
             sensor_i,
             drive_vals,
@@ -177,8 +200,11 @@ def _prepare_sweeps(cost_fn: EllipseCostFunction) -> Optional[_PackedSweeps]:
             sigma_ok,
         ) = row
         n = int(drive_vals.size)
-        fixed_anchor[i] = int(fixed_i)
-        fixed_delta[i] = float(fixed_d)
+        fixed_anchor_primary[i] = int(fixed_indices[0])
+        fixed_delta_primary[i] = float(fixed_deltas[0])
+        if expected_fixed > 1:
+            fixed_anchor_secondary[i] = int(fixed_indices[1])
+            fixed_delta_secondary[i] = float(fixed_deltas[1])
         drive_anchor[i] = int(drive_i)
         sensor_anchor[i] = int(sensor_i)
         num_points[i] = int(n)
@@ -191,8 +217,10 @@ def _prepare_sweeps(cost_fn: EllipseCostFunction) -> Optional[_PackedSweeps]:
             point_mask[i, :n] = True
 
     return _PackedSweeps(
-        fixed_anchor=fixed_anchor,
-        fixed_delta=fixed_delta,
+        fixed_anchor_primary=fixed_anchor_primary,
+        fixed_delta_primary=fixed_delta_primary,
+        fixed_anchor_secondary=fixed_anchor_secondary,
+        fixed_delta_secondary=fixed_delta_secondary,
         drive_anchor=drive_anchor,
         sensor_anchor=sensor_anchor,
         l_drive=l_drive,
@@ -299,79 +327,57 @@ def _pointwise_scale_axis1(
     return jnp.maximum(scale, floor)
 
 
-def _objective_core(
+def _anchors_from_opt_vec(
     anchor_vec: "jnp.ndarray",
-    fixed_anchor: "jnp.ndarray",
-    fixed_delta: "jnp.ndarray",
-    drive_anchor: "jnp.ndarray",
-    sensor_anchor: "jnp.ndarray",
-    l_drive: "jnp.ndarray",
-    l_sensor: "jnp.ndarray",
-    sigma_drive: "jnp.ndarray",
-    sigma_sensor: "jnp.ndarray",
-    point_mask: "jnp.ndarray",
-    has_sigma: "jnp.ndarray",
-    num_points: "jnp.ndarray",
     lb: "jnp.ndarray",
     ub: "jnp.ndarray",
+    low_anchor_z: "jnp.ndarray",
     *,
     num_anchors: int,
     dimensions: int,
-    fix_anchor0_x: bool,
-    pointwise_filtering: bool,
-    pointwise_global_mad: bool,
-    sweep_wise_filtering: bool,
-    noise_norm_available: bool,
-    robust_loss_unfiltered: bool,
-    hard_cut: bool,
-    metric_mode: int,
-    pointwise_cost_weight: float,
-    l2_scale: float,
-    min_points: int,
-    min_sweeps_after_trim: int,
-    huber_delta_unfiltered: float,
-    floor_norm: float,
-    huber_mult: float,
+    constraint_mode: int,
 ) -> "jnp.ndarray":
     x = jnp.clip(jnp.asarray(anchor_vec).reshape(-1), lb, ub)
-    if fix_anchor0_x:
+    if constraint_mode == _ANCHOR_OPT_MODE_FULL:
+        return x.reshape((num_anchors, dimensions))
+    if constraint_mode == _ANCHOR_OPT_MODE_SLIDEPRINTER_AX0:
         x = jnp.concatenate([jnp.zeros((1,), dtype=x.dtype), x], axis=0)
-    anchors = x.reshape((num_anchors, dimensions))
+        return x.reshape((num_anchors, dimensions))
+    if constraint_mode == _ANCHOR_OPT_MODE_HP4_AX0_SHARED_LOW_Z:
+        low_z = x[1]
+        zero = jnp.zeros((), dtype=x.dtype)
+        return jnp.stack(
+            [
+                jnp.stack([zero, x[0], low_z]),
+                jnp.stack([x[2], x[3], low_z]),
+                jnp.stack([x[4], x[5], low_z]),
+                jnp.stack([x[6], x[7], x[8]]),
+            ],
+            axis=0,
+        )
+    if constraint_mode == _ANCHOR_OPT_MODE_HP4_AX0_FIXED_LOW_Z:
+        low_z = jnp.asarray(low_anchor_z, dtype=x.dtype)
+        zero = jnp.zeros((), dtype=x.dtype)
+        return jnp.stack(
+            [
+                jnp.stack([zero, x[0], low_z]),
+                jnp.stack([x[1], x[2], low_z]),
+                jnp.stack([x[3], x[4], low_z]),
+                jnp.stack([x[5], x[6], x[7]]),
+            ],
+            axis=0,
+        )
+    return x.reshape((num_anchors, dimensions))
 
-    anchor_norms = jnp.linalg.norm(anchors, axis=1)
-    fixed_abs = anchor_norms[fixed_anchor] + fixed_delta
-    drive_abs = l_drive + anchor_norms[drive_anchor][:, None]
-    sensor_abs = l_sensor + anchor_norms[sensor_anchor][:, None]
 
-    neg_fixed = jnp.maximum(_EPS_LEN_MM - fixed_abs, 0.0)
-    neg_drive = jnp.maximum(_EPS_LEN_MM - drive_abs, 0.0)
-    neg_sensor = jnp.maximum(_EPS_LEN_MM - sensor_abs, 0.0)
-
-    fixed_abs = jnp.maximum(fixed_abs, _EPS_LEN_MM)
-    drive_abs = jnp.maximum(drive_abs, _EPS_LEN_MM)
-    sensor_abs = jnp.maximum(sensor_abs, _EPS_LEN_MM)
-
-    drive_pen = jnp.sum(jnp.where(point_mask, neg_drive * neg_drive, 0.0), axis=1)
-    sensor_pen = jnp.sum(jnp.where(point_mask, neg_sensor * neg_sensor, 0.0), axis=1)
-    mean_drive = _masked_mean_axis1(drive_abs, point_mask)
-    mean_sensor = _masked_mean_axis1(sensor_abs, point_mask)
-    typical = jnp.maximum(jnp.maximum(mean_drive, mean_sensor), jnp.maximum(fixed_abs, 1.0))
-    penalties = (neg_fixed * neg_fixed + drive_pen + sensor_pen) / (typical * typical)
-
-    center = anchors[fixed_anchor]
-    drive = anchors[drive_anchor]
-    sensor = anchors[sensor_anchor]
-    delta_d = center - drive
-    delta_s = center - sensor
-
-    radius = fixed_abs
-    k_d = jnp.sum(delta_d * delta_d, axis=1) + radius * radius
-    m_d = 2.0 * radius * delta_d[:, 0]
-    n_d = 2.0 * radius * delta_d[:, 1]
-    k_s = jnp.sum(delta_s * delta_s, axis=1) + radius * radius
-    m_s = 2.0 * radius * delta_s[:, 0]
-    n_s = 2.0 * radius * delta_s[:, 1]
-
+def _parametric_to_algebraic_coeffs(
+    k_d: "jnp.ndarray",
+    m_d: "jnp.ndarray",
+    n_d: "jnp.ndarray",
+    k_s: "jnp.ndarray",
+    m_s: "jnp.ndarray",
+    n_s: "jnp.ndarray",
+) -> "jnp.ndarray":
     det = m_d * n_s - n_d * m_s
 
     cand1 = jnp.stack([m_s, -m_d], axis=1)
@@ -417,7 +423,144 @@ def _objective_core(
     coeff_ellipse = coeff_ellipse / norm_div[:, None]
 
     use_line = jnp.abs(det) < 1e-10
-    coeffs = jnp.where(use_line[:, None], coeff_line, coeff_ellipse)
+    return jnp.where(use_line[:, None], coeff_line, coeff_ellipse)
+
+
+def _objective_core(
+    anchor_vec: "jnp.ndarray",
+    fixed_anchor_primary: "jnp.ndarray",
+    fixed_delta_primary: "jnp.ndarray",
+    fixed_anchor_secondary: "jnp.ndarray",
+    fixed_delta_secondary: "jnp.ndarray",
+    drive_anchor: "jnp.ndarray",
+    sensor_anchor: "jnp.ndarray",
+    l_drive: "jnp.ndarray",
+    l_sensor: "jnp.ndarray",
+    sigma_drive: "jnp.ndarray",
+    sigma_sensor: "jnp.ndarray",
+    point_mask: "jnp.ndarray",
+    has_sigma: "jnp.ndarray",
+    num_points: "jnp.ndarray",
+    low_anchor_z: "jnp.ndarray",
+    lb: "jnp.ndarray",
+    ub: "jnp.ndarray",
+    *,
+    num_anchors: int,
+    dimensions: int,
+    constraint_mode: int,
+    pointwise_filtering: bool,
+    pointwise_global_mad: bool,
+    sweep_wise_filtering: bool,
+    noise_norm_available: bool,
+    robust_loss_unfiltered: bool,
+    hard_cut: bool,
+    metric_mode: int,
+    pointwise_cost_weight: float,
+    l2_scale: float,
+    min_points: int,
+    min_sweeps_after_trim: int,
+    huber_delta_unfiltered: float,
+    floor_norm: float,
+    huber_mult: float,
+) -> "jnp.ndarray":
+    anchors = _anchors_from_opt_vec(
+        anchor_vec,
+        lb,
+        ub,
+        low_anchor_z,
+        num_anchors=num_anchors,
+        dimensions=dimensions,
+        constraint_mode=constraint_mode,
+    )
+    x = anchors.reshape(-1)
+
+    anchor_norms = jnp.linalg.norm(anchors, axis=1)
+    fixed_abs_primary = anchor_norms[fixed_anchor_primary] + fixed_delta_primary
+    fixed_abs_secondary = anchor_norms[fixed_anchor_secondary] + fixed_delta_secondary
+    drive_abs = l_drive + anchor_norms[drive_anchor][:, None]
+    sensor_abs = l_sensor + anchor_norms[sensor_anchor][:, None]
+
+    neg_fixed_primary = jnp.maximum(_EPS_LEN_MM - fixed_abs_primary, 0.0)
+    neg_fixed_secondary = jnp.maximum(_EPS_LEN_MM - fixed_abs_secondary, 0.0)
+    neg_drive = jnp.maximum(_EPS_LEN_MM - drive_abs, 0.0)
+    neg_sensor = jnp.maximum(_EPS_LEN_MM - sensor_abs, 0.0)
+
+    fixed_abs_primary = jnp.maximum(fixed_abs_primary, _EPS_LEN_MM)
+    fixed_abs_secondary = jnp.maximum(fixed_abs_secondary, _EPS_LEN_MM)
+    drive_abs = jnp.maximum(drive_abs, _EPS_LEN_MM)
+    sensor_abs = jnp.maximum(sensor_abs, _EPS_LEN_MM)
+
+    drive_pen = jnp.sum(jnp.where(point_mask, neg_drive * neg_drive, 0.0), axis=1)
+    sensor_pen = jnp.sum(jnp.where(point_mask, neg_sensor * neg_sensor, 0.0), axis=1)
+    mean_drive = _masked_mean_axis1(drive_abs, point_mask)
+    mean_sensor = _masked_mean_axis1(sensor_abs, point_mask)
+    typical = jnp.maximum(jnp.maximum(mean_drive, mean_sensor), jnp.maximum(fixed_abs_primary, 1.0))
+    penalties = neg_fixed_primary * neg_fixed_primary + drive_pen + sensor_pen
+
+    if dimensions == 3:
+        typical = jnp.maximum(typical, fixed_abs_secondary)
+        penalties = penalties + neg_fixed_secondary * neg_fixed_secondary
+
+    penalties = penalties / (typical * typical)
+
+    center = anchors[fixed_anchor_primary]
+    radius = fixed_abs_primary
+    if dimensions == 2:
+        u = jnp.broadcast_to(jnp.asarray([1.0, 0.0], dtype=anchors.dtype), center.shape)
+        v = jnp.broadcast_to(jnp.asarray([0.0, 1.0], dtype=anchors.dtype), center.shape)
+        geom_valid = jnp.ones_like(radius, dtype=bool)
+    else:
+        anchor_secondary = anchors[fixed_anchor_secondary]
+        delta_center = anchor_secondary - center
+        center_dist = jnp.linalg.norm(delta_center, axis=1)
+        center_dist_safe = jnp.where(center_dist > 1e-10, center_dist, 1.0)
+        radius_secondary = fixed_abs_secondary
+
+        h = (
+            center_dist * center_dist
+            + radius * radius
+            - radius_secondary * radius_secondary
+        ) / (2.0 * center_dist_safe)
+        radius_sq = radius * radius - h * h
+        radius = jnp.sqrt(jnp.maximum(radius_sq, 0.0))
+        normal = delta_center / center_dist_safe[:, None]
+        center = center + h[:, None] * normal
+
+        temp_x = jnp.asarray([1.0, 0.0, 0.0], dtype=anchors.dtype)
+        temp_y = jnp.asarray([0.0, 1.0, 0.0], dtype=anchors.dtype)
+        temp = jnp.where(jnp.abs(normal[:, :1]) < 0.9, temp_x[None, :], temp_y[None, :])
+        u = jnp.cross(normal, temp)
+        u_norm = jnp.linalg.norm(u, axis=1)
+        temp_z = jnp.broadcast_to(jnp.asarray([0.0, 0.0, 1.0], dtype=anchors.dtype), u.shape)
+        u_alt = jnp.cross(normal, temp_z)
+        use_alt = u_norm <= 1e-12
+        u = jnp.where(use_alt[:, None], u_alt, u)
+        u_norm = jnp.linalg.norm(u, axis=1)
+        u = u / jnp.where(u_norm > 1e-12, u_norm, 1.0)[:, None]
+        v = jnp.cross(normal, u)
+        v_norm = jnp.linalg.norm(v, axis=1)
+        v = v / jnp.where(v_norm > 1e-12, v_norm, 1.0)[:, None]
+
+        geom_valid = center_dist >= 1e-10
+        geom_valid = jnp.logical_and(geom_valid, center_dist <= (fixed_abs_primary + fixed_abs_secondary))
+        geom_valid = jnp.logical_and(geom_valid, center_dist >= jnp.abs(fixed_abs_primary - fixed_abs_secondary))
+        geom_valid = jnp.logical_and(geom_valid, radius_sq >= -1e-10)
+        geom_valid = jnp.logical_and(geom_valid, u_norm > 1e-12)
+        geom_valid = jnp.logical_and(geom_valid, v_norm > 1e-12)
+
+    drive = anchors[drive_anchor]
+    sensor = anchors[sensor_anchor]
+    delta_d = center - drive
+    delta_s = center - sensor
+
+    k_d = jnp.sum(delta_d * delta_d, axis=1) + radius * radius
+    m_d = 2.0 * radius * jnp.sum(u * delta_d, axis=1)
+    n_d = 2.0 * radius * jnp.sum(v * delta_d, axis=1)
+    k_s = jnp.sum(delta_s * delta_s, axis=1) + radius * radius
+    m_s = 2.0 * radius * jnp.sum(u * delta_s, axis=1)
+    n_s = 2.0 * radius * jnp.sum(v * delta_s, axis=1)
+
+    coeffs = _parametric_to_algebraic_coeffs(k_d, m_d, n_d, k_s, m_s, n_s)
 
     x_sq = drive_abs * drive_abs
     y_sq = sensor_abs * sensor_abs
@@ -457,6 +600,7 @@ def _objective_core(
         jnp.all(jnp.where(point_mask, jnp.isfinite(residuals), True), axis=1),
         jnp.all(jnp.where(point_mask, jnp.isfinite(r_norm), True), axis=1),
     )
+    residual_ok = jnp.logical_and(residual_ok, geom_valid)
 
     if pointwise_filtering and pointwise_global_mad:
         global_values = jnp.where(residual_ok[:, None], r_norm, jnp.nan).reshape(-1)
@@ -576,7 +720,7 @@ if _JAX_AVAILABLE:
         static_argnames=(
             "num_anchors",
             "dimensions",
-            "fix_anchor0_x",
+            "constraint_mode",
             "pointwise_filtering",
             "pointwise_global_mad",
             "sweep_wise_filtering",
@@ -597,13 +741,13 @@ else:  # pragma: no cover - optional dependency
     _COMPILED_VALUE_AND_GRAD = None
 
 
-def _build_kwargs_for_objective(cost_fn: EllipseCostFunction, *, fix_anchor0_x: bool) -> dict:
+def _build_kwargs_for_objective(cost_fn: EllipseCostFunction, *, constraint_mode: int) -> dict:
     metric_mode = _metric_mode_code(str(cost_fn.sweep_metric))
     _, _stage_name, huber_mult, hard_cut = cost_fn._pointwise_stage_settings()
     return {
         "num_anchors": int(cost_fn.num_anchors),
         "dimensions": int(cost_fn.dimensions),
-        "fix_anchor0_x": bool(fix_anchor0_x),
+        "constraint_mode": int(constraint_mode),
         "pointwise_filtering": bool(cost_fn.pointwise_filtering),
         "pointwise_global_mad": bool(cost_fn.pointwise_global_mad),
         "sweep_wise_filtering": bool(cost_fn.sweep_wise_filtering),
@@ -623,12 +767,15 @@ def _build_kwargs_for_objective(cost_fn: EllipseCostFunction, *, fix_anchor0_x: 
 
 def _build_packed_jax_args(
     packed: _PackedSweeps,
+    low_anchor_z: float,
     lb_arr: np.ndarray,
     ub_arr: np.ndarray,
 ) -> tuple:
     return (
-        jnp.asarray(packed.fixed_anchor),
-        jnp.asarray(packed.fixed_delta),
+        jnp.asarray(packed.fixed_anchor_primary),
+        jnp.asarray(packed.fixed_delta_primary),
+        jnp.asarray(packed.fixed_anchor_secondary),
+        jnp.asarray(packed.fixed_delta_secondary),
         jnp.asarray(packed.drive_anchor),
         jnp.asarray(packed.sensor_anchor),
         jnp.asarray(packed.l_drive),
@@ -638,24 +785,43 @@ def _build_packed_jax_args(
         jnp.asarray(packed.point_mask),
         jnp.asarray(packed.has_sigma),
         jnp.asarray(packed.num_points),
+        jnp.asarray(low_anchor_z, dtype=float),
         jnp.asarray(lb_arr),
         jnp.asarray(ub_arr),
     )
 
 
-def _jax_fix_anchor0_x_mode(
+def _jax_constraint_mode(
     cost_fn: EllipseCostFunction,
     lb_arr: np.ndarray,
     ub_arr: np.ndarray,
-) -> Optional[bool]:
+) -> Optional[Tuple[int, float]]:
     if lb_arr.size != ub_arr.size:
         return None
     full_size = int(cost_fn.num_anchors) * int(cost_fn.dimensions)
-    opt_size = int(anchor_opt_vector_size(cost_fn.machine_type, cost_fn.num_anchors, cost_fn.dimensions))
+    opt_size = int(
+        anchor_opt_vector_size(
+            cost_fn.machine_type,
+            cost_fn.num_anchors,
+            cost_fn.dimensions,
+            cost_fn.low_anchor_z,
+        )
+    )
     if lb_arr.size == full_size:
-        return False
+        return _ANCHOR_OPT_MODE_FULL, float("nan")
     if lb_arr.size == opt_size:
-        return bool(opt_size != full_size)
+        mode = int(
+            anchor_opt_constraint_mode(
+                cost_fn.machine_type,
+                cost_fn.num_anchors,
+                cost_fn.dimensions,
+                cost_fn.low_anchor_z,
+            )
+        )
+        low_anchor_z = float(cost_fn.low_anchor_z) if cost_fn.low_anchor_z is not None else float("nan")
+        if mode == _ANCHOR_OPT_MODE_HP4_AX0_FIXED_LOW_Z and not np.isfinite(low_anchor_z):
+            return None
+        return mode, low_anchor_z
     return None
 
 
@@ -680,11 +846,12 @@ def build_compiled_value_and_grad(
 
     lb_arr = np.asarray(lb, dtype=float).reshape(-1)
     ub_arr = np.asarray(ub, dtype=float).reshape(-1)
-    fix_anchor0_x = _jax_fix_anchor0_x_mode(cost_fn, lb_arr, ub_arr)
-    if fix_anchor0_x is None:
+    layout = _jax_constraint_mode(cost_fn, lb_arr, ub_arr)
+    if layout is None:
         return None
-    kwargs = _build_kwargs_for_objective(cost_fn, fix_anchor0_x=fix_anchor0_x)
-    packed_args = _build_packed_jax_args(packed, lb_arr, ub_arr)
+    constraint_mode, low_anchor_z = layout
+    kwargs = _build_kwargs_for_objective(cost_fn, constraint_mode=constraint_mode)
+    packed_args = _build_packed_jax_args(packed, low_anchor_z, lb_arr, ub_arr)
 
     def _wrapped(anchor_vec: np.ndarray) -> Tuple[float, np.ndarray]:
         x_np = np.clip(np.asarray(anchor_vec, dtype=float).reshape(-1), lb_arr, ub_arr)
@@ -704,7 +871,7 @@ if _JAX_AVAILABLE:
         static_argnames=(
             "num_anchors",
             "dimensions",
-            "fix_anchor0_x",
+            "constraint_mode",
             "pointwise_filtering",
             "pointwise_global_mad",
             "sweep_wise_filtering",
@@ -740,11 +907,12 @@ def build_compiled_objective(
 
     lb_arr = np.asarray(lb, dtype=float).reshape(-1)
     ub_arr = np.asarray(ub, dtype=float).reshape(-1)
-    fix_anchor0_x = _jax_fix_anchor0_x_mode(cost_fn, lb_arr, ub_arr)
-    if fix_anchor0_x is None:
+    layout = _jax_constraint_mode(cost_fn, lb_arr, ub_arr)
+    if layout is None:
         return None
-    kwargs = _build_kwargs_for_objective(cost_fn, fix_anchor0_x=fix_anchor0_x)
-    packed_args = _build_packed_jax_args(packed, lb_arr, ub_arr)
+    constraint_mode, low_anchor_z = layout
+    kwargs = _build_kwargs_for_objective(cost_fn, constraint_mode=constraint_mode)
+    packed_args = _build_packed_jax_args(packed, low_anchor_z, lb_arr, ub_arr)
 
     def _wrapped(anchor_vec: np.ndarray) -> float:
         x_np = np.clip(np.asarray(anchor_vec, dtype=float).reshape(-1), lb_arr, ub_arr)
