@@ -48,8 +48,20 @@ class MachineConfig:
         configs = {
             MachineType.SLIDEPRINTER: (3, 2, [], [], {}),
             # Anchor 3 is the load-bearing line on hangprinter_4:
-            # keep it in the fixed set and never command a positive fixed delta.
-            MachineType.HANGPRINTER_4: (4, 3, [3], [3], {3: (None, 0.0)}),
+            # keep it in the fixed set, never command a positive fixed delta on
+            # it, and keep the other fixed anchors from going negative.
+            MachineType.HANGPRINTER_4: (
+                4,
+                3,
+                [3],
+                [3],
+                {
+                    0: (0.0, None),
+                    1: (0.0, None),
+                    2: (0.0, None),
+                    3: (None, 0.0),
+                },
+            ),
             MachineType.HANGPRINTER_5: (5, 3, [4], [], {}),
             MachineType.CUBECORNERS: (8, 3, [], [], {}),
             MachineType.SKYCAM: (4, 3, [], [], {}),

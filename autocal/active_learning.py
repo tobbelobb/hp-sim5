@@ -319,6 +319,7 @@ def generate_candidate_sweeps(
     forbidden_sensors: Optional[Sequence[int]] = None,
     must_be_fixed_anchors: Optional[Sequence[int]] = None,
     fixed_delta_bounds_by_anchor: Optional[Dict[int, Tuple[Optional[float], Optional[float]]]] = None,
+    max_total_fixed_delta_mm: Optional[float] = None,
 ) -> List[SweepConfig]:
     """
     Generate sweep candidates compatible with position sweep collection.
@@ -353,6 +354,11 @@ def generate_candidate_sweeps(
         return []
     if len(must_be_fixed) > fixed_count:
         return []
+    total_fixed_delta_budget = None
+    if max_total_fixed_delta_mm is not None:
+        total_fixed_delta_budget = float(max_total_fixed_delta_mm)
+        if not np.isfinite(total_fixed_delta_budget) or total_fixed_delta_budget < 0.0:
+            total_fixed_delta_budget = None
 
     indices = list(range(n))
     out: List[SweepConfig] = []
@@ -374,6 +380,10 @@ def generate_candidate_sweeps(
                     for anchor_idx, delta_mm in zip(fixed, fixed_deltas)
                 ):
                     continue
+                if total_fixed_delta_budget is not None:
+                    total_abs_delta = sum(abs(float(delta_mm)) for delta_mm in fixed_deltas)
+                    if total_abs_delta > total_fixed_delta_budget + 1e-9:
+                        continue
                 out.append(
                     SweepConfig(
                         fixed_anchors=fixed,

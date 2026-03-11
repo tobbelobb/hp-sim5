@@ -29,7 +29,13 @@ export const MACHINE_CONFIGS = {
     dimensions: 3,
     axes: ['X', 'Y', 'Z', 'U'],
     mustBeInFixedSet: [3],
-    fixedTargetBoundsByAnchor: { 3: { maxFixed: 0 } },
+    fixedTargetBoundsByAnchor: {
+      0: { minFixed: 0 },
+      1: { minFixed: 0 },
+      2: { minFixed: 0 },
+      3: { maxFixed: 0 },
+    },
+    measuredMaxTravelScale: 0.8,
   },
   hangprinter_5: { numAnchors: 5, dimensions: 3, axes: ['X', 'Y', 'Z', 'U', 'V'], mustBeInFixedSet: [4] },
   cubecorners: { numAnchors: 8, dimensions: 3, axes: ['X', 'Y', 'Z', 'U', 'V', 'W', 'A', 'B'], mustBeInFixedSet: [] },
@@ -376,6 +382,19 @@ export function resolveFixedTargets(fixedAnchors, explicitTargets, maxTravelMm, 
     targets = Array.from({ length: fixedCount }, () => value);
   }
   return targets.map((target, idx) => constrainFixedTarget(machineConfig, fixedAnchors[idx], target));
+}
+
+export function scaleMeasuredMaxTravelMm(machineConfig, measuredMaxTravelMm) {
+  if (!Number.isFinite(measuredMaxTravelMm)) {
+    return null;
+  }
+  let scale = Number(machineConfig?.measuredMaxTravelScale);
+  if (!Number.isFinite(scale) || scale <= 0) {
+    scale = 1;
+  } else if (scale > 1) {
+    scale = 1;
+  }
+  return Math.abs(Number(measuredMaxTravelMm)) * scale;
 }
 
 function validateSweepCollectionInput(context) {
@@ -1275,7 +1294,7 @@ export async function collectSweepData(send, context) {
     if (!sizeTunePair) {
       console.log('; size-tune skipped (no force-capable anchor pair)');
     } else {
-      maxTravelMm = await measureMaxTravelMm(send, {
+      const measuredMaxTravelMm = await measureMaxTravelMm(send, {
         motorIds,
         mmPerDeg,
         forceLow,
@@ -1284,8 +1303,18 @@ export async function collectSweepData(send, context) {
         forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
         speedup,
       });
+      maxTravelMm = scaleMeasuredMaxTravelMm(machineConfig, measuredMaxTravelMm);
       if (Number.isFinite(maxTravelMm)) {
-        console.log(`; size-tune max travel=${maxTravelMm.toFixed(3)}mm`);
+        if (
+          Number.isFinite(measuredMaxTravelMm)
+          && Math.abs(measuredMaxTravelMm - maxTravelMm) > 1e-9
+        ) {
+          console.log(
+            `; size-tune max travel raw=${measuredMaxTravelMm.toFixed(3)}mm scaled=${maxTravelMm.toFixed(3)}mm`,
+          );
+        } else {
+          console.log(`; size-tune max travel=${maxTravelMm.toFixed(3)}mm`);
+        }
       } else {
         console.log('; size-tune failed; using 0.0mm');
       }

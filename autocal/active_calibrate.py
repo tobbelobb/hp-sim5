@@ -5728,13 +5728,22 @@ def _plan_next_ellipse_sweep(
     for cfg in sweeps_obs:
         observed_deltas.extend(list(cfg.fixed_deltas_mm))
 
+    config = dataset.get("config") if isinstance(dataset, dict) else None
+    max_travel_mm = None
+    if isinstance(config, dict):
+        raw_max_travel = config.get("max_travel_mm")
+        if isinstance(raw_max_travel, (int, float)) and np.isfinite(raw_max_travel):
+            max_travel_mm = float(raw_max_travel)
+    max_total_fixed_delta_mm = None
+    if (
+        str(machine_type) == "hangprinter_4"
+        and max_travel_mm is not None
+        and np.isfinite(max_travel_mm)
+        and max_travel_mm > 0.0
+    ):
+        max_total_fixed_delta_mm = float(max_travel_mm)
+
     if candidate_deltas is None:
-        config = dataset.get("config") if isinstance(dataset, dict) else None
-        max_travel_mm = None
-        if isinstance(config, dict):
-            raw_max_travel = config.get("max_travel_mm")
-            if isinstance(raw_max_travel, (int, float)) and np.isfinite(raw_max_travel):
-                max_travel_mm = float(raw_max_travel)
         explicit_delta_range = delta_min is not None or delta_max is not None
 
         default_range = None
@@ -5771,6 +5780,7 @@ def _plan_next_ellipse_sweep(
         dimensions=dimensions,
         fixed_delta_values_mm=candidate_deltas,
         machine_type=machine_type,
+        max_total_fixed_delta_mm=max_total_fixed_delta_mm,
     )
     candidates = _filter_candidates_by_spacing(
         candidates,

@@ -26,6 +26,9 @@ def test_machine_config_hangprinter_4():
     assert config.dimensions == 3
     assert config.constraints_for_1dof == 2
     assert config.must_be_fixed_anchors == [3]
+    assert config.fixed_anchor_delta_bounds[0] == (0.0, None)
+    assert config.fixed_anchor_delta_bounds[1] == (0.0, None)
+    assert config.fixed_anchor_delta_bounds[2] == (0.0, None)
     assert config.fixed_anchor_delta_bounds[3] == (None, 0.0)
 
 

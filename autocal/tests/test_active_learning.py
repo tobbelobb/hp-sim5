@@ -78,13 +78,33 @@ def test_generate_candidate_sweeps_respects_hangprinter_4_fixed_anchor_rules():
         machine_type="hangprinter_4",
     )
     assert cands
-    assert len(cands) == 18
+    assert len(cands) == 12
     assert all(3 in cfg.fixed_anchors for cfg in cands)
     assert all(cfg.drive_anchor != 3 for cfg in cands)
     assert all(cfg.sensor_anchor != 3 for cfg in cands)
     assert all(len(cfg.fixed_anchors) == 2 for cfg in cands)
     assert all(dict(zip(cfg.fixed_anchors, cfg.fixed_deltas_mm))[3] <= 0.0 for cfg in cands)
+    assert all(
+        delta_mm >= 0.0
+        for cfg in cands
+        for anchor_idx, delta_mm in zip(cfg.fixed_anchors, cfg.fixed_deltas_mm)
+        if anchor_idx != 3
+    )
     assert any(
         any(delta_mm > 0.0 for anchor_idx, delta_mm in zip(cfg.fixed_anchors, cfg.fixed_deltas_mm) if anchor_idx != 3)
         for cfg in cands
     )
+
+
+def test_generate_candidate_sweeps_limits_hangprinter_4_total_fixed_budget():
+    cands = generate_candidate_sweeps(
+        num_anchors=4,
+        dimensions=3,
+        fixed_delta_values_mm=[-10.0, 0.0, 10.0],
+        machine_type="hangprinter_4",
+        max_total_fixed_delta_mm=10.0,
+    )
+    assert cands
+    assert len(cands) == 9
+    assert all(sum(abs(float(delta_mm)) for delta_mm in cfg.fixed_deltas_mm) <= 10.0 + 1e-9 for cfg in cands)
+    assert all(cfg.fixed_deltas_mm != (10.0, -10.0) for cfg in cands)
