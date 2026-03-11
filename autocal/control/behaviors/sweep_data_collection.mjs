@@ -21,13 +21,22 @@ import { attachDebugState } from '../primitives/debug_trace.mjs';
 import { FORCE_TUNING_DEFAULTS, tuneForce } from './force_tuning.mjs';
 
 export const MACHINE_CONFIGS = {
-  slideprinter: { numAnchors: 3, dimensions: 2, axes: ['X', 'Y', 'Z'], forbiddenSensors: [] },
+  slideprinter: { numAnchors: 3, dimensions: 2, axes: ['X', 'Y', 'Z'], mustBeInFixedSet: [] },
   // These are the visible G-code axes exposed by the active RRF configs, not the
   // physical anchor labels used in M669/M666 replies.
-  hangprinter_4: { numAnchors: 4, dimensions: 3, axes: ['X', 'Y', 'Z', 'U'], forbiddenSensors: [3] },
+  hangprinter_4: {
+    numAnchors: 4,
+    dimensions: 3,
+    axes: ['X', 'Y', 'Z', 'U'],
+    mustBeInFixedSet: [3],
+    // Keep the old field as a compatibility alias for code paths that only need
+    // "not a sensor" semantics.
+    forbiddenSensors: [3],
+    fixedTargetBoundsByAnchor: { 3: { maxFixed: 0 } },
+  },
   hangprinter_5: { numAnchors: 5, dimensions: 3, axes: ['X', 'Y', 'Z', 'U', 'V'], forbiddenSensors: [4] },
-  cubecorners: { numAnchors: 8, dimensions: 3, axes: ['X', 'Y', 'Z', 'U', 'V', 'W', 'A', 'B'], forbiddenSensors: [] },
-  skycam: { numAnchors: 4, dimensions: 3, axes: ['X', 'Y', 'Z', 'U'], forbiddenSensors: [] },
+  cubecorners: { numAnchors: 8, dimensions: 3, axes: ['X', 'Y', 'Z', 'U', 'V', 'W', 'A', 'B'], mustBeInFixedSet: [] },
+  skycam: { numAnchors: 4, dimensions: 3, axes: ['X', 'Y', 'Z', 'U'], mustBeInFixedSet: [] },
 };
 
 export const MOTOR_IDS_BY_MACHINE = {
@@ -69,7 +78,7 @@ export const SWEEP_DEFAULTS = {
 /**
  * Sweep collection field reference (input + normalized options).
  * machineType: lowercase key in MACHINE_CONFIGS.
- * machineConfig: { numAnchors, dimensions, axes, forbiddenSensors } for machineType.
+ * machineConfig: { numAnchors, dimensions, axes, mustBeInFixedSet?, fixedTargetBoundsByAnchor? } for machineType.
  * motorIds: array of motor ID strings, length == machineConfig.numAnchors.
  * speedup: positive number, hp-sim speed scale (1 == realtime).
  * sweepPoints: integer >= 2, number of points per sweep.
@@ -198,6 +207,65 @@ function constraintsFor1Dof(machineConfig) {
   return Math.min(fixed, Math.max(0, machineConfig?.numAnchors ?? fixed));
 }
 
+function getMustBeInFixedSet(machineConfig) {
+  if (!Array.isArray(machineConfig?.mustBeInFixedSet)) {
+    return [];
+  }
+  return machineConfig.mustBeInFixedSet
+    .map((entry) => Number.parseInt(entry, 10))
+    .filter((entry) => Number.isFinite(entry));
+}
+
+function getSensorForbiddenAnchors(machineConfig) {
+  if (Array.isArray(machineConfig?.forbiddenSensors)) {
+    return machineConfig.forbiddenSensors
+      .map((entry) => Number.parseInt(entry, 10))
+      .filter((entry) => Number.isFinite(entry));
+  }
+  return getMustBeInFixedSet(machineConfig);
+}
+
+function getForceForbiddenAnchors(machineConfig) {
+  return [...new Set([
+    ...getSensorForbiddenAnchors(machineConfig),
+    ...getMustBeInFixedSet(machineConfig),
+  ])];
+}
+
+function getFixedTargetBounds(machineConfig, anchorIdx) {
+  if (!machineConfig || typeof machineConfig !== 'object') {
+    return null;
+  }
+  const raw = machineConfig.fixedTargetBoundsByAnchor;
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
+  const bounds = raw[anchorIdx] ?? raw[String(anchorIdx)];
+  if (!bounds || typeof bounds !== 'object') {
+    return null;
+  }
+  const minRaw = bounds.minFixed;
+  const maxRaw = bounds.maxFixed;
+  const minFixed = Number.isFinite(minRaw) ? Number(minRaw) : null;
+  const maxFixed = Number.isFinite(maxRaw) ? Number(maxRaw) : null;
+  return { minFixed, maxFixed };
+}
+
+function constrainFixedTarget(machineConfig, anchorIdx, value) {
+  let target = Number.isFinite(value) ? Number(value) : 0;
+  const bounds = getFixedTargetBounds(machineConfig, anchorIdx);
+  if (!bounds) {
+    return target;
+  }
+  if (Number.isFinite(bounds.minFixed) && target < bounds.minFixed) {
+    target = bounds.minFixed;
+  }
+  if (Number.isFinite(bounds.maxFixed) && target > bounds.maxFixed) {
+    target = bounds.maxFixed;
+  }
+  return target;
+}
+
 function canonicalDriveSensorPair(anchorA, anchorB, forbiddenSensors = []) {
   const forbidden = new Set(forbiddenSensors ?? []);
   if (forbidden.has(anchorA) && !forbidden.has(anchorB)) {
@@ -317,15 +385,19 @@ export function computeInitialForceSweepStepMm(baseRadiusMm) {
   return baseRadiusMm * Math.PI / 2;
 }
 
-function resolveFixedTargets(fixedCount, explicitTargets, maxTravelMm) {
+export function resolveFixedTargets(fixedAnchors, explicitTargets, maxTravelMm, machineConfig = null) {
+  const fixedCount = Array.isArray(fixedAnchors) ? fixedAnchors.length : 0;
   if (fixedCount <= 0) {
     return [];
   }
+  let targets = [];
   if (Array.isArray(explicitTargets)) {
-    return normalizeFixedTargets(explicitTargets, fixedCount);
+    targets = normalizeFixedTargets(explicitTargets, fixedCount);
+  } else {
+    const value = Number.isFinite(maxTravelMm) ? maxTravelMm : 0;
+    targets = Array.from({ length: fixedCount }, () => value);
   }
-  const value = Number.isFinite(maxTravelMm) ? maxTravelMm : 0;
-  return Array.from({ length: fixedCount }, () => value);
+  return targets.map((target, idx) => constrainFixedTarget(machineConfig, fixedAnchors[idx], target));
 }
 
 function validateSweepCollectionInput(context) {
@@ -489,10 +561,16 @@ export function generateSweepConfigs(machineType, forbiddenSensors = null) {
   const numAnchors = machineConfig.numAnchors;
   const allAnchors = range(numAnchors);
   const fixedCount = constraintsFor1Dof(machineConfig);
-  const forbidden = forbiddenSensors || machineConfig.forbiddenSensors || [];
+  const forbidden = Array.isArray(forbiddenSensors)
+    ? forbiddenSensors
+    : getSensorForbiddenAnchors(machineConfig);
+  const mustBeFixed = new Set(getMustBeInFixedSet(machineConfig));
   const configs = [];
 
   for (const fixedAnchors of combinations(allAnchors, fixedCount)) {
+    if ([...mustBeFixed].some((anchorIdx) => !fixedAnchors.includes(anchorIdx))) {
+      continue;
+    }
     const freeAnchors = allAnchors.filter((idx) => !fixedAnchors.includes(idx));
     for (const pair of combinations(freeAnchors, 2)) {
       const [driveAnchor, sensorAnchor] = canonicalDriveSensorPair(pair[0], pair[1], forbidden);
@@ -531,11 +609,16 @@ export function selectRepresentativeConfigs(allConfigs, machineConfig, maxSweeps
   const numAnchors = cfg.numAnchors ?? 0;
   const axes = range(numAnchors);
   const fixedCount = constraintsFor1Dof(cfg);
-  const forbidden = new Set(cfg.forbiddenSensors ?? []);
+  const forbidden = new Set(getSensorForbiddenAnchors(cfg));
+  const mustBeFixed = new Set(getMustBeInFixedSet(cfg));
   const combos = combinations(axes, fixedCount);
   const chosen = [];
 
   for (const fixedAnchors of combos) {
+    if ([...mustBeFixed].some((anchorIdx) => !fixedAnchors.includes(anchorIdx))) {
+      // eslint-disable-next-line no-continue
+      continue;
+    }
     const freeAnchors = axes.filter((idx) => !fixedAnchors.includes(idx));
     for (const pair of combinations(freeAnchors, 2)) {
       const [driveAnchor, sensorAnchor] = canonicalDriveSensorPair(pair[0], pair[1], forbidden);
@@ -565,7 +648,7 @@ export function expandSubSweepsForConfig(sweepConfig, machineConfig) {
     return [];
   }
   const normalized = normalizeSweepConfig(sweepConfig, machineConfig);
-  const forbidden = new Set(machineConfig?.forbiddenSensors ?? []);
+  const forbidden = new Set(getSensorForbiddenAnchors(machineConfig));
   const fixedSet = new Set(normalized.fixedAnchors || []);
   const candidates = [
     { driveAnchor: normalized.driveAnchor, sensorAnchor: normalized.sensorAnchor },
@@ -853,6 +936,7 @@ export async function loadSweepConfigFile(filePath, machineConfig) {
 export function validateSweepConfig(config, machineConfig) {
   const errors = [];
   const fixedCount = constraintsFor1Dof(machineConfig);
+  const mustBeFixed = getMustBeInFixedSet(machineConfig);
   if (!Array.isArray(config.fixedAnchors) || config.fixedAnchors.length !== fixedCount) {
     errors.push(`expected ${fixedCount} fixed anchors`);
   }
@@ -863,7 +947,10 @@ export function validateSweepConfig(config, machineConfig) {
   if (new Set(all).size !== config.fixedAnchors.length + 2) {
     errors.push('duplicate anchor roles in sweep config');
   }
-  if (machineConfig.forbiddenSensors?.includes(config.sensorAnchor)) {
+  if (mustBeFixed.some((anchorIdx) => !config.fixedAnchors.includes(anchorIdx))) {
+    errors.push(`anchors [${mustBeFixed.join(', ')}] must remain fixed`);
+  }
+  if (getSensorForbiddenAnchors(machineConfig).includes(config.sensorAnchor)) {
     errors.push('forbidden sensor anchor');
   }
   if (errors.length > 0) {
@@ -875,7 +962,7 @@ function normalizeSweepConfig(config, machineConfig) {
   if (!config || !machineConfig) {
     return config;
   }
-  const forbiddenSensors = machineConfig.forbiddenSensors ?? [];
+  const forbiddenSensors = getSensorForbiddenAnchors(machineConfig);
   const fixedAnchors = Array.isArray(config.fixedAnchors)
     ? [...config.fixedAnchors].sort((a, b) => a - b)
     : [];
@@ -1172,7 +1259,7 @@ export async function collectSweepData(send, context) {
 
   let forceTuningMeta = null;
   if (autoTuneForce) {
-    const forbidden = new Set(machineConfig.forbiddenSensors ?? []);
+    const forbidden = new Set(getForceForbiddenAnchors(machineConfig));
     const autoTuneConfig = sweepConfigs.find((cfg) => !forbidden.has(cfg.driveAnchor)) ?? sweepConfigs[0];
     if (!autoTuneConfig) {
       console.log('; auto-tune force skipped (no sweep configs)');
@@ -1184,7 +1271,7 @@ export async function collectSweepData(send, context) {
         mmPerDeg,
         feed,
         speedup,
-        forbiddenForceAnchors: machineConfig.forbiddenSensors,
+        forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
         forceLow,
         forceMid,
         forceMax,
@@ -1224,7 +1311,7 @@ export async function collectSweepData(send, context) {
   let maxTravelMm = Number.isFinite(maxTravelOverride) ? maxTravelOverride : null;
   let sizeTunePair = null;
   if (!useFixedTargets && maxTravelOverride === null) {
-    sizeTunePair = selectSizeTunePair(sweepConfigs, machineConfig.forbiddenSensors);
+    sizeTunePair = selectSizeTunePair(sweepConfigs, getForceForbiddenAnchors(machineConfig));
     if (!sizeTunePair) {
       console.log('; size-tune skipped (no force-capable anchor pair)');
     } else {
@@ -1234,7 +1321,7 @@ export async function collectSweepData(send, context) {
         forceLow,
         forceMax,
         pairAnchors: sizeTunePair,
-        forbiddenForceAnchors: machineConfig.forbiddenSensors,
+        forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
         speedup,
       });
       if (Number.isFinite(maxTravelMm)) {
@@ -1254,9 +1341,10 @@ export async function collectSweepData(send, context) {
   for (const sweepConfig of sweepConfigs) {
     sweepOrdinal += 1;
     const fixedTargets = resolveFixedTargets(
-      sweepConfig.fixedAnchors.length,
+      sweepConfig.fixedAnchors,
       fixedTargetsSpec,
       maxTravelMm,
+      machineConfig,
     );
     const fixedDesc = useFixedTargets
       ? fixedTargets.map((val) => val.toFixed(3)).join(', ')
@@ -1313,7 +1401,7 @@ export async function collectSweepData(send, context) {
         fixedAnchors: sweepConfig.fixedAnchors,
         fixedTargets,
         projectZeroTension: options.projectZeroTension,
-        forbiddenForceAnchors: machineConfig.forbiddenSensors,
+        forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
         baseRadiusMm: Array.isArray(m666ForCollection?.R)
           ? m666ForCollection.R[subCfg.driveAnchor]
           : m666ForCollection?.R,

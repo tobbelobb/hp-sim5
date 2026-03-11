@@ -68,6 +68,61 @@ def _canonical_drive_sensor_pair(
     return int(anchor_b), int(anchor_a)
 
 
+def _normalize_fixed_delta_bounds(
+    raw_bounds: Optional[Dict[int, Tuple[Optional[float], Optional[float]]]],
+) -> Dict[int, Tuple[Optional[float], Optional[float]]]:
+    out: Dict[int, Tuple[Optional[float], Optional[float]]] = {}
+    if not isinstance(raw_bounds, dict):
+        return out
+    for raw_idx, raw_pair in raw_bounds.items():
+        try:
+            idx = int(raw_idx)
+        except (TypeError, ValueError):
+            continue
+        lo: Optional[float] = None
+        hi: Optional[float] = None
+        if isinstance(raw_pair, dict):
+            raw_lo = raw_pair.get("minFixed")
+            raw_hi = raw_pair.get("maxFixed")
+        elif isinstance(raw_pair, (list, tuple)) and len(raw_pair) >= 2:
+            raw_lo, raw_hi = raw_pair[0], raw_pair[1]
+        else:
+            continue
+        if raw_lo is not None:
+            try:
+                val = float(raw_lo)
+            except (TypeError, ValueError):
+                val = float("nan")
+            if np.isfinite(val):
+                lo = float(val)
+        if raw_hi is not None:
+            try:
+                val = float(raw_hi)
+            except (TypeError, ValueError):
+                val = float("nan")
+            if np.isfinite(val):
+                hi = float(val)
+        out[idx] = (lo, hi)
+    return out
+
+
+def _fixed_delta_within_bounds(
+    anchor_idx: int,
+    delta_mm: float,
+    bounds_by_anchor: Dict[int, Tuple[Optional[float], Optional[float]]],
+) -> bool:
+    bounds = bounds_by_anchor.get(int(anchor_idx))
+    if bounds is None:
+        return True
+    lo, hi = bounds
+    value = float(delta_mm)
+    if lo is not None and value < float(lo) - 1e-9:
+        return False
+    if hi is not None and value > float(hi) + 1e-9:
+        return False
+    return True
+
+
 def dataset_sweep_configs(dataset: Dict[str, object]) -> List[SweepConfig]:
     sweeps = dataset.get("sweeps")
     if not isinstance(sweeps, list):
@@ -262,6 +317,8 @@ def generate_candidate_sweeps(
     fixed_delta_values_mm: Sequence[float],
     machine_type: Optional[str] = None,
     forbidden_sensors: Optional[Sequence[int]] = None,
+    must_be_fixed_anchors: Optional[Sequence[int]] = None,
+    fixed_delta_bounds_by_anchor: Optional[Dict[int, Tuple[Optional[float], Optional[float]]]] = None,
 ) -> List[SweepConfig]:
     """
     Generate sweep candidates compatible with position sweep collection.
@@ -276,11 +333,17 @@ def generate_candidate_sweeps(
         return []
 
     forbidden = set(int(x) for x in (forbidden_sensors or []))
+    must_be_fixed = set(int(x) for x in (must_be_fixed_anchors or []))
+    fixed_delta_bounds = _normalize_fixed_delta_bounds(fixed_delta_bounds_by_anchor)
     if machine_type is not None:
         try:
             mt = MachineType(machine_type)
             cfg = MachineConfig.from_type(mt)
             forbidden.update(int(x) for x in cfg.carrying_anchors or [])
+            must_be_fixed.update(int(x) for x in getattr(cfg, "must_be_fixed_anchors", []) or [])
+            fixed_delta_bounds.update(
+                _normalize_fixed_delta_bounds(getattr(cfg, "fixed_anchor_delta_bounds", {}))
+            )
         except ValueError:
             pass
 
@@ -288,11 +351,15 @@ def generate_candidate_sweeps(
     deltas = [v for v in deltas if np.isfinite(v)]
     if not deltas:
         return []
+    if len(must_be_fixed) > fixed_count:
+        return []
 
     indices = list(range(n))
     out: List[SweepConfig] = []
     for fixed in combinations(indices, fixed_count):
         fixed = tuple(int(x) for x in fixed)
+        if must_be_fixed and not must_be_fixed.issubset(fixed):
+            continue
         free = [idx for idx in indices if idx not in fixed]
         for pair in combinations(free, 2):
             canonical = _canonical_drive_sensor_pair(int(pair[0]), int(pair[1]), forbidden)
@@ -302,6 +369,11 @@ def generate_candidate_sweeps(
             if sensor in forbidden:
                 continue
             for fixed_deltas in product(deltas, repeat=fixed_count):
+                if not all(
+                    _fixed_delta_within_bounds(anchor_idx, delta_mm, fixed_delta_bounds)
+                    for anchor_idx, delta_mm in zip(fixed, fixed_deltas)
+                ):
+                    continue
                 out.append(
                     SweepConfig(
                         fixed_anchors=fixed,

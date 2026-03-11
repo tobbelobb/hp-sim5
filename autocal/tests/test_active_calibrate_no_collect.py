@@ -495,6 +495,9 @@ def test_write_bootstrap_sweep_config_uses_machine_specific_constraints(tmp_path
     for idx, line in enumerate(lines, start=1):
         fixed_token, drive_token, sensor_token = line.split()
         fixed_anchors = [int(value) for value in fixed_token.strip("[]").split(",") if value]
+        assert 3 in fixed_anchors
+        assert int(drive_token) != 3
+        assert int(sensor_token) != 3
         sweep = Sweep(
             id=f"sweep_{idx:03d}",
             fixed_anchors=fixed_anchors,

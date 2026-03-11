@@ -25,6 +25,8 @@ def test_machine_config_hangprinter_4():
     assert config.num_anchors == 4
     assert config.dimensions == 3
     assert config.constraints_for_1dof == 2
+    assert config.must_be_fixed_anchors == [3]
+    assert config.fixed_anchor_delta_bounds[3] == (None, 0.0)
 
 
 def test_sweep_validation_valid():
@@ -78,13 +80,15 @@ def test_ellipse_coefficients_normalization():
 def test_sweep_config_generator_slideprinter():
     config = MachineConfig.from_type(MachineType.SLIDEPRINTER)
     configs = generate_sweep_configs(config)
-    assert len(configs) == 6  # 3 * 2 * 1 = 6
+    assert len(configs) == 3
 
 
 def test_sweep_config_generator_hangprinter_4():
     config = MachineConfig.from_type(MachineType.HANGPRINTER_4)
     configs = generate_sweep_configs(config)
-    assert len(configs) == 9  # Carrying anchor excluded as Sensor
+    assert len(configs) == 3
+    assert all(3 in cfg["fixed_anchors"] for cfg in configs)
+    assert all(cfg["drive_anchor"] != 3 for cfg in configs)
     assert all(cfg["sensor_anchor"] != 3 for cfg in configs)
 
 
@@ -116,4 +120,3 @@ def test_roundtrip_serialization(tmp_path):
     assert loaded.sweeps[0].id == "sweep_001"
     assert loaded.sweeps[0].fixed_lengths == [10.0]
     assert loaded.sweeps[0].data_points[0].l_drive == 0
-

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -35,6 +35,8 @@ class MachineConfig:
     num_anchors: int
     dimensions: int  # 2 for Slideprinter, 3 for others
     carrying_anchors: List[int] = field(default_factory=list)
+    must_be_fixed_anchors: List[int] = field(default_factory=list)
+    fixed_anchor_delta_bounds: Dict[int, Tuple[Optional[float], Optional[float]]] = field(default_factory=dict)
 
     @property
     def constraints_for_1dof(self) -> int:
@@ -44,16 +46,25 @@ class MachineConfig:
     @classmethod
     def from_type(cls, machine_type: MachineType) -> "MachineConfig":
         configs = {
-            MachineType.SLIDEPRINTER: (3, 2, []),
-            MachineType.HANGPRINTER_4: (4, 3, [3]),  # Anchor 3 carries weight, never Sensor
-            MachineType.HANGPRINTER_5: (5, 3, [4]),  # Anchor 4 carries weight, never Sensor
-            MachineType.CUBECORNERS: (8, 3, []),
-            MachineType.SKYCAM: (4, 3, []),
+            MachineType.SLIDEPRINTER: (3, 2, [], [], {}),
+            # Anchor 3 is the load-bearing line on hangprinter_4:
+            # keep it in the fixed set and never command a positive fixed delta.
+            MachineType.HANGPRINTER_4: (4, 3, [3], [3], {3: (None, 0.0)}),
+            MachineType.HANGPRINTER_5: (5, 3, [4], [], {}),
+            MachineType.CUBECORNERS: (8, 3, [], [], {}),
+            MachineType.SKYCAM: (4, 3, [], [], {}),
         }
         if machine_type not in configs:
             raise ValueError(f"Unsupported machine type: {machine_type}")
-        num_anchors, dimensions, carrying = configs[machine_type]
-        return cls(machine_type, num_anchors, dimensions, carrying)
+        num_anchors, dimensions, carrying, must_be_fixed, fixed_bounds = configs[machine_type]
+        return cls(
+            machine_type,
+            num_anchors,
+            dimensions,
+            carrying,
+            list(must_be_fixed),
+            dict(fixed_bounds),
+        )
 
 
 @dataclass

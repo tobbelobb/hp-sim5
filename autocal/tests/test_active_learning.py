@@ -70,13 +70,21 @@ def test_generate_candidate_sweeps_slideprinter_count():
     assert len(cands) == 6
 
 
-def test_generate_candidate_sweeps_respects_forbidden_sensor():
+def test_generate_candidate_sweeps_respects_hangprinter_4_fixed_anchor_rules():
     cands = generate_candidate_sweeps(
         num_anchors=4,
         dimensions=3,
-        fixed_delta_values_mm=[0.0],
+        fixed_delta_values_mm=[-10.0, 0.0, 10.0],
         machine_type="hangprinter_4",
     )
     assert cands
+    assert len(cands) == 18
+    assert all(3 in cfg.fixed_anchors for cfg in cands)
+    assert all(cfg.drive_anchor != 3 for cfg in cands)
     assert all(cfg.sensor_anchor != 3 for cfg in cands)
     assert all(len(cfg.fixed_anchors) == 2 for cfg in cands)
+    assert all(dict(zip(cfg.fixed_anchors, cfg.fixed_deltas_mm))[3] <= 0.0 for cfg in cands)
+    assert any(
+        any(delta_mm > 0.0 for anchor_idx, delta_mm in zip(cfg.fixed_anchors, cfg.fixed_deltas_mm) if anchor_idx != 3)
+        for cfg in cands
+    )

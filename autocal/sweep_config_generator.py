@@ -1,9 +1,24 @@
 from __future__ import annotations
 
-from itertools import combinations, permutations
+from itertools import combinations
 from typing import Dict, List
 
 from autocal.sweep_types import MachineConfig
+
+
+def _canonical_drive_sensor_pair(
+    anchor_a: int, anchor_b: int, forbidden_sensor_anchors: List[int] | None = None
+) -> tuple[int, int] | None:
+    forbidden = set(forbidden_sensor_anchors or [])
+    if anchor_a in forbidden and anchor_b in forbidden:
+        return None
+    if anchor_a in forbidden and anchor_b not in forbidden:
+        return int(anchor_a), int(anchor_b)
+    if anchor_b in forbidden and anchor_a not in forbidden:
+        return int(anchor_b), int(anchor_a)
+    if anchor_a <= anchor_b:
+        return int(anchor_a), int(anchor_b)
+    return int(anchor_b), int(anchor_a)
 
 
 def generate_sweep_configs(
@@ -22,20 +37,31 @@ def generate_sweep_configs(
     if k < 0 or k >= n:
         return []
 
-    sensor_block = set(forbidden_sensor_anchors or config.carrying_anchors or [])
+    sensor_block = list(
+        forbidden_sensor_anchors if forbidden_sensor_anchors is not None else (config.carrying_anchors or [])
+    )
+    must_be_fixed = set(config.must_be_fixed_anchors or [])
+    if len(must_be_fixed) > k:
+        return []
     all_configs: List[Dict[str, List[int] | int]] = []
 
     for fixed in combinations(range(n), k):
+        if must_be_fixed and not must_be_fixed.issubset(fixed):
+            continue
         fixed_set = set(fixed)
         free_anchors = [i for i in range(n) if i not in fixed_set]
-        for drive, sensor in permutations(free_anchors, 2):
+        for anchor_a, anchor_b in combinations(free_anchors, 2):
+            canonical = _canonical_drive_sensor_pair(anchor_a, anchor_b, sensor_block)
+            if canonical is None:
+                continue
+            drive, sensor = canonical
             if sensor in sensor_block:
                 continue
             all_configs.append(
                 {
                     "fixed_anchors": list(fixed),
-                    "drive_anchor": drive,
-                    "sensor_anchor": sensor,
+                    "drive_anchor": int(drive),
+                    "sensor_anchor": int(sensor),
                 }
             )
 
@@ -104,4 +130,3 @@ def select_representative_configs(
             selected.append(cfg)
 
     return selected
-

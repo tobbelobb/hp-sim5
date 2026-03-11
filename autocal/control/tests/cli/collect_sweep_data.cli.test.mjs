@@ -10,6 +10,7 @@ import {
   combinations,
   generateSweepConfigs,
   MACHINE_CONFIGS,
+  resolveFixedTargets,
   resolveForcedBaseRadii,
   resolveForcedBuildupFactor,
   selectRepresentativeConfigs,
@@ -70,7 +71,9 @@ describe('collect_sweep_data CLI helpers', () => {
     expect(slideConfigs).toHaveLength(3);
 
     const hp4Configs = generateSweepConfigs('hangprinter_4');
-    expect(hp4Configs).toHaveLength(6);
+    expect(hp4Configs).toHaveLength(3);
+    expect(hp4Configs.every((cfg) => cfg.fixedAnchors.includes(3))).toBe(true);
+    expect(hp4Configs.every((cfg) => cfg.driveAnchor !== 3 && cfg.sensorAnchor !== 3)).toBe(true);
   });
 
   test('combinations', () => {
@@ -81,18 +84,26 @@ describe('collect_sweep_data CLI helpers', () => {
   test('selectRepresentativeConfigs', () => {
     const allConfigs = generateSweepConfigs('hangprinter_4');
     const selected = selectRepresentativeConfigs(allConfigs, MACHINE_CONFIGS.hangprinter_4, 6);
-    expect(selected).toHaveLength(6);
-    const drives = new Set(selected.map((c) => c.driveAnchor));
-    expect(drives.size).toBeGreaterThanOrEqual(3);
+    expect(selected).toHaveLength(3);
+    expect(selected.every((cfg) => cfg.fixedAnchors.includes(3))).toBe(true);
   });
 
   test('validateSweepConfig', () => {
-    const config = { numAnchors: 3, dimensions: 2, forbiddenSensors: [], axes: ['X', 'Y', 'Z'] };
+    const config = { numAnchors: 3, dimensions: 2, mustBeInFixedSet: [], axes: ['X', 'Y', 'Z'] };
     validateSweepConfig({ fixedAnchors: [0], driveAnchor: 1, sensorAnchor: 2 }, config);
     expect(() => validateSweepConfig({ fixedAnchors: [0, 0], driveAnchor: 1, sensorAnchor: 2 }, config))
       .toThrow(/duplicate/i);
     expect(() => validateSweepConfig({ fixedAnchors: [0], driveAnchor: 1, sensorAnchor: 3 }, config))
       .toThrow(/range/i);
+    expect(() => validateSweepConfig(
+      { fixedAnchors: [0, 1], driveAnchor: 3, sensorAnchor: 2 },
+      MACHINE_CONFIGS.hangprinter_4,
+    )).toThrow(/must remain fixed/i);
+  });
+
+  test('resolveFixedTargets respects per-anchor fixed bounds', () => {
+    expect(resolveFixedTargets([0, 3], [25, 25], null, MACHINE_CONFIGS.hangprinter_4)).toEqual([25, 0]);
+    expect(resolveFixedTargets([3, 2], null, 30, MACHINE_CONFIGS.hangprinter_4)).toEqual([0, 30]);
   });
 
   test('angleToLength', () => {
