@@ -9,6 +9,7 @@ import {
   stopProcess,
   waitForRrfSimulator,
 } from '../../primitives/encoder_utils.mjs';
+import { normalizeMachineType } from '../../primitives/machine_type.mjs';
 import { applyForceModeState, returnMotorsToOriginOneAtATime, waitForStableEncoders } from '../../primitives/uncalibrated_actions.mjs';
 import { MACHINE_CONFIGS, MOTOR_IDS_BY_MACHINE, SWEEP_DEFAULTS } from '../../behaviors/sweep_data_collection.mjs';
 
@@ -67,7 +68,7 @@ async function main() {
   const encoderTimeoutMs = Number.isFinite(parseFloat(args.timeout)) ? parseFloat(args.timeout) : undefined;
   const waitForWsMs = Number.isFinite(parseFloat(args.waitWs)) ? parseFloat(args.waitWs) : 0;
 
-  const machineType = (args.machineType || 'slideprinter').toLowerCase();
+  const machineType = normalizeMachineType(args.machineType || 'slideprinter');
   const machineConfig = MACHINE_CONFIGS[machineType];
   if (!machineConfig) {
     console.error(`Unknown machine type: ${machineType}`);
@@ -87,7 +88,7 @@ async function main() {
   if (shouldSpawnRrf) {
     try {
       console.log(`Starting rrf_simulator at ${targetServer}...`);
-      rrfProcess = await startRrfSimulator({ port: targetPort, debug: args.debug });
+      rrfProcess = await startRrfSimulator({ port: targetPort, debug: args.debug, machineType });
       await waitForRrfSimulator(targetServer);
     } catch (err) {
       console.error(`Unable to start rrf_simulator: ${err?.message || err}`);

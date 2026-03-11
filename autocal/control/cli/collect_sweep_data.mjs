@@ -14,6 +14,7 @@ import {
   stopProcess,
   waitForRrfSimulator,
 } from '../primitives/encoder_utils.mjs';
+import { normalizeMachineType } from '../primitives/machine_type.mjs';
 import {
   collectSweepData,
   MACHINE_CONFIGS,
@@ -133,7 +134,7 @@ async function main() {
     process.exit(0);
   }
   stepGcodeMode = !!args.stepGcode;
-  const machineType = (args.machineType || 'slideprinter').toLowerCase();
+  const machineType = normalizeMachineType(args.machineType || 'slideprinter');
   const machineConfig = MACHINE_CONFIGS[machineType];
   if (!machineConfig) {
     console.error(`Unknown machine type: ${machineType}`);
@@ -164,7 +165,7 @@ async function main() {
   if (shouldSpawnRrf) {
     try {
       console.log(`Starting rrf_simulator at ${targetServer}...`);
-      rrfProcess = await startRrfSimulator({ port: targetPort, debug: args.debug });
+      rrfProcess = await startRrfSimulator({ port: targetPort, debug: args.debug, machineType });
       await waitForRrfSimulator(targetServer);
     } catch (err) {
       console.error(`Unable to start rrf_simulator: ${err?.message || err}`);

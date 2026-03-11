@@ -1,12 +1,13 @@
 import { spawn } from 'node:child_process';
 import { formatCallSite, getDebugState, parseCallSite } from './debug_trace.mjs';
+import { resolveRrfSimulatorConfig } from './machine_type.mjs';
 import { STEP_CLOCK_HZ } from '../../../examples/js/slideprinter/rrfMotionUtils.js';
 
 export const DEFAULT_FEED = 2000;
 export const DEFAULT_RRF_PORT = 8081;
 export const DEFAULT_RRF_SERVER = `http://localhost:${DEFAULT_RRF_PORT}`;
 export const RRF_SIM_BINARY = './RRF/build/rrf_simulator';
-export const RRF_SIM_ARGS = ['--vsd', 'RRF/run/vsd', '-c', 'sys/config_slideprinter.g', '--server', '-p'];
+export const RRF_SIM_VSD_PATH = 'RRF/run/vsd';
 
 export function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -243,12 +244,24 @@ export async function runMoveWithWait(sendFn, gcode, speedup = 1, {
   }
 }
 
-export function buildRrfSimulatorArgs(port) {
-  return [...RRF_SIM_ARGS, port.toString()];
+export function buildRrfSimulatorArgs(
+  port,
+  {
+    machineType = 'slideprinter',
+    preferLineLayerConfig = false,
+  } = {},
+) {
+  const simConfig = resolveRrfSimulatorConfig(machineType, { preferLineLayerConfig });
+  return ['--vsd', RRF_SIM_VSD_PATH, '-c', simConfig, '--server', '-p', port.toString()];
 }
 
-export async function startRrfSimulator({ port = DEFAULT_RRF_PORT, debug = false } = {}) {
-  const args = buildRrfSimulatorArgs(port);
+export async function startRrfSimulator({
+  port = DEFAULT_RRF_PORT,
+  debug = false,
+  machineType = 'slideprinter',
+  preferLineLayerConfig = false,
+} = {}) {
+  const args = buildRrfSimulatorArgs(port, { machineType, preferLineLayerConfig });
   const child = spawn(RRF_SIM_BINARY, args, { stdio: ['ignore', 'pipe', 'pipe'] });
   if (debug && child?.stdout) {
     child.stdout.on('data', (data) => {

@@ -1,6 +1,8 @@
 import {
   angleToLength,
 } from '../../primitives/uncalibrated_actions.mjs';
+import { buildRrfSimulatorArgs } from '../../primitives/encoder_utils.mjs';
+import { normalizeMachineType, resolveRrfSimulatorConfig } from '../../primitives/machine_type.mjs';
 import {
   buildM666AdjustmentCommand,
   combinations,
@@ -14,6 +16,33 @@ import {
 import { parseBridgeArgs } from '../../primitives/gcode_bridge.mjs';
 
 describe('collect_sweep_data CLI helpers', () => {
+  test('normalizeMachineType maps hangprinter aliases to hangprinter_4', () => {
+    expect(normalizeMachineType('hangprinter_4')).toBe('hangprinter_4');
+    expect(normalizeMachineType('hp4')).toBe('hangprinter_4');
+    expect(normalizeMachineType('hp3')).toBe('hangprinter_4');
+    expect(normalizeMachineType('hangprinter_3')).toBe('hangprinter_4');
+  });
+
+  test('resolveRrfSimulatorConfig uses hp3 configs for hangprinter_4 family', () => {
+    expect(resolveRrfSimulatorConfig('hangprinter_4')).toBe('sys/config_hp3.g');
+    expect(resolveRrfSimulatorConfig('hp4')).toBe('sys/config_hp3.g');
+    expect(resolveRrfSimulatorConfig('hp3')).toBe('sys/config_hp3.g');
+    expect(resolveRrfSimulatorConfig('hangprinter_3')).toBe('sys/config_hp3.g');
+    expect(resolveRrfSimulatorConfig('hangprinter_4', { preferLineLayerConfig: true })).toBe('sys/config_hp3_w_line_layers.g');
+  });
+
+  test('buildRrfSimulatorArgs uses machine-aware config selection', () => {
+    expect(buildRrfSimulatorArgs(8081, { machineType: 'slideprinter' })).toEqual([
+      '--vsd', 'RRF/run/vsd', '-c', 'sys/config_slideprinter.g', '--server', '-p', '8081',
+    ]);
+    expect(buildRrfSimulatorArgs(8081, { machineType: 'hp3' })).toEqual([
+      '--vsd', 'RRF/run/vsd', '-c', 'sys/config_hp3.g', '--server', '-p', '8081',
+    ]);
+    expect(buildRrfSimulatorArgs(8081, { machineType: 'hangprinter_4', preferLineLayerConfig: true })).toEqual([
+      '--vsd', 'RRF/run/vsd', '-c', 'sys/config_hp3_w_line_layers.g', '--server', '-p', '8081',
+    ]);
+  });
+
   test('generateSweepConfigs', () => {
     const slideConfigs = generateSweepConfigs('slideprinter');
     expect(slideConfigs).toHaveLength(3);
