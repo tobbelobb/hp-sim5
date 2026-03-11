@@ -10,6 +10,7 @@ import os
 import numpy as np
 
 from autocal.ellipse_cost import EllipseCostFunction
+from autocal.theoretical_ellipse import anchor_opt_vector_size
 
 # Always force CPU backend for reproducible behavior and consistent user performance.
 os.environ["JAX_PLATFORMS"] = "cpu"
@@ -316,6 +317,7 @@ def _objective_core(
     *,
     num_anchors: int,
     dimensions: int,
+    fix_anchor0_x: bool,
     pointwise_filtering: bool,
     pointwise_global_mad: bool,
     sweep_wise_filtering: bool,
@@ -332,6 +334,8 @@ def _objective_core(
     huber_mult: float,
 ) -> "jnp.ndarray":
     x = jnp.clip(jnp.asarray(anchor_vec).reshape(-1), lb, ub)
+    if fix_anchor0_x:
+        x = jnp.concatenate([jnp.zeros((1,), dtype=x.dtype), x], axis=0)
     anchors = x.reshape((num_anchors, dimensions))
 
     anchor_norms = jnp.linalg.norm(anchors, axis=1)
@@ -572,6 +576,7 @@ if _JAX_AVAILABLE:
         static_argnames=(
             "num_anchors",
             "dimensions",
+            "fix_anchor0_x",
             "pointwise_filtering",
             "pointwise_global_mad",
             "sweep_wise_filtering",
@@ -592,12 +597,13 @@ else:  # pragma: no cover - optional dependency
     _COMPILED_VALUE_AND_GRAD = None
 
 
-def _build_kwargs_for_objective(cost_fn: EllipseCostFunction) -> dict:
+def _build_kwargs_for_objective(cost_fn: EllipseCostFunction, *, fix_anchor0_x: bool) -> dict:
     metric_mode = _metric_mode_code(str(cost_fn.sweep_metric))
     _, _stage_name, huber_mult, hard_cut = cost_fn._pointwise_stage_settings()
     return {
         "num_anchors": int(cost_fn.num_anchors),
         "dimensions": int(cost_fn.dimensions),
+        "fix_anchor0_x": bool(fix_anchor0_x),
         "pointwise_filtering": bool(cost_fn.pointwise_filtering),
         "pointwise_global_mad": bool(cost_fn.pointwise_global_mad),
         "sweep_wise_filtering": bool(cost_fn.sweep_wise_filtering),
@@ -637,6 +643,22 @@ def _build_packed_jax_args(
     )
 
 
+def _jax_fix_anchor0_x_mode(
+    cost_fn: EllipseCostFunction,
+    lb_arr: np.ndarray,
+    ub_arr: np.ndarray,
+) -> Optional[bool]:
+    if lb_arr.size != ub_arr.size:
+        return None
+    full_size = int(cost_fn.num_anchors) * int(cost_fn.dimensions)
+    opt_size = int(anchor_opt_vector_size(cost_fn.machine_type, cost_fn.num_anchors, cost_fn.dimensions))
+    if lb_arr.size == full_size:
+        return False
+    if lb_arr.size == opt_size:
+        return bool(opt_size != full_size)
+    return None
+
+
 def build_compiled_value_and_grad(
     cost_fn: EllipseCostFunction,
     lb: np.ndarray,
@@ -658,7 +680,10 @@ def build_compiled_value_and_grad(
 
     lb_arr = np.asarray(lb, dtype=float).reshape(-1)
     ub_arr = np.asarray(ub, dtype=float).reshape(-1)
-    kwargs = _build_kwargs_for_objective(cost_fn)
+    fix_anchor0_x = _jax_fix_anchor0_x_mode(cost_fn, lb_arr, ub_arr)
+    if fix_anchor0_x is None:
+        return None
+    kwargs = _build_kwargs_for_objective(cost_fn, fix_anchor0_x=fix_anchor0_x)
     packed_args = _build_packed_jax_args(packed, lb_arr, ub_arr)
 
     def _wrapped(anchor_vec: np.ndarray) -> Tuple[float, np.ndarray]:
@@ -679,6 +704,7 @@ if _JAX_AVAILABLE:
         static_argnames=(
             "num_anchors",
             "dimensions",
+            "fix_anchor0_x",
             "pointwise_filtering",
             "pointwise_global_mad",
             "sweep_wise_filtering",
@@ -714,7 +740,10 @@ def build_compiled_objective(
 
     lb_arr = np.asarray(lb, dtype=float).reshape(-1)
     ub_arr = np.asarray(ub, dtype=float).reshape(-1)
-    kwargs = _build_kwargs_for_objective(cost_fn)
+    fix_anchor0_x = _jax_fix_anchor0_x_mode(cost_fn, lb_arr, ub_arr)
+    if fix_anchor0_x is None:
+        return None
+    kwargs = _build_kwargs_for_objective(cost_fn, fix_anchor0_x=fix_anchor0_x)
     packed_args = _build_packed_jax_args(packed, lb_arr, ub_arr)
 
     def _wrapped(anchor_vec: np.ndarray) -> float:

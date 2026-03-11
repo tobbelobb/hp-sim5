@@ -3,7 +3,7 @@ import pytest
 
 from autocal.ellipse_cost import EllipseCostFunction
 from autocal.ellipse_objective_jax import _JAX_AVAILABLE, build_compiled_value_and_grad
-from autocal.theoretical_ellipse import get_anchor_bounds
+from autocal.theoretical_ellipse import anchors_matrix_to_opt_vec, get_anchor_bounds, get_anchor_opt_bounds
 
 
 def _synthetic_slideprinter_dataset():
@@ -175,3 +175,32 @@ def test_jax_stage2_filtering_value_remains_finite_with_outliers():
     assert np.isfinite(float(value_minus))
     assert np.isfinite(float(value_plus))
     assert np.asarray(grad_0, dtype=float).shape == x.shape
+
+
+@pytest.mark.skipif(not _JAX_AVAILABLE, reason="JAX is not installed")
+def test_jax_objective_accepts_reduced_slideprinter_optimizer_vector():
+    dataset, anchors = _synthetic_slideprinter_dataset()
+    cost_fn = EllipseCostFunction(
+        dataset,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=True,
+        pointwise_global_mad=True,
+        sweep_wise_filtering=True,
+        use_noise_mean=True,
+        noise_normalized=True,
+    )
+    lb_opt, ub_opt = get_anchor_opt_bounds("slideprinter", 3, 2)
+    objective = build_compiled_value_and_grad(cost_fn, np.asarray(lb_opt, dtype=float), np.asarray(ub_opt, dtype=float))
+    assert objective is not None
+
+    x_full = np.asarray(anchors, dtype=float).reshape(-1)
+    x_opt = anchors_matrix_to_opt_vec(anchors, "slideprinter")
+    value_opt, grad_opt = objective(x_opt)
+    value_full = float(cost_fn.evaluate(x_full))
+    value_np = float(cost_fn.evaluate(x_opt))
+
+    assert np.isfinite(float(value_opt))
+    assert np.all(np.isfinite(np.asarray(grad_opt, dtype=float)))
+    assert np.asarray(grad_opt, dtype=float).shape == x_opt.shape
+    assert np.isclose(value_opt, value_np, rtol=1e-6, atol=1e-8)
+    assert np.isclose(value_opt, value_full, rtol=1e-6, atol=1e-8)

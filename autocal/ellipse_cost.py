@@ -14,6 +14,8 @@ from autocal.ellipse_fitting import (
 from autocal.flex import FlexModel
 from autocal.sweep_types import MachineConfig, MachineType, Sweep
 from autocal.theoretical_ellipse import (
+    anchor_opt_vec_to_matrix,
+    anchor_opt_vector_size,
     anchors_vec_to_matrix,
     get_anchor_bounds,
     predict_ellipse_coefficients,
@@ -1308,7 +1310,12 @@ class EllipseCostFunction:
         Residuals are computed in the L^2 plane and converted to mm with a
         local linearization: |r_mm| ≈ |r_l2| / (2 * mean_length).
         """
-        anchors = anchors_vec_to_matrix(anchor_vec, self.num_anchors, self.dimensions)
+        anchors = anchor_opt_vec_to_matrix(
+            anchor_vec,
+            self.machine_type,
+            self.num_anchors,
+            self.dimensions,
+        )
         rows: List[Dict[str, object]] = []
         l2_scale = float(max(self._l2_scale, 1.0))
         sigma_noise_mm = self._encoder_noise_mm
@@ -1654,7 +1661,12 @@ class EllipseCostFunction:
 
     def robustness_diagnostics(self, anchor_vec: np.ndarray, *, top_n: int = 5) -> Dict[str, object]:
         """Return per-sweep diagnostics for active robustness filters."""
-        anchors = anchors_vec_to_matrix(anchor_vec, self.num_anchors, self.dimensions)
+        anchors = anchor_opt_vec_to_matrix(
+            anchor_vec,
+            self.machine_type,
+            self.num_anchors,
+            self.dimensions,
+        )
         diagnostics: Dict[str, object] = {}
 
         sigma_counts: Dict[str, int] = {"point": 0, "origin": 0, "min": 0, "mixed": 0}
@@ -1791,7 +1803,12 @@ class EllipseCostFunction:
 
     def evaluate(self, anchor_vec: np.ndarray) -> float:
         """Compute scalar cost for a flat anchor vector."""
-        anchors = anchors_vec_to_matrix(anchor_vec, self.num_anchors, self.dimensions)
+        anchors = anchor_opt_vec_to_matrix(
+            anchor_vec,
+            self.machine_type,
+            self.num_anchors,
+            self.dimensions,
+        )
 
         if not self.sweeps:
             return 0.0
@@ -1837,7 +1854,12 @@ class EllipseCostFunction:
 
     def evaluate_detailed(self, anchor_vec: np.ndarray) -> CostResult:
         """Evaluate cost with per-sweep breakdown."""
-        anchors = anchors_vec_to_matrix(anchor_vec, self.num_anchors, self.dimensions)
+        anchors = anchor_opt_vec_to_matrix(
+            anchor_vec,
+            self.machine_type,
+            self.num_anchors,
+            self.dimensions,
+        )
 
         per_sweep_costs: Dict[str, float] = {}
         num_valid = 0
@@ -1923,7 +1945,7 @@ class EllipseCostFunction:
                         norm_mode = unique_modes[0]
                     else:
                         norm_mode = "mixed"
-                p_count = int(self.num_anchors * self.dimensions)
+                p_count = int(anchor_opt_vector_size(self.machine_type, self.num_anchors, self.dimensions))
                 chi2_red = None
                 if n_obs > p_count:
                     chi2_red = float(np.sum(z_all**2) / float(n_obs - p_count))

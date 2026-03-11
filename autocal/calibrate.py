@@ -32,6 +32,7 @@ from autocal.ellipse_solver import format_anchors_gcode, solve_anchors
 from autocal.ellipse_visualization import create_calibration_report
 from autocal.json_schema import load_json_file, write_json_file
 from autocal.sweep_types import MachineConfig, MachineType
+from autocal.theoretical_ellipse import canonicalize_anchor_gauge
 
 
 def _load_json(path: Path) -> dict:
@@ -105,40 +106,8 @@ def _print_solution_summary(method: str, anchors: np.ndarray, *, cost: Optional[
     print(f"; [{method}] cost={cost_str} {_format_anchor_stats(anchors)}")
 
 
-def _canonicalize_slideprinter_anchors_for_output(anchors: np.ndarray) -> np.ndarray:
-    """
-    Fix the unobservable global rotation/reflection gauge for Slideprinter.
-
-    Sweep data contains only lengths, so anchors are identifiable only up to a rigid
-    rotation/reflection about the origin. For consistent, human-friendly output we:
-      1) rotate so anchor 0 lies on +Y (x≈0, y>0)
-      2) reflect (mirror) so anchor 1 has x>=0
-    """
-    anchors = np.asarray(anchors, dtype=float)
-    if anchors.shape != (3, 2):
-        return anchors
-
-    a0 = anchors[0]
-    ang = float(np.arctan2(a0[1], a0[0]))
-    # Slideprinter conventions (Klipper configs, examples) place anchor 0 at (0, -R).
-    rot = float(-np.pi / 2 - ang)
-    c = float(np.cos(rot))
-    s = float(np.sin(rot))
-    R = np.array([[c, -s], [s, c]], dtype=float)
-    out = anchors @ R.T
-
-    if out[0, 1] > 0:
-        out[:, 1] *= -1.0
-    if out[1, 0] < 0:
-        out[:, 0] *= -1.0
-    return out
-
-
 def _canonicalize_anchors_for_output(machine_type: str, anchors: np.ndarray) -> np.ndarray:
-    anchors = np.asarray(anchors, dtype=float)
-    if str(machine_type) == "slideprinter" and anchors.shape == (3, 2):
-        return _canonicalize_slideprinter_anchors_for_output(anchors)
-    return anchors
+    return canonicalize_anchor_gauge(machine_type, np.asarray(anchors, dtype=float))
 
 
 def _extract_motor_samples_with_metadata(dataset: dict) -> Tuple[np.ndarray, int, List[Tuple[int, List[int]]]]:

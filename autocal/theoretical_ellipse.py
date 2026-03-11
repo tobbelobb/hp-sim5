@@ -307,6 +307,52 @@ def predict_ellipses_for_dataset(
     return predictions
 
 
+def _slideprinter_ax0_gauge_enabled(
+    machine_type: Union[str, MachineType],
+    n_anchors: int,
+    dims: int,
+) -> bool:
+    mt = machine_type.value if isinstance(machine_type, MachineType) else str(machine_type)
+    return str(mt) == "slideprinter" and int(n_anchors) == 3 and int(dims) == 2
+
+
+def canonicalize_anchor_gauge(machine_type: Union[str, MachineType], anchors: np.ndarray) -> np.ndarray:
+    """
+    Fix the unobservable Slideprinter rotation/reflection gauge.
+
+    Sweep-length data identifies Slideprinter anchors only up to a rigid rotation/reflection
+    about the origin. Canonicalizing before dropping `A.x` preserves an equivalent geometry
+    while making the reduced parameterization deterministic.
+    """
+    anchors = np.asarray(anchors, dtype=float)
+    if not _slideprinter_ax0_gauge_enabled(machine_type, anchors.shape[0], anchors.shape[1]):
+        return anchors.copy()
+
+    a0 = anchors[0]
+    ang = float(np.arctan2(float(a0[1]), float(a0[0])))
+    rot = float(-np.pi / 2 - ang)
+    c = float(np.cos(rot))
+    s = float(np.sin(rot))
+    rmat = np.array([[c, -s], [s, c]], dtype=float)
+    out = anchors @ rmat.T
+
+    if out[1, 0] < 0.0:
+        out[:, 0] *= -1.0
+    return out
+
+
+def anchor_opt_vector_size(
+    machine_type: Union[str, MachineType],
+    n_anchors: int,
+    dims: int,
+) -> int:
+    """Return the optimizer vector length for this anchor layout."""
+    full_size = int(n_anchors) * int(dims)
+    if _slideprinter_ax0_gauge_enabled(machine_type, n_anchors, dims):
+        return full_size - 1
+    return full_size
+
+
 def get_anchor_bounds(machine_type: Union[str, MachineType]) -> Tuple[np.ndarray, np.ndarray]:
     """Return lower/upper anchor bounds for a machine type."""
     mt = machine_type.value if isinstance(machine_type, MachineType) else str(machine_type)
@@ -351,6 +397,29 @@ def get_anchor_bounds(machine_type: Union[str, MachineType]) -> Tuple[np.ndarray
     return np.array(cfg["lb"], dtype=float), np.array(cfg["ub"], dtype=float)
 
 
+def get_anchor_opt_bounds(
+    machine_type: Union[str, MachineType],
+    n_anchors: int,
+    dims: int,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Return optimizer bounds, dropping the fixed `A.x` gauge when applicable."""
+    lb, ub = get_anchor_bounds(machine_type)
+    if _slideprinter_ax0_gauge_enabled(machine_type, n_anchors, dims):
+        bound_mat = np.maximum(
+            np.abs(np.asarray(lb, dtype=float).reshape(int(n_anchors), int(dims))),
+            np.abs(np.asarray(ub, dtype=float).reshape(int(n_anchors), int(dims))),
+        )
+        max_anchor_norm = float(np.max(np.linalg.norm(bound_mat, axis=1))) if bound_mat.size else 1.0
+        if not np.isfinite(max_anchor_norm) or max_anchor_norm <= 0.0:
+            max_anchor_norm = float(np.max(bound_mat)) if bound_mat.size else 1.0
+        opt_size = anchor_opt_vector_size(machine_type, n_anchors, dims)
+        return (
+            np.full(opt_size, -max_anchor_norm, dtype=float),
+            np.full(opt_size, max_anchor_norm, dtype=float),
+        )
+    return np.asarray(lb, dtype=float), np.asarray(ub, dtype=float)
+
+
 def anchors_vec_to_matrix(vec: np.ndarray, n_anchors: int, dims: int) -> np.ndarray:
     """Convert flat anchor vector to (N, D) matrix."""
     vec = np.asarray(vec, dtype=float)
@@ -361,3 +430,53 @@ def anchors_matrix_to_vec(matrix: np.ndarray) -> np.ndarray:
     """Convert (N, D) anchor matrix to flat vector."""
     matrix = np.asarray(matrix, dtype=float)
     return matrix.ravel()
+
+
+def anchor_opt_vec_to_matrix(
+    vec: np.ndarray,
+    machine_type: Union[str, MachineType],
+    n_anchors: int,
+    dims: int,
+) -> np.ndarray:
+    """
+    Convert an optimizer vector to a full `(N, D)` anchor matrix.
+
+    The Slideprinter 2D optimizer drops `A.x` and reconstructs it here as zero.
+    Full vectors remain accepted for compatibility with existing callers/tests.
+    """
+    arr = np.asarray(vec, dtype=float)
+    if arr.ndim == 2:
+        if arr.shape != (int(n_anchors), int(dims)):
+            raise ValueError(f"Expected anchor matrix shape {(n_anchors, dims)}, got {arr.shape}")
+        return arr.copy()
+
+    flat = arr.reshape(-1)
+    full_size = int(n_anchors) * int(dims)
+    opt_size = anchor_opt_vector_size(machine_type, n_anchors, dims)
+
+    if flat.size == full_size:
+        return flat.reshape(int(n_anchors), int(dims))
+    if flat.size != opt_size:
+        raise ValueError(f"Expected anchor vector of size {opt_size} or {full_size}, got {flat.size}")
+    if opt_size == full_size:
+        return flat.reshape(int(n_anchors), int(dims))
+
+    full = np.empty(full_size, dtype=float)
+    full[0] = 0.0
+    full[1:] = flat
+    return full.reshape(int(n_anchors), int(dims))
+
+
+def anchors_matrix_to_opt_vec(
+    matrix: np.ndarray,
+    machine_type: Union[str, MachineType],
+) -> np.ndarray:
+    """Convert an anchor matrix to optimizer coordinates."""
+    anchors = np.asarray(matrix, dtype=float)
+    if anchors.ndim != 2:
+        raise ValueError(f"Expected anchor matrix, got shape {anchors.shape}")
+
+    if _slideprinter_ax0_gauge_enabled(machine_type, anchors.shape[0], anchors.shape[1]):
+        anchors = canonicalize_anchor_gauge(machine_type, anchors)
+        return anchors.ravel()[1:]
+    return anchors.ravel()

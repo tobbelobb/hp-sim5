@@ -4,11 +4,16 @@ import pytest
 from autocal.ellipse_fitting import fit_ellipse_from_sweep
 from autocal.sweep_types import MachineType
 from autocal.theoretical_ellipse import (
+    anchor_opt_vec_to_matrix,
+    anchor_opt_vector_size,
     anchors_matrix_to_vec,
+    anchors_matrix_to_opt_vec,
     anchors_vec_to_matrix,
+    canonicalize_anchor_gauge,
     compute_constraint_circle_2d,
     compute_constraint_circle_3d,
     get_anchor_bounds,
+    get_anchor_opt_bounds,
     parametric_to_algebraic_ellipse,
     predict_ellipse_coefficients,
     predict_ellipse_geometry,
@@ -193,3 +198,26 @@ def test_anchor_bounds_and_reshaping_helpers():
     mat = anchors_vec_to_matrix(vec, n_anchors=3, dims=2)
     assert mat.shape == (3, 2)
     assert np.allclose(anchors_matrix_to_vec(mat), vec)
+
+
+def test_slideprinter_optimizer_helpers_drop_anchor_a_x_without_changing_geometry():
+    anchors = np.array([[-400.0, 0.0], [400.0, 0.0], [0.0, 500.0]], dtype=float)
+
+    opt_size = anchor_opt_vector_size(MachineType.SLIDEPRINTER, 3, 2)
+    lb_opt, ub_opt = get_anchor_opt_bounds(MachineType.SLIDEPRINTER, 3, 2)
+    assert opt_size == 5
+    assert lb_opt.shape == (5,)
+    assert ub_opt.shape == (5,)
+
+    opt_vec = anchors_matrix_to_opt_vec(anchors, MachineType.SLIDEPRINTER)
+    reduced = anchor_opt_vec_to_matrix(opt_vec, MachineType.SLIDEPRINTER, 3, 2)
+    canonical = canonicalize_anchor_gauge(MachineType.SLIDEPRINTER, anchors)
+
+    assert opt_vec.shape == (5,)
+    assert reduced.shape == (3, 2)
+    assert reduced[0, 0] == pytest.approx(0.0, abs=1e-12)
+    assert np.allclose(reduced, canonical)
+    assert np.allclose(np.linalg.norm(reduced, axis=1), np.linalg.norm(anchors, axis=1))
+    assert np.isclose(np.linalg.norm(reduced[0] - reduced[1]), np.linalg.norm(anchors[0] - anchors[1]))
+    assert np.isclose(np.linalg.norm(reduced[0] - reduced[2]), np.linalg.norm(anchors[0] - anchors[2]))
+    assert np.isclose(np.linalg.norm(reduced[1] - reduced[2]), np.linalg.norm(anchors[1] - anchors[2]))
