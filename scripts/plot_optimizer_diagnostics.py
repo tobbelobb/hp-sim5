@@ -43,6 +43,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from autocal import active_calibrate as ac
 from autocal.spool_model import build_spool_model_params, dataset_with_modeled_lengths
+from autocal.sweep_types import MachineConfig, MachineType
 from autocal.theoretical_ellipse import (
     compute_constraint_circle_2d,
     compute_constraint_circle_3d,
@@ -55,13 +56,10 @@ _RE_SCORE = re.compile(r"\bScore:\s*([0-9.+-eE]+)\b")
 _RE_K = re.compile(r"\bk=([^\s;]+)")
 _RE_SUMMARY_FIT_SCORE = re.compile(r"Fit(?:/UI)? quality score.*?:\s*([0-9.+-eE]+)\s*$", re.IGNORECASE)
 _RE_M669_PARTS = re.compile(
-    r"([ABC])\s*([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)\:([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)\:([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)",
+    r"((?:P\d+)|[A-Z])\s*([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)\:([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)\:([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)",
     re.IGNORECASE,
 )
-_RE_M666_R = re.compile(
-    r"R\s*([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?):([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?):([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)",
-    re.IGNORECASE,
-)
+_RE_M666_R = re.compile(r"\bR\s*([^\s]+)", re.IGNORECASE)
 _RE_M666_Q = re.compile(r"Q([^\s]+)", re.IGNORECASE)
 
 _SWEEP_PALETTE = (
@@ -80,10 +78,42 @@ def _parse_csv_floats(text: str) -> List[float]:
     return [float(part.strip()) for part in str(text).split(",") if str(part).strip()]
 
 
-def _parse_anchors_text(text: str) -> np.ndarray:
+def _dataset_geometry(dataset: dict) -> Tuple[str, int, int]:
+    machine_type = ac._require_machine_type(dataset, context="dataset")
+    config = MachineConfig.from_type(MachineType(machine_type))
+    num_anchors = int(dataset.get("num_anchors", config.num_anchors) or config.num_anchors)
+    dimensions = int(dataset.get("dimensions", config.dimensions) or config.dimensions)
+    if num_anchors != config.num_anchors:
+        raise ValueError(
+            f"dataset num_anchors={num_anchors} does not match machine_type '{machine_type}' ({config.num_anchors})"
+        )
+    if dimensions != config.dimensions:
+        raise ValueError(
+            f"dataset dimensions={dimensions} does not match machine_type '{machine_type}' ({config.dimensions})"
+        )
+    return machine_type, num_anchors, dimensions
+
+
+def _anchor_labels_for_machine_type(machine_type: str, *, num_anchors: int) -> List[str]:
+    machine_type = ac._normalize_machine_type(machine_type) or str(machine_type)
+    if machine_type in ("hangprinter_4", "hangprinter_5"):
+        labels = ["A", "B", "C", "D", "I"]
+    else:
+        labels = ["A", "B", "C", "D", "I", "J", "K", "L", "O"]
+    if num_anchors > len(labels):
+        labels.extend(f"P{idx}" for idx in range(len(labels), int(num_anchors)))
+    return labels[:num_anchors]
+
+
+def _parse_anchors_text(text: str, *, dimensions: int) -> np.ndarray:
     arr = np.asarray(ast.literal_eval(text), dtype=float)
-    if arr.ndim != 2 or arr.shape[1] != 2:
-        raise ValueError("--anchors must be a 2D list like [[x,y],[x,y],[x,y]]")
+    dims = int(dimensions)
+    if arr.ndim != 2 or arr.shape[1] != dims:
+        if dims == 2:
+            example = "[[x,y],[x,y],[x,y]]"
+        else:
+            example = "[[x,y,z],[x,y,z],...]"
+        raise ValueError(f"--anchors must be a {dims}D list like {example}")
     return np.asarray(arr, dtype=float)
 
 
@@ -818,7 +848,7 @@ def _write_per_sweep_svgs(
             sweep=sweep,
             rows=sweep_rows,
             anchors=np.asarray(anchors, dtype=float),
-            dimensions=int(dataset.get("dimensions", 2) or 2),
+            dimensions=_dataset_geometry(dataset)[2],
             out_path=target_dir / f"{_safe_filename(sweep_id)}.raw_fit.svg",
             color_limit=color_limit,
             annotate_points=bool(annotate_points),
@@ -832,6 +862,23 @@ def _write_per_sweep_svgs(
         )
         count += 1
     return count
+
+
+def _parse_m666_radii(line: str, *, num_anchors: int) -> Optional[np.ndarray]:
+    match_r = _RE_M666_R.search(line)
+    if match_r is None:
+        return None
+    values = np.asarray(
+        [float(part) for part in str(match_r.group(1)).split(":") if str(part).strip()],
+        dtype=float,
+    ).reshape(-1)
+    if values.size == 1:
+        values = np.full(int(num_anchors), float(values[0]), dtype=float)
+    if values.size != int(num_anchors):
+        raise ValueError(
+            f"summary M666 radii count mismatch: expected {int(num_anchors)}, got {int(values.size)}"
+        )
+    return np.asarray(values, dtype=float)
 
 
 def _parse_iteration_models_from_log_text(text: str) -> List[Dict[str, object]]:
@@ -886,12 +933,19 @@ def _parse_iteration_models_from_log_text(text: str) -> List[Dict[str, object]]:
     return items
 
 
-def _parse_summary_model_from_log_text(text: str) -> Optional[Dict[str, object]]:
+def _parse_summary_model_from_log_text(text: str, *, dataset: Optional[dict] = None) -> Optional[Dict[str, object]]:
     summary_start = text.rfind("== Calibration summary ==")
     if summary_start < 0:
         return None
     summary_text = text[summary_start:]
-    anchors_map: Dict[str, Tuple[float, float]] = {}
+    if dataset is None:
+        machine_type = "slideprinter"
+        num_anchors = 3
+        dimensions = 2
+    else:
+        machine_type, num_anchors, dimensions = _dataset_geometry(dataset)
+    expected_labels = _anchor_labels_for_machine_type(machine_type, num_anchors=num_anchors)
+    anchors_map: Dict[str, Tuple[float, ...]] = {}
     radii = None
     buildup = None
     fit_score = None
@@ -901,27 +955,23 @@ def _parse_summary_model_from_log_text(text: str) -> Optional[Dict[str, object]]
             fit_score = float(match_fit.group(1))
         if "Parameters (M669)" in line or "Anchors (M669)" in line:
             for label, x_str, y_str, _z_str in _RE_M669_PARTS.findall(line):
-                anchors_map[str(label).upper()] = (float(x_str), float(y_str))
+                coords = (float(x_str), float(y_str), float(_z_str))
+                anchors_map[str(label).upper()] = coords[: int(dimensions)]
         if "Line model (M666)" in line or "Spools (M666)" in line:
-            match_r = _RE_M666_R.search(line)
-            if match_r:
-                radii = np.asarray(
-                    [float(match_r.group(1)), float(match_r.group(2)), float(match_r.group(3))],
-                    dtype=float,
-                )
+            radii = _parse_m666_radii(line, num_anchors=num_anchors)
             match_q = _RE_M666_Q.search(line)
             if match_q:
                 buildup = match_q.group(1)
-    if len(anchors_map) != 3 or radii is None:
+    if radii is None or any(label not in anchors_map for label in expected_labels):
         return None
     anchors = np.asarray(
-        [anchors_map["A"], anchors_map["B"], anchors_map["C"]],
+        [anchors_map[label] for label in expected_labels],
         dtype=float,
     )
     buildup_arr = (
-        _parse_buildup_text(str(buildup), num_anchors=3)
+        _parse_buildup_text(str(buildup), num_anchors=num_anchors)
         if buildup is not None
-        else np.zeros(3, dtype=float)
+        else np.zeros(num_anchors, dtype=float)
     )
     return {
         "anchors": anchors,
@@ -932,16 +982,21 @@ def _parse_summary_model_from_log_text(text: str) -> Optional[Dict[str, object]]
 
 
 def _resolve_model_from_args(args: argparse.Namespace, dataset: dict) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]:
-    num_anchors = int(dataset.get("num_anchors", 0))
+    _machine_type, num_anchors, dimensions = _dataset_geometry(dataset)
 
     if args.log is not None:
         text = Path(args.log).read_text(encoding="utf-8", errors="replace")
         if args.log_summary:
-            summary = _parse_summary_model_from_log_text(text)
+            summary = _parse_summary_model_from_log_text(text, dataset=dataset)
             if summary is None:
                 raise ValueError(f"could not parse summary model from log: {args.log}")
+            anchors = np.asarray(summary["anchors"], dtype=float)
+            if anchors.shape != (num_anchors, dimensions):
+                raise ValueError(
+                    f"log summary anchors must match dataset geometry ({num_anchors}x{dimensions}); got {anchors.shape}"
+                )
             return (
-                np.asarray(summary["anchors"], dtype=float),
+                anchors,
                 np.asarray(summary["radii"], dtype=float),
                 np.asarray(summary["buildup"], dtype=float),
             )
@@ -952,15 +1007,20 @@ def _resolve_model_from_args(args: argparse.Namespace, dataset: dict) -> Tuple[n
         if idx < 0 or idx >= len(items):
             raise ValueError(f"log iteration {idx} out of range; parsed {len(items)} iterations")
         item = items[idx]
+        anchors = np.asarray(item["anchors"], dtype=float)
+        if anchors.shape != (num_anchors, dimensions):
+            raise ValueError(
+                f"log iteration anchors must match dataset geometry ({num_anchors}x{dimensions}); got {anchors.shape}"
+            )
         return (
-            np.asarray(item["anchors"], dtype=float),
+            anchors,
             np.asarray(item["radii"], dtype=float),
             np.asarray(item["buildup"], dtype=float),
         )
 
     if args.anchors is None:
         raise ValueError("provide --anchors or --log")
-    anchors = _parse_anchors_text(str(args.anchors))
+    anchors = _parse_anchors_text(str(args.anchors), dimensions=dimensions)
     if anchors.shape[0] != num_anchors:
         raise ValueError(f"anchor count mismatch: dataset has {num_anchors}, got {anchors.shape[0]}")
 

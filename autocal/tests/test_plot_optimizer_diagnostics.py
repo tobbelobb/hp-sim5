@@ -1,9 +1,11 @@
+from argparse import Namespace
 import json
 
 import numpy as np
 
 from scripts.plot_optimizer_diagnostics import (
     _parse_iteration_models_from_log_text,
+    _resolve_model_from_args,
     _parse_summary_model_from_log_text,
     _json_ready,
     _sample_theoretical_raw_curve,
@@ -89,6 +91,75 @@ Wrote to console: Spools (M666): M666 R39.13:39.13:39.13 Q0.636619
     assert np.allclose(parsed["radii"], np.asarray([39.13, 39.13, 39.13]))
     assert np.allclose(parsed["buildup"], np.asarray([0.636619, 0.636619, 0.636619]))
     assert parsed["fit_score_ui"] == 4.037
+
+
+def test_parse_summary_model_uses_hangprinter_4_dataset_geometry():
+    text = """
+Wrote to console:
+Wrote to console: == Calibration summary ==
+Wrote to console: Found parameters of good quality
+Wrote to console: Fit quality score (lower is better): 2.718
+Wrote to console: Anchors (M669): M669 A0.00:-2293.09:-277.88 B1418.85:786.06:-277.88 C-1415.15:769.70:-277.88 D-6.40:125.05:1378.53
+Wrote to console: Spools (M666): M666 R31.62:31.62:31.62:31.62 Q0.636619
+""".strip()
+    dataset = {
+        "machine_type": "hangprinter_4",
+        "num_anchors": 4,
+        "dimensions": 3,
+        "sweeps": [],
+    }
+
+    parsed = _parse_summary_model_from_log_text(text, dataset=dataset)
+
+    assert parsed is not None
+    assert np.allclose(
+        parsed["anchors"],
+        np.asarray(
+            [
+                [0.0, -2293.09, -277.88],
+                [1418.85, 786.06, -277.88],
+                [-1415.15, 769.70, -277.88],
+                [-6.40, 125.05, 1378.53],
+            ]
+        ),
+    )
+    assert np.allclose(parsed["radii"], np.asarray([31.62, 31.62, 31.62, 31.62]))
+    assert np.allclose(parsed["buildup"], np.asarray([0.636619, 0.636619, 0.636619, 0.636619]))
+    assert parsed["fit_score_ui"] == 2.718
+
+
+def test_resolve_model_from_args_accepts_hangprinter_4_explicit_anchors():
+    dataset = {
+        "machine_type": "hangprinter_4",
+        "num_anchors": 4,
+        "dimensions": 3,
+        "sweeps": [],
+    }
+    args = Namespace(
+        log=None,
+        log_summary=False,
+        log_iteration=None,
+        anchors="[[0,-1900,-280],[1645.44826719,950.0,-280.0],[-1645.44826719,950.0,-280],[0,0,1900]]",
+        radii="39.1845",
+        buildup="0.636619",
+    )
+
+    anchors, radii, buildup = _resolve_model_from_args(args, dataset)
+
+    assert anchors.shape == (4, 3)
+    assert np.allclose(
+        anchors,
+        np.asarray(
+            [
+                [0.0, -1900.0, -280.0],
+                [1645.44826719, 950.0, -280.0],
+                [-1645.44826719, 950.0, -280.0],
+                [0.0, 0.0, 1900.0],
+            ]
+        ),
+    )
+    assert np.allclose(radii, np.asarray([39.1845, 39.1845, 39.1845, 39.1845]))
+    assert np.allclose(buildup, np.asarray([0.636619, 0.636619, 0.636619, 0.636619]))
 
 
 def test_svg_per_sweep_residual_order_plot_marks_midpoint_split(tmp_path):
