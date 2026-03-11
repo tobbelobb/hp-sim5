@@ -23,10 +23,12 @@ export {
   SpoolTagComponent,
   SpoolStateComponent,
   StepperMotorComponent,
+  STEPPER_CLOSED_LOOP_RESOURCE,
   RemoteSpoolSystem,
   setStepperTorqueMode,
   setStepperPositionMode,
   isStepperInTorqueMode,
+  isStepperClosedLoopEnabled,
   getStepperTorque,
 } from '../slideprinter/slideprinter_common.js';
 
@@ -35,6 +37,7 @@ import {
   SpoolTagComponent,
   SpoolStateComponent,
   StepperMotorComponent,
+  isStepperClosedLoopEnabled,
 } from '../slideprinter/slideprinter_common.js';
 
 const DEFAULT_PLANE_NORMAL = new Vector3(0.0, 0.0, 1.0);
@@ -195,7 +198,7 @@ export class StepperMotorSystem {
         }
       }
     } catch (_err) {
-      // Ignore if the slideprinter scene does not use rigid groups.
+      // Ignore if the scene does not use rigid groups.
     }
 
     for (const entityId of world.query(query)) {
@@ -240,6 +243,11 @@ export class StepperMotorSystem {
       } else {
         const groupAngle = groupAngleByMember.get(entityId) || 0.0;
         const targetWorldAngle = groupAngle + (stepper.commandedAngle - stepper.deltaAngle);
+        if (isStepperClosedLoopEnabled(world, stepper)) {
+          orient.quaternion.setFromAxisAngle(DEFAULT_PLANE_NORMAL, targetWorldAngle).normalize();
+          angVel.omega.z = 0.0;
+          continue;
+        }
         const error = normalizeAngle(currentAngle - targetWorldAngle);
         const restoringTorque = -stepper.holdingTorque * Math.sin(stepper.numPolePairs * error);
         const dampingTorque = -stepper.dampingCoeff * omegaZ;

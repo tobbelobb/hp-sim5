@@ -24,4 +24,21 @@ describe('hp-sim-3d wiring', () => {
     expect(html).toContain('"three": "../node_modules/three/build/three.module.js"');
     expect(html).toContain('"three/addons/": "../node_modules/three/examples/jsm/"');
   });
+
+  test('adds and wires the closed-loop motor toggle in the 3D app shell', () => {
+    const html = readWorkspaceFile('hp-sim-3d/index.html');
+    const source = readWorkspaceFile('hp-sim-3d/assets/hp-sim.js');
+    const lineLayeringToggleIndex = html.indexOf('id="lineLayeringToggleWrapper"');
+    const closedLoopToggleIndex = html.indexOf('id="closedLoopMotorsToggleWrapper"');
+
+    expect(lineLayeringToggleIndex).toBeGreaterThan(-1);
+    expect(closedLoopToggleIndex).toBeGreaterThan(lineLayeringToggleIndex);
+    expect(html).toContain('<input id="closedLoopMotorsToggle" type="checkbox">');
+    expect(html).toContain('<span>Closed Loop Motors</span>');
+    expect(source).toContain("import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';");
+    expect(source).toContain("const closedLoopMotorsToggle = document.getElementById('closedLoopMotorsToggle');");
+    expect(source).toContain('closedLoopMotorsToggle.checked = false;');
+    expect(source).toContain('setClosedLoopMotorFeatureFlags(world, next);');
+    expect(source).toContain("setClosedLoopMotorsEnabledState(closedLoopMotorsToggle.checked, { fromToggle: true });");
+  });
 });

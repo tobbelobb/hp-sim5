@@ -13,6 +13,7 @@ import {
   shouldHideNavigationCursorOnClick,
 } from './navigation_cursor_interactions.js';
 import { cloneExtrusionList, restoreReplayExtrusions } from './replay_state.js';
+import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
 
 const HP3_USDA_KEY = 'hp3.usda';
@@ -228,6 +229,7 @@ function initHpSim() {
   const secondaryToggleBtn = document.getElementById('secondaryToggleBtn');
   const qualityToggle = document.getElementById('qualityToggle');
   const lineLayeringToggle = document.getElementById('lineLayeringToggle');
+  const closedLoopMotorsToggle = document.getElementById('closedLoopMotorsToggle');
   const qualityToggleWrapper = document.getElementById('qualityToggleWrapper');
   const qualityToggleLabel = qualityToggleWrapper ? qualityToggleWrapper.querySelector('span') : null;
   const supportsMatchMedia = typeof window.matchMedia === 'function';
@@ -273,6 +275,9 @@ function initHpSim() {
   }
   if (lineLayeringToggle) {
     lineLayeringToggle.checked = true;
+  }
+  if (closedLoopMotorsToggle) {
+    closedLoopMotorsToggle.checked = false;
   }
 
   const usdaCatalog = new Map(
@@ -322,6 +327,7 @@ function initHpSim() {
   const machineQualityMonitors = new Map();
   let qualityEnabled = qualityToggle ? Boolean(qualityToggle.checked) : false;
   let lineLayeringEnabled = lineLayeringToggle ? Boolean(lineLayeringToggle.checked) : true;
+  let closedLoopMotorsEnabled = closedLoopMotorsToggle ? Boolean(closedLoopMotorsToggle.checked) : false;
   let secondaryControlsUserPreference = null;
   let secondaryControlsAutoActive = false;
   let jobSequenceCounter = 0;
@@ -592,6 +598,22 @@ function initHpSim() {
     }
   }
 
+  function setClosedLoopMotorsEnabledState(enabled, { fromToggle = false } = {}) {
+    const next = Boolean(enabled);
+    if (closedLoopMotorsEnabled === next) {
+      if (!fromToggle && closedLoopMotorsToggle) {
+        closedLoopMotorsToggle.checked = next;
+      }
+      setClosedLoopMotorFeatureFlags(world, next);
+      return;
+    }
+    closedLoopMotorsEnabled = next;
+    setClosedLoopMotorFeatureFlags(world, next);
+    if (!fromToggle && closedLoopMotorsToggle) {
+      closedLoopMotorsToggle.checked = next;
+    }
+  }
+
   function attachQualityMonitorsToRemoteSystem() {
     if (machineQualityMonitors.size === 0) {
       return;
@@ -642,6 +664,16 @@ function initHpSim() {
   } else {
     lineLayeringEnabled = true;
     setLineLayeringFeatureFlags(world, true);
+  }
+
+  if (closedLoopMotorsToggle) {
+    closedLoopMotorsToggle.addEventListener('change', () => {
+      setClosedLoopMotorsEnabledState(closedLoopMotorsToggle.checked, { fromToggle: true });
+    });
+    setClosedLoopMotorsEnabledState(closedLoopMotorsToggle.checked, { fromToggle: true });
+  } else {
+    closedLoopMotorsEnabled = false;
+    setClosedLoopMotorFeatureFlags(world, false);
   }
 
   const referenceOverlayState = {

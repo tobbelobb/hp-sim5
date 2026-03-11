@@ -18,6 +18,14 @@ import {
 } from '../../../src/js/cable_joints/cable_joints_core.js';
 
 const SIMULATION_PLAYBACK_RESOURCE = 'simulationPlayback';
+export const STEPPER_CLOSED_LOOP_RESOURCE = 'closedLoopMotorsEnabled';
+
+export function isStepperClosedLoopEnabled(world, stepper) {
+    if (stepper?.closedLoop === true) {
+        return true;
+    }
+    return world?.getResource?.(STEPPER_CLOSED_LOOP_RESOURCE) === true;
+}
 
 export class ExtruderComponent {
     constructor() {
@@ -172,6 +180,10 @@ export class StepperMotorComponent {
         // Torque mode support
         this.torqueMode = false;
         this.targetTorque = 0.0;
+
+        // Closed-loop support. The app shells can also force this globally
+        // through STEPPER_CLOSED_LOOP_RESOURCE.
+        this.closedLoop = false;
     }
 }
 
@@ -256,6 +268,11 @@ export class StepperMotorSystem {
                 // does not fight the motor controller. Target in world = groupAngle + commanded.
                 const groupAngle = groupAngleByMember.get(e) || 0.0;
                 const targetWorldAngle = groupAngle + (stepper.commandedAngle - stepper.deltaAngle);
+                if (isStepperClosedLoopEnabled(world, stepper)) {
+                    orient.angle = targetWorldAngle;
+                    angVel.angularVelocity = 0.0;
+                    continue;
+                }
                 const error = orient.angle - targetWorldAngle;
                 const restoringTorque = -stepper.holdingTorque * Math.sin(stepper.numPolePairs * error);
 
@@ -268,7 +285,6 @@ export class StepperMotorSystem {
             // Apply torque to angular velocity (F=ma -> a=F/m -> v=v+a*dt)
             const angularAcceleration = totalTorque / inertia.inertia;
             angVel.angularVelocity += angularAcceleration * dt;
-            //orient.angle = stepper.commandedAngle;
         }
     }
 }
