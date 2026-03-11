@@ -106,8 +106,8 @@ async function main() {
 
   let fixedAnchor = fixedAnchorArg;
   if (!Number.isFinite(fixedAnchor)) {
-    const forbidden = new Set(machineConfig.forbiddenSensors ?? []);
-    fixedAnchor = motorIds.findIndex((_, idx) => idx !== driveAnchor && forbidden.has(idx));
+    const fixedOnly = new Set(machineConfig.mustBeInFixedSet ?? []);
+    fixedAnchor = motorIds.findIndex((_, idx) => idx !== driveAnchor && fixedOnly.has(idx));
     if (fixedAnchor < 0) {
       fixedAnchor = motorIds.findIndex((_, idx) => idx !== driveAnchor);
     }
@@ -191,7 +191,7 @@ async function main() {
       fixedAnchor,
       idleForce,
       speedup,
-      forbiddenForceAnchors: machineConfig.forbiddenSensors,
+      forbiddenForceAnchors: machineConfig.mustBeInFixedSet,
     });
     const thresholds = buildMovementThresholds(noiseStats.sigmaByMotorDeg, {
       activeAnchor: driveAnchor,
@@ -221,7 +221,7 @@ async function main() {
         axes: machineConfig.axes,
         mmPerDeg,
         feed,
-        forbiddenForceAnchors: machineConfig.forbiddenSensors,
+        forbiddenForceAnchors: machineConfig.mustBeInFixedSet,
         waitForStall: true,
         ...trialOptions,
       });

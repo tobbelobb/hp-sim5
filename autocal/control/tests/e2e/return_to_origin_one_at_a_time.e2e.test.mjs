@@ -164,7 +164,7 @@ async function main() {
       feed,
       speedup,
       fixedAnchors: [motorIds.indexOf('40.0')].filter((idx) => idx >= 0),
-      forbiddenForceAnchors: machineConfig.forbiddenSensors,
+      forbiddenForceAnchors: machineConfig.mustBeInFixedSet,
       settleOptions: {
         stableWindowMs,
         pollIntervalMs,
@@ -180,7 +180,7 @@ async function main() {
         feed,
         speedup,
         fixedAnchors: [motorIds.indexOf('40.0')].filter((idx) => idx >= 0),
-        forbiddenForceAnchors: machineConfig.forbiddenSensors,
+        forbiddenForceAnchors: machineConfig.mustBeInFixedSet,
         settleOptions: {
           stableWindowMs,
           pollIntervalMs,

@@ -146,7 +146,7 @@ async function main() {
       speedup,
       sampleDurationMs,
       sampleIntervalMs,
-      forbiddenForceAnchors: machineConfig.forbiddenSensors,
+      forbiddenForceAnchors: machineConfig.mustBeInFixedSet,
     });
 
     console.log(JSON.stringify(noise, null, 2));

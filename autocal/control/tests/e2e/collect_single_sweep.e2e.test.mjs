@@ -125,11 +125,11 @@ async function main() {
     process.exit(1);
   }
 
-  const forbidden = new Set(machineConfig.forbiddenSensors ?? []);
+  const fixedOnly = new Set(machineConfig.mustBeInFixedSet ?? []);
   let sensorAnchor = sensorAnchorArg;
   if (!Number.isFinite(sensorAnchor)) {
     sensorAnchor = motorIds.findIndex(
-      (_, idx) => idx !== driveAnchor && !fixedAnchors.includes(idx) && !forbidden.has(idx),
+      (_, idx) => idx !== driveAnchor && !fixedAnchors.includes(idx) && !fixedOnly.has(idx),
     );
   }
   if (!Number.isFinite(sensorAnchor) || sensorAnchor < 0 || sensorAnchor >= motorIds.length) {
@@ -140,8 +140,8 @@ async function main() {
     console.error('Invalid --sensor-anchor (must be distinct from drive/fixed anchors)');
     process.exit(1);
   }
-  if (forbidden.has(sensorAnchor)) {
-    console.error('Invalid --sensor-anchor (forbidden sensor anchor)');
+  if (fixedOnly.has(sensorAnchor)) {
+    console.error('Invalid --sensor-anchor (anchor must stay in the fixed set)');
     process.exit(1);
   }
 
