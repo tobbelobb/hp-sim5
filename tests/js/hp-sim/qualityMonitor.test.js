@@ -1,6 +1,53 @@
 import { QualityMonitor } from '../../../hp-sim/assets/quality-monitor.js';
 
 describe('QualityMonitor _projectToPath', () => {
+  function createHudElement() {
+    const classes = new Set(['sim-hidden']);
+    const listeners = new Map();
+    return {
+      innerHTML: '',
+      textContent: '',
+      style: {
+        setProperty() {},
+      },
+      classList: {
+        add(...names) {
+          for (const name of names) {
+            classes.add(name);
+          }
+        },
+        remove(...names) {
+          for (const name of names) {
+            classes.delete(name);
+          }
+        },
+        contains(name) {
+          return classes.has(name);
+        },
+      },
+      addEventListener(type, callback) {
+        listeners.set(type, callback);
+      },
+      removeEventListener(type) {
+        listeners.delete(type);
+      },
+      clickSection(section) {
+        const callback = listeners.get('click');
+        callback?.({
+          target: {
+            closest(selector) {
+              if (selector === '.quality-hud__toggle') {
+                return { dataset: { section } };
+              }
+              return null;
+            },
+          },
+          preventDefault() {},
+        });
+      },
+    };
+  }
+
   function createMonitor() {
     const monitor = new QualityMonitor();
     const segments = [
@@ -84,5 +131,40 @@ describe('QualityMonitor _projectToPath', () => {
     expect(backProjection.segmentIndex).toBe(0);
     expect(backProjection.normalError).toBeCloseTo(-0.001, 6);
     expect(monitor.lastSegmentIndex).toBe(0);
+  });
+
+  test('renders collapsible quality and missed-step sections in the HUD', () => {
+    const hudElement = createHudElement();
+    const monitor = new QualityMonitor({ hudElement });
+    monitor.setReferenceSegments([
+      { start: [0, 0, 0], end: [0.1, 0, 0] },
+    ]);
+    monitor.setMotorDiagnosticsProvider(() => ({
+      totalMissedSteps: 15,
+      motors: [
+        { axis: 'A', missedSteps: 7 },
+        { axis: 'B', missedSteps: 3 },
+        { axis: 'C', missedSteps: 3 },
+        { axis: 'D', missedSteps: 2 },
+      ],
+    }));
+
+    monitor.recordExtrusion({ pos: [0.05, 0, 0], length: 0.0005 });
+    monitor.runFinalCheck();
+
+    expect(hudElement.innerHTML).toContain('data-section="quality-details"');
+    expect(hudElement.innerHTML).toContain('data-section="missed-steps"');
+    expect(hudElement.innerHTML).toContain('Missed Steps <strong>15</strong>');
+    expect((hudElement.innerHTML.match(/quality-hud__details--hidden/g) || [])).toHaveLength(2);
+
+    hudElement.clickSection('quality-details');
+    expect(monitor.qualityDetailsExpanded).toBe(true);
+    expect((hudElement.innerHTML.match(/quality-hud__details--hidden/g) || [])).toHaveLength(1);
+
+    hudElement.clickSection('missed-steps');
+    expect(monitor.missedStepsExpanded).toBe(true);
+    expect((hudElement.innerHTML.match(/quality-hud__details--hidden/g) || [])).toHaveLength(0);
+    expect(hudElement.innerHTML).toContain('<span>A</span><span>7</span>');
+    expect(hudElement.innerHTML).toContain('<span>D</span><span>2</span>');
   });
 });

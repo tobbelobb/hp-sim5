@@ -8,6 +8,7 @@ import { _updateAttachmentPoints } from '../../src/js/cable_joints/cable_joints_
 import { QualityMonitor } from './quality-monitor.js';
 import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
+import { getMachineMotorDiagnostics } from './motor-diagnostics.js';
 
 const COMMAND_PRESET_VARIANTS = Object.freeze({
   hangprinterLogo: Object.freeze({
@@ -453,6 +454,7 @@ function initHpSim() {
         label: getMachineDisplayName(machine),
         tintColor: machine.tintColor || null,
       });
+      existing.monitor.setMotorDiagnosticsProvider(() => getMachineMotorDiagnostics(world, machine.id));
       existing.monitor.setEnabled(qualityEnabled);
       return existing.monitor;
     }
@@ -467,6 +469,7 @@ function initHpSim() {
       label: getMachineDisplayName(machine),
       tintColor: machine.tintColor || null,
     });
+    monitor.setMotorDiagnosticsProvider(() => getMachineMotorDiagnostics(world, machine.id));
     monitor.setEnabled(qualityEnabled);
     machineQualityMonitors.set(machine.id, { monitor });
     if (referenceOverlayState.segments) {

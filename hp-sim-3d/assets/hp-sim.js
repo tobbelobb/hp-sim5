@@ -15,6 +15,7 @@ import {
 import { cloneExtrusionList, restoreReplayExtrusions } from './replay_state.js';
 import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
+import { getMachineMotorDiagnostics } from './motor-diagnostics.js';
 
 const HP3_USDA_KEY = 'hp3.usda';
 
@@ -506,6 +507,7 @@ function initHpSim() {
         label: getMachineDisplayName(machine),
         tintColor: machine.tintColor || null,
       });
+      existing.monitor.setMotorDiagnosticsProvider(() => getMachineMotorDiagnostics(world, machine.id));
       existing.monitor.setEnabled(qualityEnabled);
       return existing.monitor;
     }
@@ -520,6 +522,7 @@ function initHpSim() {
       label: getMachineDisplayName(machine),
       tintColor: machine.tintColor || null,
     });
+    monitor.setMotorDiagnosticsProvider(() => getMachineMotorDiagnostics(world, machine.id));
     monitor.setEnabled(qualityEnabled);
     machineQualityMonitors.set(machine.id, { monitor });
     if (referenceOverlayState.segments) {

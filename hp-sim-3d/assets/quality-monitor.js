@@ -288,6 +288,13 @@ export class QualityMonitor {
 
     this.remoteSystem = null;
     this.boundExtrusionListener = (event) => this.recordExtrusion(event);
+    this.motorDiagnosticsProvider = null;
+    this.qualityDetailsExpanded = false;
+    this.missedStepsExpanded = false;
+    this.boundHudClick = (event) => this._handleHudClick(event);
+    if (this.hudElement && typeof this.hudElement.addEventListener === 'function') {
+      this.hudElement.addEventListener('click', this.boundHudClick);
+    }
 
     this.metrics = null;
     this.metricsDirty = true;
@@ -377,6 +384,11 @@ export class QualityMonitor {
     this.remoteSystem = system;
   }
 
+  setMotorDiagnosticsProvider(provider) {
+    this.motorDiagnosticsProvider = typeof provider === 'function' ? provider : null;
+    this.refreshHud(true);
+  }
+
   detachRemoteSystem() {
     if (!this.remoteSystem) {
       return;
@@ -436,6 +448,9 @@ export class QualityMonitor {
   dispose() {
     this.detachRemoteSystem();
     this.setVisibilityCallback(null);
+    if (this.hudElement && typeof this.hudElement.removeEventListener === 'function') {
+      this.hudElement.removeEventListener('click', this.boundHudClick);
+    }
     this.hudElement = null;
   }
 
@@ -675,6 +690,12 @@ export class QualityMonitor {
       iou,
       score,
     } = metrics;
+    const motorDiagnostics = this._getMotorDiagnostics();
+    const qualityArrow = this.qualityDetailsExpanded ? '▲' : '▼';
+    const missedStepsArrow = this.missedStepsExpanded ? '▲' : '▼';
+    const missedSteps = Number.isFinite(motorDiagnostics.totalMissedSteps)
+      ? Math.max(0, Math.round(motorDiagnostics.totalMissedSteps))
+      : 0;
 
     const headerLabel = escapeHtml(this.machineLabel || this.machineId || 'Machine');
     const accent = sanitizeHexColor(this.machineTintColor) || this.hudAccentColor || DEFAULT_HUD_ACCENT;
@@ -691,17 +712,98 @@ export class QualityMonitor {
         `<span class="quality-hud__title">${headerLabel}</span>` +
       `</div>`
     );
-    lines.push(`<div class="quality-hud__score">Quality <strong>${score.toFixed(0)}</strong></div>`);
-    lines.push(`<div class="quality-hud__metric"><span>RMSE_n (straight)</span><span>${formatLengthMm(rmseStraight)}</span></div>`);
-    lines.push(`<div class="quality-hud__metric"><span>95th |e_n|</span><span>${formatLengthMm(p95Straight)}</span></div>`);
-    lines.push(`<div class="quality-hud__metric"><span>Corner radius avg / max</span><span>${formatLengthMm(cornerRadiusAvg)} / ${formatLengthMm(cornerRadiusMax)}</span></div>`);
-    lines.push(`<div class="quality-hud__metric"><span>Ringing amplitude</span><span>${formatLengthMm(ringingAmplitude)}</span></div>`);
-    lines.push(`<div class="quality-hud__metric"><span>Damping estimate</span><span>${Number.isFinite(ringingDecay) ? ringingDecay.toFixed(2) : '--'}</span></div>`);
-    lines.push(`<div class="quality-hud__metric"><span>Coverage / IoU</span><span>${formatPercent(coverage)} / ${formatPercent(iou)}</span></div>`);
+    lines.push(
+      `<div class="quality-hud__summary quality-hud__summary--primary">` +
+        `<span class="quality-hud__summary-copy">Quality <strong>${score.toFixed(0)}</strong></span>` +
+        `<button type="button" class="quality-hud__toggle" data-section="quality-details" aria-expanded="${this.qualityDetailsExpanded ? 'true' : 'false'}" aria-label="${this.qualityDetailsExpanded ? 'Hide quality details' : 'Show quality details'}">${qualityArrow}</button>` +
+      `</div>`
+    );
+    lines.push(
+      `<div class="quality-hud__details${this.qualityDetailsExpanded ? '' : ' quality-hud__details--hidden'}">` +
+        `<div class="quality-hud__metric"><span>RMSE_n (straight)</span><span>${formatLengthMm(rmseStraight)}</span></div>` +
+        `<div class="quality-hud__metric"><span>95th |e_n|</span><span>${formatLengthMm(p95Straight)}</span></div>` +
+        `<div class="quality-hud__metric"><span>Corner radius avg / max</span><span>${formatLengthMm(cornerRadiusAvg)} / ${formatLengthMm(cornerRadiusMax)}</span></div>` +
+        `<div class="quality-hud__metric"><span>Ringing amplitude</span><span>${formatLengthMm(ringingAmplitude)}</span></div>` +
+        `<div class="quality-hud__metric"><span>Damping estimate</span><span>${Number.isFinite(ringingDecay) ? ringingDecay.toFixed(2) : '--'}</span></div>` +
+        `<div class="quality-hud__metric"><span>Coverage / IoU</span><span>${formatPercent(coverage)} / ${formatPercent(iou)}</span></div>` +
+      `</div>`
+    );
+    lines.push(
+      `<div class="quality-hud__summary quality-hud__summary--secondary">` +
+        `<span class="quality-hud__summary-copy">Missed Steps <strong>${missedSteps}</strong></span>` +
+        `<button type="button" class="quality-hud__toggle" data-section="missed-steps" aria-expanded="${this.missedStepsExpanded ? 'true' : 'false'}" aria-label="${this.missedStepsExpanded ? 'Hide missed step details' : 'Show missed step details'}">${missedStepsArrow}</button>` +
+      `</div>`
+    );
+    lines.push(
+      `<div class="quality-hud__details${this.missedStepsExpanded ? '' : ' quality-hud__details--hidden'}">` +
+        this._renderMotorDiagnostics(motorDiagnostics.motors) +
+      `</div>`
+    );
 
     this.hudElement.innerHTML = lines.join('');
     this.hudElement.classList.remove('sim-hidden');
     this._notifyHudVisibility();
+  }
+
+  _getMotorDiagnostics() {
+    if (typeof this.motorDiagnosticsProvider !== 'function') {
+      return { totalMissedSteps: 0, motors: [] };
+    }
+    try {
+      const diagnostics = this.motorDiagnosticsProvider();
+      const motors = Array.isArray(diagnostics?.motors)
+        ? diagnostics.motors
+            .map((motor) => {
+              const axis = typeof motor?.axis === 'string' && motor.axis.trim().length > 0
+                ? motor.axis.trim()
+                : null;
+              if (!axis) {
+                return null;
+              }
+              const missedSteps = Number.isFinite(motor?.missedSteps)
+                ? Math.max(0, Math.round(motor.missedSteps))
+                : 0;
+              return {
+                axis,
+                missedSteps,
+              };
+            })
+            .filter(Boolean)
+            .sort((a, b) => a.axis.localeCompare(b.axis, undefined, { numeric: true, sensitivity: 'base' }))
+        : [];
+      const totalMissedSteps = motors.reduce((sum, motor) => sum + motor.missedSteps, 0);
+      return { totalMissedSteps, motors };
+    } catch (_err) {
+      return { totalMissedSteps: 0, motors: [] };
+    }
+  }
+
+  _renderMotorDiagnostics(motors) {
+    if (!Array.isArray(motors) || motors.length === 0) {
+      return `<div class="quality-hud__metric"><span>No motors</span><span>--</span></div>`;
+    }
+    return motors
+      .map((motor) => (
+        `<div class="quality-hud__metric"><span>${escapeHtml(motor.axis)}</span><span>${motor.missedSteps}</span></div>`
+      ))
+      .join('');
+  }
+
+  _handleHudClick(event) {
+    const button = event?.target?.closest?.('.quality-hud__toggle');
+    if (!button) {
+      return;
+    }
+    const section = button.dataset?.section;
+    if (section === 'quality-details') {
+      this.qualityDetailsExpanded = !this.qualityDetailsExpanded;
+    } else if (section === 'missed-steps') {
+      this.missedStepsExpanded = !this.missedStepsExpanded;
+    } else {
+      return;
+    }
+    event.preventDefault?.();
+    this.refreshHud(true);
   }
 
   _prepareSegmentData() {

@@ -41,4 +41,11 @@ describe('hp-sim-3d wiring', () => {
     expect(source).toContain('setClosedLoopMotorFeatureFlags(world, next);');
     expect(source).toContain("setClosedLoopMotorsEnabledState(closedLoopMotorsToggle.checked, { fromToggle: true });");
   });
+
+  test('connects motor diagnostics into the 3D quality monitor cards', () => {
+    const source = readWorkspaceFile('hp-sim-3d/assets/hp-sim.js');
+
+    expect(source).toContain("import { getMachineMotorDiagnostics } from './motor-diagnostics.js';");
+    expect(source).toContain('setMotorDiagnosticsProvider(() => getMachineMotorDiagnostics(world, machine.id));');
+  });
 });
