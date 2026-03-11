@@ -425,14 +425,6 @@ def run_active_calibrate(
         "--buildup-factor",
         "0.636619",
         "--no-collect",
-        "--optimizer-mode",
-        "fast",
-        "--scale-fix",
-        "3", # 3 in ref from March 6
-        "--fit-structure",
-        "3", # 3 in ref from March 6
-        "--filter-schedule",
-        "0,0,0,1",
     ]
     if full_auto_log is not None:
         cmd.extend(["--full-auto-log", str(full_auto_log)])
@@ -924,8 +916,8 @@ def main() -> int:
             alt_dir / f"{ds}.json",
         ])
         ref_log_path = find_file_first_existing([
-            ref_dir / f"{ds}.full_auto_reference_run_march_6.log",
-            alt_dir / f"{ds}.full_auto_reference_run_march_6.log",
+            ref_dir / f"{ds}.full_auto_reference_run_march_11.log",
+            alt_dir / f"{ds}.full_auto_reference_run_march_11.log",
         ])
 
         if dataset_path is None:
@@ -935,7 +927,7 @@ def main() -> int:
             continue
         if ref_log_path is None:
             print(f"=== {ds} ===")
-            print(f"ERROR: reference log not found (tried {ref_dir}/{ds}.full_auto_reference_run_march_6.log and /mnt/data/...)")
+            print(f"ERROR: reference log not found (tried {ref_dir}/{ds}.full_auto_reference_run_march_11.log and /mnt/data/...)")
             overall_ok = False
             continue
         jobs.append((ds, dataset_path, ref_log_path))
