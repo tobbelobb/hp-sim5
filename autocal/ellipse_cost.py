@@ -197,6 +197,17 @@ def _dataset_metadata(
     return machine_type, num_anchors, dimensions, sweeps
 
 
+def _dataset_low_anchor_z(dataset: Union[dict, "SweepDataset"]) -> Optional[float]:
+    if not isinstance(dataset, dict):
+        return None
+    raw = dataset.get("_low_anchor_z")
+    try:
+        value = float(raw)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return None
+    return value if np.isfinite(value) else None
+
+
 class EllipseCostFunction:
     """Evaluate how well anchor guesses explain observed ellipses."""
 
@@ -227,6 +238,7 @@ class EllipseCostFunction:
             self.dimensions,
             self.sweeps,
         ) = _dataset_metadata(dataset)
+        self.low_anchor_z = _dataset_low_anchor_z(dataset)
         machine_key = str(self.machine_type).lower()
         self._min_sweeps_after_trim = int(
             _MIN_SWEEPS_AFTER_TRIM_BY_MACHINE.get(machine_key, _MIN_SWEEPS_AFTER_TRIM_DEFAULT)
@@ -1315,6 +1327,7 @@ class EllipseCostFunction:
             self.machine_type,
             self.num_anchors,
             self.dimensions,
+            self.low_anchor_z,
         )
         rows: List[Dict[str, object]] = []
         l2_scale = float(max(self._l2_scale, 1.0))
@@ -1666,6 +1679,7 @@ class EllipseCostFunction:
             self.machine_type,
             self.num_anchors,
             self.dimensions,
+            self.low_anchor_z,
         )
         diagnostics: Dict[str, object] = {}
 
@@ -1808,6 +1822,7 @@ class EllipseCostFunction:
             self.machine_type,
             self.num_anchors,
             self.dimensions,
+            self.low_anchor_z,
         )
 
         if not self.sweeps:
@@ -1859,6 +1874,7 @@ class EllipseCostFunction:
             self.machine_type,
             self.num_anchors,
             self.dimensions,
+            self.low_anchor_z,
         )
 
         per_sweep_costs: Dict[str, float] = {}
@@ -1945,7 +1961,14 @@ class EllipseCostFunction:
                         norm_mode = unique_modes[0]
                     else:
                         norm_mode = "mixed"
-                p_count = int(anchor_opt_vector_size(self.machine_type, self.num_anchors, self.dimensions))
+                p_count = int(
+                    anchor_opt_vector_size(
+                        self.machine_type,
+                        self.num_anchors,
+                        self.dimensions,
+                        self.low_anchor_z,
+                    )
+                )
                 chi2_red = None
                 if n_obs > p_count:
                     chi2_red = float(np.sum(z_all**2) / float(n_obs - p_count))

@@ -221,3 +221,71 @@ def test_slideprinter_optimizer_helpers_drop_anchor_a_x_without_changing_geometr
     assert np.isclose(np.linalg.norm(reduced[0] - reduced[1]), np.linalg.norm(anchors[0] - anchors[1]))
     assert np.isclose(np.linalg.norm(reduced[0] - reduced[2]), np.linalg.norm(anchors[0] - anchors[2]))
     assert np.isclose(np.linalg.norm(reduced[1] - reduced[2]), np.linalg.norm(anchors[1] - anchors[2]))
+
+
+def test_hangprinter_4_optimizer_helpers_share_low_anchor_z_without_changing_geometry():
+    anchors = np.array(
+        [
+            [0.0, -1900.0, -120.0],
+            [1645.0, 950.0, -120.0],
+            [-1645.0, 950.0, -120.0],
+            [0.0, 0.0, 2050.0],
+        ],
+        dtype=float,
+    )
+    angle = np.deg2rad(37.0)
+    c = float(np.cos(angle))
+    s = float(np.sin(angle))
+    rmat = np.array([[c, -s], [s, c]], dtype=float)
+    rotated = anchors.copy()
+    rotated[:, :2] = rotated[:, :2] @ rmat.T
+
+    opt_size = anchor_opt_vector_size(MachineType.HANGPRINTER_4, 4, 3)
+    lb_opt, ub_opt = get_anchor_opt_bounds(MachineType.HANGPRINTER_4, 4, 3)
+    opt_vec = anchors_matrix_to_opt_vec(rotated, MachineType.HANGPRINTER_4)
+    reduced = anchor_opt_vec_to_matrix(opt_vec, MachineType.HANGPRINTER_4, 4, 3)
+    canonical = canonicalize_anchor_gauge(MachineType.HANGPRINTER_4, rotated)
+
+    assert opt_size == 9
+    assert lb_opt.shape == (9,)
+    assert ub_opt.shape == (9,)
+    assert opt_vec.shape == (9,)
+    assert reduced.shape == (4, 3)
+    assert reduced[0, 0] == pytest.approx(0.0, abs=1e-12)
+    assert np.allclose(reduced[:3, 2], reduced[0, 2])
+    assert np.allclose(reduced, canonical)
+
+    for i in range(4):
+        for j in range(i + 1, 4):
+            assert np.isclose(
+                np.linalg.norm(reduced[i] - reduced[j]),
+                np.linalg.norm(rotated[i] - rotated[j]),
+            )
+
+
+def test_hangprinter_4_optimizer_helpers_accept_fixed_low_anchor_z():
+    low_anchor_z = -120.0
+    anchors = np.array(
+        [
+            [0.0, -1900.0, low_anchor_z],
+            [1645.0, 950.0, low_anchor_z],
+            [-1645.0, 950.0, low_anchor_z],
+            [0.0, 0.0, 2050.0],
+        ],
+        dtype=float,
+    )
+
+    opt_size = anchor_opt_vector_size(MachineType.HANGPRINTER_4, 4, 3, low_anchor_z)
+    lb_opt, ub_opt = get_anchor_opt_bounds(MachineType.HANGPRINTER_4, 4, 3, low_anchor_z)
+    opt_vec = anchors_matrix_to_opt_vec(anchors, MachineType.HANGPRINTER_4, low_anchor_z)
+    reduced = anchor_opt_vec_to_matrix(opt_vec, MachineType.HANGPRINTER_4, 4, 3, low_anchor_z)
+
+    assert opt_size == 8
+    assert lb_opt.shape == (8,)
+    assert ub_opt.shape == (8,)
+    assert opt_vec.shape == (8,)
+    assert reduced.shape == (4, 3)
+    assert reduced[0, 0] == pytest.approx(0.0, abs=1e-12)
+    assert np.allclose(reduced[:3, 2], low_anchor_z)
+    assert np.allclose(reduced[:, :2], anchors[:, :2])
+    assert np.allclose(reduced[3, 2], anchors[3, 2])

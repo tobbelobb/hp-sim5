@@ -107,7 +107,10 @@ def _print_solution_summary(method: str, anchors: np.ndarray, *, cost: Optional[
 
 
 def _canonicalize_anchors_for_output(machine_type: str, anchors: np.ndarray) -> np.ndarray:
-    return canonicalize_anchor_gauge(machine_type, np.asarray(anchors, dtype=float))
+    anchors_arr = np.asarray(anchors, dtype=float)
+    if str(machine_type).strip().lower() != "slideprinter":
+        return anchors_arr.copy()
+    return canonicalize_anchor_gauge(machine_type, anchors_arr)
 
 
 def _extract_motor_samples_with_metadata(dataset: dict) -> Tuple[np.ndarray, int, List[Tuple[int, List[int]]]]:
@@ -293,6 +296,7 @@ def build_anchor_initial_guess(
     *,
     machine_type: Optional[str] = None,
     base_radii_mm: Optional[Sequence[float]] = None,
+    low_anchor_z: Optional[float] = None,
 ) -> Optional[np.ndarray]:
     machine = str(machine_type or dataset.get("machine_type", "")).strip().lower()
     if not machine:
@@ -327,7 +331,14 @@ def build_anchor_initial_guess(
     if machine == "hangprinter_4":
         if dimensions not in (0, 3) or num_anchors != 4:
             return None
-        low_base = np.asarray([0.0, -a * np.cos(np.pi / 10.0), -a * np.sin(np.pi / 10.0)], dtype=float)
+        low_z = low_anchor_z
+        if low_z is None or not np.isfinite(float(low_z)):
+            low_z = -a * np.sin(np.pi / 10.0)
+            low_xy = a * np.cos(np.pi / 10.0)
+        else:
+            low_z = float(low_z)
+            low_xy = float(np.sqrt(max(a * a - low_z * low_z, 0.0)))
+        low_base = np.asarray([0.0, -low_xy, float(low_z)], dtype=float)
         low = [_rotate_about_z(low_base, (2.0 * np.pi / 3.0) * idx) for idx in range(3)]
         top = np.asarray([0.0, 0.0, a], dtype=float)
         return np.vstack(low + [top])
@@ -358,6 +369,18 @@ def build_anchor_initial_guess(
         return out
 
     return None
+
+
+def _apply_low_anchor_z_constraint(dataset: dict, low_anchor_z: Optional[float]) -> dict:
+    try:
+        value = float(low_anchor_z) if low_anchor_z is not None else None
+    except (TypeError, ValueError):
+        value = None
+    if value is None or not np.isfinite(value):
+        return dataset
+    dataset_out = dict(dataset)
+    dataset_out["_low_anchor_z"] = float(value)
+    return dataset_out
 
 
 def _enforce_per_sweep_fixed_anchor_constant(
@@ -660,6 +683,7 @@ def calibrate_elliptical(
     residuals_csv: Optional[Path] = None,
     report_base_path: Optional[Path] = None,
     initial_guess: Optional[np.ndarray] = None,
+    low_anchor_z: Optional[float] = None,
 ) -> Dict[str, Any]:
     input_ref: Optional[Path] = None
     if isinstance(input_path, dict):
@@ -669,6 +693,7 @@ def calibrate_elliptical(
     else:
         input_ref = Path(input_path)
         dataset = _load_json(input_ref)
+    dataset = _apply_low_anchor_z_constraint(dataset, low_anchor_z)
     # `regularize_supersweep` is primarily relevant for the legacy point solver (raw motor samples);
     # ellipse mode consumes fixed_lengths setpoints, which are typically already regular.
     _ = bool(regularize_supersweep)
@@ -1131,6 +1156,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default=None,
         help="Write pointwise residuals (approx mm) to CSV after the final GNC stage.",
     )
+    ellipse_parser.add_argument(
+        "--low-anchor-z",
+        type=float,
+        default=None,
+        help="For hangprinter_4, fix the shared low-anchor Z plane to this value in mm.",
+    )
     ellipse_parser.add_argument("-v", "--verbose", action="store_true")
     ellipse_parser.add_argument("--debug", action="store_true", help="Alias for --verbose.")
     ellipse_parallel_group = ellipse_parser.add_mutually_exclusive_group()
@@ -1326,6 +1357,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             pointwise_residual_mode=str(args.pointwise_residual),
             generate_report=not args.no_report,
             residuals_csv=args.residuals_csv,
+            low_anchor_z=args.low_anchor_z,
         )
         print(result["gcode"])
         _print_solution_summary("ellipse", np.asarray(result["anchors"], dtype=float), cost=float(result.get("cost", float("nan"))))

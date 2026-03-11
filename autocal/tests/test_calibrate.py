@@ -202,6 +202,35 @@ def test_build_anchor_initial_guess_hangprinter_5_layout():
     assert np.allclose(guess[-1], expected_top, atol=1e-6)
 
 
+def test_build_anchor_initial_guess_hangprinter_4_respects_low_anchor_z():
+    dataset = {
+        "machine_type": "hangprinter_4",
+        "num_anchors": 4,
+        "dimensions": 3,
+        "config": {
+            "m666": {
+                "R": [30.0] * 4,
+                "U": [1.0] * 4,
+                "L": [1.0] * 4,
+                "H": [1.0] * 4,
+            }
+        },
+        "sweeps": [{"data_points": [{"raw_angles_deg": [-300.0, -5.0, -4.0, -3.0]}]}],
+    }
+
+    low_anchor_z = -120.0
+    guess = calibrate_module.build_anchor_initial_guess(dataset, low_anchor_z=low_anchor_z)
+    assert isinstance(guess, np.ndarray)
+    assert guess.shape == (4, 3)
+
+    a = float(300.0 * (2.0 * np.pi * 30.0) / 360.0)
+    expected_low_xy = float(np.sqrt(max(a * a - low_anchor_z * low_anchor_z, 0.0)))
+    expected_top = np.asarray([0.0, 0.0, a], dtype=float)
+    assert np.allclose(guess[:3, 2], low_anchor_z, atol=1e-6)
+    assert np.allclose(guess[0], np.asarray([0.0, -expected_low_xy, low_anchor_z], dtype=float), atol=1e-6)
+    assert np.allclose(guess[-1], expected_top, atol=1e-6)
+
+
 def test_calibrate_elliptical_forwards_initial_guess(tmp_path, monkeypatch):
     input_path = _tiny_slideprinter_delta_dataset(tmp_path)
     dataset = json.loads(input_path.read_text(encoding="utf-8"))

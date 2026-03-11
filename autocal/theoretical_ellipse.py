@@ -307,6 +307,22 @@ def predict_ellipses_for_dataset(
     return predictions
 
 
+_ANCHOR_OPT_MODE_FULL = 0
+_ANCHOR_OPT_MODE_SLIDEPRINTER_AX0 = 1
+_ANCHOR_OPT_MODE_HP4_AX0_SHARED_LOW_Z = 2
+_ANCHOR_OPT_MODE_HP4_AX0_FIXED_LOW_Z = 3
+
+
+def _coerce_low_anchor_z(low_anchor_z: Optional[float]) -> Optional[float]:
+    if low_anchor_z is None:
+        return None
+    try:
+        val = float(low_anchor_z)
+    except (TypeError, ValueError):
+        return None
+    return val if np.isfinite(val) else None
+
+
 def _slideprinter_ax0_gauge_enabled(
     machine_type: Union[str, MachineType],
     n_anchors: int,
@@ -316,40 +332,85 @@ def _slideprinter_ax0_gauge_enabled(
     return str(mt) == "slideprinter" and int(n_anchors) == 3 and int(dims) == 2
 
 
-def canonicalize_anchor_gauge(machine_type: Union[str, MachineType], anchors: np.ndarray) -> np.ndarray:
-    """
-    Fix the unobservable Slideprinter rotation/reflection gauge.
+def _hangprinter_4_ax0_gauge_enabled(
+    machine_type: Union[str, MachineType],
+    n_anchors: int,
+    dims: int,
+) -> bool:
+    mt = machine_type.value if isinstance(machine_type, MachineType) else str(machine_type)
+    return str(mt) == "hangprinter_4" and int(n_anchors) == 4 and int(dims) == 3
 
-    Sweep-length data identifies Slideprinter anchors only up to a rigid rotation/reflection
-    about the origin. Canonicalizing before dropping `A.x` preserves an equivalent geometry
-    while making the reduced parameterization deterministic.
-    """
-    anchors = np.asarray(anchors, dtype=float)
-    if not _slideprinter_ax0_gauge_enabled(machine_type, anchors.shape[0], anchors.shape[1]):
-        return anchors.copy()
 
-    a0 = anchors[0]
-    ang = float(np.arctan2(float(a0[1]), float(a0[0])))
-    rot = float(-np.pi / 2 - ang)
-    c = float(np.cos(rot))
-    s = float(np.sin(rot))
-    rmat = np.array([[c, -s], [s, c]], dtype=float)
-    out = anchors @ rmat.T
+def anchor_opt_constraint_mode(
+    machine_type: Union[str, MachineType],
+    n_anchors: int,
+    dims: int,
+    low_anchor_z: Optional[float] = None,
+) -> int:
+    if _slideprinter_ax0_gauge_enabled(machine_type, n_anchors, dims):
+        return _ANCHOR_OPT_MODE_SLIDEPRINTER_AX0
+    if _hangprinter_4_ax0_gauge_enabled(machine_type, n_anchors, dims):
+        if _coerce_low_anchor_z(low_anchor_z) is not None:
+            return _ANCHOR_OPT_MODE_HP4_AX0_FIXED_LOW_Z
+        return _ANCHOR_OPT_MODE_HP4_AX0_SHARED_LOW_Z
+    return _ANCHOR_OPT_MODE_FULL
 
-    if out[1, 0] < 0.0:
+
+def _canonicalize_xy_gauge(anchors: np.ndarray, *, orient_idx: int) -> np.ndarray:
+    out = np.asarray(anchors, dtype=float).copy()
+    if out.ndim != 2 or out.shape[1] < 2 or out.shape[0] <= 0:
+        return out
+
+    ref_xy = out[0, :2]
+    if float(np.linalg.norm(ref_xy)) > 1e-12:
+        ang = float(np.arctan2(float(ref_xy[1]), float(ref_xy[0])))
+        rot = float(-np.pi / 2 - ang)
+        c = float(np.cos(rot))
+        s = float(np.sin(rot))
+        rmat = np.array([[c, -s], [s, c]], dtype=float)
+        out[:, :2] = out[:, :2] @ rmat.T
+
+    if int(orient_idx) < out.shape[0] and out[int(orient_idx), 0] < 0.0:
         out[:, 0] *= -1.0
     return out
+
+
+def canonicalize_anchor_gauge(
+    machine_type: Union[str, MachineType],
+    anchors: np.ndarray,
+    low_anchor_z: Optional[float] = None,
+) -> np.ndarray:
+    """
+    Fix unobservable rotation/reflection gauges for reduced optimizer layouts.
+
+    Sweep-length data identifies some anchor layouts only up to a rigid rotation/reflection
+    about the origin or Z axis. Canonicalizing before dropping constrained coordinates
+    preserves an equivalent geometry while making the reduced parameterization deterministic.
+    """
+    anchors = np.asarray(anchors, dtype=float)
+    mode = anchor_opt_constraint_mode(machine_type, anchors.shape[0], anchors.shape[1], low_anchor_z)
+    if mode == _ANCHOR_OPT_MODE_SLIDEPRINTER_AX0:
+        return _canonicalize_xy_gauge(anchors, orient_idx=1)
+    if mode in (_ANCHOR_OPT_MODE_HP4_AX0_SHARED_LOW_Z, _ANCHOR_OPT_MODE_HP4_AX0_FIXED_LOW_Z):
+        return _canonicalize_xy_gauge(anchors, orient_idx=1)
+    return anchors.copy()
 
 
 def anchor_opt_vector_size(
     machine_type: Union[str, MachineType],
     n_anchors: int,
     dims: int,
+    low_anchor_z: Optional[float] = None,
 ) -> int:
     """Return the optimizer vector length for this anchor layout."""
     full_size = int(n_anchors) * int(dims)
-    if _slideprinter_ax0_gauge_enabled(machine_type, n_anchors, dims):
+    mode = anchor_opt_constraint_mode(machine_type, n_anchors, dims, low_anchor_z)
+    if mode == _ANCHOR_OPT_MODE_SLIDEPRINTER_AX0:
         return full_size - 1
+    if mode == _ANCHOR_OPT_MODE_HP4_AX0_SHARED_LOW_Z:
+        return full_size - 3
+    if mode == _ANCHOR_OPT_MODE_HP4_AX0_FIXED_LOW_Z:
+        return full_size - 4
     return full_size
 
 
@@ -401,10 +462,12 @@ def get_anchor_opt_bounds(
     machine_type: Union[str, MachineType],
     n_anchors: int,
     dims: int,
+    low_anchor_z: Optional[float] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Return optimizer bounds, dropping the fixed `A.x` gauge when applicable."""
+    """Return optimizer bounds for the reduced anchor parameterization."""
     lb, ub = get_anchor_bounds(machine_type)
-    if _slideprinter_ax0_gauge_enabled(machine_type, n_anchors, dims):
+    mode = anchor_opt_constraint_mode(machine_type, n_anchors, dims, low_anchor_z)
+    if mode == _ANCHOR_OPT_MODE_SLIDEPRINTER_AX0:
         bound_mat = np.maximum(
             np.abs(np.asarray(lb, dtype=float).reshape(int(n_anchors), int(dims))),
             np.abs(np.asarray(ub, dtype=float).reshape(int(n_anchors), int(dims))),
@@ -412,10 +475,78 @@ def get_anchor_opt_bounds(
         max_anchor_norm = float(np.max(np.linalg.norm(bound_mat, axis=1))) if bound_mat.size else 1.0
         if not np.isfinite(max_anchor_norm) or max_anchor_norm <= 0.0:
             max_anchor_norm = float(np.max(bound_mat)) if bound_mat.size else 1.0
-        opt_size = anchor_opt_vector_size(machine_type, n_anchors, dims)
+        opt_size = anchor_opt_vector_size(machine_type, n_anchors, dims, low_anchor_z)
         return (
             np.full(opt_size, -max_anchor_norm, dtype=float),
             np.full(opt_size, max_anchor_norm, dtype=float),
+        )
+    if mode in (_ANCHOR_OPT_MODE_HP4_AX0_SHARED_LOW_Z, _ANCHOR_OPT_MODE_HP4_AX0_FIXED_LOW_Z):
+        lb_mat = np.asarray(lb, dtype=float).reshape(int(n_anchors), int(dims))
+        ub_mat = np.asarray(ub, dtype=float).reshape(int(n_anchors), int(dims))
+        xy_bound_mat = np.maximum(np.abs(lb_mat[:, :2]), np.abs(ub_mat[:, :2]))
+        max_xy_norm = float(np.max(np.linalg.norm(xy_bound_mat, axis=1))) if xy_bound_mat.size else 1.0
+        if not np.isfinite(max_xy_norm) or max_xy_norm <= 0.0:
+            max_xy_norm = float(np.max(xy_bound_mat)) if xy_bound_mat.size else 1.0
+        z_lb = float(np.min(lb_mat[:, 2])) if lb_mat.shape[1] >= 3 else -max_xy_norm
+        z_ub = float(np.max(ub_mat[:, 2])) if ub_mat.shape[1] >= 3 else max_xy_norm
+        if mode == _ANCHOR_OPT_MODE_HP4_AX0_SHARED_LOW_Z:
+            return (
+                np.asarray(
+                    [
+                        -max_xy_norm,
+                        z_lb,
+                        -max_xy_norm,
+                        -max_xy_norm,
+                        -max_xy_norm,
+                        -max_xy_norm,
+                        -max_xy_norm,
+                        -max_xy_norm,
+                        z_lb,
+                    ],
+                    dtype=float,
+                ),
+                np.asarray(
+                    [
+                        max_xy_norm,
+                        z_ub,
+                        max_xy_norm,
+                        max_xy_norm,
+                        max_xy_norm,
+                        max_xy_norm,
+                        max_xy_norm,
+                        max_xy_norm,
+                        z_ub,
+                    ],
+                    dtype=float,
+                ),
+            )
+        return (
+            np.asarray(
+                [
+                    -max_xy_norm,
+                    -max_xy_norm,
+                    -max_xy_norm,
+                    -max_xy_norm,
+                    -max_xy_norm,
+                    -max_xy_norm,
+                    -max_xy_norm,
+                    z_lb,
+                ],
+                dtype=float,
+            ),
+            np.asarray(
+                [
+                    max_xy_norm,
+                    max_xy_norm,
+                    max_xy_norm,
+                    max_xy_norm,
+                    max_xy_norm,
+                    max_xy_norm,
+                    max_xy_norm,
+                    z_ub,
+                ],
+                dtype=float,
+            ),
         )
     return np.asarray(lb, dtype=float), np.asarray(ub, dtype=float)
 
@@ -437,11 +568,12 @@ def anchor_opt_vec_to_matrix(
     machine_type: Union[str, MachineType],
     n_anchors: int,
     dims: int,
+    low_anchor_z: Optional[float] = None,
 ) -> np.ndarray:
     """
     Convert an optimizer vector to a full `(N, D)` anchor matrix.
 
-    The Slideprinter 2D optimizer drops `A.x` and reconstructs it here as zero.
+    Reduced optimizer layouts reconstruct constrained anchor coordinates here.
     Full vectors remain accepted for compatibility with existing callers/tests.
     """
     arr = np.asarray(vec, dtype=float)
@@ -452,7 +584,8 @@ def anchor_opt_vec_to_matrix(
 
     flat = arr.reshape(-1)
     full_size = int(n_anchors) * int(dims)
-    opt_size = anchor_opt_vector_size(machine_type, n_anchors, dims)
+    mode = anchor_opt_constraint_mode(machine_type, n_anchors, dims, low_anchor_z)
+    opt_size = anchor_opt_vector_size(machine_type, n_anchors, dims, low_anchor_z)
 
     if flat.size == full_size:
         return flat.reshape(int(n_anchors), int(dims))
@@ -460,23 +593,83 @@ def anchor_opt_vec_to_matrix(
         raise ValueError(f"Expected anchor vector of size {opt_size} or {full_size}, got {flat.size}")
     if opt_size == full_size:
         return flat.reshape(int(n_anchors), int(dims))
-
-    full = np.empty(full_size, dtype=float)
-    full[0] = 0.0
-    full[1:] = flat
-    return full.reshape(int(n_anchors), int(dims))
+    if mode == _ANCHOR_OPT_MODE_SLIDEPRINTER_AX0:
+        full = np.empty(full_size, dtype=float)
+        full[0] = 0.0
+        full[1:] = flat
+        return full.reshape(int(n_anchors), int(dims))
+    if mode == _ANCHOR_OPT_MODE_HP4_AX0_SHARED_LOW_Z:
+        ay, low_z, bx, by, cx, cy, dx, dy, dz = [float(v) for v in flat.tolist()]
+        return np.asarray(
+            [
+                [0.0, ay, low_z],
+                [bx, by, low_z],
+                [cx, cy, low_z],
+                [dx, dy, dz],
+            ],
+            dtype=float,
+        )
+    if mode == _ANCHOR_OPT_MODE_HP4_AX0_FIXED_LOW_Z:
+        low_z = _coerce_low_anchor_z(low_anchor_z)
+        if low_z is None:
+            raise ValueError("Reduced hangprinter_4 fixed-Z mode requires a finite low_anchor_z")
+        ay, bx, by, cx, cy, dx, dy, dz = [float(v) for v in flat.tolist()]
+        return np.asarray(
+            [
+                [0.0, ay, low_z],
+                [bx, by, low_z],
+                [cx, cy, low_z],
+                [dx, dy, dz],
+            ],
+            dtype=float,
+        )
+    return flat.reshape(int(n_anchors), int(dims))
 
 
 def anchors_matrix_to_opt_vec(
     matrix: np.ndarray,
     machine_type: Union[str, MachineType],
+    low_anchor_z: Optional[float] = None,
 ) -> np.ndarray:
     """Convert an anchor matrix to optimizer coordinates."""
     anchors = np.asarray(matrix, dtype=float)
     if anchors.ndim != 2:
         raise ValueError(f"Expected anchor matrix, got shape {anchors.shape}")
 
-    if _slideprinter_ax0_gauge_enabled(machine_type, anchors.shape[0], anchors.shape[1]):
-        anchors = canonicalize_anchor_gauge(machine_type, anchors)
+    mode = anchor_opt_constraint_mode(machine_type, anchors.shape[0], anchors.shape[1], low_anchor_z)
+    if mode == _ANCHOR_OPT_MODE_SLIDEPRINTER_AX0:
+        anchors = canonicalize_anchor_gauge(machine_type, anchors, low_anchor_z=low_anchor_z)
         return anchors.ravel()[1:]
+    if mode == _ANCHOR_OPT_MODE_HP4_AX0_SHARED_LOW_Z:
+        anchors = canonicalize_anchor_gauge(machine_type, anchors, low_anchor_z=low_anchor_z)
+        low_z = float(np.mean(anchors[:3, 2]))
+        return np.asarray(
+            [
+                anchors[0, 1],
+                low_z,
+                anchors[1, 0],
+                anchors[1, 1],
+                anchors[2, 0],
+                anchors[2, 1],
+                anchors[3, 0],
+                anchors[3, 1],
+                anchors[3, 2],
+            ],
+            dtype=float,
+        )
+    if mode == _ANCHOR_OPT_MODE_HP4_AX0_FIXED_LOW_Z:
+        anchors = canonicalize_anchor_gauge(machine_type, anchors, low_anchor_z=low_anchor_z)
+        return np.asarray(
+            [
+                anchors[0, 1],
+                anchors[1, 0],
+                anchors[1, 1],
+                anchors[2, 0],
+                anchors[2, 1],
+                anchors[3, 0],
+                anchors[3, 1],
+                anchors[3, 2],
+            ],
+            dtype=float,
+        )
     return anchors.ravel()

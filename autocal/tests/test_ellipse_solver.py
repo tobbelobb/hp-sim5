@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from scipy.optimize import OptimizeResult
 from typing import Optional
 
@@ -224,7 +225,7 @@ def test_prepare_frozen_dataset_and_flags_filters_points_and_sweeps(monkeypatch)
     monkeypatch.setattr(
         ellipse_solver,
         "get_anchor_opt_bounds",
-        lambda _m, _n, _d: (np.full(5, -1000.0, dtype=float), np.full(5, 1000.0, dtype=float)),
+        lambda _m, _n, _d, _low_z=None: (np.full(5, -1000.0, dtype=float), np.full(5, 1000.0, dtype=float)),
     )
 
     frozen_dataset, flags = ellipse_solver._prepare_frozen_dataset_and_flags(
@@ -374,4 +375,109 @@ def test_solve_anchors_uses_reduced_slideprinter_optimizer_vector(monkeypatch):
     assert np.allclose(
         anchors,
         ellipse_solver.anchor_opt_vec_to_matrix(x0_seen, "slideprinter", 3, 2),
+    )
+
+
+@pytest.mark.parametrize(
+    ("low_anchor_z", "expected_len"),
+    [
+        (None, 9),
+        (-120.0, 8),
+    ],
+)
+def test_solve_anchors_uses_reduced_hangprinter_4_optimizer_vector(monkeypatch, low_anchor_z, expected_len):
+    dataset = {
+        "machine_type": "hangprinter_4",
+        "num_anchors": 4,
+        "dimensions": 3,
+        "sweeps": [],
+    }
+    if low_anchor_z is not None:
+        dataset["_low_anchor_z"] = float(low_anchor_z)
+
+    initial_guess = np.asarray(
+        [
+            [0.0, -1900.0, -120.0],
+            [1645.0, 950.0, -120.0],
+            [-1645.0, 950.0, -120.0],
+            [0.0, 0.0, 2050.0],
+        ],
+        dtype=float,
+    )
+    seen: dict = {}
+
+    class _FakeCostFn:
+        sweeps = []
+
+        def evaluate(self, x: np.ndarray) -> float:
+            vec = np.asarray(x, dtype=float).reshape(-1)
+            return float(np.dot(vec, vec))
+
+        def evaluate_detailed(self, x: np.ndarray):
+            anchors = ellipse_solver.anchor_opt_vec_to_matrix(
+                np.asarray(x, dtype=float),
+                "hangprinter_4",
+                4,
+                3,
+                low_anchor_z,
+            )
+            return ellipse_solver.CostResult(
+                total_cost=float(self.evaluate(x)),
+                per_sweep_costs={},
+                num_valid_sweeps=0,
+                num_invalid_sweeps=0,
+                anchor_estimate=anchors,
+                noise_metrics=None,
+            )
+
+        def pointwise_residual_rows(self, _x: np.ndarray):
+            return []
+
+        def robustness_diagnostics(self, _x: np.ndarray, *, top_n: int = 5):
+            _ = top_n
+            return {}
+
+    def fake_build_restart_cost_fn(*args, **kwargs):
+        _ = args, kwargs
+        return _FakeCostFn(), dataset, {}
+
+    def fake_run_lbfgsb_minimize(cost_fn, x0, **kwargs):
+        _ = kwargs
+        seen["x0"] = np.asarray(x0, dtype=float).copy()
+        return OptimizeResult(
+            x=np.asarray(x0, dtype=float),
+            fun=float(cost_fn.evaluate(x0)),
+            success=True,
+            message="ok",
+            nit=1,
+            nfev=1,
+        )
+
+    monkeypatch.setattr(ellipse_solver, "_build_cost_fn", lambda *args, **kwargs: _FakeCostFn())
+    monkeypatch.setattr(ellipse_solver, "_build_restart_cost_fn", fake_build_restart_cost_fn)
+    monkeypatch.setattr(ellipse_solver, "_run_lbfgsb_minimize", fake_run_lbfgsb_minimize)
+
+    result = ellipse_solver.solve_anchors(
+        dataset,
+        initial_guess=initial_guess,
+        method="L-BFGS-B",
+        max_iterations=4,
+        num_restarts=1,
+        use_parallel=False,
+        pointwise_filtering=False,
+        pointwise_global_mad=False,
+        sweep_wise_filtering=False,
+    )
+
+    x0_seen = np.asarray(seen["x0"], dtype=float)
+    anchors = np.asarray(result["anchors"], dtype=float)
+    assert x0_seen.shape == (expected_len,)
+    assert anchors.shape == (4, 3)
+    assert np.isclose(float(anchors[0, 0]), 0.0)
+    assert np.allclose(anchors[:3, 2], anchors[0, 2])
+    if low_anchor_z is not None:
+        assert np.allclose(anchors[:3, 2], float(low_anchor_z))
+    assert np.allclose(
+        anchors,
+        ellipse_solver.anchor_opt_vec_to_matrix(x0_seen, "hangprinter_4", 4, 3, low_anchor_z),
     )

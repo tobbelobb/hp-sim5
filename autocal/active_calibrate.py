@@ -659,6 +659,7 @@ def _estimate_effective_radii_with_spool_model(
     use_noise_mean: bool,
     sigma_source: str,
     robust_debug: bool,
+    low_anchor_z: Optional[float] = None,
     prefer_zero_tension_angles: bool = False,
     scale_fix_levels: Optional[Sequence[int]] = None,
     fit_structure_levels: Optional[Sequence[int]] = None,
@@ -1028,6 +1029,7 @@ def _estimate_effective_radii_with_spool_model(
                 generate_report=False,
                 residuals_csv=None,
                 initial_guess=np.asarray(fit_anchors_pass, dtype=float),
+                low_anchor_z=low_anchor_z,
             )
             plan_tmp = {
                 "length_model": {
@@ -2249,6 +2251,7 @@ def _estimate_effective_radii_with_spool_model(
                     generate_report=False,
                     residuals_csv=None,
                     initial_guess=anchors_current,
+                    low_anchor_z=low_anchor_z,
                 )
                 anchors_bootstrap_candidate = np.asarray(cal_bootstrap.get("anchors"), dtype=float)
                 if (
@@ -2506,6 +2509,7 @@ def _estimate_effective_radii_with_spool_model(
                     generate_report=False,
                     residuals_csv=None,
                     initial_guess=anchors_step_seed,
+                    low_anchor_z=low_anchor_z,
                 )
                 cand_anchors = np.asarray(cal_step.get("anchors"), dtype=float)
                 if cand_anchors.ndim == 2 and cand_anchors.shape == anchors_current.shape and np.all(
@@ -5347,11 +5351,22 @@ def _plan_next_ellipse_sweep(
     write_cfg: Optional[Path],
     collector_output: Optional[Path],
     collector_args: Sequence[str],
+    low_anchor_z: Optional[float] = None,
     filter_schedule: Optional[Sequence[Any]] = None,
     scale_fix: Optional[Sequence[int]] = None,
     fit_structure: Optional[Sequence[int]] = None,
 ) -> Dict[str, object]:
     dataset = _load_json(dataset_path)
+    if low_anchor_z is not None:
+        try:
+            low_anchor_z = float(low_anchor_z)
+        except (TypeError, ValueError):
+            low_anchor_z = None
+        if low_anchor_z is not None and np.isfinite(low_anchor_z):
+            dataset = dict(dataset)
+            dataset["_low_anchor_z"] = float(low_anchor_z)
+        else:
+            low_anchor_z = None
     remapped_points = _normalize_dataset_point_roles(dataset)
     machine_type = _require_machine_type(dataset, context=str(dataset_path))
     num_anchors = int(dataset.get("num_anchors", 4))
@@ -5424,6 +5439,7 @@ def _plan_next_ellipse_sweep(
             dataset,
             machine_type=str(machine_type),
             base_radii_mm=base_radii_mm.tolist(),
+            low_anchor_z=low_anchor_z,
         )
 
         seed_restarts = max(1, min(2, int(solve_restarts)))
@@ -5450,6 +5466,7 @@ def _plan_next_ellipse_sweep(
             generate_report=False,
             residuals_csv=None,
             initial_guess=anchor_initial_guess,
+            low_anchor_z=low_anchor_z,
         )
         seed_anchors = np.asarray(seed_cal["anchors"], dtype=float)
         effective_radii_mm, _fit_anchors, spool_params, dataset_for_estimation, radii_fit = (
@@ -5484,6 +5501,7 @@ def _plan_next_ellipse_sweep(
                 use_noise_mean=bool(use_noise_mean),
                 sigma_source=str(sigma_source),
                 robust_debug=bool(robust_debug),
+                low_anchor_z=low_anchor_z,
                 prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
                 scale_fix_levels=scale_fix_levels,
                 fit_structure_levels=fit_structure_levels,
@@ -5533,6 +5551,7 @@ def _plan_next_ellipse_sweep(
                 residuals_csv=residuals_csv,
                 report_base_path=dataset_path,
                 initial_guess=seed_anchors,
+                low_anchor_z=low_anchor_z,
             )
 
         length_model = {
@@ -5588,6 +5607,7 @@ def _plan_next_ellipse_sweep(
             dataset,
             machine_type=str(machine_type),
             base_radii_mm=None,
+            low_anchor_z=low_anchor_z,
         )
         cal = calibrate_elliptical(
             dataset,
@@ -5611,6 +5631,7 @@ def _plan_next_ellipse_sweep(
             generate_report=bool(generate_report),
             residuals_csv=residuals_csv,
             initial_guess=anchor_initial_guess,
+            low_anchor_z=low_anchor_z,
         )
 
     anchors = np.asarray(cal["anchors"], dtype=float)
@@ -6463,6 +6484,7 @@ def ellipse_active(
     keep_sim_alive: bool,
     hp_sim_reset: bool,
     output_with_explanations: bool,
+    low_anchor_z: Optional[float] = None,
     filter_schedule: Optional[Sequence[Any]] = None,
     scale_fix: Optional[Sequence[int]] = None,
     fit_structure: Optional[Sequence[int]] = None,
@@ -6540,6 +6562,7 @@ def ellipse_active(
         line_width=float(line_width),
         sigma_floor_mm=(None if sigma_floor_mm is None else float(sigma_floor_mm)),
         sigma_used_mm=(None if sigma_used_mm is None else float(sigma_used_mm)),
+        low_anchor_z=(None if low_anchor_z is None else float(low_anchor_z)),
         candidate_deltas=candidate_deltas,
         candidate_count=candidate_count,
         delta_min=delta_min,
@@ -6675,6 +6698,7 @@ def full_auto_loop(
     full_auto_log: Optional[Path],
     patience: int,
     full_auto_verbose: bool,
+    low_anchor_z: Optional[float] = None,
     filter_schedule: Optional[Sequence[Any]] = None,
     scale_fix: Optional[Sequence[int]] = None,
     fit_structure: Optional[Sequence[int]] = None,
@@ -6998,6 +7022,7 @@ def full_auto_loop(
         "line_width": float(line_width),
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
         "sigma_used_mm": (None if sigma_used_mm is None else float(sigma_used_mm)),
+        "low_anchor_z": (None if low_anchor_z is None else float(low_anchor_z)),
     }
 
     best_cost = float("inf")
@@ -7186,6 +7211,10 @@ def full_auto_loop(
                     settings["sigma_used_mm"] = float(settings["sigma_used_mm"])
                     if not np.isfinite(settings["sigma_used_mm"]) or settings["sigma_used_mm"] <= 0.0:
                         settings["sigma_used_mm"] = None
+                if settings.get("low_anchor_z") is not None:
+                    settings["low_anchor_z"] = float(settings["low_anchor_z"])
+                    if not np.isfinite(settings["low_anchor_z"]):
+                        settings["low_anchor_z"] = None
                 if run_flags:
                     _log_line(f"; full-auto run {run_id}: flags='{run_flags}'")
                 else:
@@ -7259,6 +7288,11 @@ def full_auto_loop(
                             None
                             if settings.get("sigma_used_mm") is None
                             else float(settings.get("sigma_used_mm"))
+                        ),
+                        low_anchor_z=(
+                            None
+                            if settings.get("low_anchor_z") is None
+                            else float(settings.get("low_anchor_z"))
                         ),
                         candidate_deltas=candidate_deltas,
                         candidate_count=int(candidate_count),
@@ -7754,6 +7788,7 @@ def ellipse_loop(
     plot_residual_histogram: bool,
     sweep_points: Optional[int],
     output_with_explanations: bool,
+    low_anchor_z: Optional[float] = None,
     filter_schedule: Optional[Sequence[Any]] = None,
     scale_fix: Optional[Sequence[int]] = None,
     fit_structure: Optional[Sequence[int]] = None,
@@ -7945,6 +7980,7 @@ def ellipse_loop(
             line_width=float(line_width),
             sigma_floor_mm=(None if sigma_floor_mm is None else float(sigma_floor_mm)),
             sigma_used_mm=(None if sigma_used_mm is None else float(sigma_used_mm)),
+            low_anchor_z=(None if low_anchor_z is None else float(low_anchor_z)),
             candidate_deltas=candidate_deltas,
             candidate_count=candidate_count,
             delta_min=delta_min,
@@ -8146,6 +8182,12 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         type=float,
         default=None,
         help="Override the final sigma used for pointwise normalization (mm).",
+    )
+    parser.add_argument(
+        "--low-anchor-z",
+        type=float,
+        default=None,
+        help="For hangprinter_4, fix the shared low-anchor Z plane to this value in mm.",
     )
     parser.add_argument(
         "--r0-bounds",
@@ -8705,6 +8747,7 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     parser.add_argument("--line-width", type=float, default=None)
     parser.add_argument("--sigma-floor-mm", type=float, default=None)
     parser.add_argument("--sigma-used-mm", type=float, default=None)
+    parser.add_argument("--low-anchor-z", type=float, default=None)
     parser.add_argument("--spring-k-multiplier", type=float, default=None)
     parser.add_argument("--threshold", type=float, default=None)
     parser.add_argument("--solve-restarts", type=int, default=None)
@@ -9355,6 +9398,7 @@ def ellipse_cli(argv: Optional[Sequence[str]] = None) -> int:
             if spool_opts.get("sigma_used_mm") is None
             else float(spool_opts["sigma_used_mm"])
         ),
+        low_anchor_z=args.low_anchor_z,
         candidate_deltas=_parse_csv_floats(args.candidate_deltas),
         candidate_count=int(args.candidate_count),
         delta_min=args.delta_min,
@@ -9451,6 +9495,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
                 if spool_opts.get("sigma_used_mm") is None
                 else float(spool_opts["sigma_used_mm"])
             ),
+            low_anchor_z=args.low_anchor_z,
             candidate_deltas=_parse_csv_floats(args.candidate_deltas),
             candidate_count=int(args.candidate_count),
             delta_min=args.delta_min,
@@ -9521,6 +9566,7 @@ def semi_auto_cli(argv: Optional[Sequence[str]] = None) -> int:
             if spool_opts.get("sigma_used_mm") is None
             else float(spool_opts["sigma_used_mm"])
         ),
+        low_anchor_z=args.low_anchor_z,
         candidate_deltas=_parse_csv_floats(args.candidate_deltas),
         candidate_count=int(args.candidate_count),
         delta_min=args.delta_min,
