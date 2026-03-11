@@ -201,6 +201,40 @@ def test_print_ellipse_plan_includes_noise_rescore_line(capsys):
     assert "sweep_bias_span=2.1mm" in out
 
 
+def test_print_ellipse_plan_logs_plain_anchors_each_iteration_for_hangprinter(capsys):
+    plan = {
+        "anchors": np.asarray(
+            [
+                [0.0, -1900.0, -280.0],
+                [1645.0, 950.0, -280.0],
+                [-1645.0, 950.0, -280.0],
+                [0.0, 0.0, 1900.0],
+            ],
+            dtype=float,
+        ),
+        "machine_type": "hangprinter_4",
+        "cost": 1.0,
+        "cost_noise_normalized": 1.0,
+        "covariance_scaled": np.eye(12, dtype=float),
+        "collect_command": ["node", "autocal/control/cli/collect_sweep_data.mjs"],
+        "calibration": {
+            "gcode": (
+                "M669 A0.00:-1900.00:-280.00 B1645.00:950.00:-280.00 "
+                "C-1645.00:950.00:-280.00 D0.00:0.00:1900.00"
+            )
+        },
+    }
+
+    ac._print_ellipse_plan(plan, print_command=False)
+
+    out = capsys.readouterr().out
+    assert (
+        "; Anchors: [[0.0, -1900.0, -280.0], [1645.0, 950.0, -280.0], "
+        "[-1645.0, 950.0, -280.0], [0.0, 0.0, 1900.0]]"
+    ) in out
+    assert "M669 A0.00:-1900.00:-280.00" in out
+
+
 def test_ellipse_loop_no_collect_accepts_without_collection(tmp_path, monkeypatch):
     dataset = tmp_path / "semi_dataset.json"
     _write_dataset(dataset, sweeps=3)

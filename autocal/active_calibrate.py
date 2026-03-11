@@ -5910,8 +5910,12 @@ def _print_ellipse_plan(
     noise_summary = _summarize_encoder_noise(plan.get("dataset") if isinstance(plan, dict) else None)
 
     print("; Active ellipse calibration")
-    if isinstance(cal, dict) and "gcode" in cal:
-        print(str(cal["gcode"]))
+    gcode = str(cal.get("gcode", "")) if isinstance(cal, dict) else ""
+    anchor_line = f"; Anchors: {anchors.tolist()}" if anchors.size else ""
+    if anchor_line and gcode.strip() != anchor_line:
+        print(anchor_line)
+    if gcode:
+        print(gcode)
     cost_raw_str = _fmt_float(cost_raw)
     cost_norm_str = _fmt_float(cost)
     print(
