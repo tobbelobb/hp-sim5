@@ -43,7 +43,13 @@ function createCompatStub(canvasOverrides = {}) {
   system.positionTracePoints = [];
   system.positionTraceMarkers = [];
   system.drawnPositionTraceCount = 0;
+  system.drawnPositionTraceMarkerCount = 0;
   system.drawnExtrusionCount = 0;
+  system.requestRender = jest.fn();
+  system.renderer = { render: jest.fn() };
+  system._animationLoopActive = false;
+  system._requestRenderHandle = null;
+  system._lastWorld = null;
   system.referenceMaterial = new THREE.LineBasicMaterial({ color: '#1e90ff' });
   system.referenceLines = new THREE.LineSegments(new THREE.BufferGeometry(), system.referenceMaterial);
   system.extrusionPointsMaterial = new THREE.PointsMaterial({ size: 7, sizeAttenuation: false, vertexColors: true });
@@ -278,6 +284,23 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
       expect(system.positionTracePointsObject.visible).toBe(true);
       expect(system.positionTracePointsObject.geometry.getAttribute('position').count).toBe(2);
       expect(system.drawnPositionTraceCount).toBe(2);
+    } finally {
+      disposeCompatStub(system);
+    }
+  });
+
+  test('skips position-trace marker uploads when marker data is unchanged', () => {
+    const system = createCompatStub();
+
+    try {
+      system.addPositionTraceMarker(0.1, 0.2, 'A');
+      const updateSpy = jest.spyOn(system, '_updatePointObject');
+
+      system._syncPositionTraceMarkers();
+
+      expect(updateSpy).not.toHaveBeenCalled();
+      expect(system.drawnPositionTraceMarkerCount).toBe(1);
+      updateSpy.mockRestore();
     } finally {
       disposeCompatStub(system);
     }

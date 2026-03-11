@@ -6,6 +6,7 @@ const ASAP_SLICE_BUDGET_MS = 28;
 const ASAP_MIN_STEPS_PER_SLICE = 64;
 const ASAP_INPUT_CHECK_MASK = 0x3f;
 const ASAP_PAUSED_DELAY_MS = 12;
+const PAUSED_POLL_DELAY_MS = 100;
 const SPEED_UPDATE_PERIOD = 10;
 const SIMULATION_PLAYBACK_RESOURCE = 'simulationPlayback';
 
@@ -85,7 +86,47 @@ export function runGame(world, internalSetupScene, options = {}) {
       clearTimeout(asapTimer);
       asapTimer = null;
     }
+    if (idleTimer != null) {
+      clearTimeout(idleTimer);
+      idleTimer = null;
+    }
     loopToken += 1;
+  };
+
+  const shouldRunContinuously = () => {
+    const pauseState = getPauseState();
+    return !pauseState || !pauseState.paused || doStep;
+  };
+
+  const renderOnce = () => {
+    const renderSystem = getRenderSystem();
+    if (!renderSystem || renderSystem.drawingSuspended) {
+      return;
+    }
+    if (typeof renderSystem.requestRender === 'function') {
+      renderSystem.requestRender(world);
+      return;
+    }
+    renderSystem.update?.(world, 0);
+  };
+
+  const scheduleIdleCheck = () => {
+    if (idleTimer != null) {
+      return;
+    }
+    idleTimer = setTimeout(() => {
+      idleTimer = null;
+      if (shouldRunContinuously()) {
+        startActiveLoop();
+        return;
+      }
+      scheduleIdleCheck();
+    }, PAUSED_POLL_DELAY_MS);
+  };
+
+  const enterIdleMode = () => {
+    renderOnce();
+    scheduleIdleCheck();
   };
 
   const setPlaybackMode = (mode) => {
@@ -283,6 +324,11 @@ export function runGame(world, internalSetupScene, options = {}) {
         return;
       }
       runLinearFrame(time);
+      if (!shouldRunContinuously()) {
+        stopLoops();
+        enterIdleMode();
+        return;
+      }
       const renderSystem = getRenderSystem();
       if (!renderSystem || typeof renderSystem.setAnimationLoop === 'function') {
         return;
@@ -307,12 +353,21 @@ export function runGame(world, internalSetupScene, options = {}) {
       if (token !== loopToken) {
         return;
       }
+      if (!shouldRunContinuously()) {
+        stopLoops();
+        enterIdleMode();
+        return;
+      }
       asapTimer = setTimeout(iterate, delay);
     };
     iterate();
   };
 
   const startActiveLoop = () => {
+    if (!shouldRunContinuously()) {
+      enterIdleMode();
+      return;
+    }
     const currentToken = loopToken;
     if (playbackMode === 'asap') {
       startAsapLoop(currentToken);
@@ -354,7 +409,11 @@ export function runGame(world, internalSetupScene, options = {}) {
     doStep = false;
     updatePauseButtonLabel();
     stopLoops();
-    startActiveLoop();
+    if (shouldRunContinuously()) {
+      startActiveLoop();
+    } else {
+      enterIdleMode();
+    }
   };
 
   const setRenderEveryNth = (value) => {
@@ -418,6 +477,8 @@ export function runGame(world, internalSetupScene, options = {}) {
       }
       pauseState.paused = true;
       updatePauseButtonLabel();
+      stopLoops();
+      enterIdleMode();
     });
   }
 
@@ -464,6 +525,7 @@ export function runGame(world, internalSetupScene, options = {}) {
   let renderStride = 1;
   let rafHandle = null;
   let asapTimer = null;
+  let idleTimer = null;
   let loopToken = 0;
 
   recomputeRenderStride();

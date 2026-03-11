@@ -593,7 +593,11 @@ export class RenderSystem3D {
     this.positionTracePoints = [];
     this.positionTraceMarkers = [];
     this.drawnPositionTraceCount = 0;
+    this.drawnPositionTraceMarkerCount = 0;
     this.drawnExtrusionCount = 0;
+    this._animationLoopActive = false;
+    this._requestRenderHandle = null;
+    this._lastWorld = null;
 
     this.controls = null;
     this.controlsEnabled = options.controlsEnabled ?? true;
@@ -953,11 +957,51 @@ export class RenderSystem3D {
   }
 
   setAnimationLoop(callback) {
+    if (this._requestRenderHandle != null && typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(this._requestRenderHandle);
+      this._requestRenderHandle = null;
+    }
+    this._animationLoopActive = typeof callback === 'function';
     this.renderer.setAnimationLoop(callback);
   }
 
   clearAnimationLoop() {
+    this._animationLoopActive = false;
+    if (this._requestRenderHandle != null && typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(this._requestRenderHandle);
+      this._requestRenderHandle = null;
+    }
     this.renderer.setAnimationLoop(null);
+  }
+
+  requestRender(world = null) {
+    if (world) {
+      this._lastWorld = world;
+    }
+    if (this.drawingSuspended || this._animationLoopActive) {
+      return;
+    }
+    if (this._requestRenderHandle != null) {
+      return;
+    }
+
+    const draw = () => {
+      this._requestRenderHandle = null;
+      if (this.drawingSuspended || this._animationLoopActive) {
+        return;
+      }
+      if (this._lastWorld) {
+        this.update(this._lastWorld, 0);
+        return;
+      }
+      this.renderer.render(this.scene, this.camera);
+    };
+
+    if (typeof requestAnimationFrame === 'function') {
+      this._requestRenderHandle = requestAnimationFrame(draw);
+      return;
+    }
+    draw();
   }
 
   setCanvasSize(width, height) {
@@ -968,10 +1012,14 @@ export class RenderSystem3D {
     this.camera.updateProjectionMatrix();
     this._lastWidth = width;
     this._lastHeight = height;
+    this.requestRender();
   }
 
   setDrawingSuspended(suspended) {
     this.drawingSuspended = Boolean(suspended);
+    if (!this.drawingSuspended) {
+      this.requestRender();
+    }
   }
 
   setViewTransform({ scaleMultiplier, offsetX, offsetY, offsetZ } = {}) {
@@ -989,6 +1037,7 @@ export class RenderSystem3D {
     }
 
     this._applyCameraFromViewTransform();
+    this.requestRender();
   }
 
   setReferencePaths(segments, options = {}) {
@@ -1006,6 +1055,7 @@ export class RenderSystem3D {
     }
     this.referenceVisible = Boolean(this.referenceRequestedVisible) && this.referencePaths.length > 0;
     this.referenceDirty = true;
+    this.requestRender();
   }
 
   setPositionTraceEnabled(enabled, options = {}) {
@@ -1019,7 +1069,9 @@ export class RenderSystem3D {
     this.positionTraceMaterial.color.set(this.positionTraceColor);
     if (!this.positionTraceEnabled) {
       this.clearPositionTrace();
+      return;
     }
+    this.requestRender();
   }
 
   clearPositionTrace({ keepMarkers = false } = {}) {
@@ -1028,6 +1080,7 @@ export class RenderSystem3D {
     if (!keepMarkers) {
       this.clearPositionTraceMarkers();
     }
+    this.requestRender();
   }
 
   clearPositionTracePoints() {
@@ -1040,11 +1093,14 @@ export class RenderSystem3D {
     if (this.navigationCursorObject) {
       this.navigationCursorObject.visible = this.navigationCursorVisible;
     }
+    this.requestRender();
   }
 
   clearPositionTraceMarkers() {
     this.positionTraceMarkers = [];
+    this.drawnPositionTraceMarkerCount = 0;
     this._updatePointObject(this.positionTraceMarkersObject, [], null, DEFAULT_MARKER_Z);
+    this.requestRender();
   }
 
   addPositionTraceMarker(simX, simY, label = '') {
@@ -1058,11 +1114,13 @@ export class RenderSystem3D {
       label
     });
     this._syncPositionTraceMarkers();
+    this.requestRender();
   }
 
   clearExtrusions() {
     this.drawnExtrusionCount = 0;
     this._updatePointObject(this.extrusionPoints, [], [], DEFAULT_TRACE_Z);
+    this.requestRender();
   }
 
   simXFromCanvas(pixelX, pixelY = this.canvas.height * 0.5) {
@@ -1327,10 +1385,20 @@ export class RenderSystem3D {
   }
 
   _syncPositionTraceMarkers() {
+    if (
+      this.positionTraceMarkers.length === this.drawnPositionTraceMarkerCount
+      && this.positionTraceMarkersObject.visible === (this.positionTraceMarkers.length > 0)
+    ) {
+      return;
+    }
+    this.drawnPositionTraceMarkerCount = this.positionTraceMarkers.length;
     this._updatePointObject(this.positionTraceMarkersObject, this.positionTraceMarkers, null, DEFAULT_MARKER_Z);
   }
 
   update(world, dt = 0) {
+    if (world) {
+      this._lastWorld = world;
+    }
     if (this.drawingSuspended) {
       return;
     }
@@ -1425,6 +1493,10 @@ export class RenderSystem3D {
 
   dispose() {
     this.clearAnimationLoop();
+    if (this._requestRenderHandle != null && typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(this._requestRenderHandle);
+      this._requestRenderHandle = null;
+    }
     this.resetVisuals();
 
     for (const material of this.sphereMaterialCache.values()) {
@@ -2518,5 +2590,6 @@ export class RenderSystem3D {
       this.orbitMaxPolarAngle
     );
     this._applyCameraFromViewTransform();
+    this.requestRender();
   }
 }

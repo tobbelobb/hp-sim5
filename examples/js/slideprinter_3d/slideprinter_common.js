@@ -1252,7 +1252,14 @@ export class InputSystem {
     this.world.setResource('grabbedBall', closestBall);
 
     const pauseState = this.world.getResource('pauseState');
-    if (pauseState) {
+    if (
+      pauseState?.paused
+      && this.pauseBtn
+      && this.pauseBtn.disabled !== true
+      && typeof this.pauseBtn.click === 'function'
+    ) {
+      this.pauseBtn.click();
+    } else if (pauseState) {
       pauseState.paused = false;
     }
     if (this.pauseBtn) {
