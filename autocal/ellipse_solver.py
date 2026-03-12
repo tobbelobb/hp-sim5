@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import concurrent.futures
 import csv
-import os
 from pathlib import Path
+import os
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 import numpy as np
@@ -61,56 +61,6 @@ def _lbfgsb_jax_mode() -> str:
     return "jac"
 
 
-def _copy_lbfgsb_jax_grad_stats(stats: Dict[str, Any]) -> Dict[str, Any]:
-    out: Dict[str, Any] = {
-        "jax_grad_ok": int(stats.get("jax_grad_ok", 0)),
-        "jax_grad_fallback": int(stats.get("jax_grad_fallback", 0)),
-        "jax_grad_callback_available": bool(stats.get("jax_grad_callback_available", False)),
-    }
-    first_reason = stats.get("jax_grad_first_fallback_reason")
-    if first_reason is not None:
-        out["jax_grad_first_fallback_reason"] = str(first_reason)
-    first_exc = stats.get("jax_grad_first_fallback_exception")
-    if first_exc:
-        out["jax_grad_first_fallback_exception"] = str(first_exc)
-    return out
-
-
-def _attach_lbfgsb_jax_grad_stats(result: OptimizeResult, stats: Dict[str, Any]) -> None:
-    for key, value in _copy_lbfgsb_jax_grad_stats(stats).items():
-        result[key] = value
-
-
-def _lbfgsb_jax_grad_stats_from_result(result: OptimizeResult) -> Optional[Dict[str, Any]]:
-    if "jax_grad_ok" not in result and "jax_grad_fallback" not in result:
-        return None
-    return {
-        "jax_grad_ok": int(result.get("jax_grad_ok", 0)),
-        "jax_grad_fallback": int(result.get("jax_grad_fallback", 0)),
-        "jax_grad_callback_available": bool(result.get("jax_grad_callback_available", False)),
-        "jax_grad_first_fallback_reason": result.get("jax_grad_first_fallback_reason"),
-        "jax_grad_first_fallback_exception": result.get("jax_grad_first_fallback_exception"),
-    }
-
-
-def _log_lbfgsb_jax_grad_stats(result: OptimizeResult) -> None:
-    stats = _lbfgsb_jax_grad_stats_from_result(result)
-    if stats is None:
-        return
-    first_exc = stats.get("jax_grad_first_fallback_exception")
-    if first_exc:
-        print(f"[lbfgsb] first JAX grad fallback exception: {first_exc}")
-    parts = [
-        f"jax_grad_ok={int(stats.get('jax_grad_ok', 0))}",
-        f"jax_grad_fallback={int(stats.get('jax_grad_fallback', 0))}",
-        f"callback_available={bool(stats.get('jax_grad_callback_available', False))}",
-    ]
-    first_reason = stats.get("jax_grad_first_fallback_reason")
-    if first_reason is not None:
-        parts.append(f"first_fallback={first_reason}")
-    print("[lbfgsb] " + " ".join(parts))
-
-
 def _build_lbfgsb_objective_with_jac(
     cost_fn: EllipseCostFunction,
     lb: np.ndarray,
@@ -119,20 +69,6 @@ def _build_lbfgsb_objective_with_jac(
     """Return a callable that emits (objective, gradient) for SciPy L-BFGS-B."""
     use_jax = _jax_objective_enabled()
     jax_value_and_grad = build_compiled_value_and_grad(cost_fn, lb, ub) if use_jax else None
-    stats: Dict[str, Any] = {
-        "jax_grad_ok": 0,
-        "jax_grad_fallback": 0,
-        "jax_grad_callback_available": bool(jax_value_and_grad is not None),
-        "jax_grad_first_fallback_reason": None,
-        "jax_grad_first_fallback_exception": None,
-    }
-
-    def _record_fallback(reason: str, exc: Optional[BaseException] = None) -> None:
-        stats["jax_grad_fallback"] = int(stats["jax_grad_fallback"]) + 1
-        if stats.get("jax_grad_first_fallback_reason") is None:
-            stats["jax_grad_first_fallback_reason"] = str(reason)
-        if exc is not None and stats.get("jax_grad_first_fallback_exception") is None:
-            stats["jax_grad_first_fallback_exception"] = f"{type(exc).__name__}: {exc}"
 
     def _value_and_grad(x: np.ndarray) -> Tuple[float, np.ndarray]:
         x_clipped = np.clip(np.asarray(x, dtype=float).reshape(-1), lb, ub)
@@ -142,19 +78,14 @@ def _build_lbfgsb_objective_with_jac(
                 value_f = float(value)
                 grad_arr = np.asarray(grad, dtype=float).reshape(-1)
                 if np.isfinite(value_f) and np.all(np.isfinite(grad_arr)):
-                    stats["jax_grad_ok"] = int(stats["jax_grad_ok"]) + 1
                     return value_f, grad_arr
-                _record_fallback("nonfinite")
-            except Exception as exc:
-                _record_fallback("exception", exc)
-        else:
-            _record_fallback("unavailable")
+            except Exception:
+                pass
 
         value = float(cost_fn.evaluate(x_clipped))
         grad = np.asarray(cost_fn.gradient_numerical(x_clipped, f0=value), dtype=float).reshape(-1)
         return value, grad
 
-    setattr(_value_and_grad, "_lbfgsb_jax_grad_stats", stats)
     return _value_and_grad
 
 
@@ -203,7 +134,7 @@ def _run_lbfgsb_minimize(
         )
 
     value_and_grad = _build_lbfgsb_objective_with_jac(cost_fn, lb, ub)
-    result = minimize(
+    return minimize(
         value_and_grad,
         x0_clipped,
         method="L-BFGS-B",
@@ -212,11 +143,6 @@ def _run_lbfgsb_minimize(
         callback=callback,
         options={"maxiter": int(max_iterations), "ftol": 1e-12, "maxls": 40, "disp": False},
     )
-    stats = getattr(value_and_grad, "_lbfgsb_jax_grad_stats", None)
-    if isinstance(stats, dict):
-        _attach_lbfgsb_jax_grad_stats(result, stats)
-        _log_lbfgsb_jax_grad_stats(result)
-    return result
 
 
 def _optimize_restart_worker(payload: dict) -> dict:
@@ -357,11 +283,6 @@ def _optimize_restart_worker(payload: dict) -> dict:
         nit=int(getattr(result, "nit", 0) or 0),
         nfev=int(getattr(result, "nfev", 0) or 0),
     )
-    stats = _lbfgsb_jax_grad_stats_from_result(result)
-    if stats is not None:
-        for key, value in stats.items():
-            if value is not None:
-                best[key] = value
     return dict(best)
 
 
