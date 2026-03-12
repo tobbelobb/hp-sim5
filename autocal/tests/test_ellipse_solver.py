@@ -67,6 +67,53 @@ def test_run_lbfgsb_minimize_supplies_explicit_jac(monkeypatch):
     assert bool(result.success) is True
 
 
+def test_run_lbfgsb_minimize_tracks_jax_grad_success(monkeypatch, capsys):
+    def fake_minimize(fun, x0, **kwargs):
+        value_1, grad_1 = fun(np.asarray(x0, dtype=float))
+        value_2, grad_2 = fun(np.asarray(x0, dtype=float))
+        assert kwargs.get("jac") is True
+        assert np.isclose(float(value_1), float(value_2))
+        assert np.allclose(np.asarray(grad_1, dtype=float), np.asarray(grad_2, dtype=float))
+        return OptimizeResult(
+            x=np.asarray(x0, dtype=float),
+            fun=float(value_2),
+            success=True,
+            message="ok",
+            nit=1,
+            nfev=2,
+        )
+
+    def _good_jax(_cost_fn, _lb, _ub):
+        def _value_and_grad(x):
+            vec = np.asarray(x, dtype=float).reshape(-1)
+            return float(np.dot(vec, vec)), 2.0 * vec
+
+        return _value_and_grad
+
+    monkeypatch.setattr(ellipse_solver, "build_compiled_value_and_grad", _good_jax)
+    monkeypatch.setattr(ellipse_solver, "minimize", fake_minimize)
+
+    cost = _QuadraticCost()
+    x0 = np.asarray([0.2, -0.3, 0.4], dtype=float)
+    result = ellipse_solver._run_lbfgsb_minimize(
+        cost,
+        x0,
+        lb=np.full(x0.shape, -10.0, dtype=float),
+        ub=np.full(x0.shape, 10.0, dtype=float),
+        bounds=[(-10.0, 10.0)] * x0.size,
+        max_iterations=5,
+    )
+
+    captured = capsys.readouterr()
+    assert result["jax_grad_ok"] == 2
+    assert result["jax_grad_fallback"] == 0
+    assert result["jax_grad_callback_available"] is True
+    assert "jax_grad_ok=2" in captured.out
+    assert "jax_grad_fallback=0" in captured.out
+    assert cost.evaluate_calls == 0
+    assert cost.gradient_calls == 0
+
+
 def test_lbfgsb_objective_falls_back_when_jax_grad_errors(monkeypatch):
     def _broken_jax(_cost_fn, _lb, _ub):
         def _broken(_x):
@@ -87,6 +134,54 @@ def test_lbfgsb_objective_falls_back_when_jax_grad_errors(monkeypatch):
     assert np.isfinite(float(value))
     assert np.allclose(np.asarray(grad, dtype=float), np.asarray([1.0, -1.0], dtype=float))
     assert cost.last_f0 is not None
+
+
+def test_run_lbfgsb_minimize_logs_first_jax_grad_fallback_exception_once(monkeypatch, capsys):
+    def fake_minimize(fun, x0, **kwargs):
+        _ = kwargs
+        value_1, grad_1 = fun(np.asarray(x0, dtype=float))
+        value_2, grad_2 = fun(np.asarray(x0, dtype=float))
+        assert np.isclose(float(value_1), float(value_2))
+        assert np.allclose(np.asarray(grad_1, dtype=float), np.asarray(grad_2, dtype=float))
+        return OptimizeResult(
+            x=np.asarray(x0, dtype=float),
+            fun=float(value_2),
+            success=True,
+            message="ok",
+            nit=1,
+            nfev=2,
+        )
+
+    def _broken_jax(_cost_fn, _lb, _ub):
+        def _broken(_x):
+            raise RuntimeError("jax trace failed")
+
+        return _broken
+
+    monkeypatch.setattr(ellipse_solver, "build_compiled_value_and_grad", _broken_jax)
+    monkeypatch.setattr(ellipse_solver, "minimize", fake_minimize)
+
+    cost = _QuadraticCost()
+    x0 = np.asarray([0.5, -0.5], dtype=float)
+    result = ellipse_solver._run_lbfgsb_minimize(
+        cost,
+        x0,
+        lb=np.full(x0.shape, -10.0, dtype=float),
+        ub=np.full(x0.shape, 10.0, dtype=float),
+        bounds=[(-10.0, 10.0)] * x0.size,
+        max_iterations=5,
+    )
+
+    captured = capsys.readouterr()
+    assert result["jax_grad_ok"] == 0
+    assert result["jax_grad_fallback"] == 2
+    assert result["jax_grad_callback_available"] is True
+    assert result["jax_grad_first_fallback_reason"] == "exception"
+    assert "RuntimeError: jax trace failed" == result["jax_grad_first_fallback_exception"]
+    assert captured.out.count("first JAX grad fallback exception") == 1
+    assert "jax_grad_fallback=2" in captured.out
+    assert cost.evaluate_calls == 2
+    assert cost.gradient_calls == 2
 
 
 def test_lbfgsb_objective_falls_back_when_jax_grad_nonfinite(monkeypatch):
