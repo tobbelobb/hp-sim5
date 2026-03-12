@@ -117,18 +117,15 @@ def _prepare_sweeps(cost_fn: EllipseCostFunction) -> Optional[_PackedSweeps]:
     rows: List[Tuple[List[int], List[float], int, int, np.ndarray, np.ndarray, np.ndarray, np.ndarray, bool]] = []
     max_points = 0
 
-    for sweep in cost_fn.sweeps:
-        (
-            fixed_indices,
-            fixed_deltas,
-            drive_idx,
-            sensor_idx,
-            l_drive,
-            l_sensor,
-            _sweep_id,
-            sigma_drive,
-            sigma_sensor,
-        ) = cost_fn._extract_sweep_arrays(sweep)
+    for sweep in cost_fn._packed_sweeps:
+        fixed_indices = sweep.fixed_indices
+        fixed_deltas = sweep.fixed_deltas
+        drive_idx = sweep.drive_idx
+        sensor_idx = sweep.sensor_idx
+        l_drive = sweep.l_drive
+        l_sensor = sweep.l_sensor
+        sigma_drive = sweep.sigma_drive_mm
+        sigma_sensor = sweep.sigma_sensor_mm
 
         if len(fixed_indices) != expected_fixed or len(fixed_deltas) != expected_fixed:
             return None

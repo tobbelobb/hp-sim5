@@ -64,6 +64,23 @@ class CostResult:
     noise_metrics: Optional[Dict[str, object]] = None
 
 
+@dataclass(frozen=True)
+class _PackedSweep:
+    """Sweep metadata and numeric point arrays cached at construction time."""
+
+    sweep_id: str
+    fixed_indices: Tuple[int, ...]
+    fixed_deltas: Tuple[float, ...]
+    drive_idx: int
+    sensor_idx: int
+    l_drive: np.ndarray
+    l_sensor: np.ndarray
+    sigma_drive_mm: Optional[np.ndarray]
+    sigma_sensor_mm: Optional[np.ndarray]
+    tension_drive_n: Optional[np.ndarray]
+    tension_sensor_n: Optional[np.ndarray]
+
+
 def canonicalize_geometry(
     center: Tuple[float, float], semi_axes: Tuple[float, float], theta: float
 ) -> Tuple[np.ndarray, np.ndarray, float]:
@@ -238,6 +255,7 @@ class EllipseCostFunction:
             self.dimensions,
             self.sweeps,
         ) = _dataset_metadata(dataset)
+        self.sweeps = list(self.sweeps)
         self.low_anchor_z = _dataset_low_anchor_z(dataset)
         machine_key = str(self.machine_type).lower()
         self._min_sweeps_after_trim = int(
@@ -332,17 +350,81 @@ class EllipseCostFunction:
                 num_axes=self.num_anchors,
                 spring_k_multiplier=float(spring_k_multiplier),
             )
+        self._packed_sweeps = tuple(self._pack_sweep(sweep) for sweep in self.sweeps)
+        self._packed_sweep_by_objid = {
+            id(sweep): packed for sweep, packed in zip(self.sweeps, self._packed_sweeps)
+        }
         # Reuse per-anchor residual extraction across evaluate/evaluate_detailed/row export.
         self._pointwise_entries_cache: Dict[
             Tuple[float, ...],
             Tuple[List[Dict[str, object]], Optional[float], List[Dict[str, object]]],
         ] = {}
 
+    def _pack_sweep(self, sweep: Union[Sweep, dict]) -> _PackedSweep:
+        if isinstance(sweep, Sweep):
+            fixed_indices = tuple(int(idx) for idx in sweep.fixed_anchors)
+            fixed_deltas = tuple(float(delta) for delta in sweep.fixed_lengths)
+            drive_idx = int(sweep.drive_anchor)
+            sensor_idx = int(sweep.sensor_anchor)
+            data_points = list(sweep.data_points or [])
+            sweep_id = str(sweep.id)
+        else:
+            fixed_indices = tuple(int(idx) for idx in sweep.get("fixed_anchors", []))
+            fixed_deltas = tuple(float(delta) for delta in sweep.get("fixed_lengths", []))
+            drive_idx = int(sweep.get("drive_anchor"))
+            sensor_idx = int(sweep.get("sensor_anchor"))
+            data_points = sweep.get("data_points", [])
+            if not isinstance(data_points, list):
+                data_points = []
+            sweep_id = str(sweep.get("id", ""))
+
+        l_drive, l_sensor, sigma_drive_mm, sigma_sensor_mm = self._extract_point_arrays(
+            data_points, drive_idx, sensor_idx
+        )
+        tension_drive_n, tension_sensor_n = self._extract_tension_arrays_from_raw(sweep)
+        return _PackedSweep(
+            sweep_id=sweep_id,
+            fixed_indices=fixed_indices,
+            fixed_deltas=fixed_deltas,
+            drive_idx=drive_idx,
+            sensor_idx=sensor_idx,
+            l_drive=np.asarray(l_drive, dtype=float),
+            l_sensor=np.asarray(l_sensor, dtype=float),
+            sigma_drive_mm=(
+                None
+                if sigma_drive_mm is None
+                else np.asarray(sigma_drive_mm, dtype=float)
+            ),
+            sigma_sensor_mm=(
+                None
+                if sigma_sensor_mm is None
+                else np.asarray(sigma_sensor_mm, dtype=float)
+            ),
+            tension_drive_n=(
+                None
+                if tension_drive_n is None
+                else np.asarray(tension_drive_n, dtype=float)
+            ),
+            tension_sensor_n=(
+                None
+                if tension_sensor_n is None
+                else np.asarray(tension_sensor_n, dtype=float)
+            ),
+        )
+
+    def _get_packed_sweep(self, sweep: Union[Sweep, dict, _PackedSweep]) -> _PackedSweep:
+        if isinstance(sweep, _PackedSweep):
+            return sweep
+        packed = self._packed_sweep_by_objid.get(id(sweep))
+        if packed is not None:
+            return packed
+        return self._pack_sweep(sweep)
+
     def _extract_sweep_arrays(
-        self, sweep: Union[Sweep, dict]
+        self, sweep: Union[Sweep, dict, _PackedSweep]
     ) -> Tuple[
-        List[int],
-        List[float],
+        Tuple[int, ...],
+        Tuple[float, ...],
         int,
         int,
         np.ndarray,
@@ -351,41 +433,22 @@ class EllipseCostFunction:
         Optional[np.ndarray],
         Optional[np.ndarray],
     ]:
-        """Extract sweep role metadata and drive/sensor arrays."""
-        if isinstance(sweep, Sweep):
-            fixed_indices = list(sweep.fixed_anchors)
-            fixed_deltas = list(sweep.fixed_lengths)
-            drive_idx = sweep.drive_anchor
-            sensor_idx = sweep.sensor_anchor
-            data_points = list(sweep.data_points or [])
-            sweep_id = sweep.id
-        else:
-            fixed_indices = list(sweep.get("fixed_anchors", []))
-            fixed_deltas = list(sweep.get("fixed_lengths", []))
-            drive_idx = int(sweep.get("drive_anchor"))
-            sensor_idx = int(sweep.get("sensor_anchor"))
-            data_points = sweep.get("data_points", [])
-            if not isinstance(data_points, list):
-                data_points = []
-            sweep_id = sweep.get("id", "")
-
-        l_drive, l_sensor, sigma_drive, sigma_sensor = self._extract_point_arrays(
-            data_points, int(drive_idx), int(sensor_idx)
-        )
+        """Return constructor-time packed sweep arrays."""
+        packed = self._get_packed_sweep(sweep)
         return (
-            fixed_indices,
-            fixed_deltas,
-            int(drive_idx),
-            int(sensor_idx),
-            l_drive,
-            l_sensor,
-            str(sweep_id),
-            sigma_drive,
-            sigma_sensor,
+            packed.fixed_indices,
+            packed.fixed_deltas,
+            packed.drive_idx,
+            packed.sensor_idx,
+            packed.l_drive,
+            packed.l_sensor,
+            packed.sweep_id,
+            packed.sigma_drive_mm,
+            packed.sigma_sensor_mm,
         )
 
     @staticmethod
-    def _extract_tension_arrays(
+    def _extract_tension_arrays_from_raw(
         sweep: Union[Sweep, dict]
     ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
         if isinstance(sweep, Sweep):
@@ -401,9 +464,29 @@ class EllipseCostFunction:
             return None, None
         return t_drive, t_sensor
 
+    def _extract_tension_arrays(
+        self, sweep: Union[Sweep, dict, _PackedSweep]
+    ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+        if isinstance(sweep, _PackedSweep):
+            return sweep.tension_drive_n, sweep.tension_sensor_n
+        packed = self._packed_sweep_by_objid.get(id(sweep))
+        if packed is not None:
+            return packed.tension_drive_n, packed.tension_sensor_n
+        return self._extract_tension_arrays_from_raw(sweep)
+
     def _reconstruct_lengths(
-        self, sweep: Union[Sweep, dict], anchors: np.ndarray
-    ) -> Tuple[List[float], int, int, np.ndarray, np.ndarray, str, float]:
+        self, sweep: Union[Sweep, dict, _PackedSweep], anchors: np.ndarray
+    ) -> Tuple[
+        List[float],
+        int,
+        int,
+        np.ndarray,
+        np.ndarray,
+        str,
+        float,
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+    ]:
         """Add anchor baselines to encoder deltas to get absolute lengths."""
         (
             fixed_indices,
@@ -1240,7 +1323,7 @@ class EllipseCostFunction:
         return cost, rms, max_abs, inlier_mask, inlier_ratio, scale, trim_threshold
 
     def _pointwise_sweep_residuals(
-        self, sweep: Union[Sweep, dict], anchors: np.ndarray
+        self, sweep: Union[Sweep, dict, _PackedSweep], anchors: np.ndarray
     ) -> Dict[str, object]:
         (
             fixed_lengths_abs,
@@ -1572,7 +1655,7 @@ class EllipseCostFunction:
 
     def _pointwise_sweep_info(
         self,
-        sweep: Union[Sweep, dict],
+        sweep: Union[Sweep, dict, _PackedSweep],
         anchors: np.ndarray,
         *,
         scale_override: Optional[float] = None,
@@ -1603,7 +1686,7 @@ class EllipseCostFunction:
         key = tuple(float(v) for v in np.asarray(anchors, dtype=float).ravel().tolist())
         cached = self._pointwise_entries_cache.get(key)
         if cached is None:
-            residual_entries = [self._pointwise_sweep_residuals(sweep, anchors) for sweep in self.sweeps]
+            residual_entries = [self._pointwise_sweep_residuals(sweep, anchors) for sweep in self._packed_sweeps]
             scale_override = None
             if self.pointwise_filtering and self.pointwise_global_mad:
                 residuals_list: List[np.ndarray] = []
@@ -1800,7 +1883,7 @@ class EllipseCostFunction:
         return diagnostics
 
     def _pointwise_predicted_cost(
-        self, sweep: Union[Sweep, dict], anchors: np.ndarray
+        self, sweep: Union[Sweep, dict, _PackedSweep], anchors: np.ndarray
     ) -> Tuple[float, float, float, float, str]:
         """
         Pointwise cost of reconstructed samples against the predicted ellipse.

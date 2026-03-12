@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 import pytest
 
@@ -234,6 +236,72 @@ def test_jax_objective_matches_numpy_cost():
     assert np.all(np.isfinite(np.asarray(grad_jax, dtype=float)))
     assert np.asarray(grad_jax, dtype=float).shape == x.shape
     assert np.isclose(value_jax, value_np, rtol=1e-6, atol=1e-8)
+
+
+@pytest.mark.skipif(not _JAX_AVAILABLE, reason="JAX is not installed")
+def test_jax_objective_uses_constructor_packed_sweeps():
+    dataset, anchors = _synthetic_slideprinter_dataset()
+    point = dataset["sweeps"][0]["data_points"][0]
+    original_drive = float(point["l_drive_mu"])
+    original_sensor = float(point["l_sensor_mu"])
+    point["l_drive"] = original_drive + 40.0
+    point["l_sensor"] = original_sensor - 40.0
+    point["sigma"] = [0.1, 0.2, 0.3]
+
+    reference_dataset = copy.deepcopy(dataset)
+    reference_cost_fn = EllipseCostFunction(
+        reference_dataset,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=True,
+        pointwise_global_mad=True,
+        sweep_wise_filtering=True,
+        use_noise_mean=True,
+        noise_normalized=True,
+        sigma_source="point",
+    )
+    lb, ub = get_anchor_bounds("slideprinter")
+    reference_objective = build_compiled_value_and_grad(
+        reference_cost_fn,
+        np.asarray(lb, dtype=float),
+        np.asarray(ub, dtype=float),
+    )
+    assert reference_objective is not None
+    x = np.asarray(anchors, dtype=float).reshape(-1)
+    expected_value, _expected_grad = reference_objective(x)
+
+    cost_fn = EllipseCostFunction(
+        dataset,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=True,
+        pointwise_global_mad=True,
+        sweep_wise_filtering=True,
+        use_noise_mean=True,
+        noise_normalized=True,
+        sigma_source="point",
+    )
+
+    sweep = dataset["sweeps"][0]
+    sweep["fixed_lengths"][0] = float(sweep["fixed_lengths"][0]) + 1234.0
+    sweep["drive_anchor"] = 0
+    sweep["sensor_anchor"] = 1
+    point["l_drive"] = original_drive + 5000.0
+    point["l_sensor"] = original_sensor - 5000.0
+    point["l_drive_mu"] = original_drive + 900.0
+    point["l_sensor_mu"] = original_sensor - 900.0
+    point["sigma"] = [9.0, 9.0, 9.0]
+
+    objective = build_compiled_value_and_grad(
+        cost_fn,
+        np.asarray(lb, dtype=float),
+        np.asarray(ub, dtype=float),
+    )
+    assert objective is not None
+
+    value_jax, grad_jax = objective(x)
+
+    assert np.isfinite(float(value_jax))
+    assert np.all(np.isfinite(np.asarray(grad_jax, dtype=float)))
+    assert np.isclose(float(value_jax), float(expected_value), rtol=1e-6, atol=1e-8)
 
 
 @pytest.mark.skipif(not _JAX_AVAILABLE, reason="JAX is not installed")

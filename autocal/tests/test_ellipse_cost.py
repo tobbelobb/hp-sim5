@@ -164,6 +164,62 @@ def test_noise_mean_lengths_reduce_cost():
     assert cost_mu < cost_raw
 
 
+def test_constructor_packs_sweeps_once_with_mu_and_sigma_replacements():
+    dataset, anchors = _synthetic_dataset()
+    dataset["config"] = {
+        "mm_per_degree": [1.0, 1.0, 1.0],
+        "encoder_noise_origin_mm": [0.02, 0.02, 0.02],
+    }
+
+    point = dataset["sweeps"][0]["data_points"][0]
+    original_drive = float(point["l_drive"])
+    original_sensor = float(point["l_sensor"])
+    point["l_drive"] = original_drive + 25.0
+    point["l_sensor"] = original_sensor - 25.0
+    point["mu"] = [0.0, original_drive, original_sensor]
+    point["sigma"] = [0.1, 0.2, 0.3]
+
+    reference_dataset = copy.deepcopy(dataset)
+    expected_cost = EllipseCostFunction(
+        reference_dataset,
+        use_noise_mean=True,
+        sigma_source="point",
+        noise_normalized=True,
+    ).evaluate(anchors.ravel())
+
+    cost_fn = EllipseCostFunction(
+        dataset,
+        use_noise_mean=True,
+        sigma_source="point",
+        noise_normalized=True,
+    )
+    packed = cost_fn._packed_sweeps[0]
+    assert packed.fixed_indices == (0,)
+    assert np.isclose(packed.fixed_deltas[0], dataset["sweeps"][0]["fixed_lengths"][0], atol=1e-12)
+    assert packed.drive_idx == 1
+    assert packed.sensor_idx == 2
+    assert np.isclose(float(packed.l_drive[0]), original_drive, atol=1e-12)
+    assert np.isclose(float(packed.l_sensor[0]), original_sensor, atol=1e-12)
+    assert packed.sigma_drive_mm is not None
+    assert packed.sigma_sensor_mm is not None
+    assert np.isclose(float(packed.sigma_drive_mm[0]), 0.2, atol=1e-12)
+    assert np.isclose(float(packed.sigma_sensor_mm[0]), 0.3, atol=1e-12)
+
+    sweep = dataset["sweeps"][0]
+    sweep["fixed_lengths"][0] = float(sweep["fixed_lengths"][0]) + 1234.0
+    sweep["drive_anchor"] = 0
+    sweep["sensor_anchor"] = 1
+    point["l_drive"] = original_drive + 5000.0
+    point["l_sensor"] = original_sensor - 5000.0
+    point["l_drive_mu"] = original_drive + 900.0
+    point["l_sensor_mu"] = original_sensor - 900.0
+    point["mu"] = [0.0, 999.0, 999.0]
+    point["sigma"] = [9.0, 9.0, 9.0]
+
+    packed_cost = cost_fn.evaluate(anchors.ravel())
+    assert np.isclose(packed_cost, expected_cost, rtol=0.0, atol=1e-12)
+
+
 def test_sigma_components_non_layered_quadrature():
     dataset, anchors = _synthetic_dataset()
     dataset = _with_noise_model(
