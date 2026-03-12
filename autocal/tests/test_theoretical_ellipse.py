@@ -200,6 +200,45 @@ def test_anchor_bounds_and_reshaping_helpers():
     assert np.allclose(anchors_matrix_to_vec(mat), vec)
 
 
+def test_hangprinter_4_bounds_encode_requested_half_space():
+    lb, ub = get_anchor_bounds(MachineType.HANGPRINTER_4)
+    lb_mat = lb.reshape(4, 3)
+    ub_mat = ub.reshape(4, 3)
+
+    assert ub_mat[0, 2] < 0.0
+    assert ub_mat[1, 2] < 0.0
+    assert ub_mat[2, 2] < 0.0
+    assert ub_mat[0, 1] < 0.0
+    assert lb_mat[1, 0] > 0.0
+    assert lb_mat[1, 1] > 0.0
+    assert ub_mat[2, 0] < 0.0
+    assert lb_mat[2, 1] > 0.0
+    assert lb_mat[3, 2] > 0.0
+
+    lb_opt, ub_opt = get_anchor_opt_bounds(MachineType.HANGPRINTER_4, 4, 3)
+    assert ub_opt[0] < 0.0
+    assert ub_opt[1] < 0.0
+    assert lb_opt[2] > 0.0
+    assert lb_opt[3] > 0.0
+    assert ub_opt[4] < 0.0
+    assert lb_opt[5] > 0.0
+    assert lb_opt[8] > 0.0
+
+    fixed_low_z = -120.0
+    lb_fixed, ub_fixed = get_anchor_opt_bounds(MachineType.HANGPRINTER_4, 4, 3, fixed_low_z)
+    assert ub_fixed[0] < 0.0
+    assert lb_fixed[1] > 0.0
+    assert lb_fixed[2] > 0.0
+    assert ub_fixed[3] < 0.0
+    assert lb_fixed[4] > 0.0
+    assert lb_fixed[7] > 0.0
+
+
+def test_hangprinter_4_fixed_low_anchor_z_must_stay_negative():
+    with pytest.raises(ValueError, match="low_anchor_z"):
+        get_anchor_opt_bounds(MachineType.HANGPRINTER_4, 4, 3, 10.0)
+
+
 def test_slideprinter_optimizer_helpers_drop_anchor_a_x_without_changing_geometry():
     anchors = np.array([[-400.0, 0.0], [400.0, 0.0], [0.0, 500.0]], dtype=float)
 

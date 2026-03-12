@@ -311,6 +311,7 @@ _ANCHOR_OPT_MODE_FULL = 0
 _ANCHOR_OPT_MODE_SLIDEPRINTER_AX0 = 1
 _ANCHOR_OPT_MODE_HP4_AX0_SHARED_LOW_Z = 2
 _ANCHOR_OPT_MODE_HP4_AX0_FIXED_LOW_Z = 3
+_STRICT_SIGN_EPS_MM = 1e-6
 
 
 def _coerce_low_anchor_z(low_anchor_z: Optional[float]) -> Optional[float]:
@@ -321,6 +322,52 @@ def _coerce_low_anchor_z(low_anchor_z: Optional[float]) -> Optional[float]:
     except (TypeError, ValueError):
         return None
     return val if np.isfinite(val) else None
+
+
+def _hangprinter_4_anchor_bounds() -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Return canonical hangprinter_4 bounds that exclude mirrored anchor layouts.
+
+    The reduced optimizer gauge fixes anchor A on the negative Y axis. These
+    bounds keep the remaining anchors in their expected quadrants and enforce
+    the low-anchor/top-anchor Z half-spaces as strict inequalities.
+    """
+    eps = float(_STRICT_SIGN_EPS_MM)
+    lb = np.asarray(
+        [
+            -5000.0,
+            -5000.0,
+            -2000.0,
+            eps,
+            eps,
+            -2000.0,
+            -5000.0,
+            eps,
+            -2000.0,
+            -5000.0,
+            -5000.0,
+            eps,
+        ],
+        dtype=float,
+    )
+    ub = np.asarray(
+        [
+            5000.0,
+            -eps,
+            -eps,
+            5000.0,
+            5000.0,
+            -eps,
+            -eps,
+            5000.0,
+            -eps,
+            5000.0,
+            5000.0,
+            5000.0,
+        ],
+        dtype=float,
+    )
+    return lb, ub
 
 
 def _slideprinter_ax0_gauge_enabled(
@@ -418,18 +465,15 @@ def get_anchor_bounds(machine_type: Union[str, MachineType]) -> Tuple[np.ndarray
     """Return lower/upper anchor bounds for a machine type."""
     mt = machine_type.value if isinstance(machine_type, MachineType) else str(machine_type)
 
+    if mt == "hangprinter_4":
+        return _hangprinter_4_anchor_bounds()
+
     bounds = {
         "slideprinter": {
             "n_anchors": 3,
             "dims": 2,
             "lb": [-2000, -2000] * 3,
             "ub": [2000, 2000] * 3,
-        },
-        "hangprinter_4": {
-            "n_anchors": 4,
-            "dims": 3,
-            "lb": [-5000, -5000, -2000] * 4,
-            "ub": [5000, 5000, 5000] * 4,
         },
         "hangprinter_5": {
             "n_anchors": 5,
@@ -483,67 +527,70 @@ def get_anchor_opt_bounds(
     if mode in (_ANCHOR_OPT_MODE_HP4_AX0_SHARED_LOW_Z, _ANCHOR_OPT_MODE_HP4_AX0_FIXED_LOW_Z):
         lb_mat = np.asarray(lb, dtype=float).reshape(int(n_anchors), int(dims))
         ub_mat = np.asarray(ub, dtype=float).reshape(int(n_anchors), int(dims))
-        xy_bound_mat = np.maximum(np.abs(lb_mat[:, :2]), np.abs(ub_mat[:, :2]))
-        max_xy_norm = float(np.max(np.linalg.norm(xy_bound_mat, axis=1))) if xy_bound_mat.size else 1.0
-        if not np.isfinite(max_xy_norm) or max_xy_norm <= 0.0:
-            max_xy_norm = float(np.max(xy_bound_mat)) if xy_bound_mat.size else 1.0
-        z_lb = float(np.min(lb_mat[:, 2])) if lb_mat.shape[1] >= 3 else -max_xy_norm
-        z_ub = float(np.max(ub_mat[:, 2])) if ub_mat.shape[1] >= 3 else max_xy_norm
+        low_z_lb = float(np.max(lb_mat[:3, 2]))
+        low_z_ub = float(np.min(ub_mat[:3, 2]))
+        if low_z_lb > low_z_ub:
+            raise ValueError("Invalid hangprinter_4 low-anchor Z bounds")
         if mode == _ANCHOR_OPT_MODE_HP4_AX0_SHARED_LOW_Z:
             return (
                 np.asarray(
                     [
-                        -max_xy_norm,
-                        z_lb,
-                        -max_xy_norm,
-                        -max_xy_norm,
-                        -max_xy_norm,
-                        -max_xy_norm,
-                        -max_xy_norm,
-                        -max_xy_norm,
-                        z_lb,
+                        lb_mat[0, 1],
+                        low_z_lb,
+                        lb_mat[1, 0],
+                        lb_mat[1, 1],
+                        lb_mat[2, 0],
+                        lb_mat[2, 1],
+                        lb_mat[3, 0],
+                        lb_mat[3, 1],
+                        lb_mat[3, 2],
                     ],
                     dtype=float,
                 ),
                 np.asarray(
                     [
-                        max_xy_norm,
-                        z_ub,
-                        max_xy_norm,
-                        max_xy_norm,
-                        max_xy_norm,
-                        max_xy_norm,
-                        max_xy_norm,
-                        max_xy_norm,
-                        z_ub,
+                        ub_mat[0, 1],
+                        low_z_ub,
+                        ub_mat[1, 0],
+                        ub_mat[1, 1],
+                        ub_mat[2, 0],
+                        ub_mat[2, 1],
+                        ub_mat[3, 0],
+                        ub_mat[3, 1],
+                        ub_mat[3, 2],
                     ],
                     dtype=float,
                 ),
             )
+        low_z = _coerce_low_anchor_z(low_anchor_z)
+        if low_z is None or low_z < low_z_lb or low_z > low_z_ub:
+            raise ValueError(
+                f"hangprinter_4 low_anchor_z must be within [{low_z_lb}, {low_z_ub}] mm"
+            )
         return (
             np.asarray(
                 [
-                    -max_xy_norm,
-                    -max_xy_norm,
-                    -max_xy_norm,
-                    -max_xy_norm,
-                    -max_xy_norm,
-                    -max_xy_norm,
-                    -max_xy_norm,
-                    z_lb,
+                    lb_mat[0, 1],
+                    lb_mat[1, 0],
+                    lb_mat[1, 1],
+                    lb_mat[2, 0],
+                    lb_mat[2, 1],
+                    lb_mat[3, 0],
+                    lb_mat[3, 1],
+                    lb_mat[3, 2],
                 ],
                 dtype=float,
             ),
             np.asarray(
                 [
-                    max_xy_norm,
-                    max_xy_norm,
-                    max_xy_norm,
-                    max_xy_norm,
-                    max_xy_norm,
-                    max_xy_norm,
-                    max_xy_norm,
-                    z_ub,
+                    ub_mat[0, 1],
+                    ub_mat[1, 0],
+                    ub_mat[1, 1],
+                    ub_mat[2, 0],
+                    ub_mat[2, 1],
+                    ub_mat[3, 0],
+                    ub_mat[3, 1],
+                    ub_mat[3, 2],
                 ],
                 dtype=float,
             ),

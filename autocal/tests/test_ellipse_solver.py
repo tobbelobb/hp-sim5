@@ -499,3 +499,104 @@ def test_solve_anchors_uses_reduced_hangprinter_4_optimizer_vector(monkeypatch, 
         anchors,
         ellipse_solver.anchor_opt_vec_to_matrix(x0_seen, "hangprinter_4", 4, 3, low_anchor_z),
     )
+
+
+def test_solve_anchors_clips_hangprinter_4_initial_guess_into_sign_constrained_half_space(monkeypatch):
+    dataset = {
+        "machine_type": "hangprinter_4",
+        "num_anchors": 4,
+        "dimensions": 3,
+        "sweeps": [],
+    }
+    initial_guess = np.asarray(
+        [
+            -1900.0,
+            120.0,
+            1645.0,
+            -950.0,
+            800.0,
+            -1800.0,
+            0.0,
+            0.0,
+            -2050.0,
+        ],
+        dtype=float,
+    )
+    seen: dict = {}
+
+    class _FakeCostFn:
+        sweeps = []
+
+        def evaluate(self, x: np.ndarray) -> float:
+            vec = np.asarray(x, dtype=float).reshape(-1)
+            return float(np.dot(vec, vec))
+
+        def evaluate_detailed(self, x: np.ndarray):
+            anchors = ellipse_solver.anchor_opt_vec_to_matrix(np.asarray(x, dtype=float), "hangprinter_4", 4, 3)
+            return ellipse_solver.CostResult(
+                total_cost=float(self.evaluate(x)),
+                per_sweep_costs={},
+                num_valid_sweeps=0,
+                num_invalid_sweeps=0,
+                anchor_estimate=anchors,
+                noise_metrics=None,
+            )
+
+        def pointwise_residual_rows(self, _x: np.ndarray):
+            return []
+
+        def robustness_diagnostics(self, _x: np.ndarray, *, top_n: int = 5):
+            _ = top_n
+            return {}
+
+    def fake_build_restart_cost_fn(*args, **kwargs):
+        _ = args, kwargs
+        return _FakeCostFn(), dataset, {}
+
+    def fake_run_lbfgsb_minimize(cost_fn, x0, **kwargs):
+        _ = kwargs
+        seen["x0"] = np.asarray(x0, dtype=float).copy()
+        return OptimizeResult(
+            x=np.asarray(x0, dtype=float),
+            fun=float(cost_fn.evaluate(x0)),
+            success=True,
+            message="ok",
+            nit=1,
+            nfev=1,
+        )
+
+    monkeypatch.setattr(ellipse_solver, "_build_cost_fn", lambda *args, **kwargs: _FakeCostFn())
+    monkeypatch.setattr(ellipse_solver, "_build_restart_cost_fn", fake_build_restart_cost_fn)
+    monkeypatch.setattr(ellipse_solver, "_run_lbfgsb_minimize", fake_run_lbfgsb_minimize)
+
+    result = ellipse_solver.solve_anchors(
+        dataset,
+        initial_guess=initial_guess,
+        method="L-BFGS-B",
+        max_iterations=4,
+        num_restarts=1,
+        use_parallel=False,
+        pointwise_filtering=False,
+        pointwise_global_mad=False,
+        sweep_wise_filtering=False,
+    )
+
+    lb_opt, ub_opt = ellipse_solver.get_anchor_opt_bounds("hangprinter_4", 4, 3)
+    x0_seen = np.asarray(seen["x0"], dtype=float)
+    anchors = np.asarray(result["anchors"], dtype=float)
+
+    assert np.all(x0_seen >= lb_opt - 1e-12)
+    assert np.all(x0_seen <= ub_opt + 1e-12)
+    assert x0_seen[1] < 0.0
+    assert x0_seen[3] > 0.0
+    assert x0_seen[4] < 0.0
+    assert x0_seen[5] > 0.0
+    assert x0_seen[8] > 0.0
+
+    assert anchors[0, 1] < 0.0
+    assert np.all(anchors[:3, 2] < 0.0)
+    assert anchors[1, 0] > 0.0
+    assert anchors[1, 1] > 0.0
+    assert anchors[2, 0] < 0.0
+    assert anchors[2, 1] > 0.0
+    assert anchors[3, 2] > 0.0
