@@ -193,6 +193,22 @@ def _synthetic_hangprinter_4_dataset(*, low_anchor_z: float | None = None):
     return dataset, anchors
 
 
+_SYNTHETIC_HP4_INVALID_GEOM_X = np.asarray(
+    [
+        -843.1943642821107,
+        4682.133455835161,
+        -1.473416959432143,
+        -1057.4269281572397,
+        1700.0749421983464,
+        7001.721923873173,
+        6349.022338386058,
+        -565.0470587180398,
+        3304.10191715804,
+    ],
+    dtype=float,
+)
+
+
 @pytest.mark.skipif(not _JAX_AVAILABLE, reason="JAX is not installed")
 def test_jax_objective_matches_numpy_cost():
     dataset, anchors = _synthetic_slideprinter_dataset()
@@ -370,3 +386,27 @@ def test_jax_hangprinter_4_objective_accepts_fixed_low_anchor_z():
     assert np.all(np.isfinite(np.asarray(grad_opt, dtype=float)))
     assert np.asarray(grad_opt, dtype=float).shape == x_opt.shape
     assert np.isclose(value_opt, value_np, rtol=1e-6, atol=1e-8)
+
+
+@pytest.mark.skipif(not _JAX_AVAILABLE, reason="JAX is not installed")
+def test_jax_hangprinter_4_invalid_geometry_sweeps_keep_finite_gradient():
+    dataset, _anchors = _synthetic_hangprinter_4_dataset()
+    cost_fn = EllipseCostFunction(
+        dataset,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=False,
+        sweep_wise_filtering=False,
+        use_noise_mean=False,
+        noise_normalized=True,
+    )
+    lb_opt, ub_opt = get_anchor_opt_bounds("hangprinter_4", 4, 3)
+    objective = build_compiled_value_and_grad(cost_fn, np.asarray(lb_opt, dtype=float), np.asarray(ub_opt, dtype=float))
+    assert objective is not None
+
+    detailed = cost_fn.evaluate_detailed(_SYNTHETIC_HP4_INVALID_GEOM_X)
+    assert detailed.num_invalid_sweeps > 0
+
+    value_jax, grad_jax = objective(_SYNTHETIC_HP4_INVALID_GEOM_X)
+
+    assert np.isfinite(float(value_jax))
+    assert np.all(np.isfinite(np.asarray(grad_jax, dtype=float)))

@@ -60,6 +60,7 @@ _SWEEP_WISE_MIN_KEEP_RATIO = 0.5
 _UNDERCONSTRAINED_PENALTY = 100.0
 _SMOOTH_POINT_TRIM_BAND = 0.10
 _SMOOTH_INLIER_BLEND_BAND = 0.50
+_SAFE_NORM_EPS = 1e-12
 
 
 @dataclass(frozen=True)
@@ -327,6 +328,32 @@ def _pointwise_scale_axis1(
     return jnp.maximum(scale, floor)
 
 
+def _safe_positive_sqrt(
+    values: "jnp.ndarray",
+    *,
+    eps: float,
+    fallback: float = 0.0,
+) -> Tuple["jnp.ndarray", "jnp.ndarray"]:
+    arr = jnp.asarray(values)
+    positive = arr > float(eps)
+    safe_arg = jnp.where(positive, arr, jnp.ones_like(arr))
+    sqrt_safe = jnp.sqrt(safe_arg)
+    out = jnp.where(positive, sqrt_safe, jnp.full_like(arr, fallback))
+    return out, positive
+
+
+def _safe_vector_norm(
+    values: "jnp.ndarray",
+    *,
+    eps: float,
+) -> Tuple["jnp.ndarray", "jnp.ndarray", "jnp.ndarray"]:
+    arr = jnp.asarray(values)
+    sq_norm = jnp.sum(arr * arr, axis=1)
+    norm, positive = _safe_positive_sqrt(sq_norm, eps=float(eps) * float(eps), fallback=0.0)
+    norm_safe = jnp.where(positive, norm, jnp.ones_like(norm))
+    return norm, norm_safe, positive
+
+
 def _anchors_from_opt_vec(
     anchor_vec: "jnp.ndarray",
     lb: "jnp.ndarray",
@@ -418,8 +445,7 @@ def _parametric_to_algebraic_coeffs(
     e = -2.0 * c_xy * k_s - b_xy * k_d
     f = a_xy * k_d * k_d + b_xy * k_d * k_s + c_xy * k_s * k_s + f_xy
     coeff_ellipse = jnp.stack([a, b, c, d, e, f], axis=1)
-    abc_norm = jnp.linalg.norm(coeff_ellipse[:, :3], axis=1)
-    norm_div = jnp.where(abc_norm > 1e-10, abc_norm, 1.0)
+    _abc_norm, norm_div, _abc_nonzero = _safe_vector_norm(coeff_ellipse[:, :3], eps=1e-10)
     coeff_ellipse = coeff_ellipse / norm_div[:, None]
 
     use_line = jnp.abs(det) < 1e-10
@@ -512,8 +538,7 @@ def _objective_core(
     else:
         anchor_secondary = anchors[fixed_anchor_secondary]
         delta_center = anchor_secondary - center
-        center_dist = jnp.linalg.norm(delta_center, axis=1)
-        center_dist_safe = jnp.where(center_dist > 1e-10, center_dist, 1.0)
+        center_dist, center_dist_safe, center_dist_ok = _safe_vector_norm(delta_center, eps=1e-10)
         radius_secondary = fixed_abs_secondary
 
         h = (
@@ -522,7 +547,7 @@ def _objective_core(
             - radius_secondary * radius_secondary
         ) / (2.0 * center_dist_safe)
         radius_sq = radius * radius - h * h
-        radius = jnp.sqrt(jnp.maximum(radius_sq, 0.0))
+        radius, _radius_positive = _safe_positive_sqrt(radius_sq, eps=_SAFE_NORM_EPS, fallback=0.0)
         normal = delta_center / center_dist_safe[:, None]
         center = center + h[:, None] * normal
 
@@ -530,23 +555,23 @@ def _objective_core(
         temp_y = jnp.asarray([0.0, 1.0, 0.0], dtype=anchors.dtype)
         temp = jnp.where(jnp.abs(normal[:, :1]) < 0.9, temp_x[None, :], temp_y[None, :])
         u = jnp.cross(normal, temp)
-        u_norm = jnp.linalg.norm(u, axis=1)
+        _u_norm, _u_norm_safe, u_ok_initial = _safe_vector_norm(u, eps=1e-12)
         temp_z = jnp.broadcast_to(jnp.asarray([0.0, 0.0, 1.0], dtype=anchors.dtype), u.shape)
         u_alt = jnp.cross(normal, temp_z)
-        use_alt = u_norm <= 1e-12
+        use_alt = jnp.logical_not(u_ok_initial)
         u = jnp.where(use_alt[:, None], u_alt, u)
-        u_norm = jnp.linalg.norm(u, axis=1)
-        u = u / jnp.where(u_norm > 1e-12, u_norm, 1.0)[:, None]
+        _u_norm, u_norm_safe, u_ok = _safe_vector_norm(u, eps=1e-12)
+        u = u / u_norm_safe[:, None]
         v = jnp.cross(normal, u)
-        v_norm = jnp.linalg.norm(v, axis=1)
-        v = v / jnp.where(v_norm > 1e-12, v_norm, 1.0)[:, None]
+        _v_norm, v_norm_safe, v_ok = _safe_vector_norm(v, eps=1e-12)
+        v = v / v_norm_safe[:, None]
 
-        geom_valid = center_dist >= 1e-10
+        geom_valid = center_dist_ok
         geom_valid = jnp.logical_and(geom_valid, center_dist <= (fixed_abs_primary + fixed_abs_secondary))
         geom_valid = jnp.logical_and(geom_valid, center_dist >= jnp.abs(fixed_abs_primary - fixed_abs_secondary))
         geom_valid = jnp.logical_and(geom_valid, radius_sq >= -1e-10)
-        geom_valid = jnp.logical_and(geom_valid, u_norm > 1e-12)
-        geom_valid = jnp.logical_and(geom_valid, v_norm > 1e-12)
+        geom_valid = jnp.logical_and(geom_valid, u_ok)
+        geom_valid = jnp.logical_and(geom_valid, v_ok)
 
     drive = anchors[drive_anchor]
     sensor = anchors[sensor_anchor]
@@ -574,8 +599,8 @@ def _objective_core(
     algebraic = a_c * x_sq * x_sq + b_c * x_sq * y_sq + c_c * y_sq * y_sq + d_c * x_sq + e_c * y_sq + f_c
     grad_x = 2.0 * a_c * x_sq + b_c * y_sq + d_c
     grad_y = b_c * x_sq + 2.0 * c_c * y_sq + e_c
-    denom = jnp.sqrt(grad_x * grad_x + grad_y * grad_y)
-    denom = jnp.where(denom < 1e-12, 1e-12, denom)
+    denom_sq = grad_x * grad_x + grad_y * grad_y
+    denom, _denom_positive = _safe_positive_sqrt(denom_sq, eps=1e-24, fallback=1e-12)
     residuals = algebraic / denom
     residuals = jnp.where(point_mask, residuals, jnp.nan)
 
@@ -584,8 +609,8 @@ def _objective_core(
         sigma_y = 2.0 * sensor_abs * sigma_sensor
         n_x = grad_x / denom
         n_y = grad_y / denom
-        sigma_l2 = jnp.sqrt((n_x * n_x) * (sigma_x * sigma_x) + (n_y * n_y) * (sigma_y * sigma_y))
-        sigma_l2 = jnp.where(sigma_l2 < 1e-12, 1e-12, sigma_l2)
+        sigma_l2_sq = (n_x * n_x) * (sigma_x * sigma_x) + (n_y * n_y) * (sigma_y * sigma_y)
+        sigma_l2, _sigma_l2_positive = _safe_positive_sqrt(sigma_l2_sq, eps=1e-24, fallback=1e-12)
         sigma_l2 = jnp.where(point_mask, sigma_l2, jnp.nan)
         sigma_ok = jnp.logical_and(
             has_sigma,
