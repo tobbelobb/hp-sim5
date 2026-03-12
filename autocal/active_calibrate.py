@@ -88,6 +88,7 @@ from autocal.calibrate import build_anchor_initial_guess, calibrate_elliptical
 from autocal.dataset_roles import normalize_dataset_point_roles as _normalize_dataset_point_roles
 from autocal.ellipse_cost import EllipseCostFunction
 from autocal.ellipse_fitting import fit_ellipse_from_sweep
+from autocal.ellipse_solver import format_anchor_matrix_plain
 from autocal.json_schema import append_jsonl_line, load_json_file, write_json_file
 from autocal.spool_model import (
     SpoolModelParams,
@@ -5921,7 +5922,7 @@ def _print_ellipse_plan(
 
     print("; Active ellipse calibration")
     gcode = str(cal.get("gcode", "")) if isinstance(cal, dict) else ""
-    anchor_line = f"; Anchors: {anchors.tolist()}" if anchors.size else ""
+    anchor_line = f"; Anchors: {format_anchor_matrix_plain(anchors)}" if anchors.size else ""
     if anchor_line and gcode.strip() != anchor_line:
         print(anchor_line)
     if gcode:

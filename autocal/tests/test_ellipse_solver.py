@@ -67,6 +67,24 @@ def test_run_lbfgsb_minimize_supplies_explicit_jac(monkeypatch):
     assert bool(result.success) is True
 
 
+def test_format_anchor_matrix_plain_rounds_to_two_decimals():
+    anchors = np.asarray(
+        [
+            [0.0, -1372.6890431014115, -280.0],
+            [1.9730184076416706e-06, 7071.067811865475, -280.0],
+            [287.79729368182825, 412.2545094734734, -634.95155106304],
+        ],
+        dtype=float,
+    )
+
+    formatted = ellipse_solver.format_anchor_matrix_plain(anchors)
+
+    assert formatted == (
+        "[[0.00, -1372.69, -280.00], [0.00, 7071.07, -280.00], "
+        "[287.80, 412.25, -634.95]]"
+    )
+
+
 def test_run_lbfgsb_minimize_tracks_jax_grad_success(monkeypatch, capsys):
     def fake_minimize(fun, x0, **kwargs):
         value_1, grad_1 = fun(np.asarray(x0, dtype=float))

@@ -205,10 +205,10 @@ def test_print_ellipse_plan_logs_plain_anchors_each_iteration_for_hangprinter(ca
     plan = {
         "anchors": np.asarray(
             [
-                [0.0, -1900.0, -280.0],
-                [1645.0, 950.0, -280.0],
-                [-1645.0, 950.0, -280.0],
-                [0.0, 0.0, 1900.0],
+                [0.0, -1900.004, -280.0],
+                [1645.004, 950.005, -280.0],
+                [-1645.006, 950.994, -280.0],
+                [0.0, 0.0, 1900.444],
             ],
             dtype=float,
         ),
@@ -229,8 +229,8 @@ def test_print_ellipse_plan_logs_plain_anchors_each_iteration_for_hangprinter(ca
 
     out = capsys.readouterr().out
     assert (
-        "; Anchors: [[0.0, -1900.0, -280.0], [1645.0, 950.0, -280.0], "
-        "[-1645.0, 950.0, -280.0], [0.0, 0.0, 1900.0]]"
+        "; Anchors: [[0.00, -1900.00, -280.00], [1645.00, 950.00, -280.00], "
+        "[-1645.01, 950.99, -280.00], [0.00, 0.00, 1900.44]]"
     ) in out
     assert "M669 A0.00:-1900.00:-280.00" in out
 
