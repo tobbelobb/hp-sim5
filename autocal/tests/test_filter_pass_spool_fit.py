@@ -2799,6 +2799,170 @@ def test_simulation_position_objective_score_is_near_zero_for_consistent_point()
     assert score == pytest.approx(0.0, abs=1e-6)
 
 
+def test_ellipse_prediction_objective_score_is_near_zero_for_consistent_sweep():
+    anchors = np.array(
+        [
+            [-120.0, 0.0],
+            [120.0, 0.0],
+            [0.0, 180.0],
+        ],
+        dtype=float,
+    )
+    baselines = np.linalg.norm(anchors, axis=1)
+    fixed_radius = 140.0
+    angles = np.linspace(-1.1, 1.1, 9)
+    points = []
+    for angle in angles:
+        pos = anchors[2] + fixed_radius * np.array([np.cos(angle), np.sin(angle)], dtype=float)
+        lengths = np.linalg.norm(anchors - pos, axis=1)
+        points.append(
+            {
+                "l_drive": float(lengths[0] - baselines[0]),
+                "l_sensor": float(lengths[1] - baselines[1]),
+            }
+        )
+    dataset = {
+        "machine_type": "slideprinter",
+        "num_anchors": 3,
+        "dimensions": 2,
+        "sweeps": [
+            {
+                "drive_anchor": 0,
+                "sensor_anchor": 1,
+                "fixed_anchors": [2],
+                "fixed_lengths": [float(fixed_radius - baselines[2])],
+                "data_points": points,
+            }
+        ],
+    }
+    cost_fn = ac._build_ellipse_cost_function(
+        dataset,
+        residual_threshold=1.0,
+        spring_k_multiplier=1.0,
+        use_flex=False,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=False,
+        pointwise_global_mad=False,
+        sweep_wise_filtering=False,
+        sweep_metric="mad",
+        use_noise_mean=False,
+        noise_normalized=True,
+        sigma_source="auto",
+    )
+
+    score, valid_sweeps, invalid_sweeps = ac.ellipse_prediction_objective_score(
+        dataset,
+        anchors,
+        cost_fn=cost_fn,
+    )
+
+    assert valid_sweeps == 1
+    assert invalid_sweeps == 0
+    assert score == pytest.approx(0.0, abs=1e-6)
+
+
+@pytest.mark.parametrize("objective_id", [0, 2])
+def test_non_pointwise_objective_schedule_controls_anchor_proposals(monkeypatch, objective_id: int):
+    base = np.array([30.0, 30.0, 30.0], dtype=float)
+    target_r = np.array([39.0, 39.0, 39.0], dtype=float)
+    target_k = np.array([0.636619, 0.636619, 0.636619], dtype=float)
+    _patch_spool_runtime(monkeypatch, target_radii=target_r, target_buildup=target_k)
+
+    proposal_calls = []
+
+    def fake_local_anchor_solver(
+        transformed_dataset,
+        initial_guess,
+        *,
+        objective_id,
+        objective_name,
+        objective_cost,
+        solve_restarts,
+        solve_iterations,
+        solve_optimizer,
+        low_anchor_z,
+    ):
+        _ = (
+            transformed_dataset,
+            objective_cost,
+            solve_restarts,
+            solve_iterations,
+            solve_optimizer,
+            low_anchor_z,
+        )
+        proposal_calls.append(
+            {
+                "objective_id": int(objective_id),
+                "objective_name": str(objective_name),
+                "initial_guess": np.asarray(initial_guess, dtype=float),
+            }
+        )
+        anchors_out = np.asarray(initial_guess, dtype=float) + 1.0
+        return {
+            "anchors": anchors_out,
+            "cost": 0.0,
+            "success": True,
+            "objective_id": int(objective_id),
+            "objective_name": str(objective_name),
+            "solver": "scheduled_local_objective_fake",
+        }
+
+    def forbidden_calibrate_elliptical(dataset_or_path, **kwargs):
+        raise AssertionError(f"calibrate_elliptical should not run for objective {objective_id}")
+
+    monkeypatch.setattr(ac, "_solve_local_anchor_objective", fake_local_anchor_solver)
+    monkeypatch.setattr(ac, "calibrate_elliptical", forbidden_calibrate_elliptical)
+
+    dataset = {
+        "machine_type": "slideprinter",
+        "num_anchors": 3,
+        "dimensions": 2,
+        "sweeps": [],
+    }
+    _eff_r, _fit_anchors, _spool_params, _transformed, fit_info = ac._estimate_effective_radii_with_spool_model(
+        dataset,
+        np.zeros((3, 2), dtype=float),
+        find_radii_mode="global",
+        find_buildup_mode="off",
+        base_radii_mm=base,
+        modeled_buildup_factor=target_k,
+        spool_to_motor_gearing_factor=np.ones(3, dtype=float),
+        mechanical_advantage=np.ones(3, dtype=float),
+        lines_per_spool=np.ones(3, dtype=float),
+        r0_bounds=(20.0, 45.0),
+        b_bounds=None,
+        r0_prior_sigma_mm=None,
+        b_prior_sigma=None,
+        spool_outer_iters=1,
+        spool_inner_iters=4,
+        theta0_mode="zero",
+        solve_restarts=1,
+        solve_iterations=10,
+        solve_optimizer="L-BFGS-B",
+        residual_threshold=1.0,
+        spring_k_multiplier=1.0,
+        use_flex=False,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=False,
+        pointwise_global_mad=False,
+        sweep_wise_filtering=False,
+        sweep_metric="mad",
+        use_noise_mean=False,
+        sigma_source="auto",
+        robust_debug=False,
+        objective_schedule=[int(objective_id)],
+    )
+
+    assert proposal_calls
+    assert all(int(call["objective_id"]) == int(objective_id) for call in proposal_calls)
+    bootstrap = fit_info.get("bootstrap_anchor_refresh", {})
+    assert bootstrap.get("solver") == "scheduled_local_objective_fake"
+    history = fit_info.get("history", [])
+    assert isinstance(history, list) and history
+    if bool(history[0].get("anchor_step_triggered")):
+        assert history[0].get("anchor_step_solver") == "scheduled_local_objective_fake"
+
+
 def test_scale_fix_3_applies_final_polish_on_every_filter_pass(monkeypatch):
     base = np.array([30.0, 30.0, 30.0], dtype=float)
     target_r = np.array([39.0, 39.0, 39.0], dtype=float)

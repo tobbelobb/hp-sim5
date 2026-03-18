@@ -271,7 +271,7 @@ the current transformed dataset.
 
 What it does:
 
-- run `calibrate_elliptical(...)` once
+- run the schedule-selected anchor proposal solve once
 - test the full move and damped moves with `alpha in {1.0, 0.5, 0.25}`
 - accept the best anchor refresh only if `_data_cost(...)` improves
 
@@ -302,9 +302,13 @@ Repeat for `spool_outer_iters` rounds:
      anchors as the starting point for the anchor proposal solve
 
 5. Anchor proposal solve:
-   - run `calibrate_elliptical(...)` on the current transformed dataset
-   - this optimizes the ellipse solver's own internal objective, not
-     `_data_cost + prior`
+   - run the schedule-selected anchor proposal solve on the current transformed
+     dataset
+   - objective `0`: predicted-ellipse vs data-fit ellipse mismatch
+   - objective `1`: `calibrate_elliptical(...)` / pointwise forward-model
+   - objective `2`: position-reconstruction / forward-transform spread
+   - this proposal objective is still separate from the later rank-based
+     acceptance / rollback logic
 
 6. Anchor acceptance:
    - test the full move and damped moves with `alpha in {1.0, 0.5, 0.25}`

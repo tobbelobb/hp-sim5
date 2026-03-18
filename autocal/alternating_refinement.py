@@ -4,8 +4,6 @@ from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 import numpy as np
 
-from autocal._autocal_common import calibrate_elliptical
-
 
 def run_alternating_refinement(
     *,
@@ -54,6 +52,7 @@ def run_alternating_refinement(
     extract_noise_metrics: Callable[[object], Optional[dict]],
     spool_anchor_step_gate: Callable[[float, float], Tuple[bool, float, float]],
     uniform_radius_scale: Callable[[np.ndarray, np.ndarray], Optional[float]],
+    solve_anchor_proposal: Callable[..., Dict[str, object]],
 ) -> Dict[str, object]:
     history: list[dict[str, object]] = []
     best = {
@@ -266,34 +265,20 @@ def run_alternating_refinement(
         anchor_cost = float("nan")
         anchor_step_success = False
         cal_step_noise_metrics: Optional[dict] = None
+        anchor_step_solver = None
         anchor_step_restarts = max(1, min(2, int(solve_restarts)))
         anchor_step_iterations = max(40, min(160, int(solve_iterations)))
         if run_anchor_step:
             try:
-                cal_step = calibrate_elliptical(
+                cal_step = solve_anchor_proposal(
                     transformed_opt,
-                    output_path=None,
-                    residual_threshold=float(residual_threshold),
+                    np.asarray(anchors_step_seed, dtype=float),
                     num_restarts=int(anchor_step_restarts),
                     max_iterations=int(anchor_step_iterations),
-                    method=str(solve_optimizer),
-                    spring_k_multiplier=float(spring_k_multiplier),
-                    use_flex=bool(use_flex),
-                    verbose=False,
-                    use_parallel=False,
-                    pointwise_residual_mode=str(pointwise_residual_mode),
-                    robust_debug=False,
-                    pointwise_filtering=bool(pointwise_filtering),
-                    pointwise_global_mad=bool(pointwise_global_mad),
-                    sweep_wise_filtering=bool(sweep_wise_filtering),
-                    sweep_metric=str(sweep_metric),
-                    use_noise_mean=bool(use_noise_mean),
-                    sigma_source=str(sigma_source),
-                    generate_report=False,
-                    residuals_csv=None,
-                    initial_guess=anchors_step_seed,
-                    low_anchor_z=low_anchor_z,
+                    robust_debug_enabled=False,
                 )
+                if isinstance(cal_step, dict):
+                    anchor_step_solver = cal_step.get("solver")
                 cand_anchors = np.asarray(cal_step.get("anchors"), dtype=float)
                 if cand_anchors.ndim == 2 and cand_anchors.shape == anchors_current.shape and np.all(
                     np.isfinite(cand_anchors)
@@ -540,6 +525,7 @@ def run_alternating_refinement(
                     if np.isfinite(anchor_step_trigger_threshold)
                     else None
                 ),
+                "anchor_step_solver": (None if anchor_step_solver is None else str(anchor_step_solver)),
                 "anchor_step_success": bool(anchor_step_success),
                 "anchor_cost": float(anchor_cost) if np.isfinite(anchor_cost) else None,
                 "cal_step_success": bool(anchor_step_success),

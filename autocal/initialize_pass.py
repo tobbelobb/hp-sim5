@@ -4,8 +4,6 @@ from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 import numpy as np
 
-from autocal._autocal_common import calibrate_elliptical
-
 
 def run_initialize_pass(
     *,
@@ -45,6 +43,7 @@ def run_initialize_pass(
     ellipse_prefit_score: Callable[[dict], Tuple[float, int, int]],
     coordinate_descent_spool: Callable[..., Tuple[np.ndarray, Dict[str, object]]],
     spool_prefit_seed_candidates: Callable[..., Sequence[np.ndarray]],
+    solve_anchor_proposal: Callable[..., Dict[str, object]],
 ) -> Dict[str, object]:
     radii_current = np.asarray(base, dtype=float).copy()
     if initial_radii_mm is not None:
@@ -327,6 +326,9 @@ def run_initialize_pass(
         "candidate_cost": None,
         "accepted_cost": None,
         "accepted_alpha": 0.0,
+        "objective_id": None,
+        "objective_name": None,
+        "solver": None,
     }
     if bool(enable_bootstrap_anchor_refresh):
         try:
@@ -340,30 +342,17 @@ def run_initialize_pass(
                 bootstrap_anchor_refresh["start_cost"] = float(anchor_refresh_start_cost)
                 anchor_step_restarts = max(1, min(2, int(solve_restarts)))
                 anchor_step_iterations = max(40, min(160, int(solve_iterations)))
-                cal_bootstrap = calibrate_elliptical(
+                cal_bootstrap = solve_anchor_proposal(
                     transformed_bootstrap,
-                    output_path=None,
-                    residual_threshold=float(residual_threshold),
+                    np.asarray(anchors_current, dtype=float),
                     num_restarts=int(anchor_step_restarts),
                     max_iterations=int(anchor_step_iterations),
-                    method=str(solve_optimizer),
-                    spring_k_multiplier=float(spring_k_multiplier),
-                    use_flex=bool(use_flex),
-                    verbose=False,
-                    use_parallel=False,
-                    pointwise_residual_mode=str(pointwise_residual_mode),
-                    robust_debug=False,
-                    pointwise_filtering=bool(pointwise_filtering),
-                    pointwise_global_mad=bool(pointwise_global_mad),
-                    sweep_wise_filtering=bool(sweep_wise_filtering),
-                    sweep_metric=str(sweep_metric),
-                    use_noise_mean=bool(use_noise_mean),
-                    sigma_source=str(sigma_source),
-                    generate_report=False,
-                    residuals_csv=None,
-                    initial_guess=anchors_current,
-                    low_anchor_z=low_anchor_z,
+                    robust_debug_enabled=False,
                 )
+                if isinstance(cal_bootstrap, dict):
+                    bootstrap_anchor_refresh["objective_id"] = cal_bootstrap.get("objective_id")
+                    bootstrap_anchor_refresh["objective_name"] = cal_bootstrap.get("objective_name")
+                    bootstrap_anchor_refresh["solver"] = cal_bootstrap.get("solver")
                 anchors_bootstrap_candidate = np.asarray(cal_bootstrap.get("anchors"), dtype=float)
                 if (
                     anchors_bootstrap_candidate.ndim == 2

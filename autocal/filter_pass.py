@@ -2,6 +2,14 @@ from __future__ import annotations
 
 import importlib.util
 
+from autocal.theoretical_ellipse import (
+    anchor_opt_vec_to_matrix,
+    anchors_matrix_to_opt_vec,
+    canonicalize_anchor_gauge,
+    get_anchor_opt_bounds,
+    predict_ellipse_coefficients,
+)
+
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.alternating_refinement import run_alternating_refinement
 from autocal.initialize_pass import run_initialize_pass
@@ -193,6 +201,252 @@ def simulation_position_objective_score(
     if valid_points <= 0:
         return float("inf"), 0, int(invalid_points)
     return float(total_cost + 100.0 * float(invalid_points)), int(valid_points), int(invalid_points)
+
+
+def ellipse_prediction_objective_score(
+    transformed_dataset: dict,
+    anchors_eval: np.ndarray,
+    *,
+    cost_fn: Optional[EllipseCostFunction],
+) -> Tuple[float, int, int]:
+    _ = transformed_dataset
+    anchors_arr = np.asarray(anchors_eval, dtype=float)
+    if anchors_arr.ndim != 2 or anchors_arr.shape[0] <= 0 or not np.all(np.isfinite(anchors_arr)):
+        return float("inf"), 0, 0
+    if cost_fn is None:
+        return float("inf"), 0, 0
+
+    sweeps = getattr(cost_fn, "sweeps", None)
+    if not isinstance(sweeps, list) or len(sweeps) <= 0:
+        return float("inf"), 0, 0
+
+    total_cost = 0.0
+    valid_sweeps = 0
+    invalid_sweeps = 0
+    dimensions = int(getattr(cost_fn, "dimensions", anchors_arr.shape[1] if anchors_arr.ndim == 2 else 0))
+
+    for sweep in sweeps:
+        try:
+            (
+                fixed_lengths_abs,
+                _drive_idx,
+                _sensor_idx,
+                l_drive_abs,
+                l_sensor_abs,
+                _sweep_id,
+                violation_penalty,
+                _sigma_drive_mm,
+                _sigma_sensor_mm,
+            ) = cost_fn._reconstruct_lengths(sweep, anchors_arr)
+            (
+                fixed_indices,
+                _fixed_deltas,
+                drive_idx2,
+                sensor_idx2,
+                _l_drive,
+                _l_sensor,
+                _packed_sweep_id,
+                _packed_sigma_drive_mm,
+                _packed_sigma_sensor_mm,
+            ) = cost_fn._extract_sweep_arrays(sweep)
+            fit = fit_ellipse_from_sweep(
+                np.asarray(l_drive_abs, dtype=float),
+                np.asarray(l_sensor_abs, dtype=float),
+                residual_threshold=float("inf"),
+                min_points=5,
+                square_inputs=True,
+            )
+            coeffs_pred = predict_ellipse_coefficients(
+                anchors_arr,
+                [int(v) for v in fixed_indices],
+                [float(v) for v in fixed_lengths_abs],
+                int(drive_idx2),
+                int(sensor_idx2),
+                dimensions=int(dimensions),
+            )
+            coeffs_obs = np.asarray(getattr(fit, "coefficients", None), dtype=float).reshape(-1)
+            if (
+                coeffs_pred is None
+                or coeffs_obs.size != 6
+                or np.asarray(coeffs_pred, dtype=float).reshape(-1).size != 6
+                or not np.all(np.isfinite(coeffs_obs))
+                or not np.all(np.isfinite(np.asarray(coeffs_pred, dtype=float)))
+                or not bool(getattr(fit, "valid", False))
+            ):
+                invalid_sweeps += 1
+                continue
+            coeffs_pred_arr = np.asarray(coeffs_pred, dtype=float).reshape(-1)
+            obs_scale = float(np.linalg.norm(coeffs_obs))
+            pred_scale = float(np.linalg.norm(coeffs_pred_arr))
+            if (not np.isfinite(obs_scale)) or (not np.isfinite(pred_scale)) or obs_scale <= 0.0 or pred_scale <= 0.0:
+                invalid_sweeps += 1
+                continue
+            obs_norm = coeffs_obs / obs_scale
+            pred_norm = coeffs_pred_arr / pred_scale
+            mismatch = min(
+                float(np.linalg.norm(obs_norm - pred_norm)),
+                float(np.linalg.norm(obs_norm + pred_norm)),
+            )
+            if not np.isfinite(mismatch):
+                invalid_sweeps += 1
+                continue
+            total_cost += float(2.0 * (np.sqrt(1.0 + mismatch * mismatch) - 1.0))
+            total_cost += float(max(float(violation_penalty), 0.0))
+            valid_sweeps += 1
+        except Exception:
+            invalid_sweeps += 1
+
+    if valid_sweeps <= 0:
+        return float("inf"), 0, int(invalid_sweeps)
+    return float(total_cost + 4.0 * float(invalid_sweeps)), int(valid_sweeps), int(invalid_sweeps)
+
+
+def _normalize_anchor_solver_method(method: str) -> str:
+    method_raw = str(method or "L-BFGS-B")
+    method_norm = method_raw.strip().replace("_", "-").lower()
+    if method_norm in ("slsqp", "sqp"):
+        return "L-BFGS-B"
+    if method_norm == "l-bfgs-b":
+        return "L-BFGS-B"
+    return str(method_raw)
+
+
+def _solve_local_anchor_objective(
+    transformed_dataset: dict,
+    initial_guess: np.ndarray,
+    *,
+    objective_id: int,
+    objective_name: str,
+    objective_cost: Callable[[dict, np.ndarray], float],
+    solve_restarts: int,
+    solve_iterations: int,
+    solve_optimizer: str,
+    low_anchor_z: Optional[float],
+) -> Optional[Dict[str, object]]:
+    try:
+        machine_type = _require_machine_type(
+            transformed_dataset,
+            context="anchor proposal dataset",
+        )
+    except Exception:
+        return None
+
+    anchors_seed = np.asarray(initial_guess, dtype=float)
+    if anchors_seed.ndim != 2 or anchors_seed.shape[0] <= 0 or not np.all(np.isfinite(anchors_seed)):
+        return None
+    num_anchors = int(anchors_seed.shape[0])
+    dimensions = int(anchors_seed.shape[1]) if anchors_seed.shape[1] > 0 else 0
+    if dimensions <= 0:
+        return None
+
+    try:
+        lb, ub = get_anchor_opt_bounds(
+            machine_type,
+            int(num_anchors),
+            int(dimensions),
+            low_anchor_z,
+        )
+        x0 = np.clip(
+            np.asarray(
+                anchors_matrix_to_opt_vec(anchors_seed, machine_type, low_anchor_z),
+                dtype=float,
+            ).reshape(-1),
+            lb,
+            ub,
+        )
+    except Exception:
+        return None
+    if x0.size <= 0:
+        return None
+
+    method_norm = _normalize_anchor_solver_method(str(solve_optimizer))
+    bounds = list(zip(lb.tolist(), ub.tolist()))
+    rng = np.random.default_rng(0)
+    guesses = [np.asarray(x0, dtype=float)]
+    span = np.maximum(ub - lb, 1.0)
+    while len(guesses) < max(1, int(solve_restarts)):
+        jitter = rng.normal(loc=0.0, scale=0.05 * span, size=x0.shape)
+        guesses.append(np.clip(np.asarray(x0 + jitter, dtype=float), lb, ub))
+
+    objective_cache: Dict[Tuple[float, ...], float] = {}
+    eval_counter = 0
+
+    def _objective(anchor_vec: np.ndarray) -> float:
+        nonlocal eval_counter
+        clipped = np.clip(np.asarray(anchor_vec, dtype=float).reshape(-1), lb, ub)
+        key = tuple(float(v) for v in np.round(clipped, decimals=9).tolist())
+        cached = objective_cache.get(key)
+        if cached is not None and np.isfinite(cached):
+            return float(cached)
+        eval_counter += 1
+        try:
+            anchors_try = anchor_opt_vec_to_matrix(
+                clipped,
+                machine_type,
+                int(num_anchors),
+                int(dimensions),
+                low_anchor_z,
+            )
+            value = float(objective_cost(transformed_dataset, anchors_try))
+        except Exception:
+            value = float("inf")
+        if not np.isfinite(value):
+            value = 1e12
+        objective_cache[key] = float(value)
+        return float(value)
+
+    best_result = None
+    best_fun = float("inf")
+    best_x = np.asarray(x0, dtype=float)
+    total_nit = 0
+    for guess in guesses:
+        try:
+            result = minimize(
+                _objective,
+                np.asarray(guess, dtype=float),
+                method=str(method_norm),
+                bounds=bounds,
+                options={"maxiter": int(max(1, solve_iterations))},
+            )
+        except Exception:
+            continue
+        result_x = np.clip(np.asarray(getattr(result, "x", guess), dtype=float).reshape(-1), lb, ub)
+        result_fun = float(_objective(result_x))
+        total_nit += int(getattr(result, "nit", 0) or 0)
+        if result_fun + 1e-12 < best_fun:
+            best_fun = float(result_fun)
+            best_x = np.asarray(result_x, dtype=float)
+            best_result = result
+
+    if not np.isfinite(best_fun):
+        return None
+
+    try:
+        anchors_best = anchor_opt_vec_to_matrix(
+            best_x,
+            machine_type,
+            int(num_anchors),
+            int(dimensions),
+            low_anchor_z,
+        )
+        anchors_best = canonicalize_anchor_gauge(
+            machine_type,
+            np.asarray(anchors_best, dtype=float),
+            low_anchor_z=low_anchor_z,
+        )
+    except Exception:
+        return None
+
+    return {
+        "anchors": np.asarray(anchors_best, dtype=float),
+        "cost": float(best_fun),
+        "success": bool(best_result is not None and getattr(best_result, "success", True)),
+        "objective_id": int(objective_id),
+        "objective_name": str(objective_name),
+        "solver": "scheduled_local_objective",
+        "nfev": int(eval_counter),
+        "nit": int(total_nit),
+    }
 
 
 def estimate_effective_radii_with_spool_model(
@@ -1165,6 +1419,88 @@ def estimate_effective_radii_with_spool_model(
                 return float(score)
         return float(_data_cost(transformed_dataset, anchors_eval))
 
+    def _anchor_objective_cost(
+        transformed_dataset: dict,
+        anchors_eval: np.ndarray,
+    ) -> float:
+        if int(objective_id) == 0:
+            score, valid_sweeps, _invalid_sweeps = ellipse_prediction_objective_score(
+                transformed_dataset,
+                anchors_eval,
+                cost_fn=_cached_cost_fn(transformed_dataset),
+            )
+            if valid_sweeps > 0 and np.isfinite(score):
+                return float(score)
+        if int(objective_id) == 2:
+            score, valid_points, _invalid_points = simulation_position_objective_score(
+                transformed_dataset,
+                anchors_eval,
+                use_noise_mean=bool(use_noise_mean),
+            )
+            if valid_points > 0 and np.isfinite(score):
+                return float(score)
+        return float(_data_cost(transformed_dataset, anchors_eval))
+
+    def _solve_anchor_proposal(
+        transformed_dataset: dict,
+        initial_guess: np.ndarray,
+        *,
+        num_restarts: int,
+        max_iterations: int,
+        robust_debug_enabled: bool,
+    ) -> Dict[str, object]:
+        if int(objective_id) != 1:
+            local_restarts = max(1, int(num_restarts))
+            local_iterations = max(1, int(max_iterations))
+            if int(objective_id) == 0:
+                local_restarts = min(local_restarts, 1)
+                local_iterations = min(local_iterations, 40)
+            elif int(objective_id) == 2:
+                local_restarts = 1
+                local_iterations = min(local_iterations, 20)
+            local_result = _solve_local_anchor_objective(
+                transformed_dataset,
+                initial_guess,
+                objective_id=int(objective_id),
+                objective_name=str(objective_name),
+                objective_cost=_anchor_objective_cost,
+                solve_restarts=int(local_restarts),
+                solve_iterations=int(local_iterations),
+                solve_optimizer=str(solve_optimizer),
+                low_anchor_z=low_anchor_z,
+            )
+            if isinstance(local_result, dict):
+                return local_result
+        result = calibrate_elliptical(
+            transformed_dataset,
+            output_path=None,
+            residual_threshold=float(residual_threshold),
+            num_restarts=int(num_restarts),
+            max_iterations=int(max_iterations),
+            method=str(solve_optimizer),
+            spring_k_multiplier=float(spring_k_multiplier),
+            use_flex=bool(use_flex),
+            verbose=False,
+            use_parallel=False,
+            pointwise_residual_mode=str(pointwise_residual_mode),
+            robust_debug=bool(robust_debug_enabled),
+            pointwise_filtering=bool(pointwise_filtering),
+            pointwise_global_mad=bool(pointwise_global_mad),
+            sweep_wise_filtering=bool(sweep_wise_filtering),
+            sweep_metric=str(sweep_metric),
+            use_noise_mean=bool(use_noise_mean),
+            sigma_source=str(sigma_source),
+            generate_report=False,
+            residuals_csv=None,
+            initial_guess=np.asarray(initial_guess, dtype=float),
+            low_anchor_z=low_anchor_z,
+        )
+        result_out = dict(result) if isinstance(result, dict) else {}
+        result_out["objective_id"] = int(objective_id)
+        result_out["objective_name"] = str(objective_name)
+        result_out["solver"] = "ellipse_solver"
+        return result_out
+
     def _extract_noise_metrics(cal_result: object) -> Optional[dict]:
         if not isinstance(cal_result, dict):
             return None
@@ -1350,6 +1686,7 @@ def estimate_effective_radii_with_spool_model(
         ellipse_prefit_score=_ellipse_prefit_score,
         coordinate_descent_spool=_coordinate_descent_spool,
         spool_prefit_seed_candidates=_spool_prefit_seed_candidates,
+        solve_anchor_proposal=_solve_anchor_proposal,
     )
     x_current = np.asarray(init_result["x_current"], dtype=float)
     radii_current = np.asarray(init_result["radii_current"], dtype=float)
@@ -1404,6 +1741,7 @@ def estimate_effective_radii_with_spool_model(
         extract_noise_metrics=_extract_noise_metrics,
         spool_anchor_step_gate=_spool_anchor_step_gate,
         uniform_radius_scale=_uniform_radius_scale,
+        solve_anchor_proposal=_solve_anchor_proposal,
     )
     best = refinement_result["best"]
     history = list(refinement_result["history"])

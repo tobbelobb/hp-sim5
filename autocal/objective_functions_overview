@@ -27,7 +27,10 @@ Recommended terminology:
 3. Bootstrap anchor refresh
 
 - This is a one-time anchor recalibration before the main alternating rounds.
-- Proposal generation uses `calibrate_elliptical(...)`.
+- Proposal generation now follows the current `--objective-schedule` entry:
+  - objective `0`: predicted-ellipse vs data-fit ellipse mismatch
+  - objective `1`: `calibrate_elliptical(...)` / pointwise forward-model objective
+  - objective `2`: position-reconstruction / forward-transform spread
 - Acceptance is by `_data_cost(...)` only, tested at `alpha in {1.0, 0.5, 0.25}`.
 
 4. Spool step
@@ -39,9 +42,12 @@ Recommended terminology:
 5. Anchor proposal solve
 
 - Spool parameters are fixed.
-- Proposal generation uses `calibrate_elliptical(...)`.
-- Objective optimized: the ellipse solver's own internal objective, not
-  `_data_cost + prior`.
+- Proposal generation follows the current `--objective-schedule` entry:
+  - objective `0`: predicted-ellipse vs data-fit ellipse mismatch
+  - objective `1`: `calibrate_elliptical(...)` / pointwise forward-model objective
+  - objective `2`: position-reconstruction / forward-transform spread
+- Final acceptance is still separate from proposal generation and still uses the
+  rank-first comparator with `_data_cost + prior` as tie-break.
 
 6. Anchor acceptance / rollback
 
@@ -131,7 +137,7 @@ Do spool parameters and anchors optimize the same metric?
 
 - No.
 - Spool step optimizes `_data_cost + prior`.
-- Anchor proposal solve optimizes the ellipse solver's internal objective.
+- Anchor proposal solve optimizes the schedule-selected anchor objective.
 - Final acceptance is by rank comparator with total-cost tie-break.
 
 Important current detail about `fit_structure`
