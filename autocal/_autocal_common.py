@@ -3994,25 +3994,27 @@ def _fit_score_ui_from_history_rank_score(
         return float(fallback) if fallback is not None and np.isfinite(fallback) else float("nan")
 
     rank = float(history_rank)
-    if rank <= float(_FULL_AUTO_HISTORY_UI_RANK_POINTS[0]):
-        return float(_FULL_AUTO_HISTORY_UI_SCORE_POINTS[0])
-    if rank >= float(_FULL_AUTO_HISTORY_UI_RANK_POINTS[-1]):
+    xp = _FULL_AUTO_HISTORY_UI_RANK_POINTS
+    yp = _FULL_AUTO_HISTORY_UI_SCORE_LOG_POINTS
+    if rank <= float(xp[0]):
+        x0 = float(xp[0])
+        x1 = float(xp[1])
+        y0 = float(yp[0])
+        y1 = float(yp[1])
+        slope = (y1 - y0) / max(x1 - x0, 1e-12)
+        mapped_log = float(y0 + slope * (rank - x0))
+    elif rank >= float(xp[-1]):
         return float(_FULL_AUTO_HISTORY_UI_SCORE_POINTS[-1])
+    else:
+        mapped_log = float(np.interp(rank, xp, yp))
 
-    mapped = np.expm1(
-        np.interp(
-            rank,
-            _FULL_AUTO_HISTORY_UI_RANK_POINTS,
-            _FULL_AUTO_HISTORY_UI_SCORE_LOG_POINTS,
-        )
-    )
-    return float(
-        np.clip(
-            mapped,
-            float(_FULL_AUTO_HISTORY_UI_SCORE_POINTS[0]),
-            float(_FULL_AUTO_HISTORY_UI_SCORE_POINTS[-1]),
-        )
-    )
+    mapped = float(np.expm1(mapped_log))
+    if mapped < 0.0:
+        fallback = _float_or_none(fallback_score_ui)
+        if fallback is not None and np.isfinite(fallback) and fallback >= 0.0:
+            return float(fallback)
+        return 0.0
+    return float(min(mapped, float(_FULL_AUTO_HISTORY_UI_SCORE_POINTS[-1])))
 
 
 def _full_auto_display_fit_score_ui(

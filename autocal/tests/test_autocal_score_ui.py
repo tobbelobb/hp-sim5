@@ -222,6 +222,21 @@ def test_full_auto_history_rank_score_maps_to_interpretable_fit_score_ui():
     )
 
 
+def test_full_auto_history_rank_score_below_curve_min_does_not_clip_to_point_six():
+    score_a = ac._fit_score_ui_from_history_rank_score(
+        3.855,
+        fallback_score_ui=0.02733,
+    )
+    score_b = ac._fit_score_ui_from_history_rank_score(
+        3.648,
+        fallback_score_ui=0.0306,
+    )
+
+    assert 0.0 <= score_a < 0.6
+    assert 0.0 <= score_b < 0.6
+    assert score_b < score_a
+
+
 def test_rank_coverage_adjustment_rewards_more_retained_observations():
     adjust_base, info_base = ac._rank_coverage_adjustment_from_noise_metrics(
         {
