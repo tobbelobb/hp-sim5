@@ -425,6 +425,7 @@ def full_auto_loop(
                     candidate_rank,
                     iteration_index=int(candidate.get("iteration", 1)),
                     coverage_adjust=_float_or_none(candidate.get("rank_coverage_adjust")),
+                    extra_adjust=_float_or_none(candidate.get("history_extra_adjust")),
                 )
                 rel_std = _float_or_none(candidate.get("rel_std"))
                 cost = _float_or_none(candidate.get("cost"))
@@ -452,6 +453,7 @@ def full_auto_loop(
                     f"rank={_fmt_float(_float_or_none(candidate.get('rank_score')))} "
                     f"iteration_adjust={_fmt_float(info.get('iteration_adjust'))} "
                     f"coverage_adjust={_fmt_float(info.get('coverage_adjust'))} "
+                    f"extra_adjust={_fmt_float(info.get('extra_adjust'))} "
                     f"selection_score={_fmt_float(info.get('selection_score'))}"
                 )
             summary_meta = dict(chosen.get("summary_meta") or {})
@@ -459,6 +461,7 @@ def full_auto_loop(
                 {
                     "history_iteration_adjust": chosen_info.get("iteration_adjust"),
                     "history_coverage_adjust": chosen_info.get("coverage_adjust"),
+                    "history_extra_adjust": chosen_info.get("extra_adjust"),
                     "history_selection_score": chosen_info.get("selection_score"),
                 }
             )
@@ -480,6 +483,7 @@ def full_auto_loop(
                 candidate_rank,
                 iteration_index=int(candidate.get("iteration", 1)),
                 coverage_adjust=_float_or_none(candidate.get("rank_coverage_adjust")),
+                extra_adjust=_float_or_none(candidate.get("history_extra_adjust")),
             )
             rel_std = _float_or_none(candidate.get("rel_std"))
             cost = _float_or_none(candidate.get("cost"))
@@ -519,6 +523,17 @@ def full_auto_loop(
             _log_line(f"\n; === full-auto iteration {step}/{max_steps} dataset={work_path} ===")
             _log_console("")
             _log_console(f"; === full-auto iteration {step}/{max_steps} dataset={work_path} ===")
+            step_dataset = _load_json(work_path)
+            step_history_extra_adjust = _full_auto_hangprinter_sweep_penalty(
+                step_dataset.get("machine_type") if isinstance(step_dataset, dict) else None,
+                step_dataset.get("dimensions") if isinstance(step_dataset, dict) else None,
+                (
+                    len(step_dataset.get("sweeps", []))
+                    if isinstance(step_dataset, dict)
+                    and isinstance(step_dataset.get("sweeps"), list)
+                    else None
+                ),
+            )
             collector_output = work_path.with_name(f"{work_path.stem}.new_{step:03d}.json")
             run_results: List[Dict[str, object]] = []
 
@@ -818,6 +833,7 @@ def full_auto_loop(
                 selected_rank_score,
                 iteration_index=step,
                 coverage_adjust=_float_or_none(metrics.get("rank_coverage_adjust")),
+                extra_adjust=float(step_history_extra_adjust),
             )
             selected_fit_score_ui = _full_auto_display_fit_score_ui(
                 score_basis=selected_score_basis,
@@ -890,6 +906,7 @@ def full_auto_loop(
                         "flags": selected_flags,
                         "rank_score": selected_rank_score,
                         "history_rank_score": selected_history_rank_score,
+                        "history_extra_adjust": float(step_history_extra_adjust),
                         "rank_coverage_adjust": metrics.get("rank_coverage_adjust"),
                         "score_ui": selected_fit_score_ui,
                         "raw_fit_score_ui": selected_raw_fit_score_ui,
@@ -904,6 +921,7 @@ def full_auto_loop(
                             "score_ui": selected_fit_score_ui,
                             "raw_fit_score_ui": selected_raw_fit_score_ui,
                             "history_rank_score": selected_history_rank_score,
+                            "history_extra_adjust": float(step_history_extra_adjust),
                             "score_basis": selected_score_basis,
                             "cost": selected_cost,
                             "rel_std": selected_rel_std,
@@ -943,6 +961,7 @@ def full_auto_loop(
                 f"rank_score={_fmt_float(selected_rank_score)} "
                 f"iteration_adjust={_fmt_float(selected_history_rank_info.get('iteration_adjust'))} "
                 f"coverage_adjust={_fmt_float(selected_history_rank_info.get('coverage_adjust'))} "
+                f"extra_adjust={_fmt_float(selected_history_rank_info.get('extra_adjust'))} "
                 f"history_rank_score={_fmt_float(selected_history_rank_score)}"
             )
             _log_line(selected_summary_line)

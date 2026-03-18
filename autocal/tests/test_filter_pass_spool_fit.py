@@ -1813,6 +1813,171 @@ def test_scale_fix_1_scales_anchor_seed_for_first_anchor_step(monkeypatch):
     assert history[0].get("scale_fix_1_applied") is True
 
 
+def test_hangprinter_global_radius_probe_escapes_bound_pinned_spool_step(monkeypatch):
+    base = np.array([39.0, 39.0, 39.0, 39.0], dtype=float)
+    target_r = 39.25
+
+    def fake_build_spool_model_params(
+        dataset,
+        *,
+        base_radii_mm,
+        modeled_radii_mm,
+        modeled_buildup_factor,
+        spool_to_motor_gearing_factor,
+        mechanical_advantage,
+        lines_per_spool,
+        base_buildup_factor=None,
+        theta0_mode="zero",
+        prefer_zero_tension_angles=False,
+    ):
+        _ = (
+            dataset,
+            base_radii_mm,
+            spool_to_motor_gearing_factor,
+            mechanical_advantage,
+            lines_per_spool,
+            base_buildup_factor,
+            theta0_mode,
+            prefer_zero_tension_angles,
+        )
+        return {
+            "radii_mm": np.asarray(modeled_radii_mm, dtype=float).reshape(-1),
+            "buildup_factor": np.asarray(modeled_buildup_factor, dtype=float).reshape(-1),
+        }
+
+    def fake_dataset_with_modeled_lengths(
+        dataset,
+        spool_params,
+        *,
+        prefer_zero_tension_angles=False,
+    ):
+        _ = prefer_zero_tension_angles
+        return {
+            "machine_type": str(dataset.get("machine_type", "hangprinter_4")),
+            "num_anchors": int(dataset.get("num_anchors", 4)),
+            "dimensions": int(dataset.get("dimensions", 3)),
+            "sweeps": [],
+            "_spool_r": float(np.median(np.asarray(spool_params["radii_mm"], dtype=float))),
+        }
+
+    def _proxy_cost(dataset, anchors) -> float:
+        r = float(dataset.get("_spool_r", 39.0))
+        anchor_mean = float(np.mean(np.asarray(anchors, dtype=float)))
+        return float(100000.0 * (anchor_mean - (r / 39.0)) ** 2.0 + 10.0 * (r - target_r) ** 2.0)
+
+    def fake_calibrate_elliptical(dataset_or_path, **kwargs):
+        _ = dataset_or_path
+        return {"anchors": np.asarray(kwargs.get("initial_guess"), dtype=float), "cost": 0.0}
+
+    def fake_evaluate_cost_at_anchors(dataset, anchors, **kwargs):
+        _ = kwargs
+        return _proxy_cost(dataset, anchors)
+
+    class FakeCostFn:
+        def __init__(self, dataset):
+            self.dataset = dataset
+
+        def evaluate(self, anchor_vec):
+            anchors = np.asarray(anchor_vec, dtype=float).reshape(4, 3)
+            return _proxy_cost(self.dataset, anchors)
+
+        def evaluate_detailed(self, anchor_vec):
+            total = float(self.evaluate(anchor_vec))
+            return SimpleNamespace(
+                total_cost=total,
+                noise_metrics={
+                    "chi2_red_rescored_tau_3bin_debiased": total,
+                    "chi2_red": total,
+                    "n_obs_trimmed": 60.0,
+                    "tau_mad_mm": 0.6,
+                    "params": 6,
+                    "sigma_model_mm": 1.0,
+                },
+            )
+
+        def pointwise_residual_rows(self, anchor_vec):
+            _ = anchor_vec
+            return []
+
+    def fake_coordinate_descent_spool(x0, *, lo, hi, kinds, max_iters, objective):
+        _ = (lo, hi, kinds, max_iters)
+        current = np.asarray(x0, dtype=float).reshape(-1)
+        candidate = np.asarray([target_r], dtype=float)
+        current_cost = float(objective(current))
+        candidate_cost = float(objective(candidate))
+        if np.isfinite(candidate_cost) and candidate_cost + 1e-12 < current_cost:
+            best = candidate
+        else:
+            best = current
+        return np.asarray(best, dtype=float), {
+            "success": True,
+            "message": "stubbed optimizer",
+            "nfev": 2,
+            "nit": 1,
+            "step_final": [],
+        }
+
+    _patch_runtime_attr(monkeypatch, "build_spool_model_params", fake_build_spool_model_params)
+    _patch_runtime_attr(monkeypatch, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
+    _patch_runtime_attr(monkeypatch, "calibrate_elliptical", fake_calibrate_elliptical)
+    _patch_runtime_attr(monkeypatch, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
+    monkeypatch.setattr(ac, "_build_ellipse_cost_function", lambda ds, **_kwargs: FakeCostFn(ds))
+    monkeypatch.setattr(ac, "_compute_tau_mad_rescore_from_rows", lambda *_args, **_kwargs: {})
+    monkeypatch.setattr(ac, "_coordinate_descent_spool", fake_coordinate_descent_spool)
+
+    dataset = {
+        "machine_type": "hangprinter_4",
+        "num_anchors": 4,
+        "dimensions": 3,
+        "sweeps": [],
+    }
+    seed_anchors = np.ones((4, 3), dtype=float)
+    eff_r, fit_anchors, _spool_params, _transformed, fit_info = ac._estimate_effective_radii_with_spool_model(
+        dataset,
+        seed_anchors,
+        find_radii_mode="global",
+        find_buildup_mode="off",
+        base_radii_mm=base,
+        modeled_buildup_factor=np.zeros(4, dtype=float),
+        spool_to_motor_gearing_factor=np.ones(4, dtype=float),
+        mechanical_advantage=np.ones(4, dtype=float),
+        lines_per_spool=np.ones(4, dtype=float),
+        r0_bounds=(39.0, 40.0),
+        b_bounds=None,
+        r0_prior_sigma_mm=None,
+        b_prior_sigma=None,
+        spool_outer_iters=1,
+        spool_inner_iters=1,
+        theta0_mode="zero",
+        solve_restarts=1,
+        solve_iterations=10,
+        solve_optimizer="L-BFGS-B",
+        residual_threshold=1.0,
+        spring_k_multiplier=1.0,
+        use_flex=False,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=False,
+        pointwise_global_mad=False,
+        sweep_wise_filtering=False,
+        sweep_metric="mad",
+        use_noise_mean=False,
+        sigma_source="auto",
+        robust_debug=False,
+        scale_fix_levels=(3,),
+        enable_prefit=False,
+        enable_bootstrap_anchor_refresh=False,
+    )
+
+    assert float(np.median(np.asarray(eff_r, dtype=float))) == pytest.approx(target_r, abs=1e-6)
+    assert float(np.mean(np.asarray(fit_anchors, dtype=float))) > 1.0
+    history = fit_info.get("history")
+    assert isinstance(history, list) and history
+    radius_probe = history[0].get("radius_anchor_probe", {})
+    assert radius_probe.get("attempted") is True
+    assert radius_probe.get("selected") is True
+    assert radius_probe.get("best_radius") == pytest.approx(target_r, abs=1e-6)
+
+
 def test_scale_fix_2_runs_final_uniform_scale_polish(monkeypatch):
     base = np.array([30.0, 30.0, 30.0], dtype=float)
 

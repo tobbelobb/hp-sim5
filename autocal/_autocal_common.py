@@ -4060,10 +4060,12 @@ def _full_auto_history_selection_score(
     iteration_index: int,
     coverage_adjust: Optional[float] = None,
     coverage_weight: float = _FULL_AUTO_HISTORY_COVERAGE_WEIGHT,
+    extra_adjust: float = 0.0,
 ) -> Tuple[float, Dict[str, Optional[float]]]:
     info: Dict[str, Optional[float]] = {
         "iteration_adjust": None,
         "coverage_adjust": None,
+        "extra_adjust": None,
         "selection_score": None,
     }
     rank = _float_or_none(rank_score)
@@ -4077,11 +4079,38 @@ def _full_auto_history_selection_score(
     if coverage is None or not np.isfinite(coverage):
         coverage = 0.0
 
-    selection_score = float(rank + iteration_adjust + float(coverage_weight) * coverage)
+    extra = _float_or_none(extra_adjust)
+    if extra is None or not np.isfinite(extra):
+        extra = 0.0
+
+    selection_score = float(rank + iteration_adjust + float(coverage_weight) * coverage + float(extra))
     info["iteration_adjust"] = float(iteration_adjust)
     info["coverage_adjust"] = float(coverage)
+    info["extra_adjust"] = float(extra)
     info["selection_score"] = float(selection_score)
     return float(selection_score), info
+
+
+def _full_auto_hangprinter_sweep_penalty(
+    machine_type: Optional[str],
+    dimensions: Optional[int],
+    sweep_count: Optional[int],
+) -> float:
+    machine_norm = _normalize_machine_type(machine_type)
+    if machine_norm != "hangprinter_4":
+        return 0.0
+    try:
+        dims = int(dimensions) if dimensions is not None else 0
+    except (TypeError, ValueError):
+        dims = 0
+    if dims != 3:
+        return 0.0
+    try:
+        sweeps = int(sweep_count) if sweep_count is not None else 0
+    except (TypeError, ValueError):
+        sweeps = 0
+    deficit = max(0, 5 - sweeps)
+    return float(0.65 * float(deficit))
 
 
 def _fit_score_ui_from_history_rank_score(
