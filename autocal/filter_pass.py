@@ -1710,12 +1710,6 @@ def estimate_effective_radii_with_spool_model(
         kinds=kinds,
         search_r=search_r,
         use_scale_fix_1=use_scale_fix_1,
-        use_global_radius_anchor_probe=bool(
-            search_r
-            and str(mode_r) == "global"
-            and machine_type_for_risk == "hangprinter_4"
-            and int(dimensions_for_risk or 0) == 3
-        ),
         outer_iters=outer_iters,
         inner_iters=inner_iters,
         solve_restarts=solve_restarts,

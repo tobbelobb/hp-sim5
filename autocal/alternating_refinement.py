@@ -21,7 +21,6 @@ def run_alternating_refinement(
     kinds: Sequence[str],
     search_r: bool,
     use_scale_fix_1: bool,
-    use_global_radius_anchor_probe: bool,
     outer_iters: int,
     inner_iters: int,
     solve_restarts: int,
@@ -338,133 +337,6 @@ def run_alternating_refinement(
                     accepted_anchors = np.asarray(anchors_try, dtype=float)
                     accepted_alpha = float(alpha)
 
-        radius_anchor_probe: Dict[str, object] = {
-            "attempted": False,
-            "selected": False,
-            "points": [],
-            "best_radius": None,
-        }
-        probe_candidate: Optional[Dict[str, object]] = None
-        if (
-            bool(use_global_radius_anchor_probe)
-            and bool(search_r)
-            and str(mode_r) == "global"
-            and x_opt.size > 0
-            and lo.size > 0
-            and hi.size > 0
-        ):
-            radius_anchor_probe["attempted"] = True
-            radius_value = float(np.asarray(x_opt, dtype=float).reshape(-1)[0])
-            radius_lo = float(np.asarray(lo, dtype=float).reshape(-1)[0])
-            radius_hi = float(np.asarray(hi, dtype=float).reshape(-1)[0])
-            radius_tol = 1e-9 * max(
-                1.0,
-                abs(float(radius_value)),
-                abs(float(radius_lo)),
-                abs(float(radius_hi)),
-            )
-            direction_target = None
-            if abs(float(radius_value) - float(radius_lo)) <= radius_tol and radius_hi > radius_lo + radius_tol:
-                direction_target = float(radius_hi)
-            elif abs(float(radius_value) - float(radius_hi)) <= radius_tol and radius_lo < radius_hi - radius_tol:
-                direction_target = float(radius_lo)
-            if direction_target is not None:
-                probe_points: list[float] = []
-                for frac in (0.25, 0.5):
-                    probe_radius = float(radius_value + (direction_target - radius_value) * float(frac))
-                    if (
-                        probe_radius <= radius_lo + radius_tol
-                        or probe_radius >= radius_hi - radius_tol
-                    ):
-                        continue
-                    if any(abs(probe_radius - prev) <= radius_tol for prev in probe_points):
-                        continue
-                    probe_points.append(float(probe_radius))
-                radius_anchor_probe["points"] = [float(v) for v in probe_points]
-                probe_restarts = 1
-                probe_iterations = max(20, min(80, int(anchor_step_iterations)))
-                probe_rank_score = float(accepted_rank_score)
-                probe_total_cost = float(accepted_total_cost)
-                for probe_radius in probe_points:
-                    try:
-                        x_probe = np.asarray(x_opt, dtype=float).reshape(-1).copy()
-                        x_probe[0] = float(probe_radius)
-                        radii_probe, buildup_probe = unpack_spool_opt_vector(
-                            x_probe,
-                            num_anchors=num_anchors,
-                            find_radii_mode=mode_r,
-                            find_buildup_mode=mode_b,
-                            fixed_radii_mm=base,
-                            fixed_buildup_factor=modeled_b,
-                        )
-                        spool_params_probe, transformed_probe = build_dataset_and_params(
-                            radii_probe,
-                            buildup_probe,
-                        )
-                        prior_probe = float(prior_cost(radii_probe, buildup_probe))
-                        scale_probe = uniform_radius_scale(radii_probe, radii_current)
-                        anchors_probe_seed = np.asarray(anchors_current, dtype=float)
-                        if scale_probe is not None and np.isfinite(float(scale_probe)):
-                            anchors_probe_seed = np.asarray(
-                                anchors_current * float(scale_probe),
-                                dtype=float,
-                            )
-                        cal_probe = solve_anchor_proposal(
-                            transformed_probe,
-                            anchors_probe_seed,
-                            num_restarts=int(probe_restarts),
-                            max_iterations=int(probe_iterations),
-                            robust_debug_enabled=False,
-                        )
-                        anchors_probe = np.asarray(
-                            cal_probe.get("anchors", anchors_probe_seed),
-                            dtype=float,
-                        )
-                        if (
-                            anchors_probe.ndim != 2
-                            or anchors_probe.shape != anchors_current.shape
-                            or not np.all(np.isfinite(anchors_probe))
-                        ):
-                            anchors_probe = np.asarray(anchors_probe_seed, dtype=float)
-                        noise_probe = extract_noise_metrics(cal_probe)
-                        cost_probe = float(data_cost(transformed_probe, anchors_probe))
-                        total_probe = (
-                            float(cost_probe + prior_probe)
-                            if np.isfinite(cost_probe) and np.isfinite(prior_probe)
-                            else float("inf")
-                        )
-                        if not np.isfinite(total_probe):
-                            continue
-                        rank_probe, rank_internal_probe = spool_rank_score(
-                            transformed_probe,
-                            anchors_probe,
-                            noise_metrics_hint=noise_probe,
-                        )
-                        if rank_better(rank_probe, total_probe, probe_rank_score, probe_total_cost):
-                            probe_rank_score = float(rank_probe)
-                            probe_total_cost = float(total_probe)
-                            probe_candidate = {
-                                "radii": np.asarray(radii_probe, dtype=float),
-                                "buildup": np.asarray(buildup_probe, dtype=float),
-                                "anchors": np.asarray(anchors_probe, dtype=float),
-                                "spool_params": spool_params_probe,
-                                "dataset": transformed_probe,
-                                "data_cost": float(cost_probe),
-                                "prior_cost": float(prior_probe),
-                                "rank_score": float(rank_probe),
-                                "rank_internal": (
-                                    None
-                                    if rank_internal_probe is None
-                                    else float(rank_internal_probe)
-                                ),
-                                "radius": float(probe_radius),
-                            }
-                    except Exception:
-                        continue
-                if probe_candidate is not None:
-                    radius_anchor_probe["selected"] = True
-                    radius_anchor_probe["best_radius"] = float(probe_candidate["radius"])
-
         radii_candidate = np.asarray(radii_opt, dtype=float)
         buildup_candidate = np.asarray(buildup_opt, dtype=float)
         anchors_candidate_final = np.asarray(accepted_anchors, dtype=float)
@@ -472,24 +344,6 @@ def run_alternating_refinement(
         transformed_candidate = transformed_opt
         candidate_data_cost = float(accepted_cost)
         candidate_prior_cost = float(spool_prior)
-        candidate_rank_score = float("inf")
-        candidate_rank_internal = None
-        candidate_update_label = "spool_only"
-        if accepted_alpha >= 1.0 - 1e-12:
-            candidate_update_label = "anchor_full"
-        elif accepted_alpha > 0.0:
-            candidate_update_label = "anchor_damped"
-        if probe_candidate is not None:
-            radii_candidate = np.asarray(probe_candidate["radii"], dtype=float)
-            buildup_candidate = np.asarray(probe_candidate["buildup"], dtype=float)
-            anchors_candidate_final = np.asarray(probe_candidate["anchors"], dtype=float)
-            spool_params_candidate = probe_candidate["spool_params"]
-            transformed_candidate = probe_candidate["dataset"]
-            candidate_data_cost = float(probe_candidate["data_cost"])
-            candidate_prior_cost = float(probe_candidate["prior_cost"])
-            candidate_rank_score = float(probe_candidate["rank_score"])
-            candidate_rank_internal = probe_candidate["rank_internal"]
-            candidate_update_label = "radius_anchor_probe"
         scale_fix3_info: Dict[str, object] = {
             "attempted": False,
             "success": False,
@@ -501,14 +355,11 @@ def run_alternating_refinement(
             if np.isfinite(candidate_data_cost) and np.isfinite(candidate_prior_cost)
             else float("inf")
         )
-        if not np.isfinite(candidate_rank_score):
-            candidate_rank_score, candidate_rank_internal = spool_rank_score(
-                transformed_candidate,
-                anchors_candidate_final,
-                noise_metrics_hint=(
-                    cal_step_noise_metrics if accepted_alpha >= 1.0 - 1e-12 else None
-                ),
-            )
+        candidate_rank_score, candidate_rank_internal = spool_rank_score(
+            transformed_candidate,
+            anchors_candidate_final,
+            noise_metrics_hint=(cal_step_noise_metrics if accepted_alpha >= 1.0 - 1e-12 else None),
+        )
 
         rollback = not rank_better(
             candidate_rank_score,
@@ -543,7 +394,12 @@ def run_alternating_refinement(
             model_rank_internal = (
                 None if candidate_rank_internal is None else float(candidate_rank_internal)
             )
-            accepted_update = str(candidate_update_label)
+            if accepted_alpha >= 1.0 - 1e-12:
+                accepted_update = "anchor_full"
+            elif accepted_alpha > 0.0:
+                accepted_update = "anchor_damped"
+            else:
+                accepted_update = "spool_only"
 
         model_total_cost = (
             float(model_cost + model_prior_cost)
@@ -653,7 +509,6 @@ def run_alternating_refinement(
                 "spool_data_cost_scale_seed": (
                     float(anchors_step_seed_cost) if np.isfinite(anchors_step_seed_cost) else None
                 ),
-                "radius_anchor_probe": dict(radius_anchor_probe),
                 "anchor_step_triggered": bool(run_anchor_step),
                 "anchor_step_trigger_reason": (
                     "spool_objective_improved"

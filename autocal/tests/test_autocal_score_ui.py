@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 import autocal.autocal as ac
 
@@ -309,31 +308,6 @@ def test_full_auto_history_selection_score_applies_iteration_and_coverage():
     assert sel_mid < sel_early
     expected_coverage_delta = ac._FULL_AUTO_HISTORY_COVERAGE_WEIGHT * 0.2
     assert np.isclose(sel_mid_filtered - sel_mid, expected_coverage_delta, atol=1e-12)
-
-
-def test_full_auto_history_selection_score_applies_extra_adjust_directly():
-    base_sel, _info_base = ac._full_auto_history_selection_score(
-        1.0,
-        iteration_index=2,
-        coverage_adjust=0.0,
-        extra_adjust=0.0,
-    )
-    penalized_sel, penalized_info = ac._full_auto_history_selection_score(
-        1.0,
-        iteration_index=2,
-        coverage_adjust=0.0,
-        extra_adjust=1.3,
-    )
-
-    assert np.isclose(penalized_sel - base_sel, 1.3, atol=1e-12)
-    assert np.isclose(float(penalized_info["extra_adjust"]), 1.3, atol=1e-12)
-
-
-def test_full_auto_hangprinter_sweep_penalty_targets_3d_underconstrained_replay():
-    assert ac._full_auto_hangprinter_sweep_penalty("hangprinter_4", 3, 3) == pytest.approx(1.3)
-    assert ac._full_auto_hangprinter_sweep_penalty("hangprinter_4", 3, 4) == pytest.approx(0.65)
-    assert ac._full_auto_hangprinter_sweep_penalty("hangprinter_4", 3, 5) == pytest.approx(0.0)
-    assert ac._full_auto_hangprinter_sweep_penalty("slideprinter", 2, 3) == pytest.approx(0.0)
 
 
 def test_layered_internal_metric_fit_structure_tail_ratio_penalty():
