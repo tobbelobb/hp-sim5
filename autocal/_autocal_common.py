@@ -2254,6 +2254,103 @@ def _spool_prefit_seed_candidates(
     return candidates
 
 
+def _bounded_axis_line_search(
+    x: np.ndarray,
+    idx: int,
+    *,
+    lo: np.ndarray,
+    hi: np.ndarray,
+    step: float,
+    xatol: float,
+    objective: Any,
+    current_cost: float,
+) -> Tuple[float, float, int]:
+    x_arr = np.asarray(x, dtype=float).reshape(-1)
+    xi = float(x_arr[idx])
+    lo_i = float(lo[idx])
+    hi_i = float(hi[idx])
+    radius = float(max(step, 0.0))
+    left = float(max(lo_i, xi - radius))
+    right = float(min(hi_i, xi + radius))
+    min_width = float(max(xatol, 1e-12))
+    if (not np.isfinite(left)) or (not np.isfinite(right)) or right - left <= min_width:
+        return float(xi), float(current_cost), 0
+
+    evals = 0
+    cache: Dict[float, float] = {}
+
+    def _eval_axis(value: float) -> float:
+        nonlocal evals
+        cand = float(np.clip(float(value), left, right))
+        key = float(np.round(cand, decimals=12))
+        cached = cache.get(key)
+        if cached is not None and np.isfinite(cached):
+            return float(cached)
+        x_try = x_arr.copy()
+        x_try[idx] = float(cand)
+        score = float(objective(x_try))
+        evals += 1
+        if not np.isfinite(score):
+            score = 1e12
+        cache[key] = float(score)
+        return float(score)
+
+    best_val = float(xi)
+    best_cost = float(current_cost)
+    cache[float(np.round(xi, decimals=12))] = float(best_cost)
+    if not np.isfinite(best_cost):
+        best_cost = float(_eval_axis(xi))
+
+    sample_points: List[float] = [float(xi)]
+    midpoint_points: set[float] = set()
+    if left < xi - 1e-12:
+        midpoint_left = float(np.round(0.5 * (left + xi), decimals=12))
+        midpoint_points.add(midpoint_left)
+        sample_points.extend([midpoint_left, float(left)])
+    if right > xi + 1e-12:
+        midpoint_right = float(np.round(0.5 * (xi + right), decimals=12))
+        midpoint_points.add(midpoint_right)
+        sample_points.extend([midpoint_right, float(right)])
+    sample_points = sorted({float(np.round(v, decimals=12)) for v in sample_points})
+
+    sample_scores: List[float] = []
+    best_sample_idx = 0
+    for sample_idx, cand in enumerate(sample_points):
+        score = float(_eval_axis(float(cand)))
+        sample_scores.append(float(score))
+        if np.isfinite(score) and score + 1e-12 < best_cost:
+            best_cost = float(score)
+            best_val = float(cand)
+            best_sample_idx = int(sample_idx)
+
+    best_sample_is_midpoint = float(np.round(best_val, decimals=12)) in midpoint_points
+    if (
+        best_sample_is_midpoint
+        and np.isfinite(best_cost)
+        and best_cost + 1e-12 < float(current_cost)
+    ):
+        lo_ref = float(sample_points[max(0, best_sample_idx - 1)])
+        hi_ref = float(sample_points[min(len(sample_points) - 1, best_sample_idx + 1)])
+        if hi_ref - lo_ref > min_width:
+            try:
+                result = minimize_scalar(
+                    lambda value: float(_eval_axis(float(value))),
+                    bounds=(float(lo_ref), float(hi_ref)),
+                    method="bounded",
+                    options={"xatol": float(min_width), "maxiter": 40},
+                )
+                if bool(getattr(result, "success", False)):
+                    cand = float(np.clip(float(getattr(result, "x", best_val)), lo_ref, hi_ref))
+                    score = float(_eval_axis(cand))
+                    if np.isfinite(score) and score + 1e-12 < best_cost:
+                        best_cost = float(score)
+                        best_val = float(cand)
+            except Exception:
+                pass
+
+    return float(best_val), float(best_cost), int(evals)
+
+
 def _coordinate_descent_spool(
     x0: np.ndarray,
     *,
@@ -2294,23 +2391,27 @@ def _coordinate_descent_spool(
             if steps[idx] <= tol[idx]:
                 continue
             best_local = float(best)
-            improved_this_axis = False
-            for direction in (1.0, -1.0):
-                x_try = x.copy()
-                cand = float(np.clip(x[idx] + direction * steps[idx], lo[idx], hi[idx]))
-                if abs(cand - x[idx]) <= 1e-12:
-                    continue
-                x_try[idx] = cand
-                score = float(objective(x_try))
-                nfev += 1
-                if np.isfinite(score) and score + 1e-12 < best_local:
-                    best_local = float(score)
-                    best = score
-                    x = x_try
-                    improved_this_round = True
-                    improved_this_axis = True
-                    improved_any = True
-            if not improved_this_axis:
+            best_axis_value, best_axis_cost, axis_nfev = _bounded_axis_line_search(
+                x,
+                idx,
+                lo=lo,
+                hi=hi,
+                step=float(steps[idx]),
+                xatol=float(tol[idx]),
+                objective=objective,
+                current_cost=best_local,
+            )
+            nfev += int(axis_nfev)
+            if (
+                np.isfinite(best_axis_cost)
+                and best_axis_cost + 1e-12 < best_local
+                and abs(float(best_axis_value) - float(x[idx])) > 1e-12
+            ):
+                x[idx] = float(best_axis_value)
+                best = float(best_axis_cost)
+                improved_this_round = True
+                improved_any = True
+            else:
                 steps[idx] *= 0.5
         if improved_this_round:
             gain = float(best_before_round - best)

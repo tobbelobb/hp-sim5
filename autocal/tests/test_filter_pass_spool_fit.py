@@ -376,6 +376,29 @@ def test_coordinate_descent_shrinks_non_improving_axes():
     assert final_steps[1] < initial_steps[1]
 
 
+def test_coordinate_descent_line_search_finds_interior_axis_minimum():
+    x0 = np.array([39.0], dtype=float)
+    lo = np.array([39.0], dtype=float)
+    hi = np.array([40.0], dtype=float)
+    kinds = ["r"]
+
+    def objective(x):
+        vec = np.asarray(x, dtype=float).reshape(-1)
+        return float((vec[0] - 39.1845) ** 2.0)
+
+    x_opt, info = ac._coordinate_descent_spool(
+        x0,
+        lo=lo,
+        hi=hi,
+        kinds=kinds,
+        max_iters=1,
+        objective=objective,
+    )
+
+    assert np.isclose(float(x_opt[0]), 39.1845, atol=5e-3)
+    assert float(info["fitted_cost"]) + 1e-9 < float(info["start_cost"])
+
+
 def test_format_m666_from_length_model_includes_r_and_q():
     length_model = {
         "effective_radii_mm": [30.0, 29.5, 30.25],
