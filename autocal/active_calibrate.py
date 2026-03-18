@@ -7456,6 +7456,14 @@ def full_auto_loop(
                 raw_fit_score_ui=selected_raw_fit_score_ui,
                 history_rank_score=selected_history_rank_score,
             )
+            m669 = _m669_from_plan(plan)
+            m666 = _m666_from_plan(plan)
+            anchors = plan.get("anchors")
+            anchor_str = ""
+            if isinstance(anchors, np.ndarray):
+                anchor_str = np.array2string(anchors, precision=2, separator=", ")
+            elif anchors is not None:
+                anchor_str = str(np.asarray(anchors))
 
             with _log_context():
                 _print_ellipse_plan(
@@ -7559,7 +7567,7 @@ def full_auto_loop(
             summary_std = _fmt_float(selected_max_std, suffix="mm")
             summary_cost = _fmt_float(selected_cost)
             summary_fit_score_ui = _fmt_float(selected_fit_score_ui)
-            _log_line(
+            selected_summary_line = (
                 f"; selected run={selected_id}{summary_flags} fit_score_ui={summary_fit_score_ui} "
                 f"raw_fit_score_ui={_fmt_float(selected_raw_fit_score_ui)} "
                 f"score_basis={selected_score_basis} cost={summary_cost} "
@@ -7569,7 +7577,16 @@ def full_auto_loop(
                 f"coverage_adjust={_fmt_float(selected_history_rank_info.get('coverage_adjust'))} "
                 f"history_rank_score={_fmt_float(selected_history_rank_score)}"
             )
-            if has_variants:
+            _log_line(selected_summary_line)
+            if full_auto_verbose:
+                _log_console(selected_summary_line)
+                if m669:
+                    _log_console(f"Anchors (M669): {m669}")
+                elif anchor_str:
+                    _log_console(f"Anchors: {anchor_str}")
+                if m666:
+                    _log_console(f"; line_model_params (M666): {m666}")
+            elif has_variants:
                 _log_console(f"; selected run={selected_id}{summary_flags}")
             if not selected_underconstrained:
                 if score_rank is not None:
@@ -8549,7 +8566,7 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--full-auto-verbose",
         action="store_true",
-        help="Enable verbose solver diagnostics during full-auto runs.",
+        help="Enable verbose full-auto iteration output, including anchors, M666, and rank scoring.",
     )
     parser.add_argument(
         "--patience",
@@ -9176,7 +9193,22 @@ def _plan_trimmed_risk_metric(plan: Dict[str, object]) -> Optional[float]:
         return None
 
     _max_std_mm, rel_std, _cov_ok = _plan_covariance_summary(plan)
-    return _trimmed_risk_metric_from_components(noise_metrics)
+    base = _trimmed_risk_metric_from_components(noise_metrics)
+    rel_std_val = _float_or_none(rel_std)
+    if base is None or rel_std_val is None or not np.isfinite(rel_std_val):
+        return None
+
+    direct_metrics = dict(noise_metrics)
+    direct_metric = float(base) * float(rel_std_val)
+    direct_metrics["chi2_red_rescored_tau_3bin_debiased"] = direct_metric
+    direct_metrics["chi2_red_rescored"] = direct_metric
+    direct_metrics["chi2_red_trimmed"] = direct_metric
+    direct_metrics["chi2_red"] = direct_metric
+    return _layered_internal_metric_from_noise_metrics(
+        direct_metrics,
+        cost_raw=_float_or_none(plan.get("cost_raw")),
+        fit_structure_levels=_plan_fit_structure_levels(plan),
+    )
 
 
 def _plan_fit_structure_levels(plan: Dict[str, object]) -> Tuple[int, ...]:
@@ -9205,7 +9237,7 @@ def _compute_score_ui_layered(plan: Dict[str, object]) -> Tuple[float, float]:
         fit_structure_levels=_plan_fit_structure_levels(plan),
     )
     m_risk = _plan_trimmed_risk_metric(plan)
-    m_layered = _blend_internal_metric_with_risk(m_base, m_risk)
+    m_layered = m_risk if m_risk is not None else m_base
     critical_nonfinite = (
         m_layered is None or cost_raw is None or tau_mad_mm is None or n_trim is None
     )
