@@ -42,6 +42,9 @@ def run_alternating_refinement(
     pack_spool_opt_vector: Callable[..., np.ndarray],
     unpack_spool_opt_vector: Callable[..., Tuple[np.ndarray, np.ndarray]],
     build_dataset_and_params: Callable[[np.ndarray, np.ndarray], Tuple[Any, dict]],
+    core_objective: Callable[[dict, np.ndarray], float],
+    core_objective_id: int,
+    core_objective_name: str,
     data_cost: Callable[[dict, np.ndarray], float],
     prior_cost: Callable[[np.ndarray, np.ndarray], float],
     spool_rank_score: Callable[..., Tuple[float, Optional[float]]],
@@ -67,8 +70,14 @@ def run_alternating_refinement(
 
     for outer_idx in range(outer_iters):
         spool_params_current, transformed_current = build_dataset_and_params(radii_current, buildup_current)
+        current_objective_cost = float(core_objective(transformed_current, anchors_current))
         current_cost = float(data_cost(transformed_current, anchors_current))
         current_prior = float(prior_cost(radii_current, buildup_current))
+        current_objective_total_cost = (
+            float(current_objective_cost + current_prior)
+            if np.isfinite(current_objective_cost) and np.isfinite(current_prior)
+            else float("inf")
+        )
         current_total_cost = (
             float(current_cost + current_prior)
             if np.isfinite(current_cost) and np.isfinite(current_prior)
@@ -105,18 +114,18 @@ def run_alternating_refinement(
                     fixed_buildup_factor=modeled_b,
                 )
                 _, transformed_try = build_dataset_and_params(radii_try, buildup_try)
-                score_data = data_cost(transformed_try, anchors_current)
-                if not np.isfinite(score_data):
+                objective_cost = core_objective(transformed_try, anchors_current)
+                if not np.isfinite(objective_cost):
                     objective_parts_cache[key] = (float("nan"), float("nan"))
                     return 1e12
                 prior = prior_cost(radii_try, buildup_try)
-                score = float(score_data + prior)
+                score = float(objective_cost + prior)
                 if not np.isfinite(score):
                     objective_cache[key] = 1e12
                     objective_parts_cache[key] = (float("nan"), float("nan"))
                     return 1e12
                 objective_cache[key] = float(score)
-                objective_parts_cache[key] = (float(score_data), float(prior))
+                objective_parts_cache[key] = (float(objective_cost), float(prior))
                 objective_dataset_cache[key] = transformed_try
                 return score
             except Exception:
@@ -213,15 +222,15 @@ def run_alternating_refinement(
                 "seed_cost": float(fitted_cost) if np.isfinite(fitted_cost) else None,
                 "seed_rank_score": None,
             }
-        start_data_cost, start_prior_cost, start_total_cost = _objective_cost_parts(x_seed)
-        fitted_data_cost, fitted_prior_cost, fitted_total_cost = _objective_cost_parts(x_opt)
+        start_objective_cost, start_prior_cost, start_total_cost = _objective_cost_parts(x_seed)
+        fitted_objective_cost, fitted_prior_cost, fitted_total_cost = _objective_cost_parts(x_opt)
         opt_info["start_cost"] = float(start_total_cost)
         opt_info["fitted_cost"] = float(fitted_total_cost)
         (
             run_anchor_step,
             anchor_step_trigger_improvement,
             anchor_step_trigger_threshold,
-        ) = spool_anchor_step_gate(current_total_cost, fitted_total_cost)
+        ) = spool_anchor_step_gate(current_objective_total_cost, fitted_total_cost)
 
         radii_opt, buildup_opt = unpack_spool_opt_vector(
             x_opt,
@@ -232,6 +241,7 @@ def run_alternating_refinement(
             fixed_buildup_factor=modeled_b,
         )
         spool_params_opt, transformed_opt = build_dataset_and_params(radii_opt, buildup_opt)
+        spool_objective_fixed = float(core_objective(transformed_opt, anchors_current))
         spool_cost_fixed = float(data_cost(transformed_opt, anchors_current))
         spool_prior = float(prior_cost(radii_opt, buildup_opt))
 
@@ -439,6 +449,8 @@ def run_alternating_refinement(
         history.append(
             {
                 "outer_iter": int(outer_idx + 1),
+                "objective_id": int(core_objective_id),
+                "objective_name": str(core_objective_name),
                 "success": bool(opt_info.get("success", False)),
                 "message": str(opt_info.get("message", "")),
                 "nfev": int(opt_info.get("nfev", eval_counter["count"])),
@@ -446,19 +458,33 @@ def run_alternating_refinement(
                 "start_cost": float(start_cost),
                 "fitted_cost": float(fitted_cost),
                 "start_data_cost": (
-                    float(start_data_cost) if np.isfinite(start_data_cost) else None
+                    float(start_objective_cost) if np.isfinite(start_objective_cost) else None
                 ),
                 "start_prior_cost": (
                     float(start_prior_cost) if np.isfinite(start_prior_cost) else None
                 ),
                 "start_total_cost": float(start_cost) if np.isfinite(start_cost) else None,
                 "fitted_data_cost": (
-                    float(fitted_data_cost) if np.isfinite(fitted_data_cost) else None
+                    float(fitted_objective_cost) if np.isfinite(fitted_objective_cost) else None
                 ),
                 "fitted_prior_cost": (
                     float(fitted_prior_cost) if np.isfinite(fitted_prior_cost) else None
                 ),
                 "fitted_total_cost": float(fitted_cost) if np.isfinite(fitted_cost) else None,
+                "start_objective_cost": (
+                    float(start_objective_cost) if np.isfinite(start_objective_cost) else None
+                ),
+                "fitted_objective_cost": (
+                    float(fitted_objective_cost) if np.isfinite(fitted_objective_cost) else None
+                ),
+                "current_objective_cost": (
+                    float(current_objective_cost) if np.isfinite(current_objective_cost) else None
+                ),
+                "current_objective_total_cost": (
+                    float(current_objective_total_cost)
+                    if np.isfinite(current_objective_total_cost)
+                    else None
+                ),
                 "current_data_cost": float(current_cost) if np.isfinite(current_cost) else None,
                 "current_prior_cost": float(current_prior) if np.isfinite(current_prior) else None,
                 "current_cost": float(current_cost) if np.isfinite(current_cost) else None,
@@ -474,9 +500,17 @@ def run_alternating_refinement(
                 "spool_data_cost_fixed_anchors": (
                     float(spool_cost_fixed) if np.isfinite(spool_cost_fixed) else None
                 ),
+                "spool_objective_cost_fixed_anchors": (
+                    float(spool_objective_fixed) if np.isfinite(spool_objective_fixed) else None
+                ),
                 "spool_prior_cost": float(spool_prior) if np.isfinite(spool_prior) else None,
                 "spool_cost_fixed_anchors": (
                     float(spool_cost_fixed) if np.isfinite(spool_cost_fixed) else None
+                ),
+                "spool_objective_total_cost_fixed_anchors": (
+                    float(spool_objective_fixed + spool_prior)
+                    if np.isfinite(spool_objective_fixed) and np.isfinite(spool_prior)
+                    else None
                 ),
                 "spool_total_cost_fixed_anchors": (
                     float(spool_cost_fixed + spool_prior)

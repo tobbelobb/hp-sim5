@@ -50,7 +50,9 @@ _OPTIMIZER_MODE_CHOICES = ("fast", "fast-fd", "legacy")
 _THETA0_MODE_CHOICES = ("infer", "zero")
 _SCALE_FIX_LEVELS = (1, 2, 3)
 _FIT_STRUCTURE_LEVELS = (1, 2, 3)
+_OBJECTIVE_SCHEDULE_LEVELS = (0, 1, 2)
 _FILTER_SCHEDULE_PASS_CHOICES = ("warmup", "dynamic", "constant")
+_DEFAULT_OBJECTIVE_SCHEDULE = (1, 1, 1, 1)
 _DEFAULT_FILTER_SCHEDULE = ("warmup", "warmup", "warmup", "dynamic")
 _NOISE_MODEL_CONFIG_KEY = "noise_model"
 _TAU_MAD_SCALE = 1.4826
@@ -1838,6 +1840,65 @@ def _parse_fit_structure_levels(
     return tuple(out)
 
 
+def _normalize_objective_schedule_pass(
+    pass_name: object,
+    *,
+    label: str = "--objective-schedule",
+) -> int:
+    text = str(pass_name or "").strip().lower()
+    mapping = {
+        "0": 0,
+        "prefit": 0,
+        "ellipse": 0,
+        "ellipse_prefit": 0,
+        "1": 1,
+        "pointwise": 1,
+        "ellipse_cost": 1,
+        "pointwise_forward_model": 1,
+        "2": 2,
+        "position": 2,
+        "sim": 2,
+        "simulation": 2,
+        "position_reconstruction": 2,
+    }
+    normalized = mapping.get(text)
+    if normalized is None:
+        allowed = "0,1,2 or prefit,pointwise,position"
+        raise ValueError(f"{label} allows only {allowed}; got '{pass_name}'")
+    return int(normalized)
+
+
+def _parse_objective_schedule(
+    spec: Optional[Any],
+    *,
+    label: str = "--objective-schedule",
+) -> Tuple[int, ...]:
+    if spec is None:
+        return tuple(int(v) for v in _DEFAULT_OBJECTIVE_SCHEDULE)
+
+    if isinstance(spec, (list, tuple, set)):
+        parts = [str(v).strip() for v in spec]
+    else:
+        text = str(spec).strip()
+        if not text:
+            raise ValueError(
+                f"{label} must list one or more passes. Example: 1,1,1,1"
+            )
+        parts = [p.strip() for p in text.split(",")]
+
+    out: List[int] = []
+    for raw_part in parts:
+        if not raw_part:
+            continue
+        out.append(int(_normalize_objective_schedule_pass(raw_part, label=label)))
+
+    if not out:
+        raise ValueError(
+            f"{label} must list one or more passes. Example: 1,1,1,1"
+        )
+    return tuple(out)
+
+
 def _normalize_filter_schedule_pass(pass_name: object, *, label: str = "--filter-schedule") -> str:
     text = str(pass_name or "").strip().lower()
     mapping = {
@@ -2665,12 +2726,17 @@ def _print_ellipse_plan(
                     else {}
                 )
                 filter_schedule_requested = radii_fit.get("filter_schedule_requested")
+                objective_schedule_requested = radii_fit.get("objective_schedule_requested")
                 schedule_text = ""
+                objective_text = ""
                 if isinstance(filter_schedule_requested, list) and filter_schedule_requested:
                     schedule_text = ",".join(str(v) for v in filter_schedule_requested)
+                if isinstance(objective_schedule_requested, list) and objective_schedule_requested:
+                    objective_text = ",".join(str(v) for v in objective_schedule_requested)
                 print(
                     f"; line_model_filter_schedule: passes={_fmt_float(len(filter_schedule_history), fmt='.0f')} "
                     f"schedule=[{schedule_text}] "
+                    f"objectives=[{objective_text}] "
                     f"last_raw_fit_score_ui={_fmt_float(last_filter_pass.get('score_ui'))} "
                     f"last_rank_score={_fmt_float(last_filter_pass.get('rank_score'))} "
                     f"last_cost={_fmt_float(last_filter_pass.get('cost_noise_normalized'))}"
@@ -3237,6 +3303,17 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         ),
     )
     parser.add_argument(
+        "--objective-schedule",
+        type=str,
+        default="1,1,1,1",
+        help=(
+            "Explicit spool objective schedule as comma-separated words or numbers. "
+            "Words: prefit,pointwise,position. Numbers: 0=ellipse_prefit, "
+            "1=pointwise_forward_model, 2=position_reconstruction. "
+            "Default: 1,1,1,1."
+        ),
+    )
+    parser.add_argument(
         "--pointwise-residual",
         choices=["sampson", "euclidean"],
         default="sampson",
@@ -3492,6 +3569,10 @@ def _resolve_spool_cli_options(
         b_bounds = _parse_min_max_bounds(args.b_bounds, label="--b-bounds")
         scale_fix_levels = _parse_scale_fix_levels(args.scale_fix, label="--scale-fix")
         fit_structure_levels = _parse_fit_structure_levels(args.fit_structure, label="--fit-structure")
+        objective_schedule = _parse_objective_schedule(
+            args.objective_schedule,
+            label="--objective-schedule",
+        )
     except ValueError as exc:
         parser.error(str(exc))
 
@@ -3561,6 +3642,7 @@ def _resolve_spool_cli_options(
         "spool_outer_iters": int(spool_outer_iters),
         "spool_inner_iters": int(spool_inner_iters),
         "filter_schedule": [str(v) for v in filter_schedule],
+        "objective_schedule": [int(v) for v in objective_schedule],
         "line_width": float(line_width),
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
         "sigma_used_mm": (None if sigma_used_mm is None else float(sigma_used_mm)),
@@ -3664,6 +3746,7 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     parser.add_argument("--scale-fix", default=None)
     parser.add_argument("--fit-structure", default=None)
     parser.add_argument("--filter-schedule", default=None)
+    parser.add_argument("--objective-schedule", default=None)
     parser.add_argument("--line-width", type=float, default=None)
     parser.add_argument("--sigma-floor-mm", type=float, default=None)
     parser.add_argument("--sigma-used-mm", type=float, default=None)

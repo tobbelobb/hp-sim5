@@ -2703,6 +2703,102 @@ def test_spool_fit_filter_schedule_runs_multiple_passes(monkeypatch):
     assert "refreeze_iters_requested" not in fit_info
 
 
+def test_spool_fit_objective_schedule_tracks_each_filter_pass(monkeypatch):
+    base = np.array([30.0, 30.0, 30.0], dtype=float)
+    target_r = np.array([39.0, 39.0, 39.0], dtype=float)
+    target_k = np.array([0.636619, 0.636619, 0.636619], dtype=float)
+    _patch_spool_runtime(monkeypatch, target_radii=target_r, target_buildup=target_k)
+
+    dataset = {"machine_type": "slideprinter", "num_anchors": 3, "dimensions": 2, "sweeps": []}
+    seed_anchors = np.zeros((3, 2), dtype=float)
+    _eff_r, _fit_anchors, _spool_params, _transformed, fit_info = ac._estimate_effective_radii_with_spool_model(
+        dataset,
+        seed_anchors,
+        find_radii_mode="global",
+        find_buildup_mode="off",
+        base_radii_mm=base,
+        modeled_buildup_factor=target_k,
+        spool_to_motor_gearing_factor=np.ones(3, dtype=float),
+        mechanical_advantage=np.ones(3, dtype=float),
+        lines_per_spool=np.ones(3, dtype=float),
+        r0_bounds=(20.0, 45.0),
+        b_bounds=None,
+        r0_prior_sigma_mm=None,
+        b_prior_sigma=None,
+        spool_outer_iters=1,
+        spool_inner_iters=4,
+        theta0_mode="zero",
+        solve_restarts=1,
+        solve_iterations=5,
+        solve_optimizer="L-BFGS-B",
+        residual_threshold=1.0,
+        spring_k_multiplier=1.0,
+        use_flex=False,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=False,
+        pointwise_global_mad=False,
+        sweep_wise_filtering=False,
+        sweep_metric="mad",
+        use_noise_mean=False,
+        sigma_source="auto",
+        robust_debug=False,
+        filter_schedule=["warmup", "warmup", "warmup"],
+        objective_schedule=[0, 1, 2],
+    )
+
+    assert fit_info.get("objective_schedule_requested") == [0, 1, 2]
+    filter_schedule_history = fit_info.get("filter_schedule_history")
+    assert isinstance(filter_schedule_history, list)
+    assert [int(item.get("objective_id", -1)) for item in filter_schedule_history] == [0, 1, 2]
+    assert [str(item.get("objective_name", "")) for item in filter_schedule_history] == [
+        "ellipse_prefit",
+        "pointwise_forward_model",
+        "position_reconstruction",
+    ]
+
+
+def test_simulation_position_objective_score_is_near_zero_for_consistent_point():
+    anchors = np.array(
+        [
+            [0.0, -1900.0, -280.0],
+            [1645.45, 950.0, -280.0],
+            [-1645.45, 950.0, -280.0],
+            [0.0, 0.0, 1900.0],
+        ],
+        dtype=float,
+    )
+    pos = np.array([120.0, -180.0, 640.0], dtype=float)
+    rel_lengths = np.linalg.norm(anchors - pos, axis=1) - np.linalg.norm(anchors, axis=1)
+    dataset = {
+        "num_anchors": 4,
+        "dimensions": 3,
+        "sweeps": [
+            {
+                "drive_anchor": 0,
+                "sensor_anchor": 1,
+                "fixed_anchors": [2, 3],
+                "fixed_lengths": [float(rel_lengths[2]), float(rel_lengths[3])],
+                "data_points": [
+                    {
+                        "l_drive": float(rel_lengths[0]),
+                        "l_sensor": float(rel_lengths[1]),
+                    }
+                ],
+            }
+        ],
+    }
+
+    score, valid_points, invalid_points = ac.simulation_position_objective_score(
+        dataset,
+        anchors,
+        use_noise_mean=False,
+    )
+
+    assert valid_points == 1
+    assert invalid_points == 0
+    assert score == pytest.approx(0.0, abs=1e-6)
+
+
 def test_scale_fix_3_applies_final_polish_on_every_filter_pass(monkeypatch):
     base = np.array([30.0, 30.0, 30.0], dtype=float)
     target_r = np.array([39.0, 39.0, 39.0], dtype=float)

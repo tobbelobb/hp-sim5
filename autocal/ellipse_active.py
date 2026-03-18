@@ -107,6 +107,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         collector_args=collector_args,
         low_anchor_z=args.low_anchor_z,
         filter_schedule=spool_options["filter_schedule"],
+        objective_schedule=spool_options["objective_schedule"],
         scale_fix=spool_options["scale_fix"],
         fit_structure=spool_options["fit_structure"],
     )

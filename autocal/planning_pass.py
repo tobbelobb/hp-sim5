@@ -52,6 +52,7 @@ def plan_next_ellipse_sweep(
     collector_args: Sequence[str],
     low_anchor_z: Optional[float] = None,
     filter_schedule: Optional[Sequence[Any]] = None,
+    objective_schedule: Optional[Sequence[Any]] = None,
     scale_fix: Optional[Sequence[int]] = None,
     fit_structure: Optional[Sequence[int]] = None,
 ) -> Dict[str, object]:
@@ -205,6 +206,10 @@ def plan_next_ellipse_sweep(
                 scale_fix_levels=scale_fix_levels,
                 fit_structure_levels=fit_structure_levels,
                 filter_schedule=_parse_filter_schedule(filter_schedule, label="filter_schedule"),
+                objective_schedule=_parse_objective_schedule(
+                    objective_schedule,
+                    label="objective_schedule",
+                ),
             )
         )
         _ = _fit_anchors
@@ -294,6 +299,13 @@ def plan_next_ellipse_sweep(
             "spool_inner_iters": int(spool_inner_iters),
             "filter_schedule": [
                 str(v) for v in _parse_filter_schedule(filter_schedule, label="filter_schedule")
+            ],
+            "objective_schedule": [
+                int(v)
+                for v in _parse_objective_schedule(
+                    objective_schedule,
+                    label="objective_schedule",
+                )
             ],
             "theta0_mode": theta0_mode_norm,
             "scale_fix_levels": [int(v) for v in scale_fix_levels],
@@ -590,4 +602,3 @@ def plan_next_ellipse_sweep(
         "fit_structure_levels": [int(v) for v in fit_structure_levels],
         "dataset_for_estimation": dataset_for_estimation,
     }
-

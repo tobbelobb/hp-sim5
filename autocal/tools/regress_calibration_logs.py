@@ -424,6 +424,8 @@ def run_autocal(
         "--buildup-factor",
         "0.636619",
         "--no-collect",
+        "--objective-schedule",
+        "0,1,2,2",
     ]
     if full_auto_log is not None:
         cmd.extend(["--full-auto-log", str(full_auto_log)])

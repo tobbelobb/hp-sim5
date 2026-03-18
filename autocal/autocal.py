@@ -71,6 +71,7 @@ def full_auto_loop(
     verbose: bool,
     low_anchor_z: Optional[float] = None,
     filter_schedule: Optional[Sequence[Any]] = None,
+    objective_schedule: Optional[Sequence[Any]] = None,
     scale_fix: Optional[Sequence[int]] = None,
     fit_structure: Optional[Sequence[int]] = None,
     no_collect: bool = False,
@@ -388,6 +389,9 @@ def full_auto_loop(
         "filter_schedule": [
             str(v) for v in _parse_filter_schedule(filter_schedule, label="filter_schedule")
         ],
+        "objective_schedule": [
+            int(v) for v in _parse_objective_schedule(objective_schedule, label="objective_schedule")
+        ],
         "scale_fix": [int(v) for v in _parse_scale_fix_levels(scale_fix)],
         "fit_structure": [int(v) for v in _parse_fit_structure_levels(fit_structure)],
         "line_width": float(line_width),
@@ -571,6 +575,13 @@ def full_auto_loop(
                         label="filter_schedule",
                     )
                 ]
+                settings["objective_schedule"] = [
+                    int(v)
+                    for v in _parse_objective_schedule(
+                        settings.get("objective_schedule"),
+                        label="objective_schedule",
+                    )
+                ]
                 settings["line_width"] = float(settings.get("line_width", DEFAULT_LAYER_LINE_WIDTH_MM))
                 if not np.isfinite(settings["line_width"]) or settings["line_width"] < 0.0:
                     settings["line_width"] = float(DEFAULT_LAYER_LINE_WIDTH_MM)
@@ -649,6 +660,7 @@ def full_auto_loop(
                         spool_inner_iters=int(settings.get("spool_inner_iters", 30)),
                         theta0_mode=str(settings.get("theta0_mode", "zero")),
                         filter_schedule=settings.get("filter_schedule"),
+                        objective_schedule=settings.get("objective_schedule"),
                         line_width=float(settings.get("line_width", DEFAULT_LAYER_LINE_WIDTH_MM)),
                         sigma_floor_mm=(
                             None
@@ -1197,6 +1209,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         patience=int(args.patience),
         verbose=bool(args.verbose),
         filter_schedule=spool_opts.get("filter_schedule"),
+        objective_schedule=spool_opts.get("objective_schedule"),
         scale_fix=spool_opts.get("scale_fix"),
         fit_structure=spool_opts.get("fit_structure"),
         no_collect=bool(args.no_collect),

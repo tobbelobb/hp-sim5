@@ -7,6 +7,7 @@ from autocal._autocal_common import (
     _apply_optimizer_mode_env,
     _parse_filter_schedule,
     _parse_full_auto_run_spec,
+    _parse_objective_schedule,
     _resolve_spool_cli_options,
     build_semi_auto_parser,
 )
@@ -53,6 +54,7 @@ def test_spool_cli_options_parse_modes_and_bounds():
     assert opts["spool_outer_iters"] == 5
     assert opts["spool_inner_iters"] == 17
     assert opts["filter_schedule"] == ["warmup", "warmup", "warmup", "dynamic"]
+    assert opts["objective_schedule"] == [1, 1, 1, 1]
     assert opts["line_width"] == 1.25
     assert opts["sigma_floor_mm"] == 0.05
     assert opts["sigma_used_mm"] == 0.8
@@ -124,6 +126,24 @@ def test_spool_cli_parses_filter_schedule_numbers():
     assert opts["filter_schedule"] == ["warmup", "warmup", "dynamic", "constant"]
 
 
+def test_spool_cli_parses_objective_schedule_numbers():
+    parser, args = _parse_spool_args("--objective-schedule", "0,0,1,2")
+    opts = _resolve_spool_cli_options(parser, args)
+    assert opts["objective_schedule"] == [0, 0, 1, 2]
+
+
+def test_spool_cli_parses_objective_schedule_words():
+    parser, args = _parse_spool_args("--objective-schedule", "prefit,pointwise,position")
+    opts = _resolve_spool_cli_options(parser, args)
+    assert opts["objective_schedule"] == [0, 1, 2]
+
+
+def test_spool_cli_rejects_unknown_objective_schedule_alias():
+    parser, args = _parse_spool_args("--objective-schedule", "0,3")
+    with pytest.raises(SystemExit):
+        _resolve_spool_cli_options(parser, args)
+
+
 def test_spool_cli_rejects_constant_without_dynamic_since_last_warmup():
     parser, args = _parse_spool_args("--filter-schedule", "warmup,constant")
     with pytest.raises(SystemExit):
@@ -172,9 +192,20 @@ def test_full_auto_run_spec_parses_filter_schedule_override():
     assert overrides["filter_schedule"] == "0,1,2"
 
 
+def test_full_auto_run_spec_parses_objective_schedule_override():
+    tokens, overrides = _parse_full_auto_run_spec("--objective-schedule 0,1,2")
+    assert tokens == ["--objective-schedule", "0,1,2"]
+    assert overrides["objective_schedule"] == "0,1,2"
+
+
 def test_parse_filter_schedule_rejects_unknown_numeric_pass_alias():
     with pytest.raises(ValueError, match="0,1,2"):
         _parse_filter_schedule("0,1,3")
+
+
+def test_parse_objective_schedule_rejects_unknown_numeric_pass_alias():
+    with pytest.raises(ValueError, match="0,1,2 or prefit,pointwise,position"):
+        _parse_objective_schedule("0,1,3")
 
 
 def test_parse_filter_schedule_rejects_legacy_refreeze_aliases():
