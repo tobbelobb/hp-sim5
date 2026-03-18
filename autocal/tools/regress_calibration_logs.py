@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Regression test runner for autocal/active_calibrate.py full-auto runs.
+Regression test runner for autocal/autocal.py full-auto runs.
 
 What it does
 - Runs fixed commands (one per dataset in DATASETS)
@@ -136,7 +136,7 @@ def _safe_float(x: str) -> Optional[float]:
 
 def parse_generated_log_path(run_output: str) -> Optional[str]:
     """
-    Parses stdout/stderr combined output from active_calibrate.py and returns the produced log path.
+    Parses stdout/stderr combined output from autocal.py and returns the produced log path.
     We accept both raw and "Wrote to console:" prefixed lines.
     """
     for line in run_output.splitlines():
@@ -404,14 +404,14 @@ def format_table(headers: List[str], rows: List[List[str]]) -> List[str]:
 
 # ---------- Running commands ----------
 
-def run_active_calibrate(
+def run_autocal(
     repo_root: Path,
     dataset_path: Path,
     full_auto_log: Optional[Path] = None,
 ) -> Tuple[int, str]:
     cmd = [
         sys.executable,
-        str(repo_root / "autocal" / "active_calibrate.py"),
+        str(repo_root / "autocal" / "autocal.py"),
         "--sim",
         "--machine-type",
         "slideprinter",
@@ -807,7 +807,7 @@ def run_one_dataset(
     isolated_dataset = prepare_isolated_dataset_copy(name, dataset_path, scratch_root)
     isolated_jsonl = isolated_dataset.with_name(f"{isolated_dataset.stem}.full_auto_log.jsonl")
 
-    rc, output = run_active_calibrate(
+    rc, output = run_autocal(
         repo_root=repo_root,
         dataset_path=isolated_dataset,
         full_auto_log=isolated_jsonl,
@@ -818,7 +818,7 @@ def run_one_dataset(
             ok=False,
             lines=[
                 f"=== {name} ===",
-                f"ERROR: active_calibrate.py exited with {rc}",
+                f"ERROR: autocal.py exited with {rc}",
                 "---- combined stdout/stderr ----",
                 output.rstrip(),
             ],
@@ -887,7 +887,7 @@ def run_one_dataset(
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--repo-root", type=str, default=".", help="Path to repo root (must contain autocal/active_calibrate.py).")
+    ap.add_argument("--repo-root", type=str, default=".", help="Path to repo root (must contain autocal/autocal.py).")
     ap.add_argument("--data-dir", type=str, default="autocal/data/references", help="Directory containing the datasets (.json).")
     ap.add_argument("--ref-dir", type=str, default="autocal/data/references", help="Directory containing the reference logs (.log).")
     ap.add_argument("--tol-mm", type=float, default=0.01, help="Tolerance on total parameter distance (anchors + 2*pi*R).")
@@ -898,8 +898,8 @@ def main() -> int:
     color = use_color(args.color)
 
     repo_root = Path(args.repo_root).resolve()
-    if not (repo_root / "autocal" / "active_calibrate.py").exists():
-        print(f"ERROR: repo_root={repo_root} does not contain autocal/active_calibrate.py", file=sys.stderr)
+    if not (repo_root / "autocal" / "autocal.py").exists():
+        print(f"ERROR: repo_root={repo_root} does not contain autocal/autocal.py", file=sys.stderr)
         return 1
 
     data_dir = (repo_root / args.data_dir).resolve() if not Path(args.data_dir).is_absolute() else Path(args.data_dir).resolve()
@@ -917,7 +917,9 @@ def main() -> int:
         ])
         ref_log_path = find_file_first_existing([
             ref_dir / f"{ds}.full_auto_reference_run_march_11.log",
+            ref_dir / f"{ds}.full_auto_reference_run_march_6.log",
             alt_dir / f"{ds}.full_auto_reference_run_march_11.log",
+            alt_dir / f"{ds}.full_auto_reference_run_march_6.log",
         ])
 
         if dataset_path is None:
@@ -927,7 +929,11 @@ def main() -> int:
             continue
         if ref_log_path is None:
             print(f"=== {ds} ===")
-            print(f"ERROR: reference log not found (tried {ref_dir}/{ds}.full_auto_reference_run_march_11.log and /mnt/data/...)")
+            print(
+                f"ERROR: reference log not found "
+                f"(tried {ref_dir}/{ds}.full_auto_reference_run_march_11.log, "
+                f"{ref_dir}/{ds}.full_auto_reference_run_march_6.log, and /mnt/data/...)"
+            )
             overall_ok = False
             continue
         jobs.append((ds, dataset_path, ref_log_path))

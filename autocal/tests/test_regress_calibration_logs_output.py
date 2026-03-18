@@ -242,7 +242,7 @@ def test_compute_true_gen_iter_stats_returns_mean_and_std():
     assert math.isclose(std, 1.5, rel_tol=1e-9, abs_tol=1e-9)
 
 
-def test_run_active_calibrate_passes_full_auto_log(monkeypatch, tmp_path):
+def test_run_autocal_passes_full_auto_log(monkeypatch, tmp_path):
     captured = {}
 
     class DummyProc:
@@ -259,7 +259,7 @@ def test_run_active_calibrate_passes_full_auto_log(monkeypatch, tmp_path):
     dataset.write_text("{}", encoding="utf-8")
     jsonl = tmp_path / "demo.full_auto_log.jsonl"
 
-    rc, out = rcl.run_active_calibrate(repo_root, dataset, full_auto_log=jsonl)
+    rc, out = rcl.run_autocal(repo_root, dataset, full_auto_log=jsonl)
     assert rc == 0
     assert out == "ok"
     assert "--full-auto-log" in captured["cmd"]
@@ -270,7 +270,7 @@ def test_run_active_calibrate_passes_full_auto_log(monkeypatch, tmp_path):
 def test_main_run_tracker_summary_includes_true_iter_mean_delta(monkeypatch, tmp_path, capsys):
     repo_root = tmp_path
     (repo_root / "autocal").mkdir()
-    (repo_root / "autocal" / "active_calibrate.py").write_text("# stub\n", encoding="utf-8")
+    (repo_root / "autocal" / "autocal.py").write_text("# stub\n", encoding="utf-8")
     (repo_root / "data").mkdir()
     (repo_root / "refs").mkdir()
     (repo_root / "data" / "demo.json").write_text("{}", encoding="utf-8")
