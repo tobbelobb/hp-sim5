@@ -8,7 +8,6 @@ This is the current, fully automated calibration pipeline. It collects sweeps, f
 python autocal/autocal.py \
   --sim \
   --machine-type slideprinter \
-  --full-auto \
   --plot-residual-histogram \
   --collector-args --speedup 25
 ```

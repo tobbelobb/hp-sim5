@@ -68,7 +68,7 @@ def full_auto_loop(
     full_auto_runs: Optional[Sequence[str]],
     full_auto_log: Optional[Path],
     patience: int,
-    full_auto_verbose: bool,
+    verbose: bool,
     low_anchor_z: Optional[float] = None,
     filter_schedule: Optional[Sequence[Any]] = None,
     scale_fix: Optional[Sequence[int]] = None,
@@ -934,7 +934,7 @@ def full_auto_loop(
                 f"history_rank_score={_fmt_float(selected_history_rank_score)}"
             )
             _log_line(selected_summary_line)
-            if full_auto_verbose:
+            if verbose:
                 _log_console(selected_summary_line)
                 if m669:
                     _log_console(f"Anchors (M669): {m669}")
@@ -1127,10 +1127,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     _apply_optimizer_mode_env(str(args.optimizer_mode))
     spool_opts = _resolve_spool_cli_options(parser, args)
     machine_type = _normalize_machine_type(str(args.machine_type))
-    if bool(args.shotgun) and not bool(args.full_auto):
-        parser.error("--shotgun requires --full-auto")
-    if not bool(args.full_auto):
-        parser.error("autocal.py only supports --full-auto")
     full_auto_runs = list(args.full_auto_run or [])
     if bool(args.shotgun):
         try:
@@ -1199,7 +1195,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         full_auto_runs=full_auto_runs,
         full_auto_log=args.full_auto_log,
         patience=int(args.patience),
-        full_auto_verbose=bool(args.full_auto_verbose),
+        verbose=bool(args.verbose),
         filter_schedule=spool_opts.get("filter_schedule"),
         scale_fix=spool_opts.get("scale_fix"),
         fit_structure=spool_opts.get("fit_structure"),

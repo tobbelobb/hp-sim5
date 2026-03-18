@@ -106,7 +106,7 @@ Implementation detail worth knowing:
 
 ## Top-Level Full-Auto Loop
 
-When `--full-auto` is used, the outermost behavior is:
+When `autocal/autocal.py` runs, the outermost behavior is:
 
 1. If the dataset file does not exist, bootstrap exactly 3 sweeps.
 2. If the dataset already contains more than 3 sweeps, replay mode starts from

@@ -415,7 +415,6 @@ def run_autocal(
         "--sim",
         "--machine-type",
         "slideprinter",
-        "--full-auto",
         "--dataset",
         str(dataset_path),
         "--find-radii",

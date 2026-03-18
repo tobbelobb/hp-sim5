@@ -318,7 +318,7 @@ def test_full_auto_loop_no_collect_exits_when_replay_depletes(tmp_path, monkeypa
         full_auto_runs=None,
         full_auto_log=None,
         patience=20,
-        full_auto_verbose=False,
+        verbose=False,
         no_collect=True,
     )
 
@@ -335,7 +335,6 @@ def test_full_auto_loop_logs_invoked_command_near_top(tmp_path, monkeypatch):
         "python",
         "autocal/autocal.py",
         "--sim",
-        "--full-auto",
         "--dataset",
         str(dataset),
     ]
@@ -418,7 +417,7 @@ def test_full_auto_loop_logs_invoked_command_near_top(tmp_path, monkeypatch):
         full_auto_runs=None,
         full_auto_log=None,
         patience=20,
-        full_auto_verbose=False,
+        verbose=False,
         no_collect=True,
     )
 
@@ -584,7 +583,7 @@ def test_full_auto_accepts_best_historical_replay_plan_after_patience(tmp_path, 
         full_auto_runs=None,
         full_auto_log=None,
         patience=2,
-        full_auto_verbose=False,
+        verbose=False,
         no_collect=True,
     )
 
@@ -751,7 +750,7 @@ def test_full_auto_history_selector_can_prefer_mid_late_replay_plan(tmp_path, mo
         full_auto_runs=None,
         full_auto_log=None,
         patience=3,
-        full_auto_verbose=False,
+        verbose=False,
         no_collect=True,
     )
 

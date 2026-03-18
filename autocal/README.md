@@ -20,7 +20,6 @@ Initiate simulated full-auto calibration with:
 python autocal/autocal.py \
   --sim \
   --machine-type slideprinter \
-  --full-auto \
   --collector-args --speedup 25
 ```
 
@@ -33,7 +32,7 @@ If everything went well you should see something like this:
 You can add `--plot-residual-histogram` to learn about the quality of your data.
 It writes `autocal/data/default_dataset.csv` and `autocal/data/default_dataset.png`.
 
-Here's a demo of the `--full-auto` option on a simulated Slideprinter: https://youtu.be/XLmpuAQYbG4
+Here's a demo of the autocal loop on a simulated Slideprinter: https://youtu.be/XLmpuAQYbG4
 
 
 ## Typical workflow (real machine)
@@ -43,14 +42,13 @@ Here's a demo of the `--full-auto` option on a simulated Slideprinter: https://y
 
 ```bash
 python autocal/autocal.py \
-  --machine-type slideprinter \
-  --full-auto
+  --machine-type slideprinter
 ```
 
 More quick tips:
 - Use `--dataset` to choose where the working dataset is stored, or to continue working on a pre-existing dataset.
 - Let the loop collect sweeps and stop when you are satisfied with the cost and residuals.
-- There's also a `--shotgun` flag that makes `--full-auto` try harder.
+- There's also a `--shotgun` flag that makes the autocal loop try harder.
 
 
 For the full details and log interpretation, see `autocal/README_elliptical_feature_calibration.md`.

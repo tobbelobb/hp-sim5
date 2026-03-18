@@ -3399,23 +3399,13 @@ def _add_output_args(parser: argparse.ArgumentParser) -> None:
 
 def build_semi_auto_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Interactive active-learning loop (semi-auto by default)."
+        description="Non-interactive autocal active-learning loop."
     )
     parser.add_argument(
         "--machine-type",
         choices=MACHINE_TYPE_INPUT_CHOICES,
         required=True,
         help=f"Machine type ({MACHINE_TYPE_CHOICES_STR})",
-    )
-    parser.add_argument(
-        "--semi-auto",
-        action="store_true",
-        help="Explicitly run the interactive semi-auto loop (default).",
-    )
-    parser.add_argument(
-        "--full-auto",
-        action="store_true",
-        help="Run the non-interactive full-auto loop.",
     )
     parser.add_argument(
         "--no-collect",
@@ -3451,7 +3441,7 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--shotgun",
         action="store_true",
-        help="Append full-auto runs from shotgun.conf (use with --full-auto).",
+        help="Append full-auto runs from shotgun.conf.",
     )
     parser.add_argument(
         "--full-auto-log",
@@ -3460,9 +3450,9 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
         help="Write full-auto JSONL logs to this path (default: <dataset>.full_auto_log.jsonl).",
     )
     parser.add_argument(
-        "--full-auto-verbose",
+        "--verbose",
         action="store_true",
-        help="Enable verbose full-auto iteration output, including anchors, M666, and rank scoring.",
+        help="Enable verbose iteration output, including anchors, M666, and rank scoring.",
     )
     parser.add_argument(
         "--patience",

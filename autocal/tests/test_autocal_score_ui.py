@@ -521,7 +521,7 @@ def test_full_auto_loop_ranks_variants_by_score_ui_not_primary_cost(
         full_auto_runs=["--solve-iterations 1", "--solve-iterations 2"],
         full_auto_log=None,
         patience=20,
-        full_auto_verbose=False,
+        verbose=False,
         no_collect=True,
     )
 
@@ -532,7 +532,7 @@ def test_full_auto_loop_ranks_variants_by_score_ui_not_primary_cost(
     assert "Quality score below 2 indicates a near-perfect fit." in out
 
 
-def test_full_auto_verbose_prints_iteration_details_each_round(
+def test_verbose_prints_iteration_details_each_round(
     tmp_path,
     monkeypatch,
     capsys,
@@ -611,7 +611,7 @@ def test_full_auto_verbose_prints_iteration_details_each_round(
         full_auto_runs=None,
         full_auto_log=None,
         patience=20,
-        full_auto_verbose=True,
+        verbose=True,
         no_collect=True,
     )
 

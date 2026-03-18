@@ -203,11 +203,12 @@ def test_apply_optimizer_mode_env_sets_solver_variables(monkeypatch):
     assert os.environ.get("AUTOCAL_DISABLE_JAX_OBJECTIVE") is None
 
 
-def test_autocal_main_normalizes_hangprinter_alias_for_full_auto(monkeypatch, tmp_path):
+def test_autocal_main_normalizes_hangprinter_alias(monkeypatch, tmp_path):
     captured = {}
 
     def fake_full_auto_loop(**kwargs):
         captured["machine_type"] = kwargs["machine_type"]
+        captured["verbose"] = kwargs["verbose"]
         return 0
 
     monkeypatch.setattr(ac, "full_auto_loop", fake_full_auto_loop)
@@ -216,7 +217,7 @@ def test_autocal_main_normalizes_hangprinter_alias_for_full_auto(monkeypatch, tm
         [
             "--machine-type",
             "hp3",
-            "--full-auto",
+            "--verbose",
             "--dataset",
             str(tmp_path / "dummy.json"),
         ]
@@ -224,3 +225,30 @@ def test_autocal_main_normalizes_hangprinter_alias_for_full_auto(monkeypatch, tm
 
     assert rc == 0
     assert captured["machine_type"] == "hangprinter_4"
+    assert captured["verbose"] is True
+
+
+def test_autocal_main_rejects_removed_full_auto_flag(tmp_path):
+    with pytest.raises(SystemExit):
+        ac.main(
+            [
+                "--machine-type",
+                "slideprinter",
+                "--full-auto",
+                "--dataset",
+                str(tmp_path / "dummy.json"),
+            ]
+        )
+
+
+def test_autocal_main_rejects_removed_full_auto_verbose_flag(tmp_path):
+    with pytest.raises(SystemExit):
+        ac.main(
+            [
+                "--machine-type",
+                "slideprinter",
+                "--full-auto-verbose",
+                "--dataset",
+                str(tmp_path / "dummy.json"),
+            ]
+        )
