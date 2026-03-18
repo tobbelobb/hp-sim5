@@ -1,7 +1,7 @@
 """Shared helper code for the new modular autocal stack.
 
-This file is extracted from autocal.active_calibrate so the new stack does
-not depend on active_calibrate.py at runtime.
+This file contains shared helpers extracted from the former autocal monolith,
+so the current stack can run independently.
 """
 
 #!/usr/bin/env python3

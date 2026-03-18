@@ -108,8 +108,9 @@ Also check out `scripts/run_ci_tests.sh`.
 ### Autocal-only filtering
 ```bash
 python -m pytest autocal/tests
-python -m pytest autocal/tests -k active_calibrate
-python -m pytest autocal/tests/test_active_calibrate_golden.py
+python -m pytest autocal/tests -k autocal
+python -m pytest autocal/tests/test_autocal_cli.py
+python -m pytest autocal/tests/test_filter_pass_spool_fit.py
 ```
 
 ### Tests of ReprapFirmware's http endpoint

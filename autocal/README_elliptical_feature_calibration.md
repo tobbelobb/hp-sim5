@@ -5,8 +5,10 @@ This is the current, fully automated calibration pipeline. It collects sweeps, f
 ## Quick start (simulation)
 
 ```bash
-python autocal/active_calibrate.py \
+python autocal/autocal.py \
   --sim \
+  --machine-type slideprinter \
+  --full-auto \
   --plot-residual-histogram \
   --collector-args --speedup 25
 ```
@@ -97,15 +99,15 @@ The most important log lines (from a typical simulation run) are:
   - The next most informative sweep suggested by active learning.
 - `collect_command ...`
   - The exact node command the loop will run to collect that sweep.
-- `Accept anchors [a], collect next sweep [c], quit [q]?`
-  - Interactive prompt to accept the current anchor estimate or collect more data. Accepting will send the found values to your machine.
+- `selected run=... history_rank_score=...`
+  - Full-auto selected the best run variant for that iteration and reports the history rank score it used for the decision.
 
 
 ## Options
 
 See `--help` for the full list of options.
 
-`--semi-auto` is optional; the semi-auto loop is the default mode.
+`autocal/autocal.py` is the modular full-auto entrypoint.
 
 If you omit `--dataset`, the loop writes to `autocal/data/default_dataset.json` (and bootstraps it if missing).
 
@@ -115,7 +117,7 @@ Use `--plot-residual-histogram` to write a residual CSV/PNG next to the dataset 
 
 ## Related utilities (used by the semi-auto loop)
 
-The semi-auto loop in `active_calibrate.py` uses the same sweep planner as `ellipse_active.py` and the same
+The full-auto loop in `autocal.py` uses the same sweep planner as `ellipse_active.py` and the same
 merge logic as `merge_sweep_datasets.py`. You can invoke them manually:
 
 - Plan a single next sweep (no collection):

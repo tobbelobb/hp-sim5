@@ -41,7 +41,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from autocal import active_calibrate as ac
+import autocal._autocal_common as ac
 from autocal.spool_model import build_spool_model_params, dataset_with_modeled_lengths
 from autocal.sweep_types import MachineConfig, MachineType
 from autocal.theoretical_ellipse import (

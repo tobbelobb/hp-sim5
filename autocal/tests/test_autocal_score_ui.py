@@ -1,6 +1,6 @@
 import numpy as np
 
-from autocal import active_calibrate as ac
+import autocal.autocal as ac
 
 
 def _valid_sweep(idx: int) -> dict:
@@ -458,7 +458,7 @@ def test_full_auto_loop_ranks_variants_by_score_ui_not_primary_cost(
         assert planned_runs
         return planned_runs.pop(0)
 
-    monkeypatch.setattr(ac, "_plan_next_ellipse_sweep", fake_plan_next)
+    monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fake_plan_next)
     monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(ac, "_append_jsonl", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(ac, "_start_rrf_simulator", lambda *_args, **_kwargs: None)
@@ -548,7 +548,7 @@ def test_full_auto_verbose_prints_iteration_details_each_round(
         n_trim=41.0,
     )
 
-    monkeypatch.setattr(ac, "_plan_next_ellipse_sweep", lambda *_args, **_kwargs: plan)
+    monkeypatch.setattr(ac, "plan_next_ellipse_sweep", lambda *_args, **_kwargs: plan)
     monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(ac, "_append_jsonl", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(ac, "_start_rrf_simulator", lambda *_args, **_kwargs: None)

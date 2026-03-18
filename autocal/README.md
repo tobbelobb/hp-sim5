@@ -14,12 +14,13 @@ The autocal requires a websocket between it and hp-sim5. Open it by adding `?gco
 If you see this, you're good to go:
 ![Image of hp-sim app](doc/hp-sim-startscreen.png)
 
-Initiate simulated data collection and semi-automatic (human-in-the-loop) calibration with:
+Initiate simulated full-auto calibration with:
 
 ```bash
-python autocal/active_calibrate.py \
+python autocal/autocal.py \
   --sim \
   --machine-type slideprinter \
+  --full-auto \
   --collector-args --speedup 25
 ```
 
@@ -38,10 +39,10 @@ Here's a demo of the `--full-auto` option on a simulated Slideprinter: https://y
 ## Typical workflow (real machine)
 
 - Remove `--sim` and any `--speedup` args.
-- Or you can let the script do everything automatically with `--full-auto`.
+- The current modular entrypoint is `autocal/autocal.py`, which runs the full-auto loop.
 
 ```bash
-python autocal/active_calibrate.py \
+python autocal/autocal.py \
   --machine-type slideprinter \
   --full-auto
 ```

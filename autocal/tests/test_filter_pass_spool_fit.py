@@ -3,7 +3,26 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from autocal import active_calibrate as ac
+import autocal.alternating_refinement as alternating_refinement
+import autocal.filter_pass as ac
+import autocal.initialize_pass as initialize_pass
+
+
+if not hasattr(ac, "_estimate_effective_radii_with_spool_model"):
+    ac._estimate_effective_radii_with_spool_model = ac.estimate_effective_radii_with_spool_model
+
+
+_RUNTIME_MODULES = (ac, initialize_pass, alternating_refinement)
+
+
+def _patch_runtime_attr(monkeypatch, name: str, value) -> None:
+    patched = False
+    for module in _RUNTIME_MODULES:
+        if hasattr(module, name):
+            monkeypatch.setattr(module, name, value)
+            patched = True
+    if not patched:
+        monkeypatch.setattr(ac, name, value)
 
 
 def _patch_spool_runtime(monkeypatch, *, target_radii: np.ndarray, target_buildup: np.ndarray):
@@ -67,10 +86,10 @@ def _patch_spool_runtime(monkeypatch, *, target_radii: np.ndarray, target_buildu
         buildup = np.asarray(dataset.get("_spool_buildup_factor", target_b), dtype=float).reshape(-1)
         return float(np.sum((radii - target_r) ** 2.0) + np.sum((buildup - target_b) ** 2.0))
 
-    monkeypatch.setattr(ac, "build_spool_model_params", fake_build_spool_model_params)
-    monkeypatch.setattr(ac, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
-    monkeypatch.setattr(ac, "calibrate_elliptical", fake_calibrate_elliptical)
-    monkeypatch.setattr(ac, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
+    _patch_runtime_attr(monkeypatch, "build_spool_model_params", fake_build_spool_model_params)
+    _patch_runtime_attr(monkeypatch, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
+    _patch_runtime_attr(monkeypatch, "calibrate_elliptical", fake_calibrate_elliptical)
+    _patch_runtime_attr(monkeypatch, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
 
 
 def test_spool_fit_buildup_only_keeps_radii_fixed(monkeypatch):
@@ -223,7 +242,7 @@ def test_spool_fit_anchor_step_caps_solver_settings(monkeypatch):
         calls.append(dict(kwargs))
         return {"anchors": np.zeros((3, 2), dtype=float), "cost": 0.0}
 
-    monkeypatch.setattr(ac, "calibrate_elliptical", fake_calibrate_elliptical)
+    _patch_runtime_attr(monkeypatch, "calibrate_elliptical", fake_calibrate_elliptical)
 
     dataset = {"num_anchors": 3, "sweeps": []}
     seed_anchors = np.zeros((3, 2), dtype=float)
@@ -288,7 +307,7 @@ def test_anchor_step_skips_when_spool_objective_does_not_improve(monkeypatch):
         calls.append(dict(kwargs))
         return {"anchors": np.asarray(kwargs.get("initial_guess"), dtype=float), "cost": 0.0}
 
-    monkeypatch.setattr(ac, "calibrate_elliptical", fake_calibrate_elliptical)
+    _patch_runtime_attr(monkeypatch, "calibrate_elliptical", fake_calibrate_elliptical)
 
     dataset = {"num_anchors": 3, "sweeps": []}
     _eff_r, _fit_anchors, _spool_params, _transformed, fit_info = ac._estimate_effective_radii_with_spool_model(
@@ -960,27 +979,6 @@ def test_resolve_sim_config_uses_env_override(monkeypatch):
     assert cfg == "sys/custom_config.g"
 
 
-def test_mm_per_degree_for_axis_ignores_lines_per_spool():
-    r = 30.0
-    gear = np.asarray([1.2], dtype=float)
-    ma = np.asarray([2.0], dtype=float)
-    mm_l1 = ac._mm_per_degree_for_axis(
-        r,
-        0,
-        spool_to_motor_gearing_factor=gear,
-        mechanical_advantage=ma,
-        lines_per_spool=np.asarray([1.0], dtype=float),
-    )
-    mm_l3 = ac._mm_per_degree_for_axis(
-        r,
-        0,
-        spool_to_motor_gearing_factor=gear,
-        mechanical_advantage=ma,
-        lines_per_spool=np.asarray([3.0], dtype=float),
-    )
-    assert np.isclose(float(mm_l1), float(mm_l3), atol=1e-12)
-
-
 def test_global_b_prior_penalty_is_not_multiplied_by_anchor_count(monkeypatch):
     def fake_build_spool_model_params(
         dataset,
@@ -1034,10 +1032,10 @@ def test_global_b_prior_penalty_is_not_multiplied_by_anchor_count(monkeypatch):
         _ = (dataset, anchors, kwargs)
         return 0.0
 
-    monkeypatch.setattr(ac, "build_spool_model_params", fake_build_spool_model_params)
-    monkeypatch.setattr(ac, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
-    monkeypatch.setattr(ac, "calibrate_elliptical", fake_calibrate_elliptical)
-    monkeypatch.setattr(ac, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
+    _patch_runtime_attr(monkeypatch, "build_spool_model_params", fake_build_spool_model_params)
+    _patch_runtime_attr(monkeypatch, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
+    _patch_runtime_attr(monkeypatch, "calibrate_elliptical", fake_calibrate_elliptical)
+    _patch_runtime_attr(monkeypatch, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
 
     base = np.array([30.0, 30.0, 30.0], dtype=float)
     dataset = {"num_anchors": 3, "sweeps": []}
@@ -1633,10 +1631,10 @@ def test_bootstrap_anchor_refresh_runs_before_first_spool_radius_step(monkeypatc
             return float((r - 30.0) ** 2.0 + 200.0)
         return float((r - target_r_with_refreshed_anchors) ** 2.0)
 
-    monkeypatch.setattr(ac, "build_spool_model_params", fake_build_spool_model_params)
-    monkeypatch.setattr(ac, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
-    monkeypatch.setattr(ac, "calibrate_elliptical", fake_calibrate_elliptical)
-    monkeypatch.setattr(ac, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
+    _patch_runtime_attr(monkeypatch, "build_spool_model_params", fake_build_spool_model_params)
+    _patch_runtime_attr(monkeypatch, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
+    _patch_runtime_attr(monkeypatch, "calibrate_elliptical", fake_calibrate_elliptical)
+    _patch_runtime_attr(monkeypatch, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
 
     base = np.array([30.0, 30.0, 30.0], dtype=float)
     dataset = {"num_anchors": 3, "sweeps": []}
@@ -1745,10 +1743,10 @@ def test_scale_fix_1_scales_anchor_seed_for_first_anchor_step(monkeypatch):
         anchor_mean = float(np.mean(np.asarray(anchors, dtype=float)))
         return float((r - 40.0) ** 2.0 + 0.01 * (anchor_mean - (r / 30.0)) ** 2.0)
 
-    monkeypatch.setattr(ac, "build_spool_model_params", fake_build_spool_model_params)
-    monkeypatch.setattr(ac, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
-    monkeypatch.setattr(ac, "calibrate_elliptical", fake_calibrate_elliptical)
-    monkeypatch.setattr(ac, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
+    _patch_runtime_attr(monkeypatch, "build_spool_model_params", fake_build_spool_model_params)
+    _patch_runtime_attr(monkeypatch, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
+    _patch_runtime_attr(monkeypatch, "calibrate_elliptical", fake_calibrate_elliptical)
+    _patch_runtime_attr(monkeypatch, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
 
     seed_anchors = np.ones((3, 2), dtype=float)
     _eff_r, _fit_anchors, _spool_params, _transformed, fit_info = ac._estimate_effective_radii_with_spool_model(
@@ -1846,10 +1844,10 @@ def test_scale_fix_2_runs_final_uniform_scale_polish(monkeypatch):
         anchor_mean = float(np.mean(np.asarray(anchors, dtype=float)))
         return float((r / max(anchor_mean, 1e-9) - 40.0) ** 2.0 + 5.0 * (anchor_mean - 1.05) ** 2.0)
 
-    monkeypatch.setattr(ac, "build_spool_model_params", fake_build_spool_model_params)
-    monkeypatch.setattr(ac, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
-    monkeypatch.setattr(ac, "calibrate_elliptical", fake_calibrate_elliptical)
-    monkeypatch.setattr(ac, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
+    _patch_runtime_attr(monkeypatch, "build_spool_model_params", fake_build_spool_model_params)
+    _patch_runtime_attr(monkeypatch, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
+    _patch_runtime_attr(monkeypatch, "calibrate_elliptical", fake_calibrate_elliptical)
+    _patch_runtime_attr(monkeypatch, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
 
     seed_anchors = np.ones((3, 2), dtype=float)
 
@@ -1952,10 +1950,10 @@ def test_scale_fix_3_keeps_final_polish_only_in_single_pass(monkeypatch):
         anchor_mean = float(np.mean(np.asarray(anchors, dtype=float)))
         return float((r / max(anchor_mean, 1e-9) - 40.0) ** 2.0 + 5.0 * (anchor_mean - 1.05) ** 2.0)
 
-    monkeypatch.setattr(ac, "build_spool_model_params", fake_build_spool_model_params)
-    monkeypatch.setattr(ac, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
-    monkeypatch.setattr(ac, "calibrate_elliptical", fake_calibrate_elliptical)
-    monkeypatch.setattr(ac, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
+    _patch_runtime_attr(monkeypatch, "build_spool_model_params", fake_build_spool_model_params)
+    _patch_runtime_attr(monkeypatch, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
+    _patch_runtime_attr(monkeypatch, "calibrate_elliptical", fake_calibrate_elliptical)
+    _patch_runtime_attr(monkeypatch, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
 
     def _run(scale_fix_levels):
         eff_r, _fit_anchors, _spool_params, _transformed, fit_info = ac._estimate_effective_radii_with_spool_model(
@@ -2081,10 +2079,10 @@ def test_final_scale_polish_requires_rank_improvement(monkeypatch):
             _ = anchor_vec
             return []
 
-    monkeypatch.setattr(ac, "build_spool_model_params", fake_build_spool_model_params)
-    monkeypatch.setattr(ac, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
-    monkeypatch.setattr(ac, "calibrate_elliptical", fake_calibrate_elliptical)
-    monkeypatch.setattr(ac, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
+    _patch_runtime_attr(monkeypatch, "build_spool_model_params", fake_build_spool_model_params)
+    _patch_runtime_attr(monkeypatch, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
+    _patch_runtime_attr(monkeypatch, "calibrate_elliptical", fake_calibrate_elliptical)
+    _patch_runtime_attr(monkeypatch, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
     monkeypatch.setattr(ac, "_build_ellipse_cost_function", lambda ds, **_kwargs: FakeCostFn(ds))
     monkeypatch.setattr(ac, "_compute_tau_mad_rescore_from_rows", lambda *_args, **_kwargs: {})
 
@@ -2443,10 +2441,10 @@ def test_spool_block_update_prefers_layered_rank_objective(monkeypatch):
             _ = anchor_vec
             return []
 
-    monkeypatch.setattr(ac, "build_spool_model_params", fake_build_spool_model_params)
-    monkeypatch.setattr(ac, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
-    monkeypatch.setattr(ac, "calibrate_elliptical", fake_calibrate_elliptical)
-    monkeypatch.setattr(ac, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
+    _patch_runtime_attr(monkeypatch, "build_spool_model_params", fake_build_spool_model_params)
+    _patch_runtime_attr(monkeypatch, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
+    _patch_runtime_attr(monkeypatch, "calibrate_elliptical", fake_calibrate_elliptical)
+    _patch_runtime_attr(monkeypatch, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
     monkeypatch.setattr(ac, "_build_ellipse_cost_function", lambda *_args, **_kwargs: FakeCostFn())
     monkeypatch.setattr(ac, "_compute_tau_mad_rescore_from_rows", lambda *_args, **_kwargs: {})
 

@@ -2,7 +2,7 @@ import shlex
 
 import numpy as np
 
-from autocal import active_calibrate as ac
+import autocal.autocal as ac
 from autocal.sweep_types import DataPoint, MachineConfig, MachineType, Sweep
 
 
@@ -235,93 +235,6 @@ def test_print_ellipse_plan_logs_plain_anchors_each_iteration_for_hangprinter(ca
     assert "M669 A0.00:-1900.00:-280.00" in out
 
 
-def test_ellipse_loop_no_collect_accepts_without_collection(tmp_path, monkeypatch):
-    dataset = tmp_path / "semi_dataset.json"
-    _write_dataset(dataset, sweeps=3)
-
-    sent = []
-
-    def fake_send(_server: str, gcode: str) -> str:
-        sent.append(gcode)
-        return "ok"
-
-    def fail_run(*_args, **_kwargs):
-        raise AssertionError("subprocess.run should not be called with --no-collect")
-
-    def fail_start(*_args, **_kwargs):
-        raise AssertionError("rrf_simulator should not be started with --sim --no-collect")
-
-    def fail_wait(*_args, **_kwargs):
-        raise AssertionError("rrf_simulator wait should not run with --sim --no-collect")
-
-    monkeypatch.setattr(ac, "_plan_next_ellipse_sweep", lambda *_args, **_kwargs: _fake_plan())
-    monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(ac, "_send_rrf_gcode", fake_send)
-    monkeypatch.setattr(ac, "_start_rrf_simulator", fail_start)
-    monkeypatch.setattr(ac, "_wait_for_rrf_server", fail_wait)
-    monkeypatch.setattr(ac.subprocess, "run", fail_run)
-
-    rc = ac.ellipse_loop(
-        work_dataset=dataset,
-        machine_type="slideprinter",
-        max_steps=3,
-        stop_cost=None,
-        stop_std_mm=None,
-        solve_restarts=1,
-        solve_iterations=1,
-        solve_optimizer="L-BFGS-B",
-        residual_threshold=1.0,
-        spring_k_multiplier=1.0,
-        use_flex=False,
-        pointwise_residual_mode="sampson",
-        pointwise_filtering=False,
-        pointwise_global_mad=False,
-        sweep_wise_filtering=False,
-        sweep_metric="mad",
-        use_noise_mean=False,
-        sigma_source="auto",
-        robust_debug=False,
-        residuals_csv=None,
-        generate_report=False,
-        find_radii="off",
-        find_buildup_factor="off",
-        base_radii=None,
-        buildup_factor=None,
-        r0_bounds=None,
-        b_bounds=None,
-        r0_prior_sigma_mm=None,
-        b_prior_sigma=None,
-        spool_outer_iters=1,
-        spool_inner_iters=1,
-        theta0_mode="zero",
-        line_width=0.4,
-        sigma_floor_mm=None,
-        sigma_used_mm=None,
-        candidate_deltas=None,
-        candidate_count=16,
-        delta_min=None,
-        delta_max=None,
-        fd_eps_mm=1.0,
-        regularization=0.0,
-        exclude_existing=True,
-        existing_tol_mm=1.0,
-        min_fixed_delta_spacing_mm=0.0,
-        top_k=5,
-        write_cfg=None,
-        collector_args=[],
-        sim=True,
-        keep_sim_alive=False,
-        hp_sim_reset=False,
-        plot_residual_histogram=False,
-        sweep_points=None,
-        output_with_explanations=False,
-        no_collect=True,
-    )
-
-    assert rc == 0
-    assert len(sent) == 0
-
-
 def test_full_auto_loop_no_collect_exits_when_replay_depletes(tmp_path, monkeypatch):
     dataset = tmp_path / "full_dataset.json"
     _write_dataset(dataset, sweeps=5)
@@ -341,7 +254,7 @@ def test_full_auto_loop_no_collect_exits_when_replay_depletes(tmp_path, monkeypa
     def fail_wait(*_args, **_kwargs):
         raise AssertionError("rrf_simulator wait should not run with --sim --no-collect")
 
-    monkeypatch.setattr(ac, "_plan_next_ellipse_sweep", lambda *_args, **_kwargs: _fake_plan())
+    monkeypatch.setattr(ac, "plan_next_ellipse_sweep", lambda *_args, **_kwargs: _fake_plan())
     monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(ac, "_send_rrf_gcode", fake_send)
     monkeypatch.setattr(ac, "_append_jsonl", lambda *_args, **_kwargs: None)
@@ -420,7 +333,7 @@ def test_full_auto_loop_logs_invoked_command_near_top(tmp_path, monkeypatch):
     sent = []
     fake_argv = [
         "python",
-        "autocal/active_calibrate.py",
+        "autocal/autocal.py",
         "--sim",
         "--full-auto",
         "--dataset",
@@ -441,7 +354,7 @@ def test_full_auto_loop_logs_invoked_command_near_top(tmp_path, monkeypatch):
     def fail_wait(*_args, **_kwargs):
         raise AssertionError("rrf_simulator wait should not run with --sim --no-collect")
 
-    monkeypatch.setattr(ac, "_plan_next_ellipse_sweep", lambda *_args, **_kwargs: _fake_plan())
+    monkeypatch.setattr(ac, "plan_next_ellipse_sweep", lambda *_args, **_kwargs: _fake_plan())
     monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(ac, "_send_rrf_gcode", fake_send)
     monkeypatch.setattr(ac, "_append_jsonl", lambda *_args, **_kwargs: None)
@@ -602,7 +515,7 @@ def test_full_auto_accepts_best_historical_replay_plan_after_patience(tmp_path, 
         sent.append(gcode)
         return "ok"
 
-    monkeypatch.setattr(ac, "_plan_next_ellipse_sweep", fake_plan)
+    monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fake_plan)
     monkeypatch.setattr(ac, "_plan_score_ui", fake_score)
     monkeypatch.setattr(ac, "_plan_primary_cost", fake_cost)
     monkeypatch.setattr(ac, "_plan_covariance_summary", fake_cov_summary)
@@ -769,7 +682,7 @@ def test_full_auto_history_selector_can_prefer_mid_late_replay_plan(tmp_path, mo
         sent.append(gcode)
         return "ok"
 
-    monkeypatch.setattr(ac, "_plan_next_ellipse_sweep", fake_plan)
+    monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fake_plan)
     monkeypatch.setattr(ac, "_plan_score_ui", fake_score)
     monkeypatch.setattr(ac, "_plan_primary_cost", fake_cost)
     monkeypatch.setattr(ac, "_plan_covariance_summary", fake_cov_summary)

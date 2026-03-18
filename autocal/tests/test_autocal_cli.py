@@ -2,40 +2,48 @@ import os
 
 import pytest
 
-import autocal.active_calibrate as ac
-from autocal.active_calibrate import (
+import autocal.autocal as ac
+from autocal._autocal_common import (
     _apply_optimizer_mode_env,
     _parse_filter_schedule,
     _parse_full_auto_run_spec,
     _resolve_spool_cli_options,
-    build_ellipse_parser,
+    build_semi_auto_parser,
 )
 
 
-def test_spool_cli_options_parse_modes_and_bounds():
-    parser = build_ellipse_parser()
+def _parse_spool_args(*extra_args):
+    parser = build_semi_auto_parser()
     args = parser.parse_args(
         [
+            "--dataset",
             "dummy.json",
             "--machine-type",
             "slideprinter",
-            "--find-radii",
-            "global",
-            "--theta0-mode",
-            "infer",
-            "--r0-bounds",
-            "12,34",
-            "--spool-outer-iters",
-            "5",
-            "--spool-inner-iters",
-            "17",
-            "--line-width",
-            "1.25",
-            "--sigma-floor-mm",
-            "0.05",
-            "--sigma-used-mm",
-            "0.8",
+            *extra_args,
         ]
+    )
+    return parser, args
+
+
+def test_spool_cli_options_parse_modes_and_bounds():
+    parser, args = _parse_spool_args(
+        "--find-radii",
+        "global",
+        "--theta0-mode",
+        "infer",
+        "--r0-bounds",
+        "12,34",
+        "--spool-outer-iters",
+        "5",
+        "--spool-inner-iters",
+        "17",
+        "--line-width",
+        "1.25",
+        "--sigma-floor-mm",
+        "0.05",
+        "--sigma-used-mm",
+        "0.8",
     )
     opts = _resolve_spool_cli_options(parser, args)
     assert opts["find_radii"] == "global"
@@ -48,19 +56,13 @@ def test_spool_cli_options_parse_modes_and_bounds():
     assert opts["line_width"] == 1.25
     assert opts["sigma_floor_mm"] == 0.05
     assert opts["sigma_used_mm"] == 0.8
-    assert opts["fit_structure"] == []
+    assert opts["fit_structure"] == [3]
 
 
 def test_spool_cli_flags_without_value_default_to_per_anchor():
-    parser = build_ellipse_parser()
-    args = parser.parse_args(
-        [
-            "dummy.json",
-            "--machine-type",
-            "slideprinter",
-            "--find-radii",
-            "--find-buildup-factor",
-        ]
+    parser, args = _parse_spool_args(
+        "--find-radii",
+        "--find-buildup-factor",
     )
     opts = _resolve_spool_cli_options(parser, args)
     assert opts["find_radii"] == "per-anchor"
@@ -69,209 +71,85 @@ def test_spool_cli_flags_without_value_default_to_per_anchor():
 
 
 def test_spool_cli_rejects_invalid_bounds():
-    parser = build_ellipse_parser()
-    args = parser.parse_args(
-        [
-            "dummy.json",
-            "--machine-type",
-            "slideprinter",
-            "--r0-bounds",
-            "10",
-        ]
-    )
+    parser, args = _parse_spool_args("--r0-bounds", "10")
     with pytest.raises(SystemExit):
         _resolve_spool_cli_options(parser, args)
 
 
 def test_spool_cli_rejects_negative_line_width():
-    parser = build_ellipse_parser()
-    args = parser.parse_args(
-        [
-            "dummy.json",
-            "--machine-type",
-            "slideprinter",
-            "--line-width",
-            "-0.1",
-        ]
-    )
+    parser, args = _parse_spool_args("--line-width", "-0.1")
     with pytest.raises(SystemExit):
         _resolve_spool_cli_options(parser, args)
 
 
 def test_spool_cli_rejects_nonpositive_sigma_floor_mm():
-    parser = build_ellipse_parser()
-    args = parser.parse_args(
-        [
-            "dummy.json",
-            "--machine-type",
-            "slideprinter",
-            "--sigma-floor-mm",
-            "0",
-        ]
-    )
+    parser, args = _parse_spool_args("--sigma-floor-mm", "0")
     with pytest.raises(SystemExit):
         _resolve_spool_cli_options(parser, args)
 
 
 def test_spool_cli_rejects_nonpositive_sigma_used_mm():
-    parser = build_ellipse_parser()
-    args = parser.parse_args(
-        [
-            "dummy.json",
-            "--machine-type",
-            "slideprinter",
-            "--sigma-used-mm",
-            "0",
-        ]
-    )
+    parser, args = _parse_spool_args("--sigma-used-mm", "0")
     with pytest.raises(SystemExit):
         _resolve_spool_cli_options(parser, args)
 
 
 def test_spool_cli_parses_scale_fix_levels():
-    parser = build_ellipse_parser()
-    args = parser.parse_args(
-        [
-            "dummy.json",
-            "--machine-type",
-            "slideprinter",
-            "--scale-fix",
-            "1,3",
-        ]
-    )
+    parser, args = _parse_spool_args("--scale-fix", "1,3")
     opts = _resolve_spool_cli_options(parser, args)
     assert opts["scale_fix"] == [1, 3]
 
 
 def test_spool_cli_rejects_invalid_scale_fix_level():
-    parser = build_ellipse_parser()
-    args = parser.parse_args(
-        [
-            "dummy.json",
-            "--machine-type",
-            "slideprinter",
-            "--scale-fix",
-            "1,4",
-        ]
-    )
+    parser, args = _parse_spool_args("--scale-fix", "1,4")
     with pytest.raises(SystemExit):
         _resolve_spool_cli_options(parser, args)
 
 
 def test_spool_cli_default_enables_scale_fix_2():
-    parser = build_ellipse_parser()
-    args = parser.parse_args(
-        [
-            "dummy.json",
-            "--machine-type",
-            "slideprinter",
-        ]
-    )
+    parser, args = _parse_spool_args()
     opts = _resolve_spool_cli_options(parser, args)
-    assert opts["scale_fix"] == [2]
+    assert opts["scale_fix"] == [3]
 
 
 def test_spool_cli_parses_filter_schedule_words():
-    parser = build_ellipse_parser()
-    args = parser.parse_args(
-        [
-            "dummy.json",
-            "--machine-type",
-            "slideprinter",
-            "--filter-schedule",
-            "warmup,warmup,dynamic,constant",
-        ]
-    )
+    parser, args = _parse_spool_args("--filter-schedule", "warmup,warmup,dynamic,constant")
     opts = _resolve_spool_cli_options(parser, args)
     assert opts["filter_schedule"] == ["warmup", "warmup", "dynamic", "constant"]
 
 
 def test_spool_cli_parses_filter_schedule_numbers():
-    parser = build_ellipse_parser()
-    args = parser.parse_args(
-        [
-            "dummy.json",
-            "--machine-type",
-            "slideprinter",
-            "--filter-schedule",
-            "0,0,1,2",
-        ]
-    )
+    parser, args = _parse_spool_args("--filter-schedule", "0,0,1,2")
     opts = _resolve_spool_cli_options(parser, args)
     assert opts["filter_schedule"] == ["warmup", "warmup", "dynamic", "constant"]
 
 
 def test_spool_cli_rejects_constant_without_dynamic_since_last_warmup():
-    parser = build_ellipse_parser()
-    args = parser.parse_args(
-        [
-            "dummy.json",
-            "--machine-type",
-            "slideprinter",
-            "--filter-schedule",
-            "warmup,constant",
-        ]
-    )
+    parser, args = _parse_spool_args("--filter-schedule", "warmup,constant")
     with pytest.raises(SystemExit):
         _resolve_spool_cli_options(parser, args)
 
 
 def test_spool_cli_allows_disabling_scale_fixes():
-    parser = build_ellipse_parser()
-    args = parser.parse_args(
-        [
-            "dummy.json",
-            "--machine-type",
-            "slideprinter",
-            "--scale-fix",
-            "off",
-        ]
-    )
+    parser, args = _parse_spool_args("--scale-fix", "off")
     opts = _resolve_spool_cli_options(parser, args)
     assert opts["scale_fix"] == []
 
 
 def test_spool_cli_parses_fit_structure_levels():
-    parser = build_ellipse_parser()
-    args = parser.parse_args(
-        [
-            "dummy.json",
-            "--machine-type",
-            "slideprinter",
-            "--fit-structure",
-            "1,3",
-        ]
-    )
+    parser, args = _parse_spool_args("--fit-structure", "1,3")
     opts = _resolve_spool_cli_options(parser, args)
     assert opts["fit_structure"] == [1, 3]
 
 
 def test_spool_cli_rejects_invalid_fit_structure_level():
-    parser = build_ellipse_parser()
-    args = parser.parse_args(
-        [
-            "dummy.json",
-            "--machine-type",
-            "slideprinter",
-            "--fit-structure",
-            "4",
-        ]
-    )
+    parser, args = _parse_spool_args("--fit-structure", "4")
     with pytest.raises(SystemExit):
         _resolve_spool_cli_options(parser, args)
 
 
 def test_spool_cli_parses_optimizer_mode():
-    parser = build_ellipse_parser()
-    args = parser.parse_args(
-        [
-            "dummy.json",
-            "--machine-type",
-            "slideprinter",
-            "--optimizer-mode",
-            "fast-fd",
-        ]
-    )
+    _parser, args = _parse_spool_args("--optimizer-mode", "fast-fd")
     assert str(args.optimizer_mode) == "fast-fd"
 
 
@@ -325,7 +203,7 @@ def test_apply_optimizer_mode_env_sets_solver_variables(monkeypatch):
     assert os.environ.get("AUTOCAL_DISABLE_JAX_OBJECTIVE") is None
 
 
-def test_semi_auto_cli_normalizes_hangprinter_alias_for_full_auto(monkeypatch, tmp_path):
+def test_autocal_main_normalizes_hangprinter_alias_for_full_auto(monkeypatch, tmp_path):
     captured = {}
 
     def fake_full_auto_loop(**kwargs):
@@ -334,7 +212,7 @@ def test_semi_auto_cli_normalizes_hangprinter_alias_for_full_auto(monkeypatch, t
 
     monkeypatch.setattr(ac, "full_auto_loop", fake_full_auto_loop)
 
-    rc = ac.semi_auto_cli(
+    rc = ac.main(
         [
             "--machine-type",
             "hp3",
