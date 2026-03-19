@@ -573,6 +573,112 @@ def test_full_auto_loop_ranks_variants_by_score_ui_not_primary_cost(
     assert "Quality score below 2 indicates a near-perfect fit." in out
 
 
+def test_full_auto_loop_ranks_variants_by_sweep_bias_even_below_old_threshold(
+    tmp_path,
+    monkeypatch,
+    capsys,
+):
+    dataset = tmp_path / "full_dataset.json"
+    _write_dataset(dataset, sweeps=3)
+
+    low_chi2_higher_bias = _layered_plan(
+        primary_cost=85.0,
+        cost_raw=0.3,
+        chi2_layered=85.0,
+        tau_mad_mm=0.8,
+        n_trim=41.0,
+        chi2_trimmed_direct=40.0,
+    )
+    low_chi2_higher_bias["calibration"]["details"]["noise_metrics"]["normalized_sweep_bias"] = 0.06
+
+    higher_chi2_lower_bias = _layered_plan(
+        primary_cost=90.0,
+        cost_raw=0.3,
+        chi2_layered=90.0,
+        tau_mad_mm=0.8,
+        n_trim=41.0,
+        chi2_trimmed_direct=40.0,
+    )
+    higher_chi2_lower_bias["calibration"]["details"]["noise_metrics"]["normalized_sweep_bias"] = 0.01
+
+    planned_runs = [low_chi2_higher_bias, higher_chi2_lower_bias]
+
+    def fake_plan_next(*_args, **_kwargs):
+        assert planned_runs
+        return planned_runs.pop(0)
+
+    monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fake_plan_next)
+    monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(ac, "_append_jsonl", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(ac, "_start_rrf_simulator", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(ac, "_wait_for_rrf_server", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(ac.subprocess, "run", lambda *_args, **_kwargs: None)
+
+    rc = ac.full_auto_loop(
+        work_dataset=dataset,
+        machine_type="slideprinter",
+        max_steps=1,
+        stop_cost=None,
+        stop_std_mm=None,
+        solve_restarts=1,
+        solve_iterations=1,
+        solve_optimizer="L-BFGS-B",
+        residual_threshold=1.0,
+        spring_k_multiplier=1.0,
+        use_flex=False,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=False,
+        pointwise_global_mad=False,
+        sweep_wise_filtering=False,
+        sweep_metric="mad",
+        use_noise_mean=False,
+        sigma_source="auto",
+        robust_debug=False,
+        residuals_csv=None,
+        generate_report=False,
+        find_radii="global",
+        find_buildup_factor="off",
+        base_radii=[30.0, 30.0, 30.0],
+        buildup_factor=0.636619,
+        r0_bounds=None,
+        b_bounds=None,
+        r0_prior_sigma_mm=None,
+        b_prior_sigma=None,
+        spool_outer_iters=1,
+        spool_inner_iters=1,
+        theta0_mode="zero",
+        line_width=0.4,
+        sigma_floor_mm=None,
+        sigma_used_mm=None,
+        candidate_deltas=None,
+        candidate_count=16,
+        delta_min=None,
+        delta_max=None,
+        fd_eps_mm=1.0,
+        regularization=0.0,
+        exclude_existing=True,
+        existing_tol_mm=1.0,
+        min_fixed_delta_spacing_mm=0.0,
+        top_k=5,
+        write_cfg=None,
+        collector_args=[],
+        sim=True,
+        keep_sim_alive=False,
+        hp_sim_reset=False,
+        sweep_points=None,
+        output_with_explanations=False,
+        full_auto_runs=["--solve-iterations 1", "--solve-iterations 2"],
+        full_auto_log=None,
+        patience=20,
+        verbose=False,
+        no_collect=True,
+    )
+
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "; selected run=run_02" in out
+
+
 def test_verbose_prints_iteration_details_each_round(
     tmp_path,
     monkeypatch,

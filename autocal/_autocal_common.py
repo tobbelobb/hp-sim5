@@ -66,6 +66,7 @@ _SCORE_UI_LAYERED_TAIL_RATIO_REF = 1.8
 _SCORE_UI_LAYERED_TAIL_RATIO_WEIGHT = 0.35
 _SCORE_UI_LAYERED_SWEEP_BIAS_REF = 0.12
 _SCORE_UI_LAYERED_SWEEP_BIAS_WEIGHT = 0.50
+_SCORE_UI_LAYERED_SWEEP_BIAS_LOOP_WEIGHT = 0.10
 _SCORE_UI_LAYERED_TAIL_FACTOR_REF = 3.0
 _SCORE_UI_LAYERED_TAIL_FACTOR_WEIGHT = 0.20
 _SCORE_UI_LAYERED_MAP_SCALE = 95.0
@@ -3990,6 +3991,65 @@ def _noise_metric_float(noise_metrics: dict, key: str) -> Optional[float]:
     return None
 
 
+def _normalized_sweep_bias_penalty_multiplier(
+    noise_metrics: Optional[dict],
+    *,
+    excess_only: bool = False,
+    weight: float = _SCORE_UI_LAYERED_SWEEP_BIAS_WEIGHT,
+    ref: float = _SCORE_UI_LAYERED_SWEEP_BIAS_REF,
+) -> float:
+    if not isinstance(noise_metrics, dict):
+        return 1.0
+    normalized_sweep_bias = _noise_metric_float(noise_metrics, "normalized_sweep_bias")
+    if normalized_sweep_bias is None or not np.isfinite(normalized_sweep_bias):
+        return 1.0
+    ref_safe = max(float(ref), float(np.finfo(float).eps))
+    ratio = max(float(normalized_sweep_bias), 0.0) / ref_safe
+    if excess_only:
+        ratio = max(0.0, ratio - 1.0)
+    return float(1.0 + float(weight) * float(ratio))
+
+
+def _normalized_sweep_bias_penalty_term(
+    noise_metrics: Optional[dict],
+    *,
+    scale: Optional[float],
+    weight: float = _SCORE_UI_LAYERED_SWEEP_BIAS_WEIGHT,
+    ref: float = _SCORE_UI_LAYERED_SWEEP_BIAS_REF,
+) -> float:
+    scale_val = _float_or_none(scale)
+    if scale_val is None or not np.isfinite(scale_val) or scale_val <= 0.0:
+        return 0.0
+    if not isinstance(noise_metrics, dict):
+        return 0.0
+    normalized_sweep_bias = _noise_metric_float(noise_metrics, "normalized_sweep_bias")
+    if normalized_sweep_bias is None or not np.isfinite(normalized_sweep_bias):
+        return 0.0
+    ref_safe = max(float(ref), float(np.finfo(float).eps))
+    ratio = max(float(normalized_sweep_bias), 0.0) / ref_safe
+    return float(float(weight) * float(scale_val) * float(ratio))
+
+
+def _apply_normalized_sweep_bias_penalty(
+    metric: Optional[float],
+    noise_metrics: Optional[dict],
+    *,
+    excess_only: bool = False,
+    weight: float = _SCORE_UI_LAYERED_SWEEP_BIAS_WEIGHT,
+    ref: float = _SCORE_UI_LAYERED_SWEEP_BIAS_REF,
+) -> Optional[float]:
+    metric_val = _float_or_none(metric)
+    if metric_val is None or not np.isfinite(metric_val):
+        return None
+    multiplier = _normalized_sweep_bias_penalty_multiplier(
+        noise_metrics,
+        excess_only=bool(excess_only),
+        weight=float(weight),
+        ref=float(ref),
+    )
+    return float(metric_val * float(multiplier))
+
+
 def _rank_coverage_adjustment_from_noise_metrics(
     noise_metrics: Optional[dict],
     *,
@@ -4220,13 +4280,13 @@ def _layered_internal_metric_from_noise_metrics(
                 * max(0.0, tail_ratio / _SCORE_UI_LAYERED_TAIL_RATIO_REF - 1.0)
             )
     if 2 in fit_structure_set:
-        normalized_sweep_bias = _noise_metric_float(noise_metrics, "normalized_sweep_bias")
-        if normalized_sweep_bias is not None:
-            m_layered *= (
-                1.0
-                + _SCORE_UI_LAYERED_SWEEP_BIAS_WEIGHT
-                * max(0.0, normalized_sweep_bias / _SCORE_UI_LAYERED_SWEEP_BIAS_REF - 1.0)
-            )
+        penalized = _apply_normalized_sweep_bias_penalty(
+            m_layered,
+            noise_metrics,
+            excess_only=True,
+        )
+        if penalized is not None:
+            m_layered = float(penalized)
     if 3 in fit_structure_set:
         tail_factor_median = _noise_metric_float(noise_metrics, "tail_factor_median")
         if tail_factor_median is not None:
@@ -4323,6 +4383,9 @@ def _compute_score_ui_layered(plan: Dict[str, object]) -> Tuple[float, float]:
     )
     m_risk = _plan_trimmed_risk_metric(plan)
     m_layered = _blend_internal_metric_with_risk(m_base, m_risk)
+    m_penalty = _normalized_sweep_bias_penalty_term(nm, scale=m_risk)
+    if m_layered is not None and np.isfinite(m_penalty) and m_penalty > 0.0:
+        m_layered = float(m_layered + m_penalty)
     critical_nonfinite = (
         m_layered is None or cost_raw is None or tau_mad_mm is None or n_trim is None
     )
