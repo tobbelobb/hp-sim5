@@ -363,6 +363,8 @@ The spool step uses a simple coordinate-descent solver:
    - try `+step`
    - try `-step`
    - keep the best improving move
+   - if that improving move used a large share of the current step, grow that
+     parameter's step size modestly for the next round
    - if neither direction improves, halve that parameter's step size
 3. Repeat until:
    - step sizes fall below tolerance, or

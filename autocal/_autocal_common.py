@@ -2187,6 +2187,24 @@ def _spool_step_tolerances(kinds: Sequence[str]) -> np.ndarray:
     return np.asarray([1e-3 if kind == "r" else 1e-5 for kind in kinds], dtype=float)
 
 
+def _grown_spool_step_after_success(step: float, *, move: float, lo: float, hi: float) -> float:
+    current_step = float(step)
+    move_mag = abs(float(move))
+    if (
+        (not np.isfinite(current_step))
+        or current_step <= 0.0
+        or (not np.isfinite(move_mag))
+        or move_mag <= 0.0
+    ):
+        return max(current_step, 1e-8)
+
+    grown = max(current_step, 1.5 * move_mag)
+    span = float(hi - lo)
+    if np.isfinite(span) and span > 0.0:
+        grown = min(grown, 0.5 * span)
+    return max(float(grown), 1e-8)
+
+
 def _spool_seed_candidates(x_seed: np.ndarray, lo: np.ndarray, hi: np.ndarray) -> List[np.ndarray]:
     seed = np.asarray(x_seed, dtype=float).reshape(-1)
     if seed.size == 0:
@@ -2407,8 +2425,15 @@ def _coordinate_descent_spool(
                 and best_axis_cost + 1e-12 < best_local
                 and abs(float(best_axis_value) - float(x[idx])) > 1e-12
             ):
+                prev_axis_value = float(x[idx])
                 x[idx] = float(best_axis_value)
                 best = float(best_axis_cost)
+                steps[idx] = _grown_spool_step_after_success(
+                    float(steps[idx]),
+                    move=(float(best_axis_value) - prev_axis_value),
+                    lo=float(lo[idx]),
+                    hi=float(hi[idx]),
+                )
                 improved_this_round = True
                 improved_any = True
             else:
