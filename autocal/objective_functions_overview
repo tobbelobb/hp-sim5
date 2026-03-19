@@ -113,15 +113,12 @@ About `_data_cost` vs `_spool_rank_score`
 - `_data_cost(...)`
   - starts from the noise-normalized ellipse cost
   - adds a risk blend term
-  - adds a `normalized_sweep_bias` penalty term scaled by the trimmed-risk
-    diagnostic
   - is used for spool optimization, bootstrap refresh acceptance, and scale
     polish search
 
 - `_spool_rank_score(...)`
   - builds a layered ranking metric from the noise diagnostics
   - blends that with risk
-  - adds the same trimmed-risk-scaled `normalized_sweep_bias` term
   - is used for anchor acceptance / rollback and final best-solution selection
     inside the spool-fitting pipeline
 
@@ -145,10 +142,8 @@ Do spool parameters and anchors optimize the same metric?
 
 Important current detail about `fit_structure`
 
-- `normalized_sweep_bias` now affects the core objectives directly:
+- `normalized_sweep_bias` now affects:
   - layered plan / full-auto scoring
-  - `_data_cost(...)`
-  - `_spool_rank_score(...)` inside the alternating rounds
 - `--fit-structure 2` is now only an additional above-reference sweep-bias
   penalty on top of that always-on term.
 

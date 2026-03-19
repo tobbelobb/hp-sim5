@@ -1397,11 +1397,6 @@ def estimate_effective_radii_with_spool_model(
             )
         else:
             data_cost = float(legacy_cost)
-        data_cost += _normalized_sweep_bias_penalty_term(
-            _noise_metrics,
-            scale=risk_metric,
-            weight=_SCORE_UI_LAYERED_SWEEP_BIAS_LOOP_WEIGHT,
-        )
         return float(data_cost)
 
     objective_id = int(requested_objective_schedule[0])
@@ -1539,15 +1534,6 @@ def estimate_effective_radii_with_spool_model(
                 use_fit_structure_penalties=False,
             )
             m_internal = _blend_internal_metric_with_risk(m_layered, risk_metric)
-            if m_internal is not None and np.isfinite(m_internal):
-                m_internal = float(
-                    m_internal
-                    + _normalized_sweep_bias_penalty_term(
-                        noise_metrics,
-                        scale=risk_metric,
-                        weight=_SCORE_UI_LAYERED_SWEEP_BIAS_LOOP_WEIGHT,
-                    )
-                )
             rank_score = _layered_rank_score_from_internal_metric(m_internal)
             return float(rank_score), (None if m_internal is None else float(m_internal))
         except Exception:

@@ -2540,7 +2540,7 @@ def test_spool_block_update_prefers_layered_rank_objective(monkeypatch):
     assert isinstance(fit_info.get("best_rank_score"), (int, float))
 
 
-def test_spool_block_update_data_cost_blends_trimmed_risk_and_sweep_bias(monkeypatch):
+def test_spool_block_update_inner_loop_ignores_sweep_bias(monkeypatch):
     base = np.array([10.0, 10.0, 10.0], dtype=float)
 
     def fake_build_spool_model_params(
@@ -2675,17 +2675,8 @@ def test_spool_block_update_data_cost_blends_trimmed_risk_and_sweep_bias(monkeyp
     history = fit_info.get("history")
     assert isinstance(history, list) and history
     expected_risk = 20.0
-    expected_bias_penalty = ac._normalized_sweep_bias_penalty_term(
-        {"normalized_sweep_bias": 0.06},
-        scale=expected_risk,
-        weight=ac._SCORE_UI_LAYERED_SWEEP_BIAS_LOOP_WEIGHT,
-    )
-    expected_data_cost = (
-        10.0 + ac._SCORE_UI_LAYERED_RISK_BLEND_WEIGHT * expected_risk + expected_bias_penalty
-    )
-    expected_rank_metric = (
-        1.0 + ac._SCORE_UI_LAYERED_RISK_BLEND_WEIGHT * expected_risk + expected_bias_penalty
-    )
+    expected_data_cost = 10.0 + ac._SCORE_UI_LAYERED_RISK_BLEND_WEIGHT * expected_risk
+    expected_rank_metric = 1.0 + ac._SCORE_UI_LAYERED_RISK_BLEND_WEIGHT * expected_risk
     expected_rank_score = ac._layered_rank_score_from_internal_metric(expected_rank_metric)
     assert np.isclose(float(history[0].get("current_data_cost")), expected_data_cost, atol=1e-9)
     assert np.isclose(float(history[0].get("current_rank_score")), expected_rank_score, atol=1e-9)

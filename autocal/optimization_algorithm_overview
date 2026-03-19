@@ -440,8 +440,6 @@ There are several distinct objectives in play:
 What it currently affects:
 
 - layered plan scoring / reporting
-- `_data_cost(...)`
-- `_spool_rank_score(...)` inside the alternating rounds
 - raw `rank_score` generation
 - full-auto run selection
 - full-auto history ranking, because `history_rank_score` starts from `rank_score`
@@ -449,6 +447,8 @@ What it currently affects:
 
 What it does not currently affect:
 
+- `_data_cost(...)`
+- `_spool_rank_score(...)` inside the alternating rounds
 - `_prior_cost(...)`
 
 `--fit-structure 2` is now only an extra above-reference sweep-bias penalty on
