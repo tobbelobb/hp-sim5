@@ -43,39 +43,118 @@ import shutil
 import subprocess
 import sys
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional, Tuple
 
 
-DATASETS = [
-    "five_points_bigger_deltas",
-    "flexible_lines_2000",
-    "layered_manual_some_bad_points",
-    "ten_points_bigger_deltas",
-    "ten_points_w_buildup",
-    "ten_points_w_buildup2",
-]
+Coord = Tuple[float, ...]
+DEFAULT_REFERENCE_LOG_NAMES = (
+    "full_auto_reference_run_march_19.log",
+    "full_auto_reference_run_march_11.log",
+    "full_auto_reference_run_march_6.log",
+)
 
-# Ground truth for --sim datasets (provided by user)
-TRUE_ANCHORS: List[Tuple[float, float]] = [
-    (0.0, -1900.0),
-    (1645.44826719, 950.0),
-    (-1645.44826719, 950.0),
+SIM_2D_TRUE_ANCHORS: List[Coord] = [
+    (0.0, -1900.0, 0.0),
+    (1645.44826719, 950.0, 0.0),
+    (-1645.44826719, 950.0, 0.0),
 ]
-TRUE_R: float = 39.184
+SIM_2D_TRUE_RADII = [39.184, 39.184, 39.184]
+
+SIM_3D_TRUE_ANCHORS: List[Coord] = [
+    (0.0, -1900.0, -280.0),
+    (1645.45, 950.0, -280.0),
+    (-1645.45, 950.0, -280.0),
+    (0.0, 0.0, 1900.0),
+]
+SIM_3D_TRUE_RADII = [39.1845, 39.1845, 39.1845, 39.1845]
+
+
+@dataclass(frozen=True)
+class DatasetSpec:
+    name: str
+    machine_type: str
+    base_radii: str
+    buildup_factor: str
+    true_anchors: List[Coord]
+    true_radii: List[float]
+    extra_args: Tuple[str, ...] = ()
+    reference_log_names: Tuple[str, ...] = field(default_factory=lambda: DEFAULT_REFERENCE_LOG_NAMES)
+
+
+DATASETS = [
+    DatasetSpec(
+        name="five_points_bigger_deltas",
+        machine_type="slideprinter",
+        base_radii="30.0",
+        buildup_factor="0.636619",
+        true_anchors=SIM_2D_TRUE_ANCHORS,
+        true_radii=SIM_2D_TRUE_RADII,
+    ),
+    DatasetSpec(
+        name="flexible_lines_2000",
+        machine_type="slideprinter",
+        base_radii="30.0",
+        buildup_factor="0.636619",
+        true_anchors=SIM_2D_TRUE_ANCHORS,
+        true_radii=SIM_2D_TRUE_RADII,
+    ),
+    DatasetSpec(
+        name="layered_manual_some_bad_points",
+        machine_type="slideprinter",
+        base_radii="30.0",
+        buildup_factor="0.636619",
+        true_anchors=SIM_2D_TRUE_ANCHORS,
+        true_radii=SIM_2D_TRUE_RADII,
+    ),
+    DatasetSpec(
+        name="ten_points_bigger_deltas",
+        machine_type="slideprinter",
+        base_radii="30.0",
+        buildup_factor="0.636619",
+        true_anchors=SIM_2D_TRUE_ANCHORS,
+        true_radii=SIM_2D_TRUE_RADII,
+    ),
+    DatasetSpec(
+        name="ten_points_w_buildup",
+        machine_type="slideprinter",
+        base_radii="30.0",
+        buildup_factor="0.636619",
+        true_anchors=SIM_2D_TRUE_ANCHORS,
+        true_radii=SIM_2D_TRUE_RADII,
+    ),
+    DatasetSpec(
+        name="ten_points_w_buildup2",
+        machine_type="slideprinter",
+        base_radii="30.0",
+        buildup_factor="0.636619",
+        true_anchors=SIM_2D_TRUE_ANCHORS,
+        true_radii=SIM_2D_TRUE_RADII,
+    ),
+    DatasetSpec(
+        name="fifth_hp3_dataset",
+        machine_type="hangprinter_4",
+        base_radii="39",
+        buildup_factor="0.636619",
+        true_anchors=SIM_3D_TRUE_ANCHORS,
+        true_radii=SIM_3D_TRUE_RADII,
+        extra_args=("--verbose", "--r0-bounds", "39,40"),
+        reference_log_names=("full_auto_reference_run_march_19.log",),
+    ),
+]
 
 
 @dataclass
 class Params:
-    anchors: Optional[List[Tuple[float, float]]]  # len=3
-    radii: Optional[List[float]]  # len=3
+    anchors: Optional[List[Coord]]
+    radii: Optional[List[float]]
     fit_score_ui: Optional[float]  # "Fit quality score" from the summary block
 
 
 @dataclass
 class Iteration:
-    anchors: Optional[List[Tuple[float, float]]]
+    anchors: Optional[List[Coord]]
     radii: Optional[List[float]]
     fit_score_ui: Optional[float] = None
     rank_score: Optional[float] = None
@@ -115,14 +194,9 @@ _RE_LEGACY_FIT_SCORE = re.compile(r"\bScore:\s*([0-9.+-eE]+)\b")
 _RE_SELECTED_FIT_SCORE_UI = re.compile(r"\b(?:fit_score_ui|score_ui)=([0-9.+-eE]+)\b")
 _RE_SELECTED_RANK_SCORE = re.compile(r"\brank_score=([0-9.+-eE]+)\b")
 _RE_SELECTED_HISTORY_RANK_SCORE = re.compile(r"\b(?:history_rank_score|selection_rank)=([0-9.+-eE]+)\b")
-_RE_M669_PARTS = re.compile(
-    r"([ABC])\s*([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)\:([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)\:([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)",
-    re.IGNORECASE,
-)
-_RE_M666_R = re.compile(
-    r"R\s*([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?):([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?):([+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?)",
-    re.IGNORECASE,
-)
+_NUM_PATTERN = r"[+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?"
+_RE_M669_PARTS = re.compile(rf"([A-Z])\s*((?:{_NUM_PATTERN})(?::{_NUM_PATTERN})+)", re.IGNORECASE)
+_RE_M666_R = re.compile(rf"\bR\s*((?:{_NUM_PATTERN})(?::{_NUM_PATTERN})+)", re.IGNORECASE)
 _RE_FIT_SCORE = re.compile(r"Fit(?:/UI)? quality score.*?:\s*([0-9.+-eE]+)\s*$")
 _RE_ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
@@ -160,8 +234,7 @@ def parse_iterations(text: str) -> List[Iteration]:
             if m:
                 try:
                     arr = ast.literal_eval(m.group(1))
-                    anchors_xy = [(float(a[0]), float(a[1])) for a in arr]
-                    cur["anchors"] = anchors_xy
+                    cur["anchors"] = [tuple(float(v) for v in a) for a in arr]
                     cur["anchors_line"] = line.strip()
                 except Exception:
                     # keep going; we'll still report parse issues later
@@ -178,6 +251,8 @@ def parse_iterations(text: str) -> List[Iteration]:
                     cur["radii"] = None
                     cur["radii_line"] = line.strip()
         if "; selected run=" in line:
+            if "anchors" not in cur and "radii" not in cur:
+                continue
             fit_score_ui = None
             rank_score = None
             history_rank_score = None
@@ -236,17 +311,14 @@ def extract_summary_block_lines(text: str, max_lines: int = 40) -> List[str]:
 
 def parse_summary(text: str) -> Optional[Params]:
     """
-    Parses the last calibration summary for:
-    - fit score
-    - anchors (A,B,C)
-    - radii (R1:R2:R3)
+    Parses the last calibration summary for fit score, anchors, and radii.
     """
     lines = extract_summary_block_lines(text, max_lines=60)
     if not lines:
         return None
 
     fit_score: Optional[float] = None
-    anchors_map: dict[str, Tuple[float, float]] = {}
+    anchors: Optional[List[Coord]] = None
     radii: Optional[List[float]] = None
 
     for line in lines:
@@ -255,24 +327,27 @@ def parse_summary(text: str) -> Optional[Params]:
             if m:
                 fit_score = _safe_float(m.group(1))
         if "Parameters (M669)" in line or "Anchors (M669)" in line:
-            parts = _RE_M669_PARTS.findall(line)
-            for (k, x, y, _z) in parts:
-                fx, fy = _safe_float(x), _safe_float(y)
-                if fx is not None and fy is not None:
-                    anchors_map[k.upper()] = (fx, fy)
+            parsed_anchors: List[Coord] = []
+            for _label, coords_text in _RE_M669_PARTS.findall(line):
+                values = [_safe_float(part) for part in coords_text.split(":")]
+                if any(v is None for v in values):
+                    parsed_anchors = []
+                    break
+                parsed_anchors.append(tuple(float(v) for v in values if v is not None))
+            if parsed_anchors:
+                anchors = parsed_anchors
         if "Line model (M666)" in line or "Spools (M666)" in line:
             m = _RE_M666_R.search(line)
             if m:
-                radii = [_safe_float(m.group(1)), _safe_float(m.group(2)), _safe_float(m.group(3))]
-                if any(v is None for v in radii):
+                parsed_radii = [_safe_float(part) for part in m.group(1).split(":")]
+                if any(v is None for v in parsed_radii):
                     radii = None
                 else:
-                    radii = [float(v) for v in radii]  # type: ignore
+                    radii = [float(v) for v in parsed_radii if v is not None]
 
-    if radii is None or len(anchors_map) != 3:
+    if radii is None or anchors is None:
         return None
 
-    anchors = [anchors_map["A"], anchors_map["B"], anchors_map["C"]]
     return Params(anchors=anchors, radii=radii, fit_score_ui=fit_score)
 
 
@@ -286,8 +361,24 @@ def parse_log_file(path: Path) -> ParsedLog:
 
 # ---------- Metrics ----------
 
-def anchor_distance(a: List[Tuple[float, float]], b: List[Tuple[float, float]]) -> float:
-    return sum(math.hypot(ax - bx, ay - by) for (ax, ay), (bx, by) in zip(a, b))
+def _anchors_compatible(a: List[Coord], b: List[Coord]) -> bool:
+    return len(a) == len(b) and all(len(left) == len(right) for left, right in zip(a, b))
+
+
+def anchor_distance(a: List[Coord], b: List[Coord]) -> float:
+    return sum(math.dist(left, right) for left, right in zip(a, b))
+
+
+def _anchor_distance_common_dims(a: List[Coord], b: List[Coord]) -> Optional[float]:
+    if len(a) != len(b):
+        return None
+    total = 0.0
+    for left, right in zip(a, b):
+        dim = min(len(left), len(right))
+        if dim == 0:
+            return None
+        total += math.dist(left[:dim], right[:dim])
+    return total
 
 
 def radius_distance(r: List[float], r2: List[float]) -> float:
@@ -296,30 +387,45 @@ def radius_distance(r: List[float], r2: List[float]) -> float:
 
 
 def total_param_distance(
-    anchors1: Optional[List[Tuple[float, float]]],
+    anchors1: Optional[List[Coord]],
     radii1: Optional[List[float]],
-    anchors2: Optional[List[Tuple[float, float]]],
+    anchors2: Optional[List[Coord]],
     radii2: Optional[List[float]],
 ) -> Optional[Tuple[float, float, float]]:
     if anchors1 is None or anchors2 is None or radii1 is None or radii2 is None:
+        return None
+    if not _anchors_compatible(anchors1, anchors2) or len(radii1) != len(radii2):
         return None
     ad = anchor_distance(anchors1, anchors2)
     rd = radius_distance(radii1, radii2)
     return (ad + rd, ad, rd)
 
 
-def error_to_true(anchors: Optional[List[Tuple[float, float]]], radii: Optional[List[float]]) -> Optional[Tuple[float, float, float]]:
+def error_to_true(
+    anchors: Optional[List[Coord]],
+    radii: Optional[List[float]],
+    true_anchors: List[Coord],
+    true_radii: List[float],
+) -> Optional[Tuple[float, float, float]]:
     if anchors is None or radii is None:
         return None
-    ad = anchor_distance(anchors, TRUE_ANCHORS)
-    rd = radius_distance(radii, [TRUE_R, TRUE_R, TRUE_R])
+    if len(anchors) != len(true_anchors) or len(radii) != len(true_radii):
+        return None
+    ad = _anchor_distance_common_dims(anchors, true_anchors)
+    if ad is None:
+        return None
+    rd = radius_distance(radii, true_radii)
     return (ad + rd, ad, rd)
 
 
-def compute_true_gen_iter_stats(iterations: List[Iteration]) -> Tuple[Optional[float], Optional[float], int]:
+def compute_true_gen_iter_stats(
+    iterations: List[Iteration],
+    true_anchors: List[Coord],
+    true_radii: List[float],
+) -> Tuple[Optional[float], Optional[float], int]:
     values: List[float] = []
     for it in iterations:
-        v = error_to_true(it.anchors, it.radii)
+        v = error_to_true(it.anchors, it.radii, true_anchors, true_radii)
         if v is None:
             continue
         total = float(v[0])
@@ -407,6 +513,7 @@ def format_table(headers: List[str], rows: List[List[str]]) -> List[str]:
 def run_autocal(
     repo_root: Path,
     dataset_path: Path,
+    dataset_spec: DatasetSpec,
     full_auto_log: Optional[Path] = None,
 ) -> Tuple[int, str]:
     cmd = [
@@ -414,16 +521,17 @@ def run_autocal(
         str(repo_root / "autocal" / "autocal.py"),
         "--sim",
         "--machine-type",
-        "slideprinter",
+        dataset_spec.machine_type,
         "--dataset",
         str(dataset_path),
         "--find-radii",
         "global",
         "--base-radii",
-        "30.0",
+        dataset_spec.base_radii,
         "--buildup-factor",
-        "0.636619",
+        dataset_spec.buildup_factor,
         "--no-collect",
+        *dataset_spec.extra_args,
     ]
     if full_auto_log is not None:
         cmd.extend(["--full-auto-log", str(full_auto_log)])
@@ -482,6 +590,7 @@ def report_dataset(
     name: str,
     ref: ParsedLog,
     gen: ParsedLog,
+    dataset_spec: DatasetSpec,
     tol_mm_total: float,
     fail_on_score_mismatch: bool,
     color: bool = False,
@@ -493,8 +602,16 @@ def report_dataset(
     lines: List[str] = []
     ok = True
     true_err_total_delta: Optional[float] = None
-    true_ref_iter_mean, _true_ref_iter_std, _true_ref_iter_count = compute_true_gen_iter_stats(ref.iterations)
-    true_gen_iter_mean, true_gen_iter_std, true_gen_iter_count = compute_true_gen_iter_stats(gen.iterations)
+    true_ref_iter_mean, _true_ref_iter_std, _true_ref_iter_count = compute_true_gen_iter_stats(
+        ref.iterations,
+        dataset_spec.true_anchors,
+        dataset_spec.true_radii,
+    )
+    true_gen_iter_mean, true_gen_iter_std, true_gen_iter_count = compute_true_gen_iter_stats(
+        gen.iterations,
+        dataset_spec.true_anchors,
+        dataset_spec.true_radii,
+    )
     true_iter_mean_delta: Optional[float] = None
     if true_ref_iter_mean is not None and true_gen_iter_mean is not None:
         true_iter_mean_delta = true_gen_iter_mean - true_ref_iter_mean
@@ -509,6 +626,7 @@ def report_dataset(
         ok = False
 
     if ref.summary and gen.summary:
+        exact = False
         delta = total_param_distance(gen.summary.anchors, gen.summary.radii, ref.summary.anchors, ref.summary.radii)
         fit_score_ui_delta = (
             gen.summary.fit_score_ui - ref.summary.fit_score_ui
@@ -516,8 +634,8 @@ def report_dataset(
             else None
         )
 
-        ref_true = error_to_true(ref.summary.anchors, ref.summary.radii)
-        gen_true = error_to_true(gen.summary.anchors, gen.summary.radii)
+        ref_true = error_to_true(ref.summary.anchors, ref.summary.radii, dataset_spec.true_anchors, dataset_spec.true_radii)
+        gen_true = error_to_true(gen.summary.anchors, gen.summary.radii, dataset_spec.true_anchors, dataset_spec.true_radii)
 
         if delta is None:
             lines.append("SUMMARY: ERROR: missing params in summary parse")
@@ -613,8 +731,8 @@ def report_dataset(
 
         # If one side is missing, keep row visible so users can see extra iterations.
         if r is None or g is None:
-            r_true = error_to_true(r.anchors, r.radii) if r is not None else None
-            g_true = error_to_true(g.anchors, g.radii) if g is not None else None
+            r_true = error_to_true(r.anchors, r.radii, dataset_spec.true_anchors, dataset_spec.true_radii) if r is not None else None
+            g_true = error_to_true(g.anchors, g.radii, dataset_spec.true_anchors, dataset_spec.true_radii) if g is not None else None
             detailed_rows.append(
                 [
                     str(i),
@@ -667,8 +785,8 @@ def report_dataset(
         worst_iter_delta = max(worst_iter_delta, total_d)
 
         # "closer/further to true" per iteration
-        r_true = error_to_true(r.anchors, r.radii)
-        g_true = error_to_true(g.anchors, g.radii)
+        r_true = error_to_true(r.anchors, r.radii, dataset_spec.true_anchors, dataset_spec.true_radii)
+        g_true = error_to_true(g.anchors, g.radii, dataset_spec.true_anchors, dataset_spec.true_radii)
 
         r_rank_score = iteration_effective_rank_score(r)
         g_rank_score = iteration_effective_rank_score(g)
@@ -794,7 +912,7 @@ def prepare_isolated_dataset_copy(dataset_name: str, dataset_path: Path, scratch
 
 
 def run_one_dataset(
-    name: str,
+    dataset_spec: DatasetSpec,
     repo_root: Path,
     dataset_path: Path,
     ref_log_path: Path,
@@ -803,12 +921,14 @@ def run_one_dataset(
     color: bool,
     scratch_root: Path,
 ) -> DatasetRunResult:
+    name = dataset_spec.name
     isolated_dataset = prepare_isolated_dataset_copy(name, dataset_path, scratch_root)
     isolated_jsonl = isolated_dataset.with_name(f"{isolated_dataset.stem}.full_auto_log.jsonl")
 
     rc, output = run_autocal(
         repo_root=repo_root,
         dataset_path=isolated_dataset,
+        dataset_spec=dataset_spec,
         full_auto_log=isolated_jsonl,
     )
     if rc != 0:
@@ -857,8 +977,16 @@ def run_one_dataset(
 
     ref_parsed = parse_log_file(ref_log_path)
     gen_parsed = parse_log_file(gen_log_path)
-    true_ref_iter_mean, _true_ref_iter_std, _true_ref_iter_count = compute_true_gen_iter_stats(ref_parsed.iterations)
-    true_gen_iter_mean, true_gen_iter_std, true_gen_iter_count = compute_true_gen_iter_stats(gen_parsed.iterations)
+    true_ref_iter_mean, _true_ref_iter_std, _true_ref_iter_count = compute_true_gen_iter_stats(
+        ref_parsed.iterations,
+        dataset_spec.true_anchors,
+        dataset_spec.true_radii,
+    )
+    true_gen_iter_mean, true_gen_iter_std, true_gen_iter_count = compute_true_gen_iter_stats(
+        gen_parsed.iterations,
+        dataset_spec.true_anchors,
+        dataset_spec.true_radii,
+    )
     true_iter_mean_delta: Optional[float] = None
     if true_ref_iter_mean is not None and true_gen_iter_mean is not None:
         true_iter_mean_delta = true_gen_iter_mean - true_ref_iter_mean
@@ -867,6 +995,7 @@ def run_one_dataset(
         name=name,
         ref=ref_parsed,
         gen=gen_parsed,
+        dataset_spec=dataset_spec,
         tol_mm_total=tol_mm_total,
         fail_on_score_mismatch=fail_on_score_mismatch,
         color=color,
@@ -908,18 +1037,16 @@ def main() -> int:
     alt_dir = Path("/mnt/data")
 
     overall_ok = True
-    jobs: List[Tuple[str, Path, Path]] = []
-    for ds in DATASETS:
+    jobs: List[Tuple[DatasetSpec, Path, Path]] = []
+    for dataset_spec in DATASETS:
+        ds = dataset_spec.name
         dataset_path = find_file_first_existing([
             data_dir / f"{ds}.json",
             alt_dir / f"{ds}.json",
         ])
-        ref_log_path = find_file_first_existing([
-            ref_dir / f"{ds}.full_auto_reference_run_march_11.log",
-            ref_dir / f"{ds}.full_auto_reference_run_march_6.log",
-            alt_dir / f"{ds}.full_auto_reference_run_march_11.log",
-            alt_dir / f"{ds}.full_auto_reference_run_march_6.log",
-        ])
+        ref_candidates = [ref_dir / f"{ds}.{name}" for name in dataset_spec.reference_log_names]
+        ref_candidates.extend(alt_dir / f"{ds}.{name}" for name in dataset_spec.reference_log_names)
+        ref_log_path = find_file_first_existing(ref_candidates)
 
         if dataset_path is None:
             print(f"=== {ds} ===")
@@ -928,14 +1055,10 @@ def main() -> int:
             continue
         if ref_log_path is None:
             print(f"=== {ds} ===")
-            print(
-                f"ERROR: reference log not found "
-                f"(tried {ref_dir}/{ds}.full_auto_reference_run_march_11.log, "
-                f"{ref_dir}/{ds}.full_auto_reference_run_march_6.log, and /mnt/data/...)"
-            )
+            print(f"ERROR: reference log not found (tried {', '.join(str(path) for path in ref_candidates)})")
             overall_ok = False
             continue
-        jobs.append((ds, dataset_path, ref_log_path))
+        jobs.append((dataset_spec, dataset_path, ref_log_path))
 
     scratch_root = (repo_root / "autocal" / "data" / ".regress_parallel_runs").resolve()
     scratch_root.mkdir(parents=True, exist_ok=True)
@@ -946,7 +1069,7 @@ def main() -> int:
             fut_to_name = {
                 pool.submit(
                     run_one_dataset,
-                    name=ds,
+                    dataset_spec=dataset_spec,
                     repo_root=repo_root,
                     dataset_path=dataset_path,
                     ref_log_path=ref_log_path,
@@ -954,8 +1077,8 @@ def main() -> int:
                     fail_on_score_mismatch=not args.no_fail_score_mismatch,
                     color=color,
                     scratch_root=scratch_root,
-                ): ds
-                for ds, dataset_path, ref_log_path in jobs
+                ): dataset_spec.name
+                for dataset_spec, dataset_path, ref_log_path in jobs
             }
             for fut in concurrent.futures.as_completed(fut_to_name):
                 ds = fut_to_name[fut]
