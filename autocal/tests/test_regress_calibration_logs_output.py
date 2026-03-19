@@ -12,14 +12,43 @@ sys.modules[SPEC.name] = rcl
 SPEC.loader.exec_module(rcl)
 
 
+def _make_dataset_spec(name="demo", machine_type="slideprinter"):
+    if machine_type == "hangprinter_4":
+        return rcl.DatasetSpec(
+            name=name,
+            machine_type=machine_type,
+            base_radii="39",
+            buildup_factor="0.636619",
+            true_anchors=rcl.SIM_3D_TRUE_ANCHORS,
+            true_radii=rcl.SIM_3D_TRUE_RADII,
+            extra_args=("--verbose", "--r0-bounds", "39,40"),
+            reference_log_names=("full_auto_reference_run_march_19.log",),
+        )
+    return rcl.DatasetSpec(
+        name=name,
+        machine_type=machine_type,
+        base_radii="30.0",
+        buildup_factor="0.636619",
+        true_anchors=rcl.SIM_2D_TRUE_ANCHORS,
+        true_radii=rcl.SIM_2D_TRUE_RADII,
+    )
+
+
+DEMO_DATASET_SPEC = _make_dataset_spec()
+
+
 def _parsed(*, fit_score_ui_ref=10.0, fit_score_ui_gen=11.0, rank_ref=2.0, rank_gen=3.0):
     ref_summary = rcl.Params(
-        anchors=[(0.0, -1900.0), (1645.44826719, 950.0), (-1645.44826719, 950.0)],
-        radii=[39.184, 39.184, 39.184],
+        anchors=DEMO_DATASET_SPEC.true_anchors,
+        radii=DEMO_DATASET_SPEC.true_radii,
         fit_score_ui=fit_score_ui_ref,
     )
     gen_summary = rcl.Params(
-        anchors=[(0.3, -1899.8), (1645.54826719, 949.9), (-1645.44826719, 950.2)],
+        anchors=[
+            (0.3, -1899.8, 0.0),
+            (1645.54826719, 949.9, 0.0),
+            (-1645.44826719, 950.2, 0.0),
+        ],
         radii=[39.185, 39.183, 39.184],
         fit_score_ui=fit_score_ui_gen,
     )
@@ -115,6 +144,7 @@ def test_report_dataset_has_readable_summary_and_verdicts():
         name="demo",
         ref=ref,
         gen=gen,
+        dataset_spec=DEMO_DATASET_SPEC,
         tol_mm_total=10.0,
         fail_on_score_mismatch=True,
         color=False,
@@ -141,6 +171,7 @@ def test_report_dataset_can_colorize_verdicts():
         name="demo",
         ref=ref,
         gen=gen,
+        dataset_spec=DEMO_DATASET_SPEC,
         tol_mm_total=10.0,
         fail_on_score_mismatch=True,
         color=True,
@@ -149,60 +180,63 @@ def test_report_dataset_can_colorize_verdicts():
     assert "\x1b[31mworse\x1b[0m" in text
 
 
-def test_report_dataset_shows_extra_generated_iterations():
+def test_report_dataset_ignores_extra_generated_iterations_in_true_iter_mean_delta():
     ref_summary = rcl.Params(
-        anchors=[(0.0, -1900.0), (1645.44826719, 950.0), (-1645.44826719, 950.0)],
-        radii=[39.184, 39.184, 39.184],
-        fit_score_ui=2000.0,
-    )
-    gen_summary = rcl.Params(
-        anchors=[(0.0, -1900.0), (1645.44826719, 950.0), (-1645.44826719, 950.0)],
-        radii=[39.184, 39.184, 39.184],
-        fit_score_ui=100.0,
+        anchors=DEMO_DATASET_SPEC.true_anchors,
+        radii=DEMO_DATASET_SPEC.true_radii,
+        fit_score_ui=1.0,
     )
     ref = rcl.ParsedLog(
         summary=ref_summary,
         iterations=[
             rcl.Iteration(
-                anchors=[(10.0, -1890.0), (1640.0, 955.0), (-1640.0, 955.0)],
-                radii=[40.0, 40.0, 40.0],
-                fit_score_ui=2000.0,
-                rank_score=2000.0,
+                anchors=DEMO_DATASET_SPEC.true_anchors,
+                radii=DEMO_DATASET_SPEC.true_radii,
+                fit_score_ui=1.0,
+                rank_score=1.0,
             ),
         ],
-        summary_block_lines=["== Calibration summary ==", "Fit quality score: 2000.0"],
+        summary_block_lines=["== Calibration summary ==", "Fit quality score: 1.0"],
     )
     gen = rcl.ParsedLog(
-        summary=gen_summary,
+        summary=ref_summary,
         iterations=[
             rcl.Iteration(
-                anchors=[(12.0, -1888.0), (1638.0, 957.0), (-1638.0, 957.0)],
-                radii=[40.1, 40.1, 40.1],
-                fit_score_ui=2100.0,
-                rank_score=2100.0,
+                anchors=DEMO_DATASET_SPEC.true_anchors,
+                radii=DEMO_DATASET_SPEC.true_radii,
+                fit_score_ui=1.0,
+                rank_score=1.0,
             ),
             rcl.Iteration(
-                anchors=gen_summary.anchors,
-                radii=gen_summary.radii,
+                anchors=[
+                    (10.0, -1890.0, 0.0),
+                    (1635.44826719, 960.0, 0.0),
+                    (-1635.44826719, 960.0, 0.0),
+                ],
+                radii=[39.184, 39.184, 39.184],
                 fit_score_ui=100.0,
                 rank_score=100.0,
             ),
         ],
-        summary_block_lines=["== Calibration summary ==", "Fit quality score: 100.0"],
+        summary_block_lines=["== Calibration summary ==", "Fit quality score: 1.0"],
     )
 
-    _, lines, _ = rcl.report_dataset(
+    ok, lines, _ = rcl.report_dataset(
         name="demo",
         ref=ref,
         gen=gen,
+        dataset_spec=DEMO_DATASET_SPEC,
         tol_mm_total=10.0,
         fail_on_score_mismatch=True,
         color=False,
     )
     text = "\n".join(lines)
+
+    assert not ok
     assert "ITERATIONS: ref=1 gen=2" in text
     assert "missing" in text
-    assert "100.000" in text
+    assert "true_iter_mean_delta=0.000 [equal]" in text
+    assert "true_gen_iter_std=" in text
 
 
 def test_prepare_isolated_dataset_copy_creates_unique_paths(tmp_path):
@@ -221,25 +255,73 @@ def test_prepare_isolated_dataset_copy_creates_unique_paths(tmp_path):
 def test_compute_true_gen_iter_stats_returns_mean_and_std():
     iters = [
         rcl.Iteration(
-            anchors=[(0.0, -1900.0), (1645.44826719, 950.0), (-1645.44826719, 950.0)],
-            radii=[39.184, 39.184, 39.184],
+            anchors=DEMO_DATASET_SPEC.true_anchors,
+            radii=DEMO_DATASET_SPEC.true_radii,
             fit_score_ui=1.0,
             rank_score=1.0,
         ),
         rcl.Iteration(
-            anchors=[(1.0, -1900.0), (1645.44826719, 951.0), (-1644.44826719, 950.0)],
-            radii=[39.184, 39.184, 39.184],
+            anchors=[
+                (1.0, -1900.0, 0.0),
+                (1645.44826719, 951.0, 0.0),
+                (-1644.44826719, 950.0, 0.0),
+            ],
+            radii=DEMO_DATASET_SPEC.true_radii,
             fit_score_ui=2.0,
             rank_score=2.0,
         ),
     ]
 
-    mean, std, count = rcl.compute_true_gen_iter_stats(iters)
+    mean, std, count = rcl.compute_true_gen_iter_stats(
+        iters,
+        DEMO_DATASET_SPEC.true_anchors,
+        DEMO_DATASET_SPEC.true_radii,
+    )
     assert count == 2
     assert mean is not None
     assert std is not None
     assert math.isclose(mean, 1.5, rel_tol=1e-9, abs_tol=1e-9)
     assert math.isclose(std, 1.5, rel_tol=1e-9, abs_tol=1e-9)
+
+
+def test_compute_true_iter_mean_delta_ignores_unpaired_iterations():
+    ref_iters = [
+        rcl.Iteration(
+            anchors=DEMO_DATASET_SPEC.true_anchors,
+            radii=DEMO_DATASET_SPEC.true_radii,
+            fit_score_ui=1.0,
+            rank_score=1.0,
+        ),
+    ]
+    gen_iters = [
+        rcl.Iteration(
+            anchors=DEMO_DATASET_SPEC.true_anchors,
+            radii=DEMO_DATASET_SPEC.true_radii,
+            fit_score_ui=1.0,
+            rank_score=1.0,
+        ),
+        rcl.Iteration(
+            anchors=[
+                (25.0, -1875.0, 0.0),
+                (1670.44826719, 975.0, 0.0),
+                (-1620.44826719, 975.0, 0.0),
+            ],
+            radii=DEMO_DATASET_SPEC.true_radii,
+            fit_score_ui=2.0,
+            rank_score=2.0,
+        ),
+    ]
+
+    mean_delta, paired_count = rcl.compute_true_iter_mean_delta(
+        ref_iters,
+        gen_iters,
+        DEMO_DATASET_SPEC.true_anchors,
+        DEMO_DATASET_SPEC.true_radii,
+    )
+
+    assert paired_count == 1
+    assert mean_delta is not None
+    assert math.isclose(mean_delta, 0.0, rel_tol=1e-9, abs_tol=1e-9)
 
 
 def test_run_autocal_passes_full_auto_log(monkeypatch, tmp_path):
@@ -259,12 +341,18 @@ def test_run_autocal_passes_full_auto_log(monkeypatch, tmp_path):
     dataset.write_text("{}", encoding="utf-8")
     jsonl = tmp_path / "demo.full_auto_log.jsonl"
 
-    rc, out = rcl.run_autocal(repo_root, dataset, full_auto_log=jsonl)
+    rc, out = rcl.run_autocal(
+        repo_root,
+        dataset,
+        DEMO_DATASET_SPEC,
+        full_auto_log=jsonl,
+    )
     assert rc == 0
     assert out == "ok"
     assert "--full-auto-log" in captured["cmd"]
     idx = captured["cmd"].index("--full-auto-log")
     assert captured["cmd"][idx + 1] == str(jsonl)
+    assert DEMO_DATASET_SPEC.machine_type in captured["cmd"]
 
 
 def test_main_run_tracker_summary_includes_true_iter_mean_delta(monkeypatch, tmp_path, capsys):
@@ -274,9 +362,10 @@ def test_main_run_tracker_summary_includes_true_iter_mean_delta(monkeypatch, tmp
     (repo_root / "data").mkdir()
     (repo_root / "refs").mkdir()
     (repo_root / "data" / "demo.json").write_text("{}", encoding="utf-8")
-    (repo_root / "refs" / "demo.full_auto_reference_run_march_6.log").write_text("log", encoding="utf-8")
+    reference_log = repo_root / "refs" / "demo.full_auto_reference_run_march_19.log"
+    reference_log.write_text("log", encoding="utf-8")
 
-    monkeypatch.setattr(rcl, "DATASETS", ["demo"])
+    monkeypatch.setattr(rcl, "DATASETS", [_make_dataset_spec(name="demo")])
 
     def fake_run_one_dataset(**kwargs):
         return rcl.DatasetRunResult(
@@ -284,7 +373,7 @@ def test_main_run_tracker_summary_includes_true_iter_mean_delta(monkeypatch, tmp
             ok=True,
             lines=["demo lines"],
             generated_log=repo_root / "generated.log",
-            reference_log=repo_root / "refs" / "demo.full_auto_reference_run_march_6.log",
+            reference_log=reference_log,
             true_err_total_delta=1.25,
             true_iter_mean_delta=-0.5,
             true_gen_iter_std=0.75,
@@ -311,6 +400,62 @@ def test_main_run_tracker_summary_includes_true_iter_mean_delta(monkeypatch, tmp
     assert "RUN_TRACKER: final_score=" in out
     assert "final_score=0.750" in out
     assert "sum_true_mean_delta=-0.500" in out
+
+
+def test_main_only_filters_by_machine_type(monkeypatch, tmp_path, capsys):
+    repo_root = tmp_path
+    (repo_root / "autocal").mkdir()
+    (repo_root / "autocal" / "autocal.py").write_text("# stub\n", encoding="utf-8")
+    (repo_root / "data").mkdir()
+    (repo_root / "refs").mkdir()
+
+    selected_spec = _make_dataset_spec(name="hang_demo", machine_type="hangprinter_4")
+    skipped_spec = _make_dataset_spec(name="slide_demo", machine_type="slideprinter")
+    (repo_root / "data" / "hang_demo.json").write_text("{}", encoding="utf-8")
+    selected_ref = repo_root / "refs" / "hang_demo.full_auto_reference_run_march_19.log"
+    selected_ref.write_text("log", encoding="utf-8")
+
+    monkeypatch.setattr(rcl, "DATASETS", [skipped_spec, selected_spec])
+    called = []
+
+    def fake_run_one_dataset(**kwargs):
+        called.append(kwargs["dataset_spec"].name)
+        return rcl.DatasetRunResult(
+            name=kwargs["dataset_spec"].name,
+            ok=True,
+            lines=[f"{kwargs['dataset_spec'].name} lines"],
+            generated_log=repo_root / f"{kwargs['dataset_spec'].name}.generated.log",
+            reference_log=selected_ref,
+            true_err_total_delta=0.0,
+            true_iter_mean_delta=0.0,
+            true_gen_iter_std=0.0,
+            true_gen_iter_count=1,
+        )
+
+    monkeypatch.setattr(rcl, "run_one_dataset", fake_run_one_dataset)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "prog",
+            "--repo-root",
+            str(repo_root),
+            "--data-dir",
+            "data",
+            "--ref-dir",
+            "refs",
+            "--only",
+            "hangprinter_4",
+        ],
+    )
+
+    rc = rcl.main()
+    out = capsys.readouterr().out
+
+    assert rc == 0
+    assert called == ["hang_demo"]
+    assert "hang_demo lines" in out
+    assert "slide_demo" not in out
 
 
 def test_compute_final_score_uses_requested_formula():

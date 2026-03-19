@@ -44,6 +44,7 @@ import subprocess
 import sys
 import uuid
 from dataclasses import dataclass, field
+from itertools import zip_longest
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -442,6 +443,32 @@ def compute_true_gen_iter_stats(
     return mean, math.sqrt(var), n
 
 
+def compute_true_iter_mean_delta(
+    ref_iterations: List[Iteration],
+    gen_iterations: List[Iteration],
+    true_anchors: List[Coord],
+    true_radii: List[float],
+) -> Tuple[Optional[float], int]:
+    deltas: List[float] = []
+    for ref_iter, gen_iter in zip_longest(ref_iterations, gen_iterations):
+        if ref_iter is None or gen_iter is None:
+            continue
+        ref_true = error_to_true(ref_iter.anchors, ref_iter.radii, true_anchors, true_radii)
+        gen_true = error_to_true(gen_iter.anchors, gen_iter.radii, true_anchors, true_radii)
+        if ref_true is None or gen_true is None:
+            continue
+        ref_total = float(ref_true[0])
+        gen_total = float(gen_true[0])
+        if not math.isfinite(ref_total) or not math.isfinite(gen_total):
+            continue
+        deltas.append(gen_total - ref_total)
+
+    n = len(deltas)
+    if n == 0:
+        return None, 0
+    return sum(deltas) / n, n
+
+
 def dir_label(delta: float, eps: float = 0.0) -> str:
     if abs(delta) <= eps:
         return "equal"
@@ -602,19 +629,17 @@ def report_dataset(
     lines: List[str] = []
     ok = True
     true_err_total_delta: Optional[float] = None
-    true_ref_iter_mean, _true_ref_iter_std, _true_ref_iter_count = compute_true_gen_iter_stats(
+    true_iter_mean_delta, _true_iter_pair_count = compute_true_iter_mean_delta(
         ref.iterations,
-        dataset_spec.true_anchors,
-        dataset_spec.true_radii,
-    )
-    true_gen_iter_mean, true_gen_iter_std, true_gen_iter_count = compute_true_gen_iter_stats(
         gen.iterations,
         dataset_spec.true_anchors,
         dataset_spec.true_radii,
     )
-    true_iter_mean_delta: Optional[float] = None
-    if true_ref_iter_mean is not None and true_gen_iter_mean is not None:
-        true_iter_mean_delta = true_gen_iter_mean - true_ref_iter_mean
+    _true_gen_iter_mean, true_gen_iter_std, true_gen_iter_count = compute_true_gen_iter_stats(
+        gen.iterations,
+        dataset_spec.true_anchors,
+        dataset_spec.true_radii,
+    )
 
     # ---- Summary ----
     lines.append(f"\n========= {name} =========")
@@ -977,19 +1002,17 @@ def run_one_dataset(
 
     ref_parsed = parse_log_file(ref_log_path)
     gen_parsed = parse_log_file(gen_log_path)
-    true_ref_iter_mean, _true_ref_iter_std, _true_ref_iter_count = compute_true_gen_iter_stats(
+    true_iter_mean_delta, _true_iter_pair_count = compute_true_iter_mean_delta(
         ref_parsed.iterations,
-        dataset_spec.true_anchors,
-        dataset_spec.true_radii,
-    )
-    true_gen_iter_mean, true_gen_iter_std, true_gen_iter_count = compute_true_gen_iter_stats(
         gen_parsed.iterations,
         dataset_spec.true_anchors,
         dataset_spec.true_radii,
     )
-    true_iter_mean_delta: Optional[float] = None
-    if true_ref_iter_mean is not None and true_gen_iter_mean is not None:
-        true_iter_mean_delta = true_gen_iter_mean - true_ref_iter_mean
+    _true_gen_iter_mean, true_gen_iter_std, true_gen_iter_count = compute_true_gen_iter_stats(
+        gen_parsed.iterations,
+        dataset_spec.true_anchors,
+        dataset_spec.true_radii,
+    )
 
     ok, lines, true_err_total_delta = report_dataset(
         name=name,
@@ -1022,6 +1045,11 @@ def main() -> int:
     ap.add_argument("--no-fail-score-mismatch", action="store_true", help="Do not fail on score/fit direction mismatch (still reported).")
     ap.add_argument("--keep-going", action="store_true", help="Run all datasets even if one fails.")
     ap.add_argument("--color", choices=["auto", "always", "never"], default="auto", help="Colorize output verdicts.")
+    ap.add_argument(
+        "--only",
+        choices=sorted({dataset.machine_type for dataset in DATASETS}),
+        help="Run only datasets for one machine type.",
+    )
     args = ap.parse_args()
     color = use_color(args.color)
 
@@ -1038,7 +1066,11 @@ def main() -> int:
 
     overall_ok = True
     jobs: List[Tuple[DatasetSpec, Path, Path]] = []
-    for dataset_spec in DATASETS:
+    dataset_specs = DATASETS
+    if args.only is not None:
+        dataset_specs = [dataset for dataset in DATASETS if dataset.machine_type == args.only]
+
+    for dataset_spec in dataset_specs:
         ds = dataset_spec.name
         dataset_path = find_file_first_existing([
             data_dir / f"{ds}.json",
