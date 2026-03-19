@@ -4260,6 +4260,7 @@ def _trimmed_risk_metric_from_components(
         return None
 
     chi2_trimmed_direct = _float_or_none(noise_metrics.get("chi2_red_tau_d_trimmed_direct"))
+
     if chi2_trimmed_direct is None or chi2_trimmed_direct < 0.0:
         return None
 
@@ -4291,23 +4292,8 @@ def _plan_trimmed_risk_metric(plan: Dict[str, object]) -> Optional[float]:
     if not isinstance(noise_metrics, dict):
         return None
 
-    _max_std_mm, rel_std, _cov_ok = _plan_covariance_summary(plan)
-    base = _trimmed_risk_metric_from_components(noise_metrics)
-    rel_std_val = _float_or_none(rel_std)
-    if base is None or rel_std_val is None or not np.isfinite(rel_std_val):
-        return None
-
-    direct_metrics = dict(noise_metrics)
-    direct_metric = float(base) * float(rel_std_val)
-    direct_metrics["chi2_red_rescored_tau_3bin_debiased"] = direct_metric
-    direct_metrics["chi2_red_rescored"] = direct_metric
-    direct_metrics["chi2_red_trimmed"] = direct_metric
-    direct_metrics["chi2_red"] = direct_metric
-    return _layered_internal_metric_from_noise_metrics(
-        direct_metrics,
-        cost_raw=_float_or_none(plan.get("cost_raw")),
-        fit_structure_levels=_plan_fit_structure_levels(plan),
-    )
+    _max_std_mm, _rel_std, _cov_ok = _plan_covariance_summary(plan)
+    return _trimmed_risk_metric_from_components(noise_metrics)
 
 
 def _plan_fit_structure_levels(plan: Dict[str, object]) -> Tuple[int, ...]:
@@ -4336,7 +4322,7 @@ def _compute_score_ui_layered(plan: Dict[str, object]) -> Tuple[float, float]:
         fit_structure_levels=_plan_fit_structure_levels(plan),
     )
     m_risk = _plan_trimmed_risk_metric(plan)
-    m_layered = m_risk if m_risk is not None else m_base
+    m_layered = _blend_internal_metric_with_risk(m_base, m_risk)
     critical_nonfinite = (
         m_layered is None or cost_raw is None or tau_mad_mm is None or n_trim is None
     )

@@ -104,7 +104,7 @@ def test_plan_score_ui_layered_keeps_good_fit_below_two_even_with_high_primary_c
     assert "near-perfect fit" in ac._solution_quality_message(score_ui)
 
 
-def test_plan_score_ui_layered_prefers_trimmed_direct_risk_metric():
+def test_plan_score_ui_layered_blends_trimmed_direct_risk_with_base_metric():
     plan = _layered_plan(
         primary_cost=74.11,
         cost_raw=0.3,
@@ -116,40 +116,28 @@ def test_plan_score_ui_layered_prefers_trimmed_direct_risk_metric():
         workspace_diag_mm=100.0,
     )
 
-    expected_m = 40.0 * (2.0 / 100.0)
-    expected_m *= (
-        1.0
-        + ac._SCORE_UI_LAYERED_N_TRIM_WEIGHT
-        * max(0.0, (ac._SCORE_UI_LAYERED_N_TRIM_REF - 35.0) / 10.0)
-    )
-    expected_m *= (
-        1.0
-        + ac._SCORE_UI_LAYERED_TAU_MAD_WEIGHT
-        * max(0.0, 1.2 / ac._SCORE_UI_LAYERED_TAU_MAD_REF_MM - 1.0)
-    )
-    expected_rank = ac._layered_rank_score_from_internal_metric(
-        expected_m,
-        cost_raw=float(plan["cost_raw"]),
-    )
-
     noise_metrics = plan["calibration"]["details"]["noise_metrics"]
-    fallback_m = ac._layered_internal_metric_from_noise_metrics(
+    base_m = ac._layered_internal_metric_from_noise_metrics(
         noise_metrics,
         cost_raw=float(plan["cost_raw"]),
     )
+    assert base_m is not None
+
+    expected_m = ac._blend_internal_metric_with_risk(base_m, 40.0)
+    assert expected_m is not None
+    expected_rank = ac._layered_rank_score_from_internal_metric(expected_m, cost_raw=float(plan["cost_raw"]))
 
     score_ui, rank_score, basis = ac._plan_score_ui(plan)
     score_ui_recomputed, m_layered = ac._compute_score_ui_layered(plan)
     assert basis == "layered-calibrated"
-    assert fallback_m is not None
-    assert np.isclose(ac._plan_trimmed_risk_metric(plan), expected_m, atol=1e-12)
+    assert np.isclose(ac._plan_trimmed_risk_metric(plan), 40.0, atol=1e-12)
     assert np.isclose(m_layered, expected_m, atol=1e-12)
-    assert not np.isclose(m_layered, fallback_m, atol=1e-12)
+    assert m_layered > base_m
     assert np.isclose(score_ui, score_ui_recomputed, atol=1e-12)
     assert np.isclose(rank_score, expected_rank, atol=1e-12)
 
 
-def test_plan_score_ui_layered_falls_back_when_trimmed_direct_risk_missing_rel_std():
+def test_plan_score_ui_layered_uses_trimmed_direct_risk_without_rel_std():
     plan = _layered_plan(
         primary_cost=74.11,
         cost_raw=0.2557,
@@ -160,12 +148,14 @@ def test_plan_score_ui_layered_falls_back_when_trimmed_direct_risk_missing_rel_s
     )
 
     noise_metrics = plan["calibration"]["details"]["noise_metrics"]
-    expected_m = ac._layered_internal_metric_from_noise_metrics(
+    base_m = ac._layered_internal_metric_from_noise_metrics(
         noise_metrics,
         cost_raw=float(plan["cost_raw"]),
     )
+    assert base_m is not None
+    expected_m = ac._blend_internal_metric_with_risk(base_m, 40.0)
     assert expected_m is not None
-    assert ac._plan_trimmed_risk_metric(plan) is None
+    assert np.isclose(ac._plan_trimmed_risk_metric(plan), 40.0, atol=1e-12)
 
     score_ui, rank_score, basis = ac._plan_score_ui(plan)
     score_ui_recomputed, m_layered = ac._compute_score_ui_layered(plan)
@@ -178,6 +168,42 @@ def test_plan_score_ui_layered_falls_back_when_trimmed_direct_risk_missing_rel_s
     assert np.isclose(m_layered, expected_m, atol=1e-12)
     assert np.isclose(score_ui, score_ui_recomputed, atol=1e-12)
     assert np.isclose(rank_score, expected_rank, atol=1e-12)
+
+
+def test_full_auto_history_selection_does_not_prefer_low_rel_std_trimmed_risk_artifact():
+    early = _layered_plan(
+        primary_cost=74.11,
+        cost_raw=0.3,
+        chi2_layered=140.0,
+        tau_mad_mm=1.2,
+        n_trim=35.0,
+        chi2_trimmed_direct=40.0,
+        max_std_mm=2.0,
+        workspace_diag_mm=100.0,
+    )
+    later = _layered_plan(
+        primary_cost=74.11,
+        cost_raw=0.2557,
+        chi2_layered=64.0,
+        tau_mad_mm=0.8,
+        n_trim=41.0,
+    )
+
+    early_score, early_rank, _ = ac._plan_score_ui(early)
+    later_score, later_rank, _ = ac._plan_score_ui(later)
+    early_history_rank, _ = ac._full_auto_history_selection_score(
+        early_rank,
+        iteration_index=1,
+        coverage_adjust=0.0,
+    )
+    later_history_rank, _ = ac._full_auto_history_selection_score(
+        later_rank,
+        iteration_index=3,
+        coverage_adjust=0.0,
+    )
+
+    assert early_score > later_score
+    assert later_history_rank < early_history_rank
 
 
 def test_plan_score_ui_layered_uses_hard_fail_for_bad_raw_geometry():
