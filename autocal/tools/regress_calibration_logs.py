@@ -537,12 +537,23 @@ def format_table(headers: List[str], rows: List[List[str]]) -> List[str]:
 
 # ---------- Running commands ----------
 
+def _flatten_cli_args(args: Sequence[object]) -> List[str]:
+    flat: List[str] = []
+    for arg in args:
+        if isinstance(arg, (list, tuple)):
+            flat.extend(str(item) for item in arg)
+        else:
+            flat.append(str(arg))
+    return flat
+
+
 def run_autocal(
     repo_root: Path,
     dataset_path: Path,
     dataset_spec: DatasetSpec,
     full_auto_log: Optional[Path] = None,
 ) -> Tuple[int, str]:
+    extra_args = _flatten_cli_args(dataset_spec.extra_args)
     cmd = [
         sys.executable,
         str(repo_root / "autocal" / "autocal.py"),
@@ -558,7 +569,7 @@ def run_autocal(
         "--buildup-factor",
         dataset_spec.buildup_factor,
         "--no-collect",
-        *dataset_spec.extra_args,
+        *extra_args,
     ]
     if full_auto_log is not None:
         cmd.extend(["--full-auto-log", str(full_auto_log)])

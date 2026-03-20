@@ -21,6 +21,7 @@ def _make_dataset_spec(name="demo", machine_type="slideprinter"):
             buildup_factor="0.636619",
             true_anchors=rcl.SIM_3D_TRUE_ANCHORS,
             true_radii=rcl.SIM_3D_TRUE_RADII,
+            find_radii="global",
             extra_args=("--verbose", "--r0-bounds", "39,40"),
             reference_log_names=("full_auto_reference_run_march_19.log",),
         )
@@ -31,6 +32,7 @@ def _make_dataset_spec(name="demo", machine_type="slideprinter"):
         buildup_factor="0.636619",
         true_anchors=rcl.SIM_2D_TRUE_ANCHORS,
         true_radii=rcl.SIM_2D_TRUE_RADII,
+        find_radii="global",
     )
 
 
@@ -353,6 +355,48 @@ def test_run_autocal_passes_full_auto_log(monkeypatch, tmp_path):
     idx = captured["cmd"].index("--full-auto-log")
     assert captured["cmd"][idx + 1] == str(jsonl)
     assert DEMO_DATASET_SPEC.machine_type in captured["cmd"]
+
+
+def test_run_autocal_flattens_nested_extra_args(monkeypatch, tmp_path):
+    captured = {}
+
+    class DummyProc:
+        returncode = 0
+        stdout = "ok"
+
+    def fake_run(cmd, **kwargs):
+        captured["cmd"] = cmd
+        return DummyProc()
+
+    monkeypatch.setattr(rcl.subprocess, "run", fake_run)
+    repo_root = tmp_path
+    dataset = tmp_path / "demo.json"
+    dataset.write_text("{}", encoding="utf-8")
+    jsonl = tmp_path / "demo.full_auto_log.jsonl"
+    spec = rcl.DatasetSpec(
+        name="demo",
+        machine_type="slideprinter",
+        base_radii="30.0",
+        buildup_factor="0.636619",
+        true_anchors=rcl.SIM_2D_TRUE_ANCHORS,
+        true_radii=rcl.SIM_2D_TRUE_RADII,
+        find_radii="global",
+        extra_args=("--verbose", ("--filter-schedule", "0")),
+    )
+
+    rc, out = rcl.run_autocal(
+        repo_root,
+        dataset,
+        spec,
+        full_auto_log=jsonl,
+    )
+
+    assert rc == 0
+    assert out == "ok"
+    assert all(not isinstance(arg, tuple) for arg in captured["cmd"])
+    assert "--filter-schedule" in captured["cmd"]
+    idx = captured["cmd"].index("--filter-schedule")
+    assert captured["cmd"][idx + 1] == "0"
 
 
 def test_main_run_tracker_summary_includes_true_iter_mean_delta(monkeypatch, tmp_path, capsys):
