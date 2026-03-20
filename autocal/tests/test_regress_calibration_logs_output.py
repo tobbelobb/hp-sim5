@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
 MODULE_PATH = Path(__file__).resolve().parents[1] / "tools" / "regress_calibration_logs.py"
 SPEC = importlib.util.spec_from_file_location("regress_calibration_logs", MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None
@@ -21,7 +22,6 @@ def _make_dataset_spec(name="demo", machine_type="slideprinter"):
             buildup_factor="0.636619",
             true_anchors=rcl.SIM_3D_TRUE_ANCHORS,
             true_radii=rcl.SIM_3D_TRUE_RADII,
-            find_radii="global",
             extra_args=("--verbose", "--r0-bounds", "39,40"),
             reference_log_names=("full_auto_reference_run_march_19.log",),
         )
@@ -32,7 +32,6 @@ def _make_dataset_spec(name="demo", machine_type="slideprinter"):
         buildup_factor="0.636619",
         true_anchors=rcl.SIM_2D_TRUE_ANCHORS,
         true_radii=rcl.SIM_2D_TRUE_RADII,
-        find_radii="global",
     )
 
 
@@ -254,6 +253,29 @@ def test_prepare_isolated_dataset_copy_creates_unique_paths(tmp_path):
     assert second.read_text(encoding="utf-8") == src.read_text(encoding="utf-8")
 
 
+def test_seventh_hp3_dataset_matches_existing_hangprinter_regression_wiring():
+    dataset_specs = {spec.name: spec for spec in rcl.DATASETS}
+
+    fifth = dataset_specs["fifth_hp3_dataset"]
+    seventh = dataset_specs["seventh_hp3_dataset"]
+
+    assert seventh.machine_type == fifth.machine_type
+    assert seventh.base_radii == fifth.base_radii
+    assert seventh.buildup_factor == fifth.buildup_factor
+    assert seventh.true_anchors == fifth.true_anchors
+    assert seventh.true_radii == fifth.true_radii
+    assert seventh.extra_args == fifth.extra_args
+    assert seventh.reference_log_names == ("full_auto_reference_run_march_20.log",)
+
+
+def test_seventh_hp3_dataset_json_is_symlinked_to_references_copy():
+    dataset_path = REPO_ROOT / "autocal" / "data" / "seventh_hp3_dataset.json"
+
+    assert dataset_path.is_symlink()
+    assert dataset_path.readlink() == Path("references/seventh_hp3_dataset.json")
+    assert dataset_path.resolve() == REPO_ROOT / "autocal" / "data" / "references" / "seventh_hp3_dataset.json"
+
+
 def test_compute_true_gen_iter_stats_returns_mean_and_std():
     iters = [
         rcl.Iteration(
@@ -380,7 +402,6 @@ def test_run_autocal_flattens_nested_extra_args(monkeypatch, tmp_path):
         buildup_factor="0.636619",
         true_anchors=rcl.SIM_2D_TRUE_ANCHORS,
         true_radii=rcl.SIM_2D_TRUE_RADII,
-        find_radii="global",
         extra_args=("--verbose", ("--filter-schedule", "0")),
     )
 

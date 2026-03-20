@@ -143,6 +143,16 @@ DATASETS = [
         extra_args=("--verbose", "--r0-bounds", "39,40"),
         reference_log_names=("full_auto_reference_run_march_19.log",),
     ),
+    DatasetSpec(
+        name="seventh_hp3_dataset",
+        machine_type="hangprinter_4",
+        base_radii="30",
+        buildup_factor="0.636619",
+        true_anchors=SIM_3D_TRUE_ANCHORS,
+        true_radii=SIM_3D_TRUE_RADII,
+        extra_args=("--verbose", "--r0-bounds", "39,40"),
+        reference_log_names=("full_auto_reference_run_march_20.log",),
+    ),
 ]
 
 
