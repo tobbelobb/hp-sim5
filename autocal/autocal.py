@@ -837,7 +837,7 @@ def full_auto_loop(
                 recovery_info["success"] = True
                 result["recovery"] = dict(recovery_info)
                 _log_console(
-                    "; underconstrained recovery succeeded; accepting the constrained warm start."
+                    "; underconstrained recovery succeeded; continuing with the repaired constrained estimate."
                 )
                 return result, dict(recovery_info)
             warm_start = _warm_start_seeds_from_plan(result["plan"])
@@ -1156,11 +1156,8 @@ def full_auto_loop(
                 threshold_accept = True
             if stop_std_mm is not None and stop_std_hit:
                 threshold_accept = True
-            recovery_succeeded = bool(isinstance(recovery_info, dict) and recovery_info.get("success"))
             if selected_underconstrained:
                 decision = "collect"
-            elif recovery_succeeded:
-                decision = "accept"
             elif threshold_accept or no_improve >= patience_limit:
                 decision = "accept"
             else:
@@ -1211,11 +1208,6 @@ def full_auto_loop(
             )
 
             if decision == "accept":
-                if recovery_succeeded:
-                    return _emit_summary_and_send(
-                        plan,
-                        summary_meta=selected_summary_meta,
-                    )
                 summary_plan, summary_meta = _select_history_summary_candidate(reason="patience-or-threshold")
                 if summary_plan is None:
                     _log_console("; full-auto: no best plan available; stopping.")
