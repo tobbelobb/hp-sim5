@@ -55,6 +55,9 @@ def plan_next_ellipse_sweep(
     objective_schedule: Optional[Sequence[Any]] = None,
     scale_fix: Optional[Sequence[int]] = None,
     fit_structure: Optional[Sequence[int]] = None,
+    initial_guess: Optional[np.ndarray] = None,
+    initial_radii_mm: Optional[np.ndarray] = None,
+    initial_buildup_factor: Optional[np.ndarray] = None,
 ) -> Dict[str, object]:
     dataset = _load_json(dataset_path)
     if low_anchor_z is not None:
@@ -94,6 +97,44 @@ def plan_next_ellipse_sweep(
         dataset,
         buildup_factor_override=buildup_factor,
     )
+
+    def _resolve_anchor_seed(base_radii_for_seed: Optional[List[float]]) -> np.ndarray:
+        if initial_guess is not None:
+            try:
+                guess = np.asarray(initial_guess, dtype=float)
+            except (TypeError, ValueError):
+                guess = np.zeros((0, 0), dtype=float)
+            if (
+                guess.ndim == 2
+                and guess.shape == (int(num_anchors), int(dimensions))
+                and np.all(np.isfinite(guess))
+            ):
+                return guess
+        return build_anchor_initial_guess(
+            dataset,
+            machine_type=str(machine_type),
+            base_radii_mm=base_radii_for_seed,
+            low_anchor_z=low_anchor_z,
+        )
+
+    def _resolve_spool_seed(
+        values: Optional[np.ndarray],
+        *,
+        positive: bool = False,
+    ) -> Optional[np.ndarray]:
+        if values is None:
+            return None
+        try:
+            arr = np.asarray(values, dtype=float).reshape(-1)
+        except (TypeError, ValueError):
+            return None
+        if arr.size == 1 and int(num_anchors) > 1:
+            arr = np.full(int(num_anchors), float(arr[0]), dtype=float)
+        if arr.size != int(num_anchors) or not np.all(np.isfinite(arr)):
+            return None
+        if positive and np.any(arr <= 0.0):
+            return None
+        return arr
 
     length_model: Optional[Dict[str, object]] = None
     spool_params: Optional[SpoolModelParams] = None
@@ -135,12 +176,9 @@ def plan_next_ellipse_sweep(
             find_buildup_factor_mode=find_buildup_mode,
             buildup_factor=est_buildup,
         )
-        anchor_initial_guess = build_anchor_initial_guess(
-            dataset,
-            machine_type=str(machine_type),
-            base_radii_mm=base_radii_mm.tolist(),
-            low_anchor_z=low_anchor_z,
-        )
+        anchor_initial_guess = _resolve_anchor_seed(base_radii_mm.tolist())
+        initial_radii_seed = _resolve_spool_seed(initial_radii_mm, positive=True)
+        initial_buildup_seed = _resolve_spool_seed(initial_buildup_factor)
 
         seed_restarts = max(1, min(2, int(solve_restarts)))
         seed_iterations = max(60, min(200, int(solve_iterations)))
@@ -210,6 +248,8 @@ def plan_next_ellipse_sweep(
                     objective_schedule,
                     label="objective_schedule",
                 ),
+                initial_radii_mm=initial_radii_seed,
+                initial_buildup_factor=initial_buildup_seed,
             )
         )
         _ = _fit_anchors
@@ -314,12 +354,7 @@ def plan_next_ellipse_sweep(
             "spool_fit": radii_fit,
         }
     else:
-        anchor_initial_guess = build_anchor_initial_guess(
-            dataset,
-            machine_type=str(machine_type),
-            base_radii_mm=None,
-            low_anchor_z=low_anchor_z,
-        )
+        anchor_initial_guess = _resolve_anchor_seed(None)
         cal = calibrate_elliptical(
             dataset,
             output_path=None,

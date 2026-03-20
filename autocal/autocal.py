@@ -506,6 +506,347 @@ def full_auto_loop(
         _log_console(f"; full-auto: stop requested ({reason}); accepting best-so-far.")
         return _emit_summary_and_send(summary_plan, summary_meta=summary_meta)
 
+    def _compute_run_metrics(plan: Dict[str, object]) -> Dict[str, object]:
+        primary_cost = _plan_primary_cost(plan)
+        raw_fit_score_ui, rank_score, score_basis = _plan_score_ui(plan)
+        max_std_mm, rel_std, cov_ok = _plan_covariance_summary(plan)
+        warnings = list(_plan_data_quality_warnings(plan))
+        noise_metrics = _plan_noise_metrics(plan)
+        rank_coverage_adjust, rank_coverage_info = _rank_coverage_adjustment_from_noise_metrics(
+            noise_metrics
+        )
+        underconstrained_penalty = _plan_hits_underconstrained_penalty(plan, primary_cost)
+        if underconstrained_penalty and "underconstrained_penalty" not in warnings:
+            warnings.append("underconstrained_penalty")
+        valid = bool(np.isfinite(primary_cost) and np.isfinite(rank_score) and cov_ok)
+        return {
+            "primary_cost": primary_cost,
+            "raw_fit_score_ui": raw_fit_score_ui,
+            "score_ui": raw_fit_score_ui,
+            "rank_score": rank_score,
+            "score_basis": score_basis,
+            "cost_noise_normalized": plan.get("cost_noise_normalized"),
+            "chi2_red": noise_metrics.get("chi2_red") if isinstance(noise_metrics, dict) else None,
+            "J": noise_metrics.get("J") if isinstance(noise_metrics, dict) else None,
+            "info_rank": plan.get("info_rank"),
+            "info_rank_deficient": plan.get("info_rank_deficient"),
+            "max_std_mm": max_std_mm,
+            "rel_std": rel_std,
+            "covariance_ok": cov_ok,
+            "underconstrained_penalty": underconstrained_penalty,
+            "rank_coverage_adjust": rank_coverage_adjust,
+            "rank_effective_obs": rank_coverage_info.get("effective_obs"),
+            "rank_total_obs": rank_coverage_info.get("total_obs"),
+            "rank_filtered_ratio": rank_coverage_info.get("filtered_ratio"),
+            "rank_obs_bonus": rank_coverage_info.get("obs_bonus"),
+            "rank_filtered_penalty": rank_coverage_info.get("filtered_penalty"),
+            "warnings": warnings,
+            "valid": valid,
+            "line_model_prefit": (
+                (((plan.get("length_model") or {}).get("radii_fit") or {}).get("prefit"))
+                if isinstance(plan, dict)
+                else None
+            ),
+        }
+
+    def _log_run_metrics(log_prefix: str, plan: Dict[str, object], metrics: Dict[str, object]) -> None:
+        cost_raw = plan.get("cost_raw")
+        cost_norm = plan.get("cost_noise_normalized", plan.get("cost"))
+        _log_line(
+            f"{log_prefix}: cost_raw={_fmt_float(cost_raw)} "
+            f"cost_noise_normalized={_fmt_float(cost_norm)} J={_fmt_float(metrics.get('J'))} "
+            f"chi2_red={_fmt_float(metrics.get('chi2_red'))} "
+            f"raw_fit_score_ui={_fmt_float(metrics.get('raw_fit_score_ui'))} "
+            f"score_basis={metrics.get('score_basis')} "
+            f"rank_coverage_adjust={_fmt_float(metrics.get('rank_coverage_adjust'))} "
+            f"effective_obs={_fmt_float(metrics.get('rank_effective_obs'), fmt='.0f')} "
+            f"filtered_ratio={_fmt_float(metrics.get('rank_filtered_ratio'))}"
+        )
+
+    def _execute_plan_run(
+        *,
+        run_id: str,
+        run_flags: str,
+        overrides: Dict[str, object],
+        settings: Dict[str, object],
+        collector_output: Path,
+        log_prefix: str,
+        path_tag: Optional[str] = None,
+        initial_guess: Optional[np.ndarray] = None,
+        initial_radii_mm: Optional[np.ndarray] = None,
+        initial_buildup_factor: Optional[np.ndarray] = None,
+    ) -> Dict[str, object]:
+        _log_line(f"{log_prefix}: flags='{run_flags}'")
+
+        cfg_run_id = str(path_tag or run_id)
+        cfg_path = _full_auto_cfg_path(work_path, cfg_run_id)
+        residuals_csv_run = None
+        if residuals_csv is not None:
+            res_base = Path(residuals_csv)
+            if len(runs) > 1 or path_tag is not None:
+                residual_suffix = str(path_tag or run_id)
+                residuals_csv_run = res_base.with_name(
+                    f"{res_base.stem}.{residual_suffix}{res_base.suffix}"
+                )
+            else:
+                residuals_csv_run = res_base
+
+        with _log_context():
+            plan = plan_next_ellipse_sweep(
+                work_path,
+                solve_restarts=int(settings["solve_restarts"]),
+                solve_iterations=int(settings["solve_iterations"]),
+                solve_optimizer=str(settings["solve_optimizer"]),
+                residual_threshold=float(settings["residual_threshold"]),
+                spring_k_multiplier=float(settings["spring_k_multiplier"]),
+                use_flex=bool(settings["use_flex"]),
+                pointwise_residual_mode=str(settings["pointwise_residual_mode"]),
+                pointwise_filtering=bool(settings["pointwise_filtering"]),
+                pointwise_global_mad=bool(settings["pointwise_global_mad"]),
+                sweep_wise_filtering=bool(settings["sweep_wise_filtering"]),
+                sweep_metric=str(settings["sweep_metric"]),
+                use_noise_mean=bool(settings["use_noise_mean"]),
+                sigma_source=str(settings["sigma_source"]),
+                robust_debug=bool(settings["robust_debug"]),
+                residuals_csv=residuals_csv_run,
+                generate_report=bool(settings["generate_report"]),
+                find_radii=str(settings.get("find_radii", "off")),
+                find_buildup_factor=str(settings.get("find_buildup_factor", "off")),
+                base_radii=(
+                    [float(v) for v in settings["base_radii"]]
+                    if isinstance(settings.get("base_radii"), list)
+                    else None
+                ),
+                buildup_factor=(
+                    float(settings["buildup_factor"])
+                    if settings.get("buildup_factor") is not None
+                    else None
+                ),
+                r0_bounds=settings.get("r0_bounds"),
+                b_bounds=settings.get("b_bounds"),
+                r0_prior_sigma_mm=(
+                    float(settings["r0_prior_sigma_mm"])
+                    if settings.get("r0_prior_sigma_mm") is not None
+                    else None
+                ),
+                b_prior_sigma=(
+                    float(settings["b_prior_sigma"])
+                    if settings.get("b_prior_sigma") is not None
+                    else None
+                ),
+                spool_outer_iters=int(settings.get("spool_outer_iters", 3)),
+                spool_inner_iters=int(settings.get("spool_inner_iters", 30)),
+                theta0_mode=str(settings.get("theta0_mode", "zero")),
+                filter_schedule=settings.get("filter_schedule"),
+                objective_schedule=settings.get("objective_schedule"),
+                line_width=float(settings.get("line_width", DEFAULT_LAYER_LINE_WIDTH_MM)),
+                sigma_floor_mm=(
+                    None
+                    if settings.get("sigma_floor_mm") is None
+                    else float(settings.get("sigma_floor_mm"))
+                ),
+                sigma_used_mm=(
+                    None
+                    if settings.get("sigma_used_mm") is None
+                    else float(settings.get("sigma_used_mm"))
+                ),
+                low_anchor_z=(
+                    None
+                    if settings.get("low_anchor_z") is None
+                    else float(settings.get("low_anchor_z"))
+                ),
+                candidate_deltas=candidate_deltas,
+                candidate_count=int(candidate_count),
+                delta_min=delta_min,
+                delta_max=delta_max,
+                fd_eps_mm=float(fd_eps_mm),
+                regularization=float(regularization),
+                exclude_existing=bool(exclude_existing),
+                existing_tol_mm=float(existing_tol_mm),
+                min_fixed_delta_spacing_mm=float(min_fixed_delta_spacing_mm),
+                top_k=int(top_k),
+                write_cfg=cfg_path,
+                collector_output=collector_output,
+                collector_args=collector_args_eff,
+                scale_fix=settings.get("scale_fix"),
+                fit_structure=settings.get("fit_structure"),
+                initial_guess=initial_guess,
+                initial_radii_mm=initial_radii_mm,
+                initial_buildup_factor=initial_buildup_factor,
+            )
+
+        metrics = _compute_run_metrics(plan)
+        _log_run_metrics(log_prefix, plan, metrics)
+        return {
+            "id": run_id,
+            "flags": run_flags,
+            "overrides": dict(overrides),
+            "settings": dict(settings),
+            "plan": plan,
+            "metrics": metrics,
+        }
+
+    def _warm_start_seeds_from_plan(plan: Dict[str, object]) -> Dict[str, np.ndarray]:
+        def _coerce_matrix(value: object) -> Optional[np.ndarray]:
+            try:
+                arr = np.asarray(value, dtype=float)
+            except (TypeError, ValueError):
+                return None
+            if arr.ndim != 2 or arr.size <= 0 or not np.all(np.isfinite(arr)):
+                return None
+            return arr
+
+        def _coerce_vector(
+            value: object,
+            *,
+            size: Optional[int] = None,
+            positive: bool = False,
+        ) -> Optional[np.ndarray]:
+            try:
+                arr = np.asarray(value, dtype=float).reshape(-1)
+            except (TypeError, ValueError):
+                return None
+            if arr.size <= 0 or not np.all(np.isfinite(arr)):
+                return None
+            if arr.size == 1 and size is not None and size > 1:
+                arr = np.full(size, float(arr[0]), dtype=float)
+            if size is not None and arr.size != size:
+                return None
+            if positive and np.any(arr <= 0.0):
+                return None
+            return arr
+
+        seeds: Dict[str, np.ndarray] = {}
+        anchors = _coerce_matrix(plan.get("anchors"))
+        if anchors is not None:
+            seeds["initial_guess"] = anchors
+        anchor_count = int(anchors.shape[0]) if anchors is not None else None
+
+        length_model = plan.get("length_model")
+        if not isinstance(length_model, dict):
+            return seeds
+
+        radii_seed = _coerce_vector(
+            length_model.get("effective_radii_mm", length_model.get("modeled_radii_mm")),
+            size=anchor_count,
+            positive=True,
+        )
+        if radii_seed is not None:
+            seeds["initial_radii_mm"] = radii_seed
+
+        buildup_seed = _coerce_vector(
+            length_model.get("modeled_buildup_factor"),
+            size=anchor_count,
+        )
+        if buildup_seed is None and length_model.get("buildup_factor_k") is not None:
+            buildup_seed = _coerce_vector(
+                length_model.get("buildup_factor_k"),
+                size=anchor_count,
+            )
+        if buildup_seed is not None:
+            seeds["initial_buildup_factor"] = buildup_seed
+        return seeds
+
+    def _single_objective_schedule(value: object) -> List[int]:
+        if isinstance(value, (list, tuple)) and value:
+            try:
+                return [int(value[-1])]
+            except (TypeError, ValueError):
+                pass
+        return [1]
+
+    def _build_underconstrained_recovery_attempts(
+        settings: Dict[str, object]
+    ) -> List[Tuple[str, Dict[str, object]]]:
+        attempts: List[Tuple[str, Dict[str, object]]] = []
+        current = dict(settings)
+        if bool(current.get("sweep_wise_filtering")):
+            current = dict(current)
+            current["sweep_wise_filtering"] = False
+            attempts.append(("restore_sweeps", dict(current)))
+        if bool(current.get("pointwise_filtering")):
+            current = dict(current)
+            current["pointwise_filtering"] = False
+            current["pointwise_global_mad"] = False
+            attempts.append(("restore_points", dict(current)))
+
+        out: List[Tuple[str, Dict[str, object]]] = []
+        for label, attempt_settings in attempts:
+            settings_eff = dict(attempt_settings)
+            if (
+                not bool(settings_eff.get("pointwise_filtering"))
+                and not bool(settings_eff.get("sweep_wise_filtering"))
+            ):
+                settings_eff["filter_schedule"] = ["warmup"]
+                settings_eff["objective_schedule"] = _single_objective_schedule(
+                    settings_eff.get("objective_schedule")
+                )
+            out.append((label, settings_eff))
+        return out
+
+    def _attempt_underconstrained_recovery(
+        selected: Dict[str, object],
+        *,
+        collector_output: Path,
+    ) -> Tuple[Optional[Dict[str, object]], Optional[Dict[str, object]]]:
+        settings = dict(selected.get("settings") or {})
+        attempts = _build_underconstrained_recovery_attempts(settings)
+        if not attempts:
+            return None, None
+
+        run_id = str(selected.get("id", "run"))
+        run_flags = str(selected.get("flags", ""))
+        overrides = dict(selected.get("overrides") or {})
+        _log_console(
+            "; selected run underconstrained; trying to restore sweeps/points from current data."
+        )
+
+        warm_start = _warm_start_seeds_from_plan(selected["plan"])
+        recovery_info: Dict[str, object] = {
+            "attempts_total": int(len(attempts)),
+            "attempt_labels": [label for label, _settings in attempts],
+            "success": False,
+        }
+        for idx, (label, settings_try) in enumerate(attempts, start=1):
+            _log_line(
+                f"; underconstrained_recovery: run={run_id} "
+                f"attempt={idx}/{len(attempts)} mode={label}"
+            )
+            result = _execute_plan_run(
+                run_id=run_id,
+                run_flags=run_flags,
+                overrides=overrides,
+                settings=settings_try,
+                collector_output=collector_output,
+                log_prefix=f"; full-auto recovery {run_id} [{label}]",
+                path_tag=f"{run_id}.{label}",
+                initial_guess=warm_start.get("initial_guess"),
+                initial_radii_mm=warm_start.get("initial_radii_mm"),
+                initial_buildup_factor=warm_start.get("initial_buildup_factor"),
+            )
+            recovery_info.update(
+                {
+                    "attempt": str(label),
+                    "attempt_index": int(idx),
+                }
+            )
+            result["recovery"] = dict(recovery_info)
+            if bool(result["metrics"].get("valid")) and not bool(
+                result["metrics"].get("underconstrained_penalty", False)
+            ):
+                recovery_info["success"] = True
+                result["recovery"] = dict(recovery_info)
+                _log_console(
+                    "; underconstrained recovery succeeded; accepting the constrained warm start."
+                )
+                return result, dict(recovery_info)
+            warm_start = _warm_start_seeds_from_plan(result["plan"])
+
+        _log_console(
+            "; underconstrained recovery exhausted current data without re-establishing constraints."
+        )
+        return None, dict(recovery_info)
+
     def _stop_file_requested() -> bool:
         try:
             return stop_file.exists()
@@ -597,168 +938,15 @@ def full_auto_loop(
                     settings["low_anchor_z"] = float(settings["low_anchor_z"])
                     if not np.isfinite(settings["low_anchor_z"]):
                         settings["low_anchor_z"] = None
-                if run_flags:
-                    _log_line(f"; full-auto run {run_id}: flags='{run_flags}'")
-                else:
-                    _log_line(f"; full-auto run {run_id}: flags=''")
-
-                cfg_path = _full_auto_cfg_path(work_path, run_id)
-                residuals_csv_run = None
-                if residuals_csv is not None:
-                    res_base = Path(residuals_csv)
-                    if len(runs) > 1:
-                        residuals_csv_run = res_base.with_name(
-                            f"{res_base.stem}.{run_id}{res_base.suffix}"
-                        )
-                    else:
-                        residuals_csv_run = res_base
-
-                with _log_context():
-                    plan = plan_next_ellipse_sweep(
-                        work_path,
-                        solve_restarts=int(settings["solve_restarts"]),
-                        solve_iterations=int(settings["solve_iterations"]),
-                        solve_optimizer=str(settings["solve_optimizer"]),
-                        residual_threshold=float(settings["residual_threshold"]),
-                        spring_k_multiplier=float(settings["spring_k_multiplier"]),
-                        use_flex=bool(settings["use_flex"]),
-                        pointwise_residual_mode=str(settings["pointwise_residual_mode"]),
-                        pointwise_filtering=bool(settings["pointwise_filtering"]),
-                        pointwise_global_mad=bool(settings["pointwise_global_mad"]),
-                        sweep_wise_filtering=bool(settings["sweep_wise_filtering"]),
-                        sweep_metric=str(settings["sweep_metric"]),
-                        use_noise_mean=bool(settings["use_noise_mean"]),
-                        sigma_source=str(settings["sigma_source"]),
-                        robust_debug=bool(settings["robust_debug"]),
-                        residuals_csv=residuals_csv_run,
-                        generate_report=bool(settings["generate_report"]),
-                        find_radii=str(settings.get("find_radii", "off")),
-                        find_buildup_factor=str(settings.get("find_buildup_factor", "off")),
-                        base_radii=(
-                            [float(v) for v in settings["base_radii"]]
-                            if isinstance(settings.get("base_radii"), list)
-                            else None
-                        ),
-                        buildup_factor=(
-                            float(settings["buildup_factor"])
-                            if settings.get("buildup_factor") is not None
-                            else None
-                        ),
-                        r0_bounds=settings.get("r0_bounds"),
-                        b_bounds=settings.get("b_bounds"),
-                        r0_prior_sigma_mm=(
-                            float(settings["r0_prior_sigma_mm"])
-                            if settings.get("r0_prior_sigma_mm") is not None
-                            else None
-                        ),
-                        b_prior_sigma=(
-                            float(settings["b_prior_sigma"])
-                            if settings.get("b_prior_sigma") is not None
-                            else None
-                        ),
-                        spool_outer_iters=int(settings.get("spool_outer_iters", 3)),
-                        spool_inner_iters=int(settings.get("spool_inner_iters", 30)),
-                        theta0_mode=str(settings.get("theta0_mode", "zero")),
-                        filter_schedule=settings.get("filter_schedule"),
-                        objective_schedule=settings.get("objective_schedule"),
-                        line_width=float(settings.get("line_width", DEFAULT_LAYER_LINE_WIDTH_MM)),
-                        sigma_floor_mm=(
-                            None
-                            if settings.get("sigma_floor_mm") is None
-                            else float(settings.get("sigma_floor_mm"))
-                        ),
-                        sigma_used_mm=(
-                            None
-                            if settings.get("sigma_used_mm") is None
-                            else float(settings.get("sigma_used_mm"))
-                        ),
-                        low_anchor_z=(
-                            None
-                            if settings.get("low_anchor_z") is None
-                            else float(settings.get("low_anchor_z"))
-                        ),
-                        candidate_deltas=candidate_deltas,
-                        candidate_count=int(candidate_count),
-                        delta_min=delta_min,
-                        delta_max=delta_max,
-                        fd_eps_mm=float(fd_eps_mm),
-                        regularization=float(regularization),
-                        exclude_existing=bool(exclude_existing),
-                        existing_tol_mm=float(existing_tol_mm),
-                        min_fixed_delta_spacing_mm=float(min_fixed_delta_spacing_mm),
-                        top_k=int(top_k),
-                        write_cfg=cfg_path,
-                        collector_output=collector_output,
-                        collector_args=collector_args_eff,
-                        scale_fix=settings.get("scale_fix"),
-                        fit_structure=settings.get("fit_structure"),
-                    )
-
-                primary_cost = _plan_primary_cost(plan)
-                raw_fit_score_ui, rank_score, score_basis = _plan_score_ui(plan)
-                max_std_mm, rel_std, cov_ok = _plan_covariance_summary(plan)
-                warnings = _plan_data_quality_warnings(plan)
-                noise_metrics = _plan_noise_metrics(plan)
-                rank_coverage_adjust, rank_coverage_info = _rank_coverage_adjustment_from_noise_metrics(
-                    noise_metrics
-                )
-                underconstrained_penalty = _plan_hits_underconstrained_penalty(plan, primary_cost)
-                if underconstrained_penalty:
-                    warnings.append("underconstrained_penalty")
-                valid = bool(np.isfinite(primary_cost) and np.isfinite(rank_score) and cov_ok)
-                cost_raw = plan.get("cost_raw")
-                cost_norm = plan.get("cost_noise_normalized", plan.get("cost"))
-                j_val = noise_metrics.get("J") if isinstance(noise_metrics, dict) else None
-                chi2_val = noise_metrics.get("chi2_red") if isinstance(noise_metrics, dict) else None
-                _log_line(
-                    f"; full-auto run {run_id}: cost_raw={_fmt_float(cost_raw)} "
-                    f"cost_noise_normalized={_fmt_float(cost_norm)} J={_fmt_float(j_val)} "
-                    f"chi2_red={_fmt_float(chi2_val)} raw_fit_score_ui={_fmt_float(raw_fit_score_ui)} "
-                    f"score_basis={score_basis} "
-                    f"rank_coverage_adjust={_fmt_float(rank_coverage_adjust)} "
-                    f"effective_obs={_fmt_float(rank_coverage_info.get('effective_obs'), fmt='.0f')} "
-                    f"filtered_ratio={_fmt_float(rank_coverage_info.get('filtered_ratio'))}"
-                )
-
                 run_results.append(
-                    {
-                        "id": run_id,
-                        "flags": run.get("flags", ""),
-                        "overrides": overrides,
-                        "settings": settings,
-                        "plan": plan,
-                        "metrics": {
-                            "primary_cost": primary_cost,
-                            "raw_fit_score_ui": raw_fit_score_ui,
-                            "score_ui": raw_fit_score_ui,
-                            "rank_score": rank_score,
-                            "score_basis": score_basis,
-                            "cost_noise_normalized": plan.get("cost_noise_normalized"),
-                            "chi2_red": noise_metrics.get("chi2_red")
-                            if isinstance(noise_metrics, dict)
-                            else None,
-                            "J": noise_metrics.get("J") if isinstance(noise_metrics, dict) else None,
-                            "info_rank": plan.get("info_rank"),
-                            "info_rank_deficient": plan.get("info_rank_deficient"),
-                            "max_std_mm": max_std_mm,
-                            "rel_std": rel_std,
-                            "covariance_ok": cov_ok,
-                            "underconstrained_penalty": underconstrained_penalty,
-                            "rank_coverage_adjust": rank_coverage_adjust,
-                            "rank_effective_obs": rank_coverage_info.get("effective_obs"),
-                            "rank_total_obs": rank_coverage_info.get("total_obs"),
-                            "rank_filtered_ratio": rank_coverage_info.get("filtered_ratio"),
-                            "rank_obs_bonus": rank_coverage_info.get("obs_bonus"),
-                            "rank_filtered_penalty": rank_coverage_info.get("filtered_penalty"),
-                            "warnings": warnings,
-                            "valid": valid,
-                            "line_model_prefit": (
-                                (((plan.get("length_model") or {}).get("radii_fit") or {}).get("prefit"))
-                                if isinstance(plan, dict)
-                                else None
-                            ),
-                        },
-                    }
+                    _execute_plan_run(
+                        run_id=run_id,
+                        run_flags=run_flags,
+                        overrides=overrides,
+                        settings=settings,
+                        collector_output=collector_output,
+                        log_prefix=f"; full-auto run {run_id}",
+                    )
                 )
 
             valid_runs = [r for r in run_results if r["metrics"]["valid"]]
@@ -800,6 +988,14 @@ def full_auto_loop(
                 return (1.0 if underconstrained else 0.0), score, rel_val, cost, str(entry.get("id", ""))
 
             selected = sorted(valid_runs, key=_sort_key)[0]
+            recovery_info = None
+            if bool(selected["metrics"].get("underconstrained_penalty", False)):
+                recovered, recovery_info = _attempt_underconstrained_recovery(
+                    selected,
+                    collector_output=collector_output,
+                )
+                if recovered is not None:
+                    selected = recovered
             plan = selected["plan"]
             metrics = selected["metrics"]
             selected_id = str(selected.get("id", "run"))
@@ -824,6 +1020,18 @@ def full_auto_loop(
                 raw_fit_score_ui=selected_raw_fit_score_ui,
                 history_rank_score=selected_history_rank_score,
             )
+            selected_summary_meta = {
+                "iteration": step,
+                "run_id": selected_id,
+                "flags": selected_flags,
+                "score_ui": selected_fit_score_ui,
+                "raw_fit_score_ui": selected_raw_fit_score_ui,
+                "history_rank_score": selected_history_rank_score,
+                "score_basis": selected_score_basis,
+                "cost": selected_cost,
+                "rel_std": selected_rel_std,
+                "max_std_mm": selected_max_std,
+            }
             m669 = _m669_from_plan(plan)
             m666 = _m666_from_plan(plan)
             anchors = plan.get("anchors")
@@ -865,18 +1073,7 @@ def full_auto_loop(
                 best_rank_score = float(selected_rank_score)
                 best_cost = float(selected_cost)
                 best_plan = plan
-                best_meta = {
-                    "iteration": step,
-                    "run_id": selected_id,
-                    "flags": selected_flags,
-                    "score_ui": selected_fit_score_ui,
-                    "raw_fit_score_ui": selected_raw_fit_score_ui,
-                    "score_basis": selected_score_basis,
-                    "history_rank_score": selected_history_rank_score,
-                    "cost": selected_cost,
-                    "rel_std": selected_rel_std,
-                    "max_std_mm": selected_max_std,
-                }
+                best_meta = dict(selected_summary_meta)
                 improved = True
 
             score_rank: Optional[int] = None
@@ -897,18 +1094,7 @@ def full_auto_loop(
                         "cost": selected_cost,
                         "rel_std": selected_rel_std,
                         "max_std_mm": selected_max_std,
-                        "summary_meta": {
-                            "iteration": step,
-                            "run_id": selected_id,
-                            "flags": selected_flags,
-                            "score_ui": selected_fit_score_ui,
-                            "raw_fit_score_ui": selected_raw_fit_score_ui,
-                            "history_rank_score": selected_history_rank_score,
-                            "score_basis": selected_score_basis,
-                            "cost": selected_cost,
-                            "rel_std": selected_rel_std,
-                            "max_std_mm": selected_max_std,
-                        },
+                        "summary_meta": dict(selected_summary_meta),
                     }
                 )
                 score_rank = _current_history_rank_position(iteration=step)
@@ -970,8 +1156,11 @@ def full_auto_loop(
                 threshold_accept = True
             if stop_std_mm is not None and stop_std_hit:
                 threshold_accept = True
+            recovery_succeeded = bool(isinstance(recovery_info, dict) and recovery_info.get("success"))
             if selected_underconstrained:
                 decision = "collect"
+            elif recovery_succeeded:
+                decision = "accept"
             elif threshold_accept or no_improve >= patience_limit:
                 decision = "accept"
             else:
@@ -1017,10 +1206,16 @@ def full_auto_loop(
                     "stop_cost_hit": stop_cost_hit,
                     "stop_std_hit": stop_std_hit,
                     "warnings": selected_warnings,
+                    "recovery": recovery_info,
                 },
             )
 
             if decision == "accept":
+                if recovery_succeeded:
+                    return _emit_summary_and_send(
+                        plan,
+                        summary_meta=selected_summary_meta,
+                    )
                 summary_plan, summary_meta = _select_history_summary_candidate(reason="patience-or-threshold")
                 if summary_plan is None:
                     _log_console("; full-auto: no best plan available; stopping.")
@@ -1071,18 +1266,7 @@ def full_auto_loop(
                 summary_plan, summary_meta = _select_history_summary_candidate(
                     reason="no-collect",
                     fallback_plan=plan if isinstance(plan, dict) else None,
-                    fallback_meta={
-                        "iteration": step,
-                        "run_id": selected_id,
-                        "flags": selected_flags,
-                        "score_ui": selected_fit_score_ui,
-                        "raw_fit_score_ui": selected_raw_fit_score_ui,
-                        "history_rank_score": selected_history_rank_score,
-                        "score_basis": selected_score_basis,
-                        "cost": selected_cost,
-                        "rel_std": selected_rel_std,
-                        "max_std_mm": selected_max_std,
-                    },
+                    fallback_meta=selected_summary_meta,
                 )
                 if summary_plan is None:
                     _log_console("; full-auto: no summary candidate available; stopping.")

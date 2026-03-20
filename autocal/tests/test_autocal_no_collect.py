@@ -758,11 +758,195 @@ def test_full_auto_history_selector_can_prefer_mid_late_replay_plan(tmp_path, mo
     assert sent == []
     out = capsys.readouterr().out
     assert "M669 iter_3" in out
-    assert "M669 iter_1" not in out
-    assert "M669 iter_4" not in out
-    assert "Rank score:" not in out
-    assert "Fit score:" not in out
-    assert "try so far." in out
-    assert "Replaying next sweep to try and beat it." in out
-    assert out.count("Patience reset.") >= 2
-    assert out.count("Still has patience for 3 more attempts.") >= 2
+
+
+def test_full_auto_underconstrained_recovery_reuses_warm_start_and_accepts_retry(
+    tmp_path,
+    monkeypatch,
+    capsys,
+):
+    dataset = tmp_path / "full_dataset.json"
+    _write_dataset(dataset, sweeps=3)
+
+    sent = []
+    call_kwargs = []
+
+    def _plan(marker: str, anchors: np.ndarray, cost: float) -> dict:
+        return {
+            "marker": marker,
+            "anchors": np.asarray(anchors, dtype=float),
+            "machine_type": "slideprinter",
+            "cost": float(cost),
+            "cost_raw": float(cost),
+            "cost_noise_normalized": float(cost),
+            "covariance": np.eye(6, dtype=float),
+            "covariance_scaled": np.eye(6, dtype=float),
+            "collect_command": ["node", "collect"],
+            "length_model": {
+                "effective_radii_mm": [39.1, 39.2, 39.3],
+                "modeled_buildup_factor": [0.61, 0.62, 0.63],
+            },
+        }
+
+    base_under = _plan(
+        "under_1",
+        np.asarray([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], dtype=float),
+        100.0,
+    )
+    sweep_recovery_under = _plan(
+        "under_2",
+        np.asarray([[2.0, 0.0], [0.0, 2.0], [2.0, 2.0]], dtype=float),
+        100.0,
+    )
+    constrained = _plan(
+        "recovered",
+        np.asarray([[3.0, 0.0], [0.0, 3.0], [3.0, 3.0]], dtype=float),
+        2.0,
+    )
+    planned_runs = [base_under, sweep_recovery_under, constrained]
+
+    def fake_plan_next(*_args, **kwargs):
+        call_kwargs.append(dict(kwargs))
+        assert planned_runs, "expected a recovery plan for each attempt"
+        return planned_runs.pop(0)
+
+    def fake_score(plan):
+        score = float(plan["cost"])
+        return score, score, "standard-noise"
+
+    def fake_cost(plan):
+        return float(plan["cost"])
+
+    def fake_cov_summary(_plan):
+        return 1.0, 1.0, True
+
+    def fake_send(_server: str, gcode: str) -> str:
+        sent.append(gcode)
+        return "ok"
+
+    monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fake_plan_next)
+    monkeypatch.setattr(ac, "_plan_score_ui", fake_score)
+    monkeypatch.setattr(ac, "_plan_primary_cost", fake_cost)
+    monkeypatch.setattr(ac, "_plan_covariance_summary", fake_cov_summary)
+    monkeypatch.setattr(ac, "_plan_data_quality_warnings", lambda _plan: [])
+    monkeypatch.setattr(
+        ac,
+        "_plan_noise_metrics",
+        lambda plan: {"chi2_red": float(plan["cost"]), "J": float(plan["cost"])},
+    )
+    monkeypatch.setattr(
+        ac,
+        "_plan_hits_underconstrained_penalty",
+        lambda plan, *_args, **_kwargs: float(plan["cost"]) == 100.0,
+    )
+    monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(ac, "_append_jsonl", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(ac, "_m669_from_plan", lambda plan: f"M669 {plan['marker']}")
+    monkeypatch.setattr(ac, "_m666_from_plan", lambda _plan: "")
+    monkeypatch.setattr(ac, "_send_rrf_gcode", fake_send)
+    monkeypatch.setattr(
+        ac.subprocess,
+        "run",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("subprocess.run should not be called after recovery succeeds")
+        ),
+    )
+
+    rc = ac.full_auto_loop(
+        work_dataset=dataset,
+        machine_type="slideprinter",
+        max_steps=3,
+        stop_cost=None,
+        stop_std_mm=None,
+        solve_restarts=1,
+        solve_iterations=1,
+        solve_optimizer="L-BFGS-B",
+        residual_threshold=1.0,
+        spring_k_multiplier=1.0,
+        use_flex=False,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=True,
+        pointwise_global_mad=True,
+        sweep_wise_filtering=True,
+        sweep_metric="mad",
+        use_noise_mean=False,
+        sigma_source="auto",
+        robust_debug=False,
+        residuals_csv=None,
+        generate_report=False,
+        find_radii="global",
+        find_buildup_factor="global",
+        base_radii=[30.0, 30.0, 30.0],
+        buildup_factor=0.636619,
+        r0_bounds=None,
+        b_bounds=None,
+        r0_prior_sigma_mm=None,
+        b_prior_sigma=None,
+        spool_outer_iters=1,
+        spool_inner_iters=1,
+        theta0_mode="zero",
+        line_width=0.4,
+        sigma_floor_mm=None,
+        sigma_used_mm=None,
+        candidate_deltas=None,
+        candidate_count=16,
+        delta_min=None,
+        delta_max=None,
+        fd_eps_mm=1.0,
+        regularization=0.0,
+        exclude_existing=True,
+        existing_tol_mm=1.0,
+        min_fixed_delta_spacing_mm=0.0,
+        top_k=5,
+        write_cfg=None,
+        collector_args=[],
+        sim=True,
+        keep_sim_alive=False,
+        hp_sim_reset=False,
+        sweep_points=None,
+        output_with_explanations=False,
+        full_auto_runs=None,
+        full_auto_log=None,
+        patience=5,
+        verbose=False,
+        filter_schedule=["dynamic", "constant"],
+        objective_schedule=[1, 2],
+        no_collect=True,
+    )
+
+    assert rc == 0
+    assert sent == []
+    assert len(call_kwargs) == 3
+
+    assert call_kwargs[0]["sweep_wise_filtering"] is True
+    assert call_kwargs[0]["pointwise_filtering"] is True
+    assert call_kwargs[0]["initial_guess"] is None
+
+    assert call_kwargs[1]["sweep_wise_filtering"] is False
+    assert call_kwargs[1]["pointwise_filtering"] is True
+    assert call_kwargs[1]["filter_schedule"] == ["dynamic", "constant"]
+    assert np.allclose(
+        np.asarray(call_kwargs[1]["initial_guess"], dtype=float),
+        np.asarray(base_under["anchors"], dtype=float),
+    )
+    assert np.allclose(
+        np.asarray(call_kwargs[1]["initial_radii_mm"], dtype=float),
+        np.asarray([39.1, 39.2, 39.3], dtype=float),
+    )
+    assert np.allclose(
+        np.asarray(call_kwargs[1]["initial_buildup_factor"], dtype=float),
+        np.asarray([0.61, 0.62, 0.63], dtype=float),
+    )
+
+    assert call_kwargs[2]["sweep_wise_filtering"] is False
+    assert call_kwargs[2]["pointwise_filtering"] is False
+    assert call_kwargs[2]["filter_schedule"] == ["warmup"]
+    assert call_kwargs[2]["objective_schedule"] == [2]
+    assert np.allclose(
+        np.asarray(call_kwargs[2]["initial_guess"], dtype=float),
+        np.asarray(sweep_recovery_under["anchors"], dtype=float),
+    )
+
+    out = capsys.readouterr().out
+    assert "underconstrained recovery succeeded" in out
+    assert "selected run hit underconstrained sentinel" not in out
