@@ -136,7 +136,7 @@ DATASETS = [
     DatasetSpec(
         name="fifth_hp3_dataset",
         machine_type="hangprinter_4",
-        base_radii="39",
+        base_radii="30",
         buildup_factor="0.636619",
         true_anchors=SIM_3D_TRUE_ANCHORS,
         true_radii=SIM_3D_TRUE_RADII,
