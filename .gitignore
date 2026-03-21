@@ -40,6 +40,8 @@ autocal/data/fine_old_datasets/
 /autocal/data/*.full_auto_log.jsonl
 /autocal/data/*.full_auto_log_*.jsonl
 /autocal/data/*.bootstrap_cfg.txt
+/autocal/data/*.active_sweep_cfg.txt
 /autocal/data/*.active_sweep_cfg.default.txt
+/autocal/data/*.active_sweep_cfg.default.restore_sweeps.txt
 /autocal/data/*.replay_tmp.json
-/autocal/data/*.replay_tmp.active_sweep_cfg.default.txt
+/autocal/data/*.replay_tmp.active_sweep_cfg.*.txt
