@@ -258,12 +258,17 @@ function buildDataPointModes({
       ? forceMid * 2.0
       : (Number.isFinite(forceMax) ? forceMax : fallbackForce),
   );
-  const relaxModes = buildModes(fallbackForce);
+  // Pull slack out of the sensor line before sampling encoder angles.
+  const collectionModes = buildModes(
+    Number.isFinite(forceMid)
+      ? forceMid * 3.0
+      : (Number.isFinite(forceMax) ? forceMax : fallbackForce),
+  );
 
   return {
     buildModes,
+    collectionModes,
     returnModes,
-    relaxModes,
     fallbackForce,
   };
 }
@@ -321,8 +326,8 @@ export async function collectDataPoint(sendFn, options = {}) {
 
   const {
     buildModes,
+    collectionModes,
     returnModes,
-    relaxModes,
     fallbackForce,
   } = buildDataPointModes({
     motorIds,
@@ -400,7 +405,7 @@ export async function collectDataPoint(sendFn, options = {}) {
       anglesDeg = stableData.anglesDeg;
     }
   } else {
-    await applyForceModeState(sendFn, { motorIds, modes: relaxModes });
+    await applyForceModeState(sendFn, { motorIds, modes: collectionModes });
     stableData = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
     anglesDeg = stableData.anglesDeg;
   }
