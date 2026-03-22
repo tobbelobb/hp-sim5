@@ -261,7 +261,7 @@ function buildDataPointModes({
   // Pull slack out of the sensor line before sampling encoder angles.
   const collectionModes = buildModes(
     Number.isFinite(forceMid)
-      ? forceMid * 3.0
+      ? forceMid * 5.0
       : (Number.isFinite(forceMax) ? forceMax : fallbackForce),
   );
 
