@@ -50,13 +50,33 @@ from typing import List, Optional, Tuple
 
 
 Coord = Tuple[float, ...]
-DEFAULT_REFERENCE_LOG_NAMES = (
-    "full_auto_reference_run_march_23.log",
-    "full_auto_reference_run_march_20.log",
-    "full_auto_reference_run_march_19.log",
-    "full_auto_reference_run_march_11.log",
-    "full_auto_reference_run_march_6.log",
-)
+REFERENCE_LOG_PREFIX = "full_auto_reference_run_"
+MONTH_NAME_TO_NUMBER = {
+    "jan": 1,
+    "january": 1,
+    "feb": 2,
+    "february": 2,
+    "mar": 3,
+    "march": 3,
+    "apr": 4,
+    "april": 4,
+    "may": 5,
+    "jun": 6,
+    "june": 6,
+    "jul": 7,
+    "july": 7,
+    "aug": 8,
+    "august": 8,
+    "sep": 9,
+    "sept": 9,
+    "september": 9,
+    "oct": 10,
+    "october": 10,
+    "nov": 11,
+    "november": 11,
+    "dec": 12,
+    "december": 12,
+}
 
 SIM_2D_TRUE_ANCHORS: List[Coord] = [
     (0.0, -1900.0, 0.0),
@@ -84,7 +104,7 @@ class DatasetSpec:
     true_radii: List[float]
     find_radii: str
     extra_args: Tuple[str, ...] = ()
-    reference_log_names: Tuple[str, ...] = field(default_factory=lambda: DEFAULT_REFERENCE_LOG_NAMES)
+    reference_log_names: Tuple[str, ...] = field(default_factory=tuple)
 
 
 DATASETS = [
@@ -151,7 +171,6 @@ DATASETS = [
         true_anchors=SIM_3D_TRUE_ANCHORS,
         true_radii=SIM_3D_TRUE_RADII,
         extra_args=("--verbose", "--r0-bounds", "39,40"),
-        reference_log_names=("full_auto_reference_run_march_19.log",),
     ),
     DatasetSpec(
         name="seventh_hp3_dataset",
@@ -162,7 +181,6 @@ DATASETS = [
         true_anchors=SIM_3D_TRUE_ANCHORS,
         true_radii=SIM_3D_TRUE_RADII,
         extra_args=("--verbose", "--r0-bounds", "39,40"),
-        reference_log_names=("full_auto_reference_run_march_20.log",),
     ),
     DatasetSpec(
         name="seventh_hp3_dataset",
@@ -173,7 +191,6 @@ DATASETS = [
         true_anchors=SIM_3D_TRUE_ANCHORS,
         true_radii=SIM_3D_TRUE_RADII,
         extra_args=("--verbose", "--r0-bounds", "39,40"),
-        reference_log_names=("full_auto_reference_run_march_20.log",),
     ),
     DatasetSpec(
         name="sixteenth_hp3_dataset_even_more_pressure",
@@ -184,7 +201,6 @@ DATASETS = [
         true_anchors=SIM_3D_TRUE_ANCHORS,
         true_radii=SIM_3D_TRUE_RADII,
         extra_args=("--verbose", "--r0-bounds", "39,40"),
-        reference_log_names=("full_auto_reference_run_march_23.log",),
     ),
     DatasetSpec(
         name="nineteenth_hp3_dataset_even_more_pressure",
@@ -195,7 +211,6 @@ DATASETS = [
         true_anchors=SIM_3D_TRUE_ANCHORS,
         true_radii=SIM_3D_TRUE_RADII,
         extra_args=("--verbose", "--r0-bounds", "39,40"),
-        reference_log_names=("full_auto_reference_run_march_23.log",),
     ),
 ]
 
@@ -993,6 +1008,85 @@ def find_file_first_existing(candidates: List[Path]) -> Optional[Path]:
     return None
 
 
+def find_file_case_insensitive(directory: Path, filename: str) -> Optional[Path]:
+    if not directory.exists():
+        return None
+    target = filename.casefold()
+    for candidate in directory.iterdir():
+        if candidate.is_file() and candidate.name.casefold() == target:
+            return candidate
+    return None
+
+
+def reference_log_sort_key(path: Path) -> Tuple[int, int, int, Tuple[Tuple[int, object], ...], str]:
+    name = path.name.casefold()
+    if not name.endswith(".log"):
+        return (0, 0, 0, (), name)
+
+    stem = name[:-4]
+    marker = f".{REFERENCE_LOG_PREFIX}"
+    if marker in stem:
+        tail = stem.split(marker, 1)[1]
+    elif stem.startswith(REFERENCE_LOG_PREFIX):
+        tail = stem[len(REFERENCE_LOG_PREFIX):]
+    else:
+        return (0, 0, 0, (), name)
+
+    parts = tail.split("_")
+    if len(parts) < 2:
+        return (0, 0, 0, (), name)
+
+    month_name = parts[0]
+    month = MONTH_NAME_TO_NUMBER.get(month_name, 0)
+    try:
+        day = int(parts[1])
+    except ValueError:
+        return (0, 0, 0, (), name)
+
+    year = 0
+    suffix_parts = parts[2:]
+    if suffix_parts and len(suffix_parts[-1]) == 4 and suffix_parts[-1].isdigit():
+        year = int(suffix_parts[-1])
+        suffix_parts = suffix_parts[:-1]
+
+    suffix_key: Tuple[Tuple[int, object], ...] = tuple(
+        (0, int(part)) if part.isdigit() else (1, part)
+        for part in suffix_parts
+    )
+    return (month, day, year, suffix_key, name)
+
+
+def resolve_reference_log_path(
+    dataset_name: str,
+    ref_dir: Path,
+    alt_dir: Path,
+    reference_log_names: Tuple[str, ...],
+) -> Optional[Path]:
+    if reference_log_names:
+        for reference_log_name in reference_log_names:
+            rel_name = f"{dataset_name}.{reference_log_name}"
+            for directory in (ref_dir, alt_dir):
+                candidate = find_file_case_insensitive(directory, rel_name)
+                if candidate is not None:
+                    return candidate
+        return None
+
+    candidates: List[Path] = []
+    dataset_prefix = f"{dataset_name}.".casefold()
+    for directory in (ref_dir, alt_dir):
+        if not directory.exists():
+            continue
+        for candidate in directory.iterdir():
+            if not candidate.is_file():
+                continue
+            if candidate.name.casefold().startswith(dataset_prefix) and candidate.name.casefold().endswith(".log"):
+                if reference_log_sort_key(candidate)[:3] != (0, 0, 0):
+                    candidates.append(candidate)
+    if not candidates:
+        return None
+    return max(candidates, key=reference_log_sort_key)
+
+
 def prepare_isolated_dataset_copy(dataset_name: str, dataset_path: Path, scratch_root: Path) -> Path:
     run_dir = scratch_root / f"{dataset_name}_{uuid.uuid4().hex[:8]}"
     run_dir.mkdir(parents=True, exist_ok=False)
@@ -1141,9 +1235,12 @@ def main() -> int:
             data_dir / f"{ds}.json",
             alt_dir / f"{ds}.json",
         ])
-        ref_candidates = [ref_dir / f"{ds}.{name}" for name in dataset_spec.reference_log_names]
-        ref_candidates.extend(alt_dir / f"{ds}.{name}" for name in dataset_spec.reference_log_names)
-        ref_log_path = find_file_first_existing(ref_candidates)
+        ref_log_path = resolve_reference_log_path(
+            dataset_name=ds,
+            ref_dir=ref_dir,
+            alt_dir=alt_dir,
+            reference_log_names=dataset_spec.reference_log_names,
+        )
 
         if dataset_path is None:
             print(f"=== {ds} ===")
@@ -1152,7 +1249,7 @@ def main() -> int:
             continue
         if ref_log_path is None:
             print(f"=== {ds} ===")
-            print(f"ERROR: reference log not found (tried {', '.join(str(path) for path in ref_candidates)})")
+            print(f"ERROR: reference log not found for {ds} in {ref_dir} or {alt_dir}")
             overall_ok = False
             continue
         jobs.append((dataset_spec, dataset_path, ref_log_path))

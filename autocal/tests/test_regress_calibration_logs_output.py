@@ -22,8 +22,8 @@ def _make_dataset_spec(name="demo", machine_type="slideprinter"):
             buildup_factor="0.636619",
             true_anchors=rcl.SIM_3D_TRUE_ANCHORS,
             true_radii=rcl.SIM_3D_TRUE_RADII,
+            find_radii="global",
             extra_args=("--verbose", "--r0-bounds", "39,40"),
-            reference_log_names=("full_auto_reference_run_march_19.log",),
         )
     return rcl.DatasetSpec(
         name=name,
@@ -32,6 +32,7 @@ def _make_dataset_spec(name="demo", machine_type="slideprinter"):
         buildup_factor="0.636619",
         true_anchors=rcl.SIM_2D_TRUE_ANCHORS,
         true_radii=rcl.SIM_2D_TRUE_RADII,
+        find_radii="global",
     )
 
 
@@ -265,7 +266,46 @@ def test_seventh_hp3_dataset_matches_existing_hangprinter_regression_wiring():
     assert seventh.true_anchors == fifth.true_anchors
     assert seventh.true_radii == fifth.true_radii
     assert seventh.extra_args == fifth.extra_args
-    assert seventh.reference_log_names == ("full_auto_reference_run_march_20.log",)
+    assert seventh.reference_log_names == ()
+
+
+def test_resolve_reference_log_path_prefers_latest_dated_log_case_insensitively(tmp_path):
+    ref_dir = tmp_path / "refs"
+    ref_dir.mkdir()
+    alt_dir = tmp_path / "alt"
+    alt_dir.mkdir()
+
+    older = ref_dir / "demo.full_auto_reference_run_march_11_2026.log"
+    older.write_text("older", encoding="utf-8")
+    same_day_old_style = ref_dir / "demo.full_auto_reference_run_march_23.log"
+    same_day_old_style.write_text("same day old style", encoding="utf-8")
+    latest = ref_dir / "demo.full_auto_reference_run_MARCH_23_2026.log"
+    latest.write_text("latest", encoding="utf-8")
+
+    found = rcl.resolve_reference_log_path("demo", ref_dir, alt_dir, ())
+
+    assert found == latest
+
+
+def test_resolve_reference_log_path_honors_explicit_override_case_insensitively(tmp_path):
+    ref_dir = tmp_path / "refs"
+    ref_dir.mkdir()
+    alt_dir = tmp_path / "alt"
+    alt_dir.mkdir()
+
+    chosen = ref_dir / "demo.full_auto_reference_run_march_11_2026.log"
+    chosen.write_text("chosen", encoding="utf-8")
+    newer = ref_dir / "demo.full_auto_reference_run_march_23_2026.log"
+    newer.write_text("newer", encoding="utf-8")
+
+    found = rcl.resolve_reference_log_path(
+        "demo",
+        ref_dir,
+        alt_dir,
+        ("full_auto_reference_run_MARCH_11_2026.LOG",),
+    )
+
+    assert found == chosen
 
 
 def test_seventh_hp3_dataset_json_is_symlinked_to_references_copy():
@@ -402,6 +442,7 @@ def test_run_autocal_flattens_nested_extra_args(monkeypatch, tmp_path):
         buildup_factor="0.636619",
         true_anchors=rcl.SIM_2D_TRUE_ANCHORS,
         true_radii=rcl.SIM_2D_TRUE_RADII,
+        find_radii="global",
         extra_args=("--verbose", ("--filter-schedule", "0")),
     )
 
@@ -427,7 +468,7 @@ def test_main_run_tracker_summary_includes_true_iter_mean_delta(monkeypatch, tmp
     (repo_root / "data").mkdir()
     (repo_root / "refs").mkdir()
     (repo_root / "data" / "demo.json").write_text("{}", encoding="utf-8")
-    reference_log = repo_root / "refs" / "demo.full_auto_reference_run_march_19.log"
+    reference_log = repo_root / "refs" / "demo.full_auto_reference_run_march_19_2026.log"
     reference_log.write_text("log", encoding="utf-8")
 
     monkeypatch.setattr(rcl, "DATASETS", [_make_dataset_spec(name="demo")])
@@ -477,7 +518,7 @@ def test_main_only_filters_by_machine_type(monkeypatch, tmp_path, capsys):
     selected_spec = _make_dataset_spec(name="hang_demo", machine_type="hangprinter_4")
     skipped_spec = _make_dataset_spec(name="slide_demo", machine_type="slideprinter")
     (repo_root / "data" / "hang_demo.json").write_text("{}", encoding="utf-8")
-    selected_ref = repo_root / "refs" / "hang_demo.full_auto_reference_run_march_19.log"
+    selected_ref = repo_root / "refs" / "hang_demo.full_auto_reference_run_march_19_2026.log"
     selected_ref.write_text("log", encoding="utf-8")
 
     monkeypatch.setattr(rcl, "DATASETS", [skipped_spec, selected_spec])
@@ -521,6 +562,48 @@ def test_main_only_filters_by_machine_type(monkeypatch, tmp_path, capsys):
     assert called == ["hang_demo"]
     assert "hang_demo lines" in out
     assert "slide_demo" not in out
+
+
+def test_main_uses_latest_reference_log_when_multiple_logs_exist(monkeypatch, tmp_path):
+    repo_root = tmp_path
+    (repo_root / "autocal").mkdir()
+    (repo_root / "autocal" / "autocal.py").write_text("# stub\n", encoding="utf-8")
+    (repo_root / "data").mkdir()
+    (repo_root / "refs").mkdir()
+    (repo_root / "data" / "demo.json").write_text("{}", encoding="utf-8")
+    older_ref = repo_root / "refs" / "demo.full_auto_reference_run_march_11_2026.log"
+    newer_ref = repo_root / "refs" / "demo.full_auto_reference_run_MARCH_23_2026.log"
+    older_ref.write_text("older", encoding="utf-8")
+    newer_ref.write_text("newer", encoding="utf-8")
+
+    monkeypatch.setattr(rcl, "DATASETS", [_make_dataset_spec(name="demo")])
+    captured = {}
+
+    def fake_run_one_dataset(**kwargs):
+        captured["ref_log_path"] = kwargs["ref_log_path"]
+        return rcl.DatasetRunResult(
+            name=kwargs["dataset_spec"].name,
+            ok=True,
+            lines=["demo lines"],
+            generated_log=repo_root / "generated.log",
+            reference_log=kwargs["ref_log_path"],
+            true_err_total_delta=0.0,
+            true_iter_mean_delta=0.0,
+            true_gen_iter_std=0.0,
+            true_gen_iter_count=1,
+        )
+
+    monkeypatch.setattr(rcl, "run_one_dataset", fake_run_one_dataset)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["prog", "--repo-root", str(repo_root), "--data-dir", "data", "--ref-dir", "refs"],
+    )
+
+    rc = rcl.main()
+
+    assert rc == 0
+    assert captured["ref_log_path"] == newer_ref
 
 
 def test_compute_final_score_uses_requested_formula():
