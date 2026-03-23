@@ -51,6 +51,8 @@ from typing import List, Optional, Tuple
 
 Coord = Tuple[float, ...]
 DEFAULT_REFERENCE_LOG_NAMES = (
+    "full_auto_reference_run_march_23.log",
+    "full_auto_reference_run_march_20.log",
     "full_auto_reference_run_march_19.log",
     "full_auto_reference_run_march_11.log",
     "full_auto_reference_run_march_6.log",
@@ -80,6 +82,7 @@ class DatasetSpec:
     buildup_factor: str
     true_anchors: List[Coord]
     true_radii: List[float]
+    find_radii: str
     extra_args: Tuple[str, ...] = ()
     reference_log_names: Tuple[str, ...] = field(default_factory=lambda: DEFAULT_REFERENCE_LOG_NAMES)
 
@@ -90,6 +93,7 @@ DATASETS = [
         machine_type="slideprinter",
         base_radii="30.0",
         buildup_factor="0.636619",
+        find_radii="global",
         true_anchors=SIM_2D_TRUE_ANCHORS,
         true_radii=SIM_2D_TRUE_RADII,
     ),
@@ -98,6 +102,7 @@ DATASETS = [
         machine_type="slideprinter",
         base_radii="30.0",
         buildup_factor="0.636619",
+        find_radii="global",
         true_anchors=SIM_2D_TRUE_ANCHORS,
         true_radii=SIM_2D_TRUE_RADII,
     ),
@@ -106,6 +111,7 @@ DATASETS = [
         machine_type="slideprinter",
         base_radii="30.0",
         buildup_factor="0.636619",
+        find_radii="global",
         true_anchors=SIM_2D_TRUE_ANCHORS,
         true_radii=SIM_2D_TRUE_RADII,
     ),
@@ -114,6 +120,7 @@ DATASETS = [
         machine_type="slideprinter",
         base_radii="30.0",
         buildup_factor="0.636619",
+        find_radii="global",
         true_anchors=SIM_2D_TRUE_ANCHORS,
         true_radii=SIM_2D_TRUE_RADII,
     ),
@@ -122,6 +129,7 @@ DATASETS = [
         machine_type="slideprinter",
         base_radii="30.0",
         buildup_factor="0.636619",
+        find_radii="global",
         true_anchors=SIM_2D_TRUE_ANCHORS,
         true_radii=SIM_2D_TRUE_RADII,
     ),
@@ -130,6 +138,7 @@ DATASETS = [
         machine_type="slideprinter",
         base_radii="30.0",
         buildup_factor="0.636619",
+        find_radii="global",
         true_anchors=SIM_2D_TRUE_ANCHORS,
         true_radii=SIM_2D_TRUE_RADII,
     ),
@@ -138,6 +147,7 @@ DATASETS = [
         machine_type="hangprinter_4",
         base_radii="30",
         buildup_factor="0.636619",
+        find_radii="global",
         true_anchors=SIM_3D_TRUE_ANCHORS,
         true_radii=SIM_3D_TRUE_RADII,
         extra_args=("--verbose", "--r0-bounds", "39,40"),
@@ -148,10 +158,44 @@ DATASETS = [
         machine_type="hangprinter_4",
         base_radii="30",
         buildup_factor="0.636619",
+        find_radii="global",
         true_anchors=SIM_3D_TRUE_ANCHORS,
         true_radii=SIM_3D_TRUE_RADII,
         extra_args=("--verbose", "--r0-bounds", "39,40"),
         reference_log_names=("full_auto_reference_run_march_20.log",),
+    ),
+    DatasetSpec(
+        name="seventh_hp3_dataset",
+        machine_type="hangprinter_4",
+        base_radii="30",
+        buildup_factor="0.636619",
+        find_radii="global",
+        true_anchors=SIM_3D_TRUE_ANCHORS,
+        true_radii=SIM_3D_TRUE_RADII,
+        extra_args=("--verbose", "--r0-bounds", "39,40"),
+        reference_log_names=("full_auto_reference_run_march_20.log",),
+    ),
+    DatasetSpec(
+        name="sixteenth_hp3_dataset_even_more_pressure",
+        machine_type="hangprinter_4",
+        base_radii="30",
+        buildup_factor="0.636619",
+        find_radii="global",
+        true_anchors=SIM_3D_TRUE_ANCHORS,
+        true_radii=SIM_3D_TRUE_RADII,
+        extra_args=("--verbose", "--r0-bounds", "39,40"),
+        reference_log_names=("full_auto_reference_run_march_23.log",),
+    ),
+    DatasetSpec(
+        name="nineteenth_hp3_dataset_even_more_pressure",
+        machine_type="hangprinter_4",
+        base_radii="30",
+        buildup_factor="0.636619",
+        find_radii="global",
+        true_anchors=SIM_3D_TRUE_ANCHORS,
+        true_radii=SIM_3D_TRUE_RADII,
+        extra_args=("--verbose", "--r0-bounds", "39,40"),
+        reference_log_names=("full_auto_reference_run_march_23.log",),
     ),
 ]
 
@@ -573,7 +617,7 @@ def run_autocal(
         "--dataset",
         str(dataset_path),
         "--find-radii",
-        "global",
+        dataset_spec.find_radii,
         "--base-radii",
         dataset_spec.base_radii,
         "--buildup-factor",

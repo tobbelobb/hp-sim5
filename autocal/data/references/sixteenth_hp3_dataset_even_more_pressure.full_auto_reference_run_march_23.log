@@ -1,0 +1,481 @@
+; command: autocal/autocal.py --sim --machine-type hangprinter_4 --verbose --dataset autocal/data/sixteenth_hp3_dataset_even_more_pressure.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --r0-bounds 39,40 --no-collect
+Wrote to console: Writing additional info to log: autocal/data/sixteenth_hp3_dataset_even_more_pressure.full_auto_7.log
+; auto-enabling --hp-sim-reset for spool search in simulation
+; full-auto replay: starting from 3 sweeps, replaying 5 additional sweeps
+; full-auto replay: using autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.json (original autocal/data/sixteenth_hp3_dataset_even_more_pressure.json left untouched)
+; full-auto log: autocal/data/sixteenth_hp3_dataset_even_more_pressure.full_auto_log_7.jsonl
+Wrote to console: ; full-auto stop: press Ctrl-C to accept best-so-far, or create autocal/data/sixteenth_hp3_dataset_even_more_pressure.full_auto.stop to request stop (cross-platform)
+
+; === full-auto iteration 1/20 dataset=autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 1/20 dataset=autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.json ===
+; full-auto run default: flags=''
+[robust] pointwise sigma_source: mode=auto point=60 origin=0 min=0 mixed=0 total=60
+[robust] pointwise: enabled=False stage=0 (wide-huber) hard_cut=False huber_mult=10
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[robust] pointwise sigma_source: mode=auto point=60 origin=0 min=0 mixed=0 total=60
+[robust] pointwise: enabled=False stage=0 (wide-huber) hard_cut=False huber_mult=10
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[robust] pointwise sigma_source: mode=auto point=60 origin=0 min=0 mixed=0 total=60
+[robust] pointwise: enabled=False stage=0 (wide-huber) hard_cut=False huber_mult=10
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=60 origin=0 min=0 mixed=0 total=60
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default: cost_raw=0.001401 cost_noise_normalized=48.07 J=48.07 chi2_red=56.56 raw_fit_score_ui=1.058 score_basis=layered-calibrated rank_coverage_adjust=0 effective_obs=60 filtered_ratio=0
+; Active ellipse calibration
+; Anchors: [[0.00, -1894.81, -244.45], [1634.90, 944.73, -244.45], [-1629.89, 941.18, -244.45], [-1.06, 0.96, 1772.86]]
+M669 A0.00:-1894.81:-244.45 B1634.90:944.73:-244.45 C-1629.89:941.18:-244.45 D-1.06:0.96:1772.86
+; cost=0.001401 cost_noise_normalized=48.07 origin_norms=[1910.515, 1903.989, 1897.930, 1772.863] pairwise=[d01=3276.568, d02=3270.998, d03=2768.306, d12=3264.796, d13=2763.449, d23=2758.019]
+; line_model: planning=L_base_mm estimation=L_model_mm find_radii=global find_buildup_factor=off k=0.6366 base=[30,30,30,30] effective=[39,39,39,39]
+; line_model_params (M666): M666 R39:39:39:39 Q0.636619
+; line_model_prefit: enabled=True success=False guarded=True seed=current start=0.6678 fit=0.6678 start_data=0.6678 start_prior=0 start_total=0.6678 fit_data=0.6678 fit_prior=0 fit_total=0.6678 valid_sweeps=3 invalid_sweeps=0
+; line_model_fit: mode=radii=global,buildup=off outer_iters=3 inner_iters=30 best_cost=52.47 last_start=52.47 last_fit=52.47 last_cal=52.47 last_data=52.47 last_prior=0 last_total=52.47 nfev=37 nit=9
+; line_model_filter_schedule: passes=4 schedule=[warmup,warmup,warmup,dynamic] objectives=[1,1,1,1] last_raw_fit_score_ui=2.589e+04 last_rank_score=6.588 last_cost=48.07
+; noise_cost: J=48.07 chi2_red=56.56 |z|_med=6.711 |z|_p95=11.12 outlier_ratio=0.7167 N=60 mode=sigma lengths=mu J_trim=48.07 chi2_red_trim=56.56 N_trim=60
+; noise_rescore: tau_MAD=0.3753mm cost_noise_normalized_old=48.07 cost_noise_normalized_new=39.94 chi2_red_old=56.56 chi2_red_new=46.99 residual_vs_distance_slope_inliers=-0.0001481 slope(|r|,d)=-0.004002 slope(r^2,d)=-0.002146 inlier_cutoff_mm=1.07mm n_inlier_rows_used_for_tau=60 tau_d_tau0=1.594mm tau_d_tau1=0 cost_noise_normalized_tau_d=10.29 chi2_red_tau_d=12.11 cost_noise_normalized_tau_d_trimmed_direct=10.29 chi2_red_tau_d_trimmed_direct=12.11 chi2_red_tau_3bin_debiased_trimmed_direct=48.35 trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased=0.2504
+; noise_bias_diagnostic: bias_vs_distance_intercept=0.02229mm bias_vs_distance_slope_inliers=-1.581e-05 cost_after_bias_diagnostic=48.09 chi2_red_after_bias_diagnostic=56.57
+; noise_rescore_bins: near_MAD=0.3355mm mid_MAD=0.0786mm far_MAD=0.1401mm N=[20,20,20]
+; noise_rescore_bins_debiased: near_MAD=0.3355mm mid_MAD=0.07863mm far_MAD=0.1406mm
+; noise_rescore_tau_3bin_debiased: tau_near=0.4974mm tau_mid=0.1166mm tau_far=0.2084mm cost_noise_normalized_tau_3bin_debiased=41.1 chi2_red_tau_3bin_debiased=48.35 chi2_red_tau_3bin_debiased_trimmed_direct=48.35
+; sweep_residual: id=sweep_003 median=-0.08951mm MAD=0.2393mm p95_abs=0.5498mm mean|z|=6.378 clipped=0/20
+; sweep_residual: id=sweep_002 median=-0.07464mm MAD=0.2443mm p95_abs=0.5306mm mean|z|=5.622 clipped=0/20
+; sweep_residual: id=sweep_001 median=-0.03764mm MAD=0.3167mm p95_abs=0.5556mm mean|z|=6.085 clipped=0/20
+; noise_demean_by_sweep: cost_noise_normalized_demeaned=51.05 chi2_red_demeaned=60.06 tail_ratio=1.683 normalized_sweep_bias=0.2754 tail_factor_median=2.172 sweep_bias_span=0.05187mm n_obs=60
+; rank_coverage: effective_obs=60 total_obs=60 filtered_ratio=0 obs_bonus=0 filtered_penalty=0 rank_adjust=0
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.8317mm used_sigma=0.8317mm floor_deg=0.01deg source=auto
+; noise_sigma_mm: encoder=0.003674mm friction_cogging=0.1591mm flex=0.468mm floor=0.05mm non_layered=0.4968mm layer_changes=0.2983mm mode_add=0.5966mm total=0.8317mm model=0.8317mm used=0.8317mm layered=true mode=global/off mode_factor=2 line_width=1mm base_radius=30mm used_override=n/a
+; info rank: 10/12 std(p11=999mm, p0=992mm, p4=979mm, p7=979mm, p2=976mm, p5=975mm)
+; covariance_scaled: chi2_red=56.56 std_scaled(p11=7.51e+03mm, p0=7.46e+03mm, p4=7.36e+03mm, p7=7.36e+03mm, p2=7.34e+03mm, p5=7.33e+03mm)
+; CI95: max_std=7513mm max_ci=1.473e+04mm workspace=1694 rel_std=4.434 rel_ci=8.691 scale=chi2_red=56.56
+; encoder_noise: points=60/60 median_sigma=0deg floor=0.01deg min_samples=10
+; encoder_noise_flags: low_samples=0 sigma_below_floor=60 sigma_nonfinite=0
+; next_sweep score=0.224279 fixed=[2, 3] targets=[0.0, -489.12922100311164] pair=[0,1]
+; top_candidates:
+;   0.224279 fixed=[2, 3] targets=[0.0, -489.12922100311164] pair=[0,1]
+;   0.224245 fixed=[2, 3] targets=[464.6727599529561, -24.456461050155553] pair=[0,1]
+;   0.22423 fixed=[2, 3] targets=[440.21629890280053, -24.456461050155553] pair=[0,1]
+;   0.224216 fixed=[2, 3] targets=[440.21629890280053, -48.912922100311164] pair=[0,1]
+;   0.224216 fixed=[2, 3] targets=[415.75983785264486, -24.456461050155553] pair=[0,1]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 0.0,-489.12922100311164 --output-file autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.new_001.json --no-spawn-rrf-simulator --force-base-radii 30 --force-buildup-factor 0.636619 --force-low 0.01590900602367999 --force-mid 0.3181801204735998 --force-max 4.695667396316999 --no-auto-tune-force --return-to-origin
+; reusing force tuning: low=0.01591N mid=0.3182N max=4.696N
+; selected run=default fit_score_ui=9.407 raw_fit_score_ui=1.058 score_basis=layered-calibrated cost=48.07 rel_std=4.434 max_std=7513mm rank_score=4.575 iteration_adjust=0 coverage_adjust=0 history_rank_score=4.575
+Wrote to console: ; selected run=default fit_score_ui=9.407 raw_fit_score_ui=1.058 score_basis=layered-calibrated cost=48.07 rel_std=4.434 max_std=7513mm rank_score=4.575 iteration_adjust=0 coverage_adjust=0 history_rank_score=4.575
+Wrote to console: Anchors (M669): M669 A0.00:-1894.81:-244.45 B1634.90:944.73:-244.45 C-1629.89:941.18:-244.45 D-1.06:0.96:1772.86
+Wrote to console: ; line_model_params (M666): M666 R39:39:39:39 Q0.636619
+Wrote to console: The best try so far.
+Wrote to console: Patience reset.
+Wrote to console: Replaying next sweep to try and beat it.
+Wrote to console: Still has patience for 3 more attempts.
+; replayed sweep 1/5 -> autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.json sweeps=4
+Wrote to console: Collected sweep nr 4
+
+; === full-auto iteration 2/20 dataset=autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 2/20 dataset=autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.json ===
+; full-auto run default: flags=''
+[robust] pointwise sigma_source: mode=auto point=80 origin=0 min=0 mixed=0 total=80
+[robust] pointwise: enabled=False stage=0 (wide-huber) hard_cut=False huber_mult=10
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[robust] pointwise sigma_source: mode=auto point=80 origin=0 min=0 mixed=0 total=80
+[robust] pointwise: enabled=False stage=0 (wide-huber) hard_cut=False huber_mult=10
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[robust] pointwise sigma_source: mode=auto point=80 origin=0 min=0 mixed=0 total=80
+[robust] pointwise: enabled=False stage=0 (wide-huber) hard_cut=False huber_mult=10
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=59 origin=0 min=0 mixed=0 total=59
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default: cost_raw=0.03281 cost_noise_normalized=602.6 J=611.1 chi2_red=721.1 raw_fit_score_ui=2.132e+06 score_basis=layered-calibrated rank_coverage_adjust=0.1312 effective_obs=59 filtered_ratio=0.2625
+; Active ellipse calibration
+; Anchors: [[0.00, -1420.26, -172.46], [1998.77, 1392.87, -172.46], [-2218.70, 1586.56, -172.46], [-18.91, -3451.83, 5000.00]]
+M669 A0.00:-1420.26:-172.46 B1998.77:1392.87:-172.46 C-2218.70:1586.56:-172.46 D-18.91:-3451.83:5000.00
+; cost=0.03281 cost_noise_normalized=602.6 origin_norms=[1430.691, 2442.314, 2733.046, 6075.810] pairwise=[d01=3450.907, d02=3736.787, d03=5557.155, d12=4221.914, d13=7368.613, d23=7548.426]
+; line_model: planning=L_base_mm estimation=L_model_mm find_radii=global find_buildup_factor=off k=0.6366 base=[30,30,30,30] effective=[39,39,39,39]
+; line_model_params (M666): M666 R39:39:39:39 Q0.636619
+; line_model_prefit: enabled=True success=False guarded=True seed=current start=0.7263 fit=0.7263 start_data=0.7263 start_prior=0 start_total=0.7263 fit_data=0.7263 fit_prior=0 fit_total=0.7263 valid_sweeps=4 invalid_sweeps=0
+; line_model_fit: mode=radii=global,buildup=off outer_iters=3 inner_iters=30 best_cost=3.236e+04 last_start=3.236e+04 last_fit=3.236e+04 last_cal=3.236e+04 last_data=3.236e+04 last_prior=0 last_total=3.236e+04 nfev=19 nit=9
+; line_model_filter_schedule: passes=4 schedule=[warmup,warmup,warmup,dynamic] objectives=[1,1,1,1] last_raw_fit_score_ui=2.007e+15 last_rank_score=11.6 last_cost=602.6
+; noise_cost: J=611.1 chi2_red=721.1 |z|_med=11.74 |z|_p95=55.27 outlier_ratio=0.8136 N=59 mode=sigma lengths=mu J_trim=611.1 chi2_red_trim=721.1 N_trim=59
+; noise_rescore: tau_MAD=0.6104mm cost_noise_normalized_old=602.6 cost_noise_normalized_new=391.7 chi2_red_old=721.1 chi2_red_new=468.6 residual_vs_distance_slope_inliers=0.0005336 slope(|r|,d)=0.00138 slope(r^2,d)=0.002861 inlier_cutoff_mm=3.604mm n_inlier_rows_used_for_tau=59 tau_d_tau0=0mm tau_d_tau1=0.001077 cost_noise_normalized_tau_d=65.94 chi2_red_tau_d=78.9 cost_noise_normalized_tau_d_trimmed_direct=54.73 chi2_red_tau_d_trimmed_direct=64.58 chi2_red_tau_3bin_debiased_trimmed_direct=216.4 trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased=0.2984
+; noise_bias_diagnostic: bias_vs_distance_intercept=0.5967mm bias_vs_distance_slope_inliers=-0.000302 cost_after_bias_diagnostic=518.1 chi2_red_after_bias_diagnostic=611.3
+; noise_rescore_bins: near_MAD=0.284mm mid_MAD=0.2438mm far_MAD=1.185mm N=[20,19,20]
+; noise_rescore_bins_debiased: near_MAD=0.2757mm mid_MAD=0.2366mm far_MAD=1.189mm
+; noise_rescore_tau_3bin_debiased: tau_near=0.4087mm tau_mid=0.3508mm tau_far=1.763mm cost_noise_normalized_tau_3bin_debiased=183.4 chi2_red_tau_3bin_debiased=216.4 chi2_red_tau_3bin_debiased_trimmed_direct=216.4
+; sweep_residual: id=sweep_004 median=1.997mm MAD=0mm p95_abs=1.997mm mean|z|=37.09 clipped=19/20
+; sweep_residual: id=sweep_002 median=0.0958mm MAD=0.2438mm p95_abs=0.72mm mean|z|=8.153 clipped=1/20
+; sweep_residual: id=sweep_003 median=0.08155mm MAD=0.284mm p95_abs=1.449mm mean|z|=11.95 clipped=0/20
+; sweep_residual: id=sweep_001 median=-0.05923mm MAD=1.054mm p95_abs=2.341mm mean|z|=26.97 clipped=1/20
+; noise_demean_by_sweep: cost_noise_normalized_demeaned=484.9 chi2_red_demeaned=572.1 tail_ratio=4.99 normalized_sweep_bias=1.862 tail_factor_median=2.954 sweep_bias_span=2.056mm n_obs=59
+; rank_coverage: effective_obs=59 total_obs=80 filtered_ratio=0.2625 obs_bonus=0 filtered_penalty=0.1312 rank_adjust=0.1312
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.8317mm used_sigma=0.8317mm floor_deg=0.01deg source=auto
+; noise_sigma_mm: encoder=0.003674mm friction_cogging=0.1591mm flex=0.468mm floor=0.05mm non_layered=0.4968mm layer_changes=0.2983mm mode_add=0.5966mm total=0.8317mm model=0.8317mm used=0.8317mm layered=true mode=global/off mode_factor=2 line_width=1mm base_radius=30mm used_override=n/a
+; info rank: 10/12 std(p11=1e+03mm, p10=1e+03mm, p9=998mm, p8=996mm, p5=995mm, p2=994mm)
+; covariance_scaled: chi2_red=721.1 std_scaled(p11=2.68e+04mm, p10=2.68e+04mm, p9=2.68e+04mm, p8=2.68e+04mm, p5=2.67e+04mm, p2=2.67e+04mm)
+; CI95: max_std=2.685e+04mm max_ci=5.262e+04mm workspace=1694 rel_std=15.84 rel_ci=31.06 scale=chi2_red=721.1
+; encoder_noise: points=80/80 median_sigma=0deg floor=0.01deg min_samples=10
+; encoder_noise_flags: low_samples=0 sigma_below_floor=80 sigma_nonfinite=0
+; next_sweep score=0.191003 fixed=[0, 3] targets=[464.6727599529561, -24.456461050155553] pair=[1,2]
+; top_candidates:
+;   0.191003 fixed=[0, 3] targets=[464.6727599529561, -24.456461050155553] pair=[1,2]
+;   0.190942 fixed=[0, 3] targets=[440.21629890280053, -24.456461050155553] pair=[1,2]
+;   0.190919 fixed=[0, 3] targets=[440.21629890280053, -48.912922100311164] pair=[1,2]
+;   0.190881 fixed=[0, 3] targets=[415.75983785264486, -24.456461050155553] pair=[1,2]
+;   0.190858 fixed=[0, 3] targets=[415.75983785264486, -48.912922100311164] pair=[1,2]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 464.6727599529561,-24.456461050155553 --output-file autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.new_002.json --no-spawn-rrf-simulator --force-base-radii 30 --force-buildup-factor 0.636619 --force-low 0.01590900602367999 --force-mid 0.3181801204735998 --force-max 4.695667396316999 --no-auto-tune-force --return-to-origin
+; reusing force tuning: low=0.01591N mid=0.3182N max=4.696N
+; selected run=default fit_score_ui=25.72 raw_fit_score_ui=2.132e+06 score_basis=layered-calibrated cost=602.6 rel_std=15.84 max_std=2.685e+04mm rank_score=7.469 iteration_adjust=-0.1919 coverage_adjust=0.1312 history_rank_score=7.303
+Wrote to console: ; selected run=default fit_score_ui=25.72 raw_fit_score_ui=2.132e+06 score_basis=layered-calibrated cost=602.6 rel_std=15.84 max_std=2.685e+04mm rank_score=7.469 iteration_adjust=-0.1919 coverage_adjust=0.1312 history_rank_score=7.303
+Wrote to console: Anchors (M669): M669 A0.00:-1420.26:-172.46 B1998.77:1392.87:-172.46 C-2218.70:1586.56:-172.46 D-18.91:-3451.83:5000.00
+Wrote to console: ; line_model_params (M666): M666 R39:39:39:39 Q0.636619
+Wrote to console: The 2nd best try so far.
+Wrote to console: Replaying next sweep to try and beat it.
+Wrote to console: Still has patience for 2 more attempts.
+; replayed sweep 2/5 -> autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.json sweeps=5
+Wrote to console: Collected sweep nr 5
+
+; === full-auto iteration 3/20 dataset=autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 3/20 dataset=autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.json ===
+; full-auto run default: flags=''
+[robust] pointwise sigma_source: mode=auto point=100 origin=0 min=0 mixed=0 total=100
+[robust] pointwise: enabled=False stage=0 (wide-huber) hard_cut=False huber_mult=10
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[robust] pointwise sigma_source: mode=auto point=100 origin=0 min=0 mixed=0 total=100
+[robust] pointwise: enabled=False stage=0 (wide-huber) hard_cut=False huber_mult=10
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[robust] pointwise sigma_source: mode=auto point=100 origin=0 min=0 mixed=0 total=100
+[robust] pointwise: enabled=False stage=0 (wide-huber) hard_cut=False huber_mult=10
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=100 origin=0 min=0 mixed=0 total=100
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default: cost_raw=0.001741 cost_noise_normalized=55.07 J=55.07 chi2_red=60.52 raw_fit_score_ui=1.015 score_basis=layered-calibrated rank_coverage_adjust=-0.1532 effective_obs=100 filtered_ratio=0
+; Active ellipse calibration
+; Anchors: [[0.00, -1924.44, -279.19], [1649.89, 956.00, -279.19], [-1634.59, 943.52, -279.19], [-1.31, 2.04, 1898.73]]
+M669 A0.00:-1924.44:-279.19 B1649.89:956.00:-279.19 C-1634.59:943.52:-279.19 D-1.31:2.04:1898.73
+; cost=0.001741 cost_noise_normalized=55.07 origin_norms=[1944.591, 1927.183, 1907.893, 1898.735] pairwise=[d01=3319.505, d02=3301.076, d03=2907.693, d12=3284.508, d13=2894.796, d23=2880.509]
+; line_model: planning=L_base_mm estimation=L_model_mm find_radii=global find_buildup_factor=off k=0.6366 base=[30,30,30,30] effective=[39,39,39,39]
+; line_model_params (M666): M666 R39:39:39:39 Q0.636619
+; line_model_prefit: enabled=True success=False guarded=True seed=current start=0.7954 fit=0.7954 start_data=0.7954 start_prior=0 start_total=0.7954 fit_data=0.7954 fit_prior=0 fit_total=0.7954 valid_sweeps=5 invalid_sweeps=0
+; line_model_fit: mode=radii=global,buildup=off outer_iters=3 inner_iters=30 best_cost=71.58 last_start=71.58 last_fit=71.58 last_cal=71.58 last_data=71.58 last_prior=0 last_total=71.58 nfev=19 nit=9
+; line_model_filter_schedule: passes=4 schedule=[warmup,warmup,warmup,dynamic] objectives=[1,1,1,1] last_raw_fit_score_ui=6.882e+04 last_rank_score=6.783 last_cost=55.07
+; noise_cost: J=55.07 chi2_red=60.52 |z|_med=5.558 |z|_p95=13.9 outlier_ratio=0.72 N=100 mode=sigma lengths=mu J_trim=55.07 chi2_red_trim=60.52 N_trim=100
+; noise_rescore: tau_MAD=0.3962mm cost_noise_normalized_old=55.07 cost_noise_normalized_new=44.88 chi2_red_old=60.52 chi2_red_new=49.32 residual_vs_distance_slope_inliers=-8.184e-06 slope(|r|,d)=-0.000108 slope(r^2,d)=-5.655e-05 inlier_cutoff_mm=1.241mm n_inlier_rows_used_for_tau=100 tau_d_tau0=0.6562mm tau_d_tau1=0 cost_noise_normalized_tau_d=33.94 chi2_red_tau_d=37.3 cost_noise_normalized_tau_d_trimmed_direct=33.94 chi2_red_tau_d_trimmed_direct=37.3 chi2_red_tau_3bin_debiased_trimmed_direct=46.49 trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased=0.8023
+; noise_bias_diagnostic: bias_vs_distance_intercept=0.1044mm bias_vs_distance_slope_inliers=-4.787e-05 cost_after_bias_diagnostic=54.89 chi2_red_after_bias_diagnostic=60.32
+; noise_rescore_bins: near_MAD=0.3339mm mid_MAD=0.3294mm far_MAD=0.2227mm N=[34,33,33]
+; noise_rescore_bins_debiased: near_MAD=0.3337mm mid_MAD=0.3295mm far_MAD=0.2356mm
+; noise_rescore_tau_3bin_debiased: tau_near=0.4948mm tau_mid=0.4886mm tau_far=0.3493mm cost_noise_normalized_tau_3bin_debiased=42.31 chi2_red_tau_3bin_debiased=46.49 chi2_red_tau_3bin_debiased_trimmed_direct=46.49
+; sweep_residual: id=sweep_003 median=-0.04784mm MAD=0.3016mm p95_abs=0.5922mm mean|z|=7.444 clipped=0/20
+; sweep_residual: id=sweep_005 median=-0.04216mm MAD=0.1762mm p95_abs=0.5609mm mean|z|=5.455 clipped=0/20
+; sweep_residual: id=sweep_002 median=-0.02767mm MAD=0.2781mm p95_abs=0.5987mm mean|z|=6.792 clipped=0/20
+; sweep_residual: id=sweep_004 median=0.01968mm MAD=0.198mm p95_abs=0.5692mm mean|z|=4.424 clipped=0/20
+; sweep_residual: id=sweep_001 median=0.008104mm MAD=0.2825mm p95_abs=0.5817mm mean|z|=6.745 clipped=0/20
+; noise_demean_by_sweep: cost_noise_normalized_demeaned=56.18 chi2_red_demeaned=61.73 tail_ratio=1.644 normalized_sweep_bias=0.06464 tail_factor_median=2.153 sweep_bias_span=0.06752mm n_obs=100
+; rank_coverage: effective_obs=100 total_obs=100 filtered_ratio=0 obs_bonus=0.1532 filtered_penalty=0 rank_adjust=-0.1532
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.8317mm used_sigma=0.8317mm floor_deg=0.01deg source=auto
+; noise_sigma_mm: encoder=0.003674mm friction_cogging=0.1591mm flex=0.468mm floor=0.05mm non_layered=0.4968mm layer_changes=0.2983mm mode_add=0.5966mm total=0.8317mm model=0.8317mm used=0.8317mm layered=true mode=global/off mode_factor=2 line_width=1mm base_radius=30mm used_override=n/a
+; info rank: 10/12 std(p11=999mm, p0=987mm, p2=976mm, p4=974mm, p8=973mm, p7=971mm)
+; covariance_scaled: chi2_red=60.52 std_scaled(p11=7.77e+03mm, p0=7.68e+03mm, p2=7.59e+03mm, p4=7.58e+03mm, p8=7.57e+03mm, p7=7.55e+03mm)
+; CI95: max_std=7769mm max_ci=1.523e+04mm workspace=1694 rel_std=4.585 rel_ci=8.987 scale=chi2_red=60.52
+; encoder_noise: points=100/100 median_sigma=0deg floor=0.01deg min_samples=10
+; encoder_noise_flags: low_samples=0 sigma_below_floor=100 sigma_nonfinite=0
+; next_sweep score=0.168138 fixed=[1, 3] targets=[0.0, -464.6727599529561] pair=[0,2]
+; top_candidates:
+;   0.168138 fixed=[1, 3] targets=[0.0, -464.6727599529561] pair=[0,2]
+;   0.168122 fixed=[1, 3] targets=[440.21629890280053, -48.912922100311164] pair=[0,2]
+;   0.168109 fixed=[1, 3] targets=[415.75983785264486, -48.912922100311164] pair=[0,2]
+;   0.168098 fixed=[1, 3] targets=[391.3033768024893, -48.912922100311164] pair=[0,2]
+;   0.168096 fixed=[1, 3] targets=[415.75983785264486, -73.36938315046677] pair=[0,2]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 0.0,-464.6727599529561 --output-file autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.new_003.json --no-spawn-rrf-simulator --force-base-radii 30 --force-buildup-factor 0.636619 --force-low 0.01590900602367999 --force-mid 0.3181801204735998 --force-max 4.695667396316999 --no-auto-tune-force --return-to-origin
+; reusing force tuning: low=0.01591N mid=0.3182N max=4.696N
+; selected run=default fit_score_ui=3.054 raw_fit_score_ui=1.015 score_basis=layered-calibrated cost=55.07 rel_std=4.585 max_std=7769mm rank_score=4.567 iteration_adjust=-0.2544 coverage_adjust=-0.1532 history_rank_score=4.282
+Wrote to console: ; selected run=default fit_score_ui=3.054 raw_fit_score_ui=1.015 score_basis=layered-calibrated cost=55.07 rel_std=4.585 max_std=7769mm rank_score=4.567 iteration_adjust=-0.2544 coverage_adjust=-0.1532 history_rank_score=4.282
+Wrote to console: Anchors (M669): M669 A0.00:-1924.44:-279.19 B1649.89:956.00:-279.19 C-1634.59:943.52:-279.19 D-1.31:2.04:1898.73
+Wrote to console: ; line_model_params (M666): M666 R39:39:39:39 Q0.636619
+Wrote to console: The best try so far.
+Wrote to console: Patience reset.
+Wrote to console: Replaying next sweep to try and beat it.
+Wrote to console: Still has patience for 3 more attempts.
+; replayed sweep 3/5 -> autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.json sweeps=6
+Wrote to console: Collected sweep nr 6
+
+; === full-auto iteration 4/20 dataset=autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 4/20 dataset=autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.json ===
+; full-auto run default: flags=''
+[robust] pointwise sigma_source: mode=auto point=120 origin=0 min=0 mixed=0 total=120
+[robust] pointwise: enabled=False stage=0 (wide-huber) hard_cut=False huber_mult=10
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[robust] pointwise sigma_source: mode=auto point=120 origin=0 min=0 mixed=0 total=120
+[robust] pointwise: enabled=False stage=0 (wide-huber) hard_cut=False huber_mult=10
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[robust] pointwise sigma_source: mode=auto point=120 origin=0 min=0 mixed=0 total=120
+[robust] pointwise: enabled=False stage=0 (wide-huber) hard_cut=False huber_mult=10
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=120 origin=0 min=0 mixed=0 total=120
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default: cost_raw=0.001711 cost_noise_normalized=50.32 J=50.32 chi2_red=54.4 raw_fit_score_ui=1.572 score_basis=layered-calibrated rank_coverage_adjust=-0.2079 effective_obs=120 filtered_ratio=0
+; Active ellipse calibration
+; Anchors: [[0.00, -1921.48, -279.85], [1650.82, 955.67, -279.85], [-1639.74, 946.62, -279.85], [-1.08, 1.74, 1900.72]]
+M669 A0.00:-1921.48:-279.85 B1650.82:955.67:-279.85 C-1639.74:946.62:-279.85 D-1.08:1.74:1900.72
+; cost=0.001711 cost_noise_normalized=50.32 origin_norms=[1941.747, 1927.903, 1913.932, 1900.723] pairwise=[d01=3317.098, d02=3303.738, d03=2907.512, d12=3290.568, d13=2897.176, d23=2886.668]
+; line_model: planning=L_base_mm estimation=L_model_mm find_radii=global find_buildup_factor=off k=0.6366 base=[30,30,30,30] effective=[39.02,39.02,39.02,39.02]
+; line_model_params (M666): M666 R39.02:39.02:39.02:39.02 Q0.636619
+; line_model_prefit: enabled=True success=False guarded=True seed=seed_4 start=0.8294 fit=0.8294 start_data=0.8294 start_prior=0 start_total=0.8294 fit_data=0.8294 fit_prior=0 fit_total=0.8294 valid_sweeps=6 invalid_sweeps=0
+; line_model_fit: mode=radii=global,buildup=off outer_iters=3 inner_iters=30 best_cost=68.92 last_start=68.94 last_fit=68.82 last_cal=68.92 last_data=68.92 last_prior=0 last_total=68.92 nfev=46 nit=10
+; line_model_filter_schedule: passes=4 schedule=[warmup,warmup,warmup,dynamic] objectives=[1,1,1,1] last_raw_fit_score_ui=2.639e+04 last_rank_score=6.591 last_cost=50.32
+; noise_cost: J=50.32 chi2_red=54.4 |z|_med=5.564 |z|_p95=12.52 outlier_ratio=0.7083 N=120 mode=sigma lengths=mu J_trim=50.32 chi2_red_trim=54.4 N_trim=120
+; noise_rescore: tau_MAD=0.3576mm cost_noise_normalized_old=50.32 cost_noise_normalized_new=42.47 chi2_red_old=54.4 chi2_red_new=45.91 residual_vs_distance_slope_inliers=-2.564e-05 slope(|r|,d)=-0.0001221 slope(r^2,d)=-7.461e-05 inlier_cutoff_mm=1.197mm n_inlier_rows_used_for_tau=120 tau_d_tau0=0.4869mm tau_d_tau1=0 cost_noise_normalized_tau_d=37.47 chi2_red_tau_d=40.51 cost_noise_normalized_tau_d_trimmed_direct=37.47 chi2_red_tau_d_trimmed_direct=40.51 chi2_red_tau_3bin_debiased_trimmed_direct=45.57 trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased=0.8891
+; noise_bias_diagnostic: bias_vs_distance_intercept=0.1034mm bias_vs_distance_slope_inliers=-4.723e-05 cost_after_bias_diagnostic=50.14 chi2_red_after_bias_diagnostic=54.21
+; noise_rescore_bins: near_MAD=0.3066mm mid_MAD=0.207mm far_MAD=0.2113mm N=[40,40,40]
+; noise_rescore_bins_debiased: near_MAD=0.3058mm mid_MAD=0.2059mm far_MAD=0.2101mm
+; noise_rescore_tau_3bin_debiased: tau_near=0.4534mm tau_mid=0.3052mm tau_far=0.3115mm cost_noise_normalized_tau_3bin_debiased=42.15 chi2_red_tau_3bin_debiased=45.57 chi2_red_tau_3bin_debiased_trimmed_direct=45.57
+; sweep_residual: id=sweep_005 median=-0.04568mm MAD=0.1837mm p95_abs=0.5598mm mean|z|=5.48 clipped=0/20
+; sweep_residual: id=sweep_006 median=-0.03919mm MAD=0.246mm p95_abs=0.4592mm mean|z|=4.308 clipped=0/20
+; sweep_residual: id=sweep_002 median=-0.0364mm MAD=0.2555mm p95_abs=0.5989mm mean|z|=6.715 clipped=0/20
+; sweep_residual: id=sweep_004 median=0.03194mm MAD=0.2191mm p95_abs=0.5505mm mean|z|=4.637 clipped=0/20
+; sweep_residual: id=sweep_003 median=-0.03183mm MAD=0.3102mm p95_abs=0.5989mm mean|z|=7.389 clipped=0/20
+; sweep_residual: +1 more sweeps
+; noise_demean_by_sweep: cost_noise_normalized_demeaned=51.51 chi2_red_demeaned=55.68 tail_ratio=1.586 normalized_sweep_bias=0.07539 tail_factor_median=2.229 sweep_bias_span=0.07762mm n_obs=120
+; rank_coverage: effective_obs=120 total_obs=120 filtered_ratio=0 obs_bonus=0.2079 filtered_penalty=0 rank_adjust=-0.2079
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.8317mm used_sigma=0.8317mm floor_deg=0.01deg source=auto
+; noise_sigma_mm: encoder=0.003674mm friction_cogging=0.1591mm flex=0.468mm floor=0.05mm non_layered=0.4968mm layer_changes=0.2983mm mode_add=0.5966mm total=0.8317mm model=0.8317mm used=0.8317mm layered=true mode=global/off mode_factor=2 line_width=1mm base_radius=30mm used_override=n/a
+; info rank: 10/12 std(p11=999mm, p0=986mm, p4=971mm, p2=971mm, p7=970mm, p5=969mm)
+; covariance_scaled: chi2_red=54.4 std_scaled(p11=7.36e+03mm, p0=7.27e+03mm, p4=7.16e+03mm, p2=7.16e+03mm, p7=7.15e+03mm, p5=7.15e+03mm)
+; CI95: max_std=7365mm max_ci=1.443e+04mm workspace=1694 rel_std=4.346 rel_ci=8.519 scale=chi2_red=54.4
+; encoder_noise: points=120/120 median_sigma=0deg floor=0.01deg min_samples=10
+; encoder_noise_flags: low_samples=0 sigma_below_floor=120 sigma_nonfinite=0
+; next_sweep score=0.147271 fixed=[2, 3] targets=[440.21629890280053, -48.912922100311164] pair=[0,1]
+; top_candidates:
+;   0.147271 fixed=[2, 3] targets=[440.21629890280053, -48.912922100311164] pair=[0,1]
+;   0.147259 fixed=[2, 3] targets=[415.75983785264486, -48.912922100311164] pair=[0,1]
+;   0.147248 fixed=[2, 3] targets=[391.3033768024893, -48.912922100311164] pair=[0,1]
+;   0.147246 fixed=[2, 3] targets=[415.75983785264486, -73.36938315046677] pair=[0,1]
+;   0.147236 fixed=[2, 3] targets=[366.84691575233376, -48.912922100311164] pair=[0,1]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 440.21629890280053,-48.912922100311164 --output-file autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.new_004.json --no-spawn-rrf-simulator --force-base-radii 30 --force-buildup-factor 0.636619 --force-low 0.01590900602367999 --force-mid 0.3181801204735998 --force-max 4.695667396316999 --no-auto-tune-force --return-to-origin
+; reusing force tuning: low=0.01591N mid=0.3182N max=4.696N
+; selected run=default fit_score_ui=4.464 raw_fit_score_ui=1.572 score_basis=layered-calibrated cost=50.32 rel_std=4.346 max_std=7365mm rank_score=4.654 iteration_adjust=-0.2638 coverage_adjust=-0.2079 history_rank_score=4.349
+Wrote to console: ; selected run=default fit_score_ui=4.464 raw_fit_score_ui=1.572 score_basis=layered-calibrated cost=50.32 rel_std=4.346 max_std=7365mm rank_score=4.654 iteration_adjust=-0.2638 coverage_adjust=-0.2079 history_rank_score=4.349
+Wrote to console: Anchors (M669): M669 A0.00:-1921.48:-279.85 B1650.82:955.67:-279.85 C-1639.74:946.62:-279.85 D-1.08:1.74:1900.72
+Wrote to console: ; line_model_params (M666): M666 R39.02:39.02:39.02:39.02 Q0.636619
+Wrote to console: The 2nd best try so far.
+Wrote to console: Replaying next sweep to try and beat it.
+Wrote to console: Still has patience for 2 more attempts.
+; replayed sweep 4/5 -> autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.json sweeps=7
+Wrote to console: Collected sweep nr 7
+
+; === full-auto iteration 5/20 dataset=autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 5/20 dataset=autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.json ===
+; full-auto run default: flags=''
+[robust] pointwise sigma_source: mode=auto point=140 origin=0 min=0 mixed=0 total=140
+[robust] pointwise: enabled=False stage=0 (wide-huber) hard_cut=False huber_mult=10
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[robust] pointwise sigma_source: mode=auto point=140 origin=0 min=0 mixed=0 total=140
+[robust] pointwise: enabled=False stage=0 (wide-huber) hard_cut=False huber_mult=10
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[robust] pointwise sigma_source: mode=auto point=140 origin=0 min=0 mixed=0 total=140
+[robust] pointwise: enabled=False stage=0 (wide-huber) hard_cut=False huber_mult=10
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=120 origin=0 min=0 mixed=0 total=120
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default: cost_raw=0.002157 cost_noise_normalized=50.38 J=50.38 chi2_red=54.46 raw_fit_score_ui=6.619 score_basis=layered-calibrated rank_coverage_adjust=-0.2427 effective_obs=138 filtered_ratio=0.01429
+; Active ellipse calibration
+; Anchors: [[0.00, -1920.96, -279.75], [1650.37, 955.41, -279.75], [-1639.31, 946.37, -279.75], [-1.08, 1.74, 1900.54]]
+M669 A0.00:-1920.96:-279.75 B1650.37:955.41:-279.75 C-1639.31:946.37:-279.75 D-1.08:1.74:1900.54
+; cost=0.002157 cost_noise_normalized=50.38 origin_norms=[1941.221, 1927.376, 1913.427, 1900.538] pairwise=[d01=3316.200, d02=3302.860, d03=2906.959, d12=3289.689, d13=2896.624, d23=2886.133]
+; line_model: planning=L_base_mm estimation=L_model_mm find_radii=global find_buildup_factor=off k=0.6366 base=[30,30,30,30] effective=[39.01,39.01,39.01,39.01]
+; line_model_params (M666): M666 R39.01:39.01:39.01:39.01 Q0.636619
+; line_model_prefit: enabled=True success=False guarded=True seed=seed_4 start=0.9283 fit=0.9283 start_data=0.9283 start_prior=0 start_total=0.9283 fit_data=0.9283 fit_prior=0 fit_total=0.9283 valid_sweeps=7 invalid_sweeps=0
+; line_model_fit: mode=radii=global,buildup=off outer_iters=3 inner_iters=30 best_cost=71.77 last_start=71.77 last_fit=71.77 last_cal=71.77 last_data=71.77 last_prior=0 last_total=71.77 nfev=37 nit=9
+; line_model_filter_schedule: passes=4 schedule=[warmup,warmup,warmup,dynamic] objectives=[1,1,1,1] last_raw_fit_score_ui=2.67e+04 last_rank_score=6.594 last_cost=50.38
+; noise_cost: J=50.38 chi2_red=54.46 |z|_med=5.563 |z|_p95=12.54 outlier_ratio=0.7083 N=120 mode=sigma lengths=mu J_trim=50.38 chi2_red_trim=54.46 N_trim=120
+; noise_rescore: tau_MAD=0.3813mm cost_noise_normalized_old=50.38 cost_noise_normalized_new=41.63 chi2_red_old=54.46 chi2_red_new=45 residual_vs_distance_slope_inliers=-0.0001348 slope(|r|,d)=-0.0001508 slope(r^2,d)=-9.553e-05 inlier_cutoff_mm=1.193mm n_inlier_rows_used_for_tau=138 tau_d_tau0=0.4313mm tau_d_tau1=0 cost_noise_normalized_tau_d=39.7 chi2_red_tau_d=42.92 cost_noise_normalized_tau_d_trimmed_direct=42.37 chi2_red_tau_d_trimmed_direct=45.32 chi2_red_tau_3bin_debiased_trimmed_direct=46.11 trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased=0.9828
+; noise_bias_diagnostic: bias_vs_distance_intercept=0.3945mm bias_vs_distance_slope_inliers=-0.0001746 cost_after_bias_diagnostic=51.89 chi2_red_after_bias_diagnostic=55.51
+; noise_rescore_bins: near_MAD=0.2532mm mid_MAD=0.2551mm far_MAD=0.2272mm N=[46,46,46]
+; noise_rescore_bins_debiased: near_MAD=0.254mm mid_MAD=0.2569mm far_MAD=0.2449mm
+; noise_rescore_tau_3bin_debiased: tau_near=0.3765mm tau_mid=0.3809mm tau_far=0.3631mm cost_noise_normalized_tau_3bin_debiased=43.11 chi2_red_tau_3bin_debiased=46.11 chi2_red_tau_3bin_debiased_trimmed_direct=46.11
+; sweep_residual: id=sweep_007 median=0.3221mm MAD=0.1496mm p95_abs=0.651mm mean|z|=7.726 clipped=2/20
+; sweep_residual: id=sweep_005 median=-0.0458mm MAD=0.1844mm p95_abs=0.5598mm mean|z|=5.483 clipped=0/20
+; sweep_residual: id=sweep_006 median=-0.03833mm MAD=0.2452mm p95_abs=0.459mm mean|z|=4.308 clipped=0/20
+; sweep_residual: id=sweep_002 median=-0.03602mm MAD=0.2557mm p95_abs=0.5993mm mean|z|=6.717 clipped=0/20
+; sweep_residual: id=sweep_004 median=0.03252mm MAD=0.2194mm p95_abs=0.5524mm mean|z|=4.65 clipped=0/20
+; sweep_residual: +2 more sweeps
+; noise_demean_by_sweep: cost_noise_normalized_demeaned=47.73 chi2_red_demeaned=51.06 tail_ratio=1.615 normalized_sweep_bias=0.1233 tail_factor_median=2.343 sweep_bias_span=0.3679mm n_obs=138
+; rank_coverage: effective_obs=138 total_obs=140 filtered_ratio=0.01429 obs_bonus=0.2499 filtered_penalty=0.007143 rank_adjust=-0.2427
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.8317mm used_sigma=0.8317mm floor_deg=0.01deg source=auto
+; noise_sigma_mm: encoder=0.003674mm friction_cogging=0.1591mm flex=0.468mm floor=0.05mm non_layered=0.4968mm layer_changes=0.2983mm mode_add=0.5966mm total=0.8317mm model=0.8317mm used=0.8317mm layered=true mode=global/off mode_factor=2 line_width=1mm base_radius=30mm used_override=n/a
+; info rank: 10/12 std(p11=998mm, p0=986mm, p4=971mm, p7=968mm, p8=968mm, p2=968mm)
+; covariance_scaled: chi2_red=54.46 std_scaled(p11=7.37e+03mm, p0=7.28e+03mm, p4=7.16e+03mm, p7=7.14e+03mm, p8=7.14e+03mm, p2=7.14e+03mm)
+; CI95: max_std=7367mm max_ci=1.444e+04mm workspace=1694 rel_std=4.348 rel_ci=8.522 scale=chi2_red=54.46
+; encoder_noise: points=140/140 median_sigma=0deg floor=0.01deg min_samples=10
+; encoder_noise_flags: low_samples=0 sigma_below_floor=140 sigma_nonfinite=0
+; next_sweep score=0.139736 fixed=[1, 3] targets=[415.75983785264486, -73.36938315046677] pair=[0,2]
+; top_candidates:
+;   0.139736 fixed=[1, 3] targets=[415.75983785264486, -73.36938315046677] pair=[0,2]
+;   0.139725 fixed=[1, 3] targets=[391.3033768024893, -73.36938315046677] pair=[0,2]
+;   0.139714 fixed=[1, 3] targets=[366.84691575233376, -73.36938315046677] pair=[0,2]
+;   0.139711 fixed=[1, 3] targets=[391.3033768024893, -97.82584420062233] pair=[0,2]
+;   0.139703 fixed=[1, 3] targets=[342.3904547021781, -73.36938315046677] pair=[0,2]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 415.75983785264486,-73.36938315046677 --output-file autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.new_005.json --no-spawn-rrf-simulator --force-base-radii 30 --force-buildup-factor 0.636619 --force-low 0.01590900602367999 --force-mid 0.3181801204735998 --force-max 4.695667396316999 --no-auto-tune-force --return-to-origin
+; reusing force tuning: low=0.01591N mid=0.3182N max=4.696N
+; selected run=default fit_score_ui=10.63 raw_fit_score_ui=6.619 score_basis=layered-calibrated cost=50.38 rel_std=4.348 max_std=7367mm rank_score=4.939 iteration_adjust=-0.2442 coverage_adjust=-0.2427 history_rank_score=4.646
+Wrote to console: ; selected run=default fit_score_ui=10.63 raw_fit_score_ui=6.619 score_basis=layered-calibrated cost=50.38 rel_std=4.348 max_std=7367mm rank_score=4.939 iteration_adjust=-0.2442 coverage_adjust=-0.2427 history_rank_score=4.646
+Wrote to console: Anchors (M669): M669 A0.00:-1920.96:-279.75 B1650.37:955.41:-279.75 C-1639.31:946.37:-279.75 D-1.08:1.74:1900.54
+Wrote to console: ; line_model_params (M666): M666 R39.01:39.01:39.01:39.01 Q0.636619
+Wrote to console: The 4th best try so far.
+Wrote to console: Replaying next sweep to try and beat it.
+Wrote to console: Still has patience for 1 more attempts.
+; replayed sweep 5/5 -> autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.json sweeps=8
+Wrote to console: Collected sweep nr 8
+
+; === full-auto iteration 6/20 dataset=autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 6/20 dataset=autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.json ===
+; full-auto run default: flags=''
+[robust] pointwise sigma_source: mode=auto point=160 origin=0 min=0 mixed=0 total=160
+[robust] pointwise: enabled=False stage=0 (wide-huber) hard_cut=False huber_mult=10
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[robust] pointwise sigma_source: mode=auto point=160 origin=0 min=0 mixed=0 total=160
+[robust] pointwise: enabled=False stage=0 (wide-huber) hard_cut=False huber_mult=10
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[robust] pointwise sigma_source: mode=auto point=160 origin=0 min=0 mixed=0 total=160
+[robust] pointwise: enabled=False stage=0 (wide-huber) hard_cut=False huber_mult=10
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=140 origin=0 min=0 mixed=0 total=140
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=4.8e-05 floor_mm=0.832
+[robust] pointwise sigma_floor_mm: origin=0.0036737 mult=3 scaled=0.0110211 min=0.05 model=0.831704 used=0.831704 floor=0.831704 floor_deg=0.01 source=model
+[robust] pointwise sigma_components_mm: encoder=0.00367 friction_cogging=0.159 flex=0.468 floor=0.05 non_layered=0.497 layer_changes=0.298 mode_add=0.597 total=0.832 model=0.832 used=0.832 layered=true mode=global/off mode_factor=2 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default: cost_raw=0.002372 cost_noise_normalized=64.6 J=64.6 chi2_red=69.04 raw_fit_score_ui=68.72 score_basis=layered-calibrated rank_coverage_adjust=-0.2842 effective_obs=158 filtered_ratio=0.0125
+; Active ellipse calibration
+; Anchors: [[0.00, -1919.95, -279.22], [1649.71, 955.94, -279.22], [-1636.36, 943.91, -279.22], [-1.56, 1.29, 1904.96]]
+M669 A0.00:-1919.95:-279.22 B1649.71:955.94:-279.22 C-1636.36:943.91:-279.22 D-1.56:1.29:1904.96
+; cost=0.002372 cost_noise_normalized=64.6 origin_norms=[1940.151, 1926.998, 1909.602, 1904.966] pairwise=[d01=3315.466, d02=3298.386, d03=2908.921, d12=3286.084, d13=2899.778, d23=2886.476]
+; line_model: planning=L_base_mm estimation=L_model_mm find_radii=global find_buildup_factor=off k=0.6366 base=[30,30,30,30] effective=[39.01,39.01,39.01,39.01]
+; line_model_params (M666): M666 R39.01:39.01:39.01:39.01 Q0.636619
+; line_model_prefit: enabled=True success=False guarded=True seed=seed_4 start=1.045 fit=1.045 start_data=1.045 start_prior=0 start_total=1.045 fit_data=1.045 fit_prior=0 fit_total=1.045 valid_sweeps=8 invalid_sweeps=0
+; line_model_fit: mode=radii=global,buildup=off outer_iters=3 inner_iters=30 best_cost=89.89 last_start=89.89 last_fit=89.89 last_cal=89.89 last_data=89.89 last_prior=0 last_total=89.89 nfev=37 nit=9
+; line_model_filter_schedule: passes=4 schedule=[warmup,warmup,warmup,dynamic] objectives=[1,1,1,1] last_raw_fit_score_ui=2.838e+05 last_rank_score=7.066 last_cost=64.6
+; noise_cost: J=64.6 chi2_red=69.04 |z|_med=6.247 |z|_p95=14.88 outlier_ratio=0.7071 N=140 mode=sigma lengths=mu J_trim=64.6 chi2_red_trim=69.04 N_trim=140
+; noise_rescore: tau_MAD=0.4141mm cost_noise_normalized_old=64.6 cost_noise_normalized_new=51.77 chi2_red_old=69.04 chi2_red_new=55.33 residual_vs_distance_slope_inliers=-0.0001944 slope(|r|,d)=-0.0001669 slope(r^2,d)=-0.000123 inlier_cutoff_mm=1.264mm n_inlier_rows_used_for_tau=158 tau_d_tau0=0.4397mm tau_d_tau1=0 cost_noise_normalized_tau_d=50.49 chi2_red_tau_d=53.96 cost_noise_normalized_tau_d_trimmed_direct=52.71 chi2_red_tau_d_trimmed_direct=55.9 chi2_red_tau_3bin_debiased_trimmed_direct=55.86 trimmed_coherence_ratio_tau_d_over_tau_3bin_debiased=1.001
+; noise_bias_diagnostic: bias_vs_distance_intercept=0.4613mm bias_vs_distance_slope_inliers=-0.0002091 cost_after_bias_diagnostic=65.24 chi2_red_after_bias_diagnostic=69.18
+; noise_rescore_bins: near_MAD=0.3097mm mid_MAD=0.2455mm far_MAD=0.2717mm N=[53,52,53]
+; noise_rescore_bins_debiased: near_MAD=0.3116mm mid_MAD=0.2431mm far_MAD=0.2698mm
+; noise_rescore_tau_3bin_debiased: tau_near=0.462mm tau_mid=0.3604mm tau_far=0.4mm cost_noise_normalized_tau_3bin_debiased=52.68 chi2_red_tau_3bin_debiased=55.86 chi2_red_tau_3bin_debiased_trimmed_direct=55.86
+; sweep_residual: id=sweep_007 median=0.3611mm MAD=0.1711mm p95_abs=0.7146mm mean|z|=8.619 clipped=2/20
+; sweep_residual: id=sweep_008 median=0.3381mm MAD=0.2982mm p95_abs=0.8898mm mean|z|=8.635 clipped=0/20
+; sweep_residual: id=sweep_002 median=-0.2437mm MAD=0.2482mm p95_abs=0.6114mm mean|z|=7.361 clipped=0/20
+; sweep_residual: id=sweep_003 median=-0.04556mm MAD=0.2594mm p95_abs=0.6194mm mean|z|=7.495 clipped=0/20
+; sweep_residual: id=sweep_006 median=-0.04338mm MAD=0.2303mm p95_abs=0.4568mm mean|z|=4.493 clipped=0/20
+; sweep_residual: +3 more sweeps
+; noise_demean_by_sweep: cost_noise_normalized_demeaned=54.25 chi2_red_demeaned=57.53 tail_ratio=1.749 normalized_sweep_bias=0.1969 tail_factor_median=2.425 sweep_bias_span=0.6048mm n_obs=158
+; rank_coverage: effective_obs=158 total_obs=160 filtered_ratio=0.0125 obs_bonus=0.2905 filtered_penalty=0.00625 rank_adjust=-0.2842
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.8317mm used_sigma=0.8317mm floor_deg=0.01deg source=auto
+; noise_sigma_mm: encoder=0.003674mm friction_cogging=0.1591mm flex=0.468mm floor=0.05mm non_layered=0.4968mm layer_changes=0.2983mm mode_add=0.5966mm total=0.8317mm model=0.8317mm used=0.8317mm layered=true mode=global/off mode_factor=2 line_width=1mm base_radius=30mm used_override=n/a
+; info rank: 10/12 std(p11=998mm, p0=985mm, p4=969mm, p7=967mm, p5=966mm, p2=965mm)
+; covariance_scaled: chi2_red=69.04 std_scaled(p11=8.29e+03mm, p0=8.19e+03mm, p4=8.05e+03mm, p7=8.04e+03mm, p5=8.02e+03mm, p2=8.02e+03mm)
+; CI95: max_std=8293mm max_ci=1.625e+04mm workspace=1694 rel_std=4.894 rel_ci=9.593 scale=chi2_red=69.04
+; encoder_noise: points=160/160 median_sigma=0deg floor=0.01deg min_samples=10
+; encoder_noise_flags: low_samples=0 sigma_below_floor=159 sigma_nonfinite=0
+; next_sweep score=0.131313 fixed=[0, 3] targets=[0.0, -440.2162989028005] pair=[1,2]
+; top_candidates:
+;   0.131313 fixed=[0, 3] targets=[0.0, -440.2162989028005] pair=[1,2]
+;   0.131312 fixed=[0, 3] targets=[391.3033768024893, -97.82584420062233] pair=[1,2]
+;   0.131301 fixed=[0, 3] targets=[366.84691575233376, -97.82584420062233] pair=[1,2]
+;   0.131291 fixed=[0, 3] targets=[342.3904547021781, -97.82584420062233] pair=[1,2]
+;   0.131287 fixed=[0, 3] targets=[366.84691575233376, -122.28230525077788] pair=[1,2]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 0.0,-440.2162989028005 --output-file autocal/data/sixteenth_hp3_dataset_even_more_pressure.replay_tmp.new_006.json --no-spawn-rrf-simulator --force-base-radii 30 --force-buildup-factor 0.636619 --force-low 0.01590900602367999 --force-mid 0.3181801204735998 --force-max 4.695667396316999 --no-auto-tune-force --return-to-origin
+; reusing force tuning: low=0.01591N mid=0.3182N max=4.696N
+; selected run=default fit_score_ui=18.89 raw_fit_score_ui=68.72 score_basis=layered-calibrated cost=64.6 rel_std=4.894 max_std=8293mm rank_score=5.404 iteration_adjust=-0.2063 coverage_adjust=-0.2842 history_rank_score=5.141
+Wrote to console: ; selected run=default fit_score_ui=18.89 raw_fit_score_ui=68.72 score_basis=layered-calibrated cost=64.6 rel_std=4.894 max_std=8293mm rank_score=5.404 iteration_adjust=-0.2063 coverage_adjust=-0.2842 history_rank_score=5.141
+Wrote to console: Anchors (M669): M669 A0.00:-1919.95:-279.22 B1649.71:955.94:-279.22 C-1636.36:943.91:-279.22 D-1.56:1.29:1904.96
+Wrote to console: ; line_model_params (M666): M666 R39.01:39.01:39.01:39.01 Q0.636619
+Wrote to console: The 5th best try so far.
+; history_select: reason=patience-or-threshold candidates=6 total_iterations=6
+; history_select: iter=3 run=default rank=4.567 iteration_adjust=-0.2544 coverage_adjust=-0.1532 selection_score=4.282
+; history_select: iter=4 run=default rank=4.654 iteration_adjust=-0.2638 coverage_adjust=-0.2079 selection_score=4.349
+; history_select: iter=1 run=default rank=4.575 iteration_adjust=0 coverage_adjust=0 selection_score=4.575
+; history_select: iter=5 run=default rank=4.939 iteration_adjust=-0.2442 coverage_adjust=-0.2427 selection_score=4.646
+; history_select: iter=6 run=default rank=5.404 iteration_adjust=-0.2063 coverage_adjust=-0.2842 selection_score=5.141
+Wrote to console: 
+Wrote to console: == Calibration summary ==
+Wrote to console: Found parameters of good quality
+Wrote to console: Fit quality score (lower is better): 3.054
+Wrote to console: Anchors (M669): M669 A0.00:-1924.44:-279.19 B1649.89:956.00:-279.19 C-1634.59:943.52:-279.19 D-1.31:2.04:1898.73
+Wrote to console: Spools (M666): M666 R39:39:39:39 Q0.636619
+Wrote to console: Interpretation: A Quality score between 2 and 5 is a useful fit.
+Wrote to console: ; --sim + --no-collect set; skipping M669 send.
