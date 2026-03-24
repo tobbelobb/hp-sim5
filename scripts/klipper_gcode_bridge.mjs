@@ -7,6 +7,7 @@ import WebSocket, { WebSocketServer } from 'ws';
 import { KlipperApiBridge } from '../autocal/control/primitives/klipper_api_bridge.mjs';
 import { connectKlipperApiBridgeWithRetry } from '../autocal/control/primitives/klipper_api_connect.mjs';
 import { createKlipperMotionRelay } from '../autocal/control/primitives/klipper_motion_relay.mjs';
+import { createSequentialLineQueue } from '../autocal/control/primitives/klipper_stdin_queue.mjs';
 import {
   buildKlippySpawnSpec,
   buildMcuBridgeSpawnSpec,
@@ -303,34 +304,7 @@ function attachProcessHandlers() {
   });
 }
 
-const stdinQueue = [];
-let stdinProcessing = false;
 let rl = null;
-
-async function processStdinQueue() {
-  if (stdinProcessing) {
-    return;
-  }
-  stdinProcessing = true;
-  try {
-    while (stdinQueue.length > 0) {
-      const next = stdinQueue.shift();
-      // eslint-disable-next-line no-await-in-loop
-      await next();
-    }
-  } finally {
-    stdinProcessing = false;
-  }
-}
-
-function enqueueLine(line) {
-  stdinQueue.push(() => handleLine(line));
-  processStdinQueue().catch((err) => {
-    if (!args.quiet) {
-      console.error(err.message);
-    }
-  });
-}
 
 async function handleLine(line) {
   const trimmed = line.trim();
@@ -359,6 +333,14 @@ async function runOneShot() {
 
 async function runInteractive() {
   await bootstrap();
+  const stdinQueue = createSequentialLineQueue({
+    onLine: handleLine,
+    onPrompt: () => {
+      if (process.stdin.isTTY && !args.quiet && rl) {
+        rl.prompt(true);
+      }
+    },
+  });
   rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -366,7 +348,7 @@ async function runInteractive() {
   });
 
   rl.on('line', (line) => {
-    enqueueLine(line);
+    stdinQueue.enqueue(line);
   });
 
   rl.on('close', () => {
