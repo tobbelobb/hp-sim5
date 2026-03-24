@@ -1322,6 +1322,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         except FileNotFoundError as exc:
             parser.error(str(exc))
     collector_args = _clean_collector_args(args.collector_args)
+    if args.speedup is not None and not _arg_has_flag(collector_args, "--speedup"):
+        speedup_arg = (
+            str(int(args.speedup))
+            if float(args.speedup).is_integer()
+            else str(args.speedup)
+        )
+        collector_args.extend(["--speedup", speedup_arg])
     if bool(args.project_zero_tension) and not _arg_has_flag(collector_args, "--project-zero-tension"):
         collector_args.append("--project-zero-tension")
     if bool(args.debug_sweep_actions) and not _arg_has_flag(collector_args, "--debug-sweep-actions"):

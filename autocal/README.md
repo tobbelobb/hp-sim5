@@ -20,8 +20,10 @@ Initiate simulated full-auto calibration with:
 python autocal/autocal.py \
   --sim \
   --machine-type slideprinter \
-  --collector-args --speedup 25
+  --speedup 25
 ```
+
+`--speedup` is forwarded to the collector automatically; use `--collector-args` only for other raw collector flags.
 
 Replace `slideprinter` with your actual type of machine (one of `slideprinter`,`hangprinter_4`,`hangprinter_5`,`cubecorners`, or `skycam`).
 Keep the hp-sim web page visible during the whole procedure, otherwise your browser might pause the simulation and break the autocalibration.

@@ -9,8 +9,9 @@ python autocal/autocal.py \
   --sim \
   --machine-type slideprinter \
   --plot-residual-histogram \
-  --collector-args --speedup 25
+  --speedup 25
 ```
+`--speedup` is forwarded to the collector automatically; use `--collector-args` only for other raw collector flags.
 `--plot-residual-histogram` writes `autocal/data/default_dataset.csv` and `autocal/data/default_dataset.png`.
 
 ## Data format recap (current)

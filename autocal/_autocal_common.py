@@ -3673,6 +3673,12 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
         help="Write the suggested sweep config to this path (default: <dataset>.active_sweep_cfg.txt)",
     )
     _add_collector_args(parser)
+    parser.add_argument(
+        "--speedup",
+        type=float,
+        default=None,
+        help="Forward this hp-sim speed scale to the collector (shortcut for --collector-args --speedup).",
+    )
     return parser
 
 

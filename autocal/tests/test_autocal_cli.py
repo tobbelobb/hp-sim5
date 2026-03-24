@@ -259,6 +259,55 @@ def test_autocal_main_normalizes_hangprinter_alias(monkeypatch, tmp_path):
     assert captured["verbose"] is True
 
 
+def test_autocal_main_forwards_top_level_speedup_to_collector_args(monkeypatch, tmp_path):
+    captured = {}
+
+    def fake_full_auto_loop(**kwargs):
+        captured["collector_args"] = kwargs["collector_args"]
+        return 0
+
+    monkeypatch.setattr(ac, "full_auto_loop", fake_full_auto_loop)
+
+    rc = ac.main(
+        [
+            "--machine-type",
+            "slideprinter",
+            "--dataset",
+            str(tmp_path / "dummy.json"),
+            "--speedup",
+            "40",
+        ]
+    )
+
+    assert rc == 0
+    assert captured["collector_args"] == ["--speedup", "40"]
+
+
+def test_autocal_main_keeps_explicit_collector_speedup_untouched(monkeypatch, tmp_path):
+    captured = {}
+
+    def fake_full_auto_loop(**kwargs):
+        captured["collector_args"] = kwargs["collector_args"]
+        return 0
+
+    monkeypatch.setattr(ac, "full_auto_loop", fake_full_auto_loop)
+
+    rc = ac.main(
+        [
+            "--machine-type",
+            "slideprinter",
+            "--dataset",
+            str(tmp_path / "dummy.json"),
+            "--collector-args",
+            "--speedup",
+            "40",
+        ]
+    )
+
+    assert rc == 0
+    assert captured["collector_args"] == ["--speedup", "40"]
+
+
 def test_autocal_main_rejects_removed_full_auto_flag(tmp_path):
     with pytest.raises(SystemExit):
         ac.main(
