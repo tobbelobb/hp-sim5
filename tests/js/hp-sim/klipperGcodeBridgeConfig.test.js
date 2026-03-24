@@ -1,6 +1,7 @@
 let parseKlipperGcodeBridgeArgs;
 let buildMcuBridgeSpawnSpec;
 let buildKlippySpawnSpec;
+let buildKlipperMotionRelayOptions;
 let extractGpioChipNumbersFromConfigText;
 let extractConfiguredGpioChipPaths;
 let ensureConfiguredGpioChipAccess;
@@ -13,6 +14,7 @@ async function importModule() {
     parseKlipperGcodeBridgeArgs,
     buildMcuBridgeSpawnSpec,
     buildKlippySpawnSpec,
+    buildKlipperMotionRelayOptions,
     extractGpioChipNumbersFromConfigText,
     extractConfiguredGpioChipPaths,
     ensureConfiguredGpioChipAccess,
@@ -113,5 +115,12 @@ describe('Klipper gcode bridge config', () => {
     expect(klippySpec.command).toBe('/opt/klippy-python');
     expect(klippySpec.args).toContain('/workspace/hp-sim5/klipper/klippy/klippy.py');
     expect(klippySpec.args).toContain('/tmp/custom.sock');
+  });
+
+  test('uses ASAP motion relay settings for the live bridge', () => {
+    expect(buildKlipperMotionRelayOptions()).toEqual({
+      dt: 1 / 60,
+      asapMode: true,
+    });
   });
 });

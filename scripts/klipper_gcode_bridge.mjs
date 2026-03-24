@@ -11,6 +11,7 @@ import { createSequentialLineQueue } from '../autocal/control/primitives/klipper
 import {
   buildKlippySpawnSpec,
   buildMcuBridgeSpawnSpec,
+  buildKlipperMotionRelayOptions,
   ensureConfiguredGpioChipAccess,
   parseKlipperGcodeBridgeArgs,
 } from '../autocal/control/primitives/klipper_gcode_bridge_config.mjs';
@@ -180,6 +181,7 @@ async function connectBridgeSocket() {
 
 async function startMotionRelay() {
   motionRelay = await createKlipperMotionRelay({
+    ...buildKlipperMotionRelayOptions(),
     onCommand: (command) => {
       broadcastExternal({ type: 'command', command, gcode: currentGcode });
     },
@@ -312,12 +314,8 @@ async function handleLine(line) {
     return;
   }
   currentGcode = trimmed;
-  if (!args.quiet) {
-    console.log(`> ${trimmed}`);
-  }
   try {
     await apiBridge.sendGcodeLine(trimmed);
-    await wait(150);
   } catch (err) {
     console.error(`Error sending "${trimmed}": ${err.message}`);
   } finally {
