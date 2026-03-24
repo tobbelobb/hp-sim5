@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import { spawn } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -168,4 +170,53 @@ export function buildKlippySpawnSpec(args, { cwd = process.cwd() } = {}) {
       '-l', '/tmp/klipper.log',
     ],
   };
+}
+
+export function extractGpioChipNumbersFromConfigText(configText) {
+  if (typeof configText !== 'string' || !configText) {
+    return [];
+  }
+  const chips = new Set();
+  const pattern = /gpiochip(\d+)/g;
+  let match;
+  while ((match = pattern.exec(configText)) !== null) {
+    chips.add(match[1]);
+  }
+  return Array.from(chips);
+}
+
+export function extractConfiguredGpioChipPaths(configPath, { cwd = process.cwd(), readFileSync = fs.readFileSync } = {}) {
+  const absPath = resolvePath(configPath, cwd);
+  const configText = readFileSync(absPath, 'utf8');
+  return extractGpioChipNumbersFromConfigText(configText).map((chipNum) => `/dev/gpiochip${chipNum}`);
+}
+
+export async function ensureConfiguredGpioChipAccess(configPath, {
+  cwd = process.cwd(),
+  readFileSync = fs.readFileSync,
+  accessSync = fs.accessSync,
+  spawnImpl = spawn,
+} = {}) {
+  const chipPaths = extractConfiguredGpioChipPaths(configPath, { cwd, readFileSync });
+  for (const chipPath of chipPaths) {
+    try {
+      accessSync(chipPath, fs.constants.R_OK | fs.constants.W_OK);
+      continue;
+    } catch (_err) {
+      // Fall through and prompt for sudo chmod.
+    }
+    await new Promise((resolve, reject) => {
+      const child = spawnImpl('sudo', ['chmod', '666', chipPath], {
+        stdio: 'inherit',
+      });
+      child.on('error', reject);
+      child.on('exit', (code) => {
+        if (code === 0) {
+          resolve();
+          return;
+        }
+        reject(new Error(`sudo chmod 666 ${chipPath} failed with exit code ${code}`));
+      });
+    });
+  }
 }

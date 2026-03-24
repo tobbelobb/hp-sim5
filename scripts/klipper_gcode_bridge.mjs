@@ -10,9 +10,11 @@ import { createKlipperMotionRelay } from '../autocal/control/primitives/klipper_
 import {
   buildKlippySpawnSpec,
   buildMcuBridgeSpawnSpec,
+  ensureConfiguredGpioChipAccess,
   parseKlipperGcodeBridgeArgs,
 } from '../autocal/control/primitives/klipper_gcode_bridge_config.mjs';
 import { connectWebSocketWithRetry } from '../autocal/control/primitives/klipper_ws_connect.mjs';
+import { waitForKlippyReady } from '../autocal/control/primitives/klipper_ready_gate.mjs';
 
 function printHelp() {
   console.log(`Usage: node scripts/klipper_gcode_bridge.mjs [options]
@@ -158,6 +160,7 @@ async function startExternalServer() {
 }
 
 async function startMcuBridge() {
+  await ensureConfiguredGpioChipAccess(args.config);
   const spec = buildMcuBridgeSpawnSpec(args);
   mcuBridgeProc = spawnLogged(spec.command, spec.args, { cwd: process.cwd() });
   prefixStream('mcu-bridge:out', mcuBridgeProc.stdout, args.quiet);
@@ -217,6 +220,7 @@ async function startApiBridge() {
       version: 'v0.1',
     },
   });
+  await waitForKlippyReady(apiBridge);
 }
 
 async function bootstrap() {

@@ -1,6 +1,9 @@
 let parseKlipperGcodeBridgeArgs;
 let buildMcuBridgeSpawnSpec;
 let buildKlippySpawnSpec;
+let extractGpioChipNumbersFromConfigText;
+let extractConfiguredGpioChipPaths;
+let ensureConfiguredGpioChipAccess;
 
 async function importModule() {
   if (parseKlipperGcodeBridgeArgs) {
@@ -10,6 +13,9 @@ async function importModule() {
     parseKlipperGcodeBridgeArgs,
     buildMcuBridgeSpawnSpec,
     buildKlippySpawnSpec,
+    extractGpioChipNumbersFromConfigText,
+    extractConfiguredGpioChipPaths,
+    ensureConfiguredGpioChipAccess,
   } = await import('../../../autocal/control/primitives/klipper_gcode_bridge_config.mjs'));
 }
 
@@ -22,6 +28,51 @@ describe('Klipper gcode bridge config', () => {
     const args = parseKlipperGcodeBridgeArgs([], { env: {} });
 
     expect(args.rawPath).toContain(`klipper_host_mcu_raw-${process.pid}`);
+  });
+
+  test('extracts configured gpiochip paths from config text', () => {
+    const configText = [
+      'step_pin: gpiochip1/gpio0',
+      'dir_pin: gpiochip1/gpio1',
+      'enable_pin: gpiochip2/gpio2',
+      'step_pin: gpiochip2/gpio3',
+    ].join('\n');
+
+    expect(extractGpioChipNumbersFromConfigText(configText)).toEqual(['1', '2']);
+    expect(extractConfiguredGpioChipPaths('ignored.cfg', {
+      readFileSync: () => configText,
+    })).toEqual(['/dev/gpiochip1', '/dev/gpiochip2']);
+  });
+
+  test('prompts for sudo chmod when a gpiochip is inaccessible', async () => {
+    const spawnCalls = [];
+    await ensureConfiguredGpioChipAccess('ignored.cfg', {
+      readFileSync: () => 'step_pin: gpiochip3/gpio0',
+      accessSync: () => {
+        const err = new Error('permission denied');
+        err.code = 'EACCES';
+        throw err;
+      },
+      spawnImpl: (command, args, options) => {
+        spawnCalls.push({ command, args, options });
+        return {
+          on(event, handler) {
+            if (event === 'exit') {
+              handler(0);
+            }
+            return this;
+          },
+        };
+      },
+    });
+
+    expect(spawnCalls).toEqual([
+      {
+        command: 'sudo',
+        args: ['chmod', '666', '/dev/gpiochip3'],
+        options: { stdio: 'inherit' },
+      },
+    ]);
   });
 
   test('parses the launcher options and builds the Klippy process specs', () => {
