@@ -506,6 +506,8 @@ async def main_async(argv=None):
                         help='Path to Klipper firmware dictionary (klipper.dict).')
     parser.add_argument('--klipper-py', dest='klipper_py_path', default=None,
                         help='Path to Klipper repo directory (to import msgproto). Optional.')
+    parser.add_argument('--no-realtime', action='store_true',
+                        help='Do not launch klipper_mcu with -r and do not use sudo. Useful for fake-pin or non-root setups.')
     parser.add_argument('--ws-host', default='127.0.0.1', help='WebSocket bind host')
     parser.add_argument('--ws-port', type=int, default=8770, help='WebSocket port')
     parser.add_argument('--klippy-log', default=None,
@@ -542,9 +544,12 @@ async def main_async(argv=None):
             mcu_bin = str(elf)
         else:
             mcu_bin = shutil.which('klipper_mcu') or 'klipper_mcu'
-    cmd = [mcu_bin, '-r', '-I', args.raw_path]
+    cmd = [mcu_bin]
+    if not args.no_realtime:
+        cmd.append('-r')
+    cmd.extend(['-I', args.raw_path])
     # The -r (realtime) flag requires root. Use sudo if not already root.
-    if os.geteuid() != 0:
+    if not args.no_realtime and os.geteuid() != 0:
         cmd.insert(0, 'sudo')
     print(f"Launching: {' '.join(shlex.quote(c) for c in cmd)}")
     mcu_proc = await asyncio.create_subprocess_exec(*cmd)
@@ -564,13 +569,19 @@ async def main_async(argv=None):
             return 3
         await asyncio.sleep(0.05)
 
-    # The MCU process, running as root, creates a PTY slave owned by root.
-    # Chmod it to be world-readable/writable so this script can open it.
-    try:
-        chmod_proc = await asyncio.create_subprocess_exec('sudo', 'chmod', '666', args.raw_path)
-        await chmod_proc.wait()
-    except Exception as e:
-        print(f"Warning: could not chmod {args.raw_path}: {e}")
+    # If the MCU process runs as root, chmod the PTY. Otherwise it should already
+    # be accessible to this user.
+    if not args.no_realtime and os.geteuid() != 0:
+        try:
+            chmod_proc = await asyncio.create_subprocess_exec('sudo', 'chmod', '666', args.raw_path)
+            await chmod_proc.wait()
+        except Exception as e:
+            print(f"Warning: could not chmod {args.raw_path}: {e}")
+    else:
+        try:
+            os.chmod(args.raw_path, 0o666)
+        except Exception as e:
+            print(f"Warning: could not chmod {args.raw_path}: {e}")
 
     raw_fd = open_tty_rw(args.raw_path)
 
@@ -664,9 +675,12 @@ async def main_async(argv=None):
         pass
     if os.path.exists(args.raw_path):
         try:
-            # This path is created by klipper_mcu running as root.
-            rm_proc = await asyncio.create_subprocess_exec('sudo', 'rm', '-f', args.raw_path)
-            await rm_proc.wait()
+            if not args.no_realtime and os.geteuid() != 0:
+                # This path is created by klipper_mcu running as root.
+                rm_proc = await asyncio.create_subprocess_exec('sudo', 'rm', '-f', args.raw_path)
+                await rm_proc.wait()
+            else:
+                os.unlink(args.raw_path)
         except Exception:
             pass
 
