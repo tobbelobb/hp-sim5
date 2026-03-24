@@ -18,6 +18,12 @@ describe('Klipper gcode bridge config', () => {
     await importModule();
   });
 
+  test('uses a per-run raw MCU path by default', () => {
+    const args = parseKlipperGcodeBridgeArgs([], { env: {} });
+
+    expect(args.rawPath).toContain(`klipper_host_mcu_raw-${process.pid}`);
+  });
+
   test('parses the launcher options and builds the Klippy process specs', () => {
     const args = parseKlipperGcodeBridgeArgs([
       '--socket', '/tmp/custom.sock',

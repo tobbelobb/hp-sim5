@@ -5,6 +5,7 @@ import readline from 'node:readline';
 import { spawn } from 'node:child_process';
 import WebSocket, { WebSocketServer } from 'ws';
 import { KlipperApiBridge } from '../autocal/control/primitives/klipper_api_bridge.mjs';
+import { connectKlipperApiBridgeWithRetry } from '../autocal/control/primitives/klipper_api_connect.mjs';
 import { createKlipperMotionRelay } from '../autocal/control/primitives/klipper_motion_relay.mjs';
 import {
   buildKlippySpawnSpec,
@@ -189,7 +190,7 @@ async function startKlippy() {
 }
 
 async function startApiBridge() {
-  apiBridge = new KlipperApiBridge({
+  apiBridge = await connectKlipperApiBridgeWithRetry(() => new KlipperApiBridge({
     socketPath: args.socketPath,
     onMessage: (msg) => {
       const response = msg?.params?.response;
@@ -205,8 +206,10 @@ async function startApiBridge() {
         console.error(err.message);
       }
     },
+  }), {
+    timeoutMs: 15000,
+    retryDelayMs: 100,
   });
-  await apiBridge.connect();
   await apiBridge.subscribeTerminalOutput();
   await apiBridge.request('info', {
     client_info: {
