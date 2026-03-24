@@ -1,10 +1,12 @@
 // KlipperHandler: Connects to a raw-bytes WebSocket via a worker.
 import timingSchedulerWorkerUrl from './timingScheduler.js?worker&url';
+import { createTimelineNormalizer, normalizeSpeedScale } from '../../../autocal/control/primitives/klipper_live_timing.mjs';
 
 const DEBUG = false; // Note: most logging is now in the worker.
 
-// options: { dt?: number } where dt is in seconds. If provided and > 0,
-// outgoing commands are batched over windows of length dt and coalesced.
+// options: { dt?: number, initialSpeedScale?: number } where dt is in seconds.
+// If provided and > 0, outgoing commands are batched over windows of length dt
+// and coalesced.
 export function connectKlipperRaw(url, onCommand /* function(command) */, options = {}) {
   // Use a URL object to construct a path relative to this module's location.
   // This is more robust than hardcoding paths, especially with bundlers/vite.
@@ -18,11 +20,13 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
   const moveLogLines = logMove ? [] : null;
   const onWorkerError = typeof options.onWorkerError === 'function' ? options.onWorkerError : null;
   const onClose = typeof options.onClose === 'function' ? options.onClose : null;
+  const initialSpeedScale = normalizeSpeedScale(options.initialSpeedScale, 1.0);
 
-  worker.postMessage({ type: 'connect', url, logMove });
+  worker.postMessage({ type: 'connect', url, logMove, speedScale: initialSpeedScale });
 
   // --- High-precision timing scheduler (Atomics.wait-based) ---
   const timingWorker = new Worker(timingSchedulerWorkerUrl, { type: 'module' });
+  const timelineNormalizer = createTimelineNormalizer();
 
   // Shared futex used to preempt sleeps
   const sab = new SharedArrayBuffer(4);
@@ -67,7 +71,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
 
   const schedule = (cmd) => {
     if (!cmd || typeof cmd !== 'object') return;
-    if (!Number.isFinite(cmd.at)) cmd.at = performance.now();
+    cmd.at = timelineNormalizer.normalizeAt(cmd.at, performance.now());
     insertSorted(cmd);
     if (!sleepArmed) {
       // Nothing armed yet: issue initial sleep

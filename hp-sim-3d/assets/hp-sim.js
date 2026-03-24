@@ -325,20 +325,6 @@ function initHpSim() {
   let printActive = false;
   let secondaryControlsEverShown = false;
   let fullscreenActive = false;
-  let currentTimeScale = 1.0;
-  let speedStatusArmed = false;
-  const machineQualityMonitors = new Map();
-  let qualityEnabled = qualityToggle ? Boolean(qualityToggle.checked) : false;
-  let lineLayeringEnabled = lineLayeringToggle ? Boolean(lineLayeringToggle.checked) : true;
-  let closedLoopMotorsEnabled = closedLoopMotorsToggle ? Boolean(closedLoopMotorsToggle.checked) : false;
-  let secondaryControlsUserPreference = null;
-  let secondaryControlsAutoActive = false;
-  let jobSequenceCounter = 0;
-  let activeJobId = null;
-  let lastRecordedJobId = null;
-  let currentJobDescriptor = null;
-  const qualityHistoryRecords = [];
-  let qualityHistoryExpanded = false;
   const urlParams =
     typeof window !== 'undefined' && window.location
       ? new URLSearchParams(window.location.search)
@@ -357,6 +343,20 @@ function initHpSim() {
   const EXTERNAL_WS_RECONNECT_INITIAL_DELAY_MS = 1000;
   const EXTERNAL_WS_RECONNECT_MAX_DELAY_MS = 5000;
   let externalWsReconnectDelayMs = EXTERNAL_WS_RECONNECT_INITIAL_DELAY_MS;
+  let currentTimeScale = 1.0;
+  let speedStatusArmed = false;
+  const machineQualityMonitors = new Map();
+  let qualityEnabled = qualityToggle ? Boolean(qualityToggle.checked) : false;
+  let lineLayeringEnabled = lineLayeringToggle ? Boolean(lineLayeringToggle.checked) : true;
+  let closedLoopMotorsEnabled = closedLoopMotorsToggle ? Boolean(closedLoopMotorsToggle.checked) : false;
+  let secondaryControlsUserPreference = null;
+  let secondaryControlsAutoActive = false;
+  let jobSequenceCounter = 0;
+  let activeJobId = null;
+  let lastRecordedJobId = null;
+  let currentJobDescriptor = null;
+  const qualityHistoryRecords = [];
+  let qualityHistoryExpanded = false;
   function forEachQualityMonitor(callback) {
     if (typeof callback !== 'function') {
       return;
@@ -1241,6 +1241,7 @@ function initHpSim() {
       try {
         externalKlipperRaw = connectKlipperRaw(externalWsUrl, onCommand, {
           dt: simDtSec,
+          initialSpeedScale: currentTimeScale,
           onClose: () => {
             externalKlipperRaw = null;
             onClose();

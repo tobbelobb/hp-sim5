@@ -1,4 +1,5 @@
 import { createKlipperSerialDecoder, SerialLineDecoder, decodeBase64Chunk } from './klipperSerialParser.js';
+import { normalizeSpeedScale, resolveRawMoveDispatchTime, scaleDurationMs } from '../../../autocal/control/primitives/klipper_live_timing.mjs';
 
 // This is a worker script for Klipper pacing.
 
@@ -36,6 +37,7 @@ let aggHasAny = false;
 
 let LOG_MOVE = false;
 let moveLogSeq = 0;
+let speedScale = 1.0;
 
 const serialDecoder = createKlipperSerialDecoder();
 let serialLineDecoder = null;
@@ -138,7 +140,7 @@ class ClockModel {
       return null;
     }
     const deltaTicks = mapped - this.lastMcuTick;
-    return this.sampleWorkerMs + (deltaTicks / this.clockHz) * 1000.0;
+    return this.sampleWorkerMs + scaleDurationMs((deltaTicks / this.clockHz) * 1000.0, speedScale);
   }
 }
 
@@ -294,7 +296,7 @@ const pacerLoop = () => {
     if (aggHasAny) {
       const sinceLast = now - lastEmitMs;
       if (sinceLast >= MIN_EMIT_INTERVAL_MS) {
-        const atMs = (aggLastStepTimeMs != null) ? aggLastStepTimeMs : now;
+        const atMs = resolveRawMoveDispatchTime(aggFirstStepTimeMs, now);
         const spanMs = (aggFirstStepTimeMs != null && aggLastStepTimeMs != null)
           ? Math.max(0, aggLastStepTimeMs - aggFirstStepTimeMs)
           : 0;
@@ -348,6 +350,24 @@ const ensurePacerRunning = () => {
   }
 };
 
+const remapScheduledWakeTimes = () => {
+  const now = performance.now();
+  for (const axis of axisOrder) {
+    const st = axisState.get(axis);
+    if (!st) continue;
+    if (st.nextStepClockRaw !== null && clockModel.isReady()) {
+      const mapped = clockModel.mcuToWorkerMs(st.nextStepClockRaw);
+      if (mapped !== null) {
+        st.nextWakeTimeMs = mapped;
+        continue;
+      }
+    }
+    if (st.nextWakeTimeMs !== null) {
+      st.nextWakeTimeMs = now + scaleDurationMs(st.nextWakeTimeMs - now, speedScale);
+    }
+  }
+};
+
 const ensureBaseClockRaw = (st) => {
   if (st.baseClockRaw !== null) return st.baseClockRaw;
   const lastRaw = clockModel.getLastRawTick();
@@ -378,7 +398,7 @@ const enqueueSegment = (axis, intervalTicks, count, addTicks) => {
     st.nextStepClockRaw = firstStepRaw;
     const mapped = clockModel.mcuToWorkerMs(firstStepRaw);
     const now = performance.now();
-    st.nextWakeTimeMs = mapped !== null ? mapped : now + ticksToMs(seg.intervalTicks);
+    st.nextWakeTimeMs = mapped !== null ? mapped : now + scaleDurationMs(ticksToMs(seg.intervalTicks), speedScale);
   } else {
     st.segments.push(seg);
   }
@@ -606,6 +626,7 @@ self.onmessage = (e) => {
   const { type, ...data } = e.data;
   if (type === 'connect') {
     LOG_MOVE = Boolean(data.logMove);
+    speedScale = normalizeSpeedScale(data.speedScale, 1.0);
     if (LOG_MOVE) {
       moveLogSeq = 0;
       try {
@@ -615,5 +636,11 @@ self.onmessage = (e) => {
     connect(data.url);
   } else if (type === 'close') {
     if (ws) ws.close();
+  } else if (type === 'set_speed_scale') {
+    const nextScale = normalizeSpeedScale(data.value, 1.0);
+    if (nextScale !== speedScale) {
+      speedScale = nextScale;
+      remapScheduledWakeTimes();
+    }
   }
 };
