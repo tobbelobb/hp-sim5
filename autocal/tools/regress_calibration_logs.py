@@ -183,16 +183,6 @@ DATASETS = [
         extra_args=("--verbose", "--r0-bounds", "39,40"),
     ),
     DatasetSpec(
-        name="seventh_hp3_dataset",
-        machine_type="hangprinter_4",
-        base_radii="30",
-        buildup_factor="0.636619",
-        find_radii="global",
-        true_anchors=SIM_3D_TRUE_ANCHORS,
-        true_radii=SIM_3D_TRUE_RADII,
-        extra_args=("--verbose", "--r0-bounds", "39,40"),
-    ),
-    DatasetSpec(
         name="sixteenth_hp3_dataset_even_more_pressure",
         machine_type="hangprinter_4",
         base_radii="30",
