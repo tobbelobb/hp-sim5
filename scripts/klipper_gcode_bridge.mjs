@@ -6,12 +6,12 @@ import { spawn } from 'node:child_process';
 import WebSocket, { WebSocketServer } from 'ws';
 import { KlipperApiBridge } from '../autocal/control/primitives/klipper_api_bridge.mjs';
 import { connectKlipperApiBridgeWithRetry } from '../autocal/control/primitives/klipper_api_connect.mjs';
-import { createKlipperMotionRelay } from '../autocal/control/primitives/klipper_motion_relay.mjs';
+import { createKlipperDumpStepperRelay } from '../autocal/control/primitives/klipper_dump_stepper_relay.mjs';
 import { createSequentialLineQueue } from '../autocal/control/primitives/klipper_stdin_queue.mjs';
 import {
   buildKlippySpawnSpec,
   buildMcuBridgeSpawnSpec,
-  buildKlipperMotionRelayOptions,
+  buildKlipperDumpStepperRelayOptions,
   ensureConfiguredGpioChipAccess,
   parseKlipperGcodeBridgeArgs,
 } from '../autocal/control/primitives/klipper_gcode_bridge_config.mjs';
@@ -110,6 +110,7 @@ let apiBridge = null;
 let motionRelay = null;
 let currentGcode = null;
 let shuttingDown = false;
+const subscribedStepperNames = new Set();
 
 const broadcastExternal = (payload) => {
   if (!externalServer || !payload) {
@@ -180,12 +181,61 @@ async function connectBridgeSocket() {
 }
 
 async function startMotionRelay() {
-  motionRelay = await createKlipperMotionRelay({
-    ...buildKlipperMotionRelayOptions(),
+  motionRelay = await createKlipperDumpStepperRelay({
+    ...buildKlipperDumpStepperRelayOptions(),
     onCommand: (command) => {
       broadcastExternal({ type: 'command', command, gcode: currentGcode });
     },
   });
+}
+
+async function subscribeStepperDumps(stepperNames = []) {
+  if (!apiBridge || !motionRelay) {
+    return;
+  }
+  const names = Array.isArray(stepperNames)
+    ? stepperNames.filter((name) => typeof name === 'string' && name.trim())
+    : [];
+  const pending = [];
+  for (const name of names) {
+    const trimmed = name.trim();
+    if (!trimmed || subscribedStepperNames.has(trimmed)) {
+      continue;
+    }
+    pending.push(trimmed);
+  }
+  if (pending.length === 0) {
+    return;
+  }
+  await Promise.allSettled(pending.map(async (stepperName) => {
+    const result = await apiBridge.subscribeStepperDump(stepperName);
+    subscribedStepperNames.add(stepperName);
+    if (!args.quiet) {
+      const header = Array.isArray(result?.header) ? result.header.join(', ') : '';
+      console.log(`Klipper dump_stepper subscribed: ${stepperName}${header ? ` (${header})` : ''}`);
+    }
+  }));
+}
+
+function handleKlipperApiMessage(msg) {
+  const params = msg?.params || null;
+  if (!params || typeof params !== 'object') {
+    return;
+  }
+  if (params.status && motionRelay) {
+    motionRelay.handleMotionReportStatus(params);
+    const steppers = params.status?.motion_report?.steppers;
+    void subscribeStepperDumps(Array.isArray(steppers) ? steppers : []).catch((err) => {
+      if (!args.quiet) {
+        console.error(`Klipper stepper subscription failed: ${err.message}`);
+      }
+    });
+    return;
+  }
+  if (typeof params.stepper_name === 'string' && motionRelay) {
+    motionRelay.feedStepperDump(params.stepper_name, params);
+    return;
+  }
 }
 
 async function startKlippy() {
@@ -199,6 +249,7 @@ async function startApiBridge() {
   apiBridge = await connectKlipperApiBridgeWithRetry(() => new KlipperApiBridge({
     socketPath: args.socketPath,
     onMessage: (msg) => {
+      handleKlipperApiMessage(msg);
       const response = msg?.params?.response;
       if (typeof response === 'string' && response.trim()) {
         broadcastExternal({ type: 'reply', gcode: currentGcode, reply: response });
@@ -224,6 +275,16 @@ async function startApiBridge() {
     },
   });
   await waitForKlippyReady(apiBridge);
+  const motionStatus = await apiBridge.request('objects/subscribe', {
+    objects: {
+      toolhead: ['print_time', 'estimated_print_time'],
+      motion_report: null,
+    },
+  });
+  if (motionRelay) {
+    motionRelay.handleMotionReportStatus(motionStatus);
+  }
+  await subscribeStepperDumps(motionStatus?.status?.motion_report?.steppers || []);
 }
 
 async function bootstrap() {
@@ -234,7 +295,9 @@ async function bootstrap() {
     try {
       const msg = JSON.parse(raw.toString());
       if (msg?.action === 'klipper_parsed' && Array.isArray(msg.lines) && motionRelay) {
-        motionRelay.feedParsedLines(msg.lines);
+        motionRelay.handleParsedLines(msg.lines);
+      } else if (msg?.action === 'klipper_clock' && motionRelay) {
+        motionRelay.handleClockMessage(msg);
       }
     } catch (_err) {
       // Ignore non-JSON messages.

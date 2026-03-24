@@ -145,10 +145,13 @@ export class KlipperApiBridge {
     return this.request('gcode/subscribe_output', { response_template: {} });
   }
 
-  async subscribeStepperDump(stepperName) {
+  async subscribeStepperDump(stepperName, responseTemplate = {}) {
     return this.request('motion_report/dump_stepper', {
       name: stepperName,
-      response_template: {},
+      response_template: {
+        stepper_name: stepperName,
+        ...responseTemplate,
+      },
     });
   }
 

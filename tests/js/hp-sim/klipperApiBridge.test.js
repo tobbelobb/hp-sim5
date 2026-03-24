@@ -77,16 +77,16 @@ describe('KlipperApiBridge', () => {
     const subPromise = bridge.subscribeStepperDump('stepper_a');
 
     expect(socket.writes).toEqual([
-      '{"id":1,"method":"motion_report/dump_stepper","params":{"name":"stepper_a","response_template":{}}}\x03',
+      '{"id":1,"method":"motion_report/dump_stepper","params":{"name":"stepper_a","response_template":{"stepper_name":"stepper_a"}}}\x03',
     ]);
 
     socket.emit('data', Buffer.from('{"id":1,"result":{"header":["interval","count","add"]}}\x03'));
     await expect(subPromise).resolves.toEqual({ header: ['interval', 'count', 'add'] });
 
-    socket.emit('data', Buffer.from('{"params":{"data":[[10,2,0]]}}\x03'));
+    socket.emit('data', Buffer.from('{"params":{"stepper_name":"stepper_a","data":[[10,2,0]]}}\x03'));
 
     expect(asyncMessages).toEqual([
-      { params: { data: [[10, 2, 0]] } },
+      { params: { stepper_name: 'stepper_a', data: [[10, 2, 0]] } },
     ]);
   });
 });

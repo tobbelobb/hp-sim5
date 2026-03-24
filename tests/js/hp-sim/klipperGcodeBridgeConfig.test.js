@@ -1,7 +1,7 @@
 let parseKlipperGcodeBridgeArgs;
 let buildMcuBridgeSpawnSpec;
 let buildKlippySpawnSpec;
-let buildKlipperMotionRelayOptions;
+let buildKlipperDumpStepperRelayOptions;
 let extractGpioChipNumbersFromConfigText;
 let extractConfiguredGpioChipPaths;
 let ensureConfiguredGpioChipAccess;
@@ -14,7 +14,7 @@ async function importModule() {
     parseKlipperGcodeBridgeArgs,
     buildMcuBridgeSpawnSpec,
     buildKlippySpawnSpec,
-    buildKlipperMotionRelayOptions,
+    buildKlipperDumpStepperRelayOptions,
     extractGpioChipNumbersFromConfigText,
     extractConfiguredGpioChipPaths,
     ensureConfiguredGpioChipAccess,
@@ -117,9 +117,9 @@ describe('Klipper gcode bridge config', () => {
     expect(klippySpec.args).toContain('/tmp/custom.sock');
   });
 
-  test('uses ASAP motion relay settings for the live bridge', () => {
-    expect(buildKlipperMotionRelayOptions()).toEqual({
-      dt: 1 / 500,
+  test('uses dump-stepper relay settings for the live bridge', () => {
+    expect(buildKlipperDumpStepperRelayOptions()).toEqual({
+      bucketDurationMs: 2,
       asapMode: true,
     });
   });

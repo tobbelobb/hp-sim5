@@ -8,7 +8,7 @@ const DEFAULT_INTERNAL_WS_PORT = 8770;
 const DEFAULT_SOCKET_PATH = '/tmp/klippy_uds';
 const DEFAULT_HOST_PATH = '/tmp/klipper_host_mcu';
 const DEFAULT_RAW_PATH = path.join(os.tmpdir(), `klipper_host_mcu_raw-${process.pid}`);
-const DEFAULT_LIVE_MOTION_DT = 1 / 500;
+const DEFAULT_LIVE_MOTION_BUCKET_MS = 2;
 const DEFAULT_CONFIG = 'examples/klipper/slideprinter/printer-hp3-linux-mcu-with-buildup.cfg';
 const DEFAULT_MCU_BIN = 'examples/klipper/linux_mcu/klipper.elf';
 const DEFAULT_DICT = 'examples/klipper/linux_mcu/klipper.dict';
@@ -173,9 +173,9 @@ export function buildKlippySpawnSpec(args, { cwd = process.cwd() } = {}) {
   };
 }
 
-export function buildKlipperMotionRelayOptions() {
+export function buildKlipperDumpStepperRelayOptions() {
   return {
-    dt: DEFAULT_LIVE_MOTION_DT,
+    bucketDurationMs: DEFAULT_LIVE_MOTION_BUCKET_MS,
     asapMode: true,
   };
 }

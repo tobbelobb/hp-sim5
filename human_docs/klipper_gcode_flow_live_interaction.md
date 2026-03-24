@@ -21,9 +21,11 @@ State: klipper_mcu raw PTY"]
     end
 
     wsInternal["WebSocket ws://127.0.0.1:8770
-State: klipper_parsed packets, klipper_clock samples"]
-    motionRelay["createKlipperMotionRelay + KlipperCommander
-State: axis mapping, bucketized queue_step -> Move commands, ASAP mode"]
+State: klipper_parsed config mirror, klipper_clock samples"]
+    apiSub["Klipper API subscriptions
+State: objects/subscribe on toolhead + motion_report, motion_report/dump_stepper subscriptions"]
+    motionRelay["createKlipperDumpStepperRelay
+State: axis mapping, timing base, dump_stepper -> bucketed Move commands, ASAP mode"]
     wsExternal["WebSocket ws://localhost:8790
 State: {type:'command', command, gcode} payloads"]
 
@@ -44,7 +46,9 @@ State: machine view, HUD, speed controls"]
     mcuBridge -->|bytes| rawPty --> klipperMcu
     klipperMcu -->|parsed host->MCU packets| mcuBridge
     mcuBridge -->|klipper_parsed JSON| wsInternal --> motionRelay
-    mcuBridge -->|klipper_clock JSON| wsInternal
+    mcuBridge -->|klipper_clock JSON| wsInternal --> motionRelay
+    apiBridge -->|objects/subscribe| apiSub --> motionRelay
+    apiSub -->|motion_report/dump_stepper| motionRelay
     motionRelay -->|Move commands| wsExternal --> hpSim
     hpSim -->|pushExternalCommands/addCommand| remote --> stepper --> ui
 ```
