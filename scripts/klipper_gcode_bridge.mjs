@@ -232,8 +232,13 @@ function handleKlipperApiMessage(msg) {
     });
     return;
   }
-  if (typeof params.stepper_name === 'string' && motionRelay) {
-    motionRelay.feedStepperDump(params.stepper_name, params);
+  const stepperName = typeof msg?.stepper_name === 'string'
+    ? msg.stepper_name
+    : typeof msg?.name === 'string'
+      ? msg.name
+      : null;
+  if (stepperName && motionRelay) {
+    motionRelay.feedStepperDump(stepperName, params);
     return;
   }
 }

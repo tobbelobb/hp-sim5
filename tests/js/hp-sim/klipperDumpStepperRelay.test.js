@@ -26,6 +26,7 @@ describe('Klipper dump-stepper relay', () => {
     relay.handleParsedLines([
       'config_stepper oid=0 step_pin=gpiochip1/gpio0 dir_pin=gpiochip1/gpio1 invert_step=0 step_pulse_ticks=100',
       'set_next_step_dir oid=0 dir=1',
+      'config_stepper oid=3 step_pin=gpiochip1/gpio9 dir_pin=gpiochip1/gpio10 invert_step=0 step_pulse_ticks=100',
     ]);
     relay.handleMotionReportStatus({
       status: {
@@ -45,11 +46,54 @@ describe('Klipper dump-stepper relay', () => {
       first_step_time: 10,
       data: [[1000, 2, 0]],
     });
+    relay.feedStepperDump('stepper_d', {
+      start_position: 0,
+      step_distance: 0.25,
+      first_step_time: 10,
+      data: [[1000, 1, 0]],
+    });
 
     relay.flushDueCommands(1000, true);
 
     expect(emitted).toEqual([
       { type: 'Move', A: 0.25 },
+      { type: 'Move', D: 0.25 },
+    ]);
+  });
+
+  test('uses top-level stepper_name metadata from Klipper async payloads', () => {
+    const emitted = [];
+    const relay = createKlipperDumpStepperRelay({
+      nowFn: () => 1000,
+      bucketDurationMs: 2,
+      asapMode: true,
+      onCommand: (command) => {
+        emitted.push({ ...command });
+      },
+    });
+
+    relay.handleParsedLines([
+      'config_stepper oid=0 step_pin=gpiochip1/gpio0 dir_pin=gpiochip1/gpio1 invert_step=0 step_pulse_ticks=100',
+      'set_next_step_dir oid=0 dir=1',
+    ]);
+    relay.handleMotionReportStatus({
+      status: {
+        motion_report: {
+          steppers: ['stepper_a'],
+        },
+      },
+    });
+    relay.feedStepperDump('stepper_a', {
+      start_position: 0,
+      step_distance: 0.125,
+      first_step_time: 10,
+      data: [[1000, 1, 0]],
+    });
+
+    relay.flushDueCommands(1000, true);
+
+    expect(emitted).toEqual([
+      { type: 'Move', A: 0.125 },
     ]);
   });
 });

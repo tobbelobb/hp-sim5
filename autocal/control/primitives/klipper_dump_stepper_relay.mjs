@@ -2,10 +2,10 @@ const STEP_PIN_AXIS_MAP = {
   'gpiochip1/gpio0': 'A',
   'gpiochip1/gpio3': 'B',
   'gpiochip1/gpio6': 'C',
-  'gpiochip1/gpio9': 'E',
+  'gpiochip1/gpio9': 'D',
 };
 
-const DEFAULT_AXIS_ORDER = ['A', 'B', 'C', 'E'];
+const DEFAULT_AXIS_ORDER = ['A', 'B', 'C', 'D', 'E'];
 const DEFAULT_CLOCK_HZ = 50_000_000;
 const DEFAULT_BUCKET_DURATION_MS = 2;
 const DEFAULT_SPEED_SCALE = 1;
@@ -40,14 +40,14 @@ function stepperNameToAxis(stepperName) {
     if (suffix === 'a') return 'A';
     if (suffix === 'b') return 'B';
     if (suffix === 'c') return 'C';
-    if (suffix === 'd') return 'E';
+    if (suffix === 'd') return 'D';
   }
   const suffix = normalized.at(-1);
   if (suffix === 'a' || suffix === 'b' || suffix === 'c') {
     return suffix.toUpperCase();
   }
   if (suffix === 'd') {
-    return 'E';
+    return 'D';
   }
   return null;
 }
