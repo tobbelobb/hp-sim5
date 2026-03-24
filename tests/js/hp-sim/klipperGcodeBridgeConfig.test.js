@@ -119,7 +119,7 @@ describe('Klipper gcode bridge config', () => {
 
   test('uses ASAP motion relay settings for the live bridge', () => {
     expect(buildKlipperMotionRelayOptions()).toEqual({
-      dt: 1 / 60,
+      dt: 1 / 500,
       asapMode: true,
     });
   });
