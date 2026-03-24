@@ -4,6 +4,7 @@ import { runGame } from '../../examples/js/slideprinter_3d/runner.js';
 import { setupScene } from '../../examples/js/slideprinter_3d/setupScene.js';
 import { RemoteSpoolSystem, InputSystem, ExtruderComponent } from '../../examples/js/slideprinter_3d/slideprinter_common.js';
 import { connectKlipperRaw } from '../../examples/js/slideprinter/klipperHandler.js';
+import { createKlipperExternalRawModeHandlers } from '../../autocal/control/primitives/klipper_external_raw_mode.mjs';
 import { detectFileFormat, FileFormat, isMcuFormat, isRrfFormat } from '../../examples/js/slideprinter/fileFormatUtils.js';
 import { _updateAttachmentPoints } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import { QualityMonitor } from './quality-monitor.js';
@@ -1233,15 +1234,17 @@ function initHpSim() {
       if (externalKlipperRaw) {
         return;
       }
-      const onCommand = (cmd) => {
-        const remoteSystem = getRemoteSystem();
-        if (remoteSystem) {
-          remoteSystem.addCommand(cmd);
-        }
-      };
+      const { onCommand, onClose } = createKlipperExternalRawModeHandlers({
+        pushExternalCommands,
+        scheduleReconnect: scheduleExternalCommandReconnect,
+      });
       try {
         externalKlipperRaw = connectKlipperRaw(externalWsUrl, onCommand, {
           dt: simDtSec,
+          onClose: () => {
+            externalKlipperRaw = null;
+            onClose();
+          },
         });
         if (externalKlipperRaw?.worker) {
           externalKlipperRaw.worker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });

@@ -17,6 +17,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
     : 'klipper_move_log.jsonl';
   const moveLogLines = logMove ? [] : null;
   const onWorkerError = typeof options.onWorkerError === 'function' ? options.onWorkerError : null;
+  const onClose = typeof options.onClose === 'function' ? options.onClose : null;
 
   worker.postMessage({ type: 'connect', url, logMove });
 
@@ -154,6 +155,13 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
       if (typeof onCommand === 'function') handleCommand(command);
     } else if (type === 'closed') {
       console.log('KlipperHandler: worker indicated connection closed');
+      if (onClose) {
+        try {
+          onClose();
+        } catch (err) {
+          console.error('KlipperHandler onClose callback threw an error:', err);
+        }
+      }
     } else if (type === 'error') {
       const msg = typeof message === 'string' && message ? message : 'Klipper worker reported an error.';
       if (typeof onWorkerError === 'function') {
