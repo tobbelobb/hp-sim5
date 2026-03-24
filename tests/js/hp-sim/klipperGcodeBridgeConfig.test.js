@@ -1,7 +1,6 @@
 let parseKlipperGcodeBridgeArgs;
 let buildMcuBridgeSpawnSpec;
 let buildKlippySpawnSpec;
-let buildKlipperDumpStepperRelayOptions;
 let extractGpioChipNumbersFromConfigText;
 let extractConfiguredGpioChipPaths;
 let ensureConfiguredGpioChipAccess;
@@ -14,7 +13,6 @@ async function importModule() {
     parseKlipperGcodeBridgeArgs,
     buildMcuBridgeSpawnSpec,
     buildKlippySpawnSpec,
-    buildKlipperDumpStepperRelayOptions,
     extractGpioChipNumbersFromConfigText,
     extractConfiguredGpioChipPaths,
     ensureConfiguredGpioChipAccess,
@@ -115,12 +113,5 @@ describe('Klipper gcode bridge config', () => {
     expect(klippySpec.command).toBe('/opt/klippy-python');
     expect(klippySpec.args).toContain('/workspace/hp-sim5/klipper/klippy/klippy.py');
     expect(klippySpec.args).toContain('/tmp/custom.sock');
-  });
-
-  test('uses dump-stepper relay settings for the live bridge', () => {
-    expect(buildKlipperDumpStepperRelayOptions()).toEqual({
-      bucketDurationMs: 2,
-      asapMode: true,
-    });
   });
 });

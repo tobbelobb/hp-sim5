@@ -3,6 +3,7 @@ import { World, EncoderComponent } from '../../src/js/cable_joints_3d/ecs.js';
 import { runGame } from '../../examples/js/slideprinter_3d/runner.js';
 import { setupScene } from '../../examples/js/slideprinter_3d/setupScene.js';
 import { RemoteSpoolSystem, InputSystem, ExtruderComponent } from '../../examples/js/slideprinter_3d/slideprinter_common.js';
+import { connectKlipperRaw } from '../../examples/js/slideprinter/klipperHandler.js';
 import { detectFileFormat, FileFormat, isMcuFormat, isRrfFormat } from '../../examples/js/slideprinter/fileFormatUtils.js';
 import { _updateAttachmentPoints } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import { QualityMonitor } from './quality-monitor.js';
@@ -341,13 +342,17 @@ function initHpSim() {
     typeof window !== 'undefined' && window.location
       ? new URLSearchParams(window.location.search)
       : null;
-  const externalWsParam = urlParams?.get('gcode_ws') || urlParams?.get('rrf_ws') || null;
+  const gcodeWsParam = urlParams?.get('gcode_ws') || null;
+  const rrfWsParam = urlParams?.get('rrf_ws') || null;
+  const externalWsParam = gcodeWsParam || rrfWsParam || null;
   const externalWsUrl = normalizeWsUrl(externalWsParam);
+  const externalKlipperRawMode = Boolean(gcodeWsParam && !rrfWsParam);
   const externalCommandQueue = [];
   const EXTERNAL_QUEUE_LIMIT = 5000;
   let externalCommandSocket = null;
   let externalCommandSocketConnecting = false;
   let externalWsReconnectTimer = null;
+  let externalKlipperRaw = null;
   const EXTERNAL_WS_RECONNECT_INITIAL_DELAY_MS = 1000;
   const EXTERNAL_WS_RECONNECT_MAX_DELAY_MS = 5000;
   let externalWsReconnectDelayMs = EXTERNAL_WS_RECONNECT_INITIAL_DELAY_MS;
@@ -1221,7 +1226,33 @@ function initHpSim() {
   }
 
   function connectExternalCommandStream() {
-    if (!externalWsUrl || externalCommandSocket || externalCommandSocketConnecting || typeof WebSocket === 'undefined') {
+    if (!externalWsUrl) {
+      return;
+    }
+    if (externalKlipperRawMode) {
+      if (externalKlipperRaw) {
+        return;
+      }
+      const onCommand = (cmd) => {
+        const remoteSystem = getRemoteSystem();
+        if (remoteSystem) {
+          remoteSystem.addCommand(cmd);
+        }
+      };
+      try {
+        externalKlipperRaw = connectKlipperRaw(externalWsUrl, onCommand, {
+          dt: simDtSec,
+        });
+        if (externalKlipperRaw?.worker) {
+          externalKlipperRaw.worker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
+        }
+      } catch (err) {
+        console.warn('hp-sim: failed to open Klipper raw stream.', err);
+        externalKlipperRaw = null;
+      }
+      return;
+    }
+    if (externalCommandSocket || externalCommandSocketConnecting || typeof WebSocket === 'undefined') {
       return;
     }
     clearExternalReconnectTimer();
@@ -3080,6 +3111,9 @@ function initHpSim() {
     if (klipperCommanderWorker) {
       klipperCommanderWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
     }
+    if (externalKlipperRaw?.worker) {
+      externalKlipperRaw.worker.postMessage({ type: 'set_speed_scale', value: safeScale });
+    }
     if (moveCommanderWorker) {
       moveCommanderWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
     }
@@ -3697,6 +3731,14 @@ function initHpSim() {
   function stopAndClearWorkers() {
     stopInactiveWorkers(null);
     resetRemoteQueue(null);
+    if (externalKlipperRaw) {
+      try {
+        externalKlipperRaw.close();
+      } catch (err) {
+        console.warn('Slideprinter demo: unable to terminate Klipper raw connection cleanly.', err);
+      }
+      externalKlipperRaw = null;
+    }
     if (moveCommanderWorker) {
       try {
         moveCommanderWorker.terminate();

@@ -21,17 +21,15 @@ State: klipper_mcu raw PTY"]
     end
 
     wsInternal["WebSocket ws://127.0.0.1:8770
-State: klipper_parsed config mirror, klipper_clock samples"]
-    apiSub["Klipper API subscriptions
-State: objects/subscribe on toolhead + motion_report, motion_report/dump_stepper subscriptions"]
-    motionRelay["createKlipperDumpStepperRelay
-State: axis mapping, timing base, dump_stepper -> bucketed Move commands, ASAP mode"]
+State: klipper_parsed mirror, klipper_clock samples"]
     wsExternal["WebSocket ws://localhost:8790
-State: {type:'command', command, gcode} payloads"]
+State: klipper_parsed / klipper_clock raw stream"]
+    klipperRaw["klipperPacer worker via connectKlipperRaw
+State: MCU clock model, queue_step pacing, Move command emission"]
 
     subgraph Browser http://localhost:5173/hp-sim5/hp-sim-3d/?gcode_ws=ws://localhost:8790
-        hpSim["hp-sim/assets/hp-sim.js or hp-sim-3d/assets/hp-sim.js
-State: externalCommandSocket, externalCommandQueue"]
+        hpSim["hp-sim-3d/assets/hp-sim.js
+State: raw Klipper websocket, pacing worker hookup"]
         remote["RemoteSpoolSystem
 State: queue of Move commands, playback state, ASAP toggle"]
         stepper["StepperMotorSystem + StepperMotorComponent
@@ -45,10 +43,8 @@ State: machine view, HUD, speed controls"]
     klippy -->|host traffic| hostPty --> mcuBridge
     mcuBridge -->|bytes| rawPty --> klipperMcu
     klipperMcu -->|parsed host->MCU packets| mcuBridge
-    mcuBridge -->|klipper_parsed JSON| wsInternal --> motionRelay
-    mcuBridge -->|klipper_clock JSON| wsInternal --> motionRelay
-    apiBridge -->|objects/subscribe| apiSub --> motionRelay
-    apiSub -->|motion_report/dump_stepper| motionRelay
-    motionRelay -->|Move commands| wsExternal --> hpSim
-    hpSim -->|pushExternalCommands/addCommand| remote --> stepper --> ui
+    mcuBridge -->|klipper_parsed JSON| wsInternal --> wsExternal --> klipperRaw
+    mcuBridge -->|klipper_clock JSON| wsInternal --> wsExternal --> klipperRaw
+    klipperRaw -->|timed Move commands| hpSim -->|addCommand| remote --> stepper --> ui
+    hpSim -->|updates view + HUD| ui
 ```
