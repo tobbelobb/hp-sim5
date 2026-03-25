@@ -1,6 +1,3 @@
-const DEFAULT_HISTORY_LIMIT = 5000;
-const RESET_MESSAGE = JSON.stringify({ type: 'reset' });
-
 function isSocketOpen(socket) {
   if (!socket || typeof socket.send !== 'function') {
     return false;
@@ -23,23 +20,8 @@ function safeSend(socket, data) {
   }
 }
 
-export function createReplayableJsonBroadcaster({ maxHistory = DEFAULT_HISTORY_LIMIT } = {}) {
+export function createJsonBroadcaster() {
   const clients = new Set();
-  const history = [];
-
-  const pruneHistory = () => {
-    const overflow = history.length - Math.max(0, maxHistory);
-    if (overflow > 0) {
-      history.splice(0, overflow);
-    }
-  };
-
-  const replayHistory = (socket) => {
-    safeSend(socket, RESET_MESSAGE);
-    for (const payload of history) {
-      safeSend(socket, payload);
-    }
-  };
 
   const register = (socket) => {
     if (!socket || typeof socket.on !== 'function') {
@@ -55,7 +37,6 @@ export function createReplayableJsonBroadcaster({ maxHistory = DEFAULT_HISTORY_L
       }
     };
     socket.on('close', onClose);
-    replayHistory(socket);
   };
 
   const broadcast = (payload) => {
@@ -68,8 +49,6 @@ export function createReplayableJsonBroadcaster({ maxHistory = DEFAULT_HISTORY_L
     } catch (_err) {
       return;
     }
-    history.push(data);
-    pruneHistory();
     for (const socket of clients) {
       safeSend(socket, data);
     }
@@ -77,7 +56,6 @@ export function createReplayableJsonBroadcaster({ maxHistory = DEFAULT_HISTORY_L
 
   const close = () => {
     clients.clear();
-    history.length = 0;
   };
 
   return {
@@ -85,7 +63,5 @@ export function createReplayableJsonBroadcaster({ maxHistory = DEFAULT_HISTORY_L
     broadcast,
     close,
     clients,
-    history,
   };
 }
-
