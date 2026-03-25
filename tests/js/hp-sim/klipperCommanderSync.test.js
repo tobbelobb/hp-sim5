@@ -6,6 +6,7 @@ let StepperMotorComponent;
 let MachineTagComponent;
 
 const SIMULATION_PLAYBACK_RESOURCE = 'simulationPlayback';
+const STEP_ANGLE_RAD = (2 * Math.PI) / (200 * 16);
 
 class FakeLineStream {
   constructor(lines = []) {
@@ -133,7 +134,7 @@ async function withImmediateTimeout(fn) {
   }
 }
 
-async function collectMoveSequence({ speedScale = 1, asapMode = false } = {}) {
+async function collectMoveSequence({ speedScale = 1, asapMode = false, lines = null } = {}) {
   await importModules();
 
   const commander = new KlipperCommander();
@@ -159,14 +160,14 @@ async function collectMoveSequence({ speedScale = 1, asapMode = false } = {}) {
       commander.setSpeedScale(speedScale);
       commander.setAsapMode(asapMode);
 
-      const lines = [
+      const commandLines = lines || [
         'config_stepper oid=0 step_pin=gpiochip1/gpio0 dir_pin=gpiochip1/gpio1 invert_step=0 step_pulse_ticks=100',
         'set_next_step_dir oid=0 dir=1',
         'queue_step oid=0 interval=60000 count=2 add=0',
         'queue_step oid=0 interval=50000 count=2 add=0',
         'queue_step oid=0 interval=70000 count=2 add=0',
       ];
-      const stream = new FakeLineStream(lines);
+      const stream = new FakeLineStream(commandLines);
       await commander.run(stream);
     };
 
@@ -193,6 +194,22 @@ describe('KlipperCommander and RemoteSpoolSystem synchronisation', () => {
     expect(doubleSpeed).toEqual(baseline);
     expect(halfSpeed).toEqual(baseline);
     expect(asapMode).toEqual(baseline);
+  });
+
+  test('KlipperCommander spreads queue_step timing across the 500 Hz bucket window', async () => {
+    const moves = await collectMoveSequence({
+      speedScale: 1,
+      asapMode: true,
+      lines: [
+        'config_stepper oid=0 step_pin=gpiochip1/gpio0 dir_pin=gpiochip1/gpio1 invert_step=0 step_pulse_ticks=100',
+        'set_next_step_dir oid=0 dir=1',
+        'queue_step oid=0 interval=60000 count=2 add=0',
+      ],
+    });
+
+    expect(moves).toHaveLength(2);
+    expect(moves[0].A / STEP_ANGLE_RAD).toBeCloseTo(5 / 3, 6);
+    expect(moves[1].A / STEP_ANGLE_RAD).toBeCloseTo(2, 6);
   });
 
   test('RemoteSpoolSystem consumes Move commands in order and waits when the queue is empty', async () => {

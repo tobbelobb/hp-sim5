@@ -1,5 +1,6 @@
 import { detectFileFormat, FileFormat, isMcuFormat } from './fileFormatUtils.js';
 import { iterateSerialLines, createKlipperSerialDecoder } from './klipperSerialParser.js';
+import { distributeEvenly } from './rrfMotionUtils.js';
 
 const serialDecoder = createKlipperSerialDecoder();
 
@@ -159,6 +160,38 @@ export class KlipperCommander {
             this.bucketSteps.set(axis, map);
         }
         return map;
+    }
+
+    _recordDistributedSequence(axis, startTick, durationTicks, totalValue) {
+        if (!Number.isFinite(totalValue) || totalValue === 0) {
+            return;
+        }
+        if (!Number.isFinite(durationTicks) || durationTicks <= 0) {
+            return;
+        }
+
+        // Spread the queued step train over its full time window so the 500 Hz
+        // physics loop sees a continuous motion envelope instead of step-edge
+        // aliasing at bucket boundaries.
+        const accumulate = (bucketIdx, delta) => {
+            if (axis === 'E') {
+                this.bucketExtrusion.set(bucketIdx, (this.bucketExtrusion.get(bucketIdx) || 0) + delta);
+                return;
+            }
+            const bucketMap = this._ensureBucketMap(axis);
+            bucketMap.set(bucketIdx, (bucketMap.get(bucketIdx) || 0) + delta);
+        };
+
+        distributeEvenly({
+            startTick,
+            durationTicks,
+            totalValue,
+            bucketSize: this.ticksPerBucket,
+            accumulate,
+            setMaxBucket: (bucketIdx) => {
+                this.maxBucketSeen = Math.max(this.maxBucketSeen, bucketIdx);
+            },
+        });
     }
 
     _markAxisActive(axis) {
@@ -401,20 +434,18 @@ export class KlipperCommander {
                 if (count <= 0) {
                     continue;
                 }
+                let totalDurationTicks = 0;
+                let nextInterval = interval;
                 for (let i = 0; i < count; i += 1) {
-                    interval = Math.max(1, interval);
-                    state.lastTick += interval;
-                    const bucketIdx = Math.floor(state.lastTick / this.ticksPerBucket);
-                    this.maxBucketSeen = Math.max(this.maxBucketSeen, bucketIdx);
-                    if (axis === 'E') {
-                        const current = this.bucketExtrusion.get(bucketIdx) || 0;
-                        this.bucketExtrusion.set(bucketIdx, current + state.dir * EXTRUDER_MM_PER_STEP);
-                    } else {
-                        const bucketMap = this._ensureBucketMap(axis);
-                        bucketMap.set(bucketIdx, (bucketMap.get(bucketIdx) || 0) + state.dir);
-                    }
-                    interval = Math.max(1, interval + add);
+                    const clampedInterval = Math.max(1, nextInterval);
+                    totalDurationTicks += clampedInterval;
+                    nextInterval = Math.max(1, clampedInterval + add);
                 }
+                const totalValue = axis === 'E'
+                    ? state.dir * EXTRUDER_MM_PER_STEP * count
+                    : state.dir * count;
+                this._recordDistributedSequence(axis, state.lastTick, totalDurationTicks, totalValue);
+                state.lastTick += totalDurationTicks;
                 state.hasSteps = true;
                 this._markAxisActive(axis);
                 await this._flushReadyBuckets();
