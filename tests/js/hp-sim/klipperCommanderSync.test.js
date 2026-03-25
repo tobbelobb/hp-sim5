@@ -33,6 +33,52 @@ class FakeLineStream {
   }
 }
 
+class PushableLineStream {
+  constructor() {
+    this._chunks = [];
+    this._pending = [];
+    this._closed = false;
+  }
+
+  pipeThrough() {
+    return this;
+  }
+
+  getReader() {
+    return {
+      read: () => {
+        if (this._chunks.length > 0) {
+          return Promise.resolve({ value: this._chunks.shift(), done: false });
+        }
+        if (this._closed) {
+          return Promise.resolve({ value: undefined, done: true });
+        }
+        return new Promise((resolve) => {
+          this._pending.push(resolve);
+        });
+      },
+    };
+  }
+
+  push(line) {
+    const chunk = `${line}\n`;
+    if (this._pending.length > 0) {
+      const resolve = this._pending.shift();
+      resolve({ value: chunk, done: false });
+      return;
+    }
+    this._chunks.push(chunk);
+  }
+
+  close() {
+    this._closed = true;
+    while (this._pending.length > 0) {
+      const resolve = this._pending.shift();
+      resolve({ value: undefined, done: true });
+    }
+  }
+}
+
 class FakeWorld {
   constructor() {
     this.entities = new Map();
@@ -180,6 +226,58 @@ async function collectMoveSequence({ speedScale = 1, asapMode = false, lines = n
   return emittedMoves;
 }
 
+async function collectLiveMoveSequence({ speedScale = 1, asapMode = false, lines = null } = {}) {
+  await importModules();
+
+  const commander = new KlipperCommander();
+  const emittedMoves = [];
+  const originalPostMessage = globalThis.postMessage;
+  globalThis.postMessage = () => {};
+
+  let now = 0;
+  const nowSpy = jest.spyOn(performance, 'now').mockImplementation(() => {
+    now += 0.5;
+    return now;
+  });
+
+  try {
+    const runPlayback = async () => {
+      commander.sendCommand = async (command) => {
+        if (command?.type === 'Move') {
+          emittedMoves.push({ ...command });
+        }
+      };
+
+      commander.setDt(1 / 500);
+      commander.setSpeedScale(speedScale);
+      commander.setAsapMode(asapMode);
+
+      const stream = new PushableLineStream();
+      const runPromise = commander.run(stream);
+
+      const commandLines = lines || [
+        'config_stepper oid=0 step_pin=gpiochip1/gpio0 dir_pin=gpiochip1/gpio1 invert_step=0 step_pulse_ticks=100',
+        'set_next_step_dir oid=0 dir=1',
+        'queue_step oid=0 interval=60000 count=2 add=0',
+        'queue_step oid=0 interval=50000 count=2 add=0',
+        'queue_step oid=0 interval=70000 count=2 add=0',
+      ];
+      for (const line of commandLines) {
+        stream.push(line);
+      }
+      stream.close();
+      await runPromise;
+    };
+
+    await withImmediateTimeout(runPlayback);
+  } finally {
+    nowSpy.mockRestore();
+    globalThis.postMessage = originalPostMessage;
+  }
+
+  return emittedMoves;
+}
+
 describe('KlipperCommander and RemoteSpoolSystem synchronisation', () => {
   beforeAll(async () => {
     await importModules();
@@ -232,6 +330,30 @@ describe('KlipperCommander and RemoteSpoolSystem synchronisation', () => {
     expect(moves[0].E).toBeUndefined();
     expect(moves[1].E).toBeUndefined();
     expect(moves[2].E).toBeGreaterThan(0);
+  });
+
+  test('KlipperCommander emits the same Move sequence when queue_step lines arrive incrementally', async () => {
+    const baseline = await collectMoveSequence({
+      speedScale: 1,
+      asapMode: true,
+      lines: [
+        'config_stepper oid=0 step_pin=gpiochip1/gpio0 dir_pin=gpiochip1/gpio1 invert_step=0 step_pulse_ticks=100',
+        'set_next_step_dir oid=0 dir=1',
+        'queue_step oid=0 interval=60000 count=2 add=0',
+      ],
+    });
+
+    const live = await collectLiveMoveSequence({
+      speedScale: 1,
+      asapMode: true,
+      lines: [
+        'config_stepper oid=0 step_pin=gpiochip1/gpio0 dir_pin=gpiochip1/gpio1 invert_step=0 step_pulse_ticks=100',
+        'set_next_step_dir oid=0 dir=1',
+        'queue_step oid=0 interval=60000 count=2 add=0',
+      ],
+    });
+
+    expect(live).toEqual(baseline);
   });
 
   test('RemoteSpoolSystem consumes Move commands in order and waits when the queue is empty', async () => {
