@@ -334,6 +334,8 @@ function initHpSim() {
   const externalWsParam = gcodeWsParam || rrfWsParam || null;
   const externalWsUrl = normalizeWsUrl(externalWsParam);
   const externalKlipperRawMode = Boolean(gcodeWsParam && !rrfWsParam);
+  const traceRawParam = urlParams?.get('trace_raw') || urlParams?.get('trace-raw') || urlParams?.get('traceRaw');
+  const traceRawEnabled = traceRawParam !== null && traceRawParam !== '0' && traceRawParam !== 'false';
   const externalCommandQueue = [];
   const EXTERNAL_QUEUE_LIMIT = 5000;
   let externalCommandSocket = null;
@@ -1060,6 +1062,20 @@ function initHpSim() {
     }
   }
 
+  function syncExternalKlipperRawDt() {
+    if (!externalKlipperRaw || typeof externalKlipperRaw.setDt !== 'function') {
+      return;
+    }
+    if (typeof simDtSec !== 'number' || !Number.isFinite(simDtSec) || simDtSec <= 0) {
+      return;
+    }
+    try {
+      externalKlipperRaw.setDt(simDtSec);
+    } catch (err) {
+      console.warn('hp-sim: unable to sync Klipper raw dt.', err);
+    }
+  }
+
   function pushExternalCommands(commands) {
     if (!Array.isArray(commands) || commands.length === 0) {
       return;
@@ -1240,8 +1256,10 @@ function initHpSim() {
       });
       try {
         externalKlipperRaw = connectKlipperRaw(externalWsUrl, onCommand, {
+          baseUrl: import.meta.url,
           dt: simDtSec,
           initialSpeedScale: currentTimeScale,
+          traceRaw: traceRawEnabled,
           onClose: () => {
             externalKlipperRaw = null;
             onClose();
@@ -1250,6 +1268,7 @@ function initHpSim() {
         if (externalKlipperRaw?.worker) {
           externalKlipperRaw.worker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
         }
+        syncExternalKlipperRawDt();
       } catch (err) {
         console.warn('hp-sim: failed to open Klipper raw stream.', err);
         externalKlipperRaw = null;
@@ -2771,6 +2790,7 @@ function initHpSim() {
             `Slideprinter demo: USDA file ${label} uses timeCodesPerSecond=${timeCodesPerSecond}, which differs from the active simulation. Using existing dt=${simDtSec.toFixed(6)}s.`
           );
         }
+        syncExternalKlipperRawDt();
       }
 
       const sceneChange = await beginSceneChange({ newMachineAdded: true });
@@ -2824,6 +2844,7 @@ function initHpSim() {
             `hp-sim: USDA preset ${sourceKey} uses timeCodesPerSecond=${timeCodesPerSecond}, which differs from the active simulation. Using existing dt=${simDtSec.toFixed(6)}s.`
           );
         }
+        syncExternalKlipperRawDt();
       }
 
       const sceneChange = await beginSceneChange({ newMachineAdded: true });

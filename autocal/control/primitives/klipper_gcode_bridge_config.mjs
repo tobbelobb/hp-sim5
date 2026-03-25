@@ -32,6 +32,7 @@ export function parseKlipperGcodeBridgeArgs(argv, { cwd = process.cwd(), env = p
     klippyPython: env.KLIPPY_PYTHON || DEFAULT_KLIPPY_PYTHON,
     command: null,
     quiet: false,
+    traceRaw: false,
     help: false,
   };
 
@@ -43,6 +44,10 @@ export function parseKlipperGcodeBridgeArgs(argv, { cwd = process.cwd(), env = p
     }
     if (arg === '--quiet' || arg === '-q') {
       out.quiet = true;
+      continue;
+    }
+    if (arg === '--trace-raw' || arg === '--traceRaw') {
+      out.traceRaw = true;
       continue;
     }
     const readValue = () => {

@@ -88,6 +88,7 @@ describe('Klipper gcode bridge config', () => {
       '--klippy-python', '/opt/klippy-python',
       '--cmd', 'G1 X100',
       '--quiet',
+      '--trace-raw',
     ], { env: {} });
 
     expect(args.socketPath).toBe('/tmp/custom.sock');
@@ -101,6 +102,7 @@ describe('Klipper gcode bridge config', () => {
     expect(args.klippyPython).toBe('/opt/klippy-python');
     expect(args.command).toBe('G1 X100');
     expect(args.quiet).toBe(true);
+    expect(args.traceRaw).toBe(true);
 
     const mcuSpec = buildMcuBridgeSpawnSpec(args, { cwd: '/workspace/hp-sim5' });
     expect(mcuSpec.command).toBe('/workspace/hp-sim5/examples/klipper/slideprinter/klipper_linux_mcu_bridge.py');

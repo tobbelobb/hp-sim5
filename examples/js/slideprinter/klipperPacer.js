@@ -1,6 +1,10 @@
 import { KlipperCommander } from './klipperCommander.js';
 import { createKlipperSerialDecoder, SerialLineDecoder, decodeBase64Chunk } from './klipperSerialParser.js';
 import { normalizeSpeedScale } from '../../../autocal/control/primitives/klipper_live_timing.mjs';
+import {
+  summarizeKlipperBridgeMessage,
+  summarizeKlipperCommand,
+} from '../../../autocal/control/primitives/klipper_raw_observability.mjs';
 
 // This worker turns live parsed Klipper MCU output into the same bucketed
 // Move commands used by KlipperCommander. That keeps the raw bridge on the
@@ -12,6 +16,7 @@ let commanderStream = null;
 let commanderRunPromise = null;
 let serialLineDecoder = null;
 let LOG_MOVE = false;
+let TRACE_RAW = false;
 let moveLogSeq = 0;
 let speedScale = 1.0;
 let extruderPosMm = 0;
@@ -150,6 +155,17 @@ function buildMoveLogEntry(command, atMs, spanMs) {
   }
 }
 
+function postTrace(trace) {
+  if (!TRACE_RAW || !trace || typeof trace !== 'object') {
+    return;
+  }
+  try {
+    postMessage({ type: 'trace', trace });
+  } catch (_err) {
+    // Ignore trace reporting failures.
+  }
+}
+
 function ensureCommander() {
   if (commander) {
     return commander;
@@ -166,6 +182,12 @@ function ensureCommander() {
     }
 
     const emittedCommand = { ...command, at: performance.now(), span: 0 };
+    postTrace({
+      scope: 'worker',
+      kind: 'move_emitted',
+      command: summarizeKlipperCommand(emittedCommand),
+      moveLogSeq,
+    });
     if (Number.isFinite(emittedCommand.E)) {
       extruderPosMm += emittedCommand.E;
     }
@@ -253,6 +275,13 @@ const handleBinaryPayload = (payload) => {
 const connect = (url) => {
   resetRuntimeState();
   ensureCommander();
+  postTrace({
+    scope: 'worker',
+    kind: 'connect',
+    url,
+    speedScale,
+    logMove: LOG_MOVE,
+  });
 
   ws = new WebSocket(url);
   ws.binaryType = 'arraybuffer';
@@ -262,10 +291,20 @@ const connect = (url) => {
       try {
         const msg = JSON.parse(event.data);
         if (msg && msg.action === 'klipper_parsed' && Array.isArray(msg.lines)) {
+          postTrace({
+            scope: 'worker',
+            kind: 'bridge_message',
+            message: summarizeKlipperBridgeMessage(msg),
+          });
           pushParsedLines(msg.lines);
           return;
         }
         if (msg && msg.action === 'klipper_serial') {
+          postTrace({
+            scope: 'worker',
+            kind: 'bridge_message',
+            message: summarizeKlipperBridgeMessage(msg),
+          });
           const chunk = decodeBase64Chunk(msg.data || msg.chunk || msg.payload);
           if (chunk) {
             feedSerialChunk(chunk);
@@ -273,6 +312,11 @@ const connect = (url) => {
           return;
         }
         if (msg && msg.action === 'klipper_clock') {
+          postTrace({
+            scope: 'worker',
+            kind: 'bridge_message',
+            message: summarizeKlipperBridgeMessage(msg),
+          });
           // The bucketed live path no longer needs live clock remapping.
           return;
         }
@@ -287,6 +331,11 @@ const connect = (url) => {
   ws.onerror = (err) => {
     console.error('websocket error:', err);
     try {
+      postTrace({
+        scope: 'worker',
+        kind: 'websocket_error',
+        message: err?.message || 'websocket error',
+      });
       postMessage({ type: 'error', message: err?.message || 'websocket error' });
     } catch (_postErr) {
       // Ignore error reporting failures.
@@ -294,6 +343,10 @@ const connect = (url) => {
   };
   ws.onclose = () => {
     console.log('connection closed');
+    postTrace({
+      scope: 'worker',
+      kind: 'close',
+    });
     resumeCommander();
     if (serialLineDecoder) {
       const remaining = serialLineDecoder.flush();
@@ -318,6 +371,7 @@ self.onmessage = (e) => {
   const { type, ...data } = e.data || {};
   if (type === 'connect') {
     LOG_MOVE = Boolean(data.logMove);
+    TRACE_RAW = Boolean(data.traceRaw);
     speedScale = normalizeSpeedScale(data.speedScale, 1.0);
     if (LOG_MOVE) {
       moveLogSeq = 0;
@@ -327,6 +381,12 @@ self.onmessage = (e) => {
         // Ignore console failures in worker contexts.
       }
     }
+    postTrace({
+      scope: 'worker',
+      kind: 'connect_request',
+      speedScale,
+      logMove: LOG_MOVE,
+    });
     connect(data.url);
     return;
   }
@@ -341,6 +401,11 @@ self.onmessage = (e) => {
   if (type === 'set_speed_scale') {
     const nextScale = normalizeSpeedScale(data.value, 1.0);
     speedScale = nextScale;
+    postTrace({
+      scope: 'worker',
+      kind: 'set_speed_scale',
+      value: nextScale,
+    });
     if (commander) {
       commander.setSpeedScale(nextScale);
       commander.accumulatedWaitMs = 0.0;
@@ -349,6 +414,11 @@ self.onmessage = (e) => {
   }
 
   if (type === 'set_asap_mode') {
+    postTrace({
+      scope: 'worker',
+      kind: 'set_asap_mode',
+      enable: Boolean(data.enable),
+    });
     if (commander) {
       commander.setAsapMode(Boolean(data.enable));
     }
@@ -356,6 +426,11 @@ self.onmessage = (e) => {
   }
 
   if (type === 'set_fast_mode') {
+    postTrace({
+      scope: 'worker',
+      kind: 'set_fast_mode',
+      enable: Boolean(data.enable),
+    });
     if (commander) {
       commander.fastMode = Boolean(data.enable);
       if (!commander.fastMode) {
@@ -366,6 +441,11 @@ self.onmessage = (e) => {
   }
 
   if (type === 'set_dt') {
+    postTrace({
+      scope: 'worker',
+      kind: 'set_dt',
+      dt: Number(data.dt),
+    });
     if (commander && Number.isFinite(data.dt) && data.dt > 0) {
       commander.setDt(data.dt);
     }
@@ -373,6 +453,10 @@ self.onmessage = (e) => {
   }
 
   if (type === 'pause') {
+    postTrace({
+      scope: 'worker',
+      kind: 'pause',
+    });
     if (commander) {
       commander.isPaused = true;
     }
@@ -380,6 +464,10 @@ self.onmessage = (e) => {
   }
 
   if (type === 'resume') {
+    postTrace({
+      scope: 'worker',
+      kind: 'resume',
+    });
     resumeCommander();
   }
 };

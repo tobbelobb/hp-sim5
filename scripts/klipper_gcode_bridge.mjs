@@ -9,6 +9,7 @@ import { KlipperApiBridge } from '../autocal/control/primitives/klipper_api_brid
 import { connectKlipperApiBridgeWithRetry } from '../autocal/control/primitives/klipper_api_connect.mjs';
 import { createSequentialLineQueue } from '../autocal/control/primitives/klipper_stdin_queue.mjs';
 import { createReplayableJsonBroadcaster } from '../autocal/control/primitives/replayable_json_broadcaster.mjs';
+import { summarizeKlipperBridgeMessage } from '../autocal/control/primitives/klipper_raw_observability.mjs';
 import {
   buildKlippySpawnSpec,
   buildMcuBridgeSpawnSpec,
@@ -36,6 +37,7 @@ Options:
   --klippy-python <path>   Python interpreter for klippy.py (default: ~/klippy-env/bin/python)
   --cmd, -c <GCODE>        Send one G-code line and exit
   --quiet, -q              Reduce console output
+  --trace-raw              Log bridged Klipper raw messages and one-shot sends
   --help, -h               Show this help`);
 }
 
@@ -125,6 +127,9 @@ async function startExternalServer() {
   externalBroadcaster = createReplayableJsonBroadcaster();
   externalServer = new WebSocketServer({ port: args.wsPort });
   externalServer.on('connection', (socket) => {
+    if (args.traceRaw) {
+      console.debug('[klipper_gcode_bridge][trace]', { scope: 'bridge', kind: 'client_connected' });
+    }
     externalBroadcaster.register(socket);
     socket.on('message', (raw) => {
       try {
@@ -202,6 +207,13 @@ async function bootstrap() {
     try {
       const msg = JSON.parse(raw.toString());
       if (isKlipperRawBridgeMessage(msg)) {
+        if (args.traceRaw) {
+          console.debug('[klipper_gcode_bridge][trace]', {
+            scope: 'bridge',
+            kind: 'bridge_message',
+            message: summarizeKlipperBridgeMessage(msg),
+          });
+        }
         externalBroadcaster?.broadcast(msg);
       }
     } catch (_err) {
@@ -276,6 +288,13 @@ async function handleLine(line) {
   }
   currentGcode = trimmed;
   try {
+    if (args.traceRaw) {
+      console.debug('[klipper_gcode_bridge][trace]', {
+        scope: 'bridge',
+        kind: 'gcode_send',
+        command: trimmed,
+      });
+    }
     await apiBridge.sendGcodeLine(trimmed);
   } catch (err) {
     console.error(`Error sending "${trimmed}": ${err.message}`);
@@ -286,6 +305,14 @@ async function handleLine(line) {
 
 async function runOneShot() {
   await bootstrap();
+  if (args.traceRaw) {
+    console.debug('[klipper_gcode_bridge][trace]', {
+      scope: 'bridge',
+      kind: 'one_shot_send',
+      command: args.command,
+      waitForMotion: true,
+    });
+  }
   await apiBridge.sendGcodeLine(args.command, { waitForMotion: true });
   await shutdown(0);
 }

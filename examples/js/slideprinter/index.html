@@ -295,6 +295,20 @@ canvas {
             logMoveFilename = raw;
         }
     }
+    const traceRawParamKeys = ['--trace-raw', 'trace-raw', 'traceRaw'];
+    let traceRawEnabled = false;
+    for (const key of traceRawParamKeys) {
+        if (!searchParams.has(key)) continue;
+        const raw = searchParams.get(key);
+        const normalized = typeof raw === 'string' ? raw.toLowerCase() : '';
+        if (raw === null || raw === '' || normalized === 'true' || raw === '1') {
+            traceRawEnabled = true;
+        } else if (normalized === 'false' || normalized === '0') {
+            traceRawEnabled = false;
+        } else {
+            traceRawEnabled = true;
+        }
+    }
 
     // --- Screen Wake Lock ---
     let wakeLock = null;
@@ -555,9 +569,11 @@ canvas {
         try {
             // Pass dt if already known; otherwise default to pass-through, and update later.
             klipperRaw = connectKlipperRaw(url, onCommand, {
+                baseUrl: import.meta.url,
                 dt: simDtSec,
                 logMove: logMoveEnabled,
                 logMoveFilename: logMoveFilename || undefined,
+                traceRaw: traceRawEnabled,
                 onWorkerError: (msg) => {
                     console.error('Klipper raw worker error:', msg);
                 },

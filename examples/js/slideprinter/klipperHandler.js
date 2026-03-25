@@ -1,16 +1,30 @@
 // KlipperHandler: Connects to a raw-bytes WebSocket via a worker.
-import timingSchedulerWorkerUrl from './timingScheduler.js?worker&url';
 import { createTimelineNormalizer, normalizeSpeedScale } from '../../../autocal/control/primitives/klipper_live_timing.mjs';
+import { summarizeKlipperCommand } from '../../../autocal/control/primitives/klipper_raw_observability.mjs';
 
-const DEBUG = false; // Note: most logging is now in the worker.
+function resolveWorkerUrl(relativePath, baseUrl) {
+  const fallbackBase = (() => {
+    if (typeof baseUrl === 'string' && baseUrl.trim()) {
+      return baseUrl.trim();
+    }
+    if (baseUrl instanceof URL) {
+      return baseUrl;
+    }
+    if (typeof document !== 'undefined' && document.baseURI) {
+      return document.baseURI;
+    }
+    if (typeof window !== 'undefined' && window.location?.href) {
+      return window.location.href;
+    }
+    return 'file:///';
+  })();
+  return new URL(relativePath, fallbackBase);
+}
 
-// options: { dt?: number, initialSpeedScale?: number } where dt is in seconds.
-// If provided and > 0, outgoing commands are batched over windows of length dt
-// and coalesced.
+// options: { dt?: number, initialSpeedScale?: number, traceRaw?: boolean, onTrace?: function }
+// where dt is in seconds.
 export function connectKlipperRaw(url, onCommand /* function(command) */, options = {}) {
-  // Use a URL object to construct a path relative to this module's location.
-  // This is more robust than hardcoding paths, especially with bundlers/vite.
-  const workerUrl = new URL('./klipperPacer.js', import.meta.url);
+  const workerUrl = resolveWorkerUrl('./klipperPacer.js', options.baseUrl);
   const worker = new Worker(workerUrl, { type: 'module' });
 
   const logMove = Boolean(options.logMove);
@@ -20,12 +34,48 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
   const moveLogLines = logMove ? [] : null;
   const onWorkerError = typeof options.onWorkerError === 'function' ? options.onWorkerError : null;
   const onClose = typeof options.onClose === 'function' ? options.onClose : null;
+  const onTrace = typeof options.onTrace === 'function' ? options.onTrace : null;
+  const traceRaw = Boolean(options.traceRaw || options.trace);
   const initialSpeedScale = normalizeSpeedScale(options.initialSpeedScale, 1.0);
+  const initialDt = Number(options.dt);
+  const hasInitialDt = Number.isFinite(initialDt) && initialDt > 0;
 
-  worker.postMessage({ type: 'connect', url, logMove, speedScale: initialSpeedScale });
+  const emitTrace = (trace) => {
+    if (!traceRaw || !trace || typeof trace !== 'object') {
+      return;
+    }
+    try {
+      if (onTrace) {
+        onTrace(trace);
+        return;
+      }
+      if (typeof console !== 'undefined' && typeof console.debug === 'function') {
+        console.debug('[KlipperRaw][trace]', trace);
+      }
+    } catch (err) {
+      if (typeof console !== 'undefined') {
+        console.warn('KlipperHandler trace callback threw an error:', err);
+      }
+    }
+  };
+
+  const postWorkerMessage = (message) => {
+    try {
+      worker.postMessage(message);
+    } catch (err) {
+      if (typeof console !== 'undefined') {
+        console.error('KlipperHandler failed to post worker message:', err);
+      }
+    }
+  };
+
+  postWorkerMessage({ type: 'connect', url, logMove, speedScale: initialSpeedScale, traceRaw });
+  if (hasInitialDt) {
+    postWorkerMessage({ type: 'set_dt', dt: initialDt });
+  }
 
   // --- High-precision timing scheduler (Atomics.wait-based) ---
-  const timingWorker = new Worker(timingSchedulerWorkerUrl, { type: 'module' });
+  const timingWorker = new Worker(resolveWorkerUrl('./timingScheduler.js', options.baseUrl), { type: 'module' });
   const timelineNormalizer = createTimelineNormalizer();
 
   // Shared futex used to preempt sleeps
@@ -64,6 +114,13 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
       timingWorker.postMessage({ type: 'sleep', ms });
       currentSleepDeadlineMs = earliest;
       sleepArmed = true;
+      emitTrace({
+        scope: 'handler',
+        kind: 'sleep_armed',
+        deadlineMs: earliest,
+        waitMs: ms,
+        pendingCount: pending.length,
+      });
     }
     // If already armed and a new earlier deadline arrives, we will only
     // preempt via SAB in schedule(); a new 'sleep' will be sent after wakeup.
@@ -71,7 +128,18 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
 
   const schedule = (cmd) => {
     if (!cmd || typeof cmd !== 'object') return;
-    cmd.at = timelineNormalizer.normalizeAt(cmd.at, performance.now());
+    const rawAtMs = Number(cmd.at);
+    const receiveAtMs = performance.now();
+    cmd.at = timelineNormalizer.normalizeAt(rawAtMs, receiveAtMs);
+    emitTrace({
+      scope: 'handler',
+      kind: 'queue_inserted',
+      rawAtMs: Number.isFinite(rawAtMs) ? rawAtMs : null,
+      normalizedAtMs: cmd.at,
+      transportDelayMs: Number.isFinite(rawAtMs) ? receiveAtMs - rawAtMs : null,
+      pendingCount: pending.length + 1,
+      command: summarizeKlipperCommand({ ...cmd, at: rawAtMs }),
+    });
     insertSorted(cmd);
     if (!sleepArmed) {
       // Nothing armed yet: issue initial sleep
@@ -81,6 +149,13 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
     // If an earlier deadline just arrived, preempt the current wait.
     const earliest = pending[0].at;
     if (currentSleepDeadlineMs === null || earliest + EARLY_EPS_MS < currentSleepDeadlineMs) {
+      emitTrace({
+        scope: 'handler',
+        kind: 'sleep_preempted',
+        oldDeadlineMs: currentSleepDeadlineMs,
+        newDeadlineMs: earliest,
+        pendingCount: pending.length,
+      });
       try {
         Atomics.store(sabI32, 0, 1);
         Atomics.notify(sabI32, 0, 1);
@@ -93,9 +168,24 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
     const { type } = e.data || {};
     if (type === 'wakeup') {
       const now = performance.now();
+      emitTrace({
+        scope: 'handler',
+        kind: 'wakeup',
+        reason: e.data?.reason ?? null,
+        nowMs: now,
+        pendingCount: pending.length,
+      });
       // Flush all due commands
       while (pending.length && pending[0].at <= now) {
         const cmd = pending.shift();
+        emitTrace({
+          scope: 'handler',
+          kind: 'dispatch',
+          dispatchAtMs: now,
+          latenessMs: now - cmd.at,
+          pendingCount: pending.length,
+          command: summarizeKlipperCommand(cmd),
+        });
         try { onCommand(cmd); } catch (_) {}
       }
       // Previous sleep has completed or was preempted: allow re-arming.
@@ -142,6 +232,12 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
   worker.onmessage = (e) => {
     const { type, command, logEntry, message } = e.data || {};
     if (type === 'move') {
+      emitTrace({
+        scope: 'worker',
+        kind: 'move_emitted',
+        command: summarizeKlipperCommand(command),
+        hasLogEntry: Boolean(logEntry),
+      });
       if (logMove && moveLogLines && logEntry) {
         try {
           const serialized = JSON.stringify(logEntry);
@@ -157,7 +253,10 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
         }
       }
       if (typeof onCommand === 'function') handleCommand(command);
+    } else if (type === 'trace') {
+      emitTrace(e.data.trace);
     } else if (type === 'closed') {
+      emitTrace({ scope: 'worker', kind: 'closed' });
       console.log('KlipperHandler: worker indicated connection closed');
       if (onClose) {
         try {
@@ -168,6 +267,7 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
       }
     } else if (type === 'error') {
       const msg = typeof message === 'string' && message ? message : 'Klipper worker reported an error.';
+      emitTrace({ scope: 'worker', kind: 'error', message: msg });
       if (typeof onWorkerError === 'function') {
         try {
           onWorkerError(msg);
@@ -187,8 +287,17 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
   // Return an object that allows the caller to terminate the connection/worker.
   return {
     worker,
-    setDt: (_newDt) => {
-      // No-op: timing is driven by per-command 'at' timestamps now
+    setDt: (newDt) => {
+      const nextDt = Number(newDt);
+      if (!Number.isFinite(nextDt) || nextDt <= 0) {
+        return;
+      }
+      postWorkerMessage({ type: 'set_dt', dt: nextDt });
+      emitTrace({
+        scope: 'handler',
+        kind: 'set_dt',
+        dt: nextDt,
+      });
     },
     getMoveLogLines: () => (logMove && moveLogLines ? [...moveLogLines] : []),
     downloadMoveLog,
