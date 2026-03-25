@@ -1,3 +1,6 @@
+const DEFAULT_HISTORY_LIMIT = 5000;
+const RESET_MESSAGE = JSON.stringify({ type: 'reset' });
+
 function isSocketOpen(socket) {
   if (!socket || typeof socket.send !== 'function') {
     return false;
@@ -20,8 +23,23 @@ function safeSend(socket, data) {
   }
 }
 
-export function createJsonBroadcaster() {
+export function createReplayableJsonBroadcaster({ maxHistory = DEFAULT_HISTORY_LIMIT } = {}) {
   const clients = new Set();
+  const history = [];
+
+  const pruneHistory = () => {
+    const overflow = history.length - Math.max(0, maxHistory);
+    if (overflow > 0) {
+      history.splice(0, overflow);
+    }
+  };
+
+  const replayHistory = (socket) => {
+    safeSend(socket, RESET_MESSAGE);
+    for (const payload of history) {
+      safeSend(socket, payload);
+    }
+  };
 
   const register = (socket) => {
     if (!socket || typeof socket.on !== 'function') {
@@ -37,6 +55,7 @@ export function createJsonBroadcaster() {
       }
     };
     socket.on('close', onClose);
+    replayHistory(socket);
   };
 
   const broadcast = (payload) => {
@@ -49,6 +68,8 @@ export function createJsonBroadcaster() {
     } catch (_err) {
       return;
     }
+    history.push(data);
+    pruneHistory();
     for (const socket of clients) {
       safeSend(socket, data);
     }
@@ -56,6 +77,7 @@ export function createJsonBroadcaster() {
 
   const close = () => {
     clients.clear();
+    history.length = 0;
   };
 
   return {
@@ -63,5 +85,7 @@ export function createJsonBroadcaster() {
     broadcast,
     close,
     clients,
+    history,
   };
 }
+

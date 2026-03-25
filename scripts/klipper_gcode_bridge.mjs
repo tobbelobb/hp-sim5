@@ -8,7 +8,7 @@ import { isKlipperRawBridgeMessage } from '../autocal/control/primitives/klipper
 import { KlipperApiBridge } from '../autocal/control/primitives/klipper_api_bridge.mjs';
 import { connectKlipperApiBridgeWithRetry } from '../autocal/control/primitives/klipper_api_connect.mjs';
 import { createSequentialLineQueue } from '../autocal/control/primitives/klipper_stdin_queue.mjs';
-import { createJsonBroadcaster } from '../autocal/control/primitives/replayable_json_broadcaster.mjs';
+import { createReplayableJsonBroadcaster } from '../autocal/control/primitives/replayable_json_broadcaster.mjs';
 import {
   buildKlippySpawnSpec,
   buildMcuBridgeSpawnSpec,
@@ -122,7 +122,7 @@ function closeSocket(socket) {
 }
 
 async function startExternalServer() {
-  externalBroadcaster = createJsonBroadcaster();
+  externalBroadcaster = createReplayableJsonBroadcaster();
   externalServer = new WebSocketServer({ port: args.wsPort });
   externalServer.on('connection', (socket) => {
     externalBroadcaster.register(socket);
