@@ -434,18 +434,31 @@ export class KlipperCommander {
                 if (count <= 0) {
                     continue;
                 }
-                let totalDurationTicks = 0;
-                let nextInterval = interval;
-                for (let i = 0; i < count; i += 1) {
-                    const clampedInterval = Math.max(1, nextInterval);
-                    totalDurationTicks += clampedInterval;
-                    nextInterval = Math.max(1, clampedInterval + add);
+                if (axis === 'E') {
+                    // Keep extrusion anchored to the actual step timestamps.
+                    // Smearing E from the start of the sequence would begin
+                    // deposition before the first Klipper pulse has occurred.
+                    for (let i = 0; i < count; i += 1) {
+                        interval = Math.max(1, interval);
+                        state.lastTick += interval;
+                        const bucketIdx = Math.floor(state.lastTick / this.ticksPerBucket);
+                        const current = this.bucketExtrusion.get(bucketIdx) || 0;
+                        this.bucketExtrusion.set(bucketIdx, current + state.dir * EXTRUDER_MM_PER_STEP);
+                        this.maxBucketSeen = Math.max(this.maxBucketSeen, bucketIdx);
+                        interval = Math.max(1, interval + add);
+                    }
+                } else {
+                    let totalDurationTicks = 0;
+                    let nextInterval = interval;
+                    for (let i = 0; i < count; i += 1) {
+                        const clampedInterval = Math.max(1, nextInterval);
+                        totalDurationTicks += clampedInterval;
+                        nextInterval = Math.max(1, clampedInterval + add);
+                    }
+                    const totalValue = state.dir * count;
+                    this._recordDistributedSequence(axis, state.lastTick, totalDurationTicks, totalValue);
+                    state.lastTick += totalDurationTicks;
                 }
-                const totalValue = axis === 'E'
-                    ? state.dir * EXTRUDER_MM_PER_STEP * count
-                    : state.dir * count;
-                this._recordDistributedSequence(axis, state.lastTick, totalDurationTicks, totalValue);
-                state.lastTick += totalDurationTicks;
                 state.hasSteps = true;
                 this._markAxisActive(axis);
                 await this._flushReadyBuckets();
