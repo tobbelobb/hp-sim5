@@ -65,11 +65,8 @@ filament_diameter: 1.750
 # as a regular GPIO here; see make-fake-pin-chip.sh for notes on Linux
 # hardware PWM (pwmchipX/pwmY) if you need it.
 heater_pin: gpiochip1/gpio15
-sensor_type: EPCOS 100K B57560G104F
-# Analog temperature sensor input via Linux IIO (analogN)
-# The script make-fake-pin-chip.sh replaces this placeholder with
-# a name like "analog0" after creating an IIO dummy device.
-sensor_pin: analog0
+sensor_type: temperature_host
+sensor_path: examples/klipper/slideprinter/extruder.temp
 control: pid
 pid_Kp: 22.2
 pid_Ki: 1.08
@@ -83,11 +80,8 @@ max_temp: 275
 # as a regular GPIO here; see make-fake-pin-chip.sh for notes on Linux
 # hardware PWM (pwmchipX/pwmY) if you need it.
 heater_pin: gpiochip1/gpio17
-sensor_type: EPCOS 100K B57560G104F
-# Analog temperature sensor input via Linux IIO (analogN)
-# The script make-fake-pin-chip.sh replaces this placeholder with
-# a name like "analog1" after creating an IIO dummy device.
-sensor_pin: analog1
+sensor_type: temperature_host
+sensor_path: examples/klipper/slideprinter/bed.temp
 control: watermark
 min_temp: 0
 max_temp: 130
