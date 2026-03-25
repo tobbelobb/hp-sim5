@@ -59,6 +59,28 @@ describe('KlipperApiBridge', () => {
     await expect(pending).resolves.toEqual({ ok: true });
   });
 
+  test('can append M400 so one-shot calls wait for motion completion', async () => {
+    const socket = new FakeSocket();
+    const bridge = new KlipperApiBridge({
+      socketPath: '/tmp/test.sock',
+      connectImpl: () => {
+        process.nextTick(() => socket.emit('connect'));
+        return socket;
+      },
+    });
+
+    await bridge.connect();
+    const pending = bridge.sendGcodeLine('G1 X10', { waitForMotion: true });
+
+    expect(socket.writes).toEqual([
+      '{"id":1,"method":"gcode/script","params":{"script":"G1 X10\\nM400"}}\x03',
+    ]);
+
+    socket.emit('data', Buffer.from('{"id":1,"result":{"ok":true}}\x03'));
+
+    await expect(pending).resolves.toEqual({ ok: true });
+  });
+
   test('delivers asynchronous subscribe messages to onMessage', async () => {
     const socket = new FakeSocket();
     const asyncMessages = [];

@@ -118,7 +118,7 @@ async function handleLine(line) {
 
 async function runOneShot() {
   await startupPromise;
-  await bridge.sendGcodeLine(args.command);
+  await bridge.sendGcodeLine(args.command, { waitForMotion: true });
   bridge.close();
   process.exit(0);
 }

@@ -133,12 +133,22 @@ export class KlipperApiBridge {
     });
   }
 
-  async sendGcodeLine(line) {
+  async sendGcodeLine(line, options = {}) {
     const script = typeof line === 'string' ? line.trim() : '';
     if (!script) {
       return null;
     }
-    return this.request('gcode/script', { script });
+    return this.sendGcodeScript(script, options);
+  }
+
+  async sendGcodeScript(script, options = {}) {
+    const trimmed = typeof script === 'string' ? script.trim() : '';
+    if (!trimmed) {
+      return null;
+    }
+    const waitForMotion = Boolean(options.waitForMotion);
+    const finalScript = waitForMotion ? `${trimmed}\nM400` : trimmed;
+    return this.request('gcode/script', { script: finalScript });
   }
 
   async subscribeTerminalOutput() {

@@ -8,6 +8,7 @@ import { isKlipperRawBridgeMessage } from '../autocal/control/primitives/klipper
 import { KlipperApiBridge } from '../autocal/control/primitives/klipper_api_bridge.mjs';
 import { connectKlipperApiBridgeWithRetry } from '../autocal/control/primitives/klipper_api_connect.mjs';
 import { createSequentialLineQueue } from '../autocal/control/primitives/klipper_stdin_queue.mjs';
+import { createReplayableJsonBroadcaster } from '../autocal/control/primitives/replayable_json_broadcaster.mjs';
 import {
   buildKlippySpawnSpec,
   buildMcuBridgeSpawnSpec,
@@ -100,30 +101,14 @@ if (args.help) {
   process.exit(0);
 }
 
-const externalClients = new Set();
 let externalServer = null;
+let externalBroadcaster = null;
 let klippyProc = null;
 let mcuBridgeProc = null;
 let bridgeSocket = null;
 let apiBridge = null;
 let currentGcode = null;
 let shuttingDown = false;
-
-const broadcastExternal = (payload) => {
-  if (!externalServer || !payload) {
-    return;
-  }
-  const data = JSON.stringify(payload);
-  for (const socket of externalClients) {
-    if (socket.readyState === WebSocket.OPEN) {
-      try {
-        socket.send(data);
-      } catch (_err) {
-        // Ignore send failures; the socket close handler will clean up.
-      }
-    }
-  }
-};
 
 function closeSocket(socket) {
   if (!socket) {
@@ -137,12 +122,10 @@ function closeSocket(socket) {
 }
 
 async function startExternalServer() {
+  externalBroadcaster = createReplayableJsonBroadcaster();
   externalServer = new WebSocketServer({ port: args.wsPort });
   externalServer.on('connection', (socket) => {
-    externalClients.add(socket);
-    socket.on('close', () => {
-      externalClients.delete(socket);
-    });
+    externalBroadcaster.register(socket);
     socket.on('message', (raw) => {
       try {
         const payload = JSON.parse(raw.toString());
@@ -219,7 +202,7 @@ async function bootstrap() {
     try {
       const msg = JSON.parse(raw.toString());
       if (isKlipperRawBridgeMessage(msg)) {
-        broadcastExternal(msg);
+        externalBroadcaster?.broadcast(msg);
       }
     } catch (_err) {
       // Ignore non-JSON messages.
@@ -251,12 +234,13 @@ async function shutdown(exitCode = 0) {
   } catch (_err) {
     // Ignore.
   }
-  for (const socket of externalClients) {
-    closeSocket(socket);
-  }
-  externalClients.clear();
   try {
     externalServer?.close();
+  } catch (_err) {
+    // Ignore.
+  }
+  try {
+    externalBroadcaster?.close();
   } catch (_err) {
     // Ignore.
   }
@@ -302,7 +286,7 @@ async function handleLine(line) {
 
 async function runOneShot() {
   await bootstrap();
-  await handleLine(args.command);
+  await apiBridge.sendGcodeLine(args.command, { waitForMotion: true });
   await shutdown(0);
 }
 
