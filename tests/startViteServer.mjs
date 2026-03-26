@@ -1,23 +1,9 @@
 import { createServer } from 'vite';
 import path from 'path';
+import { createViteServerOptions } from './viteServerOptions.mjs';
 
 const projectRoot = process.argv[2] ? path.resolve(process.argv[2]) : process.cwd();
-const server = await createServer({
-  root: projectRoot,
-  configFile: false,
-  logLevel: 'error',
-  server: {
-    port: 0,
-    host: '127.0.0.1',
-    watch: {
-      ignored: [
-        '**/autocal/**',
-        '**/dist-hangprinter-org/**'
-      ]
-    }
-  },
-  optimizeDeps: { entries: [] }
-});
+const server = await createServer(createViteServerOptions(projectRoot));
 await server.listen();
 const port = server.httpServer.address().port;
 console.log('PORT:' + port);
