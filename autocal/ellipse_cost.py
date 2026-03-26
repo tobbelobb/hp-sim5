@@ -32,8 +32,10 @@ _SWEEP_WISE_K = 3.0
 _SWEEP_WISE_MIN_SAMPLES = 5
 _SWEEP_WISE_MIN_KEEP = 2
 _SWEEP_WISE_MIN_KEEP_RATIO = 0.5
+# TODO: Try increasing this and see if we can get rid of the underconstrained sentinel errors
 _UNDERCONSTRAINED_PENALTY = 100.0  # Soft-reject: good costs are ~0-5, so 100 is ~20x worse yet finite for optimizers.
 _MIN_SWEEPS_AFTER_TRIM_DEFAULT = 3
+# TODO: Try increasing the hangprinter_4 one to 4 or 5 and do some test runs
 _MIN_SWEEPS_AFTER_TRIM_BY_MACHINE = {
     "slideprinter": 3,
     "hangprinter_4": 3,
@@ -49,6 +51,7 @@ _MODE_SIGMA_FACTORS = {
     ("global", "off"): 2.0,
     ("global", "global"): 5.0,
     ("per-anchor", "global"): 10.0,
+    ("per-anchor", "per-anchor"): 15.0,
 }
 
 
@@ -2116,62 +2119,3 @@ class EllipseCostFunction:
             grad[i] = (f_plus - base_cost) / epsilon
 
         return grad
-
-
-def create_optimization_objective(
-    dataset: Union[dict, "SweepDataset"], **cost_kwargs: object
-) -> Tuple[Callable[[np.ndarray], float], Callable[[np.ndarray], np.ndarray]]:
-    """Return objective and gradient callables for scipy.optimize."""
-    cost_fn = EllipseCostFunction(dataset, **cost_kwargs)
-
-    def objective(x: np.ndarray) -> float:
-        return cost_fn.evaluate(x)
-
-    def gradient(x: np.ndarray) -> np.ndarray:
-        return cost_fn.gradient_numerical(x)
-
-    return objective, gradient
-
-
-def combined_cost_function(
-    anchor_vec: np.ndarray,
-    ellipse_cost_fn: EllipseCostFunction,
-    point_cost_fn: Optional[Callable[[np.ndarray], float]] = None,
-    ellipse_weight: float = 1.0,
-    point_weight: float = 0.1,
-) -> float:
-    """Blend ellipse-based cost with an optional point-based term."""
-    cost = ellipse_weight * ellipse_cost_fn.evaluate(anchor_vec)
-
-    if point_cost_fn is not None:
-        cost += point_weight * point_cost_fn(anchor_vec)
-
-    return float(cost)
-
-
-def anchor_regularity_penalty(
-    anchor_vec: np.ndarray,
-    num_anchors: int,
-    dimensions: int,
-    target_symmetry: str = "none",
-) -> float:
-    """
-    Regularization that discourages implausible anchor placements.
-
-    Currently penalizes anchors that are closer together than a minimum spacing.
-    """
-    anchors = anchors_vec_to_matrix(anchor_vec, num_anchors, dimensions)
-
-    penalty = 0.0
-    min_dist = 100.0
-
-    for i in range(num_anchors):
-        for j in range(i + 1, num_anchors):
-            dist = np.linalg.norm(anchors[i] - anchors[j])
-            if dist < min_dist:
-                penalty += float((min_dist - dist) ** 2)
-
-    if target_symmetry == "triangular" and num_anchors >= 3:
-        pass
-
-    return penalty
