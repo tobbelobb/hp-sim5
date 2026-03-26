@@ -50,6 +50,8 @@ except Exception:  # pragma: no cover - optional dependency
     jnp = None  # type: ignore[assignment]
     _JAX_AVAILABLE = False
 
+# TODO: These loop duplicated from autocal/ellipse_cost.py.
+# We don't want duplicated constants. Reuse the original ones.
 _EPS_LEN_MM = 1.0
 _MAD_SCALE = 1.4826
 _POINTWISE_TRIM_K = 3.0
