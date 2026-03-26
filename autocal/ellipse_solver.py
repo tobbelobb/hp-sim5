@@ -130,7 +130,7 @@ def _run_lbfgsb_minimize(
             method="L-BFGS-B",
             bounds=bounds,
             callback=callback,
-            options={"maxiter": int(max_iterations), "ftol": 1e-12, "maxls": 40, "disp": False},
+            options={"maxiter": int(max_iterations), "ftol": 1e-12, "maxls": 40},
         )
 
     value_and_grad = _build_lbfgsb_objective_with_jac(cost_fn, lb, ub)
@@ -141,7 +141,7 @@ def _run_lbfgsb_minimize(
         jac=True,
         bounds=bounds,
         callback=callback,
-        options={"maxiter": int(max_iterations), "ftol": 1e-12, "maxls": 40, "disp": False},
+        options={"maxiter": int(max_iterations), "ftol": 1e-12, "maxls": 40},
     )
 
 
@@ -215,7 +215,6 @@ def _optimize_restart_worker(payload: dict) -> dict:
                 "xatol": 1e-4,
                 "fatol": 1e-8,
                 "adaptive": True,
-                "disp": False,
             },
         )
         result.x = np.clip(np.asarray(result.x, dtype=float), lb, ub)
@@ -230,7 +229,6 @@ def _optimize_restart_worker(payload: dict) -> dict:
                 "xatol": 1e-3,
                 "fatol": 1e-6,
                 "adaptive": True,
-                "disp": False,
             },
         )
         x1 = np.clip(np.asarray(nm.x, dtype=float), lb, ub)
@@ -249,7 +247,7 @@ def _optimize_restart_worker(payload: dict) -> dict:
         elif method_norm == "powell":
             scipy_method = "Powell"
 
-        options: Dict[str, object] = {"maxiter": max_iterations, "disp": False}
+        options: Dict[str, object] = {"maxiter": max_iterations}
         if scipy_method == "L-BFGS-B":
             options["ftol"] = 1e-12
             options["maxls"] = 40
@@ -1108,7 +1106,6 @@ def solve_anchors(
                             "xatol": 1e-4,
                             "fatol": 1e-8,
                             "adaptive": True,
-                            "disp": False,
                         },
                     )
                     # Project to bounds for downstream consumption.
@@ -1124,7 +1121,6 @@ def solve_anchors(
                             "xatol": 1e-3,
                             "fatol": 1e-6,
                             "adaptive": True,
-                            "disp": False,
                         },
                     )
                     x1 = np.clip(np.asarray(nm.x, dtype=float), lb, ub)
@@ -1144,7 +1140,7 @@ def solve_anchors(
                     elif method_norm == "powell":
                         scipy_method = "Powell"
 
-                    options: Dict[str, object] = {"maxiter": max_iterations, "disp": False}
+                    options: Dict[str, object] = {"maxiter": max_iterations}
                     if scipy_method == "L-BFGS-B":
                         options["ftol"] = 1e-12
                         options["maxls"] = 40
