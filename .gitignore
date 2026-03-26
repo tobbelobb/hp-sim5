@@ -1,5 +1,6 @@
 .aider*
 .env
+.venv
 tags
 attic/
 node_modules/
