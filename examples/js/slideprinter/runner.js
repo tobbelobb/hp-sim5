@@ -390,6 +390,23 @@ export function runGame(world, internalSetupScene, options = {}) {
 
     const getTimeScale = () => targetTimeScale;
 
+    const resumeSimulation = () => {
+        const pauseState = getPauseState();
+        if (!pauseState || !pauseState.paused) {
+            return;
+        }
+        pauseState.paused = false;
+        if (!hasStarted) {
+            startTime = performance.now();
+            totalSim = 0;
+            hasStarted = true;
+        }
+        lastTime = performance.now();
+        updatePauseButtonLabel();
+        stopLoops();
+        startActiveLoop();
+    };
+
     if (pauseBtn) {
         pauseBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -398,16 +415,7 @@ export function runGame(world, internalSetupScene, options = {}) {
                 return;
             }
             if (pauseState.paused) {
-                pauseState.paused = false;
-                if (!hasStarted) {
-                    startTime = performance.now();
-                    totalSim = 0;
-                    hasStarted = true;
-                }
-                lastTime = performance.now();
-                updatePauseButtonLabel();
-                stopLoops();
-                startActiveLoop();
+                resumeSimulation();
             } else {
                 pauseState.paused = true;
                 updatePauseButtonLabel();
@@ -472,5 +480,6 @@ export function runGame(world, internalSetupScene, options = {}) {
         setTimeScale,
         getTimeScale,
         setRenderEveryNth,
+        resume: resumeSimulation,
     };
 }

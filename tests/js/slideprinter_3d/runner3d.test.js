@@ -164,4 +164,21 @@ describe('slideprinter 3D runner idle loop handling', () => {
     expect(renderSystem.setAnimationLoop).toHaveBeenCalledTimes(2);
     expect(typeof getAnimationLoop()).toBe('function');
   });
+
+  test('resume control unpauses immediately and updates the pause button label', () => {
+    const { controls, elements, resources, renderSystem, getAnimationLoop } = setupRunner();
+
+    renderSystem.clearAnimationLoop.mockClear();
+    renderSystem.requestRender.mockClear();
+    resources.get('pauseState').paused = true;
+    elements.pauseBtn.textContent = 'Start';
+
+    controls.resume();
+
+    expect(resources.get('pauseState').paused).toBe(false);
+    expect(elements.pauseBtn.textContent).toBe('Pause');
+    expect(renderSystem.clearAnimationLoop).toHaveBeenCalledTimes(1);
+    expect(renderSystem.setAnimationLoop).toHaveBeenCalledTimes(2);
+    expect(typeof getAnimationLoop()).toBe('function');
+  });
 });

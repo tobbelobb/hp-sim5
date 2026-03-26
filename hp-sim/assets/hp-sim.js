@@ -986,6 +986,10 @@ function initHpSim() {
   }
 
   function maybeResumeFromPause() {
+    if (gameControls && typeof gameControls.resume === 'function') {
+      gameControls.resume();
+      return;
+    }
     const pauseState = world.getResource('pauseState');
     if (pauseState && pauseState.paused) {
       pauseState.paused = false;
