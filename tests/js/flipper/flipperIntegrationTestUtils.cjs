@@ -2,6 +2,23 @@ const path = require('path');
 const { spawn } = require('child_process');
 const puppeteer = require('puppeteer');
 
+function shouldLogFlipperConsoleMessage(type, text) {
+  if (!['log', 'warn', 'error'].includes(type)) {
+    return false;
+  }
+  if (type === 'warn' && text.includes('Automatic fallback to software WebGL has been deprecated')) {
+    return false;
+  }
+  if (type === 'warn' && text.includes('GPU stall due to ReadPixels')) {
+    return false;
+  }
+  return true;
+}
+
+function getFlipperBrowserLaunchArgs() {
+  return ['--no-sandbox', '--disable-setuid-sandbox', '--enable-unsafe-swiftshader'];
+}
+
 async function launchFlipperPage({
   pagePath,
   speedScale = 10.0,
@@ -25,7 +42,7 @@ async function launchFlipperPage({
 
   const browser = await puppeteer.launch({
     headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    args: getFlipperBrowserLaunchArgs()
   });
 
   const page = await browser.newPage();
@@ -36,7 +53,7 @@ async function launchFlipperPage({
   page.on('console', (msg) => {
     const type = msg.type();
     const text = msg.text();
-    if (type === 'log' || type === 'warn' || type === 'error') {
+    if (shouldLogFlipperConsoleMessage(type, text)) {
       console.log(`PAGE CONSOLE [${type.toUpperCase()}]: ${text}`);
     }
   });
@@ -136,8 +153,6 @@ async function runAutonomousScoreExpectation(page, {
     { timeout: 10000 }
   );
 
-  console.log(`Advancing simulation in ${stepChunk}-step chunks.`);
-
   let settled = false;
   let stepsTaken = 0;
   let stableScoreChunks = 0;
@@ -221,5 +236,7 @@ module.exports = {
   launchFlipperPage,
   closeFlipperPage,
   resetGame,
-  runAutonomousScoreExpectation
+  runAutonomousScoreExpectation,
+  shouldLogFlipperConsoleMessage,
+  getFlipperBrowserLaunchArgs
 };
