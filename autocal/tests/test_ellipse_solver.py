@@ -11,6 +11,7 @@ class _QuadraticCost:
         self.last_f0 = None
         self.evaluate_calls = 0
         self.gradient_calls = 0
+        self.dimensions = 3
 
     def evaluate(self, x: np.ndarray) -> float:
         self.evaluate_calls += 1
