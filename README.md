@@ -87,6 +87,7 @@ hp-sim5 has added quite a bit to each of its sub-projects:
    ```
    nvm install 24
    nvm use 24
+   nvm alias default 24
    ```
 2. In this repository run:
    ```bash
