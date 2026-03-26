@@ -114,6 +114,9 @@ python -m pip install -r requirements-warp.txt
 
 # Optional dependency for the jax-driven autocal (5x faster):
 python -m pip install -r autocal/requirements-jax-cpu.txt
+
+# Optional dependency for klipper
+python -m pip install -r klipper/scripts/klippy-requirements.txt
 ```
 
 
