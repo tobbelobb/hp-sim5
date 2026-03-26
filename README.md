@@ -83,7 +83,11 @@ hp-sim5 has added quite a bit to each of its sub-projects:
 ## Quick Start
 
 ### Running Demos Locally
-1. Install Node.js
+1. Install Node.js. Run for example:
+   ```
+   nvm install 24
+   nvm use 24
+   ```
 2. In this repository run:
    ```bash
    npm install        # only needed the first time
@@ -91,7 +95,7 @@ hp-sim5 has added quite a bit to each of its sub-projects:
    ```
 3. Open <http://localhost:5173/hp-sim5/hp-sim> in your browser.
    There's also <http://localhost:5173/hp-sim5/flipper> for the flipper demo.
-4. Hack away!
+4. Ready to hack away on the js side!
 
 
 ## Python dependencies
@@ -113,17 +117,18 @@ python -m pip install -r autocal/requirements-jax-cpu.txt
 ```
 
 
+
 ## Tests
 
 These commands cover hp-sim5-specific checks. Subrepos (like RRF, klipper, autocal, etc.) often have their own internal test suites; run those from within each subrepo when you need deeper coverage.
 
 ### Run the full local suite (no simulator / no visuals)
 ```bash
-npx test
+npx jest
 python -m pytest
 ```
 
-Also check out `scripts/run_ci_tests.sh`.
+Also check out `scripts/run_ci_tests.sh` which helps you run some more types of tests.
 
 ### Autocal-only filtering
 ```bash
@@ -161,6 +166,12 @@ npx vite
 RRF/tests/run_draw_squares_determinism_test.sh
 RRF/tests/run_logo_determinism_test.sh
 RRF/tests/run_logo_slideprinter_determinism_test.sh
+```
+
+### Autocal e2e tests
+There's also a bunch of generated autocal datasets, which you can try to solve against with:
+```bash
+python autocal/tools/regress_calibration_logs.py --no-fail-score-mismatch --keep-going
 ```
 
 ## hp-sim5 context: the Hangprinter Project

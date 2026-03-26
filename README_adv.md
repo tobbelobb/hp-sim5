@@ -121,7 +121,9 @@ This is fun and usefult for testing js/Python equivalence.
  - Locally: <http://localhost:5173/hp-sim5/tests/html/cable_joints.html>
 
 
-## 6. 3D Visualization
+## 3D Visualization
  `tests/html/3d_tests.html` tries to render cable joint points using Three.js.
  Utility modules `vector3.js` and `geometry3.js` provide basic 3D math helpers and now live under `src/js/cable_joints_3d/`.
  The Python side includes `src/python/cable_joints_3d/vector3.py` and `src/python/cable_joints_3d/geometry3.py` for analogous 3D helpers.
+
+ 
