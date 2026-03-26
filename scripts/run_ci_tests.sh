@@ -8,11 +8,11 @@ echo "== JS unit tests (jest) =="
 
 echo ""
 echo "== Python unit tests (autocal) =="
-(cd "$ROOT" && python -m pytest autocal/tests)
+(cd "$ROOT" && .venv/bin/python -m pytest autocal/tests)
 
 echo ""
 echo "== Python unit tests (cable_joints/slideprinter/flipper) =="
-(cd "$ROOT" && python -m pytest tests/python)
+(cd "$ROOT" && .venv/bin/python -m pytest tests/python)
 
 run_with_retries() {
   local label="$1"
