@@ -71,7 +71,7 @@ describe('uncalibrated_actions', () => {
     expect(recordPoint).toHaveBeenCalledWith([1, 2, 3], 12, 0, 4, null);
     expect(commands.filter((command) => command.startsWith('M569.4 '))).toEqual([
       'M569.4 P40.0:41.0:42.0 T0.0:4:2',
-      'M569.4 P40.0:41.0:42.0 T0.0:6:2',
+      'M569.4 P40.0:41.0:42.0 T0.0:10:2',
       'M569.4 P40.0:41.0:42.0 T0.0:4:2',
     ]);
   });
@@ -94,7 +94,7 @@ describe('uncalibrated_actions', () => {
     });
 
     expect(commands.filter((command) => command.startsWith('M569.4 '))).toEqual([
-      'M569.4 P40.0:41.0:42.0 T0.0:6:0.0',
+      'M569.4 P40.0:41.0:42.0 T0.0:10:0.0',
       'M569.4 P40.0:41.0:42.0 T0.0:4:0.0',
     ]);
   });
