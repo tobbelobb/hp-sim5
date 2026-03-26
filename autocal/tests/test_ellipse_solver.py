@@ -12,6 +12,10 @@ class _QuadraticCost:
         self.evaluate_calls = 0
         self.gradient_calls = 0
         self.dimensions = 3
+        self.machine_type = "hangprinter_4"
+        self.pointwise_residual_mode = "sampson"
+        self.flex_model = None
+        self._packed_sweeps = []
 
     def evaluate(self, x: np.ndarray) -> float:
         self.evaluate_calls += 1
@@ -48,7 +52,9 @@ def test_run_lbfgsb_minimize_supplies_explicit_jac(monkeypatch):
             nfev=1,
         )
 
+    monkeypatch.setattr(ellipse_solver, "build_compiled_objective", lambda _c, _lb, _ub: None)
     monkeypatch.setattr(ellipse_solver, "build_compiled_value_and_grad", lambda _c, _lb, _ub: None)
+    monkeypatch.setattr(ellipse_solver, "_lbfgsb_jax_mode", lambda: "jac")
     monkeypatch.setattr(ellipse_solver, "minimize", fake_minimize)
 
     cost = _QuadraticCost()

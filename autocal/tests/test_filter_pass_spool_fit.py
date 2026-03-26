@@ -3071,6 +3071,7 @@ def test_scale_fix_3_applies_final_polish_on_every_filter_pass(monkeypatch):
     assert bool(filter_schedule_history[2].get("final_scale_polish_attempted", False)) is True
 
 
+@pytest.mark.filterwarnings("ignore:Coefficients do not represent an ellipse")
 def test_filter_schedule_follows_explicit_3_2_3_pass_sequence(monkeypatch):
     base = np.array([30.0, 30.0, 30.0], dtype=float)
     target_r = np.array([39.0, 39.0, 39.0], dtype=float)
@@ -3203,6 +3204,7 @@ def test_filter_schedule_follows_explicit_3_2_3_pass_sequence(monkeypatch):
     assert sweep_flags == [False, False, False, True, True, False, False, False]
 
 
+@pytest.mark.filterwarnings("ignore:Coefficients do not represent an ellipse")
 def test_filter_schedule_constant_mask_hard_locks_precomputed_inliers(monkeypatch):
     base = np.array([30.0, 30.0, 30.0], dtype=float)
     target_r = np.array([39.0, 39.0, 39.0], dtype=float)
@@ -3326,6 +3328,7 @@ def test_filter_schedule_constant_mask_hard_locks_precomputed_inliers(monkeypatc
     assert all(bool(item.get("constant_mask_applied", False)) for item in filter_schedule_history[5:])
 
 
+@pytest.mark.filterwarnings("ignore:Coefficients do not represent an ellipse")
 def test_filter_schedule_warmup_clears_mask_and_later_dynamic_rebuilds_it(monkeypatch):
     base = np.array([30.0, 30.0, 30.0], dtype=float)
     target_r = np.array([39.0, 39.0, 39.0], dtype=float)
