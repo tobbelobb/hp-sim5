@@ -1,0 +1,4 @@
+# Python dependencies for the warp version of hp-sim5's physics engine
+# Install with: python -m pip install -r requirements-warp.txt
+
+warp-lang>=1.12.0

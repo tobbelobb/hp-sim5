@@ -93,6 +93,26 @@ hp-sim5 has added quite a bit to each of its sub-projects:
    There's also <http://localhost:5173/hp-sim5/flipper> for the flipper demo.
 4. Hack away!
 
+
+## Python dependencies
+
+Use environment management to install Python dependencies before running Python code. Here's how it might look with Ubuntu + venv:
+
+```
+sudo apt install python3-venv
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+
+# Optional dependency for the warp version of the python version of the physics engine:
+python -m pip install -r requirements-warp.txt
+
+# Optional dependency for the jax-driven autocal (5x faster):
+python -m pip install -r autocal/requirements-jax-cpu.txt
+```
+
+
 ## Tests
 
 These commands cover hp-sim5-specific checks. Subrepos (like RRF, klipper, autocal, etc.) often have their own internal test suites; run those from within each subrepo when you need deeper coverage.

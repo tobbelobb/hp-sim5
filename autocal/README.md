@@ -2,7 +2,30 @@
 
 ![Autocal's own logo](autocal_logo_shine.jpeg)
 
-This directory contains the fully automated elliptical feature calibration pipeline. The default workflow uses active learning plus pointwise robust fitting.
+This directory contains the fully automated elliptical feature calibration pipeline. The default workflow uses active learning and pointwise robust fitting.
+
+## Python dependencies
+
+The Python dependencies for this `autocal/` subtree are mostly covered by the requirements.txt at the root level.
+
+There's an additional Jax dependency that will cut 80% of computation time if you choose to install it.
+You only need jax on the CPU for this, so don't worry about making a full GPU install.
+
+With venv activated at the root level of the hp-sim5 repo, do
+
+```bash
+python -m pip install -r autocal/requirements-jax-cpu.txt
+```
+
+Quick verification if jax is present:
+
+```bash
+python - <<'PYCODE'
+import jax
+print(jax.__version__)
+PYCODE
+```
+
 
 ## Quick start (simulation)
 

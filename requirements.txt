@@ -1,0 +1,10 @@
+# Python dependencies for hp-sim5 at the root level
+# Install with: python -m pip install -r requirements.txt
+
+pytest>=9.0.2
+numpy>=1.26
+scipy>=1.12
+matplotlib>=3.10.8
+usd-core>=26.3
+pytest-asyncio>=1.3.0
+websockets>=16.0
