@@ -1,5 +1,5 @@
 # Optional CPU JAX support for autocal/
 # Install with: python -m pip install -r autocal/requirements-jax-cpu.txt
 
--r requirements.txt
+-r ../requirements.txt
 jax>=0.9.2
