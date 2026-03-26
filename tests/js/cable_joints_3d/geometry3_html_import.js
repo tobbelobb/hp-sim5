@@ -56,7 +56,10 @@ export const geometry3Tests = {
     // Case 3: One endpoint inside
     const p3a = new Vector3(0.5, 0, 0);
     const p3b = new Vector3(2, 0, 0);
-    success &&= assert.true(lineSegmentSphereIntersection(p3a, p3b, center, radius), 'one endpoint inside');
+    success &&= assert.false(lineSegmentSphereIntersection(p3a, p3b, center, radius), 'one endpoint inside by default');
+
+    // Case 3b: One endpoint inside with explicit pierce semantics
+    success &&= assert.true(lineSegmentSphereIntersection(p3a, p3b, center, radius, true), 'one endpoint inside with pierce enabled');
 
     // Case 4: Tangent
     const p4a = new Vector3(-2, 1, 0);
@@ -66,16 +69,16 @@ export const geometry3Tests = {
     // Case 5: Segment completely inside
     const p5a = new Vector3(-0.5, 0, 0);
     const p5b = new Vector3(0.5, 0, 0);
-    success &&= assert.true(lineSegmentSphereIntersection(p5a, p5b, center, radius), 'completely inside');
+    success &&= assert.false(lineSegmentSphereIntersection(p5a, p5b, center, radius), 'completely inside by default');
 
     if (scene) {
         const { addLine, addSphere } = scene.userData.helpers;
         addSphere(center, radius, 0x888888, true); // wireframe sphere
         addLine(p1a, p1b, 0xff0000); // No intersect - red
         addLine(p2a, p2b, 0x00ff00); // Intersect - green
-        addLine(p3a, p3b, 0x00ff00); // Intersect - green
+        addLine(p3a, p3b, 0xff0000); // No intersect by default - red
         addLine(p4a, p4b, 0x00ff00); // Intersect - green
-        addLine(p5a, p5b, 0x00ff00); // Intersect - green
+        addLine(p5a, p5b, 0xff0000); // No intersect by default - red
     }
     return success;
   },

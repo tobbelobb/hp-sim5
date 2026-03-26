@@ -47,10 +47,16 @@ describe('Geometry3', () => {
       expect(lineSegmentSphereIntersection(p2a, p2b, center, radius)).toBe(true);
     });
 
-    test('should return true when one endpoint is inside sphere', () => {
+    test('should return false when one endpoint is inside sphere by default', () => {
       const p3a = new Vector3(0.5, 0, 0);
       const p3b = new Vector3(2, 0, 0);
-      expect(lineSegmentSphereIntersection(p3a, p3b, center, radius)).toBe(true);
+      expect(lineSegmentSphereIntersection(p3a, p3b, center, radius)).toBe(false);
+    });
+
+    test('should return true when one endpoint is inside sphere and pierce is enabled', () => {
+      const p3a = new Vector3(0.5, 0, 0);
+      const p3b = new Vector3(2, 0, 0);
+      expect(lineSegmentSphereIntersection(p3a, p3b, center, radius, true)).toBe(true);
     });
 
     test('should return true for a tangent segment', () => {
@@ -59,10 +65,10 @@ describe('Geometry3', () => {
       expect(lineSegmentSphereIntersection(p4a, p4b, center, radius)).toBe(true);
     });
 
-    test('should return true when segment is completely inside sphere', () => {
+    test('should return false when segment is completely inside sphere by default', () => {
       const p5a = new Vector3(-0.5, 0, 0);
       const p5b = new Vector3(0.5, 0, 0);
-      expect(lineSegmentSphereIntersection(p5a, p5b, center, radius)).toBe(true);
+      expect(lineSegmentSphereIntersection(p5a, p5b, center, radius)).toBe(false);
     });
   });
 });
