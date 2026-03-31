@@ -2,7 +2,7 @@
 import path from 'node:path';
 import readline from 'node:readline';
 import { pathToFileURL } from 'node:url';
-import { createGcodeBridge, parseBridgeArgs } from '../primitives/gcode_bridge.mjs';
+import { createGcodeBridge } from '../../../bridges/rrf/gcode_to_rrf_simulator_to_websocket.mjs';
 import { attachDebugState } from '../primitives/debug_trace.mjs';
 import {
   DEFAULT_RRF_PORT,
@@ -68,6 +68,198 @@ function sleep(ms) {
   return baseSleep(delayMs);
 }
 
+
+export function parseBridgeArgs(argv) {
+  const envServer = process.env.RRF_SERVER_URL;
+  const args = {
+    server: envServer || 'http://localhost:8080',
+    serverExplicit: !!envServer,
+    wsPort: 8790,
+    quiet: false,
+    command: null,
+    help: false,
+    noWs: false,
+    stepGcode: false,
+    dx: null,
+    dy: null,
+    feed: null,
+    waitWs: null,
+    timeout: null,
+    debug: false,
+    debugGcode: false,
+    debugGcodeResponses: false,
+    pointsFile: null,
+    outputFile: null,
+    settleMs: null,
+    persistRrfSimulator: false,
+    hpSimReset: false,
+    noSpawnRrfSimulator: false,
+    speedup: null,
+    port: null,
+    machineType: null,
+    sweepRange: null,
+    sweepPoints: null,
+    maxSweeps: null,
+    fixedTargets: null,
+    sweepMethod: null,
+    maxTravelMm: null,
+    sensorForce: null,
+    forceLow: null,
+    forceMid: null,
+    forceMax: null,
+    preserveBuildupFactor: false,
+    forceBuildupFactor: null,
+    forceBaseRadii: null,
+    forceStep: null,
+    autoTuneForce: false,
+    noAutoTuneForce: false,
+    torque: null,
+    rampWaitMs: null,
+    swapWaitMs: null,
+    debugSweep: false,
+    debugSweepActions: false,
+    trace: false,
+    sweepConfigFile: null,
+    continuous: false,
+    sampleRate: null,
+    observabilityFile: null,
+    returnToOrigin: false,
+  };
+
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg === '--server' || arg === '--rrf') {
+      args.server = argv[++i] || args.server;
+      args.serverExplicit = true;
+    } else if (arg === '--port') {
+      const value = parseInt(argv[++i], 10);
+      if (Number.isFinite(value)) {
+        args.port = value;
+      }
+    } else if (arg === '--ws-port') {
+      const value = parseInt(argv[++i], 10);
+      if (Number.isFinite(value) && value > 0) {
+        args.wsPort = value;
+      } else {
+        args.wsPort = 0;
+      }
+    } else if (arg === '--cmd' || arg === '-c') {
+      args.command = argv[++i] || null;
+    } else if (arg === '--quiet' || arg === '-q') {
+      args.quiet = true;
+    } else if (arg === '--help' || arg === '-h') {
+      args.help = true;
+    } else if (arg === '--no-ws') {
+      args.noWs = true;
+    } else if (arg === '--step-gcode' || arg === '--step-gcodes' || arg === '--interactive-gcode') {
+      args.stepGcode = true;
+    } else if (arg === '--dx') {
+      args.dx = argv[++i] || null;
+    } else if (arg === '--dy') {
+      args.dy = argv[++i] || null;
+    } else if (arg === '--feed' || arg === '-f') {
+      args.feed = argv[++i] || null;
+    } else if (arg === '--wait-ws') {
+      args.waitWs = argv[++i] || null;
+    } else if (arg === '--timeout') {
+      args.timeout = argv[++i] || null;
+    } else if (arg === '--debug') {
+      args.debug = true;
+    } else if (arg === '--debug-gcode' || arg === '--debug-gcodes' || arg === '--trace-gcode') {
+      args.debugGcode = true;
+    } else if (arg === '--debug-gcode-responses' || arg === '--trace-gcode-responses' || arg === '--debug-gcodes-responses') {
+      args.debugGcodeResponses = true;
+    } else if (arg === '--points-file' || arg === '--points') {
+      args.pointsFile = argv[++i] || null;
+    } else if (arg === '--output-file' || arg === '--output' || arg === '--out') {
+      args.outputFile = argv[++i] || null;
+    } else if (arg === '--settle-ms') {
+      args.settleMs = argv[++i] || null;
+    } else if (arg === '--persist-rrf-simulator') {
+      args.persistRrfSimulator = true;
+    } else if (arg === '--hp-sim-reset') {
+      args.hpSimReset = true;
+    } else if (arg === '--no-spawn-rrf-simulator') {
+      args.noSpawnRrfSimulator = true;
+    } else if (arg === '--speedup') {
+      args.speedup = argv[++i] || null;
+    } else if (arg === '--machineType' || arg === '--machine-type') {
+      args.machineType = argv[++i] || null;
+    } else if (arg === '--sweepRange') {
+      args.sweepRange = argv[++i] || null;
+    } else if (arg === '--sweepPoints') {
+      args.sweepPoints = argv[++i] || null;
+    } else if (arg === '--maxSweeps') {
+      args.maxSweeps = argv[++i] || null;
+    } else if (arg === '--max-travel-mm' || arg === '--max-travel') {
+      args.maxTravelMm = argv[++i] || null;
+    } else if (arg === '--fixed-targets' || arg === '--fixedTargets' || arg === '--fixed-target') {
+      args.fixedTargets = argv[++i] || null;
+    } else if (arg === '--sensor-force' || arg === '--force-sensor' || arg === '--sensorForce') {
+      args.sensorForce = argv[++i] || null;
+    } else if (arg === '--torque') {
+      args.torque = argv[++i] || null;
+    } else if (arg === '--sweepMethod' || arg === '--sweep-method') {
+      args.sweepMethod = argv[++i] || null;
+    } else if (arg === '--force-low' || arg === '--forceLow') {
+      args.forceLow = argv[++i] || null;
+    } else if (arg === '--force-mid' || arg === '--forceMid' || arg === '--force-min' || arg === '--forceMin') {
+      args.forceMid = argv[++i] || null;
+    } else if (arg === '--force-max' || arg === '--forceMax') {
+      args.forceMax = argv[++i] || null;
+    } else if (arg === '--preserve-buildup-factor' || arg === '--preserveBuildupFactor') {
+      args.preserveBuildupFactor = true;
+    } else if (arg === '--force-buildup-factor' || arg === '--forceBuildupFactor') {
+      args.forceBuildupFactor = argv[++i] || null;
+    } else if (arg === '--force-base-radii' || arg === '--forceBaseRadii' || arg === '--base-radii') {
+      args.forceBaseRadii = argv[++i] || null;
+    } else if (arg === '--force-step' || arg === '--forceStep') {
+      args.forceStep = argv[++i] || null;
+    } else if (arg === '--auto-tune-force' || arg === '--autoTuneForce') {
+      args.autoTuneForce = true;
+    } else if (arg === '--no-auto-tune-force' || arg === '--noAutoTuneForce') {
+      args.noAutoTuneForce = true;
+    } else if (arg === '--torque-low') {
+      args.forceLow = argv[++i] || null;
+    } else if (arg === '--torque-min') {
+      args.forceMid = argv[++i] || null;
+    } else if (arg === '--torque-max') {
+      args.forceMax = argv[++i] || null;
+    } else if (arg === '--torque-step') {
+      args.forceStep = argv[++i] || null;
+    } else if (arg === '--auto-tune-torque' || arg === '--autoTuneTorque') {
+      args.autoTuneForce = true;
+    } else if (arg === '--no-auto-tune-torque' || arg === '--noAutoTuneTorque') {
+      args.noAutoTuneForce = true;
+    } else if (arg === '--ramp-wait-ms') {
+      args.rampWaitMs = argv[++i] || null;
+    } else if (arg === '--swap-wait-ms') {
+      args.swapWaitMs = argv[++i] || null;
+    } else if (arg === '--debug-sweep' || arg === '--debugSweep') {
+      args.debugSweep = true;
+    } else if (arg === '--debug-sweep-actions') {
+      args.debugSweepActions = true;
+    } else if (arg === '--trace' || arg === '--trace-positions') {
+      args.trace = true;
+    } else if (arg === '--sweep-config-file' || arg === '--sweep-config' || arg === '--sweepFile') {
+      args.sweepConfigFile = argv[++i] || null;
+    } else if (arg === '--continuous') {
+      args.continuous = true;
+    } else if (arg === '--sample-rate' || arg === '--sampleRate') {
+      args.sampleRate = argv[++i] || null;
+    } else if (arg === '--observability-file' || arg === '--obs-file') {
+      args.observabilityFile = argv[++i] || null;
+    } else if (arg === '--return-to-origin' || arg === '--returnToOrigin') {
+      args.returnToOrigin = true;
+    } else if (arg === '--project-zero-tension') {
+      args.projectZeroTension = true;
+    }
+  }
+
+  return args;
+}
+
+
 function printHelp() {
   console.log(`Usage: node autocal/control/cli/collect_sweep_data.mjs [options]
 
@@ -119,6 +311,7 @@ Examples:
   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweepPoints 41 --output-file sweep.json
   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file autocal/sweep_configs/hangprinter_4.txt --debug-sweep`);
 }
+
 
 async function main() {
   const argv = process.argv.slice(2);

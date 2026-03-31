@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import readline from 'node:readline';
-import { createGcodeBridge, parseBridgeArgs } from '../autocal/control/primitives/gcode_bridge.mjs';
+import { createGcodeBridge } from '../bridges/rrf/gcode_to_rrf_simulator_to_websocket.mjs';
 import { waitForRrfSimulator } from '../autocal/control/primitives/encoder_utils.mjs';
 import {
   DEFAULT_RRF_HTTP_BRIDGE_START_SCRIPT,
@@ -26,7 +26,44 @@ Options:
   --help, -h               Show this help`);
 }
 
-const args = parseBridgeArgs(process.argv.slice(2));
+export function parseArgs(argv) {
+  const envServer = process.env.RRF_SERVER_URL;
+  const args = {
+    server: envServer || 'http://localhost:8080',
+    wsPort: 8790,
+    noWs: false,
+    command: null,
+    quiet: false,
+    help: false,
+  };
+
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg === '--server' || arg === '--rrf') {
+      args.server = argv[++i] || args.server;
+      args.serverExplicit = true;
+    } else if (arg === '--ws-port') {
+      const value = parseInt(argv[++i], 10);
+      if (Number.isFinite(value) && value > 0) {
+        args.wsPort = value;
+      } else {
+        args.wsPort = 0;
+      }
+    } else if (arg === '--cmd' || arg === '-c') {
+      args.command = argv[++i] || null;
+    } else if (arg === '--no-ws') {
+      args.noWs = true;
+    } else if (arg === '--quiet' || arg === '-q') {
+      args.quiet = true;
+    } else if (arg === '--help' || arg === '-h') {
+      args.help = true;
+    }
+  }
+
+  return args;
+}
+
+const args = parseArgs(process.argv.slice(2));
 if (args.help) {
   printHelp();
   process.exit(0);
