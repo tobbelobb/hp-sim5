@@ -47,3 +47,6 @@ autocal/data/fine_old_datasets/
 /autocal/data/*.replay_tmp.json
 /autocal/data/*.replay_tmp.active_sweep_cfg.*.txt
 /autocal/data/*.active_sweep_cfg.default.restore_points.txt
+/output
+/.playwright-cli
+

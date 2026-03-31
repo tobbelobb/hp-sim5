@@ -1,7 +1,7 @@
 {
   "name": "cable_joints",
   "version": "1.0.0",
-  "type":"module",
+  "type": "module",
   "main": "src/js/cable_joints/cable_joints_core.js",
   "scripts": {
     "test": "jest"
@@ -11,6 +11,7 @@
     "@babel/preset-env": "^7.27.2",
     "babel-jest": "^29.7.0",
     "jest": "^29.7.0",
+    "playwright": "^1.58.2",
     "puppeteer": "^24.8.2",
     "vite": "^6.3.5"
   },
