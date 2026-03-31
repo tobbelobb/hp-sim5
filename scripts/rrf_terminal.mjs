@@ -8,7 +8,7 @@ import {
   ensureRrfHttpBridgeServer,
   isRrfServerUnavailableError,
   stopRrfHttpBridgeServer,
-} from '../autocal/control/primitives/rrf_http_bridge_cli_config.mjs';
+} from '../bridges/rrf/http/rrf_http_bridge_cli_config.mjs';
 
 function printHelp() {
   console.log(`Usage: node scripts/rrf_command_prompt.mjs [options]
