@@ -8,14 +8,18 @@ fi
 
 GCODE_FILE="$1"
 BASENAME="$(basename "$GCODE_FILE" .gcode)"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
-~/klippy-env/bin/python ~/repos/hp-sim5/klipper/klippy/klippy.py \
-  ~/repos/hp-sim5/examples/klipper/slideprinter/printer-hp3-linux-mcu-with-buildup.cfg \
+PYTHON="${KLIPPY_PYTHON:-${ROOT_DIR}/.venv/bin/python}"
+
+"$PYTHON" "$ROOT_DIR/klipper/klippy/klippy.py" \
+  "$ROOT_DIR/examples/klipper/slideprinter/printer-hp3-linux-mcu-with-buildup.cfg" \
   -i $GCODE_FILE \
-  -o ~/repos/hp-sim5/public/examples/mcu_commands/"${BASENAME}.serial" \
-  -v -d ~/repos/hp-sim5/examples/klipper/linux_mcu/klipper.dict \
+  -o "$ROOT_DIR/public/examples/mcu_commands/${BASENAME}.serial" \
+  -v -d "$ROOT_DIR/examples/klipper/linux_mcu/klipper.dict" \
 
-~/klippy-env/bin/python ~/repos/hp-sim5/klipper/klippy/parsedump.py \
-  ~/repos/hp-sim5/examples/klipper/linux_mcu/klipper.dict \
-  ~/repos/hp-sim5/public/examples/mcu_commands/"${BASENAME}.serial" \
-  > ~/repos/hp-sim5/public/examples/mcu_commands/${BASENAME}.txt
+"$PYTHON" "$ROOT_DIR/klipper/klippy/parsedump.py" \
+  "$ROOT_DIR/examples/klipper/linux_mcu/klipper.dict" \
+  "$ROOT_DIR/public/examples/mcu_commands/${BASENAME}.serial" \
+  > "$ROOT_DIR/public/examples/mcu_commands/${BASENAME}.txt"

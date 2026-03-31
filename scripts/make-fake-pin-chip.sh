@@ -81,6 +81,10 @@ create_gpio_sim() {
     sleep 0.05
   done
 
+  if [[ -e "/dev/$CHIP_SYM" ]]; then
+    chmod 666 "/dev/$CHIP_SYM" || true
+  fi
+
   echo "$CHIP_NUM:$CHIP_SYM:$DEV_DIR"
 }
 

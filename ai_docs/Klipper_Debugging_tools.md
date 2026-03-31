@@ -12,15 +12,15 @@ The Klippy regression test suite requires "data dictionaries" from many platform
 
 
 tar xfz klipper-dict-20??????.tar.gz
-~/klippy-env/bin/python ~/klipper/scripts/test_klippy.py -d dict/ ~/klipper/test/klippy/*.test
+.venv/bin/python ~/klipper/scripts/test_klippy.py -d dict/ ~/klipper/test/klippy/*.test
 Manually sending commands to the micro-controller
 Normally, the host klippy.py process would be used to translate gcode commands to Klipper micro-controller commands. However, it's also possible to manually send these MCU commands (functions marked with the DECL_COMMAND() macro in the Klipper source code). To do so, run:
 
 
-~/klippy-env/bin/python ./klippy/console.py /tmp/pseudoserial
+.venv/bin/python ./klippy/console.py /tmp/pseudoserial
 See the "HELP" command within the tool for more information on its functionality.
 
-Some command-line options are available. For more information run: ~/klippy-env/bin/python ./klippy/console.py --help
+Some command-line options are available. For more information run: .venv/bin/python ./klippy/console.py --help
 
 Translating gcode files to micro-controller commands
 The Klippy host code can run in a batch mode to produce the low-level micro-controller commands associated with a gcode file. Inspecting these low-level commands is useful when trying to understand the actions of the low-level hardware. It can also be useful to compare the difference in micro-controller commands after a code change.
@@ -33,11 +33,11 @@ make
 Once the above is done it is possible to run Klipper in batch mode (see installation for the steps necessary to build the python virtual environment and a printer.cfg file):
 
 
-~/klippy-env/bin/python ./klippy/klippy.py ~/printer.cfg -i test.gcode -o test.serial -v -d out/klipper.dict
+.venv/bin/python ./klippy/klippy.py ~/printer.cfg -i test.gcode -o test.serial -v -d out/klipper.dict
 The above will produce a file test.serial with the binary serial output. This output can be translated to readable text with:
 
 
-~/klippy-env/bin/python ./klippy/parsedump.py out/klipper.dict test.serial > test.txt
+.venv/bin/python ./klippy/parsedump.py out/klipper.dict test.serial > test.txt
 The resulting file test.txt contains a human readable list of micro-controller commands.
 
 The batch mode disables certain response / request commands in order to function. As a result, there will be some differences between actual commands and the above output. The generated data is useful for testing and inspection; it is not useful for sending to a real micro-controller.
@@ -145,7 +145,7 @@ Note that if you have installed python3-simulavr system-wide, you do not need to
 Then, with simulavr running in another window, one can run the following to read gcode from a file (eg, "test.gcode"), process it with Klippy, and send it to Klipper running in simulavr (see installation for the steps necessary to build the python virtual environment):
 
 
-~/klippy-env/bin/python ./klippy/klippy.py config/generic-simulavr.cfg -i test.gcode -v
+.venv/bin/python ./klippy/klippy.py config/generic-simulavr.cfg -i test.gcode -v
 Using simulavr with gtkwave
 One useful feature of simulavr is its ability to create signal wave generation files with the exact timing of events. To do this, follow the directions above, but run avrsim.py with a command-line like the following:
 

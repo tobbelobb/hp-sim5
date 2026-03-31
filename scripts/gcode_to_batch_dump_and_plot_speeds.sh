@@ -8,24 +8,28 @@ fi
 
 GCODE_FILE="$1"
 BASENAME="$(basename "$GCODE_FILE" .gcode)"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
-~/klippy-env/bin/python ~/repos/hp-sim5/klipper/klippy/klippy.py \
-  ~/repos/hp-sim5/examples/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg \
+PYTHON="${KLIPPY_PYTHON:-${ROOT_DIR}/.venv/bin/python}"
+
+"$PYTHON" "$ROOT_DIR/klipper/klippy/klippy.py" \
+  "$ROOT_DIR/examples/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg" \
   -i "$GCODE_FILE" \
   -o "${BASENAME}.serial" \
-  -v -d ~/repos/hp-sim5/examples/klipper/linux_mcu/klipper.dict
+  -v -d "$ROOT_DIR/examples/klipper/linux_mcu/klipper.dict"
 
-~/klippy-env/bin/python ~/repos/hp-sim5/klipper/klippy/parsedump.py \
-  ~/repos/hp-sim5/examples/klipper/linux_mcu/klipper.dict \
+"$PYTHON" "$ROOT_DIR/klipper/klippy/parsedump.py" \
+  "$ROOT_DIR/examples/klipper/linux_mcu/klipper.dict" \
   "${BASENAME}.serial" \
-  > ~/repos/hp-sim5/public/examples/mcu_commands/${BASENAME}.txt
+  > "$ROOT_DIR/public/examples/mcu_commands/${BASENAME}.txt"
 
 gio trash "${BASENAME}.serial"
 
-head ~/repos/hp-sim5/public/examples/mcu_commands/${BASENAME}.txt -n 6000 > ~/repos/hp-sim5/public/examples/mcu_commands/${BASENAME}.shorter.txt
+head "$ROOT_DIR/public/examples/mcu_commands/${BASENAME}.txt" -n 6000 > "$ROOT_DIR/public/examples/mcu_commands/${BASENAME}.shorter.txt"
 
-python plot_queue_step_speeds.py \
-  --src ~/repos/hp-sim5/public/examples/mcu_commands/${BASENAME}.shorter.txt \
+"$PYTHON" plot_queue_step_speeds.py \
+  --src "$ROOT_DIR/public/examples/mcu_commands/${BASENAME}.shorter.txt" \
   --out-csv queue_step_speeds_per_step_${BASENAME}.csv \
   --clock-hz 50000000 \
   --plot \
