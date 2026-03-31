@@ -1,6 +1,13 @@
 #!/usr/bin/env node
 import readline from 'node:readline';
 import { createGcodeBridge, parseBridgeArgs } from '../autocal/control/primitives/gcode_bridge.mjs';
+import { waitForRrfSimulator } from '../autocal/control/primitives/encoder_utils.mjs';
+import {
+  DEFAULT_RRF_HTTP_BRIDGE_START_SCRIPT,
+  buildRrfHttpBridgeWsHint,
+  ensureRrfHttpBridgeServer,
+  isRrfServerUnavailableError,
+} from '../autocal/control/primitives/rrf_http_bridge_cli_config.mjs';
 
 function printHelp() {
   console.log(`Usage: node scripts/rrf_http_bridge.mjs [options]
@@ -14,6 +21,7 @@ Options:
   --no-ws                  Disable WebSocket fan-out entirely
   --cmd, -c <GCODE>        Send one G-code line and exit
   --quiet, -q              Only print replies (suppress prompts and extra logs)
+  Auto-start launcher      ${DEFAULT_RRF_HTTP_BRIDGE_START_SCRIPT}
   --help, -h               Show this help`);
 }
 
@@ -35,8 +43,8 @@ const PROMPT_DISCONNECTED = '\x1b[90mdisconnected>\x1b[0m ';
 let promptConnectedState = !bridgeContext.wss;
 let promptEverRendered = false;
 
-let currentGcode = null;
-const bridge = bridgeContext.bridge;
+let managedRrfServer = null;
+let autoStartInFlight = null;
 
 const sendQueue = [];
 let processingQueue = false;
@@ -68,6 +76,36 @@ const promptIfInteractive = () => {
   }
 };
 
+async function ensureRrfServerReady({ forceStart = false } = {}) {
+  if (autoStartInFlight) {
+    return autoStartInFlight;
+  }
+  autoStartInFlight = (async () => {
+    if (!forceStart) {
+      try {
+        await waitForRrfSimulator(args.server, 600);
+        return managedRrfServer;
+      } catch (_err) {
+        // Fall through to autostart.
+      }
+    }
+    if (!managedRrfServer) {
+      managedRrfServer = await ensureRrfHttpBridgeServer({
+        serverUrl: args.server,
+        onInfo: args.quiet ? null : (message) => console.log(message),
+      });
+      return managedRrfServer;
+    }
+    await waitForRrfSimulator(args.server);
+    return managedRrfServer;
+  })();
+  try {
+    return await autoStartInFlight;
+  } finally {
+    autoStartInFlight = null;
+  }
+}
+
 async function processQueue() {
   if (processingQueue) {
     return;
@@ -87,17 +125,24 @@ async function handleGcodeLine(line) {
     promptIfInteractive();
     return;
   }
-  currentGcode = trimmed;
   if (!args.quiet) {
     console.log(`> ${trimmed}`);
   }
   try {
-    const result = await bridgeContext.sendGcodeLine(trimmed);
+    let result;
+    try {
+      result = await bridgeContext.sendGcodeLine(trimmed);
+    } catch (err) {
+      if (!isRrfServerUnavailableError(err)) {
+        throw err;
+      }
+      await ensureRrfServerReady({ forceStart: true });
+      result = await bridgeContext.sendGcodeLine(trimmed);
+    }
     console.log(result.reply.trim());
   } catch (err) {
     console.error(`Error sending "${trimmed}": ${err.message}`);
   } finally {
-    currentGcode = null;
     promptIfInteractive();
   }
 }
@@ -109,54 +154,21 @@ function enqueueLine(line) {
   });
 }
 
-function sendEncoderRequest(axes, timeoutMs = ENCODER_REQUEST_TIMEOUT_MS) {
-  const readyClients = getReadyWsClients();
-  if (readyClients.length === 0) {
-    throw new Error('Message not received');
-  }
-  const requestId = encoderRequestSeq++;
-  const payload = { type: 'encoder_request', requestId, axes };
-  const data = JSON.stringify(payload);
-  readyClients.forEach((client) => {
-    try {
-      client.send(data);
-    } catch (_err) {
-      // Ignore send errors; timeout will handle missing responses
-    }
-  });
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      pendingEncoderRequests.delete(requestId);
-      reject(new Error('Message not received'));
-    }, Math.max(1, timeoutMs));
-    pendingEncoderRequests.set(requestId, {
-      resolve: (value) => {
-        clearTimeout(timeout);
-        pendingEncoderRequests.delete(requestId);
-        resolve(value);
-      },
-      reject: (err) => {
-        clearTimeout(timeout);
-        pendingEncoderRequests.delete(requestId);
-        reject(err);
-      },
-    });
-  });
-}
-
 async function runOneShot() {
+  await ensureRrfServerReady();
   await bridgeContext.waitForHpSimConnection();
   await handleGcodeLine(args.command);
   bridgeContext.close();
   process.exit(0);
 }
 
-if (args.command) {
-  runOneShot().catch((err) => {
-    console.error('Failed to send command:', err);
-    process.exit(1);
-  });
-} else {
+async function main() {
+  if (args.command) {
+    await runOneShot();
+    return;
+  }
+
+  await ensureRrfServerReady();
   rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -178,6 +190,11 @@ if (args.command) {
 
   if (bridgeContext.wss && !args.quiet) {
     console.log(`WebSocket feed ready on ws://localhost:${args.wsPort}`);
-    console.log(`Open hp-sim with ?gcode_ws=ws://localhost:${args.wsPort} to follow along.`);
+    console.log(`Open hp-sim with ${buildRrfHttpBridgeWsHint(args.wsPort)} to follow along.`);
   }
 }
+
+main().catch((err) => {
+  console.error('Failed to start rrf_http_bridge:', err);
+  process.exit(1);
+});
