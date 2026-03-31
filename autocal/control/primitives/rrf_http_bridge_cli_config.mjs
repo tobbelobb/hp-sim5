@@ -72,3 +72,20 @@ export async function ensureRrfHttpBridgeServer({
   }
   return child;
 }
+
+export function stopRrfHttpBridgeServer(child) {
+  if (!child || typeof child.pid !== 'number' || child.pid <= 0) {
+    return false;
+  }
+  try {
+    process.kill(-child.pid, 'SIGTERM');
+    return true;
+  } catch (_err) {
+    try {
+      child.kill('SIGTERM');
+      return true;
+    } catch (_innerErr) {
+      return false;
+    }
+  }
+}

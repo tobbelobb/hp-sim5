@@ -7,6 +7,7 @@ import {
   buildRrfHttpBridgeWsHint,
   ensureRrfHttpBridgeServer,
   isRrfServerUnavailableError,
+  stopRrfHttpBridgeServer,
 } from '../autocal/control/primitives/rrf_http_bridge_cli_config.mjs';
 
 function printHelp() {
@@ -45,6 +46,7 @@ let promptEverRendered = false;
 
 let managedRrfServer = null;
 let autoStartInFlight = null;
+let shuttingDown = false;
 
 const sendQueue = [];
 let processingQueue = false;
@@ -158,8 +160,24 @@ async function runOneShot() {
   await ensureRrfServerReady();
   await bridgeContext.waitForHpSimConnection();
   await handleGcodeLine(args.command);
-  bridgeContext.close();
-  process.exit(0);
+  shutdown(0);
+}
+
+function shutdown(exitCode = 0) {
+  if (shuttingDown) {
+    return;
+  }
+  shuttingDown = true;
+  try {
+    bridgeContext.close();
+  } catch (_err) {
+    // Ignore shutdown errors.
+  }
+  if (managedRrfServer) {
+    stopRrfHttpBridgeServer(managedRrfServer);
+    managedRrfServer = null;
+  }
+  process.exit(exitCode);
 }
 
 async function main() {
@@ -184,8 +202,7 @@ async function main() {
   });
 
   rl.on('close', () => {
-    bridgeContext.close();
-    process.exit(0);
+    shutdown(0);
   });
 
   if (bridgeContext.wss && !args.quiet) {
@@ -196,5 +213,9 @@ async function main() {
 
 main().catch((err) => {
   console.error('Failed to start rrf_http_bridge:', err);
-  process.exit(1);
+  shutdown(1);
 });
+
+process.on('SIGINT', () => shutdown(130));
+process.on('SIGTERM', () => shutdown(143));
+process.on('SIGHUP', () => shutdown(129));
