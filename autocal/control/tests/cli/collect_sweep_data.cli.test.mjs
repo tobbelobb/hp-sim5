@@ -16,7 +16,7 @@ import {
   selectRepresentativeConfigs,
   validateSweepConfig,
 } from '../../behaviors/sweep_data_collection.mjs';
-import { parseBridgeArgs } from '../../primitives/gcode_bridge.mjs';
+import { parseBridgeArgs } from '../../cli/collect_sweep_data.mjs';
 
 describe('collect_sweep_data CLI helpers', () => {
   test('normalizeMachineType maps hangprinter aliases to hangprinter_4', () => {

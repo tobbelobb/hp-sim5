@@ -11,7 +11,7 @@ import {
 } from '../autocal/control/primitives/rrf_http_bridge_cli_config.mjs';
 
 function printHelp() {
-  console.log(`Usage: node scripts/rrf_http_bridge.mjs [options]
+  console.log(`Usage: node scripts/rrf_command_prompt.mjs [options]
 
 Send single-line G-code to an rrf_simulator HTTP server and stream the resulting
 motion commands over WebSocket for hp-sim to visualize.
@@ -249,7 +249,7 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('Failed to start rrf_http_bridge:', err);
+  console.error('Failed to start rrf_command_prompt:', err);
   shutdown(1);
 });
 

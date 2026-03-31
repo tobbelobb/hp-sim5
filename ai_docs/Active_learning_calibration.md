@@ -172,7 +172,7 @@ Codex taking a stab at this
 • What’s Implemented
 
   - Active-learning sweep planner (D-optimal Fisher information on predicted ellipse geometry) in autocal/active_learning.py:1, with CLI/reporting in autocal/active_calibrate.py:1.
-  - Data collector upgrades in scripts/collect_sweep_data.mjs:1 (+ arg parsing in scripts/gcode_bridge.mjs:253):
+  - Data collector upgrades in autocal/control/cli/collect_sweep_data.mjs:1 (+ arg parsing now in autocal/control/cli/collect_sweep_data.mjs:72):
       - --fixed-targets <spec> to collect specific fixed-anchor target(s) (overrides --superSweepRange/--superSweepPoints).
       - --return-to-origin to end the run back at encoder origin so multiple runs stay mergeable.
 

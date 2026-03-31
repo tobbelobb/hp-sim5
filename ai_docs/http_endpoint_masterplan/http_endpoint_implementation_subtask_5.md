@@ -9,7 +9,7 @@ Create a JavaScript class that bridges the HTTP endpoint to the existing `Remote
 
 ## Files to Create/Modify
 
-- `examples/js/slideprinter/rrfHttpBridge.js` - New file
+- `bridges/rrf/http/rrfHttpBridge.js` - New file
 - `examples/js/slideprinter/slideprinter_common.js` - Add torque mode handling
 - `examples/js/slideprinter/rrfCommander.js` - Optional: share parsing logic
 
@@ -18,7 +18,7 @@ Create a JavaScript class that bridges the HTTP endpoint to the existing `Remote
 ### 1. RrfHttpBridge Class
 
 ```javascript
-// examples/js/slideprinter/rrfHttpBridge.js
+// bridges/rrf/http/rrfHttpBridge.js
 
 /**
  * Bridge between HTTP G-code endpoint and RemoteSpoolSystem.
@@ -320,7 +320,7 @@ _processCommand(world, command, simTime) {
 ```javascript
 // examples/js/slideprinter/demo_http_bridge.js
 
-import { RrfHttpBridge } from './rrfHttpBridge.js';
+import { RrfHttpBridge } from '../../../bridges/rrf/http/rrfHttpBridge.js';
 import { RemoteSpoolSystem } from './slideprinter_common.js';
 
 async function main() {
@@ -366,7 +366,7 @@ main().catch(console.error);
 ```javascript
 // examples/js/slideprinter/tests/rrfHttpBridge.test.js
 
-import { RrfHttpBridge } from '../rrfHttpBridge.js';
+import { RrfHttpBridge } from '../../../../bridges/rrf/http/rrfHttpBridge.js';
 
 describe('RrfHttpBridge', () => {
     describe('_parseResponse', () => {
@@ -470,7 +470,7 @@ exit $TEST_RESULT
 ```javascript
 // examples/js/slideprinter/tests/integration_test.mjs
 
-import { RrfHttpBridge } from '../rrfHttpBridge.js';
+import { RrfHttpBridge } from '../../../../bridges/rrf/http/rrfHttpBridge.js';
 
 const bridge = new RrfHttpBridge({ baseUrl: 'http://localhost:8080' });
 
@@ -530,7 +530,7 @@ The code uses `fetch()` which is available in:
 For broader compatibility:
 
 ```javascript
-// At top of rrfHttpBridge.js
+// At top of bridges/rrf/http/rrfHttpBridge.js
 let fetchImpl;
 if (typeof fetch === 'undefined') {
     fetchImpl = require('node-fetch');

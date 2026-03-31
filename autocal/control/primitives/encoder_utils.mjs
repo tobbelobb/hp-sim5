@@ -1,7 +1,8 @@
 import { spawn } from 'node:child_process';
 import { formatCallSite, getDebugState, parseCallSite } from './debug_trace.mjs';
 import { resolveRrfSimulatorConfig } from './machine_type.mjs';
-import { STEP_CLOCK_HZ } from '../../../examples/js/slideprinter/rrfMotionUtils.js';
+import { STEP_CLOCK_HZ } from '../../../bridges/rrf/rrfMotionUtils.js';
+export { waitForRrfSimulator } from '../../../bridges/rrf/http/rrf_http_bridge_cli_config.mjs';
 
 export const DEFAULT_FEED = 2000;
 export const DEFAULT_RRF_PORT = 8081;
@@ -275,33 +276,6 @@ export async function startRrfSimulator({
     });
   }
   return child;
-}
-
-export async function waitForRrfSimulator(baseUrl, timeoutMs = 7000) {
-  const endpoint = `${baseUrl.replace(/\/$/, '')}/machine/code`;
-  const deadline = Date.now() + Math.max(1, timeoutMs);
-  while (Date.now() < deadline) {
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 1500);
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: 'M115',
-        signal: controller.signal,
-      });
-      clearTimeout(timer);
-      if (res.ok) {
-        await res.text();
-        return;
-      }
-    } catch (_err) {
-      /* try again */
-    }
-    // eslint-disable-next-line no-await-in-loop
-    await sleep(250);
-  }
-  throw new Error(`rrf_simulator at ${baseUrl} did not become ready in time`);
 }
 
 export function stopProcess(proc) {

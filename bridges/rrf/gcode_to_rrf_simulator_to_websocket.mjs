@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { WebSocketServer } from 'ws';
-import { RrfHttpBridge } from '../http/rrfHttpBridge.js';
+import { RrfHttpBridge } from './http/rrfHttpBridge.js';
 
 const MAX_PENDING_WS_PAYLOADS = 5000;
 const DEFAULT_ENCODER_TIMEOUT_MS = 2000;

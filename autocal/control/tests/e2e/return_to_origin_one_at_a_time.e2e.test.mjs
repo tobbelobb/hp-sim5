@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { parseBridgeArgs, createGcodeBridge } from '../../primitives/gcode_bridge.mjs';
+import { parseBridgeArgs } from '../../cli/collect_sweep_data.mjs';
+import { createGcodeBridge } from '../../../../bridges/rrf/gcode_to_rrf_simulator_to_websocket.mjs';
 import {
   DEFAULT_RRF_PORT,
   computeMmPerDegree,

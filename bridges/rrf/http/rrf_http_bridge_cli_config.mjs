@@ -1,6 +1,5 @@
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { waitForRrfSimulator } from './encoder_utils.mjs';
 
 export const DEFAULT_RRF_HTTP_BRIDGE_START_SCRIPT =
   process.env.RRF_HTTP_BRIDGE_START_SCRIPT || './scripts/rrf_server_hp3_w_buildup.sh';
@@ -32,6 +31,32 @@ export function buildRrfHttpBridgeLaunchSpec({
 
 export function buildRrfHttpBridgeWsHint(wsPort, { host = 'localhost' } = {}) {
   return `?${RRF_HTTP_BRIDGE_WS_QUERY_PARAM}=ws://${host}:${wsPort}`;
+}
+
+export async function waitForRrfSimulator(baseUrl, timeoutMs = 7000) {
+  const endpoint = `${baseUrl.replace(/\/$/, '')}/machine/code`;
+  const deadline = Date.now() + Math.max(1, timeoutMs);
+  while (Date.now() < deadline) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 1500);
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: 'M115',
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      if (res.ok) {
+        await res.text();
+        return;
+      }
+    } catch (_err) {
+      /* try again */
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  throw new Error(`rrf_simulator at ${baseUrl} did not become ready in time`);
 }
 
 export function isRrfServerUnavailableError(error) {

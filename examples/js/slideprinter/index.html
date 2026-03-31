@@ -276,7 +276,7 @@ canvas {
     import { RemoteSpoolSystem } from './slideprinter_common.js';
     import { connectKlipperRaw } from './klipperHandler.js';
     import { detectFileFormat, FileFormat, isMcuFormat } from './fileFormatUtils.js';
-    import { RrfHttpBridge } from './rrfHttpBridge.js';
+    import { RrfHttpBridge } from '../../../bridges/rrf/http/rrfHttpBridge.js';
 
     const searchParams = new URLSearchParams(window.location.search);
     const logMoveParamKeys = ['--log-move', 'log-move', 'logMove'];

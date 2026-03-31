@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import path from 'node:path';
 import readline from 'node:readline';
-import { pathToFileURL } from 'node:url';
 import { createGcodeBridge } from '../../../bridges/rrf/gcode_to_rrf_simulator_to_websocket.mjs';
 import { attachDebugState } from '../primitives/debug_trace.mjs';
 import {
@@ -456,7 +455,7 @@ export {
   angleToLength,
 } from '../primitives/uncalibrated_actions.mjs';
 
-const isMain = import.meta.url === pathToFileURL(process.argv[1] || '').href;
+const isMain = path.basename(process.argv[1] || '') === 'collect_sweep_data.mjs';
 if (isMain) {
   main().catch((err) => {
     console.error(err);

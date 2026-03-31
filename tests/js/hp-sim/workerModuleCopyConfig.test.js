@@ -7,15 +7,15 @@ function readWorkspaceFile(filePath) {
 }
 
 describe('worker helper module copy config', () => {
-  test('main vite build copies rrfMotionUtils.js for worker imports', () => {
+  test('main vite build copies the bridge rrfMotionUtils.js helper for worker imports', () => {
     const source = readWorkspaceFile('vite.config.js');
 
-    expect(source).toContain("'rrfMotionUtils.js'");
+    expect(source).toContain("resolve(__dirname, 'bridges/rrf')");
   });
 
-  test('hangprinter-org build copies rrfMotionUtils.js for worker imports', () => {
+  test('hangprinter-org build copies the bridge rrfMotionUtils.js helper for worker imports', () => {
     const source = readWorkspaceFile('vite.hangprinter-org.config.js');
 
-    expect(source).toContain("'rrfMotionUtils.js'");
+    expect(source).toContain("resolve(__dirname, 'bridges/rrf')");
   });
 });

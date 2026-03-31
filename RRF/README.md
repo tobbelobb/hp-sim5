@@ -87,16 +87,16 @@ curl http://localhost:8080/machine/code -d "M569.4 P40.0 T0" -H "Content-Type: t
 curl http://localhost:8080/machine/code -d "G1 X10 F1000" -H "Content-Type: text/plain"
 ```
 
-or just open a `rrf_http_bridge` like this:
+or just open the command prompt like this:
 
 ```
-node scripts/rrf_http_bridge.mjs
+node scripts/rrf_command_prompt.mjs
 ```
 
 ... Wait for it to connect with the RRF Http Bridge and type the Gcodes in directly, like this:
 
 ```
-$ node scripts/rrf_http_bridge.mjs
+$ node scripts/rrf_command_prompt.mjs
 disconnected> WebSocket feed ready on ws://localhost:8790
 Open hp-sim with ?gcode_ws=ws://localhost:8790 to follow along.
 gcode> M569.3 P40.0:41.0:42.0
@@ -108,12 +108,12 @@ gcode> G1 H2 X10
 
 #### JavaScript Integration
 
-See `examples/js/slideprinter/rrfHttpBridge.js` for programmatic access.
+See `bridges/rrf/http/rrfHttpBridge.js` for programmatic access.
 
 #### hp-sim CLI bridge (no UI changes)
 
 - Start the simulator in server mode (as above), then run
-  `node scripts/rrf_http_bridge.mjs --server http://localhost:8080 --ws-port 8790`
+  `node scripts/rrf_command_prompt.mjs --server http://localhost:8080 --ws-port 8790`
 - Type G-code lines into the CLI (or pass `--cmd "G1 X10"` for one shots); replies are printed immediately.
 - Open hp-sim locally with `?gcode_ws=ws://localhost:8790` appended to the URL so the visualization consumes the streamed motion without new UI controls.
 
