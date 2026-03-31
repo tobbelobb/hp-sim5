@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import atexit
 import sys
 from pathlib import Path
 
@@ -221,25 +222,38 @@ def full_auto_loop(
     reset_pending = bool(sim and hp_sim_reset_eff)
     rrf_server, server_explicit, port = _resolve_rrf_target(collector_args)
     sim_process: Optional[subprocess.Popen] = None
+    cleanup_registered = False
     sim_config = _resolve_sim_config(
         machine_type=machine_type,
         find_radii_mode=find_radii_mode,
         find_buildup_mode=find_buildup_mode,
     )
 
-    if sim and not no_collect and not server_explicit and not user_no_spawn:
-        target_port = port or DEFAULT_RRF_PORT
-        _log_line(f"; starting rrf_simulator at http://localhost:{target_port} (config: {sim_config})")
-        sim_process = _start_rrf_simulator(target_port, sim_config=sim_config)
-        _wait_for_rrf_server(f"http://localhost:{target_port}")
-
-    def _finalize(code: int) -> int:
+    def _cleanup() -> None:
         if sim_process and not keep_sim_alive:
             _stop_process(sim_process)
         try:
             log_handle.close()
         except Exception:
             pass
+
+    if sim and not no_collect and not server_explicit and not user_no_spawn:
+        atexit.register(_cleanup)
+        cleanup_registered = True
+        target_port = port or DEFAULT_RRF_PORT
+        _log_line(f"; starting rrf_simulator at http://localhost:{target_port} (config: {sim_config})")
+        sim_process = _start_rrf_simulator(target_port, sim_config=sim_config)
+        _wait_for_rrf_server(f"http://localhost:{target_port}")
+
+    def _finalize(code: int) -> int:
+        nonlocal cleanup_registered
+        if cleanup_registered:
+            try:
+                atexit.unregister(_cleanup)
+            except Exception:
+                pass
+            cleanup_registered = False
+        _cleanup()
         return code
 
     if not dataset_path.exists():

@@ -1,6 +1,7 @@
 import shlex
 
 import numpy as np
+import pytest
 
 import autocal.autocal as ac
 from autocal.sweep_types import DataPoint, MachineConfig, MachineType, Sweep
@@ -426,6 +427,101 @@ def test_full_auto_loop_logs_invoked_command_near_top(tmp_path, monkeypatch):
     log_text = (tmp_path / "full_dataset.full_auto.log").read_text(encoding="utf-8")
     first_two_lines = log_text.splitlines()[:2]
     assert f"; command: {shlex.join(fake_argv)}" in first_two_lines
+
+
+def test_full_auto_loop_registers_cleanup_for_keyboard_interrupt_before_main_loop(
+    tmp_path,
+    monkeypatch,
+):
+    dataset = tmp_path / "missing_dataset.json"
+
+    fake_proc = object()
+    registered_callbacks = []
+    stopped = []
+
+    def fake_register(callback, *args, **kwargs):
+        registered_callbacks.append(callback)
+        return callback
+
+    def fake_start(*_args, **_kwargs):
+        return fake_proc
+
+    def fake_wait(*_args, **_kwargs):
+        return None
+
+    def interrupting_run(*_args, **_kwargs):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(ac.atexit, "register", fake_register)
+    monkeypatch.setattr(ac, "_start_rrf_simulator", fake_start)
+    monkeypatch.setattr(ac, "_wait_for_rrf_server", fake_wait)
+    monkeypatch.setattr(ac.subprocess, "run", interrupting_run)
+    monkeypatch.setattr(ac, "_stop_process", lambda proc: stopped.append(proc))
+
+    with pytest.raises(KeyboardInterrupt):
+        ac.full_auto_loop(
+            work_dataset=dataset,
+            machine_type="slideprinter",
+            max_steps=8,
+            stop_cost=None,
+            stop_std_mm=None,
+            solve_restarts=1,
+            solve_iterations=1,
+            solve_optimizer="L-BFGS-B",
+            residual_threshold=1.0,
+            spring_k_multiplier=1.0,
+            use_flex=False,
+            pointwise_residual_mode="sampson",
+            pointwise_filtering=False,
+            pointwise_global_mad=False,
+            sweep_wise_filtering=False,
+            sweep_metric="mad",
+            use_noise_mean=False,
+            sigma_source="auto",
+            robust_debug=False,
+            residuals_csv=None,
+            generate_report=False,
+            find_radii="off",
+            find_buildup_factor="off",
+            base_radii=None,
+            buildup_factor=None,
+            r0_bounds=None,
+            b_bounds=None,
+            r0_prior_sigma_mm=None,
+            b_prior_sigma=None,
+            spool_outer_iters=1,
+            spool_inner_iters=1,
+            theta0_mode="zero",
+            line_width=0.4,
+            sigma_floor_mm=None,
+            sigma_used_mm=None,
+            candidate_deltas=None,
+            candidate_count=16,
+            delta_min=None,
+            delta_max=None,
+            fd_eps_mm=1.0,
+            regularization=0.0,
+            exclude_existing=True,
+            existing_tol_mm=1.0,
+            min_fixed_delta_spacing_mm=0.0,
+            top_k=5,
+            write_cfg=None,
+            collector_args=[],
+            sim=True,
+            keep_sim_alive=False,
+            hp_sim_reset=False,
+            sweep_points=None,
+            output_with_explanations=False,
+            full_auto_runs=None,
+            full_auto_log=None,
+            patience=20,
+            verbose=False,
+            no_collect=False,
+        )
+
+    assert len(registered_callbacks) == 1
+    registered_callbacks[0]()
+    assert stopped == [fake_proc]
 
 
 def test_write_bootstrap_sweep_config_uses_machine_specific_constraints(tmp_path):
