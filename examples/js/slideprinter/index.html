@@ -275,7 +275,7 @@ canvas {
     import { setupScene } from './setupScene.js';
     import { RemoteSpoolSystem } from './slideprinter_common.js';
     import { connectKlipperRaw } from '../../../integrations/klipper/klipperSimulatorBridge.js';
-    import { detectFileFormat, FileFormat, isMcuFormat } from '../../../integrations/shared/fileFormatUtils.js';
+    import { detectFileFormat, FileFormat, isKlipperFormat } from '../../../integrations/shared/fileFormatUtils.js';
     import { RrfHttpBridge } from '../../../integrations/rrf/rrfHttpBridge.js';
 
     const searchParams = new URLSearchParams(window.location.search);
@@ -763,7 +763,7 @@ canvas {
             moveCommanderWorker.postMessage(message);
             return;
         }
-        if (isMcuFormat(format)) {
+        if (isKlipperFormat(format)) {
             const worker = ensureKlipperMcuCommandPlayerWorker();
             if (!worker) {
                 console.warn('Unable to start KlipperMcuCommandPlayer worker.');

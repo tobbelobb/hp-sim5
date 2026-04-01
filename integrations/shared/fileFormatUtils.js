@@ -35,7 +35,7 @@ export function detectFileFormat(name) {
   return null;
 }
 
-export function isMcuFormat(format) {
+export function isKlipperFormat(format) {
   return format === FileFormat.MCU_TEXT || format === FileFormat.MCU_SERIAL;
 }
 

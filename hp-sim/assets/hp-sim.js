@@ -3,7 +3,7 @@ import { World, OrientationComponent } from '../../src/js/cable_joints/ecs.js';
 import { runGame } from '../../examples/js/slideprinter/runner.js';
 import { setupScene } from '../../examples/js/slideprinter/setupScene.js';
 import { RemoteSpoolSystem, InputSystem, ExtruderComponent } from '../../examples/js/slideprinter/slideprinter_common.js';
-import { detectFileFormat, FileFormat, isMcuFormat, isRrfFormat } from '../../integrations/shared/fileFormatUtils.js';
+import { detectFileFormat, FileFormat, isKlipperFormat, isRrfFormat } from '../../integrations/shared/fileFormatUtils.js';
 import { _updateAttachmentPoints } from '../../src/js/cable_joints/cable_joints_core.js';
 import { QualityMonitor } from './quality-monitor.js';
 import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
@@ -3944,7 +3944,7 @@ function initHpSim() {
     let worker = null;
     if (format === FileFormat.GCODE) {
       worker = ensureMoveWorker();
-    } else if (isMcuFormat(format)) {
+    } else if (isKlipperFormat(format)) {
       worker = ensureKlipperMcuCommandPlayerWorker();
     } else if (isRrfFormat(format)) {
       worker = ensureRrfWorker();
@@ -3987,7 +3987,7 @@ function initHpSim() {
     let worker = null;
     if (format === FileFormat.GCODE) {
       worker = ensureMoveWorker();
-    } else if (isMcuFormat(format)) {
+    } else if (isKlipperFormat(format)) {
       worker = ensureKlipperMcuCommandPlayerWorker();
     } else if (isRrfFormat(format)) {
       worker = ensureRrfWorker();

@@ -1,4 +1,4 @@
-import { detectFileFormat, FileFormat, isMcuFormat } from '../shared/fileFormatUtils.js';
+import { detectFileFormat, FileFormat, isKlipperFormat } from '../shared/fileFormatUtils.js';
 import { iterateSerialLines, createKlipperSerialDecoder } from './klipperSerialDecoder.js';
 import { distributeEvenly } from '../shared/motionUtils.js';
 
@@ -491,7 +491,7 @@ self.addEventListener('message', async (e) => {
                 break;
             }
             const format = detectFileFormat(file.name);
-            if (!isMcuFormat(format)) {
+            if (!isKlipperFormat(format)) {
                 postMessage({ type: 'error', message: 'Unsupported file type for KlipperMcuCommandPlayer' });
                 break;
             }
