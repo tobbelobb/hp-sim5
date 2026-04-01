@@ -50,7 +50,7 @@ function initFrontpageSlideprinter() {
 
   const world = new World();
   const machines = [];
-  let klipperCommanderWorker = null;
+  let klipperMcuCommandPlayerWorker = null;
   let moveCommanderWorker = null;
   let simDtSec = null;
   let stageReady = false;
@@ -67,7 +67,7 @@ function initFrontpageSlideprinter() {
   let currentTimeScale = 1.0;
   let speedStatusArmed = false;
 
-  const klipperCommanderModuleUrl = new URL('../../integrations/klipper/klipperMcuCommandPlayer.js', import.meta.url);
+  const klipperMcuCommandPlayerModuleUrl = new URL('../../integrations/klipper/klipperMcuCommandPlayer.js', import.meta.url);
   const moveCommanderModuleUrl = new URL('../../examples/js/slideprinter/moveCommander.js', import.meta.url);
   const usdaUrl = new URL('../../examples/usd_scenes/slideprinter.usda', import.meta.url);
 
@@ -432,8 +432,8 @@ function initFrontpageSlideprinter() {
 
   function applyTimeScaleToWorkers(scale) {
     const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1.0;
-    if (klipperCommanderWorker) {
-      klipperCommanderWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
+    if (klipperMcuCommandPlayerWorker) {
+      klipperMcuCommandPlayerWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
     }
     if (moveCommanderWorker) {
       moveCommanderWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
@@ -714,13 +714,13 @@ function initFrontpageSlideprinter() {
       }
       moveCommanderWorker = null;
     }
-    if (klipperCommanderWorker) {
+    if (klipperMcuCommandPlayerWorker) {
       try {
-        klipperCommanderWorker.terminate();
+        klipperMcuCommandPlayerWorker.terminate();
       } catch (err) {
         console.warn('Slideprinter demo: unable to terminate klipper worker cleanly.', err);
       }
-      klipperCommanderWorker = null;
+      klipperMcuCommandPlayerWorker = null;
     }
   }
 
@@ -742,19 +742,19 @@ function initFrontpageSlideprinter() {
     currentPresetKey = DEFAULT_PRESET_KEY;
   }
 
-  function ensureKlipperWorker() {
-    if (klipperCommanderWorker) {
-      return klipperCommanderWorker;
+  function ensureKlipperMcuCommandPlayerWorker() {
+    if (klipperMcuCommandPlayerWorker) {
+      return klipperMcuCommandPlayerWorker;
     }
-    klipperCommanderWorker = new Worker(klipperCommanderModuleUrl, { type: 'module' });
-    klipperCommanderWorker.onmessage = (event) => {
+    klipperMcuCommandPlayerWorker = new Worker(klipperMcuCommandPlayerModuleUrl, { type: 'module' });
+    klipperMcuCommandPlayerWorker.onmessage = (event) => {
       if (!event?.data) {
         return;
       }
       if (event.data.type === 'done') {
         console.log('Slideprinter demo: MCU log playback finished.');
         const remoteSystem = getRemoteSystem();
-        if (remoteSystem && remoteSystem.worker === klipperCommanderWorker) {
+        if (remoteSystem && remoteSystem.worker === klipperMcuCommandPlayerWorker) {
           setPrintActive(false);
         }
         return;
@@ -765,16 +765,16 @@ function initFrontpageSlideprinter() {
       }
       if (event.data.action === 'gcode') {
         const remoteSystem = getRemoteSystem();
-        if (remoteSystem && remoteSystem.worker === klipperCommanderWorker) {
+        if (remoteSystem && remoteSystem.worker === klipperMcuCommandPlayerWorker) {
           remoteSystem.addCommand(event.data.command);
         }
       }
     };
     if (simDtSec != null) {
-      klipperCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
+      klipperMcuCommandPlayerWorker.postMessage({ type: 'set_dt', dt: simDtSec });
     }
-    klipperCommanderWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
-    return klipperCommanderWorker;
+    klipperMcuCommandPlayerWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
+    return klipperMcuCommandPlayerWorker;
   }
 
   function ensureMoveWorker() {
@@ -816,8 +816,8 @@ function initFrontpageSlideprinter() {
     if (moveCommanderWorker && moveCommanderWorker !== activeWorker) {
       moveCommanderWorker.postMessage({ type: 'pause' });
     }
-    if (klipperCommanderWorker && klipperCommanderWorker !== activeWorker) {
-      klipperCommanderWorker.postMessage({ type: 'pause' });
+    if (klipperMcuCommandPlayerWorker && klipperMcuCommandPlayerWorker !== activeWorker) {
+      klipperMcuCommandPlayerWorker.postMessage({ type: 'pause' });
     }
   }
 
@@ -868,7 +868,7 @@ function initFrontpageSlideprinter() {
     if (format === FileFormat.GCODE) {
       worker = ensureMoveWorker();
     } else if (isMcuFormat(format)) {
-      worker = ensureKlipperWorker();
+      worker = ensureKlipperMcuCommandPlayerWorker();
     } else {
       console.warn('Slideprinter demo: unsupported preset format', format);
       return;
@@ -899,7 +899,7 @@ function initFrontpageSlideprinter() {
     if (format === FileFormat.GCODE) {
       worker = ensureMoveWorker();
     } else if (isMcuFormat(format)) {
-      worker = ensureKlipperWorker();
+      worker = ensureKlipperMcuCommandPlayerWorker();
     } else {
       console.warn('Slideprinter demo: unsupported upload format', file?.name || 'unknown');
       return;
@@ -1022,8 +1022,8 @@ function initFrontpageSlideprinter() {
       const timeCodesPerSecond = extractTimeCodesPerSecond(stage);
       if (timeCodesPerSecond) {
         simDtSec = 1.0 / timeCodesPerSecond;
-        if (klipperCommanderWorker) {
-          klipperCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
+        if (klipperMcuCommandPlayerWorker) {
+          klipperMcuCommandPlayerWorker.postMessage({ type: 'set_dt', dt: simDtSec });
         }
         if (moveCommanderWorker) {
           moveCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });

@@ -1,4 +1,4 @@
-let KlipperCommander;
+let KlipperMcuCommandPlayer;
 let RemoteSpoolSystem;
 let SpoolTagComponent;
 let SpoolStateComponent;
@@ -94,7 +94,7 @@ class FakeWorld {
 }
 
 async function importModules() {
-  if (KlipperCommander) {
+  if (KlipperMcuCommandPlayer) {
     return;
   }
 
@@ -111,7 +111,7 @@ async function importModules() {
     globalThis.TextDecoderStream = class {};
   }
 
-  ({ KlipperCommander } = await import('../../../integrations/klipper/klipperMcuCommandPlayer.js'));
+  ({ KlipperMcuCommandPlayer } = await import('../../../integrations/klipper/klipperMcuCommandPlayer.js'));
   ({
     RemoteSpoolSystem,
     SpoolTagComponent,
@@ -137,7 +137,7 @@ async function withImmediateTimeout(fn) {
 async function collectMoveSequence({ speedScale = 1, asapMode = false, lines = null } = {}) {
   await importModules();
 
-  const commander = new KlipperCommander();
+  const commander = new KlipperMcuCommandPlayer();
   const emittedMoves = [];
   const originalPostMessage = globalThis.postMessage;
   globalThis.postMessage = () => {};
@@ -180,12 +180,12 @@ async function collectMoveSequence({ speedScale = 1, asapMode = false, lines = n
   return emittedMoves;
 }
 
-describe('KlipperCommander and RemoteSpoolSystem synchronisation', () => {
+describe('KlipperMcuCommandPlayer and RemoteSpoolSystem synchronisation', () => {
   beforeAll(async () => {
     await importModules();
   });
 
-  test('KlipperCommander emits identical Move sequences across time scaling and ASAP modes', async () => {
+  test('KlipperMcuCommandPlayer emits identical Move sequences across time scaling and ASAP modes', async () => {
     const baseline = await collectMoveSequence({ speedScale: 1, asapMode: false });
     const doubleSpeed = await collectMoveSequence({ speedScale: 2, asapMode: false });
     const halfSpeed = await collectMoveSequence({ speedScale: 0.5, asapMode: false });
@@ -196,7 +196,7 @@ describe('KlipperCommander and RemoteSpoolSystem synchronisation', () => {
     expect(asapMode).toEqual(baseline);
   });
 
-  test('KlipperCommander spreads queue_step timing across the 500 Hz bucket window', async () => {
+  test('KlipperMcuCommandPlayer spreads queue_step timing across the 500 Hz bucket window', async () => {
     const moves = await collectMoveSequence({
       speedScale: 1,
       asapMode: true,
@@ -212,7 +212,7 @@ describe('KlipperCommander and RemoteSpoolSystem synchronisation', () => {
     expect(moves[1].A / STEP_ANGLE_RAD).toBeCloseTo(2, 6);
   });
 
-  test('KlipperCommander keeps extrusion anchored to the first real E step', async () => {
+  test('KlipperMcuCommandPlayer keeps extrusion anchored to the first real E step', async () => {
     const moves = await collectMoveSequence({
       speedScale: 1,
       asapMode: true,

@@ -318,7 +318,7 @@ A full test and its result depends on:
  - The gcode
  - The .usda file that defines the machine
  - The .cfg/config.g file that was sent into klipper
-- Any bugs in the pacer or KlipperCommander, if any
+- Any bugs in the pacer or KlipperMcuCommandPlayer, if any
  - Any manual steps we have squeezed in (which we shouldn't)
 
 A test batch is a collection of gcode files and usda files, maybe just bundled up in a common directory.

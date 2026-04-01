@@ -10,7 +10,7 @@ describe('hp-sim worker error handling', () => {
   test('registers onerror handlers for all print workers', () => {
     const source = readHpSimSource();
 
-    expect(source).toContain('klipperCommanderWorker.onerror = (event) => {');
+    expect(source).toContain('klipperMcuCommandPlayerWorker.onerror = (event) => {');
     expect(source).toContain('rrfCommanderWorker.onerror = (event) => {');
     expect(source).toContain('moveCommanderWorker.onerror = (event) => {');
   });

@@ -53,7 +53,7 @@ function parseKvPairs(text) {
     return out;
 }
 
-export class KlipperCommander {
+export class KlipperMcuCommandPlayer {
     constructor() {
         this.dt = 1 / 500; // Default to 500 Hz pacing
         this.isPaused = false;
@@ -474,13 +474,13 @@ export class KlipperCommander {
             await this._flushReadyBuckets(true);
             postMessage({ type: 'done' });
         } catch (e) {
-            console.error('KlipperCommander failed:', e);
+            console.error('KlipperMcuCommandPlayer failed:', e);
             postMessage({ type: 'error', message: e?.message || String(e) });
         }
     }
 }
 
-const commander = new KlipperCommander();
+const commander = new KlipperMcuCommandPlayer();
 
 self.addEventListener('message', async (e) => {
     const { type } = e.data || {};
@@ -492,7 +492,7 @@ self.addEventListener('message', async (e) => {
             }
             const format = detectFileFormat(file.name);
             if (!isMcuFormat(format)) {
-                postMessage({ type: 'error', message: 'Unsupported file type for KlipperCommander' });
+                postMessage({ type: 'error', message: 'Unsupported file type for KlipperMcuCommandPlayer' });
                 break;
             }
             commander.run(file.stream(), format);
@@ -511,7 +511,7 @@ self.addEventListener('message', async (e) => {
                 const format = detectFileFormat(filename) || FileFormat.MCU_TEXT;
                 await commander.run(response.body, format);
             } catch (err) {
-                console.error('KlipperCommander fetch failed:', err);
+                console.error('KlipperMcuCommandPlayer fetch failed:', err);
                 postMessage({ type: 'error', message: err.message });
             }
             break;
@@ -553,4 +553,4 @@ self.addEventListener('message', async (e) => {
     }
 });
 
-console.log('worker: KlipperCommander ready');
+console.log('worker: KlipperMcuCommandPlayer ready');

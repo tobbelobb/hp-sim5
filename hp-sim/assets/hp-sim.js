@@ -254,7 +254,7 @@ function initHpSim() {
   const world = new World();
   const machines = [];
   let machineIdCounter = 0;
-  let klipperCommanderWorker = null;
+  let klipperMcuCommandPlayerWorker = null;
   let rrfCommanderWorker = null;
   let moveCommanderWorker = null;
   let simDtSec = null;
@@ -906,7 +906,7 @@ function initHpSim() {
     syncReferenceOverlayToRenderSystem({ force: true });
   }
 
-  const klipperCommanderModuleUrl = new URL('../../integrations/klipper/klipperMcuCommandPlayer.js', import.meta.url);
+  const klipperMcuCommandPlayerModuleUrl = new URL('../../integrations/klipper/klipperMcuCommandPlayer.js', import.meta.url);
   const rrfCommanderModuleUrl = new URL('../../integrations/rrf/rrfCanPlayer.js', import.meta.url);
   const moveCommanderModuleUrl = new URL('../../examples/js/slideprinter/moveCommander.js', import.meta.url);
   function getRemoteSystem() {
@@ -2329,8 +2329,8 @@ function initHpSim() {
         if (moveCommanderWorker) {
           moveCommanderWorker.postMessage({ type: 'pause' });
         }
-        if (klipperCommanderWorker) {
-          klipperCommanderWorker.postMessage({ type: 'pause' });
+        if (klipperMcuCommandPlayerWorker) {
+          klipperMcuCommandPlayerWorker.postMessage({ type: 'pause' });
         }
         if (rrfCommanderWorker) {
           rrfCommanderWorker.postMessage({ type: 'pause' });
@@ -3011,8 +3011,8 @@ function initHpSim() {
 
   function applyTimeScaleToWorkers(scale) {
     const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1.0;
-    if (klipperCommanderWorker) {
-      klipperCommanderWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
+    if (klipperMcuCommandPlayerWorker) {
+      klipperMcuCommandPlayerWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
     }
     if (moveCommanderWorker) {
       moveCommanderWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
@@ -3388,13 +3388,13 @@ function initHpSim() {
       }
       moveCommanderWorker = null;
     }
-    if (klipperCommanderWorker) {
+    if (klipperMcuCommandPlayerWorker) {
       try {
-        klipperCommanderWorker.terminate();
+        klipperMcuCommandPlayerWorker.terminate();
       } catch (err) {
         console.warn('Slideprinter demo: unable to terminate klipper worker cleanly.', err);
       }
-      klipperCommanderWorker = null;
+      klipperMcuCommandPlayerWorker = null;
     }
     if (rrfCommanderWorker) {
       try {
@@ -3692,30 +3692,30 @@ function initHpSim() {
     return asapState.finishingPromise;
   }
 
-  function ensureKlipperWorker() {
-    if (klipperCommanderWorker) {
-      return klipperCommanderWorker;
+  function ensureKlipperMcuCommandPlayerWorker() {
+    if (klipperMcuCommandPlayerWorker) {
+      return klipperMcuCommandPlayerWorker;
     }
-    klipperCommanderWorker = new Worker(klipperCommanderModuleUrl, { type: 'module' });
-    klipperCommanderWorker.onerror = (event) => {
+    klipperMcuCommandPlayerWorker = new Worker(klipperMcuCommandPlayerModuleUrl, { type: 'module' });
+    klipperMcuCommandPlayerWorker.onerror = (event) => {
       console.error('Slideprinter demo: Klipper worker failed.', event);
       const remoteSystem = getRemoteSystem();
-      if (remoteSystem && remoteSystem.worker === klipperCommanderWorker) {
+      if (remoteSystem && remoteSystem.worker === klipperMcuCommandPlayerWorker) {
         remoteSystem.worker = null;
         setPrintActive(false);
       }
     };
-    klipperCommanderWorker.onmessageerror = (event) => {
+    klipperMcuCommandPlayerWorker.onmessageerror = (event) => {
       console.error('Slideprinter demo: Klipper worker message decode failed.', event);
     };
-    klipperCommanderWorker.onmessage = (event) => {
+    klipperMcuCommandPlayerWorker.onmessage = (event) => {
       if (!event?.data) {
         return;
       }
       if (event.data.type === 'done') {
         console.log('Slideprinter demo: MCU log playback finished.');
         const remoteSystem = getRemoteSystem();
-        if (remoteSystem && remoteSystem.worker === klipperCommanderWorker) {
+        if (remoteSystem && remoteSystem.worker === klipperMcuCommandPlayerWorker) {
           remoteSystem.worker = null;
           setPrintActive(false);
           if (asapState.active) {
@@ -3729,7 +3729,7 @@ function initHpSim() {
       if (event.data.type === 'error') {
         console.error('Slideprinter demo: Worker reported an error:', event.data.message);
         const remoteSystem = getRemoteSystem();
-        if (remoteSystem && remoteSystem.worker === klipperCommanderWorker) {
+        if (remoteSystem && remoteSystem.worker === klipperMcuCommandPlayerWorker) {
           remoteSystem.worker = null;
           setPrintActive(false);
         }
@@ -3737,16 +3737,16 @@ function initHpSim() {
       }
       if (event.data.action === 'gcode') {
         const remoteSystem = getRemoteSystem();
-        if (remoteSystem && remoteSystem.worker === klipperCommanderWorker) {
+        if (remoteSystem && remoteSystem.worker === klipperMcuCommandPlayerWorker) {
           remoteSystem.addCommand(event.data.command);
         }
       }
     };
     if (simDtSec != null) {
-      klipperCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
+      klipperMcuCommandPlayerWorker.postMessage({ type: 'set_dt', dt: simDtSec });
     }
-    klipperCommanderWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
-    return klipperCommanderWorker;
+    klipperMcuCommandPlayerWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
+    return klipperMcuCommandPlayerWorker;
   }
 
   function ensureRrfWorker() {
@@ -3867,8 +3867,8 @@ function initHpSim() {
     if (moveCommanderWorker && moveCommanderWorker !== activeWorker) {
       moveCommanderWorker.postMessage({ type: 'pause' });
     }
-    if (klipperCommanderWorker && klipperCommanderWorker !== activeWorker) {
-      klipperCommanderWorker.postMessage({ type: 'pause' });
+    if (klipperMcuCommandPlayerWorker && klipperMcuCommandPlayerWorker !== activeWorker) {
+      klipperMcuCommandPlayerWorker.postMessage({ type: 'pause' });
     }
     if (rrfCommanderWorker && rrfCommanderWorker !== activeWorker) {
       rrfCommanderWorker.postMessage({ type: 'pause' });
@@ -3945,7 +3945,7 @@ function initHpSim() {
     if (format === FileFormat.GCODE) {
       worker = ensureMoveWorker();
     } else if (isMcuFormat(format)) {
-      worker = ensureKlipperWorker();
+      worker = ensureKlipperMcuCommandPlayerWorker();
     } else if (isRrfFormat(format)) {
       worker = ensureRrfWorker();
     } else {
@@ -3988,7 +3988,7 @@ function initHpSim() {
     if (format === FileFormat.GCODE) {
       worker = ensureMoveWorker();
     } else if (isMcuFormat(format)) {
-      worker = ensureKlipperWorker();
+      worker = ensureKlipperMcuCommandPlayerWorker();
     } else if (isRrfFormat(format)) {
       worker = ensureRrfWorker();
     } else {
@@ -4447,8 +4447,8 @@ function initHpSim() {
               if (moveCommanderWorker) {
                 moveCommanderWorker.postMessage({ type: 'resume' });
               }
-              if (klipperCommanderWorker) {
-                klipperCommanderWorker.postMessage({ type: 'resume' });
+              if (klipperMcuCommandPlayerWorker) {
+                klipperMcuCommandPlayerWorker.postMessage({ type: 'resume' });
               }
               if (rrfCommanderWorker) {
                 rrfCommanderWorker.postMessage({ type: 'resume' });

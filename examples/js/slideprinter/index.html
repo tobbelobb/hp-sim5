@@ -319,7 +319,7 @@ canvas {
     const canvas = document.getElementById("myCanvas");
     let world = new World();
     let moveCommanderWorker;
-    let klipperCommanderWorker;
+    let klipperMcuCommandPlayerWorker;
     let commander;
     let httpBridge = null;
     let rrfCommanderWorker = null;
@@ -470,8 +470,8 @@ canvas {
         if (moveCommanderWorker) {
             moveCommanderWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
         }
-        if (klipperCommanderWorker) {
-            klipperCommanderWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
+        if (klipperMcuCommandPlayerWorker) {
+            klipperMcuCommandPlayerWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
         }
         if (rrfCommanderWorker) {
             rrfCommanderWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
@@ -618,7 +618,7 @@ canvas {
     const moveCommanderURI = websocket_out ? `wss://localhost:${port}` : null;
     const base = import.meta.env.BASE_URL || '/';
     const moveCommanderModuleUrl = new URL('./moveCommander.js', import.meta.url);
-    const klipperCommanderModuleUrl = new URL('../../../integrations/klipper/klipperMcuCommandPlayer.js', import.meta.url);
+    const klipperMcuCommandPlayerModuleUrl = new URL('../../../integrations/klipper/klipperMcuCommandPlayer.js', import.meta.url);
 
     if ((websocket_in && websocket_out) || (!websocket_in && !websocket_out)) {
         // Create no websocket in this case. The websocket_in && websocket_out case is
@@ -718,17 +718,17 @@ canvas {
         }
     }
 
-    const ensureKlipperCommanderWorker = () => {
-        if (klipperCommanderWorker) {
-            return klipperCommanderWorker;
+    const ensureKlipperMcuCommandPlayerWorker = () => {
+        if (klipperMcuCommandPlayerWorker) {
+            return klipperMcuCommandPlayerWorker;
         }
         if (!window.Worker) {
             console.warn('Web Workers are not supported in this browser.');
             return null;
         }
-        klipperCommanderWorker = new Worker(klipperCommanderModuleUrl, { type: 'module' });
-        console.log('main: klipperCommanderWorker is up');
-        klipperCommanderWorker.onmessage = (e) => {
+        klipperMcuCommandPlayerWorker = new Worker(klipperMcuCommandPlayerModuleUrl, { type: 'module' });
+        console.log('main: klipperMcuCommandPlayerWorker is up');
+        klipperMcuCommandPlayerWorker.onmessage = (e) => {
             if (e.data.type === 'done') {
                 console.log('main: MCU command playback finished.');
             } else if (e.data.type === 'error') {
@@ -736,18 +736,18 @@ canvas {
             } else if (e.data.action === 'gcode') {
                 const remoteSpoolSystem = world.systems.find(s => s instanceof RemoteSpoolSystem);
                 if (remoteSpoolSystem != null) {
-                    if (remoteSpoolSystem.worker !== klipperCommanderWorker) {
-                        remoteSpoolSystem.worker = klipperCommanderWorker;
+                    if (remoteSpoolSystem.worker !== klipperMcuCommandPlayerWorker) {
+                        remoteSpoolSystem.worker = klipperMcuCommandPlayerWorker;
                     }
                     remoteSpoolSystem.addCommand(e.data.command);
                 }
             }
         };
         if (simDtSec != null) {
-            klipperCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
+            klipperMcuCommandPlayerWorker.postMessage({ type: 'set_dt', dt: simDtSec });
         }
-        klipperCommanderWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
-        return klipperCommanderWorker;
+        klipperMcuCommandPlayerWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
+        return klipperMcuCommandPlayerWorker;
     };
 
     const sendWorkToFormat = (format, message) => {
@@ -764,9 +764,9 @@ canvas {
             return;
         }
         if (isMcuFormat(format)) {
-            const worker = ensureKlipperCommanderWorker();
+            const worker = ensureKlipperMcuCommandPlayerWorker();
             if (!worker) {
-                console.warn('Unable to start KlipperCommander worker.');
+                console.warn('Unable to start KlipperMcuCommandPlayer worker.');
                 return;
             }
             if (simDtSec != null) {
@@ -831,9 +831,9 @@ canvas {
               moveCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
               moveCommanderWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
           }
-          if (klipperCommanderWorker) {
-              klipperCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
-              klipperCommanderWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
+          if (klipperMcuCommandPlayerWorker) {
+              klipperMcuCommandPlayerWorker.postMessage({ type: 'set_dt', dt: simDtSec });
+              klipperMcuCommandPlayerWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
           }
           if (rrfCommanderWorker) {
               rrfCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
