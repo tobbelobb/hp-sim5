@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import { formatCallSite, getDebugState, parseCallSite } from './debug_trace.mjs';
 import { resolveRrfSimulatorConfig } from './machine_type.mjs';
-import { STEP_CLOCK_HZ } from '../../../integrations/shared/motionUtils.js';
+import { STEP_CLOCK_HZ_RRF_HOST } from '../../../integrations/shared/motionUtils.js';
 export { waitForRrfSimulator } from '../../../integrations/rrf/rrf_http_bridge_cli_config.mjs';
 
 export const DEFAULT_FEED = 2000;
@@ -114,7 +114,7 @@ export function motionDurationSeconds(parsed) {
   if (!Number.isFinite(totalTicks) || totalTicks <= 0) {
     return null;
   }
-  return totalTicks / STEP_CLOCK_HZ;
+  return totalTicks / STEP_CLOCK_HZ_RRF_HOST;
 }
 
 export function estimateMoveLengthMm(gcode, axes = null) {
