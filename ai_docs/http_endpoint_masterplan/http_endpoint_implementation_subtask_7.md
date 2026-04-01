@@ -185,7 +185,7 @@ echo "PASS: Motion command test"
 
 ```javascript
 // tests/e2e/test_04_js_integration.mjs
-import { RrfHttpBridge } from '../../bridges/rrf/http/rrfHttpBridge.js';
+import { RrfHttpBridge } from '../../integrations/rrf/rrfHttpBridge.js';
 
 const BASE_URL = process.env.RRF_SERVER_URL || 'http://localhost:8080';
 
@@ -490,7 +490,7 @@ curl http://localhost:8080/machine/code -d "G1 X10 F1000" -H "Content-Type: text
 
 ### JavaScript Integration
 
-See `bridges/rrf/http/rrfHttpBridge.js` for programmatic access.
+See `integrations/rrf/rrfHttpBridge.js` for programmatic access.
 ```
 
 ## Validation Criteria Summary

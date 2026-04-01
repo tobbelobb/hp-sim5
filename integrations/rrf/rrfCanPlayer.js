@@ -6,7 +6,7 @@ import {
     distributeWithProfile,
     isFloatValue,
     EXTRUDER_MM_PER_STEP,
-} from '../../../bridges/rrf/rrfMotionUtils.js';
+} from './rrfMotionUtils.js';
 
 const STEP_ANGLE_RAD = (2 * Math.PI) / (200 * 16);
 

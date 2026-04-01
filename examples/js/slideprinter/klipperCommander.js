@@ -1,6 +1,6 @@
-import { detectFileFormat, FileFormat, isMcuFormat } from './fileFormatUtils.js';
+import { detectFileFormat, FileFormat, isMcuFormat } from '../../../integrations/rrf/fileFormatUtils.js';
 import { iterateSerialLines, createKlipperSerialDecoder } from './klipperSerialParser.js';
-import { distributeEvenly } from '../../../bridges/rrf/rrfMotionUtils.js';
+import { distributeEvenly } from '../../../integrations/rrf/rrfMotionUtils.js';
 
 const serialDecoder = createKlipperSerialDecoder();
 

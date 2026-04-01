@@ -71,7 +71,7 @@ echo "  Motion capture continuity (X->Y): OK"
 if command -v node &> /dev/null; then
     echo "  Running JS subtask checks"
     (cd "$ROOT" && PORT="$PORT" node --no-warnings --input-type=module <<'NODE'
-import { RrfHttpBridge } from './bridges/rrf/http/rrfHttpBridge.js';
+import { RrfHttpBridge } from './integrations/rrf/rrfHttpBridge.js';
 import { RemoteSpoolSystem } from './examples/js/slideprinter/slideprinter_common.js';
 
 const assertOk = (cond, msg) => {

@@ -1,8 +1,8 @@
 import { spawn } from 'node:child_process';
 import { formatCallSite, getDebugState, parseCallSite } from './debug_trace.mjs';
 import { resolveRrfSimulatorConfig } from './machine_type.mjs';
-import { STEP_CLOCK_HZ } from '../../../bridges/rrf/rrfMotionUtils.js';
-export { waitForRrfSimulator } from '../../../bridges/rrf/http/rrf_http_bridge_cli_config.mjs';
+import { STEP_CLOCK_HZ } from '../../../integrations/rrf/rrfMotionUtils.js';
+export { waitForRrfSimulator } from '../../../integrations/rrf/rrf_http_bridge_cli_config.mjs';
 
 export const DEFAULT_FEED = 2000;
 export const DEFAULT_RRF_PORT = 8081;

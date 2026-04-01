@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import path from 'node:path';
 import readline from 'node:readline';
-import { createGcodeBridge } from '../../../bridges/rrf/gcode_to_rrf_simulator_to_websocket.mjs';
+import { createGcodeBridge } from '../../../integrations/rrf/rrfSimulatorBridge.mjs';
 import { attachDebugState } from '../primitives/debug_trace.mjs';
 import {
   DEFAULT_RRF_PORT,

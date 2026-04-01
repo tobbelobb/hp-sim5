@@ -1,6 +1,6 @@
 Feature Request: Http endpoint for RrfCommander.
 
-In the hp-sim app I've implemented a class called RrfCommander (see the file examples/js/slideprinter/rrfCommander.js). It simulates the real ReprapFirmware by reading pre-computed movement commands, stored in .csv or .can files, and sending them to the physics engine with the right timing.
+In the hp-sim app I've implemented a class called RrfCommander (see the file integrations/rrf/rrfCanPlayer.js). It simulates the real ReprapFirmware by reading pre-computed movement commands, stored in .csv or .can files, and sending them to the physics engine with the right timing.
 
 The program who pre-computed the movements and stored them in .csv format is called `rrf_simulator`. It is compiled and invoked like this:
 ```

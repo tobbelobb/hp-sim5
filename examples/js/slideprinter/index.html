@@ -275,8 +275,8 @@ canvas {
     import { setupScene } from './setupScene.js';
     import { RemoteSpoolSystem } from './slideprinter_common.js';
     import { connectKlipperRaw } from './klipperHandler.js';
-    import { detectFileFormat, FileFormat, isMcuFormat } from './fileFormatUtils.js';
-    import { RrfHttpBridge } from '../../../bridges/rrf/http/rrfHttpBridge.js';
+    import { detectFileFormat, FileFormat, isMcuFormat } from '../../../integrations/rrf/fileFormatUtils.js';
+    import { RrfHttpBridge } from '../../../integrations/rrf/rrfHttpBridge.js';
 
     const searchParams = new URLSearchParams(window.location.search);
     const logMoveParamKeys = ['--log-move', 'log-move', 'logMove'];
@@ -393,7 +393,7 @@ canvas {
         if (rrfCommanderWorker) {
             return rrfCommanderWorker;
         }
-        const worker = new Worker(new URL('./rrfCommander.js', import.meta.url), { type: 'module' });
+        const worker = new Worker(new URL('../../../integrations/rrf/rrfCanPlayer.js', import.meta.url), { type: 'module' });
         worker.onmessage = (e) => {
             const data = e.data || {};
             if (data.action === 'gcode' && data.command) {

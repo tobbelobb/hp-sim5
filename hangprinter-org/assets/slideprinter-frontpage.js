@@ -3,7 +3,7 @@ import { World } from '../../src/js/cable_joints/ecs.js';
 import { runGame } from '../../examples/js/slideprinter/runner.js';
 import { setupScene } from '../../examples/js/slideprinter/setupScene.js';
 import { RemoteSpoolSystem, InputSystem } from '../../examples/js/slideprinter/slideprinter_common.js';
-import { detectFileFormat, FileFormat, isMcuFormat } from '../../examples/js/slideprinter/fileFormatUtils.js';
+import { detectFileFormat, FileFormat, isMcuFormat } from '../../integrations/rrf/fileFormatUtils.js';
 
 const MCU_PRESETS = {
   hangprinterLogo: {

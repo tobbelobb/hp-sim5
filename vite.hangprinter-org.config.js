@@ -34,13 +34,14 @@ export default defineConfig(async () => {
 
       // Copy slideprinter helper modules that the workers import directly
       const slideprinterSrc = resolve(__dirname, 'examples/js/slideprinter');
-      const bridgeSrc = resolve(__dirname, 'bridges/rrf');
+      const rrfSrc = resolve(__dirname, 'integrations/rrf');
       const slideprinterDist = resolve(distRoot, 'assets');
       await fs.mkdir(slideprinterDist, { recursive: true });
-      for (const file of ['kinematics.js', 'guessedData.js', 'fileFormatUtils.js', 'klipperSerialParser.js']) {
+      for (const file of ['kinematics.js', 'guessedData.js', 'klipperSerialParser.js']) {
         await fs.copyFile(join(slideprinterSrc, file), join(slideprinterDist, file));
       }
-      await fs.copyFile(join(bridgeSrc, 'rrfMotionUtils.js'), join(slideprinterDist, 'rrfMotionUtils.js'));
+      await fs.copyFile(join(rrfSrc, 'fileFormatUtils.js'), join(slideprinterDist, 'fileFormatUtils.js'));
+      await fs.copyFile(join(rrfSrc, 'rrfMotionUtils.js'), join(slideprinterDist, 'rrfMotionUtils.js'));
     },
   });
 

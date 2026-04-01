@@ -1,9 +1,9 @@
 ```mermaid
 graph LR
     subgraph Terminal Session
-        term["Terminal interface (scripts/rrf_terminal.mjs)
+        term["Terminal interface (integrations/rrf/rrf_terminal.mjs)
 State: readline prompt, sendQueue[], processingQueue flag, currentGcode"]
-        bridge["RrfHttpBridge (bridges/rrf/http/rrfHttpBridge.js)
+        bridge["RrfHttpBridge (integrations/rrf/rrfHttpBridge.js)
 State: driverToAxis map, _axisAngles, _driverDirections cache, pending motion list"]
     end
     httpChan["HTTP channel http://localhost:8080/machine/code

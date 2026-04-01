@@ -9,16 +9,16 @@ Create a JavaScript class that bridges the HTTP endpoint to the existing `Remote
 
 ## Files to Create/Modify
 
-- `bridges/rrf/http/rrfHttpBridge.js` - New file
+- `integrations/rrf/rrfHttpBridge.js` - New file
 - `examples/js/slideprinter/slideprinter_common.js` - Add torque mode handling
-- `examples/js/slideprinter/rrfCommander.js` - Optional: share parsing logic
+- `integrations/rrf/rrfCanPlayer.js` - Optional: share parsing logic
 
 ## Implementation Details
 
 ### 1. RrfHttpBridge Class
 
 ```javascript
-// bridges/rrf/http/rrfHttpBridge.js
+// integrations/rrf/rrfHttpBridge.js
 
 /**
  * Bridge between HTTP G-code endpoint and RemoteSpoolSystem.
@@ -318,9 +318,9 @@ _processCommand(world, command, simTime) {
 ### 3. Example Usage
 
 ```javascript
-// examples/js/slideprinter/demo_http_bridge.js
+// integrations/rrf/demo_http_bridge.js
 
-import { RrfHttpBridge } from '../../../bridges/rrf/http/rrfHttpBridge.js';
+import { RrfHttpBridge } from '../../../integrations/rrf/rrfHttpBridge.js';
 import { RemoteSpoolSystem } from './slideprinter_common.js';
 
 async function main() {
@@ -364,9 +364,9 @@ main().catch(console.error);
 ### Unit Tests
 
 ```javascript
-// examples/js/slideprinter/tests/rrfHttpBridge.test.js
+// integrations/rrf/tests/rrfHttpBridge.test.js
 
-import { RrfHttpBridge } from '../../../../bridges/rrf/http/rrfHttpBridge.js';
+import { RrfHttpBridge } from '../../../../integrations/rrf/rrfHttpBridge.js';
 
 describe('RrfHttpBridge', () => {
     describe('_parseResponse', () => {
@@ -458,7 +458,7 @@ SERVER_PID=$!
 sleep 2
 
 # Run Node.js test script
-node --experimental-modules examples/js/slideprinter/tests/integration_test.mjs
+node --experimental-modules integrations/rrf/tests/integration_test.mjs
 
 TEST_RESULT=$?
 
@@ -468,9 +468,9 @@ exit $TEST_RESULT
 ```
 
 ```javascript
-// examples/js/slideprinter/tests/integration_test.mjs
+// integrations/rrf/tests/integration_test.mjs
 
-import { RrfHttpBridge } from '../../../../bridges/rrf/http/rrfHttpBridge.js';
+import { RrfHttpBridge } from '../../../../integrations/rrf/rrfHttpBridge.js';
 
 const bridge = new RrfHttpBridge({ baseUrl: 'http://localhost:8080' });
 
@@ -530,7 +530,7 @@ The code uses `fetch()` which is available in:
 For broader compatibility:
 
 ```javascript
-// At top of bridges/rrf/http/rrfHttpBridge.js
+// At top of integrations/rrf/rrfHttpBridge.js
 let fetchImpl;
 if (typeof fetch === 'undefined') {
     fetchImpl = require('node-fetch');

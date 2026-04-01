@@ -105,8 +105,8 @@ describe('RrfCommander binary CAN compatibility', () => {
     if (typeof globalThis.postMessage !== 'function') {
       globalThis.postMessage = () => {};
     }
-    ({ RrfCommander } = await import('../../../examples/js/slideprinter/rrfCommander.js'));
-    ({ FileFormat } = await import('../../../examples/js/slideprinter/fileFormatUtils.js'));
+    ({ RrfCommander } = await import('../../../integrations/rrf/rrfCanPlayer.js'));
+    ({ FileFormat } = await import('../../../integrations/rrf/fileFormatUtils.js'));
   });
 
   test('parses binary CAN movement entries into spool motion', async () => {

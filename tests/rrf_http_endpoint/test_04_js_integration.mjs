@@ -1,4 +1,4 @@
-import { RrfHttpBridge } from '../../bridges/rrf/http/rrfHttpBridge.js';
+import { RrfHttpBridge } from '../../integrations/rrf/rrfHttpBridge.js';
 
 const BASE_URL = process.env.RRF_SERVER_URL || 'http://localhost:8080';
 

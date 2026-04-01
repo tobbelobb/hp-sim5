@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 import readline from 'node:readline';
-import { createGcodeBridge } from '../bridges/rrf/gcode_to_rrf_simulator_to_websocket.mjs';
-import { waitForRrfSimulator } from '../autocal/control/primitives/encoder_utils.mjs';
+import { createGcodeBridge } from './rrfSimulatorBridge.mjs';
+import { waitForRrfSimulator } from '../../autocal/control/primitives/encoder_utils.mjs';
 import {
   DEFAULT_RRF_HTTP_BRIDGE_START_SCRIPT,
   buildRrfHttpBridgeWsHint,
   ensureRrfHttpBridgeServer,
   isRrfServerUnavailableError,
   stopRrfHttpBridgeServer,
-} from '../bridges/rrf/http/rrf_http_bridge_cli_config.mjs';
+} from './rrf_http_bridge_cli_config.mjs';
 
 function printHelp() {
-  console.log(`Usage: node scripts/rrf_command_prompt.mjs [options]
+  console.log(`Usage: node integrations/rrf/rrf_terminal.mjs [options]
 
 Send single-line G-code to an rrf_simulator HTTP server and stream the resulting
 motion commands over WebSocket for hp-sim to visualize.

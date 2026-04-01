@@ -3,7 +3,7 @@ import { World, OrientationComponent } from '../../src/js/cable_joints/ecs.js';
 import { runGame } from '../../examples/js/slideprinter/runner.js';
 import { setupScene } from '../../examples/js/slideprinter/setupScene.js';
 import { RemoteSpoolSystem, InputSystem, ExtruderComponent } from '../../examples/js/slideprinter/slideprinter_common.js';
-import { detectFileFormat, FileFormat, isMcuFormat, isRrfFormat } from '../../examples/js/slideprinter/fileFormatUtils.js';
+import { detectFileFormat, FileFormat, isMcuFormat, isRrfFormat } from '../../integrations/rrf/fileFormatUtils.js';
 import { _updateAttachmentPoints } from '../../src/js/cable_joints/cable_joints_core.js';
 import { QualityMonitor } from './quality-monitor.js';
 import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
@@ -907,7 +907,7 @@ function initHpSim() {
   }
 
   const klipperCommanderModuleUrl = new URL('../../examples/js/slideprinter/klipperCommander.js', import.meta.url);
-  const rrfCommanderModuleUrl = new URL('../../examples/js/slideprinter/rrfCommander.js', import.meta.url);
+  const rrfCommanderModuleUrl = new URL('../../integrations/rrf/rrfCanPlayer.js', import.meta.url);
   const moveCommanderModuleUrl = new URL('../../examples/js/slideprinter/moveCommander.js', import.meta.url);
   function getRemoteSystem() {
     return world.systems.find((sys) => sys instanceof RemoteSpoolSystem) || null;

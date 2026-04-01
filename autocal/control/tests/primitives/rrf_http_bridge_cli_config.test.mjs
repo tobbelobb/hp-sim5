@@ -2,7 +2,7 @@ import http from 'node:http';
 import {
   buildRrfHttpBridgeWsHint,
   waitForRrfSimulator,
-} from '../../../../bridges/rrf/http/rrf_http_bridge_cli_config.mjs';
+} from '../../../../integrations/rrf/rrf_http_bridge_cli_config.mjs';
 
 describe('rrf_http_bridge_cli_config', () => {
   test('buildRrfHttpBridgeWsHint formats the websocket query parameter', () => {
