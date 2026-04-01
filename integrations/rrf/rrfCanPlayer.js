@@ -57,7 +57,7 @@ async function* makeLineIterator(stream) {
     }
 }
 
-export class RrfCommander {
+export class RrfCanPlayer {
     constructor() {
         this.dt = 1 / 500;
         this.isPaused = false;
@@ -733,13 +733,13 @@ export class RrfCommander {
             await this._flushReadyBuckets(true);
             postMessage({ type: 'done' });
         } catch (e) {
-            console.error('RrfCommander failed:', e);
+            console.error('RrfCanPlayer failed:', e);
             postMessage({ type: 'error', message: e?.message || String(e) });
         }
     }
 }
 
-const commander = new RrfCommander();
+const rrfCanPlayer = new RrfCanPlayer();
 
 self.addEventListener('message', async (e) => {
     const { type } = e.data || {};
@@ -751,10 +751,10 @@ self.addEventListener('message', async (e) => {
             }
             const format = detectFileFormat(file.name);
             if (!isRrfFormat(format)) {
-                postMessage({ type: 'error', message: 'Unsupported file type for RrfCommander' });
+                postMessage({ type: 'error', message: 'Unsupported file type for RrfCanPlayer' });
                 break;
             }
-            commander.run(file.stream(), format);
+            rrfCanPlayer.run(file.stream(), format);
             break;
         }
         case 'filename_fetch': {
@@ -768,46 +768,46 @@ self.addEventListener('message', async (e) => {
                     throw new Error(`Failed to fetch ${filename}`);
                 }
                 const format = detectFileFormat(filename) || FileFormat.RRF_CAN;
-                await commander.run(response.body, isRrfFormat(format) ? format : FileFormat.RRF_CAN);
+                await rrfCanPlayer.run(response.body, isRrfFormat(format) ? format : FileFormat.RRF_CAN);
             } catch (err) {
-                console.error('RrfCommander fetch failed:', err);
+                console.error('RrfCanPlayer fetch failed:', err);
                 postMessage({ type: 'error', message: err.message });
             }
             break;
         }
         case 'set_dt': {
-            commander.setDt(e.data.dt);
+            rrfCanPlayer.setDt(e.data.dt);
             break;
         }
         case 'set_speed_scale': {
-            commander.setSpeedScale(e.data.value);
-            commander.accumulatedWaitMs = 0.0;
+            rrfCanPlayer.setSpeedScale(e.data.value);
+            rrfCanPlayer.accumulatedWaitMs = 0.0;
             break;
         }
         case 'set_asap_mode': {
-            commander.setAsapMode(e.data.enable);
+            rrfCanPlayer.setAsapMode(e.data.enable);
             break;
         }
         case 'set_fast_mode': {
-            commander.fastMode = Boolean(e.data.enable);
-            if (!commander.fastMode) {
-                commander.accumulatedWaitMs = 0.0;
+            rrfCanPlayer.fastMode = Boolean(e.data.enable);
+            if (!rrfCanPlayer.fastMode) {
+                rrfCanPlayer.accumulatedWaitMs = 0.0;
             }
             break;
         }
         case 'pause': {
-            commander.isPaused = true;
+            rrfCanPlayer.isPaused = true;
             break;
         }
         case 'resume': {
-            commander.isPaused = false;
-            if (commander.resolveResume) {
-                commander.resolveResume();
+            rrfCanPlayer.isPaused = false;
+            if (rrfCanPlayer.resolveResume) {
+                rrfCanPlayer.resolveResume();
             }
             break;
         }
         case 'reset_state': {
-            commander._resetState();
+            rrfCanPlayer._resetState();
             break;
         }
         case 'append_csv': {
@@ -821,7 +821,7 @@ self.addEventListener('message', async (e) => {
                             yield line;
                         }
                     }());
-                    await commander._consumeCsvLines(iterable);
+                    await rrfCanPlayer._consumeCsvLines(iterable);
                 }
             }
             break;
@@ -831,4 +831,4 @@ self.addEventListener('message', async (e) => {
     }
 });
 
-console.log('worker: RrfCommander ready');
+console.log('worker: RrfCanPlayer ready');

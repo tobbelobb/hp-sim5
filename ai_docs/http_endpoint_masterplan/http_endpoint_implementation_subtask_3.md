@@ -238,7 +238,7 @@ void HostCanCapture::LogTorqueModeChange(uint8_t driverAddress, float torqueNm)
 
     std::lock_guard<std::mutex> lock(captureMutex_);
 
-    // Write as special event type that RrfCommander can parse
+    // Write as special event type that RrfCanPlayer can parse
     // Format: T,driverAddress,torqueNm
     captureStream_ << "T," << (int)driverAddress << "," << torqueNm << "\n";
     captureStream_.flush();

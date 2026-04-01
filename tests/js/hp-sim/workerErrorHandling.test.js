@@ -11,7 +11,7 @@ describe('hp-sim worker error handling', () => {
     const source = readHpSimSource();
 
     expect(source).toContain('klipperMcuCommandPlayerWorker.onerror = (event) => {');
-    expect(source).toContain('rrfCommanderWorker.onerror = (event) => {');
+    expect(source).toContain('rrfCanPlayerWorker.onerror = (event) => {');
     expect(source).toContain('moveCommanderWorker.onerror = (event) => {');
   });
 

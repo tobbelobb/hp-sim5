@@ -1,4 +1,4 @@
-let RrfCommander;
+let RrfCanPlayer;
 let FileFormat;
 
 const STEP_ANGLE_RAD = (2 * Math.PI) / (200 * 16);
@@ -77,24 +77,24 @@ async function withImmediateTimeout(fn) {
 }
 
 async function collectBinaryMoves(binaryCan, { dt = null } = {}) {
-  const commander = new RrfCommander();
+  const rrfCanPlayer = new RrfCanPlayer();
   const moves = [];
-  commander.sendCommand = async (command) => {
+  rrfCanPlayer.sendCommand = async (command) => {
     if (command?.type === 'Move') {
       moves.push(command);
     }
   };
-  commander.setAsapMode(true);
+  rrfCanPlayer.setAsapMode(true);
   if (Number.isFinite(dt) && dt > 0) {
-    commander.setDt(dt);
+    rrfCanPlayer.setDt(dt);
   }
   await withImmediateTimeout(async () => {
-    await commander.run(streamFromUint8Array(binaryCan), FileFormat.RRF_CAN_BINARY);
+    await rrfCanPlayer.run(streamFromUint8Array(binaryCan), FileFormat.RRF_CAN_BINARY);
   });
   return moves;
 }
 
-describe('RrfCommander binary CAN compatibility', () => {
+describe('RrfCanPlayer binary CAN compatibility', () => {
   beforeAll(async () => {
     if (!globalThis.self) {
       globalThis.self = {};
@@ -105,7 +105,7 @@ describe('RrfCommander binary CAN compatibility', () => {
     if (typeof globalThis.postMessage !== 'function') {
       globalThis.postMessage = () => {};
     }
-    ({ RrfCommander } = await import('../../../integrations/rrf/rrfCanPlayer.js'));
+    ({ RrfCanPlayer } = await import('../../../integrations/rrf/rrfCanPlayer.js'));
     ({ FileFormat } = await import('../../../integrations/shared/fileFormatUtils.js'));
   });
 

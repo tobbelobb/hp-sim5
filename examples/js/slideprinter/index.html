@@ -322,8 +322,8 @@ canvas {
     let klipperMcuCommandPlayerWorker;
     let commander;
     let httpBridge = null;
-    let rrfCommanderWorker = null;
-    let pendingCommanderCommands = [];
+    let rrfCanPlayerWorker = null;
+    let pendingRrfCanPlayerCommands = [];
     let gameControls = null;
     let stageReady = false;
     let ws = null;
@@ -389,9 +389,9 @@ canvas {
         speedStatusEl.classList.remove('hidden');
     };
 
-    const ensureRrfCommanderWorker = () => {
-        if (rrfCommanderWorker) {
-            return rrfCommanderWorker;
+    const ensureRrfCanPlayerWorker = () => {
+        if (rrfCanPlayerWorker) {
+            return rrfCanPlayerWorker;
         }
         const worker = new Worker(new URL('../../../integrations/rrf/rrfCanPlayer.js', import.meta.url), { type: 'module' });
         worker.onmessage = (e) => {
@@ -404,13 +404,13 @@ canvas {
                     }
                     remote.addCommand(data.command);
                 } else {
-                    pendingCommanderCommands.push(data.command);
+                    pendingRrfCanPlayerCommands.push(data.command);
                 }
             } else if (data.type === 'error' && data.message) {
-                console.error('RrfCommander error:', data.message);
+                console.error('RrfCanPlayer error:', data.message);
             }
         };
-        rrfCommanderWorker = worker;
+        rrfCanPlayerWorker = worker;
         if (simDtSec) {
             worker.postMessage({ type: 'set_dt', dt: simDtSec });
         }
@@ -418,15 +418,15 @@ canvas {
         return worker;
     };
 
-    const feedMotionToCommander = (lines) => {
+    const feedMotionToRrfCanPlayer = (lines) => {
         if (!lines || lines.length === 0) {
             return;
         }
-        const worker = ensureRrfCommanderWorker();
+        const worker = ensureRrfCanPlayerWorker();
         try {
             worker.postMessage({ type: 'append_csv', lines });
         } catch (err) {
-            console.error('Failed to feed motion to RrfCommander:', err);
+            console.error('Failed to feed motion to RrfCanPlayer:', err);
         }
     };
 
@@ -441,7 +441,7 @@ canvas {
         httpBridge = new RrfHttpBridge({
             baseUrl: base,
         });
-        ensureRrfCommanderWorker();
+        ensureRrfCanPlayerWorker();
         updateHttpStatus(`Using ${base}`);
     };
 
@@ -456,7 +456,7 @@ canvas {
         try {
             const result = await httpBridge.sendGCode(gcode);
             if (result?.rawMotionLines?.length) {
-                feedMotionToCommander(result.rawMotionLines);
+                feedMotionToRrfCanPlayer(result.rawMotionLines);
             }
             updateHttpStatus(result?.reply || 'ok');
         } catch (err) {
@@ -473,8 +473,8 @@ canvas {
         if (klipperMcuCommandPlayerWorker) {
             klipperMcuCommandPlayerWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
         }
-        if (rrfCommanderWorker) {
-            rrfCommanderWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
+        if (rrfCanPlayerWorker) {
+            rrfCanPlayerWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
         }
     };
 
@@ -835,9 +835,9 @@ canvas {
               klipperMcuCommandPlayerWorker.postMessage({ type: 'set_dt', dt: simDtSec });
               klipperMcuCommandPlayerWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
           }
-          if (rrfCommanderWorker) {
-              rrfCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
-              rrfCommanderWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
+          if (rrfCanPlayerWorker) {
+              rrfCanPlayerWorker.postMessage({ type: 'set_dt', dt: simDtSec });
+              rrfCanPlayerWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
           }
           if (klipperRaw) {
               klipperRaw.setDt(simDtSec);
@@ -848,13 +848,13 @@ canvas {
           onTimeScaleChange: handleTimeScaleChange,
       });
       const remoteSystem = getRemoteSystem();
-      if (remoteSystem && rrfCommanderWorker) {
-          remoteSystem.worker = rrfCommanderWorker;
-          if (pendingCommanderCommands.length > 0) {
-              for (const cmd of pendingCommanderCommands) {
+      if (remoteSystem && rrfCanPlayerWorker) {
+          remoteSystem.worker = rrfCanPlayerWorker;
+          if (pendingRrfCanPlayerCommands.length > 0) {
+              for (const cmd of pendingRrfCanPlayerCommands) {
                   remoteSystem.addCommand(cmd);
               }
-              pendingCommanderCommands = [];
+              pendingRrfCanPlayerCommands = [];
           }
       }
       stageReady = true;

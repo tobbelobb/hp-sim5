@@ -307,7 +307,7 @@ function initHpSim() {
   const machines = [];
   let machineIdCounter = 0;
   let klipperMcuCommandPlayerWorker = null;
-  let rrfCommanderWorker = null;
+  let rrfCanPlayerWorker = null;
   let moveCommanderWorker = null;
   let simDtSec = null;
   let stageReady = false;
@@ -969,7 +969,7 @@ function initHpSim() {
   }
 
   const klipperMcuCommandPlayerModuleUrl = new URL('../../integrations/klipper/klipperMcuCommandPlayer.js', import.meta.url);
-  const rrfCommanderModuleUrl = new URL('../../integrations/rrf/rrfCanPlayer.js', import.meta.url);
+  const rrfCanPlayerModuleUrl = new URL('../../integrations/rrf/rrfCanPlayer.js', import.meta.url);
   const moveCommanderModuleUrl = new URL('../../examples/js/slideprinter/moveCommander.js', import.meta.url);
   function getRemoteSystem() {
     return world.systems.find((sys) => sys instanceof RemoteSpoolSystem) || null;
@@ -2395,8 +2395,8 @@ function initHpSim() {
         if (klipperMcuCommandPlayerWorker) {
           klipperMcuCommandPlayerWorker.postMessage({ type: 'pause' });
         }
-        if (rrfCommanderWorker) {
-          rrfCommanderWorker.postMessage({ type: 'pause' });
+        if (rrfCanPlayerWorker) {
+          rrfCanPlayerWorker.postMessage({ type: 'pause' });
         }
       } catch (err) {
         console.warn('hp-sim: unable to pause workers during scene change.', err);
@@ -3087,8 +3087,8 @@ function initHpSim() {
     if (moveCommanderWorker) {
       moveCommanderWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
     }
-    if (rrfCommanderWorker) {
-      rrfCommanderWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
+    if (rrfCanPlayerWorker) {
+      rrfCanPlayerWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
     }
   }
 
@@ -3717,13 +3717,13 @@ function initHpSim() {
       }
       klipperMcuCommandPlayerWorker = null;
     }
-    if (rrfCommanderWorker) {
+    if (rrfCanPlayerWorker) {
       try {
-        rrfCommanderWorker.terminate();
+        rrfCanPlayerWorker.terminate();
       } catch (err) {
         console.warn('Slideprinter demo: unable to terminate rrf worker cleanly.', err);
       }
-      rrfCommanderWorker = null;
+      rrfCanPlayerWorker = null;
     }
   }
 
@@ -4073,29 +4073,29 @@ function initHpSim() {
   }
 
   function ensureRrfWorker() {
-    if (rrfCommanderWorker) {
-      return rrfCommanderWorker;
+    if (rrfCanPlayerWorker) {
+      return rrfCanPlayerWorker;
     }
-    rrfCommanderWorker = new Worker(rrfCommanderModuleUrl, { type: 'module' });
-    rrfCommanderWorker.onerror = (event) => {
+    rrfCanPlayerWorker = new Worker(rrfCanPlayerModuleUrl, { type: 'module' });
+    rrfCanPlayerWorker.onerror = (event) => {
       console.error('Slideprinter demo: RRF worker failed.', event);
       const remoteSystem = getRemoteSystem();
-      if (remoteSystem && remoteSystem.worker === rrfCommanderWorker) {
+      if (remoteSystem && remoteSystem.worker === rrfCanPlayerWorker) {
         remoteSystem.worker = null;
         setPrintActive(false);
       }
     };
-    rrfCommanderWorker.onmessageerror = (event) => {
+    rrfCanPlayerWorker.onmessageerror = (event) => {
       console.error('Slideprinter demo: RRF worker message decode failed.', event);
     };
-    rrfCommanderWorker.onmessage = (event) => {
+    rrfCanPlayerWorker.onmessage = (event) => {
       if (!event?.data) {
         return;
       }
       if (event.data.type === 'done') {
         console.log('Slideprinter demo: RRF log playback finished.');
         const remoteSystem = getRemoteSystem();
-        if (remoteSystem && remoteSystem.worker === rrfCommanderWorker) {
+        if (remoteSystem && remoteSystem.worker === rrfCanPlayerWorker) {
           remoteSystem.worker = null;
           setPrintActive(false);
           if (asapState.active) {
@@ -4109,7 +4109,7 @@ function initHpSim() {
       if (event.data.type === 'error') {
         console.error('Slideprinter demo: Worker reported an error:', event.data.message);
         const remoteSystem = getRemoteSystem();
-        if (remoteSystem && remoteSystem.worker === rrfCommanderWorker) {
+        if (remoteSystem && remoteSystem.worker === rrfCanPlayerWorker) {
           remoteSystem.worker = null;
           setPrintActive(false);
         }
@@ -4117,16 +4117,16 @@ function initHpSim() {
       }
       if (event.data.action === 'gcode') {
         const remoteSystem = getRemoteSystem();
-        if (remoteSystem && remoteSystem.worker === rrfCommanderWorker) {
+        if (remoteSystem && remoteSystem.worker === rrfCanPlayerWorker) {
           remoteSystem.addCommand(event.data.command);
         }
       }
     };
     if (simDtSec != null) {
-      rrfCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
+      rrfCanPlayerWorker.postMessage({ type: 'set_dt', dt: simDtSec });
     }
-    rrfCommanderWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
-    return rrfCommanderWorker;
+    rrfCanPlayerWorker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
+    return rrfCanPlayerWorker;
   }
 
   function ensureMoveWorker() {
@@ -4193,8 +4193,8 @@ function initHpSim() {
     if (klipperMcuCommandPlayerWorker && klipperMcuCommandPlayerWorker !== activeWorker) {
       klipperMcuCommandPlayerWorker.postMessage({ type: 'pause' });
     }
-    if (rrfCommanderWorker && rrfCommanderWorker !== activeWorker) {
-      rrfCommanderWorker.postMessage({ type: 'pause' });
+    if (rrfCanPlayerWorker && rrfCanPlayerWorker !== activeWorker) {
+      rrfCanPlayerWorker.postMessage({ type: 'pause' });
     }
   }
 
@@ -4779,8 +4779,8 @@ function initHpSim() {
               if (klipperMcuCommandPlayerWorker) {
                 klipperMcuCommandPlayerWorker.postMessage({ type: 'resume' });
               }
-              if (rrfCommanderWorker) {
-                rrfCommanderWorker.postMessage({ type: 'resume' });
+              if (rrfCanPlayerWorker) {
+                rrfCanPlayerWorker.postMessage({ type: 'resume' });
               }
             } catch (err) {
               console.warn('hp-sim: unable to resume workers after user request.', err);

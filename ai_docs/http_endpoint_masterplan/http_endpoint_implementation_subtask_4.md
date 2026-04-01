@@ -232,7 +232,7 @@ server_.Get("/machine/motion", [](const httplib::Request& req, httplib::Response
 
 ## Client-Side Parsing (JavaScript)
 
-Update `RrfCommander` or create helper to parse combined responses:
+Update `RrfCanPlayer` or create helper to parse combined responses:
 
 ```javascript
 function parseHttpResponse(responseText) {
