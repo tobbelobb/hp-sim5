@@ -1,4 +1,5 @@
 import { createKlipperSerialDecoder, SerialLineDecoder, decodeBase64Chunk } from './klipperSerialDecoder.js';
+import { detectFileFormat, FileFormat, isKlipperFormat } from '../shared/fileFormatUtils.js';
 
 // This is a worker script for Klipper pacing.
 
@@ -146,6 +147,11 @@ const clockModel = new ClockModel();
 const ticksToMs = (ticks) => clockModel.ticksToMs(ticks);
 let pacerTimer = null;       // setTimeout handle for pacer
 let pacerNextDeadlineMs = null; // Absolute deadline for the next pacer wakeup
+let isPaused = false;
+let speedScale = 1;
+let asapMode = false;
+let inputComplete = false;
+let donePosted = false;
 
 const axisState = new Map(axisOrder.map(a => [a, {
   segments: [],
@@ -159,6 +165,184 @@ const axisState = new Map(axisOrder.map(a => [a, {
   baseClockRaw: null,
   nextStepClockRaw: null,
 }]));
+
+const getSpeedScale = () => (
+  Number.isFinite(speedScale) && speedScale > 0 ? speedScale : 1
+);
+
+const scaleDelayMs = (delayMs) => {
+  if (asapMode) return 0;
+  const safeDelay = Math.max(0, Number(delayMs) || 0);
+  return safeDelay / getSpeedScale();
+};
+
+const hasAxisWork = () => {
+  for (const axis of axisOrder) {
+    const st = axisState.get(axis);
+    if (!st) continue;
+    if (st.nextWakeTimeMs !== null || st.remaining > 0 || st.segments.length > 0) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const resetRuntimeState = () => {
+  if (pacerTimer) {
+    clearTimeout(pacerTimer);
+    pacerTimer = null;
+  }
+  pacerNextDeadlineMs = null;
+  clockModel.reset();
+  for (const axis of axisOrder) {
+    axisAngles.set(axis, 0.0);
+    const st = axisState.get(axis);
+    if (!st) continue;
+    st.segments.length = 0;
+    st.nextWakeTimeMs = null;
+    st.intervalTicks = null;
+    st.addTicks = 0;
+    st.remaining = 0;
+    st.dirSign = 1;
+    st.activeDirSign = 1;
+    st.baseClockRaw = null;
+    st.nextStepClockRaw = null;
+  }
+  extruderPosMm = 0;
+  aggMove = { type: 'Move' };
+  aggFirstStepTimeMs = null;
+  aggLastStepTimeMs = null;
+  aggHasAny = false;
+  lastEmitMs = 0;
+  serialLineDecoder = null;
+  inputComplete = false;
+  donePosted = false;
+  firstSeqSeen = null;
+  expectedSeq = null;
+};
+
+const resolveScaledWakeTimeMs = (nextStepRaw, fallbackDelayMs, fallbackBaseMs = performance.now()) => {
+  const now = performance.now();
+  if (asapMode) {
+    return now;
+  }
+  const mapped = nextStepRaw !== null ? clockModel.mcuToWorkerMs(nextStepRaw) : null;
+  if (mapped !== null) {
+    return now + scaleDelayMs(mapped - now);
+  }
+  return fallbackBaseMs + scaleDelayMs(fallbackDelayMs);
+};
+
+const emitAggregatedMove = (atMs = performance.now()) => {
+  if (!aggHasAny) {
+    return false;
+  }
+  const spanMs = (aggFirstStepTimeMs != null && aggLastStepTimeMs != null)
+    ? Math.max(0, aggLastStepTimeMs - aggFirstStepTimeMs)
+    : 0;
+  aggMove.at = atMs;
+  aggMove.span = spanMs;
+  const logEntry = LOG_MOVE ? buildMoveLogEntry(aggMove, atMs, spanMs) : null;
+  if (LOG_MOVE && logEntry) {
+    postMessage({ type: 'move', command: aggMove, logEntry });
+  } else {
+    postMessage({ type: 'move', command: aggMove });
+  }
+  aggMove = { type: 'Move' };
+  aggFirstStepTimeMs = null;
+  aggLastStepTimeMs = null;
+  aggHasAny = false;
+  lastEmitMs = performance.now();
+  return true;
+};
+
+const maybePostDone = () => {
+  if (!inputComplete || donePosted || isPaused) {
+    return false;
+  }
+  if (hasAxisWork()) {
+    return false;
+  }
+  if (aggHasAny) {
+    emitAggregatedMove();
+  }
+  if (hasAxisWork() || aggHasAny) {
+    return false;
+  }
+  donePosted = true;
+  pacerNextDeadlineMs = null;
+  if (pacerTimer) {
+    clearTimeout(pacerTimer);
+    pacerTimer = null;
+  }
+  postMessage({ type: 'done' });
+  return true;
+};
+
+const setPaused = (paused) => {
+  isPaused = Boolean(paused);
+  if (isPaused) {
+    if (pacerTimer) {
+      clearTimeout(pacerTimer);
+      pacerTimer = null;
+    }
+    pacerNextDeadlineMs = null;
+    return;
+  }
+  if (maybePostDone()) {
+    return;
+  }
+  if (hasAxisWork() || !inputComplete || aggHasAny) {
+    const now = performance.now();
+    pacerNextDeadlineMs = now;
+    scheduleNextPacer(now);
+  }
+};
+
+const setSpeedScale = (value) => {
+  const previousScale = getSpeedScale();
+  speedScale = value;
+  if (asapMode || previousScale === getSpeedScale()) {
+    return;
+  }
+  const now = performance.now();
+  for (const axis of axisOrder) {
+    const st = axisState.get(axis);
+    if (!st || st.nextWakeTimeMs === null) continue;
+    const remainingMs = Math.max(0, st.nextWakeTimeMs - now);
+    const logicalRemainingMs = remainingMs * previousScale;
+    st.nextWakeTimeMs = now + (logicalRemainingMs / getSpeedScale());
+  }
+  if (!isPaused && (hasAxisWork() || !inputComplete || aggHasAny)) {
+    if (pacerTimer) {
+      clearTimeout(pacerTimer);
+      pacerTimer = null;
+    }
+    pacerNextDeadlineMs = now;
+    scheduleNextPacer(now);
+  }
+};
+
+const setAsapMode = (enabled) => {
+  asapMode = Boolean(enabled);
+  if (!asapMode) {
+    return;
+  }
+  const now = performance.now();
+  for (const axis of axisOrder) {
+    const st = axisState.get(axis);
+    if (!st || st.nextWakeTimeMs === null) continue;
+    st.nextWakeTimeMs = now;
+  }
+  if (!isPaused && (hasAxisWork() || !inputComplete || aggHasAny)) {
+    if (pacerTimer) {
+      clearTimeout(pacerTimer);
+      pacerTimer = null;
+    }
+    pacerNextDeadlineMs = now;
+    scheduleNextPacer(now);
+  }
+};
 
 const ensureAxisForOid = (oid) => {
   const n = Number(oid);
@@ -212,6 +396,9 @@ const buildMoveLogEntry = (move, atMs, spanMs) => {
 
 const pacerLoop = () => {
   try {
+    if (isPaused) {
+      return;
+    }
     const now = performance.now();
     let any = false;
     let loopMinStepTimeMs = Infinity;
@@ -236,8 +423,7 @@ const pacerLoop = () => {
           st.intervalTicks = Math.max(1, (st.intervalTicks || 1) + (st.addTicks || 0));
           const nextRaw = stepRaw !== null ? wrap32(stepRaw + st.intervalTicks) : null;
           st.nextStepClockRaw = nextRaw;
-          const mapped = nextRaw !== null ? clockModel.mcuToWorkerMs(nextRaw) : null;
-          st.nextWakeTimeMs = mapped !== null ? mapped : thisStepTimeMs + ticksToMs(st.intervalTicks);
+          st.nextWakeTimeMs = resolveScaledWakeTimeMs(nextRaw, ticksToMs(st.intervalTicks), thisStepTimeMs);
         } else {
           const nextSeg = st.segments.shift();
           if (nextSeg) {
@@ -248,8 +434,7 @@ const pacerLoop = () => {
             const baseRaw = st.baseClockRaw !== null ? st.baseClockRaw : ensureBaseClockRaw(st);
             const nextRaw = wrap32(baseRaw + st.intervalTicks);
             st.nextStepClockRaw = nextRaw;
-            const mapped = clockModel.mcuToWorkerMs(nextRaw);
-            st.nextWakeTimeMs = mapped !== null ? mapped : thisStepTimeMs + ticksToMs(st.intervalTicks);
+            st.nextWakeTimeMs = resolveScaledWakeTimeMs(nextRaw, ticksToMs(st.intervalTicks), thisStepTimeMs);
           } else {
             st.nextWakeTimeMs = null;
             st.intervalTicks = null;
@@ -294,24 +479,7 @@ const pacerLoop = () => {
     if (aggHasAny) {
       const sinceLast = now - lastEmitMs;
       if (sinceLast >= MIN_EMIT_INTERVAL_MS) {
-        const atMs = (aggLastStepTimeMs != null) ? aggLastStepTimeMs : now;
-        const spanMs = (aggFirstStepTimeMs != null && aggLastStepTimeMs != null)
-          ? Math.max(0, aggLastStepTimeMs - aggFirstStepTimeMs)
-          : 0;
-        aggMove.at = atMs;
-        aggMove.span = spanMs;
-        const logEntry = LOG_MOVE ? buildMoveLogEntry(aggMove, atMs, spanMs) : null;
-        if (LOG_MOVE && logEntry) {
-          postMessage({ type: 'move', command: aggMove, logEntry });
-        } else {
-          postMessage({ type: 'move', command: aggMove });
-        }
-        // Reset aggregation
-        aggMove = { type: 'Move' };
-        aggFirstStepTimeMs = null;
-        aggLastStepTimeMs = null;
-        aggHasAny = false;
-        lastEmitMs = now;
+        emitAggregatedMove((aggLastStepTimeMs != null) ? aggLastStepTimeMs : now);
       }
     }
 
@@ -322,6 +490,9 @@ const pacerLoop = () => {
 };
 
 const scheduleNextPacer = (now = performance.now()) => {
+  if (isPaused || (inputComplete && donePosted)) {
+    return;
+  }
   if (pacerNextDeadlineMs === null) {
     pacerNextDeadlineMs = now + PACER_INTERVAL_MS;
   } else {
@@ -335,11 +506,22 @@ const scheduleNextPacer = (now = performance.now()) => {
 
 const pacerTick = () => {
   pacerTimer = null;
+  if (isPaused) {
+    return;
+  }
   pacerLoop();
-  scheduleNextPacer();
+  if (maybePostDone()) {
+    return;
+  }
+  if (hasAxisWork() || !inputComplete || aggHasAny) {
+    scheduleNextPacer();
+  }
 };
 
 const ensurePacerRunning = () => {
+  if (isPaused || (inputComplete && donePosted)) {
+    return;
+  }
   if (pacerTimer == null) {
     const now = performance.now();
     // Reset baseline so first schedule is anchored to the current clock value
@@ -376,9 +558,8 @@ const enqueueSegment = (axis, intervalTicks, count, addTicks) => {
     st.remaining = seg.remaining;
     st.activeDirSign = seg.dirSign;
     st.nextStepClockRaw = firstStepRaw;
-    const mapped = clockModel.mcuToWorkerMs(firstStepRaw);
     const now = performance.now();
-    st.nextWakeTimeMs = mapped !== null ? mapped : now + ticksToMs(seg.intervalTicks);
+    st.nextWakeTimeMs = resolveScaledWakeTimeMs(firstStepRaw, ticksToMs(seg.intervalTicks), now);
   } else {
     st.segments.push(seg);
   }
@@ -480,6 +661,9 @@ const processSerialLines = (lines) => {
       handleParsedLine(line);
     }
   }
+  if (inputComplete) {
+    maybePostDone();
+  }
 };
 
 const feedSerialChunk = (chunk) => {
@@ -518,7 +702,7 @@ const handleBinaryPayload = (payload) => {
 };
 
 const connect = (url) => {
-  serialLineDecoder = null;
+  resetRuntimeState();
   ws = new WebSocket(url);
   ws.binaryType = 'arraybuffer';
   ws.onopen = () => console.log(`connected to ${url}`);
@@ -553,9 +737,8 @@ const connect = (url) => {
             for (const axis of axisOrder) {
               const st = axisState.get(axis);
               if (!st || st.nextStepClockRaw === null || st.nextWakeTimeMs === null) continue;
-              const mapped = clockModel.mcuToWorkerMs(st.nextStepClockRaw);
-              if (mapped !== null) {
-                st.nextWakeTimeMs = mapped;
+              if (clockModel.mcuToWorkerMs(st.nextStepClockRaw) !== null) {
+                st.nextWakeTimeMs = resolveScaledWakeTimeMs(st.nextStepClockRaw, 0, receiveMs);
               }
             }
           }
@@ -570,36 +753,66 @@ const connect = (url) => {
   ws.onerror = (err) => console.error('websocket error:', err);
   ws.onclose = () => {
     console.log('connection closed');
-    if (pacerTimer) {
-      clearTimeout(pacerTimer);
-      pacerTimer = null;
-    }
-    pacerNextDeadlineMs = null;
-    clockModel.reset();
-    for (const axis of axisOrder) {
-      const st = axisState.get(axis);
-      if (!st) continue;
-      st.segments.length = 0;
-      st.nextWakeTimeMs = null;
-      st.intervalTicks = null;
-      st.addTicks = 0;
-      st.remaining = 0;
-      st.dirSign = 1;
-      st.activeDirSign = 1;
-      st.baseClockRaw = null;
-      st.nextStepClockRaw = null;
-    }
-    aggMove = { type: 'Move' };
-    aggFirstStepTimeMs = null;
-    aggLastStepTimeMs = null;
-    aggHasAny = false;
     if (serialLineDecoder) {
       const remaining = serialLineDecoder.flush();
       processSerialLines(remaining);
     }
-    serialLineDecoder = null;
+    resetRuntimeState();
+    ws = null;
     postMessage({ type: 'closed' });
   };
+};
+
+const finishUploadInput = () => {
+  if (serialLineDecoder) {
+    const remaining = serialLineDecoder.flush();
+    processSerialLines(remaining);
+    serialLineDecoder = null;
+  }
+  inputComplete = true;
+  if (!maybePostDone() && !isPaused && (hasAxisWork() || aggHasAny)) {
+    ensurePacerRunning();
+  }
+};
+
+const processUploadedText = async (file) => {
+  const text = await file.text();
+  const lines = text.split(/\r?\n/g);
+  for (const rawLine of lines) {
+    const line = typeof rawLine === 'string' ? rawLine.trim() : '';
+    if (!line) continue;
+    handleParsedLine(line);
+  }
+};
+
+const processUploadedSerial = async (file) => {
+  const buffer = await file.arrayBuffer();
+  feedSerialChunk(new Uint8Array(buffer));
+};
+
+const processUploadedFile = async (file, explicitFormat = null) => {
+  if (!file || typeof file.text !== 'function' || typeof file.arrayBuffer !== 'function') {
+    postMessage({ type: 'error', message: 'Klipper raw upload requires a File or Blob-like object.' });
+    return;
+  }
+  const format = explicitFormat || detectFileFormat(file.name) || FileFormat.MCU_TEXT;
+  if (!isKlipperFormat(format)) {
+    postMessage({ type: 'error', message: `Unsupported Klipper raw upload format: ${format}` });
+    return;
+  }
+  resetRuntimeState();
+  ws = null;
+  try {
+    if (format === FileFormat.MCU_SERIAL) {
+      await processUploadedSerial(file);
+    } else {
+      await processUploadedText(file);
+    }
+    finishUploadInput();
+  } catch (err) {
+    console.error('KlipperPacer upload processing failed', err);
+    postMessage({ type: 'error', message: err?.message || 'Failed to process Klipper upload' });
+  }
 };
 
 self.onmessage = (e) => {
@@ -613,7 +826,24 @@ self.onmessage = (e) => {
       } catch (_) { /* console may be unavailable in some worker contexts */ }
     }
     connect(data.url);
+  } else if (type === 'filename_upload') {
+    LOG_MOVE = Boolean(data.logMove);
+    moveLogSeq = 0;
+    processUploadedFile(data.filename, data.format);
+  } else if (type === 'set_speed_scale') {
+    setSpeedScale(data.value);
+  } else if (type === 'set_asap_mode') {
+    setAsapMode(data.enable);
+  } else if (type === 'pause') {
+    setPaused(true);
+  } else if (type === 'resume') {
+    setPaused(false);
   } else if (type === 'close') {
-    if (ws) ws.close();
+    if (ws) {
+      ws.close();
+    } else {
+      resetRuntimeState();
+      postMessage({ type: 'closed' });
+    }
   }
 };

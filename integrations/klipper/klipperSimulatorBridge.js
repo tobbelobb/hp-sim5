@@ -1,13 +1,10 @@
-// KlipperSimulatorBridge: Connects to a raw-bytes WebSocket via a worker.
+// KlipperSimulatorBridge: Connects the raw-bytes pacer worker to a timing scheduler.
 import timingSchedulerWorkerUrl from './timingScheduler.js?worker&url';
 
 const DEBUG = false; // Note: most logging is now in the worker.
+const EARLY_EPS_MS = 0.05; // only preempt if earlier by >= 0.05ms to reduce churn
 
-// options: { dt?: number } where dt is in seconds. If provided and > 0,
-// outgoing commands are batched over windows of length dt and coalesced.
-export function connectKlipperRaw(url, onCommand /* function(command) */, options = {}) {
-  // Use a URL object to construct a path relative to this module's location.
-  // This is more robust than hardcoding paths, especially with bundlers/vite.
+function createKlipperRawHandle(onCommand, options = {}) {
   const workerUrl = new URL('./klipperPacerWorker.js', import.meta.url);
   const worker = new Worker(workerUrl, { type: 'module' });
 
@@ -17,38 +14,55 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
     : 'klipper_move_log.jsonl';
   const moveLogLines = logMove ? [] : null;
   const onWorkerError = typeof options.onWorkerError === 'function' ? options.onWorkerError : null;
+  const onDone = typeof options.onDone === 'function' ? options.onDone : null;
 
-  worker.postMessage({ type: 'connect', url, logMove });
-
-  // --- High-precision timing scheduler (Atomics.wait-based) ---
   const timingWorker = new Worker(timingSchedulerWorkerUrl, { type: 'module' });
-
-  // Shared futex used to preempt sleeps
   const sab = new SharedArrayBuffer(4);
   const sabI32 = new Int32Array(sab);
   timingWorker.postMessage({ type: 'init', sab });
 
-  // Pending commands, sorted by 'at' (ms, performance.now() timebase)
   const pending = [];
-  let nextDeadlineMs = null; // latest computed earliest deadline among pending (for info)
-  let currentSleepDeadlineMs = null; // deadline currently armed in timing worker
-  let sleepArmed = false; // whether worker is currently sleeping for a deadline
-  const EARLY_EPS_MS = 0.05; // only preempt if earlier by >= 0.05ms to reduce churn
+  let nextDeadlineMs = null;
+  let currentSleepDeadlineMs = null;
+  let sleepArmed = false;
+  let paused = false;
+  let sourceDone = false;
+  let doneNotified = false;
+  let asapMode = false;
+  let currentSpeedScale = 1;
+  let closed = false;
 
-  const insertSorted = (cmd) => {
-    let lo = 0, hi = pending.length;
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (pending[mid].at <= cmd.at) lo = mid + 1; else hi = mid;
+  const notifyScheduler = () => {
+    try {
+      Atomics.store(sabI32, 0, 1);
+      Atomics.notify(sabI32, 0, 1);
+    } catch (_) {}
+  };
+
+  const sortPending = () => {
+    pending.sort((left, right) => left.at - right.at);
+  };
+
+  const maybeNotifyDone = () => {
+    if (!sourceDone || doneNotified || pending.length > 0 || closed) {
+      return;
     }
-    pending.splice(lo, 0, cmd);
+    doneNotified = true;
+    if (typeof onDone === 'function') {
+      onDone();
+    }
+  };
+
+  const clearTimingState = () => {
+    nextDeadlineMs = null;
+    currentSleepDeadlineMs = null;
+    sleepArmed = false;
   };
 
   const scheduleNextSleep = () => {
-    if (pending.length === 0) {
-      nextDeadlineMs = null;
-      currentSleepDeadlineMs = null;
-      sleepArmed = false;
+    if (closed || paused || pending.length === 0) {
+      clearTimingState();
+      maybeNotifyDone();
       return;
     }
     const earliest = pending[0].at;
@@ -60,53 +74,133 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
       currentSleepDeadlineMs = earliest;
       sleepArmed = true;
     }
-    // If already armed and a new earlier deadline arrives, we will only
-    // preempt via SAB in schedule(); a new 'sleep' will be sent after wakeup.
+  };
+
+  const insertSorted = (cmd) => {
+    let lo = 0;
+    let hi = pending.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (pending[mid].at <= cmd.at) {
+        lo = mid + 1;
+      } else {
+        hi = mid;
+      }
+    }
+    pending.splice(lo, 0, cmd);
   };
 
   const schedule = (cmd) => {
-    if (!cmd || typeof cmd !== 'object') return;
-    if (!Number.isFinite(cmd.at)) cmd.at = performance.now();
-    insertSorted(cmd);
+    if (!cmd || typeof cmd !== 'object' || closed) {
+      return;
+    }
+    const normalized = { ...cmd };
+    if (!Number.isFinite(normalized.at)) {
+      normalized.at = performance.now();
+    }
+    if (asapMode) {
+      normalized.at = performance.now();
+    }
+    if (paused) {
+      normalized.remainingMs = Math.max(0, normalized.at - performance.now());
+    }
+    insertSorted(normalized);
+    if (paused) {
+      return;
+    }
     if (!sleepArmed) {
-      // Nothing armed yet: issue initial sleep
       scheduleNextSleep();
       return;
     }
-    // If an earlier deadline just arrived, preempt the current wait.
     const earliest = pending[0].at;
     if (currentSleepDeadlineMs === null || earliest + EARLY_EPS_MS < currentSleepDeadlineMs) {
+      notifyScheduler();
+    }
+  };
+
+  const flushDueCommands = (now = performance.now()) => {
+    while (pending.length && pending[0].at <= now) {
+      const cmd = pending.shift();
       try {
-        Atomics.store(sabI32, 0, 1);
-        Atomics.notify(sabI32, 0, 1);
+        onCommand(cmd);
       } catch (_) {}
-      // Do not send a new 'sleep' message here; we'll arm after the worker wakes.
     }
   };
 
-  timingWorker.onmessage = (e) => {
-    const { type } = e.data || {};
-    if (type === 'wakeup') {
-      const now = performance.now();
-      // Flush all due commands
-      while (pending.length && pending[0].at <= now) {
-        const cmd = pending.shift();
-        try { onCommand(cmd); } catch (_) {}
+  const setPaused = (nextPaused) => {
+    if (paused === Boolean(nextPaused) || closed) {
+      return;
+    }
+    paused = Boolean(nextPaused);
+    const now = performance.now();
+    if (paused) {
+      for (const cmd of pending) {
+        cmd.remainingMs = Math.max(0, cmd.at - now);
       }
-      // Previous sleep has completed or was preempted: allow re-arming.
-      sleepArmed = false;
-      currentSleepDeadlineMs = null;
-      scheduleNextSleep();
+      clearTimingState();
+      notifyScheduler();
+      return;
     }
+    for (const cmd of pending) {
+      const remainingMs = Math.max(0, Number(cmd.remainingMs) || 0);
+      cmd.at = asapMode ? now : now + remainingMs;
+      delete cmd.remainingMs;
+    }
+    sortPending();
+    scheduleNextSleep();
   };
 
-  const handleCommand = (cmd) => {
-    schedule(cmd);
+  const setSpeedScale = (value) => {
+    const safeScale = Number.isFinite(value) && value > 0 ? value : 1;
+    const previousScale = currentSpeedScale;
+    currentSpeedScale = safeScale;
+    if (closed || previousScale === safeScale || pending.length === 0) {
+      worker.postMessage({ type: 'set_speed_scale', value: safeScale });
+      return;
+    }
+    const now = performance.now();
+    for (const cmd of pending) {
+      if (paused) {
+        const logicalRemaining = Math.max(0, Number(cmd.remainingMs) || 0) * previousScale;
+        cmd.remainingMs = logicalRemaining / safeScale;
+      } else {
+        const logicalRemaining = Math.max(0, cmd.at - now) * previousScale;
+        cmd.at = now + (logicalRemaining / safeScale);
+      }
+    }
+    sortPending();
+    clearTimingState();
+    notifyScheduler();
+    worker.postMessage({ type: 'set_speed_scale', value: safeScale });
+    scheduleNextSleep();
+  };
+
+  const setAsapMode = (enabled) => {
+    asapMode = Boolean(enabled);
+    if (!closed && asapMode) {
+      const now = performance.now();
+      for (const cmd of pending) {
+        if (paused) {
+          cmd.remainingMs = 0;
+        } else {
+          cmd.at = now;
+        }
+      }
+      sortPending();
+      clearTimingState();
+      notifyScheduler();
+      if (!paused) {
+        flushDueCommands(now);
+      }
+    }
+    worker.postMessage({ type: 'set_asap_mode', enable: asapMode });
+    scheduleNextSleep();
   };
 
   const announceLogHelp = () => {
-    if (!logMove || !moveLogLines) return;
-    if (announceLogHelp._done) return;
+    if (!logMove || !moveLogLines || announceLogHelp._done) {
+      return;
+    }
     announceLogHelp._done = true;
     if (typeof console !== 'undefined') {
       console.log('[KlipperRaw] move logging enabled; call handle.downloadMoveLog() to save JSONL file.');
@@ -114,7 +208,9 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
   };
 
   const downloadMoveLog = () => {
-    if (!logMove || !moveLogLines || moveLogLines.length === 0) return null;
+    if (!logMove || !moveLogLines || moveLogLines.length === 0) {
+      return null;
+    }
     if (typeof Blob === 'undefined' || typeof URL === 'undefined') {
       return moveLogLines.join('\n');
     }
@@ -134,6 +230,42 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
     return url;
   };
 
+  const forwardWorkerMessage = (message) => {
+    if (!message || typeof message !== 'object' || closed) {
+      return;
+    }
+    const payload = { ...message };
+    if (
+      payload.type === 'connect'
+      || payload.type === 'filename_upload'
+      || payload.type === 'filename_fetch'
+    ) {
+      payload.logMove = logMove;
+      sourceDone = false;
+      doneNotified = false;
+    }
+    worker.postMessage(payload);
+  };
+
+  const close = () => {
+    if (closed) {
+      return;
+    }
+    closed = true;
+    pending.length = 0;
+    clearTimingState();
+    try {
+      worker.postMessage({ type: 'close' });
+    } catch (_) {}
+    try {
+      worker.terminate();
+    } catch (_) {}
+    try {
+      timingWorker.postMessage({ type: 'shutdown' });
+    } catch (_) {}
+    notifyScheduler();
+  };
+
   worker.onmessage = (e) => {
     const { type, command, logEntry, message } = e.data || {};
     if (type === 'move') {
@@ -151,7 +283,12 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
           }
         }
       }
-      if (typeof onCommand === 'function') handleCommand(command);
+      if (typeof onCommand === 'function') {
+        schedule(command);
+      }
+    } else if (type === 'done') {
+      sourceDone = true;
+      maybeNotifyDone();
     } else if (type === 'closed') {
       console.log('KlipperSimulatorBridge: worker indicated connection closed');
     } else if (type === 'error') {
@@ -165,6 +302,8 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
       } else if (typeof console !== 'undefined') {
         console.error('KlipperSimulatorBridge worker error:', msg);
       }
+    } else if (DEBUG) {
+      console.debug('KlipperSimulatorBridge: unhandled worker message', e.data);
     }
   };
 
@@ -172,21 +311,77 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
     console.error('KlipperSimulatorBridge worker error:', err.message, err);
   };
 
-  // Return an object that allows the caller to terminate the connection/worker.
+  timingWorker.onmessage = (e) => {
+    const { type } = e.data || {};
+    if (type !== 'wakeup') {
+      return;
+    }
+    clearTimingState();
+    if (paused || closed) {
+      return;
+    }
+    flushDueCommands(performance.now());
+    scheduleNextSleep();
+  };
+
   return {
     worker,
+    postMessage(message) {
+      const type = message?.type;
+      if (!type || closed) {
+        return;
+      }
+      if (type === 'pause') {
+        setPaused(true);
+        worker.postMessage({ type: 'pause' });
+        return;
+      }
+      if (type === 'resume') {
+        setPaused(false);
+        worker.postMessage({ type: 'resume' });
+        return;
+      }
+      if (type === 'set_speed_scale') {
+        setSpeedScale(message.value);
+        return;
+      }
+      if (type === 'set_asap_mode') {
+        setAsapMode(message.enable);
+        return;
+      }
+      if (type === 'set_dt') {
+        return;
+      }
+      if (type === 'close') {
+        close();
+        return;
+      }
+      forwardWorkerMessage(message);
+    },
     setDt: (_newDt) => {
-      // No-op: timing is driven by per-command 'at' timestamps now
+      // No-op: timing is driven by per-command 'at' timestamps now.
     },
     getMoveLogLines: () => (logMove && moveLogLines ? [...moveLogLines] : []),
     downloadMoveLog,
-    close: () => {
-      try { worker.postMessage({ type: 'close' }); } catch (_) {}
-      try { timingWorker.postMessage({ type: 'shutdown' }); } catch (_) {}
-      try {
-        Atomics.store(sabI32, 0, 1);
-        Atomics.notify(sabI32, 0, 1);
-      } catch (_) {}
-    },
+    terminate: close,
+    close,
   };
+}
+
+export function createKlipperRawBridge(onCommand /* function(command) */, options = {}) {
+  return createKlipperRawHandle(onCommand, options);
+}
+
+// options: { dt?: number } where dt is in seconds. If provided and > 0,
+// outgoing commands are batched over windows of length dt and coalesced.
+export function connectKlipperRaw(url, onCommand /* function(command) */, options = {}) {
+  const handle = createKlipperRawHandle(onCommand, options);
+  handle.postMessage({ type: 'connect', url });
+  return handle;
+}
+
+export function playKlipperRawFile(file, onCommand /* function(command) */, options = {}) {
+  const handle = createKlipperRawHandle(onCommand, options);
+  handle.postMessage({ type: 'filename_upload', filename: file });
+  return handle;
 }
