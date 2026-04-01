@@ -1,10 +1,3 @@
-export const STEP_CLOCK_HZ_RRF_HOST = 48_000_000 / 64; // 750 kHz step clock
-export const EXTRUDER_MM_PER_STEP = 1 / 95.922; // Matches M92 E95.922 from the RRF config
-
-export function computeTicksPerBucket(dt) {
-    return Math.max(1, Math.round(STEP_CLOCK_HZ_RRF_HOST * dt));
-}
-
 export function isFloatValue(num) {
     if (!Number.isFinite(num)) {
         return false;

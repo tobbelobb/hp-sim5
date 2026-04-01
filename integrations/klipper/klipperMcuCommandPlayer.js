@@ -13,10 +13,10 @@ const STEP_PIN_AXIS_MAP = {
 };
 
 //const DEFAULT_AXIS_ORDER = ['A', 'B', 'C', 'D', 'E', 'I', 'J', 'K', 'L', 'O'];
-const DEFAULT_AXIS_ORDER = ['A', 'B', 'C', 'E']; // Observe: This only works for Slideprinter. Must change when we go 3d and use more complicated setups
+const DEFAULT_AXIS_ORDER = ['A', 'B', 'C', 'E'];
 const STEP_ANGLE_RAD = (2 * Math.PI) / (200 * 16); // 200 steps/rev, 16 microsteps
-const MCU_CLOCK_HZ = 50_000_000;
-const EXTRUDER_MM_PER_STEP = 33.5 / (200 * 16);
+const MCU_CLOCK_HZ_KLIPPER_HOST = 50_000_000;
+const EXTRUDER_MM_PER_STEP_KLIPPER = 33.5 / (200 * 16);
 
 async function* makeLineIterator(stream) {
     const reader = stream.pipeThrough(new TextDecoderStream()).getReader();
@@ -110,7 +110,7 @@ export class KlipperMcuCommandPlayer {
     }
 
     _computeTicksPerBucket(dt) {
-        return Math.max(1, Math.round(MCU_CLOCK_HZ * dt));
+        return Math.max(1, Math.round(MCU_CLOCK_HZ_KLIPPER_HOST * dt));
     }
 
     _targetWaitMs() {
@@ -443,7 +443,7 @@ export class KlipperMcuCommandPlayer {
                         state.lastTick += interval;
                         const bucketIdx = Math.floor(state.lastTick / this.ticksPerBucket);
                         const current = this.bucketExtrusion.get(bucketIdx) || 0;
-                        this.bucketExtrusion.set(bucketIdx, current + state.dir * EXTRUDER_MM_PER_STEP);
+                        this.bucketExtrusion.set(bucketIdx, current + state.dir * EXTRUDER_MM_PER_STEP_KLIPPER);
                         this.maxBucketSeen = Math.max(this.maxBucketSeen, bucketIdx);
                         interval = Math.max(1, interval + add);
                     }

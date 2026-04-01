@@ -1,21 +1,21 @@
 import { detectFileFormat, FileFormat, isRrfFormat } from '../shared/fileFormatUtils.js';
 import {
-    computeTicksPerBucket,
     createMotionProfile,
     distributeEvenly,
     distributeWithProfile,
     isFloatValue,
-    EXTRUDER_MM_PER_STEP,
 } from '../shared/motionUtils.js';
 
 const STEP_ANGLE_RAD = (2 * Math.PI) / (200 * 16);
+export const STEP_CLOCK_HZ_RRF_HOST = 48_000_000 / 64; // 750 kHz step clock
+export const EXTRUDER_MM_PER_STEP_RRF = 1 / 95.922; // Matches M92 E95.922 from the RRF config
 
 const DEFAULT_AXIS_ORDER = ['A', 'B', 'C', 'D', 'E', 'I', 'J', 'K', 'L', 'O'];
 const MOTOR_AXIS_MAP = new Map([
     [40, 'A'],
     [41, 'B'],
     [42, 'C'],
-    [43, 'D'], // D has been injected at position 43 here, instead of E, without testing if that causes problems or not. Just because ABCDEIJKLO is the new default order of can addresses
+    [43, 'D'], // ABCDEIJKLO is the new default order of can addresses
     [44, 'E'],
     [45, 'I'],
     [46, 'J'],
@@ -118,7 +118,7 @@ export class RrfCanPlayer {
     }
 
     _computeTicksPerBucket(dt) {
-        return computeTicksPerBucket(dt);
+        return Math.max(1, Math.round(STEP_CLOCK_HZ_RRF_HOST * dt));
     }
 
     _targetWaitMs() {
@@ -428,7 +428,7 @@ export class RrfCanPlayer {
         const distribute = (bucketIdx, normalizedDelta) => {
             const deltaValue = steps * normalizedDelta;
             if (axis === 'E' || axisType === 'float') {
-                this._recordBucketExtrusion(bucketIdx, deltaValue * EXTRUDER_MM_PER_STEP);
+                this._recordBucketExtrusion(bucketIdx, deltaValue * EXTRUDER_MM_PER_STEP_RRF);
             } else {
                 this._recordBucketSteps(axis, bucketIdx, deltaValue);
             }
@@ -436,7 +436,7 @@ export class RrfCanPlayer {
         if (useProfile) {
             this._distributeWithProfile(startTick, profile, distribute);
         } else if (axis === 'E' || axisType === 'float') {
-            const extrusionMm = steps * EXTRUDER_MM_PER_STEP;
+            const extrusionMm = steps * EXTRUDER_MM_PER_STEP_RRF;
             this._distributeEvenly(startTick, totalTicks, extrusionMm, (bucketIdx, delta) => {
                 this._recordBucketExtrusion(bucketIdx, delta);
             });
