@@ -111,7 +111,7 @@ async function importModules() {
     globalThis.TextDecoderStream = class {};
   }
 
-  ({ KlipperCommander } = await import('../../../examples/js/slideprinter/klipperCommander.js'));
+  ({ KlipperCommander } = await import('../../../integrations/klipper/klipperMcuCommandPlayer.js'));
   ({
     RemoteSpoolSystem,
     SpoolTagComponent,

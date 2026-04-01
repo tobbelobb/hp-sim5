@@ -1,6 +1,6 @@
 """
-KlipperHandler
----------------
+Klipper raw byte bridge
+-----------------------
 
 Purpose
   - WebSocket broadcaster for raw MCU bytes.
@@ -10,7 +10,7 @@ Purpose
   - For first bring-up, we just log the raw bytes (no translation).
 
 Usage (typical workflow)
-  1) Start this handler to create the WS broadcaster.
+  1) Start this bridge to create the WS broadcaster.
      Options:
        - PTY source (standalone):
            python -m examples.python.slideprinter.klipper_handler --port 8770 \

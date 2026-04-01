@@ -1,4 +1,4 @@
-// KlipperHandler: Connects to a raw-bytes WebSocket via a worker.
+// KlipperSimulatorBridge: Connects to a raw-bytes WebSocket via a worker.
 import timingSchedulerWorkerUrl from './timingScheduler.js?worker&url';
 
 const DEBUG = false; // Note: most logging is now in the worker.
@@ -8,7 +8,7 @@ const DEBUG = false; // Note: most logging is now in the worker.
 export function connectKlipperRaw(url, onCommand /* function(command) */, options = {}) {
   // Use a URL object to construct a path relative to this module's location.
   // This is more robust than hardcoding paths, especially with bundlers/vite.
-  const workerUrl = new URL('./klipperPacer.js', import.meta.url);
+  const workerUrl = new URL('./klipperPacerWorker.js', import.meta.url);
   const worker = new Worker(workerUrl, { type: 'module' });
 
   const logMove = Boolean(options.logMove);
@@ -153,23 +153,23 @@ export function connectKlipperRaw(url, onCommand /* function(command) */, option
       }
       if (typeof onCommand === 'function') handleCommand(command);
     } else if (type === 'closed') {
-      console.log('KlipperHandler: worker indicated connection closed');
+      console.log('KlipperSimulatorBridge: worker indicated connection closed');
     } else if (type === 'error') {
       const msg = typeof message === 'string' && message ? message : 'Klipper worker reported an error.';
       if (typeof onWorkerError === 'function') {
         try {
           onWorkerError(msg);
         } catch (err) {
-          console.error('KlipperHandler onWorkerError callback threw an error:', err);
+          console.error('KlipperSimulatorBridge onWorkerError callback threw an error:', err);
         }
       } else if (typeof console !== 'undefined') {
-        console.error('KlipperHandler worker error:', msg);
+        console.error('KlipperSimulatorBridge worker error:', msg);
       }
     }
   };
 
   worker.onerror = (err) => {
-    console.error('KlipperHandler worker error:', err.message, err);
+    console.error('KlipperSimulatorBridge worker error:', err.message, err);
   };
 
   // Return an object that allows the caller to terminate the connection/worker.

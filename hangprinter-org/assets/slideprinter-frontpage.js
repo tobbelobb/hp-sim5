@@ -3,7 +3,7 @@ import { World } from '../../src/js/cable_joints/ecs.js';
 import { runGame } from '../../examples/js/slideprinter/runner.js';
 import { setupScene } from '../../examples/js/slideprinter/setupScene.js';
 import { RemoteSpoolSystem, InputSystem } from '../../examples/js/slideprinter/slideprinter_common.js';
-import { detectFileFormat, FileFormat, isMcuFormat } from '../../integrations/rrf/fileFormatUtils.js';
+import { detectFileFormat, FileFormat, isMcuFormat } from '../../integrations/shared/fileFormatUtils.js';
 
 const MCU_PRESETS = {
   hangprinterLogo: {
@@ -67,7 +67,7 @@ function initFrontpageSlideprinter() {
   let currentTimeScale = 1.0;
   let speedStatusArmed = false;
 
-  const klipperCommanderModuleUrl = new URL('../../examples/js/slideprinter/klipperCommander.js', import.meta.url);
+  const klipperCommanderModuleUrl = new URL('../../integrations/klipper/klipperMcuCommandPlayer.js', import.meta.url);
   const moveCommanderModuleUrl = new URL('../../examples/js/slideprinter/moveCommander.js', import.meta.url);
   const usdaUrl = new URL('../../examples/usd_scenes/slideprinter.usda', import.meta.url);
 

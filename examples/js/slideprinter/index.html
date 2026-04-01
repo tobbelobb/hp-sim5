@@ -274,8 +274,8 @@ canvas {
     import { runGame } from './runner.js';
     import { setupScene } from './setupScene.js';
     import { RemoteSpoolSystem } from './slideprinter_common.js';
-    import { connectKlipperRaw } from './klipperHandler.js';
-    import { detectFileFormat, FileFormat, isMcuFormat } from '../../../integrations/rrf/fileFormatUtils.js';
+    import { connectKlipperRaw } from '../../../integrations/klipper/klipperSimulatorBridge.js';
+    import { detectFileFormat, FileFormat, isMcuFormat } from '../../../integrations/shared/fileFormatUtils.js';
     import { RrfHttpBridge } from '../../../integrations/rrf/rrfHttpBridge.js';
 
     const searchParams = new URLSearchParams(window.location.search);
@@ -618,7 +618,7 @@ canvas {
     const moveCommanderURI = websocket_out ? `wss://localhost:${port}` : null;
     const base = import.meta.env.BASE_URL || '/';
     const moveCommanderModuleUrl = new URL('./moveCommander.js', import.meta.url);
-    const klipperCommanderModuleUrl = new URL('./klipperCommander.js', import.meta.url);
+    const klipperCommanderModuleUrl = new URL('../../../integrations/klipper/klipperMcuCommandPlayer.js', import.meta.url);
 
     if ((websocket_in && websocket_out) || (!websocket_in && !websocket_out)) {
         // Create no websocket in this case. The websocket_in && websocket_out case is

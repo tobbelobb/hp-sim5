@@ -1,4 +1,4 @@
-import { detectFileFormat, FileFormat, isRrfFormat } from './fileFormatUtils.js';
+import { detectFileFormat, FileFormat, isRrfFormat } from '../shared/fileFormatUtils.js';
 import {
     computeTicksPerBucket,
     createMotionProfile,
@@ -6,7 +6,7 @@ import {
     distributeWithProfile,
     isFloatValue,
     EXTRUDER_MM_PER_STEP,
-} from './rrfMotionUtils.js';
+} from '../shared/motionUtils.js';
 
 const STEP_ANGLE_RAD = (2 * Math.PI) / (200 * 16);
 

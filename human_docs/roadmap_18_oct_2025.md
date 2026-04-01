@@ -127,7 +127,7 @@ or aften a given number of millimeters of travel away from the starting point,
 we recompute the .cfg file.
 We then truncate the gcode file, keeping only the lines we haven't already printed.
 The new.cfg + truncated.gcode are processed by Klipper/ReprapFirmwareBatcher to generate remaining.serial.
-In KlipperHandler or similar class we throw away our old .serial file and hot-swap in our new remaining.serial.
+In KlipperSimulatorBridge or similar bridge we throw away our old .serial file and hot-swap in our new remaining.serial.
 
 If we are cool, we could also use the timesteps that Klipper generate to help us hot-swap seamlessly from
 old.serial to remaining.serial, and not use the gcode lines or measures like that at all.
@@ -318,7 +318,7 @@ A full test and its result depends on:
  - The gcode
  - The .usda file that defines the machine
  - The .cfg/config.g file that was sent into klipper
- - Any bugs in the pacer or klipperCommander, if any
+- Any bugs in the pacer or KlipperCommander, if any
  - Any manual steps we have squeezed in (which we shouldn't)
 
 A test batch is a collection of gcode files and usda files, maybe just bundled up in a common directory.
@@ -373,4 +373,3 @@ Each (individual machine of each) test run should run on a separate cpu, includi
 
 We should be able to flip through each canvas individually and stack their (named and color identified) layers
 in any order we want (drag & drop for ordering), similar to how layers work in graphics programs like Gimp and Inkscape.
-

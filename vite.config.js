@@ -69,15 +69,13 @@ export default defineConfig(async () => {
         await fs.cp(from, to, { recursive: true });
       }));
 
-      // Copy slideprinter helper modules that the workers import directly
-      const slideprinterSrc = resolve(__dirname, 'examples/js/slideprinter');
-      const rrfSrc = resolve(__dirname, 'integrations/rrf');
+      // Copy worker helper modules that the workers import directly
+      const klipperSrc = resolve(__dirname, 'integrations/klipper');
+      const sharedSrc = resolve(__dirname, 'integrations/shared');
       const slideprinterDist = resolve(__dirname, 'dist/assets');
-      for (const file of ['kinematics.js', 'guessedData.js', 'klipperSerialParser.js']) {
-        await fs.copyFile(join(slideprinterSrc, file), join(slideprinterDist, file));
-      }
-      await fs.copyFile(join(rrfSrc, 'fileFormatUtils.js'), join(slideprinterDist, 'fileFormatUtils.js'));
-      await fs.copyFile(join(rrfSrc, 'rrfMotionUtils.js'), join(slideprinterDist, 'rrfMotionUtils.js'));
+      await fs.copyFile(join(klipperSrc, 'klipperSerialDecoder.js'), join(slideprinterDist, 'klipperSerialDecoder.js'));
+      await fs.copyFile(join(sharedSrc, 'fileFormatUtils.js'), join(slideprinterDist, 'fileFormatUtils.js'));
+      await fs.copyFile(join(sharedSrc, 'motionUtils.js'), join(slideprinterDist, 'motionUtils.js'));
     },
   });
 
