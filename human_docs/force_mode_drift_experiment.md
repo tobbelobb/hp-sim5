@@ -128,7 +128,7 @@ The trace is once again is a curve, not a straight line, just like in Series 3.
 I want you to look at possible reasons why motor 41.0 (also known as "Spool B" or "Motor B" in some contexts) acts weaker than the other two motors.
 You can look for reasons in ./examples/usd_scenes/slideprinter_multi_unit.usda, which defines the simulated scene.
 There could be something about distances, angles, materials, radii or something.
-You can also look in hp-sim/assets/hp-sim.js which defines the simulator code.
+You can also look in hp-sim/app/hp-sim.js which defines the simulator code.
 There could be something about the order in which constraints are applied or something.
 
 -----------------

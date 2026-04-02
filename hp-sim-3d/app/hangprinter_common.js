@@ -1,4 +1,4 @@
-import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
+import Vector3 from '../../src/js/cable_joints_3d/vector3.js';
 
 import {
   PositionComponent,
@@ -11,12 +11,12 @@ import {
   MomentOfInertiaComponent,
   RigidGroupComponent,
   MachineTagComponent,
-} from '../../../src/js/cable_joints_3d/ecs.js';
+} from '../../src/js/cable_joints_3d/ecs.js';
 import {
   CableLinkComponent,
   CableJointComponent,
   CablePathComponent,
-} from '../../../src/js/cable_joints_3d/cable_joints_core.js';
+} from '../../src/js/cable_joints_3d/cable_joints_core.js';
 
 export {
   ExtruderComponent,
@@ -30,7 +30,7 @@ export {
   isStepperInTorqueMode,
   isStepperClosedLoopEnabled,
   getStepperTorque,
-} from '../slideprinter/slideprinter_common.js';
+} from '../../examples/js/slideprinter/slideprinter_common.js';
 
 import {
   ExtruderComponent,
@@ -38,7 +38,7 @@ import {
   SpoolStateComponent,
   StepperMotorComponent,
   isStepperClosedLoopEnabled,
-} from '../slideprinter/slideprinter_common.js';
+} from '../../examples/js/slideprinter/slideprinter_common.js';
 
 const DEFAULT_PLANE_NORMAL = new Vector3(0.0, 0.0, 1.0);
 

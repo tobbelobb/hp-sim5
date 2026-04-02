@@ -1,7 +1,7 @@
 import {
   LINE_LAYERING_TOGGLE_KEYS,
   setLineLayeringFeatureFlags,
-} from '../../../hp-sim/assets/line-layering-flags.js';
+} from '../../../hp-sim/app/line-layering-flags.js';
 
 const CORE_CABLE_MECHANICS_KEYS = Object.freeze([
   'layeringAttachmentUpdatePoints',

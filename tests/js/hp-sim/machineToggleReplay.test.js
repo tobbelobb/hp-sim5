@@ -3,7 +3,7 @@ import path from 'path';
 import { World, MachineTagComponent } from '../../../src/js/cable_joints/ecs.js';
 import { setupScene } from '../../../examples/js/slideprinter/setupScene.js';
 import { RemoteSpoolSystem, ExtruderComponent } from '../../../examples/js/slideprinter/slideprinter_common.js';
-import { QualityMonitor } from '../../../hp-sim/assets/quality-monitor.js';
+import { QualityMonitor } from '../../../hp-sim/app/quality-monitor.js';
 import { Open as UsdOpen } from '../../../src/js/usd/stage.js';
 
 const usdPath = path.resolve(process.cwd(), 'examples/usd_scenes/slideprinter.usda');

@@ -1,4 +1,4 @@
-import { runGame } from '../../../examples/js/slideprinter_3d/runner.js';
+import { runGame } from '../../../hp-sim-3d/app/runner.js';
 
 function createEventTarget(initialText = '') {
   const listeners = new Map();

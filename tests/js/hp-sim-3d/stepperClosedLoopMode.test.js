@@ -9,7 +9,7 @@ import {
 import {
   StepperMotorComponent,
   StepperMotorSystem,
-} from '../../../examples/js/slideprinter_3d/slideprinter_common.js';
+} from '../../../hp-sim-3d/app/hangprinter_common.js';
 
 function getPlanarAngle(quaternion) {
   const axis = quaternion.transformVector(new Vector3(1.0, 0.0, 0.0));

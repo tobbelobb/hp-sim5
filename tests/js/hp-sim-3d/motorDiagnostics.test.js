@@ -8,8 +8,8 @@ import {
 import {
   SpoolStateComponent,
   StepperMotorComponent,
-} from '../../../examples/js/slideprinter_3d/slideprinter_common.js';
-import { getMachineMotorDiagnostics } from '../../../hp-sim-3d/assets/motor-diagnostics.js';
+} from '../../../hp-sim-3d/app/hangprinter_common.js';
+import { getMachineMotorDiagnostics } from '../../../hp-sim-3d/app/motor-diagnostics.js';
 
 describe('getMachineMotorDiagnostics (3D)', () => {
   test('reports per-axis missed steps from encoder angles', () => {

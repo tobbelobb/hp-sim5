@@ -3,7 +3,7 @@ import {
   resolveNavigationCursorZoomAnchor,
   resolveTouchNavigationCursorTapAction,
   shouldHideNavigationCursorOnClick,
-} from '../../../hp-sim-3d/assets/navigation_cursor_interactions.js';
+} from '../../../hp-sim-3d/app/navigation_cursor_interactions.js';
 
 describe('hp-sim navigation cursor interactions', () => {
   test('keeps wheel zoom centered on the nav cursor when it is active', () => {

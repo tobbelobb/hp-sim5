@@ -1,11 +1,11 @@
-import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
+import Vector3 from '../../src/js/cable_joints_3d/vector3.js';
 import {
   getAttribute,
   getChild,
   getChildren,
   getRelationship,
   materialProperties
-} from "../../../src/js/usd/stage.js";
+} from "../../src/js/usd/stage.js";
 import {
   PositionComponent,
   VelocityComponent,
@@ -25,7 +25,7 @@ import {
   DistanceConstraintComponent,
   RigidGroupComponent,
   MachineTagComponent,
-} from "../../../src/js/cable_joints_3d/ecs.js";
+} from "../../src/js/cable_joints_3d/ecs.js";
 import {
   CableLinkComponent,
   CableJointComponent,
@@ -33,17 +33,17 @@ import {
   linecolor1,
   CableAttachmentUpdateSystem,
   PBDCableConstraintSolver
-} from '../../../src/js/cable_joints_3d/cable_joints_core.js';
+} from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import {
   PBDResolveCableOverCorrections
-} from '../../../src/js/cable_joints_3d/pbdResolveCableOverCorrections.js';
+} from '../../src/js/cable_joints_3d/pbdResolveCableOverCorrections.js';
 
-import { CableAttachmentCacheSystem } from '../../../src/js/cable_joints_3d/cable_attachment_cache_system.js';
-import { CableSlackSystem } from '../../../src/js/cable_joints_3d/cable_slack_system.js';
-import { CableFrictionSystem } from '../../../src/js/cable_joints_3d/cable_friction_system.js';
+import { CableAttachmentCacheSystem } from '../../src/js/cable_joints_3d/cable_attachment_cache_system.js';
+import { CableSlackSystem } from '../../src/js/cable_joints_3d/cable_slack_system.js';
+import { CableFrictionSystem } from '../../src/js/cable_joints_3d/cable_friction_system.js';
 import {
   PauseStateComponent,
-} from '../flipper/flipper_common.js';
+} from '../../examples/js/flipper/flipper_common.js';
 import {
   InputSystem,
   SpoolTagComponent,
@@ -54,8 +54,8 @@ import {
   StepperMotorSystem,
   ExtruderComponent,
   ExtruderSystem
-} from './slideprinter_common.js';
-import { RenderSystem3D } from '../../../src/js/cable_joints_3d/render_system_3d.js';
+} from './hangprinter_common.js';
+import { RenderSystem3D } from '../../src/js/cable_joints_3d/render_system_3d.js';
 import {
   PrevFinalPosSystem,
   PrevFinalOrientationSystem,
@@ -67,7 +67,7 @@ import {
   PBDAngularVelocityUpdateSystem,
   XPBDDistanceConstraintSystem,
   RigidGroupSystem,
-} from '../../../src/js/cable_joints_3d/commonSystems.js';
+} from '../../src/js/cable_joints_3d/commonSystems.js';
 
 const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
 

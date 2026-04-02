@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 function readHpSim3dSource() {
-  const scriptPath = path.resolve(process.cwd(), 'hp-sim-3d/assets/hp-sim.js');
+  const scriptPath = path.resolve(process.cwd(), 'hp-sim-3d/app/hp-sim.js');
   return fs.readFileSync(scriptPath, 'utf8');
 }
 
@@ -10,7 +10,7 @@ describe('hp-sim-3d Klipper upload pipeline toggle', () => {
   test('defines a top-level Klipper upload pipeline toggle', () => {
     const source = readHpSim3dSource();
 
-    expect(source).toContain("const KLIPPER_UPLOAD_PIPELINE = 'player';");
+    expect(source).toContain("const KLIPPER_UPLOAD_PIPELINE = 'raw';");
   });
 
   test('routes uploaded Klipper files through the selected pipeline', () => {

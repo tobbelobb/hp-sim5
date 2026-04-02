@@ -1,4 +1,4 @@
-import { QualityMonitor } from '../../../hp-sim-3d/assets/quality-monitor.js';
+import { QualityMonitor } from '../../../hp-sim-3d/app/quality-monitor.js';
 
 describe('QualityMonitor 3D extrusion scoring', () => {
   function createHudElement() {

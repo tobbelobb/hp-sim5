@@ -1,7 +1,7 @@
 import {
   InputSystem,
   SpoolTagComponent,
-} from '../../../examples/js/slideprinter_3d/slideprinter_common.js';
+} from '../../../hp-sim-3d/app/hangprinter_common.js';
 import {
   World,
   PositionComponent,

@@ -1,8 +1,8 @@
 import { Open as UsdOpen, getAttribute } from '../../src/js/usd/stage.js';
 import { World, EncoderComponent } from '../../src/js/cable_joints_3d/ecs.js';
-import { runGame } from '../../examples/js/slideprinter_3d/runner.js';
-import { setupScene } from '../../examples/js/slideprinter_3d/setupScene.js';
-import { RemoteSpoolSystem, InputSystem, ExtruderComponent } from '../../examples/js/slideprinter_3d/slideprinter_common.js';
+import { runGame } from './runner.js';
+import { setupScene } from './setupScene.js';
+import { RemoteSpoolSystem, InputSystem, ExtruderComponent } from './hangprinter_common.js';
 import { detectFileFormat, FileFormat, isKlipperFormat, isRrfFormat } from '../../integrations/shared/fileFormatUtils.js';
 import { createKlipperRawBridge } from '../../integrations/klipper/klipperSimulatorBridge.js';
 import { _updateAttachmentPoints } from '../../src/js/cable_joints_3d/cable_joints_core.js';

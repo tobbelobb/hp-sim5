@@ -1,4 +1,4 @@
-import { QualityMonitor } from '../../../hp-sim/assets/quality-monitor.js';
+import { QualityMonitor } from '../../../hp-sim/app/quality-monitor.js';
 
 describe('QualityMonitor _projectToPath', () => {
   function createHudElement() {

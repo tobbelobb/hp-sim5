@@ -1,7 +1,7 @@
 import {
   CLOSED_LOOP_MOTOR_TOGGLE_KEYS,
   setClosedLoopMotorFeatureFlags,
-} from '../../../hp-sim/assets/closed-loop-flags.js';
+} from '../../../hp-sim/app/closed-loop-flags.js';
 import { STEPPER_CLOSED_LOOP_RESOURCE } from '../../../examples/js/slideprinter/slideprinter_common.js';
 
 describe('setClosedLoopMotorFeatureFlags', () => {

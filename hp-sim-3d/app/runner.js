@@ -1,5 +1,5 @@
-import { dumpWorldState } from '../../../src/js/cable_joints/debugUtils.js';
-import { InputSystem, RemoteSpoolSystem } from './slideprinter_common.js';
+import { dumpWorldState } from '../../src/js/cable_joints/debugUtils.js';
+import { InputSystem, RemoteSpoolSystem } from './hangprinter_common.js';
 
 const ASAP_RENDER_STRIDE = 10;
 const ASAP_SLICE_BUDGET_MS = 28;

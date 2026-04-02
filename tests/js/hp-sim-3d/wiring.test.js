@@ -7,13 +7,13 @@ function readWorkspaceFile(filePath) {
 
 describe('hp-sim-3d wiring', () => {
   test('points the app shell at the 3D cable joints and slideprinter modules', () => {
-    const source = readWorkspaceFile('hp-sim-3d/assets/hp-sim.js');
+    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim.js');
 
     expect(source).toContain("../../src/js/cable_joints_3d/ecs.js");
     expect(source).toContain("../../src/js/cable_joints_3d/cable_joints_core.js");
-    expect(source).toContain("../../examples/js/slideprinter_3d/runner.js");
-    expect(source).toContain("../../examples/js/slideprinter_3d/setupScene.js");
-    expect(source).toContain("../../examples/js/slideprinter_3d/slideprinter_common.js");
+    expect(source).toContain("./runner.js");
+    expect(source).toContain("./setupScene.js");
+    expect(source).toContain("./hangprinter_common.js");
     expect(source).toContain("./replay_state.js");
   });
 
@@ -27,7 +27,7 @@ describe('hp-sim-3d wiring', () => {
 
   test('adds and wires the closed-loop motor toggle in the 3D app shell', () => {
     const html = readWorkspaceFile('hp-sim-3d/index.html');
-    const source = readWorkspaceFile('hp-sim-3d/assets/hp-sim.js');
+    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim.js');
     const lineLayeringToggleIndex = html.indexOf('id="lineLayeringToggleWrapper"');
     const closedLoopToggleIndex = html.indexOf('id="closedLoopMotorsToggleWrapper"');
 
@@ -43,7 +43,7 @@ describe('hp-sim-3d wiring', () => {
   });
 
   test('connects motor diagnostics into the 3D quality monitor cards', () => {
-    const source = readWorkspaceFile('hp-sim-3d/assets/hp-sim.js');
+    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim.js');
 
     expect(source).toContain("import { getMachineMotorDiagnostics } from './motor-diagnostics.js';");
     expect(source).toContain('setMotorDiagnosticsProvider(() => getMachineMotorDiagnostics(world, machine.id));');

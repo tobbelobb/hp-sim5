@@ -8,7 +8,7 @@ import {
   SpoolStateComponent,
   StepperMotorComponent,
 } from '../../../examples/js/slideprinter/slideprinter_common.js';
-import { getMachineMotorDiagnostics } from '../../../hp-sim/assets/motor-diagnostics.js';
+import { getMachineMotorDiagnostics } from '../../../hp-sim/app/motor-diagnostics.js';
 
 describe('getMachineMotorDiagnostics', () => {
   test('reports per-axis missed steps in the machine local frame', () => {

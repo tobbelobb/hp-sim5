@@ -3,7 +3,7 @@ import {
   collectActiveExtrusionMachineIds,
   filterExtrusionsForMachines,
   restoreReplayExtrusions,
-} from '../../../hp-sim-3d/assets/replay_state.js';
+} from '../../../hp-sim-3d/app/replay_state.js';
 
 describe('hp-sim-3d replay extrusion state', () => {
   test('clones extrusion snapshots with full 3D positions intact', () => {
