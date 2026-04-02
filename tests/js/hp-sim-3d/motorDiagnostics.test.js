@@ -8,7 +8,7 @@ import {
 import {
   SpoolStateComponent,
   StepperMotorComponent,
-} from '../../../hp-sim-3d/app/hangprinter_common.js';
+} from '../../../hp-sim-3d/app/hangprinter_runtime.js';
 import { getMachineMotorDiagnostics } from '../../../hp-sim-3d/app/motor-diagnostics.js';
 
 describe('getMachineMotorDiagnostics (3D)', () => {
