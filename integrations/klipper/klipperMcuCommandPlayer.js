@@ -1,22 +1,15 @@
 import { detectFileFormat, FileFormat, isKlipperFormat } from '../shared/fileFormatUtils.js';
 import { iterateSerialLines, createKlipperSerialDecoder } from './klipperSerialDecoder.js';
 import { distributeEvenly } from '../shared/motionUtils.js';
+import {
+  STEP_PIN_AXIS_MAP,
+  DEFAULT_AXIS_ORDER,
+  STEP_ANGLE_RAD,
+  MCU_CLOCK_HZ_KLIPPER_HOST,
+  EXTRUDER_MM_PER_STEP_KLIPPER,
+} from './klipperFirmwareModel.js';
 
 const serialDecoder = createKlipperSerialDecoder();
-
-const STEP_PIN_AXIS_MAP = {
-    'gpiochip1/gpio0': 'A',
-    'gpiochip1/gpio3': 'B',
-    'gpiochip1/gpio6': 'C',
-    'gpiochip1/gpio9': 'D',
-    // Lacking I, J, K, L, O
-};
-
-//const DEFAULT_AXIS_ORDER = ['A', 'B', 'C', 'D', 'E', 'I', 'J', 'K', 'L', 'O'];
-const DEFAULT_AXIS_ORDER = ['A', 'B', 'C', 'E'];
-const STEP_ANGLE_RAD = (2 * Math.PI) / (200 * 16); // 200 steps/rev, 16 microsteps
-const MCU_CLOCK_HZ_KLIPPER_HOST = 50_000_000;
-const EXTRUDER_MM_PER_STEP_KLIPPER = 33.5 / (200 * 16);
 
 async function* makeLineIterator(stream) {
     const reader = stream.pipeThrough(new TextDecoderStream()).getReader();

@@ -1,5 +1,11 @@
 import { createKlipperSerialDecoder, SerialLineDecoder, decodeBase64Chunk } from './klipperSerialDecoder.js';
 import { detectFileFormat, FileFormat, isKlipperFormat } from '../shared/fileFormatUtils.js';
+import {
+  DEFAULT_AXIS_ORDER,
+  EXTRUDER_MM_PER_STEP_KLIPPER,
+  STEP_ANGLE_RAD,
+
+} from './klipperFirmwareModel.js';
 
 // This is a worker script for Klipper pacing.
 
@@ -9,23 +15,18 @@ let DEBUG = false;
 let firstSeqSeen = null; // Debug: first server seq index we receive
 let expectedSeq = null;  // Debug: detect gaps in parsed-line stream
 
-const axisOrder = ['A', 'B', 'C', 'D', 'E'];
+const axisOrder = DEFAULT_AXIS_ORDER;
 const axisAngles = new Map(axisOrder.map(a => [a, 0.0]));
-const stepsPerRev = 200;
-const microsteps = 16;
-const stepAngle = (2 * Math.PI) / (stepsPerRev * microsteps);
+const stepAngle = STEP_ANGLE_RAD;
 // Treat oid 4 as the extruder stepper and convert its steps to filament mm.
 // Use rotation_distance from the example config (33.5 mm per full rotation).
 // mm per microstep = rotation_distance / (stepsPerRev * microsteps)
-const EXTRUDER_OID = 4; // assumed stable mapping
 const EXTRUDER_AXIS = 'E';
-const EXTRUDER_ROTATION_DISTANCE_MM = 33.5;
-const EXTRUDER_MM_PER_STEP = EXTRUDER_ROTATION_DISTANCE_MM / (stepsPerRev * microsteps);
 let extruderPosMm = 0;
 
 // Throttle outgoing Move messages to avoid overwhelming the browser.
 // Pacer will run at this interval and emit at most once per interval.
-const PACER_INTERVAL_MS = 0.50;
+const PACER_INTERVAL_MS = 2;
 const MIN_EMIT_INTERVAL_MS = PACER_INTERVAL_MS;
 
 // Aggregation buffer across pacer ticks
@@ -448,7 +449,7 @@ const pacerLoop = () => {
         const newAngle = (axisAngles.get(axis) || 0) + stepsApplied * stepAngle;
         axisAngles.set(axis, newAngle);
         if (axis === EXTRUDER_AXIS) {
-          const e_mm = stepsApplied * EXTRUDER_MM_PER_STEP;
+          const e_mm = stepsApplied * EXTRUDER_MM_PER_STEP_KLIPPER;
           extruderPosMm += e_mm;
           aggMove.E = (aggMove.E || 0) + e_mm;
         } else {
@@ -622,7 +623,7 @@ const handleParsedLine = (line) => {
     const delta = newAngle - currentAngle;
     axisAngles.set(axis, newAngle);
     if (axis === EXTRUDER_AXIS) {
-      extruderPosMm = steps * EXTRUDER_MM_PER_STEP;
+      extruderPosMm = steps * EXTRUDER_MM_PER_STEP_KLIPPER;
     }
     const st = axisState.get(axis);
     if (st) {
