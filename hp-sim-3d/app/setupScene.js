@@ -45,18 +45,13 @@ import {
   PauseStateComponent,
 } from '../../examples/js/flipper/flipper_common.js';
 import {
-  ExtruderComponent,
-  RemoteSpoolSystem,
-  SpoolStateComponent,
-  StepperMotorComponent,
-  StepperMotorSystem,
-  ExtruderSystem,
-  SpoolTagComponent,
-} from './hangprinter_runtime.js';
-import {
   InputSystem,
   RemoteInputSystem,
 } from './hangprinter_input.js';
+import { ExtruderComponent, ExtruderSystem } from './hangprinter_extruder.js';
+import { RemoteSpoolSystem } from './remoteSpoolSystem.js';
+import { SpoolTagComponent, SpoolStateComponent } from './hangprinter_spools.js';
+import { StepperMotorComponent, StepperMotorSystem } from './hangprinter_stepper_motor.js';
 import { RenderSystem3D } from '../../src/js/cable_joints_3d/render_system_3d.js';
 import {
   PrevFinalPosSystem,

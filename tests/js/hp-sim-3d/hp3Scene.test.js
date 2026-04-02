@@ -28,7 +28,7 @@ import {
   CablePathComponent,
 } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
 import { setupScene } from '../../../hp-sim-3d/app/setupScene.js';
-import { ExtruderComponent } from '../../../hp-sim-3d/app/hangprinter_runtime.js';
+import { ExtruderComponent } from '../../../hp-sim-3d/app/hangprinter_extruder.js';
 
 const usdPath = path.resolve(process.cwd(), 'examples/usd_scenes/hp3.usda');
 

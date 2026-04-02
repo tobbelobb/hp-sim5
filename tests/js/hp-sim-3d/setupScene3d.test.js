@@ -55,7 +55,7 @@ jest.mock('../../../src/js/usd/stage.js', () => ({
 const { World } = require('../../../src/js/cable_joints_3d/ecs.js');
 const { setupScene } = require('../../../hp-sim-3d/app/setupScene.js');
 const { RenderSystem3D } = require('../../../src/js/cable_joints_3d/render_system_3d.js');
-const { ExtruderComponent } = require('../../../hp-sim-3d/app/hangprinter_runtime.js');
+const { ExtruderComponent } = require('../../../hp-sim-3d/app/hangprinter_extruder.js');
 const usdStage = require('../../../src/js/usd/stage.js');
 
 function installDefaultUsdStageMocks() {

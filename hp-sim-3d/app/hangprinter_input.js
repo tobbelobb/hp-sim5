@@ -12,9 +12,7 @@ import {
   CableJointComponent,
   CablePathComponent,
 } from '../../src/js/cable_joints_3d/cable_joints_core.js';
-import {
-  SpoolTagComponent,
-} from './hangprinter_runtime.js';
+import { SpoolTagComponent } from './hangprinter_spools.js';
 
 const DEFAULT_PLANE_NORMAL = new Vector3(0.0, 0.0, 1.0);
 

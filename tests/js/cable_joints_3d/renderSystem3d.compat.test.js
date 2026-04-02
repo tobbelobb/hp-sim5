@@ -12,7 +12,7 @@ import {
   RenderableComponent,
   RigidGroupComponent,
 } from '../../../src/js/cable_joints_3d/ecs.js';
-import { ExtruderComponent } from '../../../examples/js/slideprinter/slideprinter_common.js';
+import { ExtruderComponent } from '../../../hp-sim-3d/app/hangprinter_extruder.js';
 
 function createCompatStub(canvasOverrides = {}) {
   const system = Object.create(RenderSystem3D.prototype);

@@ -7,8 +7,10 @@ import {
 } from '../../../src/js/cable_joints_3d/ecs.js';
 import {
   SpoolStateComponent,
+} from '../../../hp-sim-3d/app/hangprinter_spools.js';
+import {
   StepperMotorComponent,
-} from '../../../hp-sim-3d/app/hangprinter_runtime.js';
+} from '../../../hp-sim-3d/app/hangprinter_stepper_motor.js';
 import { getMachineMotorDiagnostics } from '../../../hp-sim-3d/app/motor-diagnostics.js';
 
 describe('getMachineMotorDiagnostics (3D)', () => {

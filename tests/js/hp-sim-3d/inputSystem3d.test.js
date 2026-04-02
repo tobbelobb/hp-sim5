@@ -3,7 +3,7 @@ import {
 } from '../../../hp-sim-3d/app/hangprinter_input.js';
 import {
   SpoolTagComponent,
-} from '../../../hp-sim-3d/app/hangprinter_runtime.js';
+} from '../../../hp-sim-3d/app/hangprinter_spools.js';
 import {
   World,
   PositionComponent,

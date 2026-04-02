@@ -6,8 +6,8 @@ import {
 } from '../../src/js/cable_joints_3d/ecs.js';
 import {
   SpoolStateComponent,
-  StepperMotorComponent,
-} from './hangprinter_runtime.js';
+} from './hangprinter_spools.js';
+import { StepperMotorComponent } from './hangprinter_stepper_motor.js';
 import Vector3 from '../../src/js/cable_joints_3d/vector3.js';
 
 const TWO_PI = Math.PI * 2;

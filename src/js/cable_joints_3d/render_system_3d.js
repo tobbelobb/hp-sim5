@@ -16,7 +16,7 @@ import {
   CableJointComponent,
   CableLinkComponent
 } from './cable_joints_core.js';
-import { ExtruderComponent } from '../../../examples/js/slideprinter/slideprinter_common.js';
+import { ExtruderComponent } from '../../../hp-sim-3d/app/hangprinter_extruder.js';
 
 const EPSILON = 1e-9;
 const ARC_SEGMENTS = 48;
