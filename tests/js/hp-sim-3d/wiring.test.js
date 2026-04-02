@@ -7,7 +7,7 @@ function readWorkspaceFile(filePath) {
 
 describe('hp-sim-3d wiring', () => {
   test('points the app shell at the 3D cable joints and slideprinter modules', () => {
-    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim.js');
+    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim-3d.js');
 
     expect(source).toContain("../../src/js/cable_joints_3d/ecs.js");
     expect(source).toContain("../../src/js/cable_joints_3d/cable_joints_core.js");
@@ -29,7 +29,7 @@ describe('hp-sim-3d wiring', () => {
 
   test('adds and wires the closed-loop motor toggle in the 3D app shell', () => {
     const html = readWorkspaceFile('hp-sim-3d/index.html');
-    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim.js');
+    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim-3d.js');
     const lineLayeringToggleIndex = html.indexOf('id="lineLayeringToggleWrapper"');
     const closedLoopToggleIndex = html.indexOf('id="closedLoopMotorsToggleWrapper"');
 
@@ -45,7 +45,7 @@ describe('hp-sim-3d wiring', () => {
   });
 
   test('connects motor diagnostics into the 3D quality monitor cards', () => {
-    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim.js');
+    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim-3d.js');
 
     expect(source).toContain("import { getMachineMotorDiagnostics } from './motor-diagnostics.js';");
     expect(source).toContain('setMotorDiagnosticsProvider(() => getMachineMotorDiagnostics(world, machine.id));');

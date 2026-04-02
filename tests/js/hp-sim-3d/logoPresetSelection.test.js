@@ -22,7 +22,7 @@ function loadPresetResolver(source) {
   return new Function(
     'FileFormat',
     `
-      const importMeta = { url: 'file:///home/torbjorn/repos/hp-sim5/hp-sim-3d/app/hp-sim.js' };
+      const importMeta = { url: 'file:///home/torbjorn/repos/hp-sim5/hp-sim-3d/app/hp-sim-3d.js' };
       ${resolverSource.replaceAll('import.meta', 'importMeta')}
       return { HP3_USDA_KEY, resolvePresetCommand };
     `
@@ -34,7 +34,7 @@ function loadPresetResolver(source) {
 
 describe('hp-sim-3d preset selection', () => {
   test('uses hp3 CAN logo defaults when the hp3 scene is loaded', () => {
-    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim.js');
+    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim-3d.js');
     const { HP3_USDA_KEY, resolvePresetCommand } = loadPresetResolver(source);
 
     const layeredPreset = resolvePresetCommand('hangprinterLogo', true, [HP3_USDA_KEY]);
@@ -47,7 +47,7 @@ describe('hp-sim-3d preset selection', () => {
   });
 
   test('uses hp3 CAN square defaults when the hp3 scene is loaded', () => {
-    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim.js');
+    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim-3d.js');
     const { HP3_USDA_KEY, resolvePresetCommand } = loadPresetResolver(source);
 
     const layeredPreset = resolvePresetCommand('straightMoves', true, [HP3_USDA_KEY]);
@@ -62,7 +62,7 @@ describe('hp-sim-3d preset selection', () => {
   });
 
   test('keeps non-hp3 preset defaults unchanged', () => {
-    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim.js');
+    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim-3d.js');
     const { resolvePresetCommand } = loadPresetResolver(source);
 
     const layeredLogoPreset = resolvePresetCommand('hangprinterLogo', true, []);
@@ -83,7 +83,7 @@ describe('hp-sim-3d preset selection', () => {
   });
 
   test('passes loaded machine presets into preset resolution before printing', () => {
-    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim.js');
+    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim-3d.js');
 
     expect(source).toContain('const activeSourceKeys = machines.map((machine) => machine.sourceKey).filter(Boolean);');
     expect(source).toContain('const preset = resolvePresetCommand(presetKey, lineLayeringEnabled, activeSourceKeys);');
