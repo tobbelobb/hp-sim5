@@ -710,7 +710,7 @@ function initHpSim() {
   function enqueueSceneChange(task) {
     const run = sceneChangeQueue.then(() => task());
     sceneChangeQueue = run.catch((error) => {
-      console.error('hp-sim: scene change task failed', error);
+      console.error('hp-sim-3d: scene change task failed', error);
     });
     return run;
   }
@@ -1111,7 +1111,7 @@ function initHpSim() {
     }
     const delay = externalWsReconnectDelayMs;
     const messageSuffix = reason ? ` (${reason})` : '';
-    console.log(`hp-sim: waiting for external G-code stream${messageSuffix}, retrying in ${Math.round(delay)}ms`);
+    console.log(`hp-sim-3d: waiting for external G-code stream${messageSuffix}, retrying in ${Math.round(delay)}ms`);
     externalWsReconnectTimer = setTimeout(() => {
       externalWsReconnectTimer = null;
       connectExternalCommandStream();
@@ -1167,7 +1167,7 @@ function initHpSim() {
     try {
       externalCommandSocket.send(JSON.stringify(payload));
     } catch (err) {
-      console.warn('hp-sim: failed to send encoder response.', err);
+      console.warn('hp-sim-3d: failed to send encoder response.', err);
     }
   }
 
@@ -1225,7 +1225,7 @@ function initHpSim() {
       pushExternalCommands(commands);
     }
     if (typeof payload.reply === 'string' && payload.reply.trim().length > 0) {
-      console.info('hp-sim: gcode reply', payload.reply.trim());
+      console.info('hp-sim-3d: gcode reply', payload.reply.trim());
     }
   }
 
@@ -1238,7 +1238,7 @@ function initHpSim() {
     try {
       externalCommandSocket = new WebSocket(externalWsUrl);
     } catch (err) {
-      console.warn('hp-sim: failed to open external G-code stream.', err);
+      console.warn('hp-sim-3d: failed to open external G-code stream.', err);
       externalCommandSocket = null;
       externalCommandSocketConnecting = false;
       scheduleExternalCommandReconnect('failed to open');
@@ -1247,7 +1247,7 @@ function initHpSim() {
     externalCommandSocket.addEventListener('open', () => {
       externalCommandSocketConnecting = false;
       resetExternalReconnectBackoff();
-      console.log('hp-sim: external G-code stream connected:', externalWsUrl);
+      console.log('hp-sim-3d: external G-code stream connected:', externalWsUrl);
       flushExternalCommandQueue();
     });
     externalCommandSocket.addEventListener('message', (event) => {
@@ -1255,7 +1255,7 @@ function initHpSim() {
         const payload = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
         handleExternalPayload(payload);
       } catch (err) {
-        console.warn('hp-sim: failed to process external G-code payload.', err);
+        console.warn('hp-sim-3d: failed to process external G-code payload.', err);
       }
     });
     externalCommandSocket.addEventListener('close', () => {
@@ -1264,7 +1264,7 @@ function initHpSim() {
       scheduleExternalCommandReconnect('connection closed');
     });
     externalCommandSocket.addEventListener('error', (err) => {
-      console.warn('hp-sim: external G-code stream error.', err);
+      console.warn('hp-sim-3d: external G-code stream error.', err);
       if (externalCommandSocket) {
         try {
           externalCommandSocket.close();
@@ -1634,7 +1634,7 @@ function initHpSim() {
         setActive,
       });
     } catch (error) {
-      console.error('hp-sim: failed to load preset G-code reference', presetKey, error);
+      console.error('hp-sim-3d: failed to load preset G-code reference', presetKey, error);
       return null;
     }
   }
@@ -1662,7 +1662,7 @@ function initHpSim() {
         makeVisible,
       });
     } catch (error) {
-      console.error('hp-sim: failed to parse uploaded G-code reference', error);
+      console.error('hp-sim-3d: failed to parse uploaded G-code reference', error);
       return null;
     }
   }
@@ -1700,7 +1700,7 @@ function initHpSim() {
     if (matchedPresetKey) {
       const descriptor = PRESET_GCODE_MAP[matchedPresetKey];
       const label = descriptor?.label || matchedPresetKey;
-      console.log(`hp-sim: upload "${file.name}" matched preset "${matchedPresetKey}" (${label}).`);
+      console.log(`hp-sim-3d: upload "${file.name}" matched preset "${matchedPresetKey}" (${label}).`);
       void loadReferencePathForPreset(matchedPresetKey, { setActive: true });
     }
     const detectedFormat = detectFileFormat(file.name);
@@ -1964,7 +1964,7 @@ function initHpSim() {
         const { tintColor } = extractMachineColors(stage, scenePrimPath);
         entry.tintColor = tintColor || null;
       } catch (error) {
-        console.warn(`hp-sim: unable to read tint color for USDA preset ${sourceKey}.`, error);
+        console.warn(`hp-sim-3d: unable to read tint color for USDA preset ${sourceKey}.`, error);
         entry.tintColor = null;
       } finally {
         entry.tintColorLoaded = true;
@@ -2014,7 +2014,7 @@ function initHpSim() {
       presetOptionColorChips.set(key, colorChip);
       if (!entry.tintColorLoaded) {
         loadPresetTintColor(key).catch((error) => {
-          console.warn(`hp-sim: tint color preload failed for ${key}.`, error);
+          console.warn(`hp-sim-3d: tint color preload failed for ${key}.`, error);
         });
       }
     }
@@ -2179,7 +2179,7 @@ function initHpSim() {
         const query = window.matchMedia('(hover: hover) and (pointer: fine)');
         return query.matches;
       } catch (error) {
-        console.warn('hp-sim: unable to evaluate hover media query.', error);
+        console.warn('hp-sim-3d: unable to evaluate hover media query.', error);
       }
     }
     return !isMobileLayout();
@@ -2407,7 +2407,7 @@ function initHpSim() {
           rrfCanPlayerWorker.postMessage({ type: 'pause' });
         }
       } catch (err) {
-        console.warn('hp-sim: unable to pause workers during scene change.', err);
+        console.warn('hp-sim-3d: unable to pause workers during scene change.', err);
       }
       if (pauseState) {
         pauseState.paused = true;
@@ -2444,7 +2444,7 @@ function initHpSim() {
       try {
         playbackState = remoteSystem.getPlaybackState();
       } catch (err) {
-        console.warn('hp-sim: unable to capture playback state before scene change.', err);
+        console.warn('hp-sim-3d: unable to capture playback state before scene change.', err);
       }
     }
     const extrusionSnapshot = cloneExtrusionList(getExtruderComponent()?.extrusions);
@@ -2511,7 +2511,7 @@ function initHpSim() {
     }
     if (remoteSystem.history.length < targetCount) {
       console.warn(
-        `hp-sim: replay stopped early after ${remoteSystem.history.length} commands, expected ${targetCount}.`
+        `hp-sim-3d: replay stopped early after ${remoteSystem.history.length} commands, expected ${targetCount}.`
       );
     }
   }
@@ -2768,11 +2768,11 @@ function initHpSim() {
     try {
       stage = await UsdOpen(entry.url);
     } catch (error) {
-      console.error(`hp-sim: unable to load USDA preset ${sourceKey}.`, error);
+      console.error(`hp-sim-3d: unable to load USDA preset ${sourceKey}.`, error);
       return null;
     }
     if (!stage) {
-      console.error(`hp-sim: USDA preset ${sourceKey} returned an invalid stage.`);
+      console.error(`hp-sim-3d: USDA preset ${sourceKey} returned an invalid stage.`);
       return null;
     }
 
@@ -2798,7 +2798,7 @@ function initHpSim() {
           simDtSec = presetDt;
         } else if (Math.abs(presetDt - simDtSec) > 1e-6) {
           console.warn(
-            `hp-sim: USDA preset ${sourceKey} uses timeCodesPerSecond=${timeCodesPerSecond}, which differs from the active simulation. Using existing dt=${simDtSec.toFixed(6)}s.`
+            `hp-sim-3d: USDA preset ${sourceKey} uses timeCodesPerSecond=${timeCodesPerSecond}, which differs from the active simulation. Using existing dt=${simDtSec.toFixed(6)}s.`
           );
         }
       }
@@ -3747,7 +3747,7 @@ function initHpSim() {
       return;
     }
     if (asapState.active) {
-      console.warn('hp-sim: Reset ignored while Finish ASAP is active.');
+      console.warn('hp-sim-3d: Reset ignored while Finish ASAP is active.');
       return;
     }
     setPrintActive(false);
@@ -3822,7 +3822,7 @@ function initHpSim() {
       }
 
       if (performance.now() - startTime > maxDurationMs) {
-        console.warn('hp-sim: Finish ASAP exceeded expected duration; continuing to finalize.');
+        console.warn('hp-sim-3d: Finish ASAP exceeded expected duration; continuing to finalize.');
         break;
       }
 
@@ -3944,7 +3944,7 @@ function initHpSim() {
     }
     const remoteSystem = getRemoteSystem();
     if (!remoteSystem) {
-      console.warn('hp-sim: Finish ASAP requested but remote system is unavailable.');
+      console.warn('hp-sim-3d: Finish ASAP requested but remote system is unavailable.');
       return null;
     }
 
@@ -4008,7 +4008,7 @@ function initHpSim() {
       try {
         remoteSystem.worker.postMessage({ type: 'set_asap_mode', enable: true });
       } catch (err) {
-        console.warn('hp-sim: unable to enable ASAP mode for worker.', err);
+        console.warn('hp-sim-3d: unable to enable ASAP mode for worker.', err);
       }
     }
 
@@ -4018,7 +4018,7 @@ function initHpSim() {
       try {
         await runAsapFastForward(remoteSystem);
       } catch (error) {
-        console.error('hp-sim: Finish ASAP failed.', error);
+        console.error('hp-sim-3d: Finish ASAP failed.', error);
       } finally {
         await finalizeAsapMode();
       }
@@ -4297,7 +4297,7 @@ function initHpSim() {
       try {
         worker.postMessage({ type: 'resume' });
       } catch (err) {
-        console.warn('hp-sim: unable to resume worker before starting job.', err);
+        console.warn('hp-sim-3d: unable to resume worker before starting job.', err);
       }
       worker.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
     }
@@ -4329,7 +4329,7 @@ function initHpSim() {
     }
     const referencePresetKey = preset.referencePresetKey || presetKey;
     loadReferencePathForPreset(referencePresetKey, { setActive: true }).catch((error) => {
-      console.warn('hp-sim: failed to prepare reference path for preset', referencePresetKey, error);
+      console.warn('hp-sim-3d: failed to prepare reference path for preset', referencePresetKey, error);
     });
     const format = preset.format || detectFileFormat(preset.url);
     let worker = null;
@@ -4371,7 +4371,7 @@ function initHpSim() {
     }
 
     if (!stageReady) {
-      console.warn('hp-sim: unable to queue print job because no scene is loaded.');
+      console.warn('hp-sim-3d: unable to queue print job because no scene is loaded.');
       return;
     }
 
@@ -4478,7 +4478,7 @@ function initHpSim() {
         target.disabled = true;
         addUsdaFromCatalog(sourceKey, { resetView: machines.length === 0 })
           .catch((error) => {
-            console.error('hp-sim: failed to add USDA preset from catalog.', error);
+            console.error('hp-sim-3d: failed to add USDA preset from catalog.', error);
             target.checked = false;
           })
           .finally(() => {
@@ -4821,7 +4821,7 @@ function initHpSim() {
 
   const bootstrapSimulation = async () => {
     if (!usdaCatalog.has(defaultUsdaKey)) {
-      throw new Error(`hp-sim: default USDA '${defaultUsdaKey}' is not available.`);
+      throw new Error(`hp-sim-3d: default USDA '${defaultUsdaKey}' is not available.`);
     }
     await addUsdaFromCatalog(defaultUsdaKey, { resetView: true });
 
@@ -4856,7 +4856,7 @@ function initHpSim() {
                 rrfCanPlayerWorker.postMessage({ type: 'resume' });
               }
             } catch (err) {
-              console.warn('hp-sim: unable to resume workers after user request.', err);
+              console.warn('hp-sim-3d: unable to resume workers after user request.', err);
             }
           }
         }, 0);
@@ -4874,7 +4874,7 @@ function initHpSim() {
   };
 
   bootstrapSimulation().catch((error) => {
-    console.error('hp-sim bootstrap failed:', error);
+    console.error('hp-sim-3d bootstrap failed:', error);
     setPrintActive(false);
     controlsRoot.innerHTML = '<p class="sim-error">Unable to start the simulation. Please reload the page.</p>';
   });
