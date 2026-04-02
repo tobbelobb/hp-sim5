@@ -188,6 +188,7 @@ const bucketActiveAxes = new Set();
 let nextBucketToEmit = 0;
 let maxBucketSeen = -1;
 let pendingLookaheadLine = null;
+let deferBucketFlush = false;
 let logicalClockAnchorMs = 0;
 let logicalClockAnchorWorkerMs = 0;
 let logicalClockPaused = false;
@@ -329,6 +330,7 @@ const resetRuntimeState = () => {
   nextBucketToEmit = 0;
   maxBucketSeen = -1;
   pendingLookaheadLine = null;
+  deferBucketFlush = false;
   for (const axis of axisOrder) {
     axisAngles.set(axis, 0.0);
     const st = axisState.get(axis);
@@ -685,6 +687,13 @@ const flushReadyBuckets = (force = false, holdBackOneBucket = false) => {
   }
 };
 
+const flushReadyBucketsIfEnabled = (force = false, holdBackOneBucket = false) => {
+  if (deferBucketFlush && !force) {
+    return;
+  }
+  flushReadyBuckets(force, holdBackOneBucket);
+};
+
 const pacerLoop = () => {
   try {
     if (isPaused) {
@@ -976,12 +985,12 @@ const handleParsedLineBucketed = (line, nextLine = null) => {
     const st = axisState.get(axis);
     if (!st) return;
     st.dirSign = (Number(kv.dir) === 0) ? -1 : 1;
-    flushReadyBuckets(false, holdBackOneBucket);
+    flushReadyBucketsIfEnabled(false, holdBackOneBucket);
     return;
   }
   if (has('reset_step_clock')) {
     if (DEBUG) console.log(line);
-    flushReadyBuckets(false, holdBackOneBucket);
+    flushReadyBucketsIfEnabled(false, holdBackOneBucket);
     return;
   }
   if (has('set_position')) {
@@ -993,7 +1002,7 @@ const handleParsedLineBucketed = (line, nextLine = null) => {
     if (!Number.isFinite(steps)) return;
     if (axis === EXTRUDER_AXIS) {
       extruderPosMm = steps * EXTRUDER_MM_PER_STEP_KLIPPER;
-      flushReadyBuckets(false, holdBackOneBucket);
+      flushReadyBucketsIfEnabled(false, holdBackOneBucket);
       return;
     }
     const st = axisState.get(axis);
@@ -1009,7 +1018,7 @@ const handleParsedLineBucketed = (line, nextLine = null) => {
     }
     st.baseAngle = newAngle;
     markBucketAxisActive(axis);
-    flushReadyBuckets(false, holdBackOneBucket);
+    flushReadyBucketsIfEnabled(false, holdBackOneBucket);
     return;
   }
   if (has('queue_step')) {
@@ -1023,7 +1032,7 @@ const handleParsedLineBucketed = (line, nextLine = null) => {
     const interval = Number(kv.interval) || 1;
     const add = ('add' in kv) ? Number(kv.add) : 0;
     if (count <= 0) {
-      flushReadyBuckets(false, holdBackOneBucket);
+      flushReadyBucketsIfEnabled(false, holdBackOneBucket);
       return;
     }
     if (axis === EXTRUDER_AXIS) {
@@ -1072,7 +1081,7 @@ const handleParsedLineBucketed = (line, nextLine = null) => {
     }
     st.hasSteps = true;
     markBucketAxisActive(axis);
-    flushReadyBuckets(false, holdBackOneBucket);
+    flushReadyBucketsIfEnabled(false, holdBackOneBucket);
   }
 };
 
@@ -1251,6 +1260,7 @@ const processUploadedFile = async (file, explicitFormat = null) => {
     return;
   }
   resetRuntimeState();
+  deferBucketFlush = true;
   ws = null;
   try {
     if (format === FileFormat.MCU_SERIAL) {
@@ -1258,8 +1268,13 @@ const processUploadedFile = async (file, explicitFormat = null) => {
     } else {
       await processUploadedText(file);
     }
+    // Local uploads should start their playback clock after parsing completes,
+    // otherwise high speed factors can make early buckets look overdue instantly.
+    resetLogicalPlaybackClock();
+    deferBucketFlush = false;
     finishUploadInput();
   } catch (err) {
+    deferBucketFlush = false;
     console.error('KlipperPacer upload processing failed', err);
     postMessage({ type: 'error', message: err?.message || 'Failed to process Klipper upload' });
   }
