@@ -1,3 +1,11 @@
+import {
+  STEP_ANGLE_RAD,
+  EXTRUDER_MM_PER_STEP_RRF,
+  DEFAULT_AXIS_ORDER,
+  MOTOR_AXIS_MAP,
+  computeTicksPerBucket,
+} from './rrfFirmwareModel';
+
 import { detectFileFormat, FileFormat, isRrfFormat } from '../shared/fileFormatUtils.js';
 import {
     createMotionProfile,
@@ -6,23 +14,6 @@ import {
     isFloatValue,
 } from '../shared/motionUtils.js';
 
-const STEP_ANGLE_RAD = (2 * Math.PI) / (200 * 16);
-export const STEP_CLOCK_HZ_RRF_HOST = 48_000_000 / 64; // 750 kHz step clock
-export const EXTRUDER_MM_PER_STEP_RRF = 1 / 95.922; // Matches M92 E95.922 from the RRF config
-
-const DEFAULT_AXIS_ORDER = ['A', 'B', 'C', 'D', 'E', 'I', 'J', 'K', 'L', 'O'];
-const MOTOR_AXIS_MAP = new Map([
-    [40, 'A'],
-    [41, 'B'],
-    [42, 'C'],
-    [43, 'D'], // ABCDEIJKLO is the new default order of can addresses
-    [44, 'E'],
-    [45, 'I'],
-    [46, 'J'],
-    [47, 'K'],
-    [48, 'L'],
-    [49, 'O'],
-]);
 
 const UINT32_MULTIPLIER = 0x1_0000_0000;
 
@@ -63,7 +54,7 @@ export class RrfCanPlayer {
         this.isPaused = false;
         this.resolveResume = null;
         this.accumulatedWaitMs = 0.0;
-        this.ticksPerBucket = this._computeTicksPerBucket(this.dt);
+        this.ticksPerBucket = computeTicksPerBucket(this.dt);
         this.speedScale = 1.0;
         this.fastMode = false;
         this.asapMode = false;
@@ -80,7 +71,7 @@ export class RrfCanPlayer {
     setDt(dt) {
         if (Number.isFinite(dt) && dt > 0) {
             this.dt = dt;
-            this.ticksPerBucket = this._computeTicksPerBucket(this.dt);
+            this.ticksPerBucket = computeTicksPerBucket(this.dt);
         }
     }
 
@@ -115,10 +106,6 @@ export class RrfCanPlayer {
             this.resolveResume = resolve;
         });
         this.resolveResume = null;
-    }
-
-    _computeTicksPerBucket(dt) {
-        return Math.max(1, Math.round(STEP_CLOCK_HZ_RRF_HOST * dt));
     }
 
     _targetWaitMs() {

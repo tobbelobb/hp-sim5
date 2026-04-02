@@ -1,13 +1,15 @@
 import {
-    computeTicksPerBucket,
     createMotionProfile,
     distributeEvenly,
     distributeWithProfile,
     isFloatValue,
-    EXTRUDER_MM_PER_STEP,
 } from '../shared/motionUtils.js';
 
-const STEP_ANGLE_RAD = (2 * Math.PI) / (200 * 16); // 1.8deg motor, 16x microstepping
+import {
+  computeTicksPerBucket,
+  EXTRUDER_MM_PER_STEP,
+  STEP_ANGLE_RAD,
+} from './rrfFirmwareModel.js';
 
 export class RrfHttpBridge {
     constructor(options = {}) {
