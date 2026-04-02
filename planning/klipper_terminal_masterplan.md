@@ -81,3 +81,42 @@ Verification:
 - Ready -> shutdown -> ready transitions recover without restarting the terminal process.
 - If `[virtual_sdcard]` is configured, `SDCARD_PRINT_FILE` / `M24` flow updates `print_stats` / `virtual_sdcard` state as expected.
 - Manual end-to-end run covers startup, one-shot command, interactive session, restart, and clean shutdown.
+
+## Can we reuse something already in the klipper repo?
+There is no drop-in Klipper equivalent to your planned klipper_terminal.mjs inside klipper/. The closest reusable pieces are patterns, not a ready-made bridge.
+
+Best Reuse Candidates
+
+- klipper/scripts/whconsole.py:14 is the simplest client example for the API socket. It already does the two essentials correctly: connect to the Unix socket and frame JSON messages with 0x03. Its stdin loop is raw JSON, though, so it is only a
+  transport/protocol reference, not a G-code terminal.
+- klipper/scripts/motan/data_logger.py:55 is the best model for a real client. It has:
+    - initial info login with client_info (klipper/scripts/motan/data_logger.py:72)
+    - request/response dispatch by id (klipper/scripts/motan/data_logger.py:82)
+    - async subscription routing via response_template tags (klipper/scripts/motan/data_logger.py:126)
+    - dynamic discovery of motion_report.trapq and motion_report.steppers, then subscription to motion_report/dump_trapq and motion_report/dump_stepper (klipper/scripts/motan/data_logger.py:141)
+- klipper/klippy/extras/motion_report.py:11 is the key server-side source for the motion stream you want to consume. It shows exactly what dump_stepper and dump_trapq produce, including headers and fields.
+- klipper/klippy/extras/bulk_sensor.py:23 explains how Klipper pushes batched async data to webhooks clients. That matters because dump_stepper/dump_trapq are not ad hoc; they use this batch subscription mechanism.
+- klipper/klippy/webhooks.py:429 is the authoritative implementation of gcode/script, gcode/subscribe_output, objects/list, and objects/subscribe. It is useful for confirming behavior, especially that:
+    - gcode/script just runs the script and completes when done (klipper/klippy/webhooks.py:447)
+    - gcode/subscribe_output is terminal-output only (klipper/klippy/webhooks.py:453)
+    - objects/subscribe is diffed and refreshed on a 250ms timer (klipper/klippy/webhooks.py:469)
+- klipper/scripts/graph_mesh.py:31 is a small one-shot client example. It is useful for a minimal request/response helper and message assembly, but it is not interactive and not motion-related.
+
+What Is Not Already There
+
+- There is no existing Klipper script that:
+    - starts Klippy in API mode
+    - accepts plain G-code terminal input
+    - subscribes to motion streams
+    - converts those streams into your hp-sim command websocket format
+- There is also nothing in klipper/ that knows about gcode_ws, hp-sim, or your existing raw upload pipeline.
+
+Practical Recommendation
+
+Reuse the design patterns, not the Python files directly:
+
+- Port the socket framing and reconnect behavior from klipper/scripts/whconsole.py:14.
+- Port the client state machine from klipper/scripts/motan/data_logger.py:55, especially its response_template tagging and dynamic subscription discovery.
+- Treat klipper/klippy/extras/motion_report.py:11 and klipper/klippy/webhooks.py:429 as protocol truth, not code to import.
+
+The one strong conclusion is: there is no pre-existing terminal bridge to reuse wholesale, but there is enough in whconsole.py + motan/data_logger.py to avoid inventing the Klipper client behavior from scratch.
