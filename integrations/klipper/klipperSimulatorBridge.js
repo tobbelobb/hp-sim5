@@ -3,6 +3,11 @@ import timingSchedulerWorkerUrl from './timingScheduler.js?worker&url';
 
 const DEBUG = false; // Note: most logging is now in the worker.
 const EARLY_EPS_MS = 0.05; // only preempt if earlier by >= 0.05ms to reduce churn
+const BASE_LOOKAHEAD_MIN_MS = 6;
+const BASE_LOOKAHEAD_MAX_MS = 48;
+const FAST_LOOKAHEAD_MIN_MS = 24;
+const FAST_LOOKAHEAD_MAX_MS = 160;
+const FAST_LOOKAHEAD_SCALE = 4;
 
 function createKlipperRawHandle(onCommand, options = {}) {
   const workerUrl = new URL('./klipperPacerWorker.js', import.meta.url);
@@ -29,8 +34,20 @@ function createKlipperRawHandle(onCommand, options = {}) {
   let sourceDone = false;
   let doneNotified = false;
   let asapMode = false;
+  let fastMode = false;
   let currentSpeedScale = 1;
   let closed = false;
+
+  const getEnqueueLookaheadMs = () => {
+    if (asapMode) {
+      return Number.POSITIVE_INFINITY;
+    }
+    const scale = Number.isFinite(currentSpeedScale) && currentSpeedScale > 0 ? currentSpeedScale : 1;
+    if (fastMode) {
+      return Math.min(FAST_LOOKAHEAD_MAX_MS, Math.max(FAST_LOOKAHEAD_MIN_MS, scale * FAST_LOOKAHEAD_SCALE));
+    }
+    return Math.min(BASE_LOOKAHEAD_MAX_MS, Math.max(BASE_LOOKAHEAD_MIN_MS, scale));
+  };
 
   const notifyScheduler = () => {
     try {
@@ -59,7 +76,24 @@ function createKlipperRawHandle(onCommand, options = {}) {
     sleepArmed = false;
   };
 
+  const flushReadyCommands = (referenceNow = performance.now()) => {
+    const cutoff = asapMode ? referenceNow : referenceNow + getEnqueueLookaheadMs();
+    while (pending.length && pending[0].at <= cutoff) {
+      const cmd = pending.shift();
+      try {
+        onCommand(cmd);
+      } catch (_) {}
+    }
+  };
+
   const scheduleNextSleep = () => {
+    if (closed || paused || pending.length === 0) {
+      clearTimingState();
+      maybeNotifyDone();
+      return;
+    }
+    const now = performance.now();
+    flushReadyCommands(now);
     if (closed || paused || pending.length === 0) {
       clearTimingState();
       maybeNotifyDone();
@@ -68,10 +102,11 @@ function createKlipperRawHandle(onCommand, options = {}) {
     const earliest = pending[0].at;
     nextDeadlineMs = earliest;
     if (!sleepArmed) {
-      const now = performance.now();
-      const ms = Math.max(0, earliest - now);
+      const lookaheadMs = getEnqueueLookaheadMs();
+      const wakeAt = asapMode ? now : Math.max(now, earliest - lookaheadMs);
+      const ms = Math.max(0, wakeAt - now);
       timingWorker.postMessage({ type: 'sleep', ms });
-      currentSleepDeadlineMs = earliest;
+      currentSleepDeadlineMs = wakeAt;
       sleepArmed = true;
     }
   };
@@ -108,22 +143,20 @@ function createKlipperRawHandle(onCommand, options = {}) {
     if (paused) {
       return;
     }
+    flushReadyCommands(performance.now());
+    if (pending.length === 0) {
+      clearTimingState();
+      maybeNotifyDone();
+      return;
+    }
     if (!sleepArmed) {
       scheduleNextSleep();
       return;
     }
     const earliest = pending[0].at;
-    if (currentSleepDeadlineMs === null || earliest + EARLY_EPS_MS < currentSleepDeadlineMs) {
+    const wakeTarget = Math.max(performance.now(), earliest - getEnqueueLookaheadMs());
+    if (currentSleepDeadlineMs === null || wakeTarget + EARLY_EPS_MS < currentSleepDeadlineMs) {
       notifyScheduler();
-    }
-  };
-
-  const flushDueCommands = (now = performance.now()) => {
-    while (pending.length && pending[0].at <= now) {
-      const cmd = pending.shift();
-      try {
-        onCommand(cmd);
-      } catch (_) {}
     }
   };
 
@@ -175,6 +208,20 @@ function createKlipperRawHandle(onCommand, options = {}) {
     scheduleNextSleep();
   };
 
+  const setFastMode = (enabled) => {
+    const nextFastMode = Boolean(enabled);
+    if (fastMode === nextFastMode || closed) {
+      return;
+    }
+    fastMode = nextFastMode;
+    if (!paused) {
+      flushReadyCommands(performance.now());
+      clearTimingState();
+      notifyScheduler();
+      scheduleNextSleep();
+    }
+  };
+
   const setAsapMode = (enabled) => {
     asapMode = Boolean(enabled);
     if (!closed && asapMode) {
@@ -190,7 +237,7 @@ function createKlipperRawHandle(onCommand, options = {}) {
       clearTimingState();
       notifyScheduler();
       if (!paused) {
-        flushDueCommands(now);
+        flushReadyCommands(now);
       }
     }
     worker.postMessage({ type: 'set_asap_mode', enable: asapMode });
@@ -320,7 +367,7 @@ function createKlipperRawHandle(onCommand, options = {}) {
     if (paused || closed) {
       return;
     }
-    flushDueCommands(performance.now());
+    flushReadyCommands(performance.now());
     scheduleNextSleep();
   };
 
@@ -343,6 +390,10 @@ function createKlipperRawHandle(onCommand, options = {}) {
       }
       if (type === 'set_speed_scale') {
         setSpeedScale(message.value);
+        return;
+      }
+      if (type === 'set_fast_mode') {
+        setFastMode(message.enable);
         return;
       }
       if (type === 'set_asap_mode') {
