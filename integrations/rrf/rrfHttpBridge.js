@@ -7,7 +7,8 @@ import {
 
 import {
   computeTicksPerBucket,
-  EXTRUDER_MM_PER_STEP,
+  EXTRUDER_MM_PER_STEP_RRF,
+  MOTOR_AXIS_MAP,
   STEP_ANGLE_RAD,
 } from './rrfFirmwareModel.js';
 
@@ -17,18 +18,7 @@ export class RrfHttpBridge {
         this.remoteSpoolSystem = options.remoteSpoolSystem || null;
         this.onTorqueModeChange = typeof options.onTorqueModeChange === 'function' ? options.onTorqueModeChange : null;
         this.onGCodeReply = typeof options.onGCodeReply === 'function' ? options.onGCodeReply : null;
-        this.driverToAxis = options.driverToAxis || {
-            40: 'A',
-            41: 'B',
-            42: 'C',
-            43: 'D',
-            44: 'E',
-            45: 'I',
-            46: 'J',
-            47: 'K',
-            48: 'L',
-            49: 'O',
-        };
+        this.driverToAxis = options.driverToAxis || new Map(MOTOR_AXIS_MAP);
         this.fetchImpl = options.fetchImpl || (typeof fetch !== 'undefined' ? fetch.bind(globalThis) : null);
         if (!this.fetchImpl) {
             throw new Error('Fetch implementation is not available in this environment.');
@@ -247,7 +237,7 @@ export class RrfHttpBridge {
         const descriptorEntries = descriptors.map((descriptor) => ({
             descriptor,
             key: this._motorDescriptorKey(descriptor),
-            axis: descriptor ? this.driverToAxis[descriptor.canAddress] : null,
+            axis: descriptor ? this.driverToAxis.get(descriptor.canAddress) : null,
         }));
         const axesForQuery = descriptorEntries
             .filter((entry) => entry.axis)
@@ -565,7 +555,7 @@ export class RrfHttpBridge {
             return;
         }
         const torqueNm = event?.torqueNm ?? 0;
-        const axis = this.driverToAxis[descriptor.canAddress];
+        const axis = this.driverToAxis.get(descriptor.canAddress);
 
         if (!axis) {
             console.warn(`RrfHttpBridge: Unknown motorId ${descriptor.canAddress}`);
@@ -604,7 +594,7 @@ export class RrfHttpBridge {
             return;
         }
 
-        const axis = this.driverToAxis[motion.motorId];
+        const axis = this.driverToAxis.get(motion.motorId);
         if (!axis) {
             return;
         }
@@ -625,7 +615,7 @@ export class RrfHttpBridge {
         const distribute = (bucketIdx, normalizedDelta) => {
             const deltaValue = motion.steps * normalizedDelta;
             if (axis === 'E' || axisType === 'float') {
-                this._recordBucketExtrusion(bucketIdx, deltaValue * EXTRUDER_MM_PER_STEP);
+                this._recordBucketExtrusion(bucketIdx, deltaValue * EXTRUDER_MM_PER_STEP_RRF);
             } else {
                 this._recordBucketSteps(axis, bucketIdx, deltaValue);
             }
@@ -647,7 +637,7 @@ export class RrfHttpBridge {
             distributeEvenly({
                 startTick,
                 durationTicks: totalTicks,
-                totalValue: motion.steps * EXTRUDER_MM_PER_STEP,
+                totalValue: motion.steps * EXTRUDER_MM_PER_STEP_RRF,
                 bucketSize: this.ticksPerBucket,
                 accumulate: (bucketIdx, delta) => {
                     this._recordBucketExtrusion(bucketIdx, delta);
@@ -719,8 +709,7 @@ export class RrfHttpBridge {
             const asInt = Math.round(input);
             const isInteger = Math.abs(input - asInt) < 1e-9;
             if (isInteger) {
-                const key = String(asInt);
-                if (Object.prototype.hasOwnProperty.call(this.driverToAxis, key)) {
+                if (this.driverToAxis.has(asInt)) {
                     return `${asInt}.0`;
                 }
                 return `${asInt}`;
