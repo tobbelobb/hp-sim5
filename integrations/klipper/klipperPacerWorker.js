@@ -34,6 +34,7 @@ let extruderPosMm = 0;
 // Pacer will run at this interval and emit at most once per interval.
 const PACER_INTERVAL_MS = 2;
 const MIN_EMIT_INTERVAL_MS = PACER_INTERVAL_MS;
+// False keeps exact per-step bucketing without distributeEvenly smoothing.
 const ENABLE_BUCKETED_ANTIALIASING = true;
 const BUCKET_INTERVAL_MS = PACER_INTERVAL_MS;
 const TICKS_PER_BUCKET = Math.max(1, Math.round(MCU_CLOCK_HZ_KLIPPER_HOST * (BUCKET_INTERVAL_MS / 1000)));
@@ -201,6 +202,20 @@ const scaleDelayMs = (delayMs) => {
   return safeDelay / getSpeedScale();
 };
 
+const getPacerIntervalMs = () => {
+  if (asapMode) {
+    return 0;
+  }
+  return scaleDelayMs(PACER_INTERVAL_MS);
+};
+
+const getMinEmitIntervalMs = () => {
+  if (asapMode) {
+    return 0;
+  }
+  return scaleDelayMs(MIN_EMIT_INTERVAL_MS);
+};
+
 const currentLogicalPlaybackMs = (now = performance.now()) => {
   if (logicalClockPaused) {
     return logicalClockAnchorMs;
@@ -222,6 +237,14 @@ const resetLogicalPlaybackClock = () => {
   logicalClockAnchorMs = 0;
   logicalClockAnchorWorkerMs = performance.now();
   logicalClockPaused = false;
+};
+
+const workerToLogicalPlaybackMs = (workerTargetMs, now = performance.now()) => {
+  const logicalNow = currentLogicalPlaybackMs(now);
+  if (!Number.isFinite(workerTargetMs)) {
+    return logicalNow;
+  }
+  return logicalNow + Math.max(0, workerTargetMs - now);
 };
 
 const resolveBucketAtMs = (bucketIdx) => {
@@ -249,9 +272,6 @@ const hasAxisWork = () => {
 };
 
 const hasBucketWork = () => {
-  if (!ENABLE_BUCKETED_ANTIALIASING) {
-    return false;
-  }
   if (pendingLookaheadLine !== null) {
     return true;
   }
@@ -340,13 +360,26 @@ const resetRuntimeState = () => {
 };
 
 const resolveScaledWakeTimeMs = (nextStepRaw, fallbackDelayMs, fallbackBaseMs = performance.now()) => {
-  const now = performance.now();
+  const workerNow = performance.now();
+  if (!ENABLE_BUCKETED_ANTIALIASING) {
+    if (asapMode) {
+      return currentLogicalPlaybackMs(workerNow);
+    }
+    const mapped = nextStepRaw !== null ? clockModel.mcuToWorkerMs(nextStepRaw) : null;
+    if (mapped !== null) {
+      return workerToLogicalPlaybackMs(mapped, workerNow);
+    }
+    const logicalBaseMs = Number.isFinite(fallbackBaseMs)
+      ? fallbackBaseMs
+      : currentLogicalPlaybackMs(workerNow);
+    return logicalBaseMs + Math.max(0, Number(fallbackDelayMs) || 0);
+  }
   if (asapMode) {
-    return now;
+    return workerNow;
   }
   const mapped = nextStepRaw !== null ? clockModel.mcuToWorkerMs(nextStepRaw) : null;
   if (mapped !== null) {
-    return now + scaleDelayMs(mapped - now);
+    return workerNow + scaleDelayMs(mapped - workerNow);
   }
   return fallbackBaseMs + scaleDelayMs(fallbackDelayMs);
 };
@@ -438,12 +471,14 @@ const setSpeedScale = (value) => {
   if (asapMode || previousScale === getSpeedScale()) {
     return;
   }
-  for (const axis of axisOrder) {
-    const st = axisState.get(axis);
-    if (!st || st.nextWakeTimeMs === null) continue;
-    const remainingMs = Math.max(0, st.nextWakeTimeMs - now);
-    const logicalRemainingMs = remainingMs * previousScale;
-    st.nextWakeTimeMs = now + (logicalRemainingMs / getSpeedScale());
+  if (ENABLE_BUCKETED_ANTIALIASING) {
+    for (const axis of axisOrder) {
+      const st = axisState.get(axis);
+      if (!st || st.nextWakeTimeMs === null) continue;
+      const remainingMs = Math.max(0, st.nextWakeTimeMs - now);
+      const logicalRemainingMs = remainingMs * previousScale;
+      st.nextWakeTimeMs = now + (logicalRemainingMs / getSpeedScale());
+    }
   }
   if (!isPaused && (hasAxisWork() || !inputComplete || aggHasAny)) {
     if (pacerTimer) {
@@ -467,10 +502,11 @@ const setAsapMode = (enabled) => {
     return;
   }
   const now = performance.now();
+  const wakeTimeNow = ENABLE_BUCKETED_ANTIALIASING ? now : currentLogicalPlaybackMs(now);
   for (const axis of axisOrder) {
     const st = axisState.get(axis);
     if (!st || st.nextWakeTimeMs === null) continue;
-    st.nextWakeTimeMs = now;
+    st.nextWakeTimeMs = wakeTimeNow;
   }
   if (!isPaused && (hasAxisWork() || !inputComplete || aggHasAny)) {
     if (pacerTimer) {
@@ -635,9 +671,6 @@ const emitBucketedMove = (bucketIdx) => {
 };
 
 const flushReadyBuckets = (force = false, holdBackOneBucket = false) => {
-  if (!ENABLE_BUCKETED_ANTIALIASING) {
-    return;
-  }
   const threshold = readyBucketThreshold(force);
   if (threshold == null) {
     return;
@@ -657,7 +690,10 @@ const pacerLoop = () => {
     if (isPaused) {
       return;
     }
-    const now = performance.now();
+    const workerNow = performance.now();
+    const playbackNow = ENABLE_BUCKETED_ANTIALIASING
+      ? workerNow
+      : currentLogicalPlaybackMs(workerNow);
     let any = false;
     let loopMinStepTimeMs = Infinity;
     let loopMaxStepTimeMs = -Infinity;
@@ -668,11 +704,11 @@ const pacerLoop = () => {
 
       let stepsApplied = 0;
       let lastStepTimeMs = null;
-      while (st.nextWakeTimeMs !== null && st.nextWakeTimeMs <= now) {
+      while (st.nextWakeTimeMs !== null && st.nextWakeTimeMs <= playbackNow) {
         const thisStepTimeMs = st.nextWakeTimeMs;
         const stepRaw = st.nextStepClockRaw;
         stepsApplied += st.activeDirSign;
-        lastStepTimeMs = thisStepTimeMs;
+        lastStepTimeMs = workerNow;
         st.remaining -= 1;
         if (stepRaw !== null) {
           st.baseClockRaw = wrap32(stepRaw);
@@ -735,9 +771,9 @@ const pacerLoop = () => {
 
     // Throttled emit
     if (aggHasAny) {
-      const sinceLast = now - lastEmitMs;
-      if (sinceLast >= MIN_EMIT_INTERVAL_MS) {
-        emitAggregatedMove((aggLastStepTimeMs != null) ? aggLastStepTimeMs : now);
+      const sinceLast = workerNow - lastEmitMs;
+      if (sinceLast >= getMinEmitIntervalMs()) {
+        emitAggregatedMove((aggLastStepTimeMs != null) ? aggLastStepTimeMs : workerNow);
       }
     }
 
@@ -751,14 +787,17 @@ const scheduleNextPacer = (now = performance.now()) => {
   if (isPaused || (inputComplete && donePosted)) {
     return;
   }
-  if (pacerNextDeadlineMs === null) {
-    pacerNextDeadlineMs = now + PACER_INTERVAL_MS;
+  const intervalMs = getPacerIntervalMs();
+  if (intervalMs <= 0) {
+    pacerNextDeadlineMs = now;
+  } else if (pacerNextDeadlineMs === null) {
+    pacerNextDeadlineMs = now + intervalMs;
   } else {
     while (pacerNextDeadlineMs <= now) {
-      pacerNextDeadlineMs += PACER_INTERVAL_MS;
+      pacerNextDeadlineMs += intervalMs;
     }
   }
-  const delay = Math.max(0, pacerNextDeadlineMs - now);
+  const delay = intervalMs <= 0 ? 0 : Math.max(0, pacerNextDeadlineMs - now);
   pacerTimer = setTimeout(pacerTick, delay);
 };
 
@@ -817,7 +856,8 @@ const enqueueSegment = (axis, intervalTicks, count, addTicks) => {
     st.activeDirSign = seg.dirSign;
     st.nextStepClockRaw = firstStepRaw;
     const now = performance.now();
-    st.nextWakeTimeMs = resolveScaledWakeTimeMs(firstStepRaw, ticksToMs(seg.intervalTicks), now);
+    const fallbackBaseMs = ENABLE_BUCKETED_ANTIALIASING ? now : currentLogicalPlaybackMs(now);
+    st.nextWakeTimeMs = resolveScaledWakeTimeMs(firstStepRaw, ticksToMs(seg.intervalTicks), fallbackBaseMs);
   } else {
     st.segments.push(seg);
   }
@@ -999,6 +1039,19 @@ const handleParsedLineBucketed = (line, nextLine = null) => {
         },
         setMaxBucket: updateMaxBucketSeen,
       });
+    } else if (!ENABLE_BUCKETED_ANTIALIASING) {
+      st.lastTick = recordAnchoredStepSequence({
+        startTick: st.lastTick,
+        intervalTicks: interval,
+        count,
+        addTicks: add,
+        stepValue: st.dirSign,
+        bucketSize: TICKS_PER_BUCKET,
+        accumulate: (bucketIdx, delta) => {
+          recordBucketSteps(axis, bucketIdx, delta);
+        },
+        setMaxBucket: updateMaxBucketSeen,
+      });
     } else {
       const totalDurationTicks = computeQueueStepDurationTicks(interval, count, add);
       recordDistributedSequence({
@@ -1024,19 +1077,11 @@ const handleParsedLineBucketed = (line, nextLine = null) => {
 };
 
 const processParsedLine = (line, nextLine = null) => {
-  if (ENABLE_BUCKETED_ANTIALIASING) {
-    handleParsedLineBucketed(line, nextLine);
-    return;
-  }
-  handleParsedLineLegacy(line);
+  handleParsedLineBucketed(line, nextLine);
 };
 
 const pushParsedLine = (line) => {
   if (typeof line !== 'string' || line.length === 0) {
-    return;
-  }
-  if (!ENABLE_BUCKETED_ANTIALIASING) {
-    processParsedLine(line, null);
     return;
   }
   if (pendingLookaheadLine !== null) {
@@ -1046,9 +1091,6 @@ const pushParsedLine = (line) => {
 };
 
 const flushPendingParsedLine = () => {
-  if (!ENABLE_BUCKETED_ANTIALIASING) {
-    return;
-  }
   if (pendingLookaheadLine !== null) {
     processParsedLine(pendingLookaheadLine, null);
     pendingLookaheadLine = null;
@@ -1141,7 +1183,10 @@ const connect = (url) => {
               const st = axisState.get(axis);
               if (!st || st.nextStepClockRaw === null || st.nextWakeTimeMs === null) continue;
               if (clockModel.mcuToWorkerMs(st.nextStepClockRaw) !== null) {
-                st.nextWakeTimeMs = resolveScaledWakeTimeMs(st.nextStepClockRaw, 0, receiveMs);
+                const fallbackBaseMs = ENABLE_BUCKETED_ANTIALIASING
+                  ? receiveMs
+                  : currentLogicalPlaybackMs(receiveMs);
+                st.nextWakeTimeMs = resolveScaledWakeTimeMs(st.nextStepClockRaw, 0, fallbackBaseMs);
               }
             }
           }

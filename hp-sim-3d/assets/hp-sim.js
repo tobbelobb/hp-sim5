@@ -19,7 +19,7 @@ import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
 import { getMachineMotorDiagnostics } from './motor-diagnostics.js';
 
 const HP3_USDA_KEY = 'hp3.usda';
-const KLIPPER_UPLOAD_PIPELINE = 'player'; // 'player' or 'raw'
+const KLIPPER_UPLOAD_PIPELINE = 'raw'; // 'player' or 'raw'
 
 const COMMAND_PRESET_VARIANTS = Object.freeze({
   hangprinterLogo: Object.freeze({
