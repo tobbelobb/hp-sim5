@@ -1,6 +1,10 @@
 import { detectFileFormat, FileFormat, isKlipperFormat } from '../shared/fileFormatUtils.js';
 import { iterateSerialLines, createKlipperSerialDecoder } from './klipperSerialDecoder.js';
-import { distributeEvenly } from '../shared/motionUtils.js';
+import {
+    computeQueueStepDurationTicks,
+    recordAnchoredStepSequence,
+    recordDistributedSequence,
+} from './motionUtils.js';
 import {
   STEP_PIN_AXIS_MAP,
   DEFAULT_AXIS_ORDER,
@@ -156,31 +160,19 @@ export class KlipperMcuCommandPlayer {
     }
 
     _recordDistributedSequence(axis, startTick, durationTicks, totalValue) {
-        if (!Number.isFinite(totalValue) || totalValue === 0) {
-            return;
-        }
-        if (!Number.isFinite(durationTicks) || durationTicks <= 0) {
-            return;
-        }
-
-        // Spread the queued step train over its full time window so the 500 Hz
-        // physics loop sees a continuous motion envelope instead of step-edge
-        // aliasing at bucket boundaries.
-        const accumulate = (bucketIdx, delta) => {
-            if (axis === 'E') {
-                this.bucketExtrusion.set(bucketIdx, (this.bucketExtrusion.get(bucketIdx) || 0) + delta);
-                return;
-            }
-            const bucketMap = this._ensureBucketMap(axis);
-            bucketMap.set(bucketIdx, (bucketMap.get(bucketIdx) || 0) + delta);
-        };
-
-        distributeEvenly({
+        recordDistributedSequence({
+            axis,
             startTick,
             durationTicks,
             totalValue,
             bucketSize: this.ticksPerBucket,
-            accumulate,
+            accumulateStepBucket: (bucketAxis, bucketIdx, delta) => {
+                const bucketMap = this._ensureBucketMap(bucketAxis);
+                bucketMap.set(bucketIdx, (bucketMap.get(bucketIdx) || 0) + delta);
+            },
+            accumulateExtrusionBucket: (bucketIdx, delta) => {
+                this.bucketExtrusion.set(bucketIdx, (this.bucketExtrusion.get(bucketIdx) || 0) + delta);
+            },
             setMaxBucket: (bucketIdx) => {
                 this.maxBucketSeen = Math.max(this.maxBucketSeen, bucketIdx);
             },
@@ -431,23 +423,23 @@ export class KlipperMcuCommandPlayer {
                     // Keep extrusion anchored to the actual step timestamps.
                     // Smearing E from the start of the sequence would begin
                     // deposition before the first Klipper pulse has occurred.
-                    for (let i = 0; i < count; i += 1) {
-                        interval = Math.max(1, interval);
-                        state.lastTick += interval;
-                        const bucketIdx = Math.floor(state.lastTick / this.ticksPerBucket);
-                        const current = this.bucketExtrusion.get(bucketIdx) || 0;
-                        this.bucketExtrusion.set(bucketIdx, current + state.dir * EXTRUDER_MM_PER_STEP_KLIPPER);
-                        this.maxBucketSeen = Math.max(this.maxBucketSeen, bucketIdx);
-                        interval = Math.max(1, interval + add);
-                    }
+                    state.lastTick = recordAnchoredStepSequence({
+                        startTick: state.lastTick,
+                        intervalTicks: interval,
+                        count,
+                        addTicks: add,
+                        stepValue: state.dir * EXTRUDER_MM_PER_STEP_KLIPPER,
+                        bucketSize: this.ticksPerBucket,
+                        accumulate: (bucketIdx, delta) => {
+                            const current = this.bucketExtrusion.get(bucketIdx) || 0;
+                            this.bucketExtrusion.set(bucketIdx, current + delta);
+                        },
+                        setMaxBucket: (bucketIdx) => {
+                            this.maxBucketSeen = Math.max(this.maxBucketSeen, bucketIdx);
+                        },
+                    });
                 } else {
-                    let totalDurationTicks = 0;
-                    let nextInterval = interval;
-                    for (let i = 0; i < count; i += 1) {
-                        const clampedInterval = Math.max(1, nextInterval);
-                        totalDurationTicks += clampedInterval;
-                        nextInterval = Math.max(1, clampedInterval + add);
-                    }
+                    const totalDurationTicks = computeQueueStepDurationTicks(interval, count, add);
                     const totalValue = state.dir * count;
                     this._recordDistributedSequence(axis, state.lastTick, totalDurationTicks, totalValue);
                     state.lastTick += totalDurationTicks;

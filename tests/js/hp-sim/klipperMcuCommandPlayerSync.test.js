@@ -221,10 +221,11 @@ describe('KlipperMcuCommandPlayer and RemoteSpoolSystem synchronisation', () => 
         'config_stepper oid=1 step_pin=unknown1 dir_pin=gpiochip1/gpio2 invert_step=0 step_pulse_ticks=100',
         'config_stepper oid=2 step_pin=unknown2 dir_pin=gpiochip1/gpio3 invert_step=0 step_pulse_ticks=100',
         'config_stepper oid=3 step_pin=unknown3 dir_pin=gpiochip1/gpio4 invert_step=0 step_pulse_ticks=100',
+        'config_stepper oid=4 step_pin=unknown4 dir_pin=gpiochip1/gpio5 invert_step=0 step_pulse_ticks=100',
         'set_next_step_dir oid=0 dir=1',
-        'set_next_step_dir oid=3 dir=1',
+        'set_next_step_dir oid=4 dir=1',
         'queue_step oid=0 interval=60000 count=2 add=0',
-        'queue_step oid=3 interval=250000 count=1 add=0',
+        'queue_step oid=4 interval=250000 count=1 add=0',
       ],
     });
 

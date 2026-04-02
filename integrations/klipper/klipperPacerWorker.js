@@ -1,10 +1,15 @@
 import { createKlipperSerialDecoder, SerialLineDecoder, decodeBase64Chunk } from './klipperSerialDecoder.js';
 import { detectFileFormat, FileFormat, isKlipperFormat } from '../shared/fileFormatUtils.js';
 import {
+  computeQueueStepDurationTicks,
+  recordAnchoredStepSequence,
+  recordDistributedSequence,
+} from './motionUtils.js';
+import {
   DEFAULT_AXIS_ORDER,
   EXTRUDER_MM_PER_STEP_KLIPPER,
+  MCU_CLOCK_HZ_KLIPPER_HOST,
   STEP_ANGLE_RAD,
-
 } from './klipperFirmwareModel.js';
 
 // This is a worker script for Klipper pacing.
@@ -22,12 +27,16 @@ const stepAngle = STEP_ANGLE_RAD;
 // Use rotation_distance from the example config (33.5 mm per full rotation).
 // mm per microstep = rotation_distance / (stepsPerRev * microsteps)
 const EXTRUDER_AXIS = 'E';
+const spoolAxisOrder = axisOrder.filter((axis) => axis !== EXTRUDER_AXIS);
 let extruderPosMm = 0;
 
 // Throttle outgoing Move messages to avoid overwhelming the browser.
 // Pacer will run at this interval and emit at most once per interval.
 const PACER_INTERVAL_MS = 2;
 const MIN_EMIT_INTERVAL_MS = PACER_INTERVAL_MS;
+const ENABLE_BUCKETED_ANTIALIASING = true;
+const BUCKET_INTERVAL_MS = PACER_INTERVAL_MS;
+const TICKS_PER_BUCKET = Math.max(1, Math.round(MCU_CLOCK_HZ_KLIPPER_HOST * (BUCKET_INTERVAL_MS / 1000)));
 
 // Aggregation buffer across pacer ticks
 let lastEmitMs = 0;
@@ -161,11 +170,26 @@ const axisState = new Map(axisOrder.map(a => [a, {
   addTicks: 0,
   remaining: 0,
   dirSign: 1,
+  lastTick: 0,
+  baseAngle: 0,
+  hasSteps: false,
   // Direction used for the currently executing segment
   activeDirSign: 1,
   baseClockRaw: null,
   nextStepClockRaw: null,
 }]));
+
+const bucketSteps = new Map();
+const bucketExtrusion = new Map();
+const bucketAddToReference = new Map();
+const bucketActiveAxes = new Set();
+
+let nextBucketToEmit = 0;
+let maxBucketSeen = -1;
+let pendingLookaheadLine = null;
+let logicalClockAnchorMs = 0;
+let logicalClockAnchorWorkerMs = 0;
+let logicalClockPaused = false;
 
 const getSpeedScale = () => (
   Number.isFinite(speedScale) && speedScale > 0 ? speedScale : 1
@@ -175,6 +199,42 @@ const scaleDelayMs = (delayMs) => {
   if (asapMode) return 0;
   const safeDelay = Math.max(0, Number(delayMs) || 0);
   return safeDelay / getSpeedScale();
+};
+
+const currentLogicalPlaybackMs = (now = performance.now()) => {
+  if (logicalClockPaused) {
+    return logicalClockAnchorMs;
+  }
+  return logicalClockAnchorMs + Math.max(0, now - logicalClockAnchorWorkerMs) * getSpeedScale();
+};
+
+const syncLogicalPlaybackClock = (now = performance.now()) => {
+  logicalClockAnchorMs = currentLogicalPlaybackMs(now);
+  logicalClockAnchorWorkerMs = now;
+};
+
+const setLogicalPlaybackPaused = (paused, now = performance.now()) => {
+  syncLogicalPlaybackClock(now);
+  logicalClockPaused = Boolean(paused);
+};
+
+const resetLogicalPlaybackClock = () => {
+  logicalClockAnchorMs = 0;
+  logicalClockAnchorWorkerMs = performance.now();
+  logicalClockPaused = false;
+};
+
+const resolveBucketAtMs = (bucketIdx) => {
+  const now = performance.now();
+  if (asapMode) {
+    return now;
+  }
+  const targetLogicalMs = (bucketIdx + 1) * BUCKET_INTERVAL_MS;
+  const logicalNow = currentLogicalPlaybackMs(now);
+  if (targetLogicalMs <= logicalNow) {
+    return now;
+  }
+  return now + ((targetLogicalMs - logicalNow) / getSpeedScale());
 };
 
 const hasAxisWork = () => {
@@ -188,6 +248,52 @@ const hasAxisWork = () => {
   return false;
 };
 
+const hasBucketWork = () => {
+  if (!ENABLE_BUCKETED_ANTIALIASING) {
+    return false;
+  }
+  if (pendingLookaheadLine !== null) {
+    return true;
+  }
+  return nextBucketToEmit <= maxBucketSeen;
+};
+
+const ensureBucketMap = (axis) => {
+  let map = bucketSteps.get(axis);
+  if (!map) {
+    map = new Map();
+    bucketSteps.set(axis, map);
+  }
+  return map;
+};
+
+const recordBucketSteps = (axis, bucketIdx, delta) => {
+  const bucketMap = ensureBucketMap(axis);
+  bucketMap.set(bucketIdx, (bucketMap.get(bucketIdx) || 0) + delta);
+};
+
+const recordBucketExtrusion = (bucketIdx, delta) => {
+  bucketExtrusion.set(bucketIdx, (bucketExtrusion.get(bucketIdx) || 0) + delta);
+};
+
+const updateMaxBucketSeen = (bucketIdx) => {
+  maxBucketSeen = Math.max(maxBucketSeen, bucketIdx);
+};
+
+const markBucketAxisActive = (axis) => {
+  if (!axis) {
+    return;
+  }
+  const st = axisState.get(axis);
+  if (!st) {
+    return;
+  }
+  bucketActiveAxes.add(axis);
+  if (axis !== EXTRUDER_AXIS && !axisAngles.has(axis)) {
+    axisAngles.set(axis, st.baseAngle || 0);
+  }
+};
+
 const resetRuntimeState = () => {
   if (pacerTimer) {
     clearTimeout(pacerTimer);
@@ -195,6 +301,14 @@ const resetRuntimeState = () => {
   }
   pacerNextDeadlineMs = null;
   clockModel.reset();
+  resetLogicalPlaybackClock();
+  bucketSteps.clear();
+  bucketExtrusion.clear();
+  bucketAddToReference.clear();
+  bucketActiveAxes.clear();
+  nextBucketToEmit = 0;
+  maxBucketSeen = -1;
+  pendingLookaheadLine = null;
   for (const axis of axisOrder) {
     axisAngles.set(axis, 0.0);
     const st = axisState.get(axis);
@@ -205,6 +319,9 @@ const resetRuntimeState = () => {
     st.addTicks = 0;
     st.remaining = 0;
     st.dirSign = 1;
+    st.lastTick = 0;
+    st.baseAngle = 0;
+    st.hasSteps = false;
     st.activeDirSign = 1;
     st.baseClockRaw = null;
     st.nextStepClockRaw = null;
@@ -234,6 +351,23 @@ const resolveScaledWakeTimeMs = (nextStepRaw, fallbackDelayMs, fallbackBaseMs = 
   return fallbackBaseMs + scaleDelayMs(fallbackDelayMs);
 };
 
+const postMoveCommand = (command, atMs = performance.now(), spanMs = 0) => {
+  const scheduled = {
+    ...command,
+    at: atMs,
+    span: spanMs,
+  };
+  const logEntry = LOG_MOVE && scheduled.type === 'Move'
+    ? buildMoveLogEntry(scheduled, atMs, spanMs)
+    : null;
+  if (LOG_MOVE && logEntry) {
+    postMessage({ type: 'move', command: scheduled, logEntry });
+  } else {
+    postMessage({ type: 'move', command: scheduled });
+  }
+  return scheduled;
+};
+
 const emitAggregatedMove = (atMs = performance.now()) => {
   if (!aggHasAny) {
     return false;
@@ -241,14 +375,7 @@ const emitAggregatedMove = (atMs = performance.now()) => {
   const spanMs = (aggFirstStepTimeMs != null && aggLastStepTimeMs != null)
     ? Math.max(0, aggLastStepTimeMs - aggFirstStepTimeMs)
     : 0;
-  aggMove.at = atMs;
-  aggMove.span = spanMs;
-  const logEntry = LOG_MOVE ? buildMoveLogEntry(aggMove, atMs, spanMs) : null;
-  if (LOG_MOVE && logEntry) {
-    postMessage({ type: 'move', command: aggMove, logEntry });
-  } else {
-    postMessage({ type: 'move', command: aggMove });
-  }
+  postMoveCommand(aggMove, atMs, spanMs);
   aggMove = { type: 'Move' };
   aggFirstStepTimeMs = null;
   aggLastStepTimeMs = null;
@@ -261,13 +388,13 @@ const maybePostDone = () => {
   if (!inputComplete || donePosted || isPaused) {
     return false;
   }
-  if (hasAxisWork()) {
+  if (hasAxisWork() || hasBucketWork()) {
     return false;
   }
   if (aggHasAny) {
     emitAggregatedMove();
   }
-  if (hasAxisWork() || aggHasAny) {
+  if (hasAxisWork() || hasBucketWork() || aggHasAny) {
     return false;
   }
   donePosted = true;
@@ -282,6 +409,7 @@ const maybePostDone = () => {
 
 const setPaused = (paused) => {
   isPaused = Boolean(paused);
+  setLogicalPlaybackPaused(isPaused);
   if (isPaused) {
     if (pacerTimer) {
       clearTimeout(pacerTimer);
@@ -301,12 +429,15 @@ const setPaused = (paused) => {
 };
 
 const setSpeedScale = (value) => {
+  const now = performance.now();
+  const logicalNow = currentLogicalPlaybackMs(now);
   const previousScale = getSpeedScale();
   speedScale = value;
+  logicalClockAnchorMs = logicalNow;
+  logicalClockAnchorWorkerMs = now;
   if (asapMode || previousScale === getSpeedScale()) {
     return;
   }
-  const now = performance.now();
   for (const axis of axisOrder) {
     const st = axisState.get(axis);
     if (!st || st.nextWakeTimeMs === null) continue;
@@ -325,8 +456,14 @@ const setSpeedScale = (value) => {
 };
 
 const setAsapMode = (enabled) => {
-  asapMode = Boolean(enabled);
+  const nextAsapMode = Boolean(enabled);
+  if (asapMode === nextAsapMode) {
+    return;
+  }
+  syncLogicalPlaybackClock();
+  asapMode = nextAsapMode;
   if (!asapMode) {
+    logicalClockAnchorWorkerMs = performance.now();
     return;
   }
   const now = performance.now();
@@ -392,6 +529,126 @@ const buildMoveLogEntry = (move, atMs, spanMs) => {
   } catch (err) {
     console.error('Failed to build move log entry:', err);
     return null;
+  }
+};
+
+const readyBucketThreshold = (force = false) => {
+  if (force) {
+    return maxBucketSeen + 1;
+  }
+  if (maxBucketSeen < 0) {
+    return null;
+  }
+  if (bucketActiveAxes.size === 0) {
+    return null;
+  }
+  let hasBlockingAxis = false;
+  let minBucket = Infinity;
+  for (const axis of bucketActiveAxes) {
+    const st = axisState.get(axis);
+    if (!st) {
+      continue;
+    }
+    if (!st.hasSteps && st.lastTick === 0) {
+      continue;
+    }
+    hasBlockingAxis = true;
+    const bucket = Math.floor(st.lastTick / TICKS_PER_BUCKET);
+    if (bucket < minBucket) {
+      minBucket = bucket;
+    }
+  }
+  if (!hasBlockingAxis) {
+    return maxBucketSeen + 1;
+  }
+  return minBucket;
+};
+
+const emitBucketedMove = (bucketIdx) => {
+  const atMs = resolveBucketAtMs(bucketIdx);
+  const spanMs = scaleDelayMs(BUCKET_INTERVAL_MS);
+
+  const addRefEntry = bucketAddToReference.get(bucketIdx);
+  if (addRefEntry) {
+    const addCmd = { type: 'Add to reference' };
+    let hasDelta = false;
+    for (const [axis, delta] of Object.entries(addRefEntry)) {
+      if (!Number.isFinite(delta) || delta === 0) {
+        continue;
+      }
+      addCmd[axis] = delta;
+      hasDelta = true;
+    }
+    if (hasDelta) {
+      postMoveCommand(addCmd, atMs, 0);
+    }
+    bucketAddToReference.delete(bucketIdx);
+  }
+
+  let changed = false;
+  const moveCmd = { type: 'Move' };
+
+  for (const axis of spoolAxisOrder) {
+    const st = axisState.get(axis);
+    if (!axisAngles.has(axis)) {
+      axisAngles.set(axis, st?.baseAngle || 0);
+    }
+    const axisMap = bucketSteps.get(axis);
+    const deltaSteps = axisMap ? axisMap.get(bucketIdx) || 0 : 0;
+    if (deltaSteps !== 0) {
+      const current = axisAngles.get(axis) || 0;
+      const newAngle = current + deltaSteps * stepAngle;
+      axisAngles.set(axis, newAngle);
+      changed = true;
+    }
+    moveCmd[axis] = axisAngles.get(axis) || 0;
+    if (axisMap) {
+      axisMap.delete(bucketIdx);
+      if (axisMap.size === 0) {
+        bucketSteps.delete(axis);
+      }
+    }
+  }
+
+  const extrusionDelta = bucketExtrusion.get(bucketIdx) || 0;
+  if (extrusionDelta !== 0) {
+    extruderPosMm += extrusionDelta;
+    moveCmd.E = extrusionDelta;
+    changed = true;
+  }
+  if (bucketExtrusion.has(bucketIdx)) {
+    bucketExtrusion.delete(bucketIdx);
+  }
+
+  if (!changed && bucketIdx === 0) {
+    for (const axis of spoolAxisOrder) {
+      if ((axisAngles.get(axis) || 0) !== 0) {
+        changed = true;
+        break;
+      }
+    }
+  }
+
+  if (changed) {
+    postMoveCommand(moveCmd, atMs, spanMs);
+  }
+};
+
+const flushReadyBuckets = (force = false, holdBackOneBucket = false) => {
+  if (!ENABLE_BUCKETED_ANTIALIASING) {
+    return;
+  }
+  const threshold = readyBucketThreshold(force);
+  if (threshold == null) {
+    return;
+  }
+  let upperBound = Math.min(threshold, maxBucketSeen + 1);
+  if (!force && holdBackOneBucket && upperBound > nextBucketToEmit) {
+    upperBound -= 1;
+  }
+  while (nextBucketToEmit < upperBound) {
+    emitBucketedMove(nextBucketToEmit);
+    nextBucketToEmit += 1;
   }
 };
 
@@ -567,7 +824,7 @@ const enqueueSegment = (axis, intervalTicks, count, addTicks) => {
   ensurePacerRunning();
 };
 
-const handleParsedLine = (line) => {
+const handleParsedLineLegacy = (line) => {
   const has = (name) => line.includes(name + ' ');
   const sliceAfter = (name) => {
     const i = line.indexOf(name);
@@ -655,14 +912,159 @@ const handleParsedLine = (line) => {
   }
 };
 
+const handleParsedLineBucketed = (line, nextLine = null) => {
+  const has = (name) => line.includes(name + ' ');
+  const sliceAfter = (name) => {
+    const i = line.indexOf(name);
+    return i >= 0 ? line.slice(i + name.length) : '';
+  };
+  const holdBackOneBucket = nextLine !== null;
+
+  if (has('config_stepper')) {
+    if (DEBUG) console.log(line);
+    const kv = parseKv(sliceAfter('config_stepper'));
+    const axis = ensureAxisForOid(kv.oid);
+    if (axis) console.log(`Klipper map: oid ${kv.oid} -> axis ${axis}`);
+    else console.log(`Klipper failed to map oid: ${kv.oid}`);
+    return;
+  }
+  if (has('set_next_step_dir')) {
+    if (DEBUG) console.log(line);
+    const kv = parseKv(sliceAfter('set_next_step_dir'));
+    const axis = ensureAxisForOid(kv.oid);
+    if (!axis) return;
+    const st = axisState.get(axis);
+    if (!st) return;
+    st.dirSign = (Number(kv.dir) === 0) ? -1 : 1;
+    flushReadyBuckets(false, holdBackOneBucket);
+    return;
+  }
+  if (has('reset_step_clock')) {
+    if (DEBUG) console.log(line);
+    flushReadyBuckets(false, holdBackOneBucket);
+    return;
+  }
+  if (has('set_position')) {
+    if (DEBUG) console.log(line);
+    const kv = parseKv(sliceAfter('set_position'));
+    const axis = ensureAxisForOid(kv.oid);
+    if (!axis) return;
+    const steps = Number(kv.pos);
+    if (!Number.isFinite(steps)) return;
+    if (axis === EXTRUDER_AXIS) {
+      extruderPosMm = steps * EXTRUDER_MM_PER_STEP_KLIPPER;
+      flushReadyBuckets(false, holdBackOneBucket);
+      return;
+    }
+    const st = axisState.get(axis);
+    if (!st) return;
+    const newAngle = steps * stepAngle;
+    const delta = newAngle - st.baseAngle;
+    if (delta !== 0) {
+      const bucketIdx = Math.floor(st.lastTick / TICKS_PER_BUCKET);
+      const entry = bucketAddToReference.get(bucketIdx) || {};
+      entry[axis] = (entry[axis] || 0) + delta;
+      bucketAddToReference.set(bucketIdx, entry);
+      updateMaxBucketSeen(bucketIdx);
+    }
+    st.baseAngle = newAngle;
+    markBucketAxisActive(axis);
+    flushReadyBuckets(false, holdBackOneBucket);
+    return;
+  }
+  if (has('queue_step')) {
+    if (DEBUG) console.log(line);
+    const kv = parseKv(sliceAfter('queue_step'));
+    const axis = ensureAxisForOid(kv.oid);
+    if (!axis) return;
+    const st = axisState.get(axis);
+    if (!st) return;
+    const count = Number(kv.count) || 0;
+    const interval = Number(kv.interval) || 1;
+    const add = ('add' in kv) ? Number(kv.add) : 0;
+    if (count <= 0) {
+      flushReadyBuckets(false, holdBackOneBucket);
+      return;
+    }
+    if (axis === EXTRUDER_AXIS) {
+      st.lastTick = recordAnchoredStepSequence({
+        startTick: st.lastTick,
+        intervalTicks: interval,
+        count,
+        addTicks: add,
+        stepValue: st.dirSign * EXTRUDER_MM_PER_STEP_KLIPPER,
+        bucketSize: TICKS_PER_BUCKET,
+        accumulate: (bucketIdx, delta) => {
+          recordBucketExtrusion(bucketIdx, delta);
+        },
+        setMaxBucket: updateMaxBucketSeen,
+      });
+    } else {
+      const totalDurationTicks = computeQueueStepDurationTicks(interval, count, add);
+      recordDistributedSequence({
+        axis,
+        startTick: st.lastTick,
+        durationTicks: totalDurationTicks,
+        totalValue: st.dirSign * count,
+        bucketSize: TICKS_PER_BUCKET,
+        accumulateStepBucket: (bucketAxis, bucketIdx, delta) => {
+          recordBucketSteps(bucketAxis, bucketIdx, delta);
+        },
+        accumulateExtrusionBucket: (bucketIdx, delta) => {
+          recordBucketExtrusion(bucketIdx, delta);
+        },
+        setMaxBucket: updateMaxBucketSeen,
+      });
+      st.lastTick += totalDurationTicks;
+    }
+    st.hasSteps = true;
+    markBucketAxisActive(axis);
+    flushReadyBuckets(false, holdBackOneBucket);
+  }
+};
+
+const processParsedLine = (line, nextLine = null) => {
+  if (ENABLE_BUCKETED_ANTIALIASING) {
+    handleParsedLineBucketed(line, nextLine);
+    return;
+  }
+  handleParsedLineLegacy(line);
+};
+
+const pushParsedLine = (line) => {
+  if (typeof line !== 'string' || line.length === 0) {
+    return;
+  }
+  if (!ENABLE_BUCKETED_ANTIALIASING) {
+    processParsedLine(line, null);
+    return;
+  }
+  if (pendingLookaheadLine !== null) {
+    processParsedLine(pendingLookaheadLine, line);
+  }
+  pendingLookaheadLine = line;
+};
+
+const flushPendingParsedLine = () => {
+  if (!ENABLE_BUCKETED_ANTIALIASING) {
+    return;
+  }
+  if (pendingLookaheadLine !== null) {
+    processParsedLine(pendingLookaheadLine, null);
+    pendingLookaheadLine = null;
+  }
+  flushReadyBuckets(true, false);
+};
+
 const processSerialLines = (lines) => {
   if (!Array.isArray(lines) || lines.length === 0) return;
   for (const line of lines) {
     if (typeof line === 'string' && line.length > 0) {
-      handleParsedLine(line);
+      pushParsedLine(line);
     }
   }
   if (inputComplete) {
+    flushPendingParsedLine();
     maybePostDone();
   }
 };
@@ -723,7 +1125,7 @@ const connect = (url) => {
             }
             expectedSeq = msg.seq + msg.count;
           }
-          for (const line of msg.lines) handleParsedLine(line);
+          for (const line of msg.lines) pushParsedLine(line);
           return;
         } else if (msg && msg.action === 'klipper_serial') {
           const chunk = decodeBase64Chunk(msg.data || msg.chunk || msg.payload);
@@ -758,6 +1160,7 @@ const connect = (url) => {
       const remaining = serialLineDecoder.flush();
       processSerialLines(remaining);
     }
+    flushPendingParsedLine();
     resetRuntimeState();
     ws = null;
     postMessage({ type: 'closed' });
@@ -770,6 +1173,7 @@ const finishUploadInput = () => {
     processSerialLines(remaining);
     serialLineDecoder = null;
   }
+  flushPendingParsedLine();
   inputComplete = true;
   if (!maybePostDone() && !isPaused && (hasAxisWork() || aggHasAny)) {
     ensurePacerRunning();
@@ -782,7 +1186,7 @@ const processUploadedText = async (file) => {
   for (const rawLine of lines) {
     const line = typeof rawLine === 'string' ? rawLine.trim() : '';
     if (!line) continue;
-    handleParsedLine(line);
+    pushParsedLine(line);
   }
 };
 
