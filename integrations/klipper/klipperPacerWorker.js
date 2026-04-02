@@ -261,6 +261,14 @@ const resolveBucketAtMs = (bucketIdx) => {
   return now + ((targetLogicalMs - logicalNow) / getSpeedScale());
 };
 
+const isBucketDueNow = (bucketIdx, now = performance.now()) => {
+  if (asapMode) {
+    return true;
+  }
+  const targetLogicalMs = (bucketIdx + 1) * BUCKET_INTERVAL_MS;
+  return targetLogicalMs <= currentLogicalPlaybackMs(now);
+};
+
 const hasAxisWork = () => {
   for (const axis of axisOrder) {
     const st = axisState.get(axis);
@@ -278,6 +286,8 @@ const hasBucketWork = () => {
   }
   return nextBucketToEmit <= maxBucketSeen;
 };
+
+const hasPlaybackWork = () => hasAxisWork() || hasBucketWork() || aggHasAny;
 
 const ensureBucketMap = (axis) => {
   let map = bucketSteps.get(axis);
@@ -456,7 +466,7 @@ const setPaused = (paused) => {
   if (maybePostDone()) {
     return;
   }
-  if (hasAxisWork() || !inputComplete || aggHasAny) {
+  if (hasPlaybackWork()) {
     const now = performance.now();
     pacerNextDeadlineMs = now;
     scheduleNextPacer(now);
@@ -482,7 +492,7 @@ const setSpeedScale = (value) => {
       st.nextWakeTimeMs = now + (logicalRemainingMs / getSpeedScale());
     }
   }
-  if (!isPaused && (hasAxisWork() || !inputComplete || aggHasAny)) {
+  if (!isPaused && hasPlaybackWork()) {
     if (pacerTimer) {
       clearTimeout(pacerTimer);
       pacerTimer = null;
@@ -510,7 +520,7 @@ const setAsapMode = (enabled) => {
     if (!st || st.nextWakeTimeMs === null) continue;
     st.nextWakeTimeMs = wakeTimeNow;
   }
-  if (!isPaused && (hasAxisWork() || !inputComplete || aggHasAny)) {
+  if (!isPaused && hasPlaybackWork()) {
     if (pacerTimer) {
       clearTimeout(pacerTimer);
       pacerTimer = null;
@@ -768,6 +778,12 @@ const pacerLoop = () => {
       }
     }
 
+    while (nextBucketToEmit <= maxBucketSeen && isBucketDueNow(nextBucketToEmit, workerNow)) {
+      emitBucketedMove(nextBucketToEmit);
+      nextBucketToEmit += 1;
+      any = true;
+    }
+
     if (any) {
       // Extend aggregation window with this loop's min/max if available
       if (loopMinStepTimeMs < Infinity) {
@@ -819,7 +835,7 @@ const pacerTick = () => {
   if (maybePostDone()) {
     return;
   }
-  if (hasAxisWork() || !inputComplete || aggHasAny) {
+  if (hasPlaybackWork()) {
     scheduleNextPacer();
   }
 };
@@ -1099,12 +1115,14 @@ const pushParsedLine = (line) => {
   pendingLookaheadLine = line;
 };
 
-const flushPendingParsedLine = () => {
+const flushPendingParsedLine = (forceBuckets = true) => {
   if (pendingLookaheadLine !== null) {
     processParsedLine(pendingLookaheadLine, null);
     pendingLookaheadLine = null;
   }
-  flushReadyBuckets(true, false);
+  if (forceBuckets) {
+    flushReadyBuckets(true, false);
+  }
 };
 
 const processSerialLines = (lines) => {
@@ -1221,15 +1239,15 @@ const connect = (url) => {
   };
 };
 
-const finishUploadInput = () => {
+const finishUploadInput = ({ forceBucketFlush = true } = {}) => {
   if (serialLineDecoder) {
     const remaining = serialLineDecoder.flush();
     processSerialLines(remaining);
     serialLineDecoder = null;
   }
-  flushPendingParsedLine();
+  flushPendingParsedLine(forceBucketFlush);
   inputComplete = true;
-  if (!maybePostDone() && !isPaused && (hasAxisWork() || aggHasAny)) {
+  if (!maybePostDone() && !isPaused && hasPlaybackWork()) {
     ensurePacerRunning();
   }
 };
@@ -1271,8 +1289,8 @@ const processUploadedFile = async (file, explicitFormat = null) => {
     // Local uploads should start their playback clock after parsing completes,
     // otherwise high speed factors can make early buckets look overdue instantly.
     resetLogicalPlaybackClock();
+    finishUploadInput({ forceBucketFlush: false });
     deferBucketFlush = false;
-    finishUploadInput();
   } catch (err) {
     deferBucketFlush = false;
     console.error('KlipperPacer upload processing failed', err);
