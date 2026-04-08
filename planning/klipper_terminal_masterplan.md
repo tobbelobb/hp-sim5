@@ -53,24 +53,38 @@ Verification:
 Deliverables:
 - Extract worker-only logic from `integrations/klipper/klipperPacerWorker.js` into a shared module usable by both browser worker and Node terminal code.
 - Reuse existing motion math in `integrations/klipper/motionUtils.js` and `integrations/klipper/klipperFirmwareModel.js`.
-- Add an API-mode adapter that consumes `motion_report/dump_stepper` batches and clock data, then emits the same simulator `command` payloads the current raw pipeline produces.
+- Keep the browser-side Klipper pacer as the single timing source for both raw upload playback and API-mode motion playback, so API batches follow the same scheduler / bucket timing path as raw MCU files.
+- Add an API-mode adapter that consumes `motion_report/dump_stepper` batches and clock data, feeds them into the existing Klipper motion core, and schedules them without expanding them into websocket `Move` payloads in Node.
 - Delete superseded duplicate code paths inside the worker once the shared module is in place.
 
 Verification:
 - Existing raw-upload tests still pass.
-- New unit tests feed representative `dump_stepper` batches and verify emitted `Move` / `Add to reference` commands match current expectations.
+- New unit tests feed representative `dump_stepper` batches into the pacer worker and verify emitted `Move` / `Add to reference` commands match current expectations.
 
 ## 4. hp-sim bridge + command execution
 
 Deliverables:
-- WebSocket fan-out layer for `gcode_ws`, reusing the message contract already consumed by `hp-sim` / `hp-sim-3d` (`command`, `commands`, `reply`, and related control messages).
+- WebSocket fan-out layer for `gcode_ws`, keeping existing `reply` / control messages but adding a lower-level Klipper API motion stream:
+  - `klipper_api_session_start`
+  - `klipper_api_stepper_batch`
+  - `klipper_api_session_end`
+- `hp-sim` and `hp-sim-3d` should route those lower-level messages into the existing Klipper raw pacing/scheduler path instead of pushing pre-expanded `Move` commands straight into `RemoteSpoolSystem`.
 - Sequential G-code send queue built on `gcode/script`.
 - Command-to-motion session handling so one-shot and interactive commands stream motion into hp-sim while they execute.
+- Preserve raw batch timing fields (`first_clock`, `last_clock`, `start_mcu_position`, `data`, `clock_hz`) all the way to the browser so replay stays as close as possible to Klipper's batch dump semantics.
 
 Verification:
 - Manual smoke test with `?gcode_ws=ws://localhost:8790` in both `hp-sim` and `hp-sim-3d`.
 - `--cmd "G90"` returns reply text.
 - `--cmd "G1 ..."` produces visible simulator motion and no command ordering regressions under queued inputs.
+
+Closer To `x100.txt` / Batch-Dump Replay:
+- `motion_report/dump_stepper` is closer to raw replay than pre-expanded `Move` payloads because it preserves per-stepper `interval/count/add` timing and MCU clock anchoring.
+- It is still not a byte-for-byte replacement for `dist/examples/mcu_commands/x100.txt`: the Klipper API does not expose the full raw MCU stream (`set_next_step_dir`, `reset_step_clock`, etc.) through `dump_stepper`.
+- If tighter equivalence is needed later, the next candidates are:
+  - forward `motion_report/dump_trapq` alongside `dump_stepper` so planner-level move boundaries can be correlated with stepper batches
+  - add a diagnostic exporter that reconstructs a synthetic MCU-text trace from the API batches for side-by-side diffing against `x100.txt`
+  - add an optional deeper trace path only if Klipper-side instrumentation is acceptable, because the stock API does not currently expose a true raw MCU command log
 
 ## 5. Operational hardening + file-backed flow
 

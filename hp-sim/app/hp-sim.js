@@ -4,6 +4,7 @@ import { runGame } from '../../examples/js/slideprinter/runner.js';
 import { setupScene } from '../../examples/js/slideprinter/setupScene.js';
 import { RemoteSpoolSystem, InputSystem, ExtruderComponent } from '../../examples/js/slideprinter/slideprinter_common.js';
 import { detectFileFormat, FileFormat, isKlipperFormat, isRrfFormat } from '../../integrations/shared/fileFormatUtils.js';
+import { createKlipperRawBridge } from '../../integrations/klipper/klipperSimulatorBridge.js';
 import { _updateAttachmentPoints } from '../../src/js/cable_joints/cable_joints_core.js';
 import { QualityMonitor } from './quality-monitor.js';
 import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
@@ -255,6 +256,7 @@ function initHpSim() {
   const machines = [];
   let machineIdCounter = 0;
   let klipperMcuCommandPlayerWorker = null;
+  let klipperRawUploadBridge = null;
   let rrfCanPlayerWorker = null;
   let moveCommanderWorker = null;
   let simDtSec = null;
@@ -909,6 +911,20 @@ function initHpSim() {
   const klipperMcuCommandPlayerModuleUrl = new URL('../../integrations/klipper/klipperMcuCommandPlayer.js', import.meta.url);
   const rrfCanPlayerModuleUrl = new URL('../../integrations/rrf/rrfCanPlayer.js', import.meta.url);
   const moveCommanderModuleUrl = new URL('../../examples/js/slideprinter/moveCommander.js', import.meta.url);
+
+  function ensureExternalKlipperApiBridge() {
+    const remoteSystem = getRemoteSystem();
+    if (!remoteSystem) {
+      return null;
+    }
+    const bridge = klipperRawUploadBridge || createKlipperRawUploadBridge();
+    if (remoteSystem.worker !== bridge) {
+      remoteSystem.worker = bridge;
+    }
+    setPrintActive(true);
+    return bridge;
+  }
+
   function getRemoteSystem() {
     return world.systems.find((sys) => sys instanceof RemoteSpoolSystem) || null;
   }
@@ -1141,6 +1157,27 @@ function initHpSim() {
         renderSystem.update?.(world, 0);
       }
       updatePositionTraceToggleUI();
+      return;
+    }
+    if (payload.type === 'klipper_api_session_start') {
+      const bridge = ensureExternalKlipperApiBridge();
+      bridge?.postMessage({
+        type: 'api_motion_start',
+        clockHz: payload.clock_hz,
+      });
+      return;
+    }
+    if (payload.type === 'klipper_api_stepper_batch' && payload.batch) {
+      const bridge = ensureExternalKlipperApiBridge();
+      bridge?.postMessage({
+        type: 'api_motion_batch',
+        batch: payload.batch,
+      });
+      return;
+    }
+    if (payload.type === 'klipper_api_session_end') {
+      const bridge = ensureExternalKlipperApiBridge();
+      bridge?.postMessage({ type: 'api_motion_finish' });
       return;
     }
     const commands = [];
@@ -2332,6 +2369,9 @@ function initHpSim() {
         if (klipperMcuCommandPlayerWorker) {
           klipperMcuCommandPlayerWorker.postMessage({ type: 'pause' });
         }
+        if (klipperRawUploadBridge) {
+          klipperRawUploadBridge.postMessage({ type: 'pause' });
+        }
         if (rrfCanPlayerWorker) {
           rrfCanPlayerWorker.postMessage({ type: 'pause' });
         }
@@ -3014,6 +3054,9 @@ function initHpSim() {
     if (klipperMcuCommandPlayerWorker) {
       klipperMcuCommandPlayerWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
     }
+    if (klipperRawUploadBridge) {
+      klipperRawUploadBridge.postMessage({ type: 'set_speed_scale', value: safeScale });
+    }
     if (moveCommanderWorker) {
       moveCommanderWorker.postMessage({ type: 'set_speed_scale', value: safeScale });
     }
@@ -3396,6 +3439,7 @@ function initHpSim() {
       }
       klipperMcuCommandPlayerWorker = null;
     }
+    terminateKlipperRawUploadBridge();
     if (rrfCanPlayerWorker) {
       try {
         rrfCanPlayerWorker.terminate();
@@ -3749,6 +3793,58 @@ function initHpSim() {
     return klipperMcuCommandPlayerWorker;
   }
 
+  function terminateKlipperRawUploadBridge() {
+    if (!klipperRawUploadBridge) {
+      return;
+    }
+    try {
+      klipperRawUploadBridge.terminate();
+    } catch (err) {
+      console.warn('Slideprinter demo: unable to terminate raw Klipper upload bridge cleanly.', err);
+    }
+    klipperRawUploadBridge = null;
+  }
+
+  function createKlipperRawUploadBridge() {
+    terminateKlipperRawUploadBridge();
+    const bridge = createKlipperRawBridge((command) => {
+      const remoteSystem = getRemoteSystem();
+      if (remoteSystem && remoteSystem.worker === bridge) {
+        remoteSystem.addCommand(command);
+      }
+    }, {
+      onDone: () => {
+        const remoteSystem = getRemoteSystem();
+        if (remoteSystem && remoteSystem.worker === bridge) {
+          remoteSystem.worker = null;
+          setPrintActive(false);
+          if (asapState.active) {
+            asapState.pendingFinalCheck = true;
+          } else {
+            runFinalQualityChecks();
+          }
+        }
+        if (klipperRawUploadBridge === bridge) {
+          terminateKlipperRawUploadBridge();
+        }
+      },
+      onWorkerError: (message) => {
+        console.error('Slideprinter demo: raw Klipper upload bridge failed:', message);
+        const remoteSystem = getRemoteSystem();
+        if (remoteSystem && remoteSystem.worker === bridge) {
+          remoteSystem.worker = null;
+          setPrintActive(false);
+        }
+        if (klipperRawUploadBridge === bridge) {
+          terminateKlipperRawUploadBridge();
+        }
+      },
+    });
+    klipperRawUploadBridge = bridge;
+    bridge.postMessage({ type: 'set_speed_scale', value: currentTimeScale });
+    return bridge;
+  }
+
   function ensureRrfWorker() {
     if (rrfCanPlayerWorker) {
       return rrfCanPlayerWorker;
@@ -3869,6 +3965,9 @@ function initHpSim() {
     }
     if (klipperMcuCommandPlayerWorker && klipperMcuCommandPlayerWorker !== activeWorker) {
       klipperMcuCommandPlayerWorker.postMessage({ type: 'pause' });
+    }
+    if (klipperRawUploadBridge && klipperRawUploadBridge !== activeWorker) {
+      terminateKlipperRawUploadBridge();
     }
     if (rrfCanPlayerWorker && rrfCanPlayerWorker !== activeWorker) {
       rrfCanPlayerWorker.postMessage({ type: 'pause' });
@@ -4449,6 +4548,9 @@ function initHpSim() {
               }
               if (klipperMcuCommandPlayerWorker) {
                 klipperMcuCommandPlayerWorker.postMessage({ type: 'resume' });
+              }
+              if (klipperRawUploadBridge) {
+                klipperRawUploadBridge.postMessage({ type: 'resume' });
               }
               if (rrfCanPlayerWorker) {
                 rrfCanPlayerWorker.postMessage({ type: 'resume' });

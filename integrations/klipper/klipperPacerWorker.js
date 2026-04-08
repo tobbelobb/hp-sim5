@@ -53,6 +53,9 @@ let deferBucketFlush = false;
 let logicalClockAnchorMs = 0;
 let logicalClockAnchorWorkerMs = 0;
 let logicalClockPaused = false;
+let apiStreamActive = false;
+let apiStreamClockHz = MCU_CLOCK_HZ_KLIPPER_HOST;
+let apiStreamStartTick = null;
 
 const getSpeedScale = () => (
   Number.isFinite(speedScale) && speedScale > 0 ? speedScale : 1
@@ -96,12 +99,21 @@ const resetLogicalPlaybackClock = () => {
   logicalClockPaused = false;
 };
 
+const resolveBucketTargetLogicalMs = (bucketIdx) => {
+  if (apiStreamActive && Number.isFinite(apiStreamStartTick)) {
+    const bucketEndTick = motionCore.getBucketEndTick(bucketIdx);
+    const tickOffset = Math.max(0, bucketEndTick - apiStreamStartTick);
+    return (tickOffset / apiStreamClockHz) * 1000;
+  }
+  return (bucketIdx + 1) * BUCKET_INTERVAL_MS;
+};
+
 const resolveBucketAtMs = (bucketIdx) => {
   const now = performance.now();
   if (asapMode) {
     return now;
   }
-  const targetLogicalMs = (bucketIdx + 1) * BUCKET_INTERVAL_MS;
+  const targetLogicalMs = resolveBucketTargetLogicalMs(bucketIdx);
   const logicalNow = currentLogicalPlaybackMs(now);
   if (targetLogicalMs <= logicalNow) {
     return now;
@@ -113,7 +125,7 @@ const isBucketDueNow = (bucketIdx, now = performance.now()) => {
   if (asapMode) {
     return true;
   }
-  const targetLogicalMs = (bucketIdx + 1) * BUCKET_INTERVAL_MS;
+  const targetLogicalMs = resolveBucketTargetLogicalMs(bucketIdx);
   return targetLogicalMs <= currentLogicalPlaybackMs(now);
 };
 
@@ -191,6 +203,9 @@ const resetRuntimeState = () => {
   donePosted = false;
   pendingLookaheadLine = null;
   deferBucketFlush = false;
+  apiStreamActive = false;
+  apiStreamClockHz = MCU_CLOCK_HZ_KLIPPER_HOST;
+  apiStreamStartTick = null;
   firstSeqSeen = null;
   expectedSeq = null;
 };
@@ -198,6 +213,7 @@ const resetRuntimeState = () => {
 const flushReadyBuckets = (force = false, holdBackOneBucket = false) => {
   const commands = motionCore.flushCommands({
     force,
+    forceThreshold: inputComplete,
     holdBackOneBucket,
     canEmitBucket: force ? null : (bucketIdx) => isBucketDueNow(bucketIdx),
     buildTiming: (bucketIdx) => ({
@@ -548,6 +564,45 @@ const processUploadedFile = async (file, explicitFormat = null) => {
   }
 };
 
+const startApiMotionStream = ({ clockHz = MCU_CLOCK_HZ_KLIPPER_HOST } = {}) => {
+  resetRuntimeState();
+  apiStreamActive = true;
+  apiStreamClockHz = Number.isFinite(clockHz) && clockHz > 0 ? clockHz : MCU_CLOCK_HZ_KLIPPER_HOST;
+  ws = null;
+  resetLogicalPlaybackClock();
+};
+
+const consumeApiMotionBatch = (batch = {}) => {
+  if (!apiStreamActive) {
+    startApiMotionStream();
+  }
+  const firstClock = Number(batch.first_clock);
+  if (!Number.isFinite(firstClock)) {
+    return;
+  }
+  if (!Number.isFinite(apiStreamStartTick)) {
+    apiStreamStartTick = firstClock;
+    resetLogicalPlaybackClock();
+  }
+  motionCore.consumeStepperBatch({
+    stepperName: batch.name,
+    firstClock,
+    startMcuPosition: batch.start_mcu_position,
+    data: batch.data,
+  });
+  flushReadyBucketsIfEnabled(false, false);
+  if (!isPaused && hasPlaybackWork()) {
+    ensurePacerRunning();
+  }
+};
+
+const finishApiMotionStream = () => {
+  inputComplete = true;
+  if (!maybePostDone() && !isPaused && hasPlaybackWork()) {
+    ensurePacerRunning();
+  }
+};
+
 self.onmessage = (event) => {
   const { type, ...data } = event.data;
   if (type === 'connect') {
@@ -565,6 +620,15 @@ self.onmessage = (event) => {
     moveLogSeq = 0;
     resetMoveLogAxes();
     processUploadedFile(data.filename, data.format);
+  } else if (type === 'api_motion_start') {
+    LOG_MOVE = Boolean(data.logMove);
+    moveLogSeq = 0;
+    resetMoveLogAxes();
+    startApiMotionStream({ clockHz: data.clockHz });
+  } else if (type === 'api_motion_batch') {
+    consumeApiMotionBatch(data.batch);
+  } else if (type === 'api_motion_finish') {
+    finishApiMotionStream();
   } else if (type === 'set_speed_scale') {
     setSpeedScale(data.value);
   } else if (type === 'set_asap_mode') {

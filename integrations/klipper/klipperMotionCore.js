@@ -385,11 +385,12 @@ export class KlipperBucketedMotionCore {
 
   flushCommands({
     force = false,
+    forceThreshold = false,
     holdBackOneBucket = false,
     canEmitBucket = null,
     buildTiming = null,
   } = {}) {
-    const threshold = this._readyBucketThreshold(force);
+    const threshold = this._readyBucketThreshold(force || forceThreshold);
     if (threshold == null) {
       return [];
     }

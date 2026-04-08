@@ -1,6 +1,6 @@
 import { performance } from 'node:perf_hooks';
 import { WebSocketServer } from 'ws';
-import { KlipperApiMotionAdapter } from './klipperApiMotionAdapter.js';
+import { MCU_CLOCK_HZ_KLIPPER_HOST } from './klipperFirmwareModel.js';
 
 const MAX_PENDING_WS_PAYLOADS = 5000;
 const DEFAULT_MOTION_IDLE_MS = 650;
@@ -193,6 +193,7 @@ export function createKlipperTerminalBridge({
   onBroadcast = null,
   motionIdleMs = DEFAULT_MOTION_IDLE_MS,
   now = () => performance.now(),
+  clockHz = MCU_CLOCK_HZ_KLIPPER_HOST,
 } = {}) {
   if (!client) {
     throw new Error('createKlipperTerminalBridge() requires a KlippyApiClient instance.');
@@ -208,55 +209,33 @@ export function createKlipperTerminalBridge({
   const stepperSubscriptionIds = new Map();
   let activeSession = null;
 
-  const motionAdapter = new KlipperApiMotionAdapter({
-    now,
-  });
-
-  const flushSessionCommands = (session, { force = true } = {}) => {
-    if (!session || activeSession !== session) {
-      return [];
-    }
-    const commands = motionAdapter.drainReadyCommands({
-      force,
-      ignoreClock: true,
-    });
-    if (commands.length === 0) {
-      return commands;
-    }
-    session.sawMotion = true;
-    session.lastMotionAt = now();
-    if (commands.length === 1) {
-      helpers.broadcast({ type: 'command', command: commands[0], gcode: session.gcode });
-    } else {
-      helpers.broadcast({ type: 'commands', commands, gcode: session.gcode });
-    }
-    return commands;
-  };
-
-  const scheduleSessionFlush = (session) => {
-    if (!session || activeSession !== session || session.flushPending) {
-      return;
-    }
-    session.flushPending = true;
-    queueMicrotask(() => {
-      session.flushPending = false;
-      flushSessionCommands(session);
-    });
-  };
-
   const handleStepperBatch = (stepperName, batch = {}) => {
     const session = activeSession;
     if (!session) {
       return;
     }
-    motionAdapter.consumeStepperBatch({
-      name: stepperName,
-      first_clock: batch.first_clock,
-      start_mcu_position: batch.start_mcu_position,
-      data: batch.data,
+    if (!session.motionStreamStarted) {
+      session.motionStreamStarted = true;
+      helpers.broadcast({
+        type: 'klipper_api_session_start',
+        gcode: session.gcode,
+        clock_hz: clockHz,
+      });
+    }
+    helpers.broadcast({
+      type: 'klipper_api_stepper_batch',
+      gcode: session.gcode,
+      batch: {
+        name: stepperName,
+        first_clock: batch.first_clock,
+        first_time: batch.first_time ?? batch.first_step_time ?? null,
+        last_clock: batch.last_clock,
+        last_time: batch.last_time ?? batch.last_step_time ?? null,
+        start_mcu_position: batch.start_mcu_position,
+        data: Array.isArray(batch.data) ? batch.data : [],
+      },
     });
     session.lastMotionAt = now();
-    scheduleSessionFlush(session);
     if (session.motionSettler) {
       session.motionSettler.arm();
     }
@@ -304,13 +283,12 @@ export function createKlipperTerminalBridge({
   };
 
   const beginCommandSession = (gcode) => {
-    motionAdapter.reset();
     activeSession = {
       gcode,
       replyLines: [],
       sawMotion: false,
       lastMotionAt: null,
-      flushPending: false,
+      motionStreamStarted: false,
       motionSettler: null,
     };
     return activeSession;
@@ -326,29 +304,33 @@ export function createKlipperTerminalBridge({
       };
     }
 
-    flushSessionCommands(session, { force: true });
-
-    if (session.sawMotion || stepperSubscriptionIds.size > 0) {
+    if (session.motionStreamStarted || stepperSubscriptionIds.size > 0) {
       await createSettler(session, motionIdleMs, () => {
-        flushSessionCommands(session, { force: true });
+        // Give Klipper's batched motion_report stream one quiet window to deliver
+        // any tail queue_step batch that belongs to the just-completed command.
       });
     }
 
     const replyLines = [...session.replyLines];
     const reply = replyLines.length > 0 ? replyLines.join('\n') : 'ok';
+    if (session.motionStreamStarted) {
+      helpers.broadcast({
+        type: 'klipper_api_session_end',
+        gcode: session.gcode,
+      });
+    }
     helpers.broadcast({ type: 'reply', gcode: session.gcode, reply });
     activeSession = null;
     return {
       reply,
       replyLines,
-      hadMotion: session.sawMotion,
+      hadMotion: session.motionStreamStarted,
       printedLiveOutput: replyLines.length > 0,
     };
   };
 
   const abortCommandSession = () => {
     activeSession = null;
-    motionAdapter.reset();
   };
 
   const runGcodeCommand = async (gcode, execute) => {

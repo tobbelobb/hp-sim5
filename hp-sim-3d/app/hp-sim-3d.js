@@ -1091,6 +1091,20 @@ function initHpSim() {
     pushExternalCommands(batch);
   }
 
+  function ensureExternalKlipperApiBridge() {
+    const remoteSystem = getRemoteSystem();
+    if (!remoteSystem) {
+      return null;
+    }
+    const bridge = klipperRawUploadBridge || createKlipperRawUploadBridge();
+    if (remoteSystem.worker !== bridge) {
+      remoteSystem.worker = bridge;
+    }
+    setPrintActive(true);
+    maybeResumeFromPause();
+    return bridge;
+  }
+
   function clearExternalReconnectTimer() {
     if (externalWsReconnectTimer) {
       clearTimeout(externalWsReconnectTimer);
@@ -1208,6 +1222,27 @@ function initHpSim() {
         renderSystem.update?.(world, 0);
       }
       updatePositionTraceToggleUI();
+      return;
+    }
+    if (payload.type === 'klipper_api_session_start') {
+      const bridge = ensureExternalKlipperApiBridge();
+      bridge?.postMessage({
+        type: 'api_motion_start',
+        clockHz: payload.clock_hz,
+      });
+      return;
+    }
+    if (payload.type === 'klipper_api_stepper_batch' && payload.batch) {
+      const bridge = ensureExternalKlipperApiBridge();
+      bridge?.postMessage({
+        type: 'api_motion_batch',
+        batch: payload.batch,
+      });
+      return;
+    }
+    if (payload.type === 'klipper_api_session_end') {
+      const bridge = ensureExternalKlipperApiBridge();
+      bridge?.postMessage({ type: 'api_motion_finish' });
       return;
     }
     const commands = [];

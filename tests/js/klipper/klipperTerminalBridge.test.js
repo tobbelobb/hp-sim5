@@ -8,10 +8,12 @@ function flushMicrotasks() {
 
 describe('createKlipperTerminalBridge', () => {
   let createKlipperTerminalBridge;
+  let mcuClockHzKlipperHost;
 
   beforeEach(async () => {
     jest.resetModules();
     ({ createKlipperTerminalBridge } = await import('../../../integrations/klipper/klipperTerminalBridge.js'));
+    ({ MCU_CLOCK_HZ_KLIPPER_HOST: mcuClockHzKlipperHost } = await import('../../../integrations/klipper/klipperFirmwareModel.js'));
   });
 
   function createHarness() {
@@ -75,7 +77,7 @@ describe('createKlipperTerminalBridge', () => {
     }
   });
 
-  test('coalesces simultaneous stepper batches into shared motion commands and emits a final reply', async () => {
+  test('forwards simultaneous stepper batches as a shared API motion session and emits a final reply', async () => {
     const { client, klippyState, bridge, payloads } = createHarness();
 
     try {
@@ -107,14 +109,43 @@ describe('createKlipperTerminalBridge', () => {
         printedLiveOutput: true,
       });
 
-      expect(payloads).toHaveLength(2);
-      expect(payloads[0].type).toBe('commands');
-      expect(payloads[0].gcode).toBe('G1 A1 B1');
-      expect(payloads[0].commands).toHaveLength(2);
-      expect(payloads[0].commands[0].type).toBe('Move');
-      expect(payloads[0].commands[0].A).toBeDefined();
-      expect(payloads[0].commands[0].B).toBeDefined();
+      expect(payloads).toHaveLength(5);
+      expect(payloads[0]).toEqual({
+        type: 'klipper_api_session_start',
+        gcode: 'G1 A1 B1',
+        clock_hz: mcuClockHzKlipperHost,
+      });
       expect(payloads[1]).toEqual({
+        type: 'klipper_api_stepper_batch',
+        gcode: 'G1 A1 B1',
+        batch: {
+          name: 'stepper_a',
+          first_clock: 0,
+          first_time: null,
+          last_clock: undefined,
+          last_time: null,
+          start_mcu_position: 0,
+          data: [[60000, 2, 0]],
+        },
+      });
+      expect(payloads[2]).toEqual({
+        type: 'klipper_api_stepper_batch',
+        gcode: 'G1 A1 B1',
+        batch: {
+          name: 'stepper_b',
+          first_clock: 0,
+          first_time: null,
+          last_clock: undefined,
+          last_time: null,
+          start_mcu_position: 0,
+          data: [[60000, 2, 0]],
+        },
+      });
+      expect(payloads[3]).toEqual({
+        type: 'klipper_api_session_end',
+        gcode: 'G1 A1 B1',
+      });
+      expect(payloads[4]).toEqual({
         type: 'reply',
         gcode: 'G1 A1 B1',
         reply: 'ok move',

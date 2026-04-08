@@ -43,6 +43,26 @@ describe('Klipper pacer worker upload playback', () => {
     return getPostedCommands();
   }
 
+  async function playApiBatches(batches, options = {}) {
+    const {
+      speedScale = 1,
+      clockHz = 16000000,
+      advanceMs = 20,
+    } = options;
+    await loadWorkerModule();
+    globalThis.self.onmessage({ data: { type: 'set_speed_scale', value: speedScale } });
+    globalThis.self.onmessage({ data: { type: 'api_motion_start', clockHz } });
+    for (const batch of batches) {
+      globalThis.self.onmessage({ data: { type: 'api_motion_batch', batch } });
+    }
+    globalThis.self.onmessage({ data: { type: 'api_motion_finish' } });
+    jest.advanceTimersByTime(advanceMs);
+    jest.runAllTimers();
+    await Promise.resolve();
+    await Promise.resolve();
+    return getPostedCommands();
+  }
+
   beforeEach(() => {
     jest.resetModules();
     jest.useFakeTimers();
@@ -164,5 +184,25 @@ describe('Klipper pacer worker upload playback', () => {
     const moves = commands.filter((command) => command?.type === 'Move');
     expect(moves.length).toBeGreaterThan(0);
     expect(moves[0].at - startMs).toBeLessThanOrEqual(10);
+  });
+
+  test('replays API motion batches through the same paced move emission path', async () => {
+    const commands = await playApiBatches([
+      {
+        name: 'stepper_a',
+        first_clock: 0,
+        start_mcu_position: 0,
+        data: [[60000, 2, 0]],
+      },
+    ]);
+
+    const postedTypes = globalThis.postMessage.mock.calls.map(([message]) => message?.type);
+    expect(postedTypes).toContain('move');
+    expect(postedTypes).toContain('done');
+
+    const moves = commands.filter((command) => command?.type === 'Move');
+    expect(moves).toHaveLength(2);
+    expect(moves[0].A / STEP_ANGLE_RAD).toBeCloseTo(bucketedAntialiasingEnabled ? (5 / 3) : 1, 6);
+    expect(moves[1].A / STEP_ANGLE_RAD).toBeCloseTo(2, 6);
   });
 });
