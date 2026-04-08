@@ -1,0 +1,257 @@
+const fs = require('node:fs');
+const net = require('node:net');
+const os = require('node:os');
+const path = require('node:path');
+
+const FRAME_DELIMITER = '\x03';
+
+function writeFrame(socket, payload) {
+  socket.write(`${JSON.stringify(payload)}${FRAME_DELIMITER}`);
+}
+
+function createServerHarness(socketPath, onMessage) {
+  const sockets = new Set();
+  const server = net.createServer((socket) => {
+    sockets.add(socket);
+    let buffer = '';
+    socket.on('data', (chunk) => {
+      buffer += chunk.toString();
+      while (true) {
+        const frameIndex = buffer.indexOf(FRAME_DELIMITER);
+        if (frameIndex === -1) {
+          return;
+        }
+        const raw = buffer.slice(0, frameIndex);
+        buffer = buffer.slice(frameIndex + 1);
+        if (!raw) {
+          continue;
+        }
+        onMessage(JSON.parse(raw), socket);
+      }
+    });
+    socket.on('close', () => {
+      sockets.delete(socket);
+    });
+  });
+
+  return new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(socketPath, () => {
+      server.removeListener('error', reject);
+      resolve({
+        server,
+        sockets,
+        close: async () => {
+          for (const socket of sockets) {
+            socket.destroy();
+          }
+          await new Promise((closeResolve) => server.close(closeResolve));
+        },
+      });
+    });
+  });
+}
+
+describe('klipper terminal step 1', () => {
+  let KlippyApiClient;
+  let buildKlippyApiLaunchSpec;
+  let ensureKlippyApiServer;
+  let parseArgs;
+  let tmpDir;
+  let socketPath;
+
+  beforeAll(async () => {
+    ({ KlippyApiClient } = await import('../../../integrations/klipper/klippyApiClient.js'));
+    ({
+      buildKlippyApiLaunchSpec,
+      ensureKlippyApiServer,
+    } = await import('../../../integrations/klipper/klippy_api_cli_config.mjs'));
+    ({ parseArgs } = await import('../../../integrations/klipper/klipperTerminalArgs.js'));
+  });
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'klippy-terminal-test-'));
+    socketPath = path.join(tmpDir, 'klippy.sock');
+  });
+
+  afterEach(() => {
+    if (tmpDir) {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  test('parseArgs accepts step-1 klipper terminal flags', () => {
+    const args = parseArgs([
+      '--socket', '/tmp/custom.sock',
+      '--config', './printer.cfg',
+      '--log-path', './klippy.log',
+      '--start-script', './scripts/custom.sh',
+      '--cmd', 'G90',
+      '--ws-port', '9900',
+      '--quiet',
+      '--keep-alive',
+      '--no-ws',
+    ]);
+
+    expect(args.socketPath).toBe('/tmp/custom.sock');
+    expect(args.configPath).toBe('./printer.cfg');
+    expect(args.logPath).toBe('./klippy.log');
+    expect(args.startScript).toBe('./scripts/custom.sh');
+    expect(args.command).toBe('G90');
+    expect(args.wsPort).toBe(9900);
+    expect(args.quiet).toBe(true);
+    expect(args.keepAlive).toBe(true);
+    expect(args.noWs).toBe(true);
+  });
+
+  test('buildKlippyApiLaunchSpec resolves launcher paths through the repo root', () => {
+    const spec = buildKlippyApiLaunchSpec({
+      cwd: '/repo',
+      startScript: './scripts/run_klippy_api_mode.sh',
+      socketPath: './tmp/klippy.sock',
+      logPath: './tmp/klippy.log',
+      configPath: './examples/printer.cfg',
+      python: './.venv/bin/python',
+    });
+
+    expect(spec.command).toBe('/bin/bash');
+    expect(spec.args).toEqual(['/repo/scripts/run_klippy_api_mode.sh']);
+    expect(spec.options.env.KLIPPY_SOCKET_PATH).toBe('/repo/tmp/klippy.sock');
+    expect(spec.options.env.KLIPPY_LOG_PATH).toBe('/repo/tmp/klippy.log');
+    expect(spec.options.env.KLIPPY_CONFIG_PATH).toBe('/repo/examples/printer.cfg');
+    expect(spec.options.env.KLIPPY_PYTHON).toBe('/repo/.venv/bin/python');
+  });
+
+  test('ensureKlippyApiServer launches the helper script and waits for the socket', async () => {
+    const spawnImpl = jest.fn(() => ({
+      pid: 123,
+      unref: jest.fn(),
+    }));
+    const waitForSocket = jest.fn(async () => {});
+
+    const child = await ensureKlippyApiServer({
+      cwd: '/repo',
+      socketPath: '/tmp/klippy.sock',
+      startScript: './scripts/run_klippy_api_mode.sh',
+      spawnImpl,
+      waitForSocket,
+    });
+
+    expect(child.pid).toBe(123);
+    expect(spawnImpl).toHaveBeenCalledWith(
+      '/bin/bash',
+      ['/repo/scripts/run_klippy_api_mode.sh'],
+      expect.objectContaining({
+        cwd: '/repo',
+        detached: true,
+        stdio: 'ignore',
+      }),
+    );
+    expect(waitForSocket).toHaveBeenCalledWith('/tmp/klippy.sock');
+  });
+
+  test('KlippyApiClient handles requests, async subscriptions, and reconnect resubscribe', async () => {
+    const seenMethods = [];
+    const asyncResponses = [];
+
+    let activeHarness = await createServerHarness(socketPath, (message, socket) => {
+      seenMethods.push(message.method);
+      if (message.method === 'info') {
+        writeFrame(socket, {
+          id: message.id,
+          result: { state: 'ready', state_message: 'Printer is ready' },
+        });
+        return;
+      }
+      if (message.method === 'objects/list') {
+        writeFrame(socket, {
+          id: message.id,
+          result: { objects: ['webhooks', 'toolhead'] },
+        });
+        return;
+      }
+      if (message.method === 'gcode/subscribe_output') {
+        writeFrame(socket, {
+          id: message.id,
+          result: {},
+        });
+        writeFrame(socket, {
+          q: message.params.response_template.q,
+          params: { response: `hello:${message.params.response_template.q}` },
+        });
+      }
+    });
+
+    const client = new KlippyApiClient({
+      socketPath,
+      reconnectDelayMs: 20,
+      maxReconnectDelayMs: 40,
+      requestTimeoutMs: 1_000,
+      connectTimeoutMs: 500,
+    });
+
+    try {
+      await client.start();
+
+      await expect(client.request('info', {
+        client_info: { program: 'test' },
+      })).resolves.toMatchObject({ state: 'ready' });
+
+      await expect(client.request('objects/list', {})).resolves.toMatchObject({
+        objects: ['webhooks', 'toolhead'],
+      });
+
+      await client.subscribe(
+        'gcode/subscribe_output',
+        {},
+        (params) => asyncResponses.push(params.response),
+        { id: 'sub:gcode' },
+      );
+
+      expect(asyncResponses).toContain('hello:sub:gcode');
+
+      await activeHarness.close();
+
+      activeHarness = await createServerHarness(socketPath, (message, socket) => {
+        seenMethods.push(`re:${message.method}`);
+        if (message.method === 'gcode/subscribe_output') {
+          writeFrame(socket, {
+            id: message.id,
+            result: {},
+          });
+          writeFrame(socket, {
+            q: message.params.response_template.q,
+            params: { response: 'hello:reconnect' },
+          });
+          return;
+        }
+        if (message.method === 'objects/list') {
+          writeFrame(socket, {
+            id: message.id,
+            result: { objects: ['webhooks', 'toolhead', 'motion_report'] },
+          });
+          return;
+        }
+        if (message.method === 'info') {
+          writeFrame(socket, {
+            id: message.id,
+            result: { state: 'ready' },
+          });
+        }
+      });
+
+      await expect(client.request('objects/list', {})).resolves.toMatchObject({
+        objects: ['webhooks', 'toolhead', 'motion_report'],
+      });
+
+      expect(asyncResponses).toContain('hello:reconnect');
+      expect(seenMethods).toContain('gcode/subscribe_output');
+      expect(seenMethods).toContain('re:gcode/subscribe_output');
+    } finally {
+      client.close();
+      if (activeHarness) {
+        await activeHarness.close();
+      }
+    }
+  });
+});
