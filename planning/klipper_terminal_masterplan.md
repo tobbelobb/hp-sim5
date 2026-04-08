@@ -24,7 +24,7 @@ Assumptions:
 Deliverables:
 - `integrations/klipper/klipper_terminal.mjs` CLI skeleton mirroring the RRF terminal UX where it makes sense (`--cmd`, `--ws-port`, `--no-ws`, `--quiet`, `--keep-alive`).
 - A small Node-side Klipper API client for the Unix domain socket: `0x03` framing, request ids, async subscriptions, reconnect handling.
-- Klippy process manager that starts `klippy/klippy.py` with `-a <socket>` (see `scripts/run_klippy_api_mode.sh`) and tracks shutdown / restart.
+- Klippy process manager that starts `klippy/klippy.py` with `-a <socket>` and tracks shutdown / restart. See and reuse/extend `scripts/run_klippy_api_mode.sh`.
 
 Verification:
 - Start Klippy locally and complete `info` and `objects/list`.
