@@ -4,6 +4,7 @@ import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { KlippyApiClient } from './klippyApiClient.js';
 import { parseArgs } from './klipperTerminalArgs.js';
+import { KlippyRuntimeState } from './klippyRuntimeState.js';
 import {
   DEFAULT_KLIPPY_API_START_SCRIPT,
   DEFAULT_KLIPPY_CONFIG_PATH,
@@ -16,18 +17,39 @@ import {
 
 const CLIENT_INFO = {
   program: 'klipper_terminal',
-  version: 'step1',
+  version: 'step2',
 };
 
-const PROMPT_CONNECTED = 'gcode> ';
+const PROMPT_READY = 'gcode> ';
 const PROMPT_DISCONNECTED = '\x1b[90mdisconnected>\x1b[0m ';
+
+function buildStatePrompt({ connected, printerState }) {
+  if (!connected) {
+    return PROMPT_DISCONNECTED;
+  }
+  if (printerState === 'ready') {
+    return PROMPT_READY;
+  }
+  const label = printerState || 'connected';
+  const color = printerState === 'shutdown' || printerState === 'error'
+    ? '\x1b[31m'
+    : '\x1b[33m';
+  return `${color}${label}>\x1b[0m `;
+}
+
+function splitTerminalLines(response) {
+  return String(response)
+    .split(/\r?\n/)
+    .map((line) => line.trimEnd())
+    .filter((line) => line.length > 0);
+}
 
 function printHelp() {
   console.log(`Usage: node integrations/klipper/klipper_terminal.mjs [options]
 
-Send G-code to a Klippy API socket. Step 1 implements process management and
-API transport only; WebSocket simulator fan-out flags are accepted but not yet
-active.
+Send G-code to a Klippy API socket and follow runtime state via Klipper
+subscriptions. WebSocket simulator fan-out flags are accepted but are still
+reserved for a later step.
 
 Options:
   --socket <path>          Klippy API socket path (default: ${DEFAULT_KLIPPY_SOCKET_PATH})
@@ -49,25 +71,27 @@ function buildRuntime(args) {
   const client = new KlippyApiClient({
     socketPath: args.socketPath,
   });
+  const klippyState = new KlippyRuntimeState({
+    client,
+    clientInfo: CLIENT_INFO,
+  });
 
   let rl = null;
-  let promptConnectedState = false;
   let promptEverRendered = false;
   let managedKlippyProcess = null;
   let autoStartInFlight = null;
   let shuttingDown = false;
   let primePromise = null;
-  let latestInfo = null;
-  let latestObjectsList = null;
+  let lastReportedPrinterState = null;
+  let lastReportedMotionKey = null;
 
   const interactivePromptEnabled = () => rl && process.stdin.isTTY && !args.quiet;
 
-  const updatePromptForConnectionState = (connected, { forcePrompt = false } = {}) => {
-    promptConnectedState = connected;
+  const updatePromptForRuntimeState = ({ forcePrompt = false } = {}) => {
     if (!interactivePromptEnabled()) {
       return;
     }
-    const nextPrompt = connected ? PROMPT_CONNECTED : PROMPT_DISCONNECTED;
+    const nextPrompt = buildStatePrompt(klippyState.getSnapshot());
     if (rl.getPrompt() !== nextPrompt) {
       rl.setPrompt(nextPrompt);
     }
@@ -84,17 +108,13 @@ function buildRuntime(args) {
       return;
     }
     promptEverRendered = true;
-    rl.prompt();
+    rl.prompt(true);
   };
 
   const primeConnection = async () => {
     const nextPrime = (async () => {
-      latestInfo = await client.request('info', { client_info: CLIENT_INFO });
-      latestObjectsList = await client.request('objects/list', {});
-      return {
-        info: latestInfo,
-        objectsList: latestObjectsList,
-      };
+      await client.waitForConnection();
+      return klippyState.prime();
     })();
     primePromise = nextPrime;
     try {
@@ -107,29 +127,13 @@ function buildRuntime(args) {
   };
 
   const waitForPrimedConnection = async () => {
-    await client.waitForConnection();
     if (primePromise) {
       return primePromise;
     }
     return primeConnection();
   };
 
-  const waitForKlippyReady = async (timeoutMs = 15_000) => {
-    const deadline = Date.now() + Math.max(1, timeoutMs);
-    while (Date.now() < deadline) {
-      await waitForPrimedConnection();
-      if (latestInfo?.state === 'ready') {
-        return latestInfo;
-      }
-      if (latestInfo?.state === 'shutdown' || latestInfo?.state === 'error') {
-        throw new Error(latestInfo.state_message || `Klippy is in ${latestInfo.state} state.`);
-      }
-      await new Promise((resolve) => setTimeout(resolve, 200));
-      latestInfo = await client.request('info', {});
-    }
-    const details = latestInfo?.state_message || latestInfo?.state || 'unknown state';
-    throw new Error(`Klippy did not become ready within ${timeoutMs}ms (${details}).`);
-  };
+  const waitForKlippyReady = async (timeoutMs = 15_000) => klippyState.waitForReady(timeoutMs);
 
   const ensureKlippyServerReady = async ({ forceStart = false } = {}) => {
     if (autoStartInFlight) {
@@ -161,6 +165,47 @@ function buildRuntime(args) {
       return await autoStartInFlight;
     } finally {
       autoStartInFlight = null;
+    }
+  };
+
+  const printRuntimeLine = (line, stream = console.log) => {
+    stream(line);
+    updatePromptForRuntimeState();
+  };
+
+  const reportPrinterState = (snapshot) => {
+    if (args.quiet) {
+      return;
+    }
+    const state = snapshot.printerState;
+    const stateMessage = snapshot.printerStateMessage;
+    const stateKey = `${state || ''}\n${stateMessage || ''}`;
+    if (!state || lastReportedPrinterState === stateKey) {
+      return;
+    }
+    lastReportedPrinterState = stateKey;
+    const suffix = stateMessage && stateMessage !== state ? `: ${stateMessage}` : '';
+    printRuntimeLine(`Klippy state: ${state}${suffix}`);
+  };
+
+  const reportMotionSources = ({ steppers = [], trapq = [] }) => {
+    if (args.quiet) {
+      return;
+    }
+    const motionKey = JSON.stringify({ steppers, trapq });
+    if (motionKey === lastReportedMotionKey) {
+      return;
+    }
+    lastReportedMotionKey = motionKey;
+    const parts = [];
+    if (steppers.length > 0) {
+      parts.push(`steppers=${steppers.join(', ')}`);
+    }
+    if (trapq.length > 0) {
+      parts.push(`trapq=${trapq.join(', ')}`);
+    }
+    if (parts.length > 0) {
+      printRuntimeLine(`Motion sources: ${parts.join(' | ')}`);
     }
   };
 
@@ -204,17 +249,32 @@ function buildRuntime(args) {
     process.exit(exitCode);
   };
 
+  klippyState.on('gcode-output', ({ response }) => {
+    for (const line of splitTerminalLines(response)) {
+      printRuntimeLine(line);
+    }
+  });
+
+  klippyState.on('printer-state-changed', ({ snapshot }) => {
+    updatePromptForRuntimeState();
+    reportPrinterState(snapshot);
+  });
+
+  klippyState.on('motion-sources-changed', ({ steppers, trapq }) => {
+    reportMotionSources({ steppers, trapq });
+  });
+
   client.on('connected', () => {
-    updatePromptForConnectionState(true);
+    updatePromptForRuntimeState();
     primeConnection().catch((error) => {
       if (!shuttingDown) {
-        console.error(`Failed to query Klippy state: ${error.message}`);
+        console.error(`Failed to prime Klippy runtime state: ${error.message}`);
       }
     });
   });
 
   client.on('disconnected', () => {
-    updatePromptForConnectionState(false);
+    updatePromptForRuntimeState();
   });
 
   client.on('socket-error', (error) => {
@@ -230,7 +290,7 @@ function buildRuntime(args) {
   const main = async () => {
     await ensureKlippyServerReady();
     client.start();
-    await waitForPrimedConnection();
+    const primed = await waitForPrimedConnection();
 
     if (!args.noWs && args.wsPort > 0 && !args.quiet) {
       console.log('WebSocket fan-out is reserved for a later klipper_terminal step; continuing in API-only mode.');
@@ -249,7 +309,7 @@ function buildRuntime(args) {
     });
 
     if (process.stdin.isTTY && !args.quiet) {
-      updatePromptForConnectionState(promptConnectedState, { forcePrompt: true });
+      updatePromptForRuntimeState({ forcePrompt: true });
     }
 
     rl.on('line', (line) => {
@@ -263,14 +323,18 @@ function buildRuntime(args) {
     });
 
     if (!args.quiet) {
-      const objectCount = latestObjectsList?.objects?.length ?? 0;
-      const state = latestInfo?.state || 'unknown';
+      const objectCount = primed?.objectsList?.objects?.length ?? 0;
+      const snapshot = klippyState.getSnapshot();
+      const state = snapshot.printerState || 'unknown';
       console.log(`Connected to Klippy on ${args.socketPath} (${state}, ${objectCount} objects).`);
+      reportPrinterState(snapshot);
+      reportMotionSources(snapshot.motionSources);
     }
   };
 
   return {
     client,
+    klippyState,
     main,
     shutdown,
   };
@@ -310,7 +374,3 @@ function handleSignal(exitCode) {
 process.on('SIGINT', () => handleSignal(130));
 process.on('SIGTERM', () => handleSignal(143));
 process.on('SIGHUP', () => handleSignal(129));
-
-process.on('SIGINT', () => process.exit(130));
-process.on('SIGTERM', () => process.exit(143));
-process.on('SIGHUP', () => process.exit(129));
