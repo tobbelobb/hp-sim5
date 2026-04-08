@@ -10,7 +10,7 @@ export const DEFAULT_KLIPPY_LOG_PATH =
   process.env.KLIPPY_LOG_PATH || '/tmp/klipper.log';
 export const DEFAULT_KLIPPY_CONFIG_PATH =
   process.env.KLIPPY_CONFIG_PATH
-  || './examples/klipper/slideprinter/printer-hp3-linux-mcu-with-buildup.cfg';
+  || './examples/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg';
 export const DEFAULT_KLIPPY_PYTHON =
   process.env.KLIPPY_PYTHON || './.venv/bin/python';
 export const DEFAULT_KLIPPY_HOST_MCU_BIN =

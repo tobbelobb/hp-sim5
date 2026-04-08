@@ -163,11 +163,11 @@ describe('klipper terminal step 1', () => {
   });
 
   test('fake gpio chip helper command resolves through the repo root', () => {
-    expect(buildFakeGpioChipSetupCommand('./examples/klipper/slideprinter/printer-hp3-linux-mcu-with-buildup.cfg', '/repo')).toEqual({
+    expect(buildFakeGpioChipSetupCommand('./examples/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg', '/repo')).toEqual({
       command: 'sudo',
       args: [
         '/repo/scripts/make-fake-pin-chip.sh',
-        '/repo/examples/klipper/slideprinter/printer-hp3-linux-mcu-with-buildup.cfg',
+        '/repo/examples/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg',
       ],
     });
   });

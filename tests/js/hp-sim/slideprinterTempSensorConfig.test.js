@@ -11,23 +11,35 @@ function readFixture(relativePath) {
   return readFileSync(relativePath, 'utf8');
 }
 
-describe('Slideprinter temperature simulation config', () => {
+describe('Klipper temperature simulation config', () => {
   beforeAll(async () => {
     await importFs();
   });
 
   test('uses shared file-backed temperature sensors instead of fake analog pins', () => {
     const heaterConfigs = [
-      'examples/klipper/slideprinter/printer-hp3-linux-mcu-with-buildup.cfg',
-      'examples/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg.incl_extruder_and_heatbed',
-      'examples/klipper/slideprinter/printer-slideprinter-linux-mcu.simple.cfg.incl_extruder_and_heatbed',
+      {
+        relativePath: 'examples/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg',
+        extruderSensorPath: 'examples/klipper/hp3/extruder.temp',
+        bedSensorPath: 'examples/klipper/hp3/bed.temp',
+      },
+      {
+        relativePath: 'examples/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg.incl_extruder_and_heatbed',
+        extruderSensorPath: 'examples/klipper/slideprinter/extruder.temp',
+        bedSensorPath: 'examples/klipper/slideprinter/bed.temp',
+      },
+      {
+        relativePath: 'examples/klipper/slideprinter/printer-slideprinter-linux-mcu.simple.cfg.incl_extruder_and_heatbed',
+        extruderSensorPath: 'examples/klipper/slideprinter/extruder.temp',
+        bedSensorPath: 'examples/klipper/slideprinter/bed.temp',
+      },
     ];
 
-    for (const relativePath of heaterConfigs) {
+    for (const { relativePath, extruderSensorPath, bedSensorPath } of heaterConfigs) {
       const text = readFixture(relativePath);
       expect(text).toContain('sensor_type: temperature_host');
-      expect(text).toContain('sensor_path: examples/klipper/slideprinter/extruder.temp');
-      expect(text).toContain('sensor_path: examples/klipper/slideprinter/bed.temp');
+      expect(text).toContain(`sensor_path: ${extruderSensorPath}`);
+      expect(text).toContain(`sensor_path: ${bedSensorPath}`);
       expect(text).not.toMatch(/REPLACE_ME_WITH_FAKE_ANALOG_PIN_|sensor_pin:\s*analog\d+/i);
     }
   });

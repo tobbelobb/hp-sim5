@@ -14,7 +14,7 @@ ROOT_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 PYTHON="${KLIPPY_PYTHON:-${ROOT_DIR}/.venv/bin/python}"
 
 "$PYTHON" "$ROOT_DIR/klipper/klippy/klippy.py" \
-  "$ROOT_DIR/examples/klipper/slideprinter/printer-hp3-linux-mcu-with-buildup.cfg" \
+  "$ROOT_DIR/examples/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg" \
   -i $GCODE_FILE \
   -o "$ROOT_DIR/public/examples/mcu_commands/${BASENAME}.serial" \
   -v -d "$ROOT_DIR/examples/klipper/linux_mcu/klipper.dict" \
