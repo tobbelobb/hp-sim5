@@ -13,6 +13,12 @@ export const DEFAULT_KLIPPY_CONFIG_PATH =
   || './examples/klipper/slideprinter/printer-hp3-linux-mcu-with-buildup.cfg';
 export const DEFAULT_KLIPPY_PYTHON =
   process.env.KLIPPY_PYTHON || './.venv/bin/python';
+export const DEFAULT_KLIPPY_HOST_MCU_BIN =
+  process.env.KLIPPY_HOST_MCU_BIN || './examples/klipper/linux_mcu/klipper.elf';
+export const DEFAULT_KLIPPY_HOST_MCU_SERIAL =
+  process.env.KLIPPY_HOST_MCU_SERIAL || '/tmp/klipper_host_mcu';
+export const DEFAULT_KLIPPY_HOST_MCU_REALTIME =
+  process.env.KLIPPY_HOST_MCU_REALTIME || '0';
 
 const SOCKET_UNAVAILABLE_CODES = new Set([
   'ECONNREFUSED',
@@ -36,6 +42,9 @@ export function buildKlippyApiLaunchSpec({
   logPath = DEFAULT_KLIPPY_LOG_PATH,
   configPath = DEFAULT_KLIPPY_CONFIG_PATH,
   python = DEFAULT_KLIPPY_PYTHON,
+  hostMcuBin = DEFAULT_KLIPPY_HOST_MCU_BIN,
+  hostMcuSerial = DEFAULT_KLIPPY_HOST_MCU_SERIAL,
+  hostMcuRealtime = DEFAULT_KLIPPY_HOST_MCU_REALTIME,
   shell = '/bin/bash',
 } = {}) {
   return {
@@ -51,6 +60,9 @@ export function buildKlippyApiLaunchSpec({
         KLIPPY_LOG_PATH: resolvePathLike(logPath, cwd),
         KLIPPY_CONFIG_PATH: resolvePathLike(configPath, cwd),
         KLIPPY_PYTHON: resolvePathLike(python, cwd),
+        KLIPPY_HOST_MCU_BIN: resolvePathLike(hostMcuBin, cwd),
+        KLIPPY_HOST_MCU_SERIAL: resolvePathLike(hostMcuSerial, cwd),
+        KLIPPY_HOST_MCU_REALTIME: String(hostMcuRealtime),
       },
     },
   };
@@ -102,6 +114,9 @@ export async function ensureKlippyApiServer({
   logPath = DEFAULT_KLIPPY_LOG_PATH,
   configPath = DEFAULT_KLIPPY_CONFIG_PATH,
   python = DEFAULT_KLIPPY_PYTHON,
+  hostMcuBin = DEFAULT_KLIPPY_HOST_MCU_BIN,
+  hostMcuSerial = DEFAULT_KLIPPY_HOST_MCU_SERIAL,
+  hostMcuRealtime = DEFAULT_KLIPPY_HOST_MCU_REALTIME,
   shell = '/bin/bash',
   onInfo = null,
   spawnImpl = spawn,
@@ -114,6 +129,9 @@ export async function ensureKlippyApiServer({
     logPath,
     configPath,
     python,
+    hostMcuBin,
+    hostMcuSerial,
+    hostMcuRealtime,
     shell,
   });
   if (typeof onInfo === 'function') {

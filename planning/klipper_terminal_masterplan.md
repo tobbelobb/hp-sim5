@@ -18,13 +18,16 @@ Assumptions:
 - MVP uses Klipper's native API socket, not Moonraker.
 - MVP supports interactive and one-shot `gcode/script` first.
 - "Reuse `KLIPPER_UPLOAD_PIPELINE = 'raw'`" means extracting shared motion decoding / pacing logic from `integrations/klipper/klipperPacerWorker.js` instead of re-implementing it in Node.
+- The supported local runtime is direct Linux-process MCU startup via `examples/klipper/linux_mcu/klipper.elf` exposing `/tmp/klipper_host_mcu`, as documented by Klipper's Linux/RPi MCU docs. `klipper_terminal.mjs` must not depend on `examples/klipper/slideprinter/klipper_linux_mcu_bridge.py`, `pysimulavr`, `examples/klipper/slideprinter/klipper_avr_bridge.py`, or `examples/klipper/avr/klipper.elf`.
+- The fake GPIO setup from `scripts/make-fake-pin-chip.sh` is still a local prerequisite for configs that reference a simulated `gpiochip*`; it is not a substitute for the MCU process itself.
+- Local interactive runs should default to non-realtime Linux MCU startup so the terminal works without root/systemd privileges; realtime mode can remain an opt-in for dedicated environments.
 
 ## 1. Process + API transport
 
 Deliverables:
 - `integrations/klipper/klipper_terminal.mjs` CLI skeleton mirroring the RRF terminal UX where it makes sense (`--cmd`, `--ws-port`, `--no-ws`, `--quiet`, `--keep-alive`).
 - A small Node-side Klipper API client for the Unix domain socket: `0x03` framing, request ids, async subscriptions, reconnect handling.
-- Klippy process manager that starts `klippy/klippy.py` with `-a <socket>` and tracks shutdown / restart. See and reuse/extend `scripts/run_klippy_api_mode.sh`.
+- Local process manager that starts the Linux MCU process first, waits for `/tmp/klipper_host_mcu`, then starts `klippy/klippy.py` with `-a <socket>` and tracks shutdown / restart. See and reuse/extend `scripts/run_klippy_api_mode.sh`.
 
 Verification:
 - Start Klippy locally and complete `info` and `objects/list`.
@@ -41,7 +44,7 @@ Deliverables:
 - Motion source discovery from `motion_report.steppers` / `motion_report.trapq` as shown in `klipper/scripts/motan/data_logger.py` and implemented in `klipper/klippy/extras/motion_report.py`.
 
 Verification:
-- Confirm prompt / status changes track `webhooks.state`.
+- Confirm prompt / status changes track `webhooks.state`, including `startup` before the MCU side is ready and `ready` after the local Linux MCU process is up.
 - Confirm terminal output arrives through `gcode/subscribe_output`.
 - Confirm stepper names are discovered dynamically, not hard-coded.
 

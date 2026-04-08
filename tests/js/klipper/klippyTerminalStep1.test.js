@@ -112,6 +112,9 @@ describe('klipper terminal step 1', () => {
       logPath: './tmp/klippy.log',
       configPath: './examples/printer.cfg',
       python: './.venv/bin/python',
+      hostMcuBin: './examples/klipper/linux_mcu/klipper.elf',
+      hostMcuSerial: './tmp/klipper_host_mcu',
+      hostMcuRealtime: '0',
     });
 
     expect(spec.command).toBe('/bin/bash');
@@ -120,6 +123,9 @@ describe('klipper terminal step 1', () => {
     expect(spec.options.env.KLIPPY_LOG_PATH).toBe('/repo/tmp/klippy.log');
     expect(spec.options.env.KLIPPY_CONFIG_PATH).toBe('/repo/examples/printer.cfg');
     expect(spec.options.env.KLIPPY_PYTHON).toBe('/repo/.venv/bin/python');
+    expect(spec.options.env.KLIPPY_HOST_MCU_BIN).toBe('/repo/examples/klipper/linux_mcu/klipper.elf');
+    expect(spec.options.env.KLIPPY_HOST_MCU_SERIAL).toBe('/repo/tmp/klipper_host_mcu');
+    expect(spec.options.env.KLIPPY_HOST_MCU_REALTIME).toBe('0');
   });
 
   test('ensureKlippyApiServer launches the helper script and waits for the socket', async () => {
