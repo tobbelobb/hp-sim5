@@ -4,6 +4,10 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { KlippyApiClient } from './klippyApiClient.js';
+import {
+  buildKlippyBridgeWsHint,
+  createKlipperTerminalBridge,
+} from './klipperTerminalBridge.js';
 import { parseArgs } from './klipperTerminalArgs.js';
 import {
   buildFakeGpioChipSetupCommand,
@@ -23,7 +27,7 @@ import {
 
 const CLIENT_INFO = {
   program: 'klipper_terminal',
-  version: 'step2',
+  version: 'step4',
 };
 
 const PROMPT_READY = 'gcode> ';
@@ -73,9 +77,8 @@ function splitTerminalLines(response) {
 function printHelp() {
   console.log(`Usage: node integrations/klipper/klipper_terminal.mjs [options]
 
-Send G-code to a Klippy API socket and follow runtime state via Klipper
-subscriptions. WebSocket simulator fan-out flags are accepted but are still
-reserved for a later step.
+Send G-code to a Klippy API socket, subscribe to motion_report stepper batches,
+and fan simulator commands out over WebSocket for hp-sim to visualize.
 
 Options:
   --socket <path>          Klippy API socket path (default: ${DEFAULT_KLIPPY_SOCKET_PATH})
@@ -84,8 +87,8 @@ Options:
   --log-path <path>        Klippy log path for autostart (default: ${DEFAULT_KLIPPY_LOG_PATH})
   --start-script <path>    Launcher script for autostart
                            (default: ${DEFAULT_KLIPPY_API_START_SCRIPT})
-  --ws-port <port>         Reserved for future hp-sim fan-out (default: 8790)
-  --no-ws                  Disable future WebSocket fan-out
+  --ws-port <port>         Port for the hp-sim WebSocket fan-out (default: 8790)
+  --no-ws                  Disable WebSocket fan-out entirely
   --cmd, -c <GCODE>        Send G-code and exit
   --quiet, -q              Only print command results
   --keep-alive             Do not stop a terminal-managed klippy on exit
@@ -114,6 +117,15 @@ function buildRuntime(args) {
   let fakeGpioPromptShown = false;
   let terminalHandoffInFlight = false;
   const deferredRuntimeLines = [];
+  const sendQueue = [];
+  let processingQueue = false;
+  const bridgeContext = createKlipperTerminalBridge({
+    client,
+    klippyState,
+    wsPort: args.noWs ? 0 : args.wsPort,
+    quiet: args.quiet,
+    onClientChange: () => updatePromptForRuntimeState(),
+  });
 
   const interactivePromptEnabled = () => rl && process.stdin.isTTY && !args.quiet;
 
@@ -145,7 +157,28 @@ function buildRuntime(args) {
   };
 
   const handleReadlineLine = (line) => {
-    sendGcodeLine(line).catch((error) => {
+    enqueueLine(line);
+  };
+
+  const processQueue = async () => {
+    if (processingQueue) {
+      return;
+    }
+    processingQueue = true;
+    try {
+      while (sendQueue.length > 0) {
+        const next = sendQueue.shift();
+        // eslint-disable-next-line no-await-in-loop
+        await next();
+      }
+    } finally {
+      processingQueue = false;
+    }
+  };
+
+  const enqueueLine = (line) => {
+    sendQueue.push(() => sendGcodeLine(line));
+    processQueue().catch((error) => {
       console.error(`Unexpected terminal error: ${error.message}`);
     });
   };
@@ -404,8 +437,13 @@ function buildRuntime(args) {
     try {
       await waitForPrimedConnection();
       await waitForKlippyReady();
-      await client.request('gcode/script', { script: trimmed });
-      console.log('ok');
+      const result = await bridgeContext.runGcodeCommand(
+        trimmed,
+        () => client.request('gcode/script', { script: trimmed }),
+      );
+      if (!result?.printedLiveOutput) {
+        console.log(result?.reply?.trim?.() || 'ok');
+      }
       return true;
     } catch (error) {
       console.error(`Error sending "${trimmed}": ${error.message}`);
@@ -421,6 +459,11 @@ function buildRuntime(args) {
     }
     shuttingDown = true;
     try {
+      bridgeContext.close();
+    } catch (_error) {
+      // Ignore shutdown errors.
+    }
+    try {
       client.close();
     } catch (_error) {
       // Ignore shutdown errors.
@@ -433,6 +476,7 @@ function buildRuntime(args) {
   };
 
   klippyState.on('gcode-output', ({ response }) => {
+    bridgeContext.handleGcodeOutput(response);
     for (const line of splitTerminalLines(response)) {
       printRuntimeLine(line);
     }
@@ -480,11 +524,8 @@ function buildRuntime(args) {
     client.start();
     const primed = await waitForPrimedConnection();
 
-    if (!args.noWs && args.wsPort > 0 && !args.quiet) {
-      console.log('WebSocket fan-out is reserved for a later klipper_terminal step; continuing in API-only mode.');
-    }
-
     if (args.command) {
+      await bridgeContext.waitForHpSimConnection();
       const success = await sendGcodeLine(args.command);
       shutdown(success ? 0 : 1);
       return;
@@ -501,6 +542,10 @@ function buildRuntime(args) {
       const snapshot = klippyState.getSnapshot();
       const state = snapshot.printerState || 'unknown';
       console.log(`Connected to Klippy on ${args.socketPath} (${state}, ${objectCount} objects).`);
+      if (bridgeContext.wss) {
+        console.log(`WebSocket feed ready on ws://localhost:${args.wsPort}`);
+        console.log(`Open hp-sim with ${buildKlippyBridgeWsHint(args.wsPort)} to follow along.`);
+      }
       reportPrinterState(snapshot);
       reportMotionSources(snapshot.motionSources);
     }
