@@ -1,9 +1,15 @@
 #!/usr/bin/env node
+import { spawn } from 'node:child_process';
 import path from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { KlippyApiClient } from './klippyApiClient.js';
 import { parseArgs } from './klipperTerminalArgs.js';
+import {
+  buildFakeGpioChipSetupCommand,
+  configNeedsGpioChipSetup,
+  isMissingFakeGpioChipStateMessage,
+} from './klipperTerminalRecovery.js';
 import { KlippyRuntimeState } from './klippyRuntimeState.js';
 import {
   DEFAULT_KLIPPY_API_START_SCRIPT,
@@ -22,6 +28,26 @@ const CLIENT_INFO = {
 
 const PROMPT_READY = 'gcode> ';
 const PROMPT_DISCONNECTED = '\x1b[90mdisconnected>\x1b[0m ';
+
+function runFakeGpioChipSetup(commandSpec) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(commandSpec.command, commandSpec.args, {
+      stdio: 'inherit',
+    });
+    child.once('error', reject);
+    child.once('exit', (code, signal) => {
+      if (signal) {
+        reject(new Error(`fake gpio chip setup exited on signal ${signal}`));
+        return;
+      }
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      reject(new Error(`fake gpio chip setup exited with code ${code}`));
+    });
+  });
+}
 
 function buildStatePrompt({ connected, printerState }) {
   if (!connected) {
@@ -84,10 +110,17 @@ function buildRuntime(args) {
   let primePromise = null;
   let lastReportedPrinterState = null;
   let lastReportedMotionKey = null;
+  let fakeGpioPromptInFlight = false;
+  let fakeGpioPromptShown = false;
+  let terminalHandoffInFlight = false;
+  const deferredRuntimeLines = [];
 
   const interactivePromptEnabled = () => rl && process.stdin.isTTY && !args.quiet;
 
   const updatePromptForRuntimeState = ({ forcePrompt = false } = {}) => {
+    if (terminalHandoffInFlight) {
+      return;
+    }
     if (!interactivePromptEnabled()) {
       return;
     }
@@ -109,6 +142,83 @@ function buildRuntime(args) {
     }
     promptEverRendered = true;
     rl.prompt(true);
+  };
+
+  const handleReadlineLine = (line) => {
+    sendGcodeLine(line).catch((error) => {
+      console.error(`Unexpected terminal error: ${error.message}`);
+    });
+  };
+
+  const handleReadlineClose = () => {
+    shutdown(0);
+  };
+
+  const attachInteractiveReadline = () => {
+    if (rl) {
+      return;
+    }
+    rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+      terminal: process.stdin.isTTY,
+    });
+    rl.on('line', handleReadlineLine);
+    rl.on('close', handleReadlineClose);
+  };
+
+  const detachInteractiveReadline = () => {
+    if (!rl) {
+      return false;
+    }
+    rl.off('line', handleReadlineLine);
+    rl.off('close', handleReadlineClose);
+    rl.pause();
+    rl.close();
+    rl = null;
+    return true;
+  };
+
+  const flushDeferredRuntimeLines = () => {
+    while (deferredRuntimeLines.length > 0) {
+      const { line, stream } = deferredRuntimeLines.shift();
+      stream(line);
+    }
+  };
+
+  const withExclusiveTerminalAccess = async (fn) => {
+    const hadInteractiveReadline = detachInteractiveReadline();
+    terminalHandoffInFlight = true;
+    try {
+      return await fn();
+    } finally {
+      terminalHandoffInFlight = false;
+      if (hadInteractiveReadline && !shuttingDown) {
+        attachInteractiveReadline();
+      }
+      flushDeferredRuntimeLines();
+      updatePromptForRuntimeState({ forcePrompt: true });
+    }
+  };
+
+  const askUserConfirmation = async (question) => {
+    if (rl) {
+      return new Promise((resolve) => {
+        rl.question(question, (answer) => resolve(answer));
+      });
+    }
+    const promptRl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+      terminal: process.stdin.isTTY,
+    });
+    try {
+      return await new Promise((resolve) => {
+        promptRl.question(question, (answer) => resolve(answer));
+      });
+    } finally {
+      promptRl.close();
+    }
   };
 
   const primeConnection = async () => {
@@ -169,6 +279,10 @@ function buildRuntime(args) {
   };
 
   const printRuntimeLine = (line, stream = console.log) => {
+    if (terminalHandoffInFlight) {
+      deferredRuntimeLines.push({ line, stream });
+      return;
+    }
     stream(line);
     updatePromptForRuntimeState();
   };
@@ -206,6 +320,75 @@ function buildRuntime(args) {
     }
     if (parts.length > 0) {
       printRuntimeLine(`Motion sources: ${parts.join(' | ')}`);
+    }
+  };
+
+  const restartManagedKlippyAfterFakeGpioSetup = async () => {
+    if (!managedKlippyProcess) {
+      return false;
+    }
+    printRuntimeLine('Restarting the terminal-managed Klippy process now that the fake gpio chip is available...');
+    stopKlippyApiServer(managedKlippyProcess);
+    managedKlippyProcess = null;
+    primePromise = null;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await ensureKlippyServerReady({ forceStart: true });
+    await waitForPrimedConnection();
+    await waitForKlippyReady();
+    return true;
+  };
+
+  const maybeOfferFakeGpioChipSetup = async (snapshot) => {
+    if (fakeGpioPromptShown || fakeGpioPromptInFlight || shuttingDown) {
+      return;
+    }
+    if (!isMissingFakeGpioChipStateMessage(snapshot?.printerStateMessage)) {
+      return;
+    }
+    const resolvedConfigPath = path.resolve(process.cwd(), args.configPath);
+    if (!await configNeedsGpioChipSetup(resolvedConfigPath)) {
+      return;
+    }
+
+    fakeGpioPromptShown = true;
+    fakeGpioPromptInFlight = true;
+    const commandSpec = buildFakeGpioChipSetupCommand(args.configPath);
+    const commandText = `${commandSpec.command} ${commandSpec.args.join(' ')}`;
+
+    try {
+      printRuntimeLine('Klipper running on Linux needs a fake gpio chip before this config can start.');
+      printRuntimeLine(`It can be created like this: ${commandText}`);
+
+      if (!process.stdin.isTTY) {
+        printRuntimeLine('Run that command, then use FIRMWARE_RESTART or restart klipper_terminal.');
+        return;
+      }
+
+      const answer = await askUserConfirmation(
+        'Do you allow me to run that command for you? This command will ask you for sudo privileges. [y/N] ',
+      );
+      if (!/^(y|yes)$/iu.test(String(answer).trim())) {
+        printRuntimeLine('Skipped fake gpio chip setup. Run the command above, then use FIRMWARE_RESTART or restart klipper_terminal.');
+        return;
+      }
+
+      await withExclusiveTerminalAccess(async () => {
+        await runFakeGpioChipSetup(commandSpec);
+      });
+      const recovered = await restartManagedKlippyAfterFakeGpioSetup().catch((error) => {
+        console.error(`Failed to restart Klippy after fake gpio chip setup: ${error.message}`);
+        return false;
+      });
+      if (recovered) {
+        printRuntimeLine('Fake gpio chip setup completed and Klippy restarted successfully.');
+      } else {
+        printRuntimeLine('Fake gpio chip setup completed. Use FIRMWARE_RESTART or restart klipper_terminal to retry Klippy.');
+      }
+    } catch (error) {
+      console.error(`Failed to create fake gpio chip: ${error.message}`);
+    } finally {
+      fakeGpioPromptInFlight = false;
+      updatePromptForRuntimeState();
     }
   };
 
@@ -258,6 +441,11 @@ function buildRuntime(args) {
   klippyState.on('printer-state-changed', ({ snapshot }) => {
     updatePromptForRuntimeState();
     reportPrinterState(snapshot);
+    maybeOfferFakeGpioChipSetup(snapshot).catch((error) => {
+      if (!shuttingDown) {
+        console.error(`Failed to offer fake gpio chip setup: ${error.message}`);
+      }
+    });
   });
 
   klippyState.on('motion-sources-changed', ({ steppers, trapq }) => {
@@ -302,25 +490,11 @@ function buildRuntime(args) {
       return;
     }
 
-    rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-      terminal: process.stdin.isTTY,
-    });
+    attachInteractiveReadline();
 
     if (process.stdin.isTTY && !args.quiet) {
       updatePromptForRuntimeState({ forcePrompt: true });
     }
-
-    rl.on('line', (line) => {
-      sendGcodeLine(line).catch((error) => {
-        console.error(`Unexpected terminal error: ${error.message}`);
-      });
-    });
-
-    rl.on('close', () => {
-      shutdown(0);
-    });
 
     if (!args.quiet) {
       const objectCount = primed?.objectsList?.objects?.length ?? 0;

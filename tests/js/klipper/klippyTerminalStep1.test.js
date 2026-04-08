@@ -56,6 +56,8 @@ describe('klipper terminal step 1', () => {
   let KlippyApiClient;
   let buildKlippyApiLaunchSpec;
   let ensureKlippyApiServer;
+  let buildFakeGpioChipSetupCommand;
+  let isMissingFakeGpioChipStateMessage;
   let parseArgs;
   let tmpDir;
   let socketPath;
@@ -67,6 +69,10 @@ describe('klipper terminal step 1', () => {
       ensureKlippyApiServer,
     } = await import('../../../integrations/klipper/klippy_api_cli_config.mjs'));
     ({ parseArgs } = await import('../../../integrations/klipper/klipperTerminalArgs.js'));
+    ({
+      buildFakeGpioChipSetupCommand,
+      isMissingFakeGpioChipStateMessage,
+    } = await import('../../../integrations/klipper/klipperTerminalRecovery.js'));
   });
 
   beforeEach(() => {
@@ -154,6 +160,26 @@ describe('klipper terminal step 1', () => {
       }),
     );
     expect(waitForSocket).toHaveBeenCalledWith('/tmp/klippy.sock');
+  });
+
+  test('fake gpio chip helper command resolves through the repo root', () => {
+    expect(buildFakeGpioChipSetupCommand('./examples/klipper/slideprinter/printer-hp3-linux-mcu-with-buildup.cfg', '/repo')).toEqual({
+      command: 'sudo',
+      args: [
+        '/repo/scripts/make-fake-pin-chip.sh',
+        '/repo/examples/klipper/slideprinter/printer-hp3-linux-mcu-with-buildup.cfg',
+      ],
+    });
+  });
+
+  test('GPIO chip shutdown detection only matches the missing fake-chip failure', () => {
+    expect(isMissingFakeGpioChipStateMessage(
+      "MCU 'mcu' shutdown: GPIO chip device not found",
+    )).toBe(true);
+    expect(isMissingFakeGpioChipStateMessage(
+      'Printer is not ready',
+    )).toBe(false);
+    expect(isMissingFakeGpioChipStateMessage(null)).toBe(false);
   });
 
   test('KlippyApiClient handles requests, async subscriptions, and reconnect resubscribe', async () => {
