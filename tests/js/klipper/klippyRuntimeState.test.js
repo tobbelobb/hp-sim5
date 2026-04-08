@@ -310,4 +310,113 @@ describe('Klippy runtime state', () => {
       }
     }
   });
+
+  test('KlippyRuntimeState refreshes motion_report once startup transitions to ready without a motion update', async () => {
+    let objectsQueryCount = 0;
+
+    const harness = await createServerHarness(socketPath, (message, socket) => {
+      if (message.method === 'info') {
+        writeFrame(socket, {
+          id: message.id,
+          result: { state: 'startup', state_message: 'Booting' },
+        });
+        return;
+      }
+      if (message.method === 'objects/list') {
+        writeFrame(socket, {
+          id: message.id,
+          result: {
+            objects: ['webhooks', 'toolhead', 'gcode_move', 'motion_report'],
+          },
+        });
+        return;
+      }
+      if (message.method === 'objects/subscribe') {
+        writeFrame(socket, {
+          id: message.id,
+          result: {
+            eventtime: 1.0,
+            status: {
+              webhooks: { state: 'startup', state_message: 'Booting' },
+              toolhead: { position: [0, 0, 0, 0] },
+              gcode_move: { gcode_position: [0, 0, 0, 0] },
+              motion_report: {
+                live_position: [0, 0, 0, 0],
+                live_velocity: 0,
+                live_extruder_velocity: 0,
+                steppers: [],
+                trapq: [],
+              },
+            },
+          },
+        });
+        setImmediate(() => {
+          writeFrame(socket, {
+            q: message.params.response_template.q,
+            params: {
+              eventtime: 1.5,
+              status: {
+                webhooks: { state: 'ready', state_message: 'Printer is ready' },
+              },
+            },
+          });
+        });
+        return;
+      }
+      if (message.method === 'gcode/subscribe_output') {
+        writeFrame(socket, {
+          id: message.id,
+          result: {},
+        });
+        return;
+      }
+      if (message.method === 'objects/query') {
+        objectsQueryCount += 1;
+        writeFrame(socket, {
+          id: message.id,
+          result: {
+            eventtime: 1.75,
+            status: {
+              motion_report: {
+                live_position: [0, 0, 0, 0],
+                live_velocity: 0,
+                live_extruder_velocity: 0,
+                steppers: ['stepper_a', 'stepper_b'],
+                trapq: ['toolhead'],
+              },
+              webhooks: { state: 'ready', state_message: 'Printer is ready' },
+            },
+          },
+        });
+      }
+    });
+
+    const client = new KlippyApiClient({
+      socketPath,
+      reconnectDelayMs: 20,
+      maxReconnectDelayMs: 40,
+      requestTimeoutMs: 1_000,
+      connectTimeoutMs: 500,
+    });
+    const runtime = new KlippyRuntimeState({
+      client,
+      clientInfo: { program: 'test-runtime' },
+    });
+
+    try {
+      await client.start();
+      await runtime.prime();
+
+      await waitFor(() => objectsQueryCount === 1);
+      await waitFor(() => runtime.getSnapshot().motionSources.steppers.join(',') === 'stepper_a,stepper_b');
+
+      expect(runtime.getSnapshot().motionSources).toEqual({
+        steppers: ['stepper_a', 'stepper_b'],
+        trapq: ['toolhead'],
+      });
+    } finally {
+      client.close();
+      await harness.close();
+    }
+  });
 });

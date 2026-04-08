@@ -149,6 +149,7 @@ export class KlippyRuntimeState extends EventEmitter {
       trapq: [],
     };
     this.primePromise = null;
+    this.statusRefreshPromise = null;
 
     this.client.on('connected', () => {
       this.connected = true;
@@ -214,6 +215,29 @@ export class KlippyRuntimeState extends EventEmitter {
     } : {});
     this._applyInfo(info);
     return info;
+  }
+
+  async refreshSubscribedStatus() {
+    if (this.statusRefreshPromise) {
+      return this.statusRefreshPromise;
+    }
+    const nextRefresh = (async () => {
+      const objects = buildRuntimeObjectSubscription(this.availableObjects);
+      if (Object.keys(objects).length === 0) {
+        return null;
+      }
+      const result = await this.client.request('objects/query', { objects });
+      this._handleStatusPayload(result);
+      return result;
+    })();
+    this.statusRefreshPromise = nextRefresh;
+    try {
+      return await nextRefresh;
+    } finally {
+      if (this.statusRefreshPromise === nextRefresh) {
+        this.statusRefreshPromise = null;
+      }
+    }
   }
 
   async waitForReady(timeoutMs = 15_000) {
@@ -349,6 +373,13 @@ export class KlippyRuntimeState extends EventEmitter {
         stateMessage: nextComparable.printerStateMessage,
         snapshot,
       });
+      if (nextComparable.printerState === 'ready'
+        && nextComparable.motionSteppers.length === 0
+        && nextComparable.availableObjects.includes('motion_report')) {
+        this.refreshSubscribedStatus().catch((error) => {
+          this.emit('status-refresh-error', error);
+        });
+      }
     }
     if (!haveSameStrings(previous.availableObjects, nextComparable.availableObjects)) {
       this.emit('available-objects-changed', {
