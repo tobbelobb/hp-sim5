@@ -17,6 +17,10 @@ describe('createKlipperTerminalBridge', () => {
   });
 
   function createHarness(options = {}) {
+    const {
+      encoderResolver = null,
+      ...bridgeOptions
+    } = options;
     const client = {
       subscribe: jest.fn(async (_method, _params, _handler, subscribeOptions = {}) => {
         const result = { header: ['interval', 'count', 'add'] };
@@ -40,7 +44,8 @@ describe('createKlipperTerminalBridge', () => {
       wsPort: 0,
       motionIdleMs: 5,
       onBroadcast: (payload) => payloads.push(payload),
-      ...options,
+      encoderResolver,
+      ...bridgeOptions,
     });
     return {
       client,
@@ -308,6 +313,86 @@ describe('createKlipperTerminalBridge', () => {
           params: { data: [[0, 1, 2, 3, 4, 5]] },
         }),
       ]));
+    } finally {
+      bridge.close();
+    }
+  });
+
+  test('overrides placeholder M569.3 output with simulated encoder values', async () => {
+    const encoderResolver = jest.fn(async ({ axes }) => {
+      expect(axes).toEqual(['A', 'B']);
+      return [12.3456, -4.4];
+    });
+    const { bridge, payloads } = createHarness({ encoderResolver });
+
+    try {
+      const result = await bridge.runGcodeCommand('M569.3 P40.0:41.0', async () => {
+        const forwarded = bridge.handleGcodeOutput('Error: M569.3: Message not received\n');
+        expect(forwarded).toEqual([]);
+      });
+
+      expect(encoderResolver).toHaveBeenCalledTimes(1);
+      expect(result).toMatchObject({
+        reply: '[12.35, -4.40, ]',
+        hadMotion: false,
+        printedLiveOutput: false,
+      });
+      expect(payloads).toEqual([
+        {
+          type: 'reply',
+          gcode: 'M569.3 P40.0:41.0',
+          reply: '[12.35, -4.40, ]',
+        },
+      ]);
+    } finally {
+      bridge.close();
+    }
+  });
+
+  test('tracks M569.3 S references locally across simulated encoder reads', async () => {
+    const encoderResolver = jest.fn(async ({ axes }) => {
+      expect(axes).toEqual(['A']);
+      return [90];
+    });
+    const { bridge } = createHarness({ encoderResolver });
+
+    try {
+      const setReference = await bridge.runGcodeCommand('M569.3 P40.0 S', async () => {
+        bridge.handleGcodeOutput('Error: M569.3: Message not received\n');
+      });
+      const relative = await bridge.runGcodeCommand('M569.3 P40.0', async () => {
+        bridge.handleGcodeOutput('Error: M569.3: Message not received\n');
+      });
+
+      expect(setReference.reply).toBe('[0.00, ]');
+      expect(relative.reply).toBe('[0.00, ]');
+      expect(encoderResolver).toHaveBeenCalledTimes(2);
+    } finally {
+      bridge.close();
+    }
+  });
+
+  test('falls back to the Klipper placeholder reply when no simulator encoder is available', async () => {
+    const encoderResolver = jest.fn(async () => []);
+    const { bridge, payloads } = createHarness({ encoderResolver });
+
+    try {
+      const result = await bridge.runGcodeCommand('M569.3 P40.0', async () => {
+        const forwarded = bridge.handleGcodeOutput('Error: M569.3: Message not received\n');
+        expect(forwarded).toEqual([]);
+      });
+
+      expect(result).toMatchObject({
+        reply: 'Error: M569.3: Message not received',
+        printedLiveOutput: false,
+      });
+      expect(payloads).toEqual([
+        {
+          type: 'reply',
+          gcode: 'M569.3 P40.0',
+          reply: 'Error: M569.3: Message not received',
+        },
+      ]);
     } finally {
       bridge.close();
     }

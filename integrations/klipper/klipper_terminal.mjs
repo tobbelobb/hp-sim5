@@ -657,8 +657,8 @@ function buildRuntime(args, { cliArgv = process.argv.slice(2) } = {}) {
   };
 
   klippyState.on('gcode-output', ({ response }) => {
-    bridgeContext.handleGcodeOutput(response);
-    for (const line of splitTerminalLines(response)) {
+    const linesToPrint = bridgeContext.handleGcodeOutput(response);
+    for (const line of Array.isArray(linesToPrint) ? linesToPrint : splitTerminalLines(response)) {
       printRuntimeLine(line);
     }
   });

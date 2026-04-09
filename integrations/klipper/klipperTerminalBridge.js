@@ -1,16 +1,109 @@
 import { performance } from 'node:perf_hooks';
 import { WebSocketServer } from 'ws';
-import { MCU_CLOCK_HZ_KLIPPER_HOST } from './klipperFirmwareModel.js';
+import {
+  MCU_CLOCK_HZ_KLIPPER_HOST,
+  M569_DRIVER_AXIS_MAP,
+} from './klipperFirmwareModel.js';
 
 const MAX_PENDING_WS_PAYLOADS = 5000;
 const DEFAULT_MOTION_IDLE_MS = 650;
 const DEFAULT_MOTION_END_TIME_TOLERANCE_S = 0.010;
+const DEFAULT_ENCODER_TIMEOUT_MS = 2000;
 
 function splitTerminalLines(response) {
   return String(response)
     .split(/\r?\n/)
     .map((line) => line.trimEnd())
     .filter((line) => line.length > 0);
+}
+
+function normalizeMotorDescriptorValue(raw) {
+  if (raw == null) {
+    return null;
+  }
+  if (typeof raw === 'object') {
+    const canAddressCandidate = raw.can_address ?? raw.canAddress ?? raw.motorId;
+    const driverCandidate = raw.driver;
+    if (Number.isFinite(canAddressCandidate)) {
+      const driverIndex = Number.isFinite(driverCandidate) ? driverCandidate : 0;
+      return {
+        canAddress: canAddressCandidate,
+        driver: driverIndex,
+      };
+    }
+    if (Number.isFinite(driverCandidate)) {
+      return normalizeMotorDescriptorValue(driverCandidate);
+    }
+    if (Number.isFinite(raw.motorId)) {
+      return normalizeMotorDescriptorValue(raw.motorId);
+    }
+    return null;
+  }
+
+  const text = typeof raw === 'number'
+    ? raw.toString()
+    : typeof raw === 'string'
+      ? raw.trim()
+      : '';
+  if (!text) {
+    return null;
+  }
+  const [canPart, driverPart] = text.split('.');
+  const canAddress = parseInt(canPart, 10);
+  if (!Number.isFinite(canAddress)) {
+    return null;
+  }
+  let driver = 0;
+  if (driverPart !== undefined) {
+    const parsedDriver = parseInt(driverPart, 10);
+    if (Number.isFinite(parsedDriver)) {
+      driver = parsedDriver;
+    }
+  }
+  return {
+    canAddress,
+    driver,
+  };
+}
+
+function motorDescriptorKey(descriptor) {
+  if (!descriptor || !Number.isFinite(descriptor.canAddress)) {
+    return null;
+  }
+  const driverIndex = Number.isFinite(descriptor.driver) ? descriptor.driver : 0;
+  return `${descriptor.canAddress}.${driverIndex}`;
+}
+
+function parseEncoderQuery(gcode) {
+  if (typeof gcode !== 'string' || !/^M569\.3\b/i.test(gcode.trim())) {
+    return { descriptors: [], setReference: false };
+  }
+  const pMatch = gcode.match(/P([0-9:\.]+)/i);
+  const descriptors = pMatch
+    ? pMatch[1]
+      .split(':')
+      .map((value) => normalizeMotorDescriptorValue(value))
+      .filter((descriptor) => descriptor && Number.isFinite(descriptor.canAddress))
+    : [];
+  const setReference = /\bS(?:\s|$|-?[0-9])/i.test(gcode);
+  return { descriptors, setReference };
+}
+
+function isEncoderQuery(gcode) {
+  return typeof gcode === 'string' && /^M569\.3\b/i.test(gcode.trim());
+}
+
+function formatEncoderReply(values) {
+  if (!Array.isArray(values) || values.length === 0) {
+    return '[ ]';
+  }
+  const formatValue = (value) => {
+    if (!Number.isFinite(value)) {
+      return 'nan';
+    }
+    return value.toFixed(2);
+  };
+  return `[${values.map((value) => formatValue(value)).join(', ')}, ]`;
 }
 
 function buildWsHelpers({
@@ -21,6 +114,8 @@ function buildWsHelpers({
 } = {}) {
   const wss = wsPort ? new WebSocketServer({ port: wsPort }) : null;
   const pendingWsPayloads = [];
+  const pendingEncoderRequests = new Map();
+  let encoderRequestSeq = 1;
   let waitingForClientNoticePrinted = false;
 
   const getReadyWsClients = () => (wss
@@ -77,12 +172,68 @@ function buildWsHelpers({
     waitingForClientNoticePrinted = false;
   };
 
+  const handleIncomingWsMessage = (data) => {
+    if (!data) {
+      return;
+    }
+    let payload = null;
+    try {
+      payload = typeof data === 'string' ? JSON.parse(data) : JSON.parse(data.toString());
+    } catch (_error) {
+      return;
+    }
+    if (payload?.type === 'encoder_response' && payload.requestId != null) {
+      const pending = pendingEncoderRequests.get(payload.requestId);
+      if (!pending) {
+        return;
+      }
+      pendingEncoderRequests.delete(payload.requestId);
+      pending.resolve(payload);
+    }
+  };
+
+  const sendEncoderRequest = (axes, timeoutMs = DEFAULT_ENCODER_TIMEOUT_MS) => {
+    const readyClients = getReadyWsClients();
+    if (readyClients.length === 0) {
+      throw new Error('Message not received');
+    }
+    const requestId = encoderRequestSeq++;
+    const payload = { type: 'encoder_request', requestId, axes };
+    const data = JSON.stringify(payload);
+    readyClients.forEach((client) => {
+      try {
+        client.send(data);
+      } catch (_error) {
+        // Ignore send errors. The timeout below handles missing responses.
+      }
+    });
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        pendingEncoderRequests.delete(requestId);
+        reject(new Error('Message not received'));
+      }, Math.max(1, timeoutMs));
+      pendingEncoderRequests.set(requestId, {
+        resolve: (value) => {
+          clearTimeout(timeout);
+          pendingEncoderRequests.delete(requestId);
+          resolve(value);
+        },
+        reject: (error) => {
+          clearTimeout(timeout);
+          pendingEncoderRequests.delete(requestId);
+          reject(error);
+        },
+      });
+    });
+  };
+
   if (wss) {
     wss.on('connection', (socket) => {
       flushPendingPayloads();
       if (onClientChange) {
         onClientChange(true);
       }
+      socket.on('message', (data) => handleIncomingWsMessage(data));
       socket.on('close', () => {
         if (onClientChange) {
           onClientChange(hasReadyWsClients());
@@ -142,6 +293,10 @@ function buildWsHelpers({
     if (wss) {
       wss.close();
     }
+    for (const pending of pendingEncoderRequests.values()) {
+      pending.reject(new Error('encoder request bridge closed'));
+    }
+    pendingEncoderRequests.clear();
     pendingWsPayloads.splice(0, pendingWsPayloads.length);
   };
 
@@ -151,6 +306,7 @@ function buildWsHelpers({
     getReadyWsClients,
     broadcast,
     flushPendingPayloads,
+    sendEncoderRequest,
     waitForHpSimConnection,
     close,
   };
@@ -227,6 +383,9 @@ export function createKlipperTerminalBridge({
   motionEndTimeToleranceS = DEFAULT_MOTION_END_TIME_TOLERANCE_S,
   now = () => performance.now(),
   clockHz = MCU_CLOCK_HZ_KLIPPER_HOST,
+  driverToAxis = new Map(M569_DRIVER_AXIS_MAP),
+  encoderTimeoutMs = DEFAULT_ENCODER_TIMEOUT_MS,
+  encoderResolver = null,
 } = {}) {
   if (!client) {
     throw new Error('createKlipperTerminalBridge() requires a KlippyApiClient instance.');
@@ -241,8 +400,28 @@ export function createKlipperTerminalBridge({
 
   const stepperSubscriptionIds = new Map();
   const trapqSubscriptionIds = new Map();
+  const encoderReferences = new Map();
   let activeSession = null;
   const logDebug = typeof debugLog === 'function' ? debugLog : null;
+  const resolveEncoderAngles = typeof encoderResolver === 'function'
+    ? encoderResolver
+    : helpers.wss
+      ? async ({ axes, timeoutMs }) => {
+        const response = await helpers.sendEncoderRequest(
+          axes,
+          Number.isFinite(timeoutMs)
+            ? Math.max(1, Math.min(timeoutMs, 5000))
+            : encoderTimeoutMs,
+        );
+        if (Array.isArray(response?.anglesDeg)) {
+          return response.anglesDeg;
+        }
+        if (Array.isArray(response?.angles)) {
+          return response.angles;
+        }
+        return [];
+      }
+      : null;
 
   const emitDebug = (event, payload = {}) => {
     if (!logDebug) {
@@ -439,18 +618,90 @@ export function createKlipperTerminalBridge({
   };
 
   const handleGcodeOutput = (response) => {
+    const lines = splitTerminalLines(response);
     const session = activeSession;
     if (!session) {
-      return;
+      return lines;
     }
-    for (const line of splitTerminalLines(response)) {
+    for (const line of lines) {
       session.replyLines.push(line);
     }
+    if (session.deferLiveOutput) {
+      return [];
+    }
+    if (lines.length > 0) {
+      session.printedLiveOutput = true;
+    }
+    return lines;
+  };
+
+  const maybeOverrideEncoderReply = async (session) => {
+    if (!session?.isEncoderQuery || typeof resolveEncoderAngles !== 'function') {
+      return null;
+    }
+    const { descriptors, setReference } = parseEncoderQuery(session.gcode);
+    if (descriptors.length === 0) {
+      return null;
+    }
+
+    const descriptorEntries = descriptors.map((descriptor) => ({
+      descriptor,
+      key: motorDescriptorKey(descriptor),
+      axis: descriptor ? driverToAxis.get(descriptor.canAddress) : null,
+    }));
+    const axesForQuery = descriptorEntries
+      .filter((entry) => entry.axis)
+      .map((entry) => entry.axis);
+    if (axesForQuery.length === 0) {
+      return null;
+    }
+
+    let anglesDeg = null;
+    try {
+      const resolverResult = await resolveEncoderAngles({
+        axes: axesForQuery,
+        timeoutMs: encoderTimeoutMs,
+        gcode: session.gcode,
+      });
+      if (Array.isArray(resolverResult)) {
+        anglesDeg = resolverResult;
+      } else if (resolverResult && Array.isArray(resolverResult.anglesDeg)) {
+        anglesDeg = resolverResult.anglesDeg;
+      }
+    } catch (_error) {
+      return null;
+    }
+    if (!anglesDeg || anglesDeg.length === 0) {
+      return null;
+    }
+
+    const values = [];
+    let encoderIdx = 0;
+    for (const entry of descriptorEntries) {
+      if (!entry.axis) {
+        values.push(null);
+        continue;
+      }
+      const rawValue = anglesDeg[encoderIdx++];
+      if (setReference && entry.key && Number.isFinite(rawValue)) {
+        encoderReferences.set(entry.key, rawValue);
+      }
+      const reference = entry.key && encoderReferences.has(entry.key)
+        ? encoderReferences.get(entry.key)
+        : 0;
+      const relative = Number.isFinite(rawValue) ? rawValue - reference : null;
+      values.push(Number.isFinite(relative) ? relative : null);
+    }
+    return formatEncoderReply(values);
   };
 
   const beginCommandSession = (gcode) => {
+    const encoderQuery = isEncoderQuery(gcode);
     activeSession = {
       gcode,
+      deferLiveOutput: encoderQuery,
+      isEncoderQuery: encoderQuery,
+      printedLiveOutput: false,
       replyLines: [],
       sawMotion: false,
       lastMotionAt: null,
@@ -494,7 +745,7 @@ export function createKlipperTerminalBridge({
       reply,
       replyLines,
       hadMotion: session.motionStreamStarted,
-      printedLiveOutput: replyLines.length > 0,
+      printedLiveOutput: session.printedLiveOutput,
     };
   };
 
@@ -510,6 +761,10 @@ export function createKlipperTerminalBridge({
     const session = beginCommandSession(trimmed);
     try {
       await execute();
+      const encoderReply = await maybeOverrideEncoderReply(session);
+      if (typeof encoderReply === 'string' && encoderReply.trim().length > 0) {
+        session.replyLines = [encoderReply];
+      }
       return await finalizeCommandSession(session);
     } catch (error) {
       abortCommandSession();
