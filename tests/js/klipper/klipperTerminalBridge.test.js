@@ -206,6 +206,63 @@ describe('createKlipperTerminalBridge', () => {
     }
   });
 
+  test('finishes a motion session as soon as stepper coverage reaches the trapq end', async () => {
+    const { client, klippyState, bridge } = createHarness({
+      motionIdleMs: 250,
+    });
+
+    try {
+      klippyState.emit('motion-sources-changed', {
+        steppers: ['stepper_a'],
+        trapq: ['toolhead'],
+      });
+      await flushMicrotasks();
+      await flushMicrotasks();
+
+      const stepperHandler = client.subscribe.mock.calls.find(
+        (call) => call[0] === 'motion_report/dump_stepper' && call[1].name === 'stepper_a',
+      )[2];
+      const trapqHandler = client.subscribe.mock.calls.find(
+        (call) => call[0] === 'motion_report/dump_trapq' && call[1].name === 'toolhead',
+      )[2];
+
+      const resultPromise = bridge.runGcodeCommand('G1 X100', async () => {
+        trapqHandler({
+          data: [[10.0, 0.6, 0, 0, [0, 0, 0], [1, 0, 0]]],
+        });
+        stepperHandler({
+          first_clock: 0,
+          start_mcu_position: 0,
+          last_time: 10.2,
+          data: [[60000, 1, 0]],
+        });
+      });
+
+      await expect(Promise.race([
+        resultPromise.then(() => 'resolved'),
+        new Promise((resolve) => setTimeout(() => resolve('timeout'), 50)),
+      ])).resolves.toBe('timeout');
+
+      stepperHandler({
+        first_clock: 60_000,
+        start_mcu_position: 1,
+        last_time: 10.595,
+        data: [[60000, 1, 0]],
+      });
+
+      await expect(Promise.race([
+        resultPromise,
+        new Promise((resolve) => setTimeout(() => resolve('timeout'), 50)),
+      ])).resolves.toMatchObject({
+        reply: 'ok',
+        hadMotion: true,
+        printedLiveOutput: false,
+      });
+    } finally {
+      bridge.close();
+    }
+  });
+
   test('subscribes to dump_trapq only in debug mode and logs trapq batches', async () => {
     const debugEntries = [];
     const { client, klippyState, bridge } = createHarness({

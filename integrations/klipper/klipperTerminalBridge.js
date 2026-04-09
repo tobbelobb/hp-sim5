@@ -4,6 +4,7 @@ import { MCU_CLOCK_HZ_KLIPPER_HOST } from './klipperFirmwareModel.js';
 
 const MAX_PENDING_WS_PAYLOADS = 5000;
 const DEFAULT_MOTION_IDLE_MS = 650;
+const DEFAULT_MOTION_END_TIME_TOLERANCE_S = 0.010;
 
 function splitTerminalLines(response) {
   return String(response)
@@ -180,6 +181,35 @@ function createSettler(session, motionIdleMs, finalize) {
   });
 }
 
+function normalizeMotionTime(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function getStepperBatchLastTime(batch = {}) {
+  return normalizeMotionTime(batch.last_time ?? batch.last_step_time);
+}
+
+function getTrapqBatchEndTime(batch = {}) {
+  const data = Array.isArray(batch.data) ? batch.data : [];
+  let maxEndTime = null;
+  for (const entry of data) {
+    if (!Array.isArray(entry)) {
+      continue;
+    }
+    const startTime = normalizeMotionTime(entry[0]);
+    const duration = normalizeMotionTime(entry[1]) ?? 0;
+    if (!Number.isFinite(startTime)) {
+      continue;
+    }
+    const endTime = startTime + duration;
+    maxEndTime = Number.isFinite(maxEndTime)
+      ? Math.max(maxEndTime, endTime)
+      : endTime;
+  }
+  return maxEndTime;
+}
+
 export function buildKlippyBridgeWsHint(wsPort, { host = 'localhost' } = {}) {
   return `?gcode_ws=ws://${host}:${wsPort}`;
 }
@@ -194,6 +224,7 @@ export function createKlipperTerminalBridge({
   onClientChange = null,
   onBroadcast = null,
   motionIdleMs = DEFAULT_MOTION_IDLE_MS,
+  motionEndTimeToleranceS = DEFAULT_MOTION_END_TIME_TOLERANCE_S,
   now = () => performance.now(),
   clockHz = MCU_CLOCK_HZ_KLIPPER_HOST,
 } = {}) {
@@ -218,6 +249,18 @@ export function createKlipperTerminalBridge({
       return;
     }
     logDebug(event, payload);
+  };
+
+  const hasStepperCoverageForPlannedMotion = (session) => {
+    if (!session) {
+      return false;
+    }
+    const plannedEndTime = session.plannedMotionEndTime;
+    const maxStepperLastTime = session.maxStepperLastTime;
+    if (!Number.isFinite(plannedEndTime) || !Number.isFinite(maxStepperLastTime)) {
+      return false;
+    }
+    return maxStepperLastTime >= (plannedEndTime - motionEndTimeToleranceS);
   };
 
   const ensureMotionSessionStarted = (session) => {
@@ -257,8 +300,18 @@ export function createKlipperTerminalBridge({
         data: Array.isArray(batch.data) ? batch.data : [],
       },
     });
+    const lastTime = getStepperBatchLastTime(batch);
+    if (Number.isFinite(lastTime)) {
+      session.maxStepperLastTime = Number.isFinite(session.maxStepperLastTime)
+        ? Math.max(session.maxStepperLastTime, lastTime)
+        : lastTime;
+    }
     session.lastMotionAt = now();
     if (session.motionSettler) {
+      if (hasStepperCoverageForPlannedMotion(session)) {
+        session.motionSettler.finish();
+        return;
+      }
       session.motionSettler.arm();
     }
   };
@@ -283,6 +336,15 @@ export function createKlipperTerminalBridge({
         data: Array.isArray(batch.data) ? batch.data : [],
       },
     });
+    const trapqEndTime = getTrapqBatchEndTime(batch);
+    if (Number.isFinite(trapqEndTime)) {
+      session.plannedMotionEndTime = Number.isFinite(session.plannedMotionEndTime)
+        ? Math.max(session.plannedMotionEndTime, trapqEndTime)
+        : trapqEndTime;
+    }
+    if (session.motionSettler && hasStepperCoverageForPlannedMotion(session)) {
+      session.motionSettler.finish();
+    }
   };
 
   const syncMotionSources = async (stepperNames = [], trapqNames = []) => {
@@ -392,6 +454,8 @@ export function createKlipperTerminalBridge({
       replyLines: [],
       sawMotion: false,
       lastMotionAt: null,
+      maxStepperLastTime: null,
+      plannedMotionEndTime: null,
       motionStreamStarted: false,
       motionSettler: null,
     };
@@ -408,7 +472,8 @@ export function createKlipperTerminalBridge({
       };
     }
 
-    if (session.motionStreamStarted || stepperSubscriptionIds.size > 0) {
+    if (!hasStepperCoverageForPlannedMotion(session)
+      && (session.motionStreamStarted || stepperSubscriptionIds.size > 0)) {
       await createSettler(session, motionIdleMs, () => {
         // Give Klipper's batched motion_report stream one quiet window to deliver
         // any tail queue_step batch that belongs to the just-completed command.
