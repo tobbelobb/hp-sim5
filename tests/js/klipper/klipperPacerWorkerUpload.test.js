@@ -48,10 +48,14 @@ describe('Klipper pacer worker upload playback', () => {
       speedScale = 1,
       clockHz = 16000000,
       advanceMs = 20,
+      trapqBatches = [],
     } = options;
     await loadWorkerModule();
     globalThis.self.onmessage({ data: { type: 'set_speed_scale', value: speedScale } });
     globalThis.self.onmessage({ data: { type: 'api_motion_start', clockHz } });
+    for (const batch of trapqBatches) {
+      globalThis.self.onmessage({ data: { type: 'api_motion_trapq_batch', batch } });
+    }
     for (const batch of batches) {
       globalThis.self.onmessage({ data: { type: 'api_motion_batch', batch } });
     }
@@ -204,5 +208,84 @@ describe('Klipper pacer worker upload playback', () => {
     expect(moves).toHaveLength(2);
     expect(moves[0].A / STEP_ANGLE_RAD).toBeCloseTo(bucketedAntialiasingEnabled ? (5 / 3) : 1, 6);
     expect(moves[1].A / STEP_ANGLE_RAD).toBeCloseTo(2, 6);
+  });
+
+  test('rebases API motion timing against toolhead trapq instead of the historical first interval', async () => {
+    const commands = await playApiBatches([
+      {
+        name: 'stepper_a',
+        first_time: 10.1,
+        last_time: 10.1024,
+        start_mcu_position: 0,
+        data: [
+          [100000000, 1, 0],
+          [60000, 1, 0],
+        ],
+      },
+    ], {
+      clockHz: 50_000_000,
+      trapqBatches: [
+        {
+          name: 'toolhead',
+          data: [
+            [10.0, 0.2, 0, 0, [0, 0, 0], [1, 0, 0]],
+          ],
+        },
+      ],
+      advanceMs: 200,
+    });
+
+    const moves = commands.filter((command) => command?.type === 'Move');
+    expect(moves.length).toBeGreaterThan(20);
+    expect(moves[0].at).toBeLessThan(300);
+    expect(moves.at(-1).at).toBeLessThan(300);
+  });
+
+  test('starts API playback timing when buffered motion is released, not when the stream opens', async () => {
+    await loadWorkerModule();
+    globalThis.self.onmessage({ data: { type: 'set_speed_scale', value: 1 } });
+    globalThis.self.onmessage({ data: { type: 'api_motion_start', clockHz: 50_000_000 } });
+
+    jest.advanceTimersByTime(500);
+    const releaseMs = performance.now();
+
+    globalThis.self.onmessage({
+      data: {
+        type: 'api_motion_trapq_batch',
+        batch: {
+          name: 'toolhead',
+          data: [
+            [10.0, 0.5, 0, 0, [0, 0, 0], [1, 0, 0]],
+          ],
+        },
+      },
+    });
+    globalThis.self.onmessage({
+      data: {
+        type: 'api_motion_batch',
+        batch: {
+          name: 'stepper_a',
+          first_time: 10.1,
+          last_time: 10.2,
+          start_mcu_position: 0,
+          data: [
+            [100_000_000, 1, 0],
+            [100_000_000, 1, 0],
+          ],
+        },
+      },
+    });
+    globalThis.self.onmessage({ data: { type: 'api_motion_finish' } });
+
+    expect(getPostedCommands()).toHaveLength(0);
+    jest.advanceTimersByTime(80);
+    const earlyMoves = getPostedCommands().filter((command) => command?.type === 'Move');
+    expect(earlyMoves.length).toBeGreaterThan(0);
+    expect(earlyMoves.at(-1).at - releaseMs).toBeLessThanOrEqual(90);
+
+    jest.advanceTimersByTime(140);
+    const lateMoves = getPostedCommands().filter((command) => command?.type === 'Move');
+    expect(lateMoves.length).toBeGreaterThan(earlyMoves.length);
+    expect(lateMoves.at(-1).at - releaseMs).toBeGreaterThanOrEqual(200);
   });
 });

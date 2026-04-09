@@ -367,18 +367,24 @@ export class KlipperBucketedMotionCore {
     const absolutePosition = resolvedAxis === EXTRUDER_AXIS
       ? (Number(startMcuPosition) || 0) * EXTRUDER_MM_PER_STEP_KLIPPER
       : (Number(startMcuPosition) || 0) * STEP_ANGLE_RAD;
+    if (!state.hasSteps) {
+      this.setAxisReferencePosition(resolvedAxis, absolutePosition, startTick);
+    }
     state.lastTick = startTick;
-    this.setAxisReferencePosition(resolvedAxis, absolutePosition, startTick);
 
     let nextTick = startTick;
     for (const rawEntry of Array.isArray(data) ? data : []) {
       const entry = normalizeBatchEntry(rawEntry);
+      if (resolvedAxis !== EXTRUDER_AXIS) {
+        this.setAxisDirection(resolvedAxis, entry.count < 0 ? -1 : 1);
+      }
       nextTick = this.recordQueueSteps({
         axis: resolvedAxis,
         startTick: nextTick,
         intervalTicks: entry.interval,
-        count: entry.count,
+        count: resolvedAxis === EXTRUDER_AXIS ? entry.count : Math.abs(entry.count),
         addTicks: entry.add,
+        useCurrentDirection: resolvedAxis !== EXTRUDER_AXIS,
       });
     }
   }

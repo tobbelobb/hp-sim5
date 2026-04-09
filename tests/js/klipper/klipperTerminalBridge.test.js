@@ -162,6 +162,50 @@ describe('createKlipperTerminalBridge', () => {
     }
   });
 
+  test('forwards toolhead trapq batches into the API motion session', async () => {
+    const { client, klippyState, bridge, payloads } = createHarness();
+
+    try {
+      klippyState.emit('motion-sources-changed', {
+        steppers: ['stepper_a'],
+        trapq: ['toolhead'],
+      });
+      await flushMicrotasks();
+      await flushMicrotasks();
+
+      const stepperHandler = client.subscribe.mock.calls.find(
+        (call) => call[0] === 'motion_report/dump_stepper' && call[1].name === 'stepper_a',
+      )[2];
+      const trapqHandler = client.subscribe.mock.calls.find(
+        (call) => call[0] === 'motion_report/dump_trapq' && call[1].name === 'toolhead',
+      )[2];
+
+      await bridge.runGcodeCommand('G1 X100', async () => {
+        trapqHandler({
+          data: [[1, 0.5, 0, 0, [0, 0, 0], [1, 0, 0]]],
+        });
+        stepperHandler({
+          first_clock: 0,
+          start_mcu_position: 0,
+          data: [[60000, 1, 0]],
+        });
+      });
+
+      expect(payloads).toEqual(expect.arrayContaining([
+        {
+          type: 'klipper_api_trapq_batch',
+          gcode: 'G1 X100',
+          batch: {
+            name: 'toolhead',
+            data: [[1, 0.5, 0, 0, [0, 0, 0], [1, 0, 0]]],
+          },
+        },
+      ]));
+    } finally {
+      bridge.close();
+    }
+  });
+
   test('subscribes to dump_trapq only in debug mode and logs trapq batches', async () => {
     const debugEntries = [];
     const { client, klippyState, bridge } = createHarness({

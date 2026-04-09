@@ -1,0 +1,137 @@
+• The key findings are:
+
+  dump_stepper is returning Klipper’s internal queue_step command history, not individual steps. The tuple format is exactly the MCU command fields interval, count, add, as documented in klipper/docs/API_Server.md:285 and emitted in klipper/klippy/
+  extras/motion_report.py:46. The authoritative semantics are in klipper/klippy/chelper/stepcompress.c:7 and the raw MCU command format is registered in klipper/klippy/stepper.py:117.
+
+  For each tuple [A, B, C]:
+
+  - A = interval: initial delay in MCU clock ticks before the first step of that compressed run.
+  - B = count: number of steps in that run.
+    In the API dump it is signed, because Klipper stores direction by sign in history: see hs->step_count = sc->sdir ? move->count : -move->count in klipper/klippy/chelper/stepcompress.c:356.
+  - C = add: amount added to interval after each emitted step.
+    Negative means intervals shrink over the run, so the motor is accelerating.
+    Positive means intervals grow, so it is decelerating.
+    Zero means constant-spacing steps.
+
+  The exact recurrence is from klipper/klippy/chelper/stepcompress.c:10:
+
+  - next step happens after interval
+  - then interval += add
+  - repeat until count steps have been emitted
+
+  So your line at klipper_terminal_debug.log.1:126 means:
+
+  - [563589517, 1, 0]: one step after a long idle gap
+  - [2669614, 1, 0]: then one step 2,669,614 ticks later
+  - ...
+  - [776851, 3, -31166]: then 3 steps with spacings:
+      - 776851
+      - 745685
+      - 714519
+
+  That last tuple is why your arithmetic looked off. You were treating 776851 like the whole tail, but it is only the first spacing in that 3-step run. The total contribution of [776851, 3, -31166] is:
+
+  3 * 776851 + (-31166) * (3 * 2 / 2) = 2237055 ticks
+
+  That matches your “missing” 2237055 exactly.
+
+  Two more important clarifications:
+
+  - The pre-command [0,0,0] at klipper_terminal_debug.log.1:34 is not a move. It is a history marker inserted by stepcompress_set_last_position() in klipper/klippy/chelper/stepcompress.c:560, called from _query_mcu_position() in klipper/klippy/
+    stepper.py:210.
+  - The reason you see two post-command stepper_a batches instead of three is batching, not motion segmentation. dump_stepper is delivered every 0.500s by BatchBulkHelper in klipper/klippy/extras/bulk_sensor.py:20. Your move spans about 0.6556s, so it
+    naturally lands in two dump_stepper batches. The “three” belongs to dump_trapq’s accel/cruise/decel planner segments, not to dump_stepper.
+
+  The most important consequence for your simulator is this:
+
+  - You must not treat the first tuple’s interval as “time from session start”.
+  - dump_stepper is history relative to the previous step on that stepper, which may be long before the current G-code.
+  - You need to reconstruct absolute step times from first_clock plus the tuple chain, then rebase all steppers to a shared session clock origin.
+
+  You can see that in your run:
+
+  - toolhead move starts at 97.0704243 in klipper_terminal_debug.log.1:130
+  - stepper_a first real step is at 97.17113626 in klipper_terminal_debug.log.1:126
+
+  So stepper_a really starts about 95ms after move start, not after 563589517 ticks of session-local delay. The huge first interval is historical idle gap on that stepper, which strongly matches your simulator symptom of “short movement, then several
+  seconds long wait”.
+
+  Also, 34 steps on stepper_a is not evidence by itself that data is missing. That row at line 126 contains 14 steps, line 136 contains 20, and line 136’s start_mcu_position=14 confirms continuity. The planner in klipper_terminal_debug.log.1:130 does
+  show a full 100mm toolhead move. Whether 34 steps is “too small” depends on the machine kinematics, not just X travel.
+
+  If you want, I can do the next step and turn one dump_stepper session into an explicit list of absolute step times, so we can compare that directly to what your replay path is currently doing.
+
+----
+› 34 is actually the exact correct number I get when I do:
+  ```
+  $ ./scripts/gcode_to_mcu_commands.sh x100.g
+  ...
+  $ grep "queue_step oid=0" public/examples/mcu_commands/x100.g.txt
+  ...
+  ```
+  and sum up the counts. They sum up to 34. So no problem there. My previous x100.txt must have contained a mistake.
+
+  That, combined with your explanations of the tuple's meaning clears up everything.
+
+  Since dump_stepper essentially describes a "replay since boot", and we want to reproduce motion immediately, or "close to real time", we need to:
+   1. Make sure we collect at least 0.5 s of movement first, plus a 0.5 s buffer, so 1 s in total, where we include all the dump_stepper batches we can get (and give up, just execute, if no further dump_steppers appear).
+   2. reconstruct the "start time" very carefully, including rebasing all steppers to a shared session clock origin.
+
+  To stitch together dump_steppers batches, we look at the `last_clock` of the previous batch, and add the `interval` of the first tuple.
+  If their sum is equal to the `first_clock` of the following batch, then those two batches can be stitched together seamlessly.
+
+  Otherwise it sounds like we need to reconstruct a new start time so that klipper_terminal.mjs can set off the immediate movement we desire.
+  It sounds like the first "time" of a dump_trapq toolhead move is the best signal we can use to know when a move is supposed to be starting, since it is earlier than the "first_step_time" of all the steppers. So the first trapq "time" should define the
+  zero-clock reference point of a move. The first interval of the steppers first tuples should be adjusted to be relative to that reference point, that is: `adjusted_first_interval = ("first_step_time" - "time") * MCU_CLOCK_HZ_KLIPPER_HOST`, I guess.
+----
+
+• Yes. Your revised understanding is basically correct.
+
+  dump_stepper is not “this command’s motion”. It is a batched export of the stepper’s historical queue_step stream, sourced from stepcompress history. That is why the first tuple in the first post-command batch can contain a huge interval from long
+  before your current move.
+
+  The semantics are:
+
+  - interval: delay in MCU ticks from the previous step to the first step in this compressed run
+  - count: number of steps in the run
+  - add: per-step delta applied to interval after each step
+
+  The recurrence is explicit in klipper/klippy/chelper/stepcompress.c:7 and the history record is exported by klipper/klippy/extras/motion_report.py:46. dump_stepper is documented in klipper/docs/API_Server.md:285.
+
+  Your stitching rule is right:
+
+  - two adjacent stepper batches are seamless if
+    prev.last_clock + next.data[0][0] == next.first_clock
+
+  That follows from how first_clock is stored in klipper/klippy/chelper/stepcompress.c:339.
+
+  Your rebasing idea is also right, with one refinement:
+
+  - use the first toolhead trapq time as session zero
+  - for each stepper’s first tuple in the session:
+    rebased_first_interval = round((first_step_time - trapq_t0) * MCU_CLOCK_HZ_KLIPPER_HOST)
+
+  That gives you the intended delay from move start to that stepper’s first actual step. This is better than using the raw first tuple interval, because that raw interval is relative to the previous historical step, not to the command start.
+
+  One important nuance: that formula is only correct for the first emitted tuple per stepper in the replay session. After that, preserve Klipper’s original tuple stream. If you hit a discontinuity between later batches, compute a new absolute first-step
+  clock from trapq time and then convert it back to an interval relative to the last emitted step for that stepper.
+
+  So the replay algorithm should be:
+
+  1. Buffer batches for about 1s total, as you proposed.
+  2. Pick t0 = first toolhead trapq time.
+  3. For each stepper, discard pre-command marker batches like [0,0,0].
+  4. For the first real tuple of that stepper, replace its interval with:
+     round((first_step_time - t0) * clock_hz).
+  5. For later contiguous batches, append unchanged.
+  6. For later non-contiguous batches, rebase from absolute time again instead of trusting the raw first interval.
+
+  That also explains your simulator symptom:
+
+  - first short movement: you likely replayed a small early subset correctly
+  - long wait: you preserved the historical first interval from dump_stepper
+  - too-short total travel: you likely started from the wrong session origin, so later batches were paced against stale absolute history
+
+  The next implementation step should be to convert every dump_stepper batch into an absolute-per-stepper timeline first, in session-relative ticks, and only then feed the existing scheduler. That will make the batching and rebasing logic much easier to
+  reason about.
+

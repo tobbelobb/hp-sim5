@@ -1175,6 +1175,14 @@ function initHpSim() {
       });
       return;
     }
+    if (payload.type === 'klipper_api_trapq_batch' && payload.batch) {
+      const bridge = ensureExternalKlipperApiBridge();
+      bridge?.postMessage({
+        type: 'api_motion_trapq_batch',
+        batch: payload.batch,
+      });
+      return;
+    }
     if (payload.type === 'klipper_api_session_end') {
       const bridge = ensureExternalKlipperApiBridge();
       bridge?.postMessage({ type: 'api_motion_finish' });

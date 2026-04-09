@@ -5,6 +5,10 @@ import {
   applyBucketedParsedLine,
 } from './klipperMotionCore.js';
 import {
+  API_MOTION_STARTUP_BUFFER_MS,
+  KlipperApiSessionTimelineBuffer,
+} from './klipperApiSessionTimeline.js';
+import {
   DEFAULT_AXIS_ORDER,
   MCU_CLOCK_HZ_KLIPPER_HOST,
 } from './klipperFirmwareModel.js';
@@ -19,6 +23,8 @@ let expectedSeq = null;
 const axisOrder = DEFAULT_AXIS_ORDER;
 const BUCKET_INTERVAL_MS = 2;
 const ENABLE_BUCKETED_ANTIALIASING = true;
+const API_MOTION_TAIL_RESERVE_MS = 600;
+const API_MOTION_STARTUP_QUIET_WINDOW_MS = 650;
 
 let LOG_MOVE = false;
 let moveLogSeq = 0;
@@ -56,6 +62,9 @@ let logicalClockPaused = false;
 let apiStreamActive = false;
 let apiStreamClockHz = MCU_CLOCK_HZ_KLIPPER_HOST;
 let apiStreamStartTick = null;
+let apiTimelineBuffer = null;
+let apiStartupTimer = null;
+let apiPlaybackStarted = false;
 
 const getSpeedScale = () => (
   Number.isFinite(speedScale) && speedScale > 0 ? speedScale : 1
@@ -206,16 +215,34 @@ const resetRuntimeState = () => {
   apiStreamActive = false;
   apiStreamClockHz = MCU_CLOCK_HZ_KLIPPER_HOST;
   apiStreamStartTick = null;
+  apiTimelineBuffer = null;
+  apiPlaybackStarted = false;
+  if (apiStartupTimer) {
+    clearTimeout(apiStartupTimer);
+    apiStartupTimer = null;
+  }
   firstSeqSeen = null;
   expectedSeq = null;
 };
 
 const flushReadyBuckets = (force = false, holdBackOneBucket = false) => {
+  const maxKnownTick = motionCore.getMaxKnownTick();
+  const apiTailReserveTicks = (apiStreamActive && !inputComplete)
+    ? Math.round((API_MOTION_TAIL_RESERVE_MS / 1000) * apiStreamClockHz)
+    : 0;
   const commands = motionCore.flushCommands({
     force,
     forceThreshold: inputComplete,
     holdBackOneBucket,
-    canEmitBucket: force ? null : (bucketIdx) => isBucketDueNow(bucketIdx),
+    canEmitBucket: force ? null : (bucketIdx) => {
+      if (!isBucketDueNow(bucketIdx)) {
+        return false;
+      }
+      if (apiTailReserveTicks > 0 && Number.isFinite(maxKnownTick)) {
+        return motionCore.getBucketEndTick(bucketIdx) <= (maxKnownTick - apiTailReserveTicks);
+      }
+      return true;
+    },
     buildTiming: (bucketIdx) => ({
       at: resolveBucketAtMs(bucketIdx),
       span: scaleDelayMs(BUCKET_INTERVAL_MS),
@@ -569,34 +596,86 @@ const startApiMotionStream = ({ clockHz = MCU_CLOCK_HZ_KLIPPER_HOST } = {}) => {
   apiStreamActive = true;
   apiStreamClockHz = Number.isFinite(clockHz) && clockHz > 0 ? clockHz : MCU_CLOCK_HZ_KLIPPER_HOST;
   ws = null;
-  resetLogicalPlaybackClock();
+  apiTimelineBuffer = new KlipperApiSessionTimelineBuffer({
+    clockHz: apiStreamClockHz,
+    startupBufferMs: API_MOTION_STARTUP_BUFFER_MS,
+  });
 };
 
-const consumeApiMotionBatch = (batch = {}) => {
+const flushBufferedApiMotion = ({ forceStart = false } = {}) => {
   if (!apiStreamActive) {
     startApiMotionStream();
   }
-  const firstClock = Number(batch.first_clock);
-  if (!Number.isFinite(firstClock)) {
+  if (!apiTimelineBuffer) {
     return;
   }
-  if (!Number.isFinite(apiStreamStartTick)) {
-    apiStreamStartTick = firstClock;
+  const readyBatches = apiTimelineBuffer.flushReady({ forceStart });
+  if (readyBatches.length === 0) {
+    return;
+  }
+  if (!apiPlaybackStarted || !Number.isFinite(apiStreamStartTick)) {
+    apiStreamStartTick = 0;
+    apiPlaybackStarted = true;
     resetLogicalPlaybackClock();
   }
-  motionCore.consumeStepperBatch({
-    stepperName: batch.name,
-    firstClock,
-    startMcuPosition: batch.start_mcu_position,
-    data: batch.data,
-  });
+  for (const batch of readyBatches) {
+    motionCore.consumeStepperBatch({
+      stepperName: batch.name,
+      firstClock: batch.timeline_start_tick,
+      startMcuPosition: batch.start_mcu_position,
+      data: batch.data,
+    });
+  }
   flushReadyBucketsIfEnabled(false, false);
   if (!isPaused && hasPlaybackWork()) {
     ensurePacerRunning();
   }
 };
 
+const scheduleApiStartupFlush = () => {
+  if (apiStartupTimer) {
+    clearTimeout(apiStartupTimer);
+  }
+  apiStartupTimer = setTimeout(() => {
+    apiStartupTimer = null;
+    flushBufferedApiMotion({ forceStart: true });
+  }, API_MOTION_STARTUP_QUIET_WINDOW_MS);
+};
+
+const consumeApiMotionBatch = (batch = {}) => {
+  if (!apiStreamActive) {
+    startApiMotionStream();
+  }
+  if (!apiTimelineBuffer) {
+    return;
+  }
+  apiTimelineBuffer.consumeStepperBatch(batch);
+  if (apiTimelineBuffer.canStart(false)) {
+    flushBufferedApiMotion({ forceStart: false });
+    return;
+  }
+  scheduleApiStartupFlush();
+};
+
+const consumeApiTrapqBatch = (batch = {}) => {
+  if (!apiStreamActive) {
+    startApiMotionStream();
+  }
+  if (!apiTimelineBuffer) {
+    return;
+  }
+  apiTimelineBuffer.consumeTrapqBatch(batch);
+  if (apiTimelineBuffer.canStart(false)) {
+    flushBufferedApiMotion({ forceStart: false });
+  }
+};
+
 const finishApiMotionStream = () => {
+  if (apiStartupTimer) {
+    clearTimeout(apiStartupTimer);
+    apiStartupTimer = null;
+  }
+  flushBufferedApiMotion({ forceStart: true });
   inputComplete = true;
   if (!maybePostDone() && !isPaused && hasPlaybackWork()) {
     ensurePacerRunning();
@@ -627,6 +706,8 @@ self.onmessage = (event) => {
     startApiMotionStream({ clockHz: data.clockHz });
   } else if (type === 'api_motion_batch') {
     consumeApiMotionBatch(data.batch);
+  } else if (type === 'api_motion_trapq_batch') {
+    consumeApiTrapqBatch(data.batch);
   } else if (type === 'api_motion_finish') {
     finishApiMotionStream();
   } else if (type === 'set_speed_scale') {

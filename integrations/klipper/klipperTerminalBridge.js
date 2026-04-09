@@ -220,6 +220,18 @@ export function createKlipperTerminalBridge({
     logDebug(event, payload);
   };
 
+  const ensureMotionSessionStarted = (session) => {
+    if (!session || session.motionStreamStarted) {
+      return;
+    }
+    session.motionStreamStarted = true;
+    helpers.broadcast({
+      type: 'klipper_api_session_start',
+      gcode: session.gcode,
+      clock_hz: clockHz,
+    });
+  };
+
   const handleStepperBatch = (stepperName, batch = {}) => {
     emitDebug('api-response', {
       method: 'motion_report/dump_stepper',
@@ -231,14 +243,7 @@ export function createKlipperTerminalBridge({
     if (!session) {
       return;
     }
-    if (!session.motionStreamStarted) {
-      session.motionStreamStarted = true;
-      helpers.broadcast({
-        type: 'klipper_api_session_start',
-        gcode: session.gcode,
-        clock_hz: clockHz,
-      });
-    }
+    ensureMotionSessionStarted(session);
     helpers.broadcast({
       type: 'klipper_api_stepper_batch',
       gcode: session.gcode,
@@ -265,6 +270,19 @@ export function createKlipperTerminalBridge({
       name: trapqName,
       params: batch,
     });
+    const session = activeSession;
+    if (!session || trapqName !== 'toolhead') {
+      return;
+    }
+    ensureMotionSessionStarted(session);
+    helpers.broadcast({
+      type: 'klipper_api_trapq_batch',
+      gcode: session.gcode,
+      batch: {
+        name: trapqName,
+        data: Array.isArray(batch.data) ? batch.data : [],
+      },
+    });
   };
 
   const syncMotionSources = async (stepperNames = [], trapqNames = []) => {
@@ -279,7 +297,6 @@ export function createKlipperTerminalBridge({
         .filter((name) => typeof name === 'string' && name.trim().length > 0)
         .map((name) => name.trim()),
     )).sort();
-    const nextTrapqNames = new Set(normalizedTrapq);
 
     for (const [stepperName, subscriptionId] of stepperSubscriptionIds.entries()) {
       if (nextNames.has(stepperName)) {
@@ -313,7 +330,12 @@ export function createKlipperTerminalBridge({
       stepperSubscriptionIds.set(stepperName, subscriptionId);
     }
 
-    if (!debugTrapq) {
+    const subscribedTrapq = debugTrapq
+      ? normalizedTrapq
+      : normalizedTrapq.filter((name) => name === 'toolhead');
+    const subscribedTrapqNames = new Set(subscribedTrapq);
+
+    if (subscribedTrapq.length === 0) {
       for (const [trapqName, subscriptionId] of trapqSubscriptionIds.entries()) {
         client.unsubscribe(subscriptionId);
         trapqSubscriptionIds.delete(trapqName);
@@ -322,14 +344,14 @@ export function createKlipperTerminalBridge({
     }
 
     for (const [trapqName, subscriptionId] of trapqSubscriptionIds.entries()) {
-      if (nextTrapqNames.has(trapqName)) {
+      if (subscribedTrapqNames.has(trapqName)) {
         continue;
       }
       client.unsubscribe(subscriptionId);
       trapqSubscriptionIds.delete(trapqName);
     }
 
-    for (const trapqName of normalizedTrapq) {
+    for (const trapqName of subscribedTrapq) {
       if (trapqSubscriptionIds.has(trapqName)) {
         continue;
       }
