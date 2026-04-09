@@ -353,9 +353,11 @@ function initHpSim() {
   let externalCommandSocket = null;
   let externalCommandSocketConnecting = false;
   let externalWsReconnectTimer = null;
-  const EXTERNAL_WS_RECONNECT_INITIAL_DELAY_MS = 1000;
+  const EXTERNAL_WS_RECONNECT_INITIAL_DELAY_MS = 5000;
   const EXTERNAL_WS_RECONNECT_MAX_DELAY_MS = 5000;
+  const EXTERNAL_WS_RECONNECT_LOG_EVERY = 10;
   let externalWsReconnectDelayMs = EXTERNAL_WS_RECONNECT_INITIAL_DELAY_MS;
+  let externalWsConnectAttemptCount = 0;
   function forEachQualityMonitor(callback) {
     if (typeof callback !== 'function') {
       return;
@@ -1114,6 +1116,7 @@ function initHpSim() {
 
   function resetExternalReconnectBackoff() {
     externalWsReconnectDelayMs = EXTERNAL_WS_RECONNECT_INITIAL_DELAY_MS;
+    externalWsConnectAttemptCount = 0;
   }
 
   function scheduleExternalCommandReconnect(reason = '') {
@@ -1124,8 +1127,13 @@ function initHpSim() {
       return;
     }
     const delay = externalWsReconnectDelayMs;
-    const messageSuffix = reason ? ` (${reason})` : '';
-    console.log(`hp-sim-3d: waiting for external G-code stream${messageSuffix}, retrying in ${Math.round(delay)}ms`);
+    const attemptCount = Math.max(1, externalWsConnectAttemptCount);
+    if (attemptCount % EXTERNAL_WS_RECONNECT_LOG_EVERY === 0) {
+      const messageSuffix = reason ? ` (${reason})` : '';
+      console.log(
+        `hp-sim-3d: tried external G-code stream ${attemptCount} times${messageSuffix}. Continuing to retry every ${Math.round(delay)}ms`,
+      );
+    }
     externalWsReconnectTimer = setTimeout(() => {
       externalWsReconnectTimer = null;
       connectExternalCommandStream();
@@ -1278,10 +1286,10 @@ function initHpSim() {
     }
     clearExternalReconnectTimer();
     externalCommandSocketConnecting = true;
+    externalWsConnectAttemptCount += 1;
     try {
       externalCommandSocket = new WebSocket(externalWsUrl);
-    } catch (err) {
-      console.warn('hp-sim-3d: failed to open external G-code stream.', err);
+    } catch (_err) {
       externalCommandSocket = null;
       externalCommandSocketConnecting = false;
       scheduleExternalCommandReconnect('failed to open');
@@ -1289,8 +1297,13 @@ function initHpSim() {
     }
     externalCommandSocket.addEventListener('open', () => {
       externalCommandSocketConnecting = false;
+      const attemptsBeforeConnect = externalWsConnectAttemptCount;
       resetExternalReconnectBackoff();
-      console.log('hp-sim-3d: external G-code stream connected:', externalWsUrl);
+      if (attemptsBeforeConnect > 1) {
+        console.log(`hp-sim-3d: external G-code stream connected after ${attemptsBeforeConnect} attempts:`, externalWsUrl);
+      } else {
+        console.log('hp-sim-3d: external G-code stream connected:', externalWsUrl);
+      }
       flushExternalCommandQueue();
     });
     externalCommandSocket.addEventListener('message', (event) => {
@@ -1306,8 +1319,7 @@ function initHpSim() {
       externalCommandSocketConnecting = false;
       scheduleExternalCommandReconnect('connection closed');
     });
-    externalCommandSocket.addEventListener('error', (err) => {
-      console.warn('hp-sim-3d: external G-code stream error.', err);
+    externalCommandSocket.addEventListener('error', () => {
       if (externalCommandSocket) {
         try {
           externalCommandSocket.close();
