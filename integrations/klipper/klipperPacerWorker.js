@@ -23,8 +23,11 @@ let expectedSeq = null;
 const axisOrder = DEFAULT_AXIS_ORDER;
 const BUCKET_INTERVAL_MS = 2;
 const ENABLE_BUCKETED_ANTIALIASING = true;
-const API_MOTION_TAIL_RESERVE_MS = 600;
-const API_MOTION_STARTUP_QUIET_WINDOW_MS = 650;
+// Klipper's BulkHelper delivers motion_report batches every 500ms, and the
+// browser pacer needs materially more than one batch of slack to avoid
+// stalling when a batch lands a little late.
+const API_MOTION_TAIL_RESERVE_MS = 900;
+const API_MOTION_STARTUP_QUIET_WINDOW_MS = 900;
 
 let LOG_MOVE = false;
 let moveLogSeq = 0;

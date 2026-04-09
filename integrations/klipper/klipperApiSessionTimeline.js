@@ -1,6 +1,8 @@
 import { computeQueueStepDurationTicks } from './motionUtils.js';
 
-export const API_MOTION_STARTUP_BUFFER_MS = 1000;
+// Klipper's motion_report batches are emitted on a 500ms cadence, so the
+// API replay path needs more than one batch buffered before it starts.
+export const API_MOTION_STARTUP_BUFFER_MS = 2500;
 
 function normalizeBatchTime(value) {
   const numeric = Number(value);
