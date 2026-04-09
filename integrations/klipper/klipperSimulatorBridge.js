@@ -317,7 +317,7 @@ function createKlipperRawHandle(onCommand, options = {}) {
   };
 
   worker.onmessage = (e) => {
-    const { type, command, logEntry, message } = e.data || {};
+    const { type, command, logEntry, message, diagnostic } = e.data || {};
     if (type === 'move') {
       if (logMove && moveLogLines && logEntry) {
         try {
@@ -352,6 +352,8 @@ function createKlipperRawHandle(onCommand, options = {}) {
       } else if (typeof console !== 'undefined') {
         console.error('KlipperSimulatorBridge worker error:', msg);
       }
+    } else if (type === 'diagnostic' && diagnostic && typeof console !== 'undefined') {
+      console.log('[KlipperRaw][diagnostic]', JSON.stringify(diagnostic));
     } else if (DEBUG) {
       console.debug('KlipperSimulatorBridge: unhandled worker message', e.data);
     }

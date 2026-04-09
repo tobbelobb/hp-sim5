@@ -29,6 +29,12 @@ const ENABLE_BUCKETED_ANTIALIASING = true;
 const API_MOTION_TAIL_RESERVE_MS = 900;
 const API_MOTION_STARTUP_QUIET_WINDOW_MS = 900;
 const API_MOTION_INITIAL_PRELOAD_MS = API_MOTION_STARTUP_BUFFER_MS + API_MOTION_TAIL_RESERVE_MS;
+const API_MOTION_EMIT_LOOKAHEAD_MS = 24;
+const PACER_DIAGNOSTIC_RECORD_EPSILON_MS = 1;
+const PACER_DIAGNOSTIC_OVERSLEEP_REPORT_MS = 8;
+const PACER_DIAGNOSTIC_CLAMP_REPORT_MS = 2;
+const PACER_DIAGNOSTIC_DEDUP_MS = 25;
+const PACER_DIAGNOSTIC_MAX_EVENT_REPORTS = 8;
 
 let LOG_MOVE = false;
 let moveLogSeq = 0;
@@ -69,6 +75,155 @@ let apiStreamStartTick = null;
 let apiTimelineBuffer = null;
 let apiStartupTimer = null;
 let apiPlaybackStarted = false;
+let pacerSessionSeq = 0;
+let pacerDiagnostics = null;
+
+const roundDiagnosticMs = (value) => (
+  Number.isFinite(value) ? Math.round(value * 1000) / 1000 : null
+);
+
+const createPacerDiagnostics = (sessionType) => ({
+  sessionId: ++pacerSessionSeq,
+  sessionType,
+  eventReports: 0,
+  summaryPosted: false,
+  timerOversleepCount: 0,
+  maxTimerOversleepMs: 0,
+  lastTimerReportWorkerMs: null,
+  lastTimerReportOversleepMs: 0,
+  horizonClampCount: 0,
+  maxHorizonClampMs: 0,
+  lastClampWorkerMs: null,
+  lastClampSchedulableMs: null,
+});
+
+const emitPacerDiagnostic = (event, details = {}) => {
+  if (!pacerDiagnostics) {
+    return;
+  }
+  postMessage({
+    type: 'diagnostic',
+    diagnostic: {
+      source: 'klipper_pacer',
+      sessionId: pacerDiagnostics.sessionId,
+      sessionType: pacerDiagnostics.sessionType,
+      event,
+      ...details,
+    },
+  });
+};
+
+const maybeEmitPacerEvent = (event, now, details = {}, {
+  minSpacingMs = PACER_DIAGNOSTIC_DEDUP_MS,
+  lastReportKey,
+  maxValueKey = null,
+  eventValue = null,
+  minReportValue = null,
+} = {}) => {
+  if (!pacerDiagnostics || pacerDiagnostics.eventReports >= PACER_DIAGNOSTIC_MAX_EVENT_REPORTS) {
+    return;
+  }
+  if (Number.isFinite(minReportValue) && !(eventValue >= minReportValue)) {
+    return;
+  }
+  const lastReportAt = pacerDiagnostics[lastReportKey];
+  const maxValue = maxValueKey ? pacerDiagnostics[maxValueKey] : null;
+  const spacedOut = !Number.isFinite(lastReportAt) || (now - lastReportAt) >= minSpacingMs;
+  const newMax = Number.isFinite(eventValue) && (!Number.isFinite(maxValue) || eventValue > maxValue);
+  if (!spacedOut && !newMax) {
+    return;
+  }
+  pacerDiagnostics[lastReportKey] = now;
+  if (maxValueKey && Number.isFinite(eventValue)) {
+    pacerDiagnostics[maxValueKey] = Math.max(maxValue || 0, eventValue);
+  }
+  pacerDiagnostics.eventReports += 1;
+  emitPacerDiagnostic(event, details);
+};
+
+const noteTimerOversleep = (now) => {
+  if (!pacerDiagnostics || !Number.isFinite(pacerNextDeadlineMs)) {
+    return;
+  }
+  const oversleepMs = Math.max(0, now - pacerNextDeadlineMs);
+  if (oversleepMs < PACER_DIAGNOSTIC_RECORD_EPSILON_MS) {
+    return;
+  }
+  pacerDiagnostics.timerOversleepCount += 1;
+  pacerDiagnostics.maxTimerOversleepMs = Math.max(
+    pacerDiagnostics.maxTimerOversleepMs,
+    oversleepMs,
+  );
+  maybeEmitPacerEvent('timer_oversleep', now, {
+    oversleepMs: roundDiagnosticMs(oversleepMs),
+    deadlineMs: roundDiagnosticMs(pacerNextDeadlineMs),
+    observedWorkerMs: roundDiagnosticMs(now),
+  }, {
+    lastReportKey: 'lastTimerReportWorkerMs',
+    maxValueKey: 'lastTimerReportOversleepMs',
+    eventValue: oversleepMs,
+    minReportValue: PACER_DIAGNOSTIC_OVERSLEEP_REPORT_MS,
+  });
+};
+
+const noteHorizonClamp = ({
+  now,
+  logicalNow,
+  schedulableLogicalMs,
+}) => {
+  if (!pacerDiagnostics) {
+    return;
+  }
+  const clampMs = logicalNow - schedulableLogicalMs;
+  if (clampMs < PACER_DIAGNOSTIC_RECORD_EPSILON_MS) {
+    return;
+  }
+  const distinctClamp = (
+    !Number.isFinite(pacerDiagnostics.lastClampWorkerMs)
+    || (now - pacerDiagnostics.lastClampWorkerMs) >= PACER_DIAGNOSTIC_DEDUP_MS
+    || !Number.isFinite(pacerDiagnostics.lastClampSchedulableMs)
+    || Math.abs(pacerDiagnostics.lastClampSchedulableMs - schedulableLogicalMs) >= 1
+  );
+  if (distinctClamp) {
+    pacerDiagnostics.horizonClampCount += 1;
+    pacerDiagnostics.lastClampSchedulableMs = schedulableLogicalMs;
+  }
+  pacerDiagnostics.maxHorizonClampMs = Math.max(
+    pacerDiagnostics.maxHorizonClampMs,
+    clampMs,
+  );
+  maybeEmitPacerEvent('horizon_clamp', now, {
+    clampMs: roundDiagnosticMs(clampMs),
+    logicalPlaybackMs: roundDiagnosticMs(logicalNow),
+    schedulableLogicalMs: roundDiagnosticMs(schedulableLogicalMs),
+  }, {
+    lastReportKey: 'lastClampWorkerMs',
+    eventValue: clampMs,
+    minReportValue: PACER_DIAGNOSTIC_CLAMP_REPORT_MS,
+  });
+};
+
+const postPacerDiagnosticSummary = () => {
+  if (!pacerDiagnostics || pacerDiagnostics.summaryPosted) {
+    return;
+  }
+  pacerDiagnostics.summaryPosted = true;
+  emitPacerDiagnostic('summary', {
+    stats: {
+      timerOversleepCount: pacerDiagnostics.timerOversleepCount,
+      maxTimerOversleepMs: roundDiagnosticMs(pacerDiagnostics.maxTimerOversleepMs),
+      horizonClampCount: pacerDiagnostics.horizonClampCount,
+      maxHorizonClampMs: roundDiagnosticMs(pacerDiagnostics.maxHorizonClampMs),
+    },
+    config: {
+      bucketIntervalMs: BUCKET_INTERVAL_MS,
+      startupBufferMs: API_MOTION_STARTUP_BUFFER_MS,
+      tailReserveMs: API_MOTION_TAIL_RESERVE_MS,
+      startupPreloadMs: API_MOTION_INITIAL_PRELOAD_MS,
+      emitLookaheadMs: API_MOTION_EMIT_LOOKAHEAD_MS,
+    },
+  });
+};
 
 const getSpeedScale = () => (
   Number.isFinite(speedScale) && speedScale > 0 ? speedScale : 1
@@ -145,6 +300,11 @@ const clampApiLogicalPlaybackHorizon = (now = performance.now()) => {
   }
   const logicalNow = currentLogicalPlaybackMs(now);
   if (logicalNow > schedulableLogicalMs) {
+    noteHorizonClamp({
+      now,
+      logicalNow,
+      schedulableLogicalMs,
+    });
     setLogicalPlaybackTime(schedulableLogicalMs, now);
   }
 };
@@ -171,13 +331,17 @@ const resolveBucketAtMs = (bucketIdx, now = performance.now()) => {
   return now + ((targetLogicalMs - logicalNow) / getSpeedScale());
 };
 
-const isBucketDueNow = (bucketIdx, now = performance.now()) => {
+const getBucketEmitLookaheadMs = () => (
+  apiStreamActive && !asapMode ? API_MOTION_EMIT_LOOKAHEAD_MS : 0
+);
+
+const isBucketReadyToEmit = (bucketIdx, now = performance.now(), emitLookaheadMs = 0) => {
   if (asapMode) {
     return true;
   }
   clampApiLogicalPlaybackHorizon(now);
   const targetLogicalMs = resolveBucketTargetLogicalMs(bucketIdx);
-  return targetLogicalMs <= currentLogicalPlaybackMs(now);
+  return targetLogicalMs <= (currentLogicalPlaybackMs(now) + Math.max(0, emitLookaheadMs));
 };
 
 const hasBucketWork = () => pendingLookaheadLine !== null || motionCore.hasPendingBuckets();
@@ -259,6 +423,7 @@ const resetRuntimeState = () => {
   apiStreamStartTick = null;
   apiTimelineBuffer = null;
   apiPlaybackStarted = false;
+  pacerDiagnostics = null;
   if (apiStartupTimer) {
     clearTimeout(apiStartupTimer);
     apiStartupTimer = null;
@@ -272,12 +437,13 @@ const flushReadyBuckets = (force = false, holdBackOneBucket = false) => {
   clampApiLogicalPlaybackHorizon(now);
   const maxKnownTick = motionCore.getMaxKnownTick();
   const apiTailReserveTicks = getApiTailReserveTicks();
+  const emitLookaheadMs = force ? 0 : getBucketEmitLookaheadMs();
   const commands = motionCore.flushCommands({
     force,
     forceThreshold: inputComplete,
     holdBackOneBucket,
     canEmitBucket: force ? null : (bucketIdx) => {
-      if (!isBucketDueNow(bucketIdx, now)) {
+      if (!isBucketReadyToEmit(bucketIdx, now, emitLookaheadMs)) {
         return false;
       }
       if (apiTailReserveTicks > 0 && Number.isFinite(maxKnownTick)) {
@@ -310,6 +476,7 @@ const maybePostDone = () => {
   if (hasPlaybackWork()) {
     return false;
   }
+  postPacerDiagnosticSummary();
   donePosted = true;
   pacerNextDeadlineMs = null;
   if (pacerTimer) {
@@ -350,16 +517,18 @@ const scheduleNextPacer = (now = performance.now()) => {
 };
 
 const pacerTick = () => {
+  const now = performance.now();
   pacerTimer = null;
   if (isPaused) {
     return;
   }
+  noteTimerOversleep(now);
   pacerLoop();
   if (maybePostDone()) {
     return;
   }
   if (hasPlaybackWork()) {
-    scheduleNextPacer();
+    scheduleNextPacer(now);
   }
 };
 
@@ -638,6 +807,7 @@ const startApiMotionStream = ({ clockHz = MCU_CLOCK_HZ_KLIPPER_HOST } = {}) => {
   apiStreamActive = true;
   apiStreamClockHz = Number.isFinite(clockHz) && clockHz > 0 ? clockHz : MCU_CLOCK_HZ_KLIPPER_HOST;
   ws = null;
+  pacerDiagnostics = createPacerDiagnostics('api_motion');
   apiTimelineBuffer = new KlipperApiSessionTimelineBuffer({
     clockHz: apiStreamClockHz,
     // Prepay the startup window and the live tail reserve before the first

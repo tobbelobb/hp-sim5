@@ -14,6 +14,9 @@ describe('Klipper pacer worker upload playback', () => {
   const STEP_ANGLE_RAD = (2 * Math.PI) / (200 * 16);
 
   const getPostedMessages = () => globalThis.postMessage.mock.calls.map(([message]) => message);
+  const getPostedDiagnostics = () => getPostedMessages()
+    .filter((message) => message?.type === 'diagnostic')
+    .map((message) => message.diagnostic);
 
   const getPostedCommands = () => getPostedMessages()
     .filter((message) => message?.type === 'move')
@@ -327,11 +330,14 @@ describe('Klipper pacer worker upload playback', () => {
     });
     globalThis.self.onmessage({ data: { type: 'api_motion_finish' } });
 
-    expect(getPostedCommands()).toHaveLength(0);
+    const preEmittedMoves = getPostedCommands().filter((command) => command?.type === 'Move');
+    expect(preEmittedMoves.length).toBeGreaterThan(0);
+    expect(preEmittedMoves[0].at - releaseMs).toBeGreaterThanOrEqual(0);
+    expect(preEmittedMoves.at(-1).at - releaseMs).toBeLessThanOrEqual(30);
     jest.advanceTimersByTime(80);
     const earlyMoves = getPostedCommands().filter((command) => command?.type === 'Move');
-    expect(earlyMoves.length).toBeGreaterThan(0);
-    expect(earlyMoves.at(-1).at - releaseMs).toBeLessThanOrEqual(90);
+    expect(earlyMoves.length).toBeGreaterThan(preEmittedMoves.length);
+    expect(earlyMoves.at(-1).at - releaseMs).toBeLessThanOrEqual(110);
 
     jest.advanceTimersByTime(140);
     const lateMoves = getPostedCommands().filter((command) => command?.type === 'Move');
@@ -453,5 +459,53 @@ describe('Klipper pacer worker upload playback', () => {
 
     const movesAfterPacingResumes = getPostedCommands().filter((command) => command?.type === 'Move');
     expect(movesAfterPacingResumes.length).toBeGreaterThan(movesImmediatelyAfterSecondBatch.length);
+  });
+
+  test('reports live API horizon clamps when playback reaches the tail reserve', async () => {
+    await loadWorkerModule();
+    globalThis.self.onmessage({ data: { type: 'set_speed_scale', value: 1 } });
+    globalThis.self.onmessage({ data: { type: 'api_motion_start', clockHz: 50_000_000 } });
+    globalThis.self.onmessage({
+      data: {
+        type: 'api_motion_trapq_batch',
+        batch: {
+          name: 'toolhead',
+          data: [
+            [10.0, 4.0, 0, 0, [0, 0, 0], [1, 0, 0]],
+          ],
+        },
+      },
+    });
+    globalThis.self.onmessage({
+      data: {
+        type: 'api_motion_batch',
+        batch: {
+          name: 'stepper_a',
+          first_time: 10.1,
+          last_time: 13.8,
+          start_mcu_position: 0,
+          data: [
+            [500_000, 370, 0],
+          ],
+        },
+      },
+    });
+
+    jest.advanceTimersByTime(3100);
+    await Promise.resolve();
+
+    const clampEvents = getPostedDiagnostics().filter((diagnostic) => diagnostic?.event === 'horizon_clamp');
+    expect(clampEvents.length).toBeGreaterThan(0);
+    expect(clampEvents.at(-1).clampMs).toBeGreaterThan(0);
+
+    globalThis.self.onmessage({ data: { type: 'api_motion_finish' } });
+    jest.runAllTimers();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const summary = getPostedDiagnostics().find((diagnostic) => diagnostic?.event === 'summary');
+    expect(summary).toBeTruthy();
+    expect(summary.stats.horizonClampCount).toBeGreaterThan(0);
+    expect(summary.stats.maxHorizonClampMs).toBeGreaterThan(0);
   });
 });
