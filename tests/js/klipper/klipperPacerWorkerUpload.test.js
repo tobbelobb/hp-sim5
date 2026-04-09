@@ -210,6 +210,56 @@ describe('Klipper pacer worker upload playback', () => {
     expect(moves[1].A / STEP_ANGLE_RAD).toBeCloseTo(2, 6);
   });
 
+  test('starts a new API session from the reported MCU position instead of snapping back to zero', async () => {
+    await loadWorkerModule();
+    globalThis.self.onmessage({ data: { type: 'set_speed_scale', value: 1 } });
+
+    globalThis.self.onmessage({ data: { type: 'api_motion_start', clockHz: 16_000_000 } });
+    globalThis.self.onmessage({
+      data: {
+        type: 'api_motion_batch',
+        batch: {
+          name: 'stepper_a',
+          first_clock: 0,
+          start_mcu_position: 2,
+          data: [[60_000, 2, 0]],
+        },
+      },
+    });
+    globalThis.self.onmessage({ data: { type: 'api_motion_finish' } });
+    jest.runAllTimers();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const firstSessionMoveCount = getPostedCommands().length;
+    const firstSessionMoves = getPostedCommands().filter((command) => command?.type === 'Move');
+    expect(firstSessionMoves.at(-1).A / STEP_ANGLE_RAD).toBeCloseTo(4, 6);
+
+    globalThis.self.onmessage({ data: { type: 'api_motion_start', clockHz: 16_000_000 } });
+    globalThis.self.onmessage({
+      data: {
+        type: 'api_motion_batch',
+        batch: {
+          name: 'stepper_a',
+          first_clock: 0,
+          start_mcu_position: 4,
+          data: [[60_000, 2, 0]],
+        },
+      },
+    });
+    globalThis.self.onmessage({ data: { type: 'api_motion_finish' } });
+    jest.runAllTimers();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const secondSessionMoves = getPostedCommands()
+      .slice(firstSessionMoveCount)
+      .filter((command) => command?.type === 'Move');
+    expect(secondSessionMoves).toHaveLength(2);
+    expect(secondSessionMoves[0].A / STEP_ANGLE_RAD).toBeCloseTo(4 + (5 / 3), 6);
+    expect(secondSessionMoves[1].A / STEP_ANGLE_RAD).toBeCloseTo(6, 6);
+  });
+
   test('rebases API motion timing against toolhead trapq instead of the historical first interval', async () => {
     const commands = await playApiBatches([
       {

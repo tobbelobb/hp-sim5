@@ -272,6 +272,24 @@ export class KlipperBucketedMotionCore {
     this._markAxisActive(axis);
   }
 
+  seedAxisPhysicalPosition(axis, absoluteValue, tick = null) {
+    const state = this._ensureAxisState(axis);
+    if (!state) {
+      return;
+    }
+    const nextValue = Number(absoluteValue) || 0;
+    const nextTick = Number.isFinite(tick) ? tick : state.lastTick;
+    state.baseAngle = nextValue;
+    state.lastTick = nextTick;
+    state.hasSteps = true;
+    if (axis === EXTRUDER_AXIS) {
+      this.extruderPosMm = nextValue;
+      return;
+    }
+    this.axisAngles.set(axis, nextValue);
+    this._markAxisActive(axis);
+  }
+
   recordQueueSteps({
     axis,
     startTick = null,
@@ -368,7 +386,9 @@ export class KlipperBucketedMotionCore {
       ? (Number(startMcuPosition) || 0) * EXTRUDER_MM_PER_STEP_KLIPPER
       : (Number(startMcuPosition) || 0) * STEP_ANGLE_RAD;
     if (!state.hasSteps) {
-      this.setAxisReferencePosition(resolvedAxis, absolutePosition, startTick);
+      // dump_stepper.start_mcu_position is the actual physical stepper position at
+      // the start of this API stream, not a logical set_position-style rebase.
+      this.seedAxisPhysicalPosition(resolvedAxis, absolutePosition, startTick);
     }
     state.lastTick = startTick;
 

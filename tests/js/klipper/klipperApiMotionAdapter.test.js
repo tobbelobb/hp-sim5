@@ -29,7 +29,7 @@ describe('KlipperApiMotionAdapter', () => {
     expect(moves[1].A / STEP_ANGLE_RAD).toBeCloseTo(2, 6);
   });
 
-  test('emits Add to reference before batch motion when the MCU batch starts from a non-zero position', () => {
+  test('seeds batch motion from the MCU start position without a reference jump', () => {
     const adapter = new KlipperApiMotionAdapter({
       now: () => 1000,
     });
@@ -44,15 +44,11 @@ describe('KlipperApiMotionAdapter', () => {
 
     const commands = adapter.drainReadyCommands();
 
-    expect(commands.map((command) => command?.type)).toEqual([
-      'Add to reference',
-      'Move',
-      'Move',
-    ]);
-    expect(commands[0].A / STEP_ANGLE_RAD).toBeCloseTo(2, 6);
-    expect(commands[0].at).toBe(commands[1].at);
-    expect(commands[1].A / STEP_ANGLE_RAD).toBeCloseTo(5 / 3, 6);
-    expect(commands[2].A / STEP_ANGLE_RAD).toBeCloseTo(2, 6);
+    const moves = commands.filter((command) => command?.type === 'Move');
+    expect(commands.filter((command) => command?.type === 'Add to reference')).toHaveLength(0);
+    expect(moves).toHaveLength(2);
+    expect(moves[0].A / STEP_ANGLE_RAD).toBeCloseTo(2 + (5 / 3), 6);
+    expect(moves[1].A / STEP_ANGLE_RAD).toBeCloseTo(4, 6);
   });
 
   test('combines simultaneous dump_stepper batches into shared Move payloads', () => {
