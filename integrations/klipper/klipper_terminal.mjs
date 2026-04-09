@@ -24,6 +24,7 @@ import {
   DEFAULT_KLIPPY_SOCKET_PATH,
   ensureKlippyApiServer,
   stopKlippyApiServer,
+  terminateKlippyApiProcess,
   waitForKlippySocket,
 } from './klippy_api_cli_config.mjs';
 
@@ -35,6 +36,7 @@ const CLIENT_INFO = {
 const PROMPT_READY = 'gcode> ';
 const PROMPT_DISCONNECTED = '\x1b[90mdisconnected>\x1b[0m ';
 const DEFAULT_DEBUG_LOG_FILENAME = 'klipper_terminal_debug.log';
+const LOST_MCU_STATE_RE = /Lost communication with MCU/i;
 
 function runFakeGpioChipSetup(commandSpec) {
   return new Promise((resolve, reject) => {
@@ -351,6 +353,41 @@ function buildRuntime(args, { cliArgv = process.argv.slice(2) } = {}) {
 
   const waitForKlippyReady = async (timeoutMs = 15_000) => klippyState.waitForReady(timeoutMs);
 
+  const maybeRecoverLostMcuStartupState = async () => {
+    const snapshot = klippyState.getSnapshot();
+    const stateMessage = snapshot.printerStateMessage || '';
+    if (snapshot.printerState !== 'shutdown' || !LOST_MCU_STATE_RE.test(stateMessage)) {
+      return null;
+    }
+    if (!args.quiet) {
+      console.log('Detected stale Klippy shutdown caused by a missing host MCU. Restarting the managed Klippy stack...');
+    }
+    debugLogger.log('startup-recovery', {
+      socketPath: args.socketPath,
+      printerState: snapshot.printerState,
+      printerStateMessage: stateMessage,
+      managedKlippyProcess: Boolean(managedKlippyProcess),
+    });
+    if (managedKlippyProcess) {
+      stopKlippyApiServer(managedKlippyProcess);
+      managedKlippyProcess = null;
+    } else {
+      await terminateKlippyApiProcess({
+        socketPath: args.socketPath,
+      }).catch((error) => {
+        debugLogger.log('startup-recovery-terminate-error', {
+          socketPath: args.socketPath,
+          error,
+        });
+      });
+    }
+    primePromise = null;
+    lastReportedPrinterState = null;
+    lastReportedMotionKey = null;
+    await ensureKlippyServerReady({ forceStart: true });
+    return waitForPrimedConnection();
+  };
+
   const maybeFlushPendingFakeGpioPrompt = async () => {
     if (!pendingFakeGpioPromptSnapshot || !rl || shuttingDown) {
       return;
@@ -358,6 +395,34 @@ function buildRuntime(args, { cliArgv = process.argv.slice(2) } = {}) {
     const snapshot = pendingFakeGpioPromptSnapshot;
     pendingFakeGpioPromptSnapshot = null;
     await maybeOfferFakeGpioChipSetup(snapshot);
+  };
+
+  const terminateStaleKlippyProcess = async ({ reason }) => {
+    if (managedKlippyProcess) {
+      return false;
+    }
+    try {
+      const terminated = await terminateKlippyApiProcess({
+        socketPath: args.socketPath,
+      });
+      if (terminated) {
+        debugLogger.log('stale-klippy-terminated', {
+          socketPath: args.socketPath,
+          reason,
+        });
+        if (!args.quiet) {
+          console.log(`Stopped stale klippy.py on ${args.socketPath} before starting the managed stack.`);
+        }
+      }
+      return terminated;
+    } catch (error) {
+      debugLogger.log('stale-klippy-terminate-error', {
+        socketPath: args.socketPath,
+        reason,
+        error,
+      });
+      return false;
+    }
   };
 
   const ensureKlippyServerReady = async ({ forceStart = false } = {}) => {
@@ -370,8 +435,11 @@ function buildRuntime(args, { cliArgv = process.argv.slice(2) } = {}) {
           await waitForKlippySocket(args.socketPath, 750);
           return managedKlippyProcess;
         } catch (_error) {
+          await terminateStaleKlippyProcess({ reason: 'socket-not-ready' });
           // Fall through to autostart.
         }
+      } else {
+        await terminateStaleKlippyProcess({ reason: 'forced-restart' });
       }
       if (!managedKlippyProcess) {
         managedKlippyProcess = await ensureKlippyApiServer({
@@ -638,7 +706,11 @@ function buildRuntime(args, { cliArgv = process.argv.slice(2) } = {}) {
   const main = async () => {
     await ensureKlippyServerReady();
     client.start();
-    const primed = await waitForPrimedConnection();
+    let primed = await waitForPrimedConnection();
+    const recoveredPrime = await maybeRecoverLostMcuStartupState();
+    if (recoveredPrime) {
+      primed = await recoveredPrime;
+    }
 
     if (args.command) {
       await bridgeContext.waitForHpSimConnection();

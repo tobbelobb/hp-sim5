@@ -35,6 +35,113 @@ function resolvePathLike(value, cwd) {
   return path.isAbsolute(value) ? value : path.resolve(cwd, value);
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function tokenizeCommandLine(commandLine) {
+  return String(commandLine)
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+function hasArgPair(argv, flag, expectedValue) {
+  for (let i = 0; i < argv.length - 1; i += 1) {
+    if (argv[i] === flag && argv[i + 1] === expectedValue) {
+      return true;
+    }
+  }
+  return false;
+}
+
+async function listProcesses({ spawnImpl = spawn } = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawnImpl('ps', ['-eo', 'pid=,args='], {
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    let stdout = '';
+    child.once('error', reject);
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.once('close', (code) => {
+      if (code !== 0) {
+        reject(new Error(`ps exited with code ${code}`));
+        return;
+      }
+      const processes = stdout
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+          const firstSpace = line.indexOf(' ');
+          if (firstSpace === -1) {
+            return null;
+          }
+          const pid = Number.parseInt(line.slice(0, firstSpace), 10);
+          const commandLine = line.slice(firstSpace + 1).trim();
+          if (!Number.isFinite(pid) || !commandLine) {
+            return null;
+          }
+          return {
+            pid,
+            commandLine,
+            argv: tokenizeCommandLine(commandLine),
+          };
+        })
+        .filter(Boolean);
+      resolve(processes);
+    });
+  });
+}
+
+export async function findKlippyApiProcess({
+  socketPath = DEFAULT_KLIPPY_SOCKET_PATH,
+  cwd = process.cwd(),
+  listProcessesImpl = listProcesses,
+} = {}) {
+  const resolvedSocketPath = resolvePathLike(socketPath, cwd);
+  const processes = await listProcessesImpl();
+  return processes.find((proc) => (
+    proc.argv.some((arg) => arg.endsWith('/klippy.py') || arg === 'klippy.py')
+    && hasArgPair(proc.argv, '-a', resolvedSocketPath)
+  )) || null;
+}
+
+export async function terminateKlippyApiProcess({
+  socketPath = DEFAULT_KLIPPY_SOCKET_PATH,
+  cwd = process.cwd(),
+  signal = 'SIGTERM',
+  timeoutMs = 5_000,
+  pollMs = 100,
+  listProcessesImpl = listProcesses,
+  killImpl = process.kill,
+} = {}) {
+  const target = await findKlippyApiProcess({
+    socketPath,
+    cwd,
+    listProcessesImpl,
+  });
+  if (!target) {
+    return false;
+  }
+  killImpl(target.pid, signal);
+  const deadline = Date.now() + Math.max(1, timeoutMs);
+  while (Date.now() < deadline) {
+    const active = await findKlippyApiProcess({
+      socketPath,
+      cwd,
+      listProcessesImpl,
+    });
+    if (!active || active.pid !== target.pid) {
+      return true;
+    }
+    await sleep(pollMs);
+  }
+  throw new Error(`Timed out waiting for stale Klippy process ${target.pid} to exit.`);
+}
+
 export function buildKlippyApiLaunchSpec({
   cwd = process.cwd(),
   startScript = DEFAULT_KLIPPY_API_START_SCRIPT,

@@ -56,6 +56,8 @@ describe('klipper terminal step 1', () => {
   let KlippyApiClient;
   let buildKlippyApiLaunchSpec;
   let ensureKlippyApiServer;
+  let findKlippyApiProcess;
+  let terminateKlippyApiProcess;
   let buildFakeGpioChipSetupCommand;
   let isMissingFakeGpioChipStateMessage;
   let shouldDeferFakeGpioSetupPromptUntilInteractiveReadline;
@@ -68,6 +70,8 @@ describe('klipper terminal step 1', () => {
     ({
       buildKlippyApiLaunchSpec,
       ensureKlippyApiServer,
+      findKlippyApiProcess,
+      terminateKlippyApiProcess,
     } = await import('../../../integrations/klipper/klippy_api_cli_config.mjs'));
     ({ parseArgs } = await import('../../../integrations/klipper/klipperTerminalArgs.js'));
     ({
@@ -164,6 +168,50 @@ describe('klipper terminal step 1', () => {
       }),
     );
     expect(waitForSocket).toHaveBeenCalledWith('/tmp/klippy.sock');
+  });
+
+  test('findKlippyApiProcess matches klippy.py by socket path', async () => {
+    const processInfo = await findKlippyApiProcess({
+      socketPath: './tmp/klippy.sock',
+      cwd: '/repo',
+      listProcessesImpl: async () => ([
+        {
+          pid: 10,
+          argv: ['python', '/repo/klipper/klippy/klippy.py', '/repo/printer.cfg'],
+        },
+        {
+          pid: 11,
+          argv: ['python', '/repo/klipper/klippy/klippy.py', '/repo/printer.cfg', '-a', '/repo/tmp/klippy.sock'],
+        },
+      ]),
+    });
+
+    expect(processInfo).toMatchObject({
+      pid: 11,
+    });
+  });
+
+  test('terminateKlippyApiProcess kills the matching process and waits for exit', async () => {
+    const states = [
+      [
+        {
+          pid: 25,
+          argv: ['python', '/repo/klipper/klippy/klippy.py', '/repo/printer.cfg', '-a', '/repo/tmp/klippy.sock'],
+        },
+      ],
+      [],
+    ];
+    const killImpl = jest.fn();
+
+    await expect(terminateKlippyApiProcess({
+      socketPath: './tmp/klippy.sock',
+      cwd: '/repo',
+      pollMs: 0,
+      listProcessesImpl: async () => states.shift() || [],
+      killImpl,
+    })).resolves.toBe(true);
+
+    expect(killImpl).toHaveBeenCalledWith(25, 'SIGTERM');
   });
 
   test('fake gpio chip helper command resolves through the repo root', () => {

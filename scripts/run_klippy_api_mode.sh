@@ -53,6 +53,8 @@ if [[ ! -x "${HOST_MCU_BIN}" ]]; then
   exit 1
 fi
 
+rm -f "${HOST_MCU_SERIAL}"
+
 HOST_MCU_ARGS=(-I "${HOST_MCU_SERIAL}")
 if [[ "${HOST_MCU_REALTIME}" == "1" ]]; then
   HOST_MCU_ARGS=(-r "${HOST_MCU_ARGS[@]}")
