@@ -339,7 +339,7 @@ describe('Klipper pacer worker upload playback', () => {
     expect(lateMoves.at(-1).at - releaseMs).toBeGreaterThanOrEqual(200);
   });
 
-  test('does not emit a catch-up burst when a later API batch arrives after the current safe horizon', async () => {
+  test('does not start API playback until the startup preload includes the tail reserve', async () => {
     await loadWorkerModule();
     globalThis.self.onmessage({ data: { type: 'set_speed_scale', value: 1 } });
     globalThis.self.onmessage({ data: { type: 'api_motion_start', clockHz: 50_000_000 } });
@@ -349,7 +349,7 @@ describe('Klipper pacer worker upload playback', () => {
         batch: {
           name: 'toolhead',
           data: [
-            [10.0, 2.0, 0, 0, [0, 0, 0], [1, 0, 0]],
+            [10.0, 4.0, 0, 0, [0, 0, 0], [1, 0, 0]],
           ],
         },
       },
@@ -360,10 +360,65 @@ describe('Klipper pacer worker upload playback', () => {
         batch: {
           name: 'stepper_a',
           first_time: 10.1,
-          last_time: 11.3,
+          last_time: 13.0,
           start_mcu_position: 0,
           data: [
-            [500_000, 120, 0],
+            [500_000, 290, 0],
+          ],
+        },
+      },
+    });
+
+    jest.advanceTimersByTime(1000);
+    await Promise.resolve();
+    expect(getPostedCommands()).toHaveLength(0);
+
+    globalThis.self.onmessage({
+      data: {
+        type: 'api_motion_batch',
+        batch: {
+          name: 'stepper_a',
+          first_time: 13.0,
+          last_time: 13.8,
+          start_mcu_position: 290,
+          data: [
+            [500_000, 80, 0],
+          ],
+        },
+      },
+    });
+
+    jest.advanceTimersByTime(20);
+    await Promise.resolve();
+    const moves = getPostedCommands().filter((command) => command?.type === 'Move');
+    expect(moves.length).toBeGreaterThan(0);
+  });
+
+  test('does not emit a catch-up burst when a later API batch arrives after the current safe horizon', async () => {
+    await loadWorkerModule();
+    globalThis.self.onmessage({ data: { type: 'set_speed_scale', value: 1 } });
+    globalThis.self.onmessage({ data: { type: 'api_motion_start', clockHz: 50_000_000 } });
+    globalThis.self.onmessage({
+      data: {
+        type: 'api_motion_trapq_batch',
+        batch: {
+          name: 'toolhead',
+          data: [
+            [10.0, 4.5, 0, 0, [0, 0, 0], [1, 0, 0]],
+          ],
+        },
+      },
+    });
+    globalThis.self.onmessage({
+      data: {
+        type: 'api_motion_batch',
+        batch: {
+          name: 'stepper_a',
+          first_time: 10.1,
+          last_time: 13.8,
+          start_mcu_position: 0,
+          data: [
+            [500_000, 370, 0],
           ],
         },
       },
@@ -380,9 +435,9 @@ describe('Klipper pacer worker upload playback', () => {
         type: 'api_motion_batch',
         batch: {
           name: 'stepper_a',
-          first_time: 11.3,
-          last_time: 11.8,
-          start_mcu_position: 120,
+          first_time: 13.8,
+          last_time: 14.3,
+          start_mcu_position: 370,
           data: [
             [500_000, 50, 0],
           ],

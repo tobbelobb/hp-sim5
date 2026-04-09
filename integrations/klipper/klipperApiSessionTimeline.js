@@ -22,19 +22,6 @@ function getTrapqFirstTime(batch = {}) {
   return Array.isArray(first) ? normalizeBatchTime(first[0]) : null;
 }
 
-function getTrapqLastTime(batch = {}) {
-  const last = Array.isArray(batch.data) ? batch.data.at(-1) : null;
-  if (!Array.isArray(last)) {
-    return null;
-  }
-  const start = normalizeBatchTime(last[0]);
-  const duration = normalizeBatchTime(last[1]);
-  if (!Number.isFinite(start)) {
-    return null;
-  }
-  return start + (Number.isFinite(duration) ? duration : 0);
-}
-
 function normalizeBatchEntry(entry) {
   if (Array.isArray(entry)) {
     return {
@@ -153,7 +140,7 @@ export class KlipperApiSessionTimelineBuffer {
     this.pendingStepperBatches = [];
     this.sessionStartTime = null;
     this.fallbackStartTime = null;
-    this.maxObservedTime = null;
+    this.maxObservedStepperTime = null;
     this.started = false;
     this.lastTickByStepper = new Map();
   }
@@ -174,12 +161,6 @@ export class KlipperApiSessionTimelineBuffer {
         ? Math.min(this.sessionStartTime, firstTime)
         : firstTime;
     }
-    const lastTime = getTrapqLastTime(batch);
-    if (Number.isFinite(lastTime)) {
-      this.maxObservedTime = Number.isFinite(this.maxObservedTime)
-        ? Math.max(this.maxObservedTime, lastTime)
-        : lastTime;
-    }
   }
 
   consumeStepperBatch(batch = {}) {
@@ -192,8 +173,8 @@ export class KlipperApiSessionTimelineBuffer {
     }
     const lastTime = getStepperLastTime(batch) ?? firstTime;
     if (Number.isFinite(lastTime)) {
-      this.maxObservedTime = Number.isFinite(this.maxObservedTime)
-        ? Math.max(this.maxObservedTime, lastTime)
+      this.maxObservedStepperTime = Number.isFinite(this.maxObservedStepperTime)
+        ? Math.max(this.maxObservedStepperTime, lastTime)
         : lastTime;
     }
   }
@@ -204,10 +185,10 @@ export class KlipperApiSessionTimelineBuffer {
 
   getBufferedDurationMs() {
     const startTime = this._resolveStartTime(false);
-    if (!Number.isFinite(startTime) || !Number.isFinite(this.maxObservedTime)) {
+    if (!Number.isFinite(startTime) || !Number.isFinite(this.maxObservedStepperTime)) {
       return 0;
     }
-    return Math.max(0, (this.maxObservedTime - startTime) * 1000);
+    return Math.max(0, (this.maxObservedStepperTime - startTime) * 1000);
   }
 
   canStart(force = false) {

@@ -28,6 +28,7 @@ const ENABLE_BUCKETED_ANTIALIASING = true;
 // stalling when a batch lands a little late.
 const API_MOTION_TAIL_RESERVE_MS = 900;
 const API_MOTION_STARTUP_QUIET_WINDOW_MS = 900;
+const API_MOTION_INITIAL_PRELOAD_MS = API_MOTION_STARTUP_BUFFER_MS + API_MOTION_TAIL_RESERVE_MS;
 
 let LOG_MOVE = false;
 let moveLogSeq = 0;
@@ -639,7 +640,10 @@ const startApiMotionStream = ({ clockHz = MCU_CLOCK_HZ_KLIPPER_HOST } = {}) => {
   ws = null;
   apiTimelineBuffer = new KlipperApiSessionTimelineBuffer({
     clockHz: apiStreamClockHz,
-    startupBufferMs: API_MOTION_STARTUP_BUFFER_MS,
+    // Prepay the startup window and the live tail reserve before the first
+    // bucket is allowed to move, otherwise playback can stall on the first
+    // reserve boundary even when Klipper is streaming smoothly.
+    startupBufferMs: API_MOTION_INITIAL_PRELOAD_MS,
   });
 };
 
@@ -679,7 +683,10 @@ const scheduleApiStartupFlush = () => {
   }
   apiStartupTimer = setTimeout(() => {
     apiStartupTimer = null;
-    flushBufferedApiMotion({ forceStart: true });
+    // Re-check without forcing: the initial preload must include the startup
+    // window and tail reserve. Short sessions are still released by
+    // api_motion_finish(), which force-starts once the stream is complete.
+    flushBufferedApiMotion({ forceStart: false });
   }, API_MOTION_STARTUP_QUIET_WINDOW_MS);
 };
 
