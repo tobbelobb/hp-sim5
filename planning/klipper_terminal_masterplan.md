@@ -86,16 +86,13 @@ Closer To `x100.txt` / Batch-Dump Replay:
   - add a diagnostic exporter that reconstructs a synthetic MCU-text trace from the API batches for side-by-side diffing against `x100.txt`
   - add an optional deeper trace path only if Klipper-side instrumentation is acceptable, because the stock API does not currently expose a true raw MCU command log
 
-## 5. Operational hardening + file-backed flow
+## 5. file-backed flow (future backlog. Not implemented. Apr 9, 2026)
 
 Deliverables:
-- Restart / shutdown behavior for `gcode/restart`, `gcode/firmware_restart`, and `webhooks.state` transitions.
 - Optional file-backed execution path using `[virtual_sdcard]` only after the interactive path is stable.
 - Short local usage notes in the script help text, pointing to repo docs instead of duplicating them.
-- Handling of the event that "Reset" is clicked in hp-sim-3d which might temporarily interrupt the websocket.
 
 Verification:
-- Ready -> shutdown -> ready transitions recover without restarting the terminal process.
 - If `[virtual_sdcard]` is configured, `SDCARD_PRINT_FILE` / `M24` flow updates `print_stats` / `virtual_sdcard` state as expected.
 - Manual end-to-end run covers startup, one-shot command, interactive session, restart, and clean shutdown.
 
