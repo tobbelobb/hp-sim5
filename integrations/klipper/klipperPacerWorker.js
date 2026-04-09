@@ -108,6 +108,43 @@ const resetLogicalPlaybackClock = () => {
   logicalClockPaused = false;
 };
 
+const setLogicalPlaybackTime = (logicalMs, now = performance.now()) => {
+  logicalClockAnchorMs = Math.max(0, Number(logicalMs) || 0);
+  logicalClockAnchorWorkerMs = now;
+};
+
+const getApiTailReserveTicks = () => (
+  (apiStreamActive && !inputComplete)
+    ? Math.round((API_MOTION_TAIL_RESERVE_MS / 1000) * apiStreamClockHz)
+    : 0
+);
+
+const getApiSchedulableLogicalMs = () => {
+  if (!apiStreamActive || inputComplete) {
+    return null;
+  }
+  const maxKnownTick = motionCore.getMaxKnownTick();
+  if (!Number.isFinite(maxKnownTick)) {
+    return null;
+  }
+  const schedulableTick = Math.max(0, maxKnownTick - getApiTailReserveTicks());
+  return (schedulableTick / apiStreamClockHz) * 1000;
+};
+
+const clampApiLogicalPlaybackHorizon = (now = performance.now()) => {
+  if (!apiStreamActive || inputComplete || asapMode || logicalClockPaused) {
+    return;
+  }
+  const schedulableLogicalMs = getApiSchedulableLogicalMs();
+  if (!Number.isFinite(schedulableLogicalMs)) {
+    return;
+  }
+  const logicalNow = currentLogicalPlaybackMs(now);
+  if (logicalNow > schedulableLogicalMs) {
+    setLogicalPlaybackTime(schedulableLogicalMs, now);
+  }
+};
+
 const resolveBucketTargetLogicalMs = (bucketIdx) => {
   if (apiStreamActive && Number.isFinite(apiStreamStartTick)) {
     const bucketEndTick = motionCore.getBucketEndTick(bucketIdx);
@@ -117,11 +154,11 @@ const resolveBucketTargetLogicalMs = (bucketIdx) => {
   return (bucketIdx + 1) * BUCKET_INTERVAL_MS;
 };
 
-const resolveBucketAtMs = (bucketIdx) => {
-  const now = performance.now();
+const resolveBucketAtMs = (bucketIdx, now = performance.now()) => {
   if (asapMode) {
     return now;
   }
+  clampApiLogicalPlaybackHorizon(now);
   const targetLogicalMs = resolveBucketTargetLogicalMs(bucketIdx);
   const logicalNow = currentLogicalPlaybackMs(now);
   if (targetLogicalMs <= logicalNow) {
@@ -134,6 +171,7 @@ const isBucketDueNow = (bucketIdx, now = performance.now()) => {
   if (asapMode) {
     return true;
   }
+  clampApiLogicalPlaybackHorizon(now);
   const targetLogicalMs = resolveBucketTargetLogicalMs(bucketIdx);
   return targetLogicalMs <= currentLogicalPlaybackMs(now);
 };
@@ -226,16 +264,16 @@ const resetRuntimeState = () => {
 };
 
 const flushReadyBuckets = (force = false, holdBackOneBucket = false) => {
+  const now = performance.now();
+  clampApiLogicalPlaybackHorizon(now);
   const maxKnownTick = motionCore.getMaxKnownTick();
-  const apiTailReserveTicks = (apiStreamActive && !inputComplete)
-    ? Math.round((API_MOTION_TAIL_RESERVE_MS / 1000) * apiStreamClockHz)
-    : 0;
+  const apiTailReserveTicks = getApiTailReserveTicks();
   const commands = motionCore.flushCommands({
     force,
     forceThreshold: inputComplete,
     holdBackOneBucket,
     canEmitBucket: force ? null : (bucketIdx) => {
-      if (!isBucketDueNow(bucketIdx)) {
+      if (!isBucketDueNow(bucketIdx, now)) {
         return false;
       }
       if (apiTailReserveTicks > 0 && Number.isFinite(maxKnownTick)) {
@@ -244,7 +282,7 @@ const flushReadyBuckets = (force = false, holdBackOneBucket = false) => {
       return true;
     },
     buildTiming: (bucketIdx) => ({
-      at: resolveBucketAtMs(bucketIdx),
+      at: resolveBucketAtMs(bucketIdx, now),
       span: scaleDelayMs(BUCKET_INTERVAL_MS),
     }),
   });

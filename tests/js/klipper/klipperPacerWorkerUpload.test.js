@@ -288,4 +288,65 @@ describe('Klipper pacer worker upload playback', () => {
     expect(lateMoves.length).toBeGreaterThan(earlyMoves.length);
     expect(lateMoves.at(-1).at - releaseMs).toBeGreaterThanOrEqual(200);
   });
+
+  test('does not emit a catch-up burst when a later API batch arrives after the current safe horizon', async () => {
+    await loadWorkerModule();
+    globalThis.self.onmessage({ data: { type: 'set_speed_scale', value: 1 } });
+    globalThis.self.onmessage({ data: { type: 'api_motion_start', clockHz: 50_000_000 } });
+    globalThis.self.onmessage({
+      data: {
+        type: 'api_motion_trapq_batch',
+        batch: {
+          name: 'toolhead',
+          data: [
+            [10.0, 2.0, 0, 0, [0, 0, 0], [1, 0, 0]],
+          ],
+        },
+      },
+    });
+    globalThis.self.onmessage({
+      data: {
+        type: 'api_motion_batch',
+        batch: {
+          name: 'stepper_a',
+          first_time: 10.1,
+          last_time: 11.3,
+          start_mcu_position: 0,
+          data: [
+            [500_000, 120, 0],
+          ],
+        },
+      },
+    });
+
+    jest.advanceTimersByTime(700);
+    await Promise.resolve();
+
+    const movesBeforeSecondBatch = getPostedCommands().filter((command) => command?.type === 'Move');
+    expect(movesBeforeSecondBatch.length).toBeGreaterThan(0);
+
+    globalThis.self.onmessage({
+      data: {
+        type: 'api_motion_batch',
+        batch: {
+          name: 'stepper_a',
+          first_time: 11.3,
+          last_time: 11.8,
+          start_mcu_position: 120,
+          data: [
+            [500_000, 50, 0],
+          ],
+        },
+      },
+    });
+
+    const movesImmediatelyAfterSecondBatch = getPostedCommands().filter((command) => command?.type === 'Move');
+    expect(movesImmediatelyAfterSecondBatch).toHaveLength(movesBeforeSecondBatch.length);
+
+    jest.advanceTimersByTime(20);
+    await Promise.resolve();
+
+    const movesAfterPacingResumes = getPostedCommands().filter((command) => command?.type === 'Move');
+    expect(movesAfterPacingResumes.length).toBeGreaterThan(movesImmediatelyAfterSecondBatch.length);
+  });
 });
