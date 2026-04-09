@@ -37,6 +37,7 @@ const PACER_DIAGNOSTIC_DEDUP_MS = 25;
 const PACER_DIAGNOSTIC_MAX_EVENT_REPORTS = 8;
 
 let LOG_MOVE = false;
+let DEBUG_DIAGNOSTICS = false;
 let moveLogSeq = 0;
 let moveLogAxes = Object.fromEntries(axisOrder.map((axis) => [axis, 0]));
 
@@ -98,7 +99,7 @@ const createPacerDiagnostics = (sessionType) => ({
 });
 
 const emitPacerDiagnostic = (event, details = {}) => {
-  if (!pacerDiagnostics) {
+  if (!DEBUG_DIAGNOSTICS || !pacerDiagnostics) {
     return;
   }
   postMessage({
@@ -904,6 +905,7 @@ self.onmessage = (event) => {
   const { type, ...data } = event.data;
   if (type === 'connect') {
     LOG_MOVE = Boolean(data.logMove);
+    DEBUG_DIAGNOSTICS = Boolean(data.debugDiagnostics);
     moveLogSeq = 0;
     resetMoveLogAxes();
     if (LOG_MOVE) {
@@ -914,11 +916,13 @@ self.onmessage = (event) => {
     connect(data.url);
   } else if (type === 'filename_upload') {
     LOG_MOVE = Boolean(data.logMove);
+    DEBUG_DIAGNOSTICS = Boolean(data.debugDiagnostics);
     moveLogSeq = 0;
     resetMoveLogAxes();
     processUploadedFile(data.filename, data.format);
   } else if (type === 'api_motion_start') {
     LOG_MOVE = Boolean(data.logMove);
+    DEBUG_DIAGNOSTICS = Boolean(data.debugDiagnostics);
     moveLogSeq = 0;
     resetMoveLogAxes();
     startApiMotionStream({ clockHz: data.clockHz });

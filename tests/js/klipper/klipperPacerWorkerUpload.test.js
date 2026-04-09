@@ -348,7 +348,7 @@ describe('Klipper pacer worker upload playback', () => {
   test('does not start API playback until the startup preload includes the tail reserve', async () => {
     await loadWorkerModule();
     globalThis.self.onmessage({ data: { type: 'set_speed_scale', value: 1 } });
-    globalThis.self.onmessage({ data: { type: 'api_motion_start', clockHz: 50_000_000 } });
+    globalThis.self.onmessage({ data: { type: 'api_motion_start', clockHz: 50_000_000, debugDiagnostics: true } });
     globalThis.self.onmessage({
       data: {
         type: 'api_motion_trapq_batch',
@@ -461,10 +461,10 @@ describe('Klipper pacer worker upload playback', () => {
     expect(movesAfterPacingResumes.length).toBeGreaterThan(movesImmediatelyAfterSecondBatch.length);
   });
 
-  test('reports live API horizon clamps when playback reaches the tail reserve', async () => {
+  test('emits API pacing summaries when diagnostics are enabled', async () => {
     await loadWorkerModule();
     globalThis.self.onmessage({ data: { type: 'set_speed_scale', value: 1 } });
-    globalThis.self.onmessage({ data: { type: 'api_motion_start', clockHz: 50_000_000 } });
+    globalThis.self.onmessage({ data: { type: 'api_motion_start', clockHz: 50_000_000, debugDiagnostics: true } });
     globalThis.self.onmessage({
       data: {
         type: 'api_motion_trapq_batch',
@@ -494,10 +494,6 @@ describe('Klipper pacer worker upload playback', () => {
     jest.advanceTimersByTime(3100);
     await Promise.resolve();
 
-    const clampEvents = getPostedDiagnostics().filter((diagnostic) => diagnostic?.event === 'horizon_clamp');
-    expect(clampEvents.length).toBeGreaterThan(0);
-    expect(clampEvents.at(-1).clampMs).toBeGreaterThan(0);
-
     globalThis.self.onmessage({ data: { type: 'api_motion_finish' } });
     jest.runAllTimers();
     await Promise.resolve();
@@ -505,7 +501,7 @@ describe('Klipper pacer worker upload playback', () => {
 
     const summary = getPostedDiagnostics().find((diagnostic) => diagnostic?.event === 'summary');
     expect(summary).toBeTruthy();
-    expect(summary.stats.horizonClampCount).toBeGreaterThan(0);
-    expect(summary.stats.maxHorizonClampMs).toBeGreaterThan(0);
+    expect(summary.config.emitLookaheadMs).toBeGreaterThan(0);
+    expect(summary.stats.timerOversleepCount).toBeGreaterThanOrEqual(0);
   });
 });

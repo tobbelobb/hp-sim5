@@ -17,6 +17,7 @@ function createKlipperRawHandle(onCommand, options = {}) {
   const worker = new Worker(workerUrl, { type: 'module' });
 
   const logMove = Boolean(options.logMove);
+  const debugDiagnostics = Boolean(options.debugDiagnostics);
   const logMoveFilename = typeof options.logMoveFilename === 'string' && options.logMoveFilename.trim()
     ? options.logMoveFilename.trim()
     : 'klipper_move_log.jsonl';
@@ -289,8 +290,20 @@ function createKlipperRawHandle(onCommand, options = {}) {
       payload.type === 'connect'
       || payload.type === 'filename_upload'
       || payload.type === 'filename_fetch'
+      || payload.type === 'api_motion_start'
     ) {
       payload.logMove = logMove;
+      payload.debugDiagnostics = debugDiagnostics;
+      if (payload.type !== 'api_motion_start') {
+        sourceDone = false;
+        doneNotified = false;
+      }
+    }
+    if (
+      payload.type === 'connect'
+      || payload.type === 'filename_upload'
+      || payload.type === 'filename_fetch'
+    ) {
       sourceDone = false;
       doneNotified = false;
     }
@@ -352,7 +365,7 @@ function createKlipperRawHandle(onCommand, options = {}) {
       } else if (typeof console !== 'undefined') {
         console.error('KlipperSimulatorBridge worker error:', msg);
       }
-    } else if (type === 'diagnostic' && diagnostic && typeof console !== 'undefined') {
+    } else if (type === 'diagnostic' && debugDiagnostics && diagnostic && typeof console !== 'undefined') {
       console.log('[KlipperRaw][diagnostic]', JSON.stringify(diagnostic));
     } else if (DEBUG) {
       console.debug('KlipperSimulatorBridge: unhandled worker message', e.data);

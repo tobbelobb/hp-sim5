@@ -289,6 +289,8 @@ function initHpSim() {
     typeof window !== 'undefined' && window.location
       ? new URLSearchParams(window.location.search)
       : null;
+  const klipperPacerDiagnosticsEnabled = ['1', 'true', 'yes']
+    .includes((urlParams?.get('klipper_pacer_debug') || '').toLowerCase());
   const externalWsParam = urlParams?.get('gcode_ws') || urlParams?.get('rrf_ws') || null;
   const externalWsUrl = normalizeWsUrl(externalWsParam);
   const externalCommandQueue = [];
@@ -3833,6 +3835,7 @@ function initHpSim() {
         remoteSystem.addCommand(command);
       }
     }, {
+      debugDiagnostics: klipperPacerDiagnosticsEnabled,
       onDone: () => {
         const remoteSystem = getRemoteSystem();
         if (remoteSystem && remoteSystem.worker === bridge) {
