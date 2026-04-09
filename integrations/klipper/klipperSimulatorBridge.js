@@ -3,11 +3,14 @@ import timingSchedulerWorkerUrl from './timingScheduler.js?worker&url';
 
 const DEBUG = false; // Note: most logging is now in the worker.
 const EARLY_EPS_MS = 0.05; // only preempt if earlier by >= 0.05ms to reduce churn
-const BASE_LOOKAHEAD_MIN_MS = 6;
-const BASE_LOOKAHEAD_MAX_MS = 48;
-const FAST_LOOKAHEAD_MIN_MS = 24;
-const FAST_LOOKAHEAD_MAX_MS = 160;
-const FAST_LOOKAHEAD_SCALE = 4;
+// Keep a substantially thicker backlog in RemoteSpoolSystem than the old
+// near-just-in-time defaults. This reduces starvation under the current
+// runner queue gate and makes live API playback behave more like upload paths.
+const BASE_LOOKAHEAD_MIN_MS = 24;
+const BASE_LOOKAHEAD_MAX_MS = 192;
+const FAST_LOOKAHEAD_MIN_MS = 96;
+const FAST_LOOKAHEAD_MAX_MS = 640;
+const FAST_LOOKAHEAD_SCALE = 16;
 
 function createKlipperRawHandle(onCommand, options = {}) {
   const workerUrl = new URL('./klipperPacerWorker.js', import.meta.url);

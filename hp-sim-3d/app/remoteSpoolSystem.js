@@ -34,8 +34,8 @@ export class RemoteSpoolSystem {
     });
     this.axisToEntity = {};
     this.wasPaused = false;
-    this.baseHighWaterMark = 80;
-    this.baseLowWaterMark = 40;
+    this.baseHighWaterMark = 320;
+    this.baseLowWaterMark = 160;
     this.highWaterMark = this.baseHighWaterMark;
     this.lowWaterMark = this.baseLowWaterMark;
     this.fastModeActive = false;

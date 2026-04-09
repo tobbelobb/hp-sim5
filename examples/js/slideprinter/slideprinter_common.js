@@ -338,8 +338,8 @@ export class RemoteSpoolSystem {
         this.axisToEntity = {};
         this.wasPaused = false;
         // Base queue watermarks. Actual watermarks scale with playback speed.
-        this.baseHighWaterMark = 80;
-        this.baseLowWaterMark = 40;
+        this.baseHighWaterMark = 320;
+        this.baseLowWaterMark = 160;
         this.highWaterMark = this.baseHighWaterMark;
         this.lowWaterMark = this.baseLowWaterMark;
         this.fastModeActive = false;
