@@ -14,6 +14,14 @@ export const OPTIONAL_RUNTIME_OBJECTS = [
 
 const DEFAULT_OBJECT_SUBSCRIPTION_ID = 'sub:objects:runtime';
 const DEFAULT_GCODE_OUTPUT_SUBSCRIPTION_ID = 'sub:gcode:output';
+const DEBUG_STATUS_OBJECT_NAMES = [
+  'webhooks',
+  'toolhead',
+  'gcode_move',
+  'motion_report',
+  'print_stats',
+  'virtual_sdcard',
+];
 
 function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -123,6 +131,7 @@ export class KlippyRuntimeState extends EventEmitter {
     clientInfo = null,
     objectSubscriptionId = DEFAULT_OBJECT_SUBSCRIPTION_ID,
     gcodeOutputSubscriptionId = DEFAULT_GCODE_OUTPUT_SUBSCRIPTION_ID,
+    debugLog = null,
   } = {}) {
     super();
     if (!client) {
@@ -133,6 +142,7 @@ export class KlippyRuntimeState extends EventEmitter {
     this.clientInfo = clientInfo;
     this.objectSubscriptionId = objectSubscriptionId;
     this.gcodeOutputSubscriptionId = gcodeOutputSubscriptionId;
+    this.debugLog = typeof debugLog === 'function' ? debugLog : null;
 
     this.connected = false;
     this.primed = false;
@@ -184,8 +194,18 @@ export class KlippyRuntimeState extends EventEmitter {
       const info = await this.client.request('info', this.clientInfo ? {
         client_info: this.clientInfo,
       } : {});
+      this._debug('api-response', {
+        method: 'info',
+        channel: 'prime',
+        result: info,
+      });
       this._applyInfo(info);
       const objectsList = await this.client.request('objects/list', {});
+      this._debug('api-response', {
+        method: 'objects/list',
+        channel: 'prime',
+        result: objectsList,
+      });
       const availableObjects = normalizeStringList(objectsList?.objects);
       this._setAvailableObjects(availableObjects);
       await this._ensureSubscriptions(availableObjects);
@@ -213,6 +233,11 @@ export class KlippyRuntimeState extends EventEmitter {
     const info = await this.client.request('info', includeClientInfo && this.clientInfo ? {
       client_info: this.clientInfo,
     } : {});
+    this._debug('api-response', {
+      method: 'info',
+      channel: 'refresh',
+      result: info,
+    });
     this._applyInfo(info);
     return info;
   }
@@ -227,7 +252,10 @@ export class KlippyRuntimeState extends EventEmitter {
         return null;
       }
       const result = await this.client.request('objects/query', { objects });
-      this._handleStatusPayload(result);
+      this._handleStatusPayload(result, {
+        method: 'objects/query',
+        channel: 'refresh',
+      });
       return result;
     })();
     this.statusRefreshPromise = nextRefresh;
@@ -280,10 +308,16 @@ export class KlippyRuntimeState extends EventEmitter {
       await this.client.subscribe(
         'objects/subscribe',
         { objects: objectSubscription },
-        (params) => this._handleStatusPayload(params),
+        (params) => this._handleStatusPayload(params, {
+          method: 'objects/subscribe',
+          channel: 'async',
+        }),
         {
           id: this.objectSubscriptionId,
-          onResponse: (result) => this._handleStatusPayload(result),
+          onResponse: (result) => this._handleStatusPayload(result, {
+            method: 'objects/subscribe',
+            channel: 'initial',
+          }),
         },
       );
       this.objectSubscriptionKey = nextObjectKey;
@@ -295,14 +329,18 @@ export class KlippyRuntimeState extends EventEmitter {
       await this.client.subscribe(
         'gcode/subscribe_output',
         {},
-        (params) => this._handleGcodeOutput(params),
+        (params) => this._handleGcodeOutput(params, {
+          method: 'gcode/subscribe_output',
+          channel: 'async',
+        }),
         { id: this.gcodeOutputSubscriptionId },
       );
       this.gcodeOutputSubscribed = true;
     }
   }
 
-  _handleStatusPayload(payload = {}) {
+  _handleStatusPayload(payload = {}, meta = {}) {
+    this._debugStatusPayload(payload, meta);
     const payloadEventtime = Number.isFinite(payload?.eventtime) ? payload.eventtime : null;
     const nextStatus = payload?.status;
     if (isPlainObject(nextStatus)) {
@@ -326,7 +364,12 @@ export class KlippyRuntimeState extends EventEmitter {
     this._emitChangeEvents();
   }
 
-  _handleGcodeOutput(params = {}) {
+  _handleGcodeOutput(params = {}, meta = {}) {
+    this._debug('api-response', {
+      method: meta.method || 'gcode/subscribe_output',
+      channel: meta.channel || 'async',
+      params: cloneValue(params || {}),
+    });
     if (typeof params.response !== 'string' || params.response.length === 0) {
       return;
     }
@@ -334,6 +377,40 @@ export class KlippyRuntimeState extends EventEmitter {
       response: params.response,
       snapshot: this.getSnapshot(),
     });
+  }
+
+  _debugStatusPayload(payload = {}, meta = {}) {
+    const method = meta.method || 'objects/subscribe';
+    const channel = meta.channel || 'unknown';
+    const safePayload = cloneValue(payload || {});
+    this._debug('api-response', {
+      method,
+      channel,
+      payload: safePayload,
+    });
+    const status = safePayload?.status;
+    if (!isPlainObject(status)) {
+      return;
+    }
+    for (const objectName of DEBUG_STATUS_OBJECT_NAMES) {
+      if (!(objectName in status)) {
+        continue;
+      }
+      this._debug('api-status-object', {
+        method,
+        channel,
+        object: objectName,
+        eventtime: Number.isFinite(safePayload?.eventtime) ? safePayload.eventtime : null,
+        value: status[objectName],
+      });
+    }
+  }
+
+  _debug(event, payload = {}) {
+    if (!this.debugLog) {
+      return;
+    }
+    this.debugLog(event, payload);
   }
 
   _refreshMotionSources() {

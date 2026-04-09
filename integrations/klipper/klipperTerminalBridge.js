@@ -189,6 +189,8 @@ export function createKlipperTerminalBridge({
   klippyState = null,
   wsPort = 8790,
   quiet = false,
+  debugLog = null,
+  debugTrapq = false,
   onClientChange = null,
   onBroadcast = null,
   motionIdleMs = DEFAULT_MOTION_IDLE_MS,
@@ -207,9 +209,24 @@ export function createKlipperTerminalBridge({
   });
 
   const stepperSubscriptionIds = new Map();
+  const trapqSubscriptionIds = new Map();
   let activeSession = null;
+  const logDebug = typeof debugLog === 'function' ? debugLog : null;
+
+  const emitDebug = (event, payload = {}) => {
+    if (!logDebug) {
+      return;
+    }
+    logDebug(event, payload);
+  };
 
   const handleStepperBatch = (stepperName, batch = {}) => {
+    emitDebug('api-response', {
+      method: 'motion_report/dump_stepper',
+      channel: 'async',
+      name: stepperName,
+      params: batch,
+    });
     const session = activeSession;
     if (!session) {
       return;
@@ -241,13 +258,28 @@ export function createKlipperTerminalBridge({
     }
   };
 
-  const syncMotionSources = async (stepperNames = []) => {
+  const handleTrapqBatch = (trapqName, batch = {}) => {
+    emitDebug('api-response', {
+      method: 'motion_report/dump_trapq',
+      channel: 'async',
+      name: trapqName,
+      params: batch,
+    });
+  };
+
+  const syncMotionSources = async (stepperNames = [], trapqNames = []) => {
     const normalized = Array.from(new Set(
       (Array.isArray(stepperNames) ? stepperNames : [])
         .filter((name) => typeof name === 'string' && name.trim().length > 0)
         .map((name) => name.trim()),
     )).sort();
     const nextNames = new Set(normalized);
+    const normalizedTrapq = Array.from(new Set(
+      (Array.isArray(trapqNames) ? trapqNames : [])
+        .filter((name) => typeof name === 'string' && name.trim().length > 0)
+        .map((name) => name.trim()),
+    )).sort();
+    const nextTrapqNames = new Set(normalizedTrapq);
 
     for (const [stepperName, subscriptionId] of stepperSubscriptionIds.entries()) {
       if (nextNames.has(stepperName)) {
@@ -266,9 +298,59 @@ export function createKlipperTerminalBridge({
         'motion_report/dump_stepper',
         { name: stepperName },
         (params) => handleStepperBatch(stepperName, params),
-        { id: subscriptionId },
+        {
+          id: subscriptionId,
+          onResponse: (result) => {
+            emitDebug('api-response', {
+              method: 'motion_report/dump_stepper',
+              channel: 'initial',
+              name: stepperName,
+              result,
+            });
+          },
+        },
       );
       stepperSubscriptionIds.set(stepperName, subscriptionId);
+    }
+
+    if (!debugTrapq) {
+      for (const [trapqName, subscriptionId] of trapqSubscriptionIds.entries()) {
+        client.unsubscribe(subscriptionId);
+        trapqSubscriptionIds.delete(trapqName);
+      }
+      return;
+    }
+
+    for (const [trapqName, subscriptionId] of trapqSubscriptionIds.entries()) {
+      if (nextTrapqNames.has(trapqName)) {
+        continue;
+      }
+      client.unsubscribe(subscriptionId);
+      trapqSubscriptionIds.delete(trapqName);
+    }
+
+    for (const trapqName of normalizedTrapq) {
+      if (trapqSubscriptionIds.has(trapqName)) {
+        continue;
+      }
+      const subscriptionId = `sub:motion:trapq:${trapqName}`;
+      await client.subscribe(
+        'motion_report/dump_trapq',
+        { name: trapqName },
+        (params) => handleTrapqBatch(trapqName, params),
+        {
+          id: subscriptionId,
+          onResponse: (result) => {
+            emitDebug('api-response', {
+              method: 'motion_report/dump_trapq',
+              channel: 'initial',
+              name: trapqName,
+              result,
+            });
+          },
+        },
+      );
+      trapqSubscriptionIds.set(trapqName, subscriptionId);
     }
   };
 
@@ -349,16 +431,19 @@ export function createKlipperTerminalBridge({
   };
 
   if (klippyState) {
-    klippyState.on('motion-sources-changed', ({ steppers }) => {
-      syncMotionSources(steppers).catch((error) => {
+    klippyState.on('motion-sources-changed', ({ steppers, trapq }) => {
+      syncMotionSources(steppers, trapq).catch((error) => {
         if (!quiet) {
           console.error(`Failed to subscribe to Klipper motion streams: ${error.message}`);
         }
       });
     });
-    const initialSteppers = klippyState.getSnapshot?.()?.motionSources?.steppers;
-    if (Array.isArray(initialSteppers) && initialSteppers.length > 0) {
-      syncMotionSources(initialSteppers).catch((error) => {
+    const initialMotionSources = klippyState.getSnapshot?.()?.motionSources || {};
+    const initialSteppers = initialMotionSources.steppers;
+    const initialTrapq = initialMotionSources.trapq;
+    if ((Array.isArray(initialSteppers) && initialSteppers.length > 0)
+      || (debugTrapq && Array.isArray(initialTrapq) && initialTrapq.length > 0)) {
+      syncMotionSources(initialSteppers, initialTrapq).catch((error) => {
         if (!quiet) {
           console.error(`Failed to subscribe to initial Klipper motion streams: ${error.message}`);
         }
@@ -368,6 +453,14 @@ export function createKlipperTerminalBridge({
 
   const close = () => {
     abortCommandSession();
+    for (const subscriptionId of stepperSubscriptionIds.values()) {
+      client.unsubscribe(subscriptionId);
+    }
+    stepperSubscriptionIds.clear();
+    for (const subscriptionId of trapqSubscriptionIds.values()) {
+      client.unsubscribe(subscriptionId);
+    }
+    trapqSubscriptionIds.clear();
     helpers.close();
   };
 

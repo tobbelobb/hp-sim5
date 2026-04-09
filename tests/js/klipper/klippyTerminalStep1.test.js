@@ -58,6 +58,7 @@ describe('klipper terminal step 1', () => {
   let ensureKlippyApiServer;
   let buildFakeGpioChipSetupCommand;
   let isMissingFakeGpioChipStateMessage;
+  let shouldDeferFakeGpioSetupPromptUntilInteractiveReadline;
   let parseArgs;
   let tmpDir;
   let socketPath;
@@ -72,6 +73,7 @@ describe('klipper terminal step 1', () => {
     ({
       buildFakeGpioChipSetupCommand,
       isMissingFakeGpioChipStateMessage,
+      shouldDeferFakeGpioSetupPromptUntilInteractiveReadline,
     } = await import('../../../integrations/klipper/klipperTerminalRecovery.js'));
   });
 
@@ -95,6 +97,7 @@ describe('klipper terminal step 1', () => {
       '--cmd', 'G90',
       '--ws-port', '9900',
       '--quiet',
+      '--debug',
       '--keep-alive',
       '--no-ws',
     ]);
@@ -106,6 +109,7 @@ describe('klipper terminal step 1', () => {
     expect(args.command).toBe('G90');
     expect(args.wsPort).toBe(9900);
     expect(args.quiet).toBe(true);
+    expect(args.debug).toBe(true);
     expect(args.keepAlive).toBe(true);
     expect(args.noWs).toBe(true);
   });
@@ -180,6 +184,32 @@ describe('klipper terminal step 1', () => {
       'Printer is not ready',
     )).toBe(false);
     expect(isMissingFakeGpioChipStateMessage(null)).toBe(false);
+  });
+
+  test('fake gpio chip prompt waits for the shared interactive readline in interactive mode', () => {
+    expect(shouldDeferFakeGpioSetupPromptUntilInteractiveReadline({
+      stdinIsTTY: true,
+      hasInteractiveReadline: false,
+      hasCommand: false,
+    })).toBe(true);
+
+    expect(shouldDeferFakeGpioSetupPromptUntilInteractiveReadline({
+      stdinIsTTY: true,
+      hasInteractiveReadline: true,
+      hasCommand: false,
+    })).toBe(false);
+
+    expect(shouldDeferFakeGpioSetupPromptUntilInteractiveReadline({
+      stdinIsTTY: false,
+      hasInteractiveReadline: false,
+      hasCommand: false,
+    })).toBe(false);
+
+    expect(shouldDeferFakeGpioSetupPromptUntilInteractiveReadline({
+      stdinIsTTY: true,
+      hasInteractiveReadline: false,
+      hasCommand: true,
+    })).toBe(false);
   });
 
   test('KlippyApiClient handles requests, async subscriptions, and reconnect resubscribe', async () => {

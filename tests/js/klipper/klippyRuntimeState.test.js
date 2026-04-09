@@ -123,6 +123,7 @@ describe('Klippy runtime state', () => {
   test('KlippyRuntimeState caches subscriptions and rediscovers motion sources on reconnect', async () => {
     const outputs = [];
     const motionChanges = [];
+    const debugEntries = [];
 
     let phase = 'initial';
     const handleMessage = (message, socket) => {
@@ -228,6 +229,7 @@ describe('Klippy runtime state', () => {
     const runtime = new KlippyRuntimeState({
       client,
       clientInfo: { program: 'test-runtime' },
+      debugLog: (event, payload) => debugEntries.push({ event, ...payload }),
     });
 
     runtime.on('gcode-output', ({ response }) => {
@@ -303,6 +305,75 @@ describe('Klippy runtime state', () => {
           trapq: ['toolhead'],
         },
       ]));
+      expect(debugEntries).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          event: 'api-response',
+          method: 'info',
+          channel: 'prime',
+          result: { state: 'ready', state_message: 'Printer is ready' },
+        }),
+        expect.objectContaining({
+          event: 'api-response',
+          method: 'objects/list',
+          channel: 'prime',
+          result: {
+            objects: [
+              'webhooks',
+              'toolhead',
+              'gcode_move',
+              'motion_report',
+              'print_stats',
+              'virtual_sdcard',
+            ],
+          },
+        }),
+        expect.objectContaining({
+          event: 'api-response',
+          method: 'objects/subscribe',
+          channel: 'initial',
+        }),
+        expect.objectContaining({
+          event: 'api-response',
+          method: 'objects/subscribe',
+          channel: 'async',
+        }),
+        expect.objectContaining({
+          event: 'api-response',
+          method: 'gcode/subscribe_output',
+          channel: 'async',
+          params: { response: '// first output' },
+        }),
+        expect.objectContaining({
+          event: 'api-status-object',
+          method: 'objects/subscribe',
+          object: 'webhooks',
+        }),
+        expect.objectContaining({
+          event: 'api-status-object',
+          method: 'objects/subscribe',
+          object: 'toolhead',
+        }),
+        expect.objectContaining({
+          event: 'api-status-object',
+          method: 'objects/subscribe',
+          object: 'gcode_move',
+        }),
+        expect.objectContaining({
+          event: 'api-status-object',
+          method: 'objects/subscribe',
+          object: 'motion_report',
+        }),
+        expect.objectContaining({
+          event: 'api-status-object',
+          method: 'objects/subscribe',
+          object: 'print_stats',
+        }),
+        expect.objectContaining({
+          event: 'api-status-object',
+          method: 'objects/subscribe',
+          object: 'virtual_sdcard',
+        }),
+      ]));
     } finally {
       client.close();
       if (harness) {
@@ -313,6 +384,7 @@ describe('Klippy runtime state', () => {
 
   test('KlippyRuntimeState refreshes motion_report once startup transitions to ready without a motion update', async () => {
     let objectsQueryCount = 0;
+    const debugEntries = [];
 
     const harness = await createServerHarness(socketPath, (message, socket) => {
       if (message.method === 'info') {
@@ -401,6 +473,7 @@ describe('Klippy runtime state', () => {
     const runtime = new KlippyRuntimeState({
       client,
       clientInfo: { program: 'test-runtime' },
+      debugLog: (event, payload) => debugEntries.push({ event, ...payload }),
     });
 
     try {
@@ -414,6 +487,19 @@ describe('Klippy runtime state', () => {
         steppers: ['stepper_a', 'stepper_b'],
         trapq: ['toolhead'],
       });
+      expect(debugEntries).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          event: 'api-response',
+          method: 'objects/query',
+          channel: 'refresh',
+        }),
+        expect.objectContaining({
+          event: 'api-status-object',
+          method: 'objects/query',
+          channel: 'refresh',
+          object: 'motion_report',
+        }),
+      ]));
     } finally {
       client.close();
       await harness.close();

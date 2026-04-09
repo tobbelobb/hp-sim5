@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
@@ -13,6 +14,7 @@ import {
   buildFakeGpioChipSetupCommand,
   configNeedsGpioChipSetup,
   isMissingFakeGpioChipStateMessage,
+  shouldDeferFakeGpioSetupPromptUntilInteractiveReadline,
 } from './klipperTerminalRecovery.js';
 import { KlippyRuntimeState } from './klippyRuntimeState.js';
 import {
@@ -32,6 +34,7 @@ const CLIENT_INFO = {
 
 const PROMPT_READY = 'gcode> ';
 const PROMPT_DISCONNECTED = '\x1b[90mdisconnected>\x1b[0m ';
+const DEFAULT_DEBUG_LOG_FILENAME = 'klipper_terminal_debug.log';
 
 function runFakeGpioChipSetup(commandSpec) {
   return new Promise((resolve, reject) => {
@@ -91,18 +94,81 @@ Options:
   --no-ws                  Disable WebSocket fan-out entirely
   --cmd, -c <GCODE>        Send G-code and exit
   --quiet, -q              Only print command results
+  --debug                  Write API ingress logs to ${DEFAULT_DEBUG_LOG_FILENAME}
   --keep-alive             Do not stop a terminal-managed klippy on exit
   --help, -h               Show this help`);
 }
 export { parseArgs } from './klipperTerminalArgs.js';
 
-function buildRuntime(args) {
+function createTerminalDebugLogger({ enabled = false, logPath = DEFAULT_DEBUG_LOG_FILENAME, cliArgv = [] } = {}) {
+  const resolvedPath = path.resolve(process.cwd(), logPath);
+  if (enabled) {
+    fs.writeFileSync(resolvedPath, '', 'utf8');
+  }
+
+  const serializeError = (error) => {
+    if (!(error instanceof Error)) {
+      return error;
+    }
+    return {
+      name: error.name,
+      message: error.message,
+      code: error.code ?? null,
+      stack: error.stack ?? null,
+      cause: error.cause ? serializeError(error.cause) : null,
+    };
+  };
+
+  const replacer = (_key, value) => {
+    if (value instanceof Error) {
+      return serializeError(value);
+    }
+    if (typeof value === 'bigint') {
+      return value.toString();
+    }
+    return value;
+  };
+
+  const append = (event, payload = {}) => {
+    if (!enabled) {
+      return;
+    }
+    const entry = {
+      ts: new Date().toISOString(),
+      event,
+      ...payload,
+    };
+    fs.appendFileSync(resolvedPath, `${JSON.stringify(entry, replacer)}\n`, 'utf8');
+  };
+
+  append('debug-session-start', {
+    pid: process.pid,
+    cwd: process.cwd(),
+    cliArgv,
+  });
+
+  return {
+    enabled,
+    path: resolvedPath,
+    log: append,
+    close() {
+      append('debug-session-end');
+    },
+  };
+}
+
+function buildRuntime(args, { cliArgv = process.argv.slice(2) } = {}) {
+  const debugLogger = createTerminalDebugLogger({
+    enabled: args.debug,
+    cliArgv,
+  });
   const client = new KlippyApiClient({
     socketPath: args.socketPath,
   });
   const klippyState = new KlippyRuntimeState({
     client,
     clientInfo: CLIENT_INFO,
+    debugLog: debugLogger.log,
   });
 
   let rl = null;
@@ -115,6 +181,8 @@ function buildRuntime(args) {
   let lastReportedMotionKey = null;
   let fakeGpioPromptInFlight = false;
   let fakeGpioPromptShown = false;
+  let pendingFakeGpioPromptSnapshot = null;
+  let confirmationPromptInFlight = false;
   let terminalHandoffInFlight = false;
   const deferredRuntimeLines = [];
   const sendQueue = [];
@@ -124,13 +192,15 @@ function buildRuntime(args) {
     klippyState,
     wsPort: args.noWs ? 0 : args.wsPort,
     quiet: args.quiet,
+    debugLog: debugLogger.log,
+    debugTrapq: args.debug,
     onClientChange: () => updatePromptForRuntimeState(),
   });
 
   const interactivePromptEnabled = () => rl && process.stdin.isTTY && !args.quiet;
 
   const updatePromptForRuntimeState = ({ forcePrompt = false } = {}) => {
-    if (terminalHandoffInFlight) {
+    if (terminalHandoffInFlight || confirmationPromptInFlight) {
       return;
     }
     if (!interactivePromptEnabled()) {
@@ -149,6 +219,9 @@ function buildRuntime(args) {
   };
 
   const promptIfInteractive = () => {
+    if (confirmationPromptInFlight) {
+      return;
+    }
     if (!interactivePromptEnabled()) {
       return;
     }
@@ -278,6 +351,15 @@ function buildRuntime(args) {
 
   const waitForKlippyReady = async (timeoutMs = 15_000) => klippyState.waitForReady(timeoutMs);
 
+  const maybeFlushPendingFakeGpioPrompt = async () => {
+    if (!pendingFakeGpioPromptSnapshot || !rl || shuttingDown) {
+      return;
+    }
+    const snapshot = pendingFakeGpioPromptSnapshot;
+    pendingFakeGpioPromptSnapshot = null;
+    await maybeOfferFakeGpioChipSetup(snapshot);
+  };
+
   const ensureKlippyServerReady = async ({ forceStart = false } = {}) => {
     if (autoStartInFlight) {
       return autoStartInFlight;
@@ -372,7 +454,7 @@ function buildRuntime(args) {
   };
 
   const maybeOfferFakeGpioChipSetup = async (snapshot) => {
-    if (fakeGpioPromptShown || fakeGpioPromptInFlight || shuttingDown) {
+    if (fakeGpioPromptShown || fakeGpioPromptInFlight || pendingFakeGpioPromptSnapshot || shuttingDown) {
       return;
     }
     if (!isMissingFakeGpioChipStateMessage(snapshot?.printerStateMessage)) {
@@ -380,6 +462,18 @@ function buildRuntime(args) {
     }
     const resolvedConfigPath = path.resolve(process.cwd(), args.configPath);
     if (!await configNeedsGpioChipSetup(resolvedConfigPath)) {
+      return;
+    }
+
+    if (shouldDeferFakeGpioSetupPromptUntilInteractiveReadline({
+      stdinIsTTY: process.stdin.isTTY,
+      hasInteractiveReadline: Boolean(rl),
+      hasCommand: Boolean(args.command),
+    })) {
+      pendingFakeGpioPromptSnapshot = snapshot;
+      debugLogger.log('fake-gpio-setup-prompt', {
+        phase: 'deferred-until-interactive-readline',
+      });
       return;
     }
 
@@ -397,9 +491,17 @@ function buildRuntime(args) {
         return;
       }
 
+      confirmationPromptInFlight = true;
+      debugLogger.log('fake-gpio-setup-prompt', {
+        phase: 'question-shown',
+      });
       const answer = await askUserConfirmation(
         'Do you allow me to run that command for you? This command will ask you for sudo privileges. [y/N] ',
       );
+      debugLogger.log('fake-gpio-setup-prompt', {
+        phase: 'question-answered',
+        answer: String(answer ?? ''),
+      });
       if (!/^(y|yes)$/iu.test(String(answer).trim())) {
         printRuntimeLine('Skipped fake gpio chip setup. Run the command above, then use FIRMWARE_RESTART or restart klipper_terminal.');
         return;
@@ -420,6 +522,7 @@ function buildRuntime(args) {
     } catch (error) {
       console.error(`Failed to create fake gpio chip: ${error.message}`);
     } finally {
+      confirmationPromptInFlight = false;
       fakeGpioPromptInFlight = false;
       updatePromptForRuntimeState();
     }
@@ -439,7 +542,16 @@ function buildRuntime(args) {
       await waitForKlippyReady();
       const result = await bridgeContext.runGcodeCommand(
         trimmed,
-        () => client.request('gcode/script', { script: trimmed }),
+        async () => {
+          const response = await client.request('gcode/script', { script: trimmed });
+          debugLogger.log('api-response', {
+            method: 'gcode/script',
+            channel: 'command',
+            gcode: trimmed,
+            result: response,
+          });
+          return response;
+        },
       );
       if (!result?.printedLiveOutput) {
         console.log(result?.reply?.trim?.() || 'ok');
@@ -458,6 +570,7 @@ function buildRuntime(args) {
       return;
     }
     shuttingDown = true;
+    debugLogger.close();
     try {
       bridgeContext.close();
     } catch (_error) {
@@ -510,6 +623,9 @@ function buildRuntime(args) {
   });
 
   client.on('socket-error', (error) => {
+    debugLogger.log('socket-error', {
+      error,
+    });
     if (shuttingDown || args.quiet) {
       return;
     }
@@ -532,6 +648,7 @@ function buildRuntime(args) {
     }
 
     attachInteractiveReadline();
+    await maybeFlushPendingFakeGpioPrompt();
 
     if (process.stdin.isTTY && !args.quiet) {
       updatePromptForRuntimeState({ forcePrompt: true });
@@ -542,6 +659,9 @@ function buildRuntime(args) {
       const snapshot = klippyState.getSnapshot();
       const state = snapshot.printerState || 'unknown';
       console.log(`Connected to Klippy on ${args.socketPath} (${state}, ${objectCount} objects).`);
+      if (debugLogger.enabled) {
+        console.log(`Debug logging to ${debugLogger.path}`);
+      }
       if (bridgeContext.wss) {
         console.log(`WebSocket feed ready on ws://localhost:${args.wsPort}`);
         console.log(`Open hp-sim with ${buildKlippyBridgeWsHint(args.wsPort)} to follow along.`);
@@ -565,7 +685,7 @@ export async function main(argv = process.argv.slice(2)) {
     printHelp();
     return 0;
   }
-  const runtime = buildRuntime(args);
+  const runtime = buildRuntime(args, { cliArgv: argv });
   activeRuntime = runtime;
   await runtime.main();
   return 0;

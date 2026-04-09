@@ -18,6 +18,14 @@ export function buildFakeGpioChipSetupCommand(configPath, cwd = process.cwd()) {
   };
 }
 
+export function shouldDeferFakeGpioSetupPromptUntilInteractiveReadline({
+  stdinIsTTY,
+  hasInteractiveReadline,
+  hasCommand = false,
+} = {}) {
+  return Boolean(stdinIsTTY && !hasInteractiveReadline && !hasCommand);
+}
+
 export async function configNeedsGpioChipSetup(configPath) {
   try {
     const source = await fs.readFile(configPath, 'utf8');

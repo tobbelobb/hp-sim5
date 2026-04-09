@@ -15,6 +15,7 @@ export function parseArgs(argv) {
     noWs: false,
     command: null,
     quiet: false,
+    debug: false,
     keepAlive: false,
     help: false,
   };
@@ -38,6 +39,8 @@ export function parseArgs(argv) {
       args.command = argv[++i] || null;
     } else if (arg === '--quiet' || arg === '-q') {
       args.quiet = true;
+    } else if (arg === '--debug') {
+      args.debug = true;
     } else if (arg === '--keep-alive') {
       args.keepAlive = true;
     } else if (arg === '--help' || arg === '-h') {
@@ -47,4 +50,3 @@ export function parseArgs(argv) {
 
   return args;
 }
-
