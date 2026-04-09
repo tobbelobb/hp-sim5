@@ -49,4 +49,5 @@ autocal/data/fine_old_datasets/
 /autocal/data/*.active_sweep_cfg.default.restore_points.txt
 /output
 /.playwright-cli
+klipper_terminal_debug.log
 
