@@ -86,16 +86,6 @@ Closer To `x100.txt` / Batch-Dump Replay:
   - add a diagnostic exporter that reconstructs a synthetic MCU-text trace from the API batches for side-by-side diffing against `x100.txt`
   - add an optional deeper trace path only if Klipper-side instrumentation is acceptable, because the stock API does not currently expose a true raw MCU command log
 
-## 5. file-backed flow (future backlog. Not implemented. Apr 9, 2026)
-
-Deliverables:
-- Optional file-backed execution path using `[virtual_sdcard]` only after the interactive path is stable.
-- Short local usage notes in the script help text, pointing to repo docs instead of duplicating them.
-
-Verification:
-- If `[virtual_sdcard]` is configured, `SDCARD_PRINT_FILE` / `M24` flow updates `print_stats` / `virtual_sdcard` state as expected.
-- Manual end-to-end run covers startup, one-shot command, interactive session, restart, and clean shutdown.
-
 ## Can we reuse something already in the klipper repo?
 There is no drop-in Klipper equivalent to your planned klipper_terminal.mjs inside klipper/. The closest reusable pieces are patterns, not a ready-made bridge.
 
