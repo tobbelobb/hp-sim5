@@ -192,6 +192,7 @@ function buildRuntime(args, { cliArgv = process.argv.slice(2) } = {}) {
   const bridgeContext = createKlipperTerminalBridge({
     client,
     klippyState,
+    configPath: args.configPath,
     wsPort: args.noWs ? 0 : args.wsPort,
     quiet: args.quiet,
     debugLog: debugLogger.log,

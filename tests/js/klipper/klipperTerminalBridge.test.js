@@ -1,4 +1,7 @@
 const { EventEmitter } = require('node:events');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
 function flushMicrotasks() {
   return new Promise((resolve) => {
@@ -19,6 +22,7 @@ describe('createKlipperTerminalBridge', () => {
   function createHarness(options = {}) {
     const {
       encoderResolver = null,
+      configPath = null,
       ...bridgeOptions
     } = options;
     const client = {
@@ -41,6 +45,7 @@ describe('createKlipperTerminalBridge', () => {
     const bridge = createKlipperTerminalBridge({
       client,
       klippyState,
+      configPath,
       wsPort: 0,
       motionIdleMs: 5,
       onBroadcast: (payload) => payloads.push(payload),
@@ -346,6 +351,58 @@ describe('createKlipperTerminalBridge', () => {
       ]);
     } finally {
       bridge.close();
+    }
+  });
+
+  test('uses configured M569 addresses from the Klipper config file', async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hp-sim5-klipper-'));
+    const configPath = path.join(tempDir, 'printer.cfg');
+    fs.writeFileSync(configPath, `
+[stepper_a]
+step_pin: gpiochip1/gpio0
+dir_pin: gpiochip1/gpio1
+enable_pin: gpiochip1/gpio2
+microsteps: 16
+rotation_distance: 246.20
+m569_address: 55.0
+
+[stepper_b]
+step_pin: gpiochip1/gpio3
+dir_pin: gpiochip1/gpio4
+enable_pin: gpiochip1/gpio5
+microsteps: 16
+rotation_distance: 246.20
+m569_address: 56.0
+`, 'utf8');
+
+    const encoderResolver = jest.fn(async ({ axes }) => {
+      expect(axes).toEqual(['A', 'B']);
+      return [12.3456, -4.4];
+    });
+    const { bridge, payloads } = createHarness({ encoderResolver, configPath });
+
+    try {
+      const result = await bridge.runGcodeCommand('M569.3 P55.0:56.0', async () => {
+        const forwarded = bridge.handleGcodeOutput('Error: M569.3: Message not received\n');
+        expect(forwarded).toEqual([]);
+      });
+
+      expect(encoderResolver).toHaveBeenCalledTimes(1);
+      expect(result).toMatchObject({
+        reply: '[12.35, -4.40, ]',
+        hadMotion: false,
+        printedLiveOutput: false,
+      });
+      expect(payloads).toEqual([
+        {
+          type: 'reply',
+          gcode: 'M569.3 P55.0:56.0',
+          reply: '[12.35, -4.40, ]',
+        },
+      ]);
+    } finally {
+      bridge.close();
+      fs.rmSync(tempDir, { recursive: true, force: true });
     }
   });
 

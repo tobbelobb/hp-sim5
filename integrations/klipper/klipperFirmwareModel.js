@@ -6,19 +6,6 @@ export const STEP_PIN_AXIS_MAP = {
     // Lacking I, J, K, L, O
 };
 
-export const M569_DRIVER_AXIS_MAP = new Map([
-    [40, 'A'],
-    [41, 'B'],
-    [42, 'C'],
-    [43, 'D'],
-    [44, 'E'],
-    [45, 'I'],
-    [46, 'J'],
-    [47, 'K'],
-    [48, 'L'],
-    [49, 'O'],
-]);
-
 export const DEFAULT_AXIS_ORDER = ['A', 'B', 'C', 'D', 'E'];
 export const STEP_ANGLE_RAD = (2 * Math.PI) / (200 * 16); // 200 steps/rev, 16 microsteps
 export const MCU_CLOCK_HZ_KLIPPER_HOST = 50_000_000;

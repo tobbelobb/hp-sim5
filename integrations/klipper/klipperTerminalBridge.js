@@ -1,9 +1,14 @@
 import { performance } from 'node:perf_hooks';
+import fs from 'node:fs';
+import path from 'node:path';
 import { WebSocketServer } from 'ws';
 import {
   MCU_CLOCK_HZ_KLIPPER_HOST,
-  M569_DRIVER_AXIS_MAP,
 } from './klipperFirmwareModel.js';
+import {
+  buildDefaultDriverToAxisMap,
+  buildDriverToAxisMapFromConfig,
+} from './klipperMotorAddressConfig.js';
 
 const MAX_PENDING_WS_PAYLOADS = 5000;
 const DEFAULT_MOTION_IDLE_MS = 650;
@@ -112,6 +117,35 @@ function parseForceModeReplyTokens(replyText) {
     .split(',')
     .map((token) => token.trim())
     .filter((token) => token.length > 0);
+}
+
+function resolveConfigPath(configPath) {
+  if (typeof configPath !== 'string' || configPath.trim().length === 0) {
+    return null;
+  }
+  return path.resolve(configPath);
+}
+
+function loadDriverToAxisMap({
+  configPath = null,
+  driverToAxis = null,
+} = {}) {
+  if (driverToAxis instanceof Map) {
+    return new Map(driverToAxis);
+  }
+  const resolvedConfigPath = resolveConfigPath(configPath);
+  if (!resolvedConfigPath) {
+    return buildDefaultDriverToAxisMap();
+  }
+  try {
+    if (!fs.existsSync(resolvedConfigPath)) {
+      return buildDefaultDriverToAxisMap();
+    }
+  } catch (_error) {
+    return buildDefaultDriverToAxisMap();
+  }
+  const parsed = buildDriverToAxisMapFromConfig(resolvedConfigPath);
+  return parsed.size > 0 ? parsed : buildDefaultDriverToAxisMap();
 }
 
 function formatEncoderReply(values) {
@@ -404,7 +438,8 @@ export function createKlipperTerminalBridge({
   motionEndTimeToleranceS = DEFAULT_MOTION_END_TIME_TOLERANCE_S,
   now = () => performance.now(),
   clockHz = MCU_CLOCK_HZ_KLIPPER_HOST,
-  driverToAxis = new Map(M569_DRIVER_AXIS_MAP),
+  configPath = null,
+  driverToAxis = null,
   encoderTimeoutMs = DEFAULT_ENCODER_TIMEOUT_MS,
   encoderResolver = null,
 } = {}) {
@@ -417,6 +452,11 @@ export function createKlipperTerminalBridge({
     quiet,
     onClientChange,
     onBroadcast,
+  });
+
+  const resolvedDriverToAxis = loadDriverToAxisMap({
+    configPath,
+    driverToAxis,
   });
 
   const stepperSubscriptionIds = new Map();
@@ -668,7 +708,7 @@ export function createKlipperTerminalBridge({
     const descriptorEntries = descriptors.map((descriptor) => ({
       descriptor,
       key: motorDescriptorKey(descriptor),
-      axis: descriptor ? driverToAxis.get(descriptor.canAddress) : null,
+      axis: descriptor ? resolvedDriverToAxis.get(descriptor.canAddress) : null,
     }));
     const axesForQuery = descriptorEntries
       .filter((entry) => entry.axis)
@@ -728,7 +768,7 @@ export function createKlipperTerminalBridge({
     const commands = [];
     for (let index = 0; index < descriptors.length; index += 1) {
       const descriptor = descriptors[index];
-      const axis = driverToAxis.get(descriptor.canAddress);
+      const axis = resolvedDriverToAxis.get(descriptor.canAddress);
       const token = tokens[index];
       if (!axis || !token) {
         return;

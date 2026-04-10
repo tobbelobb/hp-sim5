@@ -55,7 +55,7 @@ export function mapStepperNameToAxis(stepperName) {
   if (normalized === 'extruder' || normalized.startsWith('extruder_stepper')) {
     return EXTRUDER_AXIS;
   }
-  const match = normalized.match(/^stepper_([a-z])$/);
+  const match = normalized.match(/^stepper_([a-z])(?:\d+)?$/);
   if (!match) {
     return null;
   }

@@ -71,9 +71,10 @@ class FakeFlexHelper:
 
 
 class FakeKinematics:
-    def __init__(self, steppers, mechanical_advantage):
+    def __init__(self, steppers, mechanical_advantage, m569_driver_descriptors=None):
         self.steppers = list(steppers)
         self.flex_helper = FakeFlexHelper(mechanical_advantage)
+        self.m569_driver_descriptors = list(m569_driver_descriptors or [])
 
     def get_steppers(self):
         return list(self.steppers)
@@ -111,12 +112,18 @@ def build_handler():
     return handler, gcode.commands["M569.3"]
 
 
-def build_m569_with_runtime(steppers=None, mechanical_advantage=None):
+def build_m569_with_runtime(
+    steppers=None,
+    mechanical_advantage=None,
+    m569_driver_descriptors=None,
+):
     module = load_module()
     gcode = FakeGcode()
     steppers = steppers or []
     mechanical_advantage = mechanical_advantage or []
-    toolhead = FakeToolhead(FakeKinematics(steppers, mechanical_advantage))
+    toolhead = FakeToolhead(
+        FakeKinematics(steppers, mechanical_advantage, m569_driver_descriptors)
+    )
     config = FakeConfig(FakePrinter(gcode, toolhead=toolhead))
     handler = module.load_config(config)
     return handler, gcode.commands
@@ -205,3 +212,15 @@ def test_m569_4_switches_back_to_position_mode_below_threshold():
         "torque_nm": 0.0,
         "position_mode": True,
     }
+
+
+def test_m569_4_uses_configured_driver_descriptors():
+    handler, commands = build_m569_with_runtime(
+        steppers=[FakeStepper(2.0 * math.pi * 39.1845)],
+        mechanical_advantage=[1],
+        m569_driver_descriptors=[{"can_address": 55, "driver": 0}],
+    )
+    gcmd = FakeGcmd({"P": "55.0", "T": "1.0"})
+    commands["M569.4"]["func"](gcmd)
+    assert gcmd.responses == ["-0.039185 Nm, "]
+    assert handler.driver_states[55]["force_newtons"] == 1.0
