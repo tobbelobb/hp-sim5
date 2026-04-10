@@ -6,8 +6,8 @@ import {
   MCU_CLOCK_HZ_KLIPPER_HOST,
 } from './klipperFirmwareModel.js';
 import {
-  buildDefaultDriverToAxisMap,
-  buildDriverToAxisMapFromConfig,
+  buildMotorCatalogFromConfig,
+  resolveMotorToken,
 } from './klipperMotorAddressConfig.js';
 
 const MAX_PENDING_WS_PAYLOADS = 5000;
@@ -22,76 +22,14 @@ function splitTerminalLines(response) {
     .filter((line) => line.length > 0);
 }
 
-function normalizeMotorDescriptorValue(raw) {
-  if (raw == null) {
-    return null;
-  }
-  if (typeof raw === 'object') {
-    const canAddressCandidate = raw.can_address ?? raw.canAddress ?? raw.motorId;
-    const driverCandidate = raw.driver;
-    if (Number.isFinite(canAddressCandidate)) {
-      const driverIndex = Number.isFinite(driverCandidate) ? driverCandidate : 0;
-      return {
-        canAddress: canAddressCandidate,
-        driver: driverIndex,
-      };
-    }
-    if (Number.isFinite(driverCandidate)) {
-      return normalizeMotorDescriptorValue(driverCandidate);
-    }
-    if (Number.isFinite(raw.motorId)) {
-      return normalizeMotorDescriptorValue(raw.motorId);
-    }
-    return null;
-  }
-
-  const text = typeof raw === 'number'
-    ? raw.toString()
-    : typeof raw === 'string'
-      ? raw.trim()
-      : '';
-  if (!text) {
-    return null;
-  }
-  const [canPart, driverPart] = text.split('.');
-  const canAddress = parseInt(canPart, 10);
-  if (!Number.isFinite(canAddress)) {
-    return null;
-  }
-  let driver = 0;
-  if (driverPart !== undefined) {
-    const parsedDriver = parseInt(driverPart, 10);
-    if (Number.isFinite(parsedDriver)) {
-      driver = parsedDriver;
-    }
-  }
-  return {
-    canAddress,
-    driver,
-  };
-}
-
-function motorDescriptorKey(descriptor) {
-  if (!descriptor || !Number.isFinite(descriptor.canAddress)) {
-    return null;
-  }
-  const driverIndex = Number.isFinite(descriptor.driver) ? descriptor.driver : 0;
-  return `${descriptor.canAddress}.${driverIndex}`;
-}
-
-function parseEncoderQuery(gcode) {
+function parseMotorTokens(gcode) {
   if (typeof gcode !== 'string' || !/^M569\.3\b/i.test(gcode.trim())) {
-    return { descriptors: [], setReference: false };
+    return { tokens: [], setReference: false };
   }
-  const pMatch = gcode.match(/P([0-9:\.]+)/i);
-  const descriptors = pMatch
-    ? pMatch[1]
-      .split(':')
-      .map((value) => normalizeMotorDescriptorValue(value))
-      .filter((descriptor) => descriptor && Number.isFinite(descriptor.canAddress))
-    : [];
+  const pMatch = gcode.match(/P([A-Za-z0-9_:\.]+)/i);
+  const tokens = pMatch ? pMatch[1].split(':').map((value) => value.trim()).filter(Boolean) : [];
   const setReference = /\bS(?:\s|$|-?[0-9])/i.test(gcode);
-  return { descriptors, setReference };
+  return { tokens, setReference };
 }
 
 function isEncoderQuery(gcode) {
@@ -100,16 +38,11 @@ function isEncoderQuery(gcode) {
 
 function parseForceModeCommand(gcode) {
   if (typeof gcode !== 'string' || !/^M569\.4\b/i.test(gcode.trim())) {
-    return { descriptors: [] };
+    return { tokens: [] };
   }
-  const pMatch = gcode.match(/P([0-9:\.]+)/i);
-  const descriptors = pMatch
-    ? pMatch[1]
-      .split(':')
-      .map((value) => normalizeMotorDescriptorValue(value))
-      .filter((descriptor) => descriptor && Number.isFinite(descriptor.canAddress))
-    : [];
-  return { descriptors };
+  const pMatch = gcode.match(/P([A-Za-z0-9_:\.]+)/i);
+  const tokens = pMatch ? pMatch[1].split(':').map((value) => value.trim()).filter(Boolean) : [];
+  return { tokens };
 }
 
 function parseForceModeReplyTokens(replyText) {
@@ -119,33 +52,32 @@ function parseForceModeReplyTokens(replyText) {
     .filter((token) => token.length > 0);
 }
 
-function resolveConfigPath(configPath) {
-  if (typeof configPath !== 'string' || configPath.trim().length === 0) {
-    return null;
-  }
-  return path.resolve(configPath);
-}
-
-function loadDriverToAxisMap({
+function buildDriverLookupCatalog({
   configPath = null,
   driverToAxis = null,
 } = {}) {
-  if (driverToAxis instanceof Map) {
-    return new Map(driverToAxis);
+  if (driverToAxis && typeof driverToAxis === 'object' && driverToAxis.stepperDescriptors) {
+    return driverToAxis;
   }
-  const resolvedConfigPath = resolveConfigPath(configPath);
-  if (!resolvedConfigPath) {
-    return buildDefaultDriverToAxisMap();
+  if (typeof configPath !== 'string' || configPath.trim().length === 0) {
+    return buildMotorCatalogFromConfig(null);
   }
-  try {
-    if (!fs.existsSync(resolvedConfigPath)) {
-      return buildDefaultDriverToAxisMap();
+  const resolvedConfigPath = path.resolve(configPath);
+  return fs.existsSync(resolvedConfigPath)
+    ? buildMotorCatalogFromConfig(resolvedConfigPath)
+    : buildMotorCatalogFromConfig(null);
+}
+
+function resolveMotorTokens(tokens, catalog) {
+  const resolved = [];
+  for (const token of tokens) {
+    const entry = resolveMotorToken(token, catalog);
+    if (entry.error) {
+      return { error: entry.error };
     }
-  } catch (_error) {
-    return buildDefaultDriverToAxisMap();
+    resolved.push(entry.resolved);
   }
-  const parsed = buildDriverToAxisMapFromConfig(resolvedConfigPath);
-  return parsed.size > 0 ? parsed : buildDefaultDriverToAxisMap();
+  return { resolved };
 }
 
 function formatEncoderReply(values) {
@@ -454,7 +386,7 @@ export function createKlipperTerminalBridge({
     onBroadcast,
   });
 
-  const resolvedDriverToAxis = loadDriverToAxisMap({
+  const resolvedDriverCatalog = buildDriverLookupCatalog({
     configPath,
     driverToAxis,
   });
@@ -700,19 +632,18 @@ export function createKlipperTerminalBridge({
     if (!session?.isEncoderQuery || typeof resolveEncoderAngles !== 'function') {
       return null;
     }
-    const { descriptors, setReference } = parseEncoderQuery(session.gcode);
-    if (descriptors.length === 0) {
+    const { tokens, setReference } = parseMotorTokens(session.gcode);
+    if (tokens.length === 0) {
       return null;
     }
 
-    const descriptorEntries = descriptors.map((descriptor) => ({
-      descriptor,
-      key: motorDescriptorKey(descriptor),
-      axis: descriptor ? resolvedDriverToAxis.get(descriptor.canAddress) : null,
-    }));
-    const axesForQuery = descriptorEntries
-      .filter((entry) => entry.axis)
-      .map((entry) => entry.axis);
+    const resolvedTokens = resolveMotorTokens(tokens, resolvedDriverCatalog);
+    if (resolvedTokens.error) {
+      return resolvedTokens.error;
+    }
+    const axesForQuery = resolvedTokens.resolved
+      .map((descriptor) => descriptor?.axis)
+      .filter(Boolean);
     if (axesForQuery.length === 0) {
       return null;
     }
@@ -738,17 +669,14 @@ export function createKlipperTerminalBridge({
 
     const values = [];
     let encoderIdx = 0;
-    for (const entry of descriptorEntries) {
-      if (!entry.axis) {
-        values.push(null);
-        continue;
-      }
+    for (const descriptor of resolvedTokens.resolved) {
       const rawValue = anglesDeg[encoderIdx++];
-      if (setReference && entry.key && Number.isFinite(rawValue)) {
-        encoderReferences.set(entry.key, rawValue);
+      const referenceKey = descriptor?.addressKey || descriptor?.stepperName || null;
+      if (setReference && referenceKey && Number.isFinite(rawValue)) {
+        encoderReferences.set(referenceKey, rawValue);
       }
-      const reference = entry.key && encoderReferences.has(entry.key)
-        ? encoderReferences.get(entry.key)
+      const reference = referenceKey && encoderReferences.has(referenceKey)
+        ? encoderReferences.get(referenceKey)
         : 0;
       const relative = Number.isFinite(rawValue) ? rawValue - reference : null;
       values.push(Number.isFinite(relative) ? relative : null);
@@ -757,19 +685,23 @@ export function createKlipperTerminalBridge({
   };
 
   const maybeBroadcastForceModeReply = (session) => {
-    const { descriptors } = parseForceModeCommand(session?.gcode);
-    if (!descriptors.length) {
+    const { tokens: descriptorTokens } = parseForceModeCommand(session?.gcode);
+    if (!descriptorTokens.length) {
       return;
     }
-    const tokens = parseForceModeReplyTokens(session.replyLines.join('\n'));
-    if (tokens.length !== descriptors.length) {
+    const resolved = resolveMotorTokens(descriptorTokens, resolvedDriverCatalog);
+    if (resolved.error) {
+      return;
+    }
+    const replyTokens = parseForceModeReplyTokens(session.replyLines.join('\n'));
+    if (replyTokens.length !== resolved.resolved.length) {
       return;
     }
     const commands = [];
-    for (let index = 0; index < descriptors.length; index += 1) {
-      const descriptor = descriptors[index];
-      const axis = resolvedDriverToAxis.get(descriptor.canAddress);
-      const token = tokens[index];
+    for (let index = 0; index < resolved.resolved.length; index += 1) {
+      const descriptor = resolved.resolved[index];
+      const axis = descriptor?.axis;
+      const token = replyTokens[index];
       if (!axis || !token) {
         return;
       }
@@ -777,7 +709,7 @@ export function createKlipperTerminalBridge({
         commands.push({
           type: 'SetPositionMode',
           axis,
-          driver: descriptor.canAddress,
+          driver: descriptor.addressKey || descriptor.stepperName,
           torqueNm: 0,
           timestamp: Date.now(),
         });
@@ -790,7 +722,7 @@ export function createKlipperTerminalBridge({
       commands.push({
         type: 'SetTorqueMode',
         axis,
-        driver: descriptor.canAddress,
+        driver: descriptor.addressKey || descriptor.stepperName,
         torqueNm: Number.parseFloat(torqueMatch[1]),
         timestamp: Date.now(),
       });

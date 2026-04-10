@@ -9,6 +9,19 @@ function flushMicrotasks() {
   });
 }
 
+function createTempKlipperConfig(contents) {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hp-sim5-klipper-'));
+  const configPath = path.join(tempDir, 'printer.cfg');
+  fs.writeFileSync(configPath, contents, 'utf8');
+  return {
+    tempDir,
+    configPath,
+    cleanup() {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    },
+  };
+}
+
 describe('createKlipperTerminalBridge', () => {
   let createKlipperTerminalBridge;
   let mcuClockHzKlipperHost;
@@ -328,10 +341,25 @@ describe('createKlipperTerminalBridge', () => {
       expect(axes).toEqual(['A', 'B']);
       return [12.3456, -4.4];
     });
-    const { bridge, payloads } = createHarness({ encoderResolver });
+    const tempConfig = createTempKlipperConfig(`
+[stepper_a]
+step_pin: gpiochip1/gpio0
+dir_pin: gpiochip1/gpio1
+enable_pin: gpiochip1/gpio2
+microsteps: 16
+rotation_distance: 246.20
+
+[stepper_b]
+step_pin: gpiochip1/gpio3
+dir_pin: gpiochip1/gpio4
+enable_pin: gpiochip1/gpio5
+microsteps: 16
+rotation_distance: 246.20
+`);
+    const { bridge, payloads } = createHarness({ encoderResolver, configPath: tempConfig.configPath });
 
     try {
-      const result = await bridge.runGcodeCommand('M569.3 P40.0:41.0', async () => {
+      const result = await bridge.runGcodeCommand('M569.3 Pstepper_a:stepper_b', async () => {
         const forwarded = bridge.handleGcodeOutput('Error: M569.3: Message not received\n');
         expect(forwarded).toEqual([]);
       });
@@ -345,12 +373,13 @@ describe('createKlipperTerminalBridge', () => {
       expect(payloads).toEqual([
         {
           type: 'reply',
-          gcode: 'M569.3 P40.0:41.0',
+          gcode: 'M569.3 Pstepper_a:stepper_b',
           reply: '[12.35, -4.40, ]',
         },
       ]);
     } finally {
       bridge.close();
+      tempConfig.cleanup();
     }
   });
 
@@ -411,13 +440,21 @@ m569_address: 56.0
       expect(axes).toEqual(['A']);
       return [90];
     });
-    const { bridge } = createHarness({ encoderResolver });
+    const tempConfig = createTempKlipperConfig(`
+[stepper_a]
+step_pin: gpiochip1/gpio0
+dir_pin: gpiochip1/gpio1
+enable_pin: gpiochip1/gpio2
+microsteps: 16
+rotation_distance: 246.20
+`);
+    const { bridge } = createHarness({ encoderResolver, configPath: tempConfig.configPath });
 
     try {
-      const setReference = await bridge.runGcodeCommand('M569.3 P40.0 S', async () => {
+      const setReference = await bridge.runGcodeCommand('M569.3 Pstepper_a S', async () => {
         bridge.handleGcodeOutput('Error: M569.3: Message not received\n');
       });
-      const relative = await bridge.runGcodeCommand('M569.3 P40.0', async () => {
+      const relative = await bridge.runGcodeCommand('M569.3 Pstepper_a', async () => {
         bridge.handleGcodeOutput('Error: M569.3: Message not received\n');
       });
 
@@ -426,15 +463,31 @@ m569_address: 56.0
       expect(encoderResolver).toHaveBeenCalledTimes(2);
     } finally {
       bridge.close();
+      tempConfig.cleanup();
     }
   });
 
   test('falls back to the Klipper placeholder reply when no simulator encoder is available', async () => {
     const encoderResolver = jest.fn(async () => []);
-    const { bridge, payloads } = createHarness({ encoderResolver });
+    const tempConfig = createTempKlipperConfig(`
+[stepper_a]
+step_pin: gpiochip1/gpio0
+dir_pin: gpiochip1/gpio1
+enable_pin: gpiochip1/gpio2
+microsteps: 16
+rotation_distance: 246.20
+
+[stepper_b]
+step_pin: gpiochip1/gpio3
+dir_pin: gpiochip1/gpio4
+enable_pin: gpiochip1/gpio5
+microsteps: 16
+rotation_distance: 246.20
+`);
+    const { bridge, payloads } = createHarness({ encoderResolver, configPath: tempConfig.configPath });
 
     try {
-      const result = await bridge.runGcodeCommand('M569.3 P40.0', async () => {
+      const result = await bridge.runGcodeCommand('M569.3 Pstepper_a:stepper_b', async () => {
         const forwarded = bridge.handleGcodeOutput('Error: M569.3: Message not received\n');
         expect(forwarded).toEqual([]);
       });
@@ -446,20 +499,36 @@ m569_address: 56.0
       expect(payloads).toEqual([
         {
           type: 'reply',
-          gcode: 'M569.3 P40.0',
+          gcode: 'M569.3 Pstepper_a:stepper_b',
           reply: 'Error: M569.3: Message not received',
         },
       ]);
     } finally {
       bridge.close();
+      tempConfig.cleanup();
     }
   });
 
   test('translates M569.4 torque replies into hp-sim torque mode commands', async () => {
-    const { bridge, payloads } = createHarness();
+    const tempConfig = createTempKlipperConfig(`
+[stepper_a]
+step_pin: gpiochip1/gpio0
+dir_pin: gpiochip1/gpio1
+enable_pin: gpiochip1/gpio2
+microsteps: 16
+rotation_distance: 246.20
+
+[stepper_b]
+step_pin: gpiochip1/gpio3
+dir_pin: gpiochip1/gpio4
+enable_pin: gpiochip1/gpio5
+microsteps: 16
+rotation_distance: 246.20
+`);
+    const { bridge, payloads } = createHarness({ configPath: tempConfig.configPath });
 
     try {
-      const result = await bridge.runGcodeCommand('M569.4 P40.0:41.0 T1.0:2.0', async () => {
+      const result = await bridge.runGcodeCommand('M569.4 Pstepper_a:stepper_b T1.0:2.0', async () => {
         const forwarded = bridge.handleGcodeOutput('-0.039185 Nm, -0.078369 Nm,\n');
         expect(forwarded).toEqual(['-0.039185 Nm, -0.078369 Nm,']);
       });
@@ -471,72 +540,143 @@ m569_address: 56.0
       expect(payloads).toEqual([
         expect.objectContaining({
           type: 'command',
-          gcode: 'M569.4 P40.0:41.0 T1.0:2.0',
+          gcode: 'M569.4 Pstepper_a:stepper_b T1.0:2.0',
           command: expect.objectContaining({
             type: 'SetTorqueMode',
             axis: 'A',
-            driver: 40,
+            driver: 'stepper_a',
             torqueNm: -0.039185,
           }),
         }),
         expect.objectContaining({
           type: 'command',
-          gcode: 'M569.4 P40.0:41.0 T1.0:2.0',
+          gcode: 'M569.4 Pstepper_a:stepper_b T1.0:2.0',
           command: expect.objectContaining({
             type: 'SetTorqueMode',
             axis: 'B',
-            driver: 41,
+            driver: 'stepper_b',
             torqueNm: -0.078369,
           }),
         }),
         {
           type: 'reply',
-          gcode: 'M569.4 P40.0:41.0 T1.0:2.0',
+          gcode: 'M569.4 Pstepper_a:stepper_b T1.0:2.0',
           reply: '-0.039185 Nm, -0.078369 Nm,',
         },
       ]);
     } finally {
       bridge.close();
+      tempConfig.cleanup();
     }
   });
 
   test('translates mixed M569.4 position and torque replies into hp-sim mode changes', async () => {
-    const { bridge, payloads } = createHarness();
+    const tempConfig = createTempKlipperConfig(`
+[stepper_a]
+step_pin: gpiochip1/gpio0
+dir_pin: gpiochip1/gpio1
+enable_pin: gpiochip1/gpio2
+microsteps: 16
+rotation_distance: 246.20
+
+[stepper_b]
+step_pin: gpiochip1/gpio3
+dir_pin: gpiochip1/gpio4
+enable_pin: gpiochip1/gpio5
+microsteps: 16
+rotation_distance: 246.20
+`);
+    const { bridge, payloads } = createHarness({ configPath: tempConfig.configPath });
 
     try {
-      await bridge.runGcodeCommand('M569.4 P40.0:41.0 T0:2.0', async () => {
+      await bridge.runGcodeCommand('M569.4 Pstepper_a:stepper_b T0:2.0', async () => {
         bridge.handleGcodeOutput('pos_mode, -0.078369 Nm,\n');
       });
 
       expect(payloads).toEqual([
         expect.objectContaining({
           type: 'command',
-          gcode: 'M569.4 P40.0:41.0 T0:2.0',
+          gcode: 'M569.4 Pstepper_a:stepper_b T0:2.0',
           command: expect.objectContaining({
             type: 'SetPositionMode',
             axis: 'A',
-            driver: 40,
+            driver: 'stepper_a',
             torqueNm: 0,
           }),
         }),
         expect.objectContaining({
           type: 'command',
-          gcode: 'M569.4 P40.0:41.0 T0:2.0',
+          gcode: 'M569.4 Pstepper_a:stepper_b T0:2.0',
           command: expect.objectContaining({
             type: 'SetTorqueMode',
             axis: 'B',
-            driver: 41,
+            driver: 'stepper_b',
             torqueNm: -0.078369,
           }),
         }),
         {
           type: 'reply',
-          gcode: 'M569.4 P40.0:41.0 T0:2.0',
+          gcode: 'M569.4 Pstepper_a:stepper_b T0:2.0',
           reply: 'pos_mode, -0.078369 Nm,',
         },
       ]);
     } finally {
       bridge.close();
+      tempConfig.cleanup();
+    }
+  });
+
+  test('reports missing m569_address when a named stepper lacks one in a mixed config', async () => {
+    const tempConfig = createTempKlipperConfig(`
+[stepper_a]
+step_pin: gpiochip1/gpio0
+dir_pin: gpiochip1/gpio1
+enable_pin: gpiochip1/gpio2
+microsteps: 16
+rotation_distance: 246.20
+m569_address: 55.0
+
+[stepper_b]
+step_pin: gpiochip1/gpio3
+dir_pin: gpiochip1/gpio4
+enable_pin: gpiochip1/gpio5
+microsteps: 16
+rotation_distance: 246.20
+`);
+    const { bridge } = createHarness({ configPath: tempConfig.configPath });
+
+    try {
+      const result = await bridge.runGcodeCommand('M569.4 Pstepper_a:stepper_b T1.0:2.0', async () => {
+        bridge.handleGcodeOutput('m569_address not configured for stepper_b\n');
+      });
+
+      expect(result.reply).toBe('m569_address not configured for stepper_b');
+    } finally {
+      bridge.close();
+      tempConfig.cleanup();
+    }
+  });
+
+  test('reports unknown M569 tokens when no stepper name or address matches', async () => {
+    const tempConfig = createTempKlipperConfig(`
+[stepper_a]
+step_pin: gpiochip1/gpio0
+dir_pin: gpiochip1/gpio1
+enable_pin: gpiochip1/gpio2
+microsteps: 16
+rotation_distance: 246.20
+`);
+    const { bridge } = createHarness({ configPath: tempConfig.configPath });
+
+    try {
+      const result = await bridge.runGcodeCommand('M569.3 Pdoes_not_exist', async () => {
+        bridge.handleGcodeOutput('does_not_exist did not match any stepper name or m569_address.\n');
+      });
+
+      expect(result.reply).toBe('does_not_exist did not match any stepper name or m569_address.');
+    } finally {
+      bridge.close();
+      tempConfig.cleanup();
     }
   });
 });
