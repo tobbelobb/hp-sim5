@@ -3557,6 +3557,54 @@ def _add_candidate_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--top-k", type=int, default=10)
 
 
+from abc import ABC, abstractmethod
+
+class FirmwareProvider(ABC):
+    @abstractmethod
+    def start_simulator(self, port: int, sim_config: Optional[str] = None) -> Optional[subprocess.Popen]:
+        pass
+
+    @abstractmethod
+    def wait_for_ready(self, target: str, timeout_s: float = 7.0) -> None:
+        pass
+
+    @abstractmethod
+    def send_gcode(self, target: str, gcode: str, timeout_s: float = 5.0) -> str:
+        pass
+
+
+class RRFFirmwareProvider(FirmwareProvider):
+    def start_simulator(self, port: int, sim_config: Optional[str] = None) -> Optional[subprocess.Popen]:
+        return _start_rrf_simulator(port, sim_config=sim_config)
+
+    def wait_for_ready(self, target: str, timeout_s: float = 7.0) -> None:
+        _wait_for_rrf_server(target, timeout_s=timeout_s)
+
+    def send_gcode(self, target: str, gcode: str, timeout_s: float = 5.0) -> str:
+        return _send_rrf_gcode(target, gcode, timeout_s=timeout_s)
+
+
+class KlipperFirmwareProvider(FirmwareProvider):
+    def start_simulator(self, port: int, sim_config: Optional[str] = None) -> Optional[subprocess.Popen]:
+        # Klipper simulator (klippy.py with -I) will be implemented in Phase 3
+        # For now, return None or a placeholder.
+        return None
+
+    def wait_for_ready(self, target: str, timeout_s: float = 7.0) -> None:
+        # Will be implemented in Phase 3
+        pass
+
+    def send_gcode(self, target: str, gcode: str, timeout_s: float = 5.0) -> str:
+        # Will be implemented in Phase 3
+        return ""
+
+
+def get_firmware_provider(firmware: str) -> FirmwareProvider:
+    if firmware == "klipper":
+        return KlipperFirmwareProvider()
+    return RRFFirmwareProvider()
+
+
 def _add_collector_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--collector-args",

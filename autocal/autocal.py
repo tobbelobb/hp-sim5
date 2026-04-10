@@ -76,6 +76,7 @@ def full_auto_loop(
     scale_fix: Optional[Sequence[int]] = None,
     fit_structure: Optional[Sequence[int]] = None,
     no_collect: bool = False,
+    firmware: str = "rrf",
 ) -> int:
     if work_dataset is not None:
         dataset_path = Path(work_dataset)
@@ -156,11 +157,13 @@ def full_auto_loop(
         skip_sim_send = bool(sim and no_collect and not server_explicit)
         if m669:
             if skip_sim_send:
-                _log_console("; --sim + --no-collect set; skipping M669 send.")
+                _log_console(f"; --sim + --no-collect set; skipping M669 send.")
+            elif firmware == 'klipper':
+                 _log_console("; --firmware klipper set; skipping M669 send.")
             else:
                 _log_console(f"Sending {m669} to {rrf_server}")
                 try:
-                    reply = _send_rrf_gcode(rrf_server, m669)
+                    reply = provider.send_gcode(rrf_server, m669)
                 except Exception as exc:
                     _log_console(f"; failed to send M669: {exc}")
                     return _finalize(1)
@@ -171,6 +174,7 @@ def full_auto_loop(
             _log_console("Sending M669 skipped (no command available)")
         return _finalize(0)
 
+    provider = get_firmware_provider(firmware)
     find_radii_mode = _normalize_spool_find_mode(find_radii)
     find_buildup_mode = _normalize_spool_find_mode(find_buildup_factor)
 
@@ -241,9 +245,9 @@ def full_auto_loop(
         atexit.register(_cleanup)
         cleanup_registered = True
         target_port = port or DEFAULT_RRF_PORT
-        _log_line(f"; starting rrf_simulator at http://localhost:{target_port} (config: {sim_config})")
-        sim_process = _start_rrf_simulator(target_port, sim_config=sim_config)
-        _wait_for_rrf_server(f"http://localhost:{target_port}")
+        _log_line(f"; starting {firmware} simulator at http://localhost:{target_port} (config: {sim_config})")
+        sim_process = provider.start_simulator(target_port, sim_config=sim_config)
+        provider.wait_for_ready(f"http://localhost:{target_port}")
 
     def _finalize(code: int) -> int:
         nonlocal cleanup_registered
@@ -1410,6 +1414,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         scale_fix=spool_opts.get("scale_fix"),
         fit_structure=spool_opts.get("fit_structure"),
         no_collect=bool(args.no_collect),
+        firmware=str(args.firmware),
     )
 
 

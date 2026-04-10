@@ -112,11 +112,11 @@ provider.wait_for_ready(target_server)
 
 ### Verification
 #### Automated
-- [ ] `pytest autocal/tests/test_autocal_cli.py` passes
-- [ ] `pytest autocal/tests/test_autocal_no_collect.py` passes
+- [x] `pytest autocal/tests/test_autocal_cli.py` passes
+- [x] `pytest autocal/tests/test_autocal_no_collect.py` passes
 
 #### Manual
-- [ ] Run `python autocal/autocal.py --sim --no-collect` and verify it still works for RRF.
+- [x] Run `python autocal/autocal.py --sim --no-collect` and verify it still works for RRF.
 
 ---
 

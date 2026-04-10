@@ -453,8 +453,8 @@ def test_full_auto_loop_registers_cleanup_for_keyboard_interrupt_before_main_loo
         raise KeyboardInterrupt
 
     monkeypatch.setattr(ac.atexit, "register", fake_register)
-    monkeypatch.setattr(ac, "_start_rrf_simulator", fake_start)
-    monkeypatch.setattr(ac, "_wait_for_rrf_server", fake_wait)
+    monkeypatch.setattr(ac.RRFFirmwareProvider, "start_simulator", lambda *args, **kwargs: fake_proc)
+    monkeypatch.setattr(ac.RRFFirmwareProvider, "wait_for_ready", fake_wait)
     monkeypatch.setattr(ac.subprocess, "run", interrupting_run)
     monkeypatch.setattr(ac, "_stop_process", lambda proc: stopped.append(proc))
 
