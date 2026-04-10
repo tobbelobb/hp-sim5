@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import path from 'node:path';
 import readline from 'node:readline';
-import { createGcodeBridge } from '../../../integrations/rrf/rrfSimulatorBridge.mjs';
+import { createBridge } from '../primitives/bridge_factory.mjs';
 import { attachDebugState } from '../primitives/debug_trace.mjs';
 import {
   DEFAULT_RRF_PORT,
@@ -124,11 +124,17 @@ export function parseBridgeArgs(argv) {
     sampleRate: null,
     observabilityFile: null,
     returnToOrigin: false,
+    config: null,
+    socket: null,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === '--server' || arg === '--rrf') {
+    if (arg === '--config') {
+      args.config = argv[++i] || null;
+    } else if (arg === '--socket') {
+      args.socket = argv[++i] || null;
+    } else if (arg === '--server' || arg === '--rrf') {
       args.server = argv[++i] || args.server;
       args.serverExplicit = true;
     } else if (arg === '--firmware') {
@@ -296,6 +302,8 @@ Options:
   --output-file <path>       Output JSON path (default: sweep_data_<machine>_<timestamp>.json)
   --observability-file <path> Sidecar histogram JSON path (default: <output>.obs.json)
   --firmware <rrf|klipper>   Firmware flavor to target (default: rrf)
+  --config <path>            Simulator config path (only used if --firmware klipper)
+  --socket <path>            Klippy UDS socket path (only used if --firmware klipper)
   --server, --rrf <url>      RRF server URL (default: http://localhost:${DEFAULT_RRF_PORT})
   --port <port>              Port for spawned rrf_simulator (default: ${DEFAULT_RRF_PORT})
   --no-spawn-rrf-simulator   Do not start rrf_simulator automatically
@@ -355,7 +363,7 @@ async function main() {
 
   const targetPort = Number.isFinite(parseInt(args.port, 10)) ? parseInt(args.port, 10) : DEFAULT_RRF_PORT;
   const targetServer = args.serverExplicit ? args.server : `http://localhost:${targetPort}`;
-  const shouldSpawnRrf = !args.noSpawnRrfSimulator && !args.serverExplicit;
+  const shouldSpawnRrf = args.firmware === 'rrf' && !args.noSpawnRrfSimulator && !args.serverExplicit;
   let rrfProcess = null;
 
   if (shouldSpawnRrf) {
@@ -369,10 +377,12 @@ async function main() {
     }
   }
 
-  const bridgeCtx = createGcodeBridge({
+  const bridgeCtx = await createBridge(args.firmware, {
     server: targetServer,
+    socketPath: args.socket || process.env.KLIPPY_SOCKET_PATH || '/tmp/klippy_uds',
     wsPort: args.noWs ? 0 : args.wsPort,
     quiet: args.quiet,
+    configPath: args.config,
     encoderTimeoutMs,
   });
 

@@ -3704,30 +3704,33 @@ def _add_collector_args(parser: argparse.ArgumentParser) -> None:
         "--config",
         type=str,
         default=None,
-        help="Path to simulator config file (RRF or Klipper depending on --firmware)",
+        help=(
+            "Generic simulator config path. Interpreted as --rrf-config when --firmware rrf, "
+            "or as --klipper-config when --firmware klipper."
+        ),
     )
     parser.add_argument(
         "--rrf-config",
         type=str,
         default=None,
-        help="Path to RRF simulator config file (overrides --config if set)",
+        help="Path to RRF simulator config file (env fallback: AUTOCAL_RRF_SIM_CONFIG)",
     )
     parser.add_argument(
         "--klipper-config",
         type=str,
         default=None,
-        help="Path to Klipper simulator config file (overrides --config if set)",
+        help="Path to Klipper simulator config file (env fallback: AUTOCAL_KLIPPER_SIM_CONFIG)",
     )
     parser.add_argument(
         "--sim",
         "--simulation",
         action="store_true",
-        help="Use rrf_simulator + hp-sim WebSocket bridge (default: talk to real firmware)",
+        help="Use simulator + hp-sim WebSocket bridge (default: talk to real firmware)",
     )
     parser.add_argument(
         "--keep-sim-alive",
         action="store_true",
-        help="Leave rrf_simulator running after exit (only when --sim)",
+        help="Leave simulator process running after exit (only when --sim)",
     )
     parser.add_argument(
         "--hp-sim-reset",

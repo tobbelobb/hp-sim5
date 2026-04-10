@@ -2,19 +2,76 @@ import { createGcodeBridge } from '../../../integrations/rrf/rrfSimulatorBridge.
 import { KlippyApiClient } from '../../../integrations/klipper/klippyApiClient.js';
 import { KlippyRuntimeState } from '../../../integrations/klipper/klippyRuntimeState.js';
 import { createKlipperTerminalBridge } from '../../../integrations/klipper/klipperTerminalBridge.js';
+import {
+  DEFAULT_KLIPPY_CONFIG_PATH,
+  DEFAULT_KLIPPY_SOCKET_PATH,
+} from '../../../integrations/klipper/klippy_api_cli_config.mjs';
 
 export async function createBridge(firmware, options = {}) {
-  if (firmware === 'klipper') {
-    const client = new KlippyApiClient({ socketPath: options.socketPath });
-    const klippyState = new KlippyRuntimeState({ client });
-    // Note: KlippyApiClient.start() and connection wait should happen here or be handled by the bridge
-    return createKlipperTerminalBridge({
-      client,
-      klippyState,
-      wsPort: options.wsPort,
-      quiet: options.quiet,
-      configPath: options.configPath,
-    });
+  if (firmware !== 'klipper') {
+    return createGcodeBridge(options);
   }
-  return createGcodeBridge(options);
+
+  const socketPath = options.socketPath || DEFAULT_KLIPPY_SOCKET_PATH;
+  const configPath = options.configPath || DEFAULT_KLIPPY_CONFIG_PATH;
+
+  const client = new KlippyApiClient({ socketPath });
+  const klippyState = new KlippyRuntimeState({ client });
+  const klipperBridge = createKlipperTerminalBridge({
+    client,
+    klippyState,
+    wsPort: options.wsPort,
+    quiet: options.quiet,
+    configPath,
+    encoderTimeoutMs: options.encoderTimeoutMs,
+  });
+
+  const onGcodeOutput = ({ response }) => {
+    klipperBridge.handleGcodeOutput(response);
+  };
+  klippyState.on('gcode-output', onGcodeOutput);
+
+  try {
+    client.start();
+    await client.waitForConnection();
+    await klippyState.prime();
+    await klippyState.waitForReady();
+  } catch (error) {
+    klippyState.off('gcode-output', onGcodeOutput);
+    try {
+      klipperBridge.close();
+    } catch (_error) {
+      // ignore cleanup errors
+    }
+    client.close();
+    throw error;
+  }
+
+  const sendGcodeLine = async (line) => {
+    const trimmed = line?.trim?.();
+    if (!trimmed) {
+      return null;
+    }
+    await client.waitForConnection();
+    await klippyState.prime();
+    await klippyState.waitForReady();
+    return klipperBridge.runGcodeCommand(
+      trimmed,
+      () => client.request('gcode/script', { script: trimmed }),
+    );
+  };
+
+  const close = () => {
+    klippyState.off('gcode-output', onGcodeOutput);
+    klipperBridge.close();
+    client.close();
+  };
+
+  return {
+    ...klipperBridge,
+    client,
+    klippyState,
+    sendGcodeLine,
+    close,
+  };
 }
