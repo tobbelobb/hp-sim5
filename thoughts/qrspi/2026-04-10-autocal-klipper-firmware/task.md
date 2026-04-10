@@ -1,0 +1,1 @@
+Add firmware selection to `autocal/autocal.py` so the existing autocal workflow can run against Klipper as well as the current RepRapFirmware path. The immediate target is the simulated hangprinter invocation, where `--firmware klipper` should thread through collection, simulator startup, and firmware communication instead of assuming RRF-specific behavior.
