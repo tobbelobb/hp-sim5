@@ -231,6 +231,7 @@ def full_auto_loop(
         machine_type=machine_type,
         find_radii_mode=find_radii_mode,
         find_buildup_mode=find_buildup_mode,
+        firmware=firmware,
     )
 
     def _cleanup() -> None:

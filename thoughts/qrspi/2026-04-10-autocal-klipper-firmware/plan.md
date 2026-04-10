@@ -146,11 +146,11 @@ class KlipperFirmwareProvider(FirmwareProvider):
 
 ### Verification
 #### Automated
-- [ ] `python autocal/autocal.py --sim --firmware klipper --no-collect` successfully boots Klipper.
+- [x] `python autocal/autocal.py --sim --firmware klipper --no-collect` successfully boots Klipper.
 
 #### Manual
-- [ ] Check `ps aux | grep klippy` to see if it's running.
-- [ ] Interrupt Python and verify Klipper processes are killed.
+- [x] Check `ps aux | grep klippy` to see if it's running.
+- [x] Interrupt Python and verify Klipper processes are killed.
 
 ---
 

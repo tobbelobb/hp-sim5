@@ -14,6 +14,8 @@ import subprocess
 import sys
 import time
 import urllib.request
+import json
+import socket
 import contextlib
 from contextlib import redirect_stderr, redirect_stdout
 from datetime import datetime
@@ -542,7 +544,21 @@ def _resolve_sim_config(
     machine_type: str,
     find_radii_mode: str,
     find_buildup_mode: str,
+    firmware: str = "rrf",
 ) -> str:
+    if firmware == "klipper":
+        env_cfg = os.environ.get("AUTOCAL_KLIPPER_SIM_CONFIG")
+        if isinstance(env_cfg, str) and env_cfg.strip():
+            return env_cfg.strip()
+
+        machine_type = _normalize_machine_type(machine_type) or ""
+        search_spool = _spool_mode_enabled(find_radii_mode) or _spool_mode_enabled(find_buildup_mode)
+        if machine_type == "hangprinter_4":
+            if search_spool:
+                return "examples/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg"
+            return "examples/klipper/hp3/printer-hp3-linux-mcu.cfg"
+        return "examples/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg"
+
     env_cfg = os.environ.get("AUTOCAL_RRF_SIM_CONFIG")
     if isinstance(env_cfg, str) and env_cfg.strip():
         return env_cfg.strip()
@@ -3586,17 +3602,72 @@ class RRFFirmwareProvider(FirmwareProvider):
 
 class KlipperFirmwareProvider(FirmwareProvider):
     def start_simulator(self, port: int, sim_config: Optional[str] = None) -> Optional[subprocess.Popen]:
-        # Klipper simulator (klippy.py with -I) will be implemented in Phase 3
-        # For now, return None or a placeholder.
-        return None
+        env = os.environ.copy()
+        if sim_config:
+            env["KLIPPY_CONFIG_PATH"] = str(REPO_ROOT / sim_config)
+        
+        # We don't really use 'port' for Klipper UDS mode in the same way,
+        # but the scripts could be extended if needed.
+        
+        cmd = [str(REPO_ROOT / "scripts" / "run_klippy_api_mode.sh")]
+        return subprocess.Popen(
+            cmd,
+            cwd=str(REPO_ROOT),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            env=env,
+            start_new_session=True,
+        )
 
     def wait_for_ready(self, target: str, timeout_s: float = 7.0) -> None:
-        # Will be implemented in Phase 3
-        pass
+        socket_path = os.environ.get("KLIPPY_SOCKET_PATH", "/tmp/klippy_uds")
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            if os.path.exists(socket_path):
+                try:
+                    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+                        sock.settimeout(1.0)
+                        sock.connect(socket_path)
+                        query = {"id": 1, "method": "info"}
+                        sock.sendall(json.dumps(query).encode() + b"\x03")
+                        data = b""
+                        while True:
+                            chunk = sock.recv(4096)
+                            if not chunk:
+                                break
+                            data += chunk
+                            if b"\x03" in data:
+                                break
+                        if data:
+                            return
+                except Exception:
+                    pass
+            time.sleep(0.5)
+        raise RuntimeError(f"Klipper simulator at {socket_path} did not become ready in time")
 
     def send_gcode(self, target: str, gcode: str, timeout_s: float = 5.0) -> str:
-        # Will be implemented in Phase 3
-        return ""
+        socket_path = os.environ.get("KLIPPY_SOCKET_PATH", "/tmp/klippy_uds")
+        try:
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+                sock.settimeout(timeout_s)
+                sock.connect(socket_path)
+                query = {
+                    "id": 1,
+                    "method": "gcode/script",
+                    "params": {"script": gcode}
+                }
+                sock.sendall(json.dumps(query).encode() + b"\x03")
+                data = b""
+                while True:
+                    chunk = sock.recv(4096)
+                    if not chunk:
+                        break
+                    data += chunk
+                    if b"\x03" in data:
+                        break
+                return data.decode(errors="replace")
+        except Exception as exc:
+            return f"Error sending G-code to Klipper: {exc}"
 
 
 def get_firmware_provider(firmware: str) -> FirmwareProvider:
