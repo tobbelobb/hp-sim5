@@ -545,8 +545,15 @@ def _resolve_sim_config(
     find_radii_mode: str,
     find_buildup_mode: str,
     firmware: str = "rrf",
+    config: Optional[str] = None,
+    rrf_config: Optional[str] = None,
+    klipper_config: Optional[str] = None,
 ) -> str:
     if firmware == "klipper":
+        if klipper_config:
+            return klipper_config
+        if config:
+            return config
         env_cfg = os.environ.get("AUTOCAL_KLIPPER_SIM_CONFIG")
         if isinstance(env_cfg, str) and env_cfg.strip():
             return env_cfg.strip()
@@ -559,6 +566,10 @@ def _resolve_sim_config(
             return "examples/klipper/hp3/printer-hp3-linux-mcu.cfg"
         return "examples/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg"
 
+    if rrf_config:
+        return rrf_config
+    if config:
+        return config
     env_cfg = os.environ.get("AUTOCAL_RRF_SIM_CONFIG")
     if isinstance(env_cfg, str) and env_cfg.strip():
         return env_cfg.strip()
@@ -3688,6 +3699,24 @@ def _add_collector_args(parser: argparse.ArgumentParser) -> None:
         choices=["rrf", "klipper"],
         default="rrf",
         help="Firmware flavor to target (default: rrf)",
+    )
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="Path to simulator config file (RRF or Klipper depending on --firmware)",
+    )
+    parser.add_argument(
+        "--rrf-config",
+        type=str,
+        default=None,
+        help="Path to RRF simulator config file (overrides --config if set)",
+    )
+    parser.add_argument(
+        "--klipper-config",
+        type=str,
+        default=None,
+        help="Path to Klipper simulator config file (overrides --config if set)",
     )
     parser.add_argument(
         "--sim",

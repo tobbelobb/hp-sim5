@@ -77,6 +77,9 @@ def full_auto_loop(
     fit_structure: Optional[Sequence[int]] = None,
     no_collect: bool = False,
     firmware: str = "rrf",
+    config: Optional[str] = None,
+    rrf_config: Optional[str] = None,
+    klipper_config: Optional[str] = None,
 ) -> int:
     if work_dataset is not None:
         dataset_path = Path(work_dataset)
@@ -232,6 +235,9 @@ def full_auto_loop(
         find_radii_mode=find_radii_mode,
         find_buildup_mode=find_buildup_mode,
         firmware=firmware,
+        config=config,
+        rrf_config=rrf_config,
+        klipper_config=klipper_config,
     )
 
     def _cleanup() -> None:
@@ -1416,6 +1422,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         fit_structure=spool_opts.get("fit_structure"),
         no_collect=bool(args.no_collect),
         firmware=str(args.firmware),
+        config=args.config,
+        rrf_config=args.rrf_config,
+        klipper_config=args.klipper_config,
     )
 
 
