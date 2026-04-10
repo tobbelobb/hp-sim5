@@ -397,4 +397,89 @@ describe('createKlipperTerminalBridge', () => {
       bridge.close();
     }
   });
+
+  test('translates M569.4 torque replies into hp-sim torque mode commands', async () => {
+    const { bridge, payloads } = createHarness();
+
+    try {
+      const result = await bridge.runGcodeCommand('M569.4 P40.0:41.0 T1.0:2.0', async () => {
+        const forwarded = bridge.handleGcodeOutput('-0.039185 Nm, -0.078369 Nm,\n');
+        expect(forwarded).toEqual(['-0.039185 Nm, -0.078369 Nm,']);
+      });
+
+      expect(result).toMatchObject({
+        reply: '-0.039185 Nm, -0.078369 Nm,',
+        printedLiveOutput: true,
+      });
+      expect(payloads).toEqual([
+        expect.objectContaining({
+          type: 'command',
+          gcode: 'M569.4 P40.0:41.0 T1.0:2.0',
+          command: expect.objectContaining({
+            type: 'SetTorqueMode',
+            axis: 'A',
+            driver: 40,
+            torqueNm: -0.039185,
+          }),
+        }),
+        expect.objectContaining({
+          type: 'command',
+          gcode: 'M569.4 P40.0:41.0 T1.0:2.0',
+          command: expect.objectContaining({
+            type: 'SetTorqueMode',
+            axis: 'B',
+            driver: 41,
+            torqueNm: -0.078369,
+          }),
+        }),
+        {
+          type: 'reply',
+          gcode: 'M569.4 P40.0:41.0 T1.0:2.0',
+          reply: '-0.039185 Nm, -0.078369 Nm,',
+        },
+      ]);
+    } finally {
+      bridge.close();
+    }
+  });
+
+  test('translates mixed M569.4 position and torque replies into hp-sim mode changes', async () => {
+    const { bridge, payloads } = createHarness();
+
+    try {
+      await bridge.runGcodeCommand('M569.4 P40.0:41.0 T0:2.0', async () => {
+        bridge.handleGcodeOutput('pos_mode, -0.078369 Nm,\n');
+      });
+
+      expect(payloads).toEqual([
+        expect.objectContaining({
+          type: 'command',
+          gcode: 'M569.4 P40.0:41.0 T0:2.0',
+          command: expect.objectContaining({
+            type: 'SetPositionMode',
+            axis: 'A',
+            driver: 40,
+            torqueNm: 0,
+          }),
+        }),
+        expect.objectContaining({
+          type: 'command',
+          gcode: 'M569.4 P40.0:41.0 T0:2.0',
+          command: expect.objectContaining({
+            type: 'SetTorqueMode',
+            axis: 'B',
+            driver: 41,
+            torqueNm: -0.078369,
+          }),
+        }),
+        {
+          type: 'reply',
+          gcode: 'M569.4 P40.0:41.0 T0:2.0',
+          reply: 'pos_mode, -0.078369 Nm,',
+        },
+      ]);
+    } finally {
+      bridge.close();
+    }
+  });
 });

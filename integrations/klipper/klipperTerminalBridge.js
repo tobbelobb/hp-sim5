@@ -93,6 +93,27 @@ function isEncoderQuery(gcode) {
   return typeof gcode === 'string' && /^M569\.3\b/i.test(gcode.trim());
 }
 
+function parseForceModeCommand(gcode) {
+  if (typeof gcode !== 'string' || !/^M569\.4\b/i.test(gcode.trim())) {
+    return { descriptors: [] };
+  }
+  const pMatch = gcode.match(/P([0-9:\.]+)/i);
+  const descriptors = pMatch
+    ? pMatch[1]
+      .split(':')
+      .map((value) => normalizeMotorDescriptorValue(value))
+      .filter((descriptor) => descriptor && Number.isFinite(descriptor.canAddress))
+    : [];
+  return { descriptors };
+}
+
+function parseForceModeReplyTokens(replyText) {
+  return String(replyText || '')
+    .split(',')
+    .map((token) => token.trim())
+    .filter((token) => token.length > 0);
+}
+
 function formatEncoderReply(values) {
   if (!Array.isArray(values) || values.length === 0) {
     return '[ ]';
@@ -695,6 +716,54 @@ export function createKlipperTerminalBridge({
     return formatEncoderReply(values);
   };
 
+  const maybeBroadcastForceModeReply = (session) => {
+    const { descriptors } = parseForceModeCommand(session?.gcode);
+    if (!descriptors.length) {
+      return;
+    }
+    const tokens = parseForceModeReplyTokens(session.replyLines.join('\n'));
+    if (tokens.length !== descriptors.length) {
+      return;
+    }
+    const commands = [];
+    for (let index = 0; index < descriptors.length; index += 1) {
+      const descriptor = descriptors[index];
+      const axis = driverToAxis.get(descriptor.canAddress);
+      const token = tokens[index];
+      if (!axis || !token) {
+        return;
+      }
+      if (/^pos_mode$/i.test(token)) {
+        commands.push({
+          type: 'SetPositionMode',
+          axis,
+          driver: descriptor.canAddress,
+          torqueNm: 0,
+          timestamp: Date.now(),
+        });
+        continue;
+      }
+      const torqueMatch = token.match(/^(-?\d+(?:\.\d+)?)\s*Nm$/i);
+      if (!torqueMatch) {
+        return;
+      }
+      commands.push({
+        type: 'SetTorqueMode',
+        axis,
+        driver: descriptor.canAddress,
+        torqueNm: Number.parseFloat(torqueMatch[1]),
+        timestamp: Date.now(),
+      });
+    }
+    for (const command of commands) {
+      helpers.broadcast({
+        type: 'command',
+        command,
+        gcode: session.gcode,
+      });
+    }
+  };
+
   const beginCommandSession = (gcode) => {
     const encoderQuery = isEncoderQuery(gcode);
     activeSession = {
@@ -765,6 +834,7 @@ export function createKlipperTerminalBridge({
       if (typeof encoderReply === 'string' && encoderReply.trim().length > 0) {
         session.replyLines = [encoderReply];
       }
+      maybeBroadcastForceModeReply(session);
       return await finalizeCommandSession(session);
     } catch (error) {
       abortCommandSession();
