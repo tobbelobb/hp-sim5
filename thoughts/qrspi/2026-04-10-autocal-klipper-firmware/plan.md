@@ -71,11 +71,11 @@ export async function createBridge(firmware, options = {}) {
 
 ### Verification
 #### Automated
-- [ ] `python autocal/autocal.py --help` shows `--firmware`
-- [ ] `node autocal/control/cli/collect_sweep_data.mjs --help` shows `--firmware`
+- [x] `python autocal/autocal.py --help` shows `--firmware`
+- [x] `node autocal/control/cli/collect_sweep_data.mjs --help` shows `--firmware`
 
 #### Manual
-- [ ] Run `node autocal/control/cli/collect_sweep_data.mjs --firmware klipper` and verify it fails with a "requires KlippyApiClient" or similar if not implemented correctly, but accepts the flag.
+- [x] Run `node autocal/control/cli/collect_sweep_data.mjs --firmware klipper` and verify it fails with a "requires KlippyApiClient" or similar if not implemented correctly, but accepts the flag.
 
 ---
 

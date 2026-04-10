@@ -3565,6 +3565,12 @@ def _add_collector_args(parser: argparse.ArgumentParser) -> None:
         help="Extra args passed to autocal/control/cli/collect_sweep_data.mjs (after --collector-args)",
     )
     parser.add_argument(
+        "--firmware",
+        choices=["rrf", "klipper"],
+        default="rrf",
+        help="Firmware flavor to target (default: rrf)",
+    )
+    parser.add_argument(
         "--sim",
         "--simulation",
         action="store_true",

@@ -73,6 +73,7 @@ export function parseBridgeArgs(argv) {
   const args = {
     server: envServer || 'http://localhost:8080',
     serverExplicit: !!envServer,
+    firmware: 'rrf',
     wsPort: 8790,
     quiet: false,
     command: null,
@@ -130,6 +131,8 @@ export function parseBridgeArgs(argv) {
     if (arg === '--server' || arg === '--rrf') {
       args.server = argv[++i] || args.server;
       args.serverExplicit = true;
+    } else if (arg === '--firmware') {
+      args.firmware = argv[++i] || 'rrf';
     } else if (arg === '--port') {
       const value = parseInt(argv[++i], 10);
       if (Number.isFinite(value)) {
@@ -292,6 +295,7 @@ Options:
   --project-zero-tension     Project encoder readings to zero tension during each data point
   --output-file <path>       Output JSON path (default: sweep_data_<machine>_<timestamp>.json)
   --observability-file <path> Sidecar histogram JSON path (default: <output>.obs.json)
+  --firmware <rrf|klipper>   Firmware flavor to target (default: rrf)
   --server, --rrf <url>      RRF server URL (default: http://localhost:${DEFAULT_RRF_PORT})
   --port <port>              Port for spawned rrf_simulator (default: ${DEFAULT_RRF_PORT})
   --no-spawn-rrf-simulator   Do not start rrf_simulator automatically
