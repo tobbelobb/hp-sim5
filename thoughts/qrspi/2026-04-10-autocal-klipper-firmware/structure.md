@@ -6,7 +6,7 @@ Abstract the firmware-specific logic into a `FirmwareProvider` (Python) and a `B
 ## Phase 1: CLI & Bridge Factory Foundation
 Enable the `--firmware` argument across the stack and introduce the factory pattern in Node to select the appropriate communication bridge.
 
-**Files**: 
+**Files**:
 - `autocal/_autocal_common.py` (Parser update)
 - `autocal/control/cli/collect_sweep_data.mjs` (Parser update, factory invocation)
 - `autocal/control/primitives/bridge_factory.mjs` (New: exports `createBridge(firmware, options)`)
@@ -22,7 +22,7 @@ Enable the `--firmware` argument across the stack and introduce the factory patt
 ## Phase 2: Python Firmware Strategy & RRF Refactor
 Introduce the `FirmwareProvider` abstraction in Python and migrate existing RRF logic into `RRFFirmwareProvider`.
 
-**Files**: 
+**Files**:
 - `autocal/_autocal_common.py` (Abstraction & RRF implementation)
 - `autocal/autocal.py` (Refactor to use provider)
 
@@ -38,7 +38,7 @@ Introduce the `FirmwareProvider` abstraction in Python and migrate existing RRF 
 ## Phase 3: Klipper Simulator Lifecycle (Python-led)
 Implement Klipper-specific process management in Python, allowing it to boot and manage `klippy.py` and `klipper.elf`.
 
-**Files**: 
+**Files**:
 - `autocal/_autocal_common.py` (`KlipperFirmwareProvider`)
 - `integrations/klipper/klippy_api_cli_config.mjs` (Support for `--keep-alive` if needed)
 
@@ -53,7 +53,7 @@ Implement Klipper-specific process management in Python, allowing it to boot and
 ## Phase 4: Node Klipper Bridge Integration
 Wire the existing `KlipperTerminalBridge` into the Node collector's factory and ensure it adheres to the expected data collection interface.
 
-**Files**: 
+**Files**:
 - `autocal/control/primitives/bridge_factory.mjs` (Hook up `KlipperTerminalBridge`)
 - `autocal/control/cli/collect_sweep_data.mjs` (Refine bridge usage)
 
@@ -68,7 +68,7 @@ Wire the existing `KlipperTerminalBridge` into the Node collector's factory and 
 ## Phase 5: Full Loop E2E Integration
 Final wiring to allow the full auto-calibration loop to run against Klipper.
 
-**Files**: 
+**Files**:
 - `autocal/autocal.py` (Final glue logic)
 - `autocal/_autocal_common.py` (Final helper refinements)
 
