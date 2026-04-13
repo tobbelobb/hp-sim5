@@ -55,9 +55,12 @@ export async function createBridge(firmware, options = {}) {
     await client.waitForConnection();
     await klippyState.prime();
     await klippyState.waitForReady();
+    const rewritten = typeof klipperBridge.rewriteGcodeLine === 'function'
+      ? klipperBridge.rewriteGcodeLine(trimmed)
+      : trimmed;
     return klipperBridge.runGcodeCommand(
       trimmed,
-      () => client.request('gcode/script', { script: trimmed }),
+      () => client.request('gcode/script', { script: rewritten }),
     );
   };
 

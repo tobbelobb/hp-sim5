@@ -483,6 +483,8 @@ async function main() {
     }
     return res;
   };
+  send.firmware = args.firmware;
+
   attachDebugState(send, {
     enabled: debugSweepActions,
     axes: machineConfig.axes,

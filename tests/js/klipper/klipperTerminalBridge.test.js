@@ -73,6 +73,55 @@ describe('createKlipperTerminalBridge', () => {
     };
   }
 
+  test('rewrites G1 H2 moves into FORCE_MOVE scripts using configured steppers', () => {
+    const tempConfig = createTempKlipperConfig(`
+[stepper_a]
+step_pin: gpiochip1/gpio0
+dir_pin: gpiochip1/gpio1
+enable_pin: gpiochip1/gpio2
+microsteps: 16
+rotation_distance: 246.20
+
+[stepper_b]
+step_pin: gpiochip1/gpio3
+dir_pin: gpiochip1/gpio4
+enable_pin: gpiochip1/gpio5
+microsteps: 16
+rotation_distance: 246.20
+`);
+    const { bridge } = createHarness({ configPath: tempConfig.configPath });
+
+    try {
+      const rewritten = bridge.rewriteGcodeLine('G1 H2 X12.5 Y-6.25 F1500');
+      expect(rewritten).toBe(
+        'FORCE_MOVE STEPPER=stepper_a DISTANCE=12.5 VELOCITY=25\n'
+        + 'FORCE_MOVE STEPPER=stepper_b DISTANCE=-6.25 VELOCITY=25',
+      );
+    } finally {
+      bridge.close();
+      tempConfig.cleanup();
+    }
+  });
+
+  test('keeps unsupported relative H2 moves unchanged when no matching stepper exists', () => {
+    const tempConfig = createTempKlipperConfig(`
+[stepper_a]
+step_pin: gpiochip1/gpio0
+dir_pin: gpiochip1/gpio1
+enable_pin: gpiochip1/gpio2
+microsteps: 16
+rotation_distance: 246.20
+`);
+    const { bridge } = createHarness({ configPath: tempConfig.configPath });
+
+    try {
+      expect(bridge.rewriteGcodeLine('G1 H2 U10 F1200')).toBe('G1 H2 U10 F1200');
+    } finally {
+      bridge.close();
+      tempConfig.cleanup();
+    }
+  });
+
   test('subscribes and unsubscribes dump_stepper streams from runtime motion source updates', async () => {
     const { client, klippyState, bridge } = createHarness();
 

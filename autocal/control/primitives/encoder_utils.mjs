@@ -139,6 +139,28 @@ export function estimateMoveLengthMm(gcode, axes = null) {
   return Math.sqrt(sumSquares);
 }
 
+function estimateMoveLengthMmManhattan(gcode, axes = null) {
+  if (typeof gcode !== 'string') {
+    return 0;
+  }
+  const axisChars = Array.isArray(axes) && axes.length > 0
+    ? axes.map((c) => String(c).toUpperCase()).join('')
+    : 'XYZABCDIJKL';
+  const regex = new RegExp(`\\b([${axisChars}])(-?[0-9]+(?:\\.[0-9]+)?)`, 'gi');
+  let sumAbs = 0;
+  let matched = false;
+  let match = regex.exec(gcode);
+  while (match) {
+    const value = parseFloat(match[2]);
+    if (Number.isFinite(value)) {
+      sumAbs += Math.abs(value);
+      matched = true;
+    }
+    match = regex.exec(gcode);
+  }
+  return matched ? sumAbs : 0;
+}
+
 function parseAxisValues(gcode, axes) {
   if (typeof gcode !== 'string' || !Array.isArray(axes) || axes.length === 0) {
     return {};
@@ -237,7 +259,10 @@ export async function runMoveWithWait(sendFn, gcode, speedup = 1, {
   }
   const feedMatch = gcode.match(/\bF([0-9]+(?:\.[0-9]+)?)/i);
   const feed = feedMatch ? parseFloat(feedMatch[1]) : defaultFeed;
-  const dist = estimateMoveLengthMm(gcode, axes);
+  const isKlipperSequentialRelative = sendFn?.firmware === 'klipper' && /\bH2\b/i.test(gcode);
+  const dist = isKlipperSequentialRelative
+    ? estimateMoveLengthMmManhattan(gcode, axes)
+    : estimateMoveLengthMm(gcode, axes);
   if (Number.isFinite(feed) && feed > 0 && Number.isFinite(dist)) {
     await delayFn((((dist / (feed / 60)) + 0.1) * 1000) / divisor);
   } else {

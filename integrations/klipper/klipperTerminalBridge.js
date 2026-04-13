@@ -52,6 +52,58 @@ function parseForceModeReplyTokens(replyText) {
     .filter((token) => token.length > 0);
 }
 
+const GCODE_AXIS_TO_STEPPER_AXIS = {
+  X: 'A',
+  Y: 'B',
+  Z: 'C',
+  U: 'D',
+  V: 'E',
+  W: 'F',
+};
+
+function normalizeStepperAxisForGcode(gcodeAxis) {
+  const upper = String(gcodeAxis || '').trim().toUpperCase();
+  if (!upper) {
+    return null;
+  }
+  return GCODE_AXIS_TO_STEPPER_AXIS[upper] || upper;
+}
+
+function parseRelativeForceMoveGcode(gcode) {
+  const text = String(gcode || '').trim();
+  if (!/^G0?1\b/i.test(text) || !/\bH2\b/i.test(text)) {
+    return null;
+  }
+  const feedMatch = text.match(/\bF(-?[0-9]+(?:\.[0-9]+)?)/i);
+  const feedMmPerMin = feedMatch ? Number.parseFloat(feedMatch[1]) : null;
+  const velocityMmPerS = Number.isFinite(feedMmPerMin) && feedMmPerMin > 0
+    ? feedMmPerMin / 60
+    : 1;
+
+  const axisMoves = [];
+  const axisPattern = /\b([A-Za-z])(-?[0-9]+(?:\.[0-9]+)?)/g;
+  let match = axisPattern.exec(text);
+  while (match) {
+    const axis = String(match[1]).toUpperCase();
+    if (axis !== 'G' && axis !== 'H' && axis !== 'F') {
+      const distanceMm = Number.parseFloat(match[2]);
+      if (Number.isFinite(distanceMm)) {
+        axisMoves.push({ axis, distanceMm });
+      }
+    }
+    match = axisPattern.exec(text);
+  }
+
+  if (axisMoves.length === 0) {
+    return null;
+  }
+
+  return {
+    axisMoves,
+    velocityMmPerS,
+  };
+}
+
 function buildDriverLookupCatalog({
   configPath = null,
   driverToAxis = null,
@@ -390,6 +442,44 @@ export function createKlipperTerminalBridge({
     configPath,
     driverToAxis,
   });
+
+  const resolveStepperByAxis = (() => {
+    const byAxis = new Map();
+    const descriptors = Array.isArray(resolvedDriverCatalog?.stepperDescriptors)
+      ? [...resolvedDriverCatalog.stepperDescriptors]
+      : [];
+    descriptors.sort((left, right) => String(left?.stepperName || '').localeCompare(String(right?.stepperName || '')));
+    for (const descriptor of descriptors) {
+      const axis = String(descriptor?.axis || '').toUpperCase();
+      if (!axis || byAxis.has(axis)) {
+        continue;
+      }
+      byAxis.set(axis, descriptor);
+    }
+    return (axis) => byAxis.get(String(axis || '').toUpperCase()) || null;
+  })();
+
+  const rewriteGcodeLine = (gcode) => {
+    const parsed = parseRelativeForceMoveGcode(gcode);
+    if (!parsed) {
+      return gcode;
+    }
+    const forceMoveLines = [];
+    for (const move of parsed.axisMoves) {
+      const stepperAxis = normalizeStepperAxisForGcode(move.axis);
+      const descriptor = resolveStepperByAxis(stepperAxis);
+      if (!descriptor?.stepperName) {
+        return gcode;
+      }
+      forceMoveLines.push(
+        `FORCE_MOVE STEPPER=${descriptor.stepperName} DISTANCE=${move.distanceMm} VELOCITY=${parsed.velocityMmPerS}`,
+      );
+    }
+    if (forceMoveLines.length === 0) {
+      return gcode;
+    }
+    return forceMoveLines.join('\n');
+  };
 
   const stepperSubscriptionIds = new Map();
   const trapqSubscriptionIds = new Map();
@@ -852,6 +942,7 @@ export function createKlipperTerminalBridge({
     ...helpers,
     syncMotionSources,
     handleGcodeOutput,
+    rewriteGcodeLine,
     runGcodeCommand,
     close,
   };

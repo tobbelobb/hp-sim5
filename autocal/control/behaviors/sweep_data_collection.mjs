@@ -6,6 +6,12 @@ import {
   runMoveWithWait,
   sleep as baseSleep,
 } from '../primitives/encoder_utils.mjs';
+import {
+  buildMotorCatalogFromConfig,
+  computeMmPerDegreeFromDescriptor,
+  resolveMotorToken,
+} from '../../../integrations/klipper/klipperMotorAddressConfig.js';
+import { DEFAULT_KLIPPY_CONFIG_PATH } from '../../../integrations/klipper/klippy_api_cli_config.mjs';
 import { ENCODER_NOISE_DEFAULTS } from '../primitives/encoder_noise.mjs';
 import {
   angleToLength,
@@ -326,6 +332,66 @@ function normalizeBaseRadii(values, numAnchors) {
   return normalized;
 }
 
+const GCODE_AXIS_TO_KLIPPER_STEPPER_AXIS = {
+  X: 'A',
+  Y: 'B',
+  Z: 'C',
+  U: 'D',
+  V: 'E',
+  W: 'F',
+};
+
+function normalizeKlipperStepperAxis(axis) {
+  const upper = String(axis || '').trim().toUpperCase();
+  if (!upper) {
+    return null;
+  }
+  return GCODE_AXIS_TO_KLIPPER_STEPPER_AXIS[upper] || upper;
+}
+
+export function resolveKlipperMmPerDegreeFromConfig({
+  motorIds = [],
+  axes = [],
+  configPath = DEFAULT_KLIPPY_CONFIG_PATH,
+} = {}) {
+  const catalog = buildMotorCatalogFromConfig(configPath);
+  if (!catalog || !Array.isArray(catalog.stepperDescriptors) || catalog.stepperDescriptors.length === 0) {
+    return Array.from({ length: motorIds.length || axes.length }, () => null);
+  }
+
+  const byStepperAxis = new Map();
+  for (const descriptor of catalog.stepperDescriptors) {
+    const stepperAxis = String(descriptor?.axis || '').toUpperCase();
+    if (!stepperAxis || byStepperAxis.has(stepperAxis)) {
+      continue;
+    }
+    byStepperAxis.set(stepperAxis, descriptor);
+  }
+
+  const count = Math.max(motorIds.length, axes.length);
+  const mmPerDeg = Array.from({ length: count }, () => null);
+  for (let idx = 0; idx < count; idx += 1) {
+    const token = motorIds[idx];
+    let descriptor = null;
+    if (token != null) {
+      const resolved = resolveMotorToken(token, catalog);
+      if (resolved?.resolved) {
+        descriptor = resolved.resolved;
+      }
+    }
+
+    if (!descriptor) {
+      const axis = normalizeKlipperStepperAxis(axes[idx]);
+      if (axis && byStepperAxis.has(axis)) {
+        descriptor = byStepperAxis.get(axis);
+      }
+    }
+
+    mmPerDeg[idx] = computeMmPerDegreeFromDescriptor(descriptor);
+  }
+  return mmPerDeg;
+}
+
 function formatM666Number(value) {
   return Number(value.toFixed(9)).toString();
 }
@@ -455,6 +521,8 @@ function validateSweepCollectionInput(context) {
   return {
     machineType,
     machineConfig: config,
+    firmware: String(args.firmware || 'rrf').toLowerCase(),
+    klipperConfigPath: args.config ?? null,
     motorIds,
     speedup: parseOptionalNumber(speedup, 'speedup'),
     sweepPoints,
@@ -1151,6 +1219,8 @@ export async function collectSweepData(send, context) {
   const {
     machineType,
     machineConfig,
+    firmware,
+    klipperConfigPath,
     motorIds,
     speedup,
     sweepPoints,
@@ -1225,7 +1295,18 @@ export async function collectSweepData(send, context) {
   }
 
   const m666ForCollection = (m666Adjusted && typeof m666Adjusted === 'object') ? m666Adjusted : m666Before;
-  const mmPerDeg = machineConfig.axes.map((_, idx) => computeMmPerDegree(m666ForCollection, idx));
+  let mmPerDeg = machineConfig.axes.map((_, idx) => computeMmPerDegree(m666ForCollection, idx));
+
+  if (firmware === 'klipper' && mmPerDeg.some((value) => !Number.isFinite(value))) {
+    const klipperConfigPathResolved = klipperConfigPath || DEFAULT_KLIPPY_CONFIG_PATH;
+    const fallbackMmPerDeg = resolveKlipperMmPerDegreeFromConfig({
+      motorIds,
+      axes: machineConfig.axes,
+      configPath: klipperConfigPathResolved,
+    });
+    mmPerDeg = mmPerDeg.map((value, idx) => (Number.isFinite(value) ? value : fallbackMmPerDeg[idx]));
+  }
+
   const missingAxes = mmPerDeg
     .map((val, idx) => (Number.isFinite(val) ? null : machineConfig.axes[idx]))
     .filter(Boolean);

@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import {
   angleToLength,
@@ -13,6 +14,7 @@ import {
   resolveFixedTargets,
   resolveForcedBaseRadii,
   resolveForcedBuildupFactor,
+  resolveKlipperMmPerDegreeFromConfig,
   selectRepresentativeConfigs,
   validateSweepConfig,
 } from '../../behaviors/sweep_data_collection.mjs';
@@ -111,6 +113,59 @@ describe('collect_sweep_data CLI helpers', () => {
     expect(angleToLength(10, 0, mmPerDeg)).toBe(5);
     expect(angleToLength(10, 1, mmPerDeg)).toBe(10);
     expect(angleToLength(10, 2, mmPerDeg)).toBe(0);
+  });
+
+  test('resolveKlipperMmPerDegreeFromConfig maps m569 addresses and machine axes', () => {
+    const tempDir = mkdtempSync(path.join(os.tmpdir(), 'hp-sim5-klipper-mmpd-'));
+    const configPath = path.join(tempDir, 'printer.cfg');
+    writeFileSync(configPath, `
+[printer]
+kinematics: winch
+winch_mechanical_advantage: 2, 1, 1, 1
+
+[stepper_a]
+step_pin: gpiochip1/gpio0
+dir_pin: gpiochip1/gpio1
+enable_pin: gpiochip1/gpio2
+rotation_distance: 360
+m569_address: 40.0
+
+[stepper_b]
+step_pin: gpiochip1/gpio3
+dir_pin: gpiochip1/gpio4
+enable_pin: gpiochip1/gpio5
+rotation_distance: 180
+m569_address: 41.0
+
+[stepper_c]
+step_pin: gpiochip1/gpio6
+dir_pin: gpiochip1/gpio7
+enable_pin: gpiochip1/gpio8
+rotation_distance: 90
+m569_address: 42.0
+
+[stepper_d]
+step_pin: gpiochip1/gpio9
+dir_pin: gpiochip1/gpio10
+enable_pin: gpiochip1/gpio11
+rotation_distance: 45
+m569_address: 43.0
+`, 'utf8');
+
+    try {
+      const mmPerDeg = resolveKlipperMmPerDegreeFromConfig({
+        motorIds: ['40.0', '41.0', '42.0', '43.0'],
+        axes: ['X', 'Y', 'Z', 'U'],
+        configPath,
+      });
+      expect(mmPerDeg).toHaveLength(4);
+      expect(mmPerDeg[0]).toBeCloseTo(0.5); // 360/(360*2)
+      expect(mmPerDeg[1]).toBeCloseTo(0.5); // 180/(360*1)
+      expect(mmPerDeg[2]).toBeCloseTo(0.25); // 90/(360*1)
+      expect(mmPerDeg[3]).toBeCloseTo(0.125); // 45/(360*1)
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 
   test('resolveForcedBuildupFactor defaults to no Q adjustment', () => {

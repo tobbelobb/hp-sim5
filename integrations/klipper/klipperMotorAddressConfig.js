@@ -46,7 +46,46 @@ function buildEmptyMotorCatalog() {
     stepperByName: new Map(),
     stepperByAddress: new Map(),
     hasConfiguredAddresses: false,
+    printerOptions: new Map(),
   };
+}
+
+function parseOptionalNumber(rawValue) {
+  if (rawValue == null) {
+    return null;
+  }
+  const numeric = Number.parseFloat(String(rawValue).trim());
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function parseOptionalInteger(rawValue) {
+  if (rawValue == null) {
+    return null;
+  }
+  const numeric = Number.parseInt(String(rawValue).trim(), 10);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function parseNumberList(rawValue) {
+  if (rawValue == null) {
+    return [];
+  }
+  return String(rawValue)
+    .split(/[,:]/)
+    .map((part) => Number.parseFloat(part.trim()))
+    .filter((value) => Number.isFinite(value));
+}
+
+function axisToIndex(axis) {
+  if (typeof axis !== 'string' || axis.length === 0) {
+    return null;
+  }
+  const upper = axis[0].toUpperCase();
+  const code = upper.charCodeAt(0);
+  if (code < 65 || code > 90) {
+    return null;
+  }
+  return code - 65;
 }
 
 function parseConfigFile(configPath, catalog, visited = new Set()) {
@@ -71,6 +110,10 @@ function parseConfigFile(configPath, catalog, visited = new Set()) {
     if (!currentSection) {
       return;
     }
+    if (currentSection.toLowerCase() === 'printer') {
+      catalog.printerOptions = new Map(currentOptions);
+      return;
+    }
     const axis = mapStepperNameToAxis(currentSection);
     if (!axis) {
       return;
@@ -85,6 +128,9 @@ function parseConfigFile(configPath, catalog, visited = new Set()) {
       canAddress: motorAddress?.canAddress ?? null,
       driver: motorAddress?.driver ?? null,
       hasMotorAddress: Boolean(motorAddress),
+      rotationDistanceMm: parseOptionalNumber(currentOptions.get('rotation_distance')),
+      microsteps: parseOptionalInteger(currentOptions.get('microsteps')),
+      mechanicalAdvantage: 1,
     };
     catalog.stepperDescriptors.push(descriptor);
     catalog.stepperByName.set(descriptor.stepperName, descriptor);
@@ -128,12 +174,46 @@ function parseConfigFile(configPath, catalog, visited = new Set()) {
   visited.delete(resolvedPath);
 }
 
+function applyMechanicalAdvantageFromPrinterConfig(catalog) {
+  if (!catalog || !(catalog.printerOptions instanceof Map)) {
+    return;
+  }
+  const rawMechanicalAdvantage = catalog.printerOptions.get('winch_mechanical_advantage');
+  const values = parseNumberList(rawMechanicalAdvantage);
+  if (values.length === 0) {
+    return;
+  }
+  for (const descriptor of catalog.stepperDescriptors) {
+    const axisIndex = axisToIndex(descriptor?.axis);
+    if (!Number.isFinite(axisIndex)) {
+      continue;
+    }
+    const value = values[axisIndex];
+    if (Number.isFinite(value) && value > 0) {
+      descriptor.mechanicalAdvantage = value;
+    }
+  }
+}
+
+export function computeMmPerDegreeFromDescriptor(descriptor) {
+  const rotationDistanceMm = Number(descriptor?.rotationDistanceMm);
+  if (!Number.isFinite(rotationDistanceMm) || rotationDistanceMm === 0) {
+    return null;
+  }
+  const mechanicalAdvantage = Number(descriptor?.mechanicalAdvantage);
+  const ma = Number.isFinite(mechanicalAdvantage) && mechanicalAdvantage > 0
+    ? mechanicalAdvantage
+    : 1;
+  return rotationDistanceMm / (360 * ma);
+}
+
 export function buildMotorCatalogFromConfig(configPath) {
   const catalog = buildEmptyMotorCatalog();
   if (typeof configPath !== 'string' || configPath.trim().length === 0) {
     return catalog;
   }
   parseConfigFile(configPath, catalog);
+  applyMechanicalAdvantageFromPrinterConfig(catalog);
   return catalog;
 }
 
