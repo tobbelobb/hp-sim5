@@ -3,6 +3,7 @@ import { computeQueueStepDurationTicks } from './motionUtils.js';
 // Klipper's motion_report batches are emitted on a 500ms cadence, so the
 // API replay path needs more than one batch buffered before it starts.
 export const API_MOTION_STARTUP_BUFFER_MS = 2500;
+export const API_MOTION_FALLBACK_LEAD_IN_S = 0.1;
 
 function normalizeBatchTime(value) {
   const numeric = Number(value);
@@ -145,6 +146,13 @@ export class KlipperApiSessionTimelineBuffer {
     this.lastTickByStepper = new Map();
   }
 
+  _getFallbackStartTime() {
+    if (!Number.isFinite(this.fallbackStartTime)) {
+      return null;
+    }
+    return Math.max(0, this.fallbackStartTime - API_MOTION_FALLBACK_LEAD_IN_S);
+  }
+
   setClockHz(clockHz) {
     if (Number.isFinite(clockHz) && clockHz > 0) {
       this.clockHz = clockHz;
@@ -236,8 +244,9 @@ export class KlipperApiSessionTimelineBuffer {
     if (Number.isFinite(this.sessionStartTime)) {
       return this.sessionStartTime;
     }
-    if (force && Number.isFinite(this.fallbackStartTime)) {
-      return this.fallbackStartTime;
+    const fallbackStartTime = this._getFallbackStartTime();
+    if (Number.isFinite(fallbackStartTime)) {
+      return fallbackStartTime;
     }
     return null;
   }

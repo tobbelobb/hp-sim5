@@ -345,6 +345,41 @@ describe('Klipper pacer worker upload playback', () => {
     expect(lateMoves.at(-1).at - releaseMs).toBeGreaterThanOrEqual(200);
   });
 
+  test('starts trapq-less API playback from the earliest stepper timestamp before api_motion_finish', async () => {
+    await loadWorkerModule();
+    globalThis.self.onmessage({ data: { type: 'set_speed_scale', value: 1 } });
+    globalThis.self.onmessage({ data: { type: 'api_motion_start', clockHz: 50_000_000 } });
+
+    globalThis.self.onmessage({
+      data: {
+        type: 'api_motion_batch',
+        batch: {
+          name: 'stepper_a',
+          first_time: 10.1,
+          last_time: 13.0,
+          start_mcu_position: 0,
+          data: [
+            [500_000, 290, 0],
+          ],
+        },
+      },
+    });
+
+    jest.advanceTimersByTime(20);
+    await Promise.resolve();
+
+    const movesBeforeFinish = getPostedCommands().filter((command) => command?.type === 'Move');
+    expect(movesBeforeFinish.length).toBeGreaterThan(0);
+
+    globalThis.self.onmessage({ data: { type: 'api_motion_finish' } });
+    jest.runAllTimers();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const postedTypes = globalThis.postMessage.mock.calls.map(([message]) => message?.type);
+    expect(postedTypes).toContain('done');
+  });
+
   test('does not start API playback until the startup preload includes the tail reserve', async () => {
     await loadWorkerModule();
     globalThis.self.onmessage({ data: { type: 'set_speed_scale', value: 1 } });

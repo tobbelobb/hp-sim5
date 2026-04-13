@@ -102,4 +102,40 @@ describe('Klipper API session timeline rebasing', () => {
     expect(secondBatch.data[1]).toEqual([667128, 2, -22047]);
     expect(secondBatch.timeline_last_tick).toBe(31881894);
   });
+
+  test('uses the earliest stepper first_time as a fallback anchor with a short lead-in', () => {
+    const buffer = new KlipperApiSessionTimelineBuffer({
+      clockHz: 50_000_000,
+      startupBufferMs: 1000,
+    });
+
+    buffer.consumeStepperBatch({
+      name: 'stepper_b',
+      first_time: 10.8,
+      last_time: 13.0,
+      start_mcu_position: 0,
+      data: [
+        [10_000_000, 1, 0],
+      ],
+    });
+    buffer.consumeStepperBatch({
+      name: 'stepper_a',
+      first_time: 10.2,
+      last_time: 13.1,
+      start_mcu_position: 0,
+      data: [
+        [99_999_999, 1, 0],
+        [60_000, 1, 0],
+      ],
+    });
+
+    expect(buffer.canStart(false)).toBe(true);
+
+    const batches = buffer.flushReady({ forceStart: false });
+    const firstBatch = batches.find((batch) => batch.name === 'stepper_a');
+
+    expect(firstBatch.timeline_start_tick).toBe(0);
+    expect(firstBatch.data[0]).toEqual([25_000_000, 1, 0]);
+    expect(firstBatch.data[1]).toEqual([60_000, 1, 0]);
+  });
 });
