@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import path from 'node:path';
 import readline from 'node:readline';
+import { spawn } from 'node:child_process';
 import { createBridge } from '../primitives/bridge_factory.mjs';
 import { attachDebugState } from '../primitives/debug_trace.mjs';
 import {
@@ -23,6 +24,7 @@ import {
 import { FORCE_TUNING_DEFAULTS } from '../behaviors/force_tuning.mjs';
 
 const SOURCE_FILE_LABEL = 'autocal/control/cli/collect_sweep_data.mjs';
+const SIM_PROCESS_WARNING_TIMEOUT_MS = 10_000;
 let stepGcodeMode = false;
 let pendingPreSendDelayMs = 0;
 let stepReadline = null;
@@ -67,6 +69,66 @@ function sleep(ms) {
   return baseSleep(delayMs);
 }
 
+function listProcessCommandLines() {
+  return new Promise((resolve, reject) => {
+    const child = spawn('ps', ['-eo', 'args='], {
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    let stdout = '';
+    child.once('error', reject);
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.once('close', (code) => {
+      if (code !== 0) {
+        reject(new Error(`ps exited with code ${code}`));
+        return;
+      }
+      const lines = stdout
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+      resolve(lines);
+    });
+  });
+}
+
+function isFirmwareProcessCommandLine(firmware, commandLine) {
+  if (firmware === 'klipper') {
+    return /(?:^|\s)(?:[^\s/]+\/)?klippy\.py(?:\s|$)/.test(commandLine);
+  }
+  return /(?:^|\s)(?:[^\s/]+\/)?rrf_simulator(?:\s|$)/.test(commandLine);
+}
+
+async function isFirmwareProcessRunning(firmware) {
+  const commandLines = await listProcessCommandLines();
+  return commandLines.some((commandLine) => isFirmwareProcessCommandLine(firmware, commandLine));
+}
+
+function scheduleSimulatorProcessWarning({ sim, firmware, timeoutMs = SIM_PROCESS_WARNING_TIMEOUT_MS }) {
+  if (!sim) {
+    return;
+  }
+  const timeoutSec = Math.round(Math.max(1, Number(timeoutMs) || SIM_PROCESS_WARNING_TIMEOUT_MS) / 1000);
+  const timer = setTimeout(async () => {
+    try {
+      const running = await isFirmwareProcessRunning(firmware);
+      if (running) {
+        return;
+      }
+      const expectedProcess = firmware === 'klipper' ? 'klippy.py' : 'rrf_simulator';
+      console.warn(
+        `[warning] --sim requested, but ${expectedProcess} is not running after ${timeoutSec}s. `
+        + 'The collector will keep waiting; start the simulator firmware process to continue.',
+      );
+    } catch (_error) {
+      // best-effort warning only
+    }
+  }, Math.max(1, Number(timeoutMs) || SIM_PROCESS_WARNING_TIMEOUT_MS));
+  if (typeof timer.unref === 'function') {
+    timer.unref();
+  }
+}
 
 export function parseBridgeArgs(argv) {
   const envServer = process.env.RRF_SERVER_URL;
@@ -126,6 +188,7 @@ export function parseBridgeArgs(argv) {
     returnToOrigin: false,
     config: null,
     socket: null,
+    sim: false,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -137,6 +200,8 @@ export function parseBridgeArgs(argv) {
     } else if (arg === '--server' || arg === '--rrf') {
       args.server = argv[++i] || args.server;
       args.serverExplicit = true;
+    } else if (arg === '--sim' || arg === '--simulation') {
+      args.sim = true;
     } else if (arg === '--firmware') {
       args.firmware = argv[++i] || 'rrf';
     } else if (arg === '--port') {
@@ -289,6 +354,7 @@ Options:
   --force-low <N>            idle force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_LOW_N})
   --force-mid <N>            start force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MID_N})
   --force-max <N>            end force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MAX_N})
+  --sim, --simulation        Enable simulation diagnostics (warn after 10s if firmware process is missing)
   --preserve-buildup-factor  Keep current M666 Q (default behavior when no Q override is provided)
   --force-buildup-factor <k> Force M666 Q to this value before collection
   --force-base-radii <csv>   Force M666 R radii before collection (comma-separated, e.g. 30,30,30)
@@ -365,6 +431,12 @@ async function main() {
   const targetServer = args.serverExplicit ? args.server : `http://localhost:${targetPort}`;
   const shouldSpawnRrf = args.firmware === 'rrf' && !args.noSpawnRrfSimulator && !args.serverExplicit;
   let rrfProcess = null;
+
+  scheduleSimulatorProcessWarning({
+    sim: args.sim,
+    firmware: args.firmware,
+    timeoutMs: SIM_PROCESS_WARNING_TIMEOUT_MS,
+  });
 
   if (shouldSpawnRrf) {
     try {
