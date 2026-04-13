@@ -14,6 +14,8 @@ const MAX_PENDING_WS_PAYLOADS = 5000;
 const DEFAULT_MOTION_IDLE_MS = 650;
 const DEFAULT_MOTION_END_TIME_TOLERANCE_S = 0.010;
 const DEFAULT_ENCODER_TIMEOUT_MS = 2000;
+const DEFAULT_GCODE_SCRIPT_TIMEOUT_MS = 15_000;
+const GCODE_SCRIPT_TIMEOUT_MARGIN_MS = 5_000;
 
 function splitTerminalLines(response) {
   return String(response)
@@ -102,6 +104,58 @@ function parseRelativeForceMoveGcode(gcode) {
     axisMoves,
     velocityMmPerS,
   };
+}
+
+function estimateForceMoveDurationSeconds(distanceMm, velocityMmPerS, accelMmPerS2 = 0) {
+  const distance = Math.abs(Number(distanceMm));
+  const velocity = Number(velocityMmPerS);
+  const accel = Math.max(0, Number(accelMmPerS2));
+  if (!Number.isFinite(distance) || !Number.isFinite(velocity) || velocity <= 0) {
+    return null;
+  }
+  if (!Number.isFinite(accel) || accel <= 0 || distance === 0) {
+    return distance / velocity;
+  }
+  let cruiseVelocity = velocity;
+  const maxCruiseV2 = distance * accel;
+  if (maxCruiseV2 < (cruiseVelocity ** 2)) {
+    cruiseVelocity = Math.sqrt(maxCruiseV2);
+  }
+  const accelTime = cruiseVelocity / accel;
+  const accelDecelDistance = accelTime * cruiseVelocity;
+  const cruiseTime = Math.max(0, (distance - accelDecelDistance) / cruiseVelocity);
+  return accelTime + cruiseTime + accelTime;
+}
+
+function estimateForceMoveScriptDurationSeconds(gcode) {
+  const lines = String(gcode || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length === 0) {
+    return null;
+  }
+  let totalDurationSeconds = 0;
+  let sawForceMove = false;
+  for (const line of lines) {
+    if (!/^FORCE_MOVE\b/i.test(line)) {
+      return null;
+    }
+    const distanceMatch = line.match(/\bDISTANCE=(-?[0-9]+(?:\.[0-9]+)?)/i);
+    const velocityMatch = line.match(/\bVELOCITY=(-?[0-9]+(?:\.[0-9]+)?)/i);
+    const accelMatch = line.match(/\bACCEL=(-?[0-9]+(?:\.[0-9]+)?)/i);
+    const durationSeconds = estimateForceMoveDurationSeconds(
+      distanceMatch ? Number.parseFloat(distanceMatch[1]) : null,
+      velocityMatch ? Number.parseFloat(velocityMatch[1]) : null,
+      accelMatch ? Number.parseFloat(accelMatch[1]) : 0,
+    );
+    if (!Number.isFinite(durationSeconds)) {
+      return null;
+    }
+    totalDurationSeconds += durationSeconds;
+    sawForceMove = true;
+  }
+  return sawForceMove ? totalDurationSeconds : null;
 }
 
 function buildDriverLookupCatalog({
@@ -479,6 +533,20 @@ export function createKlipperTerminalBridge({
       return gcode;
     }
     return forceMoveLines.join('\n');
+  };
+
+  const estimateGcodeScriptTimeoutMs = (gcode, fallbackMs = DEFAULT_GCODE_SCRIPT_TIMEOUT_MS) => {
+    const baseTimeoutMs = Number.isFinite(fallbackMs) && fallbackMs > 0
+      ? fallbackMs
+      : DEFAULT_GCODE_SCRIPT_TIMEOUT_MS;
+    const durationSeconds = estimateForceMoveScriptDurationSeconds(gcode);
+    if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
+      return baseTimeoutMs;
+    }
+    return Math.max(
+      baseTimeoutMs,
+      Math.ceil(durationSeconds * 1000) + GCODE_SCRIPT_TIMEOUT_MARGIN_MS,
+    );
   };
 
   const stepperSubscriptionIds = new Map();
@@ -943,6 +1011,7 @@ export function createKlipperTerminalBridge({
     syncMotionSources,
     handleGcodeOutput,
     rewriteGcodeLine,
+    estimateGcodeScriptTimeoutMs,
     runGcodeCommand,
     close,
   };

@@ -65,9 +65,12 @@ export async function createBridge(firmware, options = {}) {
     const rewritten = typeof klipperBridge.rewriteGcodeLine === 'function'
       ? klipperBridge.rewriteGcodeLine(trimmed)
       : trimmed;
+    const timeoutMs = typeof klipperBridge.estimateGcodeScriptTimeoutMs === 'function'
+      ? klipperBridge.estimateGcodeScriptTimeoutMs(rewritten, client.requestTimeoutMs)
+      : client.requestTimeoutMs;
     return klipperBridge.runGcodeCommand(
       trimmed,
-      () => client.request('gcode/script', { script: rewritten }),
+      () => client.request('gcode/script', { script: rewritten }, { timeoutMs }),
     );
   };
 

@@ -609,10 +609,20 @@ function buildRuntime(args, { cliArgv = process.argv.slice(2) } = {}) {
     try {
       await waitForPrimedConnection();
       await waitForKlippyReady();
+      const rewritten = typeof bridgeContext.rewriteGcodeLine === 'function'
+        ? bridgeContext.rewriteGcodeLine(trimmed)
+        : trimmed;
+      const timeoutMs = typeof bridgeContext.estimateGcodeScriptTimeoutMs === 'function'
+        ? bridgeContext.estimateGcodeScriptTimeoutMs(rewritten, client.requestTimeoutMs)
+        : client.requestTimeoutMs;
       const result = await bridgeContext.runGcodeCommand(
         trimmed,
         async () => {
-          const response = await client.request('gcode/script', { script: trimmed });
+          const response = await client.request(
+            'gcode/script',
+            { script: rewritten },
+            { timeoutMs },
+          );
           debugLogger.log('api-response', {
             method: 'gcode/script',
             channel: 'command',

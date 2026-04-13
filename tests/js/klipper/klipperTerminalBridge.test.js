@@ -122,6 +122,29 @@ rotation_distance: 246.20
     }
   });
 
+  test('extends gcode/script timeout for long FORCE_MOVE scripts', () => {
+    const tempConfig = createTempKlipperConfig(`
+[stepper_a]
+step_pin: gpiochip1/gpio0
+dir_pin: gpiochip1/gpio1
+enable_pin: gpiochip1/gpio2
+microsteps: 16
+rotation_distance: 246.20
+`);
+    const { bridge } = createHarness({ configPath: tempConfig.configPath });
+
+    try {
+      const rewritten = bridge.rewriteGcodeLine('G1 H2 X-457.850 F1400');
+      expect(rewritten).toBe(
+        'FORCE_MOVE STEPPER=stepper_a DISTANCE=-457.85 VELOCITY=23.333333333333332 ACCEL=500',
+      );
+      expect(bridge.estimateGcodeScriptTimeoutMs(rewritten, 15_000)).toBeGreaterThan(24_000);
+    } finally {
+      bridge.close();
+      tempConfig.cleanup();
+    }
+  });
+
   test('subscribes and unsubscribes dump_stepper streams from runtime motion source updates', async () => {
     const { client, klippyState, bridge } = createHarness();
 
