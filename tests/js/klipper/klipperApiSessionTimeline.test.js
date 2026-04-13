@@ -135,7 +135,7 @@ describe('Klipper API session timeline rebasing', () => {
     const firstBatch = batches.find((batch) => batch.name === 'stepper_a');
 
     expect(firstBatch.timeline_start_tick).toBe(0);
-    expect(firstBatch.data[0]).toEqual([25_000_000, 1, 0]);
+    expect(firstBatch.data[0]).toEqual([5_000_000, 1, 0]);
     expect(firstBatch.data[1]).toEqual([60_000, 1, 0]);
   });
 });

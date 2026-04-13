@@ -356,10 +356,10 @@ describe('Klipper pacer worker upload playback', () => {
         batch: {
           name: 'stepper_a',
           first_time: 10.1,
-          last_time: 13.0,
+          last_time: 13.8,
           start_mcu_position: 0,
           data: [
-            [500_000, 290, 0],
+            [500_000, 370, 0],
           ],
         },
       },

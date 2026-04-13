@@ -19,6 +19,10 @@ export const DEFAULT_KLIPPY_HOST_MCU_SERIAL =
   process.env.KLIPPY_HOST_MCU_SERIAL || '/tmp/klipper_host_mcu';
 export const DEFAULT_KLIPPY_HOST_MCU_REALTIME =
   process.env.KLIPPY_HOST_MCU_REALTIME || '0';
+export const DEFAULT_KLIPPY_MOTION_QUEUE_SG_LOW_TIME =
+  process.env.KLIPPY_MOTION_QUEUE_SG_LOW_TIME || null;
+export const DEFAULT_KLIPPY_MOTION_QUEUE_SG_HIGH_TIME =
+  process.env.KLIPPY_MOTION_QUEUE_SG_HIGH_TIME || null;
 
 const SOCKET_UNAVAILABLE_CODES = new Set([
   'ECONNREFUSED',
@@ -152,8 +156,26 @@ export function buildKlippyApiLaunchSpec({
   hostMcuBin = DEFAULT_KLIPPY_HOST_MCU_BIN,
   hostMcuSerial = DEFAULT_KLIPPY_HOST_MCU_SERIAL,
   hostMcuRealtime = DEFAULT_KLIPPY_HOST_MCU_REALTIME,
+  motionQueueStepGenLowTime = DEFAULT_KLIPPY_MOTION_QUEUE_SG_LOW_TIME,
+  motionQueueStepGenHighTime = DEFAULT_KLIPPY_MOTION_QUEUE_SG_HIGH_TIME,
   shell = '/bin/bash',
 } = {}) {
+  const env = {
+    ...process.env,
+    KLIPPY_SOCKET_PATH: resolvePathLike(socketPath, cwd),
+    KLIPPY_LOG_PATH: resolvePathLike(logPath, cwd),
+    KLIPPY_CONFIG_PATH: resolvePathLike(configPath, cwd),
+    KLIPPY_PYTHON: resolvePathLike(python, cwd),
+    KLIPPY_HOST_MCU_BIN: resolvePathLike(hostMcuBin, cwd),
+    KLIPPY_HOST_MCU_SERIAL: resolvePathLike(hostMcuSerial, cwd),
+    KLIPPY_HOST_MCU_REALTIME: String(hostMcuRealtime),
+  };
+  if (motionQueueStepGenLowTime !== null && motionQueueStepGenLowTime !== undefined) {
+    env.KLIPPY_MOTION_QUEUE_SG_LOW_TIME = String(motionQueueStepGenLowTime);
+  }
+  if (motionQueueStepGenHighTime !== null && motionQueueStepGenHighTime !== undefined) {
+    env.KLIPPY_MOTION_QUEUE_SG_HIGH_TIME = String(motionQueueStepGenHighTime);
+  }
   return {
     command: shell,
     args: [path.resolve(cwd, startScript)],
@@ -161,16 +183,7 @@ export function buildKlippyApiLaunchSpec({
       cwd,
       detached: true,
       stdio: 'ignore',
-      env: {
-        ...process.env,
-        KLIPPY_SOCKET_PATH: resolvePathLike(socketPath, cwd),
-        KLIPPY_LOG_PATH: resolvePathLike(logPath, cwd),
-        KLIPPY_CONFIG_PATH: resolvePathLike(configPath, cwd),
-        KLIPPY_PYTHON: resolvePathLike(python, cwd),
-        KLIPPY_HOST_MCU_BIN: resolvePathLike(hostMcuBin, cwd),
-        KLIPPY_HOST_MCU_SERIAL: resolvePathLike(hostMcuSerial, cwd),
-        KLIPPY_HOST_MCU_REALTIME: String(hostMcuRealtime),
-      },
+      env,
     },
   };
 }
@@ -224,6 +237,8 @@ export async function ensureKlippyApiServer({
   hostMcuBin = DEFAULT_KLIPPY_HOST_MCU_BIN,
   hostMcuSerial = DEFAULT_KLIPPY_HOST_MCU_SERIAL,
   hostMcuRealtime = DEFAULT_KLIPPY_HOST_MCU_REALTIME,
+  motionQueueStepGenLowTime = DEFAULT_KLIPPY_MOTION_QUEUE_SG_LOW_TIME,
+  motionQueueStepGenHighTime = DEFAULT_KLIPPY_MOTION_QUEUE_SG_HIGH_TIME,
   shell = '/bin/bash',
   onInfo = null,
   spawnImpl = spawn,
@@ -239,6 +254,8 @@ export async function ensureKlippyApiServer({
     hostMcuBin,
     hostMcuSerial,
     hostMcuRealtime,
+    motionQueueStepGenLowTime,
+    motionQueueStepGenHighTime,
     shell,
   });
   if (typeof onInfo === 'function') {

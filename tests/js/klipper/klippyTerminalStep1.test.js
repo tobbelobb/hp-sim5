@@ -129,6 +129,8 @@ describe('klipper terminal step 1', () => {
       hostMcuBin: './examples/klipper/linux_mcu/klipper.elf',
       hostMcuSerial: './tmp/klipper_host_mcu',
       hostMcuRealtime: '0',
+      motionQueueStepGenLowTime: '4.500',
+      motionQueueStepGenHighTime: '7.000',
     });
 
     expect(spec.command).toBe('/bin/bash');
@@ -140,6 +142,8 @@ describe('klipper terminal step 1', () => {
     expect(spec.options.env.KLIPPY_HOST_MCU_BIN).toBe('/repo/examples/klipper/linux_mcu/klipper.elf');
     expect(spec.options.env.KLIPPY_HOST_MCU_SERIAL).toBe('/repo/tmp/klipper_host_mcu');
     expect(spec.options.env.KLIPPY_HOST_MCU_REALTIME).toBe('0');
+    expect(spec.options.env.KLIPPY_MOTION_QUEUE_SG_LOW_TIME).toBe('4.500');
+    expect(spec.options.env.KLIPPY_MOTION_QUEUE_SG_HIGH_TIME).toBe('7.000');
   });
 
   test('ensureKlippyApiServer launches the helper script and waits for the socket', async () => {

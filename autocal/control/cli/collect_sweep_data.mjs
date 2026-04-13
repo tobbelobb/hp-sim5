@@ -146,6 +146,7 @@ async function ensureKlippySimulator({
   firmware,
   socketPath,
   configPath,
+  speedup = 1,
   quiet,
 } = {}) {
   if (!sim || firmware !== 'klipper') {
@@ -155,10 +156,17 @@ async function ensureKlippySimulator({
   if (existingKlippy) {
     return null;
   }
+  const simSpeedup = Number.isFinite(speedup) && speedup > 1 ? speedup : 1;
+  const queueAheadScale = Math.min(simSpeedup, 20);
+  const motionQueueStepGenLowTime = (0.450 * queueAheadScale).toFixed(3);
+  const motionQueueStepGenHighTime = (0.700 * queueAheadScale).toFixed(3);
+
   return ensureKlippyApiServer({
     startScript: './scripts/run_klippy_api_mode.sh',
     socketPath,
     configPath: configPath || DEFAULT_KLIPPY_CONFIG_PATH,
+    motionQueueStepGenLowTime,
+    motionQueueStepGenHighTime,
     onInfo: quiet ? null : (message) => console.log(message),
   });
 }
@@ -529,6 +537,7 @@ async function main() {
       firmware: args.firmware,
       socketPath,
       configPath: args.config,
+      speedup,
       quiet: args.quiet,
     });
   } catch (err) {
