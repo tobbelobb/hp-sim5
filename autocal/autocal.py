@@ -264,6 +264,15 @@ def full_auto_loop(
             sweep_points_value = parsed
             if raw_sweep_points is None:
                 collector_args_eff.extend(["--sweepPoints", str(parsed)])
+    collector_speedup = None
+    raw_speedup = _arg_value(collector_args_eff, "--speedup")
+    if raw_speedup is not None:
+        try:
+            parsed_speedup = float(raw_speedup)
+        except (TypeError, ValueError):
+            parsed_speedup = None
+        if parsed_speedup is not None and np.isfinite(parsed_speedup) and parsed_speedup > 0:
+            collector_speedup = float(parsed_speedup)
     reset_pending = bool(sim and hp_sim_reset_eff)
     rrf_server, server_explicit, port = _resolve_rrf_target(collector_args)
     sim_process: Optional[subprocess.Popen] = None
@@ -282,7 +291,11 @@ def full_auto_loop(
         cleanup_registered = True
         target_port = port or DEFAULT_RRF_PORT
         _log_line(f"; starting {firmware} simulator at http://localhost:{target_port} (config: {sim_config})")
-        sim_process = provider.start_simulator(target_port, sim_config=sim_config)
+        sim_process = provider.start_simulator(
+            target_port,
+            sim_config=sim_config,
+            speedup=collector_speedup,
+        )
         provider.wait_for_ready(f"http://localhost:{target_port}")
 
     def _finalize(code: int) -> int:

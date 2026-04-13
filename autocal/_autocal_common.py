@@ -450,6 +450,8 @@ def _resolve_rrf_target(collector_args: Sequence[str]) -> Tuple[str, bool, Optio
 def _apply_simulation_defaults(collector_args: Sequence[str], *, sim: bool) -> List[str]:
     args = list(collector_args)
     if sim:
+        if not _arg_has_flag(args, "--sim", "--simulation"):
+            args.append("--sim")
         if not _arg_has_flag(args, "--no-spawn-rrf-simulator"):
             args.append("--no-spawn-rrf-simulator")
     else:
@@ -3588,7 +3590,13 @@ from abc import ABC, abstractmethod
 
 class FirmwareProvider(ABC):
     @abstractmethod
-    def start_simulator(self, port: int, sim_config: Optional[str] = None) -> Optional[subprocess.Popen]:
+    def start_simulator(
+        self,
+        port: int,
+        sim_config: Optional[str] = None,
+        *,
+        speedup: Optional[float] = None,
+    ) -> Optional[subprocess.Popen]:
         pass
 
     @abstractmethod
@@ -3601,7 +3609,14 @@ class FirmwareProvider(ABC):
 
 
 class RRFFirmwareProvider(FirmwareProvider):
-    def start_simulator(self, port: int, sim_config: Optional[str] = None) -> Optional[subprocess.Popen]:
+    def start_simulator(
+        self,
+        port: int,
+        sim_config: Optional[str] = None,
+        *,
+        speedup: Optional[float] = None,
+    ) -> Optional[subprocess.Popen]:
+        _ = speedup
         return _start_rrf_simulator(port, sim_config=sim_config)
 
     def wait_for_ready(self, target: str, timeout_s: float = 7.0) -> None:
@@ -3612,14 +3627,25 @@ class RRFFirmwareProvider(FirmwareProvider):
 
 
 class KlipperFirmwareProvider(FirmwareProvider):
-    def start_simulator(self, port: int, sim_config: Optional[str] = None) -> Optional[subprocess.Popen]:
+    def start_simulator(
+        self,
+        port: int,
+        sim_config: Optional[str] = None,
+        *,
+        speedup: Optional[float] = None,
+    ) -> Optional[subprocess.Popen]:
         env = os.environ.copy()
         if sim_config:
             env["KLIPPY_CONFIG_PATH"] = str(REPO_ROOT / sim_config)
-        
+
+        sim_speedup = float(speedup) if speedup is not None and speedup > 1 else 1.0
+        queue_ahead_scale = min(sim_speedup, 20.0)
+        env["KLIPPY_MOTION_QUEUE_SG_LOW_TIME"] = f"{0.450 * queue_ahead_scale:.3f}"
+        env["KLIPPY_MOTION_QUEUE_SG_HIGH_TIME"] = f"{0.700 * queue_ahead_scale:.3f}"
+
         # We don't really use 'port' for Klipper UDS mode in the same way,
         # but the scripts could be extended if needed.
-        
+
         cmd = [str(REPO_ROOT / "scripts" / "run_klippy_api_mode.sh")]
         return subprocess.Popen(
             cmd,
