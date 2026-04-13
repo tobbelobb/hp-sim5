@@ -16,6 +16,13 @@ import {
 } from '../primitives/encoder_utils.mjs';
 import { normalizeMachineType } from '../primitives/machine_type.mjs';
 import {
+  DEFAULT_KLIPPY_CONFIG_PATH,
+  DEFAULT_KLIPPY_SOCKET_PATH,
+  ensureKlippyApiServer,
+  findKlippyApiProcess,
+  stopKlippyApiServer,
+} from '../../../integrations/klipper/klippy_api_cli_config.mjs';
+import {
   collectSweepData,
   MACHINE_CONFIGS,
   MOTOR_IDS_BY_MACHINE,
@@ -132,6 +139,28 @@ function scheduleSimulatorProcessWarning({ sim, firmware, timeoutMs = SIM_PROCES
   if (typeof timer.unref === 'function') {
     timer.unref();
   }
+}
+
+async function ensureKlippySimulator({
+  sim,
+  firmware,
+  socketPath,
+  configPath,
+  quiet,
+} = {}) {
+  if (!sim || firmware !== 'klipper') {
+    return null;
+  }
+  const existingKlippy = await findKlippyApiProcess({ socketPath });
+  if (existingKlippy) {
+    return null;
+  }
+  return ensureKlippyApiServer({
+    startScript: './scripts/run_klippy_api_mode.sh',
+    socketPath,
+    configPath: configPath || DEFAULT_KLIPPY_CONFIG_PATH,
+    onInfo: quiet ? null : (message) => console.log(message),
+  });
 }
 
 export function parseBridgeArgs(argv) {
@@ -358,7 +387,7 @@ Options:
   --force-low <N>            idle force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_LOW_N})
   --force-mid <N>            start force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MID_N})
   --force-max <N>            end force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MAX_N})
-  --sim, --simulation        Enable simulation diagnostics (warn after 10s if firmware process is missing)
+  --sim, --simulation        Enable simulation mode (autostarts Klippy in --firmware klipper)
   --preserve-buildup-factor  Keep current M666 Q (default behavior when no Q override is provided)
   --force-buildup-factor <k> Force M666 Q to this value before collection
   --force-base-radii <csv>   Force M666 R radii before collection (comma-separated, e.g. 30,30,30)
@@ -433,8 +462,48 @@ async function main() {
 
   const targetPort = Number.isFinite(parseInt(args.port, 10)) ? parseInt(args.port, 10) : DEFAULT_RRF_PORT;
   const targetServer = args.serverExplicit ? args.server : `http://localhost:${targetPort}`;
+  const socketPath = args.socket || process.env.KLIPPY_SOCKET_PATH || DEFAULT_KLIPPY_SOCKET_PATH;
   const shouldSpawnRrf = args.firmware === 'rrf' && !args.noSpawnRrfSimulator && !args.serverExplicit;
   let rrfProcess = null;
+  let managedKlippyProcess = null;
+  let bridgeCtx = null;
+  let cleanupStarted = false;
+
+  const cleanup = async () => {
+    if (cleanupStarted) {
+      return;
+    }
+    cleanupStarted = true;
+    if (rrfProcess && !args.persistRrfSimulator) {
+      stopProcess(rrfProcess);
+      rrfProcess = null;
+    }
+    if (managedKlippyProcess) {
+      stopKlippyApiServer(managedKlippyProcess);
+      managedKlippyProcess = null;
+    }
+    if (stepReadline) {
+      stepReadline.close();
+      stepReadline = null;
+    }
+    if (bridgeCtx?.close) {
+      bridgeCtx.close();
+      bridgeCtx = null;
+    }
+  };
+
+  const onSigInt = () => {
+    cleanup().finally(() => process.exit(130));
+  };
+  const onSigTerm = () => {
+    cleanup().finally(() => process.exit(143));
+  };
+  const onSigHup = () => {
+    cleanup().finally(() => process.exit(129));
+  };
+  process.once('SIGINT', onSigInt);
+  process.once('SIGTERM', onSigTerm);
+  process.once('SIGHUP', onSigHup);
 
   scheduleSimulatorProcessWarning({
     sim: args.sim,
@@ -449,67 +518,84 @@ async function main() {
       await waitForRrfSimulator(targetServer);
     } catch (err) {
       console.error(`Unable to start rrf_simulator: ${err?.message || err}`);
+      await cleanup();
       process.exit(1);
     }
   }
 
-  const bridgeCtx = await createBridge(args.firmware, {
-    server: targetServer,
-    socketPath: args.socket || process.env.KLIPPY_SOCKET_PATH || '/tmp/klippy_uds',
-    wsPort: args.noWs ? 0 : args.wsPort,
-    quiet: args.quiet,
-    configPath: args.config,
-    encoderTimeoutMs,
-  });
-
-  const send = async (line, options = {}) => {
-    const trimmed = line?.trim?.();
-    if (args.stepGcode && trimmed) {
-      const normalPreWaitMs = pendingPreSendDelayMs;
-      pendingPreSendDelayMs = 0;
-      const source = getSourceLineFromStack(new Error().stack, { skipMatches: 0 });
-      const sourceLabel = source ? `${source.file}:${source.line}` : SOURCE_FILE_LABEL;
-      await waitForEnter(
-        `Send: ${trimmed}\n  Enter to send (normal pre-wait ${Math.round(normalPreWaitMs)}ms; from ${sourceLabel}) `,
-      );
-    } else if (args.debugGcode && trimmed) {
-      console.log(`[rrf_gcode] ${trimmed}`);
-    }
-    const res = await bridgeCtx.sendGcodeLine(line, options);
-    if (args.stepGcode) {
-      const reply = res?.reply?.trim?.() || '';
-      console.log(reply.length > 0 ? `[rrf_reply] ${reply}` : '[rrf_reply] <empty>');
-    } else if ((args.debugGcodeResponses || args.debug) && res?.reply) {
-      const reply = res.reply.trim();
-      if (reply.length > 0) {
-        console.log(`[rrf_reply] ${reply}`);
-      }
-    }
-    return res;
-  };
-  send.firmware = args.firmware;
-
-  attachDebugState(send, {
-    enabled: debugSweepActions,
-    axes: machineConfig.axes,
-    motorIds,
-  });
-
-  if (!args.noWs) {
-    await bridgeCtx.waitForHpSimConnection(waitForWsMs);
-    if (args.hpSimReset) {
-      await sendHpSimReset(bridgeCtx, { quiet: args.quiet });
-    }
-    if (speedup !== 1) {
-      await sendHpSimSpeedScale(bridgeCtx, speedup, { quiet: args.quiet });
-    }
-    if (args.trace) {
-      await sendHpSimPositionTraceMode(bridgeCtx, true, { quiet: args.quiet });
-    }
+  try {
+    managedKlippyProcess = await ensureKlippySimulator({
+      sim: args.sim,
+      firmware: args.firmware,
+      socketPath,
+      configPath: args.config,
+      quiet: args.quiet,
+    });
+  } catch (err) {
+    console.error(`Unable to start Klippy simulator: ${err?.message || err}`);
+    await cleanup();
+    process.exit(1);
   }
 
   let success = false;
   try {
+    bridgeCtx = await createBridge(args.firmware, {
+      server: targetServer,
+      socketPath,
+      wsPort: args.noWs ? 0 : args.wsPort,
+      quiet: args.quiet,
+      configPath: args.config,
+      encoderTimeoutMs,
+      speedup,
+      sim: args.sim,
+    });
+
+    const send = async (line, options = {}) => {
+      const trimmed = line?.trim?.();
+      if (args.stepGcode && trimmed) {
+        const normalPreWaitMs = pendingPreSendDelayMs;
+        pendingPreSendDelayMs = 0;
+        const source = getSourceLineFromStack(new Error().stack, { skipMatches: 0 });
+        const sourceLabel = source ? `${source.file}:${source.line}` : SOURCE_FILE_LABEL;
+        await waitForEnter(
+          `Send: ${trimmed}\n  Enter to send (normal pre-wait ${Math.round(normalPreWaitMs)}ms; from ${sourceLabel}) `,
+        );
+      } else if (args.debugGcode && trimmed) {
+        console.log(`[rrf_gcode] ${trimmed}`);
+      }
+      const res = await bridgeCtx.sendGcodeLine(line, options);
+      if (args.stepGcode) {
+        const reply = res?.reply?.trim?.() || '';
+        console.log(reply.length > 0 ? `[rrf_reply] ${reply}` : '[rrf_reply] <empty>');
+      } else if ((args.debugGcodeResponses || args.debug) && res?.reply) {
+        const reply = res.reply.trim();
+        if (reply.length > 0) {
+          console.log(`[rrf_reply] ${reply}`);
+        }
+      }
+      return res;
+    };
+    send.firmware = args.firmware;
+
+    attachDebugState(send, {
+      enabled: debugSweepActions,
+      axes: machineConfig.axes,
+      motorIds,
+    });
+
+    if (!args.noWs) {
+      await bridgeCtx.waitForHpSimConnection(waitForWsMs);
+      if (args.hpSimReset) {
+        await sendHpSimReset(bridgeCtx, { quiet: args.quiet });
+      }
+      if (speedup !== 1) {
+        await sendHpSimSpeedScale(bridgeCtx, speedup, { quiet: args.quiet });
+      }
+      if (args.trace) {
+        await sendHpSimPositionTraceMode(bridgeCtx, true, { quiet: args.quiet });
+      }
+    }
+
     await collectSweepData(send, {
       args,
       machineType,
@@ -522,14 +608,10 @@ async function main() {
   } catch (err) {
     console.error(`Failed to collect sweeps: ${err?.message || err}`);
   } finally {
-    if (rrfProcess && !args.persistRrfSimulator) {
-      stopProcess(rrfProcess);
-    }
-    if (stepReadline) {
-      stepReadline.close();
-      stepReadline = null;
-    }
-    bridgeCtx.close();
+    process.off('SIGINT', onSigInt);
+    process.off('SIGTERM', onSigTerm);
+    process.off('SIGHUP', onSigHup);
+    await cleanup();
     process.exit(success ? 0 : 1);
   }
 }

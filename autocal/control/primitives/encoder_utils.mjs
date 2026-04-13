@@ -257,6 +257,9 @@ export async function runMoveWithWait(sendFn, gcode, speedup = 1, {
     await delayFn((durationSeconds * 1000) / divisor);
     return;
   }
+  if (sendFn?.firmware === 'klipper' && result?.hadMotion) {
+    return;
+  }
   const feedMatch = gcode.match(/\bF([0-9]+(?:\.[0-9]+)?)/i);
   const feed = feedMatch ? parseFloat(feedMatch[1]) : defaultFeed;
   const isKlipperSequentialRelative = sendFn?.firmware === 'klipper' && /\bH2\b/i.test(gcode);
