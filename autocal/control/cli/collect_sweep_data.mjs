@@ -94,10 +94,14 @@ function listProcessCommandLines() {
 }
 
 function isFirmwareProcessCommandLine(firmware, commandLine) {
+  const argv = String(commandLine)
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
   if (firmware === 'klipper') {
-    return /(?:^|\s)(?:[^\s/]+\/)?klippy\.py(?:\s|$)/.test(commandLine);
+    return argv.some((arg) => arg === 'klippy.py' || arg.endsWith('/klippy.py'));
   }
-  return /(?:^|\s)(?:[^\s/]+\/)?rrf_simulator(?:\s|$)/.test(commandLine);
+  return argv.some((arg) => arg === 'rrf_simulator' || arg.endsWith('/rrf_simulator'));
 }
 
 async function isFirmwareProcessRunning(firmware) {
