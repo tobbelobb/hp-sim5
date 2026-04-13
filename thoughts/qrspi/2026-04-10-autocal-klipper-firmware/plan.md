@@ -133,7 +133,7 @@ class KlipperFirmwareProvider(FirmwareProvider):
     def start_simulator(self, port: int, sim_config: Optional[str] = None):
         # Spawn scripts/run_klippy_api_mode.sh or similar
         return subprocess.Popen(["./scripts/run_klippy_api_mode.sh"], ...)
-    
+
     def wait_for_ready(self, target: str, timeout_s: float = 7.0):
         # Probe Unix socket /tmp/klippy_uds
         pass
@@ -182,7 +182,7 @@ const bridgeCtx = await createBridge(args.firmware, {
 - [x] `node autocal/control/cli/collect_sweep_data.mjs --firmware rrf --sim ...` still works.
 
 #### Manual
-- [ ] Manually run `node autocal/control/cli/collect_sweep_data.mjs --firmware klipper --sim --machine-type hangprinter_4` and verify it can collect at least one point.
+- [x] Manually run `node autocal/control/cli/collect_sweep_data.mjs --firmware klipper --sim --machine-type hangprinter_4` and verify it can collect at least one point.
 
 ---
 
