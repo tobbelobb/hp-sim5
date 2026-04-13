@@ -161,8 +161,8 @@ def full_auto_loop(
         if m669:
             if skip_sim_send:
                 _log_console(f"; --sim + --no-collect set; skipping M669 send.")
-            elif firmware == 'klipper':
-                 _log_console("; --firmware klipper set; skipping M669 send.")
+            elif firmware == "klipper":
+                _log_console("; --firmware klipper set; skipping M669 send.")
             else:
                 _log_console(f"Sending {m669} to {rrf_server}")
                 try:
@@ -191,8 +191,46 @@ def full_auto_loop(
                 mismatch="warn",
             )
 
+    sim_config = _resolve_sim_config(
+        machine_type=machine_type,
+        find_radii_mode=find_radii_mode,
+        find_buildup_mode=find_buildup_mode,
+        firmware=firmware,
+        config=config,
+        rrf_config=rrf_config,
+        klipper_config=klipper_config,
+    )
+
+    def _normalize_collector_args(argv: Sequence[str]) -> List[str]:
+        normalized = list(argv)
+
+        def _drop_flags_with_values(args: Sequence[str], *flags: str) -> List[str]:
+            out: List[str] = []
+            i = 0
+            while i < len(args):
+                arg = str(args[i])
+                if arg in flags:
+                    i += 2
+                    continue
+                if any(arg.startswith(flag + "=") for flag in flags):
+                    i += 1
+                    continue
+                out.append(arg)
+                i += 1
+            return out
+
+        normalized = _drop_flags_with_values(normalized, "--firmware")
+        normalized.extend(["--firmware", str(firmware)])
+
+        if firmware == "klipper" and sim_config is not None:
+            normalized = _drop_flags_with_values(normalized, "--config")
+            normalized.extend(["--config", str(sim_config)])
+
+        return normalized
+
     user_no_spawn = _arg_has_flag(collector_args, "--no-spawn-rrf-simulator")
-    collector_args_eff = _apply_simulation_defaults(collector_args, sim=sim)
+    collector_args_eff = _normalize_collector_args(collector_args)
+    collector_args_eff = _apply_simulation_defaults(collector_args_eff, sim=sim)
     collector_args_eff, _ = _inject_spool_collection_args(
         collector_args_eff,
         find_radii_mode=find_radii_mode,
@@ -230,15 +268,6 @@ def full_auto_loop(
     rrf_server, server_explicit, port = _resolve_rrf_target(collector_args)
     sim_process: Optional[subprocess.Popen] = None
     cleanup_registered = False
-    sim_config = _resolve_sim_config(
-        machine_type=machine_type,
-        find_radii_mode=find_radii_mode,
-        find_buildup_mode=find_buildup_mode,
-        firmware=firmware,
-        config=config,
-        rrf_config=rrf_config,
-        klipper_config=klipper_config,
-    )
 
     def _cleanup() -> None:
         if sim_process and not keep_sim_alive:
