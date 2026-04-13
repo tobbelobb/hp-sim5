@@ -1,4 +1,5 @@
 import { runGame } from '../../../hp-sim-3d/app/runner.js';
+import { RemoteSpoolSystem } from '../../../hp-sim-3d/app/remoteSpoolSystem.js';
 
 function createEventTarget(initialText = '') {
   const listeners = new Map();
@@ -49,7 +50,7 @@ describe('slideprinter 3D runner idle loop handling', () => {
     global.performance = originalPerformance;
   });
 
-  function setupRunner({ paused = false } = {}) {
+  function setupRunner({ paused = false, systems = [] } = {}) {
     const elements = {
       pauseBtn: createEventTarget('Pause'),
       resetBtn: createEventTarget('Reset'),
@@ -80,7 +81,7 @@ describe('slideprinter 3D runner idle loop handling', () => {
     resources.set('renderSystem', renderSystem);
 
     const world = {
-      systems: [],
+      systems,
       getResource(key) {
         return resources.get(key);
       },
@@ -180,5 +181,18 @@ describe('slideprinter 3D runner idle loop handling', () => {
     expect(renderSystem.clearAnimationLoop).toHaveBeenCalledTimes(1);
     expect(renderSystem.setAnimationLoop).toHaveBeenCalledTimes(2);
     expect(typeof getAnimationLoop()).toBe('function');
+  });
+
+  test('linear playback keeps advancing when a live remote worker is attached but the queue is empty', () => {
+    const remoteSystem = new RemoteSpoolSystem();
+    remoteSystem.worker = { postMessage: jest.fn() };
+    const { world, getAnimationLoop } = setupRunner({ systems: [remoteSystem] });
+
+    const loop = getAnimationLoop();
+    expect(typeof loop).toBe('function');
+
+    loop(1016);
+
+    expect(world.update).toHaveBeenCalledTimes(1);
   });
 });

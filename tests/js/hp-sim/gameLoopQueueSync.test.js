@@ -108,7 +108,7 @@ describe('game loop remote queue synchronisation', () => {
     global.document = originalDocument;
   });
 
-  test('world updates wait until a Move command is available', () => {
+  test('linear playback keeps updating even when a live worker queue is empty', () => {
     controls.reset({ autoPause: false });
     expect(rafCallbacks.length).toBeGreaterThan(0);
 
@@ -116,13 +116,14 @@ describe('game loop remote queue synchronisation', () => {
     advanceFrame();
     advanceFrame();
 
-    expect(world.updateCount).toBe(0);
+    expect(world.updateCount).toBeGreaterThan(0);
+    const updatesBeforeMove = world.updateCount;
 
     remoteSystem.addCommand({ type: 'Move', A: 0.1 });
 
     advanceFrame();
 
-    expect(world.updateCount).toBe(1);
+    expect(world.updateCount).toBeGreaterThan(updatesBeforeMove);
     const stepperComp = world.getComponentStore(StepperMotorComponent).values().next().value;
     expect(stepperComp.commandedAngle).toBeCloseTo(0.1, 12);
   });

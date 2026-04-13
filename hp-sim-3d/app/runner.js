@@ -199,7 +199,7 @@ export function runGame(world, internalSetupScene, options = {}) {
     if (queueLength > 0) {
       return true;
     }
-    return !remoteSystem.worker;
+    return playbackMode !== 'asap' || !remoteSystem.worker;
   };
 
   const runLinearFrame = (currentTime) => {
