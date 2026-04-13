@@ -181,12 +181,31 @@ def test_m569_4_requires_t_parameter():
     assert gcmd.responses == ["Error: M569.4 missing parameter 'T'"]
 
 
-def test_m569_4_requires_one_t_value_per_p():
-    _handler, commands = build_m569_with_runtime(
-        steppers=[FakeStepper("stepper_a", 2.0 * math.pi * 39.1845)],
-        mechanical_advantage=[1],
+def test_m569_4_allows_single_t_value_for_all_p_entries():
+    handler, commands = build_m569_with_runtime(
+        steppers=[
+            FakeStepper("stepper_a", 2.0 * math.pi * 39.1845, invert_dir=False),
+            FakeStepper("stepper_b", 2.0 * math.pi * 39.1845, invert_dir=True),
+        ],
+        mechanical_advantage=[1, 1],
     )
     gcmd = FakeGcmd({"P": "stepper_a:stepper_b", "T": "1.0"})
+    commands["M569.4"]["func"](gcmd)
+    assert gcmd.responses == ["-0.039185 Nm, 0.039185 Nm, "]
+    assert handler.driver_states["stepper_a"]["force_newtons"] == 1.0
+    assert handler.driver_states["stepper_b"]["force_newtons"] == 1.0
+
+
+def test_m569_4_requires_one_t_value_per_p_when_t_is_not_scalar():
+    _handler, commands = build_m569_with_runtime(
+        steppers=[
+            FakeStepper("stepper_a", 2.0 * math.pi * 39.1845),
+            FakeStepper("stepper_b", 2.0 * math.pi * 39.1845),
+            FakeStepper("stepper_c", 2.0 * math.pi * 39.1845),
+        ],
+        mechanical_advantage=[1, 1, 1],
+    )
+    gcmd = FakeGcmd({"P": "stepper_a:stepper_b:stepper_c", "T": "1.0:2.0"})
     commands["M569.4"]["func"](gcmd)
     assert gcmd.responses == ["M569.4 requires one T value per P"]
 
