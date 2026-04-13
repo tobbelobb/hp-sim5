@@ -179,7 +179,7 @@ const bridgeCtx = await createBridge(args.firmware, {
 
 ### Verification
 #### Automated
-- [ ] `node autocal/control/cli/collect_sweep_data.mjs --firmware rrf --sim ...` still works.
+- [x] `node autocal/control/cli/collect_sweep_data.mjs --firmware rrf --sim ...` still works.
 
 #### Manual
 - [ ] Manually run `node autocal/control/cli/collect_sweep_data.mjs --firmware klipper --sim --machine-type hangprinter_4` and verify it can collect at least one point.
