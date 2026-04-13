@@ -94,8 +94,8 @@ rotation_distance: 246.20
     try {
       const rewritten = bridge.rewriteGcodeLine('G1 H2 X12.5 Y-6.25 F1500');
       expect(rewritten).toBe(
-        'FORCE_MOVE STEPPER=stepper_a DISTANCE=12.5 VELOCITY=25\n'
-        + 'FORCE_MOVE STEPPER=stepper_b DISTANCE=-6.25 VELOCITY=25',
+        'FORCE_MOVE STEPPER=stepper_a DISTANCE=12.5 VELOCITY=25 ACCEL=500\n'
+        + 'FORCE_MOVE STEPPER=stepper_b DISTANCE=-6.25 VELOCITY=25 ACCEL=500',
       );
     } finally {
       bridge.close();

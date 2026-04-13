@@ -472,7 +472,7 @@ export function createKlipperTerminalBridge({
         return gcode;
       }
       forceMoveLines.push(
-        `FORCE_MOVE STEPPER=${descriptor.stepperName} DISTANCE=${move.distanceMm} VELOCITY=${parsed.velocityMmPerS}`,
+        `FORCE_MOVE STEPPER=${descriptor.stepperName} DISTANCE=${move.distanceMm} VELOCITY=${parsed.velocityMmPerS} ACCEL=500`,
       );
     }
     if (forceMoveLines.length === 0) {
