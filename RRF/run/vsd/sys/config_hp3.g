@@ -26,7 +26,7 @@ M666 L20:20:20:20  ; Motor gear teeth
 M666 H20:20:20:20  ; Spool gear teeth
 
 ; Flex compensation
-M666 W0.006                     ; Mover weighs X kg.
+M666 W0.081                     ; Mover weighs X kg.
 M666 S20000.0                   ; Spring constant (rough approximation) for Garda 1.1 mm line (unit N/m).
                                 ; The real value is somewhere between 20k and 100k.
                                 ; Lower value gives more flex compensation.
