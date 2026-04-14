@@ -21,6 +21,7 @@ import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
 import { getMachineMotorDiagnostics } from './motor-diagnostics.js';
 
 const HP3_USDA_KEY = 'hp3.usda';
+const FOUR_HIGH_ANCHORS_USDA_KEY = 'four_high_anchors.usda';
 const KLIPPER_UPLOAD_PIPELINE = 'raw'; // 'player' or 'raw'
 const PUBLIC_BASE_URL = import.meta.env.BASE_URL || '/';
 
@@ -49,6 +50,19 @@ const COMMAND_PRESET_VARIANTS = Object.freeze({
           referencePresetKey: 'hangprinterLogo',
         }),
       }),
+      [FOUR_HIGH_ANCHORS_USDA_KEY]: Object.freeze({
+        default: Object.freeze({
+          url: new URL('../../public/RRF_CAN_commands/Hangprinter_logo6_skycam.can', import.meta.url).href,
+          format: FileFormat.RRF_CAN_BINARY,
+          referencePresetKey: 'hangprinterLogo',
+        }),
+        lineLayered: Object.freeze({
+          url: new URL('../../public/RRF_CAN_commands/Hangprinter_logo6_skycam_w_line_layers.can', import.meta.url)
+            .href,
+          format: FileFormat.RRF_CAN_BINARY,
+          referencePresetKey: 'hangprinterLogo',
+        }),
+      }),
     }),
   }),
   straightMoves: Object.freeze({
@@ -71,6 +85,19 @@ const COMMAND_PRESET_VARIANTS = Object.freeze({
         }),
         lineLayered: Object.freeze({
           url: new URL('../../public/RRF_CAN_commands/draw_squares_bigger_hp3_w_line_layers.can', import.meta.url)
+            .href,
+          format: FileFormat.RRF_CAN_BINARY,
+          referencePresetKey: 'straightMovesBigger',
+        }),
+      }),
+      [FOUR_HIGH_ANCHORS_USDA_KEY]: Object.freeze({
+        default: Object.freeze({
+          url: new URL('../../public/RRF_CAN_commands/draw_squares_bigger_skycam.can', import.meta.url).href,
+          format: FileFormat.RRF_CAN_BINARY,
+          referencePresetKey: 'straightMovesBigger',
+        }),
+        lineLayered: Object.freeze({
+          url: new URL('../../public/RRF_CAN_commands/draw_squares_bigger_skycam_w_line_layers.can', import.meta.url)
             .href,
           format: FileFormat.RRF_CAN_BINARY,
           referencePresetKey: 'straightMovesBigger',
@@ -181,7 +208,7 @@ const QUALITY_HISTORY_MAX_ENTRIES = 20;
 
 const AVAILABLE_USDAS = Object.freeze([
   { file: HP3_USDA_KEY, label: 'Hangprinter v3 (default)' },
-  { file: 'four_high_anchors.usda', label: 'Four High Anchors' },
+  { file: FOUR_HIGH_ANCHORS_USDA_KEY, label: 'Four High Anchors' },
   { file: 'slideprinter_multi_unit.usda', label: 'Slideprinter Multi Unit' },
   { file: 'slideprinter.usda', label: 'Slideprinter Original' },
   { file: 'slideprinter_hexagon.usda', label: 'Slideprinter (hexagon)' },

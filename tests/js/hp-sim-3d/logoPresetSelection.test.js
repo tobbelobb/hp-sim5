@@ -22,9 +22,12 @@ function loadPresetResolver(source) {
   return new Function(
     'FileFormat',
     `
-      const importMeta = { url: 'file:///home/torbjorn/repos/hp-sim5/hp-sim-3d/app/hp-sim-3d.js' };
+      const importMeta = {
+        url: 'file:///home/torbjorn/repos/hp-sim5/hp-sim-3d/app/hp-sim-3d.js',
+        env: { BASE_URL: '/' },
+      };
       ${resolverSource.replaceAll('import.meta', 'importMeta')}
-      return { HP3_USDA_KEY, resolvePresetCommand };
+      return { HP3_USDA_KEY, FOUR_HIGH_ANCHORS_USDA_KEY, resolvePresetCommand };
     `
   )({
     MCU_SERIAL: 'MCU_SERIAL',
@@ -57,6 +60,34 @@ describe('hp-sim-3d preset selection', () => {
     expect(layeredPreset.format).toBe('RRF_CAN_BINARY');
     expect(layeredPreset.referencePresetKey).toBe('straightMovesBigger');
     expect(plainPreset.url).toContain('draw_squares_bigger_hp3.can');
+    expect(plainPreset.format).toBe('RRF_CAN_BINARY');
+    expect(plainPreset.referencePresetKey).toBe('straightMovesBigger');
+  });
+
+  test('uses skycam CAN logo defaults when the Four High Anchors scene is loaded', () => {
+    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim-3d.js');
+    const { FOUR_HIGH_ANCHORS_USDA_KEY, resolvePresetCommand } = loadPresetResolver(source);
+
+    const layeredPreset = resolvePresetCommand('hangprinterLogo', true, [FOUR_HIGH_ANCHORS_USDA_KEY]);
+    const plainPreset = resolvePresetCommand('hangprinterLogo', false, [FOUR_HIGH_ANCHORS_USDA_KEY]);
+
+    expect(layeredPreset.url).toContain('Hangprinter_logo6_skycam_w_line_layers.can');
+    expect(layeredPreset.format).toBe('RRF_CAN_BINARY');
+    expect(plainPreset.url).toContain('Hangprinter_logo6_skycam.can');
+    expect(plainPreset.format).toBe('RRF_CAN_BINARY');
+  });
+
+  test('uses skycam CAN square defaults when the Four High Anchors scene is loaded', () => {
+    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim-3d.js');
+    const { FOUR_HIGH_ANCHORS_USDA_KEY, resolvePresetCommand } = loadPresetResolver(source);
+
+    const layeredPreset = resolvePresetCommand('straightMoves', true, [FOUR_HIGH_ANCHORS_USDA_KEY]);
+    const plainPreset = resolvePresetCommand('straightMoves', false, [FOUR_HIGH_ANCHORS_USDA_KEY]);
+
+    expect(layeredPreset.url).toContain('draw_squares_bigger_skycam_w_line_layers.can');
+    expect(layeredPreset.format).toBe('RRF_CAN_BINARY');
+    expect(layeredPreset.referencePresetKey).toBe('straightMovesBigger');
+    expect(plainPreset.url).toContain('draw_squares_bigger_skycam.can');
     expect(plainPreset.format).toBe('RRF_CAN_BINARY');
     expect(plainPreset.referencePresetKey).toBe('straightMovesBigger');
   });
