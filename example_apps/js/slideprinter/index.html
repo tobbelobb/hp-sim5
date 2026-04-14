@@ -277,6 +277,11 @@ canvas {
     import { connectKlipperRaw } from '../../../integrations/klipper/klipperSimulatorBridge.js';
     import { detectFileFormat, FileFormat, isKlipperFormat } from '../../../integrations/shared/fileFormatUtils.js';
     import { RrfHttpBridge } from '../../../integrations/rrf/rrfHttpBridge.js';
+    // Keep these as Vite worker URL imports. Reverting to `new URL(workerSource, import.meta.url)`
+    // broke preview/prod builds before by emitting worker files with unresolved relative imports.
+    import moveCommanderWorkerUrl from './moveCommander.js?worker&url';
+    import klipperMcuCommandPlayerWorkerUrl from '../../../integrations/klipper/klipperMcuCommandPlayer.js?worker&url';
+    import rrfCanPlayerWorkerUrl from '../../../integrations/rrf/rrfCanPlayer.js?worker&url';
 
     const searchParams = new URLSearchParams(window.location.search);
     const logMoveParamKeys = ['--log-move', 'log-move', 'logMove'];
@@ -393,7 +398,7 @@ canvas {
         if (rrfCanPlayerWorker) {
             return rrfCanPlayerWorker;
         }
-        const worker = new Worker(new URL('../../../integrations/rrf/rrfCanPlayer.js', import.meta.url), { type: 'module' });
+        const worker = new Worker(rrfCanPlayerWorkerUrl, { type: 'module' });
         worker.onmessage = (e) => {
             const data = e.data || {};
             if (data.action === 'gcode' && data.command) {
@@ -617,9 +622,6 @@ canvas {
 
     const moveCommanderURI = websocket_out ? `wss://localhost:${port}` : null;
     const base = import.meta.env.BASE_URL || '/';
-    const moveCommanderModuleUrl = new URL('./moveCommander.js', import.meta.url);
-    const klipperMcuCommandPlayerModuleUrl = new URL('../../../integrations/klipper/klipperMcuCommandPlayer.js', import.meta.url);
-
     if ((websocket_in && websocket_out) || (!websocket_in && !websocket_out)) {
         // Create no websocket in this case. The websocket_in && websocket_out case is
         // simulated by sending the same data to web worker with postMessage.
@@ -627,7 +629,7 @@ canvas {
         // In this case MoveCommander gets its gcode file from the main page and sends
         // back segmented MoveCommander commands via postMessage.
         if (window.Worker) {
-            moveCommanderWorker = new Worker(moveCommanderModuleUrl, { type: 'module' });
+            moveCommanderWorker = new Worker(moveCommanderWorkerUrl, { type: 'module' });
             console.log("main: moveCommanderWorker is up");
             if (simDtSec != null) {
                 moveCommanderWorker.postMessage({ type: 'set_dt', dt: simDtSec });
@@ -686,7 +688,7 @@ canvas {
         // The MoveCommander gets its gcode file from the main page via postMessage,
         // and creates segmented MoveCommander commands that it sends out via the websocket.
         if (window.Worker) {
-            moveCommanderWorker = new Worker(moveCommanderModuleUrl, { type: 'module' });
+            moveCommanderWorker = new Worker(moveCommanderWorkerUrl, { type: 'module' });
             if (moveCommanderURI) {
                 moveCommanderWorker.postMessage({ type: 'set_uri', uri: moveCommanderURI });
             }
@@ -726,7 +728,7 @@ canvas {
             console.warn('Web Workers are not supported in this browser.');
             return null;
         }
-        klipperMcuCommandPlayerWorker = new Worker(klipperMcuCommandPlayerModuleUrl, { type: 'module' });
+        klipperMcuCommandPlayerWorker = new Worker(klipperMcuCommandPlayerWorkerUrl, { type: 'module' });
         console.log('main: klipperMcuCommandPlayerWorker is up');
         klipperMcuCommandPlayerWorker.onmessage = (e) => {
             if (e.data.type === 'done') {

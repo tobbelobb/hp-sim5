@@ -7,6 +7,11 @@ import { RemoteSpoolSystem } from './remoteSpoolSystem.js';
 import { InputSystem } from './hangprinter_input.js';
 import { detectFileFormat, FileFormat, isKlipperFormat, isRrfFormat } from '../../integrations/shared/fileFormatUtils.js';
 import { createKlipperRawBridge } from '../../integrations/klipper/klipperSimulatorBridge.js';
+// Keep these as Vite worker URL imports. Reverting to `new URL(workerSource, import.meta.url)`
+// broke preview/prod builds before by emitting worker files with unresolved relative imports.
+import klipperMcuCommandPlayerWorkerUrl from '../../integrations/klipper/klipperMcuCommandPlayer.js?worker&url';
+import rrfCanPlayerWorkerUrl from '../../integrations/rrf/rrfCanPlayer.js?worker&url';
+import moveCommanderWorkerUrl from '../../example_apps/js/slideprinter/moveCommander.js?worker&url';
 import { _updateAttachmentPoints } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import { QualityMonitor } from './quality-monitor.js';
 import {
@@ -1006,9 +1011,6 @@ function initHpSim() {
     syncReferenceOverlayToRenderSystem({ force: true });
   }
 
-  const klipperMcuCommandPlayerModuleUrl = new URL('../../integrations/klipper/klipperMcuCommandPlayer.js', import.meta.url);
-  const rrfCanPlayerModuleUrl = new URL('../../integrations/rrf/rrfCanPlayer.js', import.meta.url);
-  const moveCommanderModuleUrl = new URL('../../example_apps/js/slideprinter/moveCommander.js', import.meta.url);
   function getRemoteSystem() {
     return world.systems.find((sys) => sys instanceof RemoteSpoolSystem) || null;
   }
@@ -4117,7 +4119,7 @@ function initHpSim() {
     if (klipperMcuCommandPlayerWorker) {
       return klipperMcuCommandPlayerWorker;
     }
-    klipperMcuCommandPlayerWorker = new Worker(klipperMcuCommandPlayerModuleUrl, { type: 'module' });
+    klipperMcuCommandPlayerWorker = new Worker(klipperMcuCommandPlayerWorkerUrl, { type: 'module' });
     klipperMcuCommandPlayerWorker.onerror = (event) => {
       console.error('Slideprinter demo: Klipper worker failed.', event);
       const remoteSystem = getRemoteSystem();
@@ -4227,7 +4229,7 @@ function initHpSim() {
     if (rrfCanPlayerWorker) {
       return rrfCanPlayerWorker;
     }
-    rrfCanPlayerWorker = new Worker(rrfCanPlayerModuleUrl, { type: 'module' });
+    rrfCanPlayerWorker = new Worker(rrfCanPlayerWorkerUrl, { type: 'module' });
     rrfCanPlayerWorker.onerror = (event) => {
       console.error('Slideprinter demo: RRF worker failed.', event);
       const remoteSystem = getRemoteSystem();
@@ -4284,7 +4286,7 @@ function initHpSim() {
     if (moveCommanderWorker) {
       return moveCommanderWorker;
     }
-    moveCommanderWorker = new Worker(moveCommanderModuleUrl, { type: 'module' });
+    moveCommanderWorker = new Worker(moveCommanderWorkerUrl, { type: 'module' });
     moveCommanderWorker.onerror = (event) => {
       console.error('Slideprinter demo: G-code worker failed.', event);
       const remoteSystem = getRemoteSystem();

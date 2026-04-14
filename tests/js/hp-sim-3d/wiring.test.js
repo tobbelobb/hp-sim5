@@ -50,4 +50,13 @@ describe('hp-sim-3d wiring', () => {
     expect(source).toContain("import { getMachineMotorDiagnostics } from './motor-diagnostics.js';");
     expect(source).toContain('setMotorDiagnosticsProvider(() => getMachineMotorDiagnostics(world, machine.id));');
   });
+
+  test('keeps preview-safe worker URL imports for bundled print workers', () => {
+    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim-3d.js');
+
+    expect(source).toContain("?worker&url';");
+    expect(source).toContain('klipperMcuCommandPlayerWorkerUrl');
+    expect(source).toContain('rrfCanPlayerWorkerUrl');
+    expect(source).toContain('moveCommanderWorkerUrl');
+  });
 });

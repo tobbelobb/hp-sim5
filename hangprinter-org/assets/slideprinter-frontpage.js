@@ -4,6 +4,10 @@ import { runGame } from '../../example_apps/js/slideprinter/runner.js';
 import { setupScene } from '../../example_apps/js/slideprinter/setupScene.js';
 import { RemoteSpoolSystem, InputSystem } from '../../example_apps/js/slideprinter/slideprinter_common.js';
 import { detectFileFormat, FileFormat, isKlipperFormat } from '../../integrations/shared/fileFormatUtils.js';
+// Keep these as Vite worker URL imports. Reverting to `new URL(workerSource, import.meta.url)`
+// broke preview/prod builds before by emitting worker files with unresolved relative imports.
+import klipperMcuCommandPlayerWorkerUrl from '../../integrations/klipper/klipperMcuCommandPlayer.js?worker&url';
+import moveCommanderWorkerUrl from '../../example_apps/js/slideprinter/moveCommander.js?worker&url';
 
 const MCU_PRESETS = {
   hangprinterLogo: {
@@ -68,8 +72,6 @@ function initFrontpageSlideprinter() {
   let currentTimeScale = 1.0;
   let speedStatusArmed = false;
 
-  const klipperMcuCommandPlayerModuleUrl = new URL('../../integrations/klipper/klipperMcuCommandPlayer.js', import.meta.url);
-  const moveCommanderModuleUrl = new URL('../../example_apps/js/slideprinter/moveCommander.js', import.meta.url);
   const usdaUrl = `${PUBLIC_BASE_URL}usd_scenes/slideprinter.usda`;
 
   function getRemoteSystem() {
@@ -747,7 +749,7 @@ function initFrontpageSlideprinter() {
     if (klipperMcuCommandPlayerWorker) {
       return klipperMcuCommandPlayerWorker;
     }
-    klipperMcuCommandPlayerWorker = new Worker(klipperMcuCommandPlayerModuleUrl, { type: 'module' });
+    klipperMcuCommandPlayerWorker = new Worker(klipperMcuCommandPlayerWorkerUrl, { type: 'module' });
     klipperMcuCommandPlayerWorker.onmessage = (event) => {
       if (!event?.data) {
         return;
@@ -782,7 +784,7 @@ function initFrontpageSlideprinter() {
     if (moveCommanderWorker) {
       return moveCommanderWorker;
     }
-    moveCommanderWorker = new Worker(moveCommanderModuleUrl, { type: 'module' });
+    moveCommanderWorker = new Worker(moveCommanderWorkerUrl, { type: 'module' });
     moveCommanderWorker.onmessage = (event) => {
       if (!event?.data) {
         return;

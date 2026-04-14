@@ -21,4 +21,13 @@ describe('hp-sim worker error handling', () => {
     expect(source).toContain("if (event.data.type === 'error') {");
     expect(source).toContain('setPrintActive(false);');
   });
+
+  test('keeps preview-safe worker URL imports for bundled print workers', () => {
+    const source = readHpSimSource();
+
+    expect(source).toContain("?worker&url';");
+    expect(source).toContain('klipperMcuCommandPlayerWorkerUrl');
+    expect(source).toContain('rrfCanPlayerWorkerUrl');
+    expect(source).toContain('moveCommanderWorkerUrl');
+  });
 });
