@@ -7,11 +7,11 @@ import { detectFileFormat, FileFormat, isKlipperFormat } from '../../integration
 
 const MCU_PRESETS = {
   hangprinterLogo: {
-    url: new URL('../../public/examples/mcu_commands/Hangprinter_logo6.serial', import.meta.url).href,
+    url: new URL('../../public/mcu_commands/Hangprinter_logo6_flex_and_buildup.serial', import.meta.url).href,
     format: FileFormat.MCU_SERIAL,
   },
   straightMoves: {
-    url: new URL('../../public/examples/mcu_commands/draw_squares.serial', import.meta.url).href,
+    url: new URL('../../public/mcu_commands/draw_squares.serial', import.meta.url).href,
     format: FileFormat.MCU_SERIAL,
   },
 };

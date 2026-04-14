@@ -36,7 +36,7 @@ describe('hp-sim reference preset mappings', () => {
   });
 
   test('draw_squares_bigger reference gcode closes five squares', () => {
-    const gcode = readWorkspaceFile('public/examples/gcode/draw_squares_bigger.gcode');
+    const gcode = readWorkspaceFile('public/gcode/draw_squares_bigger.gcode');
     const closureMoves = gcode.match(/G1 X(?:200|300|400|500|600) Y(?:200|300|400|500|600) Z0 E(?:50|60|70|80)/g) || [];
 
     expect(closureMoves).toHaveLength(5);

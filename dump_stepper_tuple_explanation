@@ -66,7 +66,7 @@
   ```
   $ ./scripts/gcode_to_mcu_commands.sh x100.g
   ...
-  $ grep "queue_step oid=0" public/examples/mcu_commands/x100.g.txt
+  $ grep "queue_step oid=0" public/mcu_commands/x100.g.txt
   ...
   ```
   and sum up the counts. They sum up to 34. So no problem there. My previous x100.txt must have contained a mistake.
@@ -134,4 +134,3 @@
 
   The next implementation step should be to convert every dump_stepper batch into an absolute-per-stepper timeline first, in session-relative ticks, and only then feed the existing scheduler. That will make the batching and rebasing logic much easier to
   reason about.
-

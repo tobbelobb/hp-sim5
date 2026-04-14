@@ -72,7 +72,7 @@ describe('hp-sim-3d preset selection', () => {
 
     expect(layeredLogoPreset.url).toContain('Hangprinter_logo6_w_line_layers.can');
     expect(layeredLogoPreset.format).toBe('RRF_CAN_BINARY');
-    expect(plainLogoPreset.url).toContain('Hangprinter_logo6.serial');
+    expect(plainLogoPreset.url).toContain('Hangprinter_logo6_flex_and_buildup.serial');
     expect(plainLogoPreset.format).toBe('MCU_SERIAL');
     expect(layeredSquarePreset.url).toContain('draw_squares_bigger_w_line_layers.can');
     expect(layeredSquarePreset.format).toBe('RRF_CAN_BINARY');

@@ -65,7 +65,7 @@ A complete Python port of the cable joints engine is available in the `src/pytho
     - Visit <http://localhost:5173/hp-sim5/examples/python/slideprinter/index.html>
     - Send some gcode commands with the Python Move Comander:
       ```bash
-      python -m examples.python.slideprinter.move_commander public/examples/gcode/draw_squares.gcode
+      python -m examples.python.slideprinter.move_commander public/gcode/draw_squares.gcode
       ```
 
 

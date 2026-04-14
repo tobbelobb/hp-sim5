@@ -11,7 +11,7 @@
 
 # Then launch klippy with
 
-.venv/bin/python ~/repos/hp-sim5/klipper/klippy/klippy.py ~/repos/hp-sim5/examples/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg -i ~/repos/hp-sim5/public/examples/gcode/movements.gcode -v -l ~/repos/hp-sim5/attic/klipper.log
+.venv/bin/python ~/repos/hp-sim5/klipper/klippy/klippy.py ~/repos/hp-sim5/examples/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg -i ~/repos/hp-sim5/public/gcode/movements.gcode -v -l ~/repos/hp-sim5/attic/klipper.log
 
 #### Option 2: Simulate the whole avr and mirror the incoming messages on to the websocket.
 #
@@ -50,4 +50,4 @@ PYTHONPATH=~/repos/simulavr/build/pysimulavr ~/repos/hp-sim5/examples/klipper/sl
 # First run this in another terminal to make sure we're capturing klippers log output
 tail -F ~/repos/hp-sim5/attic/klipper.log
 # Then run klipper itself
-.venv/bin/python ~/repos/hp-sim5/klipper/klippy/klippy.py ~/repos/hp-sim5/examples/klipper/slideprinter/printer-slideprinter-avr.cfg -i ~/repos/hp-sim5/public/examples/gcode/draw_squares.gcode -v -l ~/repos/hp-sim5/attic/klipper.log
+.venv/bin/python ~/repos/hp-sim5/klipper/klippy/klippy.py ~/repos/hp-sim5/examples/klipper/slideprinter/printer-slideprinter-avr.cfg -i ~/repos/hp-sim5/public/gcode/draw_squares.gcode -v -l ~/repos/hp-sim5/attic/klipper.log

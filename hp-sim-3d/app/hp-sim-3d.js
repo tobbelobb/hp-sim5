@@ -26,24 +26,24 @@ const KLIPPER_UPLOAD_PIPELINE = 'raw'; // 'player' or 'raw'
 const COMMAND_PRESET_VARIANTS = Object.freeze({
   hangprinterLogo: Object.freeze({
     default: Object.freeze({
-      url: new URL('../../public/examples/mcu_commands/Hangprinter_logo6.serial', import.meta.url).href,
+      url: new URL('../../public/mcu_commands/Hangprinter_logo6_flex_and_buildup.serial', import.meta.url).href,
       format: FileFormat.MCU_SERIAL,
       referencePresetKey: 'hangprinterLogo',
     }),
     lineLayered: Object.freeze({
-      url: new URL('../../public/examples/RRF_CAN_commands/Hangprinter_logo6_w_line_layers.can', import.meta.url).href,
+      url: new URL('../../public/RRF_CAN_commands/Hangprinter_logo6_w_line_layers.can', import.meta.url).href,
       format: FileFormat.RRF_CAN_BINARY,
       referencePresetKey: 'hangprinterLogo',
     }),
     machineOverrides: Object.freeze({
       [HP3_USDA_KEY]: Object.freeze({
         default: Object.freeze({
-          url: new URL('../../public/examples/RRF_CAN_commands/Hangprinter_logo6_hp3.can', import.meta.url).href,
+          url: new URL('../../public/RRF_CAN_commands/Hangprinter_logo6_hp3.can', import.meta.url).href,
           format: FileFormat.RRF_CAN_BINARY,
           referencePresetKey: 'hangprinterLogo',
         }),
         lineLayered: Object.freeze({
-          url: new URL('../../public/examples/RRF_CAN_commands/Hangprinter_logo6_hp3_w_line_layers.can', import.meta.url).href,
+          url: new URL('../../public/RRF_CAN_commands/Hangprinter_logo6_hp3_w_line_layers.can', import.meta.url).href,
           format: FileFormat.RRF_CAN_BINARY,
           referencePresetKey: 'hangprinterLogo',
         }),
@@ -52,24 +52,24 @@ const COMMAND_PRESET_VARIANTS = Object.freeze({
   }),
   straightMoves: Object.freeze({
     default: Object.freeze({
-      url: new URL('../../public/examples/mcu_commands/draw_squares.serial', import.meta.url).href,
+      url: new URL('../../public/mcu_commands/draw_squares.serial', import.meta.url).href,
       format: FileFormat.MCU_SERIAL,
       referencePresetKey: 'straightMoves',
     }),
     lineLayered: Object.freeze({
-      url: new URL('../../public/examples/RRF_CAN_commands/draw_squares_bigger_w_line_layers.can', import.meta.url).href,
+      url: new URL('../../public/RRF_CAN_commands/draw_squares_bigger_w_line_layers.can', import.meta.url).href,
       format: FileFormat.RRF_CAN_BINARY,
       referencePresetKey: 'straightMovesBigger',
     }),
     machineOverrides: Object.freeze({
       [HP3_USDA_KEY]: Object.freeze({
         default: Object.freeze({
-          url: new URL('../../public/examples/RRF_CAN_commands/draw_squares_bigger_hp3.can', import.meta.url).href,
+          url: new URL('../../public/RRF_CAN_commands/draw_squares_bigger_hp3.can', import.meta.url).href,
           format: FileFormat.RRF_CAN_BINARY,
           referencePresetKey: 'straightMovesBigger',
         }),
         lineLayered: Object.freeze({
-          url: new URL('../../public/examples/RRF_CAN_commands/draw_squares_bigger_hp3_w_line_layers.can', import.meta.url)
+          url: new URL('../../public/RRF_CAN_commands/draw_squares_bigger_hp3_w_line_layers.can', import.meta.url)
             .href,
           format: FileFormat.RRF_CAN_BINARY,
           referencePresetKey: 'straightMovesBigger',
@@ -101,17 +101,17 @@ function resolvePresetCommand(presetKey, lineLayeringEnabled, activeSourceKeys =
 
 const PRESET_GCODE_MAP = Object.freeze({
   hangprinterLogo: {
-    url: new URL('../../public/examples/gcode/Hangprinter_logo6.gcode', import.meta.url).href,
+    url: new URL('../../public/gcode/Hangprinter_logo6.gcode', import.meta.url).href,
     label: 'Hangprinter Logo (G-code)',
     color: '#ff7a18',
   },
   straightMoves: {
-    url: new URL('../../public/examples/gcode/draw_squares.gcode', import.meta.url).href,
+    url: new URL('../../public/gcode/draw_squares.gcode', import.meta.url).href,
     label: 'Draw Squares (G-code)',
     color: '#00b2ff',
   },
   straightMovesBigger: {
-    url: new URL('../../public/examples/gcode/draw_squares_bigger.gcode', import.meta.url).href,
+    url: new URL('../../public/gcode/draw_squares_bigger.gcode', import.meta.url).href,
     label: 'Draw Bigger Squares (G-code)',
     color: '#00b2ff',
   },

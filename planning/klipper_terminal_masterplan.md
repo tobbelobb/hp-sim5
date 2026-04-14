@@ -80,7 +80,7 @@ Verification:
 
 Closer To `x100.txt` / Batch-Dump Replay:
 - `motion_report/dump_stepper` is closer to raw replay than pre-expanded `Move` payloads because it preserves per-stepper `interval/count/add` timing and MCU clock anchoring.
-- It is still not a byte-for-byte replacement for `dist/examples/mcu_commands/x100.txt`: the Klipper API does not expose the full raw MCU stream (`set_next_step_dir`, `reset_step_clock`, etc.) through `dump_stepper`.
+- It is still not a byte-for-byte replacement for `dist/mcu_commands/x100.txt`: the Klipper API does not expose the full raw MCU stream (`set_next_step_dir`, `reset_step_clock`, etc.) through `dump_stepper`.
 - If tighter equivalence is needed later, the next candidates are:
   - forward `motion_report/dump_trapq` alongside `dump_stepper` so planner-level move boundaries can be correlated with stepper batches
   - add a diagnostic exporter that reconstructs a synthetic MCU-text trace from the API batches for side-by-side diffing against `x100.txt`
