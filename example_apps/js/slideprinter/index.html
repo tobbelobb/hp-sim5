@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<!--
+  Start with:  npx vite
+  Open http://localhost:5173/hp-sim5/slideprinter.html
+  Upload a G-code file to run the JS MoveCommander locally.
+  To drive it from Python instead run
+    python -m example_apps.python.slideprinter.move_commander <file>
+  which connects via WebSocket.
+-->
+<html>
+<head>
+    <title>Slideprinter</title>
+    <link rel="icon" type="image/svg+xml"
+      href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNiIgZmlsbD0iZ3JleSIvPjwvc3ZnPg==" />
+
+    <!-- Prevent pinch / double‑tap zoom while keeping responsiveness -->
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <!-- Content Security Policy: lock down scripts while allowing required features
+         - Forbids eval/new Function (no 'unsafe-eval')
+         - Allows module workers and blob URLs for Worker()
+         - Allows WebSocket to localhost
+         - Allows Google Fonts stylesheet and font files
+         - Allows data: URIs for the inline SVG favicon -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self';
+      worker-src 'self' blob:;
+      connect-src 'self' ws: wss:;
+      img-src 'self' data:;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src https://fonts.gstatic.com data:;
+    ">
+
+    <meta http-equiv="Cross-Origin-Opener-Policy:" content="same-origin">
+    <meta http-equiv="Cross-Origin-Embedder-Policy:" content="require-corp">
+
+    <!-- Nice free Google font – optional -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
+
+    <style>
+:root {
+  --bg-1: #2d2d2d;
+  --accent-1: #ff452a;
+  --accent-2: #ffb347;
+  --text-main: #fafafa;
+  --text-dim:  #c0c0c0;
+  --radius: 4px;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100dvh;                 /* use dynamic vh so iOS toolbars don't break it */
+  width: 100dvw;
+  overflow-y: auto;               /* **kills the vertical / horizontal scroll**   */
+  background: var(--bg-1);
+  color: var(--text-main);
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent; /* removes grey flash on iOS */
+  touch-action: none;    /* stops double‑tap zoom in most browsers   */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+#gameContainer {
+  width: 100%;            /* fill full page width */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;                /* expand to fill remaining vertical space */
+}
+
+#controls {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  text-align: center;
+  margin-block: 0 8px;    /* remove top margin, keep bottom spacing */
+  padding-block: 12px 0;  /* add vertical padding */
+  background: var(--bg-1); /* ensure background covers underlying content */
+  z-index: 1;             /* stay above canvas */
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+#controls button {
+  all: unset;                      /* wipe default button styles */
+  cursor: pointer;
+  display: inline-block;
+  margin: 6px auto;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #fff;
+  background: var(--accent-1);
+  box-shadow: 0 3px 8px rgba(0,0,0,.45);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+#controls button:hover,
+#controls button:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 14px rgba(0,0,0,.55);
+}
+#controls button:active {
+  transform: scale(.97);
+}
+
+canvas {
+  width: 100%;
+  flex: 1;                         /* grow to fill vertical space */
+  display: block;
+  border-radius: var(--radius);
+  touch-action: manipulation;      /* turn off browser panning/zoom so pointermove/up always fire */
+}
+
+#controls button {
+  padding: 10px 16px;
+  font-size: 0.85rem;
+}
+
+#canvasWrapper {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  display: flex;
+}
+
+#canvasWrapper canvas {
+  flex: 1;
+}
+
+.speed-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  box-shadow: 0 3px 8px rgba(0,0,0,.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.speed-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,.25) !important;
+}
+
+.speed-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.speed-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.speed-status {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.72);
+  border-radius: 999px;
+  color: rgba(220, 220, 220, 0.92);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+  pointer-events: none;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+}
+
+.speed-status.hidden {
+  display: none;
+}
+    </style>
+  <script type="module" crossorigin src="/hp-sim5/assets/example_apps/js/slideprinter/index.html-DMDdGCdF.js"></script>
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/modulepreload-polyfill-B5Qt9EMX.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/stage-CTzUyuIZ.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_joints_core-BYkRPEMi.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/debugUtils-e3_2ZA9J.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/flipper_common-buDZ8dvm.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/renderSystem-CJzE_CDZ.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/runner-DRh4gHnR.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/pbdResolveCableOverCorrections-CH6b9cFR.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_attachment_cache_system-DdqtBYL-.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_friction_system-CxWRdIAW.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/commonSystems-DicuqbFK.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/setupScene-CsbkpWjS.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/klipperSimulatorBridge-CBIU7nYo.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/fileFormatUtils-lTzH1unm.js">
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="controls">
+            <button id="pauseBtn" tabindex="-1">Pause</button>
+            <button id="resetBtn" tabindex="-1">Reset</button>
+            <button id="stepBtn">Step</button>
+            <button id="dumpBtn" tabindex="-1">Dump State</button>
+            <input type="file" id="gcodeFile" accept=".gcode,.txt,.serial" style="display: none;" />
+            <button id="loadGcodeBtn" tabindex="-1">Upload File</button>
+            <select id="presetGcode" style="margin-left: 6px;">
+                <option value="">Built-in G-code</option>
+                <option value="draw_squares.gcode">draw_squares.gcode</option>
+                <option value="home.gcode">home.gcode</option>
+                <option value="movements.gcode">movements.gcode</option>
+                <option value="tighten.gcode">tighten.gcode</option>
+                <option value="Hangprinter_logo2.gcode">Hangprinter_logo2.gcode</option>
+                <option value="Hangprinter_logo6.gcode">Hangprinter_logo6.gcode</option>
+            </select>
+            <select id="presetMcuCommands" style="margin-left: 6px;">
+                <option value="">MCU command log</option>
+                <option value="Hangprinter_logo2_no_extrusions.txt">Hangprinter_logo2_no_extrusions.txt</option>
+                <option value="Hangprinter_logo2.txt">Hangprinter_logo2.txt</option>
+                <option value="Hangprinter_logo6_flex_and_buildup.txt">Hangprinter_logo6_flex_and_buildup.txt</option>
+                <option value="draw_squares.txt">draw_squares.txt</option>
+            </select>
+            <select id="presetSerialMcuCommands" style="margin-left: 6px;">
+                <option value="">Serial MCU commands</option>
+                <option value="Hangprinter_logo6_flex_and_buildup.serial">Hangprinter_logo6_flex_and_buildup.serial</option>
+                <option value="draw_squares.serial">draw_squares.serial</option>
+            </select>
+            <span style="margin-left: 1em;">
+                <label for="websocketIn">websocket in</label>
+                <input type="checkbox" id="websocketIn">
+            </span>
+            <span style="margin-left: 1em;">
+                <label for="websocketOut">websocket out</label>
+                <input type="checkbox" id="websocketOut">
+            </span>
+            <span style="margin-left: 1em;">
+                <label for="websocketPort">port</label>
+                <input type="text" id="websocketPort" value="8766" style="width: 4em;">
+            </span>
+            <span style="margin-left: 1em;">
+                <label for="klipperRawIn">Klipper raw in</label>
+                <input type="checkbox" id="klipperRawIn">
+            </span>
+            <span style="margin-left: 1em;">
+                <label for="klipperRawPort">port</label>
+                <input type="text" id="klipperRawPort" value="8770" style="width: 4em;">
+            </span>
+            <br />
+            <div id="httpControls" style="margin-top: 6px; font-size: 0.85rem; display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+                <span>HTTP:</span>
+                <input id="httpBaseUrl" type="text" value="http://localhost:8080" style="width: 14em;" aria-label="HTTP base URL">
+                <button id="httpConnectBtn" type="button">Use</button>
+                <input id="httpGcodeInput" type="text" placeholder="G-code (e.g. M569.4 P40.0 T0.001)" style="width: 18em;" aria-label="G-code to send over HTTP">
+                <button id="httpSendBtn" type="button">Send</button>
+                <span id="httpStatus" style="min-width: 10em; display: inline-block;"></span>
+            </div>
+            <div id="stats" style="margin-top: 4px; font-size: 0.8rem;">
+                dt: <span id="dt">N/A</span> |
+                Speed: <span id="speed">N/A</span>
+            </div>
+            <div id="speedControls" role="group" aria-label="Playback speed" style="margin-top: 6px; display: inline-flex; gap: 12px; align-items: center;">
+                <span>Playback:</span>
+                <button id="speedSlowerBtn" type="button" class="speed-btn" aria-label="Set playback to half speed">
+                    <span aria-hidden="true" class="speed-icon">&#x23E9;</span>
+                    <span class="speed-text">0.5x</span>
+                </button>
+                <button id="speedFasterBtn" type="button" class="speed-btn" aria-label="Double the playback speed">
+                    <span aria-hidden="true" class="speed-icon">&#x23E9;</span>
+                    <span class="speed-text">2x</span>
+                </button>
+            </div>
+        </div>
+        <div id="canvasWrapper">
+            <canvas id="myCanvas"></canvas>
+            <div id="speedStatus" class="speed-status hidden" role="status" aria-live="polite"></div>
+        </div>
+    </div>
+
+</body>
+</html>

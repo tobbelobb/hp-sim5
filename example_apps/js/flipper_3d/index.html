@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Mindfulness Pinball 3D</title>
+
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNiIgZmlsbD0iIzI2MzY0YiIvPjwvc3ZnPg==" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap');
+
+    :root {
+      --bg-1: #0e141d;
+      --bg-2: #1a2a3c;
+      --panel: rgba(12, 19, 29, 0.92);
+      --panel-border: rgba(110, 140, 170, 0.35);
+      --text-main: #edf3f8;
+      --text-dim: #aac0d3;
+      --btn-1: #24588c;
+      --btn-2: #3f89c4;
+      --radius: 8px;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100dvh;
+      overflow: hidden;
+      background: radial-gradient(1100px 700px at 12% 10%, var(--bg-2), var(--bg-1));
+      color: var(--text-main);
+      font-family: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #gameContainer {
+      width: 100vw;
+      height: 100dvh;
+      padding: clamp(8px, 1.2vw, 14px);
+      box-sizing: border-box;
+      display: grid;
+      grid-template-rows: min-content minmax(0, 1fr);
+      gap: 8px;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    #playfield {
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      position: relative;
+    }
+
+    #fxLayer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      border-radius: var(--radius);
+    }
+
+    #controls {
+      width: min(980px, 100%);
+      justify-self: center;
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.92rem;
+      color: var(--text-dim);
+      user-select: none;
+      backdrop-filter: blur(6px);
+    }
+
+    #controls button {
+      all: unset;
+      cursor: pointer;
+      color: #f8fbff;
+      background: linear-gradient(135deg, var(--btn-1), var(--btn-2));
+      border-radius: 6px;
+      border: 1px solid rgba(180, 210, 235, 0.35);
+      padding: 8px 12px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: transform 0.1s ease, filter 0.1s ease;
+    }
+
+    #cableFeatureFlags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 10px;
+      align-items: center;
+      font-size: 0.76rem;
+      color: var(--text-dim);
+    }
+
+    #cableFeatureFlags label {
+      white-space: nowrap;
+    }
+
+    #controls button:hover,
+    #controls button:focus-visible {
+      transform: translateY(-1px);
+      filter: brightness(1.08);
+    }
+
+    #controls button:active {
+      transform: scale(0.98);
+    }
+
+    #stats {
+      margin-left: auto;
+      font-size: 0.84rem;
+      color: var(--text-dim);
+      display: inline-flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      box-sizing: border-box;
+      display: block;
+      border-radius: var(--radius);
+      border: 1px solid rgba(110, 140, 170, 0.35);
+      touch-action: none;
+    }
+
+    @media (max-width: 780px) {
+      #gameContainer {
+        width: 100vw;
+        height: 100dvh;
+        gap: 0;
+        padding: 0;
+      }
+
+      #controls {
+        width: auto;
+        border-radius: 0;
+        border-inline: 0;
+        border-top: 0;
+      }
+
+      canvas {
+        border-radius: 0;
+        border-inline: 0;
+      }
+
+      #stats {
+        width: 100%;
+        margin-left: 0;
+      }
+    }
+  </style>
+  <script type="module" crossorigin src="/hp-sim5/assets/example_apps/js/flipper_3d/index.html-Dd-FbbeM.js"></script>
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/modulepreload-polyfill-B5Qt9EMX.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/stage-CTzUyuIZ.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_joints_core-BYkRPEMi.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/OrbitControls-ERt1_7zg.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/commonSystems-DY--1EUl.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/flipper_common-buDZ8dvm.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/render_system_3d-BCAaDTe7.js">
+  <link rel="modulepreload" crossorigin href="/hp-sim5/assets/ball_obstacle_bump_system-B0hgub1U.js">
+</head>
+<body>
+  <div id="gameContainer">
+    <div id="controls">
+      <button id="pauseBtn" tabindex="-1">Pause</button>
+      <button id="resetBtn" tabindex="-1">Reset</button>
+      <button id="stepBtn">Step</button>
+      <button id="dumpBtn" tabindex="-1">Dump State</button>
+      <div id="cableFeatureFlags"></div>
+      <span>Score: <span id="score">0</span></span>
+      <div id="stats">
+        <span>dt: <span id="dt">N/A</span></span>
+        <span>Speed: <span id="speed">N/A</span></span>
+      </div>
+    </div>
+    <div id="playfield">
+      <canvas id="myCanvas"></canvas>
+      <canvas id="fxLayer" aria-hidden="true"></canvas>
+    </div>
+  </div>
+
+</body>
+</html>
