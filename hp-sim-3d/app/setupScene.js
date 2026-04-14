@@ -43,7 +43,7 @@ import { CableSlackSystem } from '../../src/js/cable_joints_3d/cable_slack_syste
 import { CableFrictionSystem } from '../../src/js/cable_joints_3d/cable_friction_system.js';
 import {
   PauseStateComponent,
-} from '../../examples/js/flipper/flipper_common.js';
+} from '../../example_apps/js/flipper/flipper_common.js';
 import {
   InputSystem,
   RemoteInputSystem,

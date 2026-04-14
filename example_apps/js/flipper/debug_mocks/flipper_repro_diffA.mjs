@@ -1,8 +1,9 @@
 import fs from 'fs';
 import path from 'path';
-import { World } from '../home/torbjorn/repos/hp-sim5/src/js/cable_joints/ecs.js';
-import { setupScene } from '../home/torbjorn/repos/hp-sim5/examples/js/flipper/setupScene.js';
-import { Open } from '../home/torbjorn/repos/hp-sim5/src/js/usd/stage.js';
+import { fileURLToPath } from 'url';
+import { World } from '../../../../src/js/cable_joints/ecs.js';
+import { setupScene } from '../setupScene.js';
+import { Open } from '../../../../src/js/usd/stage.js';
 
 function createMockCanvas() {
   const width = 460;
@@ -55,8 +56,8 @@ const mockDocument = {
 
 global.document = mockDocument;
 
-const repoRoot = '/home/torbjorn/repos/hp-sim5';
-const usdaPath = path.resolve(repoRoot, 'examples/usd_scenes/flipper_scene.usda');
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../');
+const usdaPath = path.resolve(repoRoot, 'public/usd_scenes/flipper_scene.usda');
 const source = fs.readFileSync(usdaPath, 'utf8');
 const stage = await Open(source);
 

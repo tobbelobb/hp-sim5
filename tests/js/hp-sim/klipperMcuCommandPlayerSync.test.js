@@ -117,7 +117,7 @@ async function importModules() {
     SpoolTagComponent,
     SpoolStateComponent,
     StepperMotorComponent,
-  } = await import('../../../examples/js/slideprinter/slideprinter_common.js'));
+  } = await import('../../../example_apps/js/slideprinter/slideprinter_common.js'));
   ({ MachineTagComponent } = await import('../../../src/js/cable_joints/ecs.js'));
 }
 

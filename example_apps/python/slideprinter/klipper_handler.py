@@ -13,10 +13,10 @@ Usage (typical workflow)
   1) Start this bridge to create the WS broadcaster.
      Options:
        - PTY source (standalone):
-           python -m examples.python.slideprinter.klipper_handler --port 8770 \
+           python -m example_apps.python.slideprinter.klipper_handler --port 8770 \
                   --symlink /tmp/pseudoserial
        - UDP injection (pair with simulavr bridge):
-           python -m examples.python.slideprinter.klipper_handler --port 8770 \
+           python -m example_apps.python.slideprinter.klipper_handler --port 8770 \
                   --udp-in-port 8771
 
      It will print the real PTY slave path and maintain a symlink at /tmp/pseudoserial.
@@ -38,7 +38,7 @@ Usage (typical workflow)
           version, the batch mode may bypass serial, so prefer (A).
 
   3) Point the browser demo at ws://localhost:8770 (or wss if you terminate TLS)
-     using the new "Klipper raw in" toggle in examples/js/slideprinter/index.html.
+     using the new "Klipper raw in" toggle in example_apps/js/slideprinter/index.html.
      You should see raw hex lines in the browser console if bytes flow.
 
 Notes

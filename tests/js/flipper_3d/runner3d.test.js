@@ -3,7 +3,7 @@ jest.mock('../../../src/js/cable_joints_3d/render_system_3d.js', () => {
   return { RenderSystem3D: MockRenderSystem3D };
 });
 
-const { runGame } = require('../../../examples/js/flipper_3d/runner.js');
+const { runGame } = require('../../../example_apps/js/flipper_3d/runner.js');
 const { RenderSystem3D } = require('../../../src/js/cable_joints_3d/render_system_3d.js');
 
 function createEventTarget(initialText = '') {

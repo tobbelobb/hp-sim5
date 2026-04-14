@@ -1,8 +1,8 @@
 import { Open as UsdOpen, getAttribute } from '../../src/js/usd/stage.js';
 import { World } from '../../src/js/cable_joints/ecs.js';
-import { runGame } from '../../examples/js/slideprinter/runner.js';
-import { setupScene } from '../../examples/js/slideprinter/setupScene.js';
-import { RemoteSpoolSystem, InputSystem } from '../../examples/js/slideprinter/slideprinter_common.js';
+import { runGame } from '../../example_apps/js/slideprinter/runner.js';
+import { setupScene } from '../../example_apps/js/slideprinter/setupScene.js';
+import { RemoteSpoolSystem, InputSystem } from '../../example_apps/js/slideprinter/slideprinter_common.js';
 import { detectFileFormat, FileFormat, isKlipperFormat } from '../../integrations/shared/fileFormatUtils.js';
 
 const MCU_PRESETS = {
@@ -22,6 +22,7 @@ const MIN_VIEW_SCALE = 0.01;
 const MAX_VIEW_SCALE = 100;
 const ZOOM_FACTOR = 1.2;
 const ZOOM_EPSILON = 1e-3;
+const PUBLIC_BASE_URL = import.meta.env.BASE_URL || '/';
 
 function initFrontpageSlideprinter() {
   const canvas = document.getElementById('myCanvas');
@@ -68,8 +69,8 @@ function initFrontpageSlideprinter() {
   let speedStatusArmed = false;
 
   const klipperMcuCommandPlayerModuleUrl = new URL('../../integrations/klipper/klipperMcuCommandPlayer.js', import.meta.url);
-  const moveCommanderModuleUrl = new URL('../../examples/js/slideprinter/moveCommander.js', import.meta.url);
-  const usdaUrl = new URL('../../examples/usd_scenes/slideprinter.usda', import.meta.url);
+  const moveCommanderModuleUrl = new URL('../../example_apps/js/slideprinter/moveCommander.js', import.meta.url);
+  const usdaUrl = `${PUBLIC_BASE_URL}usd_scenes/slideprinter.usda`;
 
   function getRemoteSystem() {
     return world.systems.find((sys) => sys instanceof RemoteSpoolSystem) || null;

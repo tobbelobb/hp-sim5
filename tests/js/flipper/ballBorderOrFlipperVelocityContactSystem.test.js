@@ -13,8 +13,8 @@ import {
 import {
   FlipperStateComponent,
   FlipperTipComponent,
-} from '../../../examples/js/flipper/flipper_common.js';
-import { BallBorderOrFlipperVelocityContactSystem } from '../../../examples/js/flipper/ball_border_or_flipper_velocity_contact_system.js';
+} from '../../../example_apps/js/flipper/flipper_common.js';
+import { BallBorderOrFlipperVelocityContactSystem } from '../../../example_apps/js/flipper/ball_border_or_flipper_velocity_contact_system.js';
 
 function makeWorldWithFlipperContact() {
   const world = new World();

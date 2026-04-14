@@ -16,7 +16,7 @@ src_python_path = root_dir / "src" / "python"
 if str(src_python_path) not in sys.path:
     sys.path.insert(0, str(src_python_path))
 
-examples_python_path = root_dir / "examples" / "python"
+examples_python_path = root_dir / "example_apps" / "python"
 if str(examples_python_path) not in sys.path:
     sys.path.insert(0, str(examples_python_path))
 
@@ -61,7 +61,7 @@ from slideprinter.slideprinter_common import (
 python_dir = src_python_path / "cable_joints"
 WATCHED_FILES = [
     Path(__file__),
-    root_dir / "examples" / "usd_scenes" / "slideprinter.usda",
+    root_dir / "public" / "usd_scenes" / "slideprinter.usda",
     python_dir / "ecs.py",
     python_dir / "common_systems.py",
     python_dir / "cable_attachment_update_system.py",
@@ -242,7 +242,7 @@ async def watch_and_restart(files, interval=1.0):
 
 def load_slideprinter_stage():
     """Load the slideprinter demo USD stage."""
-    scene_path = root_dir / "examples" / "usd_scenes" / "slideprinter.usda"
+    scene_path = root_dir / "public" / "usd_scenes" / "slideprinter.usda"
     return Usd.Stage.Open(str(scene_path))
 
 def _material_properties(stage, prim):

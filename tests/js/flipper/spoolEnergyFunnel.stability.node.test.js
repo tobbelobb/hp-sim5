@@ -45,14 +45,14 @@ import {
   FlipperTipLinkSystem,
   OverlayRadiusAndCircleSectorSystem,
   PBDUnifiedContactManifoldSystem
-} from '../../../examples/js/flipper/flipper_common.js';
-import { BallObstacleBumpSystem } from '../../../examples/js/flipper/ball_obstacle_bump_system.js';
-import { BallBorderOrFlipperVelocityContactSystem } from '../../../examples/js/flipper/ball_border_or_flipper_velocity_contact_system.js';
+} from '../../../example_apps/js/flipper/flipper_common.js';
+import { BallObstacleBumpSystem } from '../../../example_apps/js/flipper/ball_obstacle_bump_system.js';
+import { BallBorderOrFlipperVelocityContactSystem } from '../../../example_apps/js/flipper/ball_border_or_flipper_velocity_contact_system.js';
 import {
   CABLE_FEATURE_DEFAULTS,
   ensureCableFeatureFlags,
   setCableFeatureFlags
-} from '../../../examples/js/flipper/cable_feature_flags.js';
+} from '../../../example_apps/js/flipper/cable_feature_flags.js';
 
 const DEFAULT_CONFIG = Object.freeze({
   pairCount: 6,

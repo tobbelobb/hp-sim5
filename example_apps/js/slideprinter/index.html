@@ -4,7 +4,7 @@
   Open http://localhost:5173/hp-sim5/slideprinter.html
   Upload a G-code file to run the JS MoveCommander locally.
   To drive it from Python instead run
-    python -m examples.python.slideprinter.move_commander <file>
+    python -m example_apps.python.slideprinter.move_commander <file>
   which connects via WebSocket.
 -->
 <html>
@@ -817,7 +817,7 @@ canvas {
             handlePresetFilename(filename);
         });
     }
-    const usdaPath = new URL('../../usd_scenes/slideprinter.usda', import.meta.url).href;
+    const usdaPath = `${base}usd_scenes/slideprinter.usda`;
 
     UsdOpen(usdaPath).then(stage => {
       if (!stage) {

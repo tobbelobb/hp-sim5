@@ -1,7 +1,7 @@
 """Plot Klipper move logs emitted by the browser --log-move flag.
 
 The log is produced by enabling the ``--log-move`` query parameter when
-loading ``examples/js/slideprinter/index.html``. The worker will emit a JSON
+loading ``example_apps/js/slideprinter/index.html``. The worker will emit a JSON
 line per aggregated move containing the command and absolute position for each
 axis. Download the log via the browser console helper ``downloadKlipperMoveLog``
 and feed the JSONL file to this script.

@@ -7,7 +7,7 @@ import {
 import {
   SpoolStateComponent,
   StepperMotorComponent,
-} from '../../../examples/js/slideprinter/slideprinter_common.js';
+} from '../../../example_apps/js/slideprinter/slideprinter_common.js';
 import { getMachineMotorDiagnostics } from '../../../hp-sim/app/motor-diagnostics.js';
 
 describe('getMachineMotorDiagnostics', () => {

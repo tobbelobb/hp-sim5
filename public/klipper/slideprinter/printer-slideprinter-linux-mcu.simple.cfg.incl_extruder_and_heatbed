@@ -66,7 +66,7 @@ filament_diameter: 1.750
 # hardware PWM (pwmchipX/pwmY) if you need it.
 heater_pin: gpiochipREPLACE_ME_WITH_FAKE_GPIO_CHIP_NUMBER/gpio15
 sensor_type: temperature_host
-sensor_path: examples/klipper/slideprinter/extruder.temp
+sensor_path: public/klipper/slideprinter/extruder.temp
 control: pid
 pid_Kp: 22.2
 pid_Ki: 1.08
@@ -81,7 +81,7 @@ max_temp: 275
 # hardware PWM (pwmchipX/pwmY) if you need it.
 heater_pin: gpiochipREPLACE_ME_WITH_FAKE_GPIO_CHIP_NUMBER/gpio17
 sensor_type: temperature_host
-sensor_path: examples/klipper/slideprinter/bed.temp
+sensor_path: public/klipper/slideprinter/bed.temp
 control: watermark
 min_temp: 0
 max_temp: 130

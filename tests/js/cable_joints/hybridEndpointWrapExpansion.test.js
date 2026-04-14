@@ -13,7 +13,7 @@ import {
   OverlayRadiusAndCircleSectorSystem,
   OverlayRadiusComponent,
   CircleSectorComponent,
-} from '../../../examples/js/flipper/flipper_common.js';
+} from '../../../example_apps/js/flipper/flipper_common.js';
 
 function createEndpointWrapWorld(storedLength) {
   const world = new World();

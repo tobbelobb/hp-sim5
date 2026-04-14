@@ -266,7 +266,8 @@
       return next;
     };
 
-    const usdaPath = new URL('../../usd_scenes/flipper_scene.usda', import.meta.url).href;
+    const base = import.meta.env.BASE_URL || '/';
+    const usdaPath = `${base}usd_scenes/flipper_scene.usda`;
     UsdOpen(usdaPath)
       .then((stage) => {
         runGame(world, () => {

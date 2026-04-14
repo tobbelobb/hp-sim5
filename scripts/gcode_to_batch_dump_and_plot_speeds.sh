@@ -14,13 +14,13 @@ ROOT_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 PYTHON="${KLIPPY_PYTHON:-${ROOT_DIR}/.venv/bin/python}"
 
 "$PYTHON" "$ROOT_DIR/klipper/klippy/klippy.py" \
-  "$ROOT_DIR/examples/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg" \
+  "$ROOT_DIR/public/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg" \
   -i "$GCODE_FILE" \
   -o "${BASENAME}.serial" \
-  -v -d "$ROOT_DIR/examples/klipper/linux_mcu/klipper.dict"
+  -v -d "$ROOT_DIR/public/klipper/linux_mcu/klipper.dict"
 
 "$PYTHON" "$ROOT_DIR/klipper/klippy/parsedump.py" \
-  "$ROOT_DIR/examples/klipper/linux_mcu/klipper.dict" \
+  "$ROOT_DIR/public/klipper/linux_mcu/klipper.dict" \
   "${BASENAME}.serial" \
   > "$ROOT_DIR/public/mcu_commands/${BASENAME}.txt"
 

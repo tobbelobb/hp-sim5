@@ -9,7 +9,7 @@ import {
   StepperMotorComponent,
   StepperMotorSystem,
   isStepperClosedLoopEnabled,
-} from '../../../examples/js/slideprinter/slideprinter_common.js';
+} from '../../../example_apps/js/slideprinter/slideprinter_common.js';
 
 describe('slideprinter stepper closed-loop mode', () => {
   test('enables closed-loop mode from either the component flag or the world resource', () => {

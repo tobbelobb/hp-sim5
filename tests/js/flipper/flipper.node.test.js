@@ -8,8 +8,8 @@ import {
   BallTagComponent,
   ScoreComponent,
   PauseStateComponent
-} from '../../../examples/js/flipper/flipper_common.js';
-import { setupScene } from '../../../examples/js/flipper/setupScene.js';
+} from '../../../example_apps/js/flipper/flipper_common.js';
+import { setupScene } from '../../../example_apps/js/flipper/setupScene.js';
 import { Open } from '../../../src/js/usd/stage.js';
 
 // Minimal DOM stubs for systems that expect browser APIs
@@ -99,7 +99,7 @@ describe('Flipper Node Simulation', () => {
   test('balls settle below flippers with expected score', async () => {
     const originalWarn = console.warn;
     console.warn = jest.fn(); // suppress warnings
-    const usdaPath = path.resolve(__dirname, '../../../examples/usd_scenes/flipper_scene.usda');
+    const usdaPath = path.resolve(__dirname, '../../../public/usd_scenes/flipper_scene.usda');
     const source = fs.readFileSync(usdaPath, 'utf8');
     const stage = await Open(source);
 

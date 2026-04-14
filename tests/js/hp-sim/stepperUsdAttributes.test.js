@@ -1,15 +1,15 @@
 import { readFileSync } from 'fs';
 import path from 'path';
 import { World } from '../../../src/js/cable_joints/ecs.js';
-import { setupScene } from '../../../examples/js/slideprinter/setupScene.js';
+import { setupScene } from '../../../example_apps/js/slideprinter/setupScene.js';
 import {
   StepperMotorComponent,
   SpoolTagComponent,
   ExtruderComponent,
-} from '../../../examples/js/slideprinter/slideprinter_common.js';
+} from '../../../example_apps/js/slideprinter/slideprinter_common.js';
 import { Open as UsdOpen } from '../../../src/js/usd/stage.js';
 
-const usdPath = path.resolve(process.cwd(), 'examples/usd_scenes/slideprinter.usda');
+const usdPath = path.resolve(process.cwd(), 'public/usd_scenes/slideprinter.usda');
 
 const createContextStub = () => {
   const noop = () => {};

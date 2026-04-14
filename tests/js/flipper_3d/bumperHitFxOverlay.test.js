@@ -5,8 +5,8 @@ import {
   RadiusComponent
 } from '../../../src/js/cable_joints_3d/ecs.js';
 import { RenderableComponent } from '../../../src/js/cable_joints/ecs.js';
-import { ObstaclePushComponent } from '../../../examples/js/flipper/flipper_common.js';
-import { BumperHitFxOverlay } from '../../../examples/js/flipper_3d/bumperHitFxOverlay.js';
+import { ObstaclePushComponent } from '../../../example_apps/js/flipper/flipper_common.js';
+import { BumperHitFxOverlay } from '../../../example_apps/js/flipper_3d/bumperHitFxOverlay.js';
 
 function createMockCanvas() {
   const gradient = { addColorStop: jest.fn() };

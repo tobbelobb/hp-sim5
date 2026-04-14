@@ -30,7 +30,7 @@ import {
 import { setupScene } from '../../../hp-sim-3d/app/setupScene.js';
 import { ExtruderComponent } from '../../../hp-sim-3d/app/hangprinter_extruder.js';
 
-const usdPath = path.resolve(process.cwd(), 'examples/usd_scenes/hp3.usda');
+const usdPath = path.resolve(process.cwd(), 'public/usd_scenes/hp3.usda');
 
 function createCanvas() {
   return {

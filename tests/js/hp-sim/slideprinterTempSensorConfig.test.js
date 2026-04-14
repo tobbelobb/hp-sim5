@@ -19,19 +19,19 @@ describe('Klipper temperature simulation config', () => {
   test('uses shared file-backed temperature sensors instead of fake analog pins', () => {
     const heaterConfigs = [
       {
-        relativePath: 'examples/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg',
-        extruderSensorPath: 'examples/klipper/hp3/extruder.temp',
-        bedSensorPath: 'examples/klipper/hp3/bed.temp',
+        relativePath: 'public/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg',
+        extruderSensorPath: 'public/klipper/hp3/extruder.temp',
+        bedSensorPath: 'public/klipper/hp3/bed.temp',
       },
       {
-        relativePath: 'examples/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg.incl_extruder_and_heatbed',
-        extruderSensorPath: 'examples/klipper/slideprinter/extruder.temp',
-        bedSensorPath: 'examples/klipper/slideprinter/bed.temp',
+        relativePath: 'public/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg.incl_extruder_and_heatbed',
+        extruderSensorPath: 'public/klipper/slideprinter/extruder.temp',
+        bedSensorPath: 'public/klipper/slideprinter/bed.temp',
       },
       {
-        relativePath: 'examples/klipper/slideprinter/printer-slideprinter-linux-mcu.simple.cfg.incl_extruder_and_heatbed',
-        extruderSensorPath: 'examples/klipper/slideprinter/extruder.temp',
-        bedSensorPath: 'examples/klipper/slideprinter/bed.temp',
+        relativePath: 'public/klipper/slideprinter/printer-slideprinter-linux-mcu.simple.cfg.incl_extruder_and_heatbed',
+        extruderSensorPath: 'public/klipper/slideprinter/extruder.temp',
+        bedSensorPath: 'public/klipper/slideprinter/bed.temp',
       },
     ];
 

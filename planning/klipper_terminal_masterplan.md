@@ -18,7 +18,7 @@ Assumptions:
 - MVP uses Klipper's native API socket, not Moonraker.
 - MVP supports interactive and one-shot `gcode/script` first.
 - "Reuse `KLIPPER_UPLOAD_PIPELINE = 'raw'`" means extracting shared motion decoding / pacing logic from `integrations/klipper/klipperPacerWorker.js` instead of re-implementing it in Node.
-- The supported local runtime is direct Linux-process MCU startup via `examples/klipper/linux_mcu/klipper.elf` exposing `/tmp/klipper_host_mcu`, as documented by Klipper's Linux/RPi MCU docs. `klipper_terminal.mjs` must not depend on `examples/klipper/slideprinter/klipper_linux_mcu_bridge.py`, `pysimulavr`, `examples/klipper/slideprinter/klipper_avr_bridge.py`, or `examples/klipper/avr/klipper.elf`.
+- The supported local runtime is direct Linux-process MCU startup via `public/klipper/linux_mcu/klipper.elf` exposing `/tmp/klipper_host_mcu`, as documented by Klipper's Linux/RPi MCU docs. `klipper_terminal.mjs` must not depend on `public/klipper/slideprinter/klipper_linux_mcu_bridge.py`, `pysimulavr`, `public/klipper/slideprinter/klipper_avr_bridge.py`, or `public/klipper/avr/klipper.elf`.
 - The fake GPIO setup from `scripts/make-fake-pin-chip.sh` is still a local prerequisite for configs that reference a simulated `gpiochip*`; it is not a substitute for the MCU process itself.
 - Local interactive runs should default to non-realtime Linux MCU startup so the terminal works without root/systemd privileges; realtime mode can remain an opt-in for dedicated environments.
 

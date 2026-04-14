@@ -39,7 +39,7 @@ jest.mock('../../../src/js/usd/stage.js', () => ({
 }));
 
 const { World } = require('../../../src/js/cable_joints_3d/ecs.js');
-const { setupScene } = require('../../../examples/js/flipper_3d/setupScene.js');
+const { setupScene } = require('../../../example_apps/js/flipper_3d/setupScene.js');
 
 function createCanvas() {
   return {

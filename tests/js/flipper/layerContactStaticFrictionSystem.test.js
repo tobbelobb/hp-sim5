@@ -10,7 +10,7 @@ import {
   MomentOfInertiaComponent,
   CoefficientOfFrictionComponent,
 } from '../../../src/js/cable_joints/ecs.js';
-import { LayerContactStaticFrictionSystem } from '../../../examples/js/flipper/layer_contact_static_friction_system.js';
+import { LayerContactStaticFrictionSystem } from '../../../example_apps/js/flipper/layer_contact_static_friction_system.js';
 
 function makeWorld() {
   const world = new World();

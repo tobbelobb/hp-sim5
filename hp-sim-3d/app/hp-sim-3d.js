@@ -22,6 +22,7 @@ import { getMachineMotorDiagnostics } from './motor-diagnostics.js';
 
 const HP3_USDA_KEY = 'hp3.usda';
 const KLIPPER_UPLOAD_PIPELINE = 'raw'; // 'player' or 'raw'
+const PUBLIC_BASE_URL = import.meta.env.BASE_URL || '/';
 
 const COMMAND_PRESET_VARIANTS = Object.freeze({
   hangprinterLogo: Object.freeze({
@@ -290,7 +291,7 @@ function initHpSim() {
       entry.file,
       {
         ...entry,
-        url: new URL(`../../examples/usd_scenes/${entry.file}`, import.meta.url).href,
+        url: `${PUBLIC_BASE_URL}usd_scenes/${entry.file}`,
         tintColor: null,
         tintColorLoaded: false,
         tintColorPromise: null,
@@ -979,7 +980,7 @@ function initHpSim() {
 
   const klipperMcuCommandPlayerModuleUrl = new URL('../../integrations/klipper/klipperMcuCommandPlayer.js', import.meta.url);
   const rrfCanPlayerModuleUrl = new URL('../../integrations/rrf/rrfCanPlayer.js', import.meta.url);
-  const moveCommanderModuleUrl = new URL('../../examples/js/slideprinter/moveCommander.js', import.meta.url);
+  const moveCommanderModuleUrl = new URL('../../example_apps/js/slideprinter/moveCommander.js', import.meta.url);
   function getRemoteSystem() {
     return world.systems.find((sys) => sys instanceof RemoteSpoolSystem) || null;
   }

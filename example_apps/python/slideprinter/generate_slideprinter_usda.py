@@ -14,7 +14,7 @@ src_python_path = root_dir / "src" / "python"
 if str(src_python_path) not in sys.path:
     sys.path.insert(0, str(src_python_path))
 
-examples_python_path = root_dir / "examples" / "python"
+examples_python_path = root_dir / "example_apps" / "python"
 if str(examples_python_path) not in sys.path:
     sys.path.insert(0, str(examples_python_path))
 
@@ -291,7 +291,7 @@ if __name__ == "__main__":
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
-        "--stage_path", type=str, default="examples/usd_scenes/generated_slideprinter.usd", help="USD output path"
+        "--stage_path", type=str, default="public/usd_scenes/generated_slideprinter.usd", help="USD output path"
     )
     parser.add_argument(
         "--num_frames", type=int, default=240, help="Number of frames to simulate"

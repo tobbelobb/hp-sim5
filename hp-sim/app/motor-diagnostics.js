@@ -6,7 +6,7 @@ import {
 import {
   SpoolStateComponent,
   StepperMotorComponent,
-} from '../../examples/js/slideprinter/slideprinter_common.js';
+} from '../../example_apps/js/slideprinter/slideprinter_common.js';
 
 const TWO_PI = Math.PI * 2;
 

@@ -8,7 +8,7 @@ import {
   PrevFinalOrientationComponent,
   AngularVelocityComponent
 } from '../../../src/js/cable_joints_3d/ecs.js';
-import { PlanarConstraintSystem3D } from '../../../examples/js/flipper_3d/flipper_common_3d.js';
+import { PlanarConstraintSystem3D } from '../../../example_apps/js/flipper_3d/flipper_common_3d.js';
 
 function makeTiltedQuaternion() {
   const qx = new OrientationComponent().quaternion;

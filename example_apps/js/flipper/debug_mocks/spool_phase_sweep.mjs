@@ -1,4 +1,4 @@
-import Vector2 from '/home/torbjorn/repos/hp-sim5/src/js/cable_joints/vector2.js';
+import Vector2 from '../../../../src/js/cable_joints/vector2.js';
 import {
   World,
   PositionComponent,
@@ -16,16 +16,16 @@ import {
   RenderableComponent,
   SimulationErrorStateComponent,
   layeringEnabled
-} from '/home/torbjorn/repos/hp-sim5/src/js/cable_joints/ecs.js';
-import { tangentFromCircleToPoint } from '/home/torbjorn/repos/hp-sim5/src/js/cable_joints/geometry.js';
+} from '../../../../src/js/cable_joints/ecs.js';
+import { tangentFromCircleToPoint } from '../../../../src/js/cable_joints/geometry.js';
 import {
   CableLinkComponent,
   CableJointComponent,
   CablePathComponent,
   CableAttachmentUpdateSystem,
   PBDCableConstraintSolver,
-} from '/home/torbjorn/repos/hp-sim5/src/js/cable_joints/cable_joints_core.js';
-import { PBDResolveCableOverCorrections } from '/home/torbjorn/repos/hp-sim5/src/js/cable_joints/pbdResolveCableOverCorrections.js';
+} from '../../../../src/js/cable_joints/cable_joints_core.js';
+import { PBDResolveCableOverCorrections } from '../../../../src/js/cable_joints/pbdResolveCableOverCorrections.js';
 import {
   PrevFinalPosSystem,
   PrevFinalOrientationSystem,
@@ -34,19 +34,19 @@ import {
   AngularMovementSystem,
   PBDVelocityUpdateSystem,
   PBDAngularVelocityUpdateSystem,
-} from '/home/torbjorn/repos/hp-sim5/src/js/cable_joints/commonSystems.js';
-import { CableAttachmentCacheSystem } from '/home/torbjorn/repos/hp-sim5/src/js/cable_joints/cable_attachment_cache_system.js';
-import { CableSlackSystem } from '/home/torbjorn/repos/hp-sim5/src/js/cable_joints/cable_slack_system.js';
-import { CableFrictionSystem } from '/home/torbjorn/repos/hp-sim5/src/js/cable_joints/cable_friction_system.js';
+} from '../../../../src/js/cable_joints/commonSystems.js';
+import { CableAttachmentCacheSystem } from '../../../../src/js/cable_joints/cable_attachment_cache_system.js';
+import { CableSlackSystem } from '../../../../src/js/cable_joints/cable_slack_system.js';
+import { CableFrictionSystem } from '../../../../src/js/cable_joints/cable_friction_system.js';
 import {
   BallTagComponent,
   PauseStateComponent,
   BorderComponent,
   PBDUnifiedContactManifoldSystem,
   OverlayRadiusAndCircleSectorSystem,
-} from '/home/torbjorn/repos/hp-sim5/examples/js/flipper/flipper_common.js';
-import { BallBorderOrFlipperVelocityContactSystem } from '/home/torbjorn/repos/hp-sim5/examples/js/flipper/ball_border_or_flipper_velocity_contact_system.js';
-import { ensureCableFeatureFlags, setCableFeatureFlags } from '/home/torbjorn/repos/hp-sim5/examples/js/flipper/cable_feature_flags.js';
+} from '../flipper_common.js';
+import { BallBorderOrFlipperVelocityContactSystem } from '../ball_border_or_flipper_velocity_contact_system.js';
+import { ensureCableFeatureFlags, setCableFeatureFlags } from '../cable_feature_flags.js';
 
 function runOnce(initialLinearSpeed = 0.15, initialStoredTurns = 1.0, steps = 700) {
   const world = new World();

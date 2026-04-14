@@ -14,7 +14,7 @@ src_python_path = root_dir / "src" / "python"
 if str(src_python_path) not in sys.path:
     sys.path.insert(0, str(src_python_path))
 
-examples_python_path = root_dir / "examples" / "python"
+examples_python_path = root_dir / "example_apps" / "python"
 if str(examples_python_path) not in sys.path:
     sys.path.insert(0, str(examples_python_path))
 
@@ -50,7 +50,7 @@ class MoveCommander:
         try:
             script_path = Path(__file__).resolve()
             root_dir = script_path.parents[3]
-            scene_path = root_dir / "examples" / "usd_scenes" / "slideprinter.usda"
+            scene_path = root_dir / "public" / "usd_scenes" / "slideprinter.usda"
             with open(scene_path, 'r') as f:
                 text = f.read()
             match = re.search(r"timeCodesPerSecond\s*=\s*(\d+(\.\d+)?)", text)

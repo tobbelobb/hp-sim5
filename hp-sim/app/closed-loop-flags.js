@@ -1,4 +1,4 @@
-import { STEPPER_CLOSED_LOOP_RESOURCE } from '../../examples/js/slideprinter/slideprinter_common.js';
+import { STEPPER_CLOSED_LOOP_RESOURCE } from '../../example_apps/js/slideprinter/slideprinter_common.js';
 
 export const CLOSED_LOOP_MOTOR_TOGGLE_KEYS = Object.freeze([
   STEPPER_CLOSED_LOOP_RESOURCE,

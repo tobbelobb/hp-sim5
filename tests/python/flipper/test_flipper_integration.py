@@ -10,7 +10,7 @@ src_python_path = root_dir / "src" / "python"
 if str(src_python_path) not in sys.path:
     sys.path.insert(0, str(src_python_path))
 
-examples_python_path = root_dir / "examples" / "python"
+examples_python_path = root_dir / "example_apps" / "python"
 if str(examples_python_path) not in sys.path:
     sys.path.insert(0, str(examples_python_path))
 

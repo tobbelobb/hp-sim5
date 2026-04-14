@@ -9,7 +9,7 @@ import {
   MomentOfInertiaComponent,
   CoefficientOfFrictionComponent,
 } from '../../../src/js/cable_joints_3d/ecs.js';
-import { BallBallVelocityContactSystem3D } from '../../../examples/js/flipper_3d/ball_ball_velocity_contact_system_3d.js';
+import { BallBallVelocityContactSystem3D } from '../../../example_apps/js/flipper_3d/ball_ball_velocity_contact_system_3d.js';
 
 describe('BallBallVelocityContactSystem3D', () => {
   test('uses layered contact offsets and friction values from the manifold', () => {

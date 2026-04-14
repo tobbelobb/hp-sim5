@@ -11,7 +11,7 @@ import {
   CircleSectorComponent,
   OverlayRadiusAndCircleSectorSystem,
   PBDUnifiedContactManifoldSystem,
-} from '../../../examples/js/flipper/flipper_common.js';
+} from '../../../example_apps/js/flipper/flipper_common.js';
 import {
   CableLinkComponent,
   CableJointComponent,

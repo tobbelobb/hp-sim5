@@ -1,5 +1,5 @@
-const { runGame } = require('../../../examples/js/flipper/runner.js');
-const { RenderSystem } = require('../../../examples/js/flipper/renderSystem.js');
+const { runGame } = require('../../../example_apps/js/flipper/runner.js');
+const { RenderSystem } = require('../../../example_apps/js/flipper/renderSystem.js');
 
 function createEventTarget(initialText = '') {
   const listeners = new Map();

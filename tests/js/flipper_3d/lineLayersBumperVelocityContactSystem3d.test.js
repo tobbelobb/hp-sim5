@@ -9,7 +9,7 @@ import {
   MomentOfInertiaComponent,
   CoefficientOfFrictionComponent,
 } from '../../../src/js/cable_joints_3d/ecs.js';
-import { LineLayersBumperVelocityContactSystem3D } from '../../../examples/js/flipper_3d/line_layers_bumper_velocity_contact_system_3d.js';
+import { LineLayersBumperVelocityContactSystem3D } from '../../../example_apps/js/flipper_3d/line_layers_bumper_velocity_contact_system_3d.js';
 
 function createWorld() {
   const world = new World();

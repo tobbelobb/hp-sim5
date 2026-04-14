@@ -10,11 +10,11 @@ export const DEFAULT_KLIPPY_LOG_PATH =
   process.env.KLIPPY_LOG_PATH || '/tmp/klipper.log';
 export const DEFAULT_KLIPPY_CONFIG_PATH =
   process.env.KLIPPY_CONFIG_PATH
-  || './examples/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg';
+  || './public/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg';
 export const DEFAULT_KLIPPY_PYTHON =
   process.env.KLIPPY_PYTHON || './.venv/bin/python';
 export const DEFAULT_KLIPPY_HOST_MCU_BIN =
-  process.env.KLIPPY_HOST_MCU_BIN || './examples/klipper/linux_mcu/klipper.elf';
+  process.env.KLIPPY_HOST_MCU_BIN || './public/klipper/linux_mcu/klipper.elf';
 export const DEFAULT_KLIPPY_HOST_MCU_SERIAL =
   process.env.KLIPPY_HOST_MCU_SERIAL || '/tmp/klipper_host_mcu';
 export const DEFAULT_KLIPPY_HOST_MCU_REALTIME =

@@ -2,7 +2,7 @@ import {
   CLOSED_LOOP_MOTOR_TOGGLE_KEYS,
   setClosedLoopMotorFeatureFlags,
 } from '../../../hp-sim/app/closed-loop-flags.js';
-import { STEPPER_CLOSED_LOOP_RESOURCE } from '../../../examples/js/slideprinter/slideprinter_common.js';
+import { STEPPER_CLOSED_LOOP_RESOURCE } from '../../../example_apps/js/slideprinter/slideprinter_common.js';
 
 describe('setClosedLoopMotorFeatureFlags', () => {
   test('writes the closed-loop motor resource as enabled', () => {

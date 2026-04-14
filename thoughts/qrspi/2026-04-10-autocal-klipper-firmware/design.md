@@ -37,8 +37,8 @@ The `autocal` command supports `--firmware klipper` (defaulting to `rrf`).
     - The bridge interface must support `sendGcodeLine` and return parsed motion/encoder data, hiding the difference between RRF's HTTP polling and Klipper's Unix-socket/WebSocket event stream.
 
 4.  **Klipper Configuration**:
-    - Default `hangprinter_4` Klipper config: `examples/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg`.
-    - Baseline fallback: `examples/klipper/hp3/printer-hp3-linux-mcu.cfg`.
+    - Default `hangprinter_4` Klipper config: `public/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg`.
+    - Baseline fallback: `public/klipper/hp3/printer-hp3-linux-mcu.cfg`.
 
 5.  **Calibration Output**:
     - For Klipper, the final calibration values will be printed to the summary but **not** sent back to the firmware automatically. This avoids complex `printer.cfg` writes or assuming specific macro names.

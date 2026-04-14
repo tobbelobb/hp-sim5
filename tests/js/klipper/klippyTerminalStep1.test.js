@@ -126,7 +126,7 @@ describe('klipper terminal step 1', () => {
       logPath: './tmp/klippy.log',
       configPath: './examples/printer.cfg',
       python: './.venv/bin/python',
-      hostMcuBin: './examples/klipper/linux_mcu/klipper.elf',
+      hostMcuBin: './public/klipper/linux_mcu/klipper.elf',
       hostMcuSerial: './tmp/klipper_host_mcu',
       hostMcuRealtime: '0',
       motionQueueStepGenLowTime: '4.500',
@@ -139,7 +139,7 @@ describe('klipper terminal step 1', () => {
     expect(spec.options.env.KLIPPY_LOG_PATH).toBe('/repo/tmp/klippy.log');
     expect(spec.options.env.KLIPPY_CONFIG_PATH).toBe('/repo/examples/printer.cfg');
     expect(spec.options.env.KLIPPY_PYTHON).toBe('/repo/.venv/bin/python');
-    expect(spec.options.env.KLIPPY_HOST_MCU_BIN).toBe('/repo/examples/klipper/linux_mcu/klipper.elf');
+    expect(spec.options.env.KLIPPY_HOST_MCU_BIN).toBe('/repo/public/klipper/linux_mcu/klipper.elf');
     expect(spec.options.env.KLIPPY_HOST_MCU_SERIAL).toBe('/repo/tmp/klipper_host_mcu');
     expect(spec.options.env.KLIPPY_HOST_MCU_REALTIME).toBe('0');
     expect(spec.options.env.KLIPPY_MOTION_QUEUE_SG_LOW_TIME).toBe('4.500');
@@ -219,11 +219,11 @@ describe('klipper terminal step 1', () => {
   });
 
   test('fake gpio chip helper command resolves through the repo root', () => {
-    expect(buildFakeGpioChipSetupCommand('./examples/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg', '/repo')).toEqual({
+    expect(buildFakeGpioChipSetupCommand('./public/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg', '/repo')).toEqual({
       command: 'sudo',
       args: [
         '/repo/scripts/make-fake-pin-chip.sh',
-        '/repo/examples/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg',
+        '/repo/public/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg',
       ],
     });
   });

@@ -19,7 +19,7 @@ import {
   ScoredTagComponent,
   PBDUnifiedContactManifoldSystem,
   OverlayRadiusComponent,
-} from '../../../examples/js/flipper/flipper_common.js';
+} from '../../../example_apps/js/flipper/flipper_common.js';
 
 function _makeWorld() {
   const world = new World();

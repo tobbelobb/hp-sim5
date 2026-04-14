@@ -1,13 +1,13 @@
 # Notes On Funnel Scene Debugging
 
 This is a quick handoff for debugging instability in:
-- `examples/js/flipper/spool_energy_funnel_debug.html`
-- `examples/js/flipper/spool_energy_debug.html`
-- `examples/js/flipper/index.html`
+- `example_apps/js/flipper/spool_energy_funnel_debug.html`
+- `example_apps/js/flipper/spool_energy_debug.html`
+- `example_apps/js/flipper/index.html`
 
 ## 1) Manual Debug Loop (Browser)
 
-1. Open `examples/js/flipper/spool_energy_funnel_debug.html`.
+1. Open `example_apps/js/flipper/spool_energy_funnel_debug.html`.
 2. Use `Pause`, `Step`, and `Reset`.
 3. While paused:
    - tap `s` for one step
@@ -19,7 +19,7 @@ This is a quick handoff for debugging instability in:
 
 ## 2) Cable Checkboxes To Sweep
 
-All checkboxes are defined in `examples/js/flipper/cable_feature_flags.js`.
+All checkboxes are defined in `example_apps/js/flipper/cable_feature_flags.js`.
 
 Current ordering detail (important for trace interpretation):
 - `CableAttachmentUpdateSystem` now runs hybrid endpoint updates both before and after the split/merge passes.

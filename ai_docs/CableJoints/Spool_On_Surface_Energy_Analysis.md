@@ -46,7 +46,7 @@ That is exactly where sudden fling events usually originate.
 
 ## Minimal Repro Scene
 
-Use `examples/js/flipper/spool_energy_debug.html`.
+Use `example_apps/js/flipper/spool_energy_debug.html`.
 
 Scene definition:
 

@@ -9,7 +9,7 @@ import {
   MomentOfInertiaComponent,
   CoefficientOfFrictionComponent,
 } from '../../../src/js/cable_joints/ecs.js';
-import { BallBallVelocityContactSystem } from '../../../examples/js/flipper/ball_ball_velocity_contact_system.js';
+import { BallBallVelocityContactSystem } from '../../../example_apps/js/flipper/ball_ball_velocity_contact_system.js';
 
 function createWorld() {
   const world = new World();

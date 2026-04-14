@@ -19,7 +19,7 @@ import {
   CableLinkComponent,
   CablePathComponent
 } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
-import { ObstaclePushComponent } from '../../../examples/js/flipper/flipper_common.js';
+import { ObstaclePushComponent } from '../../../example_apps/js/flipper/flipper_common.js';
 
 const ORIENTATION_BACK_COLOR = new THREE.Color('#2a3542');
 const ORIENTATION_FRONT_COLOR = new THREE.Color('#dddddd');

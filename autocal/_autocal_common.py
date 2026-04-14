@@ -564,9 +564,9 @@ def _resolve_sim_config(
         search_spool = _spool_mode_enabled(find_radii_mode) or _spool_mode_enabled(find_buildup_mode)
         if machine_type == "hangprinter_4":
             if search_spool:
-                return "examples/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg"
-            return "examples/klipper/hp3/printer-hp3-linux-mcu.cfg"
-        return "examples/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg"
+                return "public/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg"
+            return "public/klipper/hp3/printer-hp3-linux-mcu.cfg"
+        return "public/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg"
 
     if rrf_config:
         return rrf_config

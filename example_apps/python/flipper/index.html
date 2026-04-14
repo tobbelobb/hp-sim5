@@ -584,7 +584,7 @@ canvas {
 
     async function start() {
         const base = import.meta.env.BASE_URL || '/';
-        const usdaPath = new URL('../../usd_scenes/flipper_scene.usda', import.meta.url).href;
+        const usdaPath = `${base}usd_scenes/flipper_scene.usda`;
         try {
             const response = await fetch(usdaPath);
             if (!response.ok) {

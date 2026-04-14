@@ -1,8 +1,8 @@
 import { Open as UsdOpen, getAttribute } from '../../src/js/usd/stage.js';
 import { World, OrientationComponent } from '../../src/js/cable_joints/ecs.js';
-import { runGame } from '../../examples/js/slideprinter/runner.js';
-import { setupScene } from '../../examples/js/slideprinter/setupScene.js';
-import { RemoteSpoolSystem, InputSystem, ExtruderComponent } from '../../examples/js/slideprinter/slideprinter_common.js';
+import { runGame } from '../../example_apps/js/slideprinter/runner.js';
+import { setupScene } from '../../example_apps/js/slideprinter/setupScene.js';
+import { RemoteSpoolSystem, InputSystem, ExtruderComponent } from '../../example_apps/js/slideprinter/slideprinter_common.js';
 import { detectFileFormat, FileFormat, isKlipperFormat, isRrfFormat } from '../../integrations/shared/fileFormatUtils.js';
 import { createKlipperRawBridge } from '../../integrations/klipper/klipperSimulatorBridge.js';
 import { _updateAttachmentPoints } from '../../src/js/cable_joints/cable_joints_core.js';
@@ -133,6 +133,7 @@ const MAX_VIEW_SCALE = 200;
 const ZOOM_FACTOR = 1.2;
 const ZOOM_EPSILON = 1e-3;
 const QUALITY_HISTORY_MAX_ENTRIES = 20;
+const PUBLIC_BASE_URL = import.meta.env.BASE_URL || '/';
 
 const AVAILABLE_USDAS = Object.freeze([
   { file: 'slideprinter_multi_unit.usda', label: 'Slideprinter Multi Unit (default)' },
@@ -235,7 +236,7 @@ function initHpSim() {
       entry.file,
       {
         ...entry,
-        url: new URL(`../../examples/usd_scenes/${entry.file}`, import.meta.url).href,
+        url: `${PUBLIC_BASE_URL}usd_scenes/${entry.file}`,
         tintColor: null,
         tintColorLoaded: false,
         tintColorPromise: null,
@@ -914,7 +915,7 @@ function initHpSim() {
 
   const klipperMcuCommandPlayerModuleUrl = new URL('../../integrations/klipper/klipperMcuCommandPlayer.js', import.meta.url);
   const rrfCanPlayerModuleUrl = new URL('../../integrations/rrf/rrfCanPlayer.js', import.meta.url);
-  const moveCommanderModuleUrl = new URL('../../examples/js/slideprinter/moveCommander.js', import.meta.url);
+  const moveCommanderModuleUrl = new URL('../../example_apps/js/slideprinter/moveCommander.js', import.meta.url);
 
   function ensureExternalKlipperApiBridge() {
     const remoteSystem = getRemoteSystem();

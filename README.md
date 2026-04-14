@@ -15,7 +15,7 @@ Example usecases:
 
 Try the live apps:
 - A family of Slideprinters (2d Hangprinters) is currently deployed here: [hp-sim](https://tobbelobb.github.io/hp-sim5/hp-sim/).
-- A flipper game that tests the Cable Physics engine here: [flipper](https://tobbelobb.github.io/hp-sim5/examples/js/flipper/index.html).
+- A flipper game that tests the Cable Physics engine here: [flipper](https://tobbelobb.github.io/hp-sim5/example_apps/js/flipper/index.html).
 
 ## Cable Joints and Physics Engine
 hp-sim5 includes a Cable Joints library and XPBD physics engine inspired and coded from the work of [Matthias

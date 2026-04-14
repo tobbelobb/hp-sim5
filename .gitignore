@@ -50,4 +50,4 @@ autocal/data/fine_old_datasets/
 /output
 /.playwright-cli
 klipper_terminal_debug.log
-examples/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg.bak
+klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg.bak

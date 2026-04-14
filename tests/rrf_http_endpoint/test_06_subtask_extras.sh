@@ -72,7 +72,7 @@ if command -v node &> /dev/null; then
     echo "  Running JS subtask checks"
     (cd "$ROOT" && PORT="$PORT" node --no-warnings --input-type=module <<'NODE'
 import { RrfHttpBridge } from './integrations/rrf/rrfHttpBridge.js';
-import { RemoteSpoolSystem } from './examples/js/slideprinter/slideprinter_common.js';
+import { RemoteSpoolSystem } from './example_apps/js/slideprinter/slideprinter_common.js';
 
 const assertOk = (cond, msg) => {
     if (!cond) {

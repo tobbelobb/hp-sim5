@@ -7,8 +7,8 @@ import {
   AngularVelocityComponent,
   MomentOfInertiaComponent,
 } from '../../../src/js/cable_joints/ecs.js';
-import { ObstaclePushComponent } from '../../../examples/js/flipper/flipper_common.js';
-import { BallObstacleBumpSystem } from '../../../examples/js/flipper/ball_obstacle_bump_system.js';
+import { ObstaclePushComponent } from '../../../example_apps/js/flipper/flipper_common.js';
+import { BallObstacleBumpSystem } from '../../../example_apps/js/flipper/ball_obstacle_bump_system.js';
 
 describe('BallObstacleBumpSystem raw-contact gating', () => {
   function createWorld() {

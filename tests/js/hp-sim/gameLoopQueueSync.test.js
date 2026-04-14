@@ -1,12 +1,12 @@
 import { World, MachineTagComponent } from '../../../src/js/cable_joints/ecs.js';
-import { PauseStateComponent } from '../../../examples/js/flipper/flipper_common.js';
+import { PauseStateComponent } from '../../../example_apps/js/flipper/flipper_common.js';
 import {
   RemoteSpoolSystem,
   SpoolTagComponent,
   SpoolStateComponent,
   StepperMotorComponent,
-} from '../../../examples/js/slideprinter/slideprinter_common.js';
-import { runGame } from '../../../examples/js/slideprinter/runner.js';
+} from '../../../example_apps/js/slideprinter/slideprinter_common.js';
+import { runGame } from '../../../example_apps/js/slideprinter/runner.js';
 
 class TestWorld extends World {
   constructor() {

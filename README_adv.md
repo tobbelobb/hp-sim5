@@ -50,9 +50,9 @@ A complete Python port of the cable joints engine is available in the `src/pytho
       ```
     - Start the demo server (in another terminal)
       ```bash
-      python -m examples.python.flipper.server
+      python -m example_apps.python.flipper.server
       ```
-    - Visit <http://localhost:5173/hp-sim5/examples/python/flipper/index.html>
+    - Visit <http://localhost:5173/hp-sim5/example_apps/python/flipper/index.html>
   * Slideprinter:
     - Note: The Python Slideprinter Demo is broken, as the js hp-sim demo has replaced the js slideprinter demo, and no equivalent Python hp-sim demo has been developed.
       The core Python physics engine and all python tests still work, but the js part of python slideprinter demo has changed and need to be refitted.
@@ -60,12 +60,12 @@ A complete Python port of the cable joints engine is available in the `src/pytho
     - Start the demo server
       ```bash
       # Assumes npx vite is already running
-      python -m examples.python.slideprinter.server
+      python -m example_apps.python.slideprinter.server
       ```
-    - Visit <http://localhost:5173/hp-sim5/examples/python/slideprinter/index.html>
+    - Visit <http://localhost:5173/hp-sim5/example_apps/python/slideprinter/index.html>
     - Send some gcode commands with the Python Move Comander:
       ```bash
-      python -m examples.python.slideprinter.move_commander public/gcode/draw_squares.gcode
+      python -m example_apps.python.slideprinter.move_commander public/gcode/draw_squares.gcode
       ```
 
 
@@ -79,13 +79,13 @@ Run the demo of the current Warp version of the Python Cable Joints library on t
  - Start the flipper server in Warp mode
   ```bash
   # Assumes npx vite is already running
-  python -m examples.python.flipper.server --warp
+  python -m example_apps.python.flipper.server --warp
   ```
- - Visit <http://localhost:5173/hp-sim5/examples/python/flipper/index_warp.html>
+ - Visit <http://localhost:5173/hp-sim5/example_apps/python/flipper/index_warp.html>
 
 For a GPU demo give `server` a `--device cuda:0` flag:
 ```bash
-python -m examples.python.flipper.server --warp --device cuda:0
+python -m example_apps.python.flipper.server --warp --device cuda:0
 ```
 
 ### Flipper Overlay
@@ -95,9 +95,9 @@ This is fun and usefult for testing js/Python equivalence.
  - Start the python flipper server
   ```bash
   # Assumes npx vite is already running
-  python -m examples.python.flipper.server
+  python -m example_apps.python.flipper.server
   ```
- - Visit <http://localhost:5173/hp-sim5/examples/js/flipper/flipper_overlay.html>
+ - Visit <http://localhost:5173/hp-sim5/example_apps/js/flipper/flipper_overlay.html>
 
 ## Further Tests and Demos
 ### Cable Joints Visual "Unit Tests"

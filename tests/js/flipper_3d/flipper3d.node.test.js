@@ -21,8 +21,8 @@ import {
 import {
   BallTagComponent,
   ScoreComponent
-} from '../../../examples/js/flipper_3d/flipper_common_3d.js';
-import { setupScene } from '../../../examples/js/flipper_3d/setupScene.js';
+} from '../../../example_apps/js/flipper_3d/flipper_common_3d.js';
+import { setupScene } from '../../../example_apps/js/flipper_3d/setupScene.js';
 import { Open } from '../../../src/js/usd/stage.js';
 
 function createMockCanvas() {
@@ -100,7 +100,7 @@ describe('Flipper 3D Node Simulation', () => {
   });
 
   test('steps the full 3D scene in node with mocked rendering', async () => {
-    const usdaPath = path.resolve(__dirname, '../../../examples/usd_scenes/flipper_scene.usda');
+    const usdaPath = path.resolve(__dirname, '../../../public/usd_scenes/flipper_scene.usda');
     const source = fs.readFileSync(usdaPath, 'utf8');
     const stage = await Open(source);
 

@@ -11,7 +11,7 @@ describe('Flipper Integration Test', () => {
 
   beforeAll(async () => {
     harness = await launchFlipperPage({
-      pagePath: '/examples/js/flipper/index.html',
+      pagePath: '/example_apps/js/flipper/index.html',
       speedScale: 10.0
     });
   });

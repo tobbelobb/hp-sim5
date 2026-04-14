@@ -1,4 +1,4 @@
-import { runGame } from '../../../examples/js/slideprinter/runner.js';
+import { runGame } from '../../../example_apps/js/slideprinter/runner.js';
 
 function createEventTarget(initialText = '') {
   const listeners = new Map();

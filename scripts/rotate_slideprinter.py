@@ -24,7 +24,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from src.python.cable_joints.geometry import tangent_from_point_to_circle  # type: ignore
 
-USD_PATH = REPO_ROOT / "examples/usd_scenes/slideprinter.usda"
+USD_PATH = REPO_ROOT / "public/usd_scenes/slideprinter.usda"
 RADIUS = 0.03
 
 ANCHORS = {

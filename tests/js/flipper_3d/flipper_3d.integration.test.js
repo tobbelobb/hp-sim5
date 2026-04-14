@@ -12,7 +12,7 @@ describe('Flipper 3D Integration', () => {
 
   beforeAll(async () => {
     harness = await launchFlipperPage({
-      pagePath: '/examples/js/flipper_3d/index.html',
+      pagePath: '/example_apps/js/flipper_3d/index.html',
       speedScale: 10.0,
       viewport: { width: 1200, height: 900 },
       newDocumentVars: { _flipper3dDebug: true },

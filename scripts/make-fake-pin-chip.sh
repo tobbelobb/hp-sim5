@@ -4,7 +4,7 @@ set -euo pipefail
 # Usage:
 #   ./make-fake-pin-chip.sh [path/to/config]
 # Default config path:
-CFG_PATH="${1:-examples/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg}"
+CFG_PATH="${1:-public/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg}"
 
 # Placeholders in the config
 GPIO_PLACEHOLDER="REPLACE_ME_WITH_FAKE_GPIO_CHIP_NUMBER"

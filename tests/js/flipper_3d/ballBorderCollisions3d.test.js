@@ -9,7 +9,7 @@ import {
   BallTagComponent,
   BorderComponent,
   PBDBallBorderCollisions
-} from '../../../examples/js/flipper_3d/flipper_common_3d.js';
+} from '../../../example_apps/js/flipper_3d/flipper_common_3d.js';
 
 describe('PBDBallBorderCollisions (3D)', () => {
   test('keeps ball on simulation plane and emits planar contact normals', () => {

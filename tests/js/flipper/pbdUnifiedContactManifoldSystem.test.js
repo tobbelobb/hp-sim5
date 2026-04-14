@@ -11,7 +11,7 @@ import {
   FlipperTagComponent,
   FlipperStateComponent,
   PBDUnifiedContactManifoldSystem,
-} from '../../../examples/js/flipper/flipper_common.js';
+} from '../../../example_apps/js/flipper/flipper_common.js';
 
 describe('PBDUnifiedContactManifoldSystem', () => {
   test('resolves border and ball-ball contacts in one unified pass', () => {
