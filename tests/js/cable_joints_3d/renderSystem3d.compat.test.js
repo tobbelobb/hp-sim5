@@ -255,6 +255,32 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
     }
   });
 
+  test('prefers live quality colors for extrusion points when available', () => {
+    const system = createCompatStub();
+
+    try {
+      const world = new World();
+      const extruderEntity = world.createEntity();
+      const extruder = new ExtruderComponent();
+      extruder.extrusions.push({
+        pos: [0.25, 0.75, -0.001],
+        color: '#ffaa00',
+        qualityColor: '#ffffff',
+        length: 0.02,
+      });
+      world.addComponent(extruderEntity, extruder);
+
+      system._syncExtrusions(world);
+
+      const colorAttr = system.extrusionPoints.geometry.getAttribute('color');
+      expect(colorAttr.getX(0)).toBeCloseTo(1.0, 6);
+      expect(colorAttr.getY(0)).toBeCloseTo(1.0, 6);
+      expect(colorAttr.getZ(0)).toBeCloseTo(1.0, 6);
+    } finally {
+      disposeCompatStub(system);
+    }
+  });
+
   test('clearPositionTrace preserves stored trace history for redraw after view changes', () => {
     const system = createCompatStub();
 

@@ -1345,7 +1345,7 @@ export class RenderSystem3D {
         y: finiteOr(extrusion.pos[1], finiteOr(machineCenter?.y, 0.0)),
         z: finiteOr(extrusion.pos[2], finiteOr(machineCenter?.z, DEFAULT_TRACE_Z))
       });
-      colors.push(extrusion.color || DEFAULT_CABLE_COLOR);
+      colors.push(extrusion.qualityColor || extrusion.color || DEFAULT_CABLE_COLOR);
     }
     this.drawnExtrusionCount = extrusions.length;
     this._updatePointObject(this.extrusionPoints, points, colors, DEFAULT_TRACE_Z);
