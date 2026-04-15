@@ -1337,13 +1337,13 @@ export class RenderSystem3D {
       if (!Array.isArray(extrusion?.pos) || extrusion.pos.length < 2) {
         continue;
       }
-      const machineCenter = extrusion?.machineId
-        ? extruderComp?.machineCenters?.[extrusion.machineId]
-        : extruderComp?.centerPos;
+      const machineTip = extrusion?.machineId
+        ? extruderComp?.machineTips?.[extrusion.machineId] || extruderComp?.machineCenters?.[extrusion.machineId]
+        : extruderComp?.tipPos || extruderComp?.centerPos;
       points.push({
-        x: finiteOr(extrusion.pos[0], finiteOr(machineCenter?.x, 0.0)),
-        y: finiteOr(extrusion.pos[1], finiteOr(machineCenter?.y, 0.0)),
-        z: finiteOr(extrusion.pos[2], finiteOr(machineCenter?.z, DEFAULT_TRACE_Z))
+        x: finiteOr(extrusion.pos[0], finiteOr(machineTip?.x, 0.0)),
+        y: finiteOr(extrusion.pos[1], finiteOr(machineTip?.y, 0.0)),
+        z: finiteOr(extrusion.pos[2], finiteOr(machineTip?.z, DEFAULT_TRACE_Z))
       });
       colors.push(extrusion.qualityColor || extrusion.color || DEFAULT_CABLE_COLOR);
     }
@@ -1362,17 +1362,17 @@ export class RenderSystem3D {
     const extruderEntities = world.query([ExtruderComponent]);
     if (extruderEntities.length > 0) {
       const extruderComp = world.getComponent(extruderEntities[0], ExtruderComponent);
-      const center = extruderComp?.centerPos;
-      const centerZ = finiteOr(center?.z, DEFAULT_TRACE_Z);
-      if (center && Number.isFinite(center.x) && Number.isFinite(center.y)) {
+      const tip = extruderComp?.tipPos || extruderComp?.centerPos;
+      const tipZ = finiteOr(tip?.z, DEFAULT_TRACE_Z);
+      if (tip && Number.isFinite(tip.x) && Number.isFinite(tip.y)) {
         const last = this.positionTracePoints[this.positionTracePoints.length - 1];
         if (
           !last
-          || Math.abs(last.x - center.x) > 1e-9
-          || Math.abs(last.y - center.y) > 1e-9
-          || Math.abs((last.z ?? DEFAULT_TRACE_Z) - centerZ) > 1e-9
+          || Math.abs(last.x - tip.x) > 1e-9
+          || Math.abs(last.y - tip.y) > 1e-9
+          || Math.abs((last.z ?? DEFAULT_TRACE_Z) - tipZ) > 1e-9
         ) {
-          this.positionTracePoints.push({ x: center.x, y: center.y, z: centerZ });
+          this.positionTracePoints.push({ x: tip.x, y: tip.y, z: tipZ });
         }
       }
     }

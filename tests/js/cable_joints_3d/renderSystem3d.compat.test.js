@@ -231,6 +231,7 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
         length: 0.02,
       });
       extruder.centerPos = { x: 0.5, y: 0.6, z: -0.001 };
+      extruder.tipPos = { x: 0.45, y: 0.55, z: -0.002 };
       world.addComponent(extruderEntity, extruder);
 
       system._syncExtrusions(world);
@@ -240,14 +241,15 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
 
       system.setPositionTraceEnabled(true);
       system._syncPositionTrace(world);
-      expect(system.positionTracePointsObject.geometry.getAttribute('position').getZ(0)).toBeCloseTo(-0.001, 6);
+      expect(system.positionTracePointsObject.geometry.getAttribute('position').getZ(0)).toBeCloseTo(-0.002, 6);
 
       extruder.centerPos = { x: 0.5, y: 0.6, z: -0.003 };
+      extruder.tipPos = { x: 0.45, y: 0.55, z: -0.004 };
       system._syncPositionTrace(world);
       system.addPositionTraceMarker(0.1, 0.2, 'A');
 
       expect(system.positionTracePoints).toHaveLength(2);
-      expect(system.positionTracePointsObject.geometry.getAttribute('position').getZ(1)).toBeCloseTo(-0.003, 6);
+      expect(system.positionTracePointsObject.geometry.getAttribute('position').getZ(1)).toBeCloseTo(-0.004, 6);
       expect(system.positionTracePointsObject.visible).toBe(true);
       expect(system.positionTraceMarkersObject.visible).toBe(true);
     } finally {

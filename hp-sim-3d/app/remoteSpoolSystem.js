@@ -275,10 +275,14 @@ export class RemoteSpoolSystem {
           machineIds = recordedMachines.slice();
         }
 
+        const machineTips = extruderComp.machineTips || {};
         const machineCenters = extruderComp.machineCenters || {};
+        const tipKeys = Object.keys(machineTips);
         const centerKeys = Object.keys(machineCenters);
 
-        if (machineIds.length === 0 && centerKeys.length === 1) {
+        if (machineIds.length === 0 && tipKeys.length === 1) {
+          machineIds = [tipKeys[0]];
+        } else if (machineIds.length === 0 && centerKeys.length === 1) {
           machineIds = [centerKeys[0]];
         }
 
@@ -286,10 +290,15 @@ export class RemoteSpoolSystem {
           if (!machineId) {
             continue;
           }
-          let center = machineCenters[machineId];
-          if (!center) {
-            if (centerKeys.length === 0 && extruderComp.centerPos) {
-              center = extruderComp.centerPos;
+          let tip = machineTips[machineId];
+          if (!tip) {
+            tip = machineCenters[machineId];
+          }
+          if (!tip) {
+            if (tipKeys.length === 0 && centerKeys.length === 0 && extruderComp.tipPos) {
+              tip = extruderComp.tipPos;
+            } else if (centerKeys.length === 0 && extruderComp.centerPos) {
+              tip = extruderComp.centerPos;
             } else {
               continue;
             }
@@ -301,11 +310,11 @@ export class RemoteSpoolSystem {
               color = record.extrusionColor;
             }
           }
-          if (!center) {
+          if (!tip) {
             continue;
           }
           const extrusionEvent = {
-            pos: [center.x, center.y, Number.isFinite(center.z) ? center.z : 0],
+            pos: [tip.x, tip.y, Number.isFinite(tip.z) ? tip.z : 0],
             length: command.E,
             machineId,
             color,

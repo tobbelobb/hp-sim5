@@ -182,6 +182,20 @@ export function setupScene(world, stage, canvas, options = {}) {
         return Number.isFinite(parsed) ? parsed : null;
     }
 
+    function readVectorAttribute(primNode, attributeName) {
+        const rawValue = getAttribute(primNode, attributeName);
+        if (!rawValue || !Array.isArray(rawValue) || rawValue.length < 2) {
+            return null;
+        }
+        const x = Number(rawValue[0]);
+        const y = Number(rawValue[1]);
+        const z = Number(rawValue[2] ?? 0.0);
+        if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
+            return null;
+        }
+        return new Vector3(x, y, z);
+    }
+
     function addGravityIfDynamic(entityId, mass) {
         if (typeof mass === 'number' && Number.isFinite(mass) && mass > 0.0) {
             world.addComponent(entityId, new GravityAffectedComponent());
@@ -257,6 +271,8 @@ export function setupScene(world, stage, canvas, options = {}) {
         let extruderPrim = null;
         let extruderAuthoredPos = null;
         let extruderCenterPaths = [];
+        let extruderTipOffset = new Vector3(0.0, 0.0, 0.0);
+        let extruderColdEndOffset = null;
 
         // Discover prims and create body entities in a single pass
         for (const prim of getChildren(sceneRoot)) {
@@ -295,6 +311,10 @@ export function setupScene(world, stage, canvas, options = {}) {
                     extruderPrim = prim;
                     extruderAuthoredPos = pos.clone();
                     extruderCenterPaths = centerPaths;
+                    const tipPrim = getChild(prim, 'Tip') || getChild(prim, 'HotEnd');
+                    const coldEndPrim = getChild(prim, 'ColdEnd') || getChild(prim, 'Bottom');
+                    extruderTipOffset = readVectorAttribute(tipPrim, 'xformOp:translate') || new Vector3(0.0, 0.0, 0.0);
+                    extruderColdEndOffset = readVectorAttribute(coldEndPrim, 'xformOp:translate');
                     continue;
                 }
                 const { color, friction, restitution } = materialProperties(stage, prim);
@@ -457,6 +477,21 @@ export function setupScene(world, stage, canvas, options = {}) {
             }
             return extruderAuthoredPos.clone().subtract(averagePos);
         })();
+        const extruderCenterSourceOffsets = (() => {
+            if (extruderCenterEntityIds.length === 0) {
+                return [];
+            }
+            const averagePos = resolveAveragePosition(extruderCenterEntityIds);
+            if (!averagePos) {
+                return [];
+            }
+            return extruderCenterEntityIds
+                .map((entityId) => {
+                    const pos = world.getComponent(entityId, PositionComponent)?.pos;
+                    return pos ? pos.clone().subtract(averagePos) : null;
+                })
+                .filter((offset) => offset instanceof Vector3);
+        })();
         for (const prim of rigidGroupPrims) {
             const memberPaths = getRelationship(prim, 'rigidGroup:members');
             if (!memberPaths || memberPaths.length === 0) continue;
@@ -597,6 +632,15 @@ export function setupScene(world, stage, canvas, options = {}) {
                 if (!extruderComp.centerOffsets || typeof extruderComp.centerOffsets !== 'object') {
                     extruderComp.centerOffsets = {};
                 }
+                if (!extruderComp.centerSourceOffsets || typeof extruderComp.centerSourceOffsets !== 'object') {
+                    extruderComp.centerSourceOffsets = {};
+                }
+                if (!extruderComp.tipOffsets || typeof extruderComp.tipOffsets !== 'object') {
+                    extruderComp.tipOffsets = {};
+                }
+                if (!extruderComp.coldEndOffsets || typeof extruderComp.coldEndOffsets !== 'object') {
+                    extruderComp.coldEndOffsets = {};
+                }
                 if (extruderCenterEntityIds.length > 0) {
                     extruderComp.centerSources[machineId] = extruderCenterEntityIds.slice();
                 } else if (extruderComp.centerSources[machineId]) {
@@ -606,6 +650,21 @@ export function setupScene(world, stage, canvas, options = {}) {
                     extruderComp.centerOffsets[machineId] = extruderCenterOffset.clone();
                 } else if (extruderComp.centerOffsets[machineId]) {
                     delete extruderComp.centerOffsets[machineId];
+                }
+                if (extruderCenterSourceOffsets.length > 0) {
+                    extruderComp.centerSourceOffsets[machineId] = extruderCenterSourceOffsets.map((offset) => offset.clone());
+                } else if (extruderComp.centerSourceOffsets[machineId]) {
+                    delete extruderComp.centerSourceOffsets[machineId];
+                }
+                if (extruderTipOffset) {
+                    extruderComp.tipOffsets[machineId] = extruderTipOffset.clone();
+                } else if (extruderComp.tipOffsets[machineId]) {
+                    delete extruderComp.tipOffsets[machineId];
+                }
+                if (extruderColdEndOffset) {
+                    extruderComp.coldEndOffsets[machineId] = extruderColdEndOffset.clone();
+                } else if (extruderComp.coldEndOffsets[machineId]) {
+                    delete extruderComp.coldEndOffsets[machineId];
                 }
             }
         }
