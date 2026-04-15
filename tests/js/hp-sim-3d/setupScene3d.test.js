@@ -183,6 +183,7 @@ describe('slideprinter 3D setupScene', () => {
     expect(systemNames).toContain('ExtruderSystem');
     expect(systemNames).toContain('EncoderUpdateSystem');
     expect(systemNames).toContain('StepperMotorSystem');
+    expect(systemNames.filter((name) => name === 'SpoolAxisConstraintSystem')).toHaveLength(2);
   });
 
   test('preserves the current pause state when rebuilding the base scene', () => {

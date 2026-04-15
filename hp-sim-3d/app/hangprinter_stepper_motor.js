@@ -8,7 +8,6 @@ import { isStepperClosedLoopEnabled } from './hangprinter_runtime.js';
 import {
   SpoolStateComponent,
   composeSpoolOrientation,
-  decomposeSpoolOrientation,
   getSpoolRotationAngle,
   getSpoolWorldAxis,
 } from './hangprinter_spools.js';
@@ -62,7 +61,6 @@ export class StepperMotorSystem {
       }
 
       const currentAngle = getSpoolRotationAngle(spoolState, orient.quaternion);
-      const { swing } = decomposeSpoolOrientation(spoolState, orient.quaternion);
       const worldAxis = getSpoolWorldAxis(spoolState, orient.quaternion);
       const omegaAlongAxis = angVel.omega?.dot?.(worldAxis) ?? 0.0;
       const encoder = world.getComponent(entityId, EncoderComponent);
@@ -101,8 +99,10 @@ export class StepperMotorSystem {
       } else {
         const targetAngle = stepper.commandedAngle - stepper.deltaAngle;
         if (isStepperClosedLoopEnabled(world, stepper)) {
-          orient.quaternion.set(composeSpoolOrientation(spoolState, swing, targetAngle));
-          angVel.omega.subtract(worldAxis, omegaAlongAxis);
+          orient.quaternion.set(composeSpoolOrientation(spoolState, null, targetAngle));
+          angVel.omega.x = 0.0;
+          angVel.omega.y = 0.0;
+          angVel.omega.z = 0.0;
           if (encoder) {
             encoder.angle = targetAngle;
             encoder.axis = getSpoolWorldAxis(spoolState, orient.quaternion);

@@ -17,7 +17,7 @@ import {
 } from '../../../hp-sim-3d/app/hangprinter_spools.js';
 
 describe('slideprinter 3D stepper closed-loop mode', () => {
-  test('snaps position-controlled steppers onto the local spool axis while preserving tilt', () => {
+  test('snaps position-controlled steppers onto the locked spool axis', () => {
     const world = new World();
     const system = new StepperMotorSystem();
     const stepperEntity = world.createEntity();
@@ -40,8 +40,11 @@ describe('slideprinter 3D stepper closed-loop mode', () => {
     const angVel = world.getComponent(stepperEntity, AngularVelocityComponent);
     const spoolState = world.getComponent(stepperEntity, SpoolStateComponent);
     const worldAxis = getSpoolWorldAxis(spoolState, updatedOrient.quaternion);
+    expect(worldAxis.x).toBeCloseTo(0.0, 12);
+    expect(worldAxis.y).toBeCloseTo(0.0, 12);
+    expect(worldAxis.z).toBeCloseTo(1.0, 12);
     expect(getSpoolRotationAngle(spoolState, updatedOrient.quaternion)).toBeCloseTo(0.6, 12);
-    expect(angVel.omega.dot(worldAxis)).toBeCloseTo(0.0, 12);
+    expect(angVel.omega.length()).toBeCloseTo(0.0, 12);
   });
 
   test('keeps open-loop steppers on the torque model path by default', () => {
