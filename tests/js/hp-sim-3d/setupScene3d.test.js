@@ -56,6 +56,7 @@ const { World } = require('../../../src/js/cable_joints_3d/ecs.js');
 const { setupScene } = require('../../../hp-sim-3d/app/setupScene.js');
 const { RenderSystem3D } = require('../../../src/js/cable_joints_3d/render_system_3d.js');
 const { ExtruderComponent } = require('../../../hp-sim-3d/app/hangprinter_extruder.js');
+const { PauseStateComponent } = require('../../../example_apps/js/flipper/flipper_common.js');
 const usdStage = require('../../../src/js/usd/stage.js');
 
 function installDefaultUsdStageMocks() {
@@ -182,6 +183,28 @@ describe('slideprinter 3D setupScene', () => {
     expect(systemNames).toContain('ExtruderSystem');
     expect(systemNames).toContain('EncoderUpdateSystem');
     expect(systemNames).toContain('StepperMotorSystem');
+  });
+
+  test('preserves the current pause state when rebuilding the base scene', () => {
+    const world = new World();
+    const stage = {
+      GetPrimAtPath(path) {
+        return { path, name: path.split('/').pop() };
+      },
+      ast: {
+        descriptor: {
+          assignments: [
+            { type: 'assignment', identifier: 'timeCodesPerSecond', value: 500 }
+          ]
+        }
+      }
+    };
+
+    world.setResource('pauseState', new PauseStateComponent(true));
+
+    setupScene(world, stage, createCanvas(), { append: false });
+
+    expect(world.getResource('pauseState')).toEqual(expect.objectContaining({ paused: true }));
   });
 
   test('derives extruder offset from authored Extruder prim position and center sources', () => {

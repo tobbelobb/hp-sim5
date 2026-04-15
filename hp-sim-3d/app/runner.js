@@ -117,6 +117,7 @@ export function runGame(world, internalSetupScene, options = {}) {
     }
     idleTimer = setTimeout(() => {
       idleTimer = null;
+      updatePauseButtonLabel();
       if (shouldRunContinuously()) {
         startActiveLoop();
         return;
@@ -203,6 +204,7 @@ export function runGame(world, internalSetupScene, options = {}) {
   };
 
   const runLinearFrame = (currentTime) => {
+    updatePauseButtonLabel();
     const dt = world.getResource('dt');
     if (dtEl && dtEl.textContent === 'N/A') {
       dtEl.textContent = `${(dt * 1000).toFixed(2)}ms`;
@@ -257,6 +259,7 @@ export function runGame(world, internalSetupScene, options = {}) {
   };
 
   const runAsapBatch = () => {
+    updatePauseButtonLabel();
     const dt = world.getResource('dt');
     if (dtEl && dtEl.textContent === 'N/A') {
       dtEl.textContent = `${(dt * 1000).toFixed(2)}ms`;

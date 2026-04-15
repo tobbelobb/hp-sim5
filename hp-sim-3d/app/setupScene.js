@@ -253,9 +253,13 @@ export function setupScene(world, stage, canvas, options = {}) {
     }
 
     if (!append) {
+        const existingPauseState = world.getResource('pauseState');
+        const paused = typeof existingPauseState?.paused === 'boolean'
+            ? existingPauseState.paused
+            : false;
         world.setResource('simWidth', simWidth);
         world.setResource('simHeight', simHeight);
-        world.setResource('pauseState', new PauseStateComponent(false));
+        world.setResource('pauseState', new PauseStateComponent(paused));
         world.setResource('debugRenderPoints', {});
         world.setResource('errorState', new SimulationErrorStateComponent(false));
         world.setResource('grabbedBall', null);

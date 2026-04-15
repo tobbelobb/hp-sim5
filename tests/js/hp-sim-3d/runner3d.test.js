@@ -166,6 +166,20 @@ describe('slideprinter 3D runner idle loop handling', () => {
     expect(typeof getAnimationLoop()).toBe('function');
   });
 
+  test('external pause state changes refresh the button label on the next idle poll', () => {
+    const { elements, resources, renderSystem, getAnimationLoop } = setupRunner();
+
+    resources.get('pauseState').paused = true;
+    getAnimationLoop()(1016);
+    expect(elements.pauseBtn.textContent).toBe('Resume');
+
+    resources.get('pauseState').paused = false;
+    jest.advanceTimersByTime(100);
+
+    expect(elements.pauseBtn.textContent).toBe('Pause');
+    expect(renderSystem.setAnimationLoop).toHaveBeenCalledTimes(2);
+  });
+
   test('resume control unpauses immediately and updates the pause button label', () => {
     const { controls, elements, resources, renderSystem, getAnimationLoop } = setupRunner();
 
