@@ -42,7 +42,6 @@ const BORDER_WALL_THICKNESS = 0.012;
 const BORDER_WALL_COLOR = 0x0c111f;
 const BORDER_WALL_COLOR_HEX = '#0c111f';
 const DEFAULT_RIGID_GROUP_COLOR = '#55ff88';
-const DEFAULT_RIGID_GROUP_Z_OFFSET = 0.0015;
 const DEFAULT_EXTRUDER_COLOR = '#ff8a3d';
 const BUMPER_FX_MAX_BURSTS = 96;
 const BUMPER_FX_MIN_RADIUS = 0.03;
@@ -1986,8 +1985,8 @@ export class RenderSystem3D {
 
       const positions = line.geometry.attributes.position.array;
       const segments = line.userData.lineSegments ?? JOINT_LINE_SEGMENTS;
-      const lineStart = new Vector3(spec.pA.x, spec.pA.y, (spec.pA.z || 0.0) + DEFAULT_RIGID_GROUP_Z_OFFSET);
-      const lineEnd = new Vector3(spec.pB.x, spec.pB.y, (spec.pB.z || 0.0) + DEFAULT_RIGID_GROUP_Z_OFFSET);
+      const lineStart = new Vector3(spec.pA.x, spec.pA.y, spec.pA.z || 0.0);
+      const lineEnd = new Vector3(spec.pB.x, spec.pB.y, spec.pB.z || 0.0);
       writeStraightCablePositions(positions, lineStart, lineEnd, segments);
       line.geometry.attributes.position.needsUpdate = true;
     }

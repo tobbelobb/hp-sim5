@@ -417,13 +417,13 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
       const midpointIndex = Math.floor(positions.count / 2);
       expect(positions.getX(0)).toBeCloseTo(-0.3, 6);
       expect(positions.getY(0)).toBeCloseTo(0.0, 6);
-      expect(positions.getZ(0)).toBeCloseTo(0.0015, 6);
+      expect(positions.getZ(0)).toBeCloseTo(0.0, 6);
       expect(positions.getX(midpointIndex)).toBeCloseTo(-0.2, 6);
       expect(positions.getY(midpointIndex)).toBeCloseTo(0.15, 6);
-      expect(positions.getZ(midpointIndex)).toBeCloseTo(0.0015, 6);
+      expect(positions.getZ(midpointIndex)).toBeCloseTo(0.0, 6);
       expect(positions.getX(positions.count - 1)).toBeCloseTo(-0.1, 6);
       expect(positions.getY(positions.count - 1)).toBeCloseTo(0.3, 6);
-      expect(positions.getZ(positions.count - 1)).toBeCloseTo(0.0015, 6);
+      expect(positions.getZ(positions.count - 1)).toBeCloseTo(0.0, 6);
     } finally {
       disposeCompatStub(system);
     }

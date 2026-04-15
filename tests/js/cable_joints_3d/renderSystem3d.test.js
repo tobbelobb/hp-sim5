@@ -477,13 +477,13 @@ describe('RenderSystem3D rigid group overlays', () => {
       expect(line.visible).toBe(true);
       expect(positions.getX(0)).toBeCloseTo(-0.25, 6);
       expect(positions.getY(0)).toBeCloseTo(0.1, 6);
-      expect(positions.getZ(0)).toBeCloseTo(0.1015, 6);
+      expect(positions.getZ(0)).toBeCloseTo(0.1, 6);
       expect(positions.getX(midpointIndex)).toBeCloseTo(0.0, 6);
       expect(positions.getY(midpointIndex)).toBeCloseTo(0.1, 6);
-      expect(positions.getZ(midpointIndex)).toBeCloseTo(0.1015, 6);
+      expect(positions.getZ(midpointIndex)).toBeCloseTo(0.1, 6);
       expect(positions.getX(positions.count - 1)).toBeCloseTo(0.25, 6);
       expect(positions.getY(positions.count - 1)).toBeCloseTo(0.1, 6);
-      expect(positions.getZ(positions.count - 1)).toBeCloseTo(0.1015, 6);
+      expect(positions.getZ(positions.count - 1)).toBeCloseTo(0.1, 6);
     } finally {
       disposeRenderSystemStub(system);
     }
