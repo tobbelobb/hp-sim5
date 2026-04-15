@@ -423,6 +423,25 @@ function createDualColorSphereGeometry(baseGeometry, primaryColor, secondaryColo
   return geometry;
 }
 
+function createDualColorCylinderGeometry(baseGeometry, primaryColor, secondaryColor = ORIENTATION_BACK_COLOR) {
+  const geometry = baseGeometry.clone();
+  const positions = geometry.attributes.position;
+  const colors = new Float32Array(positions.count * 3);
+  const primary = new THREE.Color(primaryColor);
+  const secondary = new THREE.Color(secondaryColor);
+
+  for (let i = 0; i < positions.count; i += 1) {
+    const source = positions.getX(i) >= 0 ? primary : secondary;
+    const idx = i * 3;
+    colors[idx] = source.r;
+    colors[idx + 1] = source.g;
+    colors[idx + 2] = source.b;
+  }
+
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  return geometry;
+}
+
 function disposeObject(obj) {
   if (!obj) return;
   obj.traverse((child) => {
@@ -838,6 +857,7 @@ export class RenderSystem3D {
     this.sharedCylinderGeometry = new THREE.CylinderGeometry(1, 1, 1, 24, 1, false);
     this.sharedFlipperBarGeometry = new THREE.BoxGeometry(1, 1, 1);
     this.orientedSphereGeometryCache = new Map();
+    this.orientedCylinderGeometryCache = new Map();
 
     this.sphereMaterialCache = new Map();
     this.flipperMaterialCache = new Map();
@@ -1567,6 +1587,11 @@ export class RenderSystem3D {
     }
     this.orientedSphereGeometryCache.clear();
 
+    for (const geometry of this.orientedCylinderGeometryCache.values()) {
+      geometry.dispose();
+    }
+    this.orientedCylinderGeometryCache.clear();
+
     this.orientedSphereMaterial.dispose();
     this.knotMarkerMaterial.dispose();
     this.sharedSphereGeometry.dispose();
@@ -2023,15 +2048,15 @@ export class RenderSystem3D {
       let mesh = this.circleMeshes.get(entityId);
       if (!mesh) {
         mesh = new THREE.Mesh(
-          isCylinder ? this.sharedCylinderGeometry : this.sharedSphereGeometry,
-          this._getSphereMaterial(renderComp.color),
+          isCylinder ? this._getOrientedCylinderGeometry(renderComp?.color) : this.sharedSphereGeometry,
+          isCylinder ? this.orientedSphereMaterial : this._getSphereMaterial(renderComp.color),
         );
         this.circleMeshes.set(entityId, mesh);
         this.root.add(mesh);
       }
 
       const geometry = isCylinder
-        ? this.sharedCylinderGeometry
+        ? this._getOrientedCylinderGeometry(renderComp?.color)
         : orientationComp?.quaternion
         ? this._getOrientedSphereGeometry(renderComp?.color)
         : this.sharedSphereGeometry;
@@ -2040,7 +2065,7 @@ export class RenderSystem3D {
       }
 
       const material = isCylinder
-        ? this._getSphereMaterial(renderComp.color)
+        ? this.orientedSphereMaterial
         : orientationComp?.quaternion
         ? this.orientedSphereMaterial
         : this._getSphereMaterial(renderComp.color);
@@ -2486,6 +2511,16 @@ export class RenderSystem3D {
     if (!geometry) {
       geometry = createDualColorSphereGeometry(this.sharedSphereGeometry, key);
       this.orientedSphereGeometryCache.set(key, geometry);
+    }
+    return geometry;
+  }
+
+  _getOrientedCylinderGeometry(color) {
+    const key = typeof color === 'string' && color.length > 0 ? color : '#a0a0a0';
+    let geometry = this.orientedCylinderGeometryCache.get(key);
+    if (!geometry) {
+      geometry = createDualColorCylinderGeometry(this.sharedCylinderGeometry, key);
+      this.orientedCylinderGeometryCache.set(key, geometry);
     }
     return geometry;
   }

@@ -33,6 +33,7 @@ function createRenderSystemStub() {
   system.sphereMaterialCache = new Map();
   system.flipperMaterialCache = new Map();
   system.orientedSphereGeometryCache = new Map();
+  system.orientedCylinderGeometryCache = new Map();
   system.orientedSphereMaterial = new THREE.MeshStandardMaterial({
     vertexColors: true,
     roughness: 0.42,
@@ -55,6 +56,7 @@ function createRenderSystemStub() {
 
   system._getSphereMaterial = RenderSystem3D.prototype._getSphereMaterial;
   system._getOrientedSphereGeometry = RenderSystem3D.prototype._getOrientedSphereGeometry;
+  system._getOrientedCylinderGeometry = RenderSystem3D.prototype._getOrientedCylinderGeometry;
   system._createLine = RenderSystem3D.prototype._createLine;
   system._createArcLine = RenderSystem3D.prototype._createArcLine;
   system._ensureLineCapacity = RenderSystem3D.prototype._ensureLineCapacity;
@@ -78,6 +80,11 @@ function disposeRenderSystemStub(system) {
     geometry.dispose();
   }
   system.orientedSphereGeometryCache.clear();
+
+  for (const geometry of system.orientedCylinderGeometryCache.values()) {
+    geometry.dispose();
+  }
+  system.orientedCylinderGeometryCache.clear();
 
   system.orientedSphereMaterial.dispose();
   system.knotMarkerMaterial.dispose();
@@ -104,6 +111,22 @@ function findVertexColor(geometry, predicate) {
     }
   }
   return null;
+}
+
+function geometryHasVertexColor(geometry, targetColor, tolerance = 1e-6) {
+  const colorAttr = geometry.attributes.color;
+  if (!colorAttr) {
+    return false;
+  }
+  for (let i = 0; i < colorAttr.count; i += 1) {
+    const dr = Math.abs(colorAttr.getX(i) - targetColor.r);
+    const dg = Math.abs(colorAttr.getY(i) - targetColor.g);
+    const db = Math.abs(colorAttr.getZ(i) - targetColor.b);
+    if (dr <= tolerance && dg <= tolerance && db <= tolerance) {
+      return true;
+    }
+  }
+  return false;
 }
 
 describe('RenderSystem3D oriented circles', () => {
@@ -171,6 +194,7 @@ describe('RenderSystem3D oriented circles', () => {
 
     try {
       const world = new World();
+      const spoolColor = new THREE.Color('#999999');
       const spool = world.createEntity();
       const orientation = new OrientationComponent();
       orientation.quaternion.setFromAxisAngle(new Vector3(1.0, 0.0, 0.0), Math.PI / 4);
@@ -194,7 +218,11 @@ describe('RenderSystem3D oriented circles', () => {
         ),
       ).normalize();
 
-      expect(mesh.geometry).toBe(system.sharedCylinderGeometry);
+      expect(mesh.material).toBe(system.orientedSphereMaterial);
+      expect(mesh.geometry).not.toBe(system.sharedCylinderGeometry);
+      expect(mesh.geometry.attributes.color).toBeDefined();
+      expect(geometryHasVertexColor(mesh.geometry, spoolColor)).toBe(true);
+      expect(geometryHasVertexColor(mesh.geometry, ORIENTATION_BACK_COLOR)).toBe(true);
       expect(mesh.scale.x).toBeCloseTo(0.04, 8);
       expect(mesh.scale.y).toBeCloseTo(0.04, 8);
       expect(mesh.scale.z).toBeCloseTo(0.04, 8);
