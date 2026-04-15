@@ -747,4 +747,16 @@ export function setupScene(world, stage, canvas, options = {}) {
     } else if (existingRenderSystem instanceof RenderSystem3D) {
       existingRenderSystem.setCanvasSize(canvas.clientWidth, canvas.clientHeight);
     }
+
+    if (!isRemote) {
+        const extruderSystem = world.systems.find((system) => system instanceof ExtruderSystem);
+        if (extruderSystem && typeof extruderSystem.update === 'function') {
+            extruderSystem.update(world, 0);
+        }
+    }
+
+    const renderSystem = world.getResource('renderSystem');
+    if (renderSystem instanceof RenderSystem3D && typeof renderSystem.update === 'function') {
+        renderSystem.update(world, 0);
+    }
 }

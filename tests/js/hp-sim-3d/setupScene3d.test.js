@@ -284,8 +284,6 @@ describe('slideprinter 3D setupScene', () => {
 
     const extruderEntity = world.query([ExtruderComponent])[0];
     const extruder = world.getComponent(extruderEntity, ExtruderComponent);
-    const extruderSystem = world.systems.find((system) => system.constructor.name === 'ExtruderSystem');
-    extruderSystem.update(world, 0);
 
     expect(extruder.centerOffsets.default.x).toBeCloseTo(0.0, 6);
     expect(extruder.centerOffsets.default.y).toBeCloseTo(0.0, 6);
