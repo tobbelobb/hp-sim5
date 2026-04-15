@@ -412,6 +412,93 @@ describe('RenderSystem3D cable knot markers', () => {
       disposeRenderSystemStub(system);
     }
   });
+
+  test('renders hybrid wrap visuals in the spool local plane after spool tilt', () => {
+    const system = createRenderSystemStub();
+
+    try {
+      const world = new World();
+      world.setResource('enableLayering', true);
+
+      const spool = world.createEntity();
+      const center = new Vector3(1.0, 2.0, 0.0);
+      const tilt = new Vector3(1.0, 0.0, 0.0);
+      const orientation = new OrientationComponent();
+      orientation.quaternion.setFromAxisAngle(tilt, Math.PI / 4);
+
+      world.addComponent(spool, new PositionComponent(center.x, center.y, center.z));
+      world.addComponent(spool, new RadiusComponent(0.5));
+      world.addComponent(spool, new CableLinkComponent(
+        center.x,
+        center.y,
+        center.z,
+        orientation.quaternion.clone(),
+        null,
+        new Vector3(0, 0, 1),
+      ));
+      world.addComponent(spool, orientation);
+
+      const anchor = world.createEntity();
+      const jointId = world.createEntity();
+      const attachmentLocal = new Vector3(0.6, 0.0, 0.0);
+      const attachmentWorld = center.clone().add(orientation.quaternion.transformVector(attachmentLocal));
+      world.addComponent(
+        jointId,
+        new CableJointComponent(
+          spool,
+          anchor,
+          0.2,
+          attachmentWorld,
+          new Vector3(2.0, 2.0, 0.0)
+        )
+      );
+      world.addComponent(jointId, new RenderableComponent('line', '#ffd34d'));
+
+      const pathId = world.createEntity();
+      const path = new CablePathComponent(
+        world,
+        [jointId],
+        ['hybrid', 'attachment'],
+        [false, false],
+        1e6,
+        [0.25, 0.0],
+        0.1
+      );
+      world.addComponent(pathId, path);
+
+      RenderSystem3D.prototype._syncCable.call(system, world);
+
+      expect(system.knotMarkers).toHaveLength(1);
+      expect(system.wrapArcs).toHaveLength(1);
+
+      const expectedAngle = 0.25 / 0.6;
+      const expectedLocal = new Vector3(
+        0.6 * Math.cos(expectedAngle),
+        0.6 * Math.sin(expectedAngle),
+        0.0,
+      );
+      const expectedWorld = center.clone().add(orientation.quaternion.transformVector(expectedLocal));
+      const marker = system.knotMarkers[0];
+
+      expect(marker.position.x).toBeCloseTo(expectedWorld.x, 6);
+      expect(marker.position.y).toBeCloseTo(expectedWorld.y, 6);
+      expect(marker.position.z).toBeCloseTo(expectedWorld.z, 6);
+      expect(Math.abs(marker.position.z)).toBeGreaterThan(0.05);
+
+      const arc = system.wrapArcs[0];
+      const positions = arc.geometry.attributes.position;
+      let sawOutOfPlanePoint = false;
+      for (let i = 0; i < positions.count; i += 1) {
+        if (Math.abs(positions.getZ(i)) > 0.05) {
+          sawOutOfPlanePoint = true;
+          break;
+        }
+      }
+      expect(sawOutOfPlanePoint).toBe(true);
+    } finally {
+      disposeRenderSystemStub(system);
+    }
+  });
 });
 
 describe('RenderSystem3D cable sag', () => {

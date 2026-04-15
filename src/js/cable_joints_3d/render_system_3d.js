@@ -255,6 +255,29 @@ function buildPlaneBasis(planeNormal) {
   return { n, u, v };
 }
 
+function getRenderPlaneNormal(world, entityId, defaultPlaneNormal) {
+  const linkComp = world.getComponent(entityId, CableLinkComponent);
+  if (linkComp?.cablePlaneNormalLocal) {
+    const localNormal = linkComp.cablePlaneNormalLocal.clone();
+    const orientation = world.getComponent(entityId, OrientationComponent)?.quaternion;
+    if (orientation && typeof orientation.transformVector === 'function') {
+      const worldNormal = orientation.transformVector(localNormal);
+      if (worldNormal.lengthSq() > EPSILON) {
+        return worldNormal.normalize();
+      }
+    }
+    if (localNormal.lengthSq() > EPSILON) {
+      return localNormal.normalize();
+    }
+  }
+
+  if (linkComp?.cablePlaneNormal && linkComp.cablePlaneNormal.lengthSq() > EPSILON) {
+    return linkComp.cablePlaneNormal.clone().normalize();
+  }
+
+  return defaultPlaneNormal.clone().normalize();
+}
+
 function angleOnPlane(point, center, basis) {
   const rel = point.clone().subtract(center);
   const x = rel.dot(basis.u);
@@ -2228,7 +2251,7 @@ export class RenderSystem3D {
           : bodyRadius;
         if (!center || !Number.isFinite(radius) || radius <= EPSILON) continue;
 
-        const planeNormal = world.getComponent(rollerId, CableLinkComponent)?.cablePlaneNormal || this.defaultPlaneNormal;
+        const planeNormal = getRenderPlaneNormal(world, rollerId, this.defaultPlaneNormal);
         const basis = buildPlaneBasis(planeNormal);
 
         const p1 = prevJoint.attachmentPointB_world;
@@ -2268,7 +2291,7 @@ export class RenderSystem3D {
           const bodyRadius = world.getComponent(rollerA, RadiusComponent)?.radius;
 
           if (center && Number.isFinite(bodyRadius) && bodyRadius > EPSILON) {
-            const planeNormal = world.getComponent(rollerA, CableLinkComponent)?.cablePlaneNormal || this.defaultPlaneNormal;
+            const planeNormal = getRenderPlaneNormal(world, rollerA, this.defaultPlaneNormal);
             const basis = buildPlaneBasis(planeNormal);
             appendStoredWrapArcSpecs(
               arcSpecs,
@@ -2300,7 +2323,7 @@ export class RenderSystem3D {
           const bodyRadius = world.getComponent(rollerB, RadiusComponent)?.radius;
 
           if (center && Number.isFinite(bodyRadius) && bodyRadius > EPSILON) {
-            const planeNormal = world.getComponent(rollerB, CableLinkComponent)?.cablePlaneNormal || this.defaultPlaneNormal;
+            const planeNormal = getRenderPlaneNormal(world, rollerB, this.defaultPlaneNormal);
             const basis = buildPlaneBasis(planeNormal);
             appendStoredWrapArcSpecs(
               arcSpecs,
@@ -2423,7 +2446,7 @@ export class RenderSystem3D {
       return null;
     }
 
-    const planeNormal = world.getComponent(entityId, CableLinkComponent)?.cablePlaneNormal || this.defaultPlaneNormal;
+    const planeNormal = getRenderPlaneNormal(world, entityId, this.defaultPlaneNormal);
     const basis = buildPlaneBasis(planeNormal);
     const halfWidth = layeringEnabled(world) ? Math.max(0.0, path.cableHalfWidth ?? 0.0) : 0.0;
     const stored = Math.max(0.0, path.stored?.[endpointIndex] ?? 0.0);
