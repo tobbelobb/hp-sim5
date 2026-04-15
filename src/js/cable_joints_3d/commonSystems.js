@@ -17,6 +17,7 @@ import {
 } from './ecs.js';
 import {
   SpoolStateComponent,
+  rotateSpoolReferenceOrientation,
   getSpoolRotationAngle,
   getSpoolWorldAxis,
 } from '../../../hp-sim-3d/app/hangprinter_spools.js';
@@ -84,6 +85,10 @@ function applyOrientationDelta(world, entityId, deltaRotation) {
     return;
   }
   orientation.multiplyQuaternions(deltaRotation, orientation).normalize();
+  const spoolState = world.getComponent(entityId, SpoolStateComponent);
+  if (spoolState) {
+    rotateSpoolReferenceOrientation(spoolState, deltaRotation);
+  }
 }
 
 function negateQuaternion(quaternion) {

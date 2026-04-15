@@ -10,6 +10,10 @@ import {
 } from '../../../src/js/cable_joints_3d/ecs.js';
 
 import { RigidGroupSystem } from '../../../src/js/cable_joints_3d/commonSystems.js';
+import {
+  SpoolStateComponent,
+  getSpoolWorldAxis,
+} from '../../../hp-sim-3d/app/hangprinter_spools.js';
 
 function expectVectorClose(actual, expected, digits = 8) {
   expect(actual.x).toBeCloseTo(expected.x, digits);
@@ -111,5 +115,53 @@ describe('RigidGroupSystem (3D)', () => {
 
     const group = world.getComponent(groupId, RigidGroupComponent);
     expect(group.prevAngle).toBeCloseTo(yaw, 8);
+  });
+
+  test('rotates spool reference orientations with the rigid group delta', () => {
+    const world = new World();
+    const restPositions = [
+      new Vector3(-1.0, 0.0, 0.0),
+      new Vector3(1.0, 0.0, 0.0),
+      new Vector3(0.0, 1.0, 0.0),
+    ];
+
+    const members = restPositions.map((position, index) => {
+      const entityId = world.createEntity();
+      world.addComponent(entityId, new PositionComponent(position.x, position.y, position.z));
+      world.addComponent(entityId, new MassComponent(1.0));
+      world.addComponent(entityId, new OrientationComponent());
+      if (index === 0) {
+        world.addComponent(entityId, new SpoolStateComponent('A'));
+      }
+      return entityId;
+    });
+
+    const groupId = world.createEntity();
+    world.addComponent(groupId, new RigidGroupComponent(members, 1.0));
+
+    const system = new RigidGroupSystem();
+    system.update(world, 1 / 120);
+
+    const restCom = restPositions.reduce((sum, position) => sum.add(position), new Vector3(0, 0, 0)).scale(1.0 / restPositions.length);
+    const tilt = new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), Math.PI / 3).normalize();
+    const translatedCom = new Vector3(0.25, -0.4, 0.5);
+    const expectedPositions = restPositions.map((position) => {
+      const restRel = position.clone().subtract(restCom);
+      return tilt.transformVector(restRel).add(translatedCom);
+    });
+
+    members.forEach((entityId, index) => {
+      world.getComponent(entityId, PositionComponent).pos.set(expectedPositions[index]);
+    });
+
+    system.update(world, 1 / 120);
+
+    const spoolEntity = members[0];
+    const spoolState = world.getComponent(spoolEntity, SpoolStateComponent);
+    const orientation = world.getComponent(spoolEntity, OrientationComponent);
+    const spoolAxis = getSpoolWorldAxis(spoolState, orientation.quaternion);
+    const expectedAxis = tilt.transformVector(new Vector3(0, 0, 1));
+
+    expectVectorClose(spoolAxis, expectedAxis.normalize());
   });
 });

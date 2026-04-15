@@ -113,6 +113,16 @@ export function constrainSpoolOrientation(spoolState, orientationQuaternion) {
   return composeSpoolOrientation(spoolState, null, angle);
 }
 
+export function rotateSpoolReferenceOrientation(spoolState, deltaRotation) {
+  if (!spoolState?.referenceOrientation || !deltaRotation) {
+    return;
+  }
+  spoolState.referenceOrientation.multiplyQuaternions(
+    deltaRotation,
+    spoolState.referenceOrientation,
+  ).normalize();
+}
+
 export function constrainSpoolAngularVelocity(spoolState, orientationQuaternion, angularVelocityLike) {
   const worldAxis = getSpoolWorldAxis(spoolState, orientationQuaternion);
   const projectedSpeed = angularVelocityLike?.dot?.(worldAxis) ?? 0.0;
