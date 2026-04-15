@@ -48,7 +48,7 @@ def Xform "World"
             double radius = 0.01
             double3 xformOp:translate = (0.0, -0.2, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
-            float physics:mass = 0.001
+            float physics:mass = 0.002
             vector3f physics:velocity = (0.0, 0.0, 0.0)
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
@@ -89,7 +89,7 @@ def Xform "World"
             double radius = 0.01
             double3 xformOp:translate = (0.173205080756888, 0.1, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
-            float physics:mass = 0.001
+            float physics:mass = 0.002
             vector3f physics:velocity = (0.0, 0.0, 0.0)
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
@@ -130,7 +130,7 @@ def Xform "World"
             double radius = 0.01
             double3 xformOp:translate = (-0.173205080756888, 0.1, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
-            float physics:mass = 0.001
+            float physics:mass = 0.002
             vector3f physics:velocity = (0.0, 0.0, 0.0)
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }

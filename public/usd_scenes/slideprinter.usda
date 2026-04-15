@@ -22,7 +22,7 @@ def Xform "World"
             quatf xformOp:orient = (1, 0, 0, 0)
             double3 xformOp:translate = (0.030010606910511, -0.197735589798253, 0.000000000000000)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
-            float physics:mass = 0.025
+            float physics:mass = 0.027
             float3 physics:angularVelocity = (0, 0, 0)
             # Typical intertia range for Nema 17 stepper motors are ca 3e-5 to 8e-5.
             matrix3d physics:inertiaTensor = ((5e-5, 0, 0), (0, 5e-5, 0), (0, 0, 5e-5))
@@ -51,7 +51,7 @@ def Xform "World"
             quatf xformOp:orient = (1, 0, 0, 0)
             double3 xformOp:translate = (0.156238740542330, 0.124857742866617, 0.000000000000000)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
-            float physics:mass = 0.025
+            float physics:mass = 0.027
             float3 physics:angularVelocity = (0, 0, 0)
             matrix3d physics:inertiaTensor = ((5e-5, 0, 0), (0, 5e-5, 0), (0, 0, 5e-5))
             custom double stepper:holdingTorque = 0.5
@@ -79,7 +79,7 @@ def Xform "World"
             quatf xformOp:orient = (1, 0, 0, 0)
             double3 xformOp:translate = (-0.186249347452841, 0.072877846931635, 0.000000000000000)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
-            float physics:mass = 0.025
+            float physics:mass = 0.027
             float3 physics:angularVelocity = (0, 0, 0)
             matrix3d physics:inertiaTensor = ((5e-5, 0, 0), (0, 5e-5, 0), (0, 0, 5e-5))
             custom double stepper:holdingTorque = 0.5
