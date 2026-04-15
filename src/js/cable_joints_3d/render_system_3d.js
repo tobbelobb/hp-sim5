@@ -17,6 +17,10 @@ import {
   CableLinkComponent
 } from './cable_joints_core.js';
 import { ExtruderComponent } from '../../../hp-sim-3d/app/hangprinter_extruder.js';
+import {
+  SpoolStateComponent,
+  getSpoolLocalAxis,
+} from '../../../hp-sim-3d/app/hangprinter_spools.js';
 
 const EPSILON = 1e-9;
 const ARC_SEGMENTS = 48;
@@ -57,6 +61,7 @@ const DEFAULT_NAV_CURSOR_MIN_SIZE = 0.012;
 const DEFAULT_NAV_CURSOR_PIXEL_SIZE = 18;
 const DEFAULT_ORBIT_AZIMUTH = -Math.PI * 0.25;
 const DEFAULT_ORBIT_POLAR = 1.05;
+const CYLINDER_LOCAL_UP = new THREE.Vector3(0, 1, 0);
 const CATENARY_HORIZONTAL_EPSILON = 1e-5;
 const CATENARY_SOLVER_ITERATIONS = 48;
 const CATENARY_MAX_SINH_ARGUMENT = 20;
@@ -830,6 +835,7 @@ export class RenderSystem3D {
     this._bumperFxLastTimeSec = Number.NaN;
 
     this.sharedSphereGeometry = new THREE.SphereGeometry(1, 24, 16);
+    this.sharedCylinderGeometry = new THREE.CylinderGeometry(1, 1, 1, 24, 1, false);
     this.sharedFlipperBarGeometry = new THREE.BoxGeometry(1, 1, 1);
     this.orientedSphereGeometryCache = new Map();
 
@@ -1564,6 +1570,7 @@ export class RenderSystem3D {
     this.orientedSphereMaterial.dispose();
     this.knotMarkerMaterial.dispose();
     this.sharedSphereGeometry.dispose();
+    this.sharedCylinderGeometry.dispose();
     this.sharedFlipperBarGeometry.dispose();
 
     if (this.board && this.scene) {
@@ -1998,7 +2005,7 @@ export class RenderSystem3D {
     const entities = world.query([PositionComponent, RadiusComponent, RenderableComponent]);
     for (const entityId of entities) {
       const renderComp = world.getComponent(entityId, RenderableComponent);
-      if (!renderComp || renderComp.shape !== 'circle') {
+      if (!renderComp || (renderComp.shape !== 'circle' && renderComp.shape !== 'cylinder')) {
         continue;
       }
 
@@ -2009,23 +2016,32 @@ export class RenderSystem3D {
       if (!pos || !Number.isFinite(radius) || radius <= 0) {
         continue;
       }
+      const spoolState = world.getComponent(entityId, SpoolStateComponent);
+      const orientationComp = world.getComponent(entityId, OrientationComponent);
+      const isCylinder = renderComp.shape === 'cylinder';
 
       let mesh = this.circleMeshes.get(entityId);
       if (!mesh) {
-        mesh = new THREE.Mesh(this.sharedSphereGeometry, this._getSphereMaterial(renderComp.color));
+        mesh = new THREE.Mesh(
+          isCylinder ? this.sharedCylinderGeometry : this.sharedSphereGeometry,
+          this._getSphereMaterial(renderComp.color),
+        );
         this.circleMeshes.set(entityId, mesh);
         this.root.add(mesh);
       }
 
-      const orientationComp = world.getComponent(entityId, OrientationComponent);
-      const geometry = orientationComp?.quaternion
+      const geometry = isCylinder
+        ? this.sharedCylinderGeometry
+        : orientationComp?.quaternion
         ? this._getOrientedSphereGeometry(renderComp?.color)
         : this.sharedSphereGeometry;
       if (mesh.geometry !== geometry) {
         mesh.geometry = geometry;
       }
 
-      const material = orientationComp?.quaternion
+      const material = isCylinder
+        ? this._getSphereMaterial(renderComp.color)
+        : orientationComp?.quaternion
         ? this.orientedSphereMaterial
         : this._getSphereMaterial(renderComp.color);
       if (mesh.material !== material) {
@@ -2037,9 +2053,22 @@ export class RenderSystem3D {
 
       if (orientationComp?.quaternion) {
         const q = orientationComp.quaternion;
-        mesh.quaternion.set(q.x, q.y, q.z, q.w);
+        if (isCylinder) {
+          const axisLocal = getSpoolLocalAxis(spoolState);
+          const axisVector = new THREE.Vector3(axisLocal.x, axisLocal.y, axisLocal.z);
+          const localAlignment = new THREE.Quaternion().setFromUnitVectors(CYLINDER_LOCAL_UP, axisVector.normalize());
+          mesh.quaternion.set(q.x, q.y, q.z, q.w).multiply(localAlignment);
+        } else {
+          mesh.quaternion.set(q.x, q.y, q.z, q.w);
+        }
       } else {
-        mesh.quaternion.identity();
+        if (isCylinder) {
+          const axisLocal = getSpoolLocalAxis(spoolState);
+          const axisVector = new THREE.Vector3(axisLocal.x, axisLocal.y, axisLocal.z);
+          mesh.quaternion.setFromUnitVectors(CYLINDER_LOCAL_UP, axisVector.normalize());
+        } else {
+          mesh.quaternion.identity();
+        }
       }
     }
 

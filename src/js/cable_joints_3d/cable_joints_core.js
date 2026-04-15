@@ -28,11 +28,13 @@ export class CableLinkComponent {
     y = 0,
     z = 0,
     orientation = null,
-    planeNormal = null
+    planeNormal = null,
+    planeNormalLocal = null
   ) {
     this.prevCableAttachmentTimePos = new Vector3(x, y, z);
     this.prevCableAttachmentTimeOrientation = orientation ? orientation.clone() : new Quaternion();
     this.cablePlaneNormal = planeNormal ? planeNormal.clone() : new Vector3(0, 0, 1);
+    this.cablePlaneNormalLocal = planeNormalLocal ? planeNormalLocal.clone().normalize() : null;
   }
 }
 
@@ -352,6 +354,19 @@ function ensureMachineTag(world, entityId, machineId) {
 
 function _getPlaneNormal(world, entityId) {
   const linkComp = world.getComponent(entityId, CableLinkComponent);
+  if (linkComp?.cablePlaneNormalLocal) {
+    const localAxis = linkComp.cablePlaneNormalLocal.clone();
+    const orientation = world.getComponent(entityId, OrientationComponent)?.quaternion;
+    if (orientation && typeof orientation.transformVector === 'function') {
+      const worldAxis = orientation.transformVector(localAxis);
+      if (worldAxis.lengthSq() > EPSILON) {
+        return worldAxis.normalize();
+      }
+    }
+    if (localAxis.lengthSq() > EPSILON) {
+      return localAxis.normalize();
+    }
+  }
   if (linkComp && linkComp.cablePlaneNormal) {
     return linkComp.cablePlaneNormal;
   }
@@ -395,9 +410,40 @@ function _computeLocalAttachment(world, entityId, worldPoint) {
   return rel;
 }
 
-function _deltaAngleAroundAxis(prevQuat, currQuat, axis) {
+function _localTwistAngle(quaternion, axisLocal) {
+  if (!quaternion) {
+    return 0.0;
+  }
+  const normalizedAxis = axisLocal?.clone?.().normalize?.() || DEFAULT_PLANE_NORMAL.clone();
+  const projectionScale =
+    (quaternion.x * normalizedAxis.x)
+    + (quaternion.y * normalizedAxis.y)
+    + (quaternion.z * normalizedAxis.z);
+  const twist = new Quaternion(
+    normalizedAxis.x * projectionScale,
+    normalizedAxis.y * projectionScale,
+    normalizedAxis.z * projectionScale,
+    quaternion.w,
+  );
+  if (twist.lengthSq() <= EPSILON) {
+    return 0.0;
+  }
+  twist.normalize();
+  const signedSinHalf =
+    (twist.x * normalizedAxis.x)
+    + (twist.y * normalizedAxis.y)
+    + (twist.z * normalizedAxis.z);
+  return _normalizeAngleSigned(2.0 * Math.atan2(signedSinHalf, twist.w));
+}
+
+function _deltaAngleAroundAxis(prevQuat, currQuat, axis, axisIsLocal = false) {
   if (!prevQuat || !currQuat) {
     return 0.0;
+  }
+  if (axisIsLocal) {
+    const invPrev = prevQuat.clone().conjugate().normalize();
+    const qRelLocal = new Quaternion().multiplyQuaternions(invPrev, currQuat).normalize();
+    return _localTwistAngle(qRelLocal, axis);
   }
   const invPrev = prevQuat.clone().conjugate().normalize();
   const qRel = new Quaternion().multiplyQuaternions(currQuat, invPrev).normalize();
@@ -496,6 +542,22 @@ function _orientationAngleAroundAxis(quaternion, axis) {
   }
   projected.normalize();
   return Math.atan2(projected.dot(basis.v), projected.dot(basis.u));
+}
+
+function _orientationAngleForEntity(world, entityId, quaternion) {
+  const linkComp = world.getComponent(entityId, CableLinkComponent);
+  if (linkComp?.cablePlaneNormalLocal) {
+    return _localTwistAngle(quaternion, linkComp.cablePlaneNormalLocal);
+  }
+  return _orientationAngleAroundAxis(quaternion, _getPlaneNormal(world, entityId));
+}
+
+function _deltaAngleForEntity(world, entityId, prevQuat, currQuat) {
+  const linkComp = world.getComponent(entityId, CableLinkComponent);
+  if (linkComp?.cablePlaneNormalLocal) {
+    return _deltaAngleAroundAxis(prevQuat, currQuat, linkComp.cablePlaneNormalLocal, true);
+  }
+  return _deltaAngleAroundAxis(prevQuat, currQuat, _getPlaneNormal(world, entityId));
 }
 
 function _applyAxisAngleDelta(quaternion, axis, deltaAngle) {
@@ -925,7 +987,7 @@ function _ensureHybridKnotAngleComponentForEndpoint(world, path, endpointIndex, 
   const thetaSignedAtState = thetaSignAtState * thetaAtState;
   const orientation = Number.isFinite(options?.orientation)
     ? options.orientation
-    : _orientationAngleAroundAxis(world.getComponent(entityId, OrientationComponent)?.quaternion, axis);
+    : _orientationAngleForEntity(world, entityId, world.getComponent(entityId, OrientationComponent)?.quaternion);
   const basis = _planeBasisForAxis(axis);
   const rel = resolvedAttachmentPoint.clone().subtract(center);
   const relAttachmentAngle = Math.atan2(rel.dot(basis.v), rel.dot(basis.u)) - orientation;
@@ -979,7 +1041,7 @@ export function calculateAttachmentPoints(world, joint, path, i, radiusA, radius
   const planeNormalA = _getPlaneNormal(world, entityA);
   const angleA = orientationAComp?.quaternion;
   const prevAngleA = linkAComp?.prevCableAttachmentTimeOrientation;
-  const deltaAngleA = _deltaAngleAroundAxis(prevAngleA, angleA, planeNormalA);
+  const deltaAngleA = _deltaAngleForEntity(world, entityA, prevAngleA, angleA);
 
   const cwA = _effectiveCW(path, A, true);
   const attachmentLinkA = _isAttachment(path.linkTypes[A]);
@@ -1003,7 +1065,7 @@ export function calculateAttachmentPoints(world, joint, path, i, radiusA, radius
   const planeNormalB = _getPlaneNormal(world, entityB);
   const angleB = orientationBComp?.quaternion;
   const prevAngleB = linkBComp?.prevCableAttachmentTimeOrientation;
-  const deltaAngleB = _deltaAngleAroundAxis(prevAngleB, angleB, planeNormalB);
+  const deltaAngleB = _deltaAngleForEntity(world, entityB, prevAngleB, angleB);
 
   const cwB = _effectiveCW(path, B, false);
   const attachmentLinkB = _isAttachment(path.linkTypes[B]);
@@ -1086,9 +1148,9 @@ export function _updateAttachmentPoints(world) {
       const planeNormalA = _getPlaneNormal(world, entityA);
       const currentQuatA = orientationAComp?.quaternion;
       const prevQuatA = linkAComp?.prevCableAttachmentTimeOrientation;
-      const angleA = _orientationAngleAroundAxis(currentQuatA, planeNormalA);
-      const prevAngleA = _orientationAngleAroundAxis(prevQuatA, planeNormalA);
-      const deltaAngleA = _deltaAngleAroundAxis(prevQuatA, currentQuatA, planeNormalA);
+      const angleA = _orientationAngleForEntity(world, entityA, currentQuatA);
+      const prevAngleA = _orientationAngleForEntity(world, entityA, prevQuatA);
+      const deltaAngleA = _deltaAngleForEntity(world, entityA, prevQuatA, currentQuatA);
       const cwA = _effectiveCW(path, A, true);
       const rollingLinkA = _isRolling(path.linkTypes[A]);
       const isHybridA = _isHybrid(path.linkTypes[A]);
@@ -1104,9 +1166,9 @@ export function _updateAttachmentPoints(world) {
       const planeNormalB = _getPlaneNormal(world, entityB);
       const currentQuatB = orientationBComp?.quaternion;
       const prevQuatB = linkBComp?.prevCableAttachmentTimeOrientation;
-      const angleB = _orientationAngleAroundAxis(currentQuatB, planeNormalB);
-      const prevAngleB = _orientationAngleAroundAxis(prevQuatB, planeNormalB);
-      const deltaAngleB = _deltaAngleAroundAxis(prevQuatB, currentQuatB, planeNormalB);
+      const angleB = _orientationAngleForEntity(world, entityB, currentQuatB);
+      const prevAngleB = _orientationAngleForEntity(world, entityB, prevQuatB);
+      const deltaAngleB = _deltaAngleForEntity(world, entityB, prevQuatB, currentQuatB);
       const cwB = _effectiveCW(path, B, false);
       const rollingLinkB = _isRolling(path.linkTypes[B]);
       const isHybridB = _isHybrid(path.linkTypes[B]);

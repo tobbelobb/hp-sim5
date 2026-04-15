@@ -15,6 +15,11 @@ import {
   DistanceConstraintComponent,
   RigidGroupComponent
 } from './ecs.js';
+import {
+  SpoolStateComponent,
+  getSpoolRotationAngle,
+  getSpoolWorldAxis,
+} from '../../../hp-sim-3d/app/hangprinter_spools.js';
 
 const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
 
@@ -349,14 +354,20 @@ export class EncoderUpdateSystem {
         continue;
       }
 
-      const axis = getEncoderAxis(encoderComp, world);
-      const wrappedAngle = orientationAngleAroundAxis(orientationComp.quaternion, axis);
+      const spoolState = world.getComponent(entityId, SpoolStateComponent);
+      const axis = spoolState
+        ? getSpoolWorldAxis(spoolState, orientationComp.quaternion)
+        : getEncoderAxis(encoderComp, world);
+      const wrappedAngle = spoolState
+        ? getSpoolRotationAngle(spoolState, orientationComp.quaternion)
+        : orientationAngleAroundAxis(orientationComp.quaternion, axis);
       if (!Number.isFinite(wrappedAngle)) {
         continue;
       }
       encoderComp.angle = Number.isFinite(encoderComp.angle)
         ? unwrapAngleNear(encoderComp.angle, wrappedAngle)
         : wrappedAngle;
+      encoderComp.axis = axis;
     }
   }
 }

@@ -20,6 +20,7 @@ import {
   CablePathComponent
 } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
 import { ObstaclePushComponent } from '../../../example_apps/js/flipper/flipper_common.js';
+import { SpoolStateComponent } from '../../../hp-sim-3d/app/hangprinter_spools.js';
 
 const ORIENTATION_BACK_COLOR = new THREE.Color('#2a3542');
 const ORIENTATION_FRONT_COLOR = new THREE.Color('#dddddd');
@@ -28,6 +29,7 @@ function createRenderSystemStub() {
   const system = Object.create(RenderSystem3D.prototype);
   system.root = new THREE.Group();
   system.sharedSphereGeometry = new THREE.SphereGeometry(1, 12, 8);
+  system.sharedCylinderGeometry = new THREE.CylinderGeometry(1, 1, 1, 12, 1, false);
   system.sphereMaterialCache = new Map();
   system.flipperMaterialCache = new Map();
   system.orientedSphereGeometryCache = new Map();
@@ -80,6 +82,7 @@ function disposeRenderSystemStub(system) {
   system.orientedSphereMaterial.dispose();
   system.knotMarkerMaterial.dispose();
   system.sharedSphereGeometry.dispose();
+  system.sharedCylinderGeometry.dispose();
   if (typeof RenderSystem3D.prototype._clearBumperFx === 'function') {
     RenderSystem3D.prototype._clearBumperFx.call(system);
   }
@@ -158,6 +161,46 @@ describe('RenderSystem3D oriented circles', () => {
       expect(meshA.geometry).toBe(system.sharedSphereGeometry);
       expect(meshA.material).not.toBe(system.orientedSphereMaterial);
       expect(meshB.geometry).toBe(geometryB);
+    } finally {
+      disposeRenderSystemStub(system);
+    }
+  });
+
+  test('renders spools as cylinders aligned to their local rotation axis', () => {
+    const system = createRenderSystemStub();
+
+    try {
+      const world = new World();
+      const spool = world.createEntity();
+      const orientation = new OrientationComponent();
+      orientation.quaternion.setFromAxisAngle(new Vector3(1.0, 0.0, 0.0), Math.PI / 4);
+
+      world.addComponent(spool, new PositionComponent(0.1, 0.2, 0.3));
+      world.addComponent(spool, new RadiusComponent(0.04));
+      world.addComponent(spool, new RenderableComponent('cylinder', '#999999'));
+      world.addComponent(spool, orientation);
+      world.addComponent(spool, new SpoolStateComponent('A'));
+
+      RenderSystem3D.prototype._syncCircles.call(system, world);
+
+      const mesh = system.circleMeshes.get(spool);
+      const cylinderAxis = new THREE.Vector3(0, 1, 0).applyQuaternion(mesh.quaternion).normalize();
+      const expectedAxis = new THREE.Vector3(0, 0, 1).applyQuaternion(
+        new THREE.Quaternion(
+          orientation.quaternion.x,
+          orientation.quaternion.y,
+          orientation.quaternion.z,
+          orientation.quaternion.w,
+        ),
+      ).normalize();
+
+      expect(mesh.geometry).toBe(system.sharedCylinderGeometry);
+      expect(mesh.scale.x).toBeCloseTo(0.04, 8);
+      expect(mesh.scale.y).toBeCloseTo(0.04, 8);
+      expect(mesh.scale.z).toBeCloseTo(0.04, 8);
+      expect(cylinderAxis.x).toBeCloseTo(expectedAxis.x, 6);
+      expect(cylinderAxis.y).toBeCloseTo(expectedAxis.y, 6);
+      expect(cylinderAxis.z).toBeCloseTo(expectedAxis.z, 6);
     } finally {
       disposeRenderSystemStub(system);
     }

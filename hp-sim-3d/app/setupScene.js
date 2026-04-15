@@ -50,7 +50,11 @@ import {
 } from './hangprinter_input.js';
 import { ExtruderComponent, ExtruderSystem } from './hangprinter_extruder.js';
 import { RemoteSpoolSystem } from './remoteSpoolSystem.js';
-import { SpoolTagComponent, SpoolStateComponent } from './hangprinter_spools.js';
+import {
+  SpoolTagComponent,
+  SpoolStateComponent,
+  normalizeSpoolAxisLocal,
+} from './hangprinter_spools.js';
 import { StepperMotorComponent, StepperMotorSystem } from './hangprinter_stepper_motor.js';
 import { RenderSystem3D } from '../../src/js/cable_joints_3d/render_system_3d.js';
 import {
@@ -65,6 +69,7 @@ import {
   XPBDDistanceConstraintSystem,
   RigidGroupSystem,
 } from '../../src/js/cable_joints_3d/commonSystems.js';
+import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
 
 const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
 
@@ -194,6 +199,55 @@ export function setupScene(world, stage, canvas, options = {}) {
             return null;
         }
         return new Vector3(x, y, z);
+    }
+
+    function readQuaternionAttribute(primNode, attributeName) {
+        const rawValue = getAttribute(primNode, attributeName);
+        if (!rawValue || !Array.isArray(rawValue) || rawValue.length < 4) {
+            return null;
+        }
+        const w = Number(rawValue[0]);
+        const x = Number(rawValue[1]);
+        const y = Number(rawValue[2]);
+        const z = Number(rawValue[3]);
+        if (!Number.isFinite(w) || !Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
+            return null;
+        }
+        return new Quaternion(x, y, z, w).normalize();
+    }
+
+    function readSpoolAxisLocal(primNode) {
+        const axis =
+            readVectorAttribute(primNode, 'spool:axisLocal')
+            || readVectorAttribute(primNode, 'machine:axisLocal')
+            || readVectorAttribute(primNode, 'physics:rotationAxis')
+            || DEFAULT_PLANE_NORMAL;
+        return normalizeSpoolAxisLocal(axis);
+    }
+
+    function effectiveInertiaAboutAxis(inertiaTensor, axisLocal) {
+        if (!Array.isArray(inertiaTensor) || inertiaTensor.length < 3) {
+            return null;
+        }
+        const axis = normalizeSpoolAxisLocal(axisLocal);
+        const rows = inertiaTensor.map((row) => Array.isArray(row) ? row : []);
+        const xx = Number(rows[0][0] ?? 0.0);
+        const xy = Number(rows[0][1] ?? 0.0);
+        const xz = Number(rows[0][2] ?? 0.0);
+        const yx = Number(rows[1][0] ?? 0.0);
+        const yy = Number(rows[1][1] ?? 0.0);
+        const yz = Number(rows[1][2] ?? 0.0);
+        const zx = Number(rows[2][0] ?? 0.0);
+        const zy = Number(rows[2][1] ?? 0.0);
+        const zz = Number(rows[2][2] ?? 0.0);
+        const projectedX = (xx * axis.x) + (xy * axis.y) + (xz * axis.z);
+        const projectedY = (yx * axis.x) + (yy * axis.y) + (yz * axis.z);
+        const projectedZ = (zx * axis.x) + (zy * axis.y) + (zz * axis.z);
+        const inertia =
+            (axis.x * projectedX)
+            + (axis.y * projectedY)
+            + (axis.z * projectedZ);
+        return Number.isFinite(inertia) ? inertia : null;
     }
 
     function addGravityIfDynamic(entityId, mass) {
@@ -332,17 +386,23 @@ export function setupScene(world, stage, canvas, options = {}) {
                     const inertiaTensor = getAttribute(prim, "physics:inertiaTensor");
                     const velArr = getAttribute(prim, "physics:velocity");
                     const angVelArr = getAttribute(prim, "physics:angularVelocity");
+                    const initialOrientation = readQuaternionAttribute(prim, 'xformOp:orient') || new Quaternion();
+                    const spoolAxisLocal = readSpoolAxisLocal(prim);
 
                     if (radius === null || mass === null || inertiaTensor === null || !angVelArr) {
                         console.warn(`Skipping Spool prim ${prim.name} due to missing attributes.`);
                         continue;
                     }
-                    const inertia = inertiaTensor[2][2];
-                    const angVel = angVelArr[2] || 0.0;
+                    const inertia = effectiveInertiaAboutAxis(inertiaTensor, spoolAxisLocal);
+                    const angVel = new Vector3(
+                        Number(angVelArr[0] ?? 0.0),
+                        Number(angVelArr[1] ?? 0.0),
+                        Number(angVelArr[2] ?? 0.0),
+                    );
 
                     world.addComponent(ent, new SpoolTagComponent());
                     const axisName = prim.name.slice(-1).toUpperCase();
-                    world.addComponent(ent, new SpoolStateComponent(axisName));
+                    world.addComponent(ent, new SpoolStateComponent(axisName, spoolAxisLocal, initialOrientation));
                     const holdingTorque = readNumericAttribute(prim, "stepper:holdingTorque");
                     const numPolePairs = readNumericAttribute(prim, "stepper:numPolePairs");
                     const dampingCoeff = readNumericAttribute(prim, "stepper:dampingCoeff");
@@ -372,17 +432,43 @@ export function setupScene(world, stage, canvas, options = {}) {
                     world.addComponent(ent, new MassComponent(mass));
                     addGravityIfDynamic(ent, mass);
                     const spoolColor = palette?.spool ?? color ?? '#a0a0a0';
-                    world.addComponent(ent, new RenderableComponent('circle', spoolColor));
-                    world.addComponent(ent, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
+                    world.addComponent(ent, new RenderableComponent('cylinder', spoolColor));
+                    world.addComponent(
+                        ent,
+                        new OrientationComponent(
+                            initialOrientation.x,
+                            initialOrientation.y,
+                            initialOrientation.z,
+                            initialOrientation.w,
+                        ),
+                    );
                     world.addComponent(ent, new EncoderComponent());
-                    world.addComponent(ent, new AngularVelocityComponent(0.0, 0.0, angVel));
-                    world.addComponent(ent, new MomentOfInertiaComponent(inertia));
-                    world.addComponent(ent, new PrevFinalOrientationComponent(0.0, 0.0, 0.0, 1.0));
+                    world.addComponent(ent, new AngularVelocityComponent(angVel.x, angVel.y, angVel.z));
+                    world.addComponent(ent, new MomentOfInertiaComponent(inertia ?? 0.0));
+                    world.addComponent(
+                        ent,
+                        new PrevFinalOrientationComponent(
+                            initialOrientation.x,
+                            initialOrientation.y,
+                            initialOrientation.z,
+                            initialOrientation.w,
+                        ),
+                    );
                     world.addComponent(ent, new PrevFinalPosComponent(pos.x, pos.y, pos.z));
                     if (restitution !== null) world.addComponent(ent, new RestitutionComponent(restitution));
                     if (friction !== null) world.addComponent(ent, new CoefficientOfFrictionComponent(friction));
                     if (getAttribute(prim, "cable:linkable")) {
-                        world.addComponent(ent, new CableLinkComponent(pos.x, pos.y, pos.z, null, DEFAULT_PLANE_NORMAL));
+                        world.addComponent(
+                            ent,
+                            new CableLinkComponent(
+                                pos.x,
+                                pos.y,
+                                pos.z,
+                                initialOrientation,
+                                null,
+                                spoolAxisLocal,
+                            ),
+                        );
                     }
                     nameToEntityId[primKey] = ent;
                 } else if (tags.includes("Anchor")) {
@@ -406,6 +492,7 @@ export function setupScene(world, stage, canvas, options = {}) {
                     const inertiaTensor = getAttribute(prim, "physics:inertiaTensor");
                     const velArr = getAttribute(prim, "physics:velocity");
                     const angVelArr = getAttribute(prim, "physics:angularVelocity");
+                    const initialOrientation = readQuaternionAttribute(prim, 'xformOp:orient') || new Quaternion();
 
                     world.addComponent(ent, new PositionComponent(pos.x, pos.y, pos.z));
                     if (velArr !== null) {
@@ -422,20 +509,42 @@ export function setupScene(world, stage, canvas, options = {}) {
                     const pinholeColor = palette?.pinhole ?? color ?? '#cccccc';
                     world.addComponent(ent, new RenderableComponent('circle', pinholeColor));
                     if (angVelArr !== null) {
-                        world.addComponent(ent, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
-                        world.addComponent(ent, new PrevFinalOrientationComponent(0.0, 0.0, 0.0, 1.0));
-                        const angVel = angVelArr[2] || 0.0;
-                        world.addComponent(ent, new AngularVelocityComponent(0.0, 0.0, angVel));
+                        world.addComponent(
+                            ent,
+                            new OrientationComponent(
+                                initialOrientation.x,
+                                initialOrientation.y,
+                                initialOrientation.z,
+                                initialOrientation.w,
+                            ),
+                        );
+                        world.addComponent(
+                            ent,
+                            new PrevFinalOrientationComponent(
+                                initialOrientation.x,
+                                initialOrientation.y,
+                                initialOrientation.z,
+                                initialOrientation.w,
+                            ),
+                        );
+                        world.addComponent(
+                            ent,
+                            new AngularVelocityComponent(
+                                Number(angVelArr[0] ?? 0.0),
+                                Number(angVelArr[1] ?? 0.0),
+                                Number(angVelArr[2] ?? 0.0),
+                            ),
+                        );
                     }
                     if (inertiaTensor !== null) {
-                        const inertia = inertiaTensor[2][2];
-                        world.addComponent(ent, new MomentOfInertiaComponent(inertia));
+                        const inertia = effectiveInertiaAboutAxis(inertiaTensor, DEFAULT_PLANE_NORMAL);
+                        world.addComponent(ent, new MomentOfInertiaComponent(inertia ?? 0.0));
                     }
                     world.addComponent(ent, new PrevFinalPosComponent(pos.x, pos.y, pos.z));
                     if (restitution !== null) world.addComponent(ent, new RestitutionComponent(restitution));
                     if (friction !== null) world.addComponent(ent, new CoefficientOfFrictionComponent(friction));
                     if (getAttribute(prim, "cable:linkable")) {
-                        world.addComponent(ent, new CableLinkComponent(pos.x, pos.y, pos.z, null, DEFAULT_PLANE_NORMAL));
+                        world.addComponent(ent, new CableLinkComponent(pos.x, pos.y, pos.z, initialOrientation, DEFAULT_PLANE_NORMAL));
                     }
                     nameToEntityId[primKey] = ent;
                 }
