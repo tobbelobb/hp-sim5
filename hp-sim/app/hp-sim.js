@@ -31,9 +31,9 @@ const COMMAND_PRESET_VARIANTS = Object.freeze({
   }),
   straightMoves: Object.freeze({
     default: Object.freeze({
-      url: new URL('../../public/mcu_commands/draw_squares.serial', import.meta.url).href,
-      format: FileFormat.MCU_SERIAL,
-      referencePresetKey: 'straightMoves',
+      url: new URL('../../public/RRF_CAN_commands/draw_squares_bigger_slideprinter_no_buildup.can', import.meta.url).href,
+      format: FileFormat.RRF_CAN_BINARY,
+      referencePresetKey: 'straightMovesBigger',
     }),
     lineLayered: Object.freeze({
       url: new URL('../../public/RRF_CAN_commands/draw_squares_bigger_w_line_layers.can', import.meta.url).href,
