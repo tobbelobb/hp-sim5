@@ -19,12 +19,12 @@ import { getMachineMotorDiagnostics } from './motor-diagnostics.js';
 const COMMAND_PRESET_VARIANTS = Object.freeze({
   hangprinterLogo: Object.freeze({
     default: Object.freeze({
-      url: new URL('../../public/mcu_commands/Hangprinter_logo6_flex_and_buildup.serial', import.meta.url).href,
-      format: FileFormat.MCU_SERIAL,
+      url: new URL('../../public/RRF_CAN_commands/Hangprinter_logo6_slideprinter_no_buildup.can', import.meta.url).href,
+      format: FileFormat.RRF_CAN_BINARY,
       referencePresetKey: 'hangprinterLogo',
     }),
     lineLayered: Object.freeze({
-      url: new URL('../../public/RRF_CAN_commands/Hangprinter_logo6_w_line_layers.can', import.meta.url).href,
+      url: new URL('../../public/RRF_CAN_commands/Hangprinter_logo6_slideprinter_w_line_layers.can', import.meta.url).href,
       format: FileFormat.RRF_CAN_BINARY,
       referencePresetKey: 'hangprinterLogo',
     }),
@@ -36,7 +36,7 @@ const COMMAND_PRESET_VARIANTS = Object.freeze({
       referencePresetKey: 'straightMovesBigger',
     }),
     lineLayered: Object.freeze({
-      url: new URL('../../public/RRF_CAN_commands/draw_squares_bigger_w_line_layers.can', import.meta.url).href,
+      url: new URL('../../public/RRF_CAN_commands/draw_squares_bigger_slideprinter_w_line_layers.can', import.meta.url).href,
       format: FileFormat.RRF_CAN_BINARY,
       referencePresetKey: 'straightMovesBigger',
     }),
