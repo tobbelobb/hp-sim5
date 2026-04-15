@@ -43,6 +43,7 @@ const BORDER_WALL_COLOR = 0x0c111f;
 const BORDER_WALL_COLOR_HEX = '#0c111f';
 const DEFAULT_RIGID_GROUP_COLOR = '#55ff88';
 const DEFAULT_RIGID_GROUP_Z_OFFSET = 0.0015;
+const DEFAULT_EXTRUDER_COLOR = '#ff8a3d';
 const BUMPER_FX_MAX_BURSTS = 96;
 const BUMPER_FX_MIN_RADIUS = 0.03;
 const DEFAULT_REFERENCE_COLOR = '#1e90ff';
@@ -598,6 +599,7 @@ export class RenderSystem3D {
     this._animationLoopActive = false;
     this._requestRenderHandle = null;
     this._lastWorld = null;
+    this.extruderLine = null;
 
     this.controls = null;
     this.controlsEnabled = options.controlsEnabled ?? true;
@@ -1395,6 +1397,45 @@ export class RenderSystem3D {
     this._updatePointObject(this.positionTraceMarkersObject, this.positionTraceMarkers, null, DEFAULT_MARKER_Z);
   }
 
+  _syncExtruder(world) {
+    const extruderEntities = world.query([ExtruderComponent]);
+    if (extruderEntities.length === 0) {
+      if (this.extruderLine) {
+        this.extruderLine.visible = false;
+      }
+      return;
+    }
+
+    const extruderComp = world.getComponent(extruderEntities[0], ExtruderComponent);
+    const lineStart = extruderComp?.coldEndPos || extruderComp?.centerPos || null;
+    const lineEnd = extruderComp?.tipPos || extruderComp?.centerPos || null;
+    if (!lineStart || !lineEnd) {
+      if (this.extruderLine) {
+        this.extruderLine.visible = false;
+      }
+      return;
+    }
+
+    if (!this.extruderLine) {
+      this.extruderLine = this._createLine();
+      this.extruderLine.renderOrder = 875;
+      this.root.add(this.extruderLine);
+    }
+
+    this.extruderLine.visible = true;
+    setMaterialColor(this.extruderLine.material, DEFAULT_EXTRUDER_COLOR);
+
+    const positions = this.extruderLine.geometry.attributes.position.array;
+    const segments = this.extruderLine.userData.lineSegments ?? JOINT_LINE_SEGMENTS;
+    writeStraightCablePositions(
+      positions,
+      new Vector3(lineStart.x, lineStart.y, lineStart.z || 0.0),
+      new Vector3(lineEnd.x, lineEnd.y, lineEnd.z || 0.0),
+      segments
+    );
+    this.extruderLine.geometry.attributes.position.needsUpdate = true;
+  }
+
   update(world, dt = 0) {
     if (world) {
       this._lastWorld = world;
@@ -1411,6 +1452,7 @@ export class RenderSystem3D {
     this._syncCircles(world);
     this._syncFlippers(world);
     this._syncRigidGroups(world);
+    this._syncExtruder(world);
     this._syncCable(world);
     this._syncReferencePaths();
     this._syncExtrusions(world);
@@ -1470,6 +1512,12 @@ export class RenderSystem3D {
       disposeObject(line);
     }
     this.rigidGroupLines.length = 0;
+
+    if (this.extruderLine) {
+      this.root.remove(this.extruderLine);
+      disposeObject(this.extruderLine);
+      this.extruderLine = null;
+    }
 
     this._clearBumperFx();
 

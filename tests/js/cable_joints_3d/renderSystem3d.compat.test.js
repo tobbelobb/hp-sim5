@@ -106,6 +106,7 @@ function createCompatStub(canvasOverrides = {}) {
   system._updatePointObject = RenderSystem3D.prototype._updatePointObject;
   system._syncReferencePaths = RenderSystem3D.prototype._syncReferencePaths;
   system._syncExtrusions = RenderSystem3D.prototype._syncExtrusions;
+  system._syncExtruder = RenderSystem3D.prototype._syncExtruder;
   system._syncPositionTrace = RenderSystem3D.prototype._syncPositionTrace;
   system._syncPositionTraceMarkers = RenderSystem3D.prototype._syncPositionTraceMarkers;
   system._syncBoard = RenderSystem3D.prototype._syncBoard;
@@ -252,6 +253,33 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
       expect(system.positionTracePointsObject.geometry.getAttribute('position').getZ(1)).toBeCloseTo(-0.004, 6);
       expect(system.positionTracePointsObject.visible).toBe(true);
       expect(system.positionTraceMarkersObject.visible).toBe(true);
+    } finally {
+      disposeCompatStub(system);
+    }
+  });
+
+  test('renders the extruder as a line from cold end to tip', () => {
+    const system = createCompatStub();
+
+    try {
+      const world = new World();
+      const extruderEntity = world.createEntity();
+      const extruder = new ExtruderComponent();
+      extruder.coldEndPos = { x: 0.1, y: 0.2, z: 0.3 };
+      extruder.tipPos = { x: 0.4, y: 0.5, z: 0.6 };
+      world.addComponent(extruderEntity, extruder);
+
+      system._syncExtruder(world);
+
+      expect(system.extruderLine).toBeDefined();
+      expect(system.extruderLine.visible).toBe(true);
+      const positions = system.extruderLine.geometry.getAttribute('position');
+      expect(positions.getX(0)).toBeCloseTo(0.1, 6);
+      expect(positions.getY(0)).toBeCloseTo(0.2, 6);
+      expect(positions.getZ(0)).toBeCloseTo(0.3, 6);
+      expect(positions.getX(positions.count - 1)).toBeCloseTo(0.4, 6);
+      expect(positions.getY(positions.count - 1)).toBeCloseTo(0.5, 6);
+      expect(positions.getZ(positions.count - 1)).toBeCloseTo(0.6, 6);
     } finally {
       disposeCompatStub(system);
     }
