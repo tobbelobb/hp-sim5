@@ -60,6 +60,27 @@ function resolvePresetCommand(presetKey, lineLayeringEnabled) {
   return null;
 }
 
+function getPresetActionLabel(presetKey) {
+  if (presetKey === 'hangprinterLogo') {
+    return 'Print Logo';
+  }
+  if (presetKey === 'straightMoves') {
+    return 'Print Squares';
+  }
+  return presetKey;
+}
+
+function describeSelectedPresetFile(url) {
+  if (typeof url !== 'string' || url.length === 0) {
+    return null;
+  }
+  try {
+    return new URL(url, window.location.href).pathname;
+  } catch (_error) {
+    return url;
+  }
+}
+
 const PRESET_GCODE_MAP = Object.freeze({
   hangprinterLogo: {
     url: new URL('../../public/gcode/Hangprinter_logo6.gcode', import.meta.url).href,
@@ -4060,6 +4081,7 @@ function initHpSim() {
       console.warn('Slideprinter demo: unknown preset', presetKey);
       return;
     }
+    console.info(`hp-sim: ${getPresetActionLabel(presetKey)} selected file`, describeSelectedPresetFile(preset.url));
     const referencePresetKey = preset.referencePresetKey || presetKey;
     loadReferencePathForPreset(referencePresetKey, { setActive: true }).catch((error) => {
       console.warn('hp-sim: failed to prepare reference path for preset', referencePresetKey, error);
