@@ -468,14 +468,10 @@ export function setupScene(world, stage, canvas, options = {}) {
             return sum.scale(1.0 / count);
         };
         const extruderCenterOffset = (() => {
-            if (!extruderPrim || !extruderAuthoredPos || extruderCenterEntityIds.length === 0) {
+            if (!extruderPrim || !extruderAuthoredPos) {
                 return null;
             }
-            const averagePos = resolveAveragePosition(extruderCenterEntityIds);
-            if (!averagePos) {
-                return null;
-            }
-            return extruderAuthoredPos.clone().subtract(averagePos);
+            return extruderAuthoredPos.clone();
         })();
         const extruderCenterSourceOffsets = (() => {
             if (extruderCenterEntityIds.length === 0) {

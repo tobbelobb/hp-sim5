@@ -168,6 +168,9 @@ def Xform "World"
         def Xform "Extruder" ()
         {
             token[] ecs:tags = ["Extruder"]
+            # Local extruder frame:
+            # - origin = average(machine:centerSources)
+            # - child xformOp:translate values are local offsets in that frame
             double3 xformOp:translate = (0.0, 0.0, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel machine:centerSources = [

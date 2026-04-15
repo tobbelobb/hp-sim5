@@ -23,9 +23,9 @@ describe('ExtruderSystem (3D)', () => {
       new PositionComponent(1.0, -1.0 / 3.0, 0.0).pos,
       new PositionComponent(0.0, 2.0 / 3.0, 0.0).pos,
     ];
-    extruder.centerOffsets.default = new PositionComponent(0.0, 0.0, -0.1).pos;
-    extruder.tipOffsets.default = new PositionComponent(0.0, 0.0, 0.0).pos;
-    extruder.coldEndOffsets.default = new PositionComponent(0.0, 0.0, 0.1).pos;
+    extruder.centerOffsets.default = new PositionComponent(0.0, 0.0, 0.0).pos;
+    extruder.tipOffsets.default = new PositionComponent(0.0, 0.0, -0.1).pos;
+    extruder.coldEndOffsets.default = new PositionComponent(0.0, 0.0, 0.0).pos;
     world.addComponent(extruderEntity, extruder);
 
     new ExtruderSystem().update(world, 0);
@@ -34,7 +34,7 @@ describe('ExtruderSystem (3D)', () => {
     expect(extruder.effectorCenterPos.y).toBeCloseTo(0.0, 6);
     expect(extruder.effectorCenterPos.z).toBeCloseTo(0.0, 6);
     expect(extruder.centerPos.x).toBeCloseTo(0.0, 6);
-    expect(extruder.centerPos.y).toBeCloseTo(0.1, 6);
+    expect(extruder.centerPos.y).toBeCloseTo(0.0, 6);
     expect(extruder.centerPos.z).toBeCloseTo(0.0, 6);
     expect(extruder.tipPos.y).toBeCloseTo(0.1, 6);
     expect(extruder.coldEndPos.y).toBeCloseTo(0.0, 6);

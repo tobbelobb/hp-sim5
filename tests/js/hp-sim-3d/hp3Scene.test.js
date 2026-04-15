@@ -102,10 +102,10 @@ describe('hp3 USDA scene loading', () => {
     extruderSystem.update(world, 0);
 
     expect(extruder.centerSources.default).toHaveLength(3);
-    expect(extruder.centerPos.z).toBeCloseTo(0.0, 6);
-    expect(extruder.centerOffsets.default.z).toBeCloseTo(-0.1, 6);
-    expect(extruder.tipOffsets.default.z).toBeCloseTo(0.0, 6);
-    expect(extruder.coldEndOffsets.default.z).toBeCloseTo(0.1, 6);
+    expect(extruder.centerPos.z).toBeCloseTo(0.1, 6);
+    expect(extruder.centerOffsets.default.z).toBeCloseTo(0.0, 6);
+    expect(extruder.tipOffsets.default.z).toBeCloseTo(-0.1, 6);
+    expect(extruder.coldEndOffsets.default.z).toBeCloseTo(0.0, 6);
     expect(extruder.tipPos.z).toBeCloseTo(0.0, 6);
     expect(extruder.coldEndPos.z).toBeCloseTo(0.1, 6);
   });

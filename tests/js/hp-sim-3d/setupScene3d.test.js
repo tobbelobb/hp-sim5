@@ -238,13 +238,13 @@ describe('slideprinter 3D setupScene', () => {
       }
       if (prim?.path === '/World/SlideprinterScene/Extruder') {
         if (attr === 'ecs:tags') return ['Extruder'];
-        if (attr === 'xformOp:translate') return [0.12, 0.18, 0.002];
-      }
-      if (prim?.path === '/World/SlideprinterScene/Extruder/Tip') {
         if (attr === 'xformOp:translate') return [0.0, 0.0, 0.0];
       }
+      if (prim?.path === '/World/SlideprinterScene/Extruder/Tip') {
+        if (attr === 'xformOp:translate') return [0.02, -0.02, -0.001];
+      }
       if (prim?.path === '/World/SlideprinterScene/Extruder/ColdEnd') {
-        if (attr === 'xformOp:translate') return [0.0, 0.0, 0.05];
+        if (attr === 'xformOp:translate') return [0.02, -0.02, 0.049];
       }
       return null;
     });
@@ -287,14 +287,18 @@ describe('slideprinter 3D setupScene', () => {
     const extruderSystem = world.systems.find((system) => system.constructor.name === 'ExtruderSystem');
     extruderSystem.update(world, 0);
 
-    expect(extruder.centerOffsets.default.x).toBeCloseTo(0.02, 6);
-    expect(extruder.centerOffsets.default.y).toBeCloseTo(-0.02, 6);
-    expect(extruder.centerOffsets.default.z).toBeCloseTo(-0.001, 6);
-    expect(extruder.tipOffsets.default.z).toBeCloseTo(0.0, 6);
-    expect(extruder.coldEndOffsets.default.z).toBeCloseTo(0.05, 6);
-    expect(extruder.centerPos.x).toBeCloseTo(0.12, 6);
-    expect(extruder.centerPos.y).toBeCloseTo(0.18, 6);
-    expect(extruder.centerPos.z).toBeCloseTo(0.002, 6);
+    expect(extruder.centerOffsets.default.x).toBeCloseTo(0.0, 6);
+    expect(extruder.centerOffsets.default.y).toBeCloseTo(0.0, 6);
+    expect(extruder.centerOffsets.default.z).toBeCloseTo(0.0, 6);
+    expect(extruder.tipOffsets.default.x).toBeCloseTo(0.02, 6);
+    expect(extruder.tipOffsets.default.y).toBeCloseTo(-0.02, 6);
+    expect(extruder.tipOffsets.default.z).toBeCloseTo(-0.001, 6);
+    expect(extruder.coldEndOffsets.default.z).toBeCloseTo(0.049, 6);
+    expect(extruder.centerPos.x).toBeCloseTo(0.1, 6);
+    expect(extruder.centerPos.y).toBeCloseTo(0.2, 6);
+    expect(extruder.centerPos.z).toBeCloseTo(0.003, 6);
+    expect(extruder.tipPos.x).toBeCloseTo(0.12, 6);
+    expect(extruder.tipPos.y).toBeCloseTo(0.18, 6);
     expect(extruder.tipPos.z).toBeCloseTo(0.002, 6);
     expect(extruder.coldEndPos.z).toBeCloseTo(0.052, 6);
   });
