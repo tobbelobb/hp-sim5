@@ -225,8 +225,8 @@ def Xform "World"
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
-        # Group the three attachment points into a rigid cluster for simulation
-        def RigidGroup "SpoolTriangle"
+        # Group the attachment points into a rigid cluster for simulation
+        def RigidGroup "Effector"
         {
             rel rigidGroup:members = [
                 </World/HangprinterScene/AttachAL>,
