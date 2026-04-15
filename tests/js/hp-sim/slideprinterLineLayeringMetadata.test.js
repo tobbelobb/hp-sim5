@@ -22,9 +22,7 @@ describe('Slideprinter line-layering metadata', () => {
       'public/usd_scenes/slideprinter.usda',
       'public/usd_scenes/slideprinter_small.usda',
       'public/usd_scenes/slideprinter_single_pinholes.usda',
-      'public/usd_scenes/slideprinter_pure_distancejoints.usda',
       'public/usd_scenes/slideprinter_hexagon.usda',
-      'public/usd_scenes/slideprinter_hexagon_pure_distancejoints.usda',
     ];
 
     for (const relativePath of files) {

@@ -238,8 +238,6 @@ const AVAILABLE_USDAS = Object.freeze([
   { file: 'slideprinter_multi_unit.usda', label: 'Slideprinter Multi Unit' },
   { file: 'slideprinter.usda', label: 'Slideprinter Original' },
   { file: 'slideprinter_hexagon.usda', label: 'Slideprinter (hexagon)' },
-  { file: 'slideprinter_hexagon_pure_distancejoints.usda', label: 'Slideprinter (hexagon, pure distance joints)' },
-  { file: 'slideprinter_pure_distancejoints.usda', label: 'Slideprinter (distance joints)' },
   { file: 'slideprinter_single_pinholes.usda', label: 'Slideprinter (single pinholes)' },
 ]);
 
