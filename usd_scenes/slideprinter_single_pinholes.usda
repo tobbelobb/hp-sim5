@@ -48,7 +48,7 @@ def Xform "World"
             double radius = 0.01
             double3 xformOp:translate = (0.0, -0.2, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
-            float physics:mass = 0.001
+            float physics:mass = 0.002
             vector3f physics:velocity = (0.0, 0.0, 0.0)
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
@@ -89,7 +89,7 @@ def Xform "World"
             double radius = 0.01
             double3 xformOp:translate = (0.173205080756888, 0.1, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
-            float physics:mass = 0.001
+            float physics:mass = 0.002
             vector3f physics:velocity = (0.0, 0.0, 0.0)
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
@@ -130,7 +130,7 @@ def Xform "World"
             double radius = 0.01
             double3 xformOp:translate = (-0.173205080756888, 0.1, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
-            float physics:mass = 0.001
+            float physics:mass = 0.002
             vector3f physics:velocity = (0.0, 0.0, 0.0)
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
@@ -212,6 +212,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["attachment", "pinhole", "hybrid"]
             custom double[] cablePath:stored = [0, 0, 1.0]
             custom double stiffness = 20000.0
+            custom double cablePath:halfWidth = 0.001
         }
 
         def Xform "CablePathB" (
@@ -224,6 +225,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["attachment", "pinhole", "hybrid"]
             custom double[] cablePath:stored = [0, 0, 1.0]
             custom double stiffness = 20000.0
+            custom double cablePath:halfWidth = 0.001
         }
 
         def Xform "CablePathC" (
@@ -236,12 +238,15 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["attachment", "pinhole", "hybrid"]
             custom double[] cablePath:stored = [0, 0, 1.0]
             custom double stiffness = 20000.0
+            custom double cablePath:halfWidth = 0.001
         }
 
-        def Sphere "Extruder" ()
+        def Xform "Extruder" ()
         {
             token[] ecs:tags = ["Extruder"]
-            double radius = 0.01
+            # Local extruder frame:
+            # - origin = average(machine:centerSources)
+            # - child xformOp:translate values are local offsets in that frame
             double3 xformOp:translate = (0.0, 0.0, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel machine:centerSources = [
@@ -249,7 +254,20 @@ def Xform "World"
                 </World/SlideprinterScene/SpoolB>,
                 </World/SlideprinterScene/SpoolC>
             ]
+            rel machine:rigidGroup = </World/SlideprinterScene/SpoolTriangle>
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
+
+            def Xform "Tip" ()
+            {
+                double3 xformOp:translate = (0.0, 0.0, 0.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Xform "ColdEnd" ()
+            {
+                double3 xformOp:translate = (0.0, 0.0, 0.1)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
         }
         custom color3f machine:tintColor = (1, 0.70196078, 0.27843137)
         custom color3f machine:extrusionColor = (1, 0.70196078, 0.27843137)
@@ -257,8 +275,8 @@ def Xform "World"
 
     def PhysicsScene "PhysicsScene"
     {
-        vector3f physics:gravityDirection = (0, 0, 0)
-        float physics:gravityMagnitude = 0.0
+        vector3f physics:gravityDirection = (0, 0, -1)
+        float physics:gravityMagnitude = 9.82
         def Material "SpoolMaterial" (
             prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
         )

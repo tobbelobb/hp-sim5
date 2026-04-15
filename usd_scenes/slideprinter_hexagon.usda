@@ -214,6 +214,219 @@ def Xform "World"
             custom string rigidGroup:renderIndices = "[3,4,5,6,7,8,3]"
         }
 
+        def DistancePhysicsJoint "DistanceJointAB"
+        {
+            rel physics:body0 = </World/SlideprinterScene/SpoolA>
+            rel physics:body1 = </World/SlideprinterScene/SpoolB>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.173205
+            float physics:maxDistance = 0.173205
+        }
+
+        def DistancePhysicsJoint "DistanceJointBC"
+        {
+            rel physics:body0 = </World/SlideprinterScene/SpoolB>
+            rel physics:body1 = </World/SlideprinterScene/SpoolC>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.173205
+            float physics:maxDistance = 0.173205
+        }
+
+        def DistancePhysicsJoint "DistanceJointCA"
+        {
+            rel physics:body0 = </World/SlideprinterScene/SpoolC>
+            rel physics:body1 = </World/SlideprinterScene/SpoolA>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.173205
+            float physics:maxDistance = 0.173205
+        }
+
+        def DistancePhysicsJoint "DistanceJointPinholesA"
+        {
+            rel physics:body0 = </World/SlideprinterScene/PinholeAL>
+            rel physics:body1 = </World/SlideprinterScene/PinholeAR>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.2
+            float physics:maxDistance = 0.2
+        }
+
+        def DistancePhysicsJoint "DistanceJointPinholesB"
+        {
+            rel physics:body0 = </World/SlideprinterScene/PinholeBL>
+            rel physics:body1 = </World/SlideprinterScene/PinholeBR>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.2
+            float physics:maxDistance = 0.2
+        }
+
+        def DistancePhysicsJoint "DistanceJointPinholesC"
+        {
+            rel physics:body0 = </World/SlideprinterScene/PinholeCL>
+            rel physics:body1 = </World/SlideprinterScene/PinholeCR>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.2
+            float physics:maxDistance = 0.2
+        }
+
+        def DistancePhysicsJoint "DistanceJointPinholeALToSpoolA"
+        {
+            rel physics:body0 = </World/SlideprinterScene/PinholeAL>
+            rel physics:body1 = </World/SlideprinterScene/SpoolA>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.141421356237
+            float physics:maxDistance = 0.141421356237
+        }
+
+        def DistancePhysicsJoint "DistanceJointPinholeARToSpoolA"
+        {
+            rel physics:body0 = </World/SlideprinterScene/PinholeAR>
+            rel physics:body1 = </World/SlideprinterScene/SpoolA>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.141421356237
+            float physics:maxDistance = 0.141421356237
+        }
+
+
+        def DistancePhysicsJoint "DistanceJointPinholeBLToSpoolA"
+        {
+            rel physics:body0 = </World/SlideprinterScene/PinholeBL>
+            rel physics:body1 = </World/SlideprinterScene/SpoolB>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.141421356237
+            float physics:maxDistance = 0.141421356237
+        }
+
+        def DistancePhysicsJoint "DistanceJointPinholeBRToSpoolA"
+        {
+            rel physics:body0 = </World/SlideprinterScene/PinholeBR>
+            rel physics:body1 = </World/SlideprinterScene/SpoolB>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.141421356237
+            float physics:maxDistance = 0.141421356237
+        }
+
+        def DistancePhysicsJoint "DistanceJointPinholeCLToSpoolA"
+        {
+            rel physics:body0 = </World/SlideprinterScene/PinholeCL>
+            rel physics:body1 = </World/SlideprinterScene/SpoolC>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.141421356237
+            float physics:maxDistance = 0.141421356237
+        }
+
+        def DistancePhysicsJoint "DistanceJointPinholeCRToSpoolA"
+        {
+            rel physics:body0 = </World/SlideprinterScene/PinholeCR>
+            rel physics:body1 = </World/SlideprinterScene/SpoolC>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.141421356237
+            float physics:maxDistance = 0.141421356237
+        }
+
+
+        def DistancePhysicsJoint "DistanceJointPinholeARToPinholeBL"
+        {
+            rel physics:body0 = </World/SlideprinterScene/PinholeAR>
+            rel physics:body1 = </World/SlideprinterScene/PinholeBL>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.246410161512
+            float physics:maxDistance = 0.246410161512
+        }
+
+        def DistancePhysicsJoint "DistanceJointPinholeBRToPinholeCL"
+        {
+            rel physics:body0 = </World/SlideprinterScene/PinholeBR>
+            rel physics:body1 = </World/SlideprinterScene/PinholeCL>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.246410161512
+            float physics:maxDistance = 0.246410161512
+        }
+
+        def DistancePhysicsJoint "DistanceJointPinholeCRToPinholeAL"
+        {
+            rel physics:body0 = </World/SlideprinterScene/PinholeCR>
+            rel physics:body1 = </World/SlideprinterScene/PinholeAL>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.246410161512
+            float physics:maxDistance = 0.246410161512
+        }
+
+        def DistancePhysicsJoint "DistanceJointSpoolAToPinholeBL"
+        {
+            rel physics:body0 = </World/SlideprinterScene/SpoolA>
+            rel physics:body1 = </World/SlideprinterScene/PinholeBL>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.250358726478
+            float physics:maxDistance = 0.250358726478
+        }
+
+        def DistancePhysicsJoint "DistanceJointSpoolBToPinholeAR"
+        {
+            rel physics:body0 = </World/SlideprinterScene/SpoolB>
+            rel physics:body1 = </World/SlideprinterScene/PinholeAR>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.250358726478
+            float physics:maxDistance = 0.250358726478
+        }
+
+        def DistancePhysicsJoint "DistanceJointSpoolBToPinholeCL"
+        {
+            rel physics:body0 = </World/SlideprinterScene/SpoolB>
+            rel physics:body1 = </World/SlideprinterScene/PinholeCL>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.250358726478
+            float physics:maxDistance = 0.250358726478
+        }
+
+        def DistancePhysicsJoint "DistanceJointSpoolCToPinholeBR"
+        {
+            rel physics:body0 = </World/SlideprinterScene/SpoolC>
+            rel physics:body1 = </World/SlideprinterScene/PinholeBR>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.250358726478
+            float physics:maxDistance = 0.250358726478
+        }
+
+        def DistancePhysicsJoint "DistanceJointSpoolCToPinholeAL"
+        {
+            rel physics:body0 = </World/SlideprinterScene/SpoolC>
+            rel physics:body1 = </World/SlideprinterScene/PinholeAL>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.250358726478
+            float physics:maxDistance = 0.250358726478
+        }
+
+        def DistancePhysicsJoint "DistanceJointSpoolAToPinholeCR"
+        {
+            rel physics:body0 = </World/SlideprinterScene/SpoolA>
+            rel physics:body1 = </World/SlideprinterScene/PinholeCR>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            float physics:minDistance = 0.250358726478
+            float physics:maxDistance = 0.250358726478
+        }
+
+
         def CableJoint "JointAL_0"
         {
             custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
@@ -331,6 +544,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["attachment", "pinhole", "hybrid"]
             custom double[] cablePath:stored = [0, 0, 1.0]
             custom double stiffness = 20000.0
+            custom double cablePath:halfWidth = 0.001
         }
 
         def Xform "CablePathAR" (
@@ -342,6 +556,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["attachment", "pinhole", "hybrid"]
             custom double[] cablePath:stored = [0, 0, 1.0]
             custom double stiffness = 20000.0
+            custom double cablePath:halfWidth = 0.001
         }
 
         def Xform "CablePathBL" (
@@ -354,6 +569,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["attachment", "pinhole", "hybrid"]
             custom double[] cablePath:stored = [0, 0, 1.0]
             custom double stiffness = 20000.0
+            custom double cablePath:halfWidth = 0.001
         }
 
         def Xform "CablePathBR" (
@@ -367,6 +583,7 @@ def Xform "World"
             custom double[] cablePath:stored = [0, 0, 1.0]
             custom double cablePath:totalLength = 2.98068042195
             custom double stiffness = 20000.0
+            custom double cablePath:halfWidth = 0.001
         }
 
         def Xform "CablePathCL" (
@@ -380,6 +597,7 @@ def Xform "World"
             custom double[] cablePath:stored = [0, 0, 1.0]
             custom double cablePath:totalLength = 2.98068042195
             custom double stiffness = 20000.0
+            custom double cablePath:halfWidth = 0.001
         }
 
         def Xform "CablePathCR" (
@@ -393,12 +611,15 @@ def Xform "World"
             custom double[] cablePath:stored = [0, 0, 1.0]
             custom double cablePath:totalLength = 2.98068042195
             custom double stiffness = 20000.0
+            custom double cablePath:halfWidth = 0.001
         }
 
-        def Sphere "Extruder" ()
+        def Xform "Extruder" ()
         {
             token[] ecs:tags = ["Extruder"]
-            double radius = 0.01
+            # Local extruder frame:
+            # - origin = average(machine:centerSources)
+            # - child xformOp:translate values are local offsets in that frame
             double3 xformOp:translate = (0.0, 0.0, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel machine:centerSources = [
@@ -406,7 +627,20 @@ def Xform "World"
                 </World/SlideprinterScene/SpoolB>,
                 </World/SlideprinterScene/SpoolC>
             ]
+            rel machine:rigidGroup = </World/SlideprinterScene/SpoolTriangle>
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
+
+            def Xform "Tip" ()
+            {
+                double3 xformOp:translate = (0.0, 0.0, 0.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Xform "ColdEnd" ()
+            {
+                double3 xformOp:translate = (0.0, 0.0, 0.1)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
         }
         custom color3f machine:tintColor = (0.29803922, 0.85098039, 0.39215686)
         custom color3f machine:extrusionColor = (0.29803922, 0.85098039, 0.39215686)
@@ -414,8 +648,8 @@ def Xform "World"
 
     def PhysicsScene "PhysicsScene"
     {
-        vector3f physics:gravityDirection = (0, 0, 0)
-        float physics:gravityMagnitude = 0.0
+        vector3f physics:gravityDirection = (0, 0, -1)
+        float physics:gravityMagnitude = 9.82
         def Material "SpoolMaterial" (
             prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
         )

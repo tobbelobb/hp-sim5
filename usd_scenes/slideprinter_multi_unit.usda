@@ -159,10 +159,12 @@ def Xform "World"
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
-        def Sphere "Extruder" ()
+        def Xform "Extruder" ()
         {
             token[] ecs:tags = ["Extruder"]
-            double radius = 0.01
+            # Local extruder frame:
+            # - origin = average(machine:centerSources)
+            # - child xformOp:translate values are local offsets in that frame
             double3 xformOp:translate = (0.0, 0.0, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel machine:centerSources = [
@@ -170,7 +172,20 @@ def Xform "World"
                 </World/SlideprinterScene/AttachAR>,
                 </World/SlideprinterScene/AttachBR>
             ]
+            rel machine:rigidGroup = </World/SlideprinterScene/SpoolTriangle>
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
+
+            def Xform "Tip" ()
+            {
+                double3 xformOp:translate = (0.0, 0.0, 0.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Xform "ColdEnd" ()
+            {
+                double3 xformOp:translate = (0.0, 0.0, 0.1)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
         }
 
         # Group the three attachment points into a rigid cluster for simulation
@@ -402,8 +417,8 @@ def Xform "World"
 
     def PhysicsScene "PhysicsScene"
     {
-        vector3f physics:gravityDirection = (0, 0, 0)
-        float physics:gravityMagnitude = 0.0
+        vector3f physics:gravityDirection = (0, 0, -1)
+        float physics:gravityMagnitude = 9.82
         def Material "SpoolMaterial" (
             prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
         )

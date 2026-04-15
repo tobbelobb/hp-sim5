@@ -210,10 +210,12 @@ def Xform "World"
         }
 
 
-        def Sphere "Extruder" ()
+        def Xform "Extruder" ()
         {
             token[] ecs:tags = ["Extruder"]
-            double radius = 0.01
+            # Local extruder frame:
+            # - origin = average(machine:centerSources)
+            # - child xformOp:translate values are local offsets in that frame
             double3 xformOp:translate = (0.0, 0.0, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel machine:centerSources = [
@@ -222,11 +224,24 @@ def Xform "World"
                 </World/HangprinterScene/AttachBR>,
                 </World/HangprinterScene/AttachCR>
             ]
+            rel machine:rigidGroup = </World/HangprinterScene/Effector>
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
+
+            def Xform "ColdEnd" ()
+            {
+                double3 xformOp:translate = (0.0, 0.0, 0.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Xform "Tip" ()
+            {
+                double3 xformOp:translate = (0.0, 0.0, -0.1)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
         }
 
-        # Group the three attachment points into a rigid cluster for simulation
-        def RigidGroup "SpoolTriangle"
+        # Group the attachment points into a rigid cluster for simulation
+        def RigidGroup "Effector"
         {
             rel rigidGroup:members = [
                 </World/HangprinterScene/AttachAL>,
