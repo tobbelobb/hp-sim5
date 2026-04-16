@@ -603,6 +603,7 @@ export function setupScene(world, stage, canvas, options = {}) {
                 .filter((offset) => offset instanceof Vector3);
         })();
         for (const prim of rigidGroupPrims) {
+            const stiffness = getAttribute(prim, "stiffness") ?? 1.0;
             const memberPaths = getRelationship(prim, 'rigidGroup:members');
             if (!memberPaths || memberPaths.length === 0) continue;
             const memberEntities = memberPaths
@@ -612,7 +613,7 @@ export function setupScene(world, stage, canvas, options = {}) {
                 const groupEnt = world.createEntity();
                 const renderIndicesAttr = getAttribute(prim, 'rigidGroup:renderIndices');
                 const renderSegments = parseRigidGroupRenderSegments(renderIndicesAttr);
-                const groupComponent = new RigidGroupComponent(memberEntities, 1.0, renderSegments);
+                const groupComponent = new RigidGroupComponent(memberEntities, stiffness, renderSegments);
                 world.addComponent(groupEnt, groupComponent);
                 world.addComponent(groupEnt, new MachineTagComponent(machineId));
                 world.addComponent(groupEnt, new RenderableComponent('line', palette?.rigidGroup ?? palette?.distanceConstraint ?? '#55ff88'));

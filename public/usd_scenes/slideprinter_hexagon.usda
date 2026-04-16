@@ -212,6 +212,9 @@ def Xform "World"
                 </World/SlideprinterScene/PinholeCR>
             ]
             custom string rigidGroup:renderIndices = "[3,4,5,6,7,8,3]"
+
+            # RigidGroups have stiffness between 0 and 1. Default: 1.0
+            custom double stiffness = 0.1
         }
 
         def DistancePhysicsJoint "DistanceJointAB"
