@@ -1,17 +1,17 @@
 # Implementation Plan
 
 ## Overview
-Convert rigid groups from a post-solve member overlay into authoritative compound rigid bodies with body-owned pose, velocity, mass, and full inertia, while keeping authored cable topology and the current USD loading path intact. The target runtime behavior is that grouped assemblies such as `slideprinter_hexagon` move as one rigid body under cable pull, with member poses derived from body state instead of repaired after the fact.
+Convert runtime `RigidGroup` handling from a member-repair overlay into an authoritative rigid-body path with body-owned pose, velocity, mass, and 3×3 inertia, while preserving the existing USD scene-loading path and authored cable topology. The target runtime behavior is that grouped assemblies such as `slideprinter_hexagon` move as one rigid body under cable pull, with cable compliance solved through XPBD lambda state on the body rather than by correcting member entities and repairing them afterward.
 
 ## Phase 1: Authoritative compound-body loading
 
 ### Changes
 
-#### 1. 3D ECS body/attachment primitives
+#### 1. 3D ECS rigid-body primitives and tensor math
 **File**: `src/js/cable_joints_3d/ecs.js`
 **Action**: modify
 
-Add the missing 3D rigid-body primitives directly in the 3D ECS module so later phases can import them without introducing a separate utility file.
+Add the rigid-body and tensor primitives needed by later phases directly in the 3D ECS module.
 
 ```js
 export class Matrix3 {
@@ -24,36 +24,77 @@ export class Matrix3 {
   }
 
   clone() { return new Matrix3(this.elements); }
-  setIdentity() { /* set diagonal = 1 */ return this; }
-  add(other) { /* elementwise */ return this; }
-  scale(s) { /* elementwise */ return this; }
-  multiplyVector(v) { /* row-major 3x3 * Vector3 */ }
-  transpose() { /* return new Matrix3 */ }
-  multiplyMatrix(other) { /* return new Matrix3 */ }
-  inverseSymmetricOrZero() { /* robust inverse for positive semidefinite body inertia */ }
+  set(other) { this.elements.splice(0, 9, ...other.elements); return this; }
+  add(other) { for (let i = 0; i < 9; i += 1) this.elements[i] += other.elements[i]; return this; }
+  scale(s) { for (let i = 0; i < 9; i += 1) this.elements[i] *= s; return this; }
+  transpose() {
+    const e = this.elements;
+    return new Matrix3([e[0], e[3], e[6], e[1], e[4], e[7], e[2], e[5], e[8]]);
+  }
+  multiplyMatrix(other) {
+    const a = this.elements;
+    const b = other.elements;
+    return new Matrix3([
+      a[0]*b[0] + a[1]*b[3] + a[2]*b[6], a[0]*b[1] + a[1]*b[4] + a[2]*b[7], a[0]*b[2] + a[1]*b[5] + a[2]*b[8],
+      a[3]*b[0] + a[4]*b[3] + a[5]*b[6], a[3]*b[1] + a[4]*b[4] + a[5]*b[7], a[3]*b[2] + a[4]*b[5] + a[5]*b[8],
+      a[6]*b[0] + a[7]*b[3] + a[8]*b[6], a[6]*b[1] + a[7]*b[4] + a[8]*b[7], a[6]*b[2] + a[7]*b[5] + a[8]*b[8],
+    ]);
+  }
+  multiplyVector(v) {
+    const e = this.elements;
+    return new Vector3(
+      e[0] * v.x + e[1] * v.y + e[2] * v.z,
+      e[3] * v.x + e[4] * v.y + e[5] * v.z,
+      e[6] * v.x + e[7] * v.y + e[8] * v.z,
+    );
+  }
+  inverseOrZero() {
+    const e = this.elements;
+    const c00 = e[4]*e[8] - e[5]*e[7];
+    const c01 = e[2]*e[7] - e[1]*e[8];
+    const c02 = e[1]*e[5] - e[2]*e[4];
+    const c10 = e[5]*e[6] - e[3]*e[8];
+    const c11 = e[0]*e[8] - e[2]*e[6];
+    const c12 = e[2]*e[3] - e[0]*e[5];
+    const c20 = e[3]*e[7] - e[4]*e[6];
+    const c21 = e[1]*e[6] - e[0]*e[7];
+    const c22 = e[0]*e[4] - e[1]*e[3];
+    const det = e[0]*c00 + e[1]*c10 + e[2]*c20;
+    if (!Number.isFinite(det) || Math.abs(det) < 1e-12) {
+      return Matrix3.zero();
+    }
+    const invDet = 1.0 / det;
+    return new Matrix3([
+      c00*invDet, c01*invDet, c02*invDet,
+      c10*invDet, c11*invDet, c12*invDet,
+      c20*invDet, c21*invDet, c22*invDet,
+    ]);
+  }
 
   static zero() { return new Matrix3([0,0,0, 0,0,0, 0,0,0]); }
   static identity() { return new Matrix3(); }
+  static diagonal(x, y, z) { return new Matrix3([x,0,0, 0,y,0, 0,0,z]); }
   static fromOuterProduct(v) {
     return new Matrix3([
-      v.x * v.x, v.x * v.y, v.x * v.z,
-      v.y * v.x, v.y * v.y, v.y * v.z,
-      v.z * v.x, v.z * v.y, v.z * v.z,
+      v.x*v.x, v.x*v.y, v.x*v.z,
+      v.y*v.x, v.y*v.y, v.y*v.z,
+      v.z*v.x, v.z*v.y, v.z*v.z,
     ]);
   }
 }
 
 export class RigidBodyComponent {
   constructor(memberEntities = [], localFrames = new Map()) {
-    this.memberEntities = memberEntities;
-    this.localFrames = localFrames; // Map<memberEntityId, LocalFrame>
+    this.memberEntities = [...memberEntities];
+    this.memberLookup = new Set(memberEntities);
+    this.localFrames = localFrames;
   }
 }
 
 export class InertiaTensorComponent {
   constructor(bodyInertia = Matrix3.identity()) {
     this.bodyInertia = bodyInertia.clone();
-    this.bodyInvInertia = bodyInertia.clone().inverseSymmetricOrZero();
+    this.bodyInvInertia = bodyInertia.clone().inverseOrZero();
     this.worldInvInertia = this.bodyInvInertia.clone();
   }
 }
@@ -65,18 +106,25 @@ export class RigidAttachmentComponent {
     this.localOrientation = localOrientation.clone().normalize();
   }
 }
+
+export class PrevFinalBodyPoseComponent {
+  constructor(pos = new Vector3(), orientation = new Quaternion()) {
+    this.pos = pos.clone();
+    this.orientation = orientation.clone().normalize();
+  }
+}
 ```
 
 Implementation notes:
-- Keep the existing re-exports from `src/js/cable_joints/ecs.js`; do **not** edit the 2D ECS file.
-- Keep `MomentOfInertiaComponent` for non-compound legacy entities; `InertiaTensorComponent` is additive, not a replacement in this phase.
-- Use a plain `{ localPos, localOrientation, preserveSpoolTwist }` value in `RigidBodyComponent.localFrames` so later phases can reconstruct member pose without re-reading USD data.
+- Keep `MomentOfInertiaComponent` for non-compound legacy entities.
+- `InertiaTensorComponent` is authoritative for rigid bodies created from `RigidGroup`.
+- Do not touch `src/js/cable_joints/ecs.js`.
 
-#### 2. Runtime rigid-body construction during scene load
+#### 2. Build a true body entity for each rigid group during scene load
 **File**: `hp-sim-3d/app/setupScene.js`
 **Action**: modify
 
-Upgrade the current rigid-group creation path so the group entity itself becomes the authoritative body entity instead of a metadata-only overlay. Keep the authored member entities for rendering, cable-path topology, spool state, and attachment handles.
+Introduce a true rigid-body build path for rigid groups. The body entity owns mass properties and pose. Member entities remain for rendering, authored topology, spool state, and attachment handles.
 
 Add imports:
 
@@ -103,11 +151,12 @@ import {
   RigidBodyComponent,
   InertiaTensorComponent,
   RigidAttachmentComponent,
+  PrevFinalBodyPoseComponent,
   Matrix3,
-} from "../../src/js/cable_joints_3d/ecs.js";
+} from '../../src/js/cable_joints_3d/ecs.js';
 ```
 
-Add helper functions near the existing USD attribute readers:
+Add helpers near the existing USD readers:
 
 ```js
 function matrixFromUsdInertiaTensor(rawTensor) {
@@ -121,13 +170,26 @@ function matrixFromUsdInertiaTensor(rawTensor) {
   ]);
 }
 
-function rotationMatrixFromQuaternion(quaternion) {
-  // Return Matrix3 R from unit quaternion.
+function rotationMatrixFromQuaternion(q) {
+  const xx = q.x * q.x;
+  const yy = q.y * q.y;
+  const zz = q.z * q.z;
+  const xy = q.x * q.y;
+  const xz = q.x * q.z;
+  const yz = q.y * q.z;
+  const wx = q.w * q.x;
+  const wy = q.w * q.y;
+  const wz = q.w * q.z;
+  return new Matrix3([
+    1 - 2 * (yy + zz), 2 * (xy - wz),     2 * (xz + wy),
+    2 * (xy + wz),     1 - 2 * (xx + zz), 2 * (yz - wx),
+    2 * (xz - wy),     2 * (yz + wx),     1 - 2 * (xx + yy),
+  ]);
 }
 
-function rotateBodyTensorToWorld(bodyTensor, orientation) {
+function rotateTensor(tensor, orientation) {
   const R = rotationMatrixFromQuaternion(orientation);
-  return R.multiplyMatrix(bodyTensor).multiplyMatrix(R.transpose());
+  return R.multiplyMatrix(tensor).multiplyMatrix(R.transpose());
 }
 
 function parallelAxisTerm(mass, offset) {
@@ -135,80 +197,112 @@ function parallelAxisTerm(mass, offset) {
   return Matrix3.identity().scale(mass * r2)
     .add(Matrix3.fromOuterProduct(offset).scale(-mass));
 }
-
-function buildRigidBodyFromGroup(world, groupPrim, memberEntities, machineId, palette) {
-  // 1. Compute COM from positive-mass members; fall back to average position if all masses are static/nonpositive.
-  // 2. Create/upgrade the group entity.
-  // 3. Seed body Position/Orientation/Velocity/AngularVelocity/Mass/InertiaTensor.
-  // 4. Add RigidAttachmentComponent to each member and store local frames on the body.
-  // 5. Keep RigidGroupComponent only for renderSegments + legacy metadata.
-  // 6. Return the group/body entity id.
-}
 ```
 
-Inside `buildRigidBodyFromGroup(...)`, use this mass-properties pattern:
+While creating member entities, collect authored rigid-body source data in a map keyed by entity id:
 
 ```js
-const bodyOrientation = new Quaternion(); // identity in Phase 1
-const bodyPosition = computedCom;
-const localFrames = new Map();
-let totalMass = 0.0;
-let bodyInertia = Matrix3.zero();
+const authoredBodyData = new Map();
 
-for (const memberEntity of memberEntities) {
-  const pos = world.getComponent(memberEntity, PositionComponent)?.pos?.clone();
-  const memberOrientation = world.getComponent(memberEntity, OrientationComponent)?.quaternion?.clone() || new Quaternion();
-  const memberMass = world.getComponent(memberEntity, MassComponent)?.mass ?? 0.0;
-  const localPos = pos.clone().subtract(bodyPosition);
-  const localOrientation = memberOrientation.clone();
+// For each spool or pinhole/attachment entity:
+authoredBodyData.set(ent, {
+  primPath: prim.path,
+  mass,
+  position: pos.clone(),
+  orientation: initialOrientation.clone(),
+  inertiaTensor: matrixFromUsdInertiaTensor(getAttribute(prim, 'physics:inertiaTensor')),
+});
+```
 
-  localFrames.set(memberEntity, {
-    localPos,
-    localOrientation,
-    preserveSpoolTwist: world.hasComponent(memberEntity, SpoolTagComponent),
-  });
-  world.addComponent(memberEntity, new RigidAttachmentComponent(groupEnt, localPos, localOrientation));
+Replace the rigid-group build block with a helper that creates authoritative body state:
 
-  if (memberMass > 0.0) {
-    totalMass += memberMass;
+```js
+function buildRigidBodyFromGroup(world, groupEnt, memberEntities, authoredBodyData) {
+  let totalMass = 0.0;
+  const com = new Vector3();
+  const avgVel = new Vector3();
+  let dynamicCount = 0;
 
-    const memberTensor = world.hasComponent(memberEntity, MomentOfInertiaComponent)
-      ? new Matrix3([
-          world.getComponent(memberEntity, MomentOfInertiaComponent).inertia, 0, 0,
-          0, world.getComponent(memberEntity, MomentOfInertiaComponent).inertia, 0,
-          0, 0, world.getComponent(memberEntity, MomentOfInertiaComponent).inertia,
-        ])
-      : Matrix3.zero();
-
-    const rotatedMemberTensor = rotateBodyTensorToWorld(memberTensor, localOrientation);
-    bodyInertia.add(rotatedMemberTensor).add(parallelAxisTerm(memberMass, localPos));
+  for (const memberEntity of memberEntities) {
+    const authored = authoredBodyData.get(memberEntity);
+    const mass = authored?.mass ?? 0.0;
+    if (!(mass > 0.0)) continue;
+    com.add(authored.position, mass);
+    totalMass += mass;
   }
+
+  if (totalMass > 0.0) {
+    com.scale(1.0 / totalMass);
+  } else {
+    for (const memberEntity of memberEntities) {
+      const pos = world.getComponent(memberEntity, PositionComponent)?.pos;
+      if (!pos) continue;
+      com.add(pos);
+      dynamicCount += 1;
+    }
+    if (dynamicCount > 0) {
+      com.scale(1.0 / dynamicCount);
+    }
+  }
+
+  const localFrames = new Map();
+  let bodyInertia = Matrix3.zero();
+
+  for (const memberEntity of memberEntities) {
+    const authored = authoredBodyData.get(memberEntity);
+    const pos = authored?.position?.clone() || world.getComponent(memberEntity, PositionComponent)?.pos?.clone();
+    const orientation = authored?.orientation?.clone() || world.getComponent(memberEntity, OrientationComponent)?.quaternion?.clone() || new Quaternion();
+    const mass = authored?.mass ?? 0.0;
+    const localPos = pos.clone().subtract(com);
+    const localOrientation = orientation.clone();
+
+    localFrames.set(memberEntity, { localPos, localOrientation });
+    world.addComponent(memberEntity, new RigidAttachmentComponent(groupEnt, localPos, localOrientation));
+
+    if (mass > 0.0) {
+      const memberTensorBody = authored?.inertiaTensor?.clone() || Matrix3.zero();
+      const memberTensorInGroupFrame = rotateTensor(memberTensorBody, localOrientation);
+      bodyInertia.add(memberTensorInGroupFrame).add(parallelAxisTerm(mass, localPos));
+    }
+  }
+
+  world.addComponent(groupEnt, new RigidBodyComponent(memberEntities, localFrames));
+  world.addComponent(groupEnt, new PositionComponent(com.x, com.y, com.z));
+  world.addComponent(groupEnt, new OrientationComponent(0, 0, 0, 1));
+  world.addComponent(groupEnt, new VelocityComponent(avgVel.x, avgVel.y, avgVel.z));
+  world.addComponent(groupEnt, new AngularVelocityComponent(0.0, 0.0, 0.0));
+  world.addComponent(groupEnt, new MassComponent(totalMass > 0.0 ? totalMass : -1.0));
+  world.addComponent(groupEnt, new InertiaTensorComponent(bodyInertia));
+  world.addComponent(groupEnt, new PrevFinalBodyPoseComponent(com, new Quaternion()));
 }
 ```
 
-Attach these authoritative components to the rigid-group entity:
+Replace the current rigid-group entity block with:
 
 ```js
-world.addComponent(groupEnt, new RigidBodyComponent(memberEntities, localFrames));
-world.addComponent(groupEnt, new PositionComponent(bodyPosition.x, bodyPosition.y, bodyPosition.z));
-world.addComponent(groupEnt, new OrientationComponent(0, 0, 0, 1));
-world.addComponent(groupEnt, new VelocityComponent(avgVel.x, avgVel.y, avgVel.z));
-world.addComponent(groupEnt, new AngularVelocityComponent(0, 0, 0));
-world.addComponent(groupEnt, new MassComponent(totalMass > 0.0 ? totalMass : -1.0));
-world.addComponent(groupEnt, new InertiaTensorComponent(bodyInertia));
+const groupEnt = world.createEntity();
+world.addComponent(groupEnt, new MachineTagComponent(machineId));
+world.addComponent(groupEnt, new RigidGroupComponent(memberEntities, stiffness, renderSegments));
+world.addComponent(groupEnt, new RenderableComponent('line', palette?.rigidGroup ?? palette?.distanceConstraint ?? '#55ff88'));
+buildRigidBodyFromGroup(world, groupEnt, memberEntities, authoredBodyData);
 ```
 
-Important constraints for this phase:
-- Do **not** remove the member entities.
-- Do **not** change cable-joint topology yet.
-- Do **not** remove the existing member components yet; later phases still consume them.
-- Do call `syncAttachedMembersFromBody(world)` once at the end of scene construction, immediately before the final `renderSystem.update(world, 0)` call.
+At the end of `setupScene()`, call member sync before the initial render:
 
-#### 3. Body-to-member maintenance pass
+```js
+syncAttachedMembersFromBody(world);
+```
+
+Constraints for this phase:
+- Do not remove member entities.
+- Do not reroute cable joints yet.
+- Do not remove member components yet.
+
+#### 3. Body-driven member sync seam
 **File**: `src/js/cable_joints_3d/commonSystems.js`
 **Action**: modify
 
-Add a body-driven pose derivation helper and an exported sync pass. This is the Phase 1 seam that later solver and velocity changes will consume.
+Add helpers to derive member pose from body pose and push body-owned transforms back to attached members.
 
 Add imports:
 
@@ -229,16 +323,8 @@ import {
   RigidBodyComponent,
   RigidAttachmentComponent,
   InertiaTensorComponent,
+  PrevFinalBodyPoseComponent,
 } from './ecs.js';
-
-import {
-  SpoolStateComponent,
-  rotateSpoolReferenceOrientation,
-  getSpoolRotationAngle,
-  getSpoolWorldAxis,
-  decomposeSpoolOrientation,
-  composeSpoolOrientation,
-} from '../../../hp-sim-3d/app/hangprinter_spools.js';
 ```
 
 Add helpers:
@@ -253,6 +339,16 @@ export function deriveMemberPose(bodyPose, attachment) {
   return { pos: worldPos, orientation: worldOrientation };
 }
 
+export function updateWorldInvInertia(world, bodyEntity) {
+  const tensor = world.getComponent(bodyEntity, InertiaTensorComponent);
+  const orientation = world.getComponent(bodyEntity, OrientationComponent)?.quaternion;
+  if (!tensor || !orientation) {
+    return;
+  }
+  const R = rotationMatrixFromQuaternion(orientation);
+  tensor.worldInvInertia = R.multiplyMatrix(tensor.bodyInvInertia).multiplyMatrix(R.transpose());
+}
+
 export function syncAttachedMembersFromBody(world) {
   const bodyEntities = world.query([RigidBodyComponent, PositionComponent, OrientationComponent]);
   for (const bodyEntity of bodyEntities) {
@@ -264,34 +360,18 @@ export function syncAttachedMembersFromBody(world) {
       const attachment = world.getComponent(memberEntity, RigidAttachmentComponent);
       if (!attachment || attachment.bodyEntity !== bodyEntity) continue;
 
-      const nextPose = deriveMemberPose(
-        { pos: bodyPos, orientation: bodyOrientation },
-        attachment,
-      );
-
+      const nextPose = deriveMemberPose({ pos: bodyPos, orientation: bodyOrientation }, attachment);
       const posComp = world.getComponent(memberEntity, PositionComponent);
       if (posComp) posComp.pos.set(nextPose.pos);
 
       const orientationComp = world.getComponent(memberEntity, OrientationComponent);
-      if (!orientationComp) continue;
-
-      const spoolState = world.getComponent(memberEntity, SpoolStateComponent);
-      if (!spoolState) {
+      if (orientationComp) {
         orientationComp.quaternion.set(nextPose.orientation);
-        continue;
       }
-
-      const { swing, angle } = decomposeSpoolOrientation(spoolState, orientationComp.quaternion);
-      spoolState.referenceOrientation.set(nextPose.orientation);
-      orientationComp.quaternion.set(composeSpoolOrientation(spoolState, swing, angle));
     }
   }
 }
-```
 
-Also add a tiny system wrapper so later phases can insert the sync pass in the frame order without duplicating logic:
-
-```js
 export class SyncAttachedMembersFromBodySystem {
   runInPause = false;
   update(world, _dt) {
@@ -300,13 +380,13 @@ export class SyncAttachedMembersFromBodySystem {
 }
 ```
 
-Do **not** change `RigidGroupSystem` behavior yet in Phase 1.
+Do not narrow `RigidGroupSystem` yet.
 
-#### 4. Scene setup test coverage for authoritative body creation
+#### 4. Scene-setup test coverage for authoritative body creation
 **File**: `tests/js/hp-sim-3d/setupScene3d.test.js`
 **Action**: modify
 
-Extend the current mocked USD stage so one test covers a real rigid-group import.
+Extend the USD stage mocks so one test loads a rigid group with at least one spool and one pinhole member, then verify authoritative body creation.
 
 Add mocked rigid-group data:
 
@@ -345,18 +425,16 @@ expect(body.memberEntities).toEqual(expect.arrayContaining([spoolEntity, pinhole
 
 const spoolAttachment = world.getComponent(spoolEntity, RigidAttachmentComponent);
 expect(spoolAttachment.bodyEntity).toBe(bodyEntity);
-expect(world.getComponent(bodyEntity, MassComponent).mass).toBeGreaterThan(0.0);
+
+const tensor = world.getComponent(bodyEntity, InertiaTensorComponent);
+expect(tensor.bodyInertia.elements.some((value) => Math.abs(value) > 0.0)).toBe(true);
 ```
 
-Keep the existing render-system assertions intact.
-
-#### 5. Body-setup regression test for member sync
+#### 5. Body-setup regression test for derived member pose
 **File**: `tests/js/cable_joints_3d/rigidGroupSystem.test.js`
 **Action**: modify
 
-Retain the file path, but repurpose its first test to cover the new body-setup seam instead of the old overlay-only assumption.
-
-Add a test like this:
+Repurpose the setup seam coverage so it verifies body-driven member derivation.
 
 ```js
 test('syncAttachedMembersFromBody derives member pose from the body pose', () => {
@@ -383,8 +461,6 @@ test('syncAttachedMembersFromBody derives member pose from the body pose', () =>
 });
 ```
 
-Keep the existing spool-orientation compatibility coverage, but make it run through `syncAttachedMembersFromBody(...)` instead of `RigidGroupSystem.update(...)`.
-
 ### Verification
 #### Automated
 - [ ] `npx jest tests/js/hp-sim-3d/setupScene3d.test.js`
@@ -393,7 +469,7 @@ Keep the existing spool-orientation compatibility coverage, but make it run thro
 #### Manual
 - [ ] `npx vite`
 - [ ] Open the 3D app, load `slideprinter_hexagon`, and confirm the scene still renders in the same rest pose.
-- [ ] Confirm the rigid-group line rendering still appears and member meshes do not visibly drift away from the hexagon at rest.
+- [ ] Confirm the rigid-group line rendering still appears and member meshes do not drift away from the hexagon at rest.
 
 ---
 
@@ -401,11 +477,39 @@ Keep the existing spool-orientation compatibility coverage, but make it run thro
 
 ### Changes
 
-#### 1. Body-reference ownership boundary in the cable solver
+#### 1. Normalize attachment ownership for body-based cable solving
+**File**: `src/js/cable_joints_3d/ecs.js`
+**Action**: modify
+
+Tighten `RigidBodyComponent` and `RigidAttachmentComponent` invariants used by the solver.
+
+```js
+export class RigidBodyComponent {
+  constructor(memberEntities = [], localFrames = new Map()) {
+    this.memberEntities = [...memberEntities];
+    this.memberLookup = new Set(memberEntities);
+    this.localFrames = localFrames;
+  }
+
+  hasMember(entityId) {
+    return this.memberLookup.has(entityId);
+  }
+}
+
+export class RigidAttachmentComponent {
+  constructor(bodyEntity, localPos, localOrientation = new Quaternion()) {
+    this.bodyEntity = bodyEntity;
+    this.localPos = localPos.clone();
+    this.localOrientation = localOrientation.clone().normalize();
+  }
+}
+```
+
+#### 2. XPBD cable ownership boundary and body corrections
 **File**: `src/js/cable_joints_3d/cable_joints_core.js`
 **Action**: modify
 
-Keep authored cable topology member-centric, but make the solver resolve each endpoint to its owning body before computing mass/inertia and applying corrections.
+Keep authored cable topology member-centric, but resolve each endpoint to its owning body before mass/inertia lookup and correction application. Also convert compliant cable solves to explicit XPBD lambda state.
 
 Add a documented body-ref shape near the top of the file:
 
@@ -418,7 +522,28 @@ Add a documented body-ref shape near the top of the file:
  */
 ```
 
-Replace `_computeWorldAttachment(...)` with a body-ref version and add a resolver:
+Extend `CableJointComponent` with persistent XPBD state:
+
+```js
+export class CableJointComponent {
+  constructor(entityA, entityB, restLength, attachmentPointA_world, attachmentPointB_world) {
+    this.entityA = entityA;
+    this.entityB = entityB;
+    this.restLength = restLength;
+    this.attachmentPointA_world = attachmentPointA_world.clone();
+    this.attachmentPointB_world = attachmentPointB_world.clone();
+    this.lambda = 0.0;
+  }
+}
+```
+
+Reset joint lambdas when authored rest geometry is rebuilt:
+
+```js
+joint.lambda = 0.0;
+```
+
+Add rigid-body helpers:
 
 ```js
 export function resolveBodyRef(world, entityId, localPoint = new Vector3(0, 0, 0)) {
@@ -431,75 +556,51 @@ export function resolveBodyRef(world, entityId, localPoint = new Vector3(0, 0, 0
     };
   }
 
-  const rotatedLocal = attachment.localOrientation.transformVector(localPoint);
+  const rotatedLocalPoint = attachment.localOrientation.transformVector(localPoint);
   return {
     bodyEntity: attachment.bodyEntity,
-    localPoint: attachment.localPos.clone().add(rotatedLocal),
+    localPoint: attachment.localPos.clone().add(rotatedLocalPoint),
     localOrientation: attachment.localOrientation.clone(),
   };
 }
 
 export function computeWorldAttachment(world, bodyRef) {
-  const posComp = world.getComponent(bodyRef.bodyEntity, PositionComponent);
-  const orientComp = world.getComponent(bodyRef.bodyEntity, OrientationComponent);
-  if (!posComp) return bodyRef.localPoint.clone();
-  if (!orientComp) return posComp.pos.clone().add(bodyRef.localPoint);
-  return posComp.pos.clone().add(
-    orientComp.quaternion.transformVector(bodyRef.localPoint),
-  );
+  const bodyPos = world.getComponent(bodyRef.bodyEntity, PositionComponent)?.pos;
+  const bodyOrientation = world.getComponent(bodyRef.bodyEntity, OrientationComponent)?.quaternion;
+  if (!bodyPos) return bodyRef.localPoint.clone();
+  if (!bodyOrientation) return bodyPos.clone().add(bodyRef.localPoint);
+  return bodyPos.clone().add(bodyOrientation.transformVector(bodyRef.localPoint));
 }
-```
 
-Add rigid-body correction application:
+function linearizedDeltaQuaternion(rotationVector, orientation) {
+  const omegaQuat = new Quaternion(rotationVector.x, rotationVector.y, rotationVector.z, 0.0);
+  const delta = new Quaternion().multiplyQuaternions(omegaQuat, orientation).scale(0.5);
+  return new Quaternion(
+    orientation.x + delta.x,
+    orientation.y + delta.y,
+    orientation.z + delta.z,
+    orientation.w + delta.w,
+  ).normalize();
+}
 
-```js
-export function applyBodyCorrection(world, bodyEntity, deltaPos, deltaQuat) {
+export function applyBodyCorrection(world, bodyEntity, deltaPos, deltaRotationVector) {
   const posComp = world.getComponent(bodyEntity, PositionComponent);
   if (posComp && deltaPos) {
     posComp.pos.add(deltaPos);
   }
 
-  const orientComp = world.getComponent(bodyEntity, OrientationComponent);
-  if (orientComp && deltaQuat) {
-    orientComp.quaternion.multiplyQuaternions(deltaQuat, orientComp.quaternion).normalize();
-  }
-
-  const inertia = world.getComponent(bodyEntity, InertiaTensorComponent);
-  if (inertia && orientComp) {
-    inertia.worldInvInertia = rotateBodyTensorToWorld(
-      inertia.bodyInvInertia,
-      orientComp.quaternion,
+  const orientationComp = world.getComponent(bodyEntity, OrientationComponent);
+  if (orientationComp && deltaRotationVector) {
+    orientationComp.quaternion.set(
+      linearizedDeltaQuaternion(deltaRotationVector, orientationComp.quaternion),
     );
   }
+
+  updateWorldInvInertia(world, bodyEntity);
 }
 ```
 
-Update the solver snapshot and solve path:
-
-```js
-const jointRefs = new Map();
-for (const jointId of path.jointEntities) {
-  const joint = world.getComponent(jointId, CableJointComponent);
-  jointRefs.set(jointId, {
-    refA: resolveBodyRef(world, joint.entityA, computeLocal(joint.entityA, joint.attachmentPointA_world)),
-    refB: resolveBodyRef(world, joint.entityB, computeLocal(joint.entityB, joint.attachmentPointB_world)),
-  });
-}
-```
-
-In the inner solver loop:
-
-```js
-const { refA, refB } = jointRefs.get(jointId);
-if (refA.bodyEntity === refB.bodyEntity) {
-  continue; // Internal same-body cable span should not self-correct the body.
-}
-
-const pA = computeWorldAttachment(world, refA);
-const pB = computeWorldAttachment(world, refB);
-```
-
-Replace the scalar angular denominator with a tensor-aware one for rigid bodies, while preserving the old scalar path for standalone entities:
+Use tensor-aware generalized inverse mass:
 
 ```js
 function inverseMass(world, entityId) {
@@ -508,151 +609,149 @@ function inverseMass(world, entityId) {
 }
 
 function inverseAngularMetric(world, entityId, gradAng) {
-  const bodyTensor = world.getComponent(entityId, InertiaTensorComponent);
-  if (bodyTensor) {
-    const worldInv = bodyTensor.worldInvInertia ?? bodyTensor.bodyInvInertia;
-    const rotatedGrad = worldInv.multiplyVector(gradAng);
-    return {
-      metric: gradAng.dot(rotatedGrad),
-      rotationStep: rotatedGrad,
-    };
+  const tensor = world.getComponent(entityId, InertiaTensorComponent);
+  if (tensor) {
+    const rotated = tensor.worldInvInertia.multiplyVector(gradAng);
+    return { metric: gradAng.dot(rotated), rotatedGrad: rotated };
   }
 
-  const scalarMoi = world.getComponent(entityId, MomentOfInertiaComponent)?.invInertia ?? 0.0;
-  return {
-    metric: scalarMoi * gradAng.lengthSq(),
-    rotationStep: gradAng.clone().scale(scalarMoi),
-  };
+  const scalar = world.getComponent(entityId, MomentOfInertiaComponent)?.invInertia ?? 0.0;
+  return { metric: scalar * gradAng.lengthSq(), rotatedGrad: gradAng.clone().scale(scalar) };
 }
 ```
 
-Then apply the body correction with rotation-vector-to-quaternion conversion:
+Replace the core solve rule with XPBD lambda accumulation:
 
 ```js
-const angA = inverseAngularMetric(world, refA.bodyEntity, gradAngA);
-const angB = inverseAngularMetric(world, refB.bodyEntity, gradAngB);
-const denom = invMassA + angA.metric + invMassB + angB.metric + ((compliance ?? 0.0) / (dt * dt));
-const lambda = -constraintError / denom;
+function solveCableConstraint(world, joint, path, refA, refB) {
+  const pA = computeWorldAttachment(world, refA);
+  const pB = computeWorldAttachment(world, refB);
+  const diff = pB.clone().subtract(pA);
+  const length = diff.length();
+  if (length <= EPSILON) return;
 
-applyBodyCorrection(
-  world,
-  refA.bodyEntity,
-  gradPosA.clone().scale(-invMassA * lambda),
-  deltaQuatFromRotationVector(angA.rotationStep.clone().scale(-lambda)),
-);
-applyBodyCorrection(
-  world,
-  refB.bodyEntity,
-  gradPosB.clone().scale(-invMassB * lambda),
-  deltaQuatFromRotationVector(angB.rotationStep.clone().scale(-lambda)),
-);
+  const C = length - joint.restLength;
+  if (C <= EPSILON) return;
+
+  const n = diff.clone().scale(1.0 / length);
+  const bodyPosA = world.getComponent(refA.bodyEntity, PositionComponent)?.pos;
+  const bodyPosB = world.getComponent(refB.bodyEntity, PositionComponent)?.pos;
+  const rA = pA.clone().subtract(bodyPosA);
+  const rB = pB.clone().subtract(bodyPosB);
+  const gradAngA = rA.clone().cross(n);
+  const gradAngB = rB.clone().cross(n.clone().scale(-1.0));
+
+  const wA = inverseMass(world, refA.bodyEntity);
+  const wB = inverseMass(world, refB.bodyEntity);
+  const angA = inverseAngularMetric(world, refA.bodyEntity, gradAngA);
+  const angB = inverseAngularMetric(world, refB.bodyEntity, gradAngB);
+  const alphaTilde = path.compliance / (world.getResource('dt') * world.getResource('dt'));
+  const denom = wA + wB + angA.metric + angB.metric + alphaTilde;
+  if (denom <= EPSILON) return;
+
+  const deltaLambda = (-C - alphaTilde * joint.lambda) / denom;
+  joint.lambda += deltaLambda;
+  const impulse = n.clone().scale(deltaLambda);
+
+  if (wA > 0.0 || angA.metric > 0.0) {
+    applyBodyCorrection(
+      world,
+      refA.bodyEntity,
+      impulse.clone().scale(wA),
+      angA.rotatedGrad.clone().scale(deltaLambda),
+    );
+  }
+  if (wB > 0.0 || angB.metric > 0.0) {
+    applyBodyCorrection(
+      world,
+      refB.bodyEntity,
+      impulse.clone().scale(-wB),
+      angB.rotatedGrad.clone().scale(-deltaLambda),
+    );
+  }
+}
 ```
 
-Do **not** rewrite `CableAttachmentUpdateSystem`; it should keep tracing authored member entities.
+Update `PBDCableConstraintSolver.update(...)` so the solver snapshots member-local attachment points once, resolves them to body refs, skips same-body endpoint pairs, and calls `solveCableConstraint(...)`.
 
-#### 2. Scene system order for body-driven endpoint motion
+#### 3. Keep setupScene cable loading unchanged except for compatibility hooks
 **File**: `hp-sim-3d/app/setupScene.js`
 **Action**: modify
 
-Insert the new sync pass so member entities reflect body pose both before cable geometry updates and after body corrections.
+Do not change authored cable topology in setup. Only add the imports needed for the body sync path and make sure the post-solve sync system is registered after cable solving and before render-visible state consumers.
 
-In the local-simulation registration block, import and register the system wrapper:
-
-```js
-import {
-  PrevFinalPosSystem,
-  PrevFinalOrientationSystem,
-  EncoderUpdateSystem,
-  GravitySystem,
-  MovementSystem,
-  AngularMovementSystem,
-  PBDVelocityUpdateSystem,
-  PBDAngularVelocityUpdateSystem,
-  XPBDDistanceConstraintSystem,
-  RigidGroupSystem,
-  SyncAttachedMembersFromBodySystem,
-} from '../../src/js/cable_joints_3d/commonSystems.js';
-```
-
-Insert it in two places:
+Replace the current rigid-group sync point in system registration with:
 
 ```js
-world.registerSystem(new GravitySystem());
-world.registerSystem(new MovementSystem());
-world.registerSystem(new AngularMovementSystem());
-world.registerSystem(new SyncAttachedMembersFromBodySystem());
-
-world.registerSystem(new CableAttachmentUpdateSystem());
-world.registerSystem(new CableAttachmentCacheSystem());
-world.registerSystem(new CableSlackSystem());
-
 world.registerSystem(new PBDCableConstraintSolver());
 world.registerSystem(new PBDResolveCableOverCorrections());
 world.registerSystem(new SyncAttachedMembersFromBodySystem());
+world.registerSystem(new RigidGroupSystem());
+world.registerSystem(new SpoolAxisConstraintSystem());
 ```
 
-Leave `RigidGroupSystem` in place for now; Phase 4 removes the old double-correction path.
+`RigidGroupSystem` still remains in place in this phase, but member visuals must now be refreshed from body state before later systems consume member transforms.
 
-#### 3. Shared 3D ECS typings used by the solver
-**File**: `src/js/cable_joints_3d/ecs.js`
-**Action**: modify
-
-Add any small exports needed by the solver without adding a new file, for example:
-
-```js
-export function isAttachedToRigidBody(world, entityId) {
-  return world.hasComponent(entityId, RigidAttachmentComponent);
-}
-```
-
-This is optional glue only; keep the main ownership logic in `cable_joints_core.js`.
-
-#### 4. Direct solver regression test for rigid-body cable pull
+#### 4. Cable-rigid-body solver coverage
 **File**: `tests/js/cable_joints_3d/cableRigidBodySolver.test.js`
 **Action**: create
 
-Create a focused rigid-body cable test with no USD loader involved.
-
-Test fixture outline:
+Add a new unit test that checks cable correction on a body rather than on a member entity.
 
 ```js
-const world = new World();
-const body = makeRigidBody(world, {
-  pos: new Vector3(0, 0, 0),
-  mass: 2.0,
-  inertia: diagonalTensor(0.25, 0.25, 0.5),
+test('cable correction updates the owning rigid body and accumulates lambda', () => {
+  const world = new World();
+  world.setResource('dt', 1 / 120);
+
+  const body = world.createEntity();
+  const anchor = world.createEntity();
+  const member = world.createEntity();
+  const jointEntity = world.createEntity();
+  const pathEntity = world.createEntity();
+
+  world.addComponent(body, new PositionComponent(0, 0, 0));
+  world.addComponent(body, new OrientationComponent(0, 0, 0, 1));
+  world.addComponent(body, new VelocityComponent(0, 0, 0));
+  world.addComponent(body, new AngularVelocityComponent(0, 0, 0));
+  world.addComponent(body, new MassComponent(2.0));
+  world.addComponent(body, new InertiaTensorComponent(Matrix3.diagonal(1.0, 1.0, 1.0)));
+  world.addComponent(body, new RigidBodyComponent([member], new Map()));
+
+  world.addComponent(member, new PositionComponent(0, 0, 0));
+  world.addComponent(member, new OrientationComponent(0, 0, 0, 1));
+  world.addComponent(member, new RigidAttachmentComponent(body, new Vector3(0.5, 0, 0), new Quaternion()));
+
+  world.addComponent(anchor, new PositionComponent(2.0, 0, 0));
+  world.addComponent(anchor, new MassComponent(-1.0));
+
+  world.addComponent(jointEntity, new CableJointComponent(
+    member,
+    anchor,
+    1.0,
+    new Vector3(0.5, 0, 0),
+    new Vector3(2.0, 0, 0),
+  ));
+  world.addComponent(pathEntity, new CablePathComponent(world, [jointEntity], ['attachment', 'attachment'], [false, false], 1000.0));
+
+  new PBDCableConstraintSolver().update(world, world.getResource('dt'));
+
+  const joint = world.getComponent(jointEntity, CableJointComponent);
+  expect(joint.lambda).not.toBe(0.0);
+  expect(world.getComponent(body, PositionComponent).pos.x).toBeGreaterThan(0.0);
 });
-const memberLeft = attachMember(world, body, new Vector3(-0.5, 0, 0));
-const memberRight = attachMember(world, body, new Vector3(0.5, 0, 0));
-const anchor = makeStaticPoint(world, new Vector3(0, 1.0, 0));
-
-const joint = makeCableJoint(world, anchor, memberRight, restLengthShorterThanCurrentSpan);
-const path = makeCablePath(world, [joint]);
-
-new PBDCableConstraintSolver().update(world, 1 / 120);
-syncAttachedMembersFromBody(world);
-
-expect(world.getComponent(body, PositionComponent).pos.y).toBeGreaterThan(0.0);
-expect(memberSeparationStillRigid(world, memberLeft, memberRight)).toBe(true);
 ```
 
-Assertions to include:
-- body position changed,
-- body orientation changed when the cable line of action is off-center,
-- member world distance still equals the attachment rest distance after syncing,
-- attached member entities themselves were **not** the mass/inertia owners used by the solver.
-
-#### 5. Loader regression for body-owned endpoints
+#### 5. setupScene regression for body-owned endpoints
 **File**: `tests/js/hp-sim-3d/setupScene3d.test.js`
 **Action**: modify
 
-Add one assertion block that proves a cable-joint endpoint on a rigid-group member resolves to a body-owned endpoint during solve.
+Add a regression that verifies cable joints authored on rigid-group members still load, and that members have `RigidAttachmentComponent` linking them to the group body.
 
-Simplest path:
-- mock a rigid body member plus one cable joint on that member,
-- call `setupScene(...)`,
-- run one `PBDCableConstraintSolver().update(world, dt)` step,
-- assert the rigid body entity moved while the member motion still matches body-derived pose after sync.
+```js
+expect(world.getComponent(spoolEntity, RigidAttachmentComponent)?.bodyEntity).toBe(bodyEntity);
+expect(world.query([CablePathComponent]).length).toBeGreaterThan(0);
+expect(world.query([CableJointComponent]).length).toBeGreaterThan(0);
+```
 
 ### Verification
 #### Automated
@@ -660,9 +759,9 @@ Simplest path:
 
 #### Manual
 - [ ] `npx vite`
-- [ ] Load `slideprinter_hexagon` and drive one spool/axis enough to tension a cable.
-- [ ] Confirm the hexagon translates and rotates as one coherent rigid object.
-- [ ] Confirm there is no visible sponge-like internal deformation between spools and pinholes.
+- [ ] Load `slideprinter_hexagon` in the 3D app.
+- [ ] Drive the hexagon and confirm that cable pull causes coherent whole-body translation and rotation.
+- [ ] Confirm there is no visible sponge-like motion between rigid-group members while the body is under pull.
 
 ---
 
@@ -670,173 +769,124 @@ Simplest path:
 
 ### Changes
 
-#### 1. Body-level previous/final cache component
+#### 1. Body pose caches and tensor-aware body motion helpers
 **File**: `src/js/cable_joints_3d/ecs.js`
 **Action**: modify
 
-Add the body-pose cache component used for whole-body velocity reconstruction.
+`PrevFinalBodyPoseComponent` was added in Phase 1. In this phase it becomes authoritative for body-level cache and reconstruction.
 
-```js
-export class PrevFinalBodyPoseComponent {
-  constructor(pos = new Vector3(), orientation = new Quaternion()) {
-    this.pos = pos.clone();
-    this.orientation = orientation.clone().normalize();
-  }
-}
-```
+No new schema beyond Phase 1 is needed here; only ensure all rigid-body queries use `PrevFinalBodyPoseComponent` rather than member caches.
 
-Keep the existing `PrevFinalPosComponent` and `PrevFinalOrientationComponent` for standalone, non-attached entities.
-
-#### 2. Body prediction, derived member pose, and body velocity reconstruction
+#### 2. Predict and reconstruct on body state, with linearized quaternion updates
 **File**: `src/js/cable_joints_3d/commonSystems.js`
 **Action**: modify
 
-Add body-level cache/prediction/reconstruction helpers and make the existing member-level systems skip attached members.
-
-Add helpers:
+Add body-level cache, motion, and reconstruction helpers matching the PBDBodies rigid-body state layout.
 
 ```js
-function isAttachedMember(world, entityId) {
-  return world.hasComponent(entityId, RigidAttachmentComponent);
+export function cacheRigidBodyPose(world) {
+  const bodies = world.query([RigidBodyComponent, PositionComponent, OrientationComponent, PrevFinalBodyPoseComponent]);
+  for (const bodyEntity of bodies) {
+    const pos = world.getComponent(bodyEntity, PositionComponent).pos;
+    const orientation = world.getComponent(bodyEntity, OrientationComponent).quaternion;
+    const prev = world.getComponent(bodyEntity, PrevFinalBodyPoseComponent);
+    prev.pos.set(pos);
+    prev.orientation.set(orientation);
+  }
 }
 
-function isAuthoritativeBody(world, entityId) {
-  return world.hasComponent(entityId, RigidBodyComponent);
+function integrateOrientationLinearized(quaternion, omega, dt) {
+  const omegaQuat = new Quaternion(omega.x, omega.y, omega.z, 0.0);
+  const delta = new Quaternion().multiplyQuaternions(omegaQuat, quaternion).scale(0.5 * dt);
+  return new Quaternion(
+    quaternion.x + delta.x,
+    quaternion.y + delta.y,
+    quaternion.z + delta.z,
+    quaternion.w + delta.w,
+  ).normalize();
 }
 
 export function predictRigidBodyMotion(world, dt) {
-  const bodies = world.query([RigidBodyComponent, PositionComponent, VelocityComponent]);
-  for (const bodyId of bodies) {
-    const pos = world.getComponent(bodyId, PositionComponent).pos;
-    const vel = world.getComponent(bodyId, VelocityComponent).vel;
+  const gravity = world.getResource('gravity');
+  const grabbed = world.getResource('grabbedBall');
+  const bodies = world.query([RigidBodyComponent, PositionComponent, OrientationComponent, VelocityComponent, AngularVelocityComponent, MassComponent]);
+
+  for (const bodyEntity of bodies) {
+    if (bodyEntity === grabbed) continue;
+    const mass = world.getComponent(bodyEntity, MassComponent).mass;
+    if (!(mass > 0.0)) continue;
+
+    const pos = world.getComponent(bodyEntity, PositionComponent).pos;
+    const orientation = world.getComponent(bodyEntity, OrientationComponent).quaternion;
+    const vel = world.getComponent(bodyEntity, VelocityComponent).vel;
+    const omega = world.getComponent(bodyEntity, AngularVelocityComponent).omega;
+
+    if (gravity) {
+      vel.add(gravity, dt);
+    }
     pos.add(vel, dt);
-
-    const orientation = world.getComponent(bodyId, OrientationComponent)?.quaternion;
-    const omega = world.getComponent(bodyId, AngularVelocityComponent)?.omega;
-    if (orientation && omega && omega.lengthSq() > 1e-12) {
-      const angle = omega.length() * dt;
-      const axis = omega.clone().normalize();
-      const dq = new Quaternion().setFromAxisAngle(axis, angle);
-      orientation.multiplyQuaternions(dq, orientation).normalize();
-    }
-
-    const inertia = world.getComponent(bodyId, InertiaTensorComponent);
-    if (inertia && orientation) {
-      inertia.worldInvInertia = rotateBodyTensorToWorld(inertia.bodyInvInertia, orientation);
-    }
+    orientation.set(integrateOrientationLinearized(orientation, omega, dt));
+    updateWorldInvInertia(world, bodyEntity);
   }
 }
 
 export function reconstructRigidBodyVelocity(world, dt) {
-  const bodies = world.query([RigidBodyComponent, PositionComponent, VelocityComponent, PrevFinalBodyPoseComponent]);
-  for (const bodyId of bodies) {
-    const pos = world.getComponent(bodyId, PositionComponent).pos;
-    const prev = world.getComponent(bodyId, PrevFinalBodyPoseComponent).pos;
-    world.getComponent(bodyId, VelocityComponent).vel
-      .subtractVectors(pos, prev)
-      .scale(1.0 / dt);
+  if (!(dt > 0.0)) return;
+  const bodies = world.query([RigidBodyComponent, PositionComponent, VelocityComponent, PrevFinalBodyPoseComponent, MassComponent]);
+  for (const bodyEntity of bodies) {
+    const mass = world.getComponent(bodyEntity, MassComponent).mass;
+    if (!(mass > 0.0)) continue;
+    const pos = world.getComponent(bodyEntity, PositionComponent).pos;
+    const vel = world.getComponent(bodyEntity, VelocityComponent).vel;
+    const prev = world.getComponent(bodyEntity, PrevFinalBodyPoseComponent);
+    vel.subtractVectors(pos, prev.pos).scale(1.0 / dt);
   }
 }
 
 export function reconstructRigidBodyAngularVelocity(world, dt) {
-  const bodies = world.query([RigidBodyComponent, OrientationComponent, AngularVelocityComponent, PrevFinalBodyPoseComponent]);
-  for (const bodyId of bodies) {
-    const qCurr = world.getComponent(bodyId, OrientationComponent).quaternion;
-    const qPrev = world.getComponent(bodyId, PrevFinalBodyPoseComponent).orientation;
-    const qDelta = qCurr.clone().multiplyQuaternions(qCurr, qPrev.clone().conjugate().normalize()).normalize();
-    // Same quaternion-delta-to-omega math as the existing PBDAngularVelocityUpdateSystem.
-  }
-}
-```
+  if (!(dt > 0.0)) return;
+  const bodies = world.query([RigidBodyComponent, OrientationComponent, AngularVelocityComponent, PrevFinalBodyPoseComponent, InertiaTensorComponent]);
+  for (const bodyEntity of bodies) {
+    const orientation = world.getComponent(bodyEntity, OrientationComponent).quaternion;
+    const prev = world.getComponent(bodyEntity, PrevFinalBodyPoseComponent);
+    const omega = world.getComponent(bodyEntity, AngularVelocityComponent).omega;
+    const qDelta = orientation.clone().multiplyQuaternions(
+      orientation,
+      prev.orientation.clone().conjugate().normalize(),
+    ).normalize();
 
-Add system wrappers:
-
-```js
-export class PrevFinalBodyPoseSystem {
-  runInPause = false;
-  update(world, _dt) {
-    const bodies = world.query([RigidBodyComponent, PositionComponent, OrientationComponent, PrevFinalBodyPoseComponent]);
-    for (const bodyId of bodies) {
-      const cache = world.getComponent(bodyId, PrevFinalBodyPoseComponent);
-      cache.pos.set(world.getComponent(bodyId, PositionComponent).pos);
-      cache.orientation.set(world.getComponent(bodyId, OrientationComponent).quaternion);
+    if (qDelta.w < 0.0) {
+      qDelta.x *= -1.0;
+      qDelta.y *= -1.0;
+      qDelta.z *= -1.0;
+      qDelta.w *= -1.0;
     }
+
+    omega.x = (2.0 / dt) * qDelta.x;
+    omega.y = (2.0 / dt) * qDelta.y;
+    omega.z = (2.0 / dt) * qDelta.z;
   }
 }
-
-export class RigidBodyPredictionSystem {
-  runInPause = false;
-  update(world, dt) { predictRigidBodyMotion(world, dt); }
-}
-
-export class RigidBodyVelocityUpdateSystem {
-  runInPause = false;
-  update(world, dt) { reconstructRigidBodyVelocity(world, dt); }
-}
-
-export class RigidBodyAngularVelocityUpdateSystem {
-  runInPause = false;
-  update(world, dt) { reconstructRigidBodyAngularVelocity(world, dt); }
-}
 ```
 
-Modify the existing systems as follows:
-- `MovementSystem`: skip entities that have `RigidAttachmentComponent`; keep handling standalone entities only.
-- `AngularMovementSystem`: same skip rule.
-- `PrevFinalPosSystem` / `PrevFinalOrientationSystem`: skip attached members and rigid bodies that now have `PrevFinalBodyPoseComponent`.
-- `PBDVelocityUpdateSystem` / `PBDAngularVelocityUpdateSystem`: skip attached members and rigid bodies; they remain the standalone-body fallback path.
-
-Extend `syncAttachedMembersFromBody(world)` so it also derives member velocity and angular velocity after body reconstruction:
+Add small wrapper systems that call these helpers:
 
 ```js
-const bodyVel = world.getComponent(bodyEntity, VelocityComponent)?.vel || new Vector3();
-const bodyOmega = world.getComponent(bodyEntity, AngularVelocityComponent)?.omega || new Vector3();
-const rWorld = nextPose.pos.clone().subtract(bodyPos);
-
-const memberVel = bodyVel.clone().add(bodyOmega.clone().cross(rWorld));
-world.getComponent(memberEntity, VelocityComponent)?.vel?.set(memberVel);
-
-const memberOmega = bodyOmega.clone();
-// For spools, add the preserved twist-rate around the current spool world axis if one is present.
-world.getComponent(memberEntity, AngularVelocityComponent)?.omega?.set(memberOmega);
+export class PrevFinalBodyPoseSystem { runInPause = false; update(world, _dt) { cacheRigidBodyPose(world); } }
+export class PredictRigidBodyMotionSystem { runInPause = false; update(world, dt) { predictRigidBodyMotion(world, dt); } }
+export class RigidBodyVelocityUpdateSystem { runInPause = false; update(world, dt) { reconstructRigidBodyVelocity(world, dt); } }
+export class RigidBodyAngularVelocityUpdateSystem { runInPause = false; update(world, dt) { reconstructRigidBodyAngularVelocity(world, dt); } }
 ```
 
-#### 3. Seed body pose caches during scene load and switch stepping order to body authority
+Keep `deriveMemberPose(...)` and `syncAttachedMembersFromBody(...)` as the only path that updates member transforms after body solve.
+
+#### 3. Switch setupScene system registration to body-owned motion
 **File**: `hp-sim-3d/app/setupScene.js`
 **Action**: modify
 
-When creating a rigid body in `buildRigidBodyFromGroup(...)`, add the new cache component:
+Register body-level cache and motion systems for body-owned rigid groups. Leave legacy systems in place for non-rigid-group standalone entities.
 
-```js
-world.addComponent(
-  groupEnt,
-  new PrevFinalBodyPoseComponent(bodyPosition.clone(), new Quaternion()),
-);
-```
-
-Update imports and local simulation registration order:
-
-```js
-import {
-  PrevFinalPosSystem,
-  PrevFinalOrientationSystem,
-  PrevFinalBodyPoseSystem,
-  EncoderUpdateSystem,
-  GravitySystem,
-  MovementSystem,
-  AngularMovementSystem,
-  RigidBodyPredictionSystem,
-  PBDVelocityUpdateSystem,
-  PBDAngularVelocityUpdateSystem,
-  RigidBodyVelocityUpdateSystem,
-  RigidBodyAngularVelocityUpdateSystem,
-  XPBDDistanceConstraintSystem,
-  RigidGroupSystem,
-  SyncAttachedMembersFromBodySystem,
-} from '../../src/js/cable_joints_3d/commonSystems.js';
-```
-
-Replace the middle of the system order with this sequence:
+Replace the body-relevant registration block with:
 
 ```js
 world.registerSystem(new PrevFinalPosSystem());
@@ -849,8 +899,7 @@ world.registerSystem(new StepperMotorSystem());
 world.registerSystem(new GravitySystem());
 world.registerSystem(new MovementSystem());
 world.registerSystem(new AngularMovementSystem());
-world.registerSystem(new RigidBodyPredictionSystem());
-world.registerSystem(new SyncAttachedMembersFromBodySystem());
+world.registerSystem(new PredictRigidBodyMotionSystem());
 
 world.registerSystem(new CableAttachmentUpdateSystem());
 world.registerSystem(new CableAttachmentCacheSystem());
@@ -858,66 +907,69 @@ world.registerSystem(new CableSlackSystem());
 world.registerSystem(new PBDCableConstraintSolver());
 world.registerSystem(new PBDResolveCableOverCorrections());
 world.registerSystem(new SyncAttachedMembersFromBodySystem());
-
-world.registerSystem(new RigidGroupSystem()); // legacy-only by Phase 4
+world.registerSystem(new RigidGroupSystem());
 world.registerSystem(new SpoolAxisConstraintSystem());
 world.registerSystem(new CableFrictionSystem());
-
 world.registerSystem(new PBDVelocityUpdateSystem());
 world.registerSystem(new PBDAngularVelocityUpdateSystem());
 world.registerSystem(new RigidBodyVelocityUpdateSystem());
 world.registerSystem(new RigidBodyAngularVelocityUpdateSystem());
-world.registerSystem(new SyncAttachedMembersFromBodySystem());
+world.registerSystem(new ExtruderSystem());
+world.registerSystem(new EncoderUpdateSystem());
 ```
 
-#### 4. Spool helpers for body-derived reference orientation
-**File**: `hp-sim-3d/app/hangprinter_spools.js`
-**Action**: modify
+Body-owned rigid groups must now derive their visible member pose from the body before `ExtruderSystem` and `EncoderUpdateSystem` consume those transforms.
 
-Add a small helper used by `syncAttachedMembersFromBody(...)` so body motion preserves spool twist cleanly instead of reimplementing that composition logic inline.
+#### 4. Spool orientation readers consume body-derived member pose only
+**File**: `hp-sim-3d/app/hangprinter_spools.js`
+**Action**: modify if needed
+
+Only change this file if a reader assumes member orientation is directly simulated rather than derived. The desired end state is that spool utilities continue to operate on member orientation, but that orientation is now body-derived.
+
+If a safeguard is needed, add a no-op compatibility helper:
 
 ```js
-export function composeAttachedSpoolOrientation(baseReferenceOrientation, spoolState, currentOrientation) {
-  const { swing, angle } = decomposeSpoolOrientation(spoolState, currentOrientation);
-  spoolState.referenceOrientation.set(baseReferenceOrientation);
-  return composeSpoolOrientation(spoolState, swing, angle);
+export function getResolvedSpoolOrientation(world, entityId) {
+  return world.getComponent(entityId, OrientationComponent)?.quaternion ?? new Quaternion();
 }
 ```
 
-Then `syncAttachedMembersFromBody(...)` should call that helper for attached spool members instead of mutating the reference orientation and recomposing manually.
+Do not change spool math unless a direct-state assumption breaks tests.
 
-#### 5. Body-level velocity regression test
+#### 5. Body-velocity regression coverage
 **File**: `tests/js/cable_joints_3d/bodyVelocityUpdate.test.js`
 **Action**: create
 
-Create a direct regression for whole-body caches and reconstructed velocities.
-
-Test outline:
+Add a focused regression test for body-level cache and reconstruction.
 
 ```js
-test('reconstructs rigid-body linear and angular velocity from body pose delta', () => {
+test('reconstructs rigid body linear and angular velocity from body pose delta', () => {
   const world = new World();
-  const body = makeRigidBodyWithCache(world, {
-    pos: new Vector3(0, 0, 0),
-    orientation: new Quaternion(),
-  });
+  const body = world.createEntity();
+  const dt = 1 / 120;
 
-  world.getComponent(body, PrevFinalBodyPoseComponent).pos.set(new Vector3(0, 0, 0));
-  world.getComponent(body, PrevFinalBodyPoseComponent).orientation.set(new Quaternion());
-  world.getComponent(body, PositionComponent).pos.set(new Vector3(0.1, -0.2, 0.0));
-  world.getComponent(body, OrientationComponent).quaternion
-    .set(new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), Math.PI / 6));
+  world.addComponent(body, new RigidBodyComponent([], new Map()));
+  world.addComponent(body, new PositionComponent(0, 0, 0));
+  world.addComponent(body, new OrientationComponent(0, 0, 0, 1));
+  world.addComponent(body, new VelocityComponent(0, 0, 0));
+  world.addComponent(body, new AngularVelocityComponent(0, 0, 0));
+  world.addComponent(body, new MassComponent(1.0));
+  world.addComponent(body, new InertiaTensorComponent(Matrix3.diagonal(1, 1, 1)));
+  world.addComponent(body, new PrevFinalBodyPoseComponent(new Vector3(0, 0, 0), new Quaternion()));
 
-  reconstructRigidBodyVelocity(world, 0.5);
-  reconstructRigidBodyAngularVelocity(world, 0.5);
+  cacheRigidBodyPose(world);
+  world.getComponent(body, PositionComponent).pos.set(new Vector3(0.12, 0.0, 0.0));
+  world.getComponent(body, OrientationComponent).quaternion.set(
+    new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), 0.1),
+  );
 
-  expect(world.getComponent(body, VelocityComponent).vel.x).toBeCloseTo(0.2, 8);
-  expect(world.getComponent(body, VelocityComponent).vel.y).toBeCloseTo(-0.4, 8);
-  expect(world.getComponent(body, AngularVelocityComponent).omega.z).toBeCloseTo((Math.PI / 6) / 0.5, 8);
+  reconstructRigidBodyVelocity(world, dt);
+  reconstructRigidBodyAngularVelocity(world, dt);
+
+  expect(world.getComponent(body, VelocityComponent).vel.x).toBeCloseTo(0.12 / dt, 6);
+  expect(world.getComponent(body, AngularVelocityComponent).omega.z).toBeGreaterThan(0.0);
 });
 ```
-
-Add one attached-member assertion proving that after `syncAttachedMembersFromBody(world)`, the member pose is derived from the body pose and not from any independent member cache.
 
 ### Verification
 #### Automated
@@ -925,9 +977,8 @@ Add one attached-member assertion proving that after `syncAttachedMembersFromBod
 
 #### Manual
 - [ ] `npx vite`
-- [ ] Load the 3D app and move the hexagon under cable pull.
-- [ ] Confirm observed motion is whole-body translation/rotation, not fake per-member internal motion.
-- [ ] Confirm spool orientation still follows body tilt while preserving visible spool spin around its own axis.
+- [ ] In the 3D app, move the hexagon and confirm reported/visible motion follows whole-body translation and rotation.
+- [ ] Confirm member pose remains coherent after motion and cable correction.
 
 ---
 
@@ -935,77 +986,65 @@ Add one attached-member assertion proving that after `syncAttachedMembersFromBod
 
 ### Changes
 
-#### 1. Final scene registration/order cleanup and same-body constraint skipping
+#### 1. Skip same-body internal distance constraints at setup
 **File**: `hp-sim-3d/app/setupScene.js`
 **Action**: modify
 
-Extract the system-registration block into a helper so the final ordering is explicit and testable.
+Keep the setup-time skip for authored fixed-length constraints that connect two members of the same authoritative rigid body.
+
+Replace the inline skip with a named helper:
 
 ```js
-function registerSimulationSystems(world, { canvas, pauseBtn, isRemote }) {
-  // contains the final system order for local mode
-}
-```
-
-Use it in place of the inline `if (world.systems.length === 0) { ... }` block.
-
-Add helper logic near distance-joint creation:
-
-```js
-function isAuthoritativeRigidBody(world, entityId) {
-  return world.hasComponent(entityId, RigidBodyComponent);
-}
-
-function bodyOwnerForConstraint(world, entityId) {
-  return world.getComponent(entityId, RigidAttachmentComponent)?.bodyEntity ?? entityId;
-}
-
 function shouldCreateDistanceConstraint(world, entityA, entityB) {
-  return bodyOwnerForConstraint(world, entityA) !== bodyOwnerForConstraint(world, entityB);
+  const attachmentA = world.getComponent(entityA, RigidAttachmentComponent);
+  const attachmentB = world.getComponent(entityB, RigidAttachmentComponent);
+  if (attachmentA && attachmentB && attachmentA.bodyEntity === attachmentB.bodyEntity) {
+    return false;
+  }
+  return true;
 }
 ```
 
-Use it in the `DistancePhysicsJoint` loader path:
+Use it in the `DistancePhysicsJoint` import path:
 
 ```js
-if (Math.abs(minDistance - maxDistance) < 1e-6) {
-  if (shouldCreateDistanceConstraint(world, entityA, entityB)) {
-    // create constraint entity
-  }
+if (shouldCreateDistanceConstraint(world, entityA, entityB)) {
+  const constraintEntity = world.createEntity();
+  world.addComponent(constraintEntity, new MachineTagComponent(machineId));
+  world.addComponent(constraintEntity, new DistanceConstraintComponent(entityA, entityB, restLength, 0.0));
+  world.addComponent(constraintEntity, new RenderableComponent('line', distanceColor));
 }
 ```
 
-Final local system order should no longer rely on `RigidGroupSystem` to repair migrated bodies after cable solve.
-
-#### 2. Disable legacy rigid-group repair for authoritative groups
+#### 2. Narrow RigidGroupSystem to non-authoritative legacy groups only
 **File**: `src/js/cable_joints_3d/commonSystems.js`
 **Action**: modify
 
-Narrow `RigidGroupSystem` to legacy non-migrated groups only.
-
-At the top of `RigidGroupSystem.update(...)`, skip any group entity that already owns a rigid body:
+Add a helper:
 
 ```js
-for (const groupId of groupEntities) {
-  if (world.hasComponent(groupId, RigidBodyComponent)) {
-    continue;
-  }
-  const group = world.getComponent(groupId, RigidGroupComponent);
-  // existing legacy path remains unchanged below
+export function isAuthoritativeRigidBody(world, entityId) {
+  return world.hasComponent(entityId, RigidBodyComponent)
+    && world.hasComponent(entityId, InertiaTensorComponent)
+    && world.hasComponent(entityId, PrevFinalBodyPoseComponent);
 }
 ```
 
-Leave the class in place so older scenes that still only use `RigidGroupComponent` keep working.
+Guard `RigidGroupSystem.update(...)` so authoritative bodies are skipped:
 
-Also remove any remaining assumptions in helper functions that every rigid group is member-authoritative.
+```js
+if (isAuthoritativeRigidBody(world, groupId)) {
+  continue;
+}
+```
 
-#### 3. Solver-side same-body protection and final ownership cleanup
+After this phase, `RigidGroupSystem` remains only as a fallback path for scenes not yet migrated to the body-owned model.
+
+#### 3. Skip same-body cable self-correction and finalize body-owned solve order
 **File**: `src/js/cable_joints_3d/cable_joints_core.js`
 **Action**: modify
 
-Keep the Phase 2 body-ref path, but make the skip of internal same-body corrections explicit and permanent.
-
-Add a fast guard in the inner loop before denominator assembly:
+Keep the body-ref same-body skip from Phase 2 and make it explicit in the final implementation.
 
 ```js
 if (refA.bodyEntity === refB.bodyEntity) {
@@ -1013,46 +1052,37 @@ if (refA.bodyEntity === refB.bodyEntity) {
 }
 ```
 
-And keep `CableJointComponent` authored-entity semantics unchanged so path tracing still operates on members.
+Do not apply any cable correction directly to member `PositionComponent` or `OrientationComponent` when an endpoint resolves to a rigid body.
 
-Do **not** add any new post-solve member repair in this phase.
-
-#### 4. Legacy-system regression coverage and migrated-scene stability coverage
+#### 4. Regression coverage for the migrated path
 **File**: `tests/js/cable_joints_3d/rigidGroupSystem.test.js`
 **Action**: modify
 
-Split the file into two expectations:
-- legacy `RigidGroupComponent` without `RigidBodyComponent` still gets repaired,
-- authoritative rigid bodies are skipped by `RigidGroupSystem`.
-
-Example authoritative-body skip test:
+Replace overlay-specific expectations with migrated-path expectations.
 
 ```js
-test('RigidGroupSystem ignores authoritative rigid bodies', () => {
+test('authoritative rigid-body groups are ignored by RigidGroupSystem', () => {
   const world = new World();
-  const groupId = makeAuthoritativeRigidGroup(world);
-  const before = snapshotMemberPositions(world, groupId);
+  const body = world.createEntity();
+  world.addComponent(body, new RigidGroupComponent([], 1.0));
+  world.addComponent(body, new RigidBodyComponent([], new Map()));
+  world.addComponent(body, new InertiaTensorComponent(Matrix3.diagonal(1, 1, 1)));
+  world.addComponent(body, new PrevFinalBodyPoseComponent(new Vector3(), new Quaternion()));
 
-  new RigidGroupSystem().update(world, 1 / 120);
-
-  expect(snapshotMemberPositions(world, groupId)).toEqual(before);
+  expect(() => new RigidGroupSystem().update(world, 1 / 120)).not.toThrow();
 });
 ```
 
+#### 5. End-to-end setupScene stability coverage
 **File**: `tests/js/hp-sim-3d/setupScene3d.test.js`
 **Action**: modify
 
-Add final loader/system-order assertions:
+Add a final regression that verifies a rigid-group member pair no longer creates a same-body `DistanceConstraintComponent`.
 
 ```js
-const systemNames = world.systems.map((system) => system.constructor.name);
-expect(systemNames).toContain('SyncAttachedMembersFromBodySystem');
-expect(systemNames).toContain('RigidBodyPredictionSystem');
-expect(systemNames).toContain('RigidBodyVelocityUpdateSystem');
-expect(systemNames).toContain('RigidBodyAngularVelocityUpdateSystem');
+const constraints = world.query([DistanceConstraintComponent]);
+expect(constraints).toHaveLength(0);
 ```
-
-Also assert that no fixed-length `DistanceConstraintComponent` is created for two members owned by the same authoritative body.
 
 ### Verification
 #### Automated
@@ -1060,16 +1090,6 @@ Also assert that no fixed-length `DistanceConstraintComponent` is created for tw
 
 #### Manual
 - [ ] `npx vite`
-- [ ] Load `slideprinter_hexagon` and apply sustained cable pulls / repeated drive inputs.
-- [ ] Confirm there is no visible double-stiffening, internal jitter, or correction explosion.
-- [ ] Confirm the hexagon stays rigid without any post-solve member patch-up.
-
----
-
-## Notes for the implementing agent
-
-- Treat `CableJointComponent.entityA/entityB` as the authored geometry endpoints throughout all four phases. The solver ownership boundary changes, not the authored path topology.
-- The rigid-group entity should become the authoritative body entity. Do **not** create a second parallel “body object” beside the rigid-group entity unless a test proves the shared-entity approach is impossible.
-- Preserve spool twist when syncing body pose to spool members. That is the one place where a member keeps a local rotational DOF even after the body becomes authoritative.
-- Keep `MomentOfInertiaComponent` in place for standalone entities and legacy paths. Only body-owned rigid groups should use `InertiaTensorComponent`.
-- When updating tests, prefer direct component assertions over brittle entity-id assumptions.
+- [ ] Load `slideprinter_hexagon` and stress it with sustained cable pull.
+- [ ] Confirm motion remains stable with no visible internal jitter, no double-stiffening, and no repair-style snapping between members.
+- [ ] Confirm cable pull still produces coherent body translation and rotation after the legacy same-body correction paths are removed from the migrated scene.
