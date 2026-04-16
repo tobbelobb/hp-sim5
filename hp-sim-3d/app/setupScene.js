@@ -648,14 +648,14 @@ export function setupScene(world, stage, canvas, options = {}) {
             if (minDistance !== null && maxDistance !== null) {
                 if (Math.abs(minDistance - maxDistance) < 1e-6) {
                     // Skip if both bodies belong to the same rigid group
-                    //if (!entityToRigidGroup[entityA] || entityToRigidGroup[entityA] !== entityToRigidGroup[entityB]) {
+                    if (!entityToRigidGroup[entityA] || entityToRigidGroup[entityA] !== entityToRigidGroup[entityB]) {
                         const restLength = (minDistance + maxDistance) / 2.0;
                         const constraintEntity = world.createEntity();
                         world.addComponent(constraintEntity, new MachineTagComponent(machineId));
                         world.addComponent(constraintEntity, new DistanceConstraintComponent(entityA, entityB, restLength, 0.0));
                         const distanceColor = palette?.distanceConstraint ?? 'green';
                         world.addComponent(constraintEntity, new RenderableComponent('line', distanceColor));
-                    //}
+                    }
                 }
             }
         }
@@ -825,7 +825,7 @@ export function setupScene(world, stage, canvas, options = {}) {
 
           // Enforce rigid motion for grouped spools (if any)
           world.registerSystem(new RigidGroupSystem());
-          world.registerSystem(new XPBDDistanceConstraintSystem());
+          // world.registerSystem(new XPBDDistanceConstraintSystem());
           world.registerSystem(new SpoolAxisConstraintSystem());
 
           // 6. POST-SOLVE CABLE DYNAMICS: Handle friction-based slip using accurate tension
