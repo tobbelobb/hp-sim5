@@ -2,7 +2,7 @@
 
 ## Current State
 
-The 3D runtime is entity-centric today. Scene loading turns authored spool, pinhole, cable-joint, cable-path, distance-joint, and rigid-group prims into separate ECS entities or metadata over separate ECS entities, not a single compound body object. `hp-sim-3d/app/setupScene.js:332-739`
+The 3D runtime is entity-centric today. Scene loading turns authored spool, pinhole, cable-joint, cable-path, and rigid-group prims into separate ECS entities or metadata over separate ECS entities, not a single compound body object. `hp-sim-3d/app/setupScene.js:332-739`
 
 For `slideprinter_hexagon.usda`, the effector is authored as three spool prims and six pinhole prims, plus one `RigidGroup`, and six cable paths built from twelve cable joints. `public/usd_scenes/slideprinter_hexagon.usda:13-405`
 
@@ -72,13 +72,12 @@ Do **not** preserve the scalar-only inertia abstraction for rigid groups. The 3D
 
 1. **Rigid body authority**: Introduce a true compound rigid body for each runtime rigid group. The body entity owns pose, velocities, mass, and inertia; members become attached geometry/attachment handles.
 2. **Cable ownership**: Resolve cable endpoints to the owning rigid body when an endpoint lies on a rigid-group member. Constraint gradients still use the endpoint’s local offset, but corrections apply to body translation and rotation.
-3. **Internal rigidity**: Remove internal `DistancePhysicsJoint`s from `slideprinter_hexagon.usda`, and treat same-body distance constraints as out of scope for runtime solving.
-4. **Inertia model**: Introduce full tensor inertia now. Store body-space inertia and derive world-space inverse inertia per step/substep.
-5. **Velocity reconstruction**: Reconstruct linear and angular velocity at the rigid-body level from body previous/final pose, then derive member transforms from the solved body pose.
-6. **System order**: Replace the current “cable solve on members, then rigid-group patch-up” pattern with direct solving on rigid bodies. `RigidGroupSystem` should stop being a positional repair pass for fully rigid groups and instead become setup/maintenance logic or disappear for those groups.
-7. **Genericity**: Build generic compound-body groundwork now, even though the hexagon is the phase-1 proving case.
-8. **Simplicity over compatibility**: Prefer simpler code and clearer ownership boundaries over backward compatibility with member-centric behavior.
-9. **XPBD stepping**: Keep XPBD compliance and favor small-step solving rather than large-step multi-iteration compensation.
+3. **Inertia model**: Introduce full tensor inertia now. Store body-space inertia and derive world-space inverse inertia per step/substep.
+4. **Velocity reconstruction**: Reconstruct linear and angular velocity at the rigid-body level from body previous/final pose, then derive member transforms from the solved body pose.
+5. **System order**: Replace the current “cable solve on members, then rigid-group patch-up” pattern with direct solving on rigid bodies. `RigidGroupSystem` should stop being a positional repair pass for fully rigid groups and instead become setup/maintenance logic or disappear for those groups.
+6. **Genericity**: Build generic compound-body groundwork now, even though the hexagon is the phase-1 proving case.
+7. **Simplicity over compatibility**: Prefer simpler code and clearer ownership boundaries over backward compatibility with member-centric behavior.
+8. **XPBD stepping**: Keep XPBD compliance and favor small-step solving rather than large-step multi-iteration compensation.
 
 ## What We're NOT Doing
 
