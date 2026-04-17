@@ -940,6 +940,7 @@ export function setupScene(world, stage, canvas, options = {}) {
           world.registerSystem(new GravitySystem());
           world.registerSystem(new MovementSystem());
           world.registerSystem(new AngularMovementSystem());
+          world.registerSystem(new SpoolAxisConstraintSystem());
           world.registerSystem(new RigidBodySyncSystem());
 
           // 4. Update derived geometry and cable state
@@ -949,12 +950,7 @@ export function setupScene(world, stage, canvas, options = {}) {
 
           // 5. POSITIONAL SOLVERS: Correct predicted positions to satisfy constraints.
           world.registerSystem(new PBDCableConstraintSolver());
-          world.registerSystem(new RigidBodySyncSystem());
           world.registerSystem(new PBDResolveCableOverCorrections());
-          world.registerSystem(new RigidBodySyncSystem());
-
-          // world.registerSystem(new XPBDDistanceConstraintSystem());
-          world.registerSystem(new SpoolAxisConstraintSystem());
 
           // 6. POST-SOLVE CABLE DYNAMICS: Handle friction-based slip using accurate tension
           world.registerSystem(new CableFrictionSystem());

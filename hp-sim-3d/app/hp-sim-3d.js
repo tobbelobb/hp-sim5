@@ -353,7 +353,7 @@ function initHpSim() {
       },
     ])
   );
-  const defaultUsdaKey = HP3_USDA_KEY;
+  const defaultUsdaKey = 'slideprinter_single_pinholes_rigid_body.usda';
   const presetOptionInputs = new Map();
   const presetOptionLabels = new Map();
   const presetOptionColorChips = new Map();
