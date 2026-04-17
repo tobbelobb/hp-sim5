@@ -4,22 +4,28 @@ import {
   RigidBodyMemberComponent,
 } from './ecs.js';
 import { CableLinkComponent } from './cable_joints_core.js';
+import {
+  getEntityWorldOrientation,
+  getEntityWorldPosition,
+} from './rigid_bodies.js';
 
 function _storeCableLinkPoses(world) {
   const linkEntities = world.query([CableLinkComponent, PositionComponent]);
   for (const linkId of linkEntities) {
-    const posComp = world.getComponent(linkId, PositionComponent);
-    const orientationComp = world.getComponent(linkId, OrientationComponent);
+    const worldPos = getEntityWorldPosition(world, linkId);
+    const worldOrientation = getEntityWorldOrientation(world, linkId);
     const rigidBodyMemberComp = world.getComponent(linkId, RigidBodyMemberComponent);
     const linkComp = world.getComponent(linkId, CableLinkComponent);
-    linkComp.prevCableAttachmentTimePos.set(posComp.pos);
-    if (orientationComp) {
-      linkComp.prevCableAttachmentTimeOrientation.set(orientationComp.quaternion);
+    if (worldPos) {
+      linkComp.prevCableAttachmentTimePos.set(worldPos);
+    }
+    if (worldOrientation) {
+      linkComp.prevCableAttachmentTimeOrientation.set(worldOrientation);
     }
     if (rigidBodyMemberComp?.localOrientation) {
       linkComp.prevCableAttachmentTimeLocalOrientation.set(rigidBodyMemberComp.localOrientation);
-    } else if (orientationComp) {
-      linkComp.prevCableAttachmentTimeLocalOrientation.set(orientationComp.quaternion);
+    } else if (worldOrientation) {
+      linkComp.prevCableAttachmentTimeLocalOrientation.set(worldOrientation);
     }
   }
 }

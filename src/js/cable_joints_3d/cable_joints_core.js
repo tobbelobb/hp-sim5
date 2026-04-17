@@ -116,7 +116,7 @@ export class CablePathComponent {
       }
       const isRolling = linkTypes[i + 1] === 'rolling';
       if (isRolling) {
-        const center = world.getComponent(linkId, PositionComponent).pos;
+        const center = getEntityWorldPosition(world, linkId);
         const baseRadius = world.getComponent(linkId, RadiusComponent).radius;
         const radius = baseRadius + (layeringEnabled(world) ? this.cableHalfWidth : 0.0);
         const isCw = cw[i + 1];
@@ -949,7 +949,7 @@ function _ensureHybridKnotAngleComponentForEndpoint(world, path, endpointIndex, 
     return;
   }
 
-  const center = options?.center ?? world.getComponent(entityId, PositionComponent)?.pos;
+  const center = options?.center ?? getEntityWorldPosition(world, entityId);
   if (!center) {
     return;
   }
@@ -968,7 +968,7 @@ function _ensureHybridKnotAngleComponentForEndpoint(world, path, endpointIndex, 
   const thetaSignedAtState = thetaSignAtState * thetaAtState;
   const orientation = Number.isFinite(options?.orientation)
     ? options.orientation
-    : _orientationAngleForEntity(world, entityId, world.getComponent(entityId, OrientationComponent)?.quaternion);
+    : _orientationAngleForEntity(world, entityId, getEntityWorldOrientation(world, entityId));
   const basis = _planeBasisForAxis(axis);
   const rel = resolvedAttachmentPoint.clone().subtract(center);
   const relAttachmentAngle = Math.atan2(rel.dot(basis.v), rel.dot(basis.u)) - orientation;
@@ -1115,15 +1115,13 @@ export function _updateAttachmentPoints(world) {
       const entityA = joint.entityA;
       const entityB = joint.entityB;
 
-      const posAComp = world.getComponent(entityA, PositionComponent);
       const linkAComp = world.getComponent(entityA, CableLinkComponent);
-      const orientationAComp = world.getComponent(entityA, OrientationComponent);
-      const posA = posAComp?.pos;
+      const posA = getEntityWorldPosition(world, entityA);
       const prevPosA = linkAComp?.prevCableAttachmentTimePos;
       const baseRadiusA = world.getComponent(entityA, RadiusComponent)?.radius;
       const { radius: radiusA, theta: thetaA } = _effectiveRollingRadius(world, path, A, baseRadiusA);
       const planeNormalA = _getPlaneNormal(world, entityA);
-      const currentQuatA = orientationAComp?.quaternion;
+      const currentQuatA = getEntityWorldOrientation(world, entityA);
       const prevQuatA = linkAComp?.prevCableAttachmentTimeOrientation;
       const angleA = _orientationAngleForEntity(world, entityA, currentQuatA);
       const prevAngleA = _orientationAngleForEntity(world, entityA, prevQuatA);
@@ -1133,15 +1131,13 @@ export function _updateAttachmentPoints(world) {
       const isHybridA = _isHybrid(path.linkTypes[A]);
       const hasFrictionA = world.getComponent(entityA, CoefficientOfFrictionComponent);
 
-      const posBComp = world.getComponent(entityB, PositionComponent);
       const linkBComp = world.getComponent(entityB, CableLinkComponent);
-      const orientationBComp = world.getComponent(entityB, OrientationComponent);
-      const posB = posBComp?.pos;
+      const posB = getEntityWorldPosition(world, entityB);
       const prevPosB = linkBComp?.prevCableAttachmentTimePos;
       const baseRadiusB = world.getComponent(entityB, RadiusComponent)?.radius;
       const { radius: radiusB, theta: thetaB } = _effectiveRollingRadius(world, path, B, baseRadiusB);
       const planeNormalB = _getPlaneNormal(world, entityB);
-      const currentQuatB = orientationBComp?.quaternion;
+      const currentQuatB = getEntityWorldOrientation(world, entityB);
       const prevQuatB = linkBComp?.prevCableAttachmentTimeOrientation;
       const angleB = _orientationAngleForEntity(world, entityB, currentQuatB);
       const prevAngleB = _orientationAngleForEntity(world, entityB, prevQuatB);
@@ -1537,11 +1533,11 @@ export function _mergeJoints(world) {
           const pathJointCountBefore = path.jointEntities.length;
           const pA1 = joint_i.attachmentPointA_world;
           const pB2 = joint_i_plus_1.attachmentPointB_world;
-          const posA = world.getComponent(joint_i.entityA, PositionComponent).pos;
+          const posA = getEntityWorldPosition(world, joint_i.entityA);
           const radiusA = _effectivePathRadiusForEntity(world, path, joint_i.entityA, i);
           const planeNormalA = _getPlaneNormal(world, joint_i.entityA);
           const cwA = _effectiveCW(path, i, true);
-          const posB = world.getComponent(joint_i_plus_1.entityB, PositionComponent).pos;
+          const posB = getEntityWorldPosition(world, joint_i_plus_1.entityB);
           const radiusB = _effectivePathRadiusForEntity(world, path, joint_i_plus_1.entityB, i + 2);
           const planeNormalB = _getPlaneNormal(world, joint_i_plus_1.entityB);
           const cwB = path.cw[i + 2];
@@ -1641,7 +1637,7 @@ export function _splitJoints(world) {
         if (getMachineId(world, splitterId) !== pathMachine) {
           continue;
         }
-        const posSplitter = world.getComponent(splitterId, PositionComponent).pos;
+        const posSplitter = getEntityWorldPosition(world, splitterId);
         const radiusSplitter = _effectivePathRadiusForEntity(world, path, splitterId, null);
         if (lineSegmentSphereIntersection(pA, pB, posSplitter, radiusSplitter)) {
           const entityA = joint.entityA;
@@ -1649,7 +1645,7 @@ export function _splitJoints(world) {
           const newJointId = world.createEntity();
           ensureMachineTag(world, newJointId, pathMachine);
 
-          const posA = world.getComponent(entityA, PositionComponent).pos;
+          const posA = getEntityWorldPosition(world, entityA);
           const linkTypeA = path.linkTypes[i];
           const isAttachmentA = _isAttachment(linkTypeA);
           const isRollingA = _isRolling(linkTypeA);
@@ -1657,7 +1653,7 @@ export function _splitJoints(world) {
           const planeNormalA = _getPlaneNormal(world, entityA);
           const cwA = _effectiveCW(path, i, true);
 
-          const posB = world.getComponent(entityB, PositionComponent).pos;
+          const posB = getEntityWorldPosition(world, entityB);
           const linkTypeB = path.linkTypes[i + 1];
           const isAttachmentB = _isAttachment(linkTypeB);
           const isRollingB = _isRolling(linkTypeB);
@@ -1868,7 +1864,7 @@ export function _updateHybridLinkStates(world, traceStep = null) {
               : world.getComponent(path.jointEntities[i - 1], CableJointComponent)
           );
           const linkEntity = (i === 0 ? joint.entityA : joint.entityB);
-          const pos = world.getComponent(linkEntity, PositionComponent)?.pos;
+          const pos = getEntityWorldPosition(world, linkEntity);
           const radius = _effectiveRollingRadius(
             world,
             path,
@@ -1974,7 +1970,7 @@ export function _updateHybridLinkStates(world, traceStep = null) {
           neighborAttachmentPoint = joint.attachmentPointA_world;
         }
 
-        const C = world.getComponent(entityId, PositionComponent).pos;
+        const C = getEntityWorldPosition(world, entityId);
         const R = _effectiveRollingRadius(
           world,
           path,
@@ -1983,7 +1979,7 @@ export function _updateHybridLinkStates(world, traceStep = null) {
         ).radius;
         const lastEndpointIndex = path.linkTypes.length - 1;
         const neighborLinkIndex = i === 0 ? 1 : Math.max(0, lastEndpointIndex - 1);
-        const neighborPos = world.getComponent(neighborId, PositionComponent)?.pos;
+        const neighborPos = getEntityWorldPosition(world, neighborId);
         const neighborRadius = _effectiveRollingRadius(
           world,
           path,
@@ -2219,7 +2215,7 @@ export function _updateHybridLinkStates(world, traceStep = null) {
         continue;
       }
       const bodyId = leftJoint.entityB;
-      const center = world.getComponent(bodyId, PositionComponent)?.pos;
+      const center = getEntityWorldPosition(world, bodyId);
       const radius = _effectiveRollingRadius(
         world,
         path,
