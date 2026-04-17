@@ -197,10 +197,10 @@ def Xform "World"
             rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
-        # Group the three spools into a rigid cluster for simulation
-        def RigidGroup "SpoolTriangle"
+        # Group the three spools into a rigid body for simulation
+        def RigidBody "Effector"
         {
-            rel rigidGroup:members = [
+            rel rigidBody:members = [
                 </World/SlideprinterScene/SpoolA>,
                 </World/SlideprinterScene/SpoolB>,
                 </World/SlideprinterScene/SpoolC>,
@@ -211,10 +211,7 @@ def Xform "World"
                 </World/SlideprinterScene/PinholeCL>,
                 </World/SlideprinterScene/PinholeCR>
             ]
-            custom string rigidGroup:renderIndices = "[3,4,5,6,7,8,3]"
-
-            # RigidGroups have stiffness between 0 and 1. Default: 1.0
-            custom double stiffness = 0.1
+            custom string rigidBody:renderIndices = "[3,4,5,6,7,8,3]"
         }
 
         def CableJoint "JointAL_0"
@@ -417,7 +414,7 @@ def Xform "World"
                 </World/SlideprinterScene/SpoolB>,
                 </World/SlideprinterScene/SpoolC>
             ]
-            rel machine:rigidGroup = </World/SlideprinterScene/SpoolTriangle>
+            rel machine:rigidBody = </World/SlideprinterScene/Effector>
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
 
             def Xform "Tip" ()
