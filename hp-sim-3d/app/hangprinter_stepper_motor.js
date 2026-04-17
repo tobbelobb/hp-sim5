@@ -12,15 +12,43 @@ import {
   getSpoolWorldAxis,
 } from './hangprinter_spools.js';
 import {
+  getRigidBodyMember,
   getRigidBodyEntityForMember,
-  updateRigidBodyMemberLocalOrientation,
 } from '../../src/js/cable_joints_3d/rigid_bodies.js';
+import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
 
 function normalizeAngle(angle) {
   let normalized = angle;
   while (normalized > Math.PI) normalized -= 2.0 * Math.PI;
   while (normalized < -Math.PI) normalized += 2.0 * Math.PI;
   return normalized;
+}
+
+function getRigidBodyMemberSpoolFrame(world, entityId, spoolState) {
+  const member = getRigidBodyMember(world, entityId);
+  if (!member?.localOrientation) {
+    return null;
+  }
+  const bodyOrientation = world.getComponent(member.bodyEntity, OrientationComponent)?.quaternion;
+  if (!bodyOrientation) {
+    return null;
+  }
+  const bodyInverse = bodyOrientation.clone().conjugate().normalize();
+  const localReferenceOrientation = new Quaternion()
+    .multiplyQuaternions(bodyInverse, spoolState.referenceOrientation)
+    .normalize();
+  const worldOrientation = new Quaternion()
+    .multiplyQuaternions(bodyOrientation, member.localOrientation)
+    .normalize();
+  return {
+    member,
+    bodyOrientation,
+    worldOrientation,
+    localSpoolState: {
+      axisLocal: spoolState.axisLocal,
+      referenceOrientation: localReferenceOrientation,
+    },
+  };
 }
 
 export class StepperMotorComponent {
@@ -64,8 +92,15 @@ export class StepperMotorSystem {
         continue;
       }
 
-      const currentAngle = getSpoolRotationAngle(spoolState, orient.quaternion);
-      const worldAxis = getSpoolWorldAxis(spoolState, orient.quaternion);
+      const rigidBodyMemberFrame = getRigidBodyMemberSpoolFrame(world, entityId, spoolState);
+      const currentOrientation = rigidBodyMemberFrame?.worldOrientation || orient.quaternion;
+      const currentAngle = rigidBodyMemberFrame
+        ? getSpoolRotationAngle(
+          rigidBodyMemberFrame.localSpoolState,
+          rigidBodyMemberFrame.member.localOrientation,
+        )
+        : getSpoolRotationAngle(spoolState, currentOrientation);
+      const worldAxis = getSpoolWorldAxis(spoolState, currentOrientation);
       const omegaAlongAxis = angVel.omega?.dot?.(worldAxis) ?? 0.0;
       const encoder = world.getComponent(entityId, EncoderComponent);
       if (encoder) {
@@ -103,8 +138,21 @@ export class StepperMotorSystem {
       } else {
         const targetAngle = stepper.commandedAngle - stepper.deltaAngle;
         if (isStepperClosedLoopEnabled(world, stepper)) {
-          orient.quaternion.set(composeSpoolOrientation(spoolState, null, targetAngle));
-          updateRigidBodyMemberLocalOrientation(world, entityId);
+          if (rigidBodyMemberFrame) {
+            rigidBodyMemberFrame.member.localOrientation.set(
+              composeSpoolOrientation(rigidBodyMemberFrame.localSpoolState, null, targetAngle),
+            );
+            orient.quaternion.set(
+              new Quaternion()
+                .multiplyQuaternions(
+                  rigidBodyMemberFrame.bodyOrientation,
+                  rigidBodyMemberFrame.member.localOrientation,
+                )
+                .normalize(),
+            );
+          } else {
+            orient.quaternion.set(composeSpoolOrientation(spoolState, null, targetAngle));
+          }
           angVel.omega.x = 0.0;
           angVel.omega.y = 0.0;
           angVel.omega.z = 0.0;
@@ -122,6 +170,20 @@ export class StepperMotorSystem {
 
       const angularAcceleration = totalTorque / inertia.inertia;
       angVel.omega.add(worldAxis, angularAcceleration * dt);
+      if (rigidBodyMemberFrame) {
+        const integratedAngle = currentAngle + ((angVel.omega?.dot?.(worldAxis) ?? 0.0) * dt);
+        rigidBodyMemberFrame.member.localOrientation.set(
+          composeSpoolOrientation(rigidBodyMemberFrame.localSpoolState, null, integratedAngle),
+        );
+        orient.quaternion.set(
+          new Quaternion()
+            .multiplyQuaternions(
+              rigidBodyMemberFrame.bodyOrientation,
+              rigidBodyMemberFrame.member.localOrientation,
+            )
+            .normalize(),
+        );
+      }
 
       const bodyEntity = getRigidBodyEntityForMember(world, entityId);
       if (bodyEntity !== null && bodyEntity !== undefined) {

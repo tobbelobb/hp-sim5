@@ -498,6 +498,12 @@ export class AngularMovementSystem {
     const epsilon = 1e-12;
 
     for (const entityId of entities) {
+      if (
+        world.getComponent(entityId, RigidBodyMemberComponent)
+        && world.getComponent(entityId, SpoolStateComponent)
+      ) {
+        continue;
+      }
       const orientationComp = world.getComponent(entityId, OrientationComponent);
       const angularVelComp = world.getComponent(entityId, AngularVelocityComponent);
 
