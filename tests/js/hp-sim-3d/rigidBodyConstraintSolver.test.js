@@ -141,11 +141,13 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
     const solver = new PBDCableConstraintSolver();
     solver.update(world, 0.0);
 
-    const bodyPosition = world.getComponent(body, PositionComponent).pos;
-    const spoolOrientation = world.getComponent(spool, OrientationComponent).quaternion;
+	    const bodyPosition = world.getComponent(body, PositionComponent).pos;
+	    const bodyOrientation = world.getComponent(body, OrientationComponent).quaternion;
+	    const spoolOrientation = world.getComponent(spool, OrientationComponent).quaternion;
 
-    expect(bodyPosition.x).toBeCloseTo(0.0, 12);
-    expect(bodyPosition.y).toBeCloseTo(0.0, 12);
-    expect(Math.abs(spoolOrientation.z) + Math.abs(spoolOrientation.w - 1.0)).toBeGreaterThan(1e-4);
-  });
-});
+	    expect(bodyPosition.x).toBeCloseTo(0.0, 12);
+	    expect(bodyPosition.y).toBeCloseTo(0.0, 12);
+	    expect(bodyOrientation.z).toBeLessThan(-1e-4);
+	    expect(Math.abs(spoolOrientation.z) + Math.abs(spoolOrientation.w - 1.0)).toBeGreaterThan(1e-4);
+	  });
+	});

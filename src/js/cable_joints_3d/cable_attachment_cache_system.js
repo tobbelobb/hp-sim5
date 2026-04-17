@@ -1,4 +1,8 @@
-import { PositionComponent, OrientationComponent } from './ecs.js';
+import {
+  PositionComponent,
+  OrientationComponent,
+  RigidBodyMemberComponent,
+} from './ecs.js';
 import { CableLinkComponent } from './cable_joints_core.js';
 
 function _storeCableLinkPoses(world) {
@@ -6,10 +10,16 @@ function _storeCableLinkPoses(world) {
   for (const linkId of linkEntities) {
     const posComp = world.getComponent(linkId, PositionComponent);
     const orientationComp = world.getComponent(linkId, OrientationComponent);
+    const rigidBodyMemberComp = world.getComponent(linkId, RigidBodyMemberComponent);
     const linkComp = world.getComponent(linkId, CableLinkComponent);
     linkComp.prevCableAttachmentTimePos.set(posComp.pos);
     if (orientationComp) {
       linkComp.prevCableAttachmentTimeOrientation.set(orientationComp.quaternion);
+    }
+    if (rigidBodyMemberComp?.localOrientation) {
+      linkComp.prevCableAttachmentTimeLocalOrientation.set(rigidBodyMemberComp.localOrientation);
+    } else if (orientationComp) {
+      linkComp.prevCableAttachmentTimeLocalOrientation.set(orientationComp.quaternion);
     }
   }
 }

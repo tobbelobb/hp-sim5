@@ -5,7 +5,9 @@ import {
   World,
   PositionComponent,
   RadiusComponent,
-  OrientationComponent
+  OrientationComponent,
+  RigidBodyComponent,
+  RigidBodyMemberComponent,
 } from '../../../src/js/cable_joints_3d/ecs.js';
 
 import {
@@ -21,6 +23,8 @@ import {
   tangentFromSphereToSphere,
   signedArcLengthOnWheel
 } from '../../../src/js/cable_joints_3d/geometry3.js';
+import { RigidBodySyncSystem } from '../../../src/js/cable_joints_3d/commonSystems.js';
+import { initializeRigidBodySyncState } from '../../../src/js/cable_joints_3d/rigid_bodies.js';
 
 const PLANE_NORMAL = new Vector3(0, 0, 1);
 
@@ -216,6 +220,105 @@ describe('_updateAttachmentPoints (3D)', () => {
     // Total rest length of path should remain constant
     const finalTotalRestLength = jointComp_0.restLength + jointComp.restLength + pathComp.stored[0] + pathComp.stored[1] + pathComp.stored[2];
      expect(finalTotalRestLength).toBeCloseTo(pathComp.totalRestLength);
+  });
+
+  test('rigid-body carrier twist around the spool axis does not create spool payout on an internal pinhole-to-spool link', () => {
+    const world = new World();
+    const rigidBodySyncSystem = new RigidBodySyncSystem();
+
+    const body = world.createEntity();
+    const pinhole = world.createEntity();
+    const spool = world.createEntity();
+
+    const bodyPos = new Vector3(0.0, 0.0, 0.0);
+    const pinholeLocal = new Vector3(0.0, -0.2, 0.0);
+    const spoolLocal = new Vector3(0.0, 0.0, 0.0);
+    const spoolRadius = 0.05;
+    const spoolAxisLocal = new Vector3(0.0, 0.0, 1.0);
+
+    world.addComponent(body, new PositionComponent(bodyPos.x, bodyPos.y, bodyPos.z));
+    world.addComponent(body, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
+    world.addComponent(body, new RigidBodyComponent([pinhole, spool]));
+
+    world.addComponent(
+      pinhole,
+      new PositionComponent(pinholeLocal.x, pinholeLocal.y, pinholeLocal.z),
+    );
+    world.addComponent(
+      pinhole,
+      new RigidBodyMemberComponent(
+        body,
+        pinholeLocal,
+        new Quaternion(),
+      ),
+    );
+
+    world.addComponent(
+      spool,
+      new PositionComponent(spoolLocal.x, spoolLocal.y, spoolLocal.z),
+    );
+    world.addComponent(spool, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
+    world.addComponent(spool, new RadiusComponent(spoolRadius));
+    world.addComponent(
+      spool,
+      new CableLinkComponent(
+        spoolLocal.x,
+        spoolLocal.y,
+        spoolLocal.z,
+        new Quaternion(),
+        null,
+        spoolAxisLocal,
+      ),
+    );
+    world.addComponent(
+      spool,
+      new RigidBodyMemberComponent(
+        body,
+        spoolLocal,
+        new Quaternion(),
+      ),
+    );
+
+    initializeRigidBodySyncState(world, body);
+
+    const initialTangents = tangentFromPointToSphere(
+      pinholeLocal,
+      spoolLocal,
+      spoolRadius,
+      PLANE_NORMAL,
+      true,
+    );
+    const jointId = world.createEntity();
+    const jointComp = new CableJointComponent(
+      pinhole,
+      spool,
+      initialTangents.a_attach.distanceTo(initialTangents.a_sphere),
+      initialTangents.a_attach,
+      initialTangents.a_sphere,
+    );
+    world.addComponent(jointId, jointComp);
+
+    const pathId = world.createEntity();
+    const pathComp = new CablePathComponent(
+      world,
+      [jointId],
+      ['attachment', 'hybrid'],
+      [true, true],
+    );
+    world.addComponent(pathId, pathComp);
+
+    const initialRestLength = jointComp.restLength;
+    const initialStored = pathComp.stored[1];
+    expect(initialStored).toBeCloseTo(0.0, 12);
+
+    const bodyTwist = new Quaternion().setFromAxisAngle(spoolAxisLocal, Math.PI / 5.0);
+    world.getComponent(body, OrientationComponent).quaternion.set(bodyTwist);
+    rigidBodySyncSystem.update(world, 0.0);
+
+    _updateAttachmentPoints(world);
+
+    expect(pathComp.stored[1]).toBeCloseTo(initialStored, 10);
+    expect(jointComp.restLength).toBeCloseTo(initialRestLength, 10);
   });
 
   test('hybrid-attachment -> rolling -> rolling -> hybrid with small rotations', () => {

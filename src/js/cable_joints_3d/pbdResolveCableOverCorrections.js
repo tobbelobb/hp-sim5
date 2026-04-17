@@ -13,6 +13,7 @@ import {
 } from './ecs.js';
 import {
   computeWorldAttachment,
+  getRigidBodyEntityForMember,
   resolveRigidBodySolverEndpoint,
   updateRigidBodyMemberLocalOrientation,
 } from './rigid_bodies.js';
@@ -127,17 +128,30 @@ export class PBDResolveCableOverCorrections {
     const solverPointA = computeWorldAttachment(world, solverEntityA, mappedA.localPoint);
     const solverPointB = computeWorldAttachment(world, solverEntityB, mappedB.localPoint);
 
-    const massAComp = world.getComponent(solverEntityA, MassComponent);
-    const invMassA = massAComp && massAComp.mass > 0 && Number.isFinite(massAComp.mass) ? 1.0 / massAComp.mass : 0.0;
-    const moiAComp = world.getComponent(solverEntityA, MomentOfInertiaComponent);
-    const invInertiaA = moiAComp ? moiAComp.invInertia : 0.0;
+	    const massAComp = world.getComponent(solverEntityA, MassComponent);
+	    const invMassA = massAComp && massAComp.mass > 0 && Number.isFinite(massAComp.mass) ? 1.0 / massAComp.mass : 0.0;
+	    const moiAComp = world.getComponent(solverEntityA, MomentOfInertiaComponent);
+	    const invInertiaA = moiAComp ? moiAComp.invInertia : 0.0;
+	    const reactionBodyEntityA = mappedA.internalToBody ? getRigidBodyEntityForMember(world, solverEntityA) : null;
+	    const reactionBodyInertiaA = reactionBodyEntityA !== null && reactionBodyEntityA !== undefined
+	      ? world.getComponent(reactionBodyEntityA, MomentOfInertiaComponent)
+	      : null;
+	    const reactionInvInertiaA = reactionBodyInertiaA ? reactionBodyInertiaA.invInertia : 0.0;
 
-    const massBComp = world.getComponent(solverEntityB, MassComponent);
-    const invMassB = massBComp && massBComp.mass > 0 && Number.isFinite(massBComp.mass) ? 1.0 / massBComp.mass : 0.0;
-    const moiBComp = world.getComponent(solverEntityB, MomentOfInertiaComponent);
-    const invInertiaB = moiBComp ? moiBComp.invInertia : 0.0;
+	    const massBComp = world.getComponent(solverEntityB, MassComponent);
+	    const invMassB = massBComp && massBComp.mass > 0 && Number.isFinite(massBComp.mass) ? 1.0 / massBComp.mass : 0.0;
+	    const moiBComp = world.getComponent(solverEntityB, MomentOfInertiaComponent);
+	    const invInertiaB = moiBComp ? moiBComp.invInertia : 0.0;
+	    const reactionBodyEntityB = mappedB.internalToBody ? getRigidBodyEntityForMember(world, solverEntityB) : null;
+	    const reactionBodyInertiaB = reactionBodyEntityB !== null && reactionBodyEntityB !== undefined
+	      ? world.getComponent(reactionBodyEntityB, MomentOfInertiaComponent)
+	      : null;
+	    const reactionInvInertiaB = reactionBodyInertiaB ? reactionBodyInertiaB.invInertia : 0.0;
 
-    if (invMassA + invMassB + invInertiaA + invInertiaB <= EPSILON) return;
+	    if (
+	      invMassA + invMassB + invInertiaA + invInertiaB + reactionInvInertiaA + reactionInvInertiaB
+	      <= EPSILON
+	    ) return;
 
     const diff = new Vector3().subtractVectors(pB, pA);
     const len = diff.length();
@@ -155,11 +169,13 @@ export class PBDResolveCableOverCorrections {
     const rB = new Vector3().subtractVectors(solverPointB, posBComp.pos);
     const gradAngB = rB.cross(dir.clone().scale(-1));
 
-    let denom = 0;
-    denom += invMassA * gradPosA.lengthSq();
-    denom += invInertiaA * gradAngA.lengthSq();
-    denom += invMassB * gradPosB.lengthSq();
-    denom += invInertiaB * gradAngB.lengthSq();
+	    let denom = 0;
+	    denom += invMassA * gradPosA.lengthSq();
+	    denom += invInertiaA * gradAngA.lengthSq();
+	    denom += reactionInvInertiaA * gradAngA.lengthSq();
+	    denom += invMassB * gradPosB.lengthSq();
+	    denom += invInertiaB * gradAngB.lengthSq();
+	    denom += reactionInvInertiaB * gradAngB.lengthSq();
 
     const dt = world.getResource('dt');
     if (dt !== undefined && dt > 0) {
@@ -174,17 +190,25 @@ export class PBDResolveCableOverCorrections {
       const delta = gradPosA.clone().scale(invMassA * lambda);
       ensureArrayMapEntry(posCorrections, solverEntityA, delta);
     }
-    if (invInertiaA > 0) {
-      const delta = gradAngA.clone().scale(-invInertiaA * lambda);
-      ensureArrayMapEntry(angCorrections, solverEntityA, delta);
-    }
-    if (invMassB > 0) {
-      const delta = gradPosB.clone().scale(invMassB * lambda);
-      ensureArrayMapEntry(posCorrections, solverEntityB, delta);
-    }
-    if (invInertiaB > 0) {
-      const delta = gradAngB.clone().scale(-invInertiaB * lambda);
-      ensureArrayMapEntry(angCorrections, solverEntityB, delta);
-    }
-  }
-}
+	    if (invInertiaA > 0) {
+	      const delta = gradAngA.clone().scale(-invInertiaA * lambda);
+	      ensureArrayMapEntry(angCorrections, solverEntityA, delta);
+	    }
+	    if (reactionInvInertiaA > 0.0 && reactionBodyEntityA !== null && reactionBodyEntityA !== undefined) {
+	      const delta = gradAngA.clone().scale(reactionInvInertiaA * lambda);
+	      ensureArrayMapEntry(angCorrections, reactionBodyEntityA, delta);
+	    }
+	    if (invMassB > 0) {
+	      const delta = gradPosB.clone().scale(invMassB * lambda);
+	      ensureArrayMapEntry(posCorrections, solverEntityB, delta);
+	    }
+	    if (invInertiaB > 0) {
+	      const delta = gradAngB.clone().scale(-invInertiaB * lambda);
+	      ensureArrayMapEntry(angCorrections, solverEntityB, delta);
+	    }
+	    if (reactionInvInertiaB > 0.0 && reactionBodyEntityB !== null && reactionBodyEntityB !== undefined) {
+	      const delta = gradAngB.clone().scale(reactionInvInertiaB * lambda);
+	      ensureArrayMapEntry(angCorrections, reactionBodyEntityB, delta);
+	    }
+	  }
+	}
