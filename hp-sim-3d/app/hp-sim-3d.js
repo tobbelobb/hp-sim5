@@ -25,8 +25,8 @@ import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
 import { getMachineMotorDiagnostics } from './motor-diagnostics.js';
 
-const HP3_USDA_KEY = 'hp3.usda';
-const FOUR_HIGH_ANCHORS_USDA_KEY = 'four_high_anchors.usda';
+const HP3_USDA_KEY = 'hp3_rigid_body.usda';
+const FOUR_HIGH_ANCHORS_USDA_KEY = 'four_high_anchors_rigid_body.usda';
 const KLIPPER_UPLOAD_PIPELINE = 'raw'; // 'player' or 'raw'
 const PUBLIC_BASE_URL = import.meta.env.BASE_URL || '/';
 
@@ -235,13 +235,10 @@ const QUALITY_HISTORY_MAX_ENTRIES = 20;
 const AVAILABLE_USDAS = Object.freeze([
   { file: HP3_USDA_KEY, label: 'Hangprinter v3 (default)' },
   { file: FOUR_HIGH_ANCHORS_USDA_KEY, label: 'Four High Anchors' },
-  { file: 'slideprinter_multi_unit.usda', label: 'Slideprinter Multi Unit' },
-  { file: 'slideprinter.usda', label: 'Slideprinter Original' },
-  { file: 'slideprinter_hexagon.usda', label: 'Slideprinter (hexagon)' },
-  { file: 'slideprinter_single_pinholes.usda', label: 'Slideprinter (single pinholes)' },
-  { file: 'slideprinter_multi_unit_rigid_body.usda', label: 'Slideprinter Multi Unit Rigid Body' },
-  { file: 'slideprinter_hexagon_rigid_body.usda', label: 'Slideprinter (hexagon) Rigid Body' },
-  { file: 'slideprinter_single_pinholes_rigid_body.usda', label: 'Slideprinter (single pinholes) Rigid Body' },
+  { file: 'slideprinter_multi_unit_rigid_body.usda', label: 'Slideprinter Multi Unit' },
+  { file: 'slideprinter_rigid_body.usda', label: 'Slideprinter Original' },
+  { file: 'slideprinter_hexagon_rigid_body.usda', label: 'Slideprinter (hexagon)' },
+  { file: 'slideprinter_single_pinholes_rigid_body.usda', label: 'Slideprinter (single pinholes)' },
 ]);
 
 function initHpSim() {
@@ -353,7 +350,7 @@ function initHpSim() {
       },
     ])
   );
-  const defaultUsdaKey = 'slideprinter_single_pinholes_rigid_body.usda';
+  const defaultUsdaKey = HP3_USDA_KEY;
   const presetOptionInputs = new Map();
   const presetOptionLabels = new Map();
   const presetOptionColorChips = new Map();
