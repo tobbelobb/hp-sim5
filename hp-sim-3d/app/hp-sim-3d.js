@@ -239,6 +239,9 @@ const AVAILABLE_USDAS = Object.freeze([
   { file: 'slideprinter.usda', label: 'Slideprinter Original' },
   { file: 'slideprinter_hexagon.usda', label: 'Slideprinter (hexagon)' },
   { file: 'slideprinter_single_pinholes.usda', label: 'Slideprinter (single pinholes)' },
+  { file: 'slideprinter_multi_unit_rigid_body.usda', label: 'Slideprinter Multi Unit Rigid Body' },
+  { file: 'slideprinter_hexagon_rigid_body.usda', label: 'Slideprinter (hexagon) Rigid Body' },
+  { file: 'slideprinter_single_pinholes_rigid_body.usda', label: 'Slideprinter (single pinholes) Rigid Body' },
 ]);
 
 function initHpSim() {
