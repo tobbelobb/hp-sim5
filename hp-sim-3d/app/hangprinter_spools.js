@@ -1,10 +1,5 @@
 import Vector3 from '../../src/js/cable_joints_3d/vector3.js';
 import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
-import {
-  OrientationComponent,
-  AngularVelocityComponent,
-} from '../../src/js/cable_joints_3d/ecs.js';
-import { updateRigidBodyMemberLocalOrientation } from '../../src/js/cable_joints_3d/rigid_bodies.js';
 
 const DEFAULT_SPOOL_AXIS_LOCAL = new Vector3(0.0, 0.0, 1.0);
 const EPSILON = 1e-12;
@@ -137,30 +132,5 @@ export class SpoolStateComponent {
     this.axis = axis;
     this.axisLocal = normalizeSpoolAxisLocal(axisLocal);
     this.referenceOrientation = cloneQuaternionOrIdentity(referenceOrientation);
-  }
-}
-
-export class SpoolAxisConstraintSystem {
-  runInPause = false;
-
-  update(world, _dt) {
-    const entities = world.query([SpoolStateComponent, OrientationComponent]);
-    for (const entityId of entities) {
-      const spoolState = world.getComponent(entityId, SpoolStateComponent);
-      const orientation = world.getComponent(entityId, OrientationComponent);
-      if (!spoolState || !orientation?.quaternion) {
-        continue;
-      }
-
-      orientation.quaternion.set(constrainSpoolOrientation(spoolState, orientation.quaternion));
-      updateRigidBodyMemberLocalOrientation(world, entityId);
-
-      const angularVelocity = world.getComponent(entityId, AngularVelocityComponent);
-      if (angularVelocity?.omega) {
-        angularVelocity.omega.set(
-          constrainSpoolAngularVelocity(spoolState, orientation.quaternion, angularVelocity.omega),
-        );
-      }
-    }
   }
 }

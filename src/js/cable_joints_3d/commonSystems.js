@@ -20,6 +20,8 @@ import {
 import {
   SpoolStateComponent,
   rotateSpoolReferenceOrientation,
+  constrainSpoolOrientation,
+  constrainSpoolAngularVelocity,
   getSpoolRotationAngle,
   getSpoolWorldAxis,
 } from '../../../hp-sim-3d/app/hangprinter_spools.js';
@@ -449,6 +451,13 @@ export class RigidBodySyncSystem {
               .multiplyQuaternions(currentBodyOrientation, member.localOrientation)
               .normalize(),
           );
+          const spoolState = world.getComponent(entityId, SpoolStateComponent);
+          if (spoolState) {
+            orientationComp.quaternion.set(
+              constrainSpoolOrientation(spoolState, orientationComp.quaternion),
+            );
+            updateRigidBodyMemberLocalOrientation(world, entityId);
+          }
         }
 
         const posComp = world.getComponent(entityId, PositionComponent);
@@ -465,6 +474,14 @@ export class RigidBodySyncSystem {
             linearVelocity.add(bodyAngularVelComp.omega.cross(worldOffset));
           }
           velComp.vel.set(linearVelocity);
+        }
+
+        const spoolState = world.getComponent(entityId, SpoolStateComponent);
+        const angularVelComp = world.getComponent(entityId, AngularVelocityComponent);
+        if (spoolState && angularVelComp?.omega && orientationComp?.quaternion) {
+          angularVelComp.omega.set(
+            constrainSpoolAngularVelocity(spoolState, orientationComp.quaternion, angularVelComp.omega),
+          );
         }
       }
 

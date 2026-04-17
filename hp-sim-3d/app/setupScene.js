@@ -56,7 +56,6 @@ import {
   SpoolTagComponent,
   SpoolStateComponent,
   normalizeSpoolAxisLocal,
-  SpoolAxisConstraintSystem,
 } from './hangprinter_spools.js';
 import { StepperMotorComponent, StepperMotorSystem } from './hangprinter_stepper_motor.js';
 import { RenderSystem3D } from '../../src/js/cable_joints_3d/render_system_3d.js';
@@ -940,7 +939,6 @@ export function setupScene(world, stage, canvas, options = {}) {
           world.registerSystem(new GravitySystem());
           world.registerSystem(new MovementSystem());
           world.registerSystem(new AngularMovementSystem());
-          world.registerSystem(new SpoolAxisConstraintSystem());
           world.registerSystem(new RigidBodySyncSystem());
 
           // 4. Update derived geometry and cable state
