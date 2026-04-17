@@ -620,6 +620,12 @@ export class RigidBodyMemberAngularVelocityUpdateSystem {
     if (dt <= epsilon) return;
 
     for (const entityId of entities) {
+      // Spool members keep omega on the stepper path; reconstructing it from
+      // projected local-twist changes feeds constraint corrections back into payout.
+      if (world.getComponent(entityId, SpoolStateComponent)) {
+        continue;
+      }
+
       const member = world.getComponent(entityId, RigidBodyMemberComponent);
       const prevLocal = world.getComponent(entityId, PrevRigidBodyLocalOrientationComponent);
       const angularVel = world.getComponent(entityId, AngularVelocityComponent);
