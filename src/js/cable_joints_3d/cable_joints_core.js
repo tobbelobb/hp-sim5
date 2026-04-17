@@ -24,6 +24,8 @@ import {
 import {
   computeLocalAttachment,
   computeWorldAttachment,
+  getEntityWorldOrientation,
+  getEntityWorldPosition,
   getRigidBodyEntityForMember,
   resolveRigidBodySolverEndpoint,
   updateRigidBodyMemberLocalOrientation,
@@ -364,7 +366,7 @@ function _getPlaneNormal(world, entityId) {
   const linkComp = world.getComponent(entityId, CableLinkComponent);
   if (linkComp?.cablePlaneNormalLocal) {
     const localAxis = linkComp.cablePlaneNormalLocal.clone();
-    const orientation = world.getComponent(entityId, OrientationComponent)?.quaternion;
+    const orientation = getEntityWorldOrientation(world, entityId);
     if (orientation && typeof orientation.transformVector === 'function') {
       const worldAxis = orientation.transformVector(localAxis);
       if (worldAxis.lengthSq() > EPSILON) {
@@ -1010,15 +1012,13 @@ export function calculateAttachmentPoints(world, joint, path, i, radiusA, radius
   const entityA = joint.entityA;
   const entityB = joint.entityB;
 
-  const posAComp = world.getComponent(entityA, PositionComponent);
   const linkAComp = world.getComponent(entityA, CableLinkComponent);
-  const orientationAComp = world.getComponent(entityA, OrientationComponent);
 
-  const posA = posAComp?.pos;
+  const posA = getEntityWorldPosition(world, entityA);
   const attachmentA_previous = joint.attachmentPointA_world;
   const prevPosA = linkAComp?.prevCableAttachmentTimePos;
   const planeNormalA = _getPlaneNormal(world, entityA);
-  const angleA = orientationAComp?.quaternion;
+  const angleA = getEntityWorldOrientation(world, entityA);
   const prevAngleA = linkAComp?.prevCableAttachmentTimeOrientation;
   const deltaAngleA = _deltaAngleForEntity(world, entityA, prevAngleA, angleA);
 
@@ -1034,15 +1034,13 @@ export function calculateAttachmentPoints(world, joint, path, i, radiusA, radius
     pADiffFromRotation = rotated.clone().subtract(attachmentA_previous);
   }
 
-  const posBComp = world.getComponent(entityB, PositionComponent);
   const linkBComp = world.getComponent(entityB, CableLinkComponent);
-  const orientationBComp = world.getComponent(entityB, OrientationComponent);
 
-  const posB = posBComp?.pos;
+  const posB = getEntityWorldPosition(world, entityB);
   const attachmentB_previous = joint.attachmentPointB_world;
   const prevPosB = linkBComp?.prevCableAttachmentTimePos;
   const planeNormalB = _getPlaneNormal(world, entityB);
-  const angleB = orientationBComp?.quaternion;
+  const angleB = getEntityWorldOrientation(world, entityB);
   const prevAngleB = linkBComp?.prevCableAttachmentTimeOrientation;
   const deltaAngleB = _deltaAngleForEntity(world, entityB, prevAngleB, angleB);
 
