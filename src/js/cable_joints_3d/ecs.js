@@ -82,6 +82,29 @@ export class AngularVelocityComponent {
     }
 }
 
+export class RigidBodyComponent {
+  constructor(members = [], renderSegments = null) {
+    this.members = Array.isArray(members) ? members.slice() : [];
+    this.renderSegments = Array.isArray(renderSegments) ? renderSegments : null;
+    this.syncedPosition = new Vector3(0.0, 0.0, 0.0);
+    this.syncedOrientation = new Quaternion();
+  }
+}
+
+export class RigidBodyMemberComponent {
+  constructor(bodyEntity = null, localPosition = null, localOrientation = null) {
+    this.bodyEntity = bodyEntity;
+    this.localPosition = localPosition ? localPosition.clone() : new Vector3(0.0, 0.0, 0.0);
+    this.localOrientation = localOrientation ? localOrientation.clone().normalize() : new Quaternion();
+  }
+}
+
+export class PrevRigidBodyLocalOrientationComponent {
+  constructor(x = 0, y = 0, z = 0, w = 1) {
+    this.quaternion = new Quaternion(x, y, z, w);
+  }
+}
+
 function _resourceBool(world, key, fallback = true) {
   const value = world?.getResource?.(key);
   return typeof value === 'boolean' ? value : fallback;

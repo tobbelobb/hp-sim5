@@ -4,6 +4,7 @@ import {
   OrientationComponent,
   AngularVelocityComponent,
 } from '../../src/js/cable_joints_3d/ecs.js';
+import { updateRigidBodyMemberLocalOrientation } from '../../src/js/cable_joints_3d/rigid_bodies.js';
 
 const DEFAULT_SPOOL_AXIS_LOCAL = new Vector3(0.0, 0.0, 1.0);
 const EPSILON = 1e-12;
@@ -152,6 +153,7 @@ export class SpoolAxisConstraintSystem {
       }
 
       orientation.quaternion.set(constrainSpoolOrientation(spoolState, orientation.quaternion));
+      updateRigidBodyMemberLocalOrientation(world, entityId);
 
       const angularVelocity = world.getComponent(entityId, AngularVelocityComponent);
       if (angularVelocity?.omega) {

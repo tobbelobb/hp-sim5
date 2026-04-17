@@ -8,6 +8,7 @@ import {
   OrientationComponent,
   ObstaclePushComponent,
   RenderableComponent,
+  RigidBodyComponent,
   RigidGroupComponent,
   layeringEnabled
 } from './ecs.js';
@@ -1997,15 +1998,18 @@ export class RenderSystem3D {
   }
 
   _syncRigidGroups(world) {
+    const rigidBodies = world.query([RigidBodyComponent]);
     const rigidGroups = world.query([RigidGroupComponent]);
-    if (!rigidGroups || rigidGroups.length === 0) {
+    const rigidAssemblies = [...rigidBodies, ...rigidGroups];
+    if (!rigidAssemblies || rigidAssemblies.length === 0) {
       this._hideLines(this.rigidGroupLines);
       return;
     }
 
     const lineSpecs = [];
-    for (const groupId of rigidGroups) {
-      const group = world.getComponent(groupId, RigidGroupComponent);
+    for (const groupId of rigidAssemblies) {
+      const group = world.getComponent(groupId, RigidBodyComponent)
+        || world.getComponent(groupId, RigidGroupComponent);
       const members = Array.isArray(group?.members) ? group.members : [];
       if (members.length < 2) {
         continue;

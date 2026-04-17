@@ -23,7 +23,9 @@ import {
   SimulationErrorStateComponent,
   RenderableComponent,
   DistanceConstraintComponent,
-  RigidGroupComponent,
+  RigidBodyComponent,
+  RigidBodyMemberComponent,
+  PrevRigidBodyLocalOrientationComponent,
   MachineTagComponent,
 } from "../../src/js/cable_joints_3d/ecs.js";
 import {
@@ -67,10 +69,13 @@ import {
   AngularMovementSystem,
   PBDVelocityUpdateSystem,
   PBDAngularVelocityUpdateSystem,
+  PrevRigidBodyLocalOrientationSystem,
+  RigidBodyMemberAngularVelocityUpdateSystem,
+  RigidBodySyncSystem,
   XPBDDistanceConstraintSystem,
-  RigidGroupSystem,
 } from '../../src/js/cable_joints_3d/commonSystems.js';
 import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
+import { initializeRigidBodySyncState } from '../../src/js/cable_joints_3d/rigid_bodies.js';
 
 const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
 
@@ -257,6 +262,63 @@ export function setupScene(world, stage, canvas, options = {}) {
         }
     }
 
+    function pointMassMomentForOffset(offset) {
+        if (!(offset instanceof Vector3)) {
+            return 0.0;
+        }
+        return offset.lengthSq();
+    }
+
+    function computeRigidBodyAggregateState(memberEntities) {
+        const com = new Vector3(0.0, 0.0, 0.0);
+        const linearVelocity = new Vector3(0.0, 0.0, 0.0);
+        let totalMass = 0.0;
+
+        for (const entityId of memberEntities) {
+            const pos = world.getComponent(entityId, PositionComponent)?.pos;
+            const mass = world.getComponent(entityId, MassComponent)?.mass ?? 0.0;
+            const vel = world.getComponent(entityId, VelocityComponent)?.vel;
+            if (!pos || !(mass > 0.0)) {
+                continue;
+            }
+            com.add(pos, mass);
+            if (vel) {
+                linearVelocity.add(vel, mass);
+            }
+            totalMass += mass;
+        }
+
+        if (totalMass > 0.0) {
+            com.scale(1.0 / totalMass);
+            linearVelocity.scale(1.0 / totalMass);
+        }
+
+        let totalInertia = 0.0;
+        for (const entityId of memberEntities) {
+            const pos = world.getComponent(entityId, PositionComponent)?.pos;
+            const mass = world.getComponent(entityId, MassComponent)?.mass ?? 0.0;
+            const inertia = world.getComponent(entityId, MomentOfInertiaComponent)?.inertia ?? 0.0;
+            if (!(mass > 0.0) || !pos) {
+                continue;
+            }
+            const offset = pos.clone().subtract(com);
+            totalInertia += inertia + (mass * pointMassMomentForOffset(offset));
+        }
+
+        if (!(totalInertia > 0.0)) {
+            totalInertia = totalMass > 0.0 ? totalMass : 0.0;
+        }
+
+        return {
+            position: com,
+            velocity: linearVelocity,
+            orientation: new Quaternion(),
+            angularVelocity: new Vector3(0.0, 0.0, 0.0),
+            mass: totalMass,
+            inertia: totalInertia,
+        };
+    }
+
     function scopedKey(relativeName) {
         const key = relativeName || '';
         return namespace ? `${namespace}::${key}` : key;
@@ -326,7 +388,7 @@ export function setupScene(world, stage, canvas, options = {}) {
         const jointPrims = [];
         const pathPrims = [];
         const distanceJointPrims = [];
-        const rigidGroupPrims = [];
+        const rigidBodyPrims = [];
         let extruderPrim = null;
         let extruderAuthoredPos = null;
         let extruderCenterPaths = [];
@@ -349,13 +411,17 @@ export function setupScene(world, stage, canvas, options = {}) {
                 distanceJointPrims.push(prim);
             }
 
-            // Detect rigid groups either by explicit defType or a members rel
-            if (prim.type === 'definition' && (prim.defType === 'RigidGroup')) {
-                rigidGroupPrims.push(prim);
+            // Detect rigid bodies either by explicit defType or a members rel.
+            if (prim.type === 'definition' && (prim.defType === 'RigidBody' || prim.defType === 'RigidGroup')) {
+                rigidBodyPrims.push(prim);
             } else {
-                const maybeMembers = getRelationship(prim, 'rigidGroup:members');
-                if (maybeMembers && maybeMembers.length > 0) {
-                    rigidGroupPrims.push(prim);
+                const maybeRigidBodyMembers = getRelationship(prim, 'rigidBody:members');
+                const maybeRigidGroupMembers = getRelationship(prim, 'rigidGroup:members');
+                if (
+                    (maybeRigidBodyMembers && maybeRigidBodyMembers.length > 0)
+                    || (maybeRigidGroupMembers && maybeRigidGroupMembers.length > 0)
+                ) {
+                    rigidBodyPrims.push(prim);
                 }
             }
 
@@ -552,8 +618,8 @@ export function setupScene(world, stage, canvas, options = {}) {
             }
         }
 
-        // Build rigid groups first (if any)
-        const entityToRigidGroup = {};
+        // Build rigid bodies first (if any)
+        const entityToRigidBody = {};
         const extruderCenterEntityIds = (() => {
             const rels = normalizeToPlainArray(extruderCenterPaths);
             if (!Array.isArray(rels) || rels.length === 0) {
@@ -602,28 +668,88 @@ export function setupScene(world, stage, canvas, options = {}) {
                 })
                 .filter((offset) => offset instanceof Vector3);
         })();
-        for (const prim of rigidGroupPrims) {
-            const stiffness = getAttribute(prim, "stiffness") ?? 1.0;
-            const memberPaths = getRelationship(prim, 'rigidGroup:members');
+        for (const prim of rigidBodyPrims) {
+            const memberPaths = getRelationship(prim, 'rigidBody:members') || getRelationship(prim, 'rigidGroup:members');
             if (!memberPaths || memberPaths.length === 0) continue;
             const memberEntities = memberPaths
                 .map(path => nameToEntityId[scopedKeyFromPath(path)])
                 .filter(id => id !== undefined);
             if (memberEntities.length >= 2) {
-                const groupEnt = world.createEntity();
-                const renderIndicesAttr = getAttribute(prim, 'rigidGroup:renderIndices');
+                const bodyState = computeRigidBodyAggregateState(memberEntities);
+                const bodyEnt = world.createEntity();
+                const renderIndicesAttr = getAttribute(prim, 'rigidBody:renderIndices') ?? getAttribute(prim, 'rigidGroup:renderIndices');
                 const renderSegments = parseRigidGroupRenderSegments(renderIndicesAttr);
-                const groupComponent = new RigidGroupComponent(memberEntities, stiffness, renderSegments);
-                world.addComponent(groupEnt, groupComponent);
-                world.addComponent(groupEnt, new MachineTagComponent(machineId));
-                world.addComponent(groupEnt, new RenderableComponent('line', palette?.rigidGroup ?? palette?.distanceConstraint ?? '#55ff88'));
-                for (const e of memberEntities) {
-                    entityToRigidGroup[e] = groupEnt;
+
+                world.addComponent(bodyEnt, new MachineTagComponent(machineId));
+                world.addComponent(bodyEnt, new PositionComponent(
+                    bodyState.position.x,
+                    bodyState.position.y,
+                    bodyState.position.z,
+                ));
+                world.addComponent(bodyEnt, new VelocityComponent(
+                    bodyState.velocity.x,
+                    bodyState.velocity.y,
+                    bodyState.velocity.z,
+                ));
+                world.addComponent(bodyEnt, new MassComponent(bodyState.mass));
+                addGravityIfDynamic(bodyEnt, bodyState.mass);
+                world.addComponent(bodyEnt, new RenderableComponent('line', palette?.rigidBody ?? palette?.rigidGroup ?? palette?.distanceConstraint ?? '#55ff88'));
+                world.addComponent(bodyEnt, new OrientationComponent(
+                    bodyState.orientation.x,
+                    bodyState.orientation.y,
+                    bodyState.orientation.z,
+                    bodyState.orientation.w,
+                ));
+                world.addComponent(bodyEnt, new PrevFinalOrientationComponent(
+                    bodyState.orientation.x,
+                    bodyState.orientation.y,
+                    bodyState.orientation.z,
+                    bodyState.orientation.w,
+                ));
+                world.addComponent(bodyEnt, new AngularVelocityComponent(
+                    bodyState.angularVelocity.x,
+                    bodyState.angularVelocity.y,
+                    bodyState.angularVelocity.z,
+                ));
+                world.addComponent(bodyEnt, new MomentOfInertiaComponent(bodyState.inertia));
+                world.addComponent(bodyEnt, new PrevFinalPosComponent(
+                    bodyState.position.x,
+                    bodyState.position.y,
+                    bodyState.position.z,
+                ));
+                world.addComponent(bodyEnt, new RigidBodyComponent(memberEntities, renderSegments));
+                initializeRigidBodySyncState(world, bodyEnt);
+
+                for (const entityId of memberEntities) {
+                    const memberPos = world.getComponent(entityId, PositionComponent)?.pos || new Vector3(0.0, 0.0, 0.0);
+                    const memberOrientation = world.getComponent(entityId, OrientationComponent)?.quaternion || new Quaternion();
+                    const localPosition = memberPos.clone().subtract(bodyState.position);
+                    const localOrientation = memberOrientation.clone().normalize();
+                    world.addComponent(entityId, new RigidBodyMemberComponent(bodyEnt, localPosition, localOrientation));
+                    world.addComponent(entityId, new PrevRigidBodyLocalOrientationComponent(
+                        localOrientation.x,
+                        localOrientation.y,
+                        localOrientation.z,
+                        localOrientation.w,
+                    ));
+
+                    world.removeComponent(entityId, GravityAffectedComponent);
+                    const massComponent = world.getComponent(entityId, MassComponent);
+                    if (massComponent) {
+                        massComponent.mass = 0.0;
+                    }
+
+                    const velocityComponent = world.getComponent(entityId, VelocityComponent);
+                    if (velocityComponent?.vel) {
+                        velocityComponent.vel.set(new Vector3(0.0, 0.0, 0.0));
+                    }
+
+                    entityToRigidBody[entityId] = bodyEnt;
                 }
             }
         }
 
-        // Process discovered DistancePhysicsJoints (skip those internal to a rigid group)
+        // Process discovered DistancePhysicsJoints (skip those internal to a rigid body)
         for (const prim of distanceJointPrims) {
             const body0PathRel = getRelationship(prim, "physics:body0");
             const body1PathRel = getRelationship(prim, "physics:body1");
@@ -647,8 +773,8 @@ export function setupScene(world, stage, canvas, options = {}) {
 
             if (minDistance !== null && maxDistance !== null) {
                 if (Math.abs(minDistance - maxDistance) < 1e-6) {
-                    // Skip if both bodies belong to the same rigid group
-                    if (!entityToRigidGroup[entityA] || entityToRigidGroup[entityA] !== entityToRigidGroup[entityB]) {
+                    // Skip if both bodies belong to the same rigid body
+                    if (!entityToRigidBody[entityA] || entityToRigidBody[entityA] !== entityToRigidBody[entityB]) {
                         const restLength = (minDistance + maxDistance) / 2.0;
                         const constraintEntity = world.createEntity();
                         world.addComponent(constraintEntity, new MachineTagComponent(machineId));
@@ -804,6 +930,7 @@ export function setupScene(world, stage, canvas, options = {}) {
           // 1. Cache state from previous step
           world.registerSystem(new PrevFinalPosSystem());
           world.registerSystem(new PrevFinalOrientationSystem());
+          world.registerSystem(new PrevRigidBodyLocalOrientationSystem());
 
           // 2. Handle non-physics state changes
           world.registerSystem(new RemoteSpoolSystem());
@@ -813,6 +940,7 @@ export function setupScene(world, stage, canvas, options = {}) {
           world.registerSystem(new GravitySystem());
           world.registerSystem(new MovementSystem());
           world.registerSystem(new AngularMovementSystem());
+          world.registerSystem(new RigidBodySyncSystem());
 
           // 4. Update derived geometry and cable state
           world.registerSystem(new CableAttachmentUpdateSystem());
@@ -821,10 +949,10 @@ export function setupScene(world, stage, canvas, options = {}) {
 
           // 5. POSITIONAL SOLVERS: Correct predicted positions to satisfy constraints.
           world.registerSystem(new PBDCableConstraintSolver());
+          world.registerSystem(new RigidBodySyncSystem());
           world.registerSystem(new PBDResolveCableOverCorrections());
+          world.registerSystem(new RigidBodySyncSystem());
 
-          // Enforce rigid motion for grouped spools (if any)
-          world.registerSystem(new RigidGroupSystem());
           // world.registerSystem(new XPBDDistanceConstraintSystem());
           world.registerSystem(new SpoolAxisConstraintSystem());
 
@@ -834,6 +962,7 @@ export function setupScene(world, stage, canvas, options = {}) {
           // 7. UPDATE VELOCITY: Derive final velocities from the position changes
           world.registerSystem(new PBDVelocityUpdateSystem());
           world.registerSystem(new PBDAngularVelocityUpdateSystem());
+          world.registerSystem(new RigidBodyMemberAngularVelocityUpdateSystem());
 
           // 8. VELOCITY SOLVERS: Apply restitution and dynamic friction
           // Velocity-level solvers (which might also do positional adjustments)

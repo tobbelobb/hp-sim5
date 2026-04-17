@@ -21,6 +21,12 @@ import {
   MachineTagComponent,
   layeringEnabled
 } from './ecs.js';
+import {
+  computeLocalAttachment,
+  computeWorldAttachment,
+  resolveRigidBodySolverEndpoint,
+  updateRigidBodyMemberLocalOrientation,
+} from './rigid_bodies.js';
 
 export class CableLinkComponent {
   constructor(
@@ -374,40 +380,11 @@ function _getPlaneNormal(world, entityId) {
 }
 
 function _computeWorldAttachment(world, entityId, localPoint) {
-  if (!localPoint) {
-    return null;
-  }
-  const localVec = localPoint.clone();
-  if (!world) {
-    return localVec;
-  }
-
-  const posComp = world.getComponent(entityId, PositionComponent);
-  if (!posComp || !posComp.pos) {
-    return localVec;
-  }
-
-  const orientationComp = world.getComponent(entityId, OrientationComponent);
-  if (orientationComp && orientationComp.quaternion) {
-    const rotated = orientationComp.quaternion.transformVector(localVec);
-    return posComp.pos.clone().add(rotated);
-  }
-
-  return posComp.pos.clone().add(localVec);
+  return computeWorldAttachment(world, entityId, localPoint);
 }
 
 function _computeLocalAttachment(world, entityId, worldPoint) {
-  const posComp = world.getComponent(entityId, PositionComponent);
-  if (!posComp) {
-    return worldPoint.clone();
-  }
-  const rel = worldPoint.clone().subtract(posComp.pos);
-  const orientationComp = world.getComponent(entityId, OrientationComponent);
-  if (orientationComp && orientationComp.quaternion) {
-    const inv = orientationComp.quaternion.clone().conjugate().normalize();
-    return inv.transformVector(rel);
-  }
-  return rel;
+  return computeLocalAttachment(world, entityId, worldPoint);
 }
 
 function _localTwistAngle(quaternion, axisLocal) {
@@ -2327,18 +2304,7 @@ export class PBDCableConstraintSolver {
     const ITERATIONS = 2;
 
     const jointLocals = new Map();
-    const computeLocal = (entityId, worldPoint) => {
-      const posComp = world.getComponent(entityId, PositionComponent);
-      const orientComp = world.getComponent(entityId, OrientationComponent);
-      if (!posComp) return new Vector3(0, 0, 0);
-
-      const rel = worldPoint.clone().subtract(posComp.pos);
-      if (orientComp && orientComp.quaternion) {
-        const inv = orientComp.quaternion.clone().conjugate().normalize();
-        return inv.transformVector(rel);
-      }
-      return rel;
-    };
+    const computeLocal = (entityId, worldPoint) => computeLocalAttachment(world, entityId, worldPoint);
 
     const applyConstraint = (
       entityA,
@@ -2354,28 +2320,35 @@ export class PBDCableConstraintSolver {
         return;
       }
 
-      const massAComp = world.getComponent(entityA, MassComponent);
+      const mappedA = resolveRigidBodySolverEndpoint(world, entityA, entityB, pointA_world);
+      const mappedB = resolveRigidBodySolverEndpoint(world, entityB, entityA, pointB_world);
+      const solverEntityA = mappedA.entityId;
+      const solverEntityB = mappedB.entityId;
+      const solverPointA = computeWorldAttachment(world, solverEntityA, mappedA.localPoint);
+      const solverPointB = computeWorldAttachment(world, solverEntityB, mappedB.localPoint);
+
+      const massAComp = world.getComponent(solverEntityA, MassComponent);
       const invMassA = (massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
-      const moiAComp = world.getComponent(entityA, MomentOfInertiaComponent);
+      const moiAComp = world.getComponent(solverEntityA, MomentOfInertiaComponent);
       const invInertiaA = moiAComp ? moiAComp.invInertia : 0.0;
 
-      const massBComp = world.getComponent(entityB, MassComponent);
+      const massBComp = world.getComponent(solverEntityB, MassComponent);
       const invMassB = (massBComp && massBComp.mass > 0) ? 1.0 / massBComp.mass : 0.0;
-      const moiBComp = world.getComponent(entityB, MomentOfInertiaComponent);
+      const moiBComp = world.getComponent(solverEntityB, MomentOfInertiaComponent);
       const invInertiaB = moiBComp ? moiBComp.invInertia : 0.0;
 
       if (invMassA + invMassB + invInertiaA + invInertiaB <= EPSILON) {
         return;
       }
 
-      const posAComp = world.getComponent(entityA, PositionComponent);
-      const posBComp = world.getComponent(entityB, PositionComponent);
+      const posAComp = world.getComponent(solverEntityA, PositionComponent);
+      const posBComp = world.getComponent(solverEntityB, PositionComponent);
       if (!posAComp || !posBComp) {
         return;
       }
 
-      const rA = new Vector3().subtractVectors(pointA_world, posAComp.pos);
-      const rB = new Vector3().subtractVectors(pointB_world, posBComp.pos);
+      const rA = new Vector3().subtractVectors(solverPointA, posAComp.pos);
+      const rB = new Vector3().subtractVectors(solverPointB, posBComp.pos);
       const gradAngA = rA.cross(gradPosA);
       const gradAngB = rB.cross(gradPosB);
 
@@ -2400,13 +2373,14 @@ export class PBDCableConstraintSolver {
       }
       if (invInertiaA > 0.0) {
         const deltaAngA = gradAngA.clone().scale(-invInertiaA * lambda);
-        const orientationAComp = world.getComponent(entityA, OrientationComponent);
+        const orientationAComp = world.getComponent(solverEntityA, OrientationComponent);
         if (orientationAComp) {
           const angle = deltaAngA.length();
           if (angle > EPSILON) {
             const axis = deltaAngA.clone().scale(1.0 / angle);
             const dq = new Quaternion().setFromAxisAngle(axis, angle);
             orientationAComp.quaternion.multiplyQuaternions(dq, orientationAComp.quaternion).normalize();
+            updateRigidBodyMemberLocalOrientation(world, solverEntityA);
           }
         }
       }
@@ -2417,13 +2391,14 @@ export class PBDCableConstraintSolver {
       }
       if (invInertiaB > 0.0) {
         const deltaAngB = gradAngB.clone().scale(-invInertiaB * lambda);
-        const orientationBComp = world.getComponent(entityB, OrientationComponent);
+        const orientationBComp = world.getComponent(solverEntityB, OrientationComponent);
         if (orientationBComp) {
           const angle = deltaAngB.length();
           if (angle > EPSILON) {
             const axis = deltaAngB.clone().scale(1.0 / angle);
             const dq = new Quaternion().setFromAxisAngle(axis, angle);
             orientationBComp.quaternion.multiplyQuaternions(dq, orientationBComp.quaternion).normalize();
+            updateRigidBodyMemberLocalOrientation(world, solverEntityB);
           }
         }
       }

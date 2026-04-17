@@ -11,6 +11,10 @@ import {
   getSpoolRotationAngle,
   getSpoolWorldAxis,
 } from './hangprinter_spools.js';
+import {
+  getRigidBodyEntityForMember,
+  updateRigidBodyMemberLocalOrientation,
+} from '../../src/js/cable_joints_3d/rigid_bodies.js';
 
 function normalizeAngle(angle) {
   let normalized = angle;
@@ -100,6 +104,7 @@ export class StepperMotorSystem {
         const targetAngle = stepper.commandedAngle - stepper.deltaAngle;
         if (isStepperClosedLoopEnabled(world, stepper)) {
           orient.quaternion.set(composeSpoolOrientation(spoolState, null, targetAngle));
+          updateRigidBodyMemberLocalOrientation(world, entityId);
           angVel.omega.x = 0.0;
           angVel.omega.y = 0.0;
           angVel.omega.z = 0.0;
@@ -117,6 +122,16 @@ export class StepperMotorSystem {
 
       const angularAcceleration = totalTorque / inertia.inertia;
       angVel.omega.add(worldAxis, angularAcceleration * dt);
+
+      const bodyEntity = getRigidBodyEntityForMember(world, entityId);
+      if (bodyEntity !== null && bodyEntity !== undefined) {
+        const bodyAngularVelocity = world.getComponent(bodyEntity, AngularVelocityComponent);
+        const bodyInertia = world.getComponent(bodyEntity, MomentOfInertiaComponent);
+        if (bodyAngularVelocity?.omega && bodyInertia?.inertia > 0.0) {
+          const bodyDeltaOmega = -(inertia.inertia / bodyInertia.inertia) * angularAcceleration * dt;
+          bodyAngularVelocity.omega.add(worldAxis, bodyDeltaOmega);
+        }
+      }
     }
   }
 }

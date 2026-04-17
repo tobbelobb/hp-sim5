@@ -13,7 +13,9 @@ import {
   MassComponent,
   MomentOfInertiaComponent,
   DistanceConstraintComponent,
-  RigidGroupComponent
+  RigidBodyComponent,
+  RigidBodyMemberComponent,
+  PrevRigidBodyLocalOrientationComponent,
 } from './ecs.js';
 import {
   SpoolStateComponent,
@@ -21,6 +23,10 @@ import {
   getSpoolRotationAngle,
   getSpoolWorldAxis,
 } from '../../../hp-sim-3d/app/hangprinter_spools.js';
+import {
+  initializeRigidBodySyncState,
+  updateRigidBodyMemberLocalOrientation,
+} from './rigid_bodies.js';
 
 const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
 
@@ -253,6 +259,7 @@ export class GravitySystem {
     const entities = world.query([VelocityComponent, GravityAffectedComponent]);
     for (const entityId of entities) {
       if (entityId === grabbed) continue;
+      if (world.getComponent(entityId, RigidBodyMemberComponent)) continue;
       const velComp = world.getComponent(entityId, VelocityComponent);
       velComp.vel.add(gravity, dt);
     }
@@ -324,9 +331,26 @@ export class MovementSystem {
     const linearEntities = world.query([PositionComponent, VelocityComponent]);
     for (const entityId of linearEntities) {
       if (entityId === grabbed) continue;
+      if (world.getComponent(entityId, RigidBodyMemberComponent)) continue;
       const posComp = world.getComponent(entityId, PositionComponent);
       const velComp = world.getComponent(entityId, VelocityComponent);
       posComp.pos.add(velComp.vel, dt);
+    }
+  }
+}
+
+export class PrevRigidBodyLocalOrientationSystem {
+  runInPause = false;
+
+  update(world, _dt) {
+    const entities = world.query([RigidBodyMemberComponent, PrevRigidBodyLocalOrientationComponent]);
+    for (const entityId of entities) {
+      const member = world.getComponent(entityId, RigidBodyMemberComponent);
+      const prevLocal = world.getComponent(entityId, PrevRigidBodyLocalOrientationComponent);
+      if (!member?.localOrientation || !prevLocal?.quaternion) {
+        continue;
+      }
+      prevLocal.quaternion.set(member.localOrientation);
     }
   }
 }
@@ -377,120 +401,75 @@ export class EncoderUpdateSystem {
   }
 }
 
-export class RigidGroupSystem {
+export class RigidBodySyncSystem {
   runInPause = false;
 
-  _computeCOM(world, members) {
-    let sumMass = 0.0;
-    const com = new Vector3(0, 0, 0);
-    for (const id of members) {
-      const pos = world.getComponent(id, PositionComponent)?.pos;
-      const mass = world.getComponent(id, MassComponent)?.mass ?? 0.0;
-      if (!pos || !(mass > 0.0)) {
-        continue;
-      }
-      com.add(pos, mass);
-      sumMass += mass;
-    }
-    if (sumMass > 0.0) {
-      com.scale(1.0 / sumMass);
-    }
-    return { com, sumMass };
-  }
-
-  update(world, dt) {
-    const planeNormal = getDefaultPlaneNormal(world);
-    const groupEntities = world.query([RigidGroupComponent]);
-    if (!groupEntities || groupEntities.length === 0) {
+  update(world, _dt) {
+    const bodyEntities = world.query([RigidBodyComponent, PositionComponent, OrientationComponent]);
+    if (!bodyEntities || bodyEntities.length === 0) {
       return;
     }
 
-    for (const groupId of groupEntities) {
-      const group = world.getComponent(groupId, RigidGroupComponent);
-      const members = Array.isArray(group?.members) ? group.members : [];
-      if (members.length < 2) {
+    for (const bodyEntityId of bodyEntities) {
+      const body = world.getComponent(bodyEntityId, RigidBodyComponent);
+      const bodyPosComp = world.getComponent(bodyEntityId, PositionComponent);
+      const bodyOrientationComp = world.getComponent(bodyEntityId, OrientationComponent);
+      const bodyVelComp = world.getComponent(bodyEntityId, VelocityComponent);
+      const bodyAngularVelComp = world.getComponent(bodyEntityId, AngularVelocityComponent);
+      const members = Array.isArray(body?.members) ? body.members : [];
+      if (!body || !bodyPosComp?.pos || !bodyOrientationComp?.quaternion || members.length < 1) {
         continue;
       }
 
-      if (!group.restLocal) {
-        const { com } = this._computeCOM(world, members);
-        group.restLocal = members.map((entityId) => {
-          const pos = world.getComponent(entityId, PositionComponent)?.pos;
-          return pos ? pos.clone().subtract(com) : new Vector3(0, 0, 0);
-        });
-        group.referenceTriangle = chooseReferenceTriangle(group.restLocal);
-        group.restPairs = [];
-        for (let i = 0; i < group.restLocal.length - 1; i += 1) {
-          const restA = group.restLocal[i];
-          if (!restA) continue;
-          for (let j = i + 1; j < group.restLocal.length; j += 1) {
-            const restB = group.restLocal[j];
-            if (!restB) continue;
-            group.restPairs.push({
-              indexA: i,
-              indexB: j,
-              restLength: restA.distanceTo(restB),
-            });
-          }
-        }
+      if (!body.syncedPosition || !body.syncedOrientation) {
+        initializeRigidBodySyncState(world, bodyEntityId);
       }
 
-      const stiffness = Math.max(0.0, Math.min(1.0, group.stiffness ?? 1.0));
-      const epsilon = 1e-9;
-      for (const pair of group.restPairs || []) {
-        const entityA = members[pair.indexA];
-        const entityB = members[pair.indexB];
-        const posAComp = world.getComponent(entityA, PositionComponent);
-        const posBComp = world.getComponent(entityB, PositionComponent);
-        if (!posAComp?.pos || !posBComp?.pos) {
-          continue;
-        }
-
-        const massAComp = world.getComponent(entityA, MassComponent);
-        const massBComp = world.getComponent(entityB, MassComponent);
-        const invMassA = massAComp && massAComp.mass > 0 ? 1.0 / massAComp.mass : 0.0;
-        const invMassB = massBComp && massBComp.mass > 0 ? 1.0 / massBComp.mass : 0.0;
-        if (invMassA + invMassB <= epsilon) {
-          continue;
-        }
-
-        const diff = new Vector3().subtractVectors(posBComp.pos, posAComp.pos);
-        const currentLength = diff.length();
-        if (currentLength <= epsilon) {
-          continue;
-        }
-
-        const deltaLambda = (pair.restLength - currentLength) / (invMassA + invMassB);
-        const correction = diff.scale((deltaLambda * stiffness) / currentLength);
-        if (invMassA > 0.0) {
-          posAComp.pos.add(correction, -invMassA);
-        }
-        if (invMassB > 0.0) {
-          posBComp.pos.add(correction, invMassB);
-        }
-      }
-
-      const { com, sumMass } = this._computeCOM(world, members);
-      if (!(sumMass > 0.0)) {
-        continue;
-      }
-
-      const rotation = estimateGroupRotation(world, members, group);
-      const previousRotation = group.prevRotation instanceof Quaternion
-        ? group.prevRotation.clone().normalize()
-        : new Quaternion();
-      const deltaRotation = rotation.clone()
-        .multiplyQuaternions(rotation, previousRotation.clone().conjugate().normalize())
+      const previousBodyOrientation = body.syncedOrientation.clone().normalize();
+      const currentBodyOrientation = bodyOrientationComp.quaternion.clone().normalize();
+      const bodyDelta = currentBodyOrientation.clone()
+        .multiplyQuaternions(
+          currentBodyOrientation,
+          previousBodyOrientation.clone().conjugate().normalize(),
+        )
         .normalize();
-      const rotationDeltaMagnitude = Math.abs(deltaRotation.x) + Math.abs(deltaRotation.y)
-        + Math.abs(deltaRotation.z) + Math.abs(deltaRotation.w - 1.0);
-      if (rotationDeltaMagnitude > 1e-12) {
-        for (const entityId of members) {
-          applyOrientationDelta(world, entityId, deltaRotation);
+
+      for (const entityId of members) {
+        const member = world.getComponent(entityId, RigidBodyMemberComponent);
+        if (!member) {
+          continue;
+        }
+
+        const orientationComp = world.getComponent(entityId, OrientationComponent);
+        if (orientationComp?.quaternion) {
+          applyOrientationDelta(world, entityId, bodyDelta);
+          updateRigidBodyMemberLocalOrientation(world, entityId);
+          orientationComp.quaternion.set(
+            new Quaternion()
+              .multiplyQuaternions(currentBodyOrientation, member.localOrientation)
+              .normalize(),
+          );
+        }
+
+        const posComp = world.getComponent(entityId, PositionComponent);
+        if (posComp?.pos) {
+          const rotatedLocal = currentBodyOrientation.transformVector(member.localPosition);
+          posComp.pos.set(bodyPosComp.pos.clone().add(rotatedLocal));
+        }
+
+        const velComp = world.getComponent(entityId, VelocityComponent);
+        if (velComp?.vel) {
+          const linearVelocity = bodyVelComp?.vel ? bodyVelComp.vel.clone() : new Vector3(0.0, 0.0, 0.0);
+          if (bodyAngularVelComp?.omega && member.localPosition) {
+            const worldOffset = currentBodyOrientation.transformVector(member.localPosition);
+            linearVelocity.add(bodyAngularVelComp.omega.cross(worldOffset));
+          }
+          velComp.vel.set(linearVelocity);
         }
       }
-      group.prevRotation = rotation.clone();
-      group.prevAngle = estimatePlanarGroupAngle(world, members, group, com, planeNormal);
+
+      body.syncedPosition.set(bodyPosComp.pos);
+      body.syncedOrientation.set(currentBodyOrientation);
     }
   }
 }
@@ -541,6 +520,7 @@ export class PBDVelocityUpdateSystem {
 
     for (const entityId of entities) {
       if (entityId === grabbed) continue;
+      if (world.getComponent(entityId, RigidBodyMemberComponent)) continue;
 
       const massComp = world.getComponent(entityId, MassComponent);
       if (massComp && massComp.mass <= 0) continue;
@@ -570,6 +550,7 @@ export class PBDAngularVelocityUpdateSystem {
 
     for (const entityId of entities) {
       if (entityId === grabbed) continue;
+      if (world.getComponent(entityId, RigidBodyMemberComponent)) continue;
 
       const moiComp = world.getComponent(entityId, MomentOfInertiaComponent);
       if (moiComp && moiComp.invInertia <= 0) continue;
@@ -604,6 +585,64 @@ export class PBDAngularVelocityUpdateSystem {
       angularVelComp.omega.x = qDelta.x * scale;
       angularVelComp.omega.y = qDelta.y * scale;
       angularVelComp.omega.z = qDelta.z * scale;
+    }
+  }
+}
+
+export class RigidBodyMemberAngularVelocityUpdateSystem {
+  runInPause = false;
+
+  update(world, dt) {
+    const entities = world.query([
+      RigidBodyMemberComponent,
+      AngularVelocityComponent,
+      PrevRigidBodyLocalOrientationComponent,
+    ]);
+    const epsilon = 1e-9;
+
+    if (dt <= epsilon) return;
+
+    for (const entityId of entities) {
+      const member = world.getComponent(entityId, RigidBodyMemberComponent);
+      const prevLocal = world.getComponent(entityId, PrevRigidBodyLocalOrientationComponent);
+      const angularVel = world.getComponent(entityId, AngularVelocityComponent);
+      const bodyOrientation = world.getComponent(member?.bodyEntity, OrientationComponent)?.quaternion;
+      if (!member?.localOrientation || !prevLocal?.quaternion || !angularVel?.omega || !bodyOrientation) {
+        continue;
+      }
+
+      const qCurr = member.localOrientation.clone().normalize();
+      const qPrevInv = prevLocal.quaternion.clone().conjugate().normalize();
+      const qDelta = qCurr.clone().multiplyQuaternions(qCurr, qPrevInv).normalize();
+
+      if (qDelta.w < 0.0) {
+        qDelta.x *= -1.0;
+        qDelta.y *= -1.0;
+        qDelta.z *= -1.0;
+        qDelta.w *= -1.0;
+      }
+
+      const w = Math.max(-1.0, Math.min(1.0, qDelta.w));
+      const angle = 2.0 * Math.acos(w);
+      const sinHalf = Math.sqrt(Math.max(0.0, 1.0 - (w * w)));
+
+      if (sinHalf <= 1e-12 || angle <= epsilon) {
+        angularVel.omega.x = 0.0;
+        angularVel.omega.y = 0.0;
+        angularVel.omega.z = 0.0;
+        continue;
+      }
+
+      const axisLocal = new Vector3(
+        qDelta.x / sinHalf,
+        qDelta.y / sinHalf,
+        qDelta.z / sinHalf,
+      );
+      const axisWorld = bodyOrientation.transformVector(axisLocal).normalize();
+      const scale = angle / dt;
+      angularVel.omega.x = axisWorld.x * scale;
+      angularVel.omega.y = axisWorld.y * scale;
+      angularVel.omega.z = axisWorld.z * scale;
     }
   }
 }

@@ -3,6 +3,7 @@ import {
   OrientationComponent,
   AngularVelocityComponent,
   MomentOfInertiaComponent,
+  RigidBodyMemberComponent,
 } from '../../../src/js/cable_joints_3d/ecs.js';
 import {
   StepperMotorComponent,
@@ -68,5 +69,32 @@ describe('slideprinter 3D stepper closed-loop mode', () => {
     const worldAxis = getSpoolWorldAxis(spoolState, updatedOrient.quaternion);
     expect(getSpoolRotationAngle(spoolState, updatedOrient.quaternion)).toBeCloseTo(0.2, 12);
     expect(Math.abs(angVel.omega.dot(worldAxis))).toBeGreaterThan(0.01);
+  });
+
+  test('applies equal-and-opposite motor reaction torque to the host rigid body', () => {
+    const world = new World();
+    const system = new StepperMotorSystem();
+
+    const bodyEntity = world.createEntity();
+    world.addComponent(bodyEntity, new AngularVelocityComponent(0.0, 0.0, 0.0));
+    world.addComponent(bodyEntity, new MomentOfInertiaComponent(4.0));
+
+    const stepperEntity = world.createEntity();
+    const orient = new OrientationComponent();
+    orient.quaternion.setFromAxisAngle(new Vector3(0.0, 0.0, 1.0), 0.2);
+
+    world.addComponent(stepperEntity, new StepperMotorComponent(1.1, 0.0, 0.5, 1, 0.0));
+    world.addComponent(stepperEntity, new SpoolStateComponent('A'));
+    world.addComponent(stepperEntity, orient);
+    world.addComponent(stepperEntity, new AngularVelocityComponent(0.0, 0.0, 0.0));
+    world.addComponent(stepperEntity, new MomentOfInertiaComponent(1.0));
+    world.addComponent(stepperEntity, new RigidBodyMemberComponent(bodyEntity));
+
+    system.update(world, 0.1);
+
+    const spoolAngularVelocity = world.getComponent(stepperEntity, AngularVelocityComponent).omega;
+    const bodyAngularVelocity = world.getComponent(bodyEntity, AngularVelocityComponent).omega;
+    expect(spoolAngularVelocity.z).toBeGreaterThan(0.0);
+    expect(bodyAngularVelocity.z).toBeCloseTo(-0.25 * spoolAngularVelocity.z, 12);
   });
 });

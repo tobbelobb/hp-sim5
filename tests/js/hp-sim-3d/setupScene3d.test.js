@@ -178,12 +178,14 @@ describe('slideprinter 3D setupScene', () => {
     expect(planeNormal?.z).toBeCloseTo(1.0, 6);
 
     const systemNames = world.systems.map((system) => system.constructor.name);
-    expect(systemNames).toContain('RigidGroupSystem');
-    expect(systemNames).toContain('XPBDDistanceConstraintSystem');
+    expect(systemNames).toContain('PrevRigidBodyLocalOrientationSystem');
+    expect(systemNames).toContain('RigidBodySyncSystem');
+    expect(systemNames).toContain('RigidBodyMemberAngularVelocityUpdateSystem');
     expect(systemNames).toContain('ExtruderSystem');
     expect(systemNames).toContain('EncoderUpdateSystem');
     expect(systemNames).toContain('StepperMotorSystem');
-    expect(systemNames.filter((name) => name === 'SpoolAxisConstraintSystem')).toHaveLength(2);
+    expect(systemNames.filter((name) => name === 'RigidBodySyncSystem')).toHaveLength(3);
+    expect(systemNames.filter((name) => name === 'SpoolAxisConstraintSystem')).toHaveLength(1);
   });
 
   test('preserves the current pause state when rebuilding the base scene', () => {
