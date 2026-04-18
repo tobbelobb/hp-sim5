@@ -2364,6 +2364,26 @@ export class PBDCableConstraintSolver {
 
     const jointLocals = new Map();
     const computeLocal = (entityId, worldPoint) => computeLocalAttachment(world, entityId, worldPoint);
+    const getExternalMemberAngularSolveInfo = (originalEntityId, mappedEndpoint) => {
+      if (!mappedEndpoint || mappedEndpoint.internalToBody || mappedEndpoint.entityId === originalEntityId) {
+        return null;
+      }
+      const linkComp = world.getComponent(originalEntityId, CableLinkComponent);
+      if (!linkComp?.cablePlaneNormalLocal) {
+        return null;
+      }
+      const orientationComp = world.getComponent(originalEntityId, OrientationComponent);
+      const moiComp = world.getComponent(originalEntityId, MomentOfInertiaComponent);
+      const centerWorld = getEntityWorldPosition(world, originalEntityId);
+      if (!orientationComp?.quaternion || !centerWorld || !(moiComp?.invInertia > EPSILON)) {
+        return null;
+      }
+      return {
+        entityId: originalEntityId,
+        centerWorld,
+        invInertia: moiComp.invInertia,
+      };
+    };
 
     const applyConstraint = (
       entityA,
@@ -2385,6 +2405,8 @@ export class PBDCableConstraintSolver {
       const solverEntityB = mappedB.entityId;
       const solverPointA = computeWorldAttachment(world, solverEntityA, mappedA.localPoint);
       const solverPointB = computeWorldAttachment(world, solverEntityB, mappedB.localPoint);
+      const memberAngularA = getExternalMemberAngularSolveInfo(entityA, mappedA);
+      const memberAngularB = getExternalMemberAngularSolveInfo(entityB, mappedB);
 
 	      const massAComp = world.getComponent(solverEntityA, MassComponent);
 	      const invMassA = (massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
@@ -2405,9 +2427,12 @@ export class PBDCableConstraintSolver {
 	        ? world.getComponent(reactionBodyEntityB, MomentOfInertiaComponent)
 	        : null;
 	      const reactionInvInertiaB = reactionBodyInertiaB ? reactionBodyInertiaB.invInertia : 0.0;
+        const memberInvInertiaA = memberAngularA?.invInertia ?? 0.0;
+        const memberInvInertiaB = memberAngularB?.invInertia ?? 0.0;
 
 	      if (
 	        invMassA + invMassB + invInertiaA + invInertiaB + reactionInvInertiaA + reactionInvInertiaB
+          + memberInvInertiaA + memberInvInertiaB
 	        <= EPSILON
 	      ) {
 	        return;
@@ -2423,14 +2448,26 @@ export class PBDCableConstraintSolver {
       const rB = new Vector3().subtractVectors(solverPointB, posBComp.pos);
       const gradAngA = rA.cross(gradPosA);
       const gradAngB = rB.cross(gradPosB);
+      const gradAngMemberA = memberAngularA
+        ? new Vector3().subtractVectors(pointA_world, memberAngularA.centerWorld).cross(gradPosA)
+        : null;
+      const gradAngMemberB = memberAngularB
+        ? new Vector3().subtractVectors(pointB_world, memberAngularB.centerWorld).cross(gradPosB)
+        : null;
 
       let denom = 0.0;
 	      denom += invMassA * gradPosA.lengthSq();
 	      denom += invInertiaA * gradAngA.lengthSq();
 	      denom += reactionInvInertiaA * gradAngA.lengthSq();
+        if (memberInvInertiaA > 0.0 && gradAngMemberA) {
+          denom += memberInvInertiaA * gradAngMemberA.lengthSq();
+        }
 	      denom += invMassB * gradPosB.lengthSq();
 	      denom += invInertiaB * gradAngB.lengthSq();
 	      denom += reactionInvInertiaB * gradAngB.lengthSq();
+        if (memberInvInertiaB > 0.0 && gradAngMemberB) {
+          denom += memberInvInertiaB * gradAngMemberB.lengthSq();
+        }
 	      if (Number.isFinite(dt) && dt > EPSILON) {
 	        denom += (compliance ?? 0.0) / (dt * dt);
 	      }
@@ -2458,6 +2495,19 @@ export class PBDCableConstraintSolver {
 	          }
 	        }
 	      }
+        if (memberInvInertiaA > 0.0 && gradAngMemberA) {
+          const deltaAngMemberA = gradAngMemberA.clone().scale(-memberInvInertiaA * lambda);
+          const memberOrientationAComp = world.getComponent(memberAngularA.entityId, OrientationComponent);
+          if (memberOrientationAComp) {
+            const angle = deltaAngMemberA.length();
+            if (angle > EPSILON) {
+              const axis = deltaAngMemberA.clone().scale(1.0 / angle);
+              const dq = new Quaternion().setFromAxisAngle(axis, angle);
+              memberOrientationAComp.quaternion.multiplyQuaternions(dq, memberOrientationAComp.quaternion).normalize();
+              updateRigidBodyMemberLocalOrientation(world, memberAngularA.entityId);
+            }
+          }
+        }
 	      if (reactionInvInertiaA > 0.0 && reactionBodyEntityA !== null && reactionBodyEntityA !== undefined) {
 	        const reactionAngA = gradAngA.clone().scale(reactionInvInertiaA * lambda);
 	        const reactionOrientationAComp = world.getComponent(reactionBodyEntityA, OrientationComponent);
@@ -2488,6 +2538,19 @@ export class PBDCableConstraintSolver {
 	          }
 	        }
 	      }
+        if (memberInvInertiaB > 0.0 && gradAngMemberB) {
+          const deltaAngMemberB = gradAngMemberB.clone().scale(-memberInvInertiaB * lambda);
+          const memberOrientationBComp = world.getComponent(memberAngularB.entityId, OrientationComponent);
+          if (memberOrientationBComp) {
+            const angle = deltaAngMemberB.length();
+            if (angle > EPSILON) {
+              const axis = deltaAngMemberB.clone().scale(1.0 / angle);
+              const dq = new Quaternion().setFromAxisAngle(axis, angle);
+              memberOrientationBComp.quaternion.multiplyQuaternions(dq, memberOrientationBComp.quaternion).normalize();
+              updateRigidBodyMemberLocalOrientation(world, memberAngularB.entityId);
+            }
+          }
+        }
 	      if (reactionInvInertiaB > 0.0 && reactionBodyEntityB !== null && reactionBodyEntityB !== undefined) {
 	        const reactionAngB = gradAngB.clone().scale(reactionInvInertiaB * lambda);
 	        const reactionOrientationBComp = world.getComponent(reactionBodyEntityB, OrientationComponent);

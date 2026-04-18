@@ -1,6 +1,7 @@
 import Vector3 from './vector3.js';
 import Quaternion from './quaternion.js';
 import {
+  CableLinkComponent,
   CableJointComponent,
   CablePathComponent,
   calculateAttachmentPoints
@@ -13,6 +14,7 @@ import {
 } from './ecs.js';
 import {
   computeWorldAttachment,
+  getEntityWorldPosition,
   getRigidBodyEntityForMember,
   resolveRigidBodySolverEndpoint,
   updateRigidBodyMemberLocalOrientation,
@@ -35,6 +37,27 @@ function applyAngularCorrection(orientationComp, deltaVec) {
   const axis = deltaVec.clone().scale(1.0 / angle);
   const dq = new Quaternion().setFromAxisAngle(axis, angle);
   orientationComp.quaternion.multiplyQuaternions(dq, orientationComp.quaternion).normalize();
+}
+
+function getExternalMemberAngularSolveInfo(world, originalEntityId, mappedEndpoint) {
+  if (!mappedEndpoint || mappedEndpoint.internalToBody || mappedEndpoint.entityId === originalEntityId) {
+    return null;
+  }
+  const linkComp = world.getComponent(originalEntityId, CableLinkComponent);
+  if (!linkComp?.cablePlaneNormalLocal) {
+    return null;
+  }
+  const orientationComp = world.getComponent(originalEntityId, OrientationComponent);
+  const moiComp = world.getComponent(originalEntityId, MomentOfInertiaComponent);
+  const centerWorld = getEntityWorldPosition(world, originalEntityId);
+  if (!orientationComp?.quaternion || !centerWorld || !(moiComp?.invInertia > EPSILON)) {
+    return null;
+  }
+  return {
+    entityId: originalEntityId,
+    centerWorld,
+    invInertia: moiComp.invInertia,
+  };
 }
 
 export class PBDResolveCableOverCorrections {
@@ -127,6 +150,8 @@ export class PBDResolveCableOverCorrections {
     const solverEntityB = mappedB.entityId;
     const solverPointA = computeWorldAttachment(world, solverEntityA, mappedA.localPoint);
     const solverPointB = computeWorldAttachment(world, solverEntityB, mappedB.localPoint);
+    const memberAngularA = getExternalMemberAngularSolveInfo(world, entityA, mappedA);
+    const memberAngularB = getExternalMemberAngularSolveInfo(world, entityB, mappedB);
 
 	    const massAComp = world.getComponent(solverEntityA, MassComponent);
 	    const invMassA = massAComp && massAComp.mass > 0 && Number.isFinite(massAComp.mass) ? 1.0 / massAComp.mass : 0.0;
@@ -147,9 +172,12 @@ export class PBDResolveCableOverCorrections {
 	      ? world.getComponent(reactionBodyEntityB, MomentOfInertiaComponent)
 	      : null;
 	    const reactionInvInertiaB = reactionBodyInertiaB ? reactionBodyInertiaB.invInertia : 0.0;
+      const memberInvInertiaA = memberAngularA?.invInertia ?? 0.0;
+      const memberInvInertiaB = memberAngularB?.invInertia ?? 0.0;
 
 	    if (
 	      invMassA + invMassB + invInertiaA + invInertiaB + reactionInvInertiaA + reactionInvInertiaB
+        + memberInvInertiaA + memberInvInertiaB
 	      <= EPSILON
 	    ) return;
 
@@ -164,18 +192,30 @@ export class PBDResolveCableOverCorrections {
     const posAComp = world.getComponent(solverEntityA, PositionComponent);
     const rA = new Vector3().subtractVectors(solverPointA, posAComp.pos);
     const gradAngA = rA.cross(dir);
+    const gradAngMemberA = memberAngularA
+      ? new Vector3().subtractVectors(pA, memberAngularA.centerWorld).cross(dir)
+      : null;
 
     const posBComp = world.getComponent(solverEntityB, PositionComponent);
     const rB = new Vector3().subtractVectors(solverPointB, posBComp.pos);
     const gradAngB = rB.cross(dir.clone().scale(-1));
+    const gradAngMemberB = memberAngularB
+      ? new Vector3().subtractVectors(pB, memberAngularB.centerWorld).cross(dir.clone().scale(-1))
+      : null;
 
 	    let denom = 0;
 	    denom += invMassA * gradPosA.lengthSq();
 	    denom += invInertiaA * gradAngA.lengthSq();
 	    denom += reactionInvInertiaA * gradAngA.lengthSq();
+      if (memberInvInertiaA > 0.0 && gradAngMemberA) {
+        denom += memberInvInertiaA * gradAngMemberA.lengthSq();
+      }
 	    denom += invMassB * gradPosB.lengthSq();
 	    denom += invInertiaB * gradAngB.lengthSq();
 	    denom += reactionInvInertiaB * gradAngB.lengthSq();
+      if (memberInvInertiaB > 0.0 && gradAngMemberB) {
+        denom += memberInvInertiaB * gradAngMemberB.lengthSq();
+      }
 
     const dt = world.getResource('dt');
     if (dt !== undefined && dt > 0) {
@@ -194,6 +234,10 @@ export class PBDResolveCableOverCorrections {
 	      const delta = gradAngA.clone().scale(-invInertiaA * lambda);
 	      ensureArrayMapEntry(angCorrections, solverEntityA, delta);
 	    }
+      if (memberInvInertiaA > 0.0 && gradAngMemberA) {
+        const delta = gradAngMemberA.clone().scale(-memberInvInertiaA * lambda);
+        ensureArrayMapEntry(angCorrections, memberAngularA.entityId, delta);
+      }
 	    if (reactionInvInertiaA > 0.0 && reactionBodyEntityA !== null && reactionBodyEntityA !== undefined) {
 	      const delta = gradAngA.clone().scale(reactionInvInertiaA * lambda);
 	      ensureArrayMapEntry(angCorrections, reactionBodyEntityA, delta);
@@ -206,6 +250,10 @@ export class PBDResolveCableOverCorrections {
 	      const delta = gradAngB.clone().scale(-invInertiaB * lambda);
 	      ensureArrayMapEntry(angCorrections, solverEntityB, delta);
 	    }
+      if (memberInvInertiaB > 0.0 && gradAngMemberB) {
+        const delta = gradAngMemberB.clone().scale(-memberInvInertiaB * lambda);
+        ensureArrayMapEntry(angCorrections, memberAngularB.entityId, delta);
+      }
 	    if (reactionInvInertiaB > 0.0 && reactionBodyEntityB !== null && reactionBodyEntityB !== undefined) {
 	      const delta = gradAngB.clone().scale(reactionInvInertiaB * lambda);
 	      ensureArrayMapEntry(angCorrections, reactionBodyEntityB, delta);

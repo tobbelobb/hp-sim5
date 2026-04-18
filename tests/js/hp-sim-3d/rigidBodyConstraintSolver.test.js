@@ -8,6 +8,7 @@ import {
   RigidBodyMemberComponent,
 } from '../../../src/js/cable_joints_3d/ecs.js';
 import {
+  CableLinkComponent,
   CableJointComponent,
   CablePathComponent,
   PBDCableConstraintSolver,
@@ -150,4 +151,84 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
 	    expect(bodyOrientation.z).toBeLessThan(-1e-4);
 	    expect(Math.abs(spoolOrientation.z) + Math.abs(spoolOrientation.w - 1.0)).toBeGreaterThan(1e-4);
 	  });
+
+  test('external cable corrections can backdrive a rigid-body-mounted spool member', () => {
+    const world = new World();
+    world.setResource('dt', 1.0);
+
+    const body = world.createEntity();
+    world.addComponent(body, new PositionComponent(0.0, 0.0, 0.0));
+    world.addComponent(body, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
+    world.addComponent(body, new MassComponent(2.0));
+    world.addComponent(body, new MomentOfInertiaComponent(5.0));
+
+    const spool = world.createEntity();
+    world.addComponent(spool, new PositionComponent(1.0, 0.0, 0.0));
+    world.addComponent(spool, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
+    world.addComponent(spool, new MassComponent(0.0));
+    world.addComponent(spool, new MomentOfInertiaComponent(0.1));
+    world.addComponent(
+      spool,
+      new CableLinkComponent(
+        1.0,
+        0.0,
+        0.0,
+        null,
+        null,
+        new Vector3(0.0, 0.0, 1.0),
+      ),
+    );
+    world.addComponent(
+      spool,
+      new RigidBodyMemberComponent(
+        body,
+        new Vector3(1.0, 0.0, 0.0),
+      ),
+    );
+
+    world.addComponent(body, new RigidBodyComponent([spool]));
+
+    const anchor = world.createEntity();
+    world.addComponent(anchor, new PositionComponent(2.0, 0.0, 0.0));
+    world.addComponent(anchor, new MassComponent(-1.0));
+
+    const jointEntity = world.createEntity();
+    world.addComponent(
+      jointEntity,
+      CableJointComponent.fromWorld(
+        spool,
+        anchor,
+        1.0,
+        new Vector3(1.0, 1.0, 0.0),
+        new Vector3(2.0, 0.0, 0.0),
+      ),
+    );
+
+    const pathEntity = world.createEntity();
+    world.addComponent(
+      pathEntity,
+      new CablePathComponent(
+        world,
+        [jointEntity],
+        ['attachment', 'attachment'],
+        [true, true],
+        Infinity,
+        null,
+        0.0,
+      ),
+    );
+
+    const solver = new PBDCableConstraintSolver();
+    solver.update(world, 0.0);
+
+    const bodyPosition = world.getComponent(body, PositionComponent).pos;
+    const bodyOrientation = world.getComponent(body, OrientationComponent).quaternion;
+    const spoolOrientation = world.getComponent(spool, OrientationComponent).quaternion;
+    const spoolMember = world.getComponent(spool, RigidBodyMemberComponent);
+
+    expect(bodyPosition.x).toBeGreaterThan(0.0);
+    expect(Math.abs(bodyOrientation.z) + Math.abs(bodyOrientation.w - 1.0)).toBeGreaterThan(1e-4);
+    expect(Math.abs(spoolOrientation.z) + Math.abs(spoolOrientation.w - 1.0)).toBeGreaterThan(1e-4);
+    expect(Math.abs(spoolMember.localOrientation.z) + Math.abs(spoolMember.localOrientation.w - 1.0)).toBeGreaterThan(1e-4);
+  });
 	});
