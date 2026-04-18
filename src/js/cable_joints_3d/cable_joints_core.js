@@ -541,6 +541,44 @@ function _deltaAngleForEntity(world, entityId, prevQuat, currQuat) {
   return _deltaAngleAroundAxis(prevQuat, currQuat, _getPlaneNormal(world, entityId));
 }
 
+function _attachmentRelativeOrientationForEntity(
+  world,
+  entityId,
+  center,
+  attachmentPoint,
+  quaternion = null,
+  orientationAngle = null,
+) {
+  if (!center || !attachmentPoint) {
+    return null;
+  }
+
+  const linkComp = world.getComponent(entityId, CableLinkComponent);
+  if (linkComp?.cablePlaneNormalLocal) {
+    const orientationQuat = quaternion ?? getEntityWorldOrientation(world, entityId);
+    if (!orientationQuat) {
+      return null;
+    }
+    const relWorld = attachmentPoint.clone().subtract(center);
+    const invOrientation = orientationQuat.clone().conjugate().normalize();
+    const relLocal = invOrientation.transformVector(relWorld);
+    const basisLocal = _planeBasisForAxis(linkComp.cablePlaneNormalLocal);
+    return Math.atan2(relLocal.dot(basisLocal.v), relLocal.dot(basisLocal.u));
+  }
+
+  const basis = _planeBasisForAxis(_getPlaneNormal(world, entityId));
+  const relWorld = attachmentPoint.clone().subtract(center);
+  const attachmentAngleWorld = Math.atan2(relWorld.dot(basis.v), relWorld.dot(basis.u));
+  const resolvedOrientationAngle = Number.isFinite(orientationAngle)
+    ? orientationAngle
+    : _orientationAngleForEntity(
+      world,
+      entityId,
+      quaternion ?? getEntityWorldOrientation(world, entityId),
+    );
+  return _normalizeAngleSigned(attachmentAngleWorld - resolvedOrientationAngle);
+}
+
 function _applyAxisAngleDelta(quaternion, axis, deltaAngle) {
   if (!quaternion || !Number.isFinite(deltaAngle) || Math.abs(deltaAngle) <= EPSILON) {
     return;
@@ -954,7 +992,6 @@ function _ensureHybridKnotAngleComponentForEndpoint(world, path, endpointIndex, 
     return;
   }
 
-  const axis = _getPlaneNormal(world, entityId);
   const baseRadius = world.getComponent(entityId, RadiusComponent)?.radius;
   const pathHalfWidth = layeringEnabled(world) ? (path.cableHalfWidth ?? 0.0) : 0.0;
   const rampLength = Math.max(0.0, baseRadius ?? 0.0) * KNOT_SPAN;
@@ -969,9 +1006,17 @@ function _ensureHybridKnotAngleComponentForEndpoint(world, path, endpointIndex, 
   const orientation = Number.isFinite(options?.orientation)
     ? options.orientation
     : _orientationAngleForEntity(world, entityId, getEntityWorldOrientation(world, entityId));
-  const basis = _planeBasisForAxis(axis);
-  const rel = resolvedAttachmentPoint.clone().subtract(center);
-  const relAttachmentAngle = Math.atan2(rel.dot(basis.v), rel.dot(basis.u)) - orientation;
+  const relAttachmentAngle = _attachmentRelativeOrientationForEntity(
+    world,
+    entityId,
+    center,
+    resolvedAttachmentPoint,
+    options?.quaternion ?? getEntityWorldOrientation(world, entityId),
+    orientation,
+  );
+  if (!Number.isFinite(relAttachmentAngle)) {
+    return;
+  }
   const knotAngle = _normalizeAngleSigned(relAttachmentAngle - thetaSignedAtState);
   if (!Number.isFinite(knotAngle)) {
     return;
@@ -1161,6 +1206,7 @@ export function _updateAttachmentPoints(world) {
           attachmentPoint: attachmentA_previous,
           center: prevPosA,
           orientation: prevAngleA,
+          quaternion: prevQuatA,
           createIfMissing: false
         });
       }
@@ -1169,6 +1215,7 @@ export function _updateAttachmentPoints(world) {
           attachmentPoint: attachmentB_previous,
           center: prevPosB,
           orientation: prevAngleB,
+          quaternion: prevQuatB,
           createIfMissing: false
         });
       }
@@ -1187,10 +1234,14 @@ export function _updateAttachmentPoints(world) {
         attachmentA_current &&
         Number.isFinite(thetaA)
       ) {
-        const basisA = _planeBasisForAxis(planeNormalA);
-        const relA = attachmentA_current.clone().subtract(posA);
-        const attachmentAngleWorldA = Math.atan2(relA.dot(basisA.v), relA.dot(basisA.u));
-        const attachmentRelOrientationA = _normalizeAngleSigned(attachmentAngleWorldA - angleA);
+        const attachmentRelOrientationA = _attachmentRelativeOrientationForEntity(
+          world,
+          entityA,
+          posA,
+          attachmentA_current,
+          currentQuatA,
+          angleA,
+        );
         const thetaSignedA = (cwA ? -1.0 : 1.0) * thetaA;
         const knotAngleFromAttachmentA = _normalizeAngleSigned(attachmentRelOrientationA - thetaSignedA);
         const diffA = _normalizeAngleSigned(knotAngleFromAttachmentA - knotAngleA);
@@ -1206,10 +1257,14 @@ export function _updateAttachmentPoints(world) {
         attachmentB_current &&
         Number.isFinite(thetaB)
       ) {
-        const basisB = _planeBasisForAxis(planeNormalB);
-        const relB = attachmentB_current.clone().subtract(posB);
-        const attachmentAngleWorldB = Math.atan2(relB.dot(basisB.v), relB.dot(basisB.u));
-        const attachmentRelOrientationB = _normalizeAngleSigned(attachmentAngleWorldB - angleB);
+        const attachmentRelOrientationB = _attachmentRelativeOrientationForEntity(
+          world,
+          entityB,
+          posB,
+          attachmentB_current,
+          currentQuatB,
+          angleB,
+        );
         const thetaSignedB = (cwB ? 1.0 : -1.0) * thetaB;
         const knotAngleFromAttachmentB = _normalizeAngleSigned(attachmentRelOrientationB - thetaSignedB);
         const diffB = _normalizeAngleSigned(knotAngleFromAttachmentB - knotAngleB);
@@ -1391,10 +1446,14 @@ export function _updateAttachmentPoints(world) {
             thetaCurrentA = _effectiveRollingRadius(world, path, A, baseRadiusA).theta;
           }
           const thetaSignA = cwA ? -1.0 : 1.0;
-          const basisA = _planeBasisForAxis(planeNormalA);
-          const relA = attachmentA_current.clone().subtract(posA);
-          const attachmentAngleWorldA = Math.atan2(relA.dot(basisA.v), relA.dot(basisA.u));
-          const attachmentRelOrientationA = _normalizeAngleSigned(attachmentAngleWorldA - angleA);
+          const attachmentRelOrientationA = _attachmentRelativeOrientationForEntity(
+            world,
+            entityA,
+            posA,
+            attachmentA_current,
+            currentQuatA,
+            angleA,
+          );
           const thetaSignedWrappedA = _normalizeAngleSigned(attachmentRelOrientationA - knotAngleA);
           const thetaSignedCurrentA = thetaSignA * thetaCurrentA;
           const thetaSignedTargetA = _unwrapAngleNear(thetaSignedCurrentA, thetaSignedWrappedA);
@@ -1421,10 +1480,14 @@ export function _updateAttachmentPoints(world) {
             thetaCurrentB = _effectiveRollingRadius(world, path, B, baseRadiusB).theta;
           }
           const thetaSignB = cwB ? 1.0 : -1.0;
-          const basisB = _planeBasisForAxis(planeNormalB);
-          const relB = attachmentB_current.clone().subtract(posB);
-          const attachmentAngleWorldB = Math.atan2(relB.dot(basisB.v), relB.dot(basisB.u));
-          const attachmentRelOrientationB = _normalizeAngleSigned(attachmentAngleWorldB - angleB);
+          const attachmentRelOrientationB = _attachmentRelativeOrientationForEntity(
+            world,
+            entityB,
+            posB,
+            attachmentB_current,
+            currentQuatB,
+            angleB,
+          );
           const thetaSignedWrappedB = _normalizeAngleSigned(attachmentRelOrientationB - knotAngleB);
           const thetaSignedCurrentB = thetaSignB * thetaCurrentB;
           const thetaSignedTargetB = _unwrapAngleNear(thetaSignedCurrentB, thetaSignedWrappedB);
