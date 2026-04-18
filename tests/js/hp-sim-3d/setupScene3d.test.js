@@ -180,7 +180,6 @@ describe('slideprinter 3D setupScene', () => {
     const systemNames = world.systems.map((system) => system.constructor.name);
     expect(systemNames).toContain('PrevRigidBodyLocalOrientationSystem');
     expect(systemNames).toContain('RigidBodySyncSystem');
-    expect(systemNames).toContain('RigidBodyMemberAngularVelocityUpdateSystem');
     expect(systemNames).toContain('ExtruderSystem');
     expect(systemNames).toContain('EncoderUpdateSystem');
     expect(systemNames).toContain('StepperMotorSystem');

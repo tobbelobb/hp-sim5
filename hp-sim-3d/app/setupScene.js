@@ -69,7 +69,6 @@ import {
   PBDVelocityUpdateSystem,
   PBDAngularVelocityUpdateSystem,
   PrevRigidBodyLocalOrientationSystem,
-  RigidBodyMemberAngularVelocityUpdateSystem,
   RigidBodySyncSystem,
   XPBDDistanceConstraintSystem,
 } from '../../src/js/cable_joints_3d/commonSystems.js';
@@ -956,7 +955,6 @@ export function setupScene(world, stage, canvas, options = {}) {
           // 7. UPDATE VELOCITY: Derive final velocities from the position changes
           world.registerSystem(new PBDVelocityUpdateSystem());
           world.registerSystem(new PBDAngularVelocityUpdateSystem());
-          world.registerSystem(new RigidBodyMemberAngularVelocityUpdateSystem());
 
           // 8. VELOCITY SOLVERS: Apply restitution and dynamic friction
           // Velocity-level solvers (which might also do positional adjustments)
