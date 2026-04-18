@@ -27,6 +27,9 @@ import {
 } from '../../../hp-sim-3d/app/hangprinter_spools.js';
 import {
   initializeRigidBodySyncState,
+  computeWorldAttachment,
+  getEntityWorldPosition,
+  resolveRigidBodySolverEndpoint,
   updateRigidBodyMemberLocalOrientation,
 } from './rigid_bodies.js';
 
@@ -283,22 +286,42 @@ export class XPBDDistanceConstraintSystem {
 
       const entityA = constraint.entityA;
       const entityB = constraint.entityB;
+      const pointA = getEntityWorldPosition(world, entityA);
+      const pointB = getEntityWorldPosition(world, entityB);
+      if (!pointA || !pointB) {
+        continue;
+      }
 
-      const posAComp = world.getComponent(entityA, PositionComponent);
-      const posBComp = world.getComponent(entityB, PositionComponent);
+      const mappedA = resolveRigidBodySolverEndpoint(world, entityA, entityB, pointA);
+      const mappedB = resolveRigidBodySolverEndpoint(world, entityB, entityA, pointB);
+      const solverEntityA = mappedA.entityId;
+      const solverEntityB = mappedB.entityId;
+      if (solverEntityA === solverEntityB) {
+        continue;
+      }
+
+      const solverPointA = computeWorldAttachment(world, solverEntityA, mappedA.localPoint);
+      const solverPointB = computeWorldAttachment(world, solverEntityB, mappedB.localPoint);
+      if (!solverPointA || !solverPointB) {
+        continue;
+      }
+
+      const posAComp = world.getComponent(solverEntityA, PositionComponent);
+      const posBComp = world.getComponent(solverEntityB, PositionComponent);
       if (!posAComp?.pos || !posBComp?.pos) {
         continue;
       }
 
-      const massAComp = world.getComponent(entityA, MassComponent);
-      const massBComp = world.getComponent(entityB, MassComponent);
+      const massAComp = world.getComponent(solverEntityA, MassComponent);
+      const massBComp = world.getComponent(solverEntityB, MassComponent);
       const invMassA = massAComp && massAComp.mass > 0 ? 1.0 / massAComp.mass : 0.0;
       const invMassB = massBComp && massBComp.mass > 0 ? 1.0 / massBComp.mass : 0.0;
-      if (invMassA + invMassB <= epsilon) {
-        continue;
-      }
+      const moiAComp = world.getComponent(solverEntityA, MomentOfInertiaComponent);
+      const moiBComp = world.getComponent(solverEntityB, MomentOfInertiaComponent);
+      const invInertiaA = moiAComp ? moiAComp.invInertia : 0.0;
+      const invInertiaB = moiBComp ? moiBComp.invInertia : 0.0;
 
-      const diff = new Vector3().subtractVectors(posBComp.pos, posAComp.pos);
+      const diff = new Vector3().subtractVectors(solverPointB, solverPointA);
       const currentLength = diff.length();
       if (currentLength <= epsilon) {
         continue;
@@ -306,8 +329,20 @@ export class XPBDDistanceConstraintSystem {
 
       const dir = diff.clone().scale(1.0 / currentLength);
       const violation = currentLength - constraint.restLength;
+      const gradPosA = dir.clone();
+      const gradPosB = dir.clone().scale(-1.0);
+      const rA = new Vector3().subtractVectors(solverPointA, posAComp.pos);
+      const rB = new Vector3().subtractVectors(solverPointB, posBComp.pos);
+      const gradAngA = rA.cross(gradPosA);
+      const gradAngB = rB.cross(gradPosB);
       const alphaTilde = constraint.compliance / (dt * dt);
-      const denominator = invMassA + invMassB + alphaTilde;
+      const denominator = (
+        invMassA * gradPosA.lengthSq()
+        + invInertiaA * gradAngA.lengthSq()
+        + invMassB * gradPosB.lengthSq()
+        + invInertiaB * gradAngB.lengthSq()
+        + alphaTilde
+      );
       if (denominator <= epsilon) {
         continue;
       }
@@ -315,12 +350,37 @@ export class XPBDDistanceConstraintSystem {
       const deltaLambda = (-violation - alphaTilde * constraint.lambda) / denominator;
       constraint.lambda += deltaLambda;
 
-      const correction = dir.clone().scale(deltaLambda);
       if (invMassA > 0.0) {
-        posAComp.pos.add(correction, -invMassA);
+        posAComp.pos.add(gradPosA.clone().scale(-invMassA * deltaLambda));
+      }
+      if (invInertiaA > 0.0) {
+        const deltaAngA = gradAngA.clone().scale(-invInertiaA * deltaLambda);
+        const orientationCompA = world.getComponent(solverEntityA, OrientationComponent);
+        if (orientationCompA?.quaternion) {
+          const angle = deltaAngA.length();
+          if (angle > epsilon) {
+            const axis = deltaAngA.clone().scale(1.0 / angle);
+            const dq = new Quaternion().setFromAxisAngle(axis, angle);
+            orientationCompA.quaternion.multiplyQuaternions(dq, orientationCompA.quaternion).normalize();
+            updateRigidBodyMemberLocalOrientation(world, solverEntityA);
+          }
+        }
       }
       if (invMassB > 0.0) {
-        posBComp.pos.add(correction, invMassB);
+        posBComp.pos.add(gradPosB.clone().scale(-invMassB * deltaLambda));
+      }
+      if (invInertiaB > 0.0) {
+        const deltaAngB = gradAngB.clone().scale(-invInertiaB * deltaLambda);
+        const orientationCompB = world.getComponent(solverEntityB, OrientationComponent);
+        if (orientationCompB?.quaternion) {
+          const angle = deltaAngB.length();
+          if (angle > epsilon) {
+            const axis = deltaAngB.clone().scale(1.0 / angle);
+            const dq = new Quaternion().setFromAxisAngle(axis, angle);
+            orientationCompB.quaternion.multiplyQuaternions(dq, orientationCompB.quaternion).normalize();
+            updateRigidBodyMemberLocalOrientation(world, solverEntityB);
+          }
+        }
       }
     }
   }
