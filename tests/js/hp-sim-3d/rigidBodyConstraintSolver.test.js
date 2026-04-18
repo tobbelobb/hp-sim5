@@ -3,6 +3,7 @@ import {
   PositionComponent,
   OrientationComponent,
   MassComponent,
+  RadiusComponent,
   MomentOfInertiaComponent,
   RigidBodyComponent,
   RigidBodyMemberComponent,
@@ -231,4 +232,107 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
     expect(Math.abs(spoolOrientation.z) + Math.abs(spoolOrientation.w - 1.0)).toBeGreaterThan(1e-4);
     expect(Math.abs(spoolMember.localOrientation.z) + Math.abs(spoolMember.localOrientation.w - 1.0)).toBeGreaterThan(1e-4);
   });
-	});
+
+  test('external pinhole cable corrections can backdrive a downstream rigid-body-mounted spool member', () => {
+    const world = new World();
+    world.setResource('dt', 1.0);
+
+    const body = world.createEntity();
+    world.addComponent(body, new PositionComponent(0.0, 0.0, 0.0));
+    world.addComponent(body, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
+    world.addComponent(body, new MassComponent(2.0));
+    world.addComponent(body, new MomentOfInertiaComponent(5.0));
+
+    const pinhole = world.createEntity();
+    world.addComponent(pinhole, new PositionComponent(0.0, 0.0, 0.0));
+    world.addComponent(pinhole, new MassComponent(0.0));
+    world.addComponent(
+      pinhole,
+      new RigidBodyMemberComponent(
+        body,
+        new Vector3(0.0, 0.0, 0.0),
+      ),
+    );
+
+    const spool = world.createEntity();
+    world.addComponent(spool, new PositionComponent(1.0, 0.0, 0.0));
+    world.addComponent(spool, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
+    world.addComponent(spool, new MassComponent(0.0));
+    world.addComponent(spool, new RadiusComponent(1.0));
+    world.addComponent(spool, new MomentOfInertiaComponent(0.1));
+    world.addComponent(
+      spool,
+      new CableLinkComponent(
+        1.0,
+        0.0,
+        0.0,
+        null,
+        null,
+        new Vector3(0.0, 0.0, 1.0),
+      ),
+    );
+    world.addComponent(
+      spool,
+      new RigidBodyMemberComponent(
+        body,
+        new Vector3(1.0, 0.0, 0.0),
+      ),
+    );
+
+    world.addComponent(body, new RigidBodyComponent([pinhole, spool]));
+
+    const anchor = world.createEntity();
+    world.addComponent(anchor, new PositionComponent(2.0, 0.0, 0.0));
+    world.addComponent(anchor, new MassComponent(-1.0));
+
+    const outerJoint = world.createEntity();
+    world.addComponent(
+      outerJoint,
+      CableJointComponent.fromWorld(
+        anchor,
+        pinhole,
+        1.0,
+        new Vector3(2.0, 0.0, 0.0),
+        new Vector3(0.0, 0.0, 0.0),
+      ),
+    );
+
+    const innerJoint = world.createEntity();
+    world.addComponent(
+      innerJoint,
+      CableJointComponent.fromLocal(
+        world,
+        pinhole,
+        spool,
+        1.0,
+        new Vector3(0.0, 0.0, 0.0),
+        new Vector3(0.0, 1.0, 0.0),
+      ),
+    );
+
+    const pathEntity = world.createEntity();
+    world.addComponent(
+      pathEntity,
+      new CablePathComponent(
+        world,
+        [outerJoint, innerJoint],
+        ['attachment', 'pinhole', 'hybrid'],
+        [true, true, true],
+        Infinity,
+        [0.0, 0.0, 0.2],
+        0.0,
+      ),
+    );
+
+    const solver = new PBDCableConstraintSolver();
+    solver.update(world, 0.0);
+
+    const bodyPosition = world.getComponent(body, PositionComponent).pos;
+    const spoolOrientation = world.getComponent(spool, OrientationComponent).quaternion;
+    const spoolMember = world.getComponent(spool, RigidBodyMemberComponent);
+
+    expect(bodyPosition.x).toBeGreaterThan(0.0);
+    expect(Math.abs(spoolOrientation.z) + Math.abs(spoolOrientation.w - 1.0)).toBeGreaterThan(1e-4);
+    expect(Math.abs(spoolMember.localOrientation.z) + Math.abs(spoolMember.localOrientation.w - 1.0)).toBeGreaterThan(1e-4);
+  });
+});

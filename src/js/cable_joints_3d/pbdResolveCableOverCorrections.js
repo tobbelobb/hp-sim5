@@ -39,25 +39,95 @@ function applyAngularCorrection(orientationComp, deltaVec) {
   orientationComp.quaternion.multiplyQuaternions(dq, orientationComp.quaternion).normalize();
 }
 
-function getExternalMemberAngularSolveInfo(world, originalEntityId, mappedEndpoint) {
-  if (!mappedEndpoint || mappedEndpoint.internalToBody || mappedEndpoint.entityId === originalEntityId) {
+function buildExternalMemberAngularSolveInfo(world, entityId, pointWorld, gradPos) {
+  const linkComp = world.getComponent(entityId, CableLinkComponent);
+  if (!linkComp?.cablePlaneNormalLocal || !pointWorld || !gradPos) {
     return null;
   }
-  const linkComp = world.getComponent(originalEntityId, CableLinkComponent);
-  if (!linkComp?.cablePlaneNormalLocal) {
-    return null;
-  }
-  const orientationComp = world.getComponent(originalEntityId, OrientationComponent);
-  const moiComp = world.getComponent(originalEntityId, MomentOfInertiaComponent);
-  const centerWorld = getEntityWorldPosition(world, originalEntityId);
+  const orientationComp = world.getComponent(entityId, OrientationComponent);
+  const moiComp = world.getComponent(entityId, MomentOfInertiaComponent);
+  const centerWorld = getEntityWorldPosition(world, entityId);
   if (!orientationComp?.quaternion || !centerWorld || !(moiComp?.invInertia > EPSILON)) {
     return null;
   }
   return {
-    entityId: originalEntityId,
+    entityId,
     centerWorld,
     invInertia: moiComp.invInertia,
+    pointWorld: pointWorld.clone(),
+    gradPos: gradPos.clone(),
   };
+}
+
+function isHybridLinkType(value) {
+  return value === 'hybrid' || value === 'hybrid-attachment';
+}
+
+function getExternalMemberAngularSolveInfo(
+  world,
+  path,
+  jointIndex,
+  side,
+  originalEntityId,
+  mappedEndpoint,
+  pointWorld,
+  gradPos
+) {
+  if (!mappedEndpoint || mappedEndpoint.internalToBody || mappedEndpoint.entityId === originalEntityId) {
+    return null;
+  }
+
+  const directInfo = buildExternalMemberAngularSolveInfo(world, originalEntityId, pointWorld, gradPos);
+  if (directInfo) {
+    return directInfo;
+  }
+
+  if (!path || !Array.isArray(path.linkTypes) || !Array.isArray(path.jointEntities) || path.jointEntities.length < 2) {
+    return null;
+  }
+
+  const pinholeLinkIndex = side === 'A' ? jointIndex : jointIndex + 1;
+  if (path.linkTypes[pinholeLinkIndex] !== 'pinhole') {
+    return null;
+  }
+
+  let internalJointIndex = null;
+  let hybridOnJointSide = null;
+  if (side === 'A' && pinholeLinkIndex > 0 && isHybridLinkType(path.linkTypes[pinholeLinkIndex - 1])) {
+    internalJointIndex = jointIndex - 1;
+    hybridOnJointSide = 'A';
+  } else if (
+    side === 'B' &&
+    pinholeLinkIndex < path.linkTypes.length - 1 &&
+    isHybridLinkType(path.linkTypes[pinholeLinkIndex + 1])
+  ) {
+    internalJointIndex = jointIndex + 1;
+    hybridOnJointSide = 'B';
+  }
+  if (!(internalJointIndex >= 0 && internalJointIndex < path.jointEntities.length)) {
+    return null;
+  }
+
+  const internalJointId = path.jointEntities[internalJointIndex];
+  const internalJoint = world.getComponent(internalJointId, CableJointComponent);
+  if (!internalJoint) {
+    return null;
+  }
+  const hybridEntityId = hybridOnJointSide === 'A' ? internalJoint.entityA : internalJoint.entityB;
+  const hybridPointWorld = hybridOnJointSide === 'A'
+    ? internalJoint.attachmentPointA_world
+    : internalJoint.attachmentPointB_world;
+  if (!hybridPointWorld || !pointWorld) {
+    return null;
+  }
+
+  const coupledGradPos = pointWorld.clone().subtract(hybridPointWorld);
+  if (coupledGradPos.lengthSq() <= EPSILON) {
+    return null;
+  }
+  coupledGradPos.normalize();
+
+  return buildExternalMemberAngularSolveInfo(world, hybridEntityId, hybridPointWorld, coupledGradPos);
 }
 
 export class PBDResolveCableOverCorrections {
@@ -150,8 +220,6 @@ export class PBDResolveCableOverCorrections {
     const solverEntityB = mappedB.entityId;
     const solverPointA = computeWorldAttachment(world, solverEntityA, mappedA.localPoint);
     const solverPointB = computeWorldAttachment(world, solverEntityB, mappedB.localPoint);
-    const memberAngularA = getExternalMemberAngularSolveInfo(world, entityA, mappedA);
-    const memberAngularB = getExternalMemberAngularSolveInfo(world, entityB, mappedB);
 
 	    const massAComp = world.getComponent(solverEntityA, MassComponent);
 	    const invMassA = massAComp && massAComp.mass > 0 && Number.isFinite(massAComp.mass) ? 1.0 / massAComp.mass : 0.0;
@@ -172,14 +240,6 @@ export class PBDResolveCableOverCorrections {
 	      ? world.getComponent(reactionBodyEntityB, MomentOfInertiaComponent)
 	      : null;
 	    const reactionInvInertiaB = reactionBodyInertiaB ? reactionBodyInertiaB.invInertia : 0.0;
-      const memberInvInertiaA = memberAngularA?.invInertia ?? 0.0;
-      const memberInvInertiaB = memberAngularB?.invInertia ?? 0.0;
-
-	    if (
-	      invMassA + invMassB + invInertiaA + invInertiaB + reactionInvInertiaA + reactionInvInertiaB
-        + memberInvInertiaA + memberInvInertiaB
-	      <= EPSILON
-	    ) return;
 
     const diff = new Vector3().subtractVectors(pB, pA);
     const len = diff.length();
@@ -188,19 +248,47 @@ export class PBDResolveCableOverCorrections {
 
     const gradPosA = dir.clone().scale(-1);
     const gradPosB = dir.clone();
+    const memberAngularA = getExternalMemberAngularSolveInfo(
+      world,
+      path,
+      i,
+      'A',
+      entityA,
+      mappedA,
+      pA,
+      gradPosA,
+    );
+    const memberAngularB = getExternalMemberAngularSolveInfo(
+      world,
+      path,
+      i,
+      'B',
+      entityB,
+      mappedB,
+      pB,
+      gradPosB,
+    );
+    const memberInvInertiaA = memberAngularA?.invInertia ?? 0.0;
+    const memberInvInertiaB = memberAngularB?.invInertia ?? 0.0;
+
+	    if (
+	      invMassA + invMassB + invInertiaA + invInertiaB + reactionInvInertiaA + reactionInvInertiaB
+        + memberInvInertiaA + memberInvInertiaB
+	      <= EPSILON
+	    ) return;
 
     const posAComp = world.getComponent(solverEntityA, PositionComponent);
     const rA = new Vector3().subtractVectors(solverPointA, posAComp.pos);
     const gradAngA = rA.cross(dir);
     const gradAngMemberA = memberAngularA
-      ? new Vector3().subtractVectors(pA, memberAngularA.centerWorld).cross(dir)
+      ? new Vector3().subtractVectors(memberAngularA.pointWorld, memberAngularA.centerWorld).cross(memberAngularA.gradPos)
       : null;
 
     const posBComp = world.getComponent(solverEntityB, PositionComponent);
     const rB = new Vector3().subtractVectors(solverPointB, posBComp.pos);
     const gradAngB = rB.cross(dir.clone().scale(-1));
     const gradAngMemberB = memberAngularB
-      ? new Vector3().subtractVectors(pB, memberAngularB.centerWorld).cross(dir.clone().scale(-1))
+      ? new Vector3().subtractVectors(memberAngularB.pointWorld, memberAngularB.centerWorld).cross(memberAngularB.gradPos)
       : null;
 
 	    let denom = 0;

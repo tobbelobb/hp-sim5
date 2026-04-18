@@ -2364,28 +2364,96 @@ export class PBDCableConstraintSolver {
 
     const jointLocals = new Map();
     const computeLocal = (entityId, worldPoint) => computeLocalAttachment(world, entityId, worldPoint);
-    const getExternalMemberAngularSolveInfo = (originalEntityId, mappedEndpoint) => {
-      if (!mappedEndpoint || mappedEndpoint.internalToBody || mappedEndpoint.entityId === originalEntityId) {
+    const buildExternalMemberAngularSolveInfo = (entityId, pointWorld, gradPos) => {
+      const linkComp = world.getComponent(entityId, CableLinkComponent);
+      if (!linkComp?.cablePlaneNormalLocal || !pointWorld || !gradPos) {
         return null;
       }
-      const linkComp = world.getComponent(originalEntityId, CableLinkComponent);
-      if (!linkComp?.cablePlaneNormalLocal) {
-        return null;
-      }
-      const orientationComp = world.getComponent(originalEntityId, OrientationComponent);
-      const moiComp = world.getComponent(originalEntityId, MomentOfInertiaComponent);
-      const centerWorld = getEntityWorldPosition(world, originalEntityId);
+      const orientationComp = world.getComponent(entityId, OrientationComponent);
+      const moiComp = world.getComponent(entityId, MomentOfInertiaComponent);
+      const centerWorld = getEntityWorldPosition(world, entityId);
       if (!orientationComp?.quaternion || !centerWorld || !(moiComp?.invInertia > EPSILON)) {
         return null;
       }
       return {
-        entityId: originalEntityId,
+        entityId,
         centerWorld,
         invInertia: moiComp.invInertia,
+        pointWorld: pointWorld.clone(),
+        gradPos: gradPos.clone(),
       };
+    };
+    const getExternalMemberAngularSolveInfo = (
+      path,
+      jointIndex,
+      side,
+      originalEntityId,
+      mappedEndpoint,
+      pointWorld,
+      gradPos
+    ) => {
+      if (!mappedEndpoint || mappedEndpoint.internalToBody || mappedEndpoint.entityId === originalEntityId) {
+        return null;
+      }
+
+      const directInfo = buildExternalMemberAngularSolveInfo(originalEntityId, pointWorld, gradPos);
+      if (directInfo) {
+        return directInfo;
+      }
+
+      if (!path || !Array.isArray(path.linkTypes) || !Array.isArray(path.jointEntities) || path.jointEntities.length < 2) {
+        return null;
+      }
+
+      const pinholeLinkIndex = side === 'A' ? jointIndex : jointIndex + 1;
+      if (path.linkTypes[pinholeLinkIndex] !== 'pinhole') {
+        return null;
+      }
+
+      let internalJointIndex = null;
+      let hybridOnJointSide = null;
+      if (side === 'A' && pinholeLinkIndex > 0 && _isHybrid(path.linkTypes[pinholeLinkIndex - 1])) {
+        internalJointIndex = jointIndex - 1;
+        hybridOnJointSide = 'A';
+      } else if (
+        side === 'B' &&
+        pinholeLinkIndex < path.linkTypes.length - 1 &&
+        _isHybrid(path.linkTypes[pinholeLinkIndex + 1])
+      ) {
+        internalJointIndex = jointIndex + 1;
+        hybridOnJointSide = 'B';
+      }
+      if (!(internalJointIndex >= 0 && internalJointIndex < path.jointEntities.length)) {
+        return null;
+      }
+
+      const internalJointId = path.jointEntities[internalJointIndex];
+      const internalJoint = world.getComponent(internalJointId, CableJointComponent);
+      const internalLocals = jointLocals.get(internalJointId);
+      if (!internalJoint || !internalLocals) {
+        return null;
+      }
+
+      const hybridEntityId = hybridOnJointSide === 'A' ? internalJoint.entityA : internalJoint.entityB;
+      const hybridPointWorld = hybridOnJointSide === 'A'
+        ? _computeWorldAttachment(world, hybridEntityId, internalLocals.localA)
+        : _computeWorldAttachment(world, hybridEntityId, internalLocals.localB);
+      if (!hybridPointWorld || !pointWorld) {
+        return null;
+      }
+
+      const coupledGradPos = pointWorld.clone().subtract(hybridPointWorld);
+      if (coupledGradPos.lengthSq() <= EPSILON) {
+        return null;
+      }
+      coupledGradPos.normalize();
+
+      return buildExternalMemberAngularSolveInfo(hybridEntityId, hybridPointWorld, coupledGradPos);
     };
 
     const applyConstraint = (
+      path,
+      jointIndex,
       entityA,
       entityB,
       pointA_world,
@@ -2405,8 +2473,24 @@ export class PBDCableConstraintSolver {
       const solverEntityB = mappedB.entityId;
       const solverPointA = computeWorldAttachment(world, solverEntityA, mappedA.localPoint);
       const solverPointB = computeWorldAttachment(world, solverEntityB, mappedB.localPoint);
-      const memberAngularA = getExternalMemberAngularSolveInfo(entityA, mappedA);
-      const memberAngularB = getExternalMemberAngularSolveInfo(entityB, mappedB);
+      const memberAngularA = getExternalMemberAngularSolveInfo(
+        path,
+        jointIndex,
+        'A',
+        entityA,
+        mappedA,
+        pointA_world,
+        gradPosA,
+      );
+      const memberAngularB = getExternalMemberAngularSolveInfo(
+        path,
+        jointIndex,
+        'B',
+        entityB,
+        mappedB,
+        pointB_world,
+        gradPosB,
+      );
 
 	      const massAComp = world.getComponent(solverEntityA, MassComponent);
 	      const invMassA = (massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
@@ -2449,10 +2533,10 @@ export class PBDCableConstraintSolver {
       const gradAngA = rA.cross(gradPosA);
       const gradAngB = rB.cross(gradPosB);
       const gradAngMemberA = memberAngularA
-        ? new Vector3().subtractVectors(pointA_world, memberAngularA.centerWorld).cross(gradPosA)
+        ? new Vector3().subtractVectors(memberAngularA.pointWorld, memberAngularA.centerWorld).cross(memberAngularA.gradPos)
         : null;
       const gradAngMemberB = memberAngularB
-        ? new Vector3().subtractVectors(pointB_world, memberAngularB.centerWorld).cross(gradPosB)
+        ? new Vector3().subtractVectors(memberAngularB.pointWorld, memberAngularB.centerWorld).cross(memberAngularB.gradPos)
         : null;
 
       let denom = 0.0;
@@ -2621,6 +2705,8 @@ export class PBDCableConstraintSolver {
           const gradPosA = dir.clone();
           const gradPosB = dir.clone().scale(-1.0);
           applyConstraint(
+            path,
+            j,
             entityA,
             entityB,
             pA,
