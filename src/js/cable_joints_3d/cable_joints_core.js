@@ -2360,7 +2360,7 @@ export class PBDCableConstraintSolver {
   update(world, _dt_unused) {
     const pathEntities = world.query([CablePathComponent]);
     const dt = world.getResource('dt');
-    const ITERATIONS = 1;
+    const ITERATIONS = 4;
 
     const jointLocals = new Map();
     const computeLocal = (entityId, worldPoint) => computeLocalAttachment(world, entityId, worldPoint);
@@ -2492,35 +2492,35 @@ export class PBDCableConstraintSolver {
         gradPosB,
       );
 
-	      const massAComp = world.getComponent(solverEntityA, MassComponent);
-	      const invMassA = (massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
-	      const moiAComp = world.getComponent(solverEntityA, MomentOfInertiaComponent);
-	      const invInertiaA = moiAComp ? moiAComp.invInertia : 0.0;
-	      const reactionBodyEntityA = mappedA.internalToBody ? getRigidBodyEntityForMember(world, solverEntityA) : null;
-	      const reactionBodyInertiaA = reactionBodyEntityA !== null && reactionBodyEntityA !== undefined
-	        ? world.getComponent(reactionBodyEntityA, MomentOfInertiaComponent)
-	        : null;
-	      const reactionInvInertiaA = reactionBodyInertiaA ? reactionBodyInertiaA.invInertia : 0.0;
+	    const massAComp = world.getComponent(solverEntityA, MassComponent);
+	    const invMassA = (massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
+	    const moiAComp = world.getComponent(solverEntityA, MomentOfInertiaComponent);
+	    const invInertiaA = moiAComp ? moiAComp.invInertia : 0.0;
+	    const reactionBodyEntityA = mappedA.internalToBody ? getRigidBodyEntityForMember(world, solverEntityA) : null;
+	    const reactionBodyInertiaA = reactionBodyEntityA !== null && reactionBodyEntityA !== undefined
+	      ? world.getComponent(reactionBodyEntityA, MomentOfInertiaComponent)
+	      : null;
+	    const reactionInvInertiaA = reactionBodyInertiaA ? reactionBodyInertiaA.invInertia : 0.0;
 
-	      const massBComp = world.getComponent(solverEntityB, MassComponent);
-	      const invMassB = (massBComp && massBComp.mass > 0) ? 1.0 / massBComp.mass : 0.0;
-	      const moiBComp = world.getComponent(solverEntityB, MomentOfInertiaComponent);
-	      const invInertiaB = moiBComp ? moiBComp.invInertia : 0.0;
-	      const reactionBodyEntityB = mappedB.internalToBody ? getRigidBodyEntityForMember(world, solverEntityB) : null;
-	      const reactionBodyInertiaB = reactionBodyEntityB !== null && reactionBodyEntityB !== undefined
-	        ? world.getComponent(reactionBodyEntityB, MomentOfInertiaComponent)
-	        : null;
-	      const reactionInvInertiaB = reactionBodyInertiaB ? reactionBodyInertiaB.invInertia : 0.0;
-        const memberInvInertiaA = memberAngularA?.invInertia ?? 0.0;
-        const memberInvInertiaB = memberAngularB?.invInertia ?? 0.0;
+	    const massBComp = world.getComponent(solverEntityB, MassComponent);
+	    const invMassB = (massBComp && massBComp.mass > 0) ? 1.0 / massBComp.mass : 0.0;
+	    const moiBComp = world.getComponent(solverEntityB, MomentOfInertiaComponent);
+	    const invInertiaB = moiBComp ? moiBComp.invInertia : 0.0;
+	    const reactionBodyEntityB = mappedB.internalToBody ? getRigidBodyEntityForMember(world, solverEntityB) : null;
+	    const reactionBodyInertiaB = reactionBodyEntityB !== null && reactionBodyEntityB !== undefined
+	      ? world.getComponent(reactionBodyEntityB, MomentOfInertiaComponent)
+	      : null;
+	    const reactionInvInertiaB = reactionBodyInertiaB ? reactionBodyInertiaB.invInertia : 0.0;
+      const memberInvInertiaA = memberAngularA?.invInertia ?? 0.0;
+      const memberInvInertiaB = memberAngularB?.invInertia ?? 0.0;
 
-	      if (
-	        invMassA + invMassB + invInertiaA + invInertiaB + reactionInvInertiaA + reactionInvInertiaB
-          + memberInvInertiaA + memberInvInertiaB
-	        <= EPSILON
-	      ) {
-	        return;
-	      }
+	    if (
+	      invMassA + invMassB + invInertiaA + invInertiaB + reactionInvInertiaA + reactionInvInertiaB
+        + memberInvInertiaA + memberInvInertiaB
+	      <= EPSILON
+	    ) {
+	      return;
+	    }
 
       const posAComp = world.getComponent(solverEntityA, PositionComponent);
       const posBComp = world.getComponent(solverEntityB, PositionComponent);
@@ -2566,48 +2566,48 @@ export class PBDCableConstraintSolver {
         const deltaPosA = gradPosA.clone().scale(-invMassA * lambda);
         posAComp.pos.add(deltaPosA);
       }
-	      if (invInertiaA > 0.0) {
-	        const deltaAngA = gradAngA.clone().scale(-invInertiaA * lambda);
-	        const orientationAComp = world.getComponent(solverEntityA, OrientationComponent);
-	        if (orientationAComp) {
-          const angle = deltaAngA.length();
-          if (angle > EPSILON) {
-            const axis = deltaAngA.clone().scale(1.0 / angle);
-            const dq = new Quaternion().setFromAxisAngle(axis, angle);
-            orientationAComp.quaternion.multiplyQuaternions(dq, orientationAComp.quaternion).normalize();
-            updateRigidBodyMemberLocalOrientation(world, solverEntityA);
-	          }
+	    if (invInertiaA > 0.0) {
+	      const deltaAngA = gradAngA.clone().scale(-invInertiaA * lambda);
+	      const orientationAComp = world.getComponent(solverEntityA, OrientationComponent);
+	      if (orientationAComp) {
+        const angle = deltaAngA.length();
+        if (angle > EPSILON) {
+          const axis = deltaAngA.clone().scale(1.0 / angle);
+          const dq = new Quaternion().setFromAxisAngle(axis, angle);
+          orientationAComp.quaternion.multiplyQuaternions(dq, orientationAComp.quaternion).normalize();
+          updateRigidBodyMemberLocalOrientation(world, solverEntityA);
 	        }
 	      }
-        if (memberInvInertiaA > 0.0 && gradAngMemberA) {
-          const deltaAngMemberA = gradAngMemberA.clone().scale(-memberInvInertiaA * lambda);
-          const memberOrientationAComp = world.getComponent(memberAngularA.entityId, OrientationComponent);
-          if (memberOrientationAComp) {
-            const angle = deltaAngMemberA.length();
-            if (angle > EPSILON) {
-              const axis = deltaAngMemberA.clone().scale(1.0 / angle);
-              const dq = new Quaternion().setFromAxisAngle(axis, angle);
-              memberOrientationAComp.quaternion.multiplyQuaternions(dq, memberOrientationAComp.quaternion).normalize();
-              updateRigidBodyMemberLocalOrientation(world, memberAngularA.entityId);
-            }
+	    }
+      if (memberInvInertiaA > 0.0 && gradAngMemberA) {
+        const deltaAngMemberA = gradAngMemberA.clone().scale(-memberInvInertiaA * lambda);
+        const memberOrientationAComp = world.getComponent(memberAngularA.entityId, OrientationComponent);
+        if (memberOrientationAComp) {
+          const angle = deltaAngMemberA.length();
+          if (angle > EPSILON) {
+            const axis = deltaAngMemberA.clone().scale(1.0 / angle);
+            const dq = new Quaternion().setFromAxisAngle(axis, angle);
+            memberOrientationAComp.quaternion.multiplyQuaternions(dq, memberOrientationAComp.quaternion).normalize();
+            updateRigidBodyMemberLocalOrientation(world, memberAngularA.entityId);
           }
         }
-	      if (reactionInvInertiaA > 0.0 && reactionBodyEntityA !== null && reactionBodyEntityA !== undefined) {
-	        const reactionAngA = gradAngA.clone().scale(reactionInvInertiaA * lambda);
-	        const reactionOrientationAComp = world.getComponent(reactionBodyEntityA, OrientationComponent);
-	        if (reactionOrientationAComp) {
-	          const angle = reactionAngA.length();
-	          if (angle > EPSILON) {
-	            const axis = reactionAngA.clone().scale(1.0 / angle);
-	            const dq = new Quaternion().setFromAxisAngle(axis, angle);
-	            reactionOrientationAComp.quaternion.multiplyQuaternions(dq, reactionOrientationAComp.quaternion).normalize();
-	          }
+      }
+	    if (reactionInvInertiaA > 0.0 && reactionBodyEntityA !== null && reactionBodyEntityA !== undefined) {
+	      const reactionAngA = gradAngA.clone().scale(reactionInvInertiaA * lambda);
+	      const reactionOrientationAComp = world.getComponent(reactionBodyEntityA, OrientationComponent);
+	      if (reactionOrientationAComp) {
+	        const angle = reactionAngA.length();
+	        if (angle > EPSILON) {
+	          const axis = reactionAngA.clone().scale(1.0 / angle);
+	          const dq = new Quaternion().setFromAxisAngle(axis, angle);
+	          reactionOrientationAComp.quaternion.multiplyQuaternions(dq, reactionOrientationAComp.quaternion).normalize();
 	        }
 	      }
+	    }
 
-	      if (invMassB > 0.0) {
-	        const deltaPosB = gradPosB.clone().scale(-invMassB * lambda);
-	        posBComp.pos.add(deltaPosB);
+	    if (invMassB > 0.0) {
+	      const deltaPosB = gradPosB.clone().scale(-invMassB * lambda);
+	      posBComp.pos.add(deltaPosB);
       }
       if (invInertiaB > 0.0) {
         const deltaAngB = gradAngB.clone().scale(-invInertiaB * lambda);
@@ -2619,35 +2619,35 @@ export class PBDCableConstraintSolver {
             const dq = new Quaternion().setFromAxisAngle(axis, angle);
             orientationBComp.quaternion.multiplyQuaternions(dq, orientationBComp.quaternion).normalize();
             updateRigidBodyMemberLocalOrientation(world, solverEntityB);
-	          }
 	        }
 	      }
-        if (memberInvInertiaB > 0.0 && gradAngMemberB) {
-          const deltaAngMemberB = gradAngMemberB.clone().scale(-memberInvInertiaB * lambda);
-          const memberOrientationBComp = world.getComponent(memberAngularB.entityId, OrientationComponent);
-          if (memberOrientationBComp) {
-            const angle = deltaAngMemberB.length();
-            if (angle > EPSILON) {
-              const axis = deltaAngMemberB.clone().scale(1.0 / angle);
-              const dq = new Quaternion().setFromAxisAngle(axis, angle);
-              memberOrientationBComp.quaternion.multiplyQuaternions(dq, memberOrientationBComp.quaternion).normalize();
-              updateRigidBodyMemberLocalOrientation(world, memberAngularB.entityId);
-            }
+	    }
+      if (memberInvInertiaB > 0.0 && gradAngMemberB) {
+        const deltaAngMemberB = gradAngMemberB.clone().scale(-memberInvInertiaB * lambda);
+        const memberOrientationBComp = world.getComponent(memberAngularB.entityId, OrientationComponent);
+        if (memberOrientationBComp) {
+          const angle = deltaAngMemberB.length();
+          if (angle > EPSILON) {
+            const axis = deltaAngMemberB.clone().scale(1.0 / angle);
+            const dq = new Quaternion().setFromAxisAngle(axis, angle);
+            memberOrientationBComp.quaternion.multiplyQuaternions(dq, memberOrientationBComp.quaternion).normalize();
+            updateRigidBodyMemberLocalOrientation(world, memberAngularB.entityId);
           }
         }
-	      if (reactionInvInertiaB > 0.0 && reactionBodyEntityB !== null && reactionBodyEntityB !== undefined) {
-	        const reactionAngB = gradAngB.clone().scale(reactionInvInertiaB * lambda);
-	        const reactionOrientationBComp = world.getComponent(reactionBodyEntityB, OrientationComponent);
-	        if (reactionOrientationBComp) {
-	          const angle = reactionAngB.length();
-	          if (angle > EPSILON) {
-	            const axis = reactionAngB.clone().scale(1.0 / angle);
-	            const dq = new Quaternion().setFromAxisAngle(axis, angle);
-	            reactionOrientationBComp.quaternion.multiplyQuaternions(dq, reactionOrientationBComp.quaternion).normalize();
-	          }
+      }
+	    if (reactionInvInertiaB > 0.0 && reactionBodyEntityB !== null && reactionBodyEntityB !== undefined) {
+	      const reactionAngB = gradAngB.clone().scale(reactionInvInertiaB * lambda);
+	      const reactionOrientationBComp = world.getComponent(reactionBodyEntityB, OrientationComponent);
+	      if (reactionOrientationBComp) {
+	        const angle = reactionAngB.length();
+	        if (angle > EPSILON) {
+	          const axis = reactionAngB.clone().scale(1.0 / angle);
+	          const dq = new Quaternion().setFromAxisAngle(axis, angle);
+	          reactionOrientationBComp.quaternion.multiplyQuaternions(dq, reactionOrientationBComp.quaternion).normalize();
 	        }
 	      }
-	    };
+	    }
+	  };
 
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
@@ -2713,7 +2713,7 @@ export class PBDCableConstraintSolver {
             pB,
             gradPosA,
             gradPosB,
-            constraintError,
+            constraintError/ITERATIONS,
             path.compliance
           );
         }
