@@ -948,6 +948,7 @@ export function setupScene(world, stage, canvas, options = {}) {
           // 5. POSITIONAL SOLVERS: Correct predicted positions to satisfy constraints.
           world.registerSystem(new PBDCableConstraintSolver());
           world.registerSystem(new PBDResolveCableOverCorrections());
+          //world.registerSystem(new StepperMotorSystem());
 
           // 6. POST-SOLVE CABLE DYNAMICS: Handle friction-based slip using accurate tension
           world.registerSystem(new CableFrictionSystem());

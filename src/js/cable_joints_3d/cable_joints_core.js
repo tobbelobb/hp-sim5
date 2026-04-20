@@ -2360,7 +2360,7 @@ export class PBDCableConstraintSolver {
   update(world, _dt_unused) {
     const pathEntities = world.query([CablePathComponent]);
     const dt = world.getResource('dt');
-    const ITERATIONS = 4;
+    const ITERATIONS = 1;
 
     const jointLocals = new Map();
     const computeLocal = (entityId, worldPoint) => computeLocalAttachment(world, entityId, worldPoint);
@@ -2713,7 +2713,7 @@ export class PBDCableConstraintSolver {
             pB,
             gradPosA,
             gradPosB,
-            constraintError/ITERATIONS,
+            constraintError,
             path.compliance
           );
         }
