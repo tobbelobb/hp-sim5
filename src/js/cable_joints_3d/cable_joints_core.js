@@ -2469,19 +2469,16 @@ export class PBDCableConstraintSolver {
       if (constraintError <= EPSILON) {
         return;
       }
-      // This function really does three solves:
+      // This function really does two solves:
       //
       //  1. entity{A,B}
       //  2. member{A,B}
-      //  3. reaction{A,B}
       //
       //  It should really only do one solve; the entity{A,B}.
-      //
-      //  The member solve is there to enable cable pullout.
-      //  It should be handled by a separate system. Call it RigidBodyPBDCableConstraintSolver.
-      //
-      //  The reaction solve should also be solved by a separate system,
-      //  the RigidBodyReactionTorqueSystem also mentioned in ../../../hp-sim-3d/app/hangprinter_stepper_motor.js
+      //  But without the member solve we're not allowing cable pullout.
+      //  Maybe create a new system, call it RigidBodyPBDCableConstraintSolver,
+      //  that handles such phenomena?
+      //  It would have to run right after this system anyways, so let's just code in here for now.
       //
       const mappedA = resolveRigidBodySolverEndpoint(world, entityA, entityB, pointA_world);
       const mappedB = resolveRigidBodySolverEndpoint(world, entityB, entityA, pointB_world);
@@ -2536,7 +2533,8 @@ export class PBDCableConstraintSolver {
       //  - If yes, it first tries the simple case: use the original endpoint entity directly.
       //  - If that does not apply, it looks for a special pinhole + hybrid path pattern and, in that case, redirects the angular solve to the adjacent hybrid member instead.
 
-      //  Without it, we don't get any pullout behavior from onboard spools.
+      //  Without a return value from getExternalMemberAngularSolveInfo,
+      //  we don't get any pullout behavior from onboard spools.
 
 	    const massAComp = world.getComponent(solverEntityA, MassComponent);
 	    const invMassA = (massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
