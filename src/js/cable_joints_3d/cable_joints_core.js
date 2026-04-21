@@ -2352,11 +2352,11 @@ export class PBDCableConstraintSolver {
   update(world, _dt_unused) {
     const pathEntities = world.query([CablePathComponent]);
     const dt = world.getResource('dt');
-    const ITERATIONS = 2;
+    const ITERATIONS = 1;
 
     const jointLocals = new Map();
     const computeLocal = (entityId, worldPoint) => computeLocalAttachment(world, entityId, worldPoint);
-    const buildExternalMemberAngularSolveInfo = (entityId, pointWorld, gradPos) => {
+    const buildExternalMemberSpinSolveInfo = (entityId, pointWorld, gradPos) => {
       const linkComp = world.getComponent(entityId, CableLinkComponent);
       if (!linkComp?.cablePlaneNormalLocal || !pointWorld || !gradPos) {
         return null;
@@ -2367,15 +2367,23 @@ export class PBDCableConstraintSolver {
       if (!orientationComp?.quaternion || !centerWorld || !(moiComp?.invInertia > EPSILON)) {
         return null;
       }
+
+      const axisWorld = orientationComp.quaternion
+        .transformVector(linkComp.cablePlaneNormalLocal.clone());
+      if (axisWorld.lengthSq() <= EPSILON) {
+        return null;
+      }
+      axisWorld.normalize();
       return {
         entityId,
         centerWorld,
         invInertia: moiComp.invInertia,
+        axisWorld,
         pointWorld: pointWorld.clone(),
         gradPos: gradPos.clone(),
       };
     };
-    const getExternalMemberAngularSolveInfo = (
+    const getExternalMemberSpinSolveInfo = (
       path,
       jointIndex,
       side,
@@ -2388,11 +2396,8 @@ export class PBDCableConstraintSolver {
         return null;
       }
 
-      const directInfo = buildExternalMemberAngularSolveInfo(originalEntityId, pointWorld, gradPos);
+      const directInfo = buildExternalMemberSpinSolveInfo(originalEntityId, pointWorld, gradPos);
       if (directInfo) {
-        // directInfo is populated for slideprinter_rigid_body.usda.
-        // So whenever the CableJoint goes right from the anchor to a spool that is attached
-        // to a rigid body
         return directInfo;
       }
 
@@ -2443,7 +2448,7 @@ export class PBDCableConstraintSolver {
       }
       coupledGradPos.normalize();
 
-      return buildExternalMemberAngularSolveInfo(hybridEntityId, hybridPointWorld, coupledGradPos);
+      return buildExternalMemberSpinSolveInfo(hybridEntityId, hybridPointWorld, coupledGradPos);
     };
 
     const applyConstraint = (
@@ -2461,40 +2466,14 @@ export class PBDCableConstraintSolver {
       if (constraintError <= EPSILON) {
         return;
       }
-      // This function really does two solves:
-      //
-      //  1. entity{A,B}
-      //  2. member{A,B}
-      //
-      //  It should really only do one solve; the entity{A,B}.
-      //  But without the member solve we're not allowing cable pullout.
-      //  Maybe create a new system, call it RigidBodyPBDCableConstraintSolver,
-      //  that handles such phenomena?
-      //  It would have to run right after this system anyways, so let's just code in here for now.
-      //
       const mappedA = resolveRigidBodySolverEndpoint(world, entityA, entityB, pointA_world);
       const mappedB = resolveRigidBodySolverEndpoint(world, entityB, entityA, pointB_world);
-      // Gives us mapped{A,B}.
-      //  - entityId
-      //  - localPoint
-      //        often computed with computeLocalAttachment(world, entityId, worldPoint)
-      //        which asks "where is this worldPoint in the entity's own coordinates?"
-      //        It transforms between coordinate systems
-      //        The entity's own coordinate system rotates together with the entity, so computeLocalAttachment
-      //        "rotates the point backwards" during computation.
-      //        Can be used to retrieve point{A,B}_world like
-      //        computeWorldAttachment(world, solverEntityA, mappedA.localPoint);
-      //        which uses getEntityWorldPosition and getEntityWorldOrientation
-      //        to transform back to the world coordinate system
-      //
-      //  - worldPoint
-      //  - internalToBody {false,true}
 
       const solverEntityA = mappedA.entityId;
       const solverEntityB = mappedB.entityId;
       const solverPointA = pointA_world;
       const solverPointB = pointB_world;
-      const memberAngularA = getExternalMemberAngularSolveInfo(
+      const memberSpinA = getExternalMemberSpinSolveInfo(
         path,
         jointIndex,
         'A',
@@ -2503,7 +2482,7 @@ export class PBDCableConstraintSolver {
         pointA_world,
         gradPosA, // gradPosA is a unit vector pointing from A to B
       );
-      const memberAngularB = getExternalMemberAngularSolveInfo(
+      const memberSpinB = getExternalMemberSpinSolveInfo(
         path,
         jointIndex,
         'B',
@@ -2512,22 +2491,6 @@ export class PBDCableConstraintSolver {
         pointB_world,
         gradPosB, // gradPosB is a unit vector pointing from B to A
       );
-      // memberAngularB is populated every time for slideprinter_rigid_body.usda,
-      // and half of the time for slideprinter_single_pinholes_rigid_body.usda and the hexagon.
-      // So whenever there's CableJoint who connects to an entity which is part of a rigid body but not
-      // internal to the rigid body
-
-      // getExternalMemberAngularSolveInfo is a helper that decides whether a cable-joint constraint should
-      // also apply an angular correction to a neighboring cable member.
-      //
-      //  - It starts from one cable endpoint and asks: “Is this endpoint actually solved by some other entity than the original one?”
-      //  - If not, it returns null.
-      //  - If yes, it first tries the simple case: use the original endpoint entity directly.
-      //  - If that does not apply, it looks for a special pinhole + hybrid path pattern and, in that case, redirects the angular solve to the adjacent hybrid member instead.
-
-      //  Without a return value from getExternalMemberAngularSolveInfo,
-      //  we don't get any pullout behavior from onboard spools.
-
 	    const massAComp = world.getComponent(solverEntityA, MassComponent);
 	    const invMassA = (massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
 	    const moiAComp = world.getComponent(solverEntityA, MomentOfInertiaComponent);
@@ -2538,8 +2501,8 @@ export class PBDCableConstraintSolver {
 	    const moiBComp = world.getComponent(solverEntityB, MomentOfInertiaComponent);
 	    const invInertiaB = moiBComp ? moiBComp.invInertia : 0.0;
 
-      const memberInvInertiaA = memberAngularA?.invInertia ?? 0.0;
-      const memberInvInertiaB = memberAngularB?.invInertia ?? 0.0;
+      const memberInvInertiaA = memberSpinA?.invInertia ?? 0.0;
+      const memberInvInertiaB = memberSpinB?.invInertia ?? 0.0;
 
 	    if (
 	      invMassA + invMassB + invInertiaA + invInertiaB + memberInvInertiaA + memberInvInertiaB
@@ -2558,23 +2521,29 @@ export class PBDCableConstraintSolver {
       const rB = new Vector3().subtractVectors(solverPointB, posBComp.pos);
       const gradAngA = rA.cross(gradPosA);
       const gradAngB = rB.cross(gradPosB);
-      const gradAngMemberA = memberAngularA
-        ? new Vector3().subtractVectors(memberAngularA.pointWorld, memberAngularA.centerWorld).cross(memberAngularA.gradPos)
+      const gradAngMemberA = memberSpinA
+        ? new Vector3().subtractVectors(memberSpinA.pointWorld, memberSpinA.centerWorld).cross(memberSpinA.gradPos)
         : null;
-      const gradAngMemberB = memberAngularB
-        ? new Vector3().subtractVectors(memberAngularB.pointWorld, memberAngularB.centerWorld).cross(memberAngularB.gradPos)
+      const gradAngMemberB = memberSpinB
+        ? new Vector3().subtractVectors(memberSpinB.pointWorld, memberSpinB.centerWorld).cross(memberSpinB.gradPos)
         : null;
+      const gradSpinA = (memberSpinA?.axisWorld && gradAngMemberA)
+        ? gradAngMemberA.dot(memberSpinA.axisWorld)
+        : 0.0;
+      const gradSpinB = (memberSpinB?.axisWorld && gradAngMemberB)
+        ? gradAngMemberB.dot(memberSpinB.axisWorld)
+        : 0.0;
 
       let denom = 0.0;
 	      denom += invMassA * gradPosA.lengthSq();
 	      denom += invInertiaA * gradAngA.lengthSq();
-        if (memberInvInertiaA > 0.0 && gradAngMemberA) {
-          denom += memberInvInertiaA * gradAngMemberA.lengthSq();
+        if (memberInvInertiaA > 0.0 && Math.abs(gradSpinA) > EPSILON) {
+          denom += memberInvInertiaA * gradSpinA * gradSpinA;
         }
 	      denom += invMassB * gradPosB.lengthSq();
 	      denom += invInertiaB * gradAngB.lengthSq();
-        if (memberInvInertiaB > 0.0 && gradAngMemberB) {
-          denom += memberInvInertiaB * gradAngMemberB.lengthSq();
+        if (memberInvInertiaB > 0.0 && Math.abs(gradSpinB) > EPSILON) {
+          denom += memberInvInertiaB * gradSpinB * gradSpinB;
         }
 	      if (Number.isFinite(dt) && dt > EPSILON) {
 	        denom += (compliance ?? 0.0) / (dt * dt);
@@ -2603,16 +2572,14 @@ export class PBDCableConstraintSolver {
 	        }
 	      }
 	    }
-      if (memberInvInertiaA > 0.0 && gradAngMemberA) {
-        const deltaAngMemberA = gradAngMemberA.clone().scale(-memberInvInertiaA * lambda);
-        const memberOrientationAComp = world.getComponent(memberAngularA.entityId, OrientationComponent);
+      if (memberInvInertiaA > 0.0 && memberSpinA?.axisWorld && Math.abs(gradSpinA) > EPSILON) {
+        const deltaAngleMemberA = -memberInvInertiaA * lambda * gradSpinA;
+        const memberOrientationAComp = world.getComponent(memberSpinA.entityId, OrientationComponent);
         if (memberOrientationAComp) {
-          const angle = deltaAngMemberA.length();
-          if (angle > EPSILON) {
-            const axis = deltaAngMemberA.clone().scale(1.0 / angle);
-            const dq = new Quaternion().setFromAxisAngle(axis, angle);
+          if (Math.abs(deltaAngleMemberA) > EPSILON) {
+            const dq = new Quaternion().setFromAxisAngle(memberSpinA.axisWorld, deltaAngleMemberA);
             memberOrientationAComp.quaternion.multiplyQuaternions(dq, memberOrientationAComp.quaternion).normalize();
-            updateRigidBodyMemberLocalOrientation(world, memberAngularA.entityId);
+            updateRigidBodyMemberLocalOrientation(world, memberSpinA.entityId);
           }
         }
       }
@@ -2634,16 +2601,14 @@ export class PBDCableConstraintSolver {
 	        }
 	      }
 	    }
-      if (memberInvInertiaB > 0.0 && gradAngMemberB) {
-        const deltaAngMemberB = gradAngMemberB.clone().scale(-memberInvInertiaB * lambda);
-        const memberOrientationBComp = world.getComponent(memberAngularB.entityId, OrientationComponent);
+      if (memberInvInertiaB > 0.0 && memberSpinB?.axisWorld && Math.abs(gradSpinB) > EPSILON) {
+        const deltaAngleMemberB = -memberInvInertiaB * lambda * gradSpinB;
+        const memberOrientationBComp = world.getComponent(memberSpinB.entityId, OrientationComponent);
         if (memberOrientationBComp) {
-          const angle = deltaAngMemberB.length();
-          if (angle > EPSILON) {
-            const axis = deltaAngMemberB.clone().scale(1.0 / angle);
-            const dq = new Quaternion().setFromAxisAngle(axis, angle);
+          if (Math.abs(deltaAngleMemberB) > EPSILON) {
+            const dq = new Quaternion().setFromAxisAngle(memberSpinB.axisWorld, deltaAngleMemberB);
             memberOrientationBComp.quaternion.multiplyQuaternions(dq, memberOrientationBComp.quaternion).normalize();
-            updateRigidBodyMemberLocalOrientation(world, memberAngularB.entityId);
+            updateRigidBodyMemberLocalOrientation(world, memberSpinB.entityId);
           }
         }
       }
