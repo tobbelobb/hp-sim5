@@ -198,7 +198,7 @@ describe('slideprinter 3D stepper closed-loop mode', () => {
     expect(angVel.omega.length()).toBeCloseTo(0.0, 12);
   });
 
-  test('injects opposite rigid-body orientation when a member spool snaps in closed loop', () => {
+  test('splits closed-loop reaction rotation between the spool and host body by relative inertia', () => {
     const world = new World();
     const system = new StepperMotorSystem();
 
@@ -206,10 +206,10 @@ describe('slideprinter 3D stepper closed-loop mode', () => {
     const bodyOrientation = new OrientationComponent();
     world.addComponent(bodyEntity, bodyOrientation);
     world.addComponent(bodyEntity, new AngularVelocityComponent(0.0, 0.0, 0.0));
-    world.addComponent(bodyEntity, new MomentOfInertiaComponent(10.0));
 
     const stepperEntity = world.createEntity();
-    world.addComponent(bodyEntity, new RigidBodyComponent([stepperEntity]));
+    const ballastEntity = world.createEntity();
+    world.addComponent(bodyEntity, new RigidBodyComponent([stepperEntity, ballastEntity]));
 
     const stepper = new StepperMotorComponent(0.8, 0.2);
     stepper.closedLoop = true;
@@ -227,7 +227,16 @@ describe('slideprinter 3D stepper closed-loop mode', () => {
     world.addComponent(stepperEntity, new AngularVelocityComponent(0.0, 0.0, 0.0));
     world.addComponent(stepperEntity, new MomentOfInertiaComponent(1.0));
     world.addComponent(stepperEntity, new MassComponent(1.0));
-    world.addComponent(stepperEntity, new RigidBodyMemberComponent(bodyEntity, null, localOrientation));
+    world.addComponent(
+      stepperEntity,
+      new RigidBodyMemberComponent(bodyEntity, new Vector3(0.0, 0.0, 0.0), localOrientation),
+    );
+    world.addComponent(ballastEntity, new MassComponent(3.0));
+    world.addComponent(ballastEntity, new MomentOfInertiaComponent(5.0));
+    world.addComponent(
+      ballastEntity,
+      new RigidBodyMemberComponent(bodyEntity, new Vector3(2.0, 0.0, 0.0)),
+    );
 
     system.update(world, 0.1);
 
@@ -238,9 +247,19 @@ describe('slideprinter 3D stepper closed-loop mode', () => {
       axisLocal: spoolState.axisLocal,
       referenceOrientation: new Quaternion(),
     };
+    const targetAngle = 0.6;
+    const motorAngleDelta = targetAngle - (-0.2);
+    const totalEffectiveInertia = 1.0 + 5.0 + (3.0 * 4.0);
+    const expectedBodyAngle = -motorAngleDelta * (1.0 / totalEffectiveInertia);
+    const expectedWorldSpoolAngle = targetAngle + expectedBodyAngle;
     expect(getSpoolRotationAngle(localSpoolState, member.localOrientation)).toBeCloseTo(0.6, 12);
-    expect(getSpoolRotationAngle({ axisLocal: spoolState.axisLocal, referenceOrientation: new Quaternion() }, updatedBodyOrientation)).toBeCloseTo(-0.8, 12);
-    expect(getSpoolRotationAngle(spoolState, updatedOrient)).toBeCloseTo(-0.2, 12);
+    expect(
+      getSpoolRotationAngle(
+        { axisLocal: spoolState.axisLocal, referenceOrientation: new Quaternion() },
+        updatedBodyOrientation,
+      ),
+    ).toBeCloseTo(expectedBodyAngle, 12);
+    expect(getSpoolRotationAngle(spoolState, updatedOrient)).toBeCloseTo(expectedWorldSpoolAngle, 12);
   });
 
   test('does not double-integrate rigid-body-member spool rotation in AngularMovementSystem', () => {

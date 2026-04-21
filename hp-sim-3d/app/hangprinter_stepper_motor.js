@@ -88,7 +88,7 @@ function getRigidBodyEffectiveInertiaAboutAxis(world, bodyEntity, worldAxis) {
   return world.getComponent(bodyEntity, MomentOfInertiaComponent)?.inertia ?? 0.0;
 }
 
-function applyRigidBodyReactionRotation(world, rigidBodyMemberFrame, worldAxis, motorAngleDelta) {
+function applyRigidBodyReactionRotation(world, rigidBodyMemberFrame, worldAxis, motorAngleDelta, spoolInertia) {
   const bodyEntity = rigidBodyMemberFrame?.member?.bodyEntity;
   if (
     bodyEntity === null
@@ -100,11 +100,13 @@ function applyRigidBodyReactionRotation(world, rigidBodyMemberFrame, worldAxis, 
 
   const bodyInertia = getRigidBodyEffectiveInertiaAboutAxis(world, bodyEntity, worldAxis);
   const bodyOrientation = world.getComponent(bodyEntity, OrientationComponent)?.quaternion;
-  if (!bodyOrientation || !(bodyInertia > EPSILON)) {
+  const motorRotorInertia = Number.isFinite(spoolInertia) ? Math.max(0.0, spoolInertia) : 0.0;
+  if (!bodyOrientation || !(bodyInertia > EPSILON) || !(motorRotorInertia > EPSILON)) {
     return;
   }
 
-  const dq = new Quaternion().setFromAxisAngle(worldAxis, -motorAngleDelta);
+  const reactionFraction = motorRotorInertia / bodyInertia;
+  const dq = new Quaternion().setFromAxisAngle(worldAxis, -motorAngleDelta * reactionFraction);
   bodyOrientation.multiplyQuaternions(dq, bodyOrientation).normalize();
 }
 
@@ -212,11 +214,17 @@ export class StepperMotorSystem {
         const targetAngle = stepper.commandedAngle - stepper.deltaAngle;
         if (isStepperClosedLoopEnabled(world, stepper)) {
           if (rigidBodyMemberFrame) {
-            const motorAngleDelta = normalizeAngle(targetAngle - currentAngle);
+            const motorAngleDelta = normalizeAngle(currentAngle - targetAngle);
             rigidBodyMemberFrame.member.localOrientation.set(
               composeSpoolOrientation(rigidBodyMemberFrame.localSpoolState, null, targetAngle),
             );
-            applyRigidBodyReactionRotation(world, rigidBodyMemberFrame, worldAxis, motorAngleDelta);
+            applyRigidBodyReactionRotation(
+              world,
+              rigidBodyMemberFrame,
+              worldAxis,
+              motorAngleDelta,
+              inertia.inertia,
+            );
             orient.quaternion.set(
               new Quaternion()
                 .multiplyQuaternions(
