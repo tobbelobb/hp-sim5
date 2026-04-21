@@ -21,12 +21,12 @@ function identityQuaternion() {
   return new Quaternion(0.0, 0.0, 0.0, 1.0);
 }
 
-export function getRigidBodyMember(world, entityId) {
+export function getRigidBodyMemberComponent(world, entityId) {
   return world?.getComponent?.(entityId, RigidBodyMemberComponent) || null;
 }
 
 export function getRigidBodyEntityForMember(world, entityId) {
-  const member = getRigidBodyMember(world, entityId);
+  const member = getRigidBodyMemberComponent(world, entityId);
   return member?.bodyEntity ?? null;
 }
 
@@ -41,11 +41,11 @@ export function getRigidBodyForEntity(world, entityId) {
 }
 
 export function isRigidBodyMember(world, entityId) {
-  return getRigidBodyMember(world, entityId) !== null;
+  return getRigidBodyMemberComponent(world, entityId) !== null;
 }
 
 export function getEntityWorldPosition(world, entityId) {
-  const member = getRigidBodyMember(world, entityId);
+  const member = getRigidBodyMemberComponent(world, entityId);
   if (member) {
     const bodyPos = world.getComponent(member.bodyEntity, PositionComponent)?.pos;
     const bodyOrientation = world.getComponent(member.bodyEntity, OrientationComponent)?.quaternion;
@@ -58,7 +58,7 @@ export function getEntityWorldPosition(world, entityId) {
 }
 
 export function getEntityWorldOrientation(world, entityId) {
-  const member = getRigidBodyMember(world, entityId);
+  const member = getRigidBodyMemberComponent(world, entityId);
   if (member) {
     const bodyOrientation = world.getComponent(member.bodyEntity, OrientationComponent)?.quaternion;
     if (bodyOrientation && isFiniteQuaternion(member.localOrientation)) {
@@ -104,7 +104,7 @@ export function computeLocalAttachment(world, entityId, worldPoint) {
 }
 
 export function resolveRigidBodySolverEndpoint(world, entityId, counterpartEntityId, worldPoint) {
-  const member = getRigidBodyMember(world, entityId);
+  const member = getRigidBodyMemberComponent(world, entityId);
   if (!member) {
     return {
       entityId,
@@ -114,7 +114,7 @@ export function resolveRigidBodySolverEndpoint(world, entityId, counterpartEntit
     };
   }
 
-  const counterpartMember = getRigidBodyMember(world, counterpartEntityId);
+  const counterpartMember = getRigidBodyMemberComponent(world, counterpartEntityId);
   const internalToBody = counterpartMember && counterpartMember.bodyEntity === member.bodyEntity;
   const solverEntityId = internalToBody ? entityId : member.bodyEntity;
 
@@ -127,7 +127,7 @@ export function resolveRigidBodySolverEndpoint(world, entityId, counterpartEntit
 }
 
 export function updateRigidBodyMemberLocalOrientation(world, entityId) {
-  const member = getRigidBodyMember(world, entityId);
+  const member = getRigidBodyMemberComponent(world, entityId);
   if (!member) {
     return;
   }

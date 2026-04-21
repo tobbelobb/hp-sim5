@@ -2398,6 +2398,9 @@ export class PBDCableConstraintSolver {
 
       const directInfo = buildExternalMemberAngularSolveInfo(originalEntityId, pointWorld, gradPos);
       if (directInfo) {
+        // directInfo is populated for slideprinter_rigid_body.usda.
+        // So whenever the CableJoint goes right from the anchor to a spool that is attached
+        // to a rigid body
         return directInfo;
       }
 
@@ -2466,13 +2469,42 @@ export class PBDCableConstraintSolver {
       if (constraintError <= EPSILON) {
         return;
       }
-
+      // This function really does three solves:
+      //
+      //  1. entity{A,B}
+      //  2. member{A,B}
+      //  3. reaction{A,B}
+      //
+      //  It should really only do one solve; the entity{A,B}.
+      //
+      //  The member solve is there to enable cable pullout.
+      //  It should be handled by a separate system. Call it RigidBodyPBDCableConstraintSolver.
+      //
+      //  The reaction solve should also be solved by a separate system,
+      //  the RigidBodyReactionTorqueSystem also mentioned in ../../../hp-sim-3d/app/hangprinter_stepper_motor.js
+      //
       const mappedA = resolveRigidBodySolverEndpoint(world, entityA, entityB, pointA_world);
       const mappedB = resolveRigidBodySolverEndpoint(world, entityB, entityA, pointB_world);
+      // Gives us mapped{A,B}.
+      //  - entityId
+      //  - localPoint
+      //        often computed with computeLocalAttachment(world, entityId, worldPoint)
+      //        which asks "where is this worldPoint in the entity's own coordinates?"
+      //        It transforms between coordinate systems
+      //        The entity's own coordinate system rotates together with the entity, so computeLocalAttachment
+      //        "rotates the point backwards" during computation.
+      //        Can be used to retrieve point{A,B}_world like
+      //        computeWorldAttachment(world, solverEntityA, mappedA.localPoint);
+      //        which uses getEntityWorldPosition and getEntityWorldOrientation
+      //        to transform back to the world coordinate system
+      //
+      //  - worldPoint
+      //  - internalToBody {false,true}
+
       const solverEntityA = mappedA.entityId;
       const solverEntityB = mappedB.entityId;
-      const solverPointA = computeWorldAttachment(world, solverEntityA, mappedA.localPoint);
-      const solverPointB = computeWorldAttachment(world, solverEntityB, mappedB.localPoint);
+      const solverPointA = pointA_world;
+      const solverPointB = pointB_world;
       const memberAngularA = getExternalMemberAngularSolveInfo(
         path,
         jointIndex,
@@ -2480,7 +2512,7 @@ export class PBDCableConstraintSolver {
         entityA,
         mappedA,
         pointA_world,
-        gradPosA,
+        gradPosA, // gradPosA is a unit vector pointing from A to B
       );
       const memberAngularB = getExternalMemberAngularSolveInfo(
         path,
@@ -2489,8 +2521,22 @@ export class PBDCableConstraintSolver {
         entityB,
         mappedB,
         pointB_world,
-        gradPosB,
+        gradPosB, // gradPosB is a unit vector pointing from B to A
       );
+      // memberAngularB is populated every time for slideprinter_rigid_body.usda,
+      // and half of the time for slideprinter_single_pinholes_rigid_body.usda and the hexagon.
+      // So whenever there's CableJoint who connects to an entity which is part of a rigid body but not
+      // internal to the rigid body
+
+      // getExternalMemberAngularSolveInfo is a helper that decides whether a cable-joint constraint should
+      // also apply an angular correction to a neighboring cable member.
+      //
+      //  - It starts from one cable endpoint and asks: “Is this endpoint actually solved by some other entity than the original one?”
+      //  - If not, it returns null.
+      //  - If yes, it first tries the simple case: use the original endpoint entity directly.
+      //  - If that does not apply, it looks for a special pinhole + hybrid path pattern and, in that case, redirects the angular solve to the adjacent hybrid member instead.
+
+      //  Without it, we don't get any pullout behavior from onboard spools.
 
 	    const massAComp = world.getComponent(solverEntityA, MassComponent);
 	    const invMassA = (massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;

@@ -12,7 +12,7 @@ import {
   getSpoolWorldAxis,
 } from './hangprinter_spools.js';
 import {
-  getRigidBodyMember,
+  getRigidBodyMemberComponent,
   getRigidBodyEntityForMember,
 } from '../../src/js/cable_joints_3d/rigid_bodies.js';
 import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
@@ -25,7 +25,7 @@ function normalizeAngle(angle) {
 }
 
 function getRigidBodyMemberSpoolFrame(world, entityId, spoolState) {
-  const member = getRigidBodyMember(world, entityId);
+  const member = getRigidBodyMemberComponent(world, entityId);
   if (!member?.localOrientation) {
     return null;
   }
@@ -185,6 +185,8 @@ export class StepperMotorSystem {
         );
       }
 
+      // This block has to do with reaction torque, which should really be handled by its own system,
+      // maybe call it RigidBodyReactionTorqueSystem
       const bodyEntity = getRigidBodyEntityForMember(world, entityId);
       if (bodyEntity !== null && bodyEntity !== undefined) {
         const bodyAngularVelocity = world.getComponent(bodyEntity, AngularVelocityComponent);
