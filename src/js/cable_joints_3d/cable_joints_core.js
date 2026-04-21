@@ -2542,7 +2542,9 @@ export class PBDCableConstraintSolver {
 	    const invMassA = (massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
 	    const moiAComp = world.getComponent(solverEntityA, MomentOfInertiaComponent);
 	    const invInertiaA = moiAComp ? moiAComp.invInertia : 0.0;
-	    const reactionBodyEntityA = mappedA.internalToBody ? getRigidBodyEntityForMember(world, solverEntityA) : null;
+	    // Apply reaction torque to the rigid body that owns the endpoint member,
+	    // regardless of whether the solver endpoint was promoted to the body.
+	    const reactionBodyEntityA = getRigidBodyEntityForMember(world, entityA);
 	    const reactionBodyInertiaA = reactionBodyEntityA !== null && reactionBodyEntityA !== undefined
 	      ? world.getComponent(reactionBodyEntityA, MomentOfInertiaComponent)
 	      : null;
@@ -2552,7 +2554,9 @@ export class PBDCableConstraintSolver {
 	    const invMassB = (massBComp && massBComp.mass > 0) ? 1.0 / massBComp.mass : 0.0;
 	    const moiBComp = world.getComponent(solverEntityB, MomentOfInertiaComponent);
 	    const invInertiaB = moiBComp ? moiBComp.invInertia : 0.0;
-	    const reactionBodyEntityB = mappedB.internalToBody ? getRigidBodyEntityForMember(world, solverEntityB) : null;
+	    // Apply reaction torque to the rigid body that owns the endpoint member,
+	    // regardless of whether the solver endpoint was promoted to the body.
+	    const reactionBodyEntityB = getRigidBodyEntityForMember(world, entityB);
 	    const reactionBodyInertiaB = reactionBodyEntityB !== null && reactionBodyEntityB !== undefined
 	      ? world.getComponent(reactionBodyEntityB, MomentOfInertiaComponent)
 	      : null;
@@ -2639,7 +2643,7 @@ export class PBDCableConstraintSolver {
         }
       }
 	    if (reactionInvInertiaA > 0.0 && reactionBodyEntityA !== null && reactionBodyEntityA !== undefined) {
-	      const reactionAngA = gradAngA.clone().scale(reactionInvInertiaA * lambda);
+	      const reactionAngA = gradAngA.clone().scale(-reactionInvInertiaA * lambda);
 	      const reactionOrientationAComp = world.getComponent(reactionBodyEntityA, OrientationComponent);
 	      if (reactionOrientationAComp) {
 	        const angle = reactionAngA.length();
@@ -2682,7 +2686,7 @@ export class PBDCableConstraintSolver {
         }
       }
 	    if (reactionInvInertiaB > 0.0 && reactionBodyEntityB !== null && reactionBodyEntityB !== undefined) {
-	      const reactionAngB = gradAngB.clone().scale(reactionInvInertiaB * lambda);
+	      const reactionAngB = gradAngB.clone().scale(-reactionInvInertiaB * lambda);
 	      const reactionOrientationBComp = world.getComponent(reactionBodyEntityB, OrientationComponent);
 	      if (reactionOrientationBComp) {
 	        const angle = reactionAngB.length();

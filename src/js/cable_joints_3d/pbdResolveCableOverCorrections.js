@@ -225,7 +225,9 @@ export class PBDResolveCableOverCorrections {
 	    const invMassA = massAComp && massAComp.mass > 0 && Number.isFinite(massAComp.mass) ? 1.0 / massAComp.mass : 0.0;
 	    const moiAComp = world.getComponent(solverEntityA, MomentOfInertiaComponent);
 	    const invInertiaA = moiAComp ? moiAComp.invInertia : 0.0;
-	    const reactionBodyEntityA = mappedA.internalToBody ? getRigidBodyEntityForMember(world, solverEntityA) : null;
+	    // Apply reaction torque to the rigid body that owns the endpoint member,
+	    // regardless of whether the solver endpoint was promoted to the body.
+	    const reactionBodyEntityA = getRigidBodyEntityForMember(world, entityA);
 	    const reactionBodyInertiaA = reactionBodyEntityA !== null && reactionBodyEntityA !== undefined
 	      ? world.getComponent(reactionBodyEntityA, MomentOfInertiaComponent)
 	      : null;
@@ -235,7 +237,9 @@ export class PBDResolveCableOverCorrections {
 	    const invMassB = massBComp && massBComp.mass > 0 && Number.isFinite(massBComp.mass) ? 1.0 / massBComp.mass : 0.0;
 	    const moiBComp = world.getComponent(solverEntityB, MomentOfInertiaComponent);
 	    const invInertiaB = moiBComp ? moiBComp.invInertia : 0.0;
-	    const reactionBodyEntityB = mappedB.internalToBody ? getRigidBodyEntityForMember(world, solverEntityB) : null;
+	    // Apply reaction torque to the rigid body that owns the endpoint member,
+	    // regardless of whether the solver endpoint was promoted to the body.
+	    const reactionBodyEntityB = getRigidBodyEntityForMember(world, entityB);
 	    const reactionBodyInertiaB = reactionBodyEntityB !== null && reactionBodyEntityB !== undefined
 	      ? world.getComponent(reactionBodyEntityB, MomentOfInertiaComponent)
 	      : null;
