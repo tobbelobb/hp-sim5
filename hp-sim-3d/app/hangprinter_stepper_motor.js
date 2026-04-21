@@ -76,7 +76,7 @@ function getRigidBodyEffectiveInertiaAboutAxis(world, bodyEntity, worldAxis) {
     }
 
     const memberInertia = world.getComponent(entityId, MomentOfInertiaComponent)?.inertia ?? 0.0;
-    const memberMass = world.getComponent(entityId, MassComponent)?.mass ?? 0.0;
+    const memberMass = member.physicalMass ?? (world.getComponent(entityId, MassComponent)?.mass ?? 0.0);
     const offsetWorld = bodyOrientation.transformVector(member.localPosition);
     const perpendicularMomentArmSq = offsetWorld.cross(axis).lengthSq();
     totalInertia += memberInertia + (memberMass * perpendicularMomentArmSq);

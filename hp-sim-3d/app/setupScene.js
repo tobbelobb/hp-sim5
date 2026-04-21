@@ -721,9 +721,13 @@ export function setupScene(world, stage, canvas, options = {}) {
                 for (const entityId of memberEntities) {
                     const memberPos = world.getComponent(entityId, PositionComponent)?.pos || new Vector3(0.0, 0.0, 0.0);
                     const memberOrientation = world.getComponent(entityId, OrientationComponent)?.quaternion || new Quaternion();
+                    const memberMass = world.getComponent(entityId, MassComponent)?.mass ?? 0.0;
                     const localPosition = memberPos.clone().subtract(bodyState.position);
                     const localOrientation = memberOrientation.clone().normalize();
-                    world.addComponent(entityId, new RigidBodyMemberComponent(bodyEnt, localPosition, localOrientation));
+                    world.addComponent(
+                        entityId,
+                        new RigidBodyMemberComponent(bodyEnt, localPosition, localOrientation, memberMass),
+                    );
                     world.addComponent(entityId, new PrevRigidBodyLocalOrientationComponent(
                         localOrientation.x,
                         localOrientation.y,

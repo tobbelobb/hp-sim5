@@ -113,6 +113,50 @@ describe('slideprinter 3D stepper closed-loop mode', () => {
     expect(bodyAngularVelocity.z).toBeCloseTo(-(spoolAngularVelocity.z / expectedBodyInertia), 12);
   });
 
+  test('uses preserved rigid-body member mass when the live mass component has been zeroed', () => {
+    const world = new World();
+    const system = new StepperMotorSystem();
+
+    const bodyEntity = world.createEntity();
+    world.addComponent(bodyEntity, new OrientationComponent());
+    world.addComponent(bodyEntity, new AngularVelocityComponent(0.0, 0.0, 0.0));
+    world.addComponent(bodyEntity, new MomentOfInertiaComponent(999.0));
+
+    const stepperEntity = world.createEntity();
+    const ballastEntity = world.createEntity();
+    world.addComponent(bodyEntity, new RigidBodyComponent([stepperEntity, ballastEntity]));
+
+    const localOrientation = new Quaternion().setFromAxisAngle(new Vector3(0.0, 0.0, 1.0), 0.2);
+    const orient = new OrientationComponent();
+    orient.quaternion.set(localOrientation);
+
+    world.addComponent(stepperEntity, new StepperMotorComponent(1.1, 0.0, 0.5, 1, 0.0));
+    world.addComponent(stepperEntity, new SpoolStateComponent('A', null, new Quaternion()));
+    world.addComponent(stepperEntity, orient);
+    world.addComponent(stepperEntity, new AngularVelocityComponent(0.0, 0.0, 0.0));
+    world.addComponent(stepperEntity, new MomentOfInertiaComponent(1.0));
+    world.addComponent(stepperEntity, new MassComponent(0.0));
+    world.addComponent(
+      stepperEntity,
+      new RigidBodyMemberComponent(bodyEntity, new Vector3(0.0, 0.0, 0.0), localOrientation, 2.0),
+    );
+
+    world.addComponent(ballastEntity, new MassComponent(0.0));
+    world.addComponent(ballastEntity, new MomentOfInertiaComponent(5.0));
+    world.addComponent(
+      ballastEntity,
+      new RigidBodyMemberComponent(bodyEntity, new Vector3(2.0, 0.0, 0.0), null, 3.0),
+    );
+
+    system.update(world, 0.1);
+
+    const spoolAngularVelocity = world.getComponent(stepperEntity, AngularVelocityComponent).omega;
+    const bodyAngularVelocity = world.getComponent(bodyEntity, AngularVelocityComponent).omega;
+    const expectedBodyInertia = 1.0 + 5.0 + (3.0 * 4.0);
+    expect(spoolAngularVelocity.z).toBeGreaterThan(0.0);
+    expect(bodyAngularVelocity.z).toBeCloseTo(-(spoolAngularVelocity.z / expectedBodyInertia), 12);
+  });
+
   test('snaps rigid-body-member spools in local spool space', () => {
     const world = new World();
     const system = new StepperMotorSystem();

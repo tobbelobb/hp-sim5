@@ -92,10 +92,11 @@ export class RigidBodyComponent {
 }
 
 export class RigidBodyMemberComponent {
-  constructor(bodyEntity = null, localPosition = null, localOrientation = null) {
+  constructor(bodyEntity = null, localPosition = null, localOrientation = null, physicalMass = null) {
     this.bodyEntity = bodyEntity;
     this.localPosition = localPosition ? localPosition.clone() : new Vector3(0.0, 0.0, 0.0);
     this.localOrientation = localOrientation ? localOrientation.clone().normalize() : new Quaternion();
+    this.physicalMass = Number.isFinite(physicalMass) ? physicalMass : null;
   }
 }
 
