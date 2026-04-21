@@ -2620,12 +2620,12 @@ export class PBDCableConstraintSolver {
 	      const deltaAngA = gradAngA.clone().scale(-invInertiaA * lambda);
 	      const orientationAComp = world.getComponent(solverEntityA, OrientationComponent);
 	      if (orientationAComp) {
-        const angle = deltaAngA.length();
-        if (angle > EPSILON) {
-          const axis = deltaAngA.clone().scale(1.0 / angle);
-          const dq = new Quaternion().setFromAxisAngle(axis, angle);
-          orientationAComp.quaternion.multiplyQuaternions(dq, orientationAComp.quaternion).normalize();
-          updateRigidBodyMemberLocalOrientation(world, solverEntityA);
+          const angle = deltaAngA.length();
+          if (angle > EPSILON) {
+            const axis = deltaAngA.clone().scale(1.0 / angle);
+            const dq = new Quaternion().setFromAxisAngle(axis, angle);
+            orientationAComp.quaternion.multiplyQuaternions(dq, orientationAComp.quaternion).normalize();
+            updateRigidBodyMemberLocalOrientation(world, solverEntityA);
 	        }
 	      }
 	    }
