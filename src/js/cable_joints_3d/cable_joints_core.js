@@ -2678,7 +2678,7 @@ export class PBDCableConstraintSolver {
             pB,
             gradPosA,
             gradPosB,
-            constraintError/ITERATIONS,
+            constraintError,
             path.compliance
           );
         }
