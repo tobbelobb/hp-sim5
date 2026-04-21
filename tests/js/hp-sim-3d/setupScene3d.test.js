@@ -55,6 +55,7 @@ jest.mock('../../../src/js/usd/stage.js', () => ({
 const { World } = require('../../../src/js/cable_joints_3d/ecs.js');
 const { setupScene } = require('../../../hp-sim-3d/app/setupScene.js');
 const { RenderSystem3D } = require('../../../src/js/cable_joints_3d/render_system_3d.js');
+const { CablePathComponent } = require('../../../src/js/cable_joints_3d/cable_joints_core.js');
 const { ExtruderComponent } = require('../../../hp-sim-3d/app/hangprinter_extruder.js');
 const { PauseStateComponent } = require('../../../example_apps/js/flipper/flipper_common.js');
 const usdStage = require('../../../src/js/usd/stage.js');
@@ -206,6 +207,110 @@ describe('slideprinter 3D setupScene', () => {
     setupScene(world, stage, createCanvas(), { append: false });
 
     expect(world.getResource('pauseState')).toEqual(expect.objectContaining({ paused: true }));
+  });
+
+  test('reads authored cable path damping into CablePathComponent', () => {
+    usdStage.getChildren.mockImplementation((prim) => {
+      if (prim?.path === '/World/SlideprinterScene') {
+        return [
+          {
+            path: '/World/SlideprinterScene/AnchorA',
+            name: 'AnchorA',
+            type: 'definition',
+            defType: 'Sphere'
+          },
+          {
+            path: '/World/SlideprinterScene/SpoolA',
+            name: 'SpoolA',
+            type: 'definition',
+            defType: 'Sphere'
+          },
+          {
+            path: '/World/SlideprinterScene/Joint1',
+            name: 'Joint1',
+            type: 'definition',
+            defType: 'CableJoint'
+          },
+          {
+            path: '/World/SlideprinterScene/CablePath1',
+            name: 'CablePath1',
+            type: 'definition',
+            defType: 'Xform'
+          }
+        ];
+      }
+      return [];
+    });
+
+    usdStage.getAttribute.mockImplementation((prim, attr) => {
+      if (prim?.path === '/World/PhysicsScene') {
+        if (attr === 'physics:gravityDirection') return [0.0, -1.0, 0.0];
+        if (attr === 'physics:gravityMagnitude') return 9.82;
+      }
+      if (prim?.path === '/World/SlideprinterScene/AnchorA') {
+        if (attr === 'xformOp:translate') return [0.0, 0.0, 0.0];
+        if (attr === 'radius') return 0.05;
+        if (attr === 'physics:mass') return -1.0;
+      }
+      if (prim?.path === '/World/SlideprinterScene/SpoolA') {
+        if (attr === 'ecs:tags') return ['Spool'];
+        if (attr === 'xformOp:translate') return [0.2, 0.0, 0.0];
+        if (attr === 'radius') return 0.05;
+        if (attr === 'physics:mass') return 1.0;
+        if (attr === 'physics:inertiaTensor') return [[0, 0, 0], [0, 0, 0], [0, 0, 0.01]];
+        if (attr === 'physics:velocity') return [0.0, 0.0, 0.0];
+        if (attr === 'physics:angularVelocity') return [0.0, 0.0, 0.0];
+        if (attr === 'cable:linkable') return true;
+      }
+      if (prim?.path === '/World/SlideprinterScene/Joint1') {
+        if (attr === 'restLength') return 0.2;
+        if (attr === 'localPos0') return [0.0, 0.0, 0.0];
+        if (attr === 'localPos1') return [0.0, 0.05, 0.0];
+      }
+      if (prim?.path === '/World/SlideprinterScene/CablePath1') {
+        if (attr === 'apiSchemas') return ['CablePathAPI'];
+        if (attr === 'cablePath:linkTypes') return ['attachment', 'attachment'];
+        if (attr === 'cablePath:clockwise') return [true, true];
+        if (attr === 'cablePath:stored') return [0.0, 0.0];
+        if (attr === 'stiffness') return 1000.0;
+        if (attr === 'cablePath:halfWidth') return 0.001;
+        if (attr === 'cablePath:damping') return 0.125;
+      }
+      return null;
+    });
+
+    usdStage.getRelationship.mockImplementation((prim, rel) => {
+      if (prim?.path === '/World/SlideprinterScene/Joint1' && rel === 'physics:body0') {
+        return ['/World/SlideprinterScene/AnchorA'];
+      }
+      if (prim?.path === '/World/SlideprinterScene/Joint1' && rel === 'physics:body1') {
+        return ['/World/SlideprinterScene/SpoolA'];
+      }
+      if (prim?.path === '/World/SlideprinterScene/CablePath1' && rel === 'cablePath:joints') {
+        return ['/World/SlideprinterScene/Joint1'];
+      }
+      return [];
+    });
+
+    const world = new World();
+    const stage = {
+      GetPrimAtPath(path) {
+        return { path, name: path.split('/').pop() };
+      },
+      ast: {
+        descriptor: {
+          assignments: [
+            { type: 'assignment', identifier: 'timeCodesPerSecond', value: 500 }
+          ]
+        }
+      }
+    };
+
+    setupScene(world, stage, createCanvas());
+
+    const pathEntities = world.query([CablePathComponent]);
+    expect(pathEntities).toHaveLength(1);
+    expect(world.getComponent(pathEntities[0], CablePathComponent).damping).toBeCloseTo(0.125, 12);
   });
 
   test('derives extruder offset from authored Extruder prim position and center sources', () => {

@@ -130,6 +130,14 @@ class "CablePathAPI" (
         """
     )
 
+    double damping = 0.0 (
+        doc = """XPBD damping coefficient for the cable path.
+
+        Used by the cable constraint solver together with compliance to
+        damp oscillations along the path's generalized motion.
+        """
+    )
+
     bool enabled = true (
         doc = """Whether this cable path is active.
 

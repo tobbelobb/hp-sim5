@@ -142,6 +142,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["attachment", "hybrid"]
             custom double[] cablePath:stored = [0, 1.0]
             custom double stiffness = 20000.0
+            custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
         }
 
@@ -154,6 +155,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["attachment", "hybrid"]
             custom double[] cablePath:stored = [0, 1.0]
             custom double stiffness = 20000.0
+            custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
         }
 
@@ -166,6 +168,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["attachment", "hybrid"]
             custom double[] cablePath:stored = [0, 1.0]
             custom double stiffness = 20000.0
+            custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
         }
 

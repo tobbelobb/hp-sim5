@@ -12,9 +12,12 @@ import {
 
 import {
   PositionComponent,
+  PrevFinalPosComponent,
   RadiusComponent,
   MassComponent,
   OrientationComponent,
+  PrevFinalOrientationComponent,
+  RigidBodyMemberComponent,
   HybridKnotAngleComponent,
   MomentOfInertiaComponent,
   CoefficientOfFrictionComponent,
@@ -88,7 +91,8 @@ export class CablePathComponent {
     cw = [],
     spring_constant = 1e6,
     stored = null,
-    cableHalfWidth = 0.0
+    cableHalfWidth = 0.0,
+    damping = 0.0
   ) {
     this.totalRestLength = 0.0;
     this.jointEntities = jointEntities; // Ordered list of CableJoint entity IDs
@@ -96,6 +100,7 @@ export class CablePathComponent {
     this.cw = cw; // Ordered. cw.length === linkTypes.length
     this.spring_constant = spring_constant;
     this.compliance = 1.0 / spring_constant;
+    this.damping = Number.isFinite(damping) ? Math.max(0.0, damping) : 0.0;
     this.stored = new Array(cw.length).fill(0.0); // Ordered. stored.length === cw.length
     this.cableHalfWidth = Number.isFinite(cableHalfWidth) ? Math.max(0.0, cableHalfWidth) : 0.0;
 
@@ -440,6 +445,43 @@ function _deltaAngleAroundAxis(prevQuat, currQuat, axis, axisIsLocal = false) {
     angle -= 2.0 * Math.PI;
   }
   return angle * sign;
+}
+
+function _rotationVectorBetween(prevQuat, currQuat) {
+  if (!prevQuat || !currQuat) {
+    return new Vector3(0.0, 0.0, 0.0);
+  }
+
+  const qDelta = new Quaternion()
+    .multiplyQuaternions(
+      currQuat,
+      prevQuat.clone().conjugate().normalize(),
+    )
+    .normalize();
+
+  if (qDelta.w < 0.0) {
+    qDelta.x *= -1.0;
+    qDelta.y *= -1.0;
+    qDelta.z *= -1.0;
+    qDelta.w *= -1.0;
+  }
+
+  const w = Math.max(-1.0, Math.min(1.0, qDelta.w));
+  const angle = 2.0 * Math.acos(w);
+  if (angle <= EPSILON) {
+    return new Vector3(0.0, 0.0, 0.0);
+  }
+
+  const sinHalf = Math.sqrt(Math.max(0.0, 1.0 - (w * w)));
+  if (sinHalf <= EPSILON) {
+    return new Vector3(0.0, 0.0, 0.0);
+  }
+
+  return new Vector3(
+    qDelta.x / sinHalf,
+    qDelta.y / sinHalf,
+    qDelta.z / sinHalf,
+  ).scale(angle);
 }
 
 function _rotateAroundAxis(point, center, axis, angle, cw) {
@@ -2356,6 +2398,35 @@ export class PBDCableConstraintSolver {
 
     const jointLocals = new Map();
     const computeLocal = (entityId, worldPoint) => computeLocalAttachment(world, entityId, worldPoint);
+    const getPrevPosition = (entityId) => world.getComponent(entityId, PrevFinalPosComponent)?.pos ?? null;
+    const getPrevOrientation = (entityId) => world.getComponent(entityId, PrevFinalOrientationComponent)?.quaternion ?? null;
+    const getCurrentOrientation = (entityId) => world.getComponent(entityId, OrientationComponent)?.quaternion ?? null;
+    const getPrevLocalOrientation = (entityId) => {
+      const member = world.getComponent(entityId, RigidBodyMemberComponent);
+      if (!member) {
+        return getPrevOrientation(entityId);
+      }
+
+      const prevBodyOrientation = getPrevOrientation(member.bodyEntity);
+      const prevMemberOrientation = getPrevOrientation(entityId);
+      if (!prevBodyOrientation || !prevMemberOrientation) {
+        return null;
+      }
+
+      return new Quaternion()
+        .multiplyQuaternions(
+          prevBodyOrientation.clone().conjugate().normalize(),
+          prevMemberOrientation,
+        )
+        .normalize();
+    };
+    const getCurrentLocalOrientation = (entityId) => {
+      const member = world.getComponent(entityId, RigidBodyMemberComponent);
+      if (member?.localOrientation) {
+        return member.localOrientation;
+      }
+      return getCurrentOrientation(entityId);
+    };
     const buildExternalMemberSpinSolveInfo = (entityId, pointWorld, gradPos) => {
       const linkComp = world.getComponent(entityId, CableLinkComponent);
       if (!linkComp?.cablePlaneNormalLocal || !pointWorld || !gradPos) {
@@ -2521,6 +2592,23 @@ export class PBDCableConstraintSolver {
       const rB = new Vector3().subtractVectors(solverPointB, posBComp.pos);
       const gradAngA = rA.cross(gradPosA);
       const gradAngB = rB.cross(gradPosB);
+
+      const prevPosA = getPrevPosition(solverEntityA);
+      const prevPosB = getPrevPosition(solverEntityB);
+      const prevQuatA = getPrevOrientation(solverEntityA);
+      const prevQuatB = getPrevOrientation(solverEntityB);
+      const currQuatA = getCurrentOrientation(solverEntityA);
+      const currQuatB = getCurrentOrientation(solverEntityB);
+
+      const translationalDispA = prevPosA
+        ? gradPosA.dot(posAComp.pos.clone().subtract(prevPosA))
+        : 0.0;
+      const translationalDispB = prevPosB
+        ? gradPosB.dot(posBComp.pos.clone().subtract(prevPosB))
+        : 0.0;
+      const rotationalDispA = gradAngA.dot(_rotationVectorBetween(prevQuatA, currQuatA));
+      const rotationalDispB = gradAngB.dot(_rotationVectorBetween(prevQuatB, currQuatB));
+
       const gradAngMemberA = memberSpinA
         ? new Vector3().subtractVectors(memberSpinA.pointWorld, memberSpinA.centerWorld).cross(memberSpinA.gradPos)
         : null;
@@ -2534,26 +2622,58 @@ export class PBDCableConstraintSolver {
         ? gradAngMemberB.dot(memberSpinB.axisWorld)
         : 0.0;
 
-      let denom = 0.0;
-	      denom += invMassA * gradPosA.lengthSq();
-	      denom += invInertiaA * gradAngA.lengthSq();
-        if (memberInvInertiaA > 0.0 && Math.abs(gradSpinA) > EPSILON) {
-          denom += memberInvInertiaA * gradSpinA * gradSpinA;
-        }
-	      denom += invMassB * gradPosB.lengthSq();
-	      denom += invInertiaB * gradAngB.lengthSq();
-        if (memberInvInertiaB > 0.0 && Math.abs(gradSpinB) > EPSILON) {
-          denom += memberInvInertiaB * gradSpinB * gradSpinB;
-        }
-	      if (Number.isFinite(dt) && dt > EPSILON) {
-	        denom += (compliance ?? 0.0) / (dt * dt);
-	      }
+      const linkCompMemberA = memberSpinA
+        ? world.getComponent(memberSpinA.entityId, CableLinkComponent)
+        : null;
+      const linkCompMemberB = memberSpinB
+        ? world.getComponent(memberSpinB.entityId, CableLinkComponent)
+        : null;
+      const spinAngleDispA = (memberSpinA && linkCompMemberA?.cablePlaneNormalLocal)
+        ? _deltaAngleAroundAxis(
+          getPrevLocalOrientation(memberSpinA.entityId),
+          getCurrentLocalOrientation(memberSpinA.entityId),
+          linkCompMemberA.cablePlaneNormalLocal,
+          true,
+        )
+        : 0.0;
+      const spinAngleDispB = (memberSpinB && linkCompMemberB?.cablePlaneNormalLocal)
+        ? _deltaAngleAroundAxis(
+          getPrevLocalOrientation(memberSpinB.entityId),
+          getCurrentLocalOrientation(memberSpinB.entityId),
+          linkCompMemberB.cablePlaneNormalLocal,
+          true,
+        )
+        : 0.0;
+      const spinDispA = gradSpinA * spinAngleDispA;
+      const spinDispB = gradSpinB * spinAngleDispB;
+
+      let mechDenom = 0.0;
+      mechDenom += invMassA * gradPosA.lengthSq();
+      mechDenom += invInertiaA * gradAngA.lengthSq();
+      if (memberInvInertiaA > 0.0 && Math.abs(gradSpinA) > EPSILON) {
+        mechDenom += memberInvInertiaA * gradSpinA * gradSpinA;
+      }
+      mechDenom += invMassB * gradPosB.lengthSq();
+      mechDenom += invInertiaB * gradAngB.lengthSq();
+      if (memberInvInertiaB > 0.0 && Math.abs(gradSpinB) > EPSILON) {
+        mechDenom += memberInvInertiaB * gradSpinB * gradSpinB;
+      }
+
+      const alphaTilde = (Number.isFinite(dt) && dt > EPSILON)
+        ? (compliance ?? 0.0) / (dt * dt)
+        : 0.0;
+      const gamma = (Number.isFinite(dt) && dt > EPSILON)
+        ? Math.max(0.0, (compliance ?? 0.0) * (path?.damping ?? 0.0) / dt)
+        : 0.0;
+      const jDx = translationalDispA + rotationalDispA + spinDispA + translationalDispB + rotationalDispB + spinDispB;
+      const denom = ((1.0 + gamma) * mechDenom) + alphaTilde;
 
       if (denom <= EPSILON) {
         return;
       }
+      //console.log(`gamma: ${gamma}`);
 
-      const lambda = -constraintError / denom;
+      const lambda = (-constraintError - (gamma * jDx)) / denom;
 
       if (invMassA > 0.0) {
         const deltaPosA = gradPosA.clone().scale(-invMassA * lambda);
@@ -2625,7 +2745,6 @@ export class PBDCableConstraintSolver {
         });
       }
     }
-
     for (let iter = 0; iter < ITERATIONS; iter++) {
       const isForward = (iter % 2 === 0);
 

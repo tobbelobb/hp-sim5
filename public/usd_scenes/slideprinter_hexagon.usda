@@ -334,6 +334,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["attachment", "pinhole", "hybrid"]
             custom double[] cablePath:stored = [0, 0, 1.0]
             custom double stiffness = 20000.0
+            custom double cablePath:damping = 0.0
             custom double cablePath:halfWidth = 0.001
         }
 
@@ -346,6 +347,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["attachment", "pinhole", "hybrid"]
             custom double[] cablePath:stored = [0, 0, 1.0]
             custom double stiffness = 20000.0
+            custom double cablePath:damping = 0.0
             custom double cablePath:halfWidth = 0.001
         }
 
@@ -359,6 +361,7 @@ def Xform "World"
             custom token[] cablePath:linkTypes = ["attachment", "pinhole", "hybrid"]
             custom double[] cablePath:stored = [0, 0, 1.0]
             custom double stiffness = 20000.0
+            custom double cablePath:damping = 0.0
             custom double cablePath:halfWidth = 0.001
         }
 
@@ -373,6 +376,7 @@ def Xform "World"
             custom double[] cablePath:stored = [0, 0, 1.0]
             custom double cablePath:totalLength = 2.98068042195
             custom double stiffness = 20000.0
+            custom double cablePath:damping = 0.0
             custom double cablePath:halfWidth = 0.001
         }
 
@@ -387,6 +391,7 @@ def Xform "World"
             custom double[] cablePath:stored = [0, 0, 1.0]
             custom double cablePath:totalLength = 2.98068042195
             custom double stiffness = 20000.0
+            custom double cablePath:damping = 0.0
             custom double cablePath:halfWidth = 0.001
         }
 
@@ -401,6 +406,7 @@ def Xform "World"
             custom double[] cablePath:stored = [0, 0, 1.0]
             custom double cablePath:totalLength = 2.98068042195
             custom double stiffness = 20000.0
+            custom double cablePath:damping = 0.0
             custom double cablePath:halfWidth = 0.001
         }
 
