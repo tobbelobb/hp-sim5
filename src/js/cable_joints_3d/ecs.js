@@ -100,12 +100,6 @@ export class RigidBodyMemberComponent {
   }
 }
 
-export class PrevRigidBodyLocalOrientationComponent {
-  constructor(x = 0, y = 0, z = 0, w = 1) {
-    this.quaternion = new Quaternion(x, y, z, w);
-  }
-}
-
 function _resourceBool(world, key, fallback = true) {
   const value = world?.getResource?.(key);
   return typeof value === 'boolean' ? value : fallback;

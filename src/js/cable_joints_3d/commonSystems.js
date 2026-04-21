@@ -15,7 +15,6 @@ import {
   DistanceConstraintComponent,
   RigidBodyComponent,
   RigidBodyMemberComponent,
-  PrevRigidBodyLocalOrientationComponent,
 } from './ecs.js';
 import {
   SpoolStateComponent,
@@ -242,22 +241,6 @@ export class MovementSystem {
       const posComp = world.getComponent(entityId, PositionComponent);
       const velComp = world.getComponent(entityId, VelocityComponent);
       posComp.pos.add(velComp.vel, dt);
-    }
-  }
-}
-
-export class PrevRigidBodyLocalOrientationSystem {
-  runInPause = false;
-
-  update(world, _dt) {
-    const entities = world.query([RigidBodyMemberComponent, PrevRigidBodyLocalOrientationComponent]);
-    for (const entityId of entities) {
-      const member = world.getComponent(entityId, RigidBodyMemberComponent);
-      const prevLocal = world.getComponent(entityId, PrevRigidBodyLocalOrientationComponent);
-      if (!member?.localOrientation || !prevLocal?.quaternion) {
-        continue;
-      }
-      prevLocal.quaternion.set(member.localOrientation);
     }
   }
 }

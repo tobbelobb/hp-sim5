@@ -178,7 +178,6 @@ describe('slideprinter 3D setupScene', () => {
     expect(planeNormal?.z).toBeCloseTo(1.0, 6);
 
     const systemNames = world.systems.map((system) => system.constructor.name);
-    expect(systemNames).toContain('PrevRigidBodyLocalOrientationSystem');
     expect(systemNames).toContain('RigidBodySyncSystem');
     expect(systemNames).toContain('ExtruderSystem');
     expect(systemNames).toContain('EncoderUpdateSystem');

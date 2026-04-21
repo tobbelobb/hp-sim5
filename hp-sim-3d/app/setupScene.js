@@ -25,7 +25,6 @@ import {
   DistanceConstraintComponent,
   RigidBodyComponent,
   RigidBodyMemberComponent,
-  PrevRigidBodyLocalOrientationComponent,
   MachineTagComponent,
 } from "../../src/js/cable_joints_3d/ecs.js";
 import {
@@ -68,7 +67,6 @@ import {
   AngularMovementSystem,
   PBDVelocityUpdateSystem,
   PBDAngularVelocityUpdateSystem,
-  PrevRigidBodyLocalOrientationSystem,
   RigidBodySyncSystem,
   XPBDDistanceConstraintSystem,
 } from '../../src/js/cable_joints_3d/commonSystems.js';
@@ -728,12 +726,6 @@ export function setupScene(world, stage, canvas, options = {}) {
                         entityId,
                         new RigidBodyMemberComponent(bodyEnt, localPosition, localOrientation, memberMass),
                     );
-                    world.addComponent(entityId, new PrevRigidBodyLocalOrientationComponent(
-                        localOrientation.x,
-                        localOrientation.y,
-                        localOrientation.z,
-                        localOrientation.w,
-                    ));
 
                     world.removeComponent(entityId, GravityAffectedComponent);
                     const massComponent = world.getComponent(entityId, MassComponent);
@@ -932,7 +924,6 @@ export function setupScene(world, stage, canvas, options = {}) {
           // 1. Cache state from previous step
           world.registerSystem(new PrevFinalPosSystem());
           world.registerSystem(new PrevFinalOrientationSystem());
-          world.registerSystem(new PrevRigidBodyLocalOrientationSystem());
 
           // 2. Handle non-physics state changes
           world.registerSystem(new RemoteSpoolSystem());
