@@ -2574,15 +2574,18 @@ export class PBDCableConstraintSolver {
         pointB_world,
         gradPosB, // gradPosB is a unit vector pointing from B to A
       );
+      const lockedSolverA = isLockedClosedLoopStepper(solverEntityA);
+      const lockedSolverB = isLockedClosedLoopStepper(solverEntityB);
+
 	    const massAComp = world.getComponent(solverEntityA, MassComponent);
-	    const invMassA = (massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
+	    const invMassA = (!lockedSolverA && massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
 	    const moiAComp = world.getComponent(solverEntityA, MomentOfInertiaComponent);
-	    const invInertiaA = moiAComp ? moiAComp.invInertia : 0.0;
+	    const invInertiaA = (!lockedSolverA && moiAComp) ? moiAComp.invInertia : 0.0;
 
 	    const massBComp = world.getComponent(solverEntityB, MassComponent);
-	    const invMassB = (massBComp && massBComp.mass > 0) ? 1.0 / massBComp.mass : 0.0;
+	    const invMassB = (!lockedSolverB && massBComp && massBComp.mass > 0) ? 1.0 / massBComp.mass : 0.0;
 	    const moiBComp = world.getComponent(solverEntityB, MomentOfInertiaComponent);
-	    const invInertiaB = moiBComp ? moiBComp.invInertia : 0.0;
+	    const invInertiaB = (!lockedSolverB && moiBComp) ? moiBComp.invInertia : 0.0;
 
       const memberInvInertiaA = memberSpinA?.invInertia ?? 0.0;
       const memberInvInertiaB = memberSpinB?.invInertia ?? 0.0;

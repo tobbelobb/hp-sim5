@@ -322,6 +322,75 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
     expect(Math.abs(spoolMember.localOrientation.w - 1.0)).toBeCloseTo(0.0, 12);
   });
 
+  test('standalone closed-loop steppers are excluded from cable solver DOFs', () => {
+    const world = new World();
+    world.setResource('dt', 1.0);
+
+    const spool = world.createEntity();
+    world.addComponent(spool, new PositionComponent(0.0, 0.0, 0.0));
+    world.addComponent(spool, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
+    world.addComponent(spool, new MassComponent(2.0));
+    world.addComponent(spool, new MomentOfInertiaComponent(0.1));
+    world.addComponent(
+      spool,
+      new CableLinkComponent(
+        0.0,
+        0.0,
+        0.0,
+        null,
+        null,
+        new Vector3(0.0, 0.0, 1.0),
+      ),
+    );
+    const stepper = new StepperMotorComponent();
+    stepper.closedLoop = true;
+    world.addComponent(spool, stepper);
+
+    const anchor = world.createEntity();
+    world.addComponent(anchor, new PositionComponent(2.0, 0.0, 0.0));
+    world.addComponent(anchor, new MassComponent(-1.0));
+
+    const jointEntity = world.createEntity();
+    world.addComponent(
+      jointEntity,
+      CableJointComponent.fromWorld(
+        spool,
+        anchor,
+        1.0,
+        new Vector3(0.0, 1.0, 0.0),
+        new Vector3(2.0, 0.0, 0.0),
+      ),
+    );
+
+    const pathEntity = world.createEntity();
+    world.addComponent(
+      pathEntity,
+      new CablePathComponent(
+        world,
+        [jointEntity],
+        ['attachment', 'attachment'],
+        [true, true],
+        Infinity,
+        null,
+        0.0,
+      ),
+    );
+
+    const solver = new PBDCableConstraintSolver();
+    solver.update(world, 0.0);
+
+    const spoolPosition = world.getComponent(spool, PositionComponent).pos;
+    const spoolOrientation = world.getComponent(spool, OrientationComponent).quaternion;
+
+    expect(spoolPosition.x).toBeCloseTo(0.0, 12);
+    expect(spoolPosition.y).toBeCloseTo(0.0, 12);
+    expect(spoolPosition.z).toBeCloseTo(0.0, 12);
+    expect(Math.abs(spoolOrientation.x)).toBeCloseTo(0.0, 12);
+    expect(Math.abs(spoolOrientation.y)).toBeCloseTo(0.0, 12);
+    expect(Math.abs(spoolOrientation.z)).toBeCloseTo(0.0, 12);
+    expect(Math.abs(spoolOrientation.w - 1.0)).toBeCloseTo(0.0, 12);
+  });
+
   test('external pinhole cable corrections can backdrive a downstream rigid-body-mounted spool member', () => {
     const world = new World();
     world.setResource('dt', 1.0);
