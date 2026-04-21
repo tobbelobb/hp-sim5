@@ -24,13 +24,3 @@ export function setStepperPositionMode(world, entity) {
     stepper.targetTorque = 0;
   }
 }
-
-export function isStepperInTorqueMode(world, entity) {
-  const stepper = world.getComponent(entity, StepperMotorComponent);
-  return stepper?.torqueMode ?? false;
-}
-
-export function getStepperTorque(world, entity) {
-  const stepper = world.getComponent(entity, StepperMotorComponent);
-  return stepper?.torqueMode ? stepper.targetTorque : 0;
-}

@@ -10,33 +10,6 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-function normalizeAngle(angle) {
-  let a = angle;
-  while (a > Math.PI) a -= 2 * Math.PI;
-  while (a < -Math.PI) a += 2 * Math.PI;
-  return a;
-}
-
-function distancePointToSegment(px, py, ax, ay, bx, by) {
-  const abx = bx - ax;
-  const aby = by - ay;
-  const apx = px - ax;
-  const apy = py - ay;
-  const abLenSq = abx * abx + aby * aby;
-  if (abLenSq <= 1e-16) {
-    const dx = px - ax;
-    const dy = py - ay;
-    return Math.sqrt(dx * dx + dy * dy);
-  }
-  let t = (apx * abx + apy * aby) / abLenSq;
-  t = Math.max(0, Math.min(1, t));
-  const cx = ax + t * abx;
-  const cy = ay + t * aby;
-  const dx = px - cx;
-  const dy = py - cy;
-  return Math.sqrt(dx * dx + dy * dy);
-}
-
 function distancePointToSegment3D(px, py, pz, ax, ay, az, bx, by, bz) {
   const abx = bx - ax;
   const aby = by - ay;

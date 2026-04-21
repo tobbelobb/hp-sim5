@@ -73,8 +73,8 @@ export class CableJointComponent {
       entityA,
       entityB,
       restLength,
-      _computeWorldAttachment(world, entityA, attachmentPointA_local),
-      _computeWorldAttachment(world, entityB, attachmentPointB_local)
+      computeWorldAttachment(world, entityA, attachmentPointA_local),
+      computeWorldAttachment(world, entityB, attachmentPointB_local)
     );
   }
 }
@@ -381,14 +381,6 @@ function _getPlaneNormal(world, entityId) {
     return linkComp.cablePlaneNormal;
   }
   return DEFAULT_PLANE_NORMAL;
-}
-
-function _computeWorldAttachment(world, entityId, localPoint) {
-  return computeWorldAttachment(world, entityId, localPoint);
-}
-
-function _computeLocalAttachment(world, entityId, worldPoint) {
-  return computeLocalAttachment(world, entityId, worldPoint);
 }
 
 function _localTwistAngle(quaternion, axisLocal) {
@@ -2439,8 +2431,8 @@ export class PBDCableConstraintSolver {
 
       const hybridEntityId = hybridOnJointSide === 'A' ? internalJoint.entityA : internalJoint.entityB;
       const hybridPointWorld = hybridOnJointSide === 'A'
-        ? _computeWorldAttachment(world, hybridEntityId, internalLocals.localA)
-        : _computeWorldAttachment(world, hybridEntityId, internalLocals.localB);
+        ? computeWorldAttachment(world, hybridEntityId, internalLocals.localA)
+        : computeWorldAttachment(world, hybridEntityId, internalLocals.localB);
       if (!hybridPointWorld || !pointWorld) {
         return null;
       }
@@ -2693,8 +2685,8 @@ export class PBDCableConstraintSolver {
           const entityA = joint.entityA;
           const entityB = joint.entityB;
 
-          const pA = _computeWorldAttachment(world, entityA, locals.localA);
-          const pB = _computeWorldAttachment(world, entityB, locals.localB);
+          const pA = computeWorldAttachment(world, entityA, locals.localA);
+          const pB = computeWorldAttachment(world, entityB, locals.localB);
 
           const currentSegmentLength = pA.distanceTo(pB);
           let dir = null;

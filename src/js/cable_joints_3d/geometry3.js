@@ -138,18 +138,3 @@ export function rightOfPlane(x, p0, p1, planeNormal) {
   const p02 = new Vector2(0, 0);
   return rightOfLine(x2, p02, p12);
 }
-
-/**
- * Calculates the arc length between two points on a sphere's surface.
- * @param {Vector3} p1 - Start point on sphere surface.
- * @param {Vector3} p2 - End point on sphere surface.
- * @param {Vector3} center - Center of the sphere.
- * @param {number} radius - Radius of the sphere.
- * @returns {number} The arc length.
- */
-export function arcLengthOnSphere(p1, p2, center, radius) {
-    const v1 = new Vector3().subtractVectors(p1, center).normalize();
-    const v2 = new Vector3().subtractVectors(p2, center).normalize();
-    const angle = Math.acos(Math.max(-1, Math.min(1, v1.dot(v2)))); // Clamp for precision
-    return radius * angle;
-}

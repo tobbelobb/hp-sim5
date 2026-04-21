@@ -30,20 +30,6 @@ export function getRigidBodyEntityForMember(world, entityId) {
   return member?.bodyEntity ?? null;
 }
 
-export function getRigidBodyForEntity(world, entityId) {
-  if (entityId === null || entityId === undefined) {
-    return null;
-  }
-  if (world?.getComponent?.(entityId, RigidBodyComponent)) {
-    return entityId;
-  }
-  return getRigidBodyEntityForMember(world, entityId);
-}
-
-export function isRigidBodyMember(world, entityId) {
-  return getRigidBodyMemberComponent(world, entityId) !== null;
-}
-
 export function getEntityWorldPosition(world, entityId) {
   const member = getRigidBodyMemberComponent(world, entityId);
   if (member) {
