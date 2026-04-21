@@ -28,7 +28,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-5, 0, 0), (0, 5e-5, 0), (0, 0, 5e-5))
             custom double stepper:holdingTorque = 0.5
             custom int stepper:numPolePairs = 50
-            custom double stepper:dampingCoeff = 0.01
+            custom double stepper:dampingCoeff = 0.011
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
@@ -89,7 +89,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-5, 0, 0), (0, 5e-5, 0), (0, 0, 5e-5))
             custom double stepper:holdingTorque = 0.5
             custom int stepper:numPolePairs = 50
-            custom double stepper:dampingCoeff = 0.01
+            custom double stepper:dampingCoeff = 0.011
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
@@ -151,7 +151,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-5, 0, 0), (0, 5e-5, 0), (0, 0, 5e-5))
             custom double stepper:holdingTorque = 0.5
             custom int stepper:numPolePairs = 50
-            custom double stepper:dampingCoeff = 0.01
+            custom double stepper:dampingCoeff = 0.011
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
