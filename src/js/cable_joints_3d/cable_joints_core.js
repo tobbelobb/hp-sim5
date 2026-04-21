@@ -2642,18 +2642,18 @@ export class PBDCableConstraintSolver {
           }
         }
       }
-	    if (reactionInvInertiaA > 0.0 && reactionBodyEntityA !== null && reactionBodyEntityA !== undefined) {
-	      const reactionAngA = gradAngA.clone().scale(-reactionInvInertiaA * lambda);
-	      const reactionOrientationAComp = world.getComponent(reactionBodyEntityA, OrientationComponent);
-	      if (reactionOrientationAComp) {
-	        const angle = reactionAngA.length();
-	        if (angle > EPSILON) {
-	          const axis = reactionAngA.clone().scale(1.0 / angle);
-	          const dq = new Quaternion().setFromAxisAngle(axis, angle);
-	          reactionOrientationAComp.quaternion.multiplyQuaternions(dq, reactionOrientationAComp.quaternion).normalize();
-	        }
-	      }
-	    }
+	    //if (reactionInvInertiaA > 0.0 && reactionBodyEntityA !== null && reactionBodyEntityA !== undefined) {
+	    //  const reactionAngA = gradAngA.clone().scale(-reactionInvInertiaA * lambda);
+	    //  const reactionOrientationAComp = world.getComponent(reactionBodyEntityA, OrientationComponent);
+	    //  if (reactionOrientationAComp) {
+	    //    const angle = reactionAngA.length();
+	    //    if (angle > EPSILON) {
+	    //      const axis = reactionAngA.clone().scale(1.0 / angle);
+	    //      const dq = new Quaternion().setFromAxisAngle(axis, angle);
+	    //      reactionOrientationAComp.quaternion.multiplyQuaternions(dq, reactionOrientationAComp.quaternion).normalize();
+	    //    }
+	    //  }
+	    //}
 
 	    if (invMassB > 0.0) {
 	      const deltaPosB = gradPosB.clone().scale(-invMassB * lambda);
@@ -2685,18 +2685,18 @@ export class PBDCableConstraintSolver {
           }
         }
       }
-	    if (reactionInvInertiaB > 0.0 && reactionBodyEntityB !== null && reactionBodyEntityB !== undefined) {
-	      const reactionAngB = gradAngB.clone().scale(-reactionInvInertiaB * lambda);
-	      const reactionOrientationBComp = world.getComponent(reactionBodyEntityB, OrientationComponent);
-	      if (reactionOrientationBComp) {
-	        const angle = reactionAngB.length();
-	        if (angle > EPSILON) {
-	          const axis = reactionAngB.clone().scale(1.0 / angle);
-	          const dq = new Quaternion().setFromAxisAngle(axis, angle);
-	          reactionOrientationBComp.quaternion.multiplyQuaternions(dq, reactionOrientationBComp.quaternion).normalize();
-	        }
-	      }
-	    }
+	    //if (reactionInvInertiaB > 0.0 && reactionBodyEntityB !== null && reactionBodyEntityB !== undefined) {
+	    //  const reactionAngB = gradAngB.clone().scale(-reactionInvInertiaB * lambda);
+	    //  const reactionOrientationBComp = world.getComponent(reactionBodyEntityB, OrientationComponent);
+	    //  if (reactionOrientationBComp) {
+	    //    const angle = reactionAngB.length();
+	    //    if (angle > EPSILON) {
+	    //      const axis = reactionAngB.clone().scale(1.0 / angle);
+	    //      const dq = new Quaternion().setFromAxisAngle(axis, angle);
+	    //      reactionOrientationBComp.quaternion.multiplyQuaternions(dq, reactionOrientationBComp.quaternion).normalize();
+	    //    }
+	    //  }
+	    //}
 	  };
 
     for (const pathId of pathEntities) {

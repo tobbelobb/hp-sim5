@@ -935,7 +935,7 @@ export function setupScene(world, stage, canvas, options = {}) {
           world.registerSystem(new StepperMotorSystem());
 
           // 3. PREDICTION: Apply forces and integrate velocity to get predicted positions
-          world.registerSystem(new GravitySystem());
+          //world.registerSystem(new GravitySystem());
           world.registerSystem(new MovementSystem());
           world.registerSystem(new AngularMovementSystem());
           world.registerSystem(new RigidBodySyncSystem());

@@ -3,6 +3,8 @@ import {
   OrientationComponent,
   AngularVelocityComponent,
   MomentOfInertiaComponent,
+  MassComponent,
+  RigidBodyComponent,
 } from '../../src/js/cable_joints_3d/ecs.js';
 import { isStepperClosedLoopEnabled } from './hangprinter_runtime.js';
 import {
@@ -13,9 +15,10 @@ import {
 } from './hangprinter_spools.js';
 import {
   getRigidBodyMemberComponent,
-  getRigidBodyEntityForMember,
 } from '../../src/js/cable_joints_3d/rigid_bodies.js';
 import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
+
+const EPSILON = 1e-12;
 
 function normalizeAngle(angle) {
   let normalized = angle;
@@ -49,6 +52,76 @@ function getRigidBodyMemberSpoolFrame(world, entityId, spoolState) {
       referenceOrientation: localReferenceOrientation,
     },
   };
+}
+
+function getRigidBodyEffectiveInertiaAboutAxis(world, bodyEntity, worldAxis) {
+  const axis = worldAxis?.clone?.();
+  if (!axis || axis.lengthSq() <= EPSILON) {
+    return world.getComponent(bodyEntity, MomentOfInertiaComponent)?.inertia ?? 0.0;
+  }
+  axis.normalize();
+
+  const body = world.getComponent(bodyEntity, RigidBodyComponent);
+  const bodyOrientation = world.getComponent(bodyEntity, OrientationComponent)?.quaternion;
+  const members = Array.isArray(body?.members) ? body.members : [];
+  if (!bodyOrientation || members.length < 1) {
+    return world.getComponent(bodyEntity, MomentOfInertiaComponent)?.inertia ?? 0.0;
+  }
+
+  let totalInertia = 0.0;
+  for (const entityId of members) {
+    const member = getRigidBodyMemberComponent(world, entityId);
+    if (!member?.localPosition) {
+      continue;
+    }
+
+    const memberInertia = world.getComponent(entityId, MomentOfInertiaComponent)?.inertia ?? 0.0;
+    const memberMass = world.getComponent(entityId, MassComponent)?.mass ?? 0.0;
+    const offsetWorld = bodyOrientation.transformVector(member.localPosition);
+    const perpendicularMomentArmSq = offsetWorld.cross(axis).lengthSq();
+    totalInertia += memberInertia + (memberMass * perpendicularMomentArmSq);
+  }
+
+  if (totalInertia > EPSILON) {
+    return totalInertia;
+  }
+  return world.getComponent(bodyEntity, MomentOfInertiaComponent)?.inertia ?? 0.0;
+}
+
+function applyRigidBodyReactionRotation(world, rigidBodyMemberFrame, worldAxis, motorAngleDelta) {
+  const bodyEntity = rigidBodyMemberFrame?.member?.bodyEntity;
+  if (
+    bodyEntity === null
+    || bodyEntity === undefined
+    || Math.abs(motorAngleDelta) <= EPSILON
+  ) {
+    return;
+  }
+
+  const bodyInertia = getRigidBodyEffectiveInertiaAboutAxis(world, bodyEntity, worldAxis);
+  const bodyOrientation = world.getComponent(bodyEntity, OrientationComponent)?.quaternion;
+  if (!bodyOrientation || !(bodyInertia > EPSILON)) {
+    return;
+  }
+
+  const dq = new Quaternion().setFromAxisAngle(worldAxis, -motorAngleDelta);
+  bodyOrientation.multiplyQuaternions(dq, bodyOrientation).normalize();
+}
+
+function applyRigidBodyReactionAngularVelocity(world, rigidBodyMemberFrame, worldAxis, totalTorque, dt) {
+  const bodyEntity = rigidBodyMemberFrame?.member?.bodyEntity;
+  if (bodyEntity === null || bodyEntity === undefined || Math.abs(totalTorque) <= EPSILON) {
+    return;
+  }
+
+  const bodyInertia = getRigidBodyEffectiveInertiaAboutAxis(world, bodyEntity, worldAxis);
+  const bodyAngularVelocity = world.getComponent(bodyEntity, AngularVelocityComponent);
+  if (!bodyAngularVelocity?.omega || !(bodyInertia > EPSILON)) {
+    return;
+  }
+
+  const bodyAngularAcceleration = -totalTorque / bodyInertia;
+  bodyAngularVelocity.omega.add(worldAxis, bodyAngularAcceleration * dt);
 }
 
 export class StepperMotorComponent {
@@ -139,9 +212,11 @@ export class StepperMotorSystem {
         const targetAngle = stepper.commandedAngle - stepper.deltaAngle;
         if (isStepperClosedLoopEnabled(world, stepper)) {
           if (rigidBodyMemberFrame) {
+            const motorAngleDelta = normalizeAngle(targetAngle - currentAngle);
             rigidBodyMemberFrame.member.localOrientation.set(
               composeSpoolOrientation(rigidBodyMemberFrame.localSpoolState, null, targetAngle),
             );
+            applyRigidBodyReactionRotation(world, rigidBodyMemberFrame, worldAxis, motorAngleDelta);
             orient.quaternion.set(
               new Quaternion()
                 .multiplyQuaternions(
@@ -170,6 +245,7 @@ export class StepperMotorSystem {
 
       const angularAcceleration = totalTorque / inertia.inertia;
       angVel.omega.add(worldAxis, angularAcceleration * dt);
+      applyRigidBodyReactionAngularVelocity(world, rigidBodyMemberFrame, worldAxis, totalTorque, dt);
       if (rigidBodyMemberFrame) {
         const integratedAngle = currentAngle + ((angVel.omega?.dot?.(worldAxis) ?? 0.0) * dt);
         rigidBodyMemberFrame.member.localOrientation.set(
@@ -184,18 +260,6 @@ export class StepperMotorSystem {
             .normalize(),
         );
       }
-
-      // This block has to do with reaction torque, which should really be handled by its own system,
-      // maybe call it RigidBodyReactionTorqueSystem
-      //const bodyEntity = getRigidBodyEntityForMember(world, entityId);
-      //if (bodyEntity !== null && bodyEntity !== undefined) {
-      //  const bodyAngularVelocity = world.getComponent(bodyEntity, AngularVelocityComponent);
-      //  const bodyInertia = world.getComponent(bodyEntity, MomentOfInertiaComponent);
-      //  if (bodyAngularVelocity?.omega && bodyInertia?.inertia > 0.0) {
-      //    const bodyDeltaOmega = -(inertia.inertia / bodyInertia.inertia) * angularAcceleration * dt;
-      //    bodyAngularVelocity.omega.add(worldAxis, bodyDeltaOmega);
-      //  }
-      //}
     }
   }
 }
