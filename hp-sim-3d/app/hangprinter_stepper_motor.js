@@ -212,39 +212,6 @@ export class StepperMotorSystem {
           coggingTorque;
       } else {
         const targetAngle = stepper.commandedAngle - stepper.deltaAngle;
-        if (isStepperClosedLoopEnabled(world, stepper)) {
-          if (rigidBodyMemberFrame) {
-            const motorAngleDelta = normalizeAngle(currentAngle - targetAngle);
-            rigidBodyMemberFrame.member.localOrientation.set(
-              composeSpoolOrientation(rigidBodyMemberFrame.localSpoolState, null, targetAngle),
-            );
-            applyRigidBodyReactionRotation(
-              world,
-              rigidBodyMemberFrame,
-              worldAxis,
-              motorAngleDelta,
-              inertia.inertia,
-            );
-            orient.quaternion.set(
-              new Quaternion()
-                .multiplyQuaternions(
-                  rigidBodyMemberFrame.bodyOrientation,
-                  rigidBodyMemberFrame.member.localOrientation,
-                )
-                .normalize(),
-            );
-          } else {
-            orient.quaternion.set(composeSpoolOrientation(spoolState, null, targetAngle));
-          }
-          angVel.omega.x = 0.0;
-          angVel.omega.y = 0.0;
-          angVel.omega.z = 0.0;
-          if (encoder) {
-            encoder.angle = targetAngle;
-            encoder.axis = getSpoolWorldAxis(spoolState, orient.quaternion);
-          }
-          continue;
-        }
         const error = normalizeAngle(currentAngle - targetAngle);
         const restoringTorque = -stepper.holdingTorque * Math.sin(stepper.numPolePairs * error);
         const dampingTorque = -stepper.dampingCoeff * omegaAlongAxis;

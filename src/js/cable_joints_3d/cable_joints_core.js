@@ -33,6 +33,8 @@ import {
   resolveRigidBodySolverEndpoint,
   updateRigidBodyMemberLocalOrientation,
 } from './rigid_bodies.js';
+import { StepperMotorComponent } from '../../../hp-sim-3d/app/hangprinter_stepper_motor.js';
+import { isStepperClosedLoopEnabled } from '../../../hp-sim-3d/app/hangprinter_runtime.js';
 
 export class CableLinkComponent {
   constructor(
@@ -2427,7 +2429,17 @@ export class PBDCableConstraintSolver {
       }
       return getCurrentOrientation(entityId);
     };
+    const isLockedClosedLoopStepper = (entityId) => {
+      const stepper = world.getComponent(entityId, StepperMotorComponent);
+      if (!stepper || stepper.torqueMode) {
+        return false;
+      }
+      return isStepperClosedLoopEnabled(world, stepper);
+    };
     const buildExternalMemberSpinSolveInfo = (entityId, pointWorld, gradPos) => {
+      if (isLockedClosedLoopStepper(entityId)) {
+        return null;
+      }
       const linkComp = world.getComponent(entityId, CableLinkComponent);
       if (!linkComp?.cablePlaneNormalLocal || !pointWorld || !gradPos) {
         return null;
