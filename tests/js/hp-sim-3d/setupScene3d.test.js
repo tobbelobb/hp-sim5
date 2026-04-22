@@ -443,7 +443,7 @@ describe('slideprinter 3D setupScene', () => {
     expect(extruder.coldEndPos.z).toBeCloseTo(0.052, 6);
   });
 
-  test('loads Wheel prims as passive rotating cylinders without stepper controls', () => {
+  test('loads Wheel prims as passive rotating cylinders with cable-plane orientation and no stepper controls', () => {
     usdStage.getChildren.mockImplementation((prim) => {
       if (prim?.path === '/World/SlideprinterScene') {
         return [{
@@ -470,7 +470,6 @@ describe('slideprinter 3D setupScene', () => {
         if (attr === 'physics:velocity') return [0.0, 0.0, 0.0];
         if (attr === 'physics:angularVelocity') return [0.0, 0.0, 0.0];
         if (attr === 'spool:axisLocal') return [1.0, 0.0, 0.0];
-        if (attr === 'cable:linkable') return true;
       }
       return null;
     });
@@ -513,6 +512,8 @@ describe('slideprinter 3D setupScene', () => {
     expect(spoolState.axisLocal.z).toBeCloseTo(0.0, 6);
     expect(cableLink).toBeTruthy();
     expect(cableLink.cablePlaneNormalLocal.x).toBeCloseTo(1.0, 6);
+    expect(cableLink.cablePlaneNormalLocal.y).toBeCloseTo(0.0, 6);
+    expect(cableLink.cablePlaneNormalLocal.z).toBeCloseTo(0.0, 6);
     expect(world.getComponent(wheelEntity, StepperMotorComponent)).toBeUndefined();
     expect(world.getComponent(wheelEntity, SpoolTagComponent)).toBeUndefined();
   });

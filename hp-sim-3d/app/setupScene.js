@@ -660,19 +660,17 @@ export function setupScene(world, stage, canvas, options = {}) {
                     world.addComponent(ent, new PrevFinalPosComponent(pos.x, pos.y, pos.z));
                     if (restitution !== null) world.addComponent(ent, new RestitutionComponent(restitution));
                     if (friction !== null) world.addComponent(ent, new CoefficientOfFrictionComponent(friction));
-                    if (getAttribute(prim, "cable:linkable")) {
-                        world.addComponent(
-                            ent,
-                            new CableLinkComponent(
-                                pos.x,
-                                pos.y,
-                                pos.z,
-                                initialOrientation,
-                                null,
-                                wheelAxisLocal,
-                            ),
-                        );
-                    }
+                    world.addComponent(
+                        ent,
+                        new CableLinkComponent(
+                            pos.x,
+                            pos.y,
+                            pos.z,
+                            initialOrientation,
+                            null,
+                            wheelAxisLocal,
+                        ),
+                    );
                     nameToEntityId[primKey] = ent;
                 } else if (tags.includes("Anchor")) {
                     const ent = world.createEntity();

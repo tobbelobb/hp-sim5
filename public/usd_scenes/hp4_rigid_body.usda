@@ -45,7 +45,7 @@ def Xform "World"
             token[] ecs:tags = ["Anchor"]
             # Distance between vertical action point holes is 59.5 mm. Gotten from hangprinter/src/corner_clamp.scad
             # Like this: echo("dist:", higher_bearing_z + b623_big_ugroove_small_r + Eyelet_extra_dist - (lower_bearing_z - b623_big_ugroove_small_r - Eyelet_extra_dist));
-            double3 xformOp:translate = (-0.346410161513775, -2.14, -0.18595)
+            double3 xformOp:translate = (-0.346410161513775, -2.14, -0.2395)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
@@ -397,7 +397,7 @@ def Xform "World"
                 </World/HangprinterScene/AttachBR>,
             ]
 
-            # custom string rigidBody:renderIndices = "[0,8,9]"
+            custom string rigidBody:renderIndices = "[8,9,10,8]"
         }
 
         def CableJoint "JointAL_0"
@@ -457,7 +457,7 @@ def Xform "World"
             custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/PinholeAL_bottom>
             custom rel physics:body1 = </World/HangprinterScene/AnchorAL_bottom>
-            custom double restLength = 0.02
+            custom double restLength = 1.9205
         }
 
         def CableJoint "JointAR_0"
