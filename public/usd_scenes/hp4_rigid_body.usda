@@ -229,7 +229,7 @@ def Xform "World"
             custom bool cable:linkable = 1
             double radius = 0.03
             quatf xformOp:orient = (1, 0, 0, 0)
-            double3 xformOp:translate = (2.165063509461097, 1.25, -0.18)
+            double3 xformOp:translate = (2.1997, 1.2700, -0.18)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = -1.0
             float3 physics:angularVelocity = (0, 0, 0)
@@ -410,7 +410,7 @@ def Xform "World"
             custom bool cable:linkable = 1
             double radius = 0.03
             quatf xformOp:orient = (1, 0, 0, 0)
-            double3 xformOp:translate = (-2.165063509461097, 1.25, -0.18)
+            double3 xformOp:translate = (-2.1997, 1.27, -0.18)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = -1.0
             float3 physics:angularVelocity = (0, 0, 0)
@@ -424,7 +424,7 @@ def Xform "World"
         def Xform "AnchorCL_top" ()
         {
             token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (-1.680089283341811, 1.370000000000001, -0.18)
+            double3 xformOp:translate = (-1.68009, 1.37, -0.18)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
@@ -432,7 +432,7 @@ def Xform "World"
         def Xform "AnchorCL_bottom" ()
         {
             token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (-1.680089283341811, 1.370000000000001, -0.2395)
+            double3 xformOp:translate = (-1.68009, 1.37, -0.2395)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
@@ -440,7 +440,7 @@ def Xform "World"
         def Xform "AnchorCR_top" ()
         {
             token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (-2.026499444855586, 0.770000000000001, -0.18)
+            double3 xformOp:translate = (-2.0265, 0.77, -0.18)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
@@ -448,7 +448,7 @@ def Xform "World"
         def Xform "AnchorCR_bottom" ()
         {
             token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (-2.026499444855586, 0.770000000000001, -0.2395)
+            double3 xformOp:translate = (-2.0265, 0.77, -0.2395)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
@@ -517,7 +517,7 @@ def Xform "World"
         {
             token[] ecs:tags = ["Wheel"]
             double radius = 0.0065
-            double3 xformOp:translate = (-0.363730669589464, -0.189999999999999, 0.09275)
+            double3 xformOp:translate = (-0.363730669589464, -0.19, 0.09275)
             double3 xformOp:rotateXYZ = (0, 90, 240)
             uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
             float physics:mass = 0.002
@@ -532,7 +532,7 @@ def Xform "World"
         )
         {
             token[] ecs:tags = ["Pinhole"]
-            double3 xformOp:translate = (-0.381051177665153, -0.179999999999999, 0.1)
+            double3 xformOp:translate = (-0.381051177665153, -0.18, 0.1)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             float physics:mass = 0.0002
             vector3f physics:velocity = (0.0, 0.0, 0.0)
@@ -546,7 +546,7 @@ def Xform "World"
         {
             token[] ecs:tags = ["Wheel"]
             double radius = 0.0065
-            double3 xformOp:translate = (-0.363730669589464, -0.189999999999999, 0.04775)
+            double3 xformOp:translate = (-0.363730669589464, -0.19, 0.04775)
             double3 xformOp:rotateXYZ = (0, 90, 240)
             uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
             float physics:mass = 0.002
@@ -561,7 +561,7 @@ def Xform "World"
         )
         {
             token[] ecs:tags = ["Pinhole"]
-            double3 xformOp:translate = (-0.381051177665153, -0.179999999999999, 0.0405)
+            double3 xformOp:translate = (-0.381051177665153, -0.18, 0.0405)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             float physics:mass = 0.0002
             vector3f physics:velocity = (0.0, 0.0, 0.0)
@@ -582,7 +582,6 @@ def Xform "World"
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = -1.0
             float3 physics:angularVelocity = (0, 0, 0)
-            # Typical intertia range for Nema 17 stepper motors are ca 3e-5 to 8e-5.
             matrix3d physics:inertiaTensor = ((5e-5, 0, 0), (0, 5e-5, 0), (0, 0, 5e-5))
             custom double stepper:holdingTorque = 0.5
             custom int stepper:numPolePairs = 50
@@ -624,8 +623,8 @@ def Xform "World"
             double3 xformOp:translate = (0.0, 0.0, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel machine:centerSources = [
-                </World/HangprinterScene/WheelAL_top>,
-                </World/HangprinterScene/WheelAR_top>,
+                </World/HangprinterScene/AttachAL>,
+                </World/HangprinterScene/AttachAR>,
                 </World/HangprinterScene/AttachBR>
             ]
             rel machine:rigidBody = </World/HangprinterScene/Effector>
@@ -648,6 +647,9 @@ def Xform "World"
         def RigidBody "Effector"
         {
             rel rigidBody:members = [
+                </World/HangprinterScene/AttachAL>,
+                </World/HangprinterScene/AttachAR>,
+                </World/HangprinterScene/AttachBR>,
                 </World/HangprinterScene/WheelAL_top>,
                 </World/HangprinterScene/WheelAL_bottom>,
                 </World/HangprinterScene/WheelAR_top>,
@@ -656,9 +658,6 @@ def Xform "World"
                 </World/HangprinterScene/PinholeAL_bottom>,
                 </World/HangprinterScene/PinholeAR_top>,
                 </World/HangprinterScene/PinholeAR_bottom>,
-                </World/HangprinterScene/AttachAL>,
-                </World/HangprinterScene/AttachAR>,
-                </World/HangprinterScene/AttachBR>,
                 </World/HangprinterScene/WheelBL_top>,
                 </World/HangprinterScene/WheelBL_bottom>,
                 </World/HangprinterScene/WheelBR_top>,
@@ -677,7 +676,7 @@ def Xform "World"
                 </World/HangprinterScene/PinholeCR_bottom>,
             ]
 
-            custom string rigidBody:renderIndices = "[8,9,10,8]"
+            custom string rigidBody:renderIndices = "[0,1,2,0]"
         }
 
         def CableJoint "JointAL_0"
@@ -792,8 +791,8 @@ def Xform "World"
 
         def CableJoint "JointBL_0"
         {
-            custom point3d localPos0 = (-0.02885847120644477, 0.008196867671665307, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (-0.02885847120644477, 0.008196867671665307, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/SpoolB>
             custom rel physics:body1 = </World/HangprinterScene/AnchorBL_top>
             custom double restLength = 0.528299157674891
@@ -801,8 +800,8 @@ def Xform "World"
 
         def CableJoint "JointBL_anchor_to_pinhole"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/AnchorBL_top>
             custom rel physics:body1 = </World/HangprinterScene/PinholeBL_top>
             custom double restLength = 1.9205
@@ -810,8 +809,8 @@ def Xform "World"
 
         def CableJoint "JointBL_pinhole_to_wheel"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/PinholeBL_top>
             custom rel physics:body1 = </World/HangprinterScene/WheelBL_top>
             custom double restLength = 0.02
@@ -819,8 +818,8 @@ def Xform "World"
 
         def CableJoint "JointBL_wheel_to_wheel"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/WheelBL_top>
             custom rel physics:body1 = </World/HangprinterScene/WheelBL_bottom>
             custom double restLength = 0.045
@@ -828,8 +827,8 @@ def Xform "World"
 
         def CableJoint "JointBL_wheel_to_pinhole"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/WheelBL_bottom>
             custom rel physics:body1 = </World/HangprinterScene/PinholeBL_bottom>
             custom double restLength = 0.02
@@ -837,8 +836,8 @@ def Xform "World"
 
         def CableJoint "JointBL_pinhole_to_anchor"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/PinholeBL_bottom>
             custom rel physics:body1 = </World/HangprinterScene/AnchorBL_bottom>
             custom double restLength = 1.9205
@@ -846,8 +845,8 @@ def Xform "World"
 
         def CableJoint "JointBR_0"
         {
-            custom point3d localPos0 = (0.003990156267789723, 0.02973346015785290, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0.00399016, 0.02973346, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/SpoolB>
             custom rel physics:body1 = </World/HangprinterScene/AnchorBR_top>
             custom double restLength = 0.528299157674891
@@ -855,8 +854,8 @@ def Xform "World"
 
         def CableJoint "JointBR_anchor_to_pinhole"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/AnchorBR_top>
             custom rel physics:body1 = </World/HangprinterScene/PinholeBR_top>
             custom double restLength = 1.9205
@@ -864,8 +863,8 @@ def Xform "World"
 
         def CableJoint "JointBR_pinhole_to_wheel"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/PinholeBR_top>
             custom rel physics:body1 = </World/HangprinterScene/WheelBR_top>
             custom double restLength = 0.02
@@ -873,8 +872,8 @@ def Xform "World"
 
         def CableJoint "JointBR_wheel_to_wheel"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/WheelBR_top>
             custom rel physics:body1 = </World/HangprinterScene/WheelBR_bottom>
             custom double restLength = 0.045
@@ -882,8 +881,8 @@ def Xform "World"
 
         def CableJoint "JointBR_wheel_to_pinhole"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/WheelBR_bottom>
             custom rel physics:body1 = </World/HangprinterScene/PinholeBR_bottom>
             custom double restLength = 0.02
@@ -891,8 +890,8 @@ def Xform "World"
 
         def CableJoint "JointBR_pinhole_to_anchor"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/PinholeBR_bottom>
             custom rel physics:body1 = </World/HangprinterScene/AnchorBR_bottom>
             custom double restLength = 1.9205
@@ -900,8 +899,8 @@ def Xform "World"
 
         def CableJoint "JointCL_0"
         {
-            custom point3d localPos0 = (0.007330539968100840, -0.02909060301499558, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0.007330539968100840, -0.02909060301499558, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/SpoolC>
             custom rel physics:body1 = </World/HangprinterScene/AnchorCL_top>
             custom double restLength = 0.528299157674891
@@ -909,8 +908,8 @@ def Xform "World"
 
         def CableJoint "JointCL_anchor_to_pinhole"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/AnchorCL_top>
             custom rel physics:body1 = </World/HangprinterScene/PinholeCL_top>
             custom double restLength = 1.9205
@@ -918,8 +917,8 @@ def Xform "World"
 
         def CableJoint "JointCL_pinhole_to_wheel"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/PinholeCL_top>
             custom rel physics:body1 = </World/HangprinterScene/WheelCL_top>
             custom double restLength = 0.02
@@ -927,8 +926,8 @@ def Xform "World"
 
         def CableJoint "JointCL_wheel_to_wheel"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/WheelCL_top>
             custom rel physics:body1 = </World/HangprinterScene/WheelCL_bottom>
             custom double restLength = 0.045
@@ -936,8 +935,8 @@ def Xform "World"
 
         def CableJoint "JointCL_wheel_to_pinhole"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/WheelCL_bottom>
             custom rel physics:body1 = </World/HangprinterScene/PinholeCL_bottom>
             custom double restLength = 0.02
@@ -945,8 +944,8 @@ def Xform "World"
 
         def CableJoint "JointCL_pinhole_to_anchor"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/PinholeCL_bottom>
             custom rel physics:body1 = </World/HangprinterScene/AnchorCL_bottom>
             custom double restLength = 1.9205
@@ -954,8 +953,8 @@ def Xform "World"
 
         def CableJoint "JointCR_0"
         {
-            custom point3d localPos0 = (-0.02774500997300793, -0.01141115338595086, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (-0.02774500997300793, -0.01141115338595086, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/SpoolC>
             custom rel physics:body1 = </World/HangprinterScene/AnchorCR_top>
             custom double restLength = 0.528299157674891
@@ -963,8 +962,8 @@ def Xform "World"
 
         def CableJoint "JointCR_anchor_to_pinhole"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/AnchorCR_top>
             custom rel physics:body1 = </World/HangprinterScene/PinholeCR_top>
             custom double restLength = 1.9205
@@ -972,8 +971,8 @@ def Xform "World"
 
         def CableJoint "JointCR_pinhole_to_wheel"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/PinholeCR_top>
             custom rel physics:body1 = </World/HangprinterScene/WheelCR_top>
             custom double restLength = 0.02
@@ -981,8 +980,8 @@ def Xform "World"
 
         def CableJoint "JointCR_wheel_to_wheel"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/WheelCR_top>
             custom rel physics:body1 = </World/HangprinterScene/WheelCR_bottom>
             custom double restLength = 0.045
@@ -990,8 +989,8 @@ def Xform "World"
 
         def CableJoint "JointCR_wheel_to_pinhole"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/WheelCR_bottom>
             custom rel physics:body1 = </World/HangprinterScene/PinholeCR_bottom>
             custom double restLength = 0.02
@@ -999,8 +998,8 @@ def Xform "World"
 
         def CableJoint "JointCR_pinhole_to_anchor"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/PinholeCR_bottom>
             custom rel physics:body1 = </World/HangprinterScene/AnchorCR_bottom>
             custom double restLength = 1.9205
@@ -1035,8 +1034,8 @@ def Xform "World"
 
         def CableJoint "JointD0_1"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/AnchorD0>
             custom double restLength = 1.9
             custom rel physics:body1 = </World/HangprinterScene/AttachAL>
@@ -1044,8 +1043,8 @@ def Xform "World"
 
         def CableJoint "JointD1_1"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/AnchorD1>
             custom double restLength = 1.9
             custom rel physics:body1 = </World/HangprinterScene/AttachAR>
@@ -1053,8 +1052,8 @@ def Xform "World"
 
         def CableJoint "JointD2_1"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/AnchorD2>
             custom double restLength = 1.9
             custom rel physics:body1 = </World/HangprinterScene/AttachBR>
@@ -1092,7 +1091,6 @@ def Xform "World"
         )
         {
             custom bool[] cablePath:clockwise = [1, 1, 1, 1, 1, 1, 1]
-            custom bool cablePath:enabled = 1
             custom rel cablePath:joints = [</World/HangprinterScene/JointBL_0>, </World/HangprinterScene/JointBL_anchor_to_pinhole>, </World/HangprinterScene/JointBL_pinhole_to_wheel>, </World/HangprinterScene/JointBL_wheel_to_wheel>, </World/HangprinterScene/JointBL_wheel_to_pinhole>, </World/HangprinterScene/JointBL_pinhole_to_anchor>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "pinhole", "rolling", "rolling", "pinhole", "attachment"]
             custom double[] cablePath:stored = [1.0, 0, 0, 0.010210, 0.010210, 0, 0]
