@@ -258,13 +258,6 @@ export function setupScene(world, stage, canvas, options = {}) {
         }
     }
 
-    function pointMassMomentForOffset(offset) {
-        if (!(offset instanceof Vector3)) {
-            return 0.0;
-        }
-        return offset.lengthSq();
-    }
-
     function computeRigidBodyAggregateState(memberEntities) {
         const com = new Vector3(0.0, 0.0, 0.0);
         const linearVelocity = new Vector3(0.0, 0.0, 0.0);
@@ -298,7 +291,7 @@ export function setupScene(world, stage, canvas, options = {}) {
                 continue;
             }
             const offset = pos.clone().subtract(com);
-            totalInertia += inertia + (mass * pointMassMomentForOffset(offset));
+            totalInertia += inertia + (mass * offset.lengthSq());
         }
 
         if (!(totalInertia > 0.0)) {

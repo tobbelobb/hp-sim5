@@ -26,6 +26,7 @@ import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
 import { getMachineMotorDiagnostics } from './motor-diagnostics.js';
 
 const HP3_USDA_KEY = 'hp3_rigid_body.usda';
+const HP4_USDA_KEY = 'hp4_rigid_body.usda';
 const FOUR_HIGH_ANCHORS_USDA_KEY = 'four_high_anchors_rigid_body.usda';
 const KLIPPER_UPLOAD_PIPELINE = 'raw'; // 'player' or 'raw'
 const PUBLIC_BASE_URL = import.meta.env.BASE_URL || '/';
@@ -233,7 +234,8 @@ const ZOOM_EPSILON = 1e-3;
 const QUALITY_HISTORY_MAX_ENTRIES = 20;
 
 const AVAILABLE_USDAS = Object.freeze([
-  { file: HP3_USDA_KEY, label: 'Hangprinter v3 (default)' },
+  { file: HP4_USDA_KEY, label: 'Hangprinter v4 (default)' },
+  { file: HP3_USDA_KEY, label: 'Hangprinter v3' },
   { file: FOUR_HIGH_ANCHORS_USDA_KEY, label: 'Four High Anchors' },
   { file: 'slideprinter_multi_unit_rigid_body.usda', label: 'Slideprinter Multi Unit' },
   { file: 'slideprinter_rigid_body.usda', label: 'Slideprinter Original' },
@@ -350,7 +352,7 @@ function initHpSim() {
       },
     ])
   );
-  const defaultUsdaKey = HP3_USDA_KEY;
+  const defaultUsdaKey = HP4_USDA_KEY;
   const presetOptionInputs = new Map();
   const presetOptionLabels = new Map();
   const presetOptionColorChips = new Map();
