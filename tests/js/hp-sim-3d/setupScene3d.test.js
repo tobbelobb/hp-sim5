@@ -67,6 +67,8 @@ const { ExtruderComponent } = require('../../../hp-sim-3d/app/hangprinter_extrud
 const { PauseStateComponent } = require('../../../example_apps/js/flipper/flipper_common.js');
 const { SpoolTagComponent, SpoolStateComponent } = require('../../../hp-sim-3d/app/hangprinter_spools.js');
 const { StepperMotorComponent } = require('../../../hp-sim-3d/app/hangprinter_stepper_motor.js');
+const Quaternion = require('../../../src/js/cable_joints_3d/quaternion.js').default;
+const Vector3 = require('../../../src/js/cable_joints_3d/vector3.js').default;
 const usdStage = require('../../../src/js/usd/stage.js');
 
 function installDefaultUsdStageMocks() {
@@ -511,5 +513,64 @@ describe('slideprinter 3D setupScene', () => {
     expect(cableLink.cablePlaneNormalLocal.x).toBeCloseTo(1.0, 6);
     expect(world.getComponent(wheelEntity, StepperMotorComponent)).toBeUndefined();
     expect(world.getComponent(wheelEntity, SpoolTagComponent)).toBeUndefined();
+  });
+
+  test('accepts Euler degree triples for xformOp:orient', () => {
+    usdStage.getChildren.mockImplementation((prim) => {
+      if (prim?.path === '/World/SlideprinterScene') {
+        return [{
+          path: '/World/SlideprinterScene/WheelA',
+          name: 'WheelA',
+          type: 'definition',
+          defType: 'Circle',
+        }];
+      }
+      return [];
+    });
+    usdStage.getAttribute.mockImplementation((prim, attr) => {
+      if (prim?.path === '/World/PhysicsScene') {
+        if (attr === 'physics:gravityDirection') return [0.0, -1.0, 0.0];
+        if (attr === 'physics:gravityMagnitude') return 9.82;
+      }
+      if (prim?.path === '/World/SlideprinterScene/WheelA') {
+        if (attr === 'ecs:tags') return ['Wheel'];
+        if (attr === 'xformOp:translate') return [0.2, 0.3, 0.4];
+        if (attr === 'xformOp:orient') return [0.0, 90.0, 0.0];
+        if (attr === 'radius') return 0.05;
+        if (attr === 'physics:mass') return 1.0;
+        if (attr === 'physics:inertiaTensor') return [[0.01, 0, 0], [0, 0.02, 0], [0, 0, 0.03]];
+        if (attr === 'physics:velocity') return [0.0, 0.0, 0.0];
+        if (attr === 'physics:angularVelocity') return [0.0, 0.0, 0.0];
+      }
+      return null;
+    });
+    usdStage.getRelationship.mockImplementation(() => []);
+
+    const world = new World();
+    const stage = {
+      GetPrimAtPath(path) {
+        return { path, name: path.split('/').pop() };
+      },
+      ast: {
+        descriptor: {
+          assignments: [
+            { type: 'assignment', identifier: 'timeCodesPerSecond', value: 500 }
+          ]
+        }
+      }
+    };
+
+    setupScene(world, stage, createCanvas());
+
+    const wheelEntity = world.query([OrientationComponent])[0];
+    const orientation = world.getComponent(wheelEntity, OrientationComponent).quaternion;
+    const rotatedForward = orientation.transformVector(new Vector3(0.0, 0.0, 1.0));
+    const expected = new Quaternion()
+      .setFromAxisAngle(new Vector3(0.0, 1.0, 0.0), Math.PI / 2.0)
+      .transformVector(new Vector3(0.0, 0.0, 1.0));
+
+    expect(rotatedForward.x).toBeCloseTo(expected.x, 6);
+    expect(rotatedForward.y).toBeCloseTo(expected.y, 6);
+    expect(rotatedForward.z).toBeCloseTo(expected.z, 6);
   });
 });

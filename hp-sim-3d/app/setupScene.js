@@ -205,7 +205,25 @@ export function setupScene(world, stage, canvas, options = {}) {
 
     function readQuaternionAttribute(primNode, attributeName) {
         const rawValue = getAttribute(primNode, attributeName);
-        if (!rawValue || !Array.isArray(rawValue) || rawValue.length < 4) {
+        if (!rawValue || !Array.isArray(rawValue)) {
+            return null;
+        }
+        if (rawValue.length === 3) {
+            const degToRad = Math.PI / 180.0;
+            const xDeg = Number(rawValue[0]);
+            const yDeg = Number(rawValue[1]);
+            const zDeg = Number(rawValue[2]);
+            if (!Number.isFinite(xDeg) || !Number.isFinite(yDeg) || !Number.isFinite(zDeg)) {
+                return null;
+            }
+            const qx = new Quaternion().setFromAxisAngle(new Vector3(1.0, 0.0, 0.0), xDeg * degToRad);
+            const qy = new Quaternion().setFromAxisAngle(new Vector3(0.0, 1.0, 0.0), yDeg * degToRad);
+            const qz = new Quaternion().setFromAxisAngle(new Vector3(0.0, 0.0, 1.0), zDeg * degToRad);
+            return new Quaternion()
+                .multiplyQuaternions(qz, new Quaternion().multiplyQuaternions(qy, qx))
+                .normalize();
+        }
+        if (rawValue.length < 4) {
             return null;
         }
         const w = Number(rawValue[0]);
