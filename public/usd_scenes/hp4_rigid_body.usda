@@ -20,7 +20,7 @@ def Xform "World"
             custom bool cable:linkable = 1
             double radius = 0.03
             quatf xformOp:orient = (1, 0, 0, 0)
-            double3 xformOp:translate = (0.0, -2.5, -0.18)
+            double3 xformOp:translate = (0.0, -2.54, -0.18)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = -1.0
             float3 physics:angularVelocity = (0, 0, 0)
@@ -32,18 +32,36 @@ def Xform "World"
             vector3f physics:velocity = (0.0, 0.0, 0.0)
         }
 
-        def Xform "AnchorAL" ()
+        def Xform "AnchorAL_top" ()
         {
             token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (-0.346410161513775, -2.1, -0.18)
+            double3 xformOp:translate = (-0.346410161513775, -2.14, -0.18)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
-        def Xform "AnchorAR" ()
+        def Xform "AnchorAL_bottom" ()
         {
             token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (0.346410161513775, -2.1, -0.18)
+            # Distance between vertical action point holes is 59.5 mm. Gotten from hangprinter/src/corner_clamp.scad
+            # Like this: echo("dist:", higher_bearing_z + b623_big_ugroove_small_r + Eyelet_extra_dist - (lower_bearing_z - b623_big_ugroove_small_r - Eyelet_extra_dist));
+            double3 xformOp:translate = (-0.346410161513775, -2.14, -0.18595)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+        }
+
+        def Xform "AnchorAR_top" ()
+        {
+            token[] ecs:tags = ["Anchor"]
+            double3 xformOp:translate = (0.346410161513775, -2.14, -0.18)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+        }
+
+        def Xform "AnchorAR_bottom" ()
+        {
+            token[] ecs:tags = ["Anchor"]
+            double3 xformOp:translate = (0.346410161513775, -2.14, -0.18595)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
@@ -54,14 +72,61 @@ def Xform "World"
         {
             token[] ecs:tags = ["Wheel"]
             # radius taken from bearing_u_big_623.scad in the hangprinter repo. d=14.1 (mm) => r=7.05 mm == 0.00705 m
-            double radius = 0.00705
-            double3 xformOp:translate = (-0.346410161513775, -0.2, 0.07)
+            # in coner_clamp.scad however, the radius is 6.5 mm so we'll use that
+            double radius = 0.0065
+            # 0.1-0.0065 = 0.0935
+            # Then there's an Eyelet_extra_dist = 0.75
+            # 0.1 - 0.0065 - 0.00075 = 0.09275
+            double3 xformOp:translate = (-0.346410161513775, -0.22, 0.09275)
             double3 xformOp:rotateXYZ = (0, 90, 0)
             uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
             # Typical mass of a 623 bearing is 2 g
             float physics:mass = 0.002
             # Typical rotational inertia of a 623 bearing is 3e-8. Our outer pla ring adds a little bit so say 5e-8
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            vector3f physics:velocity = (0.0, 0.0, 0.0)
+            float3 physics:angularVelocity = (0, 0, 0)
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+        }
+
+        def Circle "PinholeAL_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            double3 xformOp:translate = (-0.346410161513775, -0.24, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float physics:mass = 0.0002
+            vector3f physics:velocity = (0.0, 0.0, 0.0)
+            float3 physics:angularVelocity = (0, 0, 0)
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+        }
+
+        def Circle "WheelAL_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double radius = 0.0065
+            # Corner_clamp_bearings_center_to_center = 45 in hangprinter/src/lib/parameters.scad
+            # 0.1 - 0.0065 - 0.00075 - 0.045 = 0.04775
+            double3 xformOp:translate = (-0.346410161513775, -0.22, 0.04775)
+            double3 xformOp:rotateXYZ = (0, 90, 0)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            float physics:mass = 0.002
+            matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            vector3f physics:velocity = (0.0, 0.0, 0.0)
+            float3 physics:angularVelocity = (0, 0, 0)
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+        }
+
+        def Circle "PinholeAL_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            # 0.1 - 0.0065 - 0.00075 - 0.045 - 0.0065 - 0.00075 = 0.1 - 0.0595 = 0.0405
+            double3 xformOp:translate = (-0.346410161513775, -0.24, 0.0405)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float physics:mass = 0.0002
             vector3f physics:velocity = (0.0, 0.0, 0.0)
             float3 physics:angularVelocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
@@ -78,6 +143,64 @@ def Xform "World"
             float physics:mass = 0.027
             vector3f physics:velocity = (0.0, 0.0, 0.0)
             rel material:binding = </World/PhysicsScene/PinholeMaterial>
+        }
+
+        def Circle "WheelAR_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double radius = 0.0065
+            double3 xformOp:translate = (0.346410161513775, -0.22, 0.09275)
+            double3 xformOp:rotateXYZ = (0, 90, 0)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            # Typical mass of a 623 bearing is 2 g
+            float physics:mass = 0.002
+            # Typical rotational inertia of a 623 bearing is 3e-8. Our outer pla ring adds a little bit so say 5e-8
+            matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            vector3f physics:velocity = (0.0, 0.0, 0.0)
+            float3 physics:angularVelocity = (0, 0, 0)
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+        }
+
+        def Circle "PinholeAR_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            double3 xformOp:translate = (0.346410161513775, -0.24, 0.1)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float physics:mass = 0.0002
+            vector3f physics:velocity = (0.0, 0.0, 0.0)
+            float3 physics:angularVelocity = (0, 0, 0)
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+        }
+
+        def Circle "WheelAR_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double radius = 0.0065
+            double3 xformOp:translate = (0.346410161513775, -0.22, 0.04775)
+            double3 xformOp:rotateXYZ = (0, 90, 0)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            float physics:mass = 0.002
+            matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            vector3f physics:velocity = (0.0, 0.0, 0.0)
+            float3 physics:angularVelocity = (0, 0, 0)
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+        }
+
+        def Circle "PinholeAR_bottom" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            double3 xformOp:translate = (0.346410161513775, -0.24, 0.0405)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float physics:mass = 0.0002
+            vector3f physics:velocity = (0.0, 0.0, 0.0)
+            float3 physics:angularVelocity = (0, 0, 0)
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
         def Circle "AttachAR" (
@@ -233,11 +356,11 @@ def Xform "World"
             double3 xformOp:translate = (0.0, 0.0, 0.0)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel machine:centerSources = [
-                </World/HangprinterScene/AttachAL>,
-                </World/HangprinterScene/AttachAR>,
+                </World/HangprinterScene/WheelAL_top>,
+                </World/HangprinterScene/WheelAR_top>,
                 </World/HangprinterScene/AttachBR>
             ]
-            rel machine:rigidBody = </World/HangprinterScene/SpoolTriangle>
+            rel machine:rigidBody = </World/HangprinterScene/Effector>
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
 
             def Xform "ColdEnd" ()
@@ -258,57 +381,55 @@ def Xform "World"
         {
             rel rigidBody:members = [
                 </World/HangprinterScene/WheelAL_top>,
+                </World/HangprinterScene/WheelAL_bottom>,
+                </World/HangprinterScene/WheelAR_top>,
+                </World/HangprinterScene/WheelAR_bottom>,
+                </World/HangprinterScene/PinholeAL_top>,
+                </World/HangprinterScene/PinholeAL_bottom>,
+                </World/HangprinterScene/PinholeAR_top>,
+                </World/HangprinterScene/PinholeAR_bottom>,
                 </World/HangprinterScene/AttachAL>,
                 </World/HangprinterScene/AttachAR>,
                 </World/HangprinterScene/AttachBR>,
             ]
         }
 
-        #def DistancePhysicsJoint "DistanceJointAA"
-        #{
-        #    rel physics:body0 = </World/HangprinterScene/AttachAL>
-        #    rel physics:body1 = </World/HangprinterScene/AttachAR>
-        #    point3f physics:localPos0 = (0, 0, 0)
-        #    point3f physics:localPos1 = (0, 0, 0)
-        #    float physics:minDistance = 0.69282032302755
-        #    float physics:maxDistance = 0.69282032302755
-        #}
-
-        #def DistancePhysicsJoint "DistanceJointAB"
-        #{
-        #    rel physics:body0 = </World/HangprinterScene/AttachAR>
-        #    rel physics:body1 = </World/HangprinterScene/AttachBR>
-        #    point3f physics:localPos0 = (0, 0, 0)
-        #    point3f physics:localPos1 = (0, 0, 0)
-        #    float physics:minDistance = 0.69282032302755
-        #    float physics:maxDistance = 0.69282032302755
-        #}
-
-        #def DistancePhysicsJoint "DistanceJointBA"
-        #{
-        #    rel physics:body1 = </World/HangprinterScene/AttachBR>
-        #    rel physics:body0 = </World/HangprinterScene/AttachAL>
-        #    point3f physics:localPos0 = (0, 0, 0)
-        #    point3f physics:localPos1 = (0, 0, 0)
-        #    float physics:minDistance = 0.69282032302755
-        #    float physics:maxDistance = 0.69282032302755
-        #}
-
         def CableJoint "JointAL_0"
         {
-            custom point3d localPos0 = (0.02152793123834394, 0.02089373534333028, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0.02152793123834394, 0.02089373534333028, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/SpoolA>
-            custom rel physics:body1 = </World/HangprinterScene/AnchorAL>
+            custom rel physics:body1 = </World/HangprinterScene/AnchorAL_top>
             custom double restLength = 0.528299157674891
         }
 
-        def CableJoint "JointAL_1"
+        def CableJoint "JointAL_anchor_to_top"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom rel physics:body0 = </World/HangprinterScene/AnchorAL>
-            custom rel physics:body1 = </World/HangprinterScene/AttachAL>
+            # TODO: local pos tuning
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0.0, 0)
+            custom rel physics:body0 = </World/HangprinterScene/AnchorAL_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelAL_top>
+            custom double restLength = 1.9205
+        }
+
+        def CableJoint "JointAL_top_to_bottom"
+        {
+            # TODO: local pos tuning
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom rel physics:body0 = </World/HangprinterScene/WheelAL_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelAL_bottom>
+            custom double restLength = 0.045
+        }
+
+        def CableJoint "JointAL_bottom_to_anchor"
+        {
+            # TODO: local pos tuning
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom rel physics:body0 = </World/HangprinterScene/WheelAL_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/AnchorAL_bottom>
             custom double restLength = 1.9205
         }
 
@@ -317,7 +438,7 @@ def Xform "World"
             custom point3d localPos0 = (0.02375485370521822, -0.01832230677190205, 0.000000000000000)
             custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
             custom rel physics:body0 = </World/HangprinterScene/SpoolA>
-            custom rel physics:body1 = </World/HangprinterScene/AnchorAR>
+            custom rel physics:body1 = </World/HangprinterScene/AnchorAR_top>
             custom double restLength = 0.528299157674891
         }
 
@@ -325,7 +446,7 @@ def Xform "World"
         {
             custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
             custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom rel physics:body0 = </World/HangprinterScene/AnchorAR>
+            custom rel physics:body0 = </World/HangprinterScene/AnchorAR_top>
             custom rel physics:body1 = </World/HangprinterScene/AttachAR>
             custom double restLength = 1.9205
         }

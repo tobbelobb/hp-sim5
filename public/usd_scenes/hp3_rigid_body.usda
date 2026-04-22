@@ -218,7 +218,7 @@ def Xform "World"
                 </World/HangprinterScene/AttachAR>,
                 </World/HangprinterScene/AttachBR>
             ]
-            rel machine:rigidBody = </World/HangprinterScene/SpoolTriangle>
+            rel machine:rigidBody = </World/HangprinterScene/Effector>
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
 
             def Xform "ColdEnd" ()
