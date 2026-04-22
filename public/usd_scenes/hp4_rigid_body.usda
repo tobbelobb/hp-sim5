@@ -61,7 +61,7 @@ def Xform "World"
         def Xform "AnchorAR_bottom" ()
         {
             token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (0.346410161513775, -2.14, -0.18595)
+            double3 xformOp:translate = (0.346410161513775, -2.14, -0.2395)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
@@ -421,18 +421,15 @@ def Xform "World"
 
         def CableJoint "JointAL_pinhole_to_wheel"
         {
-            # TODO: local pos tuning
             custom point3d localPos0 = (0, 0, 0)
             custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/PinholeAL_top>
             custom rel physics:body1 = </World/HangprinterScene/WheelAL_top>
-            # TODO: maybe tune this distance a little bit as well
             custom double restLength = 0.02
         }
 
         def CableJoint "JointAL_wheel_to_wheel"
         {
-            # TODO: local pos tuning
             custom point3d localPos0 = (0, 0, 0)
             custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/WheelAL_top>
@@ -442,12 +439,10 @@ def Xform "World"
 
         def CableJoint "JointAL_wheel_to_pinhole"
         {
-            # TODO: local pos tuning
             custom point3d localPos0 = (0, 0, 0)
             custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/WheelAL_bottom>
             custom rel physics:body1 = </World/HangprinterScene/PinholeAL_bottom>
-            # TODO: maybe tune this distance a little bit as well
             custom double restLength = 0.02
         }
 
@@ -462,19 +457,56 @@ def Xform "World"
 
         def CableJoint "JointAR_0"
         {
-            custom point3d localPos0 = (0.02375485370521822, -0.01832230677190205, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            custom point3d localPos0 = (0.02375485370521822, -0.01832230677190205, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/SpoolA>
             custom rel physics:body1 = </World/HangprinterScene/AnchorAR_top>
             custom double restLength = 0.528299157674891
         }
 
-        def CableJoint "JointAR_1"
+        def CableJoint "JointAR_anchor_to_pinhole"
         {
-            custom point3d localPos0 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
-            custom point3d localPos1 = (0.000000000000000, 0.000000000000000, 0.000000000000000)
+            # TODO: local pos tuning
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
             custom rel physics:body0 = </World/HangprinterScene/AnchorAR_top>
-            custom rel physics:body1 = </World/HangprinterScene/AttachAR>
+            custom rel physics:body1 = </World/HangprinterScene/PinholeAR_top>
+            custom double restLength = 1.9205
+        }
+
+        def CableJoint "JointAR_pinhole_to_wheel"
+        {
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom rel physics:body0 = </World/HangprinterScene/PinholeAR_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelAR_top>
+            custom double restLength = 0.02
+        }
+
+        def CableJoint "JointAR_wheel_to_wheel"
+        {
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom rel physics:body0 = </World/HangprinterScene/WheelAR_top>
+            custom rel physics:body1 = </World/HangprinterScene/WheelAR_bottom>
+            custom double restLength = 0.045
+        }
+
+        def CableJoint "JointAR_wheel_to_pinhole"
+        {
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom rel physics:body0 = </World/HangprinterScene/WheelAR_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/PinholeAR_bottom>
+            custom double restLength = 0.02
+        }
+
+        def CableJoint "JointAR_pinhole_to_anchor"
+        {
+            custom point3d localPos0 = (0, 0, 0)
+            custom point3d localPos1 = (0, 0, 0)
+            custom rel physics:body0 = </World/HangprinterScene/PinholeAR_bottom>
+            custom rel physics:body1 = </World/HangprinterScene/AnchorAR_bottom>
             custom double restLength = 1.9205
         }
 
@@ -550,20 +582,6 @@ def Xform "World"
             custom rel physics:body1 = </World/HangprinterScene/AttachAL>
         }
 
-        def Xform "CablePathAL" (
-            apiSchemas = ["CablePathAPI"]
-        )
-        {
-            custom bool[] cablePath:clockwise = [1, 1, 1, 1, 1, 1, 1]
-            custom rel cablePath:joints = [</World/HangprinterScene/JointAL_0>, </World/HangprinterScene/JointAL_anchor_to_pinhole>, </World/HangprinterScene/JointAL_pinhole_to_wheel>, </World/HangprinterScene/JointAL_wheel_to_wheel>, </World/HangprinterScene/JointAL_wheel_to_pinhole>, </World/HangprinterScene/JointAL_pinhole_to_anchor>]
-            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "pinhole", "rolling", "rolling", "pinhole", "attachment"]
-            # 0.0065*pi/2 = 0.010210
-            custom double[] cablePath:stored = [1.0, 0 ,0, 0.010210, 0.010210, 0, 0]
-            custom double stiffness = 20000.0
-            custom double cablePath:damping = 5.0
-            custom double cablePath:halfWidth = 0.001
-        }
-
         def CableJoint "JointD0_0"
         {
             custom point3d localPos0 = (-0.016906, 0.024783, 0.0)
@@ -618,14 +636,28 @@ def Xform "World"
             custom rel physics:body1 = </World/HangprinterScene/AttachBR>
         }
 
+        def Xform "CablePathAL" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 1, 1, 1, 1, 1, 1]
+            custom rel cablePath:joints = [</World/HangprinterScene/JointAL_0>, </World/HangprinterScene/JointAL_anchor_to_pinhole>, </World/HangprinterScene/JointAL_pinhole_to_wheel>, </World/HangprinterScene/JointAL_wheel_to_wheel>, </World/HangprinterScene/JointAL_wheel_to_pinhole>, </World/HangprinterScene/JointAL_pinhole_to_anchor>]
+            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "pinhole", "rolling", "rolling", "pinhole", "attachment"]
+            # 0.0065*pi/2 = 0.010210
+            custom double[] cablePath:stored = [1.0, 0 ,0, 0.010210, 0.010210, 0, 0]
+            custom double stiffness = 20000.0
+            custom double cablePath:damping = 5.0
+            custom double cablePath:halfWidth = 0.001
+        }
+
         def Xform "CablePathAR" (
             apiSchemas = ["CablePathAPI"]
         )
         {
-            custom bool[] cablePath:clockwise = [1, 1, 1]
-            custom rel cablePath:joints = [</World/HangprinterScene/JointAR_0>, </World/HangprinterScene/JointAR_1>]
-            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
-            custom double[] cablePath:stored = [1.0, 0, 0]
+            custom bool[] cablePath:clockwise = [1, 1, 1, 1, 1, 1, 1]
+            custom rel cablePath:joints = [</World/HangprinterScene/JointAR_0>, </World/HangprinterScene/JointAR_anchor_to_pinhole>, </World/HangprinterScene/JointAR_pinhole_to_wheel>, </World/HangprinterScene/JointAR_wheel_to_wheel>, </World/HangprinterScene/JointAR_wheel_to_pinhole>, </World/HangprinterScene/JointAR_pinhole_to_anchor>]
+            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "pinhole", "rolling", "rolling", "pinhole", "attachment"]
+            custom double[] cablePath:stored = [1.0, 0 ,0, 0.010210, 0.010210, 0, 0]
             custom double stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
