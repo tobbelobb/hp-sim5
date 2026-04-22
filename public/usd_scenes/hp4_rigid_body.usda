@@ -93,6 +93,7 @@ def Xform "World"
             apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
+            token[] ecs:tags = ["Pinhole"]
             double3 xformOp:translate = (-0.346410161513775, -0.24, 0.1)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             float physics:mass = 0.0002
@@ -123,6 +124,7 @@ def Xform "World"
             apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
+            token[] ecs:tags = ["Pinhole"]
             # 0.1 - 0.0065 - 0.00075 - 0.045 - 0.0065 - 0.00075 = 0.1 - 0.0595 = 0.0405
             double3 xformOp:translate = (-0.346410161513775, -0.24, 0.0405)
             uniform token[] xformOpOrder = ["xformOp:translate"]
@@ -167,6 +169,7 @@ def Xform "World"
             apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
+            token[] ecs:tags = ["Pinhole"]
             double3 xformOp:translate = (0.346410161513775, -0.24, 0.1)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             float physics:mass = 0.0002
@@ -195,6 +198,7 @@ def Xform "World"
             apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
         )
         {
+            token[] ecs:tags = ["Pinhole"]
             double3 xformOp:translate = (0.346410161513775, -0.24, 0.0405)
             uniform token[] xformOpOrder = ["xformOp:translate"]
             float physics:mass = 0.0002

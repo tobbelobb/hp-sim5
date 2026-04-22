@@ -60,6 +60,8 @@ const {
   EncoderComponent,
   OrientationComponent,
   AngularVelocityComponent,
+  RadiusComponent,
+  PositionComponent,
 } = require('../../../src/js/cable_joints_3d/ecs.js');
 const { CablePathComponent } = require('../../../src/js/cable_joints_3d/cable_joints_core.js');
 const { CableLinkComponent } = require('../../../src/js/cable_joints_3d/cable_joints_core.js');
@@ -630,5 +632,64 @@ describe('slideprinter 3D setupScene', () => {
     expect(rotatedForward.x).toBeCloseTo(0.0, 6);
     expect(rotatedForward.y).toBeCloseTo(0.0, 6);
     expect(rotatedForward.z).toBeCloseTo(1.0, 6);
+  });
+
+  test('treats Eyelet like Pinhole and assigns a fallback render radius', () => {
+    usdStage.getChildren.mockImplementation((prim) => {
+      if (prim?.path === '/World/SlideprinterScene') {
+        return [{
+          path: '/World/SlideprinterScene/EyeletA',
+          name: 'EyeletA',
+          type: 'definition',
+          defType: 'Circle',
+        }];
+      }
+      return [];
+    });
+    usdStage.getAttribute.mockImplementation((prim, attr) => {
+      if (prim?.path === '/World/PhysicsScene') {
+        if (attr === 'physics:gravityDirection') return [0.0, -1.0, 0.0];
+        if (attr === 'physics:gravityMagnitude') return 9.82;
+      }
+      if (prim?.path === '/World/SlideprinterScene/EyeletA') {
+        if (attr === 'ecs:tags') return ['Eyelet'];
+        if (attr === 'xformOp:translate') return [0.1, 0.2, 0.3];
+        if (attr === 'physics:mass') return 0.0002;
+        if (attr === 'physics:velocity') return [0.0, 0.0, 0.0];
+        if (attr === 'physics:angularVelocity') return [0.0, 0.0, 0.0];
+      }
+      return null;
+    });
+    usdStage.getRelationship.mockImplementation(() => []);
+
+    const world = new World();
+    const stage = {
+      GetPrimAtPath(path) {
+        return { path, name: path.split('/').pop() };
+      },
+      ast: {
+        descriptor: {
+          assignments: [
+            { type: 'assignment', identifier: 'timeCodesPerSecond', value: 500 }
+          ]
+        }
+      }
+    };
+
+    setupScene(world, stage, createCanvas());
+
+    const eyeletEntities = world.query([RenderableComponent, RadiusComponent, PositionComponent]);
+    expect(eyeletEntities).toHaveLength(1);
+
+    const eyeletEntity = eyeletEntities[0];
+    const renderable = world.getComponent(eyeletEntity, RenderableComponent);
+    const radius = world.getComponent(eyeletEntity, RadiusComponent);
+    const pos = world.getComponent(eyeletEntity, PositionComponent).pos;
+
+    expect(renderable.shape).toBe('circle');
+    expect(radius.radius).toBeCloseTo(0.002, 9);
+    expect(pos.x).toBeCloseTo(0.1, 9);
+    expect(pos.y).toBeCloseTo(0.2, 9);
+    expect(pos.z).toBeCloseTo(0.3, 9);
   });
 });

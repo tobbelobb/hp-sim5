@@ -74,6 +74,7 @@ import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
 import { initializeRigidBodySyncState } from '../../src/js/cable_joints_3d/rigid_bodies.js';
 
 const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
+const DEFAULT_PINHOLE_RADIUS = 0.002;
 
 export function setupScene(world, stage, canvas, options = {}) {
     const existingRenderSystem = world.getResource('renderSystem');
@@ -685,7 +686,7 @@ export function setupScene(world, stage, canvas, options = {}) {
                         world.addComponent(ent, new CableLinkComponent(pos.x, pos.y, pos.z, null, DEFAULT_PLANE_NORMAL));
                     }
                     nameToEntityId[primKey] = ent;
-                } else if (tags.includes("Pinhole") || tags.includes("Attachment")) {
+                } else if (tags.includes("Pinhole") || tags.includes("Eyelet") || tags.includes("Attachment")) {
                     const ent = world.createEntity();
                     world.addComponent(ent, new SpoolTagComponent());
                     world.addComponent(ent, new MachineTagComponent(machineId));
@@ -703,9 +704,7 @@ export function setupScene(world, stage, canvas, options = {}) {
                     } else {
                         world.addComponent(ent, new VelocityComponent(0.0, 0.0, 0.0));
                     }
-                    if (radius !== null) {
-                        world.addComponent(ent, new RadiusComponent(radius));
-                    }
+                    world.addComponent(ent, new RadiusComponent(radius ?? DEFAULT_PINHOLE_RADIUS));
                     world.addComponent(ent, new MassComponent(mass));
                     addGravityIfDynamic(ent, mass);
                     const pinholeColor = palette?.pinhole ?? color ?? '#cccccc';
