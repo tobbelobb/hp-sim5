@@ -527,6 +527,79 @@ export function setupScene(world, stage, canvas, options = {}) {
                         );
                     }
                     nameToEntityId[primKey] = ent;
+                } else if (tags.includes("Wheel")) {
+                    const ent = world.createEntity();
+                    world.addComponent(ent, new MachineTagComponent(machineId));
+                    const radius = getAttribute(prim, "radius");
+                    const mass = getAttribute(prim, "physics:mass");
+                    const inertiaTensor = getAttribute(prim, "physics:inertiaTensor");
+                    const velArr = getAttribute(prim, "physics:velocity");
+                    const angVelArr = getAttribute(prim, "physics:angularVelocity");
+                    const initialOrientation = readQuaternionAttribute(prim, 'xformOp:orient') || new Quaternion();
+                    const wheelAxisLocal = readSpoolAxisLocal(prim);
+
+                    if (radius === null || mass === null || inertiaTensor === null || !angVelArr) {
+                        console.warn(`Skipping Wheel prim ${prim.name} due to missing attributes.`);
+                        continue;
+                    }
+                    const inertia = effectiveInertiaAboutAxis(inertiaTensor, wheelAxisLocal);
+                    const angVel = new Vector3(
+                        Number(angVelArr[0] ?? 0.0),
+                        Number(angVelArr[1] ?? 0.0),
+                        Number(angVelArr[2] ?? 0.0),
+                    );
+
+                    world.addComponent(ent, new SpoolStateComponent(null, wheelAxisLocal, initialOrientation));
+                    world.addComponent(ent, new PositionComponent(pos.x, pos.y, pos.z));
+                    if (velArr !== null) {
+                      const vel = new Vector3(velArr[0], velArr[1], velArr[2] || 0);
+                      world.addComponent(ent, new VelocityComponent(vel.x, vel.y, vel.z));
+                    } else {
+                      world.addComponent(ent, new VelocityComponent(0.0, 0.0, 0.0));
+                    }
+                    world.addComponent(ent, new RadiusComponent(radius));
+                    world.addComponent(ent, new MassComponent(mass));
+                    addGravityIfDynamic(ent, mass);
+                    const wheelColor = palette?.wheel ?? palette?.spool ?? color ?? '#a0a0a0';
+                    world.addComponent(ent, new RenderableComponent('cylinder', wheelColor));
+                    world.addComponent(
+                        ent,
+                        new OrientationComponent(
+                            initialOrientation.x,
+                            initialOrientation.y,
+                            initialOrientation.z,
+                            initialOrientation.w,
+                        ),
+                    );
+                    world.addComponent(ent, new EncoderComponent());
+                    world.addComponent(ent, new AngularVelocityComponent(angVel.x, angVel.y, angVel.z));
+                    world.addComponent(ent, new MomentOfInertiaComponent(inertia ?? 0.0));
+                    world.addComponent(
+                        ent,
+                        new PrevFinalOrientationComponent(
+                            initialOrientation.x,
+                            initialOrientation.y,
+                            initialOrientation.z,
+                            initialOrientation.w,
+                        ),
+                    );
+                    world.addComponent(ent, new PrevFinalPosComponent(pos.x, pos.y, pos.z));
+                    if (restitution !== null) world.addComponent(ent, new RestitutionComponent(restitution));
+                    if (friction !== null) world.addComponent(ent, new CoefficientOfFrictionComponent(friction));
+                    if (getAttribute(prim, "cable:linkable")) {
+                        world.addComponent(
+                            ent,
+                            new CableLinkComponent(
+                                pos.x,
+                                pos.y,
+                                pos.z,
+                                initialOrientation,
+                                null,
+                                wheelAxisLocal,
+                            ),
+                        );
+                    }
+                    nameToEntityId[primKey] = ent;
                 } else if (tags.includes("Anchor")) {
                     const ent = world.createEntity();
                     world.addComponent(ent, new MachineTagComponent(machineId));

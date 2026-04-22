@@ -55,9 +55,18 @@ jest.mock('../../../src/js/usd/stage.js', () => ({
 const { World } = require('../../../src/js/cable_joints_3d/ecs.js');
 const { setupScene } = require('../../../hp-sim-3d/app/setupScene.js');
 const { RenderSystem3D } = require('../../../src/js/cable_joints_3d/render_system_3d.js');
+const {
+  RenderableComponent,
+  EncoderComponent,
+  OrientationComponent,
+  AngularVelocityComponent,
+} = require('../../../src/js/cable_joints_3d/ecs.js');
 const { CablePathComponent } = require('../../../src/js/cable_joints_3d/cable_joints_core.js');
+const { CableLinkComponent } = require('../../../src/js/cable_joints_3d/cable_joints_core.js');
 const { ExtruderComponent } = require('../../../hp-sim-3d/app/hangprinter_extruder.js');
 const { PauseStateComponent } = require('../../../example_apps/js/flipper/flipper_common.js');
+const { SpoolTagComponent, SpoolStateComponent } = require('../../../hp-sim-3d/app/hangprinter_spools.js');
+const { StepperMotorComponent } = require('../../../hp-sim-3d/app/hangprinter_stepper_motor.js');
 const usdStage = require('../../../src/js/usd/stage.js');
 
 function installDefaultUsdStageMocks() {
@@ -428,5 +437,79 @@ describe('slideprinter 3D setupScene', () => {
     expect(extruder.tipPos.y).toBeCloseTo(0.18, 6);
     expect(extruder.tipPos.z).toBeCloseTo(0.002, 6);
     expect(extruder.coldEndPos.z).toBeCloseTo(0.052, 6);
+  });
+
+  test('loads Wheel prims as passive rotating cylinders without stepper controls', () => {
+    usdStage.getChildren.mockImplementation((prim) => {
+      if (prim?.path === '/World/SlideprinterScene') {
+        return [{
+          path: '/World/SlideprinterScene/WheelA',
+          name: 'WheelA',
+          type: 'definition',
+          defType: 'Circle',
+        }];
+      }
+      return [];
+    });
+    usdStage.getAttribute.mockImplementation((prim, attr) => {
+      if (prim?.path === '/World/PhysicsScene') {
+        if (attr === 'physics:gravityDirection') return [0.0, -1.0, 0.0];
+        if (attr === 'physics:gravityMagnitude') return 9.82;
+      }
+      if (prim?.path === '/World/SlideprinterScene/WheelA') {
+        if (attr === 'ecs:tags') return ['Wheel'];
+        if (attr === 'xformOp:translate') return [0.2, 0.3, 0.4];
+        if (attr === 'xformOp:orient') return [1.0, 0.0, 0.0, 0.0];
+        if (attr === 'radius') return 0.05;
+        if (attr === 'physics:mass') return 1.0;
+        if (attr === 'physics:inertiaTensor') return [[0.01, 0, 0], [0, 0.02, 0], [0, 0, 0.03]];
+        if (attr === 'physics:velocity') return [0.0, 0.0, 0.0];
+        if (attr === 'physics:angularVelocity') return [0.0, 0.0, 0.0];
+        if (attr === 'spool:axisLocal') return [1.0, 0.0, 0.0];
+        if (attr === 'cable:linkable') return true;
+      }
+      return null;
+    });
+    usdStage.getRelationship.mockImplementation(() => []);
+
+    const world = new World();
+    const stage = {
+      GetPrimAtPath(path) {
+        return { path, name: path.split('/').pop() };
+      },
+      ast: {
+        descriptor: {
+          assignments: [
+            { type: 'assignment', identifier: 'timeCodesPerSecond', value: 500 }
+          ]
+        }
+      }
+    };
+
+    setupScene(world, stage, createCanvas());
+
+    const wheelEntities = world.query([
+      SpoolStateComponent,
+      RenderableComponent,
+      EncoderComponent,
+      OrientationComponent,
+      AngularVelocityComponent,
+    ]);
+    expect(wheelEntities).toHaveLength(1);
+
+    const wheelEntity = wheelEntities[0];
+    const spoolState = world.getComponent(wheelEntity, SpoolStateComponent);
+    const renderable = world.getComponent(wheelEntity, RenderableComponent);
+    const cableLink = world.getComponent(wheelEntity, CableLinkComponent);
+
+    expect(renderable.shape).toBe('cylinder');
+    expect(spoolState.axis).toBeNull();
+    expect(spoolState.axisLocal.x).toBeCloseTo(1.0, 6);
+    expect(spoolState.axisLocal.y).toBeCloseTo(0.0, 6);
+    expect(spoolState.axisLocal.z).toBeCloseTo(0.0, 6);
+    expect(cableLink).toBeTruthy();
+    expect(cableLink.cablePlaneNormalLocal.x).toBeCloseTo(1.0, 6);
+    expect(world.getComponent(wheelEntity, StepperMotorComponent)).toBeUndefined();
+    expect(world.getComponent(wheelEntity, SpoolTagComponent)).toBeUndefined();
   });
 });
