@@ -205,25 +205,7 @@ export function setupScene(world, stage, canvas, options = {}) {
 
     function readQuaternionAttribute(primNode, attributeName) {
         const rawValue = getAttribute(primNode, attributeName);
-        if (!rawValue || !Array.isArray(rawValue)) {
-            return null;
-        }
-        if (rawValue.length === 3) {
-            const degToRad = Math.PI / 180.0;
-            const xDeg = Number(rawValue[0]);
-            const yDeg = Number(rawValue[1]);
-            const zDeg = Number(rawValue[2]);
-            if (!Number.isFinite(xDeg) || !Number.isFinite(yDeg) || !Number.isFinite(zDeg)) {
-                return null;
-            }
-            const qx = new Quaternion().setFromAxisAngle(new Vector3(1.0, 0.0, 0.0), xDeg * degToRad);
-            const qy = new Quaternion().setFromAxisAngle(new Vector3(0.0, 1.0, 0.0), yDeg * degToRad);
-            const qz = new Quaternion().setFromAxisAngle(new Vector3(0.0, 0.0, 1.0), zDeg * degToRad);
-            return new Quaternion()
-                .multiplyQuaternions(qz, new Quaternion().multiplyQuaternions(qy, qx))
-                .normalize();
-        }
-        if (rawValue.length < 4) {
+        if (!rawValue || !Array.isArray(rawValue) || rawValue.length < 4) {
             return null;
         }
         const w = Number(rawValue[0]);
@@ -234,6 +216,55 @@ export function setupScene(world, stage, canvas, options = {}) {
             return null;
         }
         return new Quaternion(x, y, z, w).normalize();
+    }
+
+    function readRotateYXZAttribute(primNode, attributeName) {
+        const rawValue = getAttribute(primNode, attributeName);
+        if (!rawValue || !Array.isArray(rawValue) || rawValue.length < 3) {
+            return null;
+        }
+        const xDeg = Number(rawValue[0]);
+        const yDeg = Number(rawValue[1]);
+        const zDeg = Number(rawValue[2]);
+        if (!Number.isFinite(xDeg) || !Number.isFinite(yDeg) || !Number.isFinite(zDeg)) {
+            return null;
+        }
+        const degToRad = Math.PI / 180.0;
+        const qx = new Quaternion().setFromAxisAngle(new Vector3(1.0, 0.0, 0.0), xDeg * degToRad);
+        const qy = new Quaternion().setFromAxisAngle(new Vector3(0.0, 1.0, 0.0), yDeg * degToRad);
+        const qz = new Quaternion().setFromAxisAngle(new Vector3(0.0, 0.0, 1.0), zDeg * degToRad);
+        return new Quaternion()
+            .multiplyQuaternions(qz, new Quaternion().multiplyQuaternions(qx, qy))
+            .normalize();
+    }
+
+    function readOrientationAttribute(primNode) {
+        const xformOpOrder = normalizeToPlainArray(getAttribute(primNode, 'xformOpOrder'));
+        const rotationOrder = Array.isArray(xformOpOrder) ? xformOpOrder : [];
+        if (rotationOrder.length > 0) {
+            const combined = new Quaternion();
+            let found = false;
+            for (const opName of rotationOrder) {
+                let opRotation = null;
+                if (opName === 'xformOp:orient') {
+                    opRotation = readQuaternionAttribute(primNode, opName);
+                } else if (opName === 'xformOp:rotateYXZ') {
+                    opRotation = readRotateYXZAttribute(primNode, opName);
+                }
+                if (!opRotation) {
+                    continue;
+                }
+                combined.multiplyQuaternions(opRotation, combined).normalize();
+                found = true;
+            }
+            if (found) {
+                return combined;
+            }
+        }
+        return (
+            readQuaternionAttribute(primNode, 'xformOp:orient')
+            || readRotateYXZAttribute(primNode, 'xformOp:rotateYXZ')
+        );
     }
 
     function readSpoolAxisLocal(primNode) {
@@ -460,7 +491,7 @@ export function setupScene(world, stage, canvas, options = {}) {
                     const inertiaTensor = getAttribute(prim, "physics:inertiaTensor");
                     const velArr = getAttribute(prim, "physics:velocity");
                     const angVelArr = getAttribute(prim, "physics:angularVelocity");
-                    const initialOrientation = readQuaternionAttribute(prim, 'xformOp:orient') || new Quaternion();
+                    const initialOrientation = readOrientationAttribute(prim) || new Quaternion();
                     const spoolAxisLocal = readSpoolAxisLocal(prim);
 
                     if (radius === null || mass === null || inertiaTensor === null || !angVelArr) {
@@ -553,7 +584,7 @@ export function setupScene(world, stage, canvas, options = {}) {
                     const inertiaTensor = getAttribute(prim, "physics:inertiaTensor");
                     const velArr = getAttribute(prim, "physics:velocity");
                     const angVelArr = getAttribute(prim, "physics:angularVelocity");
-                    const initialOrientation = readQuaternionAttribute(prim, 'xformOp:orient') || new Quaternion();
+                    const initialOrientation = readOrientationAttribute(prim) || new Quaternion();
                     const wheelAxisLocal = readSpoolAxisLocal(prim);
 
                     if (radius === null || mass === null || inertiaTensor === null || !angVelArr) {
@@ -639,7 +670,7 @@ export function setupScene(world, stage, canvas, options = {}) {
                     const inertiaTensor = getAttribute(prim, "physics:inertiaTensor");
                     const velArr = getAttribute(prim, "physics:velocity");
                     const angVelArr = getAttribute(prim, "physics:angularVelocity");
-                    const initialOrientation = readQuaternionAttribute(prim, 'xformOp:orient') || new Quaternion();
+                    const initialOrientation = readOrientationAttribute(prim) || new Quaternion();
 
                     world.addComponent(ent, new PositionComponent(pos.x, pos.y, pos.z));
                     if (velArr !== null) {

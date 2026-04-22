@@ -515,7 +515,7 @@ describe('slideprinter 3D setupScene', () => {
     expect(world.getComponent(wheelEntity, SpoolTagComponent)).toBeUndefined();
   });
 
-  test('accepts Euler degree triples for xformOp:orient', () => {
+  test('accepts xformOp:rotateYXZ using USD angle packing', () => {
     usdStage.getChildren.mockImplementation((prim) => {
       if (prim?.path === '/World/SlideprinterScene') {
         return [{
@@ -535,7 +535,8 @@ describe('slideprinter 3D setupScene', () => {
       if (prim?.path === '/World/SlideprinterScene/WheelA') {
         if (attr === 'ecs:tags') return ['Wheel'];
         if (attr === 'xformOp:translate') return [0.2, 0.3, 0.4];
-        if (attr === 'xformOp:orient') return [0.0, 90.0, 0.0];
+        if (attr === 'xformOp:rotateYXZ') return [0.0, 90.0, 0.0];
+        if (attr === 'xformOpOrder') return ['xformOp:rotateYXZ'];
         if (attr === 'radius') return 0.05;
         if (attr === 'physics:mass') return 1.0;
         if (attr === 'physics:inertiaTensor') return [[0.01, 0, 0], [0, 0.02, 0], [0, 0, 0.03]];
@@ -572,5 +573,62 @@ describe('slideprinter 3D setupScene', () => {
     expect(rotatedForward.x).toBeCloseTo(expected.x, 6);
     expect(rotatedForward.y).toBeCloseTo(expected.y, 6);
     expect(rotatedForward.z).toBeCloseTo(expected.z, 6);
+  });
+
+  test('does not treat a 3-value xformOp:orient as Euler shorthand', () => {
+    usdStage.getChildren.mockImplementation((prim) => {
+      if (prim?.path === '/World/SlideprinterScene') {
+        return [{
+          path: '/World/SlideprinterScene/WheelA',
+          name: 'WheelA',
+          type: 'definition',
+          defType: 'Circle',
+        }];
+      }
+      return [];
+    });
+    usdStage.getAttribute.mockImplementation((prim, attr) => {
+      if (prim?.path === '/World/PhysicsScene') {
+        if (attr === 'physics:gravityDirection') return [0.0, -1.0, 0.0];
+        if (attr === 'physics:gravityMagnitude') return 9.82;
+      }
+      if (prim?.path === '/World/SlideprinterScene/WheelA') {
+        if (attr === 'ecs:tags') return ['Wheel'];
+        if (attr === 'xformOp:translate') return [0.2, 0.3, 0.4];
+        if (attr === 'xformOp:orient') return [0.0, 90.0, 0.0];
+        if (attr === 'xformOpOrder') return ['xformOp:orient'];
+        if (attr === 'radius') return 0.05;
+        if (attr === 'physics:mass') return 1.0;
+        if (attr === 'physics:inertiaTensor') return [[0.01, 0, 0], [0, 0.02, 0], [0, 0, 0.03]];
+        if (attr === 'physics:velocity') return [0.0, 0.0, 0.0];
+        if (attr === 'physics:angularVelocity') return [0.0, 0.0, 0.0];
+      }
+      return null;
+    });
+    usdStage.getRelationship.mockImplementation(() => []);
+
+    const world = new World();
+    const stage = {
+      GetPrimAtPath(path) {
+        return { path, name: path.split('/').pop() };
+      },
+      ast: {
+        descriptor: {
+          assignments: [
+            { type: 'assignment', identifier: 'timeCodesPerSecond', value: 500 }
+          ]
+        }
+      }
+    };
+
+    setupScene(world, stage, createCanvas());
+
+    const wheelEntity = world.query([OrientationComponent])[0];
+    const orientation = world.getComponent(wheelEntity, OrientationComponent).quaternion;
+    const rotatedForward = orientation.transformVector(new Vector3(0.0, 0.0, 1.0));
+
+    expect(rotatedForward.x).toBeCloseTo(0.0, 6);
+    expect(rotatedForward.y).toBeCloseTo(0.0, 6);
+    expect(rotatedForward.z).toBeCloseTo(1.0, 6);
   });
 });
