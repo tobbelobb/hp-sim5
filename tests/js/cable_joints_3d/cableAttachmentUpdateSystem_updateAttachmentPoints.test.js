@@ -223,6 +223,137 @@ describe('_updateAttachmentPoints (3D)', () => {
      expect(finalTotalRestLength).toBeCloseTo(pathComp.totalRestLength);
   });
 
+  test('initial wheel-center placeholders do not corrupt BL-style rolling rest lengths', () => {
+    const world = new World();
+    const wheelPlaneNormal = new Vector3(-0.5, 0.8660254037844386, 0.0);
+
+    const pinholeTop = world.createEntity();
+    const wheelTop = world.createEntity();
+    const wheelBottom = world.createEntity();
+    const pinholeBottom = world.createEntity();
+
+    const pinholeTopPos = new Vector3(0.381051177665153, -0.18, 0.1);
+    const wheelTopPos = new Vector3(0.363730669589464, -0.19, 0.09275);
+    const wheelBottomPos = new Vector3(0.363730669589464, -0.19, 0.04775);
+    const pinholeBottomPos = new Vector3(0.381051177665153, -0.18, 0.0405);
+    const wheelRadius = 0.0065;
+
+    world.addComponent(
+      pinholeTop,
+      new PositionComponent(pinholeTopPos.x, pinholeTopPos.y, pinholeTopPos.z),
+    );
+    world.addComponent(
+      pinholeTop,
+      new CableLinkComponent(
+        pinholeTopPos.x,
+        pinholeTopPos.y,
+        pinholeTopPos.z,
+        null,
+        PLANE_NORMAL,
+      ),
+    );
+
+    world.addComponent(
+      wheelTop,
+      new PositionComponent(wheelTopPos.x, wheelTopPos.y, wheelTopPos.z),
+    );
+    world.addComponent(wheelTop, new RadiusComponent(wheelRadius));
+    world.addComponent(
+      wheelTop,
+      new CableLinkComponent(
+        wheelTopPos.x,
+        wheelTopPos.y,
+        wheelTopPos.z,
+        null,
+        wheelPlaneNormal,
+      ),
+    );
+
+    world.addComponent(
+      wheelBottom,
+      new PositionComponent(wheelBottomPos.x, wheelBottomPos.y, wheelBottomPos.z),
+    );
+    world.addComponent(wheelBottom, new RadiusComponent(wheelRadius));
+    world.addComponent(
+      wheelBottom,
+      new CableLinkComponent(
+        wheelBottomPos.x,
+        wheelBottomPos.y,
+        wheelBottomPos.z,
+        null,
+        wheelPlaneNormal,
+      ),
+    );
+
+    world.addComponent(
+      pinholeBottom,
+      new PositionComponent(pinholeBottomPos.x, pinholeBottomPos.y, pinholeBottomPos.z),
+    );
+    world.addComponent(
+      pinholeBottom,
+      new CableLinkComponent(
+        pinholeBottomPos.x,
+        pinholeBottomPos.y,
+        pinholeBottomPos.z,
+        null,
+        PLANE_NORMAL,
+      ),
+    );
+
+    const jointTopId = world.createEntity();
+    const jointTop = new CableJointComponent(
+      pinholeTop,
+      wheelTop,
+      0.02,
+      pinholeTopPos.clone(),
+      wheelTopPos.clone(),
+    );
+    world.addComponent(jointTopId, jointTop);
+
+    const jointMiddleId = world.createEntity();
+    const jointMiddle = new CableJointComponent(
+      wheelTop,
+      wheelBottom,
+      0.045,
+      wheelTopPos.clone(),
+      wheelBottomPos.clone(),
+    );
+    world.addComponent(jointMiddleId, jointMiddle);
+
+    const jointBottomId = world.createEntity();
+    const jointBottom = new CableJointComponent(
+      wheelBottom,
+      pinholeBottom,
+      0.02,
+      wheelBottomPos.clone(),
+      pinholeBottomPos.clone(),
+    );
+    world.addComponent(jointBottomId, jointBottom);
+
+    const pathId = world.createEntity();
+    const pathComp = new CablePathComponent(
+      world,
+      [jointTopId, jointMiddleId, jointBottomId],
+      ['pinhole', 'rolling', 'rolling', 'pinhole'],
+      [true, true, true, true],
+      1e6,
+      [0.0, 0.01021, 0.01021, 0.0],
+    );
+    world.addComponent(pathId, pathComp);
+
+    _updateAttachmentPoints(world);
+
+    expect(jointTop.restLength).toBeCloseTo(0.02, 6);
+    expect(jointBottom.restLength).toBeCloseTo(0.02, 6);
+    expect(pathComp.stored[1]).toBeCloseTo(0.01021, 6);
+    expect(pathComp.stored[2]).toBeCloseTo(0.01021, 6);
+
+    expect(jointTop.attachmentPointB_world.distanceTo(wheelTopPos)).toBeCloseTo(wheelRadius, 6);
+    expect(jointMiddle.attachmentPointA_world.distanceTo(wheelTopPos)).toBeCloseTo(wheelRadius, 6);
+    expect(jointMiddle.attachmentPointB_world.distanceTo(wheelBottomPos)).toBeCloseTo(wheelRadius, 6);
+    expect(jointBottom.attachmentPointA_world.distanceTo(wheelBottomPos)).toBeCloseTo(wheelRadius, 6);
+  });
+
   test('rigid-body carrier twist around the spool axis does not create spool payout on an internal pinhole-to-spool link', () => {
     const world = new World();
     const rigidBodySyncSystem = new RigidBodySyncSystem();

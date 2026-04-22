@@ -1172,6 +1172,17 @@ export function calculateAttachmentPoints(world, joint, path, i, radiusA, radius
   return { attachmentA_current, attachmentB_current };
 }
 
+function _isNonCenterAttachment(point, center) {
+  if (!point || !center) {
+    return false;
+  }
+  const distance = point.distanceTo(center);
+  if (!Number.isFinite(distance)) {
+    return false;
+  }
+  return Math.abs(distance) >= 1e-4;
+}
+
 export function _updateAttachmentPoints(world) {
   const logDiffA = false;
   const logDiffB = false;
@@ -1313,7 +1324,15 @@ export function _updateAttachmentPoints(world) {
       const storedA_before = path.stored[A] ?? 0.0;
       const storedB_before = path.stored[B] ?? 0.0;
 
-      if (rollingLinkA && attachmentA_previous && attachmentA_current && prevPosA && posA && radiusA !== undefined) {
+      if (
+        rollingLinkA &&
+        attachmentA_previous &&
+        attachmentA_current &&
+        prevPosA &&
+        posA &&
+        radiusA !== undefined &&
+        _isNonCenterAttachment(attachmentA_previous, prevPosA, radiusA)
+      ) {
         sA = signedArcLengthOnWheel(
           attachmentA_previous.clone().subtract(prevPosA),
           attachmentA_current.clone().subtract(posA),
@@ -1336,7 +1355,15 @@ export function _updateAttachmentPoints(world) {
         }
       }
 
-      if (rollingLinkB && attachmentB_previous && attachmentB_current && prevPosB && posB && radiusB !== undefined) {
+      if (
+        rollingLinkB &&
+        attachmentB_previous &&
+        attachmentB_current &&
+        prevPosB &&
+        posB &&
+        radiusB !== undefined &&
+        _isNonCenterAttachment(attachmentB_previous, prevPosB, radiusB)
+      ) {
         sB = signedArcLengthOnWheel(
           attachmentB_previous.clone().subtract(prevPosB),
           attachmentB_current.clone().subtract(posB),
