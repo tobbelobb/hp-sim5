@@ -56,8 +56,8 @@ def Xform "World"
             # radius taken from bearing_u_big_623.scad in the hangprinter repo. d=14.1 (mm) => r=7.05 mm == 0.00705 m
             double radius = 0.00705
             double3 xformOp:translate = (-0.346410161513775, -0.2, 0.07)
-            double3 xformOp:orient = (0, 90, 0)
-            uniform token[] xformOpOrder = ["xformOp:orient", "xformOp:translate"]
+            double3 xformOp:rotateXYZ = (0, 90, 0)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
             # Typical mass of a 623 bearing is 2 g
             float physics:mass = 0.002
             # Typical rotational inertia of a 623 bearing is 3e-8. Our outer pla ring adds a little bit so say 5e-8

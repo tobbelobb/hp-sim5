@@ -218,7 +218,7 @@ export function setupScene(world, stage, canvas, options = {}) {
         return new Quaternion(x, y, z, w).normalize();
     }
 
-    function readRotateYXZAttribute(primNode, attributeName) {
+    function readRotateABCAttribute(primNode, attributeName, rotationOrder) {
         const rawValue = getAttribute(primNode, attributeName);
         if (!rawValue || !Array.isArray(rawValue) || rawValue.length < 3) {
             return null;
@@ -230,12 +230,36 @@ export function setupScene(world, stage, canvas, options = {}) {
             return null;
         }
         const degToRad = Math.PI / 180.0;
-        const qx = new Quaternion().setFromAxisAngle(new Vector3(1.0, 0.0, 0.0), xDeg * degToRad);
-        const qy = new Quaternion().setFromAxisAngle(new Vector3(0.0, 1.0, 0.0), yDeg * degToRad);
-        const qz = new Quaternion().setFromAxisAngle(new Vector3(0.0, 0.0, 1.0), zDeg * degToRad);
-        return new Quaternion()
-            .multiplyQuaternions(qz, new Quaternion().multiplyQuaternions(qx, qy))
-            .normalize();
+        const axisRotations = {
+            X: new Quaternion().setFromAxisAngle(new Vector3(1.0, 0.0, 0.0), xDeg * degToRad),
+            Y: new Quaternion().setFromAxisAngle(new Vector3(0.0, 1.0, 0.0), yDeg * degToRad),
+            Z: new Quaternion().setFromAxisAngle(new Vector3(0.0, 0.0, 1.0), zDeg * degToRad),
+        };
+        const combined = new Quaternion();
+        for (const axisName of rotationOrder) {
+            const axisRotation = axisRotations[axisName];
+            if (!axisRotation) {
+                return null;
+            }
+            combined.multiplyQuaternions(axisRotation, combined).normalize();
+        }
+        return combined;
+    }
+
+    function readRotationOpAttribute(primNode, opName) {
+        if (typeof opName !== 'string') {
+            return null;
+        }
+        const normalizedOpName = opName.startsWith('!invert!') ? opName.slice('!invert!'.length) : opName;
+        const orientMatch = normalizedOpName.match(/^xformOp:orient(?:[:].+)?$/);
+        if (orientMatch) {
+            return readQuaternionAttribute(primNode, normalizedOpName);
+        }
+        const rotateMatch = normalizedOpName.match(/^xformOp:rotate(XYZ|XZY|YXZ|YZX|ZXY|ZYX)(?:[:].+)?$/);
+        if (rotateMatch) {
+            return readRotateABCAttribute(primNode, normalizedOpName, rotateMatch[1]);
+        }
+        return null;
     }
 
     function readOrientationAttribute(primNode) {
@@ -245,12 +269,7 @@ export function setupScene(world, stage, canvas, options = {}) {
             const combined = new Quaternion();
             let found = false;
             for (const opName of rotationOrder) {
-                let opRotation = null;
-                if (opName === 'xformOp:orient') {
-                    opRotation = readQuaternionAttribute(primNode, opName);
-                } else if (opName === 'xformOp:rotateYXZ') {
-                    opRotation = readRotateYXZAttribute(primNode, opName);
-                }
+                const opRotation = readRotationOpAttribute(primNode, opName);
                 if (!opRotation) {
                     continue;
                 }
@@ -263,7 +282,12 @@ export function setupScene(world, stage, canvas, options = {}) {
         }
         return (
             readQuaternionAttribute(primNode, 'xformOp:orient')
-            || readRotateYXZAttribute(primNode, 'xformOp:rotateYXZ')
+            || readRotateABCAttribute(primNode, 'xformOp:rotateXYZ', 'XYZ')
+            || readRotateABCAttribute(primNode, 'xformOp:rotateXZY', 'XZY')
+            || readRotateABCAttribute(primNode, 'xformOp:rotateYXZ', 'YXZ')
+            || readRotateABCAttribute(primNode, 'xformOp:rotateYZX', 'YZX')
+            || readRotateABCAttribute(primNode, 'xformOp:rotateZXY', 'ZXY')
+            || readRotateABCAttribute(primNode, 'xformOp:rotateZYX', 'ZYX')
         );
     }
 
