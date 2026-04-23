@@ -88,7 +88,7 @@ class "CablePathAPI" (
     }
 )
 {
-    rel cableJoints[] (
+    rel cablePath:joints[] (
         doc = """Ordered sequence of CableJoint prims that make up this cable path.
 
         The cable path is defined by the sequential connection of these joints.
@@ -97,7 +97,7 @@ class "CablePathAPI" (
         """
     )
 
-    token[] linkTypes (
+    token[] cablePath:linkTypes (
         doc = """Type of link for each segment in the cable path.
 
         Defines how the cable interacts with each body along the path.
@@ -106,7 +106,7 @@ class "CablePathAPI" (
         """
     )
 
-    bool[] clockwise (
+    bool[] cablePath:clockwise (
         doc = """Direction of cable routing around each body in the path.
 
         For bodies where the cable wraps around (rolling contacts),
@@ -114,7 +114,7 @@ class "CablePathAPI" (
         """
     )
 
-    double[] storedLength (
+    double[] cablePath:stored (
         doc = """Amount of cable stored or wound at each segment.
 
         Represents cable length that is wound up or stored at each body,
@@ -122,7 +122,7 @@ class "CablePathAPI" (
         """
     )
 
-    double totalLength (
+    double cablePath:totalLength (
         doc = """Total physical length of the cable in the path.
 
         This is the sum of all segment rest lengths plus any stored lengths.
@@ -130,7 +130,15 @@ class "CablePathAPI" (
         """
     )
 
-    double damping = 0.0 (
+    double stiffness = 1000.0 (
+        doc = """Stiffness of the cable path constraint in N/m.
+
+        Higher values make the path resist stretching more strongly.
+        This stays unnamespaced to match the existing authored scenes.
+        """
+    )
+
+    double cablePath:damping = 0.0 (
         doc = """XPBD damping coefficient for the cable path.
 
         Used by the cable constraint solver together with compliance to
@@ -138,14 +146,22 @@ class "CablePathAPI" (
         """
     )
 
-    bool enabled = true (
+    double cablePath:halfWidth = 0.0 (
+        doc = """Half the rendered and effective cable width in world units.
+
+        Used by path rendering and by spool/wrap calculations that account
+        for the cable's finite cross section.
+        """
+    )
+
+    bool cablePath:enabled = true (
         doc = """Whether this cable path is active.
 
         When disabled, all CableJoint constraints in the path are deactivated.
         """
     )
 
-    double tension = 0.0 (
+    double cablePath:tension = 0.0 (
         doc = """Current tension in the cable path.
 
         Runtime property representing the overall tension state of the cable.
