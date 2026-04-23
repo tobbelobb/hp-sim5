@@ -13,11 +13,12 @@ describe('CablePathAPI schema', () => {
     expect(schemaText).toContain('token[] cablePath:linkTypes');
     expect(schemaText).toContain('bool[] cablePath:clockwise');
     expect(schemaText).toContain('double[] cablePath:stored');
+    expect(schemaText).toContain('token[] cablePath:storedMode');
+    expect(schemaText).toContain('token cablePath:initPolicy = "deriveMissing"');
     expect(schemaText).toContain('double cablePath:totalLength');
     expect(schemaText).toContain('double stiffness = 1000.0');
     expect(schemaText).toContain('double cablePath:damping = 0.0');
     expect(schemaText).toContain('double cablePath:halfWidth = 0.0');
-    expect(schemaText).toContain('bool cablePath:enabled = true');
     expect(schemaText).toContain('double cablePath:tension = 0.0');
 
     expect(schemaText).not.toContain('rel cableJoints[]');

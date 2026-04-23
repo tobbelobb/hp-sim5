@@ -1,4 +1,4 @@
-import { parse as parseUsda } from "@kroxilon/usda-parser";
+import { parseUsdaAst } from './usda_parser.js';
 
 /**
  * Open() – the JavaScript twin of Usd.Stage.Open().
@@ -23,7 +23,7 @@ export async function Open(pathOrSource) {
         return text;
       });
 
-  const ast = parseUsda(source);
+  const ast = parseUsdaAst(source);
   const primIndex = indexPrims(ast.statements);
 
   return {

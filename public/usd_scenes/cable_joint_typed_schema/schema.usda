@@ -106,6 +106,23 @@ class "CablePathAPI" (
         """
     )
 
+    uniform token[] cablePath:storedMode (
+        doc = """Per-link control for cablePath:stored authoring.
+
+        Use 'manual' to keep the authored cablePath:stored value for a link,
+        or 'auto' to derive it from the path geometry at initialization time.
+        """
+    )
+
+    uniform token cablePath:initPolicy = "deriveMissing" (
+        doc = """Initialization policy for derived cable values.
+
+        'manual' requires explicit authored values, 'deriveMissing' fills only
+        missing derivable values, and 'deriveAll' recomputes all derivable
+        values from the reference pose.
+        """
+    )
+
     uniform double cablePath:totalLength (
         doc = """Total physical length of the cable in the path.
 
