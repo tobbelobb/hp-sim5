@@ -1,4 +1,4 @@
-import { Open as UsdOpen, getAttribute } from '../../src/js/usd/stage.js';
+import { OpenText as UsdOpenText, getAttribute } from '../../src/js/usd/stage.js';
 import { World, OrientationComponent } from '../../src/js/cable_joints/ecs.js';
 import { runGame } from '../../example_apps/js/slideprinter/runner.js';
 import { setupScene } from '../../example_apps/js/slideprinter/setupScene.js';
@@ -15,6 +15,7 @@ import { QualityMonitor } from './quality-monitor.js';
 import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
 import { getMachineMotorDiagnostics } from './motor-diagnostics.js';
+import { bakeCableSceneUsdaSource } from '../../src/js/usd/cable_scene_baker.js';
 
 const COMMAND_PRESET_VARIANTS = Object.freeze({
   hangprinterLogo: Object.freeze({
@@ -264,6 +265,8 @@ function initHpSim() {
         tintColor: null,
         tintColorLoaded: false,
         tintColorPromise: null,
+        sourceText: null,
+        sourcePromise: null,
       },
     ])
   );
@@ -1558,6 +1561,66 @@ function initHpSim() {
     return response.text();
   }
 
+  async function fetchUsdaText(url) {
+    const response = await fetch(url, { cache: 'no-cache' });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch USDA from ${url}: ${response.status}`);
+    }
+    const text = await response.text();
+    if (text.trim().startsWith('<')) {
+      throw new Error(`Fetch for ${url} returned HTML, not a USDA file.`);
+    }
+    return text;
+  }
+
+  function bakeUsdaSourceForLineLayering(sourceText, enabled) {
+    const options = enabled ? {} : { cablePathHalfWidthOverride: 0.0, deriveAll: true };
+    return bakeCableSceneUsdaSource(sourceText, options).source;
+  }
+
+  function openBakedUsdaStage(sourceText, enabled = lineLayeringEnabled) {
+    return UsdOpenText(bakeUsdaSourceForLineLayering(sourceText, enabled));
+  }
+
+  function refreshMachineBakedStage(machine) {
+    if (!machine?.sourceText) {
+      return true;
+    }
+    try {
+      machine.stage = openBakedUsdaStage(machine.sourceText, lineLayeringEnabled);
+      machine.scenePrimPath = findScenePrimPath(machine.stage);
+      return true;
+    } catch (error) {
+      console.error(`hp-sim: unable to bake USDA source for ${machine.name || machine.id}.`, error);
+      return false;
+    }
+  }
+
+  function loadCatalogUsdaSource(sourceKey) {
+    if (!sourceKey || !usdaCatalog.has(sourceKey)) {
+      return Promise.resolve(null);
+    }
+    const entry = usdaCatalog.get(sourceKey);
+    if (!entry) {
+      return Promise.resolve(null);
+    }
+    if (typeof entry.sourceText === 'string') {
+      return Promise.resolve(entry.sourceText);
+    }
+    if (entry.sourcePromise) {
+      return entry.sourcePromise;
+    }
+    entry.sourcePromise = fetchUsdaText(entry.url)
+      .then((sourceText) => {
+        entry.sourceText = sourceText;
+        return sourceText;
+      })
+      .finally(() => {
+        entry.sourcePromise = null;
+      });
+    return entry.sourcePromise;
+  }
+
   async function loadReferencePath(cacheKey, loader, {
     metadataOverrides = {},
     color = null,
@@ -1832,7 +1895,7 @@ function initHpSim() {
     return match?.value ?? null;
   }
 
-  function registerMachine(stage, { name = null, sourceKey = null, sourceUrl = null } = {}) {
+  function registerMachine(stage, { name = null, sourceKey = null, sourceUrl = null, sourceText = null } = {}) {
     if (!stage) {
       return null;
     }
@@ -1853,6 +1916,7 @@ function initHpSim() {
       scenePrimPath,
       sourceKey: sourceKey || null,
       sourceUrl: sourceUrl || null,
+      sourceText: typeof sourceText === 'string' ? sourceText : null,
     };
     if (sourceKey && usdaCatalog.has(sourceKey)) {
       const entry = usdaCatalog.get(sourceKey);
@@ -1881,6 +1945,9 @@ function initHpSim() {
     }
     let isFirst = true;
     for (const machine of machines) {
+      if (!refreshMachineBakedStage(machine)) {
+        continue;
+      }
       const sceneOptions = {
         remote: false,
         append: !isFirst,
@@ -1971,7 +2038,8 @@ function initHpSim() {
     }
     entry.tintColorPromise = (async () => {
       try {
-        const stage = await UsdOpen(entry.url);
+        const sourceText = await loadCatalogUsdaSource(sourceKey);
+        const stage = openBakedUsdaStage(sourceText, true);
         const scenePrimPath = findScenePrimPath(stage);
         const { tintColor } = extractMachineColors(stage, scenePrimPath);
         entry.tintColor = tintColor || null;
@@ -2729,14 +2797,14 @@ function initHpSim() {
 
     let stage = null;
     try {
-      stage = await UsdOpen(sourceText);
+      stage = openBakedUsdaStage(sourceText, lineLayeringEnabled);
     } catch (error) {
-      console.error(`Slideprinter demo: unable to parse USDA file ${label}:`, error);
+      console.error(`Slideprinter demo: unable to bake/parse USDA file ${label}:`, error);
       return;
     }
 
     return enqueueSceneChange(async () => {
-      const machine = registerMachine(stage, { name: label, sourceKey: null, sourceUrl: null });
+      const machine = registerMachine(stage, { name: label, sourceKey: null, sourceUrl: null, sourceText });
       if (!machine) {
         return;
       }
@@ -2767,11 +2835,17 @@ function initHpSim() {
       return null;
     }
     const entry = usdaCatalog.get(sourceKey);
+    const existing = machines.find((machine) => machine.sourceKey === sourceKey);
+    if (existing) {
+      return existing;
+    }
+    let sourceText = null;
     let stage = null;
     try {
-      stage = await UsdOpen(entry.url);
+      sourceText = await loadCatalogUsdaSource(sourceKey);
+      stage = openBakedUsdaStage(sourceText, lineLayeringEnabled);
     } catch (error) {
-      console.error(`hp-sim: unable to load USDA preset ${sourceKey}.`, error);
+      console.error(`hp-sim: unable to bake/load USDA preset ${sourceKey}.`, error);
       return null;
     }
     if (!stage) {
@@ -2780,15 +2854,11 @@ function initHpSim() {
     }
 
     return enqueueSceneChange(async () => {
-      const existing = machines.find((machine) => machine.sourceKey === sourceKey);
-      if (existing) {
-        return existing;
-      }
-
       const machine = registerMachine(stage, {
         name: entry.label,
         sourceKey,
         sourceUrl: entry.url,
+        sourceText,
       });
       if (!machine) {
         return null;

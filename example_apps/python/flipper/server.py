@@ -329,7 +329,7 @@ def stage_to_world(world, stage):
         link_types = list(cable_path_prim.GetAttribute("cablePath:linkTypes").Get() or [])
         cw = list(cable_path_prim.GetAttribute("cablePath:clockwise").Get() or [])
         stored = list(cable_path_prim.GetAttribute("cablePath:stored").Get() or [])
-        stiffness = cable_path_prim.GetAttribute("stiffness").Get()
+        stiffness = cable_path_prim.GetAttribute("cablePath:stiffness").Get()
         if ordered:
             cid = world.create_entity()
             path_comp = create_cable_path_component(world, ordered, link_types, cw, stiffness, stored=stored)

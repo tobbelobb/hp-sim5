@@ -1,13 +1,15 @@
 import { readFileSync } from 'fs';
 import path from 'path';
 import { World } from '../../../src/js/cable_joints/ecs.js';
+import { CablePathComponent } from '../../../src/js/cable_joints/cable_joints_core.js';
 import { setupScene } from '../../../example_apps/js/slideprinter/setupScene.js';
 import {
   StepperMotorComponent,
   SpoolTagComponent,
   ExtruderComponent,
 } from '../../../example_apps/js/slideprinter/slideprinter_common.js';
-import { Open as UsdOpen } from '../../../src/js/usd/stage.js';
+import { OpenText as UsdOpenText } from '../../../src/js/usd/stage.js';
+import { bakeCableSceneUsdaSource } from '../../../src/js/usd/cable_scene_baker.js';
 
 const usdPath = path.resolve(process.cwd(), 'public/usd_scenes/slideprinter.usda');
 
@@ -82,7 +84,7 @@ describe('Stepper attributes from USD', () => {
 
   beforeAll(async () => {
     const usdSource = readFileSync(usdPath, 'utf8');
-    stage = await UsdOpen(usdSource);
+    stage = UsdOpenText(bakeCableSceneUsdaSource(usdSource).source);
   });
 
   beforeEach(() => {
@@ -151,6 +153,21 @@ describe('Stepper attributes from USD', () => {
       expect(stepper.holdingTorque).toBeCloseTo(0.5);
       expect(stepper.numPolePairs).toBe(50);
       expect(stepper.dampingCoeff).toBeCloseTo(0.01);
+    }
+  });
+
+  test('setupScene applies namespaced cable path stiffness from USD', () => {
+    const world = new World();
+    const canvas = createCanvasStub();
+
+    setupScene(world, stage, canvas, { append: false });
+
+    const cablePathEntities = world.query([CablePathComponent]);
+    expect(cablePathEntities.length).toBeGreaterThan(0);
+
+    for (const entity of cablePathEntities) {
+      const pathComp = world.getComponent(entity, CablePathComponent);
+      expect(pathComp.spring_constant).toBeCloseTo(20000.0);
     }
   });
 

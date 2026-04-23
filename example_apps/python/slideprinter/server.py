@@ -490,7 +490,7 @@ def stage_to_world(world, stage):
                     joint_entities,
                     list(cable_path_prim.GetAttribute("cablePath:linkTypes").Get() or []),
                     list(cable_path_prim.GetAttribute("cablePath:clockwise").Get() or []),
-                    float(cable_path_prim.GetAttribute("stiffness").Get()),
+                    float(cable_path_prim.GetAttribute("cablePath:stiffness").Get()),
                     stored=list(cable_path_prim.GetAttribute("cablePath:stored").Get() or []),
                 ),
             )

@@ -298,7 +298,7 @@ export function setupScene(world, stage, canvas) {
           jointEntities,
           linkTypes ? [...linkTypes] : null,
           clockwiseFlags,
-          getAttribute(cablePathPrim, "stiffness") || Infinity,
+          getAttribute(cablePathPrim, "cablePath:stiffness") || Infinity,
           stored ? [...stored] : null,
           cableHalfWidth ?? 0.0
         );
