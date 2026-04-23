@@ -23,7 +23,7 @@ import {
   ScoreComponent
 } from '../../../example_apps/js/flipper_3d/flipper_common_3d.js';
 import { setupScene } from '../../../example_apps/js/flipper_3d/setupScene.js';
-import { Open } from '../../../src/js/usd/stage.js';
+import { OpenCableScene as Open } from '../../../src/js/usd/cable_scene_loader.js';
 
 function createMockCanvas() {
   const width = 460;

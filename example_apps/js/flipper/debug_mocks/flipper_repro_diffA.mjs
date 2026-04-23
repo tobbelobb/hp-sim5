@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { World } from '../../../../src/js/cable_joints/ecs.js';
 import { setupScene } from '../setupScene.js';
-import { Open } from '../../../../src/js/usd/stage.js';
+import { OpenCableScene as Open } from '../../../../src/js/usd/cable_scene_loader.js';
 
 function createMockCanvas() {
   const width = 460;

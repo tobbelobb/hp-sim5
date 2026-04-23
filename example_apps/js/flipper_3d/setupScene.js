@@ -320,7 +320,7 @@ export function setupScene(world, stage, canvas) {
     const jointEntities = jointNames.map((jointName) => jointEntityMap[jointName]).filter(Boolean);
     const linkTypes = getAttribute(cablePathPrim, 'cablePath:linkTypes');
     const clockwise = getAttribute(cablePathPrim, 'cablePath:clockwise');
-    const stored = getAttribute(cablePathPrim, 'cablePath:stored');
+    const stored = getAttribute(cablePathPrim, 'cablePath:stored') || [];
     const cableHalfWidth = getAttribute(cablePathPrim, 'cablePath:halfWidth');
     const clockwiseFlags = Array.isArray(clockwise)
       ? clockwise.map((value) => value === true || value === 1 || value === '1' || value === 'true')
@@ -334,7 +334,7 @@ export function setupScene(world, stage, canvas) {
         linkTypes ? [...linkTypes] : null,
         clockwiseFlags,
         getAttribute(cablePathPrim, 'cablePath:stiffness') || Infinity,
-        stored ? [...stored] : null,
+        stored,
         cableHalfWidth ?? 0.0
       )
     );

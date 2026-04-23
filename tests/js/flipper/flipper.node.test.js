@@ -10,7 +10,7 @@ import {
   PauseStateComponent
 } from '../../../example_apps/js/flipper/flipper_common.js';
 import { setupScene } from '../../../example_apps/js/flipper/setupScene.js';
-import { Open } from '../../../src/js/usd/stage.js';
+import { OpenCableScene as Open } from '../../../src/js/usd/cable_scene_loader.js';
 
 // Minimal DOM stubs for systems that expect browser APIs
 function createMockCanvas() {

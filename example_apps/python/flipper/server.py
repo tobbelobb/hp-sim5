@@ -2,7 +2,9 @@ import asyncio
 import json
 import functools
 import os
+import subprocess
 import sys
+import tempfile
 import numpy as np
 from pathlib import Path
 
@@ -130,7 +132,14 @@ async def watch_and_restart(files, interval=1.0):
 def load_flipper_stage():
     """Load the flipper demo USD stage."""
     scene_path = root_dir / "public" / "usd_scenes" / "flipper_scene.usda"
-    return Usd.Stage.Open(str(scene_path))
+    baked_path = Path(tempfile.gettempdir()) / "hp-sim5_flipper_scene_baked.usda"
+    subprocess.run(
+        ["node", str(root_dir / "scripts" / "bake_cable_scene.mjs"), str(scene_path), str(baked_path)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return Usd.Stage.Open(str(baked_path))
 
 def _material_properties(stage, prim):
     """Return (color_hex, friction, restitution) from a prim's bound material."""

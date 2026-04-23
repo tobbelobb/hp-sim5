@@ -6,24 +6,28 @@ import { parseUsdaAst } from './usda_parser.js';
  * returns a Stage-like object with GetPrimAtPath(), Traverse(), and the raw AST.
  */
 export async function Open(pathOrSource) {
-  const source = isUsdText(pathOrSource)
-    ? pathOrSource                              // already the file text
-    : await fetch(pathOrSource).then(async (r) => {
-        if (!r.ok) {
-          throw new Error(`Failed to fetch ${r.url}: ${r.status} ${r.statusText}. Check that the file path is correct and the server is configured to serve it.`);
-        }
-        const text = await r.text();
-        // A common error is for the server to return an HTML 404 page.
-        // This provides a better error message than the parser's syntax error.
-        if (text.trim().startsWith("<")) {
-          throw new Error(
-            `Fetch for ${r.url} returned HTML, not a USDA file. Check that the file path is correct.`
-          );
-        }
-        return text;
-      });
+  return OpenText(await readUsdaSource(pathOrSource));
+}
 
-  return OpenText(source);
+export async function readUsdaSource(pathOrSource) {
+  if (isUsdText(pathOrSource)) {
+    return pathOrSource;
+  }
+
+  const response = await fetch(pathOrSource);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${response.url}: ${response.status} ${response.statusText}. Check that the file path is correct and the server is configured to serve it.`);
+  }
+
+  const text = await response.text();
+  // A common error is for the server to return an HTML 404 page.
+  // This provides a better error message than the parser's syntax error.
+  if (text.trim().startsWith("<")) {
+    throw new Error(
+      `Fetch for ${response.url} returned HTML, not a USDA file. Check that the file path is correct.`
+    );
+  }
+  return text;
 }
 
 export function OpenText(source) {
