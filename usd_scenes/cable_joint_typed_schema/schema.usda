@@ -56,22 +56,6 @@ class CableJoint "CableJoint" (
         The cable constraint acts between localPos0 on body0 and this point.
         """
     )
-
-    double stiffness = 1000.0 (
-        doc = """Stiffness of the cable constraint in N/m.
-
-        Higher values create a stiffer cable that resists stretching more strongly.
-        Lower values allow more elastic behavior.
-        """
-    )
-
-    bool enabled = true (
-        doc = """Whether this cable joint constraint is active.
-
-        Disabled cable joints do not participate in simulation but remain
-        in the scene for potential re-enabling later.
-        """
-    )
 }
 
 class "CablePathAPI" (
@@ -88,7 +72,7 @@ class "CablePathAPI" (
     }
 )
 {
-    rel cableJoints[] (
+    rel cablePath:joints[] (
         doc = """Ordered sequence of CableJoint prims that make up this cable path.
 
         The cable path is defined by the sequential connection of these joints.
@@ -97,7 +81,7 @@ class "CablePathAPI" (
         """
     )
 
-    token[] linkTypes (
+    token[] cablePath:linkTypes (
         doc = """Type of link for each segment in the cable path.
 
         Defines how the cable interacts with each body along the path.
@@ -106,7 +90,7 @@ class "CablePathAPI" (
         """
     )
 
-    bool[] clockwise (
+    bool[] cablePath:clockwise (
         doc = """Direction of cable routing around each body in the path.
 
         For bodies where the cable wraps around (rolling contacts),
@@ -114,7 +98,7 @@ class "CablePathAPI" (
         """
     )
 
-    double[] storedLength (
+    double[] cablePath:stored (
         doc = """Amount of cable stored or wound at each segment.
 
         Represents cable length that is wound up or stored at each body,
@@ -122,7 +106,24 @@ class "CablePathAPI" (
         """
     )
 
-    double totalLength (
+    uniform token[] cablePath:storedMode (
+        doc = """Per-link control for cablePath:stored authoring.
+
+        Use 'manual' to keep the authored cablePath:stored value for a link,
+        or 'auto' to derive it from the path geometry at initialization time.
+        """
+    )
+
+    uniform token cablePath:initPolicy = "deriveMissing" (
+        doc = """Initialization policy for derived cable values.
+
+        'manual' requires explicit authored values, 'deriveMissing' fills only
+        missing derivable values, and 'deriveAll' recomputes all derivable
+        values from the reference pose.
+        """
+    )
+
+    uniform double cablePath:totalLength (
         doc = """Total physical length of the cable in the path.
 
         This is the sum of all segment rest lengths plus any stored lengths.
@@ -130,7 +131,14 @@ class "CablePathAPI" (
         """
     )
 
-    double damping = 0.0 (
+    uniform double cablePath:stiffness = 1000.0 (
+        doc = """Stiffness of the cable path constraint in N/m.
+
+        Higher values make the path resist stretching more strongly.
+        """
+    )
+
+    uniform double cablePath:damping = 0.0 (
         doc = """XPBD damping coefficient for the cable path.
 
         Used by the cable constraint solver together with compliance to
@@ -138,14 +146,15 @@ class "CablePathAPI" (
         """
     )
 
-    bool enabled = true (
-        doc = """Whether this cable path is active.
+    uniform double cablePath:halfWidth = 0.0 (
+        doc = """Half the rendered and effective cable width in world units.
 
-        When disabled, all CableJoint constraints in the path are deactivated.
+        Used by path rendering and by spool/wrap calculations that account
+        for the cable's finite cross section.
         """
     )
 
-    double tension = 0.0 (
+    double cablePath:tension = 0.0 (
         doc = """Current tension in the cable path.
 
         Runtime property representing the overall tension state of the cable.
