@@ -4,6 +4,7 @@ import {
   World,
   EncoderComponent,
   OrientationComponent,
+  RigidBodyMemberComponent,
 } from '../../../src/js/cable_joints_3d/ecs.js';
 import {
   EncoderUpdateSystem,
@@ -94,5 +95,34 @@ describe('EncoderUpdateSystem', () => {
     encoderSystem.update(world, 1 / 500);
 
     expect(encoder.angle).toBeCloseTo(Math.PI / 3, 6);
+  });
+
+  test('reads rigid-body-member spool encoders from the resolved body-local frame', () => {
+    const world = new World();
+    const bodyEntity = world.createEntity();
+    const memberEntity = world.createEntity();
+    const bodyOrientation = new OrientationComponent();
+    const bodyTilt = new Quaternion().setFromAxisAngle(new Vector3(1.0, 0.0, 0.0), Math.PI / 4);
+    const localTwist = new Quaternion().setFromAxisAngle(new Vector3(0.0, 0.0, 1.0), Math.PI / 3);
+    const staleMemberOrientation = new OrientationComponent();
+    const encoder = new EncoderComponent();
+
+    bodyOrientation.quaternion.set(bodyTilt);
+    staleMemberOrientation.quaternion.set(localTwist);
+
+    world.addComponent(bodyEntity, bodyOrientation);
+    world.addComponent(memberEntity, staleMemberOrientation);
+    world.addComponent(memberEntity, encoder);
+    world.addComponent(memberEntity, new SpoolStateComponent('A', null, bodyTilt.clone()));
+    world.addComponent(memberEntity, new RigidBodyMemberComponent(bodyEntity, null, localTwist));
+
+    const encoderSystem = new EncoderUpdateSystem();
+    encoderSystem.update(world, 1 / 500);
+
+    const expectedAxis = bodyTilt.transformVector(new Vector3(0.0, 0.0, 1.0)).normalize();
+    expect(encoder.angle).toBeCloseTo(Math.PI / 3, 6);
+    expect(encoder.axis.x).toBeCloseTo(expectedAxis.x, 6);
+    expect(encoder.axis.y).toBeCloseTo(expectedAxis.y, 6);
+    expect(encoder.axis.z).toBeCloseTo(expectedAxis.z, 6);
   });
 });

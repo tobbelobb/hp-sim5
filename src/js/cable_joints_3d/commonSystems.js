@@ -27,6 +27,7 @@ import {
 import {
   initializeRigidBodySyncState,
   computeWorldAttachment,
+  getEntityWorldOrientation,
   getEntityWorldPosition,
   resolveRigidBodySolverEndpoint,
   updateRigidBodyMemberLocalOrientation,
@@ -95,6 +96,32 @@ function applyOrientationDelta(world, entityId, deltaRotation) {
   if (spoolState) {
     rotateSpoolReferenceOrientation(spoolState, deltaRotation);
   }
+}
+
+function getRigidBodyMemberSpoolFrame(world, entityId, spoolState) {
+  const member = world.getComponent(entityId, RigidBodyMemberComponent);
+  if (!member?.localOrientation) {
+    return null;
+  }
+  const bodyOrientation = world.getComponent(member.bodyEntity, OrientationComponent)?.quaternion;
+  if (!bodyOrientation) {
+    return null;
+  }
+  const bodyInverse = bodyOrientation.clone().conjugate().normalize();
+  const localReferenceOrientation = new Quaternion()
+    .multiplyQuaternions(bodyInverse, spoolState.referenceOrientation)
+    .normalize();
+  const worldOrientation = new Quaternion()
+    .multiplyQuaternions(bodyOrientation, member.localOrientation)
+    .normalize();
+  return {
+    member,
+    worldOrientation,
+    localSpoolState: {
+      axisLocal: spoolState.axisLocal,
+      referenceOrientation: localReferenceOrientation,
+    },
+  };
 }
 
 export class GravitySystem {
@@ -274,12 +301,24 @@ export class EncoderUpdateSystem {
       }
 
       const spoolState = world.getComponent(entityId, SpoolStateComponent);
+      const worldOrientation = getEntityWorldOrientation(world, entityId) || orientationComp.quaternion;
+      const rigidBodyMemberSpoolFrame = spoolState
+        ? getRigidBodyMemberSpoolFrame(world, entityId, spoolState)
+        : null;
+      const spoolWorldOrientation = rigidBodyMemberSpoolFrame?.worldOrientation || worldOrientation;
       const axis = spoolState
-        ? getSpoolWorldAxis(spoolState, orientationComp.quaternion)
+        ? getSpoolWorldAxis(spoolState, spoolWorldOrientation)
         : getEncoderAxis(encoderComp, world);
       const wrappedAngle = spoolState
-        ? getSpoolRotationAngle(spoolState, orientationComp.quaternion)
-        : orientationAngleAroundAxis(orientationComp.quaternion, axis);
+        ? (
+          rigidBodyMemberSpoolFrame
+            ? getSpoolRotationAngle(
+              rigidBodyMemberSpoolFrame.localSpoolState,
+              rigidBodyMemberSpoolFrame.member.localOrientation,
+            )
+            : getSpoolRotationAngle(spoolState, spoolWorldOrientation)
+        )
+        : orientationAngleAroundAxis(worldOrientation, axis);
       if (!Number.isFinite(wrappedAngle)) {
         continue;
       }
