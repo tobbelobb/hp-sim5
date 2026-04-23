@@ -6,6 +6,7 @@ import {
   PositionComponent,
   RadiusComponent,
   OrientationComponent,
+  CoefficientOfFrictionComponent,
   RigidBodyComponent,
   RigidBodyMemberComponent,
 } from '../../../src/js/cable_joints_3d/ecs.js';
@@ -651,6 +652,90 @@ describe('_updateAttachmentPoints (3D)', () => {
 
     expect(pathComp.stored[1]).toBeCloseTo(initialStored, 10);
     expect(jointComp.restLength).toBeCloseTo(initialRestLength, 10);
+  });
+
+  test('rest-length clamp keeps rigid-body-member local orientation synced after spool correction', () => {
+    const world = new World();
+
+    const body = world.createEntity();
+    const spool = world.createEntity();
+    const anchor = world.createEntity();
+
+    const spoolPos = new Vector3(0.0, 0.0, 0.0);
+    const anchorPos = new Vector3(0.0, 2.0, 0.0);
+    const spoolRadius = 1.0;
+    const spoolAxisLocal = new Vector3(0.0, 0.0, 1.0);
+    const initialAngle = 0.5;
+    const initialOrientation = new Quaternion().setFromAxisAngle(spoolAxisLocal, initialAngle);
+
+    world.addComponent(body, new PositionComponent(0.0, 0.0, 0.0));
+    world.addComponent(body, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
+    world.addComponent(body, new RigidBodyComponent([spool]));
+
+    world.addComponent(anchor, new PositionComponent(anchorPos.x, anchorPos.y, anchorPos.z));
+    world.addComponent(anchor, new CableLinkComponent(anchorPos.x, anchorPos.y, anchorPos.z, null, PLANE_NORMAL));
+
+    world.addComponent(spool, new PositionComponent(spoolPos.x, spoolPos.y, spoolPos.z));
+    world.addComponent(
+      spool,
+      new OrientationComponent(
+        initialOrientation.x,
+        initialOrientation.y,
+        initialOrientation.z,
+        initialOrientation.w,
+      ),
+    );
+    world.addComponent(spool, new RadiusComponent(spoolRadius));
+    world.addComponent(spool, new CoefficientOfFrictionComponent(0.5));
+    world.addComponent(
+      spool,
+      new CableLinkComponent(
+        spoolPos.x,
+        spoolPos.y,
+        spoolPos.z,
+        new Quaternion(),
+        null,
+        spoolAxisLocal,
+      ),
+    );
+    world.addComponent(
+      spool,
+      new RigidBodyMemberComponent(
+        body,
+        spoolPos,
+        initialOrientation.clone(),
+      ),
+    );
+
+    const initialTangent = tangentFromPointToSphere(anchorPos, spoolPos, spoolRadius, PLANE_NORMAL, false);
+    const jointId = world.createEntity();
+    world.addComponent(
+      jointId,
+      new CableJointComponent(
+        anchor,
+        spool,
+        0.01,
+        initialTangent.a_attach,
+        initialTangent.a_sphere,
+      ),
+    );
+
+    const pathId = world.createEntity();
+    world.addComponent(
+      pathId,
+      new CablePathComponent(world, [jointId], ['attachment', 'rolling'], [true, false]),
+    );
+
+    _updateAttachmentPoints(world);
+
+    const orientation = world.getComponent(spool, OrientationComponent).quaternion;
+    const member = world.getComponent(spool, RigidBodyMemberComponent);
+
+    expect(orientation.w).not.toBeCloseTo(initialOrientation.w, 10);
+    expect(member.localOrientation.x).toBeCloseTo(orientation.x, 12);
+    expect(member.localOrientation.y).toBeCloseTo(orientation.y, 12);
+    expect(member.localOrientation.z).toBeCloseTo(orientation.z, 12);
+    expect(member.localOrientation.w).toBeCloseTo(orientation.w, 12);
   });
 
   test('calculateAttachmentPoints uses rigid-body world transforms after the body rotates', () => {

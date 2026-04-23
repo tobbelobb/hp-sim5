@@ -1,5 +1,4 @@
 import {
-  EncoderComponent,
   OrientationComponent,
   AngularVelocityComponent,
   MomentOfInertiaComponent,
@@ -177,11 +176,6 @@ export class StepperMotorSystem {
         : getSpoolRotationAngle(spoolState, currentOrientation);
       const worldAxis = getSpoolWorldAxis(spoolState, currentOrientation);
       const omegaAlongAxis = angVel.omega?.dot?.(worldAxis) ?? 0.0;
-      const encoder = world.getComponent(entityId, EncoderComponent);
-      if (encoder) {
-        encoder.angle = currentAngle;
-        encoder.axis = worldAxis.clone();
-      }
       let totalTorque;
 
       if (stepper.torqueMode) {

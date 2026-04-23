@@ -3,6 +3,7 @@ import { parseBridgeArgs } from '../../cli/collect_sweep_data.mjs';
 import { createGcodeBridge } from '../../../../integrations/rrf/rrfSimulatorBridge.mjs';
 import {
   DEFAULT_RRF_PORT,
+  sendHpSimReset,
   sendHpSimSpeedScale,
   startRrfSimulator,
   stopProcess,
@@ -115,6 +116,9 @@ async function main() {
     await bridgeCtx.waitForHpSimConnection(waitForWsMs);
     if (isSimulation && bridgeCtx.getReadyWsClients().length === 0) {
       throw new Error('hp-sim encoder bridge not connected (use --wait-ws or check ws port).');
+    }
+    if (args.hpSimReset) {
+      await sendHpSimReset(bridgeCtx, { quiet: args.quiet });
     }
     if (isSimulation && speedup !== 1) {
       await sendHpSimSpeedScale(bridgeCtx, speedup, { quiet: args.quiet });

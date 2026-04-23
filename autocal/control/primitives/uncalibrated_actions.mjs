@@ -40,7 +40,43 @@ export function angleToLength(angleDeg, axisIdx, mmPerDeg) {
   return angleDeg * mmPer;
 }
 
-export async function waitForStableEncoders(sendFn, motorIds, speedup, options = {}) {
+function anglesToLengths(anglesDeg, mmPerDeg) {
+  if (!Array.isArray(anglesDeg)) {
+    return [];
+  }
+  return anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+}
+
+function normalizeWaitForStableEncodersArgs(speedupOrOptions, options = {}) {
+  const hasOptionsBag = (
+    speedupOrOptions
+    && typeof speedupOrOptions === 'object'
+    && !Array.isArray(speedupOrOptions)
+  );
+  if (!hasOptionsBag) {
+    return {
+      speedup: speedupOrOptions,
+      options: options && typeof options === 'object' ? options : {},
+    };
+  }
+
+  const normalizedOptions = {
+    ...speedupOrOptions,
+    ...(options && typeof options === 'object' ? options : {}),
+  };
+  const normalizedSpeedup = normalizedOptions.speedup;
+  delete normalizedOptions.speedup;
+  return {
+    speedup: normalizedSpeedup,
+    options: normalizedOptions,
+  };
+}
+
+export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions, options = {}) {
+  const {
+    speedup,
+    options: normalizedOptions,
+  } = normalizeWaitForStableEncodersArgs(speedupOrOptions, options);
   const debugState = getDebugState(sendFn);
   if (debugState?.enabled) {
     const callSite = parseCallSite(new Error().stack, { skip: 1 });
@@ -54,7 +90,7 @@ export async function waitForStableEncoders(sendFn, motorIds, speedup, options =
     timeoutMs = null,
     sleepFn = baseSleep,
     nowFn = () => Date.now(),
-  } = options;
+  } = normalizedOptions;
   const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
   const pollMs = pollIntervalMs / timeScale;
   const windowMs = Math.max(pollMs * 2, stableWindowMs / timeScale);
@@ -501,7 +537,7 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
   }
 
   const stableBefore = await waitForStableEncoders(sendFn, motorIds,  speedup, settleOptions);
-  const lengths = stableBefore.anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+  const lengths = anglesToLengths(stableBefore.anglesDeg, mmPerDeg);
   const order = calculateReturnOrder({ fixedAnchors, currentLengths: lengths });
   const forbidden = new Set(forbiddenForceAnchors ?? []);
 
@@ -511,7 +547,7 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
       throw new Error(`Missing axis mapping for anchor ${anchorIdx}`);
     }
     const stable = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
-    const currentLengths = stable.anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+    const currentLengths = anglesToLengths(stable.anglesDeg, mmPerDeg);
     const fixedIdx = pickClosestToOrigin(currentLengths, new Set([anchorIdx]));
     const modes = currentLengths.map((_, idx) => {
       if (idx === anchorIdx || idx === fixedIdx || forbidden.has(idx)) {
@@ -540,7 +576,8 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
     }
   }
 
-  return getCurrentLengths(sendFn, motorIds, mmPerDeg);
+  const stableAfter = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+  return anglesToLengths(stableAfter.anglesDeg, mmPerDeg);
 }
 
 export async function returnMotorsToOriginAllAtOnce(sendFn, options = {}) {
@@ -561,7 +598,7 @@ export async function returnMotorsToOriginAllAtOnce(sendFn, options = {}) {
   }
 
   const stableBefore = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
-  const lengths = stableBefore.anglesDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+  const lengths = anglesToLengths(stableBefore.anglesDeg, mmPerDeg);
   const moveParts = [];
   for (let idx = 0; idx < motorIds.length; idx += 1) {
     const axis = axes[idx];
@@ -586,5 +623,6 @@ export async function returnMotorsToOriginAllAtOnce(sendFn, options = {}) {
     });
   }
 
-  return getCurrentLengths(sendFn, motorIds, mmPerDeg);
+  const stableAfter = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+  return anglesToLengths(stableAfter.anglesDeg, mmPerDeg);
 }

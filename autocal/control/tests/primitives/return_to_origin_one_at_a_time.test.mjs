@@ -42,4 +42,56 @@ describe('returnMotorsToOriginOneAtATime', () => {
 
     expect(axesOrder).toEqual(['A', 'C', 'B']);
   });
+
+  test('waits for the final return move to settle before reporting lengths', async () => {
+    let moved = false;
+    let postMoveReads = 0;
+    const send = async (line) => {
+      if (line.startsWith('G1 H2')) {
+        moved = true;
+        return { reply: '' };
+      }
+      if (line.startsWith('M569.3')) {
+        if (!moved) {
+          return { reply: '10' };
+        }
+        postMoveReads += 1;
+        if (postMoveReads === 1) {
+          return { reply: '3' };
+        }
+        return { reply: '0' };
+      }
+      return { reply: '' };
+    };
+    let nowMs = 0;
+    const delayFn = (ms = 0) => {
+      nowMs += ms;
+      return Promise.resolve();
+    };
+    const sleepFn = (ms = 0) => {
+      nowMs += ms;
+      return Promise.resolve();
+    };
+    const nowFn = () => nowMs;
+
+    const lengths = await returnMotorsToOriginOneAtATime(send, {
+      motorIds: ['40.0'],
+      axes: ['A'],
+      mmPerDeg: [1],
+      feed: 100,
+      speedup: 100,
+      midForce: 0.01,
+      delayFn,
+      settleOptions: {
+        pollIntervalMs: 1,
+        stableWindowMs: 2,
+        toleranceDeg: 0.5,
+        sleepFn,
+        nowFn,
+      },
+    });
+
+    expect(lengths).toEqual([0]);
+    expect(postMoveReads).toBeGreaterThan(1);
+  });
 });

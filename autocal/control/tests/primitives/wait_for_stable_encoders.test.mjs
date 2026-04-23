@@ -13,6 +13,19 @@ describe('waitForStableEncoders', () => {
     expect(result.samples).toBeGreaterThanOrEqual(2);
   });
 
+  test('accepts an options object in the third argument slot', async () => {
+    const send = async () => ({ reply: '0 0' });
+
+    const result = await waitForStableEncoders(send, ['40.0', '41.0'], {
+      speedup: 10,
+      pollIntervalMs: 10,
+      stableWindowMs: 20,
+    });
+
+    expect(result.anglesDeg).toEqual([0, 0]);
+    expect(result.samples).toBeGreaterThanOrEqual(2);
+  });
+
   test('treats 10 seconds of vibration without drift as stable', async () => {
     const readings = [-0.5, 0.5, -0.5, 0.5, -0.5, 0.5, -0.5, 0.5, -0.5, 0.5, -0.5];
     let pollIdx = 0;

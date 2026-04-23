@@ -11,12 +11,35 @@ function buildWsHelpers({ wsPort, quiet = false, onClientChange }) {
   let waitingForClientNoticePrinted = false;
   const pendingEncoderRequests = new Map();
   let encoderRequestSeq = 1;
+  let encoderClientSeq = 1;
+  let preferredEncoderClient = null;
+  const clientSeqBySocket = new WeakMap();
 
   const getReadyWsClients = () => (wss
     ? Array.from(wss.clients).filter((client) => client.readyState === 1)
     : []);
 
   const hasReadyWsClients = () => getReadyWsClients().length > 0;
+
+  const getPreferredEncoderClient = () => {
+    const readyClients = getReadyWsClients();
+    if (readyClients.length === 0) {
+      preferredEncoderClient = null;
+      return null;
+    }
+    if (preferredEncoderClient && readyClients.includes(preferredEncoderClient)) {
+      return preferredEncoderClient;
+    }
+    preferredEncoderClient = readyClients.reduce((best, client) => {
+      if (!best) {
+        return client;
+      }
+      const bestSeq = clientSeqBySocket.get(best) ?? 0;
+      const clientSeq = clientSeqBySocket.get(client) ?? 0;
+      return clientSeq >= bestSeq ? client : best;
+    }, null);
+    return preferredEncoderClient;
+  };
 
   const enqueuePendingPayload = (payload) => {
     if (!wss || !payload) {
@@ -80,23 +103,19 @@ function buildWsHelpers({ wsPort, quiet = false, onClientChange }) {
   };
 
   const sendEncoderRequest = (axes, timeoutMs = DEFAULT_ENCODER_TIMEOUT_MS) => {
-    const readyClients = getReadyWsClients();
-    if (readyClients.length === 0) {
+    const encoderClient = getPreferredEncoderClient();
+    if (!encoderClient) {
       throw new Error('Message not received');
     }
     const requestId = encoderRequestSeq++;
     const payload = { type: 'encoder_request', requestId, axes };
     const data = JSON.stringify(payload);
-    readyClients.forEach((client) => {
-      try {
-        client.send(data);
-      } catch (_err) {
-        /* ignore send errors; timeout will handle missing responses */
-      }
-    });
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         pendingEncoderRequests.delete(requestId);
+        if (preferredEncoderClient === encoderClient) {
+          preferredEncoderClient = null;
+        }
         reject(new Error('Message not received'));
       }, Math.max(1, timeoutMs));
       pendingEncoderRequests.set(requestId, {
@@ -111,17 +130,32 @@ function buildWsHelpers({ wsPort, quiet = false, onClientChange }) {
           reject(err);
         },
       });
+      try {
+        encoderClient.send(data);
+      } catch (_err) {
+        clearTimeout(timeout);
+        pendingEncoderRequests.delete(requestId);
+        if (preferredEncoderClient === encoderClient) {
+          preferredEncoderClient = null;
+        }
+        reject(new Error('Message not received'));
+      }
     });
   };
 
   if (wss) {
     wss.on('connection', (socket) => {
+      clientSeqBySocket.set(socket, encoderClientSeq++);
+      preferredEncoderClient = socket;
       flushPendingPayloads();
       if (onClientChange) {
         onClientChange(true);
       }
       socket.on('message', (data) => handleIncomingWsMessage(data));
       socket.on('close', () => {
+        if (preferredEncoderClient === socket) {
+          preferredEncoderClient = null;
+        }
         if (onClientChange) {
           onClientChange(hasReadyWsClients());
         }
