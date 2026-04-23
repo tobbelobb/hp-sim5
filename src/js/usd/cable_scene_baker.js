@@ -663,7 +663,9 @@ function resolvePath(pathPrim, pathPath, index, transformCache, bodyCache, seenJ
     throw new Error(`${pathPath}: cablePath:clockwise must match cablePath:linkTypes length.`);
   }
 
-  const initPolicy = normalizeInitPolicy(getAttribute(pathPrim, 'cablePath:initPolicy'));
+  const initPolicy = options.deriveAll === true
+    ? DERIVE_ALL_POLICY
+    : normalizeInitPolicy(getAttribute(pathPrim, 'cablePath:initPolicy'));
   const storedValues = normalizeStoredValues(pathPrim, linkTypes.length);
   const storedModes = normalizeStoredModes(pathPrim, linkTypes.length);
   const halfWidthOverride = options.cablePathHalfWidthOverride;

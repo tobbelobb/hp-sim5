@@ -1670,7 +1670,7 @@ function initHpSim() {
   }
 
   function bakeUsdaSourceForLineLayering(sourceText, enabled) {
-    const options = enabled ? {} : { cablePathHalfWidthOverride: 0.0 };
+    const options = enabled ? {} : { cablePathHalfWidthOverride: 0.0, deriveAll: true };
     return bakeCableSceneUsdaSource(sourceText, options).source;
   }
 
