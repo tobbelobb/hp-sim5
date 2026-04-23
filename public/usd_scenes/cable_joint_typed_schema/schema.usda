@@ -131,11 +131,10 @@ class "CablePathAPI" (
         """
     )
 
-    uniform double stiffness = 1000.0 (
+    uniform double cablePath:stiffness = 1000.0 (
         doc = """Stiffness of the cable path constraint in N/m.
 
         Higher values make the path resist stretching more strongly.
-        This stays unnamespaced to match the existing authored scenes.
         """
     )
 

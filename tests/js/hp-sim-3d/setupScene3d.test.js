@@ -285,7 +285,7 @@ describe('slideprinter 3D setupScene', () => {
         if (attr === 'cablePath:linkTypes') return ['attachment', 'attachment'];
         if (attr === 'cablePath:clockwise') return [true, true];
         if (attr === 'cablePath:stored') return [0.0, 0.0];
-        if (attr === 'stiffness') return 1000.0;
+        if (attr === 'cablePath:stiffness') return 1000.0;
         if (attr === 'cablePath:halfWidth') return 0.001;
         if (attr === 'cablePath:damping') return 0.125;
       }

@@ -16,12 +16,13 @@ describe('CablePathAPI schema', () => {
     expect(schemaText).toContain('token[] cablePath:storedMode');
     expect(schemaText).toContain('token cablePath:initPolicy = "deriveMissing"');
     expect(schemaText).toContain('double cablePath:totalLength');
-    expect(schemaText).toContain('double stiffness = 1000.0');
+    expect(schemaText).toContain('double cablePath:stiffness = 1000.0');
     expect(schemaText).toContain('double cablePath:damping = 0.0');
     expect(schemaText).toContain('double cablePath:halfWidth = 0.0');
     expect(schemaText).toContain('double cablePath:tension = 0.0');
 
     expect(schemaText).not.toContain('rel cableJoints[]');
     expect(schemaText).not.toContain('double[] storedLength');
+    expect(schemaText).not.toContain('double stiffness = 1000.0');
   });
 });

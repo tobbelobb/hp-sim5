@@ -173,6 +173,72 @@ def Xform "World"
     expect(getAttribute(pathPrim, 'cablePath:storedMode')).toEqual(['manual', 'manual', 'manual']);
   });
 
+  test('can override authored cablePath:halfWidth while baking', async () => {
+    const source = `#usda 1.0
+
+def Xform "World"
+{
+    def Xform "Scene"
+    {
+        def Xform "AnchorL"
+        {
+            double3 xformOp:translate = (-2, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Circle "Wheel"
+        {
+            double radius = 1
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "AnchorR"
+        {
+            double3 xformOp:translate = (2, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def CableJoint "JointL"
+        {
+            custom rel physics:body0 = </World/Scene/AnchorL>
+            custom rel physics:body1 = </World/Scene/Wheel>
+        }
+
+        def CableJoint "JointR"
+        {
+            custom rel physics:body0 = </World/Scene/Wheel>
+            custom rel physics:body1 = </World/Scene/AnchorR>
+        }
+
+        def Xform "CablePathA" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 1, 1]
+            custom rel cablePath:joints = [</World/Scene/JointL>, </World/Scene/JointR>]
+            custom token[] cablePath:linkTypes = ["attachment", "rolling", "attachment"]
+            custom token[] cablePath:storedMode = ["manual", "auto", "manual"]
+            custom double[] cablePath:stored = [0, 0, 0]
+            custom double cablePath:halfWidth = 0.25
+        }
+    }
+}
+`;
+
+    const defaultBaked = bakeCableSceneUsdaSource(source);
+    const overrideBaked = bakeCableSceneUsdaSource(source, { cablePathHalfWidthOverride: 0.0 });
+    const defaultStage = await UsdOpen(defaultBaked.source);
+    const overrideStage = await UsdOpen(overrideBaked.source);
+    const defaultPath = defaultStage.GetPrimAtPath('/World/Scene/CablePathA');
+    const overridePath = overrideStage.GetPrimAtPath('/World/Scene/CablePathA');
+
+    expect(getAttribute(overridePath, 'cablePath:halfWidth')).toBe(0.0);
+    expect(getAttribute(overridePath, 'cablePath:stored')[1]).toBeLessThan(
+      getAttribute(defaultPath, 'cablePath:stored')[1]
+    );
+  });
+
   test('deriveAll overwrites authored joint values and derivable stored values', async () => {
     const source = `#usda 1.0
 

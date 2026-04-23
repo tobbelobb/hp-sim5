@@ -117,7 +117,7 @@ def Xform "World"
             custom double cablePath:halfWidth = 0.0025
             custom double[] cablePath:stored = [0, 0.18856494486496805, 0.06274932338455928, 0]
             custom double cablePath:totalLength = 1.600225609524756
-            custom double stiffness = 200
+            custom double cablePath:stiffness = 200
             custom double cablePath:damping = 0.0
         }
 

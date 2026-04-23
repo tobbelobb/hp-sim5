@@ -963,7 +963,7 @@ export function setupScene(world, stage, canvas, options = {}) {
             const linkTypes = getAttribute(prim, "cablePath:linkTypes");
             const clockwise = getAttribute(prim, "cablePath:clockwise");
             const stored = getAttribute(prim, "cablePath:stored");
-            const stiffness = getAttribute(prim, "stiffness");
+            const stiffness = getAttribute(prim, "cablePath:stiffness");
             const cableHalfWidth = getAttribute(prim, "cablePath:halfWidth");
             const damping = readNumericAttribute(prim, "cablePath:damping");
 

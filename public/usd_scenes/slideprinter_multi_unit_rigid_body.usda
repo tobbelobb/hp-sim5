@@ -341,7 +341,7 @@ def Xform "World"
             custom rel cablePath:joints = [</World/SlideprinterScene/JointAL_0>, </World/SlideprinterScene/JointAL_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [1.0, 0 ,0]
-            custom double stiffness = 20000.0
+            custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
         }
@@ -354,7 +354,7 @@ def Xform "World"
             custom rel cablePath:joints = [</World/SlideprinterScene/JointAR_0>, </World/SlideprinterScene/JointAR_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [1.0, 0, 0]
-            custom double stiffness = 20000.0
+            custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
         }
@@ -368,7 +368,7 @@ def Xform "World"
             custom rel cablePath:joints = [</World/SlideprinterScene/JointBL_0>, </World/SlideprinterScene/JointBL_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [1.0, 0, 0]
-            custom double stiffness = 20000.0
+            custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
         }
@@ -382,7 +382,7 @@ def Xform "World"
             custom rel cablePath:joints = [</World/SlideprinterScene/JointBR_0>, </World/SlideprinterScene/JointBR_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [1.0, 0, 0]
-            custom double stiffness = 20000.0
+            custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
         }
@@ -396,7 +396,7 @@ def Xform "World"
             custom rel cablePath:joints = [</World/SlideprinterScene/JointCL_0>, </World/SlideprinterScene/JointCL_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [1.0, 0, 0]
-            custom double stiffness = 20000.0
+            custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
         }
@@ -410,7 +410,7 @@ def Xform "World"
             custom rel cablePath:joints = [</World/SlideprinterScene/JointCR_0>, </World/SlideprinterScene/JointCR_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [1.0, 0, 0]
-            custom double stiffness = 20000.0
+            custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
         }

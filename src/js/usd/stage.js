@@ -23,6 +23,10 @@ export async function Open(pathOrSource) {
         return text;
       });
 
+  return OpenText(source);
+}
+
+export function OpenText(source) {
   const ast = parseUsdaAst(source);
   const primIndex = indexPrims(ast.statements);
 

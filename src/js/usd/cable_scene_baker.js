@@ -650,7 +650,7 @@ function resolveStoredValue(linkIndex, pathContext) {
   return 0.0;
 }
 
-function resolvePath(pathPrim, pathPath, index, transformCache, bodyCache, seenJoints) {
+function resolvePath(pathPrim, pathPath, index, transformCache, bodyCache, seenJoints, options = {}) {
   const jointPaths = getRelationship(pathPrim, 'cablePath:joints');
   const linkTypes = normalizeToPlainArray(getAttribute(pathPrim, 'cablePath:linkTypes')) ?? [];
   const clockwise = (normalizeToPlainArray(getAttribute(pathPrim, 'cablePath:clockwise')) ?? [])
@@ -666,7 +666,11 @@ function resolvePath(pathPrim, pathPath, index, transformCache, bodyCache, seenJ
   const initPolicy = normalizeInitPolicy(getAttribute(pathPrim, 'cablePath:initPolicy'));
   const storedValues = normalizeStoredValues(pathPrim, linkTypes.length);
   const storedModes = normalizeStoredModes(pathPrim, linkTypes.length);
-  const halfWidth = Math.max(0.0, Number(getAttribute(pathPrim, 'cablePath:halfWidth') ?? 0.0));
+  const halfWidthOverride = options.cablePathHalfWidthOverride;
+  const authoredHalfWidth = Number(getAttribute(pathPrim, 'cablePath:halfWidth') ?? 0.0);
+  const halfWidth = Math.max(0.0, Number.isFinite(halfWidthOverride)
+    ? halfWidthOverride
+    : (Number.isFinite(authoredHalfWidth) ? authoredHalfWidth : 0.0));
 
   const jointDefs = jointPaths.map((jointPath) => {
     const jointPrim = index[jointPath];
@@ -742,6 +746,9 @@ function resolvePath(pathPrim, pathPath, index, transformCache, bodyCache, seenJ
     'custom',
   );
   setDeclaration(pathPrim, 'cablePath:initPolicy', MANUAL_MODE, 'token', 'custom');
+  if (Number.isFinite(halfWidthOverride)) {
+    setDeclaration(pathPrim, 'cablePath:halfWidth', halfWidth, 'double', 'custom');
+  }
 
   return {
     pathPath,
@@ -750,7 +757,7 @@ function resolvePath(pathPrim, pathPath, index, transformCache, bodyCache, seenJ
   };
 }
 
-export function bakeCableSceneAst(ast) {
+export function bakeCableSceneAst(ast, options = {}) {
   const bakedAst = cloneAst(ast);
   const index = indexPrims(bakedAst.statements);
   const transformCache = new Map();
@@ -768,6 +775,7 @@ export function bakeCableSceneAst(ast) {
     transformCache,
     bodyCache,
     seenJoints,
+    options,
   ));
 
   return {
@@ -776,9 +784,9 @@ export function bakeCableSceneAst(ast) {
   };
 }
 
-export function bakeCableSceneUsdaSource(sourceText) {
+export function bakeCableSceneUsdaSource(sourceText, options = {}) {
   const parsedAst = parseUsdaAst(sourceText);
-  const baked = bakeCableSceneAst(parsedAst);
+  const baked = bakeCableSceneAst(parsedAst, options);
   return {
     ...baked,
     source: serializeUsdaSceneAst(baked.ast),
