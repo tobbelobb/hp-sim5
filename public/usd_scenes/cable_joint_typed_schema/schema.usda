@@ -56,22 +56,6 @@ class CableJoint "CableJoint" (
         The cable constraint acts between localPos0 on body0 and this point.
         """
     )
-
-    double stiffness = 1000.0 (
-        doc = """Stiffness of the cable constraint in N/m.
-
-        Higher values create a stiffer cable that resists stretching more strongly.
-        Lower values allow more elastic behavior.
-        """
-    )
-
-    bool enabled = true (
-        doc = """Whether this cable joint constraint is active.
-
-        Disabled cable joints do not participate in simulation but remain
-        in the scene for potential re-enabling later.
-        """
-    )
 }
 
 class "CablePathAPI" (
@@ -122,7 +106,7 @@ class "CablePathAPI" (
         """
     )
 
-    double cablePath:totalLength (
+    uniform double cablePath:totalLength (
         doc = """Total physical length of the cable in the path.
 
         This is the sum of all segment rest lengths plus any stored lengths.
@@ -130,7 +114,7 @@ class "CablePathAPI" (
         """
     )
 
-    double stiffness = 1000.0 (
+    uniform double stiffness = 1000.0 (
         doc = """Stiffness of the cable path constraint in N/m.
 
         Higher values make the path resist stretching more strongly.
@@ -138,7 +122,7 @@ class "CablePathAPI" (
         """
     )
 
-    double cablePath:damping = 0.0 (
+    uniform double cablePath:damping = 0.0 (
         doc = """XPBD damping coefficient for the cable path.
 
         Used by the cable constraint solver together with compliance to
@@ -146,18 +130,11 @@ class "CablePathAPI" (
         """
     )
 
-    double cablePath:halfWidth = 0.0 (
+    uniform double cablePath:halfWidth = 0.0 (
         doc = """Half the rendered and effective cable width in world units.
 
         Used by path rendering and by spool/wrap calculations that account
         for the cable's finite cross section.
-        """
-    )
-
-    bool cablePath:enabled = true (
-        doc = """Whether this cable path is active.
-
-        When disabled, all CableJoint constraints in the path are deactivated.
         """
     )
 
