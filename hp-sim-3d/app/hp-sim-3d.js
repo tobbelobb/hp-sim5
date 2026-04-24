@@ -355,7 +355,7 @@ function initHpSim() {
       },
     ])
   );
-  const defaultUsdaKey = HP4_USDA_KEY;
+  const defaultUsdaKey = HP3_USDA_KEY;
   const presetOptionInputs = new Map();
   const presetOptionLabels = new Map();
   const presetOptionColorChips = new Map();
