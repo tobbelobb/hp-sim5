@@ -305,7 +305,6 @@ def Xform "World"
         )
         {
             custom bool[] cablePath:clockwise = [1, 1, 1]
-            custom bool cablePath:enabled = 1
             custom rel cablePath:joints = [</World/SlideprinterScene/JointBL_0>, </World/SlideprinterScene/JointBL_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [1.0, 0, 0]
@@ -321,7 +320,6 @@ def Xform "World"
         )
         {
             custom bool[] cablePath:clockwise = [1, 1, 1]
-            custom bool cablePath:enabled = 1
             custom rel cablePath:joints = [</World/SlideprinterScene/JointBR_0>, </World/SlideprinterScene/JointBR_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [1.0, 0, 0]
@@ -337,7 +335,6 @@ def Xform "World"
         )
         {
             custom bool[] cablePath:clockwise = [1, 1, 1]
-            custom bool cablePath:enabled = 1
             custom rel cablePath:joints = [</World/SlideprinterScene/JointCL_0>, </World/SlideprinterScene/JointCL_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [1.0, 0, 0]
@@ -353,7 +350,6 @@ def Xform "World"
         )
         {
             custom bool[] cablePath:clockwise = [1, 1, 1]
-            custom bool cablePath:enabled = 1
             custom rel cablePath:joints = [</World/SlideprinterScene/JointCR_0>, </World/SlideprinterScene/JointCR_1>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
             custom double[] cablePath:stored = [1.0, 0, 0]
