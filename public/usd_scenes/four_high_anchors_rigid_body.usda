@@ -358,7 +358,7 @@ def Xform "World"
             custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
-            custom token[] cablePath:storedMode = ["manual", "manual"]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
         }
 
@@ -373,7 +373,7 @@ def Xform "World"
             custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
-            custom token[] cablePath:storedMode = ["manual", "manual"]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
         }
 
@@ -388,7 +388,7 @@ def Xform "World"
             custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
-            custom token[] cablePath:storedMode = ["manual", "manual"]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
         }
 
@@ -403,7 +403,7 @@ def Xform "World"
             custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
-            custom token[] cablePath:storedMode = ["manual", "manual"]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
         }
 
@@ -418,7 +418,7 @@ def Xform "World"
             custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
-            custom token[] cablePath:storedMode = ["manual", "manual"]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
         }
 
@@ -433,7 +433,7 @@ def Xform "World"
             custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
-            custom token[] cablePath:storedMode = ["manual", "manual"]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
         }
 
@@ -448,7 +448,7 @@ def Xform "World"
             custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
-            custom token[] cablePath:storedMode = ["manual", "manual"]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
         }
 
@@ -463,7 +463,7 @@ def Xform "World"
             custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
-            custom token[] cablePath:storedMode = ["manual", "manual"]
+            custom token[] cablePath:storedMode = ["manual", "manual", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
         }
 
