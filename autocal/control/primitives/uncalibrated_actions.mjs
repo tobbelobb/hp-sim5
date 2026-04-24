@@ -217,6 +217,7 @@ export async function getCurrentLengths(sendFn, motorIds, mmPerDeg) {
 }
 
 export async function primeEncoders(sendFn, { motorIds, axes } = {}) {
+  console.log("PRIMING ENCODERS!");
   await sendFn(`M569.3 P${motorIds.join(':')} S`);
 }
 
@@ -522,7 +523,7 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
     axes,
     mmPerDeg,
     feed,
-    speedup = 1,
+    speedup,
     delayFn,
     midForce = DEFAULT_MID_FORCE_N,
     fixedAnchors = [],

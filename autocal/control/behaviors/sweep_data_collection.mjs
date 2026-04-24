@@ -1315,7 +1315,7 @@ export async function collectSweepData(send, context) {
   }
   attachDebugState(send, { mmPerDeg });
 
-  await primeEncoders(send, { motorIds, axes: machineConfig.axes });
+  //await primeEncoders(send, { motorIds, axes: machineConfig.axes });
 
   let forceTuningMeta = null;
   if (autoTuneForce) {
@@ -1360,7 +1360,7 @@ export async function collectSweepData(send, context) {
     modes: motorIds.map(() => forceLow),
   });
   await waitForStableEncoders(send, motorIds, speedup);
-  await primeEncoders(send, { motorIds, axes: machineConfig.axes });
+  //await primeEncoders(send, { motorIds, axes: machineConfig.axes });
   await applyForceModeState(send, {
     motorIds,
     modes: motorIds.map(() => 'position'),
@@ -1611,6 +1611,7 @@ export async function collectSweepData(send, context) {
         mmPerDeg,
         feed,
         speedup,
+        midForce = forceTuning.force_mid_n,
       });
       console.log('Returned all motors to encoder origin.');
     } catch (err) {
