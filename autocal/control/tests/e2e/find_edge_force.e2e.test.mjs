@@ -78,7 +78,7 @@ async function main() {
 
   const isSimulation = argv.includes('--sim') || argv.includes('--simulation');
   const idleForce = parseNumberArg(argv, '--force-low', 0.02);
-  const capForceLimit = parseNumberArg(argv, '--force-cap', 100.0);
+  const capForceLimit = parseNumberArg(argv, '--force-cap', 20.0);
   const driveAnchor = parseIntegerArg(argv, '--drive-anchor', 0);
   const fixedAnchorArg = parseIntegerArg(argv, '--fixed-anchor', null);
   const feed = Number.isFinite(parseFloat(args.feed)) ? parseFloat(args.feed) : 1400;
