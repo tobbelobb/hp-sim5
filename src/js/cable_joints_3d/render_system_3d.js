@@ -776,12 +776,12 @@ export class RenderSystem3D {
     // Add thin blue axes
     const axesGeometry = new THREE.BufferGeometry();
     const axesPositions = new Float32Array([
-        0, 0, 0, 1, 0, 0, // X
-        0, 0, 0, 0, 1, 0, // Y
-        0, 0, 0, 0, 0, 1  // Z
+        -2.5, 0, 0, 2.5, 0, 0, // X
+        0, -2.5, 0, 0, 2.5, 0, // Y
+        0, 0, -2.5, 0, 0, 2.5  // Z
     ]);
     axesGeometry.setAttribute('position', new THREE.BufferAttribute(axesPositions, 3));
-    const axesMaterial = new THREE.LineBasicMaterial({ color: 0x0000ff });
+    const axesMaterial = new THREE.LineBasicMaterial({ color: 0xDDDDFF, transparent: true, opacity: 0.05});
     const axes = new THREE.LineSegments(axesGeometry, axesMaterial);
     axes.frustumCulled = false;
     axes.userData.ownsGeometry = true;
