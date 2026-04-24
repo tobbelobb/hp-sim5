@@ -1101,7 +1101,7 @@ export function setupScene(world, stage, canvas, options = {}) {
           planeNormal: DEFAULT_PLANE_NORMAL,
           targetX: 0.0,
           targetY: 0.0,
-          cameraZ: 2.2 / Math.max(0.2, inputSys.scaleMultiplier),
+          cameraZ: 2.2 / Math.max(0.02, inputSys.scaleMultiplier),
           initialOrbitAzimuth: -Math.PI * 0.25,
           initialOrbitPolar: 1.05,
           controlsEnabled: false,

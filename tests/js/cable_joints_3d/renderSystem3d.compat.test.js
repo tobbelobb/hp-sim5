@@ -95,7 +95,6 @@ function createCompatStub(canvasOverrides = {}) {
   system._baseViewTarget = new THREE.Vector3(0.0, 0.0, 0.0);
   system._fixedCameraPosition = new THREE.Vector3();
   system._fixedCameraQuaternion = new THREE.Quaternion();
-  system._setOrbitFromOffset = RenderSystem3D.prototype._setOrbitFromOffset;
   system._cameraDistanceForScale = RenderSystem3D.prototype._cameraDistanceForScale;
   system._getViewTarget = RenderSystem3D.prototype._getViewTarget;
   system._clientToCanvasPixels = RenderSystem3D.prototype._clientToCanvasPixels;

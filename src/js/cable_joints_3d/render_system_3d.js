@@ -33,8 +33,8 @@ const ORIENTATION_BACK_COLOR = '#2a3542';
 const KNOT_MARKER_COLOR = '#ff3b30';
 const KNOT_MARKER_RADIUS = 0.002;
 const DEFAULT_BACKGROUND_COLOR = 0x1b2b3c;
-const PRINT_SURFACE_Z = -0.0005;
-const PRINT_SURFACE_OUTLINE_Z = 0.0008;
+const PRINT_SURFACE_Z = 0.0;
+const PRINT_SURFACE_OUTLINE_Z = 0.0;
 const PRINT_SURFACE_MIN_HALF_EXTENT = 0.18;
 const PRINT_SURFACE_MARGIN = 0.08;
 const PRINT_SURFACE_COLOR = 0x243248;
@@ -56,9 +56,9 @@ const DEFAULT_TRACE_MARKER_COLOR = '#2dd4bf';
 const DEFAULT_NAV_CURSOR_COLOR = '#ffd34d';
 const DEFAULT_TRACE_POINT_SIZE = 3;
 const DEFAULT_EXTRUSION_POINT_SIZE = 2;
-const DEFAULT_TRACE_Z = 0.0025;
+const DEFAULT_TRACE_Z = 0.0;
 const DEFAULT_MARKER_Z = 0.005;
-const DEFAULT_NAV_CURSOR_MIN_SIZE = 0.012;
+const DEFAULT_NAV_CURSOR_MIN_SIZE = 0.0012;
 const DEFAULT_NAV_CURSOR_PIXEL_SIZE = 18;
 const DEFAULT_ORBIT_AZIMUTH = -Math.PI * 0.25;
 const DEFAULT_ORBIT_POLAR = 1.05;
@@ -607,7 +607,7 @@ export class RenderSystem3D {
     this._baseViewTarget = new THREE.Vector3(targetX, targetY, 0);
     this._baseCameraOffset = this.camera.position.clone().sub(this._baseViewTarget);
     this._baseCameraDistance = Math.max(
-      0.1,
+      0.001,
       Number.isFinite(options.cameraDistance) ? options.cameraDistance : this._baseCameraOffset.length()
     );
     this.viewScaleMultiplier = 1.0;
@@ -2646,18 +2646,6 @@ export class RenderSystem3D {
     }
 
     return maxAbs + PRINT_SURFACE_MARGIN;
-  }
-
-  _setOrbitFromOffset(offset) {
-    const distance = Math.max(0.1, offset.length());
-    const radialXY = Math.hypot(offset.x, offset.y);
-    this.orbitAzimuth = Math.atan2(offset.y, offset.x);
-    this.orbitPolar = THREE.MathUtils.clamp(
-      Math.atan2(radialXY, offset.z),
-      this.orbitMinPolarAngle,
-      this.orbitMaxPolarAngle
-    );
-    this._baseCameraDistance = distance;
   }
 
   _cameraDistanceForScale(scaleMultiplier = this.viewScaleMultiplier) {
