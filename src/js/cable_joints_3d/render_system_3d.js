@@ -597,7 +597,7 @@ export class RenderSystem3D {
     const height = Math.max(1, canvas.clientHeight || canvas.height || 1);
     this.renderer.setSize(width, height, false);
 
-    this.camera = new THREE.PerspectiveCamera(48, width / height, 0.01, 30.0);
+    this.camera = new THREE.PerspectiveCamera(48, width / height, 0.0001, 30.0);
     const targetX = Number.isFinite(options.targetX) ? options.targetX : 0.0;
     const targetY = Number.isFinite(options.targetY) ? options.targetY : 0.0;
     const camZ = Number.isFinite(options.cameraZ) ? options.cameraZ : 2.2;
@@ -662,7 +662,7 @@ export class RenderSystem3D {
       this.controls.enableZoom = options.enableZoom ?? false;
       this.controls.minPolarAngle = Number.isFinite(options.minPolarAngle) ? options.minPolarAngle : 0.0;
       this.controls.maxPolarAngle = Number.isFinite(options.maxPolarAngle) ? options.maxPolarAngle : Math.PI;
-      this.controls.minDistance = 0.45;
+      this.controls.minDistance = 0.0001;
       this.controls.maxDistance = 8.0;
       this.controls.target.set(targetX, targetY, 0);
       if (options.rotateWithRightMouse || this.rotateWithShiftRightMouse) {
@@ -2661,8 +2661,8 @@ export class RenderSystem3D {
   }
 
   _cameraDistanceForScale(scaleMultiplier = this.viewScaleMultiplier) {
-    const scale = Math.max(0.05, scaleMultiplier);
-    return Math.max(0.08, this._baseCameraDistance / scale);
+    const scale = scaleMultiplier;
+    return this._baseCameraDistance / scale;
   }
 
   _getViewTarget() {
