@@ -202,6 +202,16 @@ DATASETS = [
         true_radii=SIM_3D_TRUE_RADII,
         extra_args=("--verbose", "--r0-bounds", "39,40"),
     ),
+    DatasetSpec(
+        name="23_april_2026",
+        machine_type="hangprinter_4",
+        base_radii="30",
+        buildup_factor="0.636619",
+        find_radii="global",
+        true_anchors=SIM_3D_TRUE_ANCHORS,
+        true_radii=SIM_3D_TRUE_RADII,
+        extra_args=("--verbose", "--r0-bounds", "39,40"),
+    ),
 ]
 
 
