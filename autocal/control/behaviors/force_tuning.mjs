@@ -4,7 +4,6 @@ import {
   applyForceModeState,
   getCurrentLengths,
   primeEncoders,
-  returnMotorsToOriginAllAtOnce,
   returnMotorsToOriginOneAtATime,
   waitForStableEncoders,
 } from '../primitives/uncalibrated_actions.mjs';
@@ -157,7 +156,7 @@ export async function findMinimumMovingForce(sendFn, options = {}) {
     baseLow = DEFAULT_FORCE_LOW_N,
     capForceLimit = AUTO_TUNE_MAX_FORCE_N,
     trialFn = null,
-    returnToOriginFn = returnMotorsToOriginAllAtOnce,
+    returnToOriginFn = returnMotorsToOriginOneAtATime,
     maxBracketSteps = AUTO_TUNE_MAX_BRACKET_STEPS,
     maxBisectSteps = AUTO_TUNE_MAX_BISECT_STEPS,
     absTolerance = AUTO_TUNE_ABSOLUTE_TOLERANCE,

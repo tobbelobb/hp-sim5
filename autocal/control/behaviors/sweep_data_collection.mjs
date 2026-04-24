@@ -20,7 +20,7 @@ import {
   collectDataPoint,
   getCurrentLengths,
   primeEncoders,
-  returnMotorsToOriginAllAtOnce,
+  returnMotorsToOriginOneAtATime,
   waitForStableEncoders,
 } from '../primitives/uncalibrated_actions.mjs';
 import { attachDebugState } from '../primitives/debug_trace.mjs';
@@ -1523,7 +1523,7 @@ export async function collectSweepData(send, context) {
     );
     if (returnToOrigin && sweepOrdinal < totalPlannedSweeps) {
       try {
-        await returnMotorsToOriginAllAtOnce(send, {
+        await returnMotorsToOriginOneAtATime(send, {
           motorIds,
           axes: machineConfig.axes,
           mmPerDeg,
@@ -1605,7 +1605,7 @@ export async function collectSweepData(send, context) {
 
   if (returnToOrigin) {
     try {
-      await returnMotorsToOriginAllAtOnce(send, {
+      await returnMotorsToOriginOneAtATime(send, {
         motorIds,
         axes: machineConfig.axes,
         mmPerDeg,
