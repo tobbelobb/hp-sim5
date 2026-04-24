@@ -1611,7 +1611,6 @@ export async function collectSweepData(send, context) {
         mmPerDeg,
         feed,
         speedup,
-        midForce = forceTuning.force_mid_n,
       });
       console.log('Returned all motors to encoder origin.');
     } catch (err) {
