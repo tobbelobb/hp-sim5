@@ -107,7 +107,6 @@ def Xform "World"
         )
         {
             custom bool[] cablePath:clockwise = [1, 1, 1, 1]
-            custom bool cablePath:enabled = 1
             custom rel cablePath:joints = [
                 </World/FlipperScene/Joint1>,
                 </World/FlipperScene/Joint2>,
@@ -115,10 +114,11 @@ def Xform "World"
             ]
             custom token[] cablePath:linkTypes = ["hybrid-attachment", "rolling", "rolling", "hybrid-attachment"]
             custom double cablePath:halfWidth = 0.0025
-            custom double[] cablePath:stored = [0, 0.18856494486496805, 0.06274932338455928, 0]
-            custom double cablePath:totalLength = 1.600225609524756
+            custom double[] cablePath:stored = [0, 0, 0, 0]
+            custom token[] cablePath:storedMode = ["manual", "auto", "auto", "manual"]
             custom double cablePath:stiffness = 200
             custom double cablePath:damping = 0.0
+            custom token cablePath:initPolicy = "deriveMissing"
         }
 
         def CableJoint "Joint1"
@@ -127,7 +127,6 @@ def Xform "World"
             custom point3d localPos1 = (-0.099959374162354, 0.002850178427832, 0.000000000000000)
             custom rel physics:body0 = </World/FlipperScene/Ball2>
             custom rel physics:body1 = </World/FlipperScene/Obs4>
-            custom double restLength = 0.6731358332498777
         }
 
         def CableJoint "Joint2"
@@ -136,7 +135,6 @@ def Xform "World"
             custom point3d localPos1 = (0.040398203742037, 0.112995509355093, 0.000000000000000)
             custom rel physics:body0 = </World/FlipperScene/Obs4>
             custom rel physics:body1 = </World/FlipperScene/Obs3>
-            custom double restLength = 0.5381449618829482
         }
 
         def CableJoint "Joint3"
@@ -145,7 +143,6 @@ def Xform "World"
             custom point3d localPos1 = (-0.025906926332688, 0.030476731583172, 0.000000000000000)
             custom rel physics:body0 = </World/FlipperScene/Obs3>
             custom rel physics:body1 = </World/FlipperScene/Ball1>
-            custom double restLength = 0.1276305461424022
         }
 
         def PhysicsRevoluteJoint "FixedObs3"
