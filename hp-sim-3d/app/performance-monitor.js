@@ -13,6 +13,7 @@ export class PerformanceMonitor {
     this.stepTimes = [];
     this.systemTotals = new Map();
     this.systemMax = new Map();
+    this.systemCounts = new Map();
   }
 
   beginStep() {
@@ -42,18 +43,7 @@ export class PerformanceMonitor {
   }
 
   measureSystem(name, fn) {
-    if (!this.enabled) {
-      return fn();
-    }
-
-    const t0 = performance.now();
-    try {
-      return fn();
-    } finally {
-      const dt = performance.now() - t0;
-      this.systemTotals.set(name, (this.systemTotals.get(name) || 0) + dt);
-      this.systemMax.set(name, Math.max(this.systemMax.get(name) || 0, dt));
-    }
+    return this.measureBlock(name, fn);
   }
 
   report() {
@@ -72,12 +62,17 @@ export class PerformanceMonitor {
     );
 
     const rows = [...this.systemTotals.entries()]
-      .map(([name, totalMs]) => ({
-        system: name,
-        totalMs: Number(totalMs.toFixed(3)),
-        avgMs: Number((totalMs / this.logEverySteps).toFixed(4)),
-        maxMs: Number((this.systemMax.get(name) || 0).toFixed(3)),
-      }))
+      .map(([name, totalMs]) => {
+        const count = this.systemCounts.get(name) || 0;
+        return {
+          system: name,
+          calls: count,
+          totalMs: Number(totalMs.toFixed(3)),
+          avgPerCallMs: Number((totalMs / Math.max(1, count)).toFixed(4)),
+          avgPerStepMs: Number((totalMs / Math.max(1, this.logEverySteps)).toFixed(4)),
+          maxMs: Number((this.systemMax.get(name) || 0).toFixed(3)),
+        };
+      })
       .sort((a, b) => b.totalMs - a.totalMs);
 
     console.table(rows);
@@ -87,6 +82,7 @@ export class PerformanceMonitor {
     this.stepTimes.length = 0;
     this.systemTotals.clear();
     this.systemMax.clear();
+    this.systemCounts.clear();
   }
 
   measureBlock(name, fn) {
@@ -98,9 +94,7 @@ export class PerformanceMonitor {
     try {
       return fn();
     } finally {
-      const dt = performance.now() - t0;
-      this.systemTotals.set(name, (this.systemTotals.get(name) || 0) + dt);
-      this.systemMax.set(name, Math.max(this.systemMax.get(name) || 0, dt));
+      this.measureSample(name, performance.now() - t0);
     }
   }
 
@@ -108,6 +102,7 @@ export class PerformanceMonitor {
     if (!this.enabled) return;
     this.systemTotals.set(name, (this.systemTotals.get(name) || 0) + dt);
     this.systemMax.set(name, Math.max(this.systemMax.get(name) || 0, dt));
+    this.systemCounts.set(name, (this.systemCounts.get(name) || 0) + 1);
   }
 }
 

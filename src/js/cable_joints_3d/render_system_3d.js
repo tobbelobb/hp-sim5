@@ -1500,6 +1500,14 @@ export class RenderSystem3D {
     this.extruderLine.geometry.attributes.position.needsUpdate = true;
   }
 
+  measureRenderBlock(world, name, fn) {
+    const perf = world?.getResource?.('performanceMonitor');
+    if (perf?.enabled && typeof perf.measureBlock === 'function') {
+      return perf.measureBlock(`RenderSystem3D.${name}`, fn);
+    }
+    return fn();
+  }
+
   update(world, dt = 0) {
     const perf = world?.getResource?.('performanceMonitor');
 
@@ -1526,36 +1534,64 @@ export class RenderSystem3D {
       return;
     }
 
-    this._syncBoard(world);
-    this._syncBorder(world);
-    this._syncCircles(world);
-    this._syncFlippers(world);
-    this._syncRigidGroups(world);
-    this._syncExtruder(world);
-    this._syncCable(world);
-    this._syncReferencePaths();
-    this._syncExtrusions(world);
-    this._syncPositionTrace(world);
-    this._syncPositionTraceMarkers();
 
-    this._updateBumperHitFx(world);
+    this.measureRenderBlock(world, '_syncBoard', () => {
+      this._syncBoard(world);
+    });
+    this.measureRenderBlock(world, '_syncBorder', () => {
+      this._syncBorder(world);
+    });
+    this.measureRenderBlock(world, '_syncCircles', () => {
+      this._syncCircles(world);
+    });
+    this.measureRenderBlock(world, '_syncFlippers', () => {
+      this._syncFlippers(world);
+    });
+    this.measureRenderBlock(world, '_syncRigidGroups', () => {
+      this._syncRigidGroups(world);
+    });
+    this.measureRenderBlock(world, '_syncExtruder', () => {
+      this._syncExtruder(world);
+    });
+    this.measureRenderBlock(world, '_syncCable', () => {
+      this._syncCable(world);
+    });
+    this.measureRenderBlock(world, '_syncReferencePaths', () => {
+      this._syncReferencePaths();
+    });
+    this.measureRenderBlock(world, '_syncExtrusions', () => {
+      this._syncExtrusions(world);
+    });
+    this.measureRenderBlock(world, '_syncPositionTrace', () => {
+      this._syncPositionTrace(world);
+    });
+    this.measureRenderBlock(world, '_syncPositionTraceMarkers', () => {
+      this._syncPositionTraceMarkers();
+    });
+    this.measureRenderBlock(world, '_updateBumperHitFx', () => {
+      this._updateBumperHitFx(world);
+    });
 
-    if (this.controlsEnabled && this.controls) {
-      this.controls.update();
-    } else {
-      // Hard lock to eliminate any camera drift from external handlers/layout churn.
-      this.camera.position.copy(this._fixedCameraPosition);
-      this.camera.quaternion.copy(this._fixedCameraQuaternion);
-      this.camera.updateMatrixWorld();
-    }
-
-    if (this.debugEnabled) {
-      this._debugFrame += 1;
-      if (this._debugFrame % 30 === 0) {
-        console.debug('[flipper3d-pose]', this._collectPoseDebug(world));
+    this.measureRenderBlock(world, 'the_rest', () => {
+      if (this.controlsEnabled && this.controls) {
+        this.controls.update();
+      } else {
+        // Hard lock to eliminate any camera drift from external handlers/layout churn.
+        this.camera.position.copy(this._fixedCameraPosition);
+        this.camera.quaternion.copy(this._fixedCameraQuaternion);
+        this.camera.updateMatrixWorld();
       }
-    }
-    this.renderer.render(this.scene, this.camera);
+
+      if (this.debugEnabled) {
+        this._debugFrame += 1;
+        if (this._debugFrame % 30 === 0) {
+          console.debug('[flipper3d-pose]', this._collectPoseDebug(world));
+        }
+      }
+    });
+    this.measureRenderBlock(world, 'this.renderer.render', () => {
+      this.renderer.render(this.scene, this.camera);
+    });
   }
 
   resetVisuals() {
