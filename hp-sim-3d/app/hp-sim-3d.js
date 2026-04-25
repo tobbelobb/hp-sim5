@@ -284,6 +284,8 @@ function initHpSim() {
   const printStatusEl = document.getElementById('printStatus');
   const replayStatusEl = document.getElementById('replayStatus');
   const asapStatusEl = document.getElementById('asapStatus');
+  let replayStatusMessageEl = null;
+  let replayCancelBtn = null;
   const qualityHudEl = document.getElementById('qualityHud');
   const qualityHistoryHud = document.getElementById('qualityHistoryHud');
   const qualityHistoryToggleBtn = document.getElementById('qualityHistoryToggle');
@@ -770,6 +772,7 @@ function initHpSim() {
     context: null,
     pausedForSceneChange: false,
     replayInProgress: false,
+    replayCancelRequested: false,
     targetHistoryLength: 0,
     wasPaused: null,
     frameSnapshot: null,
@@ -808,6 +811,24 @@ function initHpSim() {
     return list.map((cmd) => ({ ...cmd }));
   }
 
+  function nextUiFrame() {
+    return new Promise((resolve) => {
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => resolve());
+      } else {
+        setTimeout(resolve, 0);
+      }
+    });
+  }
+
+  function nowMs() {
+    return (
+      typeof performance !== 'undefined' && typeof performance.now === 'function'
+        ? performance.now()
+        : Date.now()
+    );
+  }
+
   function getExtruderComponent() {
     const extruderEntities = world.query([ExtruderComponent]);
     if (extruderEntities.length === 0) {
@@ -816,11 +837,20 @@ function initHpSim() {
     return world.getComponent(extruderEntities[0], ExtruderComponent) || null;
   }
 
-  function replayExtrusionsIntoQualityMonitors(extrusions) {
+  async function replayExtrusionsIntoQualityMonitors(extrusions) {
     const snapshot = Array.isArray(extrusions) ? extrusions : [];
     resetQualityMonitors({ keepReference: true });
-    for (const extrusion of snapshot) {
-      forEachQualityMonitor((monitor) => monitor.recordExtrusion(extrusion));
+    for (let i = 0; i < snapshot.length; i += 1) {
+      const frameStart = nowMs();
+      do {
+        const extrusion = snapshot[i];
+        forEachQualityMonitor((monitor) => monitor.recordExtrusion(extrusion));
+        i += 1;
+      } while (i < snapshot.length && nowMs() - frameStart < 8);
+      i -= 1;
+      if (i + 1 < snapshot.length) {
+        await nextUiFrame();
+      }
     }
     runFinalQualityChecks();
     refreshAllQualityMonitors(true);
@@ -920,11 +950,52 @@ function initHpSim() {
     printStatusEl.classList.add('sim-hidden');
   }
 
-  function showReplayStatus(message = 'Replaying extrusions...') {
+  function ensureReplayStatusControls() {
     if (!replayStatusEl) {
       return;
     }
-    replayStatusEl.textContent = message;
+    if (!replayStatusMessageEl) {
+      replayStatusEl.textContent = '';
+      replayStatusMessageEl = document.createElement('div');
+      replayStatusMessageEl.className = 'sim-replay-status__message';
+      replayStatusEl.appendChild(replayStatusMessageEl);
+    }
+    if (!replayCancelBtn) {
+      replayCancelBtn = document.createElement('button');
+      replayCancelBtn.type = 'button';
+      replayCancelBtn.className = 'sim-replay-status__cancel';
+      replayCancelBtn.textContent = 'Cancel';
+      replayCancelBtn.addEventListener('click', () => {
+        sceneChangeState.replayCancelRequested = true;
+        replayCancelBtn.disabled = true;
+        replayCancelBtn.setAttribute('aria-disabled', 'true');
+        if (replayStatusMessageEl) {
+          replayStatusMessageEl.textContent = 'Cancelling replay...';
+        }
+      });
+      replayStatusEl.appendChild(replayCancelBtn);
+    }
+  }
+
+  function showReplayStatus(message = 'Replaying extrusions...', { cancellable = true } = {}) {
+    if (!replayStatusEl) {
+      return;
+    }
+    ensureReplayStatusControls();
+    if (replayStatusMessageEl) {
+      replayStatusMessageEl.textContent = message;
+    } else {
+      replayStatusEl.textContent = message;
+    }
+    if (replayCancelBtn) {
+      replayCancelBtn.classList.toggle('sim-hidden', !cancellable);
+      replayCancelBtn.disabled = !cancellable;
+      if (cancellable) {
+        replayCancelBtn.removeAttribute('aria-disabled');
+      } else {
+        replayCancelBtn.setAttribute('aria-disabled', 'true');
+      }
+    }
     replayStatusEl.classList.remove('sim-hidden');
   }
 
@@ -932,7 +1003,16 @@ function initHpSim() {
     if (!replayStatusEl) {
       return;
     }
-    replayStatusEl.textContent = '';
+    if (replayStatusMessageEl) {
+      replayStatusMessageEl.textContent = '';
+    } else {
+      replayStatusEl.textContent = '';
+    }
+    if (replayCancelBtn) {
+      replayCancelBtn.disabled = false;
+      replayCancelBtn.removeAttribute('aria-disabled');
+      replayCancelBtn.classList.add('sim-hidden');
+    }
     replayStatusEl.classList.add('sim-hidden');
   }
 
@@ -2578,6 +2658,7 @@ function initHpSim() {
     sceneChangeState.wasPaused = pauseState ? pauseState.paused : null;
     sceneChangeState.targetHistoryLength = remoteSystem ? remoteSystem.history.length : 0;
     sceneChangeState.replayInProgress = false;
+    sceneChangeState.replayCancelRequested = false;
 
     if (wasPrinting) {
       try {
@@ -2651,11 +2732,11 @@ function initHpSim() {
 
   async function runReplayLoop(targetCount, { renderSystem = null } = {}) {
     if (!Number.isFinite(targetCount) || targetCount <= 0) {
-      return;
+      return { cancelled: false, iterations: 0 };
     }
     const remoteSystem = getRemoteSystem();
     if (!remoteSystem) {
-      return;
+      return { cancelled: false, iterations: 0 };
     }
     sceneChangeState.replayInProgress = true;
     const previousPauseDisabled = pauseBtn ? pauseBtn.disabled : null;
@@ -2663,7 +2744,7 @@ function initHpSim() {
       setButtonDisabled(pauseBtn, true);
     }
     if (renderSystem && typeof renderSystem.setDrawingSuspended === 'function') {
-      renderSystem.setDrawingSuspended(true);
+      renderSystem.setDrawingSuspended(false);
     }
     const pauseState = world.getResource('pauseState');
     const dtResource = world.getResource('dt');
@@ -2675,16 +2756,39 @@ function initHpSim() {
         : 1 / 120;
     const maxIterations = Math.max(targetCount * 4, targetCount + 200);
     let iterations = 0;
+    let cancelled = false;
     try {
       if (pauseState) {
         pauseState.paused = false;
       }
       while (remoteSystem.history.length < targetCount && iterations < maxIterations) {
-        world.update(stepDt);
-        iterations += 1;
-        if (iterations % 500 === 0) {
-          await new Promise((resolve) => setTimeout(resolve, 0));
+        const frameStart = nowMs();
+        do {
+          if (sceneChangeState.replayCancelRequested) {
+            cancelled = true;
+            break;
+          }
+          world.update(stepDt);
+          iterations += 1;
+        } while (
+          remoteSystem.history.length < targetCount
+          && iterations < maxIterations
+          && nowMs() - frameStart < 8
+        );
+
+        if (renderSystem && typeof renderSystem.update === 'function') {
+          renderSystem.update(world, 0);
         }
+        if (remoteSystem.history.length < targetCount && !cancelled) {
+          showReplayStatus(
+            `Replaying extrusions... ${remoteSystem.history.length}/${targetCount}`,
+            { cancellable: true }
+          );
+        }
+        if (cancelled) {
+          break;
+        }
+        await nextUiFrame();
       }
     } finally {
       if (pauseBtn) {
@@ -2696,15 +2800,17 @@ function initHpSim() {
       }
       sceneChangeState.replayInProgress = false;
     }
-    if (remoteSystem.history.length < targetCount) {
+    if (!cancelled && remoteSystem.history.length < targetCount) {
       console.warn(
         `hp-sim-3d: replay stopped early after ${remoteSystem.history.length} commands, expected ${targetCount}.`
       );
     }
+    return { cancelled, iterations };
   }
 
   async function restorePrintAfterSceneChange(sceneChange) {
     sceneChangeState.replayInProgress = false;
+    sceneChangeState.replayCancelRequested = false;
     const renderSystem = world.getResource('renderSystem');
     const pauseState = world.getResource('pauseState');
     const shouldResetQuality =
@@ -2738,15 +2844,29 @@ function initHpSim() {
     const historyClone = cloneCommandList(playbackState.history);
     const queueClone = cloneCommandList(playbackState.queue);
     const extruderComp = getExtruderComponent();
-    if (extruderComp && Array.isArray(extruderComp.extrusions)) {
-      extruderComp.extrusions = [];
-    }
     const extrusionSnapshot = cloneExtrusionList(sceneChange.extrusionSnapshot);
-    let restoredExtrusions = [];
+    let finalExtrusions = [];
     const showReplay = Boolean(sceneChange.wasPrinting && historyClone.length > 0);
     if (showReplay) {
       showReplayStatus();
     }
+    if (extruderComp) {
+      finalExtrusions = restoreReplayExtrusions(extruderComp, extrusionSnapshot);
+    }
+    if (renderSystem) {
+      if (typeof renderSystem.setDrawingSuspended === 'function') {
+        renderSystem.setDrawingSuspended(false);
+      }
+      if (typeof renderSystem.clearExtrusions === 'function') {
+        renderSystem.clearExtrusions();
+      }
+      if (typeof renderSystem.update === 'function') {
+        renderSystem.update(world, 0);
+      }
+    }
+    const replaySeedExtrusionCount = Array.isArray(extruderComp?.extrusions)
+      ? extruderComp.extrusions.length
+      : 0;
 
     remoteSystem.worker = null;
     remoteSystem.wasPaused = false;
@@ -2756,10 +2876,11 @@ function initHpSim() {
       remoteSystem.resetAxisMapping();
     }
 
+    let replayResult = { cancelled: false, iterations: 0 };
     try {
       await new Promise((resolve) => setTimeout(resolve, 0));
       if (historyClone.length > 0) {
-        await runReplayLoop(historyClone.length, { renderSystem });
+        replayResult = await runReplayLoop(historyClone.length, { renderSystem });
       }
     } finally {
       if (showReplay) {
@@ -2771,12 +2892,25 @@ function initHpSim() {
     remoteSystem.commands = queueClone;
     remoteSystem.worker = sceneChange.worker || null;
     remoteSystem.wasPaused = false;
-    if (extruderComp && extrusionSnapshot.length > 0) {
-      restoredExtrusions = restoreReplayExtrusions(extruderComp, extrusionSnapshot);
+    if (extruderComp) {
+      if (replayResult.cancelled) {
+        finalExtrusions = restoreReplayExtrusions(extruderComp, extrusionSnapshot);
+        showPrintStatus('Replay cancelled. Print remains paused.');
+      } else if (Array.isArray(extruderComp.extrusions)) {
+        const replayedExtrusions = cloneExtrusionList(extruderComp.extrusions.slice(replaySeedExtrusionCount));
+        if (replayedExtrusions.length > 0) {
+          extruderComp.extrusions = replayedExtrusions;
+          finalExtrusions = replayedExtrusions;
+        } else {
+          finalExtrusions = restoreReplayExtrusions(extruderComp, extrusionSnapshot);
+        }
+      }
     }
     if (shouldResetQuality) {
-      if (restoredExtrusions.length > 0) {
-        replayExtrusionsIntoQualityMonitors(restoredExtrusions);
+      if (finalExtrusions.length > 0) {
+        showReplayStatus('Updating quality metrics...', { cancellable: false });
+        await replayExtrusionsIntoQualityMonitors(finalExtrusions);
+        hideReplayStatus();
       } else {
         runFinalQualityChecks();
         refreshAllQualityMonitors(true);
@@ -2806,6 +2940,7 @@ function initHpSim() {
     sceneChangeState.pausedForSceneChange = true;
     sceneChangeState.targetHistoryLength = 0;
     sceneChangeState.wasPaused = null;
+    sceneChangeState.replayCancelRequested = false;
     sceneChangeState.context = null;
   }
 
@@ -2837,6 +2972,7 @@ function initHpSim() {
       sceneChangeState.pausedForSceneChange = false;
       sceneChangeState.targetHistoryLength = 0;
       sceneChangeState.wasPaused = null;
+      sceneChangeState.replayCancelRequested = false;
       stopAndClearWorkers();
       setPrintActive(false);
       return;
@@ -3155,6 +3291,7 @@ function initHpSim() {
     if (!printActive) {
       sceneChangeState.context = null;
       sceneChangeState.pausedForSceneChange = false;
+      sceneChangeState.replayCancelRequested = false;
       hideReplayStatus();
       hidePrintStatus();
       hideAsapStatus();
