@@ -1074,7 +1074,7 @@ export function setupScene(world, stage, canvas, options = {}) {
           world.registerSystem(new RigidBodySyncSystem());
 
           // 4. Update derived geometry and cable state
-          world.registerSystem(new CableAttachmentUpdateSystem());
+          world.registerSystem(new CableAttachmentUpdateSystem(false));
           world.registerSystem(new CableAttachmentCacheSystem());
           world.registerSystem(new CableSlackSystem());
 

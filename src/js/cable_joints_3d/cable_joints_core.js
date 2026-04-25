@@ -2496,6 +2496,10 @@ export function _updateHybridLinkStates(world, traceStep = null) {
 export class CableAttachmentUpdateSystem {
   runInPause = false;
 
+  constructor(mergeAndSplitFeature = true) {
+    this.mergeAndSplitFeature = mergeAndSplitFeature;
+  }
+
   update(world, _dt_unused) {
     const prevHybridStep = Math.floor(_readFiniteResource(world, 'cableHybridTransitionStep', 0));
     const nextHybridStep = prevHybridStep + 1;
@@ -2508,12 +2512,12 @@ export class CableAttachmentUpdateSystem {
     }
     _recordCableStepSummary(world, nextHybridStep, 'afterAttachment');
 
-    if (_featureFlag(world, 'layeringMergeJoints', true)) {
+    if (_featureFlag(world, 'layeringMergeJoints', this.mergeAndSplitFeature)) {
       _mergeJoints(world);
     }
     _recordCableStepSummary(world, nextHybridStep, 'afterMerge');
 
-    if (_featureFlag(world, 'layeringSplitJoints', true)) {
+    if (_featureFlag(world, 'layeringSplitJoints', this.mergeAndSplitFeature)) {
       _splitJoints(world);
     }
     _recordCableStepSummary(world, nextHybridStep, 'afterSplit');
