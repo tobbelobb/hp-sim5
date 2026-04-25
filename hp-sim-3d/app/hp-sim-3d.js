@@ -20,7 +20,6 @@ import {
   resolveTouchNavigationCursorTapAction,
   shouldHideNavigationCursorOnClick,
 } from './navigation_cursor_interactions.js';
-import { cloneExtrusionList, restoreReplayExtrusions } from './replay_state.js';
 import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
 import { getMachineMotorDiagnostics } from './motor-diagnostics.js';
@@ -282,10 +281,7 @@ function initHpSim() {
   const customMachinesList = document.getElementById('customMachinesList');
   const machinesRemoveAllBtn = document.getElementById('machinesRemoveAllBtn');
   const printStatusEl = document.getElementById('printStatus');
-  const replayStatusEl = document.getElementById('replayStatus');
   const asapStatusEl = document.getElementById('asapStatus');
-  let replayStatusMessageEl = null;
-  let replayCancelBtn = null;
   const qualityHudEl = document.getElementById('qualityHud');
   const qualityHistoryHud = document.getElementById('qualityHistoryHud');
   const qualityHistoryToggleBtn = document.getElementById('qualityHistoryToggle');
@@ -768,17 +764,6 @@ function initHpSim() {
   };
   updateQualityToggleLabel();
   updateReferenceToggleUI();
-  const sceneChangeState = {
-    context: null,
-    pausedForSceneChange: false,
-    replayInProgress: false,
-    replayCancelRequested: false,
-    targetHistoryLength: 0,
-    wasPaused: null,
-    frameSnapshot: null,
-    frameSnapshotNeedsApply: false,
-    renderSuspended: false,
-  };
 
   let sceneChangeQueue = Promise.resolve();
 
@@ -804,95 +789,6 @@ function initHpSim() {
     pendingFinalCheck: false,
   };
 
-  function cloneCommandList(list) {
-    if (!Array.isArray(list) || list.length === 0) {
-      return [];
-    }
-    return list.map((cmd) => ({ ...cmd }));
-  }
-
-  function nextUiFrame() {
-    return new Promise((resolve) => {
-      if (typeof requestAnimationFrame === 'function') {
-        requestAnimationFrame(() => resolve());
-      } else {
-        setTimeout(resolve, 0);
-      }
-    });
-  }
-
-  function nowMs() {
-    return (
-      typeof performance !== 'undefined' && typeof performance.now === 'function'
-        ? performance.now()
-        : Date.now()
-    );
-  }
-
-  function getExtruderComponent() {
-    const extruderEntities = world.query([ExtruderComponent]);
-    if (extruderEntities.length === 0) {
-      return null;
-    }
-    return world.getComponent(extruderEntities[0], ExtruderComponent) || null;
-  }
-
-  function captureSceneFrameSnapshot() {
-    if (!canvas) {
-      return;
-    }
-    const width = canvas.width | 0;
-    const height = canvas.height | 0;
-    if (width <= 0 || height <= 0) {
-      return;
-    }
-    let snapshot = sceneChangeState.frameSnapshot;
-    if (!snapshot) {
-      snapshot = document.createElement('canvas');
-      sceneChangeState.frameSnapshot = snapshot;
-    }
-    if (snapshot.width !== width) {
-      snapshot.width = width;
-    }
-    if (snapshot.height !== height) {
-      snapshot.height = height;
-    }
-    const snapshotCtx = snapshot.getContext('2d');
-    if (!snapshotCtx) {
-      sceneChangeState.frameSnapshot = null;
-      sceneChangeState.frameSnapshotNeedsApply = false;
-      return;
-    }
-    snapshotCtx.clearRect(0, 0, snapshot.width, snapshot.height);
-    try {
-      snapshotCtx.drawImage(canvas, 0, 0, width, height);
-      sceneChangeState.frameSnapshotNeedsApply = true;
-    } catch (_err) {
-      sceneChangeState.frameSnapshotNeedsApply = false;
-    }
-  }
-
-  function applySceneFrameSnapshot() {
-    if (!sceneChangeState.frameSnapshotNeedsApply) {
-      return;
-    }
-    if (!canvas) {
-      sceneChangeState.frameSnapshotNeedsApply = false;
-      return;
-    }
-    const snapshot = sceneChangeState.frameSnapshot;
-    if (!snapshot) {
-      sceneChangeState.frameSnapshotNeedsApply = false;
-      return;
-    }
-    sceneChangeState.frameSnapshotNeedsApply = false;
-  }
-
-  function clearSceneFrameSnapshot() {
-    sceneChangeState.frameSnapshotNeedsApply = false;
-    sceneChangeState.frameSnapshot = null;
-  }
-
   function setButtonDisabled(button, disabled) {
     if (!button) {
       return;
@@ -904,15 +800,6 @@ function initHpSim() {
     } else {
       button.removeAttribute('aria-disabled');
     }
-  }
-
-  function suspendRenderSystemForSceneChange() {
-    const renderSystem = world.getResource('renderSystem');
-    if (!renderSystem || typeof renderSystem.setDrawingSuspended !== 'function') {
-      return;
-    }
-    renderSystem.setDrawingSuspended(true);
-    sceneChangeState.renderSuspended = true;
   }
 
   function showPrintStatus(message) {
@@ -929,72 +816,6 @@ function initHpSim() {
     }
     printStatusEl.textContent = '';
     printStatusEl.classList.add('sim-hidden');
-  }
-
-  function ensureReplayStatusControls() {
-    if (!replayStatusEl) {
-      return;
-    }
-    if (!replayStatusMessageEl) {
-      replayStatusEl.textContent = '';
-      replayStatusMessageEl = document.createElement('div');
-      replayStatusMessageEl.className = 'sim-replay-status__message';
-      replayStatusEl.appendChild(replayStatusMessageEl);
-    }
-    if (!replayCancelBtn) {
-      replayCancelBtn = document.createElement('button');
-      replayCancelBtn.type = 'button';
-      replayCancelBtn.className = 'sim-replay-status__cancel';
-      replayCancelBtn.textContent = 'Cancel';
-      replayCancelBtn.addEventListener('click', () => {
-        sceneChangeState.replayCancelRequested = true;
-        replayCancelBtn.disabled = true;
-        replayCancelBtn.setAttribute('aria-disabled', 'true');
-        if (replayStatusMessageEl) {
-          replayStatusMessageEl.textContent = 'Cancelling replay...';
-        }
-      });
-      replayStatusEl.appendChild(replayCancelBtn);
-    }
-  }
-
-  function showReplayStatus(message = 'Replaying extrusions...', { cancellable = true } = {}) {
-    if (!replayStatusEl) {
-      return;
-    }
-    ensureReplayStatusControls();
-    if (replayStatusMessageEl) {
-      replayStatusMessageEl.textContent = message;
-    } else {
-      replayStatusEl.textContent = message;
-    }
-    if (replayCancelBtn) {
-      replayCancelBtn.classList.toggle('sim-hidden', !cancellable);
-      replayCancelBtn.disabled = !cancellable;
-      if (cancellable) {
-        replayCancelBtn.removeAttribute('aria-disabled');
-      } else {
-        replayCancelBtn.setAttribute('aria-disabled', 'true');
-      }
-    }
-    replayStatusEl.classList.remove('sim-hidden');
-  }
-
-  function hideReplayStatus() {
-    if (!replayStatusEl) {
-      return;
-    }
-    if (replayStatusMessageEl) {
-      replayStatusMessageEl.textContent = '';
-    } else {
-      replayStatusEl.textContent = '';
-    }
-    if (replayCancelBtn) {
-      replayCancelBtn.disabled = false;
-      replayCancelBtn.removeAttribute('aria-disabled');
-      replayCancelBtn.classList.add('sim-hidden');
-    }
-    replayStatusEl.classList.add('sim-hidden');
   }
 
   function showAsapStatus(message = 'Finishing print ASAP...') {
@@ -2624,291 +2445,7 @@ function initHpSim() {
     }
   }
 
-  async function beginSceneChange({ newMachineAdded = false } = {}) {
-    if (sceneChangeState.context) {
-      if (newMachineAdded) {
-        sceneChangeState.context.newMachineAdded = true;
-      }
-      return sceneChangeState.context;
-    }
-    captureSceneFrameSnapshot();
-    suspendRenderSystemForSceneChange();
-    const remoteSystem = getRemoteSystem();
-    const wasPrinting = Boolean(printActive && remoteSystem);
-    const pauseState = world.getResource('pauseState');
-    sceneChangeState.wasPaused = pauseState ? pauseState.paused : null;
-    sceneChangeState.targetHistoryLength = remoteSystem ? remoteSystem.history.length : 0;
-    sceneChangeState.replayInProgress = false;
-    sceneChangeState.replayCancelRequested = false;
-
-    if (wasPrinting) {
-      try {
-        if (moveCommanderWorker) {
-          moveCommanderWorker.postMessage({ type: 'pause' });
-        }
-        if (klipperMcuCommandPlayerWorker) {
-          klipperMcuCommandPlayerWorker.postMessage({ type: 'pause' });
-        }
-        if (klipperRawUploadBridge) {
-          klipperRawUploadBridge.postMessage({ type: 'pause' });
-        }
-        if (rrfCanPlayerWorker) {
-          rrfCanPlayerWorker.postMessage({ type: 'pause' });
-        }
-      } catch (err) {
-        console.warn('hp-sim-3d: unable to pause workers during scene change.', err);
-      }
-      if (pauseState) {
-        pauseState.paused = true;
-      }
-      if (!sceneChangeState.pausedForSceneChange) {
-        showPrintStatus('Print paused due to change of scene');
-      }
-      sceneChangeState.pausedForSceneChange = true;
-      if (pauseBtn) {
-        pauseBtn.textContent = 'Resume';
-      }
-
-      if (remoteSystem) {
-        let settleAttempts = 0;
-        const getQueueLength = typeof remoteSystem.getQueueLength === 'function'
-          ? () => remoteSystem.getQueueLength()
-          : () => (Array.isArray(remoteSystem.commands) ? remoteSystem.commands.length : 0);
-        let previousLength = getQueueLength();
-        const maxAttempts = 6;
-        while (settleAttempts < maxAttempts) {
-          await new Promise((resolve) => setTimeout(resolve, 0));
-          const currentLength = getQueueLength();
-          if (currentLength === previousLength) {
-            break;
-          }
-          previousLength = currentLength;
-          settleAttempts += 1;
-        }
-      }
-    }
-
-    let playbackState = null;
-    if (wasPrinting && remoteSystem && typeof remoteSystem.getPlaybackState === 'function') {
-      try {
-        playbackState = remoteSystem.getPlaybackState();
-      } catch (err) {
-        console.warn('hp-sim-3d: unable to capture playback state before scene change.', err);
-      }
-    }
-    const extrusionSnapshot = cloneExtrusionList(getExtruderComponent()?.extrusions);
-
-    const context = {
-      wasPrinting,
-      playbackState,
-      extrusionSnapshot,
-      worker: remoteSystem ? remoteSystem.worker : null,
-      newMachineAdded: Boolean(newMachineAdded),
-      targetHistoryLength: sceneChangeState.targetHistoryLength,
-      wasPaused: sceneChangeState.wasPaused,
-    };
-    sceneChangeState.context = context;
-    return context;
-  }
-
-  async function runReplayLoop(targetCount, { renderSystem = null } = {}) {
-    if (!Number.isFinite(targetCount) || targetCount <= 0) {
-      return { cancelled: false, iterations: 0 };
-    }
-    const remoteSystem = getRemoteSystem();
-    if (!remoteSystem) {
-      return { cancelled: false, iterations: 0 };
-    }
-    sceneChangeState.replayInProgress = true;
-    const previousPauseDisabled = pauseBtn ? pauseBtn.disabled : null;
-    if (pauseBtn) {
-      setButtonDisabled(pauseBtn, true);
-    }
-    if (renderSystem && typeof renderSystem.setDrawingSuspended === 'function') {
-      renderSystem.setDrawingSuspended(false);
-    }
-    const pauseState = world.getResource('pauseState');
-    const dtResource = world.getResource('dt');
-    const stepDt =
-      typeof dtResource === 'number' && Number.isFinite(dtResource) && dtResource > 0
-        ? dtResource
-        : typeof simDtSec === 'number' && Number.isFinite(simDtSec) && simDtSec > 0
-        ? simDtSec
-        : 1 / 120;
-    const maxIterations = Math.max(targetCount * 4, targetCount + 200);
-    let iterations = 0;
-    let cancelled = false;
-    try {
-      if (pauseState) {
-        pauseState.paused = false;
-      }
-      while (remoteSystem.history.length < targetCount && iterations < maxIterations) {
-        const frameStart = nowMs();
-        do {
-          if (sceneChangeState.replayCancelRequested) {
-            cancelled = true;
-            break;
-          }
-          world.update(stepDt);
-          iterations += 1;
-        } while (
-          remoteSystem.history.length < targetCount
-          && iterations < maxIterations
-          && nowMs() - frameStart < 8
-        );
-
-        if (renderSystem && typeof renderSystem.update === 'function') {
-          renderSystem.update(world, 0);
-        }
-        if (remoteSystem.history.length < targetCount && !cancelled) {
-          showReplayStatus(
-            `Replaying extrusions... ${remoteSystem.history.length}/${targetCount}`,
-            { cancellable: true }
-          );
-        }
-        if (cancelled) {
-          break;
-        }
-        await nextUiFrame();
-      }
-    } finally {
-      if (pauseBtn) {
-        const restoreDisabled = previousPauseDisabled != null ? previousPauseDisabled : false;
-        setButtonDisabled(pauseBtn, restoreDisabled);
-      }
-      if (pauseState) {
-        pauseState.paused = true;
-      }
-      sceneChangeState.replayInProgress = false;
-    }
-    if (!cancelled && remoteSystem.history.length < targetCount) {
-      console.warn(
-        `hp-sim-3d: replay stopped early after ${remoteSystem.history.length} commands, expected ${targetCount}.`
-      );
-    }
-    return { cancelled, iterations };
-  }
-
-  async function restorePrintAfterSceneChange(sceneChange) {
-    sceneChangeState.replayInProgress = false;
-    sceneChangeState.replayCancelRequested = false;
-    const renderSystem = world.getResource('renderSystem');
-    const pauseState = world.getResource('pauseState');
-    if (!sceneChange || !sceneChange.wasPrinting) {
-      if (renderSystem && typeof renderSystem.setDrawingSuspended === 'function') {
-        renderSystem.setDrawingSuspended(false);
-      }
-      sceneChangeState.renderSuspended = false;
-      if (renderSystem && typeof renderSystem.update === 'function') {
-        renderSystem.update(world, 0);
-      }
-      clearSceneFrameSnapshot();
-      sceneChangeState.context = null;
-      return;
-    }
-    const remoteSystem = getRemoteSystem();
-    if (!remoteSystem) {
-      if (renderSystem && typeof renderSystem.setDrawingSuspended === 'function') {
-        renderSystem.setDrawingSuspended(false);
-      }
-      sceneChangeState.renderSuspended = false;
-      clearSceneFrameSnapshot();
-      sceneChangeState.context = null;
-      return;
-    }
-    const playbackState = sceneChange.playbackState || { history: [], queue: [] };
-    const historyClone = cloneCommandList(playbackState.history);
-    const queueClone = cloneCommandList(playbackState.queue);
-    const extruderComp = getExtruderComponent();
-    const extrusionSnapshot = cloneExtrusionList(sceneChange.extrusionSnapshot);
-    const showReplay = Boolean(sceneChange.wasPrinting && historyClone.length > 0);
-    if (showReplay) {
-      showReplayStatus();
-    }
-    if (extruderComp) {
-      restoreReplayExtrusions(extruderComp, extrusionSnapshot);
-    }
-    if (renderSystem) {
-      if (typeof renderSystem.setDrawingSuspended === 'function') {
-        renderSystem.setDrawingSuspended(false);
-      }
-      if (typeof renderSystem.clearExtrusions === 'function') {
-        renderSystem.clearExtrusions();
-      }
-      if (typeof renderSystem.update === 'function') {
-        renderSystem.update(world, 0);
-      }
-    }
-    const replaySeedExtrusionCount = Array.isArray(extruderComp?.extrusions)
-      ? extruderComp.extrusions.length
-      : 0;
-
-    remoteSystem.worker = null;
-    remoteSystem.wasPaused = false;
-    remoteSystem.history = [];
-    remoteSystem.commands = cloneCommandList(historyClone).concat(queueClone);
-    if (typeof remoteSystem.resetAxisMapping === 'function') {
-      remoteSystem.resetAxisMapping();
-    }
-
-    let replayResult = { cancelled: false, iterations: 0 };
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      if (historyClone.length > 0) {
-        replayResult = await runReplayLoop(historyClone.length, { renderSystem });
-      }
-    } finally {
-      if (showReplay) {
-        hideReplayStatus();
-      }
-    }
-
-    remoteSystem.history = historyClone;
-    remoteSystem.commands = queueClone;
-    remoteSystem.worker = sceneChange.worker || null;
-    remoteSystem.wasPaused = false;
-    if (extruderComp) {
-      if (replayResult.cancelled) {
-        restoreReplayExtrusions(extruderComp, extrusionSnapshot);
-        showPrintStatus('Replay cancelled. Print remains paused.');
-      } else if (Array.isArray(extruderComp.extrusions)) {
-        const replayedExtrusions = cloneExtrusionList(extruderComp.extrusions.slice(replaySeedExtrusionCount));
-        if (replayedExtrusions.length > 0) {
-          extruderComp.extrusions = replayedExtrusions;
-        } else {
-          restoreReplayExtrusions(extruderComp, extrusionSnapshot);
-        }
-      }
-    }
-
-    if (renderSystem) {
-      if (typeof renderSystem.setDrawingSuspended === 'function') {
-        renderSystem.setDrawingSuspended(false);
-      }
-      if (typeof renderSystem.clearExtrusions === 'function') {
-        renderSystem.clearExtrusions();
-      }
-      if ('drawnExtrusionCount' in renderSystem) {
-        renderSystem.drawnExtrusionCount = 0;
-      }
-      if (typeof renderSystem.update === 'function') {
-        renderSystem.update(world, 0);
-      }
-    }
-
-    if (pauseState) {
-      pauseState.paused = true;
-    }
-    sceneChangeState.renderSuspended = false;
-    clearSceneFrameSnapshot();
-    sceneChangeState.pausedForSceneChange = true;
-    sceneChangeState.targetHistoryLength = 0;
-    sceneChangeState.wasPaused = null;
-    sceneChangeState.replayCancelRequested = false;
-    sceneChangeState.context = null;
-  }
-
-  async function refreshSceneAfterMachineChange({ clearExtrusions = false, resetView = false, sceneChange = null } = {}) {
+  async function resetAfterMachineListChange({ resetView = false } = {}) {
     if (machines.length === 0) {
       clearQualityMonitors();
       updateQualityHudVisibility();
@@ -2918,7 +2455,6 @@ function initHpSim() {
         renderSystem.resetVisuals();
         renderSystem.update?.(world, 0);
       }
-      clearSceneFrameSnapshot();
       resetViewStateDefaults();
       setNavigationCursorActive(false);
       resetCanvasTapTracking();
@@ -2930,13 +2466,7 @@ function initHpSim() {
       stageReady = false;
       setSpeedButtonsEnabled(false);
       updateZoomButtonState();
-      hideReplayStatus();
       hidePrintStatus();
-      sceneChangeState.context = null;
-      sceneChangeState.pausedForSceneChange = false;
-      sceneChangeState.targetHistoryLength = 0;
-      sceneChangeState.wasPaused = null;
-      sceneChangeState.replayCancelRequested = false;
       stopAndClearWorkers();
       setPrintActive(false);
       return;
@@ -2955,13 +2485,15 @@ function initHpSim() {
       panModeBtn.disabled = false;
       panModeBtn.removeAttribute('aria-disabled');
     }
-    reapplyViewState({ clearExtrusions });
-    if (sceneChangeState.renderSuspended || sceneChangeState.frameSnapshotNeedsApply) {
-      suspendRenderSystemForSceneChange();
-    }
-    applySceneFrameSnapshot();
-    if (sceneChange) {
-      await restorePrintAfterSceneChange(sceneChange);
+    if (gameControls && typeof gameControls.reset === 'function') {
+      handleUserReset();
+    } else {
+      stopAndClearWorkers();
+      resetJobTracking();
+      setPrintActive(false);
+      reapplyViewState({ clearExtrusions: true });
+      resetQualityMonitors({ keepReference: true });
+      setReferenceVisibility(false);
     }
   }
 
@@ -2975,13 +2507,8 @@ function initHpSim() {
       if (removedMachine) {
         removeQualityMonitor(removedMachine.id);
       }
-      const sceneChange = await beginSceneChange({ newMachineAdded: false });
       updateMachineMenuUI();
-      if (machines.length === 0) {
-        await refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: true, sceneChange });
-        return;
-      }
-      await refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: false, sceneChange });
+      await resetAfterMachineListChange({ resetView: machines.length === 0 });
     });
   }
 
@@ -2992,9 +2519,8 @@ function initHpSim() {
       }
       machines.splice(0, machines.length);
       clearQualityMonitors();
-      const sceneChange = await beginSceneChange({ newMachineAdded: false });
       updateMachineMenuUI();
-      await refreshSceneAfterMachineChange({ clearExtrusions: true, resetView: true, sceneChange });
+      await resetAfterMachineListChange({ resetView: true });
     });
   }
 
@@ -3037,12 +2563,7 @@ function initHpSim() {
         }
       }
 
-      const sceneChange = await beginSceneChange({ newMachineAdded: true });
-      await refreshSceneAfterMachineChange({
-        clearExtrusions: true,
-        resetView: machines.length === 1,
-        sceneChange,
-      });
+      await resetAfterMachineListChange({ resetView: machines.length === 1 });
     });
   }
 
@@ -3092,12 +2613,7 @@ function initHpSim() {
         }
       }
 
-      const sceneChange = await beginSceneChange({ newMachineAdded: true });
-      await refreshSceneAfterMachineChange({
-        clearExtrusions: true,
-        resetView: resetView || machines.length === 1,
-        sceneChange,
-      });
+      await resetAfterMachineListChange({ resetView: resetView || machines.length === 1 });
       return machine;
     });
   }
@@ -3253,10 +2769,6 @@ function initHpSim() {
     updateMainButtonsState();
     setSecondaryControlsVisible(printActive && machines.length > 0);
     if (!printActive) {
-      sceneChangeState.context = null;
-      sceneChangeState.pausedForSceneChange = false;
-      sceneChangeState.replayCancelRequested = false;
-      hideReplayStatus();
       hidePrintStatus();
       hideAsapStatus();
     }
@@ -4259,7 +3771,6 @@ function initHpSim() {
     setButtonDisabled(pauseBtn, true);
     setButtonDisabled(resetBtn, true);
 
-    hideReplayStatus();
     showAsapStatus();
 
     if (qualityEnabled) {
@@ -4598,10 +4109,7 @@ function initHpSim() {
     }
     resetQualityMonitors({ keepReference: true });
     setPrintActive(true);
-    hideReplayStatus();
     hidePrintStatus();
-    sceneChangeState.context = null;
-    sceneChangeState.pausedForSceneChange = false;
     resetJobTracking();
     beginNewJob(jobDescriptor);
     return true;
@@ -5122,38 +4630,6 @@ function initHpSim() {
       initialTimeScale: currentTimeScale,
       onTimeScaleChange: handleTimeScaleChange,
     });
-    if (pauseBtn) {
-      pauseBtn.addEventListener('click', () => {
-        setTimeout(() => {
-          const pauseState = world.getResource('pauseState');
-          if (
-            sceneChangeState.pausedForSceneChange &&
-            pauseState &&
-            !pauseState.paused &&
-            !sceneChangeState.replayInProgress
-          ) {
-            hidePrintStatus();
-            sceneChangeState.pausedForSceneChange = false;
-            try {
-              if (moveCommanderWorker) {
-                moveCommanderWorker.postMessage({ type: 'resume' });
-              }
-              if (klipperMcuCommandPlayerWorker) {
-                klipperMcuCommandPlayerWorker.postMessage({ type: 'resume' });
-              }
-              if (klipperRawUploadBridge) {
-                klipperRawUploadBridge.postMessage({ type: 'resume' });
-              }
-              if (rrfCanPlayerWorker) {
-                rrfCanPlayerWorker.postMessage({ type: 'resume' });
-              }
-            } catch (err) {
-              console.warn('hp-sim-3d: unable to resume workers after user request.', err);
-            }
-          }
-        }, 0);
-      });
-    }
     if (gameControls && typeof gameControls.reset === 'function') {
       gameControls.reset({ autoPause: true });
     }

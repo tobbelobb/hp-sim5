@@ -16,7 +16,6 @@ describe('hp-sim-3d wiring', () => {
     expect(source).toContain("./hangprinter_extruder.js");
     expect(source).toContain("./remoteSpoolSystem.js");
     expect(source).toContain("./hangprinter_input.js");
-    expect(source).toContain("./replay_state.js");
   });
 
   test('declares a Three.js import map in the 3D html entrypoint', () => {

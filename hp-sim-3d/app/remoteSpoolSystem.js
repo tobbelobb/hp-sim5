@@ -332,18 +332,6 @@ export class RemoteSpoolSystem {
     }
   }
 
-  replayHistory(world, commands, options = {}) {
-    if (!Array.isArray(commands) || commands.length === 0) {
-      return;
-    }
-    const { recordHistory = false, emitEvents = false } = options;
-    this.resetAxisMapping();
-    this._ensureAxisMapping(world);
-    for (const command of commands) {
-      this._processCommand(world, command, { recordHistory, emitEvents });
-    }
-  }
-
   update(world, dt) {
     const playbackState = world.getResource(SIMULATION_PLAYBACK_RESOURCE) || null;
     const desiredPlaybackMode = playbackState?.mode === 'asap' ? 'asap' : 'linear';
