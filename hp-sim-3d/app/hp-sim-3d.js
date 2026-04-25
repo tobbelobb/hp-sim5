@@ -837,25 +837,6 @@ function initHpSim() {
     return world.getComponent(extruderEntities[0], ExtruderComponent) || null;
   }
 
-  async function replayExtrusionsIntoQualityMonitors(extrusions) {
-    const snapshot = Array.isArray(extrusions) ? extrusions : [];
-    resetQualityMonitors({ keepReference: true });
-    for (let i = 0; i < snapshot.length; i += 1) {
-      const frameStart = nowMs();
-      do {
-        const extrusion = snapshot[i];
-        forEachQualityMonitor((monitor) => monitor.recordExtrusion(extrusion));
-        i += 1;
-      } while (i < snapshot.length && nowMs() - frameStart < 8);
-      i -= 1;
-      if (i + 1 < snapshot.length) {
-        await nextUiFrame();
-      }
-    }
-    runFinalQualityChecks();
-    refreshAllQualityMonitors(true);
-  }
-
   function captureSceneFrameSnapshot() {
     if (!canvas) {
       return;
@@ -2813,11 +2794,6 @@ function initHpSim() {
     sceneChangeState.replayCancelRequested = false;
     const renderSystem = world.getResource('renderSystem');
     const pauseState = world.getResource('pauseState');
-    const shouldResetQuality =
-      Boolean(sceneChange?.wasPrinting) && machineQualityMonitors.size > 0;
-    if (shouldResetQuality) {
-      resetQualityMonitors({ keepReference: true });
-    }
     if (!sceneChange || !sceneChange.wasPrinting) {
       if (renderSystem && typeof renderSystem.setDrawingSuspended === 'function') {
         renderSystem.setDrawingSuspended(false);
@@ -2845,13 +2821,12 @@ function initHpSim() {
     const queueClone = cloneCommandList(playbackState.queue);
     const extruderComp = getExtruderComponent();
     const extrusionSnapshot = cloneExtrusionList(sceneChange.extrusionSnapshot);
-    let finalExtrusions = [];
     const showReplay = Boolean(sceneChange.wasPrinting && historyClone.length > 0);
     if (showReplay) {
       showReplayStatus();
     }
     if (extruderComp) {
-      finalExtrusions = restoreReplayExtrusions(extruderComp, extrusionSnapshot);
+      restoreReplayExtrusions(extruderComp, extrusionSnapshot);
     }
     if (renderSystem) {
       if (typeof renderSystem.setDrawingSuspended === 'function') {
@@ -2894,26 +2869,15 @@ function initHpSim() {
     remoteSystem.wasPaused = false;
     if (extruderComp) {
       if (replayResult.cancelled) {
-        finalExtrusions = restoreReplayExtrusions(extruderComp, extrusionSnapshot);
+        restoreReplayExtrusions(extruderComp, extrusionSnapshot);
         showPrintStatus('Replay cancelled. Print remains paused.');
       } else if (Array.isArray(extruderComp.extrusions)) {
         const replayedExtrusions = cloneExtrusionList(extruderComp.extrusions.slice(replaySeedExtrusionCount));
         if (replayedExtrusions.length > 0) {
           extruderComp.extrusions = replayedExtrusions;
-          finalExtrusions = replayedExtrusions;
         } else {
-          finalExtrusions = restoreReplayExtrusions(extruderComp, extrusionSnapshot);
+          restoreReplayExtrusions(extruderComp, extrusionSnapshot);
         }
-      }
-    }
-    if (shouldResetQuality) {
-      if (finalExtrusions.length > 0) {
-        showReplayStatus('Updating quality metrics...', { cancellable: false });
-        await replayExtrusionsIntoQualityMonitors(finalExtrusions);
-        hideReplayStatus();
-      } else {
-        runFinalQualityChecks();
-        refreshAllQualityMonitors(true);
       }
     }
 
