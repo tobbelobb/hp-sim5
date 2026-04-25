@@ -25,6 +25,7 @@ import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
 import { getMachineMotorDiagnostics } from './motor-diagnostics.js';
 import { bakeCableSceneUsdaSource } from '../../src/js/usd/cable_scene_baker.js';
+import { PerformanceMonitor } from './performance-monitor.js';
 
 const HP3_USDA_KEY = 'hp3_rigid_body.usda';
 const HP4_USDA_KEY = 'hp4_rigid_body.usda';
@@ -406,6 +407,15 @@ function initHpSim() {
       : null;
   const klipperPacerDiagnosticsEnabled = ['1', 'true', 'yes']
     .includes((urlParams?.get('klipper_pacer_debug') || '').toLowerCase());
+
+  const perfEnabled = ['1', 'true', 'yes']
+    .includes((urlParams?.get('perf') || '').toLowerCase());
+  world.setResource('performanceMonitor', new PerformanceMonitor({
+    enabled: perfEnabled,
+    logEverySteps: 3000,
+    slowStepMs: 8.0,
+  }));
+
   const externalWsParam = urlParams?.get('gcode_ws') || urlParams?.get('rrf_ws') || null;
   const externalWsUrl = normalizeWsUrl(externalWsParam);
   const externalCommandQueue = [];

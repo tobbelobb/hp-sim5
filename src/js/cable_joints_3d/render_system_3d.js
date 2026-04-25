@@ -1501,6 +1501,21 @@ export class RenderSystem3D {
   }
 
   update(world, dt = 0) {
+    const perf = world?.getResource?.('performanceMonitor');
+
+    if (perf?.enabled) {
+      const t0 = performance.now();
+      try {
+        return this._updateImpl(world, dt);
+      } finally {
+        perf.measureSample?.('RenderSystem3D.update.inner', performance.now() - t0);
+      }
+    }
+
+    return this._updateImpl(world, dt);
+  }
+
+  _updateImpl(world, dt) {
     if (world) {
       this._lastWorld = world;
     }

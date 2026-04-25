@@ -116,17 +116,30 @@ export class World {
   update(dt) {
     const pauseState = this.getResource('pauseState');
     const errorState = this.getResource('errorState');
+    const perf = this.getResource('performanceMonitor');
+
     const isPaused = pauseState ? pauseState.paused : false;
     const hasError = errorState ? errorState.hasError : false;
 
-    for (const system of this.systems) {
-      // Skip systems if paused (and system doesn't run in pause) OR if there's an error
-      if (system.update && ((!system.runInPause && isPaused) || hasError)) {
-        continue; // Skip systems if paused or error occurred
+    perf?.beginStep?.();
+
+    try {
+      for (const system of this.systems) {
+        // Skip systems if paused (and system doesn't run in pause) OR if there's an error
+        if (system.update && ((!system.runInPause && isPaused) || hasError)) {
+          continue; // Skip systems if paused or error occurred
+        }
+        if (system.update) {
+          const name = system.constructor?.name || 'AnonymousSystem';
+          if (perf?.enabled) {
+            perf.measureSystem(name, () => system.update(this, dt));
+          } else {
+            system.update(this, dt);
+          }
+        }
       }
-      if (system.update) {
-        system.update(this, dt);
-      }
+    } finally {
+      perf?.endStep?.();
     }
   }
 }

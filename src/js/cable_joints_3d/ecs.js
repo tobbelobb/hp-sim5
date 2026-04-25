@@ -108,3 +108,5 @@ function _resourceBool(world, key, fallback = true) {
 export function layeringEnabled(world) {
   return _resourceBool(world, 'enableLayering', true);
 }
+
+

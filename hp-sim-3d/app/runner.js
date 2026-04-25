@@ -43,6 +43,13 @@ export function runGame(world, internalSetupScene, options = {}) {
 
   const getPauseState = () => world.getResource('pauseState');
   const getRenderSystem = () => world.getResource('renderSystem') || null;
+  const measurePerfBlock = (name, fn) => {
+    const perf = world.getResource('performanceMonitor');
+    if (perf?.enabled && typeof perf.measureBlock === 'function') {
+      return perf.measureBlock(name, fn);
+    }
+    return fn();
+  };
 
   const updatePauseButtonLabel = () => {
     const pauseState = getPauseState();
@@ -104,11 +111,17 @@ export function runGame(world, internalSetupScene, options = {}) {
     if (!renderSystem || renderSystem.drawingSuspended) {
       return;
     }
+
     if (typeof renderSystem.requestRender === 'function') {
-      renderSystem.requestRender(world);
+      measurePerfBlock('RenderSystem3D.requestRender', () => {
+        renderSystem.requestRender(world);
+      });
       return;
     }
-    renderSystem.update?.(world, 0);
+
+    measurePerfBlock('RenderSystem3D.update', () => {
+      renderSystem.update?.(world, 0);
+    });
   };
 
   const scheduleIdleCheck = () => {
@@ -160,7 +173,9 @@ export function runGame(world, internalSetupScene, options = {}) {
       return;
     }
     renderCounter = 0;
-    renderSystem.update?.(world, 0);
+    measurePerfBlock('RenderSystem3D.update', () => {
+      renderSystem.update?.(world, 0);
+    });
   };
 
   const updateSpeedMeter = () => {
