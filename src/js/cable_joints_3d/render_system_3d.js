@@ -643,6 +643,12 @@ export class RenderSystem3D {
     this.drawnPositionTraceCount = 0;
     this.drawnPositionTraceMarkerCount = 0;
     this.drawnExtrusionCount = 0;
+    this.extrusionPointCloud = new AppendOnlyPointCloud(this.scene, {
+      chunkSize: 65536,
+      color: DEFAULT_CABLE_COLOR,
+      size: DEFAULT_EXTRUSION_POINT_SIZE,
+      zOffset: DEFAULT_TRACE_Z,
+    });
     this._animationLoopActive = false;
     this._requestRenderHandle = null;
     this._lastWorld = null;
@@ -802,22 +808,6 @@ export class RenderSystem3D {
     this.referenceLines.userData.ownsGeometry = true;
     this.referenceLines.userData.ownsMaterial = true;
     this.scene.add(this.referenceLines);
-
-    this.extrusionPointsMaterial = new THREE.PointsMaterial({
-      size: DEFAULT_EXTRUSION_POINT_SIZE,
-      sizeAttenuation: false,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.95,
-      depthWrite: false,
-      toneMapped: false
-    });
-    this.extrusionPoints = new THREE.Points(new THREE.BufferGeometry(), this.extrusionPointsMaterial);
-    this.extrusionPoints.frustumCulled = false;
-    this.extrusionPoints.renderOrder = 850;
-    this.extrusionPoints.userData.ownsGeometry = true;
-    this.extrusionPoints.userData.ownsMaterial = true;
-    this.scene.add(this.extrusionPoints);
 
     this.positionTraceMaterial = new THREE.PointsMaterial({
       color: DEFAULT_TRACE_COLOR,
@@ -1184,8 +1174,8 @@ export class RenderSystem3D {
   }
 
   clearExtrusions() {
+    this.extrusionPointCloud?.clear?.();
     this.drawnExtrusionCount = 0;
-    this._updatePointObject(this.extrusionPoints, [], [], DEFAULT_TRACE_Z);
     this.requestRender();
   }
 
@@ -1382,10 +1372,22 @@ export class RenderSystem3D {
     this.referenceDirty = false;
   }
 
+  _ensureExtrusionPointCloud() {
+    if (!this.extrusionPointCloud) {
+      this.extrusionPointCloud = new AppendOnlyPointCloud(this.scene, {
+        chunkSize: 65536,
+        color: DEFAULT_CABLE_COLOR,
+        size: DEFAULT_EXTRUSION_POINT_SIZE,
+        zOffset: DEFAULT_TRACE_Z,
+      });
+    }
+    return this.extrusionPointCloud;
+  }
+
   _syncExtrusions(world) {
     const extruderEntities = world.query([ExtruderComponent]);
     if (extruderEntities.length === 0) {
-      if (this.drawnExtrusionCount !== 0 || this.extrusionPoints.visible) {
+      if (this.drawnExtrusionCount !== 0 || (this.extrusionPointCloud?.totalPoints ?? 0) !== 0) {
         this.clearExtrusions();
       }
       return;
@@ -1393,28 +1395,31 @@ export class RenderSystem3D {
 
     const extruderComp = world.getComponent(extruderEntities[0], ExtruderComponent);
     const extrusions = Array.isArray(extruderComp?.extrusions) ? extruderComp.extrusions : [];
-    if (extrusions.length === this.drawnExtrusionCount && this.extrusionPoints.visible === (extrusions.length > 0)) {
+    if (extrusions.length === this.drawnExtrusionCount) {
       return;
     }
 
-    const points = [];
-    const colors = [];
-    for (const extrusion of extrusions) {
-      if (!Array.isArray(extrusion?.pos) || extrusion.pos.length < 2) {
+    const pointCloud = this._ensureExtrusionPointCloud();
+    if (this.drawnExtrusionCount > extrusions.length) {
+      pointCloud.clear();
+      this.drawnExtrusionCount = 0;
+    }
+
+    for (let i = this.drawnExtrusionCount; i < extrusions.length; i += 1) {
+      const extrusion = extrusions[i];
+      const point = getExtrusionPoint(extrusion, extruderComp);
+      if (!point) {
         continue;
       }
-      const machineTip = extrusion?.machineId
-        ? extruderComp?.machineTips?.[extrusion.machineId] || extruderComp?.machineCenters?.[extrusion.machineId]
-        : extruderComp?.tipPos || extruderComp?.centerPos;
-      points.push({
-        x: finiteOr(extrusion.pos[0], finiteOr(machineTip?.x, 0.0)),
-        y: finiteOr(extrusion.pos[1], finiteOr(machineTip?.y, 0.0)),
-        z: finiteOr(extrusion.pos[2], finiteOr(machineTip?.z, DEFAULT_TRACE_Z))
-      });
-      colors.push(extrusion.qualityColor || extrusion.color || DEFAULT_CABLE_COLOR);
+      pointCloud.appendPoint(
+        point.x,
+        point.y,
+        point.z,
+        extrusion?.qualityColor || extrusion?.color || DEFAULT_CABLE_COLOR
+      );
     }
+    pointCloud.flushUpdates();
     this.drawnExtrusionCount = extrusions.length;
-    this._updatePointObject(this.extrusionPoints, points, colors, DEFAULT_TRACE_Z);
   }
 
   _syncPositionTrace(world) {
@@ -1733,10 +1738,6 @@ export class RenderSystem3D {
     if (this.referenceLines && this.scene) {
       this.scene.remove(this.referenceLines);
       disposeObject(this.referenceLines);
-    }
-    if (this.extrusionPoints && this.scene) {
-      this.scene.remove(this.extrusionPoints);
-      disposeObject(this.extrusionPoints);
     }
     if (this.positionTracePointsObject && this.scene) {
       this.scene.remove(this.positionTracePointsObject);
@@ -2784,4 +2785,180 @@ export class RenderSystem3D {
     this._applyCameraFromViewTransform();
     this.requestRender();
   }
+
+}
+
+function getExtrusionPoint(extrusion, extruderComp = null) {
+  if (!extrusion) return null;
+
+  const machineTip = extrusion?.machineId
+    ? extruderComp?.machineTips?.[extrusion.machineId] || extruderComp?.machineCenters?.[extrusion.machineId]
+    : extruderComp?.tipPos || extruderComp?.centerPos;
+
+  if (Array.isArray(extrusion.pos) && extrusion.pos.length >= 2) {
+    return {
+      x: finiteOr(extrusion.pos[0], finiteOr(machineTip?.x, 0.0)),
+      y: finiteOr(extrusion.pos[1], finiteOr(machineTip?.y, 0.0)),
+      z: finiteOr(extrusion.pos[2], finiteOr(machineTip?.z, DEFAULT_TRACE_Z)),
+    };
+  }
+
+  // Direct Vector3 shape
+  if (
+    Number.isFinite(extrusion.x) &&
+    Number.isFinite(extrusion.y) &&
+    Number.isFinite(extrusion.z)
+  ) {
+    return extrusion;
+  }
+
+  const point =
+    extrusion.position ||
+    extrusion.point ||
+    extrusion.tipPos ||
+    null;
+
+  if (
+    point &&
+    Number.isFinite(point.x) &&
+    Number.isFinite(point.y) &&
+    Number.isFinite(point.z)
+  ) {
+    return point;
+  }
+
+  return machineTip && Number.isFinite(machineTip.x) && Number.isFinite(machineTip.y)
+    ? {
+        x: finiteOr(machineTip.x, 0.0),
+        y: finiteOr(machineTip.y, 0.0),
+        z: finiteOr(machineTip.z, DEFAULT_TRACE_Z),
+      }
+    : null;
+}
+
+class AppendOnlyPointCloud {
+  constructor(scene, {
+    chunkSize = 65536,
+    color = '#ffffff',
+    size = 2,
+    zOffset = 0.0,
+  } = {}) {
+    this.scene = scene;
+    this.chunkSize = chunkSize;
+    this.color = color;
+    this.size = size;
+    this.zOffset = zOffset;
+
+    this.chunks = [];
+    this.totalPoints = 0;
+    this._color = new THREE.Color(color);
+  }
+
+  clear() {
+    for (const chunk of this.chunks) {
+      this.scene.remove(chunk.points);
+      chunk.geometry.dispose();
+      chunk.material.dispose();
+    }
+    this.chunks.length = 0;
+    this.totalPoints = 0;
+  }
+
+  appendPoint(x, y, z, color = this.color) {
+    let chunk = this.chunks[this.chunks.length - 1];
+
+    if (!chunk || chunk.count >= this.chunkSize) {
+      chunk = this.createChunk();
+      this.chunks.push(chunk);
+    }
+
+    const i = chunk.count;
+    const base = i * 3;
+
+    chunk.positions[base] = x;
+    chunk.positions[base + 1] = y;
+    chunk.positions[base + 2] = z + this.zOffset;
+    this._color.set(color || this.color);
+    chunk.colors[base] = this._color.r;
+    chunk.colors[base + 1] = this._color.g;
+    chunk.colors[base + 2] = this._color.b;
+
+    chunk.count += 1;
+    this.totalPoints += 1;
+
+    chunk.geometry.setDrawRange(0, chunk.count);
+    chunk.dirtyStart = Math.min(chunk.dirtyStart, base);
+    chunk.dirtyEnd = Math.max(chunk.dirtyEnd, base + 3);
+  }
+
+  flushUpdates() {
+    for (const chunk of this.chunks) {
+      if (!(chunk.dirtyEnd > chunk.dirtyStart)) {
+        continue;
+      }
+      markAttributeRangeDirty(chunk.geometry.attributes.position, chunk.dirtyStart, chunk.dirtyEnd);
+      markAttributeRangeDirty(chunk.geometry.attributes.color, chunk.dirtyStart, chunk.dirtyEnd);
+      chunk.dirtyStart = Infinity;
+      chunk.dirtyEnd = -Infinity;
+    }
+  }
+
+  createChunk() {
+    const positions = new Float32Array(this.chunkSize * 3);
+    const colors = new Float32Array(this.chunkSize * 3);
+
+    const geometry = new THREE.BufferGeometry();
+    const positionAttr = new THREE.BufferAttribute(positions, 3);
+    const colorAttr = new THREE.BufferAttribute(colors, 3);
+    positionAttr.setUsage(THREE.DynamicDrawUsage);
+    colorAttr.setUsage(THREE.DynamicDrawUsage);
+    geometry.setAttribute('position', positionAttr);
+    geometry.setAttribute('color', colorAttr);
+    geometry.setDrawRange(0, 0);
+
+    const material = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: this.size,
+      sizeAttenuation: false,
+      vertexColors: true,
+      depthWrite: false,
+      transparent: true,
+      opacity: 0.95,
+      toneMapped: false,
+    });
+
+    const points = new THREE.Points(geometry, material);
+    points.frustumCulled = false;
+    points.renderOrder = 850;
+    points.userData.ownsGeometry = true;
+    points.userData.ownsMaterial = true;
+
+    this.scene.add(points);
+
+    return {
+      geometry,
+      material,
+      points,
+      positions,
+      colors,
+      count: 0,
+      dirtyStart: Infinity,
+      dirtyEnd: -Infinity,
+    };
+  }
+}
+
+function markAttributeRangeDirty(attribute, start, end) {
+  if (!attribute) {
+    return;
+  }
+
+  const count = Math.max(0, end - start);
+  if (typeof attribute.addUpdateRange === 'function') {
+    attribute.addUpdateRange(start, count);
+  } else if (attribute.updateRange) {
+    attribute.updateRange.offset = start;
+    attribute.updateRange.count = count;
+  }
+  attribute.needsUpdate = true;
 }

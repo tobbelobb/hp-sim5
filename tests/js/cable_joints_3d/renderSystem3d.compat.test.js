@@ -52,8 +52,6 @@ function createCompatStub(canvasOverrides = {}) {
   system._lastWorld = null;
   system.referenceMaterial = new THREE.LineBasicMaterial({ color: '#1e90ff' });
   system.referenceLines = new THREE.LineSegments(new THREE.BufferGeometry(), system.referenceMaterial);
-  system.extrusionPointsMaterial = new THREE.PointsMaterial({ size: 7, sizeAttenuation: false, vertexColors: true });
-  system.extrusionPoints = new THREE.Points(new THREE.BufferGeometry(), system.extrusionPointsMaterial);
   system.positionTraceMaterial = new THREE.PointsMaterial({ color: '#ffffff', size: 6, sizeAttenuation: false });
   system.positionTracePointsObject = new THREE.Points(new THREE.BufferGeometry(), system.positionTraceMaterial);
   system.positionTraceMarkerMaterial = new THREE.PointsMaterial({ color: '#2dd4bf', size: 8, sizeAttenuation: false });
@@ -104,6 +102,7 @@ function createCompatStub(canvasOverrides = {}) {
   system.rotateOrbitByPixels = RenderSystem3D.prototype.rotateOrbitByPixels;
   system._updatePointObject = RenderSystem3D.prototype._updatePointObject;
   system._syncReferencePaths = RenderSystem3D.prototype._syncReferencePaths;
+  system._ensureExtrusionPointCloud = RenderSystem3D.prototype._ensureExtrusionPointCloud;
   system._syncExtrusions = RenderSystem3D.prototype._syncExtrusions;
   system._syncExtruder = RenderSystem3D.prototype._syncExtruder;
   system._syncPositionTrace = RenderSystem3D.prototype._syncPositionTrace;
@@ -138,7 +137,6 @@ function createCompatStub(canvasOverrides = {}) {
   system._rayPlanePoint = new THREE.Vector3();
   system._rayHit = new THREE.Vector3();
   system.scene.add(system.referenceLines);
-  system.scene.add(system.extrusionPoints);
   system.scene.add(system.positionTracePointsObject);
   system.scene.add(system.positionTraceMarkersObject);
   system.scene.add(system.root);
@@ -152,8 +150,7 @@ function createCompatStub(canvasOverrides = {}) {
 function disposeCompatStub(system) {
   system.referenceLines.geometry.dispose();
   system.referenceMaterial.dispose();
-  system.extrusionPoints.geometry.dispose();
-  system.extrusionPointsMaterial.dispose();
+  system.extrusionPointCloud?.clear?.();
   system.positionTracePointsObject.geometry.dispose();
   system.positionTraceMaterial.dispose();
   system.positionTraceMarkersObject.geometry.dispose();
@@ -236,8 +233,10 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
 
       system._syncExtrusions(world);
       expect(system.drawnExtrusionCount).toBe(1);
-      expect(system.extrusionPoints.geometry.getAttribute('position').count).toBe(1);
-      expect(system.extrusionPoints.geometry.getAttribute('position').getZ(0)).toBeCloseTo(-0.001, 6);
+      const extrusionPositions = system.extrusionPointCloud.chunks[0].geometry.getAttribute('position');
+      expect(system.extrusionPointCloud.totalPoints).toBe(1);
+      expect(system.extrusionPointCloud.chunks[0].geometry.drawRange.count).toBe(1);
+      expect(extrusionPositions.getZ(0)).toBeCloseTo(-0.001, 6);
 
       system.setPositionTraceEnabled(true);
       system._syncPositionTrace(world);
@@ -301,7 +300,7 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
 
       system._syncExtrusions(world);
 
-      const colorAttr = system.extrusionPoints.geometry.getAttribute('color');
+      const colorAttr = system.extrusionPointCloud.chunks[0].geometry.getAttribute('color');
       expect(colorAttr.getX(0)).toBeCloseTo(1.0, 6);
       expect(colorAttr.getY(0)).toBeCloseTo(1.0, 6);
       expect(colorAttr.getZ(0)).toBeCloseTo(1.0, 6);
