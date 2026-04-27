@@ -13,11 +13,191 @@ import {
   CableJointComponent,
   CablePathComponent,
   PBDCableConstraintSolver,
+  _updateAttachmentPoints,
 } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
 import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
+import { tangentFromPointToSphere } from '../../../src/js/cable_joints_3d/geometry3.js';
 import { StepperMotorComponent } from '../../../hp-sim-3d/app/hangprinter_stepper_motor.js';
 
 describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
+  function rotateBodyZ(world, bodyEntity, angle) {
+    const q = world.getComponent(bodyEntity, OrientationComponent).quaternion;
+    q.x = 0.0;
+    q.y = 0.0;
+    q.z = Math.sin(angle / 2.0);
+    q.w = Math.cos(angle / 2.0);
+  }
+
+  test('external rigid-body-mounted spool winding includes host body twist', () => {
+    const world = new World();
+    world.setResource('dt', 1.0);
+
+    const body = world.createEntity();
+    world.addComponent(body, new PositionComponent(0.0, 0.0, 0.0));
+    world.addComponent(body, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
+    world.addComponent(body, new MassComponent(1.0));
+    world.addComponent(body, new MomentOfInertiaComponent(1.0));
+
+    const spool = world.createEntity();
+    world.addComponent(spool, new PositionComponent(0.0, 0.0, 0.0));
+    world.addComponent(spool, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
+    world.addComponent(spool, new RadiusComponent(1.0));
+    world.addComponent(spool, new MassComponent(0.0));
+    world.addComponent(
+      spool,
+      new CableLinkComponent(
+        0.0,
+        0.0,
+        0.0,
+        null,
+        null,
+        new Vector3(0.0, 0.0, 1.0),
+      ),
+    );
+    world.addComponent(
+      spool,
+      new RigidBodyMemberComponent(
+        body,
+        new Vector3(0.0, 0.0, 0.0),
+      ),
+    );
+    world.addComponent(body, new RigidBodyComponent([spool]));
+
+    const anchor = world.createEntity();
+    const anchorPos = new Vector3(2.0, 0.0, 0.0);
+    const initialSpoolAttachment = tangentFromPointToSphere(
+      anchorPos,
+      new Vector3(0.0, 0.0, 0.0),
+      1.0,
+      new Vector3(0.0, 0.0, 1.0),
+      true,
+    ).a_sphere;
+    world.addComponent(anchor, new PositionComponent(anchorPos.x, anchorPos.y, anchorPos.z));
+    world.addComponent(anchor, new MassComponent(-1.0));
+
+    const jointEntity = world.createEntity();
+    world.addComponent(
+      jointEntity,
+      CableJointComponent.fromWorld(
+        anchor,
+        spool,
+        2.0,
+        anchorPos,
+        initialSpoolAttachment,
+      ),
+    );
+
+    const pathEntity = world.createEntity();
+    world.addComponent(
+      pathEntity,
+      new CablePathComponent(
+        world,
+        [jointEntity],
+        ['attachment', 'hybrid'],
+        [true, true],
+        Infinity,
+        [0.0, 1.0],
+        0.0,
+      ),
+    );
+    const restBefore = world.getComponent(jointEntity, CableJointComponent).restLength;
+
+    rotateBodyZ(world, body, 0.25);
+    _updateAttachmentPoints(world);
+
+    const restAfter = world.getComponent(jointEntity, CableJointComponent).restLength;
+    expect(Math.abs(restAfter - restBefore)).toBeGreaterThan(1e-4);
+  });
+
+  test('same-body pinhole-to-spool winding ignores host body twist', () => {
+    const world = new World();
+    world.setResource('dt', 1.0);
+
+    const body = world.createEntity();
+    world.addComponent(body, new PositionComponent(0.0, 0.0, 0.0));
+    world.addComponent(body, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
+    world.addComponent(body, new MassComponent(1.0));
+    world.addComponent(body, new MomentOfInertiaComponent(1.0));
+
+    const pinhole = world.createEntity();
+    world.addComponent(pinhole, new PositionComponent(2.0, 0.0, 0.0));
+    world.addComponent(pinhole, new MassComponent(0.0));
+    world.addComponent(
+      pinhole,
+      new RigidBodyMemberComponent(
+        body,
+        new Vector3(2.0, 0.0, 0.0),
+      ),
+    );
+
+    const spool = world.createEntity();
+    world.addComponent(spool, new PositionComponent(0.0, 0.0, 0.0));
+    world.addComponent(spool, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
+    world.addComponent(spool, new RadiusComponent(1.0));
+    world.addComponent(spool, new MassComponent(0.0));
+    world.addComponent(
+      spool,
+      new CableLinkComponent(
+        0.0,
+        0.0,
+        0.0,
+        null,
+        null,
+        new Vector3(0.0, 0.0, 1.0),
+      ),
+    );
+    world.addComponent(
+      spool,
+      new RigidBodyMemberComponent(
+        body,
+        new Vector3(0.0, 0.0, 0.0),
+      ),
+    );
+    world.addComponent(body, new RigidBodyComponent([pinhole, spool]));
+
+    const pinholePos = new Vector3(2.0, 0.0, 0.0);
+    const initialSpoolAttachment = tangentFromPointToSphere(
+      pinholePos,
+      new Vector3(0.0, 0.0, 0.0),
+      1.0,
+      new Vector3(0.0, 0.0, 1.0),
+      true,
+    ).a_sphere;
+
+    const jointEntity = world.createEntity();
+    world.addComponent(
+      jointEntity,
+      CableJointComponent.fromWorld(
+        pinhole,
+        spool,
+        2.0,
+        pinholePos,
+        initialSpoolAttachment,
+      ),
+    );
+
+    const pathEntity = world.createEntity();
+    world.addComponent(
+      pathEntity,
+      new CablePathComponent(
+        world,
+        [jointEntity],
+        ['pinhole', 'hybrid'],
+        [true, true],
+        Infinity,
+        [0.0, 1.0],
+        0.0,
+      ),
+    );
+    const restBefore = world.getComponent(jointEntity, CableJointComponent).restLength;
+
+    rotateBodyZ(world, body, 0.25);
+    _updateAttachmentPoints(world);
+
+    const restAfter = world.getComponent(jointEntity, CableJointComponent).restLength;
+    expect(restAfter).toBeCloseTo(restBefore, 12);
+  });
+
   test('maps external member corrections onto the host rigid body', () => {
     const world = new World();
     world.setResource('dt', 1.0);

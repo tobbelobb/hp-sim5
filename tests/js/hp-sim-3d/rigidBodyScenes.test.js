@@ -17,6 +17,7 @@ jest.mock('../../../src/js/cable_joints_3d/render_system_3d.js', () => {
 import { readFileSync } from 'fs';
 import path from 'path';
 import { Open as UsdOpen } from '../../../src/js/usd/stage.js';
+import { bakeCableSceneUsdaSource } from '../../../src/js/usd/cable_scene_baker.js';
 import {
   World,
   RigidBodyComponent,
@@ -80,8 +81,10 @@ describe('rigid-body USDA scene loading', () => {
     ['slideprinter_single_pinholes_rigid_body.usda', 6],
     ['slideprinter_hexagon_rigid_body.usda', 9],
   ])('loads %s into a single rigid-body assembly', async (fileName, expectedMembers) => {
+    const source = readFileSync(path.resolve(process.cwd(), 'public/usd_scenes', fileName), 'utf8');
+    const baked = bakeCableSceneUsdaSource(source).source;
     const stage = await UsdOpen(
-      readFileSync(path.resolve(process.cwd(), 'public/usd_scenes', fileName), 'utf8'),
+      baked,
     );
     const world = new World();
 

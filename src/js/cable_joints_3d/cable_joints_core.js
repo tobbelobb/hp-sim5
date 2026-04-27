@@ -570,6 +570,96 @@ function _previousLocalOrientationForLink(linkComp, fallbackQuaternion = null) {
   return linkComp?.prevCableAttachmentTimeLocalOrientation || fallbackQuaternion;
 }
 
+function _sameRigidBodyMemberPair(world, entityA, entityB) {
+  const memberA = world.getComponent(entityA, RigidBodyMemberComponent);
+  const memberB = world.getComponent(entityB, RigidBodyMemberComponent);
+  return Boolean(memberA && memberB && memberA.bodyEntity === memberB.bodyEntity);
+}
+
+function _orientationFrameForEndpoint(
+  world,
+  entityId,
+  counterpartEntityId,
+  currentWorldQuaternion,
+  previousWorldQuaternion,
+  linkComp,
+) {
+  // Onboard spans should ignore host body rotation. External spans should
+  // include the mounted part's full world rotation against the outside cable.
+  if (_sameRigidBodyMemberPair(world, entityId, counterpartEntityId)) {
+    return {
+      current: _currentLocalOrientationForEntity(world, entityId, currentWorldQuaternion),
+      previous: _previousLocalOrientationForLink(linkComp, previousWorldQuaternion),
+    };
+  }
+  return {
+    current: currentWorldQuaternion,
+    previous: previousWorldQuaternion,
+  };
+}
+
+function _bodyOrientationFromMemberFrame(worldQuaternion, localQuaternion) {
+  if (!worldQuaternion || !localQuaternion) {
+    return null;
+  }
+  return new Quaternion()
+    .multiplyQuaternions(
+      worldQuaternion,
+      localQuaternion.clone().conjugate().normalize(),
+    )
+    .normalize();
+}
+
+function _arcFrameForEndpoint(
+  world,
+  entityId,
+  counterpartEntityId,
+  previousVector,
+  currentVector,
+  planeNormal,
+  previousWorldQuaternion,
+  currentWorldQuaternion,
+  previousFrameQuaternion,
+  currentFrameQuaternion,
+) {
+  if (!_sameRigidBodyMemberPair(world, entityId, counterpartEntityId)) {
+    return {
+      previousVector,
+      currentVector,
+      planeNormal,
+    };
+  }
+
+  const previousBodyOrientation = _bodyOrientationFromMemberFrame(
+    previousWorldQuaternion,
+    previousFrameQuaternion,
+  );
+  const currentBodyOrientation = _bodyOrientationFromMemberFrame(
+    currentWorldQuaternion,
+    currentFrameQuaternion,
+  );
+  if (!previousBodyOrientation || !currentBodyOrientation) {
+    return {
+      previousVector,
+      currentVector,
+      planeNormal,
+    };
+  }
+
+  const previousBodyInverse = previousBodyOrientation.clone().conjugate().normalize();
+  const currentBodyInverse = currentBodyOrientation.clone().conjugate().normalize();
+  const framePlaneNormal = currentBodyInverse.transformVector(planeNormal.clone());
+  if (framePlaneNormal.lengthSq() > EPSILON) {
+    framePlaneNormal.normalize();
+  }
+
+  return {
+    previousVector: previousBodyInverse.transformVector(previousVector),
+    currentVector: currentBodyInverse.transformVector(currentVector),
+    planeNormal: framePlaneNormal,
+  };
+}
+
 export function _orientationAngleForEntity(world, entityId, quaternion, localQuaternion = null) {
   const linkComp = world.getComponent(entityId, CableLinkComponent);
   if (linkComp?.cablePlaneNormalLocal) {
@@ -1145,15 +1235,21 @@ export function calculateAttachmentPoints(world, joint, path, i, radiusA, radius
   const planeNormalA = _getPlaneNormal(world, entityA);
   const currentQuatA = getEntityWorldOrientation(world, entityA);
   const prevQuatA = linkAComp?.prevCableAttachmentTimeOrientation;
-  const currentLocalQuatA = _currentLocalOrientationForEntity(world, entityA, currentQuatA);
-  const prevLocalQuatA = _previousLocalOrientationForLink(linkAComp, prevQuatA);
+  const frameQuatA = _orientationFrameForEndpoint(
+    world,
+    entityA,
+    entityB,
+    currentQuatA,
+    prevQuatA,
+    linkAComp,
+  );
   const deltaAngleA = _deltaAngleForEntity(
     world,
     entityA,
     prevQuatA,
     currentQuatA,
-    prevLocalQuatA,
-    currentLocalQuatA,
+    frameQuatA.previous,
+    frameQuatA.current,
   );
 
   const cwA = _effectiveCW(path, A, true);
@@ -1176,15 +1272,21 @@ export function calculateAttachmentPoints(world, joint, path, i, radiusA, radius
   const planeNormalB = _getPlaneNormal(world, entityB);
   const currentQuatB = getEntityWorldOrientation(world, entityB);
   const prevQuatB = linkBComp?.prevCableAttachmentTimeOrientation;
-  const currentLocalQuatB = _currentLocalOrientationForEntity(world, entityB, currentQuatB);
-  const prevLocalQuatB = _previousLocalOrientationForLink(linkBComp, prevQuatB);
+  const frameQuatB = _orientationFrameForEndpoint(
+    world,
+    entityB,
+    entityA,
+    currentQuatB,
+    prevQuatB,
+    linkBComp,
+  );
   const deltaAngleB = _deltaAngleForEntity(
     world,
     entityB,
     prevQuatB,
     currentQuatB,
-    prevLocalQuatB,
-    currentLocalQuatB,
+    frameQuatB.previous,
+    frameQuatB.current,
   );
 
   const cwB = _effectiveCW(path, B, false);
@@ -1277,17 +1379,23 @@ export function _updateAttachmentPoints(world) {
       const planeNormalA = _getPlaneNormal(world, entityA);
       const currentQuatA = getEntityWorldOrientation(world, entityA);
       const prevQuatA = linkAComp?.prevCableAttachmentTimeOrientation;
-      const currentLocalQuatA = _currentLocalOrientationForEntity(world, entityA, currentQuatA);
-      const prevLocalQuatA = _previousLocalOrientationForLink(linkAComp, prevQuatA);
-      const angleA = _orientationAngleForEntity(world, entityA, currentQuatA, currentLocalQuatA);
-      const prevAngleA = _orientationAngleForEntity(world, entityA, prevQuatA, prevLocalQuatA);
+      const frameQuatA = _orientationFrameForEndpoint(
+        world,
+        entityA,
+        entityB,
+        currentQuatA,
+        prevQuatA,
+        linkAComp,
+      );
+      const angleA = _orientationAngleForEntity(world, entityA, currentQuatA, frameQuatA.current);
+      const prevAngleA = _orientationAngleForEntity(world, entityA, prevQuatA, frameQuatA.previous);
       const deltaAngleA = _deltaAngleForEntity(
         world,
         entityA,
         prevQuatA,
         currentQuatA,
-        prevLocalQuatA,
-        currentLocalQuatA,
+        frameQuatA.previous,
+        frameQuatA.current,
       );
       const cwA = _effectiveCW(path, A, true);
       const rollingLinkA = _isRolling(path.linkTypes[A]);
@@ -1302,17 +1410,23 @@ export function _updateAttachmentPoints(world) {
       const planeNormalB = _getPlaneNormal(world, entityB);
       const currentQuatB = getEntityWorldOrientation(world, entityB);
       const prevQuatB = linkBComp?.prevCableAttachmentTimeOrientation;
-      const currentLocalQuatB = _currentLocalOrientationForEntity(world, entityB, currentQuatB);
-      const prevLocalQuatB = _previousLocalOrientationForLink(linkBComp, prevQuatB);
-      const angleB = _orientationAngleForEntity(world, entityB, currentQuatB, currentLocalQuatB);
-      const prevAngleB = _orientationAngleForEntity(world, entityB, prevQuatB, prevLocalQuatB);
+      const frameQuatB = _orientationFrameForEndpoint(
+        world,
+        entityB,
+        entityA,
+        currentQuatB,
+        prevQuatB,
+        linkBComp,
+      );
+      const angleB = _orientationAngleForEntity(world, entityB, currentQuatB, frameQuatB.current);
+      const prevAngleB = _orientationAngleForEntity(world, entityB, prevQuatB, frameQuatB.previous);
       const deltaAngleB = _deltaAngleForEntity(
         world,
         entityB,
         prevQuatB,
         currentQuatB,
-        prevLocalQuatB,
-        currentLocalQuatB,
+        frameQuatB.previous,
+        frameQuatB.current,
       );
       const cwB = _effectiveCW(path, B, false);
       const rollingLinkB = _isRolling(path.linkTypes[B]);
@@ -1368,7 +1482,7 @@ export function _updateAttachmentPoints(world) {
           attachmentA_current,
           currentQuatA,
           angleA,
-          currentLocalQuatA,
+          frameQuatA.current,
         );
         const thetaSignedA = (cwA ? -1.0 : 1.0) * thetaA;
         const knotAngleFromAttachmentA = _normalizeAngleSigned(attachmentRelOrientationA - thetaSignedA);
@@ -1392,7 +1506,7 @@ export function _updateAttachmentPoints(world) {
           attachmentB_current,
           currentQuatB,
           angleB,
-          currentLocalQuatB,
+          frameQuatB.current,
         );
         const thetaSignedB = (cwB ? 1.0 : -1.0) * thetaB;
         const knotAngleFromAttachmentB = _normalizeAngleSigned(attachmentRelOrientationB - thetaSignedB);
@@ -1415,13 +1529,25 @@ export function _updateAttachmentPoints(world) {
         radiusA !== undefined &&
         _isNonCenterAttachment(attachmentA_previous, prevPosA, radiusA)
       ) {
-        sA = signedArcLengthOnWheel(
+        const arcFrameA = _arcFrameForEndpoint(
+          world,
+          entityA,
+          entityB,
           attachmentA_previous.clone().subtract(prevPosA),
           attachmentA_current.clone().subtract(posA),
+          planeNormalA,
+          prevQuatA,
+          currentQuatA,
+          frameQuatA.previous,
+          frameQuatA.current,
+        );
+        sA = signedArcLengthOnWheel(
+          arcFrameA.previousVector,
+          arcFrameA.currentVector,
           new Vector3(0.0, 0.0, 0.0),
           radiusA,
           cwA,
-          planeNormalA
+          arcFrameA.planeNormal
         );
         if (isHybridA) {
           sA += _hybridStoredDeltaFromRotation(
@@ -1446,13 +1572,25 @@ export function _updateAttachmentPoints(world) {
         radiusB !== undefined &&
         _isNonCenterAttachment(attachmentB_previous, prevPosB, radiusB)
       ) {
-        sB = signedArcLengthOnWheel(
+        const arcFrameB = _arcFrameForEndpoint(
+          world,
+          entityB,
+          entityA,
           attachmentB_previous.clone().subtract(prevPosB),
           attachmentB_current.clone().subtract(posB),
+          planeNormalB,
+          prevQuatB,
+          currentQuatB,
+          frameQuatB.previous,
+          frameQuatB.current,
+        );
+        sB = signedArcLengthOnWheel(
+          arcFrameB.previousVector,
+          arcFrameB.currentVector,
           new Vector3(0.0, 0.0, 0.0),
           radiusB,
           cwB,
-          planeNormalB
+          arcFrameB.planeNormal
         );
         if (isHybridB) {
           sB += _hybridStoredDeltaFromRotation(
@@ -1622,7 +1760,7 @@ export function _updateAttachmentPoints(world) {
             attachmentA_current,
             currentQuatA,
             angleA,
-            currentLocalQuatA,
+            frameQuatA.current,
           );
           const thetaSignedWrappedA = _normalizeAngleSigned(attachmentRelOrientationA - knotAngleA);
           const thetaSignedCurrentA = thetaSignA * thetaCurrentA;
@@ -1657,7 +1795,7 @@ export function _updateAttachmentPoints(world) {
             attachmentB_current,
             currentQuatB,
             angleB,
-            currentLocalQuatB,
+            frameQuatB.current,
           );
           const thetaSignedWrappedB = _normalizeAngleSigned(attachmentRelOrientationB - knotAngleB);
           const thetaSignedCurrentB = thetaSignB * thetaCurrentB;
