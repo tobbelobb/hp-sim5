@@ -3,6 +3,7 @@ import {
   signedArcLengthOnWheel,
   tangentFromPointToSphere,
   tangentFromSphereToPoint,
+  tangentFromSphereToSphere,
 } from '../../../src/js/cable_joints_3d/geometry3.js';
 import { bakeCableSceneUsdaSource } from '../../../src/js/usd/cable_scene_baker.js';
 import { Open as UsdOpen, getAttribute } from '../../../src/js/usd/stage.js';
@@ -171,6 +172,105 @@ def Xform "World"
     expect(stored[2]).toBe(7);
     expect(getAttribute(pathPrim, 'cablePath:initPolicy')).toBe('manual');
     expect(getAttribute(pathPrim, 'cablePath:storedMode')).toEqual(['manual', 'manual', 'manual']);
+  });
+
+  test('derives direct hybrid-to-rolling joints on the wheel perimeter', async () => {
+    const source = `#usda 1.0
+
+def Xform "World"
+{
+    def Xform "Scene"
+    {
+        def Circle "Spool"
+        {
+            custom bool cable:linkable = 1
+            double radius = 1
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Circle "Wheel"
+        {
+            double radius = 0.5
+            double3 xformOp:translate = (3, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "Attach"
+        {
+            double3 xformOp:translate = (3, 2, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def CableJoint "JointSpoolToWheel"
+        {
+            custom rel physics:body0 = </World/Scene/Spool>
+            custom rel physics:body1 = </World/Scene/Wheel>
+        }
+
+        def CableJoint "JointWheelToAttach"
+        {
+            custom rel physics:body0 = </World/Scene/Wheel>
+            custom rel physics:body1 = </World/Scene/Attach>
+        }
+
+        def Xform "CablePathD0" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 0, 1]
+            custom rel cablePath:joints = [</World/Scene/JointSpoolToWheel>, </World/Scene/JointWheelToAttach>]
+            custom token[] cablePath:linkTypes = ["hybrid", "rolling", "attachment"]
+            custom double[] cablePath:stored = [1, 0, 0]
+            custom token[] cablePath:storedMode = ["manual", "auto", "manual"]
+            custom double cablePath:halfWidth = 0.1
+            custom token cablePath:initPolicy = "deriveMissing"
+        }
+    }
+}
+`;
+
+    const baked = bakeCableSceneUsdaSource(source);
+    const stage = await UsdOpen(baked.source);
+    const firstJoint = stage.GetPrimAtPath('/World/Scene/JointSpoolToWheel');
+    const secondJoint = stage.GetPrimAtPath('/World/Scene/JointWheelToAttach');
+    const pathPrim = stage.GetPrimAtPath('/World/Scene/CablePathD0');
+
+    const wheelPos = new Vector3(3.0, 0.0, 0.0);
+    const spoolTangent = tangentFromSphereToSphere(
+      new Vector3(0.0, 0.0, 0.0),
+      1.0,
+      false,
+      wheelPos,
+      0.5,
+      false,
+      PLANE_NORMAL,
+    );
+    const attachTangent = tangentFromSphereToPoint(
+      new Vector3(3.0, 2.0, 0.0),
+      wheelPos,
+      0.5,
+      PLANE_NORMAL,
+      false,
+    ).a_sphere;
+    const expectedStored = 0.6 * signedArcLengthOnWheel(
+      spoolTangent.b_sphere,
+      attachTangent,
+      wheelPos,
+      1.0,
+      false,
+      PLANE_NORMAL,
+      true,
+    );
+
+    expectVectorClose(getAttribute(firstJoint, 'localPos0'), spoolTangent.a_sphere);
+    expectVectorClose(getAttribute(firstJoint, 'localPos1'), spoolTangent.b_sphere.clone().subtract(wheelPos));
+    expectVectorClose(getAttribute(secondJoint, 'localPos0'), attachTangent.clone().subtract(wheelPos));
+    expect(getAttribute(firstJoint, 'localPos1')[0] ** 2 + getAttribute(firstJoint, 'localPos1')[1] ** 2)
+      .toBeCloseTo(0.25);
+    expect(getAttribute(pathPrim, 'cablePath:stored')[0]).toBe(1);
+    expect(getAttribute(pathPrim, 'cablePath:stored')[1]).toBeCloseTo(expectedStored);
+    expect(getAttribute(pathPrim, 'cablePath:stored')[1]).toBeGreaterThan(0);
   });
 
   test('can override authored cablePath:halfWidth while baking', async () => {

@@ -381,6 +381,15 @@ function computeLocalPoint(transform, worldPoint) {
   return inverse.transformVector(relative);
 }
 
+function projectPointToPlane(point, planePoint, planeNormal) {
+  const normal = planeNormal.clone();
+  if (normal.lengthSq() <= EPSILON) {
+    return point.clone();
+  }
+  normal.normalize();
+  return point.clone().subtract(normal, point.clone().subtract(planePoint).dot(normal));
+}
+
 function isRollingLink(linkType) {
   return linkType === 'rolling' || linkType === 'hybrid';
 }
@@ -475,17 +484,51 @@ function deriveJointWorldPoints(body0, body1, linkType0, linkType1, clockwise0, 
     if (!(body0.radius > EPSILON) || !(body1.radius > EPSILON)) {
       throw new Error(`Cannot derive rolling-to-rolling tangent without radii on ${body0.path} and ${body1.path}.`);
     }
-    const tangents = tangentFromSphereToSphere(
-      body0.position,
-      body0.radius,
-      clockwise0,
-      body1.position,
-      body1.radius,
-      clockwise1,
-      body0.planeNormal,
-    );
-    world0 = tangents.a_sphere;
-    world1 = tangents.b_sphere;
+    if (linkType0 === 'hybrid' && linkType1 === 'rolling') {
+      const projectedSource = projectPointToPlane(body0.position, body1.position, body1.planeNormal);
+      world1 = tangentFromPointToSphere(
+        projectedSource,
+        body1.position,
+        body1.radius,
+        body1.planeNormal,
+        clockwise1,
+      ).a_sphere;
+      world0 = tangentFromSphereToPoint(
+        world1,
+        body0.position,
+        body0.radius,
+        body0.planeNormal,
+        clockwise0,
+      ).a_sphere;
+    } else if (linkType0 === 'rolling' && linkType1 === 'hybrid') {
+      const projectedTarget = projectPointToPlane(body1.position, body0.position, body0.planeNormal);
+      world0 = tangentFromSphereToPoint(
+        projectedTarget,
+        body0.position,
+        body0.radius,
+        body0.planeNormal,
+        clockwise0,
+      ).a_sphere;
+      world1 = tangentFromPointToSphere(
+        world0,
+        body1.position,
+        body1.radius,
+        body1.planeNormal,
+        clockwise1,
+      ).a_sphere;
+    } else {
+      const tangents = tangentFromSphereToSphere(
+        body0.position,
+        body0.radius,
+        clockwise0,
+        body1.position,
+        body1.radius,
+        clockwise1,
+        body0.planeNormal,
+      );
+      world0 = tangents.a_sphere;
+      world1 = tangents.b_sphere;
+    }
   } else if (rolling0) {
     if (!(body0.radius > EPSILON)) {
       throw new Error(`Cannot derive rolling tangent without radius on ${body0.path}.`);

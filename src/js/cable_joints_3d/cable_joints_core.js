@@ -128,15 +128,13 @@ export class CablePathComponent {
         const radius = baseRadius + (layeringEnabled(world) ? this.cableHalfWidth : 0.0);
         const isCw = cw[i + 1];
 
-        const planeNormal = world.getComponent(linkId, CableLinkComponent)?.cablePlaneNormal;
-
         const initialStoredLength = signedArcLengthOnWheel(
           joint_i.attachmentPointB_world,
           joint_i_plus_1.attachmentPointA_world,
           center,
           radius,
           isCw,
-          planeNormal,
+          _getPlaneNormal(world, linkId),
           true
         );
         this.stored[i + 1] = initialStoredLength;
@@ -490,6 +488,14 @@ function _rotateAroundAxis(point, center, axis, angle, cw) {
   const axisNorm = axis.clone().normalize();
   const signedAngle = cw ? angle : -angle;
   return point.clone().subtract(center).rotateAroundAxis(axisNorm, signedAngle).add(center);
+}
+
+function _projectPointToPlane(point, planePoint, planeNormal) {
+  if (!point || !planePoint || !planeNormal || planeNormal.lengthSq() <= EPSILON) {
+    return point ? point.clone() : null;
+  }
+  const normal = planeNormal.clone().normalize();
+  return point.clone().subtract(normal, point.clone().subtract(planePoint).dot(normal));
 }
 
 function _effectiveCW(path, linkIndex, travellingFromCircle) {
@@ -1320,9 +1326,43 @@ export function calculateAttachmentPoints(world, joint, path, i, radiusA, radius
     }
   } else if (rollingLinkA && rollingLinkB) {
     if (posA && posB && radiusA !== undefined && radiusB !== undefined) {
-      const tangents = tangentFromSphereToSphere(posA, radiusA, cwA, posB, radiusB, cwB, planeNormalA);
-      attachmentA_current = tangents.a_sphere;
-      attachmentB_current = tangents.b_sphere;
+      if (isHybridA && !isHybridB) {
+        const projectedSource = _projectPointToPlane(posA, posB, planeNormalB);
+        attachmentB_current = tangentFromPointToSphere(
+          projectedSource,
+          posB,
+          radiusB,
+          planeNormalB,
+          cwB
+        ).a_sphere;
+        attachmentA_current = tangentFromSphereToPoint(
+          attachmentB_current,
+          posA,
+          radiusA,
+          planeNormalA,
+          cwA
+        ).a_sphere;
+      } else if (!isHybridA && isHybridB) {
+        const projectedTarget = _projectPointToPlane(posB, posA, planeNormalA);
+        attachmentA_current = tangentFromSphereToPoint(
+          projectedTarget,
+          posA,
+          radiusA,
+          planeNormalA,
+          cwA
+        ).a_sphere;
+        attachmentB_current = tangentFromPointToSphere(
+          attachmentA_current,
+          posB,
+          radiusB,
+          planeNormalB,
+          cwB
+        ).a_sphere;
+      } else {
+        const tangents = tangentFromSphereToSphere(posA, radiusA, cwA, posB, radiusB, cwB, planeNormalA);
+        attachmentA_current = tangents.a_sphere;
+        attachmentB_current = tangents.b_sphere;
+      }
     }
   } else {
     if (isHybridA && pADiffFromTranslation) {
