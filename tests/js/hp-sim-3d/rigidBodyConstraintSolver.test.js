@@ -18,6 +18,7 @@ import {
 import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
 import { tangentFromPointToSphere } from '../../../src/js/cable_joints_3d/geometry3.js';
 import { StepperMotorComponent } from '../../../hp-sim-3d/app/hangprinter_stepper_motor.js';
+import { SpoolStateComponent } from '../../../hp-sim-3d/app/hangprinter_spools.js';
 
 describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
   function rotateBodyZ(world, bodyEntity, angle) {
@@ -27,6 +28,69 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
     q.z = Math.sin(angle / 2.0);
     q.w = Math.cos(angle / 2.0);
   }
+
+  test('frictionless rolling wheels do not expose generic angular solver DOFs', () => {
+    const world = new World();
+    world.setResource('dt', 1.0);
+
+    const wheel = world.createEntity();
+    world.addComponent(wheel, new PositionComponent(0.0, 0.0, 0.0));
+    world.addComponent(wheel, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
+    world.addComponent(wheel, new MassComponent(-1.0));
+    world.addComponent(wheel, new RadiusComponent(1.0));
+    world.addComponent(wheel, new MomentOfInertiaComponent(0.1));
+    world.addComponent(wheel, new SpoolStateComponent(null, new Vector3(0.0, 0.0, 1.0)));
+    world.addComponent(
+      wheel,
+      new CableLinkComponent(
+        0.0,
+        0.0,
+        0.0,
+        null,
+        null,
+        new Vector3(0.0, 0.0, 1.0),
+      ),
+    );
+
+    const anchor = world.createEntity();
+    world.addComponent(anchor, new PositionComponent(3.0, 0.0, 0.0));
+    world.addComponent(anchor, new MassComponent(-1.0));
+
+    const jointEntity = world.createEntity();
+    world.addComponent(
+      jointEntity,
+      CableJointComponent.fromWorld(
+        wheel,
+        anchor,
+        1.0,
+        new Vector3(0.0, 1.0, 0.0),
+        new Vector3(3.0, 0.0, 0.0),
+      ),
+    );
+
+    const pathEntity = world.createEntity();
+    world.addComponent(
+      pathEntity,
+      new CablePathComponent(
+        world,
+        [jointEntity],
+        ['rolling', 'attachment'],
+        [true, true],
+        Infinity,
+        null,
+        0.0,
+      ),
+    );
+
+    const solver = new PBDCableConstraintSolver();
+    solver.update(world, 0.0);
+
+    const wheelOrientation = world.getComponent(wheel, OrientationComponent).quaternion;
+    expect(Math.abs(wheelOrientation.x)).toBeCloseTo(0.0, 12);
+    expect(Math.abs(wheelOrientation.y)).toBeCloseTo(0.0, 12);
+    expect(Math.abs(wheelOrientation.z)).toBeCloseTo(0.0, 12);
+    expect(Math.abs(wheelOrientation.w - 1.0)).toBeCloseTo(0.0, 12);
+  });
 
   test('external rigid-body-mounted spool winding includes host body twist', () => {
     const world = new World();
@@ -351,6 +415,7 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
     world.addComponent(spool, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
     world.addComponent(spool, new MassComponent(0.0));
     world.addComponent(spool, new MomentOfInertiaComponent(0.1));
+    world.addComponent(spool, new SpoolStateComponent(null, new Vector3(0.0, 0.0, 1.0)));
     world.addComponent(
       spool,
       new CableLinkComponent(

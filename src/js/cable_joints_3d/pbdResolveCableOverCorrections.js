@@ -12,6 +12,7 @@ import {
   MomentOfInertiaComponent,
   OrientationComponent
 } from './ecs.js';
+import { SpoolStateComponent } from '../../../hp-sim-3d/app/hangprinter_spools.js';
 import {
   computeWorldAttachment,
   getEntityWorldPosition,
@@ -61,6 +62,12 @@ function buildExternalMemberAngularSolveInfo(world, entityId, pointWorld, gradPo
 
 function isHybridLinkType(value) {
   return value === 'hybrid' || value === 'hybrid-attachment';
+}
+
+function hasAxisOnlyCableSpinDof(world, entityId) {
+  const spoolState = world.getComponent(entityId, SpoolStateComponent);
+  const linkComp = world.getComponent(entityId, CableLinkComponent);
+  return Boolean(spoolState && linkComp?.cablePlaneNormalLocal);
 }
 
 function getExternalMemberAngularSolveInfo(
@@ -224,7 +231,7 @@ export class PBDResolveCableOverCorrections {
 	    const massAComp = world.getComponent(solverEntityA, MassComponent);
 	    const invMassA = massAComp && massAComp.mass > 0 && Number.isFinite(massAComp.mass) ? 1.0 / massAComp.mass : 0.0;
 	    const moiAComp = world.getComponent(solverEntityA, MomentOfInertiaComponent);
-	    const invInertiaA = moiAComp ? moiAComp.invInertia : 0.0;
+	    const invInertiaA = (moiAComp && !hasAxisOnlyCableSpinDof(world, solverEntityA)) ? moiAComp.invInertia : 0.0;
 	    // Apply reaction torque to the rigid body that owns the endpoint member,
 	    // regardless of whether the solver endpoint was promoted to the body.
 	    const reactionBodyEntityA = getRigidBodyEntityForMember(world, entityA);
@@ -236,7 +243,7 @@ export class PBDResolveCableOverCorrections {
 	    const massBComp = world.getComponent(solverEntityB, MassComponent);
 	    const invMassB = massBComp && massBComp.mass > 0 && Number.isFinite(massBComp.mass) ? 1.0 / massBComp.mass : 0.0;
 	    const moiBComp = world.getComponent(solverEntityB, MomentOfInertiaComponent);
-	    const invInertiaB = moiBComp ? moiBComp.invInertia : 0.0;
+	    const invInertiaB = (moiBComp && !hasAxisOnlyCableSpinDof(world, solverEntityB)) ? moiBComp.invInertia : 0.0;
 	    // Apply reaction torque to the rigid body that owns the endpoint member,
 	    // regardless of whether the solver endpoint was promoted to the body.
 	    const reactionBodyEntityB = getRigidBodyEntityForMember(world, entityB);

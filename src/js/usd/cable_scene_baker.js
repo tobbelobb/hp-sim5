@@ -4,6 +4,7 @@ import {
   signedArcLengthOnWheel,
   tangentFromPointToSphere,
   tangentFromSphereToPoint,
+  tangentFromSphereToSphere,
 } from '../cable_joints_3d/geometry3.js';
 import { getAttribute, getRelationship } from './stage.js';
 import { parseUsdaAst } from './usda_parser.js';
@@ -430,6 +431,13 @@ function deriveRollingSidePoint(body, counterpart, linkType, clockwise, pointIsF
     ).a_sphere;
 }
 
+function planesAreParallel(normalA, normalB) {
+  if (!normalA || !normalB || normalA.lengthSq() <= EPSILON || normalB.lengthSq() <= EPSILON) {
+    return false;
+  }
+  return Math.abs(Math.abs(normalA.clone().normalize().dot(normalB.clone().normalize())) - 1.0) <= 1e-6;
+}
+
 function normalizeInitPolicy(rawValue) {
   if (rawValue === MANUAL_MODE || rawValue === DERIVE_MISSING_POLICY || rawValue === DERIVE_ALL_POLICY) {
     return rawValue;
@@ -504,11 +512,28 @@ function deriveJointWorldPoints(body0, body1, linkType0, linkType1, clockwise0, 
   let world0 = body0.position.clone();
   let world1 = body1.position.clone();
 
-  if (rolling0) {
-    world0 = deriveRollingSidePoint(body0, body1, linkType0, clockwise0, true);
-  }
-  if (rolling1) {
-    world1 = deriveRollingSidePoint(body1, body0, linkType1, clockwise1, false);
+  if (rolling0 && rolling1 && planesAreParallel(body0.planeNormal, body1.planeNormal)) {
+    if (!(body0.radius > EPSILON) || !(body1.radius > EPSILON)) {
+      throw new Error(`Cannot derive rolling-to-rolling tangent without radii on ${body0.path} and ${body1.path}.`);
+    }
+    const tangents = tangentFromSphereToSphere(
+      body0.position,
+      body0.radius,
+      clockwise0,
+      body1.position,
+      body1.radius,
+      clockwise1,
+      body0.planeNormal,
+    );
+    world0 = tangents.a_sphere;
+    world1 = tangents.b_sphere;
+  } else {
+    if (rolling0) {
+      world0 = deriveRollingSidePoint(body0, body1, linkType0, clockwise0, true);
+    }
+    if (rolling1) {
+      world1 = deriveRollingSidePoint(body1, body0, linkType1, clockwise1, false);
+    }
   }
 
   return { world0, world1 };

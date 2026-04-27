@@ -192,12 +192,13 @@ def Xform "World"
         {
             double radius = 0.5
             double3 xformOp:translate = (3, 0, 0)
+            vector3f physics:rotationAxis = (0, 1, 0)
             uniform token[] xformOpOrder = ["xformOp:translate"]
         }
 
         def Xform "Attach"
         {
-            double3 xformOp:translate = (3, 2, 0)
+            double3 xformOp:translate = (3, 0, 2)
             uniform token[] xformOpOrder = ["xformOp:translate"]
         }
 
@@ -236,6 +237,7 @@ def Xform "World"
     const pathPrim = stage.GetPrimAtPath('/World/Scene/CablePathD0');
 
     const wheelPos = new Vector3(3.0, 0.0, 0.0);
+    const wheelPlaneNormal = new Vector3(0.0, 1.0, 0.0);
     const spoolTangent = tangentFromSphereToPoint(
       wheelPos,
       new Vector3(0.0, 0.0, 0.0),
@@ -247,14 +249,14 @@ def Xform "World"
       new Vector3(0.0, 0.0, 0.0),
       wheelPos,
       0.5,
-      PLANE_NORMAL,
+      wheelPlaneNormal,
       false,
     ).a_sphere;
     const attachTangent = tangentFromSphereToPoint(
-      new Vector3(3.0, 2.0, 0.0),
+      new Vector3(3.0, 0.0, 2.0),
       wheelPos,
       0.5,
-      PLANE_NORMAL,
+      wheelPlaneNormal,
       false,
     ).a_sphere;
     const expectedStored = 0.6 * signedArcLengthOnWheel(
@@ -263,14 +265,14 @@ def Xform "World"
       wheelPos,
       1.0,
       false,
-      PLANE_NORMAL,
+      wheelPlaneNormal,
       true,
     );
 
     expectVectorClose(getAttribute(firstJoint, 'localPos0'), spoolTangent);
     expectVectorClose(getAttribute(firstJoint, 'localPos1'), wheelTangent.clone().subtract(wheelPos));
     expectVectorClose(getAttribute(secondJoint, 'localPos0'), attachTangent.clone().subtract(wheelPos));
-    expect(getAttribute(firstJoint, 'localPos1')[0] ** 2 + getAttribute(firstJoint, 'localPos1')[1] ** 2)
+    expect(getAttribute(firstJoint, 'localPos1')[0] ** 2 + getAttribute(firstJoint, 'localPos1')[2] ** 2)
       .toBeCloseTo(0.25);
     expect(getAttribute(pathPrim, 'cablePath:stored')[0]).toBe(1);
     expect(getAttribute(pathPrim, 'cablePath:stored')[1]).toBeCloseTo(expectedStored);

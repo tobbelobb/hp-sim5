@@ -35,6 +35,7 @@ import {
 } from './rigid_bodies.js';
 import { StepperMotorComponent } from '../../../hp-sim-3d/app/hangprinter_stepper_motor.js';
 import { isStepperClosedLoopEnabled } from '../../../hp-sim-3d/app/hangprinter_runtime.js';
+import { SpoolStateComponent } from '../../../hp-sim-3d/app/hangprinter_spools.js';
 
 export class CableLinkComponent {
   constructor(
@@ -513,6 +514,13 @@ function _deriveRollingSideAttachment(bodyPos, counterpartPos, radius, planeNorm
   return pointIsFirst
     ? tangentFromSphereToPoint(projectedCounterpart, bodyPos, radius, planeNormal, cw).a_sphere
     : tangentFromPointToSphere(projectedCounterpart, bodyPos, radius, planeNormal, cw).a_sphere;
+}
+
+function _planesAreParallel(normalA, normalB) {
+  if (!normalA || !normalB || normalA.lengthSq() <= EPSILON || normalB.lengthSq() <= EPSILON) {
+    return false;
+  }
+  return Math.abs(Math.abs(normalA.clone().normalize().dot(normalB.clone().normalize())) - 1.0) <= 1e-6;
 }
 
 function _resourceBool(world, key, fallback = true) {
@@ -1236,6 +1244,26 @@ function _isHybrid(value) {
   return value === 'hybrid' || value === 'hybrid-attachment';
 }
 
+function _hasAxisOnlyCableSpinDof(world, entityId) {
+  const spoolState = world.getComponent(entityId, SpoolStateComponent);
+  const linkComp = world.getComponent(entityId, CableLinkComponent);
+  return Boolean(spoolState && linkComp?.cablePlaneNormalLocal);
+}
+
+function _linkAllowsCableSpin(world, path, linkIndex, entityId) {
+  if (!_hasAxisOnlyCableSpinDof(world, entityId)) {
+    return false;
+  }
+  if (_isHybrid(path?.linkTypes?.[linkIndex])) {
+    return true;
+  }
+  if (path?.linkTypes?.[linkIndex] !== 'rolling') {
+    return true;
+  }
+  const friction = world.getComponent(entityId, CoefficientOfFrictionComponent);
+  return Number.isFinite(friction?.mu) && friction.mu > EPSILON;
+}
+
 export function calculateAttachmentPoints(world, joint, path, i, radiusA, radiusB) {
   const A = i;
   const B = i + 1;
@@ -1318,16 +1346,38 @@ export function calculateAttachmentPoints(world, joint, path, i, radiusA, radius
   let attachmentA_current = posA ? posA.clone() : null;
   let attachmentB_current = posB ? posB.clone() : null;
 
-  if (rollingLinkA) {
-    attachmentA_current = _deriveRollingSideAttachment(posA, posB, radiusA, planeNormalA, cwA, true);
-  } else if (isHybridA && pADiffFromTranslation) {
-    attachmentA_current = attachmentA_previous.clone().add(pADiffFromTranslation).add(pADiffFromRotation);
-  }
+  const rotatedHybridA = path.linkTypes[A] === 'hybrid-attachment' && Math.abs(deltaAngleA) > EPSILON;
+  const rotatedHybridB = path.linkTypes[B] === 'hybrid-attachment' && Math.abs(deltaAngleB) > EPSILON;
+  const useCommonRollingTangent = (
+    rollingLinkA &&
+    rollingLinkB &&
+    _planesAreParallel(planeNormalA, planeNormalB) &&
+    !rotatedHybridA &&
+    !rotatedHybridB
+  );
 
-  if (rollingLinkB) {
-    attachmentB_current = _deriveRollingSideAttachment(posB, posA, radiusB, planeNormalB, cwB, false);
-  } else if (isHybridB && pBDiffFromTranslation) {
-    attachmentB_current = attachmentB_previous.clone().add(pBDiffFromTranslation).add(pBDiffFromRotation);
+  if (useCommonRollingTangent) {
+    if (posA && posB && radiusA !== undefined && radiusB !== undefined) {
+      const tangents = tangentFromSphereToSphere(posA, radiusA, cwA, posB, radiusB, cwB, planeNormalA);
+      attachmentA_current = tangents.a_sphere;
+      attachmentB_current = tangents.b_sphere;
+    }
+  } else {
+    if ((rotatedHybridA || !rollingLinkA) && isHybridA && pADiffFromTranslation) {
+      attachmentA_current = attachmentA_previous.clone().add(pADiffFromTranslation).add(pADiffFromRotation);
+    }
+
+    if ((rotatedHybridB || !rollingLinkB) && isHybridB && pBDiffFromTranslation) {
+      attachmentB_current = attachmentB_previous.clone().add(pBDiffFromTranslation).add(pBDiffFromRotation);
+    }
+
+    if (rollingLinkA && !rotatedHybridA) {
+      attachmentA_current = _deriveRollingSideAttachment(posA, attachmentB_current, radiusA, planeNormalA, cwA, true);
+    }
+
+    if (rollingLinkB && !rotatedHybridB) {
+      attachmentB_current = _deriveRollingSideAttachment(posB, attachmentA_current, radiusB, planeNormalB, cwB, false);
+    }
   }
 
   return { attachmentA_current, attachmentB_current };
@@ -2749,13 +2799,20 @@ export class PBDCableConstraintSolver {
       pointWorld,
       gradPos
     ) => {
-      if (!mappedEndpoint || mappedEndpoint.internalToBody || mappedEndpoint.entityId === originalEntityId) {
+      if (!mappedEndpoint) {
         return null;
       }
 
-      const directInfo = buildExternalMemberSpinSolveInfo(originalEntityId, pointWorld, gradPos);
-      if (directInfo) {
-        return directInfo;
+      const directLinkIndex = side === 'A' ? jointIndex : jointIndex + 1;
+      if (_linkAllowsCableSpin(world, path, directLinkIndex, originalEntityId)) {
+        const directInfo = buildExternalMemberSpinSolveInfo(originalEntityId, pointWorld, gradPos);
+        if (directInfo) {
+          return directInfo;
+        }
+      }
+
+      if (mappedEndpoint.internalToBody || mappedEndpoint.entityId === originalEntityId) {
+        return null;
       }
 
       if (!path || !Array.isArray(path.linkTypes) || !Array.isArray(path.jointEntities) || path.jointEntities.length < 2) {
@@ -2850,16 +2907,18 @@ export class PBDCableConstraintSolver {
       );
       const lockedSolverA = isLockedClosedLoopStepper(solverEntityA);
       const lockedSolverB = isLockedClosedLoopStepper(solverEntityB);
+      const axisOnlySolverA = _hasAxisOnlyCableSpinDof(world, solverEntityA);
+      const axisOnlySolverB = _hasAxisOnlyCableSpinDof(world, solverEntityB);
 
 	    const massAComp = world.getComponent(solverEntityA, MassComponent);
 	    const invMassA = (!lockedSolverA && massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
 	    const moiAComp = world.getComponent(solverEntityA, MomentOfInertiaComponent);
-	    const invInertiaA = (!lockedSolverA && moiAComp) ? moiAComp.invInertia : 0.0;
+	    const invInertiaA = (!lockedSolverA && !axisOnlySolverA && moiAComp) ? moiAComp.invInertia : 0.0;
 
 	    const massBComp = world.getComponent(solverEntityB, MassComponent);
 	    const invMassB = (!lockedSolverB && massBComp && massBComp.mass > 0) ? 1.0 / massBComp.mass : 0.0;
 	    const moiBComp = world.getComponent(solverEntityB, MomentOfInertiaComponent);
-	    const invInertiaB = (!lockedSolverB && moiBComp) ? moiBComp.invInertia : 0.0;
+	    const invInertiaB = (!lockedSolverB && !axisOnlySolverB && moiBComp) ? moiBComp.invInertia : 0.0;
 
       const memberInvInertiaA = memberSpinA?.invInertia ?? 0.0;
       const memberInvInertiaB = memberSpinB?.invInertia ?? 0.0;

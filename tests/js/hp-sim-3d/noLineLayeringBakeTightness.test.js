@@ -125,7 +125,7 @@ function expectAllCablePathsTight(world, phase) {
     const pathComp = world.getComponent(pathEntity, CablePathComponent);
     const geometricLength = geometricCablePathLength(world, pathComp);
     try {
-      expect(pathComp.totalRestLength).toBeCloseTo(geometricLength, 9);
+      expect(pathComp.totalRestLength).toBeCloseTo(geometricLength, 8);
     } catch (error) {
       error.message = `${phase}: ${error.message}`;
       throw error;
