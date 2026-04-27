@@ -3,7 +3,6 @@ import {
   signedArcLengthOnWheel,
   tangentFromPointToSphere,
   tangentFromSphereToPoint,
-  tangentFromSphereToSphere,
 } from '../../../src/js/cable_joints_3d/geometry3.js';
 import { bakeCableSceneUsdaSource } from '../../../src/js/usd/cable_scene_baker.js';
 import { Open as UsdOpen, getAttribute } from '../../../src/js/usd/stage.js';
@@ -237,15 +236,20 @@ def Xform "World"
     const pathPrim = stage.GetPrimAtPath('/World/Scene/CablePathD0');
 
     const wheelPos = new Vector3(3.0, 0.0, 0.0);
-    const spoolTangent = tangentFromSphereToSphere(
+    const spoolTangent = tangentFromSphereToPoint(
+      wheelPos,
       new Vector3(0.0, 0.0, 0.0),
       1.0,
+      PLANE_NORMAL,
       false,
+    ).a_sphere;
+    const wheelTangent = tangentFromPointToSphere(
+      new Vector3(0.0, 0.0, 0.0),
       wheelPos,
       0.5,
-      false,
       PLANE_NORMAL,
-    );
+      false,
+    ).a_sphere;
     const attachTangent = tangentFromSphereToPoint(
       new Vector3(3.0, 2.0, 0.0),
       wheelPos,
@@ -254,7 +258,7 @@ def Xform "World"
       false,
     ).a_sphere;
     const expectedStored = 0.6 * signedArcLengthOnWheel(
-      spoolTangent.b_sphere,
+      wheelTangent,
       attachTangent,
       wheelPos,
       1.0,
@@ -263,8 +267,8 @@ def Xform "World"
       true,
     );
 
-    expectVectorClose(getAttribute(firstJoint, 'localPos0'), spoolTangent.a_sphere);
-    expectVectorClose(getAttribute(firstJoint, 'localPos1'), spoolTangent.b_sphere.clone().subtract(wheelPos));
+    expectVectorClose(getAttribute(firstJoint, 'localPos0'), spoolTangent);
+    expectVectorClose(getAttribute(firstJoint, 'localPos1'), wheelTangent.clone().subtract(wheelPos));
     expectVectorClose(getAttribute(secondJoint, 'localPos0'), attachTangent.clone().subtract(wheelPos));
     expect(getAttribute(firstJoint, 'localPos1')[0] ** 2 + getAttribute(firstJoint, 'localPos1')[1] ** 2)
       .toBeCloseTo(0.25);

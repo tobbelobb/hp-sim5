@@ -16,6 +16,37 @@ import {
 import { RigidBodySyncSystem } from '../../../src/js/cable_joints_3d/commonSystems.js';
 
 describe('spool axis handling in RigidBodySyncSystem', () => {
+  test('removes off-axis tilt for standalone spools while preserving twist', () => {
+    const world = new World();
+    const spoolEntity = world.createEntity();
+    const swing = new Quaternion().setFromAxisAngle(new Vector3(1.0, 0.0, 0.0), Math.PI / 5);
+    const twist = new Quaternion().setFromAxisAngle(new Vector3(0.0, 0.0, 1.0), Math.PI / 3);
+    const orientation = new Quaternion().multiplyQuaternions(swing, twist).normalize();
+
+    world.addComponent(spoolEntity, new SpoolStateComponent('A'));
+    world.addComponent(
+      spoolEntity,
+      new OrientationComponent(orientation.x, orientation.y, orientation.z, orientation.w),
+    );
+    world.addComponent(spoolEntity, new AngularVelocityComponent(1.0, -2.0, 3.0));
+
+    const system = new RigidBodySyncSystem();
+    system.update(world, 1 / 500);
+
+    const spoolState = world.getComponent(spoolEntity, SpoolStateComponent);
+    const updatedOrientation = world.getComponent(spoolEntity, OrientationComponent);
+    const angularVelocity = world.getComponent(spoolEntity, AngularVelocityComponent);
+    const worldAxis = getSpoolWorldAxis(spoolState, updatedOrientation.quaternion);
+
+    expect(worldAxis.x).toBeCloseTo(0.0, 12);
+    expect(worldAxis.y).toBeCloseTo(0.0, 12);
+    expect(worldAxis.z).toBeCloseTo(1.0, 12);
+    expect(getSpoolRotationAngle(spoolState, updatedOrientation.quaternion)).toBeCloseTo(Math.PI / 3, 12);
+    expect(angularVelocity.omega.x).toBeCloseTo(0.0, 12);
+    expect(angularVelocity.omega.y).toBeCloseTo(0.0, 12);
+    expect(angularVelocity.omega.z).toBeCloseTo(3.0, 12);
+  });
+
   test('removes off-axis spool tilt while preserving twist and axis-aligned angular velocity', () => {
     const world = new World();
     const bodyEntity = world.createEntity();

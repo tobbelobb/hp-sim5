@@ -505,6 +505,16 @@ function _effectiveCW(path, linkIndex, travellingFromCircle) {
   return path.cw[linkIndex];
 }
 
+function _deriveRollingSideAttachment(bodyPos, counterpartPos, radius, planeNormal, cw, pointIsFirst) {
+  if (!bodyPos || !counterpartPos || radius === undefined) {
+    return bodyPos ? bodyPos.clone() : null;
+  }
+  const projectedCounterpart = _projectPointToPlane(counterpartPos, bodyPos, planeNormal);
+  return pointIsFirst
+    ? tangentFromSphereToPoint(projectedCounterpart, bodyPos, radius, planeNormal, cw).a_sphere
+    : tangentFromPointToSphere(projectedCounterpart, bodyPos, radius, planeNormal, cw).a_sphere;
+}
+
 function _resourceBool(world, key, fallback = true) {
   const value = world?.getResource?.(key);
   return typeof value === 'boolean' ? value : fallback;
@@ -1259,7 +1269,6 @@ export function calculateAttachmentPoints(world, joint, path, i, radiusA, radius
   );
 
   const cwA = _effectiveCW(path, A, true);
-  const attachmentLinkA = _isAttachment(path.linkTypes[A]);
   const rollingLinkA = _isRolling(path.linkTypes[A]);
   const isHybridA = _isHybrid(path.linkTypes[A]);
 
@@ -1296,7 +1305,6 @@ export function calculateAttachmentPoints(world, joint, path, i, radiusA, radius
   );
 
   const cwB = _effectiveCW(path, B, false);
-  const attachmentLinkB = _isAttachment(path.linkTypes[B]);
   const rollingLinkB = _isRolling(path.linkTypes[B]);
   const isHybridB = _isHybrid(path.linkTypes[B]);
 
@@ -1310,67 +1318,16 @@ export function calculateAttachmentPoints(world, joint, path, i, radiusA, radius
   let attachmentA_current = posA ? posA.clone() : null;
   let attachmentB_current = posB ? posB.clone() : null;
 
-  if (attachmentLinkA && rollingLinkB) {
-    if (isHybridA && pADiffFromTranslation) {
-      attachmentA_current = attachmentA_previous.clone().add(pADiffFromTranslation).add(pADiffFromRotation);
-    }
-    if (attachmentA_current && posB && radiusB !== undefined) {
-      attachmentB_current = tangentFromPointToSphere(attachmentA_current, posB, radiusB, planeNormalB, cwB).a_sphere;
-    }
-  } else if (rollingLinkA && attachmentLinkB) {
-    if (isHybridB && pBDiffFromTranslation) {
-      attachmentB_current = attachmentB_previous.clone().add(pBDiffFromTranslation).add(pBDiffFromRotation);
-    }
-    if (attachmentB_current && posA && radiusA !== undefined) {
-      attachmentA_current = tangentFromSphereToPoint(attachmentB_current, posA, radiusA, planeNormalA, cwA).a_sphere;
-    }
-  } else if (rollingLinkA && rollingLinkB) {
-    if (posA && posB && radiusA !== undefined && radiusB !== undefined) {
-      if (isHybridA && !isHybridB) {
-        const projectedSource = _projectPointToPlane(posA, posB, planeNormalB);
-        attachmentB_current = tangentFromPointToSphere(
-          projectedSource,
-          posB,
-          radiusB,
-          planeNormalB,
-          cwB
-        ).a_sphere;
-        attachmentA_current = tangentFromSphereToPoint(
-          attachmentB_current,
-          posA,
-          radiusA,
-          planeNormalA,
-          cwA
-        ).a_sphere;
-      } else if (!isHybridA && isHybridB) {
-        const projectedTarget = _projectPointToPlane(posB, posA, planeNormalA);
-        attachmentA_current = tangentFromSphereToPoint(
-          projectedTarget,
-          posA,
-          radiusA,
-          planeNormalA,
-          cwA
-        ).a_sphere;
-        attachmentB_current = tangentFromPointToSphere(
-          attachmentA_current,
-          posB,
-          radiusB,
-          planeNormalB,
-          cwB
-        ).a_sphere;
-      } else {
-        const tangents = tangentFromSphereToSphere(posA, radiusA, cwA, posB, radiusB, cwB, planeNormalA);
-        attachmentA_current = tangents.a_sphere;
-        attachmentB_current = tangents.b_sphere;
-      }
-    }
-  } else {
-    if (isHybridA && pADiffFromTranslation) {
-      attachmentA_current = attachmentA_previous.clone().add(pADiffFromTranslation).add(pADiffFromRotation);
-    }
-    if (isHybridB && pBDiffFromTranslation) {
-      attachmentB_current = attachmentB_previous.clone().add(pBDiffFromTranslation).add(pBDiffFromRotation);
-    }
+  if (rollingLinkA) {
+    attachmentA_current = _deriveRollingSideAttachment(posA, posB, radiusA, planeNormalA, cwA, true);
+  } else if (isHybridA && pADiffFromTranslation) {
+    attachmentA_current = attachmentA_previous.clone().add(pADiffFromTranslation).add(pADiffFromRotation);
+  }
+
+  if (rollingLinkB) {
+    attachmentB_current = _deriveRollingSideAttachment(posB, posA, radiusB, planeNormalB, cwB, false);
+  } else if (isHybridB && pBDiffFromTranslation) {
+    attachmentB_current = attachmentB_previous.clone().add(pBDiffFromTranslation).add(pBDiffFromRotation);
   }
 
   return { attachmentA_current, attachmentB_current };

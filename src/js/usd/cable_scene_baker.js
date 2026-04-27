@@ -4,7 +4,6 @@ import {
   signedArcLengthOnWheel,
   tangentFromPointToSphere,
   tangentFromSphereToPoint,
-  tangentFromSphereToSphere,
 } from '../cable_joints_3d/geometry3.js';
 import { getAttribute, getRelationship } from './stage.js';
 import { parseUsdaAst } from './usda_parser.js';
@@ -406,6 +405,31 @@ function effectiveCW(clockwise, linkIndex, travellingFromCircle) {
   return base;
 }
 
+function deriveRollingSidePoint(body, counterpart, linkType, clockwise, pointIsFirst) {
+  if (!isRollingLink(linkType)) {
+    return body.position.clone();
+  }
+  if (!(body.radius > EPSILON)) {
+    throw new Error(`Cannot derive rolling tangent without radius on ${body.path}.`);
+  }
+  const projectedCounterpart = projectPointToPlane(counterpart.position, body.position, body.planeNormal);
+  return pointIsFirst
+    ? tangentFromSphereToPoint(
+      projectedCounterpart,
+      body.position,
+      body.radius,
+      body.planeNormal,
+      clockwise,
+    ).a_sphere
+    : tangentFromPointToSphere(
+      projectedCounterpart,
+      body.position,
+      body.radius,
+      body.planeNormal,
+      clockwise,
+    ).a_sphere;
+}
+
 function normalizeInitPolicy(rawValue) {
   if (rawValue === MANUAL_MODE || rawValue === DERIVE_MISSING_POLICY || rawValue === DERIVE_ALL_POLICY) {
     return rawValue;
@@ -480,77 +504,11 @@ function deriveJointWorldPoints(body0, body1, linkType0, linkType1, clockwise0, 
   let world0 = body0.position.clone();
   let world1 = body1.position.clone();
 
-  if (rolling0 && rolling1) {
-    if (!(body0.radius > EPSILON) || !(body1.radius > EPSILON)) {
-      throw new Error(`Cannot derive rolling-to-rolling tangent without radii on ${body0.path} and ${body1.path}.`);
-    }
-    if (linkType0 === 'hybrid' && linkType1 === 'rolling') {
-      const projectedSource = projectPointToPlane(body0.position, body1.position, body1.planeNormal);
-      world1 = tangentFromPointToSphere(
-        projectedSource,
-        body1.position,
-        body1.radius,
-        body1.planeNormal,
-        clockwise1,
-      ).a_sphere;
-      world0 = tangentFromSphereToPoint(
-        world1,
-        body0.position,
-        body0.radius,
-        body0.planeNormal,
-        clockwise0,
-      ).a_sphere;
-    } else if (linkType0 === 'rolling' && linkType1 === 'hybrid') {
-      const projectedTarget = projectPointToPlane(body1.position, body0.position, body0.planeNormal);
-      world0 = tangentFromSphereToPoint(
-        projectedTarget,
-        body0.position,
-        body0.radius,
-        body0.planeNormal,
-        clockwise0,
-      ).a_sphere;
-      world1 = tangentFromPointToSphere(
-        world0,
-        body1.position,
-        body1.radius,
-        body1.planeNormal,
-        clockwise1,
-      ).a_sphere;
-    } else {
-      const tangents = tangentFromSphereToSphere(
-        body0.position,
-        body0.radius,
-        clockwise0,
-        body1.position,
-        body1.radius,
-        clockwise1,
-        body0.planeNormal,
-      );
-      world0 = tangents.a_sphere;
-      world1 = tangents.b_sphere;
-    }
-  } else if (rolling0) {
-    if (!(body0.radius > EPSILON)) {
-      throw new Error(`Cannot derive rolling tangent without radius on ${body0.path}.`);
-    }
-    world0 = tangentFromSphereToPoint(
-      world1,
-      body0.position,
-      body0.radius,
-      body0.planeNormal,
-      clockwise0,
-    ).a_sphere;
-  } else if (rolling1) {
-    if (!(body1.radius > EPSILON)) {
-      throw new Error(`Cannot derive rolling tangent without radius on ${body1.path}.`);
-    }
-    world1 = tangentFromPointToSphere(
-      world0,
-      body1.position,
-      body1.radius,
-      body1.planeNormal,
-      clockwise1,
-    ).a_sphere;
+  if (rolling0) {
+    world0 = deriveRollingSidePoint(body0, body1, linkType0, clockwise0, true);
+  }
+  if (rolling1) {
+    world1 = deriveRollingSidePoint(body1, body0, linkType1, clockwise1, false);
   }
 
   return { world0, world1 };

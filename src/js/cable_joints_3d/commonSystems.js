@@ -334,6 +334,27 @@ export class RigidBodySyncSystem {
   runInPause = false;
 
   update(world, _dt) {
+    const standaloneSpools = world.query([SpoolStateComponent, OrientationComponent]);
+    for (const entityId of standaloneSpools) {
+      if (world.getComponent(entityId, RigidBodyMemberComponent)) {
+        continue;
+      }
+      const spoolState = world.getComponent(entityId, SpoolStateComponent);
+      const orientationComp = world.getComponent(entityId, OrientationComponent);
+      if (spoolState && orientationComp?.quaternion) {
+        orientationComp.quaternion.set(
+          constrainSpoolOrientation(spoolState, orientationComp.quaternion),
+        );
+      }
+
+      const angularVelComp = world.getComponent(entityId, AngularVelocityComponent);
+      if (spoolState && angularVelComp?.omega && orientationComp?.quaternion) {
+        angularVelComp.omega.set(
+          constrainSpoolAngularVelocity(spoolState, orientationComp.quaternion, angularVelComp.omega),
+        );
+      }
+    }
+
     const bodyEntities = world.query([RigidBodyComponent, PositionComponent, OrientationComponent]);
     if (!bodyEntities || bodyEntities.length === 0) {
       return;
