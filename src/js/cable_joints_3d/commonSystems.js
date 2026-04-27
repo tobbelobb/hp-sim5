@@ -380,6 +380,9 @@ export class RigidBodySyncSystem {
           );
           const spoolState = world.getComponent(entityId, SpoolStateComponent);
           if (spoolState) {
+            // Spools are modeled as rigid members with one preserved local
+            // twist DOF. Sync follows the parent body, then projects away
+            // swing instead of solving a compliant body-rotor hinge.
             orientationComp.quaternion.set(
               constrainSpoolOrientation(spoolState, orientationComp.quaternion),
             );

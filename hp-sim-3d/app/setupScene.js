@@ -1059,6 +1059,12 @@ export function setupScene(world, stage, canvas, options = {}) {
       world.registerSystem(inputSys);
 
       if (!isRemote) {
+          // hp-sim-3d follows the usual XPBD/PBD frame order:
+          // save previous pose, apply external changes, integrate predicted
+          // pose, sync rigid members, update cable geometry, solve positional
+          // constraints, then derive final velocities. There is no global
+          // per-frame substep loop here yet; the runner supplies fixed dt
+          // updates. See hp-sim-3d/README.md for implementation notes.
           // 1. Cache state from previous step
           world.registerSystem(new PrevFinalPosSystem());
           world.registerSystem(new PrevFinalOrientationSystem());

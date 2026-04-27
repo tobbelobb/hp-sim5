@@ -214,8 +214,14 @@ export class StepperMotorSystem {
 
       const angularAcceleration = totalTorque / inertia.inertia;
       angVel.omega.add(worldAxis, angularAcceleration * dt);
+      // This is a custom motor/reaction path for rigid-body-member spools. A
+      // full XPBD hinge motor would instead solve body <-> rotor constraints
+      // and distribute off-axis corrections through inverse inertia.
       applyRigidBodyReactionAngularVelocity(world, rigidBodyMemberFrame, worldAxis, totalTorque, dt);
       if (rigidBodyMemberFrame) {
+        // Integrate the rotor's free twist directly in member-local space.
+        // RigidBodySyncSystem later recomposes body orientation + local twist
+        // and clamps any swing away.
         const integratedAngle = currentAngle + ((angVel.omega?.dot?.(worldAxis) ?? 0.0) * dt);
         rigidBodyMemberFrame.member.localOrientation.set(
           composeSpoolOrientation(rigidBodyMemberFrame.localSpoolState, null, integratedAngle),

@@ -105,6 +105,10 @@ export function composeSpoolOrientation(spoolState, swingQuaternion, angle) {
 }
 
 export function constrainSpoolOrientation(spoolState, orientationQuaternion) {
+  // Current hp-sim-3d spool model: the rotor is a rigid-body member with one
+  // allowed local DOF. We keep only twist around the spool axis and discard
+  // swing. This is a direct projection, not an XPBD hinge solve; see
+  // hp-sim-3d/README.md for the tradeoff and future hinge-joint direction.
   const { angle } = decomposeSpoolOrientation(spoolState, orientationQuaternion);
   return composeSpoolOrientation(spoolState, null, angle);
 }
@@ -120,6 +124,8 @@ export function rotateSpoolReferenceOrientation(spoolState, deltaRotation) {
 }
 
 export function constrainSpoolAngularVelocity(spoolState, orientationQuaternion, angularVelocityLike) {
+  // Match constrainSpoolOrientation(): off-axis rotor angular velocity is
+  // clamped away instead of being converted into a bearing reaction torque.
   const worldAxis = getSpoolWorldAxis(spoolState, orientationQuaternion);
   const projectedSpeed = angularVelocityLike?.dot?.(worldAxis) ?? 0.0;
   return worldAxis.scale(projectedSpeed);

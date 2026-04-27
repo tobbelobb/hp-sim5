@@ -116,6 +116,22 @@ This is fun and usefult for testing js/Python equivalence.
  - Deployed at: <https://tobbelobb.github.io/hp-sim5/tests/html/cable_joints_3d.html>
  - Locally: <http://localhost:5173/hp-sim5/tests/html/cable_joints_3d.html>
 
+## hp-sim-3d Implementation Notes
+The 3D Hangprinter app lives in `hp-sim-3d/`. Its system registration order in
+`hp-sim-3d/app/setupScene.js` is the actual simulation loop: save previous pose,
+apply motor/external changes, integrate predicted pose, sync rigid-body members,
+update cable geometry, solve position constraints, then update velocities.
+
+The current rigid-body model is a practical parent/member design rather than a
+fully general XPBD rigid-body joint graph. Spool rotors keep one local twist DOF
+through direct projection and a custom stepper motor path; they are not yet
+separate rotor bodies connected by hinge/motor constraints. This is deliberate
+for now because hp-sim-3d only needs scalar/effective inertia and plausible motor
+reaction behavior.
+
+For the detailed tradeoffs and the future hinge-joint direction, see
+`hp-sim-3d/README.md`.
+
 ## Cable Joints Hanging Visual Test
  - Deployed at: <https://tobbelobb.github.io/hp-sim5/tests/html/cable_joints.html>
  - Locally: <http://localhost:5173/hp-sim5/tests/html/cable_joints.html>
