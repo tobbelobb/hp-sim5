@@ -73,7 +73,7 @@ def Xform "World"
         {
             token[] ecs:tags = ["Wheel"]
             # radius taken from bearing_u_big_623.scad in the hangprinter repo. d=14.1 (mm) => r=7.05 mm == 0.00705 m
-            # in coner_clamp.scad however, the radius is 6.5 mm so we'll use that
+            # in corner_clamp.scad however, the radius is 6.5 mm so we'll use that
             double radius = 0.0065
             # 0.1-0.0065 = 0.0935
             # Then there's an Eyelet_extra_dist = 0.75
@@ -590,13 +590,39 @@ def Xform "World"
             vector3f physics:velocity = (0, 0, 0)
         }
 
-        def Xform "AnchorD0" ()
+        def Circle "WheelD00_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
         {
-            token[] ecs:tags = ["Anchor"]
-            double3 xformOp:translate = (-0.346410161513775, -0.2, 2.00)
-            uniform token[] xformOpOrder = ["xformOp:translate"]
+            token[] ecs:tags = ["Wheel"]
+            double radius = 0.0065
+            # Bearing centers are 6 mm apart, found in line_verticalizer.scad
+            double3 xformOp:translate = (-0.352410161513775, -0.2, 2.0)
+            double3 xformOp:rotateXYZ = (0, 90, 300)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            float physics:mass = -1.0
+            matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            vector3f physics:velocity = (0, 0, 0)
+            float3 physics:angularVelocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
+
+        #def Circle "WheelD01_top" (
+        #    apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        #)
+        #{
+        #    token[] ecs:tags = ["Wheel"]
+        #    double radius = 0.0065
+        #    # Bearing centers are 6 mm apart, found in line_verticalizer.scad
+        #    double3 xformOp:translate = (-0.340410161513775, -0.2, 2.0)
+        #    double3 xformOp:rotateXYZ = (0, 90, 300)
+        #    uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+        #    float physics:mass = 0.002
+        #    matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+        #    vector3f physics:velocity = (0, 0, 0)
+        #    float3 physics:angularVelocity = (0, 0, 0)
+        #    rel material:binding = </World/PhysicsScene/AnchorMaterial>
+        #}
 
         def Xform "AnchorD1" ()
         {
@@ -899,7 +925,7 @@ def Xform "World"
         def CableJoint "JointD0_0"
         {
             custom rel physics:body0 = </World/HangprinterScene/SpoolD>
-            custom rel physics:body1 = </World/HangprinterScene/AnchorD0>
+            custom rel physics:body1 = </World/HangprinterScene/WheelD00_top>
         }
 
         def CableJoint "JointD1_0"
@@ -916,7 +942,7 @@ def Xform "World"
 
         def CableJoint "JointD0_1"
         {
-            custom rel physics:body0 = </World/HangprinterScene/AnchorD0>
+            custom rel physics:body0 = </World/HangprinterScene/WheelD00_top>
             custom rel physics:body1 = </World/HangprinterScene/AttachAL>
         }
 
@@ -1026,13 +1052,14 @@ def Xform "World"
             apiSchemas = ["CablePathAPI"]
         )
         {
-            custom bool[] cablePath:clockwise = [1, 1, 1]
+            custom bool[] cablePath:clockwise = [1, 0, 1]
             custom rel cablePath:joints = [</World/HangprinterScene/JointD0_0>, </World/HangprinterScene/JointD0_1>]
-            custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "attachment"]
+            custom token[] cablePath:linkTypes = ["hybrid", "rolling", "attachment"]
             custom double[] cablePath:stored = [1.0, 0, 0]
             custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
+            custom token[] cablePath:storedMode = ["manual", "auto", "manual"]
             custom token cablePath:initPolicy = "deriveMissing"
         }
 
