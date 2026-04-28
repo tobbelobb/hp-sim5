@@ -75,6 +75,7 @@ def Xform "World"
             # radius taken from bearing_u_big_623.scad in the hangprinter repo. d=14.1 (mm) => r=7.05 mm == 0.00705 m
             # in corner_clamp.scad however, the radius is 6.5 mm so we'll use that
             double radius = 0.0065
+            double height = 0.004
             # 0.1-0.0065 = 0.0935
             # Then there's an Eyelet_extra_dist = 0.75
             # 0.1 - 0.0065 - 0.00075 = 0.09275
@@ -109,6 +110,7 @@ def Xform "World"
         {
             token[] ecs:tags = ["Wheel"]
             double radius = 0.0065
+            double height = 0.004
             # Corner_clamp_bearings_center_to_center = 45 in hangprinter/src/lib/parameters.scad
             # 0.1 - 0.0065 - 0.00075 - 0.045 = 0.04775
             double3 xformOp:translate = (-0.346410161513775, -0.22, 0.04775)
@@ -154,6 +156,7 @@ def Xform "World"
         {
             token[] ecs:tags = ["Wheel"]
             double radius = 0.0065
+            double height = 0.004
             double3 xformOp:translate = (0.346410161513775, -0.22, 0.09275)
             double3 xformOp:rotateXYZ = (0, 90, 0)
             uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
@@ -185,6 +188,7 @@ def Xform "World"
         {
             token[] ecs:tags = ["Wheel"]
             double radius = 0.0065
+            double height = 0.004
             double3 xformOp:translate = (0.346410161513775, -0.22, 0.04775)
             double3 xformOp:rotateXYZ = (0, 90, 0)
             uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
@@ -279,6 +283,7 @@ def Xform "World"
         {
             token[] ecs:tags = ["Wheel"]
             double radius = 0.0065
+            double height = 0.004
             double3 xformOp:translate = (0.363730669589464, -0.19, 0.09275)
             double3 xformOp:rotateXYZ = (0, 90, 120)
             uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
@@ -308,6 +313,7 @@ def Xform "World"
         {
             token[] ecs:tags = ["Wheel"]
             double radius = 0.0065
+            double height = 0.004
             double3 xformOp:translate = (0.363730669589464, -0.19, 0.04775)
             double3 xformOp:rotateXYZ = (0, 90, 120)
             uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
@@ -337,6 +343,7 @@ def Xform "World"
         {
             token[] ecs:tags = ["Wheel"]
             double radius = 0.0065
+            double height = 0.004
             double3 xformOp:translate = (0.017320508075689, 0.41, 0.09275)
             double3 xformOp:rotateXYZ = (0, 90, 120)
             uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
@@ -366,6 +373,7 @@ def Xform "World"
         {
             token[] ecs:tags = ["Wheel"]
             double radius = 0.0065
+            double height = 0.004
             double3 xformOp:translate = (0.017320508075689, 0.41, 0.04775)
             double3 xformOp:rotateXYZ = (0, 90, 120)
             uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
@@ -460,6 +468,7 @@ def Xform "World"
         {
             token[] ecs:tags = ["Wheel"]
             double radius = 0.0065
+            double height = 0.004
             double3 xformOp:translate = (-0.017320508075689, 0.41, 0.09275)
             double3 xformOp:rotateXYZ = (0, 90, 240)
             uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
@@ -489,6 +498,7 @@ def Xform "World"
         {
             token[] ecs:tags = ["Wheel"]
             double radius = 0.0065
+            double height = 0.004
             double3 xformOp:translate = (-0.017320508075689, 0.41, 0.04775)
             double3 xformOp:rotateXYZ = (0, 90, 240)
             uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
@@ -518,6 +528,7 @@ def Xform "World"
         {
             token[] ecs:tags = ["Wheel"]
             double radius = 0.0065
+            double height = 0.004
             double3 xformOp:translate = (-0.363730669589464, -0.19, 0.09275)
             double3 xformOp:rotateXYZ = (0, 90, 240)
             uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
@@ -547,6 +558,7 @@ def Xform "World"
         {
             token[] ecs:tags = ["Wheel"]
             double radius = 0.0065
+            double height = 0.004
             double3 xformOp:translate = (-0.363730669589464, -0.19, 0.04775)
             double3 xformOp:rotateXYZ = (0, 90, 240)
             uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
@@ -579,7 +591,7 @@ def Xform "World"
             custom bool cable:linkable = 1
             double radius = 0.03
             quatf xformOp:orient = (1, 0, 0, 0)
-            double3 xformOp:translate = (0, 0, 2.00)
+            double3 xformOp:translate = (0, 0, 2.0065)
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = -1.0
             float3 physics:angularVelocity = (0, 0, 0)
@@ -596,8 +608,9 @@ def Xform "World"
         {
             token[] ecs:tags = ["Wheel"]
             double radius = 0.0065
+            double height = 0.004
             # Bearing centers are 6 mm apart, found in line_verticalizer.scad
-            double3 xformOp:translate = (-0.352410161513775, -0.2, 2.0)
+            double3 xformOp:translate = (-0.34791016, -0.197401924, 2.0)
             double3 xformOp:rotateXYZ = (0, 90, 300)
             uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
             float physics:mass = -1.0
@@ -607,22 +620,23 @@ def Xform "World"
             rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
-        #def Circle "WheelD01_top" (
-        #    apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
-        #)
-        #{
-        #    token[] ecs:tags = ["Wheel"]
-        #    double radius = 0.0065
-        #    # Bearing centers are 6 mm apart, found in line_verticalizer.scad
-        #    double3 xformOp:translate = (-0.340410161513775, -0.2, 2.0)
-        #    double3 xformOp:rotateXYZ = (0, 90, 300)
-        #    uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
-        #    float physics:mass = 0.002
-        #    matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
-        #    vector3f physics:velocity = (0, 0, 0)
-        #    float3 physics:angularVelocity = (0, 0, 0)
-        #    rel material:binding = </World/PhysicsScene/AnchorMaterial>
-        #}
+        def Circle "WheelD01_top" (
+            apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI", "MaterialBindingAPI"]
+        )
+        {
+            token[] ecs:tags = ["Wheel"]
+            double radius = 0.0065
+            double height = 0.004
+            # Bearing centers are 6 mm apart, found in line_verticalizer.scad
+            double3 xformOp:translate = (-0.34491016151, -0.20259807621, 2.0)
+            double3 xformOp:rotateXYZ = (0, 90, 300)
+            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+            float physics:mass = 0.002
+            matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
+            vector3f physics:velocity = (0, 0, 0)
+            float3 physics:angularVelocity = (0, 0, 0)
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+        }
 
         def Xform "AnchorD1" ()
         {
