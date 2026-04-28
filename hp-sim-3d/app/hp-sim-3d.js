@@ -313,6 +313,7 @@ function initHpSim() {
   const qualityHistoryList = document.getElementById('qualityHistoryList');
   const secondaryToggleBtn = document.getElementById('secondaryToggleBtn');
   const qualityToggle = document.getElementById('qualityToggle');
+  const showForcesToggle = document.getElementById('showForcesToggle');
   const lineLayeringToggle = document.getElementById('lineLayeringToggle');
   const closedLoopMotorsToggle = document.getElementById('closedLoopMotorsToggle');
   const qualityToggleWrapper = document.getElementById('qualityToggleWrapper');
@@ -357,6 +358,9 @@ function initHpSim() {
 
   if (qualityToggle) {
     qualityToggle.checked = false;
+  }
+  if (showForcesToggle) {
+    showForcesToggle.checked = true;
   }
   if (lineLayeringToggle) {
     lineLayeringToggle.checked = true;
@@ -414,6 +418,7 @@ function initHpSim() {
   let speedStatusArmed = false;
   const machineQualityMonitors = new Map();
   let qualityEnabled = qualityToggle ? Boolean(qualityToggle.checked) : false;
+  let showConstraintForces = showForcesToggle ? Boolean(showForcesToggle.checked) : true;
   let lineLayeringEnabled = lineLayeringToggle ? Boolean(lineLayeringToggle.checked) : true;
   let closedLoopMotorsEnabled = closedLoopMotorsToggle ? Boolean(closedLoopMotorsToggle.checked) : false;
   let secondaryControlsUserPreference = null;
@@ -680,6 +685,19 @@ function initHpSim() {
     updateQualityHudVisibility();
   }
 
+  function setShowConstraintForcesState(enabled, { fromToggle = false } = {}) {
+    const next = Boolean(enabled);
+    showConstraintForces = next;
+    world.setResource('showConstraintForces', next);
+    if (!fromToggle && showForcesToggle) {
+      showForcesToggle.checked = next;
+    }
+    const renderSystem = world.getResource('renderSystem');
+    if (renderSystem && typeof renderSystem.requestRender === 'function') {
+      renderSystem.requestRender(world);
+    }
+  }
+
   function setLineLayeringEnabledState(enabled, { fromToggle = false } = {}) {
     const next = Boolean(enabled);
     if (lineLayeringEnabled === next) {
@@ -757,6 +775,16 @@ function initHpSim() {
     }
   } else {
     qualityEnabled = false;
+  }
+
+  if (showForcesToggle) {
+    showForcesToggle.addEventListener('change', () => {
+      setShowConstraintForcesState(showForcesToggle.checked, { fromToggle: true });
+    });
+    setShowConstraintForcesState(showForcesToggle.checked, { fromToggle: true });
+  } else {
+    showConstraintForces = true;
+    world.setResource('showConstraintForces', true);
   }
 
   if (lineLayeringToggle) {

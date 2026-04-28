@@ -2350,6 +2350,7 @@ export class RenderSystem3D {
     const layering =
       layeringEnabled(world) &&
       world.getResource('layeringRenderWraps') !== false;
+    const showForceSigns = world.getResource('showConstraintForces') !== false;
     const upDirection = getUpDirection(world);
 
     if (pathEntities.length === 0) {
@@ -2385,11 +2386,13 @@ export class RenderSystem3D {
           color: taut ? baseColor : SLACK_COLOR
         });
 
-        forceSignSpecs.push({
-          joint,
-          text: formatConstraintForce(joint.constraintForceMagnitude),
-          upDirection
-        });
+        if (showForceSigns) {
+          forceSignSpecs.push({
+            joint,
+            text: formatConstraintForce(joint.constraintForceMagnitude),
+            upDirection
+          });
+        }
       }
 
       for (let i = 1; i < path.linkTypes.length - 1; i++) {

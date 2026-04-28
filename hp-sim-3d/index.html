@@ -52,18 +52,24 @@
               </div>
               <button id="fullscreenBtn" type="button" class="sim-secondary sim-fullscreen" aria-pressed="false">Fullscreen</button>
               <button id="referenceToggleBtn" type="button" class="sim-secondary sim-reference-toggle" aria-pressed="false">Show Reference Path</button>
-              <label id="qualityToggleWrapper" class="sim-toggle" for="qualityToggle">
-                <input id="qualityToggle" type="checkbox">
-                <span>Live Quality Checks</span>
-              </label>
-              <label id="lineLayeringToggleWrapper" class="sim-toggle" for="lineLayeringToggle">
-                <input id="lineLayeringToggle" type="checkbox" checked>
-                <span>Line Layering</span>
-              </label>
-              <label id="closedLoopMotorsToggleWrapper" class="sim-toggle" for="closedLoopMotorsToggle">
-                <input id="closedLoopMotorsToggle" type="checkbox">
-                <span>Closed Loop Motors</span>
-              </label>
+              <div class="sim-toggle-group" aria-label="Simulation overlays and motor options">
+                <label id="qualityToggleWrapper" class="sim-toggle" for="qualityToggle">
+                  <input id="qualityToggle" type="checkbox">
+                  <span>Live Quality Checks</span>
+                </label>
+                <label id="showForcesToggleWrapper" class="sim-toggle" for="showForcesToggle">
+                  <input id="showForcesToggle" type="checkbox" checked>
+                  <span>Show Forces</span>
+                </label>
+                <label id="lineLayeringToggleWrapper" class="sim-toggle" for="lineLayeringToggle">
+                  <input id="lineLayeringToggle" type="checkbox" checked>
+                  <span>Line Layering</span>
+                </label>
+                <label id="closedLoopMotorsToggleWrapper" class="sim-toggle" for="closedLoopMotorsToggle">
+                  <input id="closedLoopMotorsToggle" type="checkbox">
+                  <span>Closed Loop Motors</span>
+                </label>
+              </div>
             </div>
             <input
               type="file"

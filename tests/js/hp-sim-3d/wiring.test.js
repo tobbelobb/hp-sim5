@@ -43,6 +43,23 @@ describe('hp-sim-3d wiring', () => {
     expect(source).toContain("setClosedLoopMotorsEnabledState(closedLoopMotorsToggle.checked, { fromToggle: true });");
   });
 
+  test('adds and wires the force sign toggle with the other checkbox controls', () => {
+    const html = readWorkspaceFile('hp-sim-3d/index.html');
+    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim-3d.js');
+    const qualityToggleIndex = html.indexOf('id="qualityToggleWrapper"');
+    const showForcesToggleIndex = html.indexOf('id="showForcesToggleWrapper"');
+    const lineLayeringToggleIndex = html.indexOf('id="lineLayeringToggleWrapper"');
+
+    expect(html).toContain('class="sim-toggle-group"');
+    expect(showForcesToggleIndex).toBeGreaterThan(qualityToggleIndex);
+    expect(lineLayeringToggleIndex).toBeGreaterThan(showForcesToggleIndex);
+    expect(html).toContain('<input id="showForcesToggle" type="checkbox" checked>');
+    expect(html).toContain('<span>Show Forces</span>');
+    expect(source).toContain("const showForcesToggle = document.getElementById('showForcesToggle');");
+    expect(source).toContain("world.setResource('showConstraintForces', next);");
+    expect(source).toContain("setShowConstraintForcesState(showForcesToggle.checked, { fromToggle: true });");
+  });
+
   test('connects motor diagnostics into the 3D quality monitor cards', () => {
     const source = readWorkspaceFile('hp-sim-3d/app/hp-sim-3d.js');
 

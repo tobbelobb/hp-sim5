@@ -591,6 +591,55 @@ describe('RenderSystem3D cable sag', () => {
     }
   });
 
+  test('hides force signs when the force overlay resource is disabled', () => {
+    const system = createRenderSystemStub();
+
+    try {
+      const world = new World();
+      world.setResource('showConstraintForces', false);
+
+      const jointId = world.createEntity();
+      const joint = new CableJointComponent(
+        world.createEntity(),
+        world.createEntity(),
+        1.0,
+        new Vector3(0.0, 0.0, 0.2),
+        new Vector3(1.0, 0.0, 0.2)
+      );
+      joint.constraintForceMagnitude = 12.345;
+      world.addComponent(jointId, joint);
+      world.addComponent(jointId, new RenderableComponent('line', '#ffd34d'));
+
+      const pathId = world.createEntity();
+      world.addComponent(
+        pathId,
+        new CablePathComponent(
+          world,
+          [jointId],
+          ['attachment', 'attachment'],
+          [false, false],
+          1e6,
+          [0.0, 0.0],
+          0.0
+        )
+      );
+
+      RenderSystem3D.prototype._syncCable.call(system, world);
+      expect(system.forceSigns).toHaveLength(0);
+
+      world.setResource('showConstraintForces', true);
+      RenderSystem3D.prototype._syncCable.call(system, world);
+      expect(system.forceSigns).toHaveLength(1);
+      expect(system.forceSigns[0].visible).toBe(true);
+
+      world.setResource('showConstraintForces', false);
+      RenderSystem3D.prototype._syncCable.call(system, world);
+      expect(system.forceSigns[0].visible).toBe(false);
+    } finally {
+      disposeRenderSystemStub(system);
+    }
+  });
+
   test('renders slack cable joints as a sagging catenary polyline', () => {
     const system = createRenderSystemStub();
 

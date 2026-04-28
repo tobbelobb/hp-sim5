@@ -143,6 +143,13 @@ body {
   margin-left: auto;
 }
 
+.sim-toggle-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
 .canvas-frame {
   flex: 1;
   width: 100%;
@@ -734,6 +741,10 @@ body {
     align-self: flex-end;
   }
 
+  .sim-toggle-group {
+    width: 100%;
+  }
+
   .quality-history {
     top: auto;
     bottom: 24px;
@@ -763,6 +774,10 @@ body {
   }
 
   .sim-start-buttons {
+    display: contents;
+  }
+
+  .sim-toggle-group {
     display: contents;
   }
 
