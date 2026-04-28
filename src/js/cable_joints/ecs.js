@@ -191,9 +191,10 @@ export class MomentOfInertiaComponent {
 }
 // RenderableComponent needs to be redefined in cable_joints_3d/ecs.js to fit 3d rendering needs.
 export class RenderableComponent {
-  constructor(shape = 'circle', color = '#888888') {
+  constructor(shape = 'circle', color = '#888888', options = {}) {
     this.shape = shape; // 'circle', 'line', 'flipper', 'border'
     this.color = color;
+    this.height = Number.isFinite(options?.height) && options.height > 0 ? options.height : null;
   }
 }
 

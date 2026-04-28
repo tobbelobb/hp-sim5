@@ -200,6 +200,57 @@ describe('slideprinter 3D setupScene', () => {
     expect(systemNames).not.toContain('SpoolAxisConstraintSystem');
   });
 
+  test('reads authored Wheel height into the cylinder renderable', () => {
+    usdStage.getChildren.mockImplementation((prim) => {
+      if (prim?.path === '/World/SlideprinterScene') {
+        return [{
+          path: '/World/SlideprinterScene/WheelA',
+          name: 'WheelA',
+          type: 'definition',
+          defType: 'Circle'
+        }];
+      }
+      return [];
+    });
+    usdStage.getAttribute.mockImplementation((prim, attr) => {
+      if (prim?.path === '/World/PhysicsScene') {
+        if (attr === 'physics:gravityDirection') return [0.0, -1.0, 0.0];
+        if (attr === 'physics:gravityMagnitude') return 9.82;
+      }
+      if (prim?.path === '/World/SlideprinterScene/WheelA') {
+        if (attr === 'ecs:tags') return ['Wheel'];
+        if (attr === 'xformOp:translate') return [0.0, 0.0, 0.0];
+        if (attr === 'radius') return 0.04;
+        if (attr === 'height') return 0.004;
+        if (attr === 'physics:mass') return 1.0;
+        if (attr === 'physics:inertiaTensor') return [[0.01, 0, 0], [0, 0.01, 0], [0, 0, 0.01]];
+        if (attr === 'physics:angularVelocity') return [0.0, 0.0, 0.0];
+        if (attr === 'cable:linkable') return true;
+      }
+      return null;
+    });
+
+    const world = new World();
+    const stage = {
+      GetPrimAtPath(path) {
+        return { path, name: path.split('/').pop() };
+      },
+      ast: {
+        descriptor: {
+          assignments: [
+            { type: 'assignment', identifier: 'timeCodesPerSecond', value: 500 }
+          ]
+        }
+      }
+    };
+
+    setupScene(world, stage, createCanvas());
+
+    const renderables = Array.from(world.getComponentStore(RenderableComponent)?.values() ?? []);
+    const wheelRenderable = renderables.find((component) => component.shape === 'cylinder');
+    expect(wheelRenderable?.height).toBeCloseTo(0.004, 8);
+  });
+
   test('preserves the current pause state when rebuilding the base scene', () => {
     const world = new World();
     const stage = {

@@ -233,6 +233,38 @@ describe('RenderSystem3D oriented circles', () => {
       disposeRenderSystemStub(system);
     }
   });
+
+  test('uses authored cylinder height without changing default cylinder scale', () => {
+    const system = createRenderSystemStub();
+
+    try {
+      const world = new World();
+
+      const defaultCylinder = world.createEntity();
+      world.addComponent(defaultCylinder, new PositionComponent(0.0, 0.0, 0.0));
+      world.addComponent(defaultCylinder, new RadiusComponent(0.04));
+      world.addComponent(defaultCylinder, new RenderableComponent('cylinder', '#999999'));
+
+      const authoredCylinder = world.createEntity();
+      world.addComponent(authoredCylinder, new PositionComponent(0.1, 0.0, 0.0));
+      world.addComponent(authoredCylinder, new RadiusComponent(0.04));
+      world.addComponent(authoredCylinder, new RenderableComponent('cylinder', '#999999', { height: 0.004 }));
+
+      RenderSystem3D.prototype._syncCircles.call(system, world);
+
+      const defaultMesh = system.circleMeshes.get(defaultCylinder);
+      const authoredMesh = system.circleMeshes.get(authoredCylinder);
+
+      expect(defaultMesh.scale.x).toBeCloseTo(0.04, 8);
+      expect(defaultMesh.scale.y).toBeCloseTo(0.04, 8);
+      expect(defaultMesh.scale.z).toBeCloseTo(0.04, 8);
+      expect(authoredMesh.scale.x).toBeCloseTo(0.04, 8);
+      expect(authoredMesh.scale.y).toBeCloseTo(0.004, 8);
+      expect(authoredMesh.scale.z).toBeCloseTo(0.04, 8);
+    } finally {
+      disposeRenderSystemStub(system);
+    }
+  });
 });
 
 describe('RenderSystem3D bumper hit fx', () => {

@@ -2168,7 +2168,10 @@ export class RenderSystem3D {
       }
 
       mesh.position.set(pos.x, pos.y, pos.z);
-      mesh.scale.set(radius, radius, radius);
+      const height = Number.isFinite(renderComp.height) && renderComp.height > 0
+        ? renderComp.height
+        : radius;
+      mesh.scale.set(radius, isCylinder ? height : radius, radius);
 
       if (orientationComp?.quaternion) {
         const q = orientationComp.quaternion;

@@ -609,6 +609,7 @@ export function setupScene(world, stage, canvas, options = {}) {
                     const inertiaTensor = getAttribute(prim, "physics:inertiaTensor");
                     const velArr = getAttribute(prim, "physics:velocity");
                     const angVelArr = getAttribute(prim, "physics:angularVelocity");
+                    const height = Number(getAttribute(prim, "height"));
                     const initialOrientation = readOrientationAttribute(prim) || new Quaternion();
                     const wheelAxisLocal = readSpoolAxisLocal(prim);
 
@@ -635,7 +636,11 @@ export function setupScene(world, stage, canvas, options = {}) {
                     world.addComponent(ent, new MassComponent(mass));
                     addGravityIfDynamic(ent, mass);
                     const wheelColor = palette?.wheel ?? palette?.spool ?? color ?? '#a0a0a0';
-                    world.addComponent(ent, new RenderableComponent('cylinder', wheelColor));
+                    world.addComponent(ent, new RenderableComponent(
+                        'cylinder',
+                        wheelColor,
+                        { height: Number.isFinite(height) && height > 0 ? height : null },
+                    ));
                     world.addComponent(
                         ent,
                         new OrientationComponent(
