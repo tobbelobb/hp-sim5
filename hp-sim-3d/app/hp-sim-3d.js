@@ -45,6 +45,18 @@ const COMMAND_PRESET_VARIANTS = Object.freeze({
       referencePresetKey: 'hangprinterLogo',
     }),
     machineOverrides: Object.freeze({
+      [HP4_USDA_KEY]: Object.freeze({
+        default: Object.freeze({
+          url: new URL('../../public/RRF_CAN_commands/Hangprinter_logo6_hp4_no_buildup.can', import.meta.url).href,
+          format: FileFormat.RRF_CAN_BINARY,
+          referencePresetKey: 'hangprinterLogo',
+        }),
+        lineLayered: Object.freeze({
+          url: new URL('../../public/RRF_CAN_commands/Hangprinter_logo6_hp4_w_line_layers.can', import.meta.url).href,
+          format: FileFormat.RRF_CAN_BINARY,
+          referencePresetKey: 'hangprinterLogo',
+        }),
+      }),
       [HP3_USDA_KEY]: Object.freeze({
         default: Object.freeze({
           url: new URL('../../public/RRF_CAN_commands/Hangprinter_logo6_hp3_no_buildup.can', import.meta.url).href,
@@ -84,6 +96,19 @@ const COMMAND_PRESET_VARIANTS = Object.freeze({
       referencePresetKey: 'straightMovesBigger',
     }),
     machineOverrides: Object.freeze({
+      [HP4_USDA_KEY]: Object.freeze({
+        default: Object.freeze({
+          url: new URL('../../public/RRF_CAN_commands/draw_squares_bigger_hp4_no_buildup.can', import.meta.url).href,
+          format: FileFormat.RRF_CAN_BINARY,
+          referencePresetKey: 'straightMovesBigger',
+        }),
+        lineLayered: Object.freeze({
+          url: new URL('../../public/RRF_CAN_commands/draw_squares_bigger_hp4_w_line_layers.can', import.meta.url)
+            .href,
+          format: FileFormat.RRF_CAN_BINARY,
+          referencePresetKey: 'straightMovesBigger',
+        }),
+      }),
       [HP3_USDA_KEY]: Object.freeze({
         default: Object.freeze({
           url: new URL('../../public/RRF_CAN_commands/draw_squares_bigger_hp3_no_buildup.can', import.meta.url).href,
