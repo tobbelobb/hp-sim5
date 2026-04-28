@@ -38,7 +38,7 @@ def Xform "World"
             token[] ecs:tags = ["Anchor"]
             double3 xformOp:translate = (-0.346410161513775, -2.14, -0.18)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Xform "AnchorAL_bottom" ()
@@ -56,7 +56,7 @@ def Xform "World"
             token[] ecs:tags = ["Anchor"]
             double3 xformOp:translate = (0.346410161513775, -2.14, -0.18)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Xform "AnchorAR_bottom" ()
@@ -88,7 +88,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "PinholeAL_top" (
@@ -101,7 +101,7 @@ def Xform "World"
             float physics:mass = 0.0002
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Circle "WheelAL_bottom" (
@@ -120,7 +120,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "PinholeAL_bottom" (
@@ -134,7 +134,7 @@ def Xform "World"
             float physics:mass = 0.0002
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Circle "CornerAL" (
@@ -166,7 +166,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "PinholeAR_top" (
@@ -179,7 +179,7 @@ def Xform "World"
             float physics:mass = 0.0002
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Circle "WheelAR_bottom" (
@@ -196,7 +196,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "PinholeAR_bottom" (
@@ -209,7 +209,7 @@ def Xform "World"
             float physics:mass = 0.0002
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Circle "CornerAR" (
@@ -250,7 +250,7 @@ def Xform "World"
             token[] ecs:tags = ["Anchor"]
             double3 xformOp:translate = (2.026499444855586, 0.77, -0.18)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Xform "AnchorBL_bottom" ()
@@ -266,7 +266,7 @@ def Xform "World"
             token[] ecs:tags = ["Anchor"]
             double3 xformOp:translate = (1.680089283341812, 1.37, -0.18)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Xform "AnchorBR_bottom" ()
@@ -291,7 +291,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "PinholeBL_top" (
@@ -304,7 +304,7 @@ def Xform "World"
             float physics:mass = 0.0002
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Circle "WheelBL_bottom" (
@@ -321,7 +321,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "PinholeBL_bottom" (
@@ -334,7 +334,7 @@ def Xform "World"
             float physics:mass = 0.0002
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Circle "WheelBR_top" (
@@ -351,7 +351,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "PinholeBR_top" (
@@ -364,7 +364,7 @@ def Xform "World"
             float physics:mass = 0.0002
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Circle "WheelBR_bottom" (
@@ -381,7 +381,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "PinholeBR_bottom" (
@@ -394,7 +394,7 @@ def Xform "World"
             float physics:mass = 0.0002
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Circle "CornerBR" (
@@ -435,7 +435,7 @@ def Xform "World"
             token[] ecs:tags = ["Anchor"]
             double3 xformOp:translate = (-1.68009, 1.37, -0.18)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Xform "AnchorCL_bottom" ()
@@ -451,7 +451,7 @@ def Xform "World"
             token[] ecs:tags = ["Anchor"]
             double3 xformOp:translate = (-2.0265, 0.77, -0.18)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Xform "AnchorCR_bottom" ()
@@ -476,7 +476,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "PinholeCL_top" (
@@ -489,7 +489,7 @@ def Xform "World"
             float physics:mass = 0.0002
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Circle "WheelCL_bottom" (
@@ -506,7 +506,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "PinholeCL_bottom" (
@@ -519,7 +519,7 @@ def Xform "World"
             float physics:mass = 0.0002
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Circle "WheelCR_top" (
@@ -536,7 +536,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "PinholeCR_top" (
@@ -549,7 +549,7 @@ def Xform "World"
             float physics:mass = 0.0002
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Circle "WheelCR_bottom" (
@@ -566,7 +566,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "PinholeCR_bottom" (
@@ -579,7 +579,7 @@ def Xform "World"
             float physics:mass = 0.0002
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
 
         def Circle "SpoolD" (
@@ -617,7 +617,7 @@ def Xform "World"
             float physics:mass = -1.0
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "WheelD0_right_top" (
@@ -635,7 +635,7 @@ def Xform "World"
             float physics:mass = -1.0
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "WheelD0_left_bottom" (
@@ -652,7 +652,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "WheelD0_right_bottom" (
@@ -669,7 +669,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "AttachD0" (
@@ -683,7 +683,7 @@ def Xform "World"
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = -1.0
             vector3f physics:velocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
         def Circle "WheelD1_left_top" (
@@ -701,7 +701,7 @@ def Xform "World"
             float physics:mass = -1.0
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "WheelD1_right_top" (
@@ -719,7 +719,7 @@ def Xform "World"
             float physics:mass = -1.0
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "WheelD1_left_bottom" (
@@ -736,7 +736,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "WheelD1_right_bottom" (
@@ -753,7 +753,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "AttachD1" (
@@ -767,7 +767,7 @@ def Xform "World"
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = -1.0
             vector3f physics:velocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
         def Circle "WheelD2_left_top" (
@@ -785,7 +785,7 @@ def Xform "World"
             float physics:mass = -1.0
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "WheelD2_right_top" (
@@ -803,7 +803,7 @@ def Xform "World"
             float physics:mass = -1.0
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "WheelD2_left_bottom" (
@@ -820,7 +820,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "WheelD2_right_bottom" (
@@ -837,7 +837,7 @@ def Xform "World"
             matrix3d physics:inertiaTensor = ((5e-8, 0, 0), (0, 5e-8, 0), (0, 0, 5e-8))
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/AnchorMaterial>
+            rel material:binding = </World/PhysicsScene/WheelMaterial>
         }
 
         def Circle "AttachD2" (
@@ -851,7 +851,7 @@ def Xform "World"
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:orient"]
             float physics:mass = -1.0
             vector3f physics:velocity = (0, 0, 0)
-            rel material:binding = </World/PhysicsScene/PinholeMaterial>
+            rel material:binding = </World/PhysicsScene/AnchorMaterial>
         }
 
 
@@ -1395,6 +1395,15 @@ def Xform "World"
         }
 
         def Material "PinholeMaterial" (
+            prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
+        )
+        {
+            float physics:staticFriction = 0.005
+            float physics:dynamicFriction = 0.005
+            float physics:restitution = 0.025
+        }
+
+        def Material "WheelMaterial" (
             prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
         )
         {
