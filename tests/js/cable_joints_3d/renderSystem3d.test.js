@@ -44,6 +44,7 @@ function createRenderSystemStub() {
   system.jointLines = [];
   system.wrapArcs = [];
   system.knotMarkers = [];
+  system.forceSigns = [];
   system.rigidGroupLines = [];
   system._activeCircleIds = new Set();
   system.defaultPlaneNormal = new Vector3(0, 0, 1);
@@ -61,6 +62,9 @@ function createRenderSystemStub() {
   system._createArcLine = RenderSystem3D.prototype._createArcLine;
   system._ensureLineCapacity = RenderSystem3D.prototype._ensureLineCapacity;
   system._ensureKnotMarkerCapacity = RenderSystem3D.prototype._ensureKnotMarkerCapacity;
+  system._ensureForceSignCapacity = RenderSystem3D.prototype._ensureForceSignCapacity;
+  system._createForceSign = RenderSystem3D.prototype._createForceSign;
+  system._updateForceSignText = RenderSystem3D.prototype._updateForceSignText;
   system._hideLines = RenderSystem3D.prototype._hideLines;
   system._hideMeshes = RenderSystem3D.prototype._hideMeshes;
   system._buildKnotMarkerSpec = RenderSystem3D.prototype._buildKnotMarkerSpec;
@@ -90,6 +94,12 @@ function disposeRenderSystemStub(system) {
   system.knotMarkerMaterial.dispose();
   system.sharedSphereGeometry.dispose();
   system.sharedCylinderGeometry.dispose();
+  for (const sign of system.forceSigns ?? []) {
+    if (sign.material?.map) {
+      sign.material.map.dispose();
+    }
+    sign.material?.dispose?.();
+  }
   if (typeof RenderSystem3D.prototype._clearBumperFx === 'function') {
     RenderSystem3D.prototype._clearBumperFx.call(system);
   }
@@ -534,6 +544,53 @@ describe('RenderSystem3D cable knot markers', () => {
 });
 
 describe('RenderSystem3D cable sag', () => {
+  test('renders a floating force sign for each cable joint', () => {
+    const system = createRenderSystemStub();
+
+    try {
+      const world = new World();
+      world.setResource('gravity', new Vector3(0.0, 0.0, -9.81));
+
+      const jointId = world.createEntity();
+      const joint = new CableJointComponent(
+        world.createEntity(),
+        world.createEntity(),
+        1.0,
+        new Vector3(0.0, 0.0, 0.2),
+        new Vector3(1.0, 0.0, 0.2)
+      );
+      joint.constraintForceMagnitude = 12.345;
+      world.addComponent(jointId, joint);
+      world.addComponent(jointId, new RenderableComponent('line', '#ffd34d'));
+
+      const pathId = world.createEntity();
+      world.addComponent(
+        pathId,
+        new CablePathComponent(
+          world,
+          [jointId],
+          ['attachment', 'attachment'],
+          [false, false],
+          1e6,
+          [0.0, 0.0],
+          0.0
+        )
+      );
+
+      RenderSystem3D.prototype._syncCable.call(system, world);
+
+      expect(system.forceSigns).toHaveLength(1);
+      const sign = system.forceSigns[0];
+      expect(sign.visible).toBe(true);
+      expect(sign.userData.text).toBe('12.3 N');
+      expect(sign.position.x).toBeCloseTo(0.5, 6);
+      expect(sign.position.y).toBeCloseTo(0.0, 6);
+      expect(sign.position.z).toBeCloseTo(0.224, 6);
+    } finally {
+      disposeRenderSystemStub(system);
+    }
+  });
+
   test('renders slack cable joints as a sagging catenary polyline', () => {
     const system = createRenderSystemStub();
 

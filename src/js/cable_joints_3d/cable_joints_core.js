@@ -61,6 +61,9 @@ export class CableJointComponent {
     this.restLength = restLength; // dn - the dynamic maximum length
     this.attachmentPointA_world = attachmentPointA_world.clone();
     this.attachmentPointB_world = attachmentPointB_world.clone();
+    this.constraintLambda = 0.0;
+    this.constraintForce = new Vector3(0, 0, 0);
+    this.constraintForceMagnitude = 0.0;
   }
 
   static fromWorld(entityA, entityB, restLength, attachmentPointA_world, attachmentPointB_world) {
@@ -2874,6 +2877,7 @@ export class PBDCableConstraintSolver {
     const applyConstraint = (
       path,
       jointIndex,
+      joint,
       entityA,
       entityB,
       pointA_world,
@@ -3028,6 +3032,14 @@ export class PBDCableConstraintSolver {
       //console.log(`gamma: ${gamma}`);
 
       const lambda = (-constraintError - (gamma * jDx)) / denom;
+      const invDtSq = (Number.isFinite(dt) && dt > EPSILON) ? 1.0 / (dt * dt) : 0.0;
+      if (!joint.constraintForce) {
+        joint.constraintForce = new Vector3(0, 0, 0);
+      }
+      joint.constraintLambda = lambda;
+      joint.constraintForce.set(gradPosA);
+      joint.constraintForce.scale(lambda * invDtSq);
+      joint.constraintForceMagnitude = Math.abs(lambda) * invDtSq;
 
       if (invMassA > 0.0) {
         const deltaPosA = gradPosA.clone().scale(-invMassA * lambda);
@@ -3093,6 +3105,15 @@ export class PBDCableConstraintSolver {
       if (path.jointEntities.length < 1) continue;
       for (const jointId of path.jointEntities) {
         const joint = world.getComponent(jointId, CableJointComponent);
+        joint.constraintLambda = 0.0;
+        if (!joint.constraintForce) {
+          joint.constraintForce = new Vector3(0, 0, 0);
+        } else {
+          joint.constraintForce.x = 0.0;
+          joint.constraintForce.y = 0.0;
+          joint.constraintForce.z = 0.0;
+        }
+        joint.constraintForceMagnitude = 0.0;
         jointLocals.set(jointId, {
           localA: computeLocal(joint.entityA, joint.attachmentPointA_world),
           localB: computeLocal(joint.entityB, joint.attachmentPointB_world)
@@ -3145,6 +3166,7 @@ export class PBDCableConstraintSolver {
           applyConstraint(
             path,
             j,
+            joint,
             entityA,
             entityB,
             pA,

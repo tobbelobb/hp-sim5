@@ -120,6 +120,51 @@ describe('PBDCableConstraintSolver (3D)', () => {
     expect(d1).toBeCloseTo(3.0, 1);
   });
 
+  test('records XPBD constraint force as lambda times direction over dt squared', () => {
+    const world = new World();
+    const e0 = world.createEntity();
+    const e1 = world.createEntity();
+    world.addComponent(e0, new PositionComponent(0, 0, 0));
+    world.addComponent(e1, new PositionComponent(5, 0, 0));
+    world.addComponent(e0, new MassComponent(1.0));
+    world.addComponent(e1, new MassComponent(1.0));
+
+    const jointId = world.createEntity();
+    world.addComponent(
+      jointId,
+      new CableJointComponent(
+        e0,
+        e1,
+        3.0,
+        new Vector3(0, 0, 0),
+        new Vector3(5, 0, 0)
+      )
+    );
+
+    const pathEnt = world.createEntity();
+    world.addComponent(
+      pathEnt,
+      new CablePathComponent(
+        world,
+        [jointId],
+        ['attachment', 'attachment'],
+        [true, true],
+        Infinity
+      )
+    );
+
+    const dt = 0.5;
+    world.setResource('dt', dt);
+    new PBDCableConstraintSolver().update(world, dt);
+
+    const joint = world.getComponent(jointId, CableJointComponent);
+    expect(joint.constraintLambda).toBeCloseTo(-1.0, 8);
+    expect(joint.constraintForce.x).toBeCloseTo(-4.0, 8);
+    expect(joint.constraintForce.y).toBeCloseTo(0.0, 8);
+    expect(joint.constraintForce.z).toBeCloseTo(0.0, 8);
+    expect(joint.constraintForceMagnitude).toBeCloseTo(4.0, 8);
+  });
+
   test('pendulum constraint keeps mass within restLength under gravity', () => {
     const startLength = 2.0;
     const restLength = 1.0;

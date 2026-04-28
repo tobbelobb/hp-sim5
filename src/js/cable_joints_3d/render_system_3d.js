@@ -32,6 +32,11 @@ const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
 const ORIENTATION_BACK_COLOR = '#2a3542';
 const KNOT_MARKER_COLOR = '#ff3b30';
 const KNOT_MARKER_RADIUS = 0.002;
+const FORCE_SIGN_FLOAT_OFFSET = 0.024;
+const FORCE_SIGN_WIDTH = 0.11;
+const FORCE_SIGN_HEIGHT = 0.034;
+const FORCE_SIGN_TEXTURE_WIDTH = 256;
+const FORCE_SIGN_TEXTURE_HEIGHT = 80;
 const DEFAULT_BACKGROUND_COLOR = 0x1b2b3c;
 const PRINT_SURFACE_Z = 0.0;
 const PRINT_SURFACE_OUTLINE_Z = 0.0;
@@ -474,12 +479,76 @@ function disposeObject(obj) {
     }
     if (child.material && child.userData.ownsMaterial) {
       if (Array.isArray(child.material)) {
-        child.material.forEach((mat) => mat.dispose());
+        child.material.forEach((mat) => {
+          if (mat.map && child.userData.ownsTexture) {
+            mat.map.dispose();
+          }
+          mat.dispose();
+        });
       } else {
+        if (child.material.map && child.userData.ownsTexture) {
+          child.material.map.dispose();
+        }
         child.material.dispose();
       }
     }
   });
+}
+
+function formatConstraintForce(forceN) {
+  const value = Number.isFinite(forceN) ? Math.max(0.0, forceN) : 0.0;
+  if (value >= 1000.0) {
+    return `${(value / 1000.0).toFixed(1)} kN`;
+  }
+  if (value >= 100.0) {
+    return `${value.toFixed(0)} N`;
+  }
+  if (value >= 10.0) {
+    return `${value.toFixed(1)} N`;
+  }
+  return `${value.toFixed(2)} N`;
+}
+
+function createForceSignTexture(text) {
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
+    return null;
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = FORCE_SIGN_TEXTURE_WIDTH;
+  canvas.height = FORCE_SIGN_TEXTURE_HEIGHT;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return null;
+  }
+
+  paintForceSignCanvas(context, text);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function paintForceSignCanvas(context, text) {
+  const width = FORCE_SIGN_TEXTURE_WIDTH;
+  const height = FORCE_SIGN_TEXTURE_HEIGHT;
+  context.clearRect(0, 0, width, height);
+  context.fillStyle = 'rgba(12, 17, 31, 0.88)';
+  context.strokeStyle = 'rgba(255, 211, 77, 0.96)';
+  context.lineWidth = 5;
+  context.beginPath();
+  if (typeof context.roundRect === 'function') {
+    context.roundRect(4, 4, width - 8, height - 8, 12);
+  } else {
+    context.rect(4, 4, width - 8, height - 8);
+  }
+  context.fill();
+  context.stroke();
+  context.fillStyle = '#f7fbff';
+  context.font = '600 36px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.fillText(text, width * 0.5, height * 0.52);
 }
 
 export function collectRigidGroupEdges(memberCount, renderSegments) {
@@ -903,6 +972,7 @@ export class RenderSystem3D {
     this.jointLines = [];
     this.wrapArcs = [];
     this.knotMarkers = [];
+    this.forceSigns = [];
     this.rigidGroupLines = [];
 
     this.borderLine = null;
@@ -1627,6 +1697,12 @@ export class RenderSystem3D {
     }
     this.knotMarkers.length = 0;
 
+    for (const sign of this.forceSigns) {
+      this.root.remove(sign);
+      disposeObject(sign);
+    }
+    this.forceSigns.length = 0;
+
     for (const line of this.rigidGroupLines) {
       this.root.remove(line);
       disposeObject(line);
@@ -2280,12 +2356,14 @@ export class RenderSystem3D {
       this._hideLines(this.jointLines);
       this._hideLines(this.wrapArcs);
       this._hideMeshes(this.knotMarkers);
+      this._hideMeshes(this.forceSigns);
       return;
     }
 
     const jointSpecs = [];
     const arcSpecs = [];
     const knotSpecs = [];
+    const forceSignSpecs = [];
 
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
@@ -2305,6 +2383,12 @@ export class RenderSystem3D {
         jointSpecs.push({
           joint,
           color: taut ? baseColor : SLACK_COLOR
+        });
+
+        forceSignSpecs.push({
+          joint,
+          text: formatConstraintForce(joint.constraintForceMagnitude),
+          upDirection
         });
       }
 
@@ -2425,6 +2509,7 @@ export class RenderSystem3D {
     this._ensureLineCapacity(this.jointLines, jointSpecs.length, false);
     this._ensureLineCapacity(this.wrapArcs, arcSpecs.length, true);
     this._ensureKnotMarkerCapacity(knotSpecs.length);
+    this._ensureForceSignCapacity(forceSignSpecs.length);
 
     for (let i = 0; i < this.jointLines.length; i++) {
       const line = this.jointLines[i];
@@ -2482,6 +2567,30 @@ export class RenderSystem3D {
       marker.visible = true;
       marker.position.set(spec.position.x, spec.position.y, spec.position.z);
       marker.scale.setScalar(spec.radius);
+    }
+
+    for (let i = 0; i < this.forceSigns.length; i++) {
+      const sign = this.forceSigns[i];
+      const spec = forceSignSpecs[i];
+      if (!spec) {
+        sign.visible = false;
+        continue;
+      }
+
+      const pA = spec.joint.attachmentPointA_world;
+      const pB = spec.joint.attachmentPointB_world;
+      if (!pA || !pB) {
+        sign.visible = false;
+        continue;
+      }
+
+      this._updateForceSignText(sign, spec.text);
+      sign.visible = true;
+      sign.position.set(
+        (pA.x + pB.x) * 0.5 + spec.upDirection.x * FORCE_SIGN_FLOAT_OFFSET,
+        (pA.y + pB.y) * 0.5 + spec.upDirection.y * FORCE_SIGN_FLOAT_OFFSET,
+        (pA.z + pB.z) * 0.5 + spec.upDirection.z * FORCE_SIGN_FLOAT_OFFSET
+      );
     }
   }
 
@@ -2558,6 +2667,51 @@ export class RenderSystem3D {
       this.knotMarkers.push(marker);
       this.root.add(marker);
     }
+  }
+
+  _ensureForceSignCapacity(count) {
+    while (this.forceSigns.length < count) {
+      const sign = this._createForceSign();
+      this.forceSigns.push(sign);
+      this.root.add(sign);
+    }
+  }
+
+  _createForceSign() {
+    const texture = createForceSignTexture('0.00 N');
+    const material = new THREE.SpriteMaterial({
+      map: texture,
+      color: texture ? 0xffffff : 0xffd34d,
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+      toneMapped: false
+    });
+    const sign = new THREE.Sprite(material);
+    sign.scale.set(FORCE_SIGN_WIDTH, FORCE_SIGN_HEIGHT, 1.0);
+    sign.renderOrder = 950;
+    sign.frustumCulled = false;
+    sign.userData.ownsMaterial = true;
+    sign.userData.ownsTexture = Boolean(texture);
+    sign.userData.text = '0.00 N';
+    return sign;
+  }
+
+  _updateForceSignText(sign, text) {
+    if (sign.userData.text === text) {
+      return;
+    }
+
+    sign.userData.text = text;
+    const map = sign.material?.map;
+    const canvas = map?.image;
+    const context = canvas?.getContext?.('2d');
+    if (!context) {
+      return;
+    }
+
+    paintForceSignCanvas(context, text);
+    map.needsUpdate = true;
   }
 
   _createLine() {
