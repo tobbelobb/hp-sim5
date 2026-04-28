@@ -115,11 +115,12 @@ export function tangentFromSphereToSphere(posA, radiusA, cwA, posB, radiusB, cwB
   const origin = posA;
   const posA2 = projectToPlane2D(posA, origin, basis);
   const posB2 = projectToPlane2D(posB, origin, basis);
+  const planeOffsetB = new Vector3().subtractVectors(posB, posA).dot(basis.n);
 
   const result2 = tangentFromCircleToCircle(posA2, radiusA, cwA, posB2, radiusB, cwB);
   return {
     a_sphere: liftFromPlane2D(result2.a_circle, origin, basis),
-    b_sphere: liftFromPlane2D(result2.b_circle, origin, basis)
+    b_sphere: liftFromPlane2D(result2.b_circle, origin, basis).add(basis.n, planeOffsetB)
   };
 }
 

@@ -279,6 +279,60 @@ def Xform "World"
     expect(getAttribute(pathPrim, 'cablePath:stored')[1]).toBeGreaterThan(0);
   });
 
+  test('keeps rolling-to-rolling tangents in each offset wheel plane', async () => {
+    const source = `#usda 1.0
+
+def Xform "World"
+{
+    def Xform "Scene"
+    {
+        def Circle "WheelA"
+        {
+            double radius = 0.1
+            vector3f physics:rotationAxis = (1, 0, 0)
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Circle "WheelB"
+        {
+            double radius = 0.1
+            vector3f physics:rotationAxis = (1, 0, 0)
+            double3 xformOp:translate = (0.01, 0, 1)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def CableJoint "JointAB"
+        {
+            custom rel physics:body0 = </World/Scene/WheelA>
+            custom rel physics:body1 = </World/Scene/WheelB>
+        }
+
+        def Xform "CablePathA" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 1]
+            custom rel cablePath:joints = [</World/Scene/JointAB>]
+            custom token[] cablePath:linkTypes = ["rolling", "rolling"]
+            custom token cablePath:initPolicy = "deriveMissing"
+        }
+    }
+}
+`;
+
+    const baked = bakeCableSceneUsdaSource(source);
+    const stage = await UsdOpen(baked.source);
+    const jointPrim = stage.GetPrimAtPath('/World/Scene/JointAB');
+    const localA = getAttribute(jointPrim, 'localPos0');
+    const localB = getAttribute(jointPrim, 'localPos1');
+
+    expect(localA[0]).toBeCloseTo(0.0);
+    expect(localB[0]).toBeCloseTo(0.0);
+    expect(Math.hypot(localA[1], localA[2])).toBeCloseTo(0.1);
+    expect(Math.hypot(localB[1], localB[2])).toBeCloseTo(0.1);
+  });
+
   test('can override authored cablePath:halfWidth while baking', async () => {
     const source = `#usda 1.0
 
