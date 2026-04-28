@@ -1,5 +1,5 @@
 import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
-import { World, PositionComponent, VelocityComponent, MassComponent, GravityAffectedComponent } from '../../../src/js/cable_joints_3d/ecs.js';
+import { World, PositionComponent, VelocityComponent, MassComponent, RadiusComponent, GravityAffectedComponent } from '../../../src/js/cable_joints_3d/ecs.js';
 import {
   CableJointComponent,
   CableLinkComponent,
@@ -163,6 +163,85 @@ describe('PBDCableConstraintSolver (3D)', () => {
     expect(joint.constraintForce.y).toBeCloseTo(0.0, 8);
     expect(joint.constraintForce.z).toBeCloseTo(0.0, 8);
     expect(joint.constraintForceMagnitude).toBeCloseTo(4.0, 8);
+  });
+
+  test('reports propagated cable tension across taut pinhole and rolling neighbors without local correction', () => {
+    const world = new World();
+    world.setResource('dt', 1.0);
+
+    const e0 = world.createEntity();
+    const e1 = world.createEntity();
+    const e2 = world.createEntity();
+    const e3 = world.createEntity();
+    world.addComponent(e0, new PositionComponent(0, 0, 0));
+    world.addComponent(e1, new PositionComponent(1, 0, 0));
+    world.addComponent(e2, new PositionComponent(2, 0, 0));
+    world.addComponent(e3, new PositionComponent(4, 0, 0));
+    world.addComponent(e0, new MassComponent(-1.0));
+    world.addComponent(e1, new MassComponent(-1.0));
+    world.addComponent(e2, new MassComponent(-1.0));
+    world.addComponent(e3, new MassComponent(-1.0));
+    world.addComponent(e2, new RadiusComponent(1.0));
+
+    const joint0 = world.createEntity();
+    world.addComponent(
+      joint0,
+      new CableJointComponent(
+        e0,
+        e1,
+        1.0,
+        new Vector3(0, 0, 0),
+        new Vector3(1, 0, 0)
+      )
+    );
+
+    const joint1 = world.createEntity();
+    world.addComponent(
+      joint1,
+      new CableJointComponent(
+        e1,
+        e2,
+        1.0,
+        new Vector3(1, 0, 0),
+        new Vector3(2, 0, 0)
+      )
+    );
+
+    const joint2 = world.createEntity();
+    world.addComponent(
+      joint2,
+      new CableJointComponent(
+        e2,
+        e3,
+        1.0,
+        new Vector3(2, 0, 0),
+        new Vector3(4, 0, 0)
+      )
+    );
+
+    const pathEnt = world.createEntity();
+    world.addComponent(
+      pathEnt,
+      new CablePathComponent(
+        world,
+        [joint0, joint1, joint2],
+        ['attachment', 'pinhole', 'rolling', 'attachment'],
+        [true, true, true, true],
+        100.0
+      )
+    );
+
+    new PBDCableConstraintSolver().update(world, 1.0);
+
+    const left = world.getComponent(joint0, CableJointComponent);
+    const middle = world.getComponent(joint1, CableJointComponent);
+    const right = world.getComponent(joint2, CableJointComponent);
+    expect(left.constraintForceMagnitude).toBeCloseTo(0.0, 12);
+    expect(middle.constraintForceMagnitude).toBeCloseTo(0.0, 12);
+    expect(right.constraintForceMagnitude).toBeCloseTo(0.0, 12);
+    expect(left.tensionMagnitude).toBeCloseTo(100.0, 8);
+    expect(middle.tensionMagnitude).toBeCloseTo(100.0, 8);
+    expect(right.tensionMagnitude).toBeCloseTo(100.0, 8);
   });
 
   test('pendulum constraint keeps mass within restLength under gravity', () => {
