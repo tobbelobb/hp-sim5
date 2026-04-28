@@ -20,7 +20,6 @@ import {
   RigidBodyMemberComponent,
   HybridKnotAngleComponent,
   MomentOfInertiaComponent,
-  CoefficientOfFrictionComponent,
   MachineTagComponent,
   layeringEnabled
 } from './ecs.js';
@@ -1254,14 +1253,15 @@ function _linkAllowsCableSpin(world, path, linkIndex, entityId) {
   if (!_hasAxisOnlyCableSpinDof(world, entityId)) {
     return false;
   }
-  if (_isHybrid(path?.linkTypes?.[linkIndex])) {
+  const linkType = path?.linkTypes?.[linkIndex];
+  if (_isHybrid(linkType) || linkType === 'rolling') {
     return true;
   }
-  if (path?.linkTypes?.[linkIndex] !== 'rolling') {
-    return true;
-  }
-  const friction = world.getComponent(entityId, CoefficientOfFrictionComponent);
-  return Number.isFinite(friction?.mu) && friction.mu > EPSILON;
+  return linkType !== undefined;
+}
+
+function _isSpinBackdrivableThroughPinhole(linkType) {
+  return linkType === 'rolling' || _isHybrid(linkType);
 }
 
 export function calculateAttachmentPoints(world, joint, path, i, radiusA, radiusB) {
@@ -1447,7 +1447,9 @@ export function _updateAttachmentPoints(world) {
       const cwA = _effectiveCW(path, A, true);
       const rollingLinkA = _isRolling(path.linkTypes[A]);
       const isHybridA = _isHybrid(path.linkTypes[A]);
-      const hasFrictionA = world.getComponent(entityA, CoefficientOfFrictionComponent);
+      // Rolling links are non-slip by link type. Material friction only belongs
+      // to the secondary CableFrictionSystem tension-transfer pass.
+      const transfersRollingRotationA = rollingLinkA && !isHybridA;
 
       const linkBComp = world.getComponent(entityB, CableLinkComponent);
       const posB = getEntityWorldPosition(world, entityB);
@@ -1478,7 +1480,7 @@ export function _updateAttachmentPoints(world) {
       const cwB = _effectiveCW(path, B, false);
       const rollingLinkB = _isRolling(path.linkTypes[B]);
       const isHybridB = _isHybrid(path.linkTypes[B]);
-      const hasFrictionB = world.getComponent(entityB, CoefficientOfFrictionComponent);
+      const transfersRollingRotationB = rollingLinkB && !isHybridB;
 
       let { attachmentA_current, attachmentB_current } = calculateAttachmentPoints(
         world,
@@ -1605,7 +1607,7 @@ export function _updateAttachmentPoints(world) {
             pathHalfWidth,
             radiusA
           );
-        } else if (hasFrictionA) {
+        } else if (transfersRollingRotationA) {
           sA += (cwA ? deltaAngleA * radiusA : -deltaAngleA * radiusA);
         }
       }
@@ -1648,7 +1650,7 @@ export function _updateAttachmentPoints(world) {
             pathHalfWidth,
             radiusB
           );
-        } else if (hasFrictionB) {
+        } else if (transfersRollingRotationB) {
           sB += (cwB ? deltaAngleB * radiusB : -deltaAngleB * radiusB);
         }
       }
@@ -1672,7 +1674,7 @@ export function _updateAttachmentPoints(world) {
             sAEffective -= shiftA;
             sBEffective += shiftB;
 
-            if ((isHybridB || hasFrictionB) && currentQuatB) {
+            if ((isHybridB || transfersRollingRotationB) && currentQuatB) {
               if (isHybridB) {
                 _applyEntityAxisAngleDelta(
                   world,
@@ -1700,7 +1702,7 @@ export function _updateAttachmentPoints(world) {
               }
             }
 
-            if ((isHybridA || hasFrictionA) && currentQuatA) {
+            if ((isHybridA || transfersRollingRotationA) && currentQuatA) {
               if (isHybridA) {
                 _applyEntityAxisAngleDelta(
                   world,
@@ -1729,7 +1731,7 @@ export function _updateAttachmentPoints(world) {
             }
           } else {
             sBEffective += requiredLift;
-            if ((isHybridB || hasFrictionB) && currentQuatB) {
+            if ((isHybridB || transfersRollingRotationB) && currentQuatB) {
               if (isHybridB) {
                 _applyEntityAxisAngleDelta(
                   world,
@@ -2825,17 +2827,21 @@ export class PBDCableConstraintSolver {
       }
 
       let internalJointIndex = null;
-      let hybridOnJointSide = null;
-      if (side === 'A' && pinholeLinkIndex > 0 && _isHybrid(path.linkTypes[pinholeLinkIndex - 1])) {
+      let spinOnJointSide = null;
+      if (
+        side === 'A' &&
+        pinholeLinkIndex > 0 &&
+        _isSpinBackdrivableThroughPinhole(path.linkTypes[pinholeLinkIndex - 1])
+      ) {
         internalJointIndex = jointIndex - 1;
-        hybridOnJointSide = 'A';
+        spinOnJointSide = 'A';
       } else if (
         side === 'B' &&
         pinholeLinkIndex < path.linkTypes.length - 1 &&
-        _isHybrid(path.linkTypes[pinholeLinkIndex + 1])
+        _isSpinBackdrivableThroughPinhole(path.linkTypes[pinholeLinkIndex + 1])
       ) {
         internalJointIndex = jointIndex + 1;
-        hybridOnJointSide = 'B';
+        spinOnJointSide = 'B';
       }
       if (!(internalJointIndex >= 0 && internalJointIndex < path.jointEntities.length)) {
         return null;
@@ -2848,21 +2854,21 @@ export class PBDCableConstraintSolver {
         return null;
       }
 
-      const hybridEntityId = hybridOnJointSide === 'A' ? internalJoint.entityA : internalJoint.entityB;
-      const hybridPointWorld = hybridOnJointSide === 'A'
-        ? computeWorldAttachment(world, hybridEntityId, internalLocals.localA)
-        : computeWorldAttachment(world, hybridEntityId, internalLocals.localB);
-      if (!hybridPointWorld || !pointWorld) {
+      const spinEntityId = spinOnJointSide === 'A' ? internalJoint.entityA : internalJoint.entityB;
+      const spinPointWorld = spinOnJointSide === 'A'
+        ? computeWorldAttachment(world, spinEntityId, internalLocals.localA)
+        : computeWorldAttachment(world, spinEntityId, internalLocals.localB);
+      if (!spinPointWorld || !pointWorld) {
         return null;
       }
 
-      const coupledGradPos = pointWorld.clone().subtract(hybridPointWorld);
+      const coupledGradPos = pointWorld.clone().subtract(spinPointWorld);
       if (coupledGradPos.lengthSq() <= EPSILON) {
         return null;
       }
       coupledGradPos.normalize();
 
-      return buildExternalMemberSpinSolveInfo(hybridEntityId, hybridPointWorld, coupledGradPos);
+      return buildExternalMemberSpinSolveInfo(spinEntityId, spinPointWorld, coupledGradPos);
     };
 
     const applyConstraint = (
