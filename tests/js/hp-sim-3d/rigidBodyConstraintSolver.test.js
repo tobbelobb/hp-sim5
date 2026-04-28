@@ -10,7 +10,6 @@ import {
   MomentOfInertiaComponent,
   RigidBodyComponent,
   RigidBodyMemberComponent,
-  CoefficientOfFrictionComponent,
 } from '../../../src/js/cable_joints_3d/ecs.js';
 import {
   CableLinkComponent,
@@ -36,7 +35,7 @@ import {
   RigidBodySyncSystem,
 } from '../../../src/js/cable_joints_3d/commonSystems.js';
 import { CableAttachmentCacheSystem } from '../../../src/js/cable_joints_3d/cable_attachment_cache_system.js';
-import { CableFrictionSystem } from '../../../src/js/cable_joints_3d/cable_friction_system.js';
+import { CableSlackSystem } from '../../../src/js/cable_joints_3d/cable_slack_system.js';
 
 describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
   function rotateBodyZ(world, bodyEntity, angle) {
@@ -787,9 +786,6 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
       world.addComponent(entity, new RadiusComponent(radius));
       world.addComponent(entity, new MomentOfInertiaComponent(1e-4));
       world.addComponent(entity, new SpoolStateComponent(null, axis));
-      // The test includes CableFrictionSystem for pinhole transfer. Keep the
-      // rolling spans stuck so wheel rotation is the only rolling transfer path.
-      world.addComponent(entity, new CoefficientOfFrictionComponent(1000.0));
       world.addComponent(entity, new PrevFinalPosComponent(pos.x, pos.y, pos.z));
       world.addComponent(
         entity,
@@ -892,7 +888,7 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
       new RigidBodySyncSystem(),
       new CableAttachmentUpdateSystem(false),
       new CableAttachmentCacheSystem(),
-      new CableFrictionSystem(),
+      new CableSlackSystem(),
       new PBDCableConstraintSolver(),
       new PBDAngularVelocityUpdateSystem(),
     ];
