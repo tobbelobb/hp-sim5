@@ -32,18 +32,12 @@ M666 S20000.0             ; Spring constant (rough approximation) for Garda 1.1 
                           ; The real value is somewhere between 20k and 100k.
                           ; Lower value gives more flex compensation.
 M666 I3.0:3.0:3.0         ; Min planned force in all directions (unit N).
-                          ; This is a safety limit. Should affect only exceptional/wrong moves,
-                          ; for example moves outside of the reachable volume.
 M666 X170.0:170.0:170.0   ; Max planned force in all directions (unit N)
                           ; This is a safety limit. Will affect moves close to
                           ; the limits of the reachable volume.
 
 ; Guy wire lengths. Needed for flex compenation.
 ; Guy wires go between spool and final line roller.
-; If your spools are all mounted on the D-anchor, on the ceiling plate, then you're all good,
-; and you don't need to configure M666 Y values explicitly.
-; If your spools are not all on the D-anchor then you must measure guy wire
-; lengths and set them here.
 ; If your spools are all mounted on their respective anchors, so that you have no guy wires,
 ; then you should configure zeroed guy wire lengths M666 Y0.0:0.0:0.0:0.0.
 M666 Y528.3:528.3:528.3
