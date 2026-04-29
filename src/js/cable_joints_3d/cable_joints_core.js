@@ -64,7 +64,6 @@ export class CableJointComponent {
     this.constraintLambda = 0.0;
     this.constraintForce = new Vector3(0, 0, 0);
     this.constraintForceMagnitude = 0.0;
-    this.tensionMagnitude = 0.0;
   }
 
   static fromWorld(entityA, entityB, restLength, attachmentPointA_world, attachmentPointB_world) {
@@ -1266,10 +1265,6 @@ function _linkAllowsCableSpin(world, path, linkIndex, entityId) {
 
 function _isSpinBackdrivableThroughPinhole(linkType) {
   return linkType === 'rolling' || _isHybrid(linkType);
-}
-
-function _linkTransmitsCableTension(linkType) {
-  return linkType === 'pinhole' || linkType === 'rolling' || _isHybrid(linkType);
 }
 
 export function calculateAttachmentPoints(world, joint, path, i, radiusA, radiusB) {
@@ -3045,7 +3040,6 @@ export class PBDCableConstraintSolver {
       joint.constraintForce.set(gradPosA);
       joint.constraintForce.scale(lambda * invDtSq);
       joint.constraintForceMagnitude = Math.abs(lambda) * invDtSq;
-      joint.tensionMagnitude = Math.max(joint.tensionMagnitude ?? 0.0, joint.constraintForceMagnitude);
 
       if (invMassA > 0.0) {
         const deltaPosA = gradPosA.clone().scale(-invMassA * lambda);
@@ -3120,7 +3114,6 @@ export class PBDCableConstraintSolver {
           joint.constraintForce.z = 0.0;
         }
         joint.constraintForceMagnitude = 0.0;
-        joint.tensionMagnitude = 0.0;
         jointLocals.set(jointId, {
           localA: computeLocal(joint.entityA, joint.attachmentPointA_world),
           localB: computeLocal(joint.entityB, joint.attachmentPointB_world)
@@ -3184,76 +3177,6 @@ export class PBDCableConstraintSolver {
             path.compliance
           );
         }
-      }
-    }
-
-    const jointTensionData = new Map();
-    const tautTolerance = 1e-6;
-    for (const pathId of pathEntities) {
-      const path = world.getComponent(pathId, CablePathComponent);
-      if (path.jointEntities.length < 1) continue;
-
-      for (const jointId of path.jointEntities) {
-        const joint = world.getComponent(jointId, CableJointComponent);
-        const locals = jointLocals.get(jointId);
-        if (!joint || !locals) continue;
-
-        const pA = computeWorldAttachment(world, joint.entityA, locals.localA);
-        const pB = computeWorldAttachment(world, joint.entityB, locals.localB);
-        if (!pA || !pB) continue;
-
-        const currentLength = pA.distanceTo(pB);
-        const stretch = currentLength - joint.restLength;
-        const elasticTension = (
-          stretch > EPSILON &&
-          Number.isFinite(path.compliance) &&
-          path.compliance > EPSILON
-        )
-          ? stretch / path.compliance
-          : 0.0;
-        const localTension = Math.max(
-          Number.isFinite(joint.constraintForceMagnitude) ? joint.constraintForceMagnitude : 0.0,
-          elasticTension,
-        );
-
-        joint.tensionMagnitude = localTension;
-        jointTensionData.set(jointId, {
-          joint,
-          taut: currentLength >= joint.restLength - tautTolerance,
-          tension: localTension,
-        });
-      }
-
-      let startJointIndex = 0;
-      while (startJointIndex < path.jointEntities.length) {
-        const startData = jointTensionData.get(path.jointEntities[startJointIndex]);
-        if (!startData?.taut) {
-          startJointIndex += 1;
-          continue;
-        }
-
-        let endJointIndex = startJointIndex;
-        let componentTension = startData.tension;
-        while (endJointIndex + 1 < path.jointEntities.length) {
-          const linkType = path.linkTypes[endJointIndex + 1];
-          const nextData = jointTensionData.get(path.jointEntities[endJointIndex + 1]);
-          if (!_linkTransmitsCableTension(linkType) || !nextData?.taut) {
-            break;
-          }
-          endJointIndex += 1;
-          componentTension = Math.max(componentTension, nextData.tension);
-        }
-
-        if (componentTension > 0.0) {
-          for (let j = startJointIndex; j <= endJointIndex; j++) {
-            const data = jointTensionData.get(path.jointEntities[j]);
-            if (data?.joint) {
-              data.joint.tensionMagnitude = Math.max(data.joint.tensionMagnitude ?? 0.0, componentTension);
-            }
-          }
-        }
-
-        startJointIndex = endJointIndex + 1;
       }
     }
   }

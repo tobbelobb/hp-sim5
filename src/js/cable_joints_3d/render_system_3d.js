@@ -2387,15 +2387,9 @@ export class RenderSystem3D {
         });
 
         if (showForceSigns) {
-          const tensionMagnitude = (
-            Number.isFinite(joint.tensionMagnitude) &&
-            joint.tensionMagnitude > 0.0
-          )
-            ? joint.tensionMagnitude
-            : joint.constraintForceMagnitude;
           forceSignSpecs.push({
             joint,
-            text: formatConstraintForce(tensionMagnitude),
+            text: formatConstraintForce(joint.constraintForceMagnitude),
             upDirection
           });
         }
