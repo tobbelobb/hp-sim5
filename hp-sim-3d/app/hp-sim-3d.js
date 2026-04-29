@@ -360,7 +360,7 @@ function initHpSim() {
     qualityToggle.checked = false;
   }
   if (showForcesToggle) {
-    showForcesToggle.checked = true;
+    showForcesToggle.checked = false;
   }
   if (lineLayeringToggle) {
     lineLayeringToggle.checked = true;
@@ -418,7 +418,7 @@ function initHpSim() {
   let speedStatusArmed = false;
   const machineQualityMonitors = new Map();
   let qualityEnabled = qualityToggle ? Boolean(qualityToggle.checked) : false;
-  let showConstraintForces = showForcesToggle ? Boolean(showForcesToggle.checked) : true;
+  let showConstraintForces = showForcesToggle ? Boolean(showForcesToggle.checked) : false;
   let lineLayeringEnabled = lineLayeringToggle ? Boolean(lineLayeringToggle.checked) : true;
   let closedLoopMotorsEnabled = closedLoopMotorsToggle ? Boolean(closedLoopMotorsToggle.checked) : false;
   let secondaryControlsUserPreference = null;
@@ -783,8 +783,8 @@ function initHpSim() {
     });
     setShowConstraintForcesState(showForcesToggle.checked, { fromToggle: true });
   } else {
-    showConstraintForces = true;
-    world.setResource('showConstraintForces', true);
+    showConstraintForces = false;
+    world.setResource('showConstraintForces', false);
   }
 
   if (lineLayeringToggle) {

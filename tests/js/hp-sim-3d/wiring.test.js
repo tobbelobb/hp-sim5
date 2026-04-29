@@ -53,7 +53,7 @@ describe('hp-sim-3d wiring', () => {
     expect(html).toContain('class="sim-toggle-group"');
     expect(showForcesToggleIndex).toBeGreaterThan(qualityToggleIndex);
     expect(lineLayeringToggleIndex).toBeGreaterThan(showForcesToggleIndex);
-    expect(html).toContain('<input id="showForcesToggle" type="checkbox" checked>');
+    expect(html).toContain('<input id="showForcesToggle" type="checkbox">');
     expect(html).toContain('<span>Show Forces</span>');
     expect(source).toContain("const showForcesToggle = document.getElementById('showForcesToggle');");
     expect(source).toContain("world.setResource('showConstraintForces', next);");
