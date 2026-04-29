@@ -145,7 +145,7 @@ def Xform "World"
             double radius = 0.005
             double3 xformOp:translate = (-0.346410161513775, -0.2, 0.1)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            float physics:mass = 0.0001
+            float physics:mass = 0.0142
             vector3f physics:velocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
@@ -220,7 +220,8 @@ def Xform "World"
             double radius = 0.005
             double3 xformOp:translate = (0.346410161513775, -0.2, 0.1)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            float physics:mass = 0.0001
+            # A mass of 0.0142 here takes total mover mass up to 81 g which equals the hp3 total mover mass
+            float physics:mass = 0.0142
             vector3f physics:velocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
@@ -405,7 +406,7 @@ def Xform "World"
             double radius = 0.005
             double3 xformOp:translate = (0, 0.4, 0.1)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            float physics:mass = 0.0001
+            float physics:mass = 0.0142
             vector3f physics:velocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/PinholeMaterial>
         }
@@ -1245,7 +1246,7 @@ def Xform "World"
             custom bool[] cablePath:clockwise = [1, 1, 1, 1, 1, 1, 1]
             custom rel cablePath:joints = [</World/HangprinterScene/JointAL_0>, </World/HangprinterScene/JointAL_anchor_to_pinhole>, </World/HangprinterScene/JointAL_pinhole_to_wheel>, </World/HangprinterScene/JointAL_wheel_to_wheel>, </World/HangprinterScene/JointAL_wheel_to_pinhole>, </World/HangprinterScene/JointAL_pinhole_to_anchor>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "pinhole", "rolling", "rolling", "pinhole", "attachment"]
-            custom double[] cablePath:stored = [1.0, 0 ,0, 0, 0, 0, 0]
+            custom double[] cablePath:stored = [2.0, 0 ,0, 0, 0, 0, 0]
             custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
@@ -1260,7 +1261,7 @@ def Xform "World"
             custom bool[] cablePath:clockwise = [1, 1, 1, 1, 1, 1, 1]
             custom rel cablePath:joints = [</World/HangprinterScene/JointAR_0>, </World/HangprinterScene/JointAR_anchor_to_pinhole>, </World/HangprinterScene/JointAR_pinhole_to_wheel>, </World/HangprinterScene/JointAR_wheel_to_wheel>, </World/HangprinterScene/JointAR_wheel_to_pinhole>, </World/HangprinterScene/JointAR_pinhole_to_anchor>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "pinhole", "rolling", "rolling", "pinhole", "attachment"]
-            custom double[] cablePath:stored = [1.0, 0 ,0, 0, 0, 0, 0]
+            custom double[] cablePath:stored = [2.0, 0 ,0, 0, 0, 0, 0]
             custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
@@ -1275,7 +1276,7 @@ def Xform "World"
             custom bool[] cablePath:clockwise = [1, 1, 1, 1, 1, 1, 1]
             custom rel cablePath:joints = [</World/HangprinterScene/JointBL_0>, </World/HangprinterScene/JointBL_anchor_to_pinhole>, </World/HangprinterScene/JointBL_pinhole_to_wheel>, </World/HangprinterScene/JointBL_wheel_to_wheel>, </World/HangprinterScene/JointBL_wheel_to_pinhole>, </World/HangprinterScene/JointBL_pinhole_to_anchor>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "pinhole", "rolling", "rolling", "pinhole", "attachment"]
-            custom double[] cablePath:stored = [1.0, 0, 0, 0, 0, 0, 0]
+            custom double[] cablePath:stored = [2.0, 0, 0, 0, 0, 0, 0]
             custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
@@ -1290,7 +1291,7 @@ def Xform "World"
             custom bool[] cablePath:clockwise = [1, 1, 1, 1, 1, 1, 1]
             custom rel cablePath:joints = [</World/HangprinterScene/JointBR_0>, </World/HangprinterScene/JointBR_anchor_to_pinhole>, </World/HangprinterScene/JointBR_pinhole_to_wheel>, </World/HangprinterScene/JointBR_wheel_to_wheel>, </World/HangprinterScene/JointBR_wheel_to_pinhole>, </World/HangprinterScene/JointBR_pinhole_to_anchor>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "pinhole", "rolling", "rolling", "pinhole", "attachment"]
-            custom double[] cablePath:stored = [1.0, 0, 0, 0, 0, 0, 0]
+            custom double[] cablePath:stored = [2.0, 0, 0, 0, 0, 0, 0]
             custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
@@ -1305,7 +1306,7 @@ def Xform "World"
             custom bool[] cablePath:clockwise = [1, 1, 1, 1, 1, 1, 1]
             custom rel cablePath:joints = [</World/HangprinterScene/JointCL_0>, </World/HangprinterScene/JointCL_anchor_to_pinhole>, </World/HangprinterScene/JointCL_pinhole_to_wheel>, </World/HangprinterScene/JointCL_wheel_to_wheel>, </World/HangprinterScene/JointCL_wheel_to_pinhole>, </World/HangprinterScene/JointCL_pinhole_to_anchor>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "pinhole", "rolling", "rolling", "pinhole", "attachment"]
-            custom double[] cablePath:stored = [1.0, 0, 0, 0, 0, 0, 0]
+            custom double[] cablePath:stored = [2.0, 0, 0, 0, 0, 0, 0]
             custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
@@ -1320,7 +1321,7 @@ def Xform "World"
             custom bool[] cablePath:clockwise = [1, 1, 1, 1, 1, 1, 1]
             custom rel cablePath:joints = [</World/HangprinterScene/JointCR_0>, </World/HangprinterScene/JointCR_anchor_to_pinhole>, </World/HangprinterScene/JointCR_pinhole_to_wheel>, </World/HangprinterScene/JointCR_wheel_to_wheel>, </World/HangprinterScene/JointCR_wheel_to_pinhole>, </World/HangprinterScene/JointCR_pinhole_to_anchor>]
             custom token[] cablePath:linkTypes = ["hybrid", "pinhole", "pinhole", "rolling", "rolling", "pinhole", "attachment"]
-            custom double[] cablePath:stored = [1.0, 0, 0, 0, 0, 0, 0]
+            custom double[] cablePath:stored = [2.0, 0, 0, 0, 0, 0, 0]
             custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
@@ -1336,7 +1337,7 @@ def Xform "World"
             custom rel cablePath:joints = [</World/HangprinterScene/JointD0_0>, </World/HangprinterScene/JointD0_1>, </World/HangprinterScene/JointD0_2>, </World/HangprinterScene/JointD0_3>, </World/HangprinterScene/JointD0_4>]
             custom token[] cablePath:linkTypes = ["hybrid", "rolling", "rolling", "rolling", "rolling", "attachment"]
             custom token[] cablePath:storedMode = ["manual", "auto", "auto", "auto", "auto", "manual"]
-            custom double[] cablePath:stored = [1.0, 0, 0, 0, 0, 0]
+            custom double[] cablePath:stored = [2.0, 0, 0, 0, 0, 0]
             custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
@@ -1351,7 +1352,7 @@ def Xform "World"
             custom rel cablePath:joints = [</World/HangprinterScene/JointD1_0>, </World/HangprinterScene/JointD1_1>, </World/HangprinterScene/JointD1_2>, </World/HangprinterScene/JointD1_3>, </World/HangprinterScene/JointD1_4>]
             custom token[] cablePath:linkTypes = ["hybrid", "rolling", "rolling", "rolling", "rolling", "attachment"]
             custom token[] cablePath:storedMode = ["manual", "auto", "auto", "auto", "auto", "manual"]
-            custom double[] cablePath:stored = [1.0, 0, 0, 0, 0, 0]
+            custom double[] cablePath:stored = [2.0, 0, 0, 0, 0, 0]
             custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
@@ -1366,7 +1367,7 @@ def Xform "World"
             custom rel cablePath:joints = [</World/HangprinterScene/JointD2_0>, </World/HangprinterScene/JointD2_1>, </World/HangprinterScene/JointD2_2>, </World/HangprinterScene/JointD2_3>, </World/HangprinterScene/JointD2_4>]
             custom token[] cablePath:linkTypes = ["hybrid", "rolling", "rolling", "rolling", "rolling", "attachment"]
             custom token[] cablePath:storedMode = ["manual", "auto", "auto", "auto", "auto", "manual"]
-            custom double[] cablePath:stored = [1.0, 0, 0, 0, 0, 0]
+            custom double[] cablePath:stored = [2.0, 0, 0, 0, 0, 0]
             custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
             custom double cablePath:halfWidth = 0.001
