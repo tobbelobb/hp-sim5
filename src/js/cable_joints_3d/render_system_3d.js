@@ -35,6 +35,8 @@ const KNOT_MARKER_RADIUS = 0.002;
 const FORCE_SIGN_FLOAT_OFFSET = 0.024;
 const FORCE_SIGN_WIDTH = 0.11;
 const FORCE_SIGN_HEIGHT = 0.034;
+const FORCE_SIGN_SPREAD_MARGIN = 0.006;
+const FORCE_SIGN_SPREAD_ITERATIONS = 10;
 const FORCE_SIGN_TEXTURE_WIDTH = 256;
 const FORCE_SIGN_TEXTURE_HEIGHT = 80;
 const DEFAULT_BACKGROUND_COLOR = 0x1b2b3c;
@@ -549,6 +551,122 @@ function paintForceSignCanvas(context, text) {
   context.textAlign = 'center';
   context.textBaseline = 'middle';
   context.fillText(text, width * 0.5, height * 0.52);
+}
+
+function finiteVector3Like(value) {
+  return Boolean(
+    value &&
+    Number.isFinite(value.x) &&
+    Number.isFinite(value.y) &&
+    Number.isFinite(value.z)
+  );
+}
+
+function dotVector3Like(value, axis) {
+  return value.x * axis.x + value.y * axis.y + value.z * axis.z;
+}
+
+function getForceSignAnchor(spec) {
+  const pA = spec?.joint?.attachmentPointA_world;
+  const pB = spec?.joint?.attachmentPointB_world;
+  const upDirection = spec?.upDirection;
+  if (!finiteVector3Like(pA) || !finiteVector3Like(pB) || !finiteVector3Like(upDirection)) {
+    return null;
+  }
+
+  return new THREE.Vector3(
+    (pA.x + pB.x) * 0.5 + upDirection.x * FORCE_SIGN_FLOAT_OFFSET,
+    (pA.y + pB.y) * 0.5 + upDirection.y * FORCE_SIGN_FLOAT_OFFSET,
+    (pA.z + pB.z) * 0.5 + upDirection.z * FORCE_SIGN_FLOAT_OFFSET
+  );
+}
+
+function getForceSignSpreadBasis(camera, fallbackUpDirection) {
+  const right = new THREE.Vector3(1, 0, 0);
+  const up = new THREE.Vector3(0, 1, 0);
+  if (camera?.quaternion) {
+    right.applyQuaternion(camera.quaternion).normalize();
+    up.applyQuaternion(camera.quaternion).normalize();
+    return { right, up };
+  }
+
+  if (finiteVector3Like(fallbackUpDirection)) {
+    up.set(fallbackUpDirection.x, fallbackUpDirection.y, fallbackUpDirection.z).normalize();
+  }
+  return { right, up };
+}
+
+function spreadForceSignSpecs(forceSignSpecs, camera) {
+  if (!Array.isArray(forceSignSpecs) || forceSignSpecs.length < 2) {
+    for (const spec of forceSignSpecs ?? []) {
+      spec.position = getForceSignAnchor(spec);
+    }
+    return;
+  }
+
+  const { right, up } = getForceSignSpreadBasis(camera, forceSignSpecs[0]?.upDirection);
+  const minX = FORCE_SIGN_WIDTH + FORCE_SIGN_SPREAD_MARGIN;
+  const minY = FORCE_SIGN_HEIGHT + FORCE_SIGN_SPREAD_MARGIN;
+  const items = [];
+
+  for (let i = 0; i < forceSignSpecs.length; i += 1) {
+    const spec = forceSignSpecs[i];
+    const anchor = getForceSignAnchor(spec);
+    spec.position = anchor;
+    if (!anchor) {
+      continue;
+    }
+
+    const x = dotVector3Like(anchor, right);
+    const y = dotVector3Like(anchor, up);
+    items.push({
+      spec,
+      anchor,
+      baseX: x,
+      baseY: y,
+      x,
+      y
+    });
+  }
+
+  for (let iteration = 0; iteration < FORCE_SIGN_SPREAD_ITERATIONS; iteration += 1) {
+    let moved = false;
+    for (let i = 0; i < items.length; i += 1) {
+      for (let j = i + 1; j < items.length; j += 1) {
+        const a = items[i];
+        const b = items[j];
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const overlapX = minX - Math.abs(dx);
+        const overlapY = minY - Math.abs(dy);
+        if (!(overlapX > 0.0 && overlapY > 0.0)) {
+          continue;
+        }
+
+        moved = true;
+        if (overlapX < overlapY) {
+          const direction = dx === 0.0 ? (i % 2 === 0 ? 1.0 : -1.0) : Math.sign(dx);
+          const shift = overlapX * 0.5 * direction;
+          a.x -= shift;
+          b.x += shift;
+        } else {
+          const direction = dy === 0.0 ? (i % 2 === 0 ? 1.0 : -1.0) : Math.sign(dy);
+          const shift = overlapY * 0.5 * direction;
+          a.y -= shift;
+          b.y += shift;
+        }
+      }
+    }
+    if (!moved) {
+      break;
+    }
+  }
+
+  for (const item of items) {
+    item.spec.position = item.anchor.clone()
+      .addScaledVector(right, item.x - item.baseX)
+      .addScaledVector(up, item.y - item.baseY);
+  }
 }
 
 export function collectRigidGroupEdges(memberCount, renderSegments) {
@@ -2513,6 +2631,7 @@ export class RenderSystem3D {
     this._ensureLineCapacity(this.wrapArcs, arcSpecs.length, true);
     this._ensureKnotMarkerCapacity(knotSpecs.length);
     this._ensureForceSignCapacity(forceSignSpecs.length);
+    spreadForceSignSpecs(forceSignSpecs, this.camera);
 
     for (let i = 0; i < this.jointLines.length; i++) {
       const line = this.jointLines[i];
@@ -2580,20 +2699,14 @@ export class RenderSystem3D {
         continue;
       }
 
-      const pA = spec.joint.attachmentPointA_world;
-      const pB = spec.joint.attachmentPointB_world;
-      if (!pA || !pB) {
+      if (!spec.position) {
         sign.visible = false;
         continue;
       }
 
       this._updateForceSignText(sign, spec.text);
       sign.visible = true;
-      sign.position.set(
-        (pA.x + pB.x) * 0.5 + spec.upDirection.x * FORCE_SIGN_FLOAT_OFFSET,
-        (pA.y + pB.y) * 0.5 + spec.upDirection.y * FORCE_SIGN_FLOAT_OFFSET,
-        (pA.z + pB.z) * 0.5 + spec.upDirection.z * FORCE_SIGN_FLOAT_OFFSET
-      );
+      sign.position.copy(spec.position);
     }
   }
 

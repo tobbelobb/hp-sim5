@@ -591,6 +591,65 @@ describe('RenderSystem3D cable sag', () => {
     }
   });
 
+  test('spreads overlapping force signs so each label remains readable', () => {
+    const system = createRenderSystemStub();
+
+    try {
+      const world = new World();
+      world.setResource('gravity', new Vector3(0.0, 0.0, -9.81));
+
+      const jointIds = [];
+      const linkIds = [
+        world.createEntity(),
+        world.createEntity(),
+        world.createEntity(),
+        world.createEntity()
+      ];
+      for (let i = 0; i < 3; i += 1) {
+        const jointId = world.createEntity();
+        const joint = new CableJointComponent(
+          linkIds[i],
+          linkIds[i + 1],
+          1.0,
+          new Vector3(0.0, 0.0, 0.2),
+          new Vector3(1.0, 0.0, 0.2)
+        );
+        joint.constraintForceMagnitude = 10 + i;
+        world.addComponent(jointId, joint);
+        world.addComponent(jointId, new RenderableComponent('line', '#ffd34d'));
+        jointIds.push(jointId);
+      }
+
+      const pathId = world.createEntity();
+      world.addComponent(
+        pathId,
+        new CablePathComponent(
+          world,
+          jointIds,
+          ['attachment', 'attachment', 'attachment', 'attachment'],
+          [false, false, false, false],
+          1e6,
+          [0.0, 0.0, 0.0, 0.0],
+          0.0
+        )
+      );
+
+      RenderSystem3D.prototype._syncCable.call(system, world);
+
+      expect(system.forceSigns).toHaveLength(3);
+      const visibleSigns = system.forceSigns.filter((sign) => sign.visible);
+      expect(visibleSigns).toHaveLength(3);
+
+      const sortedZ = visibleSigns
+        .map((sign) => sign.position.z)
+        .sort((a, b) => a - b);
+      expect(sortedZ[1] - sortedZ[0]).toBeGreaterThanOrEqual(0.039);
+      expect(sortedZ[2] - sortedZ[1]).toBeGreaterThanOrEqual(0.039);
+    } finally {
+      disposeRenderSystemStub(system);
+    }
+  });
+
   test('hides force signs when the force overlay resource is disabled', () => {
     const system = createRenderSystemStub();
 
