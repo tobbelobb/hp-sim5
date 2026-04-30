@@ -971,6 +971,7 @@ export function setupScene(world, stage, canvas, options = {}) {
             const stiffness = getAttribute(prim, "cablePath:stiffness");
             const cableHalfWidth = getAttribute(prim, "cablePath:halfWidth");
             const damping = readNumericAttribute(prim, "cablePath:damping");
+            const solverIterations = readNumericAttribute(prim, "cablePath:solverIterations");
 
             const pathComp = new CablePathComponent(
               world,
@@ -980,7 +981,8 @@ export function setupScene(world, stage, canvas, options = {}) {
               stiffness || Infinity,
               stored ? [...stored] : null,
               cableHalfWidth ?? 0.0,
-              damping ?? 0.0
+              damping ?? 0.0,
+              solverIterations ?? 1
             );
             world.addComponent(cablePath, pathComp);
             world.addComponent(cablePath, new MachineTagComponent(machineId));

@@ -273,7 +273,7 @@ describe('slideprinter 3D setupScene', () => {
     expect(world.getResource('pauseState')).toEqual(expect.objectContaining({ paused: true }));
   });
 
-  test('reads authored cable path damping into CablePathComponent', () => {
+  test('reads authored cable path solver tuning into CablePathComponent', () => {
     usdStage.getChildren.mockImplementation((prim) => {
       if (prim?.path === '/World/SlideprinterScene') {
         return [
@@ -339,6 +339,7 @@ describe('slideprinter 3D setupScene', () => {
         if (attr === 'cablePath:stiffness') return 1000.0;
         if (attr === 'cablePath:halfWidth') return 0.001;
         if (attr === 'cablePath:damping') return 0.125;
+        if (attr === 'cablePath:solverIterations') return 4;
       }
       return null;
     });
@@ -374,7 +375,9 @@ describe('slideprinter 3D setupScene', () => {
 
     const pathEntities = world.query([CablePathComponent]);
     expect(pathEntities).toHaveLength(1);
-    expect(world.getComponent(pathEntities[0], CablePathComponent).damping).toBeCloseTo(0.125, 12);
+    const pathComp = world.getComponent(pathEntities[0], CablePathComponent);
+    expect(pathComp.damping).toBeCloseTo(0.125, 12);
+    expect(pathComp.solverIterations).toBe(4);
   });
 
   test('derives extruder offset from authored Extruder prim position and center sources', () => {

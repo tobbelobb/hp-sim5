@@ -97,7 +97,8 @@ export class CablePathComponent {
     spring_constant = 1e6,
     stored = null,
     cableHalfWidth = 0.0,
-    damping = 0.0
+    damping = 0.0,
+    solverIterations = 1
   ) {
     this.totalRestLength = 0.0;
     this.jointEntities = jointEntities; // Ordered list of CableJoint entity IDs
@@ -106,6 +107,9 @@ export class CablePathComponent {
     this.spring_constant = spring_constant;
     this.compliance = 1.0 / spring_constant;
     this.damping = Number.isFinite(damping) ? Math.max(0.0, damping) : 0.0;
+    this.solverIterations = Number.isFinite(solverIterations)
+      ? Math.max(1, Math.floor(solverIterations))
+      : 1;
     this.stored = new Array(cw.length).fill(0.0); // Ordered. stored.length === cw.length
     this.cableHalfWidth = Number.isFinite(cableHalfWidth) ? Math.max(0.0, cableHalfWidth) : 0.0;
 
@@ -2725,7 +2729,6 @@ export class PBDCableConstraintSolver {
   update(world, _dt_unused) {
     const pathEntities = world.query([CablePathComponent]);
     const dt = world.getResource('dt');
-    const ITERATIONS = 4;
 
     const jointLocals = new Map();
     const computeLocal = (entityId, worldPoint) => computeLocalAttachment(world, entityId, worldPoint);
@@ -2885,7 +2888,8 @@ export class PBDCableConstraintSolver {
       gradPosA,
       gradPosB,
       constraintError,
-      compliance
+      compliance,
+      solveIteration
     ) => {
       if (constraintError <= EPSILON) {
         return;
@@ -3036,10 +3040,12 @@ export class PBDCableConstraintSolver {
       if (!joint.constraintForce) {
         joint.constraintForce = new Vector3(0, 0, 0);
       }
-      joint.constraintLambda = lambda;
-      joint.constraintForce.set(gradPosA);
-      joint.constraintForce.scale(lambda * invDtSq);
-      joint.constraintForceMagnitude = Math.abs(lambda) * invDtSq;
+      if (solveIteration === 0) {
+        joint.constraintLambda = lambda;
+        joint.constraintForce.set(gradPosA);
+        joint.constraintForce.scale(lambda * invDtSq);
+        joint.constraintForceMagnitude = Math.abs(lambda) * invDtSq;
+      }
 
       if (invMassA > 0.0) {
         const deltaPosA = gradPosA.clone().scale(-invMassA * lambda);
@@ -3120,7 +3126,13 @@ export class PBDCableConstraintSolver {
         });
       }
     }
-    for (let iter = 0; iter < ITERATIONS; iter++) {
+    let maxIterations = 1;
+    for (const pathId of pathEntities) {
+      const path = world.getComponent(pathId, CablePathComponent);
+      maxIterations = Math.max(maxIterations, path?.solverIterations ?? 1);
+    }
+
+    for (let iter = 0; iter < maxIterations; iter++) {
       const isForward = (iter % 2 === 0);
 
       const startPath = isForward ? 0 : pathEntities.length - 1;
@@ -3131,6 +3143,7 @@ export class PBDCableConstraintSolver {
         const pathId = pathEntities[p];
         const path = world.getComponent(pathId, CablePathComponent);
         if (path.jointEntities.length < 1) continue;
+        if (iter >= (path.solverIterations ?? 1)) continue;
 
         const startJoint = isForward ? 0 : path.jointEntities.length - 1;
         const endJoint = isForward ? path.jointEntities.length : -1;
@@ -3174,7 +3187,8 @@ export class PBDCableConstraintSolver {
             gradPosA,
             gradPosB,
             constraintError,
-            path.compliance
+            path.compliance,
+            iter
           );
         }
       }
