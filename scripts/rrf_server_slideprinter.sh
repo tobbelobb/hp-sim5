@@ -1,1 +1,4 @@
-./RRF/build/rrf_simulator --vsd RRF/run/vsd -c sys/config_slideprinter.g --server -p 8080
+#!/usr/bin/env bash
+set -euo pipefail
+
+exec "$(dirname "$0")/rrf_server.sh" -c config_slideprinter.g
