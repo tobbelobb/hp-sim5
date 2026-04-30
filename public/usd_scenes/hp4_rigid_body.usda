@@ -1399,8 +1399,8 @@ def Xform "World"
             prepend apiSchemas = ["PhysicsMaterialAPI", "PhysxMaterialAPI"]
         )
         {
-            float physics:staticFriction = 0.005
-            float physics:dynamicFriction = 0.005
+            float physics:staticFriction = 0.0
+            float physics:dynamicFriction = 0.0
             float physics:restitution = 0.025
         }
 
