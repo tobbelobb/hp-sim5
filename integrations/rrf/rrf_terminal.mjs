@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import path from 'node:path';
 import readline from 'node:readline';
 import { createGcodeBridge } from './rrfSimulatorBridge.mjs';
 import { waitForRrfSimulator } from '../../autocal/control/primitives/encoder_utils.mjs';
@@ -20,19 +21,39 @@ Options:
   --server, --rrf <url>    Base URL of rrf_simulator (default: http://localhost:8080)
   --ws-port <port>         Port for the WebSocket fan-out (0 to disable, default: 8790)
   --no-ws                  Disable WebSocket fan-out entirely
-  --cmd, -c <GCODE>        Send one G-code line and exit
+  --cmd <GCODE>            Send one G-code line and exit
+  -c, --config <CONFIG>    RRF config file for autostart (config_name.g or sys/config_name.g)
+  -m, --machineType <TYPE> Machine type for autostart when --config is omitted
+  --buildup, --line-layers Use config_<machine>_w_line_layers.g for autostart
+  --no-buildup, --no_buildup, no_buildup, --no-line-layers
+                           Use config_<machine>.g for autostart
   --quiet, -q              Only print replies (suppress prompts and extra logs)
   Auto-start launcher      ${DEFAULT_RRF_HTTP_BRIDGE_START_SCRIPT}
   --help, -h               Show this help`);
 }
 
+function takeValue(argv, index, optionName) {
+  const value = argv[index + 1];
+  if (!value) {
+    throw new Error(`${optionName} requires an argument`);
+  }
+  return value;
+}
+
 export function parseArgs(argv) {
   const envServer = process.env.RRF_SERVER_URL;
+  const hasCustomStartScript = Boolean(process.env.RRF_HTTP_BRIDGE_START_SCRIPT);
+  let simulatorConfig = null;
+  let machineType = 'hp3';
+  let lineLayerArg = '--line-layers';
+  let hasAutostartOption = false;
   const args = {
     server: envServer || 'http://localhost:8080',
     wsPort: 8790,
     noWs: false,
     command: null,
+    startScript: DEFAULT_RRF_HTTP_BRIDGE_START_SCRIPT,
+    startScriptArgs: [],
     quiet: false,
     help: false,
   };
@@ -40,45 +61,70 @@ export function parseArgs(argv) {
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--server' || arg === '--rrf') {
-      args.server = argv[++i] || args.server;
+      args.server = takeValue(argv, i, arg);
+      i += 1;
       args.serverExplicit = true;
     } else if (arg === '--ws-port') {
-      const value = parseInt(argv[++i], 10);
+      const value = parseInt(takeValue(argv, i, arg), 10);
+      i += 1;
       if (Number.isFinite(value) && value > 0) {
         args.wsPort = value;
       } else {
         args.wsPort = 0;
       }
-    } else if (arg === '--cmd' || arg === '-c') {
-      args.command = argv[++i] || null;
+    } else if (arg === '--cmd') {
+      args.command = takeValue(argv, i, arg);
+      i += 1;
+    } else if (arg === '-c' || arg === '--config') {
+      simulatorConfig = takeValue(argv, i, arg);
+      hasAutostartOption = true;
+      i += 1;
+    } else if (arg.startsWith('--config=')) {
+      simulatorConfig = arg.slice('--config='.length);
+      hasAutostartOption = true;
+    } else if (arg === '-m' || arg === '--machineType') {
+      machineType = takeValue(argv, i, arg);
+      hasAutostartOption = true;
+      i += 1;
+    } else if (arg.startsWith('--machineType=')) {
+      machineType = arg.slice('--machineType='.length);
+      hasAutostartOption = true;
+    } else if (arg === '--buildup' || arg === '--line-layers') {
+      lineLayerArg = arg;
+      hasAutostartOption = true;
+    } else if (
+      arg === '--no-buildup'
+      || arg === '--no_buildup'
+      || arg === 'no_buildup'
+      || arg === '--no-line-layers'
+    ) {
+      lineLayerArg = arg;
+      hasAutostartOption = true;
     } else if (arg === '--no-ws') {
       args.noWs = true;
     } else if (arg === '--quiet' || arg === '-q') {
       args.quiet = true;
     } else if (arg === '--help' || arg === '-h') {
       args.help = true;
+    } else {
+      throw new Error(`unknown option: ${arg}`);
     }
+  }
+
+  if (simulatorConfig) {
+    args.startScriptArgs = ['-c', simulatorConfig];
+  } else if (hasAutostartOption || !hasCustomStartScript) {
+    args.startScriptArgs = ['-m', machineType, lineLayerArg];
   }
 
   return args;
 }
 
-const args = parseArgs(process.argv.slice(2));
-if (args.help) {
-  printHelp();
-  process.exit(0);
-}
-
-const bridgeContext = createGcodeBridge({
-  server: args.server,
-  wsPort: args.noWs ? 0 : args.wsPort,
-  quiet: args.quiet,
-  onClientChange: (connected) => updatePromptForConnectionState(connected),
-});
-
 const PROMPT_CONNECTED = 'gcode> ';
 const PROMPT_DISCONNECTED = '\x1b[90mdisconnected>\x1b[0m ';
-let promptConnectedState = !bridgeContext.wss;
+let args = null;
+let bridgeContext = null;
+let promptConnectedState = true;
 let promptEverRendered = false;
 
 let managedRrfServer = null;
@@ -131,6 +177,8 @@ async function ensureRrfServerReady({ forceStart = false } = {}) {
     if (!managedRrfServer) {
       managedRrfServer = await ensureRrfHttpBridgeServer({
         serverUrl: args.server,
+        startScript: args.startScript,
+        startScriptArgs: args.startScriptArgs,
         onInfo: args.quiet ? null : (message) => console.log(message),
       });
       return managedRrfServer;
@@ -248,10 +296,44 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error('Failed to start rrf_command_prompt:', err);
-  shutdown(1);
-});
+export async function runCli(argv = process.argv.slice(2)) {
+  try {
+    args = parseArgs(argv);
+  } catch (err) {
+    console.error(`rrf_terminal.mjs: ${err.message}`);
+    console.error('Try node integrations/rrf/rrf_terminal.mjs --help for usage.');
+    return 2;
+  }
+  if (args.help) {
+    printHelp();
+    return 0;
+  }
+
+  bridgeContext = createGcodeBridge({
+    server: args.server,
+    wsPort: args.noWs ? 0 : args.wsPort,
+    quiet: args.quiet,
+    onClientChange: (connected) => updatePromptForConnectionState(connected),
+  });
+  promptConnectedState = !bridgeContext.wss;
+  await main();
+  return 0;
+}
+
+const isMain = path.basename(process.argv[1] || '') === 'rrf_terminal.mjs';
+
+if (isMain) {
+  runCli()
+    .then((exitCode) => {
+      if (Number.isInteger(exitCode) && exitCode !== 0) {
+        process.exitCode = exitCode;
+      }
+    })
+    .catch((err) => {
+      console.error(`Failed to start rrf_command_prompt: ${err.message}`);
+      shutdown(1);
+    });
+}
 
 process.on('SIGINT', () => shutdown(130));
 process.on('SIGTERM', () => shutdown(143));

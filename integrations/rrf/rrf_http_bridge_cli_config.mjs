@@ -2,7 +2,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 
 export const DEFAULT_RRF_HTTP_BRIDGE_START_SCRIPT =
-  process.env.RRF_HTTP_BRIDGE_START_SCRIPT || './scripts/rrf_server_hp3_w_buildup.sh';
+  process.env.RRF_HTTP_BRIDGE_START_SCRIPT || './scripts/rrf_server.sh';
 export const RRF_HTTP_BRIDGE_WS_QUERY_PARAM = 'gcode_ws';
 
 const SERVER_UNAVAILABLE_CODES = new Set([
@@ -16,11 +16,12 @@ const SERVER_UNAVAILABLE_CODES = new Set([
 export function buildRrfHttpBridgeLaunchSpec({
   cwd = process.cwd(),
   startScript = DEFAULT_RRF_HTTP_BRIDGE_START_SCRIPT,
+  startScriptArgs = [],
   shell = '/bin/bash',
 } = {}) {
   return {
     command: shell,
-    args: [path.resolve(cwd, startScript)],
+    args: [path.resolve(cwd, startScript), ...startScriptArgs],
     options: {
       cwd,
       detached: true,
@@ -75,6 +76,7 @@ export async function ensureRrfHttpBridgeServer({
   serverUrl,
   cwd = process.cwd(),
   startScript = DEFAULT_RRF_HTTP_BRIDGE_START_SCRIPT,
+  startScriptArgs = [],
   shell = '/bin/bash',
   onInfo = null,
   spawnImpl = spawn,
@@ -83,9 +85,10 @@ export async function ensureRrfHttpBridgeServer({
   if (!serverUrl) {
     throw new Error('Missing server URL for rrf_http_bridge autostart.');
   }
-  const spec = buildRrfHttpBridgeLaunchSpec({ cwd, startScript, shell });
+  const spec = buildRrfHttpBridgeLaunchSpec({ cwd, startScript, startScriptArgs, shell });
   if (typeof onInfo === 'function') {
-    onInfo(`rrf_simulator is not responding at ${serverUrl}. Starting ${startScript}...`);
+    const renderedArgs = startScriptArgs.length > 0 ? ` ${startScriptArgs.join(' ')}` : '';
+    onInfo(`rrf_simulator is not responding at ${serverUrl}. Starting ${startScript}${renderedArgs}...`);
   }
   const child = spawnImpl(spec.command, spec.args, spec.options);
   if (typeof child?.unref === 'function') {
