@@ -64,6 +64,7 @@ export class CableJointComponent {
     this.constraintLambda = 0.0;
     this.constraintForce = new Vector3(0, 0, 0);
     this.constraintForceMagnitude = 0.0;
+    this.transferredConstraintForceMagnitude = 0.0;
   }
 
   static fromWorld(entityA, entityB, restLength, attachmentPointA_world, attachmentPointB_world) {
@@ -2874,7 +2875,12 @@ export class PBDCableConstraintSolver {
       }
       coupledGradPos.normalize();
 
-      return buildExternalMemberSpinSolveInfo(spinEntityId, spinPointWorld, coupledGradPos);
+      const info = buildExternalMemberSpinSolveInfo(spinEntityId, spinPointWorld, coupledGradPos);
+      if (info) {
+        info.transferredJointId = internalJointId;
+        info.transferredJointIndex = internalJointIndex;
+      }
+      return info;
     };
 
     const applyConstraint = (
@@ -3045,6 +3051,24 @@ export class PBDCableConstraintSolver {
         joint.constraintForce.set(gradPosA);
         joint.constraintForce.scale(lambda * invDtSq);
         joint.constraintForceMagnitude = Math.abs(lambda) * invDtSq;
+        const transferredForceMagnitude = Math.abs(lambda) * invDtSq;
+        if (memberSpinA?.transferredJointId !== undefined) {
+          const transferredJointA = world.getComponent(memberSpinA.transferredJointId, CableJointComponent);
+          if (transferredJointA) {
+            transferredJointA.transferredConstraintForceMagnitude =
+              (transferredJointA.transferredConstraintForceMagnitude ?? 0.0) + transferredForceMagnitude;
+          }
+        }
+        if (
+          memberSpinB?.transferredJointId !== undefined &&
+          memberSpinB.transferredJointId !== memberSpinA?.transferredJointId
+        ) {
+          const transferredJointB = world.getComponent(memberSpinB.transferredJointId, CableJointComponent);
+          if (transferredJointB) {
+            transferredJointB.transferredConstraintForceMagnitude =
+              (transferredJointB.transferredConstraintForceMagnitude ?? 0.0) + transferredForceMagnitude;
+          }
+        }
       }
 
       if (invMassA > 0.0) {
@@ -3120,6 +3144,7 @@ export class PBDCableConstraintSolver {
           joint.constraintForce.z = 0.0;
         }
         joint.constraintForceMagnitude = 0.0;
+        joint.transferredConstraintForceMagnitude = 0.0;
         jointLocals.set(jointId, {
           localA: computeLocal(joint.entityA, joint.attachmentPointA_world),
           localB: computeLocal(joint.entityB, joint.attachmentPointB_world)

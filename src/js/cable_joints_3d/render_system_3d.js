@@ -516,6 +516,16 @@ function formatConstraintForce(forceN) {
   return `${value.toFixed(2)} N`;
 }
 
+function totalConstraintForceMagnitude(joint) {
+  const direct = Number.isFinite(joint?.constraintForceMagnitude)
+    ? Math.max(0.0, joint.constraintForceMagnitude)
+    : 0.0;
+  const transferred = Number.isFinite(joint?.transferredConstraintForceMagnitude)
+    ? Math.max(0.0, joint.transferredConstraintForceMagnitude)
+    : 0.0;
+  return direct + transferred;
+}
+
 function createForceSignTexture(text) {
   if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
     return null;
@@ -2594,7 +2604,7 @@ export class RenderSystem3D {
         if (showForceSigns) {
           forceSignSpecs.push({
             joint,
-            text: formatConstraintForce(joint.constraintForceMagnitude),
+            text: formatConstraintForce(totalConstraintForceMagnitude(joint)),
             upDirection
           });
         }

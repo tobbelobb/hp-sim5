@@ -749,12 +749,19 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
     const bodyPosition = world.getComponent(body, PositionComponent).pos;
     const spoolOrientation = world.getComponent(spool, OrientationComponent).quaternion;
     const spoolMember = world.getComponent(spool, RigidBodyMemberComponent);
+    const outerJointComp = world.getComponent(outerJoint, CableJointComponent);
+    const innerJointComp = world.getComponent(innerJoint, CableJointComponent);
 
     expect(bodyPosition.x).toBeGreaterThan(0.0);
     expect(Math.abs(spoolOrientation.x)).toBeCloseTo(0.0, 12);
     expect(Math.abs(spoolOrientation.y)).toBeCloseTo(0.0, 12);
     expect(Math.abs(spoolOrientation.z) + Math.abs(spoolOrientation.w - 1.0)).toBeGreaterThan(1e-4);
     expect(Math.abs(spoolMember.localOrientation.z) + Math.abs(spoolMember.localOrientation.w - 1.0)).toBeGreaterThan(1e-4);
+    expect(outerJointComp.constraintForceMagnitude).toBeGreaterThan(0.0);
+    expect(innerJointComp.transferredConstraintForceMagnitude).toBeCloseTo(
+      outerJointComp.constraintForceMagnitude,
+      8,
+    );
   });
 
   test('onboard rolling links behind pinholes backdrive and roll rest length', () => {
