@@ -45,6 +45,7 @@ function createRenderSystemStub() {
   system.wrapArcs = [];
   system.knotMarkers = [];
   system.forceSigns = [];
+  system.forceSignConnectors = [];
   system.rigidGroupLines = [];
   system._activeCircleIds = new Set();
   system.defaultPlaneNormal = new Vector3(0, 0, 1);
@@ -63,7 +64,9 @@ function createRenderSystemStub() {
   system._ensureLineCapacity = RenderSystem3D.prototype._ensureLineCapacity;
   system._ensureKnotMarkerCapacity = RenderSystem3D.prototype._ensureKnotMarkerCapacity;
   system._ensureForceSignCapacity = RenderSystem3D.prototype._ensureForceSignCapacity;
+  system._ensureForceSignConnectorCapacity = RenderSystem3D.prototype._ensureForceSignConnectorCapacity;
   system._createForceSign = RenderSystem3D.prototype._createForceSign;
+  system._createForceSignConnector = RenderSystem3D.prototype._createForceSignConnector;
   system._updateForceSignText = RenderSystem3D.prototype._updateForceSignText;
   system._hideLines = RenderSystem3D.prototype._hideLines;
   system._hideMeshes = RenderSystem3D.prototype._hideMeshes;
@@ -99,6 +102,10 @@ function disposeRenderSystemStub(system) {
       sign.material.map.dispose();
     }
     sign.material?.dispose?.();
+  }
+  for (const line of system.forceSignConnectors ?? []) {
+    line.geometry?.dispose?.();
+    line.material?.dispose?.();
   }
   if (typeof RenderSystem3D.prototype._clearBumperFx === 'function') {
     RenderSystem3D.prototype._clearBumperFx.call(system);
@@ -586,6 +593,78 @@ describe('RenderSystem3D cable sag', () => {
       expect(sign.position.x).toBeCloseTo(0.5, 6);
       expect(sign.position.y).toBeCloseTo(0.0, 6);
       expect(sign.position.z).toBeCloseTo(0.224, 6);
+      expect(sign.material.sizeAttenuation).toBe(false);
+
+      expect(system.forceSignConnectors).toHaveLength(1);
+      const connector = system.forceSignConnectors[0];
+      const positions = connector.geometry.attributes.position;
+      expect(connector.visible).toBe(true);
+      expect(positions.getX(0)).toBeCloseTo(0.5, 6);
+      expect(positions.getY(0)).toBeCloseTo(0.0, 6);
+      expect(positions.getZ(0)).toBeCloseTo(0.2, 6);
+      expect(positions.getX(1)).toBeCloseTo(sign.position.x, 6);
+      expect(positions.getY(1)).toBeCloseTo(sign.position.y, 6);
+      expect(positions.getZ(1)).toBeCloseTo(sign.position.z, 6);
+    } finally {
+      disposeRenderSystemStub(system);
+    }
+  });
+
+  test('keeps force signs screen-sized as the camera moves closer', () => {
+    const system = createRenderSystemStub();
+
+    try {
+      system.camera = new THREE.PerspectiveCamera(48, 1, 0.0001, 30.0);
+      system.camera.position.set(0.5, -1.0, 0.4);
+      system.camera.up.set(0, 0, 1);
+      system.camera.lookAt(0.5, 0.0, 0.2);
+      system.camera.updateMatrixWorld();
+      system.renderer = { domElement: { height: 800, clientHeight: 800 } };
+
+      const world = new World();
+      world.setResource('gravity', new Vector3(0.0, 0.0, -9.81));
+
+      const jointId = world.createEntity();
+      const joint = new CableJointComponent(
+        world.createEntity(),
+        world.createEntity(),
+        1.0,
+        new Vector3(0.0, 0.0, 0.2),
+        new Vector3(1.0, 0.0, 0.2)
+      );
+      joint.constraintForceMagnitude = 12.345;
+      world.addComponent(jointId, joint);
+      world.addComponent(jointId, new RenderableComponent('line', '#ffd34d'));
+
+      const pathId = world.createEntity();
+      world.addComponent(
+        pathId,
+        new CablePathComponent(
+          world,
+          [jointId],
+          ['attachment', 'attachment'],
+          [false, false],
+          1e6,
+          [0.0, 0.0],
+          0.0
+        )
+      );
+
+      RenderSystem3D.prototype._syncCable.call(system, world);
+      const farScale = system.forceSigns[0].scale.clone();
+      const farOffset = system.forceSigns[0].position.z - 0.2;
+
+      system.camera.position.set(0.5, -0.35, 0.27);
+      system.camera.lookAt(0.5, 0.0, 0.2);
+      system.camera.updateMatrixWorld();
+      RenderSystem3D.prototype._syncCable.call(system, world);
+
+      const nearScale = system.forceSigns[0].scale;
+      const nearOffset = system.forceSigns[0].position.z - 0.2;
+      expect(nearScale.x).toBeCloseTo(farScale.x, 8);
+      expect(nearScale.y).toBeCloseTo(farScale.y, 8);
+      expect(nearOffset).toBeGreaterThan(0.0);
+      expect(nearOffset).toBeLessThan(farOffset);
     } finally {
       disposeRenderSystemStub(system);
     }

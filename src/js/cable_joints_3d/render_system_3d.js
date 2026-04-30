@@ -32,10 +32,15 @@ const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
 const ORIENTATION_BACK_COLOR = '#2a3542';
 const KNOT_MARKER_COLOR = '#ff3b30';
 const KNOT_MARKER_RADIUS = 0.002;
-const FORCE_SIGN_FLOAT_OFFSET = 0.024;
+const FORCE_SIGN_FALLBACK_FLOAT_OFFSET = 0.024;
 const FORCE_SIGN_WIDTH = 0.11;
 const FORCE_SIGN_HEIGHT = 0.034;
+const FORCE_SIGN_WIDTH_PX = 96;
+const FORCE_SIGN_HEIGHT_PX = 30;
+const FORCE_SIGN_JOINT_CLEARANCE_PX = 10;
+const FORCE_SIGN_CONNECTOR_COLOR = '#ffd34d';
 const FORCE_SIGN_SPREAD_MARGIN = 0.006;
+const FORCE_SIGN_SPREAD_MARGIN_PX = 8;
 const FORCE_SIGN_SPREAD_ITERATIONS = 10;
 const FORCE_SIGN_TEXTURE_WIDTH = 256;
 const FORCE_SIGN_TEXTURE_HEIGHT = 80;
@@ -566,19 +571,83 @@ function dotVector3Like(value, axis) {
   return value.x * axis.x + value.y * axis.y + value.z * axis.z;
 }
 
-function getForceSignAnchor(spec) {
+function getForceSignViewportHeight(camera) {
+  const domElement = camera?.userData?.rendererDomElement;
+  return Math.max(
+    1,
+    domElement?.clientHeight ||
+      domElement?.height ||
+      camera?.userData?.viewportHeight ||
+      1
+  );
+}
+
+function getWorldUnitsPerScreenPixel(camera, worldPosition, viewportHeight = getForceSignViewportHeight(camera)) {
+  if (!camera || !worldPosition || !Number.isFinite(viewportHeight) || viewportHeight <= 0) {
+    return null;
+  }
+
+  if (camera.isPerspectiveCamera && Number.isFinite(camera.fov)) {
+    const forward = new THREE.Vector3();
+    camera.getWorldDirection(forward);
+    const depth = worldPosition.clone().sub(camera.position).dot(forward);
+    if (!(depth > EPSILON)) {
+      return null;
+    }
+    return (2.0 * depth * Math.tan(THREE.MathUtils.degToRad(camera.fov) * 0.5)) / viewportHeight;
+  }
+
+  if (camera.isOrthographicCamera && Number.isFinite(camera.top) && Number.isFinite(camera.bottom)) {
+    const zoom = Number.isFinite(camera.zoom) && camera.zoom > EPSILON ? camera.zoom : 1.0;
+    return ((camera.top - camera.bottom) / zoom) / viewportHeight;
+  }
+
+  return null;
+}
+
+function getForceSignScreenScale(camera, viewportHeight = getForceSignViewportHeight(camera)) {
+  if (!camera?.isPerspectiveCamera || !Number.isFinite(camera.fov) || !Number.isFinite(viewportHeight) || viewportHeight <= 0) {
+    return { width: FORCE_SIGN_WIDTH, height: FORCE_SIGN_HEIGHT };
+  }
+
+  const fovScale = 2.0 / (viewportHeight / Math.tan(THREE.MathUtils.degToRad(camera.fov) * 0.5));
+  return {
+    width: FORCE_SIGN_WIDTH_PX * fovScale,
+    height: FORCE_SIGN_HEIGHT_PX * fovScale
+  };
+}
+
+function getForceSignJointPosition(spec) {
   const pA = spec?.joint?.attachmentPointA_world;
   const pB = spec?.joint?.attachmentPointB_world;
-  const upDirection = spec?.upDirection;
-  if (!finiteVector3Like(pA) || !finiteVector3Like(pB) || !finiteVector3Like(upDirection)) {
+  if (!finiteVector3Like(pA) || !finiteVector3Like(pB)) {
     return null;
   }
 
   return new THREE.Vector3(
-    (pA.x + pB.x) * 0.5 + upDirection.x * FORCE_SIGN_FLOAT_OFFSET,
-    (pA.y + pB.y) * 0.5 + upDirection.y * FORCE_SIGN_FLOAT_OFFSET,
-    (pA.z + pB.z) * 0.5 + upDirection.z * FORCE_SIGN_FLOAT_OFFSET
+    (pA.x + pB.x) * 0.5,
+    (pA.y + pB.y) * 0.5,
+    (pA.z + pB.z) * 0.5
   );
+}
+
+function getForceSignAnchor(spec, camera, viewportHeight) {
+  const jointPosition = getForceSignJointPosition(spec);
+  const upDirection = spec?.upDirection;
+  if (!jointPosition || !finiteVector3Like(upDirection)) {
+    return null;
+  }
+
+  const worldUnitsPerPixel = getWorldUnitsPerScreenPixel(camera, jointPosition, viewportHeight);
+  const offset = worldUnitsPerPixel
+    ? (FORCE_SIGN_HEIGHT_PX * 0.5 + FORCE_SIGN_JOINT_CLEARANCE_PX) * worldUnitsPerPixel
+    : FORCE_SIGN_FALLBACK_FLOAT_OFFSET;
+
+  return jointPosition.add(new THREE.Vector3(
+    upDirection.x * offset,
+    upDirection.y * offset,
+    upDirection.z * offset
+  ));
 }
 
 function getForceSignSpreadBasis(camera, fallbackUpDirection) {
@@ -596,27 +665,32 @@ function getForceSignSpreadBasis(camera, fallbackUpDirection) {
   return { right, up };
 }
 
-function spreadForceSignSpecs(forceSignSpecs, camera) {
+function spreadForceSignSpecs(forceSignSpecs, camera, viewportHeight) {
   if (!Array.isArray(forceSignSpecs) || forceSignSpecs.length < 2) {
     for (const spec of forceSignSpecs ?? []) {
-      spec.position = getForceSignAnchor(spec);
+      spec.jointPosition = getForceSignJointPosition(spec);
+      spec.position = getForceSignAnchor(spec, camera, viewportHeight);
     }
     return;
   }
 
   const { right, up } = getForceSignSpreadBasis(camera, forceSignSpecs[0]?.upDirection);
-  const minX = FORCE_SIGN_WIDTH + FORCE_SIGN_SPREAD_MARGIN;
-  const minY = FORCE_SIGN_HEIGHT + FORCE_SIGN_SPREAD_MARGIN;
   const items = [];
 
   for (let i = 0; i < forceSignSpecs.length; i += 1) {
     const spec = forceSignSpecs[i];
-    const anchor = getForceSignAnchor(spec);
+    const jointPosition = getForceSignJointPosition(spec);
+    const anchor = getForceSignAnchor(spec, camera, viewportHeight);
+    spec.jointPosition = jointPosition;
     spec.position = anchor;
     if (!anchor) {
       continue;
     }
 
+    const worldUnitsPerPixel = getWorldUnitsPerScreenPixel(camera, anchor, viewportHeight);
+    const halfWidth = worldUnitsPerPixel ? FORCE_SIGN_WIDTH_PX * 0.5 * worldUnitsPerPixel : FORCE_SIGN_WIDTH * 0.5;
+    const halfHeight = worldUnitsPerPixel ? FORCE_SIGN_HEIGHT_PX * 0.5 * worldUnitsPerPixel : FORCE_SIGN_HEIGHT * 0.5;
+    const margin = worldUnitsPerPixel ? FORCE_SIGN_SPREAD_MARGIN_PX * worldUnitsPerPixel : FORCE_SIGN_SPREAD_MARGIN;
     const x = dotVector3Like(anchor, right);
     const y = dotVector3Like(anchor, up);
     items.push({
@@ -625,7 +699,10 @@ function spreadForceSignSpecs(forceSignSpecs, camera) {
       baseX: x,
       baseY: y,
       x,
-      y
+      y,
+      halfWidth,
+      halfHeight,
+      margin
     });
   }
 
@@ -637,6 +714,8 @@ function spreadForceSignSpecs(forceSignSpecs, camera) {
         const b = items[j];
         const dx = b.x - a.x;
         const dy = b.y - a.y;
+        const minX = a.halfWidth + b.halfWidth + Math.max(a.margin, b.margin);
+        const minY = a.halfHeight + b.halfHeight + Math.max(a.margin, b.margin);
         const overlapX = minX - Math.abs(dx);
         const overlapY = minY - Math.abs(dy);
         if (!(overlapX > 0.0 && overlapY > 0.0)) {
@@ -1091,6 +1170,7 @@ export class RenderSystem3D {
     this.wrapArcs = [];
     this.knotMarkers = [];
     this.forceSigns = [];
+    this.forceSignConnectors = [];
     this.rigidGroupLines = [];
 
     this.borderLine = null;
@@ -1821,6 +1901,12 @@ export class RenderSystem3D {
     }
     this.forceSigns.length = 0;
 
+    for (const line of this.forceSignConnectors) {
+      this.root.remove(line);
+      disposeObject(line);
+    }
+    this.forceSignConnectors.length = 0;
+
     for (const line of this.rigidGroupLines) {
       this.root.remove(line);
       disposeObject(line);
@@ -2476,6 +2562,7 @@ export class RenderSystem3D {
       this._hideLines(this.wrapArcs);
       this._hideMeshes(this.knotMarkers);
       this._hideMeshes(this.forceSigns);
+      this._hideLines(this.forceSignConnectors);
       return;
     }
 
@@ -2631,7 +2718,16 @@ export class RenderSystem3D {
     this._ensureLineCapacity(this.wrapArcs, arcSpecs.length, true);
     this._ensureKnotMarkerCapacity(knotSpecs.length);
     this._ensureForceSignCapacity(forceSignSpecs.length);
-    spreadForceSignSpecs(forceSignSpecs, this.camera);
+    this._ensureForceSignConnectorCapacity(forceSignSpecs.length);
+    const forceSignViewportHeight = Math.max(
+      1,
+      this.renderer?.domElement?.clientHeight ||
+        this.renderer?.domElement?.height ||
+        this.canvas?.clientHeight ||
+        this.canvas?.height ||
+        1
+    );
+    spreadForceSignSpecs(forceSignSpecs, this.camera, forceSignViewportHeight);
 
     for (let i = 0; i < this.jointLines.length; i++) {
       const line = this.jointLines[i];
@@ -2693,20 +2789,41 @@ export class RenderSystem3D {
 
     for (let i = 0; i < this.forceSigns.length; i++) {
       const sign = this.forceSigns[i];
+      const connector = this.forceSignConnectors[i];
       const spec = forceSignSpecs[i];
       if (!spec) {
         sign.visible = false;
+        if (connector) {
+          connector.visible = false;
+        }
         continue;
       }
 
-      if (!spec.position) {
+      if (!spec.position || !spec.jointPosition) {
         sign.visible = false;
+        if (connector) {
+          connector.visible = false;
+        }
         continue;
       }
 
       this._updateForceSignText(sign, spec.text);
       sign.visible = true;
       sign.position.copy(spec.position);
+      const scale = getForceSignScreenScale(this.camera, forceSignViewportHeight);
+      sign.scale.set(scale.width, scale.height, 1.0);
+
+      if (connector) {
+        connector.visible = true;
+        const p = connector.geometry.attributes.position.array;
+        p[0] = spec.jointPosition.x;
+        p[1] = spec.jointPosition.y;
+        p[2] = spec.jointPosition.z;
+        p[3] = spec.position.x;
+        p[4] = spec.position.y;
+        p[5] = spec.position.z;
+        connector.geometry.attributes.position.needsUpdate = true;
+      }
     }
   }
 
@@ -2793,6 +2910,14 @@ export class RenderSystem3D {
     }
   }
 
+  _ensureForceSignConnectorCapacity(count) {
+    while (this.forceSignConnectors.length < count) {
+      const line = this._createForceSignConnector();
+      this.forceSignConnectors.push(line);
+      this.root.add(line);
+    }
+  }
+
   _createForceSign() {
     const texture = createForceSignTexture('0.00 N');
     const material = new THREE.SpriteMaterial({
@@ -2801,6 +2926,7 @@ export class RenderSystem3D {
       transparent: true,
       depthTest: false,
       depthWrite: false,
+      sizeAttenuation: false,
       toneMapped: false
     });
     const sign = new THREE.Sprite(material);
@@ -2811,6 +2937,25 @@ export class RenderSystem3D {
     sign.userData.ownsTexture = Boolean(texture);
     sign.userData.text = '0.00 N';
     return sign;
+  }
+
+  _createForceSignConnector() {
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(2 * 3), 3));
+    const material = new THREE.LineBasicMaterial({
+      color: FORCE_SIGN_CONNECTOR_COLOR,
+      transparent: true,
+      opacity: 0.72,
+      depthTest: false,
+      depthWrite: false,
+      toneMapped: false
+    });
+    const line = new THREE.Line(geometry, material);
+    line.renderOrder = 949;
+    line.frustumCulled = false;
+    line.userData.ownsGeometry = true;
+    line.userData.ownsMaterial = true;
+    return line;
   }
 
   _updateForceSignText(sign, text) {
