@@ -1087,14 +1087,11 @@ export function setupScene(world, stage, canvas, options = {}) {
           // 4. Update derived geometry and cable state
           world.registerSystem(new CableAttachmentUpdateSystem(false));
           world.registerSystem(new CableAttachmentCacheSystem());
-          world.registerSystem(new CableSlackSystem());
+          world.registerSystem(new CableFrictionSystem());
 
           // 5. POSITIONAL SOLVERS: Correct predicted positions to satisfy constraints.
           world.registerSystem(new PBDCableConstraintSolver());
           world.registerSystem(new PBDResolveCableOverCorrections());
-
-          // 6. POST-SOLVE CABLE DYNAMICS: Handle friction-based slip using accurate tension
-          world.registerSystem(new CableFrictionSystem());
 
           // 7. UPDATE VELOCITY: Derive final velocities from the position changes
           world.registerSystem(new PBDVelocityUpdateSystem());
