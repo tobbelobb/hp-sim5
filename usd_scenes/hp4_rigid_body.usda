@@ -1346,6 +1346,7 @@ def Xform "World"
             custom double[] cablePath:stored = [2.0, 0, 0, 0, 0, 0]
             custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
+            custom int cablePath:solverIterations = 4
             custom double cablePath:halfWidth = 0.001
             custom token cablePath:initPolicy = "deriveMissing"
         }
@@ -1361,6 +1362,7 @@ def Xform "World"
             custom double[] cablePath:stored = [2.0, 0, 0, 0, 0, 0]
             custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
+            custom int cablePath:solverIterations = 4
             custom double cablePath:halfWidth = 0.001
             custom token cablePath:initPolicy = "deriveMissing"
         }
@@ -1376,6 +1378,7 @@ def Xform "World"
             custom double[] cablePath:stored = [2.0, 0, 0, 0, 0, 0]
             custom double cablePath:stiffness = 20000.0
             custom double cablePath:damping = 5.0
+            custom int cablePath:solverIterations = 4
             custom double cablePath:halfWidth = 0.001
             custom token cablePath:initPolicy = "deriveMissing"
         }
