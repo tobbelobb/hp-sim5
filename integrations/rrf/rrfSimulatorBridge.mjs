@@ -236,6 +236,7 @@ export function createGcodeBridge({
   quiet = false,
   onClientChange = null,
   encoderTimeoutMs = DEFAULT_ENCODER_TIMEOUT_MS,
+  driverToAxis = null,
 } = {}) {
   const helpers = buildWsHelpers({ wsPort, quiet, onClientChange });
   let currentGcode = null;
@@ -258,6 +259,7 @@ export function createGcodeBridge({
 
   const bridge = new RrfHttpBridge({
     baseUrl: server.replace(/\/$/, ''),
+    driverToAxis: driverToAxis || undefined,
     remoteSpoolSystem: {
       addCommand: (command) => {
         if (!command) {

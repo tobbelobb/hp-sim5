@@ -76,7 +76,7 @@ async function withImmediateTimeout(fn) {
   }
 }
 
-async function collectBinaryMoves(binaryCan, { dt = null } = {}) {
+async function collectBinaryMoves(binaryCan, { dt = null, driverToAxis = null } = {}) {
   const rrfCanPlayer = new RrfCanPlayer();
   const moves = [];
   rrfCanPlayer.sendCommand = async (command) => {
@@ -87,6 +87,9 @@ async function collectBinaryMoves(binaryCan, { dt = null } = {}) {
   rrfCanPlayer.setAsapMode(true);
   if (Number.isFinite(dt) && dt > 0) {
     rrfCanPlayer.setDt(dt);
+  }
+  if (driverToAxis) {
+    rrfCanPlayer.setDriverToAxis(driverToAxis);
   }
   await withImmediateTimeout(async () => {
     await rrfCanPlayer.run(streamFromUint8Array(binaryCan), FileFormat.RRF_CAN_BINARY);
@@ -135,5 +138,32 @@ describe('RrfCanPlayer binary CAN compatibility', () => {
 
     expect(moves.length).toBeGreaterThanOrEqual(1);
     expect(moves[0].A).toBeCloseTo(3 * STEP_ANGLE_RAD, 12);
+  });
+
+  test('uses configured driver mapping for cubecorners motor 44', async () => {
+    const binaryCan = makeSingleEntryBinaryCan({
+      time: 0,
+      motorId: 44,
+      steps: 5,
+      accelTicks: 100,
+    });
+
+    const moves = await collectBinaryMoves(binaryCan, {
+      driverToAxis: new Map([
+        [40, 'A'],
+        [41, 'B'],
+        [42, 'C'],
+        [43, 'D'],
+        [44, 'I'],
+        [45, 'J'],
+        [46, 'L'],
+        [47, 'O'],
+        [48, 'E'],
+      ]),
+    });
+
+    expect(moves.length).toBeGreaterThanOrEqual(1);
+    expect(moves[0].I).toBeCloseTo(5 * STEP_ANGLE_RAD, 12);
+    expect(moves[0].E).toBeUndefined();
   });
 });

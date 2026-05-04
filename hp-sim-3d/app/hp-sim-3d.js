@@ -7,6 +7,7 @@ import { RemoteSpoolSystem } from './remoteSpoolSystem.js';
 import { InputSystem } from './hangprinter_input.js';
 import { detectFileFormat, FileFormat, isKlipperFormat, isRrfFormat } from '../../integrations/shared/fileFormatUtils.js';
 import { createKlipperRawBridge } from '../../integrations/klipper/klipperSimulatorBridge.js';
+import { parseRrfMotorAxisMapFromConfigText } from '../../integrations/rrf/rrfFirmwareModel.js';
 // Keep these as Vite worker URL imports. Reverting to `new URL(workerSource, import.meta.url)`
 // broke preview/prod builds before by emitting worker files with unresolved relative imports.
 import klipperMcuCommandPlayerWorkerUrl from '../../integrations/klipper/klipperMcuCommandPlayer.js?worker&url';
@@ -29,8 +30,28 @@ import { PerformanceMonitor } from './performance-monitor.js';
 const HP3_USDA_KEY = 'hp3_rigid_body.usda';
 const HP4_USDA_KEY = 'hp4_rigid_body.usda';
 const FOUR_HIGH_ANCHORS_USDA_KEY = 'four_high_anchors_rigid_body.usda';
+const CUBECORNERS_USDA_KEY = 'cubecorners_rigid_body.usda';
 const KLIPPER_UPLOAD_PIPELINE = 'raw'; // 'player' or 'raw'
 const PUBLIC_BASE_URL = import.meta.env.BASE_URL || '/';
+
+const RRF_CONFIG_VARIANTS_BY_USDA_KEY = Object.freeze({
+  [HP3_USDA_KEY]: Object.freeze({
+    default: 'RRF/run/vsd/sys/config_hp3.g',
+    lineLayered: 'RRF/run/vsd/sys/config_hp3_w_line_layers.g',
+  }),
+  [HP4_USDA_KEY]: Object.freeze({
+    default: 'RRF/run/vsd/sys/config_hp4.g',
+    lineLayered: 'RRF/run/vsd/sys/config_hp4_w_line_layers.g',
+  }),
+  [FOUR_HIGH_ANCHORS_USDA_KEY]: Object.freeze({
+    default: 'RRF/run/vsd/sys/config_skycam.g',
+    lineLayered: 'RRF/run/vsd/sys/config_skycam_w_line_layers.g',
+  }),
+  [CUBECORNERS_USDA_KEY]: Object.freeze({
+    default: 'RRF/run/vsd/sys/config_cubecorners.g',
+    lineLayered: 'RRF/run/vsd/sys/config_cubecorners_w_line_layers.g',
+  }),
+});
 
 const COMMAND_PRESET_VARIANTS = Object.freeze({
   hangprinterLogo: Object.freeze({
@@ -77,6 +98,19 @@ const COMMAND_PRESET_VARIANTS = Object.freeze({
         }),
         lineLayered: Object.freeze({
           url: new URL('../../public/RRF_CAN_commands/Hangprinter_logo6_skycam_w_line_layers.can', import.meta.url)
+            .href,
+          format: FileFormat.RRF_CAN_BINARY,
+          referencePresetKey: 'hangprinterLogo',
+        }),
+      }),
+      [CUBECORNERS_USDA_KEY]: Object.freeze({
+        default: Object.freeze({
+          url: new URL('../../public/RRF_CAN_commands/Hangprinter_logo6_cubecorners_no_buildup.can', import.meta.url).href,
+          format: FileFormat.RRF_CAN_BINARY,
+          referencePresetKey: 'hangprinterLogo',
+        }),
+        lineLayered: Object.freeze({
+          url: new URL('../../public/RRF_CAN_commands/Hangprinter_logo6_cubecorners_w_line_layers.can', import.meta.url)
             .href,
           format: FileFormat.RRF_CAN_BINARY,
           referencePresetKey: 'hangprinterLogo',
@@ -135,6 +169,19 @@ const COMMAND_PRESET_VARIANTS = Object.freeze({
           referencePresetKey: 'straightMovesBigger',
         }),
       }),
+      [CUBECORNERS_USDA_KEY]: Object.freeze({
+        default: Object.freeze({
+          url: new URL('../../public/RRF_CAN_commands/draw_squares_bigger_cubecorners_no_buildup.can', import.meta.url).href,
+          format: FileFormat.RRF_CAN_BINARY,
+          referencePresetKey: 'straightMovesBigger',
+        }),
+        lineLayered: Object.freeze({
+          url: new URL('../../public/RRF_CAN_commands/draw_squares_bigger_cubecorners_w_line_layers.can', import.meta.url)
+            .href,
+          format: FileFormat.RRF_CAN_BINARY,
+          referencePresetKey: 'straightMovesBigger',
+        }),
+      }),
     }),
   }),
 });
@@ -157,6 +204,11 @@ function resolvePresetCommand(presetKey, lineLayeringEnabled, activeSourceKeys =
     return selectedVariants.lineLayered;
   }
   return null;
+}
+
+function buildPublicProjectUrl(relativePath) {
+  const normalizedBase = PUBLIC_BASE_URL.endsWith('/') ? PUBLIC_BASE_URL : `${PUBLIC_BASE_URL}/`;
+  return `${normalizedBase}${relativePath.replace(/^\/+/, '')}`;
 }
 
 function getPresetActionLabel(presetKey) {
@@ -263,6 +315,7 @@ const AVAILABLE_USDAS = Object.freeze([
   { file: HP4_USDA_KEY, label: 'Hangprinter v4 (default)' },
   { file: HP3_USDA_KEY, label: 'Hangprinter v3' },
   { file: FOUR_HIGH_ANCHORS_USDA_KEY, label: 'Four High Anchors' },
+  { file: CUBECORNERS_USDA_KEY, label: 'CubeCorners' },
   { file: 'slideprinter_multi_unit_rigid_body.usda', label: 'Slideprinter Multi Unit' },
   { file: 'slideprinter_rigid_body.usda', label: 'Slideprinter Original' },
   { file: 'slideprinter_hexagon_rigid_body.usda', label: 'Slideprinter (hexagon)' },
@@ -4168,7 +4221,45 @@ function initHpSim() {
     return true;
   }
 
-  function playPreset(presetKey) {
+  function resolveActiveRrfConfigPath() {
+    const activeSourceKeys = machines.map((machine) => machine.sourceKey).filter(Boolean);
+    for (const sourceKey of activeSourceKeys) {
+      const variants = RRF_CONFIG_VARIANTS_BY_USDA_KEY[sourceKey];
+      if (!variants) {
+        continue;
+      }
+      return lineLayeringEnabled && variants.lineLayered ? variants.lineLayered : variants.default;
+    }
+    return null;
+  }
+
+  async function configureRrfWorkerForActiveMachine(worker) {
+    if (!worker || typeof worker.postMessage !== 'function') {
+      return;
+    }
+    const configPath = resolveActiveRrfConfigPath();
+    if (!configPath) {
+      return;
+    }
+    try {
+      const response = await fetch(buildPublicProjectUrl(configPath));
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const driverToAxis = parseRrfMotorAxisMapFromConfigText(await response.text());
+      if (driverToAxis.size === 0) {
+        return;
+      }
+      worker.postMessage({
+        type: 'set_driver_to_axis',
+        driverToAxis: Array.from(driverToAxis.entries()),
+      });
+    } catch (error) {
+      console.warn(`hp-sim-3d: unable to load RRF motor map from ${configPath}.`, error);
+    }
+  }
+
+  async function playPreset(presetKey) {
     ensureReadyForNewJob();
     if (!stageReady) {
       return;
@@ -4207,6 +4298,9 @@ function initHpSim() {
     }
     if (simDtSec != null) {
       worker.postMessage({ type: 'set_dt', dt: simDtSec });
+    }
+    if (isRrfFormat(format)) {
+      await configureRrfWorkerForActiveMachine(worker);
     }
     worker.postMessage({ type: 'filename_fetch', filename: preset.url });
   }
@@ -4253,6 +4347,9 @@ function initHpSim() {
     }
     if (simDtSec != null) {
       worker.postMessage({ type: 'set_dt', dt: simDtSec });
+    }
+    if (isRrfFormat(format)) {
+      await configureRrfWorkerForActiveMachine(worker);
     }
     worker.postMessage({ type: 'filename_upload', filename: file, format });
   }

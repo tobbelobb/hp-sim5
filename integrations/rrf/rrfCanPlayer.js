@@ -64,6 +64,7 @@ export class RrfCanPlayer {
         this.lastYieldTime = 0;
         this.axisByMotorId = new Map();
         this.valueTypeByMotorId = new Map();
+        this.driverToAxis = new Map(MOTOR_AXIS_MAP);
         this.baselineEmitted = false;
         this._resetState();
     }
@@ -132,6 +133,24 @@ export class RrfCanPlayer {
         this.baselineEmitted = false;
     }
 
+    setDriverToAxis(driverToAxis) {
+        const entries = driverToAxis instanceof Map
+            ? Array.from(driverToAxis.entries())
+            : Array.isArray(driverToAxis)
+                ? driverToAxis
+                : Object.entries(driverToAxis || {});
+        const next = new Map();
+        for (const [driver, axis] of entries) {
+            const motorId = Number(driver);
+            const axisName = typeof axis === 'string' ? axis.toUpperCase() : '';
+            if (Number.isFinite(motorId) && axisName) {
+                next.set(motorId, axisName);
+            }
+        }
+        this.driverToAxis = next.size > 0 ? next : new Map(MOTOR_AXIS_MAP);
+        this._resetState();
+    }
+
     _ensureAxisState(axis) {
         if (!axis) {
             return null;
@@ -161,7 +180,7 @@ export class RrfCanPlayer {
         if (this.axisByMotorId.has(motorId)) {
             return this.axisByMotorId.get(motorId);
         }
-        let axis = MOTOR_AXIS_MAP.get(motorId);
+        let axis = this.driverToAxis.get(motorId);
         if (!axis || this.usedAxes.has(axis)) {
             axis = DEFAULT_AXIS_ORDER.find(candidate => !this.usedAxes.has(candidate));
         }
@@ -764,6 +783,10 @@ self.addEventListener('message', async (e) => {
         }
         case 'set_dt': {
             rrfCanPlayer.setDt(e.data.dt);
+            break;
+        }
+        case 'set_driver_to_axis': {
+            rrfCanPlayer.setDriverToAxis(e.data.driverToAxis);
             break;
         }
         case 'set_speed_scale': {

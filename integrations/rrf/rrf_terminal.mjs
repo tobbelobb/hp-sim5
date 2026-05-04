@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import path from 'node:path';
+import fs from 'node:fs';
 import readline from 'node:readline';
 import { createGcodeBridge } from './rrfSimulatorBridge.mjs';
+import { parseRrfMotorAxisMapFromConfigText } from './rrfFirmwareModel.js';
 import { waitForRrfSimulator } from '../../autocal/control/primitives/encoder_utils.mjs';
 import {
   DEFAULT_RRF_HTTP_BRIDGE_START_SCRIPT,
@@ -38,6 +40,43 @@ function takeValue(argv, index, optionName) {
     throw new Error(`${optionName} requires an argument`);
   }
   return value;
+}
+
+function normalizeLineLayerSuffix(lineLayerArg) {
+  return lineLayerArg === '--buildup' || lineLayerArg === '--line-layers'
+    ? '_w_line_layers'
+    : '';
+}
+
+function resolveRrfConfigPath(configValue) {
+  if (!configValue) {
+    return null;
+  }
+  const candidates = [];
+  if (path.isAbsolute(configValue)) {
+    candidates.push(configValue);
+  } else {
+    candidates.push(path.resolve(process.cwd(), configValue));
+    candidates.push(path.resolve(process.cwd(), 'RRF/run/vsd/sys', configValue));
+    candidates.push(path.resolve(process.cwd(), 'RRF/run/vsd', configValue));
+  }
+  return candidates.find((candidate) => fs.existsSync(candidate)) || candidates[0] || null;
+}
+
+function readDriverToAxisFromConfig(configPath) {
+  if (!configPath) {
+    return null;
+  }
+  try {
+    const configText = fs.readFileSync(configPath, 'utf8');
+    const driverToAxis = parseRrfMotorAxisMapFromConfigText(configText);
+    return driverToAxis.size > 0 ? driverToAxis : null;
+  } catch (err) {
+    if (!args?.quiet) {
+      console.warn(`rrf_terminal.mjs: unable to read RRF motor map from ${configPath}: ${err.message}`);
+    }
+    return null;
+  }
 }
 
 export function parseArgs(argv) {
@@ -113,8 +152,10 @@ export function parseArgs(argv) {
 
   if (simulatorConfig) {
     args.startScriptArgs = ['-c', simulatorConfig];
+    args.configPath = resolveRrfConfigPath(simulatorConfig);
   } else if (hasAutostartOption || !hasCustomStartScript) {
     args.startScriptArgs = ['-m', machineType, lineLayerArg];
+    args.configPath = resolveRrfConfigPath(`config_${machineType}${normalizeLineLayerSuffix(lineLayerArg)}.g`);
   }
 
   return args;
@@ -314,6 +355,7 @@ export async function runCli(argv = process.argv.slice(2)) {
     wsPort: args.noWs ? 0 : args.wsPort,
     quiet: args.quiet,
     onClientChange: (connected) => updatePromptForConnectionState(connected),
+    driverToAxis: readDriverToAxisFromConfig(args.configPath),
   });
   promptConnectedState = !bridgeContext.wss;
   await main();
