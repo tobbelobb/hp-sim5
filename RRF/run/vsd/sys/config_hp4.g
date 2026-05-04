@@ -30,8 +30,8 @@ M666 W0.081                     ; Mover weighs X kg.
 M666 S20000.0                   ; Spring constant (rough approximation) for Garda 1.1 mm line (unit N/m).
                                 ; The real value is somewhere between 20k and 100k.
                                 ; Lower value gives more flex compensation.
-M666 I3.0:3.0:3.0:3.0           ; Min planned force in all directions (unit N).
-M666 X170.0:170.0:170.0:170.0   ; Max planned force in all directions (unit N)
+M666 I10.0:10.0:10.0:10.0       ; Min planned force in all directions (unit N).
+M666 X40.0:40.0:40.0:40.0       ; Max planned force in all directions (unit N)
                                 ; This is a safety limit. Will affect moves close to
                                 ; the limits of the reachable volume.
 
