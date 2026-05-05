@@ -181,6 +181,7 @@ const CABLE_HYBRID_TRACE_PREFIX = '[CableHybridTrace]';
 const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
 const DEFAULT_CLOSED_LOOP_STEPPER_CONSTRAINT_STIFFNESS = 1e8;
 const DEFAULT_OPEN_LOOP_STEPPER_CONSTRAINT_STIFFNESS_SCALE = 1.0;
+const DEFAULT_OPEN_LOOP_STEPPER_HOLDING_TORQUE_SCALE = 1.0;
 
 function _debugCable(world, message) {
   if (world?.getResource('cableDebugLogs') === true) {
@@ -1311,6 +1312,25 @@ function _effectiveMotorizedSpinInvInertia(world, entityId, invInertia, dt) {
       : (1.0 / invInertia)
   ) + (stiffness * dt * dt);
   return effectiveInertia > EPSILON ? (1.0 / effectiveInertia) : invInertia;
+}
+
+function _openLoopStepperHoldingTorqueLimit(world, stepper) {
+  if (!stepper || stepper.torqueMode || isStepperClosedLoopEnabled(world, stepper)) {
+    return Infinity;
+  }
+
+  const holdingTorque = Number.isFinite(stepper.holdingTorque)
+    ? Math.max(0.0, stepper.holdingTorque)
+    : 0.0;
+  const scale = Math.max(
+    0.0,
+    _readFiniteResource(
+      world,
+      'openLoopStepperHoldingTorqueScale',
+      DEFAULT_OPEN_LOOP_STEPPER_HOLDING_TORQUE_SCALE,
+    ),
+  );
+  return holdingTorque * scale;
 }
 
 function _linkAllowsCableSpin(world, path, linkIndex, entityId) {
@@ -2836,10 +2856,13 @@ export class PBDCableConstraintSolver {
         return null;
       }
       axisWorld.normalize();
+      const stepper = world.getComponent(entityId, StepperMotorComponent);
       return {
         entityId,
         centerWorld,
+        freeInvInertia: moiComp.invInertia,
         invInertia: _effectiveMotorizedSpinInvInertia(world, entityId, moiComp.invInertia, dt),
+        holdingTorqueLimit: _openLoopStepperHoldingTorqueLimit(world, stepper),
         axisWorld,
         pointWorld: pointWorld.clone(),
         gradPos: gradPos.clone(),
@@ -2866,7 +2889,7 @@ export class PBDCableConstraintSolver {
         }
       }
 
-      if (mappedEndpoint.internalToBody || mappedEndpoint.entityId === originalEntityId) {
+      if (mappedEndpoint.internalToBody) {
         return null;
       }
 
@@ -3084,18 +3107,6 @@ export class PBDCableConstraintSolver {
       const spinDispA = gradSpinA * spinAngleDispA;
       const spinDispB = gradSpinB * spinAngleDispB;
 
-      let mechDenom = 0.0;
-      mechDenom += invMassA * gradPosA.lengthSq();
-      mechDenom += invInertiaA * gradAngA.lengthSq();
-      if (memberInvInertiaA > 0.0 && Math.abs(gradSpinA) > EPSILON) {
-        mechDenom += memberInvInertiaA * gradSpinA * gradSpinA;
-      }
-      mechDenom += invMassB * gradPosB.lengthSq();
-      mechDenom += invInertiaB * gradAngB.lengthSq();
-      if (memberInvInertiaB > 0.0 && Math.abs(gradSpinB) > EPSILON) {
-        mechDenom += memberInvInertiaB * gradSpinB * gradSpinB;
-      }
-
       const alphaTilde = (Number.isFinite(dt) && dt > EPSILON)
         ? (compliance ?? 0.0) / (dt * dt)
         : 0.0;
@@ -3103,15 +3114,60 @@ export class PBDCableConstraintSolver {
         ? Math.max(0.0, (compliance ?? 0.0) * (path?.damping ?? 0.0) / dt)
         : 0.0;
       const jDx = translationalDispA + rotationalDispA + spinDispA + translationalDispB + rotationalDispB + spinDispB;
-      const denom = ((1.0 + gamma) * mechDenom) + alphaTilde;
+      const solveLambda = (solveMemberInvInertiaA, solveMemberInvInertiaB) => {
+        let mechDenom = 0.0;
+        mechDenom += invMassA * gradPosA.lengthSq();
+        mechDenom += invInertiaA * gradAngA.lengthSq();
+        if (solveMemberInvInertiaA > 0.0 && Math.abs(gradSpinA) > EPSILON) {
+          mechDenom += solveMemberInvInertiaA * gradSpinA * gradSpinA;
+        }
+        mechDenom += invMassB * gradPosB.lengthSq();
+        mechDenom += invInertiaB * gradAngB.lengthSq();
+        if (solveMemberInvInertiaB > 0.0 && Math.abs(gradSpinB) > EPSILON) {
+          mechDenom += solveMemberInvInertiaB * gradSpinB * gradSpinB;
+        }
 
-      if (denom <= EPSILON) {
+        const denom = ((1.0 + gamma) * mechDenom) + alphaTilde;
+        if (denom <= EPSILON) {
+          return null;
+        }
+        return (-constraintError - (gamma * jDx)) / denom;
+      };
+
+      let solveMemberInvInertiaA = memberInvInertiaA;
+      let solveMemberInvInertiaB = memberInvInertiaB;
+      let lambda = solveLambda(solveMemberInvInertiaA, solveMemberInvInertiaB);
+      if (lambda === null) {
         return;
       }
-      //console.log(`gamma: ${gamma}`);
 
-      const lambda = (-constraintError - (gamma * jDx)) / denom;
       const invDtSq = (Number.isFinite(dt) && dt > EPSILON) ? 1.0 / (dt * dt) : 0.0;
+      const exceedsHoldingTorque = (memberSpin, gradSpin) => {
+        const torqueLimit = memberSpin?.holdingTorqueLimit;
+        if (!(Number.isFinite(torqueLimit) && torqueLimit >= 0.0)) {
+          return false;
+        }
+        if (!(invDtSq > 0.0) || Math.abs(gradSpin) <= EPSILON) {
+          return false;
+        }
+        const cableTorque = Math.abs(lambda) * invDtSq * Math.abs(gradSpin);
+        return cableTorque > torqueLimit + EPSILON;
+      };
+      const releaseMotorA = exceedsHoldingTorque(memberSpinA, gradSpinA);
+      const releaseMotorB = exceedsHoldingTorque(memberSpinB, gradSpinB);
+      if (releaseMotorA || releaseMotorB) {
+        solveMemberInvInertiaA = releaseMotorA
+          ? (memberSpinA?.freeInvInertia ?? memberInvInertiaA)
+          : memberInvInertiaA;
+        solveMemberInvInertiaB = releaseMotorB
+          ? (memberSpinB?.freeInvInertia ?? memberInvInertiaB)
+          : memberInvInertiaB;
+        lambda = solveLambda(solveMemberInvInertiaA, solveMemberInvInertiaB);
+        if (lambda === null) {
+          return;
+        }
+      }
+
       if (!joint.constraintForce) {
         joint.constraintForce = new Vector3(0, 0, 0);
       }
@@ -3156,8 +3212,8 @@ export class PBDCableConstraintSolver {
 	        }
 	      }
 	    }
-      if (memberInvInertiaA > 0.0 && memberSpinA?.axisWorld && Math.abs(gradSpinA) > EPSILON) {
-        const deltaAngleMemberA = -memberInvInertiaA * lambda * gradSpinA;
+      if (solveMemberInvInertiaA > 0.0 && memberSpinA?.axisWorld && Math.abs(gradSpinA) > EPSILON) {
+        const deltaAngleMemberA = -solveMemberInvInertiaA * lambda * gradSpinA;
         const memberOrientationAComp = world.getComponent(memberSpinA.entityId, OrientationComponent);
         if (memberOrientationAComp) {
           if (Math.abs(deltaAngleMemberA) > EPSILON) {
@@ -3185,8 +3241,8 @@ export class PBDCableConstraintSolver {
 	        }
 	      }
 	    }
-      if (memberInvInertiaB > 0.0 && memberSpinB?.axisWorld && Math.abs(gradSpinB) > EPSILON) {
-        const deltaAngleMemberB = -memberInvInertiaB * lambda * gradSpinB;
+      if (solveMemberInvInertiaB > 0.0 && memberSpinB?.axisWorld && Math.abs(gradSpinB) > EPSILON) {
+        const deltaAngleMemberB = -solveMemberInvInertiaB * lambda * gradSpinB;
         const memberOrientationBComp = world.getComponent(memberSpinB.entityId, OrientationComponent);
         if (memberOrientationBComp) {
           if (Math.abs(deltaAngleMemberB) > EPSILON) {
