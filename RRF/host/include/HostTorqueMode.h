@@ -31,7 +31,7 @@ private:
     HostTorqueMode() = default;
 
     static constexpr uint8_t MIN_DRIVER = 40;
-    static constexpr uint8_t MAX_DRIVER = 43;
+    static constexpr uint8_t MAX_DRIVER = 49;
     static constexpr size_t NUM_DRIVERS = MAX_DRIVER - MIN_DRIVER + 1;
     static constexpr float MIN_TORQUE_THRESHOLD = 0.0001f;
 
