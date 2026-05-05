@@ -523,7 +523,7 @@ function totalConstraintForceMagnitude(joint) {
   const transferred = Number.isFinite(joint?.transferredConstraintForceMagnitude)
     ? Math.max(0.0, joint.transferredConstraintForceMagnitude)
     : 0.0;
-  return direct + transferred;
+  return Math.max(direct, transferred);
 }
 
 function createForceSignTexture(text) {

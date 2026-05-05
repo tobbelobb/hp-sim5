@@ -178,6 +178,39 @@ export class StepperMotorSystem {
       const omegaAlongAxis = angVel.omega?.dot?.(worldAxis) ?? 0.0;
       let totalTorque;
 
+      if (!stepper.torqueMode && isStepperClosedLoopEnabled(world, stepper)) {
+        const targetAngle = stepper.commandedAngle - stepper.deltaAngle;
+        const motorAngleDelta = -normalizeAngle(currentAngle - targetAngle);
+
+        applyRigidBodyReactionRotation(
+          world,
+          rigidBodyMemberFrame,
+          worldAxis,
+          motorAngleDelta,
+          inertia.inertia,
+        );
+
+        if (rigidBodyMemberFrame) {
+          rigidBodyMemberFrame.member.localOrientation.set(
+            composeSpoolOrientation(rigidBodyMemberFrame.localSpoolState, null, targetAngle),
+          );
+          orient.quaternion.set(
+            new Quaternion()
+              .multiplyQuaternions(
+                rigidBodyMemberFrame.bodyOrientation,
+                rigidBodyMemberFrame.member.localOrientation,
+              )
+              .normalize(),
+          );
+        } else {
+          orient.quaternion.set(composeSpoolOrientation(spoolState, null, targetAngle));
+        }
+        angVel.omega.x = 0.0;
+        angVel.omega.y = 0.0;
+        angVel.omega.z = 0.0;
+        continue;
+      }
+
       if (stepper.torqueMode) {
         const maxSpeedRad = Math.max(1e-6, stepper.maxSpeedRad ?? 600);
         const droop = Math.max(0, Math.min(1, 1 - Math.abs(omegaAlongAxis) / maxSpeedRad));

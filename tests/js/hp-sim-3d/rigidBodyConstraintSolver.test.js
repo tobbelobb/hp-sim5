@@ -26,7 +26,10 @@ import {
   tangentFromSphereToSphere,
 } from '../../../src/js/cable_joints_3d/geometry3.js';
 import { StepperMotorComponent } from '../../../hp-sim-3d/app/hangprinter_stepper_motor.js';
-import { SpoolStateComponent } from '../../../hp-sim-3d/app/hangprinter_spools.js';
+import {
+  SpoolStateComponent,
+  getSpoolRotationAngle,
+} from '../../../hp-sim-3d/app/hangprinter_spools.js';
 import {
   AngularMovementSystem,
   PrevFinalOrientationSystem,
@@ -499,7 +502,7 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
     expect(Math.abs(spoolMember.localOrientation.z) + Math.abs(spoolMember.localOrientation.w - 1.0)).toBeGreaterThan(1e-4);
   });
 
-  test('closed-loop rigid-body-mounted steppers do not expose a cable-driven spin DOF', () => {
+  test('closed-loop rigid-body-mounted steppers stay stiff against cable-driven spin', () => {
     const world = new World();
     world.setResource('dt', 1.0);
 
@@ -583,15 +586,84 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
     expect(Math.abs(spoolMember.localOrientation.w - 1.0)).toBeCloseTo(0.0, 12);
   });
 
-  test('standalone closed-loop steppers are excluded from cable solver DOFs', () => {
+  test('position-controlled steppers add holding stiffness to cable spin solve', () => {
+    const solveForce = (stepper = null) => {
+      const world = new World();
+      world.setResource('dt', 1.0 / 500.0);
+
+      const spool = world.createEntity();
+      world.addComponent(spool, new PositionComponent(0.0, 0.0, 0.0));
+      world.addComponent(spool, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
+      world.addComponent(spool, new MassComponent(-1.0));
+      world.addComponent(spool, new MomentOfInertiaComponent(1e-6));
+      world.addComponent(spool, new SpoolStateComponent('A', new Vector3(0.0, 0.0, 1.0)));
+      world.addComponent(
+        spool,
+        new CableLinkComponent(
+          0.0,
+          0.0,
+          0.0,
+          null,
+          null,
+          new Vector3(0.0, 0.0, 1.0),
+        ),
+      );
+      if (stepper) {
+        world.addComponent(spool, stepper);
+      }
+
+      const anchor = world.createEntity();
+      world.addComponent(anchor, new PositionComponent(2.0, 0.0, 0.0));
+      world.addComponent(anchor, new MassComponent(-1.0));
+
+      const jointEntity = world.createEntity();
+      world.addComponent(
+        jointEntity,
+        CableJointComponent.fromWorld(
+          spool,
+          anchor,
+          1.0,
+          new Vector3(0.0, 1.0, 0.0),
+          new Vector3(2.0, 0.0, 0.0),
+        ),
+      );
+
+      const pathEntity = world.createEntity();
+      world.addComponent(
+        pathEntity,
+        new CablePathComponent(
+          world,
+          [jointEntity],
+          ['hybrid', 'attachment'],
+          [true, true],
+          20000.0,
+          null,
+          0.0,
+        ),
+      );
+
+      new PBDCableConstraintSolver().update(world, 0.0);
+      return world.getComponent(jointEntity, CableJointComponent).constraintForceMagnitude;
+    };
+
+    const freeForce = solveForce();
+    const drivenForce = solveForce(new StepperMotorComponent(0.0, 0.0, 0.5, 50, 0.0));
+
+    expect(drivenForce).toBeGreaterThan(freeForce * 10.0);
+  });
+
+  test('standalone closed-loop steppers provide very stiff cable spin compliance', () => {
     const world = new World();
-    world.setResource('dt', 1.0);
+    const dt = 1.0 / 500.0;
+    world.setResource('dt', dt);
 
     const spool = world.createEntity();
     world.addComponent(spool, new PositionComponent(0.0, 0.0, 0.0));
     world.addComponent(spool, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
-    world.addComponent(spool, new MassComponent(2.0));
+    world.addComponent(spool, new MassComponent(-1.0));
     world.addComponent(spool, new MomentOfInertiaComponent(0.1));
+    const spoolState = new SpoolStateComponent('A', new Vector3(0.0, 0.0, 1.0));
+    world.addComponent(spool, spoolState);
     world.addComponent(
       spool,
       new CableLinkComponent(
@@ -631,7 +703,7 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
         [jointEntity],
         ['attachment', 'attachment'],
         [true, true],
-        Infinity,
+        20000.0,
         null,
         0.0,
       ),
@@ -642,14 +714,95 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
 
     const spoolPosition = world.getComponent(spool, PositionComponent).pos;
     const spoolOrientation = world.getComponent(spool, OrientationComponent).quaternion;
+    const joint = world.getComponent(jointEntity, CableJointComponent);
 
     expect(spoolPosition.x).toBeCloseTo(0.0, 12);
     expect(spoolPosition.y).toBeCloseTo(0.0, 12);
     expect(spoolPosition.z).toBeCloseTo(0.0, 12);
     expect(Math.abs(spoolOrientation.x)).toBeCloseTo(0.0, 12);
     expect(Math.abs(spoolOrientation.y)).toBeCloseTo(0.0, 12);
-    expect(Math.abs(spoolOrientation.z)).toBeCloseTo(0.0, 12);
-    expect(Math.abs(spoolOrientation.w - 1.0)).toBeCloseTo(0.0, 12);
+    expect(Math.abs(getSpoolRotationAngle(spoolState, spoolOrientation))).toBeLessThan(1e-3);
+    expect(joint.constraintForceMagnitude).toBeGreaterThan(1000.0);
+  });
+
+  test('fixed pinholes expose neighboring cable force to force signs', () => {
+    const world = new World();
+    world.setResource('dt', 1.0 / 500.0);
+
+    const spool = world.createEntity();
+    world.addComponent(spool, new PositionComponent(0.0, 0.0, 0.0));
+    world.addComponent(spool, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
+    world.addComponent(spool, new RadiusComponent(0.1));
+    world.addComponent(spool, new MassComponent(-1.0));
+    world.addComponent(spool, new MomentOfInertiaComponent(0.1));
+    world.addComponent(spool, new SpoolStateComponent('A', new Vector3(0.0, 0.0, 1.0)));
+    world.addComponent(
+      spool,
+      new CableLinkComponent(
+        0.0,
+        0.0,
+        0.0,
+        null,
+        null,
+        new Vector3(0.0, 0.0, 1.0),
+      ),
+    );
+
+    const pinhole = world.createEntity();
+    world.addComponent(pinhole, new PositionComponent(1.0, 0.0, 0.0));
+    world.addComponent(pinhole, new MassComponent(-1.0));
+
+    const attachment = world.createEntity();
+    world.addComponent(attachment, new PositionComponent(3.0, 0.0, 0.0));
+    world.addComponent(attachment, new MassComponent(1.0));
+
+    const innerJoint = world.createEntity();
+    world.addComponent(
+      innerJoint,
+      CableJointComponent.fromWorld(
+        spool,
+        pinhole,
+        1.0,
+        new Vector3(0.0, 0.0, 0.0),
+        new Vector3(1.0, 0.0, 0.0),
+      ),
+    );
+
+    const outerJoint = world.createEntity();
+    world.addComponent(
+      outerJoint,
+      CableJointComponent.fromWorld(
+        pinhole,
+        attachment,
+        1.0,
+        new Vector3(1.0, 0.0, 0.0),
+        new Vector3(3.0, 0.0, 0.0),
+      ),
+    );
+
+    const pathEntity = world.createEntity();
+    world.addComponent(
+      pathEntity,
+      new CablePathComponent(
+        world,
+        [innerJoint, outerJoint],
+        ['hybrid', 'pinhole', 'attachment'],
+        [true, true, true],
+        20000.0,
+        [0.0, 0.0, 0.0],
+        0.0,
+      ),
+    );
+
+    new PBDCableConstraintSolver().update(world, 0.0);
+
+    const inner = world.getComponent(innerJoint, CableJointComponent);
+    const outer = world.getComponent(outerJoint, CableJointComponent);
+    expect(outer.constraintForceMagnitude).toBeGreaterThan(0.0);
+    expect(inner.transferredConstraintForceMagnitude).toBeCloseTo(
+      outer.constraintForceMagnitude,
+      8,
+    );
   });
 
   test('external pinhole cable corrections can backdrive a downstream rigid-body-mounted spool member', () => {

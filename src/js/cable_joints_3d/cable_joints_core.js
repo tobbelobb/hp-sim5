@@ -179,6 +179,8 @@ const CABLE_DEBUG_PREFIX = '[CableJointsDebug]';
 const CABLE_HYBRID_TRACE_PREFIX = '[CableHybridTrace]';
 
 const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
+const DEFAULT_CLOSED_LOOP_STEPPER_CONSTRAINT_STIFFNESS = 1e8;
+const DEFAULT_OPEN_LOOP_STEPPER_CONSTRAINT_STIFFNESS_SCALE = 1.0;
 
 function _debugCable(world, message) {
   if (world?.getResource('cableDebugLogs') === true) {
@@ -1255,6 +1257,60 @@ function _hasAxisOnlyCableSpinDof(world, entityId) {
   const spoolState = world.getComponent(entityId, SpoolStateComponent);
   const linkComp = world.getComponent(entityId, CableLinkComponent);
   return Boolean(spoolState && linkComp?.cablePlaneNormalLocal);
+}
+
+function _positionStepperConstraintStiffness(world, stepper) {
+  if (!stepper || stepper.torqueMode) {
+    return 0.0;
+  }
+
+  if (isStepperClosedLoopEnabled(world, stepper)) {
+    return Math.max(
+      0.0,
+      _readFiniteResource(
+        world,
+        'closedLoopStepperConstraintStiffness',
+        DEFAULT_CLOSED_LOOP_STEPPER_CONSTRAINT_STIFFNESS,
+      ),
+    );
+  }
+
+  const holdingTorque = Number.isFinite(stepper.holdingTorque)
+    ? Math.max(0.0, stepper.holdingTorque)
+    : 0.0;
+  const polePairs = Number.isFinite(stepper.numPolePairs)
+    ? Math.max(1.0, Math.abs(stepper.numPolePairs))
+    : 1.0;
+  const scale = Math.max(
+    0.0,
+    _readFiniteResource(
+      world,
+      'openLoopStepperConstraintStiffnessScale',
+      DEFAULT_OPEN_LOOP_STEPPER_CONSTRAINT_STIFFNESS_SCALE,
+    ),
+  );
+
+  return holdingTorque * polePairs * scale;
+}
+
+function _effectiveMotorizedSpinInvInertia(world, entityId, invInertia, dt) {
+  if (!(invInertia > EPSILON)) {
+    return 0.0;
+  }
+
+  const stepper = world.getComponent(entityId, StepperMotorComponent);
+  const stiffness = _positionStepperConstraintStiffness(world, stepper);
+  if (!(stiffness > EPSILON) || !(Number.isFinite(dt) && dt > EPSILON)) {
+    return invInertia;
+  }
+
+  const inertia = world.getComponent(entityId, MomentOfInertiaComponent)?.inertia;
+  const effectiveInertia = (
+    Number.isFinite(inertia) && inertia > EPSILON
+      ? inertia
+      : (1.0 / invInertia)
+  ) + (stiffness * dt * dt);
+  return effectiveInertia > EPSILON ? (1.0 / effectiveInertia) : invInertia;
 }
 
 function _linkAllowsCableSpin(world, path, linkIndex, entityId) {
@@ -2762,17 +2818,7 @@ export class PBDCableConstraintSolver {
       }
       return getCurrentOrientation(entityId);
     };
-    const isLockedClosedLoopStepper = (entityId) => {
-      const stepper = world.getComponent(entityId, StepperMotorComponent);
-      if (!stepper || stepper.torqueMode) {
-        return false;
-      }
-      return isStepperClosedLoopEnabled(world, stepper);
-    };
     const buildExternalMemberSpinSolveInfo = (entityId, pointWorld, gradPos) => {
-      if (isLockedClosedLoopStepper(entityId)) {
-        return null;
-      }
       const linkComp = world.getComponent(entityId, CableLinkComponent);
       if (!linkComp?.cablePlaneNormalLocal || !pointWorld || !gradPos) {
         return null;
@@ -2793,7 +2839,7 @@ export class PBDCableConstraintSolver {
       return {
         entityId,
         centerWorld,
-        invInertia: moiComp.invInertia,
+        invInertia: _effectiveMotorizedSpinInvInertia(world, entityId, moiComp.invInertia, dt),
         axisWorld,
         pointWorld: pointWorld.clone(),
         gradPos: gradPos.clone(),
@@ -2882,6 +2928,31 @@ export class PBDCableConstraintSolver {
       }
       return info;
     };
+    const recordTransferredForceMagnitude = (jointId, forceMagnitude) => {
+      if (!(Number.isFinite(forceMagnitude) && forceMagnitude > 0.0)) {
+        return;
+      }
+      const transferredJoint = world.getComponent(jointId, CableJointComponent);
+      if (!transferredJoint) {
+        return;
+      }
+      const previous = transferredJoint.transferredConstraintForceMagnitude ?? 0.0;
+      transferredJoint.transferredConstraintForceMagnitude = Math.max(previous, forceMagnitude);
+    };
+    const recordPinholeNeighborForceTransfers = (path, jointIndex, forceMagnitude) => {
+      if (!path || !Array.isArray(path.linkTypes) || !Array.isArray(path.jointEntities)) {
+        return;
+      }
+      if (path.linkTypes[jointIndex] === 'pinhole' && jointIndex > 0) {
+        recordTransferredForceMagnitude(path.jointEntities[jointIndex - 1], forceMagnitude);
+      }
+      if (
+        path.linkTypes[jointIndex + 1] === 'pinhole' &&
+        jointIndex + 1 < path.jointEntities.length
+      ) {
+        recordTransferredForceMagnitude(path.jointEntities[jointIndex + 1], forceMagnitude);
+      }
+    };
 
     const applyConstraint = (
       path,
@@ -2925,20 +2996,18 @@ export class PBDCableConstraintSolver {
         pointB_world,
         gradPosB, // gradPosB is a unit vector pointing from B to A
       );
-      const lockedSolverA = isLockedClosedLoopStepper(solverEntityA);
-      const lockedSolverB = isLockedClosedLoopStepper(solverEntityB);
       const axisOnlySolverA = _hasAxisOnlyCableSpinDof(world, solverEntityA);
       const axisOnlySolverB = _hasAxisOnlyCableSpinDof(world, solverEntityB);
 
 	    const massAComp = world.getComponent(solverEntityA, MassComponent);
-	    const invMassA = (!lockedSolverA && massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
+	    const invMassA = (massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
 	    const moiAComp = world.getComponent(solverEntityA, MomentOfInertiaComponent);
-	    const invInertiaA = (!lockedSolverA && !axisOnlySolverA && moiAComp) ? moiAComp.invInertia : 0.0;
+	    const invInertiaA = (!axisOnlySolverA && moiAComp) ? moiAComp.invInertia : 0.0;
 
 	    const massBComp = world.getComponent(solverEntityB, MassComponent);
-	    const invMassB = (!lockedSolverB && massBComp && massBComp.mass > 0) ? 1.0 / massBComp.mass : 0.0;
+	    const invMassB = (massBComp && massBComp.mass > 0) ? 1.0 / massBComp.mass : 0.0;
 	    const moiBComp = world.getComponent(solverEntityB, MomentOfInertiaComponent);
-	    const invInertiaB = (!lockedSolverB && !axisOnlySolverB && moiBComp) ? moiBComp.invInertia : 0.0;
+	    const invInertiaB = (!axisOnlySolverB && moiBComp) ? moiBComp.invInertia : 0.0;
 
       const memberInvInertiaA = memberSpinA?.invInertia ?? 0.0;
       const memberInvInertiaB = memberSpinB?.invInertia ?? 0.0;
@@ -3052,22 +3121,21 @@ export class PBDCableConstraintSolver {
         joint.constraintForce.scale(lambda * invDtSq);
         joint.constraintForceMagnitude = Math.abs(lambda) * invDtSq;
         const transferredForceMagnitude = Math.abs(lambda) * invDtSq;
+        recordPinholeNeighborForceTransfers(path, jointIndex, transferredForceMagnitude);
         if (memberSpinA?.transferredJointId !== undefined) {
-          const transferredJointA = world.getComponent(memberSpinA.transferredJointId, CableJointComponent);
-          if (transferredJointA) {
-            transferredJointA.transferredConstraintForceMagnitude =
-              (transferredJointA.transferredConstraintForceMagnitude ?? 0.0) + transferredForceMagnitude;
-          }
+          recordTransferredForceMagnitude(
+            memberSpinA.transferredJointId,
+            transferredForceMagnitude,
+          );
         }
         if (
           memberSpinB?.transferredJointId !== undefined &&
           memberSpinB.transferredJointId !== memberSpinA?.transferredJointId
         ) {
-          const transferredJointB = world.getComponent(memberSpinB.transferredJointId, CableJointComponent);
-          if (transferredJointB) {
-            transferredJointB.transferredConstraintForceMagnitude =
-              (transferredJointB.transferredConstraintForceMagnitude ?? 0.0) + transferredForceMagnitude;
-          }
+          recordTransferredForceMagnitude(
+            memberSpinB.transferredJointId,
+            transferredForceMagnitude,
+          );
         }
       }
 
