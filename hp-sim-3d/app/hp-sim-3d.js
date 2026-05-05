@@ -23,7 +23,10 @@ import {
 } from './navigation_cursor_interactions.js';
 import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
-import { getMachineMotorDiagnostics } from './motor-diagnostics.js';
+import {
+  getMachineMotorDiagnostics,
+  resetMachineMotorDiagnostics,
+} from './motor-diagnostics.js';
 import { bakeCableSceneUsdaSource } from '../../src/js/usd/cable_scene_baker.js';
 import { PerformanceMonitor } from './performance-monitor.js';
 
@@ -806,6 +809,7 @@ function initHpSim() {
   }
 
   function resetQualityMonitors(options = {}) {
+    resetMachineMotorDiagnostics(world);
     forEachQualityMonitor((monitor) => monitor.reset(options));
   }
 

@@ -63,8 +63,10 @@ describe('hp-sim-3d wiring', () => {
   test('connects motor diagnostics into the 3D quality monitor cards', () => {
     const source = readWorkspaceFile('hp-sim-3d/app/hp-sim-3d.js');
 
-    expect(source).toContain("import { getMachineMotorDiagnostics } from './motor-diagnostics.js';");
+    expect(source).toContain('getMachineMotorDiagnostics,');
+    expect(source).toContain('resetMachineMotorDiagnostics,');
     expect(source).toContain('setMotorDiagnosticsProvider(() => getMachineMotorDiagnostics(world, machine.id));');
+    expect(source).toContain('resetMachineMotorDiagnostics(world);');
   });
 
   test('keeps preview-safe worker URL imports for bundled print workers', () => {

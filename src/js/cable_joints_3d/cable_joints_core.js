@@ -17,6 +17,7 @@ import {
   MassComponent,
   OrientationComponent,
   PrevFinalOrientationComponent,
+  EncoderComponent,
   RigidBodyMemberComponent,
   HybridKnotAngleComponent,
   MomentOfInertiaComponent,
@@ -2976,6 +2977,15 @@ export class PBDCableConstraintSolver {
         recordTransferredForceMagnitude(path.jointEntities[jointIndex + 1], forceMagnitude);
       }
     };
+    const recordEncoderSpinDelta = (entityId, deltaAngle) => {
+      if (!(Number.isFinite(deltaAngle) && Math.abs(deltaAngle) > EPSILON)) {
+        return;
+      }
+      const encoder = world.getComponent(entityId, EncoderComponent);
+      if (encoder && Number.isFinite(encoder.angle)) {
+        encoder.angle += deltaAngle;
+      }
+    };
 
     const applyConstraint = (
       path,
@@ -3220,6 +3230,7 @@ export class PBDCableConstraintSolver {
             const dq = new Quaternion().setFromAxisAngle(memberSpinA.axisWorld, deltaAngleMemberA);
             memberOrientationAComp.quaternion.multiplyQuaternions(dq, memberOrientationAComp.quaternion).normalize();
             updateRigidBodyMemberLocalOrientation(world, memberSpinA.entityId);
+            recordEncoderSpinDelta(memberSpinA.entityId, deltaAngleMemberA);
           }
         }
       }
@@ -3249,6 +3260,7 @@ export class PBDCableConstraintSolver {
             const dq = new Quaternion().setFromAxisAngle(memberSpinB.axisWorld, deltaAngleMemberB);
             memberOrientationBComp.quaternion.multiplyQuaternions(dq, memberOrientationBComp.quaternion).normalize();
             updateRigidBodyMemberLocalOrientation(world, memberSpinB.entityId);
+            recordEncoderSpinDelta(memberSpinB.entityId, deltaAngleMemberB);
           }
         }
       }

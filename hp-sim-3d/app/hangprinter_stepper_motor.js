@@ -4,6 +4,7 @@ import {
   MomentOfInertiaComponent,
   MassComponent,
   RigidBodyComponent,
+  EncoderComponent,
 } from '../../src/js/cable_joints_3d/ecs.js';
 import { isStepperClosedLoopEnabled } from './hangprinter_runtime.js';
 import {
@@ -125,6 +126,16 @@ function applyRigidBodyReactionAngularVelocity(world, rigidBodyMemberFrame, worl
   bodyAngularVelocity.omega.add(worldAxis, bodyAngularAcceleration * dt);
 }
 
+function addEncoderAngle(world, entityId, deltaAngle) {
+  if (!(Number.isFinite(deltaAngle) && Math.abs(deltaAngle) > EPSILON)) {
+    return;
+  }
+  const encoder = world.getComponent(entityId, EncoderComponent);
+  if (encoder && Number.isFinite(encoder.angle)) {
+    encoder.angle += deltaAngle;
+  }
+}
+
 export class StepperMotorComponent {
   constructor(
     commandedAngle = 0.0,
@@ -143,6 +154,9 @@ export class StepperMotorComponent {
     this.torqueMode = false;
     this.targetTorque = 0.0;
     this.closedLoop = false;
+    this.missedSteps = 0;
+    this.currentMissedSteps = 0;
+    this.missedStepEncoderOffset = null;
   }
 }
 
@@ -205,6 +219,7 @@ export class StepperMotorSystem {
         } else {
           orient.quaternion.set(composeSpoolOrientation(spoolState, null, targetAngle));
         }
+        addEncoderAngle(world, entityId, motorAngleDelta);
         angVel.omega.x = 0.0;
         angVel.omega.y = 0.0;
         angVel.omega.z = 0.0;

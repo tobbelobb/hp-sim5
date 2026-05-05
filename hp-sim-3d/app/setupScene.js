@@ -57,6 +57,7 @@ import {
   normalizeSpoolAxisLocal,
 } from './hangprinter_spools.js';
 import { StepperMotorComponent, StepperMotorSystem } from './hangprinter_stepper_motor.js';
+import { MissedStepTrackingSystem } from './motor-diagnostics.js';
 import { RenderSystem3D } from '../../src/js/cable_joints_3d/render_system_3d.js';
 import {
   PrevFinalPosSystem,
@@ -1105,6 +1106,7 @@ export function setupScene(world, stage, canvas, options = {}) {
           // 9. Game Logic or similar. Counters and stuff
           world.registerSystem(new ExtruderSystem());
           world.registerSystem(new EncoderUpdateSystem());
+          world.registerSystem(new MissedStepTrackingSystem());
       }
 
       const renderSystem = new RenderSystem3D(canvas, {

@@ -10,7 +10,10 @@ import {
 import {
   StepperMotorComponent,
 } from '../../../hp-sim-3d/app/hangprinter_stepper_motor.js';
-import { getMachineMotorDiagnostics } from '../../../hp-sim-3d/app/motor-diagnostics.js';
+import {
+  getMachineMotorDiagnostics,
+  resetMachineMotorDiagnostics,
+} from '../../../hp-sim-3d/app/motor-diagnostics.js';
 
 describe('getMachineMotorDiagnostics (3D)', () => {
   test('reports per-axis missed steps from local spool rotation angles', () => {
@@ -88,6 +91,84 @@ describe('getMachineMotorDiagnostics (3D)', () => {
       totalMissedSteps: 1,
       motors: [
         { axis: 'A', missedSteps: 1 },
+      ],
+    });
+  });
+
+  test('counts full-turn encoder slips after the initial encoder offset is established', () => {
+    const world = new World();
+    const axisA = world.createEntity();
+
+    world.addComponent(axisA, new MachineTagComponent('machine-1'));
+    world.addComponent(axisA, new SpoolStateComponent('A'));
+    world.addComponent(axisA, new StepperMotorComponent(0.0, 0.0));
+    world.addComponent(axisA, new OrientationComponent());
+    const encoder = new EncoderComponent(0.0);
+    world.addComponent(axisA, encoder);
+
+    expect(getMachineMotorDiagnostics(world, 'machine-1')).toEqual({
+      totalMissedSteps: 0,
+      motors: [
+        { axis: 'A', missedSteps: 0 },
+      ],
+    });
+
+    encoder.angle = Math.PI * 2.0;
+
+    expect(getMachineMotorDiagnostics(world, 'machine-1')).toEqual({
+      totalMissedSteps: 50,
+      motors: [
+        { axis: 'A', missedSteps: 50 },
+      ],
+    });
+  });
+
+  test('keeps the peak missed-step count after transient slip is corrected', () => {
+    const world = new World();
+    const axisA = world.createEntity();
+    const stepAngle = (Math.PI * 2) / 50;
+
+    world.addComponent(axisA, new MachineTagComponent('machine-1'));
+    world.addComponent(axisA, new SpoolStateComponent('A'));
+    world.addComponent(axisA, new StepperMotorComponent(0.0, 0.0));
+    world.addComponent(axisA, new OrientationComponent());
+    const encoder = new EncoderComponent(0.0);
+    world.addComponent(axisA, encoder);
+
+    getMachineMotorDiagnostics(world, 'machine-1');
+    encoder.angle = 3.0 * stepAngle;
+    expect(getMachineMotorDiagnostics(world, 'machine-1').totalMissedSteps).toBe(3);
+
+    encoder.angle = 0.0;
+    expect(getMachineMotorDiagnostics(world, 'machine-1')).toEqual({
+      totalMissedSteps: 3,
+      motors: [
+        { axis: 'A', missedSteps: 3 },
+      ],
+    });
+  });
+
+  test('reset clears accumulated missed-step counts and rebaselines encoder turns', () => {
+    const world = new World();
+    const axisA = world.createEntity();
+
+    world.addComponent(axisA, new MachineTagComponent('machine-1'));
+    world.addComponent(axisA, new SpoolStateComponent('A'));
+    world.addComponent(axisA, new StepperMotorComponent(0.0, 0.0));
+    world.addComponent(axisA, new OrientationComponent());
+    const encoder = new EncoderComponent(0.0);
+    world.addComponent(axisA, encoder);
+
+    getMachineMotorDiagnostics(world, 'machine-1');
+    encoder.angle = Math.PI * 2.0;
+    expect(getMachineMotorDiagnostics(world, 'machine-1').totalMissedSteps).toBe(50);
+
+    resetMachineMotorDiagnostics(world, 'machine-1');
+
+    expect(getMachineMotorDiagnostics(world, 'machine-1')).toEqual({
+      totalMissedSteps: 0,
+      motors: [
+        { axis: 'A', missedSteps: 0 },
       ],
     });
   });

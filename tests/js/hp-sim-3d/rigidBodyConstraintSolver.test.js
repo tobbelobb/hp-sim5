@@ -5,6 +5,7 @@ import {
   PrevFinalOrientationComponent,
   PrevFinalPosComponent,
   AngularVelocityComponent,
+  EncoderComponent,
   MassComponent,
   RadiusComponent,
   MomentOfInertiaComponent,
@@ -39,6 +40,7 @@ import {
 } from '../../../src/js/cable_joints_3d/commonSystems.js';
 import { CableAttachmentCacheSystem } from '../../../src/js/cable_joints_3d/cable_attachment_cache_system.js';
 import { CableSlackSystem } from '../../../src/js/cable_joints_3d/cable_slack_system.js';
+import { getMachineMotorDiagnostics } from '../../../hp-sim-3d/app/motor-diagnostics.js';
 
 describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
   function rotateBodyZ(world, bodyEntity, angle) {
@@ -670,6 +672,73 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
 
     expect(overloaded.force).toBeLessThan(5.0);
     expect(Math.abs(overloaded.spoolAngle)).toBeGreaterThan((2.0 * Math.PI) / 50.0);
+  });
+
+  test('solver spin deltas preserve full-turn encoder history for missed-step diagnostics', () => {
+    const world = new World();
+    world.setResource('dt', 1.0 / 500.0);
+
+    const spool = world.createEntity();
+    world.addComponent(spool, new PositionComponent(0.0, 0.0, 0.0));
+    const spoolOrientation = new OrientationComponent(0.0, 0.0, 0.0, 1.0);
+    world.addComponent(spool, spoolOrientation);
+    world.addComponent(spool, new MassComponent(-1.0));
+    world.addComponent(spool, new MomentOfInertiaComponent(1e-6));
+    const spoolState = new SpoolStateComponent('A', new Vector3(0.0, 0.0, 1.0));
+    world.addComponent(spool, spoolState);
+    world.addComponent(spool, new EncoderComponent(0.0));
+    world.addComponent(spool, new StepperMotorComponent(0.0, 0.0, 0.001, 50, 0.0));
+    world.addComponent(
+      spool,
+      new CableLinkComponent(
+        0.0,
+        0.0,
+        0.0,
+        null,
+        null,
+        new Vector3(0.0, 0.0, 1.0),
+      ),
+    );
+
+    const anchor = world.createEntity();
+    world.addComponent(anchor, new PositionComponent(20.0, 0.0, 0.0));
+    world.addComponent(anchor, new MassComponent(-1.0));
+
+    const jointEntity = world.createEntity();
+    world.addComponent(
+      jointEntity,
+      CableJointComponent.fromWorld(
+        spool,
+        anchor,
+        0.0,
+        new Vector3(0.0, 1.0, 0.0),
+        new Vector3(20.0, 0.0, 0.0),
+      ),
+    );
+
+    const pathEntity = world.createEntity();
+    world.addComponent(
+      pathEntity,
+      new CablePathComponent(
+        world,
+        [jointEntity],
+        ['hybrid', 'attachment'],
+        [true, true],
+        20000.0,
+        null,
+        0.0,
+      ),
+    );
+
+    expect(getMachineMotorDiagnostics(world).totalMissedSteps).toBe(0);
+
+    new PBDCableConstraintSolver().update(world, 0.0);
+
+    const encoder = world.getComponent(spool, EncoderComponent);
+    const wrappedSpoolAngle = getSpoolRotationAngle(spoolState, spoolOrientation.quaternion);
+    expect(Math.abs(encoder.angle)).toBeGreaterThan(2.0 * Math.PI);
+    expect(Math.abs(wrappedSpoolAngle)).toBeLessThan(Math.PI);
+    expect(getMachineMotorDiagnostics(world).totalMissedSteps).toBeGreaterThan(50);
   });
 
   test('standalone closed-loop steppers provide very stiff cable spin compliance', () => {
