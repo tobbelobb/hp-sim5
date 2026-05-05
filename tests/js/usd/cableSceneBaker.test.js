@@ -64,7 +64,7 @@ def Xform "World"
     const expectedTangent = tangentFromSphereToPoint(
       new Vector3(3.0, 0.0, 0.0),
       new Vector3(0.0, 0.0, 0.0),
-      1.0,
+      1.25,
       PLANE_NORMAL,
       false,
     ).a_sphere;
@@ -142,14 +142,14 @@ def Xform "World"
     const leftTangent = tangentFromPointToSphere(
       new Vector3(-2.0, 0.0, 0.0),
       new Vector3(0.0, 0.0, 0.0),
-      1.0,
+      1.25,
       PLANE_NORMAL,
       true,
     ).a_sphere;
     const rightTangent = tangentFromSphereToPoint(
       new Vector3(2.0, 0.0, 0.0),
       new Vector3(0.0, 0.0, 0.0),
-      1.0,
+      1.25,
       PLANE_NORMAL,
       true,
     ).a_sphere;
@@ -241,21 +241,21 @@ def Xform "World"
     const spoolTangent = tangentFromSphereToPoint(
       wheelPos,
       new Vector3(0.0, 0.0, 0.0),
-      1.0,
+      1.1,
       PLANE_NORMAL,
       false,
     ).a_sphere;
     const wheelTangent = tangentFromPointToSphere(
       new Vector3(0.0, 0.0, 0.0),
       wheelPos,
-      0.5,
+      0.6,
       wheelPlaneNormal,
       false,
     ).a_sphere;
     const attachTangent = tangentFromSphereToPoint(
       new Vector3(3.0, 0.0, 2.0),
       wheelPos,
-      0.5,
+      0.6,
       wheelPlaneNormal,
       false,
     ).a_sphere;
@@ -273,10 +273,72 @@ def Xform "World"
     expectVectorClose(getAttribute(firstJoint, 'localPos1'), wheelTangent.clone().subtract(wheelPos));
     expectVectorClose(getAttribute(secondJoint, 'localPos0'), attachTangent.clone().subtract(wheelPos));
     expect(getAttribute(firstJoint, 'localPos1')[0] ** 2 + getAttribute(firstJoint, 'localPos1')[2] ** 2)
-      .toBeCloseTo(0.25);
+      .toBeCloseTo(0.36);
     expect(getAttribute(pathPrim, 'cablePath:stored')[0]).toBe(1);
     expect(getAttribute(pathPrim, 'cablePath:stored')[1]).toBeCloseTo(expectedStored);
     expect(getAttribute(pathPrim, 'cablePath:stored')[1]).toBeGreaterThan(0);
+  });
+
+  test('uses stored line-layer radius when deriving hybrid endpoint tangents', async () => {
+    const source = `#usda 1.0
+
+def Xform "World"
+{
+    def Xform "Scene"
+    {
+        def Circle "Spool"
+        {
+            custom bool cable:linkable = 1
+            double radius = 1
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Xform "Anchor"
+        {
+            double3 xformOp:translate = (5, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def CableJoint "JointA"
+        {
+            custom rel physics:body0 = </World/Scene/Spool>
+            custom rel physics:body1 = </World/Scene/Anchor>
+        }
+
+        def Xform "CablePathA" (
+            apiSchemas = ["CablePathAPI"]
+        )
+        {
+            custom bool[] cablePath:clockwise = [1, 1]
+            custom rel cablePath:joints = [</World/Scene/JointA>]
+            custom token[] cablePath:linkTypes = ["hybrid", "attachment"]
+            custom double[] cablePath:stored = [8, 0]
+            custom token[] cablePath:storedMode = ["manual", "manual"]
+            custom double cablePath:halfWidth = 0.1
+            custom token cablePath:initPolicy = "deriveMissing"
+        }
+    }
+}
+`;
+
+    const baked = bakeCableSceneUsdaSource(source);
+    const stage = await UsdOpen(baked.source);
+    const jointPrim = stage.GetPrimAtPath('/World/Scene/JointA');
+
+    const expectedTangent = tangentFromSphereToPoint(
+      new Vector3(5.0, 0.0, 0.0),
+      new Vector3(0.0, 0.0, 0.0),
+      1.3,
+      PLANE_NORMAL,
+      false,
+    ).a_sphere;
+
+    expectVectorClose(getAttribute(jointPrim, 'localPos0'), expectedTangent);
+    expect(Math.hypot(...getAttribute(jointPrim, 'localPos0'))).toBeCloseTo(1.3);
+    expect(getAttribute(jointPrim, 'restLength')).toBeCloseTo(
+      expectedTangent.distanceTo(new Vector3(5.0, 0.0, 0.0))
+    );
   });
 
   test('keeps rolling-to-rolling tangents in each offset wheel plane', async () => {

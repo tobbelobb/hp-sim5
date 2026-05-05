@@ -16,6 +16,7 @@ const AUTO_MODE = 'auto';
 const DERIVE_MISSING_POLICY = 'deriveMissing';
 const DERIVE_ALL_POLICY = 'deriveAll';
 const EPSILON = 1e-9;
+const KNOT_SPAN = Math.PI / 30.0;
 
 function cloneAst(ast) {
   if (typeof structuredClone === 'function') {
@@ -406,11 +407,100 @@ function effectiveCW(clockwise, linkIndex, travellingFromCircle) {
   return base;
 }
 
-function deriveRollingSidePoint(body, counterpart, linkType, clockwise, pointIsFirst) {
+function layerWrapParams(r0, dr, rampLength, layerIndex) {
+  const twoPi = 2.0 * Math.PI;
+  const rn = r0 + dr * layerIndex;
+
+  let dPhiRamp = 0.0;
+  if (rampLength > EPSILON) {
+    dPhiRamp = rampLength / (rn + 0.5 * dr);
+    if (dPhiRamp > twoPi) dPhiRamp = twoPi;
+    if (dPhiRamp < 0.0) dPhiRamp = 0.0;
+  }
+
+  const phiConst = twoPi - dPhiRamp;
+  const Lconst = rn * phiConst;
+  const Lwrap = Lconst + dPhiRamp * (rn + 0.5 * dr);
+  return { rn, dPhiRamp, phiConst, Lconst, Lwrap };
+}
+
+function storedToRadiusAndTheta(storedLength, baseRadius, halfWidth, rampLength) {
+  const stored = Math.max(0.0, storedLength ?? 0.0);
+  const twoPi = 2.0 * Math.PI;
+  const r0 = baseRadius + halfWidth;
+  const dr = 2.0 * halfWidth;
+  const LrampTarget = Math.max(0.0, rampLength ?? 0.0);
+
+  if (!(r0 > EPSILON) || !(dr > EPSILON)) {
+    const linearRadius = Number.isFinite(baseRadius) ? Math.max(baseRadius, 0.0) : 0.0;
+    const theta = linearRadius > EPSILON ? (stored / linearRadius) : 0.0;
+    return { radius: linearRadius, theta, layer: 0, phi: theta, inRamp: false };
+  }
+
+  let s = stored;
+  let thetaBase = 0.0;
+  let n = 0;
+  const MAX_LAYERS = 2048;
+
+  while (n < MAX_LAYERS) {
+    const wrap = layerWrapParams(r0, dr, LrampTarget, n);
+    if (s > wrap.Lwrap + EPSILON) {
+      s -= wrap.Lwrap;
+      thetaBase += twoPi;
+      n += 1;
+      continue;
+    }
+
+    if (s <= wrap.Lconst + EPSILON || !(wrap.dPhiRamp > EPSILON)) {
+      const phi = wrap.rn > EPSILON ? Math.min(wrap.phiConst, s / wrap.rn) : 0.0;
+      return { radius: wrap.rn, theta: thetaBase + phi, layer: n, phi, inRamp: false };
+    }
+
+    const sRamp = Math.max(0.0, s - wrap.Lconst);
+    const a = dr / (2.0 * wrap.dPhiRamp);
+    const b = wrap.rn;
+    const disc = b * b + 4.0 * a * sRamp;
+    const x = (-b + Math.sqrt(Math.max(0.0, disc))) / (2.0 * a);
+    const xClamped = Math.max(0.0, Math.min(wrap.dPhiRamp, x));
+    const alpha = xClamped / wrap.dPhiRamp;
+    const radius = wrap.rn + dr * alpha;
+    const phi = wrap.phiConst + xClamped;
+    return { radius, theta: thetaBase + phi, layer: n, phi, inRamp: true };
+  }
+
+  const rn = r0 + dr * MAX_LAYERS;
+  return { radius: rn, theta: thetaBase, layer: MAX_LAYERS, phi: 0.0, inRamp: false };
+}
+
+function effectiveRollingRadiusForBake(body, linkType, linkIndex, pathContext) {
+  if (!isRollingLink(linkType) || !Number.isFinite(body.radius)) {
+    return body.radius;
+  }
+
+  const halfWidth = Number.isFinite(pathContext?.halfWidth) ? pathContext.halfWidth : 0.0;
+  if (!(halfWidth > EPSILON)) {
+    return body.radius;
+  }
+
+  const effectiveRadius = body.radius + halfWidth;
+  const lastLinkIndex = pathContext.linkTypes.length - 1;
+  const isEndpoint = linkIndex === 0 || linkIndex === lastLinkIndex;
+  if (isEndpoint && linkType === 'hybrid') {
+    const stored = Math.max(0.0, pathContext.storedValues[linkIndex] ?? 0.0);
+    if (stored > EPSILON) {
+      const { radius } = storedToRadiusAndTheta(stored, body.radius, halfWidth, body.radius * KNOT_SPAN);
+      return Math.max(effectiveRadius, radius);
+    }
+  }
+
+  return effectiveRadius;
+}
+
+function deriveRollingSidePoint(body, counterpart, linkType, radius, clockwise, pointIsFirst) {
   if (!isRollingLink(linkType)) {
     return body.position.clone();
   }
-  if (!(body.radius > EPSILON)) {
+  if (!(radius > EPSILON)) {
     throw new Error(`Cannot derive rolling tangent without radius on ${body.path}.`);
   }
   const projectedCounterpart = projectPointToPlane(counterpart.position, body.position, body.planeNormal);
@@ -418,14 +508,14 @@ function deriveRollingSidePoint(body, counterpart, linkType, clockwise, pointIsF
     ? tangentFromSphereToPoint(
       projectedCounterpart,
       body.position,
-      body.radius,
+      radius,
       body.planeNormal,
       clockwise,
     ).a_sphere
     : tangentFromPointToSphere(
       projectedCounterpart,
       body.position,
-      body.radius,
+      radius,
       body.planeNormal,
       clockwise,
     ).a_sphere;
@@ -505,23 +595,25 @@ function buildBodyContext(index, path, transformCache, bodyCache) {
   return context;
 }
 
-function deriveJointWorldPoints(body0, body1, linkType0, linkType1, clockwise0, clockwise1) {
+function deriveJointWorldPoints(body0, body1, linkType0, linkType1, clockwise0, clockwise1, pathContext) {
   const rolling0 = isRollingLink(linkType0);
   const rolling1 = isRollingLink(linkType1);
+  const radius0 = effectiveRollingRadiusForBake(body0, linkType0, pathContext.linkIndex0, pathContext);
+  const radius1 = effectiveRollingRadiusForBake(body1, linkType1, pathContext.linkIndex1, pathContext);
 
   let world0 = body0.position.clone();
   let world1 = body1.position.clone();
 
   if (rolling0 && rolling1 && planesAreParallel(body0.planeNormal, body1.planeNormal)) {
-    if (!(body0.radius > EPSILON) || !(body1.radius > EPSILON)) {
+    if (!(radius0 > EPSILON) || !(radius1 > EPSILON)) {
       throw new Error(`Cannot derive rolling-to-rolling tangent without radii on ${body0.path} and ${body1.path}.`);
     }
     const tangents = tangentFromSphereToSphere(
       body0.position,
-      body0.radius,
+      radius0,
       clockwise0,
       body1.position,
-      body1.radius,
+      radius1,
       clockwise1,
       body0.planeNormal,
     );
@@ -529,10 +621,10 @@ function deriveJointWorldPoints(body0, body1, linkType0, linkType1, clockwise0, 
     world1 = tangents.b_sphere;
   } else {
     if (rolling0) {
-      world0 = deriveRollingSidePoint(body0, body1, linkType0, clockwise0, true);
+      world0 = deriveRollingSidePoint(body0, body1, linkType0, radius0, clockwise0, true);
     }
     if (rolling1) {
-      world1 = deriveRollingSidePoint(body1, body0, linkType1, clockwise1, false);
+      world1 = deriveRollingSidePoint(body1, body0, linkType1, radius1, clockwise1, false);
     }
   }
 
@@ -548,9 +640,10 @@ function resolveJoint(jointPath, jointPrim, context) {
     linkType1,
     clockwise0,
     clockwise1,
+    pathContext,
   } = context;
 
-  const derivedWorld = deriveJointWorldPoints(body0, body1, linkType0, linkType1, clockwise0, clockwise1);
+  const derivedWorld = deriveJointWorldPoints(body0, body1, linkType0, linkType1, clockwise0, clockwise1, pathContext);
   const authoredLocal0 = readVectorAttribute(jointPrim, 'localPos0');
   const authoredLocal1 = readVectorAttribute(jointPrim, 'localPos1');
   const authoredRestLengthDecl = findDeclaration(jointPrim, 'restLength');
@@ -748,6 +841,13 @@ function resolvePath(pathPrim, pathPath, index, transformCache, bodyCache, seenJ
       linkType1: linkTypes[jointIndex + 1],
       clockwise0: effectiveCW(clockwise, jointIndex, true),
       clockwise1: effectiveCW(clockwise, jointIndex + 1, false),
+      pathContext: {
+        linkTypes,
+        storedValues,
+        halfWidth,
+        linkIndex0: jointIndex,
+        linkIndex1: jointIndex + 1,
+      },
     },
   ));
 
