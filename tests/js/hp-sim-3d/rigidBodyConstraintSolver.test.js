@@ -9,6 +9,7 @@ import {
   MassComponent,
   RadiusComponent,
   MomentOfInertiaComponent,
+  CoefficientOfFrictionComponent,
   RigidBodyComponent,
   RigidBodyMemberComponent,
 } from '../../../src/js/cable_joints_3d/ecs.js';
@@ -49,6 +50,84 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
     q.y = 0.0;
     q.z = Math.sin(angle / 2.0);
     q.w = Math.cos(angle / 2.0);
+  }
+
+  function createFixedPinholeBackdriveWorld(pinholeFriction = null) {
+    const world = new World();
+    world.setResource('dt', 1.0 / 500.0);
+
+    const spool = world.createEntity();
+    const spoolOrientation = new OrientationComponent(0.0, 0.0, 0.0, 1.0);
+    const spoolState = new SpoolStateComponent('A', new Vector3(0.0, 0.0, 1.0));
+    world.addComponent(spool, new PositionComponent(0.0, 0.0, 0.0));
+    world.addComponent(spool, spoolOrientation);
+    world.addComponent(spool, new RadiusComponent(1.0));
+    world.addComponent(spool, new MassComponent(-1.0));
+    world.addComponent(spool, new MomentOfInertiaComponent(1e-6));
+    world.addComponent(spool, spoolState);
+    world.addComponent(spool, new StepperMotorComponent(0.0, 0.0, 0.5, 50, 0.0));
+    world.addComponent(
+      spool,
+      new CableLinkComponent(
+        0.0,
+        0.0,
+        0.0,
+        null,
+        null,
+        new Vector3(0.0, 0.0, 1.0),
+      ),
+    );
+
+    const pinhole = world.createEntity();
+    world.addComponent(pinhole, new PositionComponent(2.0, 0.0, 0.0));
+    world.addComponent(pinhole, new MassComponent(-1.0));
+    if (pinholeFriction !== null) {
+      world.addComponent(pinhole, new CoefficientOfFrictionComponent(pinholeFriction));
+    }
+
+    const attachment = world.createEntity();
+    world.addComponent(attachment, new PositionComponent(4.0, 0.0, 0.0));
+    world.addComponent(attachment, new MassComponent(1.0));
+
+    const innerJoint = world.createEntity();
+    world.addComponent(
+      innerJoint,
+      CableJointComponent.fromWorld(
+        spool,
+        pinhole,
+        Math.sqrt(5.0),
+        new Vector3(0.0, 1.0, 0.0),
+        new Vector3(2.0, 0.0, 0.0),
+      ),
+    );
+
+    const outerJoint = world.createEntity();
+    world.addComponent(
+      outerJoint,
+      CableJointComponent.fromWorld(
+        pinhole,
+        attachment,
+        1.0,
+        new Vector3(2.0, 0.0, 0.0),
+        new Vector3(4.0, 0.0, 0.0),
+      ),
+    );
+
+    const pathEntity = world.createEntity();
+    world.addComponent(
+      pathEntity,
+      new CablePathComponent(
+        world,
+        [innerJoint, outerJoint],
+        ['hybrid', 'pinhole', 'attachment'],
+        [true, true, true],
+        20000.0,
+        [0.0, 0.0, 0.0],
+        0.0,
+      ),
+    );
+
+    return { world, spoolOrientation, spoolState, innerJoint, outerJoint };
   }
 
   test('frictionless rolling wheels expose their axis-only cable spin DOF', () => {
@@ -895,76 +974,8 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
   });
 
   test('fixed pinhole cable corrections can backdrive an upstream open-loop stepper', () => {
-    const world = new World();
-    world.setResource('dt', 1.0 / 500.0);
-
-    const spool = world.createEntity();
-    const spoolOrientation = new OrientationComponent(0.0, 0.0, 0.0, 1.0);
-    const spoolState = new SpoolStateComponent('A', new Vector3(0.0, 0.0, 1.0));
-    world.addComponent(spool, new PositionComponent(0.0, 0.0, 0.0));
-    world.addComponent(spool, spoolOrientation);
-    world.addComponent(spool, new RadiusComponent(1.0));
-    world.addComponent(spool, new MassComponent(-1.0));
-    world.addComponent(spool, new MomentOfInertiaComponent(1e-6));
-    world.addComponent(spool, spoolState);
-    world.addComponent(spool, new StepperMotorComponent(0.0, 0.0, 0.5, 50, 0.0));
-    world.addComponent(
-      spool,
-      new CableLinkComponent(
-        0.0,
-        0.0,
-        0.0,
-        null,
-        null,
-        new Vector3(0.0, 0.0, 1.0),
-      ),
-    );
-
-    const pinhole = world.createEntity();
-    world.addComponent(pinhole, new PositionComponent(2.0, 0.0, 0.0));
-    world.addComponent(pinhole, new MassComponent(-1.0));
-
-    const attachment = world.createEntity();
-    world.addComponent(attachment, new PositionComponent(4.0, 0.0, 0.0));
-    world.addComponent(attachment, new MassComponent(1.0));
-
-    const innerJoint = world.createEntity();
-    world.addComponent(
-      innerJoint,
-      CableJointComponent.fromWorld(
-        spool,
-        pinhole,
-        Math.sqrt(5.0),
-        new Vector3(0.0, 1.0, 0.0),
-        new Vector3(2.0, 0.0, 0.0),
-      ),
-    );
-
-    const outerJoint = world.createEntity();
-    world.addComponent(
-      outerJoint,
-      CableJointComponent.fromWorld(
-        pinhole,
-        attachment,
-        1.0,
-        new Vector3(2.0, 0.0, 0.0),
-        new Vector3(4.0, 0.0, 0.0),
-      ),
-    );
-
-    const pathEntity = world.createEntity();
-    world.addComponent(
-      pathEntity,
-      new CablePathComponent(
-        world,
-        [innerJoint, outerJoint],
-        ['hybrid', 'pinhole', 'attachment'],
-        [true, true, true],
-        20000.0,
-        [0.0, 0.0, 0.0],
-        0.0,
-      ),
-    );
+    const { world, spoolOrientation, spoolState, innerJoint, outerJoint } =
+      createFixedPinholeBackdriveWorld();
 
     new PBDCableConstraintSolver().update(world, 0.0);
 
@@ -977,6 +988,33 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
       8,
     );
     expect(Math.abs(spoolAngle)).toBeGreaterThan((2.0 * Math.PI) / 50.0);
+  });
+
+  test('fixed pinhole friction resists direct upstream spool backdrive', () => {
+    const free = createFixedPinholeBackdriveWorld(0.0);
+    const resisted = createFixedPinholeBackdriveWorld(0.05);
+
+    new PBDCableConstraintSolver().update(free.world, 0.0);
+    new PBDCableConstraintSolver().update(resisted.world, 0.0);
+
+    const freeAngle = Math.abs(getSpoolRotationAngle(
+      free.spoolState,
+      free.spoolOrientation.quaternion,
+    ));
+    const resistedAngle = Math.abs(getSpoolRotationAngle(
+      resisted.spoolState,
+      resisted.spoolOrientation.quaternion,
+    ));
+
+    expect(freeAngle).toBeGreaterThan((2.0 * Math.PI) / 50.0);
+    expect(resistedAngle).toBeLessThan(freeAngle * 0.25);
+    expect(
+      resisted.world.getComponent(resisted.innerJoint, CableJointComponent)
+        .transferredConstraintForceMagnitude,
+    ).toBeLessThan(
+      resisted.world.getComponent(resisted.outerJoint, CableJointComponent)
+        .constraintForceMagnitude,
+    );
   });
 
   test('external pinhole cable corrections can backdrive a downstream rigid-body-mounted spool member', () => {

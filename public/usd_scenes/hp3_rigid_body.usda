@@ -556,6 +556,8 @@ def Xform "World"
              {
                  color3f inputs:diffuseColor = (0.6, 0.6, 0.6)
              }
+             float physics:staticFriction = 0.0005
+             float physics:dynamicFriction = 0.0005
         }
     }
 }
