@@ -196,6 +196,11 @@ describe('slideprinter 3D setupScene', () => {
     expect(systemNames).toContain('ExtruderSystem');
     expect(systemNames).toContain('EncoderUpdateSystem');
     expect(systemNames).toContain('StepperMotorSystem');
+    expect(systemNames).toContain('TorqueModeSystem');
+    expect(systemNames.indexOf('TorqueModeSystem')).toBeGreaterThan(
+      systemNames.indexOf('PBDAngularVelocityUpdateSystem'),
+    );
+    expect(systemNames.indexOf('TorqueModeSystem')).toBeLessThan(systemNames.indexOf('ExtruderSystem'));
     expect(systemNames.filter((name) => name === 'RigidBodySyncSystem')).toHaveLength(1);
     expect(systemNames).not.toContain('SpoolAxisConstraintSystem');
   });

@@ -27,7 +27,7 @@ function normalizeAngle(angle) {
   return normalized;
 }
 
-function getRigidBodyMemberSpoolFrame(world, entityId, spoolState) {
+export function getRigidBodyMemberSpoolFrame(world, entityId, spoolState) {
   const member = getRigidBodyMemberComponent(world, entityId);
   if (!member?.localOrientation) {
     return null;
@@ -110,7 +110,7 @@ function applyRigidBodyReactionRotation(world, rigidBodyMemberFrame, worldAxis, 
   bodyOrientation.multiplyQuaternions(dq, bodyOrientation).normalize();
 }
 
-function applyRigidBodyReactionAngularVelocity(world, rigidBodyMemberFrame, worldAxis, totalTorque, dt) {
+export function applyRigidBodyReactionAngularVelocity(world, rigidBodyMemberFrame, worldAxis, totalTorque, dt) {
   const bodyEntity = rigidBodyMemberFrame?.member?.bodyEntity;
   if (bodyEntity === null || bodyEntity === undefined || Math.abs(totalTorque) <= EPSILON) {
     return;
@@ -179,6 +179,9 @@ export class StepperMotorSystem {
       if (!stepper || !spoolState || !orient || !angVel || !inertia) {
         continue;
       }
+      if (stepper.torqueMode) {
+        continue;
+      }
 
       const rigidBodyMemberFrame = getRigidBodyMemberSpoolFrame(world, entityId, spoolState);
       const currentOrientation = rigidBodyMemberFrame?.worldOrientation || orient.quaternion;
@@ -190,9 +193,8 @@ export class StepperMotorSystem {
         : getSpoolRotationAngle(spoolState, currentOrientation);
       const worldAxis = getSpoolWorldAxis(spoolState, currentOrientation);
       const omegaAlongAxis = angVel.omega?.dot?.(worldAxis) ?? 0.0;
-      let totalTorque;
 
-      if (!stepper.torqueMode && isStepperClosedLoopEnabled(world, stepper)) {
+      if (isStepperClosedLoopEnabled(world, stepper)) {
         const targetAngle = stepper.commandedAngle - stepper.deltaAngle;
         const motorAngleDelta = -normalizeAngle(currentAngle - targetAngle);
 
@@ -226,39 +228,11 @@ export class StepperMotorSystem {
         continue;
       }
 
-      if (stepper.torqueMode) {
-        const maxSpeedRad = Math.max(1e-6, stepper.maxSpeedRad ?? 600);
-        const droop = Math.max(0, Math.min(1, 1 - Math.abs(omegaAlongAxis) / maxSpeedRad));
-        const electricalTorque = stepper.targetTorque * droop;
-        const dampingTorque = -(stepper.holdingTorque / maxSpeedRad) * omegaAlongAxis;
-        const windageCoeff = stepper.windageCoeff ?? (stepper.dampingCoeff * 1e-3);
-        const windageTorque = -windageCoeff * omegaAlongAxis * Math.abs(omegaAlongAxis);
-
-        const epsW = 1e-3;
-        const smoothSign = omegaAlongAxis / (Math.abs(omegaAlongAxis) + epsW);
-        const coulomb = stepper.coulombFriction ?? (0.002 * stepper.holdingTorque);
-        const stiction = stepper.stictionTorque ?? (0.003 * stepper.holdingTorque);
-        const stictionSpeed = stepper.stictionSpeed ?? 1.0;
-        const stictionFactor = Math.exp(-Math.abs(omegaAlongAxis) / stictionSpeed);
-        const frictionTorque = -(coulomb + stiction * stictionFactor) * smoothSign;
-
-        const cogAmp = stepper.coggingTorque ?? (0.01 * stepper.holdingTorque);
-        const cogFreq = stepper.coggingFreq ?? stepper.numPolePairs;
-        const coggingTorque = -cogAmp * Math.sin(cogFreq * currentAngle);
-
-        totalTorque =
-          electricalTorque +
-          dampingTorque +
-          windageTorque +
-          frictionTorque +
-          coggingTorque;
-      } else {
-        const targetAngle = stepper.commandedAngle - stepper.deltaAngle;
-        const error = normalizeAngle(currentAngle - targetAngle);
-        const restoringTorque = -stepper.holdingTorque * Math.sin(stepper.numPolePairs * error);
-        const dampingTorque = -stepper.dampingCoeff * omegaAlongAxis;
-        totalTorque = restoringTorque + dampingTorque;
-      }
+      const targetAngle = stepper.commandedAngle - stepper.deltaAngle;
+      const error = normalizeAngle(currentAngle - targetAngle);
+      const restoringTorque = -stepper.holdingTorque * Math.sin(stepper.numPolePairs * error);
+      const dampingTorque = -stepper.dampingCoeff * omegaAlongAxis;
+      const totalTorque = restoringTorque + dampingTorque;
 
       const angularAcceleration = totalTorque / inertia.inertia;
       angVel.omega.add(worldAxis, angularAcceleration * dt);

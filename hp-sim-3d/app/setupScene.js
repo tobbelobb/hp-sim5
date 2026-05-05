@@ -57,6 +57,7 @@ import {
   normalizeSpoolAxisLocal,
 } from './hangprinter_spools.js';
 import { StepperMotorComponent, StepperMotorSystem } from './hangprinter_stepper_motor.js';
+import { TorqueModeSystem } from './torqueModeSystem.js';
 import { MissedStepTrackingSystem } from './motor-diagnostics.js';
 import { RenderSystem3D } from '../../src/js/cable_joints_3d/render_system_3d.js';
 import {
@@ -1102,6 +1103,7 @@ export function setupScene(world, stage, canvas, options = {}) {
 
           // 8. VELOCITY SOLVERS: Apply restitution and dynamic friction
           // Velocity-level solvers (which might also do positional adjustments)
+          world.registerSystem(new TorqueModeSystem());
 
           // 9. Game Logic or similar. Counters and stuff
           world.registerSystem(new ExtruderSystem());
