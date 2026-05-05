@@ -686,8 +686,6 @@ export function setupScene(world, stage, canvas, options = {}) {
                     world.addComponent(ent, new MassComponent(-1.0));
                     const anchorColor = palette?.anchor ?? color ?? '#aaaaaa';
                     world.addComponent(ent, new RenderableComponent('circle', anchorColor));
-                    if (restitution !== null) world.addComponent(ent, new RestitutionComponent(restitution));
-                    if (friction !== null) world.addComponent(ent, new CoefficientOfFrictionComponent(friction));
                     if (getAttribute(prim, "cable:linkable")) {
                         world.addComponent(ent, new CableLinkComponent(pos.x, pos.y, pos.z, null, DEFAULT_PLANE_NORMAL));
                     }

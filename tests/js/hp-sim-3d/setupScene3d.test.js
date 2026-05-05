@@ -62,7 +62,6 @@ const {
   AngularVelocityComponent,
   RadiusComponent,
   PositionComponent,
-  CoefficientOfFrictionComponent,
 } = require('../../../src/js/cable_joints_3d/ecs.js');
 const { CablePathComponent } = require('../../../src/js/cable_joints_3d/cable_joints_core.js');
 const { CableLinkComponent } = require('../../../src/js/cable_joints_3d/cable_joints_core.js');
@@ -75,7 +74,6 @@ const Vector3 = require('../../../src/js/cable_joints_3d/vector3.js').default;
 const usdStage = require('../../../src/js/usd/stage.js');
 
 function installDefaultUsdStageMocks() {
-  usdStage.materialProperties.mockReturnValue({ color: '#8899aa', friction: null, restitution: null });
   usdStage.getAttribute.mockImplementation((prim, attr) => {
     if (prim?.path === '/World/PhysicsScene') {
       if (attr === 'physics:gravityDirection') return [0.0, -1.0, 0.0];
@@ -251,58 +249,6 @@ describe('slideprinter 3D setupScene', () => {
     const renderables = Array.from(world.getComponentStore(RenderableComponent)?.values() ?? []);
     const wheelRenderable = renderables.find((component) => component.shape === 'cylinder');
     expect(wheelRenderable?.height).toBeCloseTo(0.004, 8);
-  });
-
-  test('adds authored material friction to Anchor prims', () => {
-    usdStage.getChildren.mockImplementation((prim) => {
-      if (prim?.path === '/World/SlideprinterScene') {
-        return [{
-          path: '/World/SlideprinterScene/AnchorA',
-          name: 'AnchorA',
-          type: 'definition',
-          defType: 'Xform',
-        }];
-      }
-      return [];
-    });
-    usdStage.getAttribute.mockImplementation((prim, attr) => {
-      if (prim?.path === '/World/PhysicsScene') {
-        if (attr === 'physics:gravityDirection') return [0.0, -1.0, 0.0];
-        if (attr === 'physics:gravityMagnitude') return 9.82;
-      }
-      if (prim?.path === '/World/SlideprinterScene/AnchorA') {
-        if (attr === 'ecs:tags') return ['Anchor'];
-        if (attr === 'xformOp:translate') return [0.0, 0.0, 0.0];
-      }
-      return null;
-    });
-    usdStage.materialProperties.mockReturnValue({
-      color: '#8899aa',
-      friction: 0.05,
-      restitution: null,
-    });
-
-    const world = new World();
-    const stage = {
-      GetPrimAtPath(path) {
-        return { path, name: path.split('/').pop() };
-      },
-      ast: {
-        descriptor: {
-          assignments: [
-            { type: 'assignment', identifier: 'timeCodesPerSecond', value: 500 }
-          ]
-        }
-      }
-    };
-
-    setupScene(world, stage, createCanvas());
-
-    const frictionComponents = Array.from(
-      world.getComponentStore(CoefficientOfFrictionComponent)?.values() ?? [],
-    );
-    expect(frictionComponents).toHaveLength(1);
-    expect(frictionComponents[0].mu).toBeCloseTo(0.05, 12);
   });
 
   test('preserves the current pause state when rebuilding the base scene', () => {

@@ -21,7 +21,6 @@ import {
   RigidBodyMemberComponent,
   HybridKnotAngleComponent,
   MomentOfInertiaComponent,
-  CoefficientOfFrictionComponent,
   MachineTagComponent,
   layeringEnabled
 } from './ecs.js';
@@ -184,9 +183,6 @@ const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
 const DEFAULT_CLOSED_LOOP_STEPPER_CONSTRAINT_STIFFNESS = 1e8;
 const DEFAULT_OPEN_LOOP_STEPPER_CONSTRAINT_STIFFNESS_SCALE = 1.0;
 const DEFAULT_OPEN_LOOP_STEPPER_HOLDING_TORQUE_SCALE = 1.0;
-// XPBD position solves otherwise give fixed pinholes lossless, instant access
-// to very light spool spin DOFs. Material mu provides the scene-level knob.
-const DEFAULT_PINHOLE_SPIN_FRICTION_GAIN = 100.0;
 
 function _debugCable(world, message) {
   if (world?.getResource('cableDebugLogs') === true) {
@@ -1336,46 +1332,6 @@ function _openLoopStepperHoldingTorqueLimit(world, stepper) {
     ),
   );
   return holdingTorque * scale;
-}
-
-function _pinholeSpinFrictionInfo(world, pinholeEntityId, pinholePointWorld, outerGradPos, spinPointWorld) {
-  const frictionComp = world.getComponent(pinholeEntityId, CoefficientOfFrictionComponent);
-  const mu = Number.isFinite(frictionComp?.mu) ? Math.max(0.0, frictionComp.mu) : 0.0;
-  if (!(mu > EPSILON) || !pinholePointWorld || !outerGradPos || !spinPointWorld) {
-    return null;
-  }
-
-  const outerDir = outerGradPos.clone();
-  const internalDir = spinPointWorld.clone().subtract(pinholePointWorld);
-  if (outerDir.lengthSq() <= EPSILON || internalDir.lengthSq() <= EPSILON) {
-    return null;
-  }
-  outerDir.normalize();
-  internalDir.normalize();
-
-  const wrapAngle = Math.acos(Math.max(-1.0, Math.min(1.0, outerDir.dot(internalDir))));
-  if (!(wrapAngle > EPSILON)) {
-    return null;
-  }
-
-  const gain = Math.max(
-    0.0,
-    _readFiniteResource(
-      world,
-      'pinholeSpinFrictionGain',
-      DEFAULT_PINHOLE_SPIN_FRICTION_GAIN,
-    ),
-  );
-  const spinScale = gain > EPSILON
-    ? 1.0 / (1.0 + (mu * wrapAngle * gain))
-    : 1.0;
-
-  return {
-    mu,
-    wrapAngle,
-    spinScale: Math.max(0.0, Math.min(1.0, spinScale)),
-    forceScale: Math.exp(-mu * wrapAngle),
-  };
 }
 
 function _linkAllowsCableSpin(world, path, linkIndex, entityId) {
@@ -2993,20 +2949,6 @@ export class PBDCableConstraintSolver {
       if (info) {
         info.transferredJointId = internalJointId;
         info.transferredJointIndex = internalJointIndex;
-        const friction = _pinholeSpinFrictionInfo(
-          world,
-          originalEntityId,
-          pointWorld,
-          gradPos,
-          spinPointWorld,
-        );
-        if (friction) {
-          info.invInertia *= friction.spinScale;
-          info.freeInvInertia *= friction.spinScale;
-          info.spinCorrectionScale = friction.spinScale;
-          info.forceTransmissionScale = friction.forceScale;
-          info.pinholeSpinFriction = friction;
-        }
       }
       return info;
     };
@@ -3021,22 +2963,18 @@ export class PBDCableConstraintSolver {
       const previous = transferredJoint.transferredConstraintForceMagnitude ?? 0.0;
       transferredJoint.transferredConstraintForceMagnitude = Math.max(previous, forceMagnitude);
     };
-    const recordPinholeNeighborForceTransfers = (path, jointIndex, forceMagnitude, scaleForJoint = null) => {
+    const recordPinholeNeighborForceTransfers = (path, jointIndex, forceMagnitude) => {
       if (!path || !Array.isArray(path.linkTypes) || !Array.isArray(path.jointEntities)) {
         return;
       }
       if (path.linkTypes[jointIndex] === 'pinhole' && jointIndex > 0) {
-        const jointId = path.jointEntities[jointIndex - 1];
-        const scale = scaleForJoint ? scaleForJoint(jointId) : 1.0;
-        recordTransferredForceMagnitude(jointId, forceMagnitude * scale);
+        recordTransferredForceMagnitude(path.jointEntities[jointIndex - 1], forceMagnitude);
       }
       if (
         path.linkTypes[jointIndex + 1] === 'pinhole' &&
         jointIndex + 1 < path.jointEntities.length
       ) {
-        const jointId = path.jointEntities[jointIndex + 1];
-        const scale = scaleForJoint ? scaleForJoint(jointId) : 1.0;
-        recordTransferredForceMagnitude(jointId, forceMagnitude * scale);
+        recordTransferredForceMagnitude(path.jointEntities[jointIndex + 1], forceMagnitude);
       }
     };
     const recordEncoderSpinDelta = (entityId, deltaAngle) => {
@@ -3176,8 +3114,8 @@ export class PBDCableConstraintSolver {
           true,
         )
         : 0.0;
-      const spinDispA = gradSpinA * spinAngleDispA * (memberSpinA?.spinCorrectionScale ?? 1.0);
-      const spinDispB = gradSpinB * spinAngleDispB * (memberSpinB?.spinCorrectionScale ?? 1.0);
+      const spinDispA = gradSpinA * spinAngleDispA;
+      const spinDispB = gradSpinB * spinAngleDispB;
 
       const alphaTilde = (Number.isFinite(dt) && dt > EPSILON)
         ? (compliance ?? 0.0) / (dt * dt)
@@ -3222,10 +3160,7 @@ export class PBDCableConstraintSolver {
         if (!(invDtSq > 0.0) || Math.abs(gradSpin) <= EPSILON) {
           return false;
         }
-        const forceScale = Number.isFinite(memberSpin?.forceTransmissionScale)
-          ? Math.max(0.0, Math.min(1.0, memberSpin.forceTransmissionScale))
-          : 1.0;
-        const cableTorque = Math.abs(lambda) * invDtSq * Math.abs(gradSpin) * forceScale;
+        const cableTorque = Math.abs(lambda) * invDtSq * Math.abs(gradSpin);
         return cableTorque > torqueLimit + EPSILON;
       };
       const releaseMotorA = exceedsHoldingTorque(memberSpinA, gradSpinA);
@@ -3252,21 +3187,11 @@ export class PBDCableConstraintSolver {
         joint.constraintForce.scale(lambda * invDtSq);
         joint.constraintForceMagnitude = Math.abs(lambda) * invDtSq;
         const transferredForceMagnitude = Math.abs(lambda) * invDtSq;
-        const forceScaleForJoint = (jointId) => {
-          let scale = 1.0;
-          if (memberSpinA?.transferredJointId === jointId) {
-            scale = Math.min(scale, memberSpinA.forceTransmissionScale ?? 1.0);
-          }
-          if (memberSpinB?.transferredJointId === jointId) {
-            scale = Math.min(scale, memberSpinB.forceTransmissionScale ?? 1.0);
-          }
-          return scale;
-        };
-        recordPinholeNeighborForceTransfers(path, jointIndex, transferredForceMagnitude, forceScaleForJoint);
+        recordPinholeNeighborForceTransfers(path, jointIndex, transferredForceMagnitude);
         if (memberSpinA?.transferredJointId !== undefined) {
           recordTransferredForceMagnitude(
             memberSpinA.transferredJointId,
-            transferredForceMagnitude * (memberSpinA.forceTransmissionScale ?? 1.0),
+            transferredForceMagnitude,
           );
         }
         if (
@@ -3275,7 +3200,7 @@ export class PBDCableConstraintSolver {
         ) {
           recordTransferredForceMagnitude(
             memberSpinB.transferredJointId,
-            transferredForceMagnitude * (memberSpinB.forceTransmissionScale ?? 1.0),
+            transferredForceMagnitude,
           );
         }
       }
@@ -3298,10 +3223,7 @@ export class PBDCableConstraintSolver {
 	      }
 	    }
       if (solveMemberInvInertiaA > 0.0 && memberSpinA?.axisWorld && Math.abs(gradSpinA) > EPSILON) {
-        const deltaAngleMemberA = -solveMemberInvInertiaA
-          * lambda
-          * gradSpinA
-          * (memberSpinA.spinCorrectionScale ?? 1.0);
+        const deltaAngleMemberA = -solveMemberInvInertiaA * lambda * gradSpinA;
         const memberOrientationAComp = world.getComponent(memberSpinA.entityId, OrientationComponent);
         if (memberOrientationAComp) {
           if (Math.abs(deltaAngleMemberA) > EPSILON) {
@@ -3329,12 +3251,9 @@ export class PBDCableConstraintSolver {
             updateRigidBodyMemberLocalOrientation(world, solverEntityB);
 	        }
 	      }
-      }
+	    }
       if (solveMemberInvInertiaB > 0.0 && memberSpinB?.axisWorld && Math.abs(gradSpinB) > EPSILON) {
-        const deltaAngleMemberB = -solveMemberInvInertiaB
-          * lambda
-          * gradSpinB
-          * (memberSpinB.spinCorrectionScale ?? 1.0);
+        const deltaAngleMemberB = -solveMemberInvInertiaB * lambda * gradSpinB;
         const memberOrientationBComp = world.getComponent(memberSpinB.entityId, OrientationComponent);
         if (memberOrientationBComp) {
           if (Math.abs(deltaAngleMemberB) > EPSILON) {
