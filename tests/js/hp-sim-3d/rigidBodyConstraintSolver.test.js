@@ -600,6 +600,7 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
     const orientation = new OrientationComponent(0.0, 0.0, 0.0, 1.0);
     world.addComponent(spool, orientation);
     world.addComponent(spool, new MassComponent(-1.0));
+    world.addComponent(spool, new RadiusComponent(1.0));
     world.addComponent(spool, new MomentOfInertiaComponent(1e-6));
     const spoolState = new SpoolStateComponent('A', new Vector3(0.0, 0.0, 1.0));
     world.addComponent(spool, spoolState);
@@ -736,7 +737,166 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
 
     const joint = world.getComponent(jointEntity, CableJointComponent);
     expect(joint.constraintForceMagnitude).toBeGreaterThan(0.0);
-    expect(world.getResource('torqueModeCableLoadTorques')?.get(spool)).toBeLessThan(0.0);
+    expect(world.getResource('torqueModeCableLoadTorques')?.get(spool)).toBeGreaterThan(0.0);
+    expect(getSpoolRotationAngle(spoolState, orientation.quaternion)).toBeCloseTo(0.0, 12);
+  });
+
+  test('fixed torque-mode spool segments load the motor without reporting solver force', () => {
+    const stepper = new StepperMotorComponent();
+    stepper.torqueMode = true;
+
+    const world = new World();
+    world.setResource('dt', 1.0);
+
+    const spool = world.createEntity();
+    world.addComponent(spool, new PositionComponent(0.0, 0.0, 0.0));
+    const orientation = new OrientationComponent(0.0, 0.0, 0.0, 1.0);
+    world.addComponent(spool, orientation);
+    world.addComponent(spool, new MassComponent(-1.0));
+    world.addComponent(spool, new RadiusComponent(1.0));
+    world.addComponent(spool, new MomentOfInertiaComponent(1.0));
+    const spoolState = new SpoolStateComponent('A', new Vector3(0.0, 0.0, 1.0));
+    world.addComponent(spool, spoolState);
+    world.addComponent(
+      spool,
+      new CableLinkComponent(
+        0.0,
+        0.0,
+        0.0,
+        null,
+        null,
+        new Vector3(0.0, 0.0, 1.0),
+      ),
+    );
+    world.addComponent(spool, stepper);
+
+    const pinhole = world.createEntity();
+    world.addComponent(pinhole, new PositionComponent(2.0, 0.0, 0.0));
+    world.addComponent(pinhole, new MassComponent(-1.0));
+
+    const jointEntity = world.createEntity();
+    const currentLength = Math.sqrt(5.0);
+    world.addComponent(
+      jointEntity,
+      CableJointComponent.fromWorld(
+        spool,
+        pinhole,
+        currentLength - 0.1,
+        new Vector3(0.0, 1.0, 0.0),
+        new Vector3(2.0, 0.0, 0.0),
+      ),
+    );
+
+    const pathEntity = world.createEntity();
+    world.addComponent(
+      pathEntity,
+      new CablePathComponent(
+        world,
+        [jointEntity],
+        ['hybrid', 'pinhole'],
+        [true, true],
+        1000.0,
+        [0.0, 0.0],
+        0.0,
+      ),
+    );
+
+    new PBDCableConstraintSolver().update(world, 0.0);
+
+    const joint = world.getComponent(jointEntity, CableJointComponent);
+    expect(joint.constraintForceMagnitude).toBeCloseTo(0.0, 12);
+    expect(joint.transferredConstraintForceMagnitude).toBeCloseTo(0.0, 12);
+    expect(world.getResource('torqueModeCableLoadTorques')?.get(spool)).toBeCloseTo(100.0, 9);
+    expect(world.getResource('torqueModeCableLoadStiffnesses')?.get(spool)).toBeCloseTo(1000.0, 9);
+    expect(world.getResource('torqueModeCableLoadDampings')?.get(spool) ?? 0.0).toBeCloseTo(0.0, 12);
+    expect(getSpoolRotationAngle(spoolState, orientation.quaternion)).toBeCloseTo(0.0, 12);
+  });
+
+  test('pinhole-transferred tension loads a torque-mode spool by effective radius', () => {
+    const stepper = new StepperMotorComponent();
+    stepper.torqueMode = true;
+
+    const world = new World();
+    world.setResource('dt', 1.0);
+
+    const spool = world.createEntity();
+    world.addComponent(spool, new PositionComponent(0.0, 0.0, 0.0));
+    const orientation = new OrientationComponent(0.0, 0.0, 0.0, 1.0);
+    world.addComponent(spool, orientation);
+    world.addComponent(spool, new MassComponent(-1.0));
+    world.addComponent(spool, new RadiusComponent(1.0));
+    world.addComponent(spool, new MomentOfInertiaComponent(1.0));
+    const spoolState = new SpoolStateComponent('A', new Vector3(0.0, 0.0, 1.0));
+    world.addComponent(spool, spoolState);
+    world.addComponent(
+      spool,
+      new CableLinkComponent(
+        0.0,
+        0.0,
+        0.0,
+        null,
+        null,
+        new Vector3(0.0, 0.0, 1.0),
+      ),
+    );
+    world.addComponent(spool, stepper);
+
+    const pinhole = world.createEntity();
+    world.addComponent(pinhole, new PositionComponent(2.0, 0.0, 0.0));
+    world.addComponent(pinhole, new MassComponent(-1.0));
+
+    const mass = world.createEntity();
+    const massValue = 1e8;
+    world.addComponent(mass, new PositionComponent(4.0, 0.0, 0.0));
+    world.addComponent(mass, new MassComponent(massValue));
+
+    const internalJointEntity = world.createEntity();
+    world.addComponent(
+      internalJointEntity,
+      CableJointComponent.fromWorld(
+        spool,
+        pinhole,
+        1.0,
+        new Vector3(1.0, 0.0, 0.0),
+        new Vector3(2.0, 0.0, 0.0),
+      ),
+    );
+
+    const outerJointEntity = world.createEntity();
+    world.addComponent(
+      outerJointEntity,
+      CableJointComponent.fromWorld(
+        pinhole,
+        mass,
+        1.9,
+        new Vector3(2.0, 0.0, 0.0),
+        new Vector3(4.0, 0.0, 0.0),
+      ),
+    );
+
+    const pathEntity = world.createEntity();
+    world.addComponent(
+      pathEntity,
+      new CablePathComponent(
+        world,
+        [internalJointEntity, outerJointEntity],
+        ['hybrid', 'pinhole', 'attachment'],
+        [true, true, true],
+        1000.0,
+        [0.0, 0.0, 0.0],
+        0.0,
+      ),
+    );
+
+    new PBDCableConstraintSolver().update(world, 0.0);
+
+    const internalJoint = world.getComponent(internalJointEntity, CableJointComponent);
+    const outerJoint = world.getComponent(outerJointEntity, CableJointComponent);
+    const expectedForce = 0.1 / ((1.0 / 1000.0) + (1.0 / massValue));
+    expect(outerJoint.constraintForceMagnitude).toBeCloseTo(expectedForce, 6);
+    expect(internalJoint.transferredConstraintForceMagnitude).toBeCloseTo(expectedForce, 6);
+    expect(world.getResource('torqueModeCableLoadTorques')?.get(spool)).toBeCloseTo(expectedForce, 6);
+    expect(world.getResource('torqueModeCableLoadStiffnesses')?.get(spool) ?? 0.0).toBeCloseTo(0.0, 12);
     expect(getSpoolRotationAngle(spoolState, orientation.quaternion)).toBeCloseTo(0.0, 12);
   });
 

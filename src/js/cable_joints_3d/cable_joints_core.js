@@ -2843,6 +2843,23 @@ export class PBDCableConstraintSolver {
       }
       return getCurrentOrientation(entityId);
     };
+    const hybridStoredConstraintGradSpin = (path, linkIndex, jointSide, entityId) => {
+      if (!path || !_isHybrid(path.linkTypes?.[linkIndex])) {
+        return 0.0;
+      }
+      // Hybrid spool rotation changes both the tangent point and the segment
+      // rest length. The stored-length term is the r_eff part of tau = r_eff*T.
+      const baseRadius = world.getComponent(entityId, RadiusComponent)?.radius;
+      const { radius } = _effectiveRollingRadius(world, path, linkIndex, baseRadius);
+      const effectiveRadius = Number.isFinite(radius)
+        ? radius
+        : (Number.isFinite(baseRadius) ? baseRadius : 0.0);
+      if (!(effectiveRadius > EPSILON)) {
+        return 0.0;
+      }
+      const storedGrad = (_effectiveCW(path, linkIndex, jointSide === 'A') ? 1.0 : -1.0) * effectiveRadius;
+      return jointSide === 'A' ? storedGrad : -storedGrad;
+    };
     const buildExternalMemberSpinSolveInfo = (entityId, pointWorld, gradPos) => {
       const linkComp = world.getComponent(entityId, CableLinkComponent);
       if (!linkComp?.cablePlaneNormalLocal || !pointWorld || !gradPos) {
@@ -2891,6 +2908,17 @@ export class PBDCableConstraintSolver {
       if (_linkAllowsCableSpin(world, path, directLinkIndex, originalEntityId)) {
         const directInfo = buildExternalMemberSpinSolveInfo(originalEntityId, pointWorld, gradPos);
         if (directInfo) {
+          directInfo.storedConstraintGradSpin = hybridStoredConstraintGradSpin(
+            path,
+            directLinkIndex,
+            side,
+            originalEntityId,
+          );
+          if (Math.abs(directInfo.storedConstraintGradSpin) > EPSILON) {
+            directInfo.solveUsesStoredGradSpin = true;
+            directInfo.useStoredOnlyForTorqueLoad = true;
+            directInfo.recordTorqueLoadImplicitCoeffs = true;
+          }
           return directInfo;
         }
       }
@@ -2954,6 +2982,16 @@ export class PBDCableConstraintSolver {
       if (info) {
         info.transferredJointId = internalJointId;
         info.transferredJointIndex = internalJointIndex;
+        const spinLinkIndex = spinOnJointSide === 'A'
+          ? internalJointIndex
+          : internalJointIndex + 1;
+        info.storedConstraintGradSpin = hybridStoredConstraintGradSpin(
+          path,
+          spinLinkIndex,
+          spinOnJointSide,
+          spinEntityId,
+        );
+        info.useStoredOnlyForTorqueLoad = Math.abs(info.storedConstraintGradSpin) > EPSILON;
       }
       return info;
     };
@@ -2992,22 +3030,45 @@ export class PBDCableConstraintSolver {
       }
     };
     const cableLoadTorques = new Map();
+    const cableLoadStiffnesses = new Map();
+    const cableLoadDampings = new Map();
     world.setResource('torqueModeCableLoadTorques', cableLoadTorques);
-    const recordTorqueModeCableLoad = (memberSpin, gradSpin, lambda, invDtSq) => {
+    world.setResource('torqueModeCableLoadStiffnesses', cableLoadStiffnesses);
+    world.setResource('torqueModeCableLoadDampings', cableLoadDampings);
+    const recordTorqueModeCableLoad = (path, memberSpin, loadGradSpin, lambda, invDtSq) => {
       if (
         !memberSpin
         || !memberSpin.torqueMode
         || !(invDtSq > 0.0)
-        || Math.abs(gradSpin) <= EPSILON
       ) {
         return;
       }
-      const torque = -lambda * invDtSq * gradSpin;
+      if (Math.abs(loadGradSpin) <= EPSILON) {
+        return;
+      }
+      const torque = lambda * invDtSq * loadGradSpin;
       if (!Number.isFinite(torque) || Math.abs(torque) <= EPSILON) {
         return;
       }
       const previous = cableLoadTorques.get(memberSpin.entityId) ?? 0.0;
       cableLoadTorques.set(memberSpin.entityId, previous + torque);
+      if (memberSpin.recordTorqueLoadImplicitCoeffs) {
+        const stiffness = Number.isFinite(path?.spring_constant)
+          ? Math.max(0.0, path.spring_constant)
+          : 0.0;
+        const damping = Number.isFinite(path?.damping)
+          ? Math.max(0.0, path.damping)
+          : 0.0;
+        const gradSq = loadGradSpin * loadGradSpin;
+        if (stiffness > 0.0) {
+          const previousStiffness = cableLoadStiffnesses.get(memberSpin.entityId) ?? 0.0;
+          cableLoadStiffnesses.set(memberSpin.entityId, previousStiffness + (stiffness * gradSq));
+        }
+        if (damping > 0.0) {
+          const previousDamping = cableLoadDampings.get(memberSpin.entityId) ?? 0.0;
+          cableLoadDampings.set(memberSpin.entityId, previousDamping + (damping * gradSq));
+        }
+      }
     };
 
     const applyConstraint = (
@@ -3068,13 +3129,6 @@ export class PBDCableConstraintSolver {
       const memberInvInertiaA = memberSpinA?.invInertia ?? 0.0;
       const memberInvInertiaB = memberSpinB?.invInertia ?? 0.0;
 
-	    if (
-	      invMassA + invMassB + invInertiaA + invInertiaB + memberInvInertiaA + memberInvInertiaB
-	      <= EPSILON
-	    ) {
-	      return;
-	    }
-
       const posAComp = world.getComponent(solverEntityA, PositionComponent);
       const posBComp = world.getComponent(solverEntityB, PositionComponent);
       if (!posAComp || !posBComp) {
@@ -3114,6 +3168,24 @@ export class PBDCableConstraintSolver {
       const gradSpinB = (memberSpinB?.axisWorld && gradAngMemberB)
         ? gradAngMemberB.dot(memberSpinB.axisWorld)
         : 0.0;
+      const storedGradSpinA = Number.isFinite(memberSpinA?.storedConstraintGradSpin)
+        ? memberSpinA.storedConstraintGradSpin
+        : 0.0;
+      const storedGradSpinB = Number.isFinite(memberSpinB?.storedConstraintGradSpin)
+        ? memberSpinB.storedConstraintGradSpin
+        : 0.0;
+      const solveGradSpinA = memberSpinA?.solveUsesStoredGradSpin
+        ? storedGradSpinA
+        : gradSpinA;
+      const solveGradSpinB = memberSpinB?.solveUsesStoredGradSpin
+        ? storedGradSpinB
+        : gradSpinB;
+      const loadGradSpinA = memberSpinA?.useStoredOnlyForTorqueLoad
+        ? storedGradSpinA
+        : solveGradSpinA;
+      const loadGradSpinB = memberSpinB?.useStoredOnlyForTorqueLoad
+        ? storedGradSpinB
+        : solveGradSpinB;
 
       const linkCompMemberA = memberSpinA
         ? world.getComponent(memberSpinA.entityId, CableLinkComponent)
@@ -3137,8 +3209,8 @@ export class PBDCableConstraintSolver {
           true,
         )
         : 0.0;
-      const spinDispA = gradSpinA * spinAngleDispA;
-      const spinDispB = gradSpinB * spinAngleDispB;
+      const spinDispA = solveGradSpinA * spinAngleDispA;
+      const spinDispB = solveGradSpinB * spinAngleDispB;
 
       const alphaTilde = (Number.isFinite(dt) && dt > EPSILON)
         ? (compliance ?? 0.0) / (dt * dt)
@@ -3147,19 +3219,23 @@ export class PBDCableConstraintSolver {
         ? Math.max(0.0, (compliance ?? 0.0) * (path?.damping ?? 0.0) / dt)
         : 0.0;
       const jDx = translationalDispA + rotationalDispA + spinDispA + translationalDispB + rotationalDispB + spinDispB;
-      const solveLambda = (solveMemberInvInertiaA, solveMemberInvInertiaB) => {
+      const mechanicalDenom = (solveMemberInvInertiaA, solveMemberInvInertiaB) => {
         let mechDenom = 0.0;
         mechDenom += invMassA * gradPosA.lengthSq();
         mechDenom += invInertiaA * gradAngA.lengthSq();
-        if (solveMemberInvInertiaA > 0.0 && Math.abs(gradSpinA) > EPSILON) {
-          mechDenom += solveMemberInvInertiaA * gradSpinA * gradSpinA;
+        if (solveMemberInvInertiaA > 0.0 && Math.abs(solveGradSpinA) > EPSILON) {
+          mechDenom += solveMemberInvInertiaA * solveGradSpinA * solveGradSpinA;
         }
         mechDenom += invMassB * gradPosB.lengthSq();
         mechDenom += invInertiaB * gradAngB.lengthSq();
-        if (solveMemberInvInertiaB > 0.0 && Math.abs(gradSpinB) > EPSILON) {
-          mechDenom += solveMemberInvInertiaB * gradSpinB * gradSpinB;
+        if (solveMemberInvInertiaB > 0.0 && Math.abs(solveGradSpinB) > EPSILON) {
+          mechDenom += solveMemberInvInertiaB * solveGradSpinB * solveGradSpinB;
         }
+        return mechDenom;
+      };
 
+      const solveLambda = (solveMemberInvInertiaA, solveMemberInvInertiaB) => {
+        const mechDenom = mechanicalDenom(solveMemberInvInertiaA, solveMemberInvInertiaB);
         const denom = ((1.0 + gamma) * mechDenom) + alphaTilde;
         if (denom <= EPSILON) {
           return null;
@@ -3186,8 +3262,8 @@ export class PBDCableConstraintSolver {
         const cableTorque = Math.abs(lambda) * invDtSq * Math.abs(gradSpin);
         return cableTorque > torqueLimit + EPSILON;
       };
-      const releaseMotorA = exceedsHoldingTorque(memberSpinA, gradSpinA);
-      const releaseMotorB = exceedsHoldingTorque(memberSpinB, gradSpinB);
+      const releaseMotorA = exceedsHoldingTorque(memberSpinA, solveGradSpinA);
+      const releaseMotorB = exceedsHoldingTorque(memberSpinB, solveGradSpinB);
       if (releaseMotorA || releaseMotorB) {
         solveMemberInvInertiaA = releaseMotorA
           ? (memberSpinA?.freeInvInertia ?? memberInvInertiaA)
@@ -3200,8 +3276,12 @@ export class PBDCableConstraintSolver {
           return;
         }
       }
-      recordTorqueModeCableLoad(memberSpinA, gradSpinA, lambda, invDtSq);
-      recordTorqueModeCableLoad(memberSpinB, gradSpinB, lambda, invDtSq);
+      recordTorqueModeCableLoad(path, memberSpinA, loadGradSpinA, lambda, invDtSq);
+      recordTorqueModeCableLoad(path, memberSpinB, loadGradSpinB, lambda, invDtSq);
+
+      if (mechanicalDenom(solveMemberInvInertiaA, solveMemberInvInertiaB) <= EPSILON) {
+        return;
+      }
 
       if (!joint.constraintForce) {
         joint.constraintForce = new Vector3(0, 0, 0);
@@ -3247,8 +3327,8 @@ export class PBDCableConstraintSolver {
 	        }
 	      }
 	    }
-      if (solveMemberInvInertiaA > 0.0 && memberSpinA?.axisWorld && Math.abs(gradSpinA) > EPSILON) {
-        const deltaAngleMemberA = -solveMemberInvInertiaA * lambda * gradSpinA;
+      if (solveMemberInvInertiaA > 0.0 && memberSpinA?.axisWorld && Math.abs(solveGradSpinA) > EPSILON) {
+        const deltaAngleMemberA = -solveMemberInvInertiaA * lambda * solveGradSpinA;
         const memberOrientationAComp = world.getComponent(memberSpinA.entityId, OrientationComponent);
         if (memberOrientationAComp) {
           if (Math.abs(deltaAngleMemberA) > EPSILON) {
@@ -3277,8 +3357,8 @@ export class PBDCableConstraintSolver {
 	        }
 	      }
 	    }
-      if (solveMemberInvInertiaB > 0.0 && memberSpinB?.axisWorld && Math.abs(gradSpinB) > EPSILON) {
-        const deltaAngleMemberB = -solveMemberInvInertiaB * lambda * gradSpinB;
+      if (solveMemberInvInertiaB > 0.0 && memberSpinB?.axisWorld && Math.abs(solveGradSpinB) > EPSILON) {
+        const deltaAngleMemberB = -solveMemberInvInertiaB * lambda * solveGradSpinB;
         const memberOrientationBComp = world.getComponent(memberSpinB.entityId, OrientationComponent);
         if (memberOrientationBComp) {
           if (Math.abs(deltaAngleMemberB) > EPSILON) {

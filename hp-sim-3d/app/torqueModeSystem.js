@@ -53,6 +53,14 @@ export function readTorqueModeCableLoadTorque(world, entityId) {
   return Number.isFinite(load) ? load : 0.0;
 }
 
+function readTorqueModeCableLoadScalar(world, resourceName, entityId) {
+  const values = world?.getResource?.(resourceName);
+  const value = values instanceof Map
+    ? values.get(entityId)
+    : values?.[entityId];
+  return Number.isFinite(value) ? Math.max(0.0, value) : 0.0;
+}
+
 export class TorqueModeSystem {
   update(world, dt) {
     const query = [
@@ -88,10 +96,41 @@ export class TorqueModeSystem {
       const worldAxis = getSpoolWorldAxis(spoolState, currentOrientation);
       const omegaAlongAxis = angVel.omega?.dot?.(worldAxis) ?? 0.0;
       const driveTorque = computeTorqueModeTorque(stepper, currentAngle, omegaAlongAxis);
-      const totalTorque = driveTorque + readTorqueModeCableLoadTorque(world, entityId);
+      const cableLoadTorque = readTorqueModeCableLoadTorque(world, entityId);
+      const cableLoadStiffness = readTorqueModeCableLoadScalar(
+        world,
+        'torqueModeCableLoadStiffnesses',
+        entityId,
+      );
+      const cableLoadDamping = readTorqueModeCableLoadScalar(
+        world,
+        'torqueModeCableLoadDampings',
+        entityId,
+      );
 
-      const angularAcceleration = totalTorque / inertia.inertia;
-      angVel.omega.add(worldAxis, angularAcceleration * dt);
+      let deltaOmegaAlongAxis = 0.0;
+      if (
+        cableLoadStiffness > 0.0
+        && Number.isFinite(inertia.inertia)
+        && inertia.inertia > 0.0
+        && Number.isFinite(dt)
+        && dt > 0.0
+      ) {
+        const springLoadTorque = cableLoadTorque + (cableLoadDamping * omegaAlongAxis);
+        const implicitDenom = 1.0
+          + ((dt * cableLoadDamping) / inertia.inertia)
+          + ((dt * dt * cableLoadStiffness) / inertia.inertia);
+        const nextOmegaAlongAxis = (
+          omegaAlongAxis
+          + ((dt / inertia.inertia) * (driveTorque + springLoadTorque))
+        ) / implicitDenom;
+        deltaOmegaAlongAxis = nextOmegaAlongAxis - omegaAlongAxis;
+      } else {
+        const totalTorque = driveTorque + cableLoadTorque;
+        deltaOmegaAlongAxis = (totalTorque / inertia.inertia) * dt;
+      }
+
+      angVel.omega.add(worldAxis, deltaOmegaAlongAxis);
       // This is a custom motor/reaction path for rigid-body-member spools. A
       // full XPBD hinge motor would instead solve body <-> rotor constraints
       // and distribute off-axis corrections through inverse inertia.

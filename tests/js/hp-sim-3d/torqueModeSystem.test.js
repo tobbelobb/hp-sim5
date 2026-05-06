@@ -74,6 +74,19 @@ describe('3D torque mode system', () => {
     expect(angularVelocity.omega.z).toBeCloseTo(0.015, 12);
   });
 
+  test('integrates stiff direct cable loads implicitly', () => {
+    const world = new World();
+    const entity = addTorqueModeStepper(world, 0.5);
+    world.setResource('torqueModeCableLoadTorques', new Map([[entity, 0.0]]));
+    world.setResource('torqueModeCableLoadStiffnesses', new Map([[entity, 100.0]]));
+    const torqueModeSystem = new TorqueModeSystem();
+
+    torqueModeSystem.update(world, 0.1);
+
+    const angularVelocity = world.getComponent(entity, AngularVelocityComponent);
+    expect(angularVelocity.omega.z).toBeCloseTo(1.0 / 60.0, 12);
+  });
+
   test('applies reaction torque and integrates rigid-body member spool twist', () => {
     const world = new World();
     const bodyEntity = world.createEntity();
