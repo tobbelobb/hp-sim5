@@ -6,7 +6,9 @@ import {
   MassComponent,
   MomentOfInertiaComponent,
   OrientationComponent,
-  RadiusComponent
+  RadiusComponent,
+  RigidBodyComponent,
+  RigidBodyMemberComponent
 } from '../../../src/js/cable_joints_3d/ecs.js';
 
 import {
@@ -256,5 +258,81 @@ describe('PBDResolveCableOverCorrections (3D)', () => {
     const finalPosCompB = world.getComponent(entityB, PositionComponent);
     expect(finalPosCompB.pos.x).toBeCloseTo(initialPosB.x);
     expect(finalPosCompB.pos.y).toBeCloseTo(initialPosB.y);
+  });
+
+  test('averages over-corrected pulls through a shared rigid body', () => {
+    const world = new World();
+    const dt = 1.0 / 60.0;
+    world.setResource('dt', dt);
+
+    const body = world.createEntity();
+    const initialBodyPos = new Vector3(0, 0, 1);
+    world.addComponent(body, new PositionComponent(initialBodyPos.x, initialBodyPos.y, initialBodyPos.z));
+    world.addComponent(body, new MassComponent(1));
+    world.addComponent(body, new MomentOfInertiaComponent(1));
+    world.addComponent(body, new OrientationComponent(0, 0, 0, 1));
+
+    const addAnchor = (x) => {
+      const entity = world.createEntity();
+      world.addComponent(entity, new PositionComponent(x, 0, 10));
+      world.addComponent(entity, new MassComponent(-1));
+      world.addComponent(entity, new CableLinkComponent());
+      return entity;
+    };
+
+    const addMember = (x) => {
+      const entity = world.createEntity();
+      world.addComponent(entity, new PositionComponent(x, 0, initialBodyPos.z));
+      world.addComponent(entity, new MassComponent(0));
+      world.addComponent(entity, new MomentOfInertiaComponent(1));
+      world.addComponent(entity, new OrientationComponent(0, 0, 0, 1));
+      world.addComponent(entity, new CableLinkComponent());
+      world.addComponent(entity, new RigidBodyMemberComponent(body, new Vector3(x, 0, 0)));
+      return entity;
+    };
+
+    const anchorLeft = addAnchor(-1);
+    const anchorRight = addAnchor(1);
+    const memberLeft = addMember(-1);
+    const memberRight = addMember(1);
+    world.addComponent(body, new RigidBodyComponent([memberLeft, memberRight]));
+
+    const addJointPath = (anchor, member, x) => {
+      const jointEntity = world.createEntity();
+      world.addComponent(
+        jointEntity,
+        new CableJointComponent(
+          anchor,
+          member,
+          10,
+          new Vector3(x, 0, 10),
+          new Vector3(x, 0, 0),
+        ),
+      );
+
+      const pathEntity = world.createEntity();
+      world.addComponent(
+        pathEntity,
+        new CablePathComponent(world, [jointEntity], ['attachment', 'attachment'], [false, false]),
+      );
+      return jointEntity;
+    };
+
+    addJointPath(anchorLeft, memberLeft, -1);
+    addJointPath(anchorRight, memberRight, 1);
+
+    const resolveSystem = new PBDResolveCableOverCorrections();
+    resolveSystem.update(world, dt);
+
+    const bodyPos = world.getComponent(body, PositionComponent).pos;
+    const bodyComp = world.getComponent(body, RigidBodyComponent);
+    const leftPos = world.getComponent(memberLeft, PositionComponent).pos;
+    const rightPos = world.getComponent(memberRight, PositionComponent).pos;
+
+    expect(bodyPos.z).toBeLessThan(initialBodyPos.z);
+    expect(bodyPos.z).toBeGreaterThan(-0.1);
+    expect(bodyComp.syncedPosition.z).toBeCloseTo(bodyPos.z);
+    expect(leftPos.z).toBeCloseTo(bodyPos.z);
+    expect(rightPos.z).toBeCloseTo(bodyPos.z);
   });
 });

@@ -1,5 +1,12 @@
 import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
-import { World, PositionComponent, VelocityComponent, MassComponent, GravityAffectedComponent } from '../../../src/js/cable_joints_3d/ecs.js';
+import {
+  World,
+  PositionComponent,
+  PrevFinalPosComponent,
+  VelocityComponent,
+  MassComponent,
+  GravityAffectedComponent,
+} from '../../../src/js/cable_joints_3d/ecs.js';
 import {
   CableJointComponent,
   CableLinkComponent,
@@ -163,6 +170,60 @@ describe('PBDCableConstraintSolver (3D)', () => {
     expect(joint.constraintForce.y).toBeCloseTo(0.0, 8);
     expect(joint.constraintForce.z).toBeCloseTo(0.0, 8);
     expect(joint.constraintForceMagnitude).toBeCloseTo(4.0, 8);
+  });
+
+  test('damping increases force only when a taut cable is stretching', () => {
+    const solveForce = (prevZ) => {
+      const world = new World();
+      const mass = world.createEntity();
+      const anchor = world.createEntity();
+
+      world.addComponent(mass, new PositionComponent(0, 0, 0));
+      world.addComponent(mass, new PrevFinalPosComponent(0, 0, prevZ));
+      world.addComponent(mass, new MassComponent(1));
+      world.addComponent(anchor, new PositionComponent(0, 0, 1));
+      world.addComponent(anchor, new PrevFinalPosComponent(0, 0, 1));
+      world.addComponent(anchor, new MassComponent(-1));
+
+      const jointId = world.createEntity();
+      world.addComponent(
+        jointId,
+        new CableJointComponent(
+          mass,
+          anchor,
+          0.9,
+          new Vector3(0, 0, 0),
+          new Vector3(0, 0, 1),
+        ),
+      );
+
+      const pathEnt = world.createEntity();
+      world.addComponent(
+        pathEnt,
+        new CablePathComponent(
+          world,
+          [jointId],
+          ['attachment', 'attachment'],
+          [true, true],
+          20000,
+          null,
+          0.0,
+          5.0,
+        ),
+      );
+
+      const dt = 1 / 500;
+      world.setResource('dt', dt);
+      new PBDCableConstraintSolver().update(world, dt);
+      return world.getComponent(jointId, CableJointComponent).constraintForceMagnitude;
+    };
+
+    const staticForce = solveForce(0.0);
+    const lengtheningForce = solveForce(0.01);
+    const shorteningForce = solveForce(-0.01);
+
+    expect(lengtheningForce).toBeGreaterThan(staticForce);
+    expect(shorteningForce).toBeLessThan(staticForce);
   });
 
   test('pendulum constraint keeps mass within restLength under gravity', () => {

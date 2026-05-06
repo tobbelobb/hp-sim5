@@ -7,6 +7,7 @@ import {
   CablePathComponent,
   CableJointComponent
 } from './cable_joints_core.js';
+import { SpoolStateComponent } from '../../../hp-sim-3d/app/hangprinter_spools.js';
 
 // Base iteration count tuned for a 60 Hz frame time. When the simulation uses
 // smaller timesteps, we reduce the per-step iterations so that the total number
@@ -60,7 +61,9 @@ function _evenOutTensionFriction(world) {
         const radius = radiusComp ? radiusComp.radius : 0.0;
         const effectiveRadius = radius + (layeringEnabled(world) ? (path.cableHalfWidth ?? 0.0) : 0.0);
 
-        if (mu > epsilon) {
+        const freeRollingLink = linkType === 'rolling' && world.getComponent(linkEntityId, SpoolStateComponent);
+
+        if (!freeRollingLink && mu > epsilon) {
           const storedLengthOnLink = path.stored[i + 1];
           let wrapAngle = 0;
           if (linkType === 'rolling' && effectiveRadius > epsilon && Math.abs(storedLengthOnLink) > epsilon) {

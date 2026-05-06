@@ -3240,7 +3240,7 @@ export class PBDCableConstraintSolver {
         if (denom <= EPSILON) {
           return null;
         }
-        return (-constraintError - (gamma * jDx)) / denom;
+        return (-constraintError + (gamma * jDx)) / denom;
       };
 
       let solveMemberInvInertiaA = memberInvInertiaA;
