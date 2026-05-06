@@ -3129,13 +3129,6 @@ export class PBDCableConstraintSolver {
       const memberInvInertiaA = memberSpinA?.invInertia ?? 0.0;
       const memberInvInertiaB = memberSpinB?.invInertia ?? 0.0;
 
-      if (
-        invMassA + invMassB + invInertiaA + invInertiaB + memberInvInertiaA + memberInvInertiaB
-        <= EPSILON
-      ) {
-        return;
-      }
-
       const posAComp = world.getComponent(solverEntityA, PositionComponent);
       const posBComp = world.getComponent(solverEntityB, PositionComponent);
       if (!posAComp || !posBComp) {
