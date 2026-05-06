@@ -27,6 +27,34 @@ function _hybridTransitionArcThreshold(path) {
   return Math.max(1e-6, 0.25 * halfWidth);
 }
 
+function _redistributePairRestLengthByTensionRatio(
+  jHighComp,
+  jLowComp,
+  dHigh,
+  dLow,
+  tensionRatio,
+) {
+  // The PBD cable solver uses one stiffness per joint, so equal force means
+  // equal absolute extension, not equal strain.
+  const totalRest = jHighComp.restLength + jLowComp.restLength;
+  const totalDist = dHigh + dLow;
+  if (!(totalRest > 0.0) || !(totalDist > 1e-9)) {
+    return;
+  }
+
+  if (totalRest >= totalDist) {
+    jHighComp.restLength = totalRest * (dHigh / totalDist);
+    jLowComp.restLength = totalRest - jHighComp.restLength;
+    return;
+  }
+
+  const ratio = Math.max(1.0, tensionRatio);
+  let highRest = (dHigh - (ratio * dLow) + (ratio * totalRest)) / (1.0 + ratio);
+  highRest = Math.max(0.0, Math.min(totalRest, highRest));
+  jHighComp.restLength = highRest;
+  jLowComp.restLength = totalRest - highRest;
+}
+
 function _evenOutTensionFriction(world) {
   const pathEntities = world.query([CablePathComponent]);
   const epsilon = 1e-9;
@@ -46,7 +74,14 @@ function _evenOutTensionFriction(world) {
       const l0_current = j0_comp.restLength;
       const l1_current = j1_comp.restLength;
 
-      if (l0_current <= epsilon || l1_current <= epsilon) continue;
+      if (
+        !Number.isFinite(l0_current) ||
+        !Number.isFinite(l1_current) ||
+        l0_current < 0.0 ||
+        l1_current < 0.0
+      ) {
+        continue;
+      }
 
       const linkType = path.linkTypes[i + 1];
       let frictionActive = false;
@@ -83,54 +118,44 @@ function _evenOutTensionFriction(world) {
 
       if (!frictionActive) {
         if (linkType !== 'attachment') {
-          const availableRestLength = l0_current + l1_current;
-          const totalDist = d0 + d1;
-          if (totalDist > epsilon) {
-            j0_comp.restLength = availableRestLength * d0 / totalDist;
-            j1_comp.restLength = availableRestLength * d1 / totalDist;
-          }
+          _redistributePairRestLengthByTensionRatio(j0_comp, j1_comp, d0, d1, 1.0);
         }
         continue;
       }
 
-      const tension0 = l0_current > epsilon ? d0 / l0_current : Infinity;
-      const tension1 = l1_current > epsilon ? d1 / l1_current : Infinity;
+      const tension0 = Math.max(0.0, d0 - l0_current);
+      const tension1 = Math.max(0.0, d1 - l1_current);
 
       if (Math.abs(tension0 - tension1) < epsilon) continue;
 
-      let T_high, L_high_current, D_high, is_j0_high;
-      let T_low, L_low_current, D_low;
+      let T_high, D_high, is_j0_high;
+      let T_low, D_low;
 
       if (tension0 > tension1) {
-        [T_high, L_high_current, D_high, is_j0_high] = [tension0, l0_current, d0, true];
-        [T_low, L_low_current, D_low] = [tension1, l1_current, d1];
+        [T_high, D_high, is_j0_high] = [tension0, d0, true];
+        [T_low, D_low] = [tension1, d1];
       } else {
-        [T_high, L_high_current, D_high, is_j0_high] = [tension1, l1_current, d1, false];
-        [T_low, L_low_current, D_low] = [tension0, l0_current, d0];
+        [T_high, D_high, is_j0_high] = [tension1, d1, false];
+        [T_low, D_low] = [tension0, d0];
       }
 
       if (T_high > T_low * frictionThreshold + epsilon) {
-        const L_total = L_high_current + L_low_current;
-        const denominator = D_high + D_low * frictionThreshold;
-        if (denominator > epsilon) {
-          let L_high_new = (D_high * L_total) / denominator;
-          let L_low_new = L_total - L_high_new;
-
-          if (L_high_new < 0) L_high_new = 0;
-          if (L_low_new < 0) L_low_new = 0;
-          const currentNewTotal = L_high_new + L_low_new;
-          if (currentNewTotal > epsilon && Math.abs(currentNewTotal - L_total) > epsilon) {
-            L_high_new = (L_high_new / currentNewTotal) * L_total;
-            L_low_new = (L_low_new / currentNewTotal) * L_total;
-          }
-
-          if (is_j0_high) {
-            j0_comp.restLength = L_high_new;
-            j1_comp.restLength = L_low_new;
-          } else {
-            j1_comp.restLength = L_high_new;
-            j0_comp.restLength = L_low_new;
-          }
+        if (is_j0_high) {
+          _redistributePairRestLengthByTensionRatio(
+            j0_comp,
+            j1_comp,
+            D_high,
+            D_low,
+            frictionThreshold,
+          );
+        } else {
+          _redistributePairRestLengthByTensionRatio(
+            j1_comp,
+            j0_comp,
+            D_high,
+            D_low,
+            frictionThreshold,
+          );
         }
       }
     }

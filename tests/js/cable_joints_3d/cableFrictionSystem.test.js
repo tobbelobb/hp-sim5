@@ -28,7 +28,7 @@ describe('CableFrictionSystem (3D)', () => {
     world.addComponent(wheel, new CoefficientOfFrictionComponent(0.5));
 
     const right = world.createEntity();
-    world.addComponent(right, new PositionComponent(1, 0, 0));
+    world.addComponent(right, new PositionComponent(6, 0, 0));
 
     const joint0 = world.createEntity();
     world.addComponent(
@@ -36,7 +36,7 @@ describe('CableFrictionSystem (3D)', () => {
       new CableJointComponent(
         left,
         wheel,
-        1.0,
+        7.0,
         new Vector3(0, 0, 0),
         new Vector3(10, 0, 0)
       )
@@ -48,9 +48,9 @@ describe('CableFrictionSystem (3D)', () => {
       new CableJointComponent(
         wheel,
         right,
-        1.0,
+        7.0,
         new Vector3(0, 0, 0),
-        new Vector3(1, 0, 0)
+        new Vector3(6, 0, 0)
       )
     );
 
@@ -72,12 +72,13 @@ describe('CableFrictionSystem (3D)', () => {
     system.update(world, 1 / 2000);
 
     const threshold = Math.exp(0.5 * (1.0 / 0.5));
-    const totalRest = 2.0;
-    const expectedHigh = (10.0 * totalRest) / (10.0 + 1.0 * threshold);
+    const totalRest = 14.0;
+    const expectedHigh = (10.0 - (threshold * 6.0) + (threshold * totalRest)) / (1.0 + threshold);
     const expectedLow = totalRest - expectedHigh;
 
     expect(world.getComponent(joint0, CableJointComponent).restLength).toBeCloseTo(expectedHigh, 8);
     expect(world.getComponent(joint1, CableJointComponent).restLength).toBeCloseTo(expectedLow, 8);
+    expect(10.0 - expectedHigh).toBeCloseTo(threshold * (6.0 - expectedLow), 8);
   });
 
   test('free-spinning rolling links equalize tension despite material friction', () => {
@@ -93,7 +94,7 @@ describe('CableFrictionSystem (3D)', () => {
     world.addComponent(wheel, new SpoolStateComponent(null, new Vector3(0, 0, 1)));
 
     const right = world.createEntity();
-    world.addComponent(right, new PositionComponent(1, 0, 0));
+    world.addComponent(right, new PositionComponent(6, 0, 0));
 
     const joint0 = world.createEntity();
     world.addComponent(
@@ -101,7 +102,7 @@ describe('CableFrictionSystem (3D)', () => {
       new CableJointComponent(
         left,
         wheel,
-        1.0,
+        7.0,
         new Vector3(0, 0, 0),
         new Vector3(10, 0, 0)
       )
@@ -113,9 +114,9 @@ describe('CableFrictionSystem (3D)', () => {
       new CableJointComponent(
         wheel,
         right,
-        1.0,
+        7.0,
         new Vector3(0, 0, 0),
-        new Vector3(1, 0, 0)
+        new Vector3(6, 0, 0)
       )
     );
 
@@ -136,7 +137,7 @@ describe('CableFrictionSystem (3D)', () => {
     const system = new CableFrictionSystem();
     system.update(world, 1 / 2000);
 
-    expect(world.getComponent(joint0, CableJointComponent).restLength).toBeCloseTo(20 / 11, 8);
-    expect(world.getComponent(joint1, CableJointComponent).restLength).toBeCloseTo(2 / 11, 8);
+    expect(world.getComponent(joint0, CableJointComponent).restLength).toBeCloseTo(9.0, 8);
+    expect(world.getComponent(joint1, CableJointComponent).restLength).toBeCloseTo(5.0, 8);
   });
 });
