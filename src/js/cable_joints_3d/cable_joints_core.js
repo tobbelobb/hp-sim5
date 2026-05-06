@@ -1301,6 +1301,10 @@ function _effectiveMotorizedSpinInvInertia(world, entityId, invInertia, dt) {
   }
 
   const stepper = world.getComponent(entityId, StepperMotorComponent);
+  if (stepper?.torqueMode) {
+    return 0.0;
+  }
+
   const stiffness = _positionStepperConstraintStiffness(world, stepper);
   if (!(stiffness > EPSILON) || !(Number.isFinite(dt) && dt > EPSILON)) {
     return invInertia;
@@ -2864,6 +2868,7 @@ export class PBDCableConstraintSolver {
         freeInvInertia: moiComp.invInertia,
         invInertia: _effectiveMotorizedSpinInvInertia(world, entityId, moiComp.invInertia, dt),
         holdingTorqueLimit: _openLoopStepperHoldingTorqueLimit(world, stepper),
+        torqueMode: Boolean(stepper?.torqueMode),
         axisWorld,
         pointWorld: pointWorld.clone(),
         gradPos: gradPos.clone(),
@@ -2985,6 +2990,24 @@ export class PBDCableConstraintSolver {
       if (encoder && Number.isFinite(encoder.angle)) {
         encoder.angle += deltaAngle;
       }
+    };
+    const cableLoadTorques = new Map();
+    world.setResource('torqueModeCableLoadTorques', cableLoadTorques);
+    const recordTorqueModeCableLoad = (memberSpin, gradSpin, lambda, invDtSq) => {
+      if (
+        !memberSpin
+        || !memberSpin.torqueMode
+        || !(invDtSq > 0.0)
+        || Math.abs(gradSpin) <= EPSILON
+      ) {
+        return;
+      }
+      const torque = -lambda * invDtSq * gradSpin;
+      if (!Number.isFinite(torque) || Math.abs(torque) <= EPSILON) {
+        return;
+      }
+      const previous = cableLoadTorques.get(memberSpin.entityId) ?? 0.0;
+      cableLoadTorques.set(memberSpin.entityId, previous + torque);
     };
 
     const applyConstraint = (
@@ -3177,6 +3200,8 @@ export class PBDCableConstraintSolver {
           return;
         }
       }
+      recordTorqueModeCableLoad(memberSpinA, gradSpinA, lambda, invDtSq);
+      recordTorqueModeCableLoad(memberSpinB, gradSpinB, lambda, invDtSq);
 
       if (!joint.constraintForce) {
         joint.constraintForce = new Vector3(0, 0, 0);

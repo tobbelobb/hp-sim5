@@ -45,6 +45,14 @@ export function computeTorqueModeTorque(stepper, currentAngle, omegaAlongAxis) {
   );
 }
 
+export function readTorqueModeCableLoadTorque(world, entityId) {
+  const loads = world?.getResource?.('torqueModeCableLoadTorques');
+  const load = loads instanceof Map
+    ? loads.get(entityId)
+    : loads?.[entityId];
+  return Number.isFinite(load) ? load : 0.0;
+}
+
 export class TorqueModeSystem {
   update(world, dt) {
     const query = [
@@ -79,14 +87,15 @@ export class TorqueModeSystem {
         : getSpoolRotationAngle(spoolState, currentOrientation);
       const worldAxis = getSpoolWorldAxis(spoolState, currentOrientation);
       const omegaAlongAxis = angVel.omega?.dot?.(worldAxis) ?? 0.0;
-      const totalTorque = computeTorqueModeTorque(stepper, currentAngle, omegaAlongAxis);
+      const driveTorque = computeTorqueModeTorque(stepper, currentAngle, omegaAlongAxis);
+      const totalTorque = driveTorque + readTorqueModeCableLoadTorque(world, entityId);
 
       const angularAcceleration = totalTorque / inertia.inertia;
       angVel.omega.add(worldAxis, angularAcceleration * dt);
       // This is a custom motor/reaction path for rigid-body-member spools. A
       // full XPBD hinge motor would instead solve body <-> rotor constraints
       // and distribute off-axis corrections through inverse inertia.
-      applyRigidBodyReactionAngularVelocity(world, rigidBodyMemberFrame, worldAxis, totalTorque, dt);
+      applyRigidBodyReactionAngularVelocity(world, rigidBodyMemberFrame, worldAxis, driveTorque, dt);
       if (rigidBodyMemberFrame) {
         // Integrate the rotor's free twist directly in member-local space.
         // RigidBodySyncSystem later recomposes body orientation + local twist

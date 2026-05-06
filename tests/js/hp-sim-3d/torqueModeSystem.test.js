@@ -10,7 +10,10 @@ import {
   StepperMotorComponent,
   StepperMotorSystem,
 } from '../../../hp-sim-3d/app/hangprinter_stepper_motor.js';
-import { TorqueModeSystem } from '../../../hp-sim-3d/app/torqueModeSystem.js';
+import {
+  TorqueModeSystem,
+  readTorqueModeCableLoadTorque,
+} from '../../../hp-sim-3d/app/torqueModeSystem.js';
 import {
   SpoolStateComponent,
   getSpoolRotationAngle,
@@ -58,6 +61,19 @@ describe('3D torque mode system', () => {
     expect(angularVelocity.omega.z).toBeCloseTo(0.025, 12);
   });
 
+  test('subtracts signed cable load torque from the spool ODE', () => {
+    const world = new World();
+    const entity = addTorqueModeStepper(world, 0.5);
+    world.setResource('torqueModeCableLoadTorques', new Map([[entity, -0.2]]));
+    const torqueModeSystem = new TorqueModeSystem();
+
+    torqueModeSystem.update(world, 0.1);
+
+    const angularVelocity = world.getComponent(entity, AngularVelocityComponent);
+    expect(readTorqueModeCableLoadTorque(world, entity)).toBeCloseTo(-0.2, 12);
+    expect(angularVelocity.omega.z).toBeCloseTo(0.015, 12);
+  });
+
   test('applies reaction torque and integrates rigid-body member spool twist', () => {
     const world = new World();
     const bodyEntity = world.createEntity();
@@ -81,6 +97,26 @@ describe('3D torque mode system', () => {
     };
     expect(getSpoolRotationAngle(localSpoolState, member.localOrientation)).toBeCloseTo(0.0025, 12);
     expect(getSpoolRotationAngle(spoolState, orientation.quaternion)).toBeCloseTo(0.0025, 12);
+    expect(bodyAngularVelocity.omega.z).toBeCloseTo(-0.025, 12);
+  });
+
+  test('does not treat external cable load as motor-body reaction torque', () => {
+    const world = new World();
+    const bodyEntity = world.createEntity();
+    world.addComponent(bodyEntity, new OrientationComponent());
+    world.addComponent(bodyEntity, new AngularVelocityComponent(0.0, 0.0, 0.0));
+
+    const entity = addTorqueModeStepper(world, 0.5);
+    world.addComponent(bodyEntity, new RigidBodyComponent([entity]));
+    world.addComponent(entity, new RigidBodyMemberComponent(bodyEntity));
+    world.setResource('torqueModeCableLoadTorques', new Map([[entity, -0.2]]));
+
+    const torqueModeSystem = new TorqueModeSystem();
+    torqueModeSystem.update(world, 0.1);
+
+    const spoolAngularVelocity = world.getComponent(entity, AngularVelocityComponent);
+    const bodyAngularVelocity = world.getComponent(bodyEntity, AngularVelocityComponent);
+    expect(spoolAngularVelocity.omega.z).toBeCloseTo(0.015, 12);
     expect(bodyAngularVelocity.omega.z).toBeCloseTo(-0.025, 12);
   });
 });
