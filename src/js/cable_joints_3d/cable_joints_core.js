@@ -3129,6 +3129,13 @@ export class PBDCableConstraintSolver {
       const memberInvInertiaA = memberSpinA?.invInertia ?? 0.0;
       const memberInvInertiaB = memberSpinB?.invInertia ?? 0.0;
 
+      if (
+        invMassA + invMassB + invInertiaA + invInertiaB + memberInvInertiaA + memberInvInertiaB
+        <= EPSILON
+      ) {
+        return;
+      }
+
       const posAComp = world.getComponent(solverEntityA, PositionComponent);
       const posBComp = world.getComponent(solverEntityB, PositionComponent);
       if (!posAComp || !posBComp) {
@@ -3174,10 +3181,10 @@ export class PBDCableConstraintSolver {
       const storedGradSpinB = Number.isFinite(memberSpinB?.storedConstraintGradSpin)
         ? memberSpinB.storedConstraintGradSpin
         : 0.0;
-      const solveGradSpinA = memberSpinA?.solveUsesStoredGradSpin
+      const solveGradSpinA = (memberSpinA?.solveUsesStoredGradSpin && memberSpinA?.torqueMode)
         ? storedGradSpinA
         : gradSpinA;
-      const solveGradSpinB = memberSpinB?.solveUsesStoredGradSpin
+      const solveGradSpinB = (memberSpinB?.solveUsesStoredGradSpin && memberSpinB?.torqueMode)
         ? storedGradSpinB
         : gradSpinB;
       const loadGradSpinA = memberSpinA?.useStoredOnlyForTorqueLoad
