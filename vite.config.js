@@ -76,6 +76,15 @@ export default defineConfig(async () => {
       await fs.copyFile(join(klipperSrc, 'klipperSerialDecoder.js'), join(slideprinterDist, 'klipperSerialDecoder.js'));
       await fs.copyFile(join(sharedSrc, 'fileFormatUtils.js'), join(slideprinterDist, 'fileFormatUtils.js'));
       await fs.copyFile(join(sharedSrc, 'motionUtils.js'), join(slideprinterDist, 'motionUtils.js'));
+
+      // hp-sim-3d fetches these config files at runtime to map RRF drivers to axes.
+      const rrfConfigSrc = resolve(__dirname, 'RRF/run/vsd/sys');
+      const rrfConfigDist = resolve(__dirname, 'dist/RRF/run/vsd/sys');
+      const rrfConfigFiles = await fg('config_*.g', { cwd: rrfConfigSrc, onlyFiles: true });
+      await fs.mkdir(rrfConfigDist, { recursive: true });
+      await Promise.all(rrfConfigFiles.map((file) => (
+        fs.copyFile(join(rrfConfigSrc, file), join(rrfConfigDist, file))
+      )));
     },
   });
 

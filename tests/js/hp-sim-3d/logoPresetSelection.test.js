@@ -6,7 +6,7 @@ function readWorkspaceFile(filePath) {
 }
 
 function extractPresetResolverSource(source) {
-  const start = source.indexOf("const HP3_USDA_KEY = 'hp3.usda';");
+  const start = source.indexOf("const HP3_USDA_KEY = 'hp3_rigid_body.usda';");
   const end = source.indexOf('const PRESET_GCODE_MAP');
   if (start === -1 || end === -1 || end <= start) {
     return null;
@@ -27,7 +27,7 @@ function loadPresetResolver(source) {
         env: { BASE_URL: '/' },
       };
       ${resolverSource.replaceAll('import.meta', 'importMeta')}
-      return { HP3_USDA_KEY, FOUR_HIGH_ANCHORS_USDA_KEY, resolvePresetCommand };
+      return { HP3_USDA_KEY, FOUR_HIGH_ANCHORS_USDA_KEY, CUBECORNERS_USDA_KEY, resolvePresetCommand };
     `
   )({
     MCU_SERIAL: 'MCU_SERIAL',
@@ -45,7 +45,7 @@ describe('hp-sim-3d preset selection', () => {
 
     expect(layeredPreset.url).toContain('Hangprinter_logo6_hp3_w_line_layers.can');
     expect(layeredPreset.format).toBe('RRF_CAN_BINARY');
-    expect(plainPreset.url).toContain('Hangprinter_logo6_hp3.can');
+    expect(plainPreset.url).toContain('Hangprinter_logo6_hp3_no_buildup.can');
     expect(plainPreset.format).toBe('RRF_CAN_BINARY');
   });
 
@@ -59,7 +59,7 @@ describe('hp-sim-3d preset selection', () => {
     expect(layeredPreset.url).toContain('draw_squares_bigger_hp3_w_line_layers.can');
     expect(layeredPreset.format).toBe('RRF_CAN_BINARY');
     expect(layeredPreset.referencePresetKey).toBe('straightMovesBigger');
-    expect(plainPreset.url).toContain('draw_squares_bigger_hp3.can');
+    expect(plainPreset.url).toContain('draw_squares_bigger_hp3_no_buildup.can');
     expect(plainPreset.format).toBe('RRF_CAN_BINARY');
     expect(plainPreset.referencePresetKey).toBe('straightMovesBigger');
   });
@@ -73,7 +73,7 @@ describe('hp-sim-3d preset selection', () => {
 
     expect(layeredPreset.url).toContain('Hangprinter_logo6_skycam_w_line_layers.can');
     expect(layeredPreset.format).toBe('RRF_CAN_BINARY');
-    expect(plainPreset.url).toContain('Hangprinter_logo6_skycam.can');
+    expect(plainPreset.url).toContain('Hangprinter_logo6_skycam_no_buildup.can');
     expect(plainPreset.format).toBe('RRF_CAN_BINARY');
   });
 
@@ -87,12 +87,27 @@ describe('hp-sim-3d preset selection', () => {
     expect(layeredPreset.url).toContain('draw_squares_bigger_skycam_w_line_layers.can');
     expect(layeredPreset.format).toBe('RRF_CAN_BINARY');
     expect(layeredPreset.referencePresetKey).toBe('straightMovesBigger');
-    expect(plainPreset.url).toContain('draw_squares_bigger_skycam.can');
+    expect(plainPreset.url).toContain('draw_squares_bigger_skycam_no_buildup.can');
     expect(plainPreset.format).toBe('RRF_CAN_BINARY');
     expect(plainPreset.referencePresetKey).toBe('straightMovesBigger');
   });
 
-  test('keeps non-hp3 preset defaults unchanged', () => {
+  test('uses cubecorners CAN square defaults when the cubecorners scene is loaded', () => {
+    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim-3d.js');
+    const { CUBECORNERS_USDA_KEY, resolvePresetCommand } = loadPresetResolver(source);
+
+    const layeredPreset = resolvePresetCommand('straightMoves', true, [CUBECORNERS_USDA_KEY]);
+    const plainPreset = resolvePresetCommand('straightMoves', false, [CUBECORNERS_USDA_KEY]);
+
+    expect(layeredPreset.url).toContain('draw_squares_bigger_cubecorners_w_line_layers.can');
+    expect(layeredPreset.format).toBe('RRF_CAN_BINARY');
+    expect(layeredPreset.referencePresetKey).toBe('straightMovesBigger');
+    expect(plainPreset.url).toContain('draw_squares_bigger_cubecorners_no_buildup.can');
+    expect(plainPreset.format).toBe('RRF_CAN_BINARY');
+    expect(plainPreset.referencePresetKey).toBe('straightMovesBigger');
+  });
+
+  test('keeps slideprinter preset defaults unchanged', () => {
     const source = readWorkspaceFile('hp-sim-3d/app/hp-sim-3d.js');
     const { resolvePresetCommand } = loadPresetResolver(source);
 
@@ -101,16 +116,16 @@ describe('hp-sim-3d preset selection', () => {
     const layeredSquarePreset = resolvePresetCommand('straightMoves', true, []);
     const plainSquarePreset = resolvePresetCommand('straightMoves', false, []);
 
-    expect(layeredLogoPreset.url).toContain('Hangprinter_logo6_w_line_layers.can');
+    expect(layeredLogoPreset.url).toContain('Hangprinter_logo6_slideprinter_w_line_layers.can');
     expect(layeredLogoPreset.format).toBe('RRF_CAN_BINARY');
-    expect(plainLogoPreset.url).toContain('Hangprinter_logo6_flex_and_buildup.serial');
-    expect(plainLogoPreset.format).toBe('MCU_SERIAL');
-    expect(layeredSquarePreset.url).toContain('draw_squares_bigger_w_line_layers.can');
+    expect(plainLogoPreset.url).toContain('Hangprinter_logo6_slideprinter_no_buildup.can');
+    expect(plainLogoPreset.format).toBe('RRF_CAN_BINARY');
+    expect(layeredSquarePreset.url).toContain('draw_squares_bigger_slideprinter_w_line_layers.can');
     expect(layeredSquarePreset.format).toBe('RRF_CAN_BINARY');
     expect(layeredSquarePreset.referencePresetKey).toBe('straightMovesBigger');
-    expect(plainSquarePreset.url).toContain('draw_squares.serial');
-    expect(plainSquarePreset.format).toBe('MCU_SERIAL');
-    expect(plainSquarePreset.referencePresetKey).toBe('straightMoves');
+    expect(plainSquarePreset.url).toContain('draw_squares_bigger_slideprinter_no_buildup.can');
+    expect(plainSquarePreset.format).toBe('RRF_CAN_BINARY');
+    expect(plainSquarePreset.referencePresetKey).toBe('straightMovesBigger');
   });
 
   test('passes loaded machine presets into preset resolution before printing', () => {
