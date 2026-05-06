@@ -2918,6 +2918,18 @@ export class PBDCableConstraintSolver {
             directInfo.solveUsesStoredGradSpin = true;
             directInfo.useStoredOnlyForTorqueLoad = true;
             directInfo.recordTorqueLoadImplicitCoeffs = true;
+            directInfo.deferTorqueLoadToPinholeNeighbor = (
+              (
+                side === 'A' &&
+                path?.linkTypes?.[jointIndex + 1] === 'pinhole' &&
+                jointIndex + 1 < (path?.jointEntities?.length ?? 0)
+              ) ||
+              (
+                side === 'B' &&
+                path?.linkTypes?.[jointIndex] === 'pinhole' &&
+                jointIndex > 0
+              )
+            );
           }
           return directInfo;
         }
@@ -2992,6 +3004,9 @@ export class PBDCableConstraintSolver {
           spinEntityId,
         );
         info.useStoredOnlyForTorqueLoad = Math.abs(info.storedConstraintGradSpin) > EPSILON;
+        if (info.useStoredOnlyForTorqueLoad) {
+          info.recordTorqueLoadImplicitCoeffs = true;
+        }
       }
       return info;
     };
@@ -3039,6 +3054,7 @@ export class PBDCableConstraintSolver {
       if (
         !memberSpin
         || !memberSpin.torqueMode
+        || memberSpin.deferTorqueLoadToPinholeNeighbor
         || !(invDtSq > 0.0)
       ) {
         return;
