@@ -187,10 +187,16 @@ GCodeResult SetRemoteDriverCurrents(const CanDriversData<float>&,
     return ReturnOk(reply);
 }
 
-GCodeResult SetRemotePressureAdvance(const CanDriversData<float>&,
-                                     const StringRef& reply) noexcept
+GCodeResult SetRemotePressureAdvance(
+    const CanDriversData<ShortPressureAdvanceParameters>&,
+    const StringRef& reply) noexcept
 {
     return ReturnOk(reply);
+}
+
+GCodeResult EnableCan(GCodeBuffer&, const StringRef& reply) THROWS(GCodeException)
+{
+    return ReturnOk(reply, "CAN unavailable on host");
 }
 
 GCodeResult SetRemoteDriverStepsPerMmAndMicrostepping(
@@ -223,7 +229,7 @@ GCodeResult ConfigureRemoteDriver(DriverId driver, GCodeBuffer& gb, const String
 
 #if SUPPORT_HANGPRINTER
         Kinematics& kin = reprap.GetMove().GetKinematics();
-        if (kin.GetLegacyType() == KinematicsType::hangprinter)
+        if (kin.GetKinematicsType() == KinematicsType::hangprinter)
         {
             gb.MustSee('P');
             size_t drivesCount = reprap.GetGCodes().GetVisibleAxes();

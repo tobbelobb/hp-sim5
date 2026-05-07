@@ -42,6 +42,8 @@ constexpr std::size_t MaxPortsPerHeater = 3;
 
 constexpr std::size_t MaxBedHeaters = 12;
 constexpr std::size_t MaxChamberHeaters = 8;
+constexpr std::size_t MaxHeatersPerBed = 4;
+constexpr std::size_t MaxHeatersPerChamber = 4;
 constexpr int8_t DefaultE0Heater = 1;
 
 constexpr std::size_t NumThermistorInputs = 4;
@@ -66,6 +68,8 @@ inline constexpr Pin DIRECTION_PINS[NumDirectDrivers] = {NoPin, NoPin, NoPin,
                                                          NoPin, NoPin, NoPin};
 inline constexpr Pin ENABLE_PINS[NumDirectDrivers] = {NoPin, NoPin, NoPin,
                                                       NoPin, NoPin, NoPin};
+inline constexpr Pin DriverEnablePins[NumDirectDrivers] = {NoPin, NoPin, NoPin,
+                                                           NoPin, NoPin, NoPin};
 inline constexpr Pin TmcCsPins[NumDirectDrivers] = {NoPin, NoPin, NoPin,
                                                     NoPin, NoPin, NoPin};
 

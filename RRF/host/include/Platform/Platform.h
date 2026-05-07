@@ -125,8 +125,12 @@ public:
 
     // --- Logging and Messaging ---
     void Message(MessageType type, const char* message) noexcept;
+    void Message(const GCodeBuffer* gb, MessageType type, OutputBuffer* buffer) noexcept;
+    void MessageF(const GCodeBuffer* gb, MessageType type, const char* fmt, ...) noexcept
+        __attribute__((format(printf, 4, 5)));
     void MessageF(MessageType type, const char* fmt, ...) noexcept
         __attribute__((format(printf, 3, 4)));
+    void MessageV(const GCodeBuffer* gb, MessageType type, const char* fmt, va_list vargs) noexcept;
     void MessageV(MessageType type, const char* fmt, va_list vargs) noexcept;
     void Message(MessageType type, OutputBuffer* buffer) noexcept;
     void RawMessage(MessageType type, const char* message) noexcept;

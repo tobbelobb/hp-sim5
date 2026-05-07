@@ -58,9 +58,23 @@ public:
     void SetBedHeater(size_t index, int heater) noexcept;
     bool IsBedHeater(int heater) const noexcept;
 
+    void SetBedHeaters(size_t index, const int32_t heaterNumbers[], size_t count) noexcept;
+    void ClearBedHeaters(size_t index) noexcept;
+    size_t GetBedHeaterCount(size_t index) const noexcept;
+    int GetBedHeaterAt(size_t index, size_t pos) const noexcept;
+    size_t GetNumBedSlotsToReport() const noexcept;
+
     int GetChamberHeater(size_t index) const noexcept;
     void SetChamberHeater(size_t index, int heater) noexcept;
     bool IsChamberHeater(int heater) const noexcept;
+
+    void SetChamberHeaters(size_t index, const int32_t heaterNumbers[], size_t count) noexcept;
+    void ClearChamberHeaters(size_t index) noexcept;
+    size_t GetChamberHeaterCount(size_t index) const noexcept;
+    int GetChamberHeaterAt(size_t index, size_t pos) const noexcept;
+    size_t GetNumChamberSlotsToReport() const noexcept;
+
+    HeaterFunction GetHeaterFunction(int heater) const noexcept;
 
     void SetAsToolHeater(int8_t heater) const noexcept;
     bool IsBedOrChamberHeater(int heater) const noexcept;
@@ -381,6 +395,32 @@ inline bool Heat::IsBedHeater(int heater) const noexcept
     return HeaterMatchesList(heater, bedHeaters);
 }
 
+inline void Heat::SetBedHeaters(size_t index, const int32_t heaterNumbers[],
+                                size_t count) noexcept
+{
+    SetBedHeater(index, (count != 0 && heaterNumbers != nullptr) ? heaterNumbers[0] : -1);
+}
+
+inline void Heat::ClearBedHeaters(size_t index) noexcept
+{
+    SetBedHeater(index, -1);
+}
+
+inline size_t Heat::GetBedHeaterCount(size_t index) const noexcept
+{
+    return GetBedHeater(index) >= 0 ? 1 : 0;
+}
+
+inline int Heat::GetBedHeaterAt(size_t index, size_t pos) const noexcept
+{
+    return (pos == 0) ? GetBedHeater(index) : -1;
+}
+
+inline size_t Heat::GetNumBedSlotsToReport() const noexcept
+{
+    return bedHeaters.size();
+}
+
 inline int Heat::GetChamberHeater(size_t index) const noexcept
 {
     return (index < chamberHeaters.size()) ? chamberHeaters[index] : -1;
@@ -398,6 +438,45 @@ inline void Heat::SetChamberHeater(size_t index, int heater) noexcept
 inline bool Heat::IsChamberHeater(int heater) const noexcept
 {
     return HeaterMatchesList(heater, chamberHeaters);
+}
+
+inline void Heat::SetChamberHeaters(size_t index, const int32_t heaterNumbers[],
+                                    size_t count) noexcept
+{
+    SetChamberHeater(index, (count != 0 && heaterNumbers != nullptr) ? heaterNumbers[0] : -1);
+}
+
+inline void Heat::ClearChamberHeaters(size_t index) noexcept
+{
+    SetChamberHeater(index, -1);
+}
+
+inline size_t Heat::GetChamberHeaterCount(size_t index) const noexcept
+{
+    return GetChamberHeater(index) >= 0 ? 1 : 0;
+}
+
+inline int Heat::GetChamberHeaterAt(size_t index, size_t pos) const noexcept
+{
+    return (pos == 0) ? GetChamberHeater(index) : -1;
+}
+
+inline size_t Heat::GetNumChamberSlotsToReport() const noexcept
+{
+    return chamberHeaters.size();
+}
+
+inline HeaterFunction Heat::GetHeaterFunction(int heater) const noexcept
+{
+    if (IsBedHeater(heater))
+    {
+        return HeaterFunction::bed;
+    }
+    if (IsChamberHeater(heater))
+    {
+        return HeaterFunction::chamber;
+    }
+    return HeaterFunction::tool;
 }
 
 inline void Heat::SetAsToolHeater(int8_t) const noexcept

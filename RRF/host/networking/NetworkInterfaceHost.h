@@ -25,7 +25,7 @@ public:
     void Diagnostics(const StringRef& reply) noexcept override;
 
     GCodeResult EnableInterface(int mode, const StringRef& ssid,
-                                const StringRef& reply) noexcept override;
+                                const StringRef& reply, bool tlsAllowed = true) noexcept override;
     GCodeResult GetNetworkState(const StringRef& reply) noexcept override;
     int EnableState() const noexcept override;
     bool IsWiFiInterface() const noexcept override;
@@ -40,8 +40,11 @@ public:
                               const StringRef& reply) noexcept override;
     const MacAddress& GetMacAddress() const noexcept override;
     void UpdateHostname(const char* hostname) noexcept override;
-
-    void OpenDataPort(TcpPort) noexcept override {}
+    bool OpenDataPort(TcpPort, bool useTls = false) noexcept override
+    {
+        (void)useTls;
+        return false;
+    }
     void TerminateDataPort() noexcept override {}
 
 protected:

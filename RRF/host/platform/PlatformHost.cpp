@@ -267,6 +267,7 @@ void Platform::Message(MessageType type, const char* message) noexcept
     LogToFile(type, message);
 }
 
+
 void Platform::Message(MessageType type, OutputBuffer* buffer) noexcept
 {
     if (buffer == nullptr)
@@ -281,6 +282,30 @@ void Platform::Message(MessageType type, OutputBuffer* buffer) noexcept
         combined.append(cur->Data(), cur->DataLength());
     }
     Message(type, combined.c_str());
+}
+
+void Platform::MessageF(const GCodeBuffer* gb, MessageType type,
+                        const char* fmt, ...) noexcept
+{
+    (void)gb;
+    va_list vargs;
+    va_start(vargs, fmt);
+    MessageV(type, fmt, vargs);
+    va_end(vargs);
+}
+
+void Platform::MessageV(const GCodeBuffer* gb, MessageType type,
+                        const char* fmt, va_list vargs) noexcept
+{
+    (void)gb;
+    MessageV(type, fmt, vargs);
+}
+
+void Platform::Message(const GCodeBuffer* gb, MessageType type,
+                       OutputBuffer* buffer) noexcept
+{
+    (void)gb;
+    Message(type, buffer);
 }
 
 void Platform::RawMessage(MessageType type, const char* message) noexcept

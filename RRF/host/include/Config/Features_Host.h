@@ -176,3 +176,7 @@
 #undef HAS_VOLTAGE_MONITOR
 #endif
 #define HAS_VOLTAGE_MONITOR 0
+
+#ifndef SUPPORT_OBJECT_MODEL
+# define SUPPORT_OBJECT_MODEL	1
+#endif

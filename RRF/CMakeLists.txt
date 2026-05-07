@@ -48,6 +48,7 @@ target_sources(rrf_simulator PRIVATE
     ${SIM_ROOT_DIR}/src/HostTorqueMode.cpp
     ${SIM_ROOT_DIR}/platform/Heap.cpp
     ${SIM_ROOT_DIR}/platform/PlatformHost.cpp
+    ${SIM_ROOT_DIR}/platform/FirmwareUpdateHost.cpp
     ${SIM_ROOT_DIR}/can/CanCapture.cpp
     ${SIM_ROOT_DIR}/can/CanInterfaceHost.cpp
     #${SIM_ROOT_DIR}/can/CanMotionHost.cpp
@@ -94,7 +95,12 @@ set(RRF_SOURCES_TO_USE
     Movement/Kinematics/CoreKinematics.cpp
     Movement/Kinematics/ZLeadscrewKinematics.cpp
     Movement/Kinematics/RoundBedKinematics.cpp
+    Movement/Kinematics/RotaryDeltaKinematics.cpp
     Movement/Kinematics/HangprinterKinematics.cpp
+    Movement/Kinematics/LinearDeltaKinematics.cpp
+    Movement/Kinematics/ScaraKinematics.cpp
+    Movement/Kinematics/PolarKinematics.cpp
+    Movement/Kinematics/FiveBarScaraKinematics.cpp
 
     # Tier 3: The Motion Planning Engine (Bottom-Up)
     Movement/DriveMovement.cpp
@@ -299,6 +305,7 @@ set(RRFLibraries_HEADERS_TO_USE
     General/IsoDate.h
     General/FreelistManager.h
     General/Portability.h
+    General/IapInfo.h
     Math/Deviation.h
     Math/DeviationAccumulator.h
     General/IP4String.h
@@ -329,6 +336,7 @@ set(CANlib_HEADERS_TO_USE
     TemperatureError.h
     CANlibNotifyIndices.h
     CanMessageGenericTableFormat.h
+    HeaterModel.h
 )
 
 # List of fake headers from your host/include directory that we'll use

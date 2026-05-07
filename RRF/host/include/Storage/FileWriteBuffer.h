@@ -7,10 +7,9 @@
 // Host implementation of the firmware FileWriteBuffer abstraction.
 // Provides a fixed-size scratch buffer so higher layers can keep the same call sites.
 
-namespace HostStorage
-{
 constexpr size_t FileWriteBufLen = 8192;
-}
+constexpr size_t NumFileWriteBuffers = 1;
+constexpr size_t SbcFileWriteBufLen = 4096;
 
 class FileWriteBuffer
 {
@@ -48,7 +47,7 @@ public:
     }
     size_t BytesLeft() const noexcept
     {
-        return HostStorage::FileWriteBufLen - index;
+        return FileWriteBufLen - index;
     }
 
     size_t Store(const char* data, size_t length) noexcept
@@ -74,5 +73,5 @@ public:
 private:
     FileWriteBuffer* next;
     size_t index;
-    std::array<char, HostStorage::FileWriteBufLen> buffer{};
+    std::array<char, FileWriteBufLen> buffer{};
 };

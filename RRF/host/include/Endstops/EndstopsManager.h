@@ -103,7 +103,7 @@ public:
 
 #if SUPPORT_CAN_EXPANSION
     void HandleRemoteAnalogZProbeValueChange(CanAddress src, uint8_t handleMajor,
-                                             uint8_t handleMinor,
+                                             uint8_t handleMinor, uint16_t when,
                                              uint32_t reading) noexcept
     {
     }

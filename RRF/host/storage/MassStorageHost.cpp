@@ -408,7 +408,7 @@ FileWriteBuffer* MassStorage::AllocateWriteBuffer() noexcept
 
 size_t MassStorage::GetFileWriteBufferLength() noexcept
 {
-    return HostStorage::FileWriteBufLen;
+    return FileWriteBufLen;
 }
 
 void MassStorage::ReleaseWriteBuffer(FileWriteBuffer* buffer) noexcept
