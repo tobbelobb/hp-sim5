@@ -33,3 +33,41 @@ export class CableSlackSystem {
     _equalizePinholeTension(world);
   }
 }
+
+function _slideTheSlack(world) {
+  const pathEntities = world.query([CablePathComponent]);
+  for (const pathId of pathEntities) {
+    const path = world.getComponent(pathId, CablePathComponent);
+    if (path.jointEntities.length < 2) continue;
+    for (let i = 0; i < path.jointEntities.length - 1; i++) {
+
+      if (path.linkTypes[i + 1] === 'attachment') continue; // Nothing slides across an attachment
+      const j0 = world.getComponent(path.jointEntities[i], CableJointComponent);
+      const j1 = world.getComponent(path.jointEntities[i + 1], CableJointComponent);
+      const d0 = j0.attachmentPointA_world.distanceTo(j0.attachmentPointB_world);
+      const d1 = j1.attachmentPointA_world.distanceTo(j1.attachmentPointB_world);
+      const l0 = j0.restLength;
+      const l1 = j1.restLength;
+      const slack0 = l0 - d0;  // >0 means slack, <0 means over-stretched
+      const slack1 = l1 - d1;
+      let slip = 0;
+      if (slack0 > 0 && slack1 < 0) {
+        slip = Math.min(slack0, -slack1);
+        j0.restLength -= slip;
+        j1.restLength += slip;
+      }
+      else if (slack1 > 0 && slack0 < 0) {
+        slip = Math.min(slack1, -slack0);
+        j1.restLength -= slip;
+        j0.restLength += slip;
+      }
+    }
+  }
+}
+
+export class SlideLooseCableSystem {
+  runInPause = false;
+  update(world, _dt) {
+    _slideTheSlack(world);
+  }
+}
