@@ -1,10 +1,10 @@
 import { parseEncoderReply, sleep as baseSleep } from './encoder_utils.mjs';
 
 const MAD_SCALE = 1.4826;
-const DEFAULT_NOISE_SAMPLE_COUNT = 20;
+const DEFAULT_NOISE_SAMPLE_COUNT = 16;
 const DEFAULT_NOISE_SAMPLE_RATE_HZ = 40;
-const DEFAULT_NOISE_MIN_SAMPLES = 10;
-const DEFAULT_NOISE_SIGMA_FLOOR_DEG = 0.01;
+const DEFAULT_NOISE_MIN_SAMPLES = 8;
+const DEFAULT_NOISE_SIGMA_FLOOR_DEG = 0.02;
 
 export const ENCODER_NOISE_DEFAULTS = {
   DEFAULT_NOISE_SAMPLE_COUNT,

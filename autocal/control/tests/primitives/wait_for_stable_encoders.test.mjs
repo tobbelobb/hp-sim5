@@ -40,6 +40,7 @@ describe('waitForStableEncoders', () => {
       pollIntervalMs: 1000,
       stableWindowMs: 2000,
       toleranceDeg: 0.1,
+      vibrationWindowMs: 10000,
       sleepFn: async (ms) => {
         nowMs += ms;
       },

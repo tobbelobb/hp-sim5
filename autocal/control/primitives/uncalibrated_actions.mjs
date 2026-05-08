@@ -8,9 +8,9 @@ import {
 } from '../primitives/debug_trace.mjs';
 
 const DEFAULT_STABILITY_POLL_MS = 500;
-const DEFAULT_STABILITY_WINDOW_MS = 2000;
-const DEFAULT_STABILITY_TOLERANCE_DEG = 1.0;
-const DEFAULT_VIBRATION_WINDOW_MS = 10000;
+const DEFAULT_STABILITY_WINDOW_MS = 1500;
+const DEFAULT_STABILITY_TOLERANCE_DEG = 1.5;
+const DEFAULT_VIBRATION_WINDOW_MS = 5000;
 const DEFAULT_LOW_FORCE_N = 0.001; // Just pull out more line
 const DEFAULT_MID_FORCE_N = 1.0; // Carefully wind in automatically
 
