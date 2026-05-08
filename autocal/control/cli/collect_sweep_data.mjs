@@ -207,6 +207,7 @@ export function parseBridgeArgs(argv) {
     sweepMethod: null,
     maxTravelMm: null,
     sensorForce: null,
+    sensorCollectionForce: null,
     forceLow: null,
     forceMid: null,
     forceMax: null,
@@ -311,6 +312,8 @@ export function parseBridgeArgs(argv) {
       args.fixedTargets = argv[++i] || null;
     } else if (arg === '--sensor-force' || arg === '--force-sensor' || arg === '--sensorForce') {
       args.sensorForce = argv[++i] || null;
+    } else if (arg === '--sensor-collection-force' || arg === '--sensorCollectionForce') {
+      args.sensorCollectionForce = argv[++i] || null;
     } else if (arg === '--torque') {
       args.torque = argv[++i] || null;
     } else if (arg === '--sweepMethod' || arg === '--sweep-method') {
@@ -387,7 +390,7 @@ Options:
   --max-travel-mm <mm>       Fixed-anchor delta applied to all fixed anchors
   --maxSweeps <count>        Max sweeps when auto-generating configs (default: ${SWEEP_DEFAULTS.DEFAULT_MAX_SWEEPS})
   --feed <mm/min>            Feed rate for drive moves (default: ${SWEEP_DEFAULTS.DEFAULT_FEED})
-  --sensor-force <N>         Deprecated (sensor motor uses force-low)
+  --sensor-force <N>         Alias for --sensor-collection-force
   --settleMs <ms>            Deprecated (was fixed settle time; now waits for encoder stability)
   --speedup <scale>          hp-sim speed scale (default: 1)
   --continuous               Deprecated (force-drive sweeps only)
@@ -395,6 +398,8 @@ Options:
   --force-low <N>            idle force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_LOW_N})
   --force-mid <N>            start force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MID_N})
   --force-max <N>            end force (default: ${FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MAX_N})
+  --sensor-collection-force <N>
+                              measurement preload force for sensor anchors
   --sim, --simulation        Enable simulation mode (autostarts Klippy in --firmware klipper)
   --preserve-buildup-factor  Keep current M666 Q (default behavior when no Q override is provided)
   --force-buildup-factor <k> Force M666 Q to this value before collection

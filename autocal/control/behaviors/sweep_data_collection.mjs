@@ -15,7 +15,7 @@ import { DEFAULT_KLIPPY_CONFIG_PATH } from '../../../integrations/klipper/klippy
 import { ENCODER_NOISE_DEFAULTS } from '../primitives/encoder_noise.mjs';
 import {
   angleToLength,
-  applyDataPointReturnModes,
+  applyDataPointPreloadModes,
   applyForceModeState,
   collectDataPoint,
   getCurrentLengths,
@@ -494,6 +494,10 @@ function validateSweepCollectionInput(context) {
   const forceLow = parseOptionalNumber(args.forceLow, 'force-low');
   const forceMid = parseOptionalNumber(args.forceMid, 'force-mid');
   const forceMax = parseOptionalNumber(args.forceMax, 'force-max');
+  const sensorCollectionForce = parseOptionalNumber(
+    args.sensorCollectionForce ?? args.sensorForce,
+    'sensor-collection-force',
+  );
   const forceBuildupFactor = parseOptionalNumber(args.forceBuildupFactor, 'force-buildup-factor');
   const preserveBuildupFactor = !!args.preserveBuildupFactor;
   const forceBaseRadii = parseOptionalNumberList(
@@ -537,6 +541,7 @@ function validateSweepCollectionInput(context) {
     forceLow,
     forceMid,
     forceMax,
+    sensorCollectionForce,
     forceBuildupFactor,
     preserveBuildupFactor,
     forceBaseRadii,
@@ -570,6 +575,9 @@ function applySweepDefaults(input) {
   const forceLow = input.forceLow ?? FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_LOW_N;
   const forceMid = input.forceMid ?? FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MID_N;
   const forceMax = input.forceMax ?? FORCE_TUNING_DEFAULTS.DEFAULT_FORCE_MAX_N;
+  const sensorCollectionForce = Number.isFinite(input.sensorCollectionForce)
+    ? input.sensorCollectionForce
+    : null;
   const noiseSampleCount = Math.max(1, input.noiseSampleCount ?? DEFAULT_NOISE_SAMPLE_COUNT);
   let noiseSampleRateHz = Number.isFinite(input.noiseSampleRateHz)
     ? input.noiseSampleRateHz
@@ -600,6 +608,7 @@ function applySweepDefaults(input) {
     forceLow,
     forceMid,
     forceMax,
+    sensorCollectionForce,
     forceBuildupFactor: Number.isFinite(input.forceBuildupFactor) ? input.forceBuildupFactor : null,
     preserveBuildupFactor: !!input.preserveBuildupFactor,
     noiseSampleCount,
@@ -1038,6 +1047,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
     forceLow,
     forceMid,
     forceMax,
+    sensorCollectionForce = null,
     noiseSampleCount,
     noiseSampleIntervalMs,
     noiseMinSamples,
@@ -1070,7 +1080,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
   await applyForceModeState(sendFn, { motorIds, modes: modesPullout });
   await waitForStableEncoders(sendFn, motorIds, speedup);
 
-  const returnModes = motorIds.map((_, idx) => {
+  const preloadModes = motorIds.map((_, idx) => {
     if (idx === driveAnchor) {
       return 'position';
     }
@@ -1079,7 +1089,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
     }
     return forceMid*2.0;
   });
-  await applyForceModeState(sendFn, { motorIds, modes: returnModes });
+  await applyForceModeState(sendFn, { motorIds, modes: preloadModes });
   const forceStable = await waitForStableEncoders(sendFn, motorIds, speedup);
   const endAngles = forceStable.anglesDeg;
   const endLengths = endAngles.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
@@ -1105,10 +1115,6 @@ async function performForceSweep(sendFn, sweepConfig, options) {
     return lengths;
   };
 
-  //recordPoint(endAngles, driveEndPointMm, 0, sweepPoints);
-
-  await applyForceModeState(sendFn, { motorIds, modes: returnModes });
-
   const steps = Math.max(2, sweepPoints + 1);
   const stepCount = steps - 1;
   const totalDelta = driveStartPointMm - driveEndPointMm;
@@ -1117,24 +1123,28 @@ async function performForceSweep(sendFn, sweepConfig, options) {
   const remainingSteps = Math.max(1, stepCount - 1);
   const stepDelta = (totalDelta - initialStepMm) / remainingSteps;
   let currentDrive = driveEndPointMm;
+  let measurementPreloadActive = false;
   for (let stepIdx = 1; stepIdx < steps; stepIdx += 1) {
     const target = stepIdx === 1
       ? driveEndPointMm + initialStepMm
       : driveEndPointMm + initialStepMm + stepDelta * (stepIdx - 1);
     const delta = target - currentDrive;
     if (Number.isFinite(delta) && Math.abs(delta) > 1e-6) {
-      // eslint-disable-next-line no-await-in-loop
-      await applyDataPointReturnModes(sendFn, {
-        motorIds,
-        driveAnchor,
-        sensorAnchors: [sensorAnchor],
-        fixedAnchors,
-        forbiddenForceAnchors,
-        forceMax,
-        forceMin: forceMid,
-        forceMid,
-        speedup,
-      });
+      if (!measurementPreloadActive) {
+        // eslint-disable-next-line no-await-in-loop
+        await applyDataPointPreloadModes(sendFn, {
+          motorIds,
+          driveAnchor,
+          sensorAnchors: [sensorAnchor],
+          fixedAnchors,
+          forbiddenForceAnchors,
+          forceMax,
+          forceMin: forceMid,
+          forceMid,
+          sensorCollectionForce,
+          speedup,
+        });
+      }
       if (fixedTargetByAnchor) {
         // eslint-disable-next-line no-await-in-loop
         await enforceFixedAnchors(sendFn, {
@@ -1155,6 +1165,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
       );
       // eslint-disable-next-line no-await-in-loop
       await waitForStableEncoders(sendFn, motorIds, speedup);
+      measurementPreloadActive = false;
     }
     // eslint-disable-next-line no-await-in-loop
     const collected = await collectDataPoint(sendFn, {
@@ -1168,6 +1179,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
       forceMax,
       forceMin: forceMid,
       forceMid,
+      sensorCollectionForce,
       speedup,
       recordPoint,
       driveSetpointMm: target,
@@ -1181,6 +1193,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
         speedup,
       },
     });
+    measurementPreloadActive = !projectZeroTension;
     const noiseStats = collected?.noiseStats;
     if (noiseStats && dataPoints.length > 0) {
       const point = dataPoints[dataPoints.length - 1];
@@ -1247,6 +1260,7 @@ export async function collectSweepData(send, context) {
     forceBuildupFactor,
     preserveBuildupFactor,
     forceBaseRadii,
+    sensorCollectionForce,
   } = options;
   let { forceLow, forceMid, forceMax } = options;
 
@@ -1470,6 +1484,7 @@ export async function collectSweepData(send, context) {
         forceLow,
         forceMid,
         forceMax,
+        sensorCollectionForce,
         noiseSampleCount,
         noiseSampleIntervalMs,
         noiseMinSamples,

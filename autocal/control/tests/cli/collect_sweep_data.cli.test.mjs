@@ -218,9 +218,11 @@ m569_address: 43.0
       '--force-buildup-factor', '0.5',
       '--force-base-radii', '30,31,32',
       '--preserve-buildup-factor',
+      '--sensor-collection-force', '7',
     ]);
     expect(args.forceBuildupFactor).toBe('0.5');
     expect(args.forceBaseRadii).toBe('30,31,32');
     expect(args.preserveBuildupFactor).toBe(true);
+    expect(args.sensorCollectionForce).toBe('7');
   });
 });

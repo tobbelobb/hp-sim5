@@ -58,10 +58,12 @@ Options:
   --sweepPoints <count>      Number of points per sweep (default: 21)
   --speedup <scale>          hp-sim speed scale (default: 1)
   --feed <mm/min>            Feed rate for drive moves (default: 1400)
-  --sensor-force <N>         Deprecated (sensor motor uses force-low)
+  --sensor-force <N>         Alias for --sensor-collection-force
   --force-low <N>            idle force (default: 0.01)
   --force-mid <N>            start force (default: 0.01)
   --force-max <N>            end force (default: 0.1)
+  --sensor-collection-force <N>
+                              measurement preload force for sensor anchors
   --auto-tune-force          auto-tune force-low/mid/max (default when no force args)
   --no-auto-tune-force       skip auto-tuning and use provided/default forces
   --sim, --simulation        Query hp-sim for encoder angles (auto-enables WebSocket)

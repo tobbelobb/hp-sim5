@@ -266,6 +266,7 @@ function buildDataPointModes({
   forceMax,
   forceMin,
   forceMid,
+  sensorCollectionForce,
 } = {}) {
   const fixedSet = new Set((fixedAnchors ?? []).filter((idx) => Number.isFinite(idx)));
   const sensorSet = new Set(
@@ -290,35 +291,44 @@ function buildDataPointModes({
     return fallbackForce;
   });
 
-  const returnModes = buildModes(
+  const preloadModes = buildModes(
     Number.isFinite(forceMid)
       ? forceMid * 2.0
       : (Number.isFinite(forceMax) ? forceMax : fallbackForce),
   );
+  const defaultSensorCollectionForce = Number.isFinite(forceMax)
+    ? Math.min(
+      forceMax,
+      Math.max(
+        Number.isFinite(forceMid) ? forceMid * 5.0 : fallbackForce,
+        forceMax * 0.5,
+      ),
+    )
+    : (Number.isFinite(forceMid) ? forceMid * 5.0 : fallbackForce);
+  const measurementSensorForce = Number.isFinite(sensorCollectionForce)
+    ? sensorCollectionForce
+    : defaultSensorCollectionForce;
   // Pull slack out of the sensor line before sampling encoder angles.
-  const collectionModes = buildModes(
-    Number.isFinite(forceMid)
-      ? forceMid * 5.0
-      : (Number.isFinite(forceMax) ? forceMax : fallbackForce),
-  );
+  const measurementModes = buildModes(measurementSensorForce);
 
   return {
     buildModes,
-    collectionModes,
-    returnModes,
+    measurementModes,
+    measurementSensorForce,
+    preloadModes,
     fallbackForce,
   };
 }
 
-export async function applyDataPointReturnModes(sendFn, options = {}) {
+export async function applyDataPointPreloadModes(sendFn, options = {}) {
   const { motorIds, speedup, settleOptions = {} } = options;
   if (!Array.isArray(motorIds) || motorIds.length === 0) {
-    throw new Error('applyDataPointReturnModes requires motorIds');
+    throw new Error('applyDataPointPreloadModes requires motorIds');
   }
-  const { returnModes } = buildDataPointModes(options);
-  await applyForceModeState(sendFn, { motorIds, modes: returnModes });
+  const { preloadModes } = buildDataPointModes(options);
+  await applyForceModeState(sendFn, { motorIds, modes: preloadModes });
   await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
-  return returnModes;
+  return preloadModes;
 }
 
 export async function collectDataPoint(sendFn, options = {}) {
@@ -333,6 +343,7 @@ export async function collectDataPoint(sendFn, options = {}) {
     forceMax,
     forceMin,
     forceMid,
+    sensorCollectionForce,
     speedup,
     settleOptions = {},
     recordPoint,
@@ -363,8 +374,8 @@ export async function collectDataPoint(sendFn, options = {}) {
 
   const {
     buildModes,
-    collectionModes,
-    returnModes,
+    measurementModes,
+    preloadModes,
     fallbackForce,
   } = buildDataPointModes({
     motorIds,
@@ -375,10 +386,11 @@ export async function collectDataPoint(sendFn, options = {}) {
     forceMax,
     forceMin,
     forceMid,
+    sensorCollectionForce,
   });
 
   if (!skipReturnModePrep) {
-    await applyForceModeState(sendFn, { motorIds, modes: returnModes });
+    await applyForceModeState(sendFn, { motorIds, modes: preloadModes });
     await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
   }
 
@@ -442,7 +454,7 @@ export async function collectDataPoint(sendFn, options = {}) {
       anglesDeg = stableData.anglesDeg;
     }
   } else {
-    await applyForceModeState(sendFn, { motorIds, modes: collectionModes });
+    await applyForceModeState(sendFn, { motorIds, modes: measurementModes });
     stableData = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
     anglesDeg = stableData.anglesDeg;
   }
@@ -468,9 +480,6 @@ export async function collectDataPoint(sendFn, options = {}) {
 
   if (restoreToModeWhenFinished !== undefined) {
     await applyForceModeState(sendFn, { motorIds, modes: restoreToModeWhenFinished });
-    await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
-  } else {
-    await applyForceModeState(sendFn, { motorIds, modes: returnModes });
     await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
   }
 

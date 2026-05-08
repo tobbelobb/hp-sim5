@@ -47,7 +47,7 @@ describe('uncalibrated_actions', () => {
     expect(result.samples).toBeGreaterThanOrEqual(2);
   });
 
-  test('collectDataPoint tensions the sensor before reading and restores return modes', async () => {
+  test('collectDataPoint tensions the sensor before reading and stays in measurement preload', async () => {
     const { commands, send } = createCollectDataSend();
     const recordPoint = jest.fn();
 
@@ -72,7 +72,6 @@ describe('uncalibrated_actions', () => {
     expect(commands.filter((command) => command.startsWith('M569.4 '))).toEqual([
       'M569.4 P40.0:41.0:42.0 T0.0:4:2',
       'M569.4 P40.0:41.0:42.0 T0.0:10:2',
-      'M569.4 P40.0:41.0:42.0 T0.0:4:2',
     ]);
   });
 
@@ -95,7 +94,49 @@ describe('uncalibrated_actions', () => {
 
     expect(commands.filter((command) => command.startsWith('M569.4 '))).toEqual([
       'M569.4 P40.0:41.0:42.0 T0.0:10:0.0',
-      'M569.4 P40.0:41.0:42.0 T0.0:4:0.0',
+    ]);
+  });
+
+  test('collectDataPoint defaults sensor collection force from force max', async () => {
+    const { commands, send } = createCollectDataSend('5 6 7');
+
+    await collectDataPoint(send, {
+      motorIds: ['40.0', '41.0', '42.0'],
+      axes: ['X', 'Y', 'Z'],
+      mmPerDeg: [1, 1, 1],
+      driveAnchor: 0,
+      sensorAnchors: [1],
+      forceMid: 0.2,
+      forceMax: 10,
+      speedup: 1,
+      settleOptions: createSettleOptions(),
+      skipReturnModePrep: true,
+    });
+
+    expect(commands.filter((command) => command.startsWith('M569.4 '))).toEqual([
+      'M569.4 P40.0:41.0:42.0 T0.0:5:0.2',
+    ]);
+  });
+
+  test('collectDataPoint accepts explicit sensor collection force', async () => {
+    const { commands, send } = createCollectDataSend('5 6 7');
+
+    await collectDataPoint(send, {
+      motorIds: ['40.0', '41.0', '42.0'],
+      axes: ['X', 'Y', 'Z'],
+      mmPerDeg: [1, 1, 1],
+      driveAnchor: 0,
+      sensorAnchors: [1],
+      forceMid: 0.2,
+      forceMax: 10,
+      sensorCollectionForce: 7,
+      speedup: 1,
+      settleOptions: createSettleOptions(),
+      skipReturnModePrep: true,
+    });
+
+    expect(commands.filter((command) => command.startsWith('M569.4 '))).toEqual([
+      'M569.4 P40.0:41.0:42.0 T0.0:7:0.2',
     ]);
   });
 });
