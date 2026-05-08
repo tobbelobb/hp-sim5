@@ -234,6 +234,25 @@ export function buildGlobalForceModes(motorIds, force, forbiddenForceAnchors = [
   return motorIds.map((_, idx) => (forbidden.has(idx) ? 'position' : force));
 }
 
+export function buildSymmetricPulloutModes({
+  motorIds,
+  movingAnchors = new Set(),
+  fixedAnchors = [],
+  forbiddenForceAnchors = [],
+  forceMid,
+  forceMax,
+} = {}) {
+  const fixedSet = new Set((fixedAnchors ?? []).filter((idx) => Number.isFinite(idx)));
+  const movingSet = movingAnchors instanceof Set
+    ? movingAnchors
+    : new Set((movingAnchors ?? []).filter((idx) => Number.isFinite(idx)));
+  const forbidden = new Set((forbiddenForceAnchors ?? []).filter((idx) => Number.isFinite(idx)));
+  const pullForce = Number.isFinite(forceMax) ? forceMax : forceMid;
+  return motorIds.map((_, idx) => (
+    (movingSet.has(idx) || fixedSet.has(idx) || forbidden.has(idx)) ? 'position' : pullForce
+  ));
+}
+
 function getFixedTargetBounds(machineConfig, anchorIdx) {
   if (!machineConfig || typeof machineConfig !== 'object') {
     return null;
@@ -788,8 +807,9 @@ async function prepareSweepPositioning(sendFn, sweepConfig, options) {
     motorIds,
     axes,
     mmPerDeg,
-    forceLow,
     forceMid,
+    forceMax,
+    forbiddenForceAnchors = [],
     fixedTargets = [],
     feed = DEFAULT_FEED,
     speedup,
@@ -803,7 +823,6 @@ async function prepareSweepPositioning(sendFn, sweepConfig, options) {
   const formatDelta = (axis, delta) => `${axis}${delta.toFixed(3)}`;
 
   const fixedAnchors = sweepConfig.fixedAnchors || [];
-  const fixedSet = new Set(fixedAnchors);
   const movingAnchors = new Set();
   for (let i = 0; i < fixedAnchors.length; i += 1) {
     const anchorIdx = fixedAnchors[i];
@@ -816,9 +835,14 @@ async function prepareSweepPositioning(sendFn, sweepConfig, options) {
   }
 
   if (moveParts.length > 0) {
-    const preMoveModes = motorIds.map((_, idx) => (
-      (movingAnchors.has(idx) || fixedSet.has(idx)) ? 'position' : forceMid
-    ));
+    const preMoveModes = buildSymmetricPulloutModes({
+      motorIds,
+      movingAnchors,
+      fixedAnchors,
+      forbiddenForceAnchors,
+      forceMid,
+      forceMax,
+    });
     await applyForceModeState(sendFn, { motorIds, modes: preMoveModes });
     await runMoveWithWait(sendFn, `G1 H2 ${moveParts.join(' ')} F${feed}`, speedup, { axes });
   }
@@ -1465,8 +1489,9 @@ export async function collectSweepData(send, context) {
         motorIds,
         axes: machineConfig.axes,
         mmPerDeg,
-        forceLow,
         forceMid,
+        forceMax,
+        forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
         fixedTargets,
         feed,
         speedup,

@@ -9,6 +9,7 @@ import { normalizeMachineType, resolveRrfSimulatorConfig } from '../../primitive
 import {
   buildM666AdjustmentCommand,
   buildGlobalForceModes,
+  buildSymmetricPulloutModes,
   combinations,
   generateSweepConfigs,
   MACHINE_CONFIGS,
@@ -115,6 +116,17 @@ describe('collect_sweep_data CLI helpers', () => {
       0.3182,
       MACHINE_CONFIGS.hangprinter_4.mustBeInFixedSet,
     )).toEqual([0.3182, 0.3182, 0.3182, 'position']);
+  });
+
+  test('buildSymmetricPulloutModes uses max force on free anchors', () => {
+    expect(buildSymmetricPulloutModes({
+      motorIds: ['40.0', '41.0', '42.0', '43.0'],
+      movingAnchors: new Set([0]),
+      fixedAnchors: [0, 3],
+      forbiddenForceAnchors: MACHINE_CONFIGS.hangprinter_4.mustBeInFixedSet,
+      forceMid: 0.3182,
+      forceMax: 9.2035,
+    })).toEqual(['position', 9.2035, 9.2035, 'position']);
   });
 
   test('angleToLength', () => {
