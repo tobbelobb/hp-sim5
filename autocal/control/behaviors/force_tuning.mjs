@@ -338,6 +338,8 @@ export async function runForceTrial(sendFn, options = {}) {
     mmPerDeg,
     feed = DEFAULT_FEED,
     forbiddenForceAnchors = [],
+    previousTrialMoved = false,
+    settleOptions = {},
   } = options;
 
   if (!Array.isArray(motorIds) || motorIds.length === 0) {
@@ -380,7 +382,7 @@ export async function runForceTrial(sendFn, options = {}) {
     activeForce: idleForce,
     forbiddenForceAnchors,
   });
-  const stableStart = await waitForStableEncoders(sendFn, motorIds, speedup);
+  const stableStart = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
   let startAngles = stableStart.anglesDeg;
 
   const rampWaitMs = Math.max(0, rampStepWaitMs / timeScale);
@@ -458,20 +460,8 @@ export async function runForceTrial(sendFn, options = {}) {
     }
   }
 
-  await setForceTrialModes(sendFn, motorIds, {
-    activeAnchor,
-    fixedAnchor,
-    idleForce,
-    activeForce: idleForce,
-    forbiddenForceAnchors,
-  });
-  const stableResidual = await waitForStableEncoders(sendFn, motorIds, speedup);
-  const residualAngles = stableResidual.anglesDeg;
-
   const deltaEndDeg = endAngles.map((angle, idx) => angle - (startAngles[idx] ?? 0));
-  const deltaResidualDeg = residualAngles.map((angle, idx) => angle - (startAngles[idx] ?? 0));
   const activeDelta = deltaEndDeg[activeAnchor] ?? 0;
-  const activeResidual = deltaResidualDeg[activeAnchor] ?? 0;
 
   const thetaActThr = thresholds?.thetaActThr ?? 0.5;
   const thetaResThr = thresholds?.thetaResThr ?? 0.3;
@@ -487,14 +477,10 @@ export async function runForceTrial(sendFn, options = {}) {
     if (Math.abs(delta) >= thrOther) {
       restMovedCount += 1;
     }
-    restResidualSum += Math.abs(deltaResidualDeg[anchorIdx] ?? 0);
   }
-  const residualActiveOk = Math.abs(activeResidual) >= thetaResThr;
-  const residualRestOk = restResidualSum >= sumResidualThr;
-
-  const moved = restAnchors.length > 0
-    ? (activeMoved && restMovedCount >= 1 && residualActiveOk && residualRestOk)
-    : false;
+  const pulloutMoved = restAnchors.length > 0
+    ? (activeMoved && restMovedCount >= 1)
+    : activeMoved;
 
   const travelDeg = Math.abs(
     stalled && Number.isFinite(stallAngle)
@@ -502,7 +488,11 @@ export async function runForceTrial(sendFn, options = {}) {
       : activeDelta,
   );
 
-  if (Array.isArray(axes) && Array.isArray(mmPerDeg) && travelDeg > 2 * thetaActThr) {
+  const canReturnToOrigin = Array.isArray(axes) && Array.isArray(mmPerDeg);
+  const shouldReturnToOrigin = canReturnToOrigin && travelDeg > 2 * thetaActThr;
+  const returnBeforeIdleRelease = shouldReturnToOrigin && (pulloutMoved || previousTrialMoved);
+  let residualAngles = null;
+  if (returnBeforeIdleRelease) {
     await returnMotorsToOriginOneAtATime(sendFn, {
       motorIds,
       axes,
@@ -512,6 +502,52 @@ export async function runForceTrial(sendFn, options = {}) {
       midForce: idleForce,
       fixedAnchors: [fixedAnchor],
       forbiddenForceAnchors,
+      settleOptions,
+    });
+    await setForceTrialModes(sendFn, motorIds, {
+      activeAnchor,
+      fixedAnchor,
+      idleForce,
+      activeForce: idleForce,
+      forbiddenForceAnchors,
+    });
+    residualAngles = endAngles;
+  } else {
+    await setForceTrialModes(sendFn, motorIds, {
+      activeAnchor,
+      fixedAnchor,
+      idleForce,
+      activeForce: idleForce,
+      forbiddenForceAnchors,
+    });
+    const stableResidual = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+    residualAngles = stableResidual.anglesDeg;
+  }
+
+  const deltaResidualDeg = residualAngles.map((angle, idx) => angle - (startAngles[idx] ?? 0));
+  const activeResidual = deltaResidualDeg[activeAnchor] ?? 0;
+  restResidualSum = 0;
+  for (const anchorIdx of restAnchors) {
+    restResidualSum += Math.abs(deltaResidualDeg[anchorIdx] ?? 0);
+  }
+  const residualActiveOk = returnBeforeIdleRelease || Math.abs(activeResidual) >= thetaResThr;
+  const residualRestOk = returnBeforeIdleRelease || restResidualSum >= sumResidualThr;
+
+  const moved = restAnchors.length > 0
+    ? (activeMoved && restMovedCount >= 1 && residualActiveOk && residualRestOk)
+    : (activeMoved && residualActiveOk);
+
+  if (!returnBeforeIdleRelease && shouldReturnToOrigin) {
+    await returnMotorsToOriginOneAtATime(sendFn, {
+      motorIds,
+      axes,
+      mmPerDeg,
+      feed,
+      speedup,
+      midForce: idleForce,
+      fixedAnchors: [fixedAnchor],
+      forbiddenForceAnchors,
+      settleOptions,
     });
     await setForceTrialModes(sendFn, motorIds, {
       activeAnchor,
@@ -936,6 +972,7 @@ export async function tuneForce(sendFn, plan, options = {}) {
     console.log(`; auto-tune ${label}: test=${formatValue(force)} moved=${result?.moved ? 'yes' : 'no'} travel=${travel}deg stalled=${result?.stalled ? 'yes' : 'no'}`);
   };
 
+  let anyTrialMoved = false;
   const runTrial = async (force, label, trialOptions = {}) => {
     const result = await runForceTrial(sendFn, {
       motorIds,
@@ -952,7 +989,11 @@ export async function tuneForce(sendFn, plan, options = {}) {
       forbiddenForceAnchors,
       waitForStall: options.waitForStall ?? true,
       stallTimeoutMs: options.stallTimeoutMs,
+      previousTrialMoved: anyTrialMoved,
     });
+    if (result?.moved) {
+      anyTrialMoved = true;
+    }
     if (label) {
       logTrial(label, force, result);
     }
