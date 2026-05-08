@@ -947,7 +947,7 @@ async function measureMaxTravelMm(sendFn, options = {}) {
     });
     await applyForceModeState(sendFn, { motorIds, modes: modesPullPair });
     if (i < pullFractions.length - 1) {
-      baseSleep(100);
+      await baseSleep(100);
     }
   }
   await waitForStableEncoders(sendFn, motorIds, speedup);
@@ -1443,6 +1443,15 @@ export async function collectSweepData(send, context) {
       } else {
         console.log('; size-tune failed; using 0.0mm');
       }
+      await returnMotorsToOriginOneAtATime(send, {
+        motorIds,
+        axes: machineConfig.axes,
+        mmPerDeg,
+        feed,
+        speedup,
+        midForce: forceLow,
+        forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
+      });
     }
   }
   if (!Number.isFinite(maxTravelMm)) {
