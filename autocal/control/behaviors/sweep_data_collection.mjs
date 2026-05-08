@@ -229,6 +229,11 @@ function getForceForbiddenAnchors(machineConfig) {
   return getMustBeInFixedSet(machineConfig);
 }
 
+export function buildGlobalForceModes(motorIds, force, forbiddenForceAnchors = []) {
+  const forbidden = new Set((forbiddenForceAnchors ?? []).filter((idx) => Number.isFinite(idx)));
+  return motorIds.map((_, idx) => (forbidden.has(idx) ? 'position' : force));
+}
+
 function getFixedTargetBounds(machineConfig, anchorIdx) {
   if (!machineConfig || typeof machineConfig !== 'object') {
     return null;
@@ -1345,19 +1350,20 @@ export async function collectSweepData(send, context) {
   }
 
   // A short tighten-release cycle before we set encoder reference points and set pos mode
+  const forbiddenForceAnchors = getForceForbiddenAnchors(machineConfig);
   await applyForceModeState(send, {
     motorIds,
-    modes: motorIds.map(() => forceMid),
+    modes: buildGlobalForceModes(motorIds, forceMid, forbiddenForceAnchors),
   });
   await waitForStableEncoders(send, motorIds, speedup);
   await applyForceModeState(send, {
     motorIds,
-    modes: motorIds.map(() => forceMid*0.5),
+    modes: buildGlobalForceModes(motorIds, forceMid * 0.5, forbiddenForceAnchors),
   });
   await waitForStableEncoders(send, motorIds, speedup);
   await applyForceModeState(send, {
     motorIds,
-    modes: motorIds.map(() => forceLow),
+    modes: buildGlobalForceModes(motorIds, forceLow, forbiddenForceAnchors),
   });
   await waitForStableEncoders(send, motorIds, speedup);
   //await primeEncoders(send, { motorIds, axes: machineConfig.axes });

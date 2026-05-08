@@ -8,6 +8,7 @@ import { buildRrfSimulatorArgs } from '../../primitives/encoder_utils.mjs';
 import { normalizeMachineType, resolveRrfSimulatorConfig } from '../../primitives/machine_type.mjs';
 import {
   buildM666AdjustmentCommand,
+  buildGlobalForceModes,
   combinations,
   generateSweepConfigs,
   MACHINE_CONFIGS,
@@ -106,6 +107,14 @@ describe('collect_sweep_data CLI helpers', () => {
   test('resolveFixedTargets respects per-anchor fixed bounds', () => {
     expect(resolveFixedTargets([0, 3], [25, 25], null, MACHINE_CONFIGS.hangprinter_4)).toEqual([25, 0]);
     expect(resolveFixedTargets([3, 2], null, 30, MACHINE_CONFIGS.hangprinter_4)).toEqual([0, 30]);
+  });
+
+  test('buildGlobalForceModes keeps forbidden anchors in position mode', () => {
+    expect(buildGlobalForceModes(
+      ['40.0', '41.0', '42.0', '43.0'],
+      0.3182,
+      MACHINE_CONFIGS.hangprinter_4.mustBeInFixedSet,
+    )).toEqual([0.3182, 0.3182, 0.3182, 'position']);
   });
 
   test('angleToLength', () => {
