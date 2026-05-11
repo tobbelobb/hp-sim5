@@ -15,9 +15,9 @@ PYTHON="${KLIPPY_PYTHON:-${ROOT_DIR}/.venv/bin/python}"
 
 "$PYTHON" "$ROOT_DIR/klipper/klippy/klippy.py" \
   "$ROOT_DIR/public/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg" \
-  -i $GCODE_FILE \
+  -i "$GCODE_FILE" \
   -o "$ROOT_DIR/public/mcu_commands/${BASENAME}.serial" \
-  -v -d "$ROOT_DIR/public/klipper/linux_mcu/klipper.dict" \
+  -v -d "$ROOT_DIR/public/klipper/linux_mcu/klipper.dict"
 
 "$PYTHON" "$ROOT_DIR/klipper/klippy/parsedump.py" \
   "$ROOT_DIR/public/klipper/linux_mcu/klipper.dict" \
