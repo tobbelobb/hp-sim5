@@ -147,14 +147,23 @@ CONFIG_PATH="${ROOT_DIR}/${config}"
 
 BASENAME="$(basename "$gcode_file" .gcode)"
 PYTHON="${KLIPPY_PYTHON:-${ROOT_DIR}/.venv/bin/python}"
+OUTPUT_MACHINE="${config#public/klipper/}"
+OUTPUT_MACHINE="${OUTPUT_MACHINE%%/*}"
+OUTPUT_VARIANT="no_buildup"
+if [[ "$config" == *"-with-buildup.cfg" ]]; then
+  OUTPUT_VARIANT="buildup"
+fi
+OUTPUT_DIR="$ROOT_DIR/public/mcu_commands/$OUTPUT_MACHINE"
+OUTPUT_BASE="$OUTPUT_DIR/${BASENAME}_${OUTPUT_VARIANT}"
+mkdir -p "$OUTPUT_DIR"
 
 "$PYTHON" "$ROOT_DIR/klipper/klippy/klippy.py" \
   "$CONFIG_PATH" \
   -i "$gcode_file" \
-  -o "$ROOT_DIR/public/mcu_commands/${BASENAME}.serial" \
+  -o "${OUTPUT_BASE}.serial" \
   -v -d "$ROOT_DIR/public/klipper/linux_mcu/klipper.dict"
 
 "$PYTHON" "$ROOT_DIR/klipper/klippy/parsedump.py" \
   "$ROOT_DIR/public/klipper/linux_mcu/klipper.dict" \
-  "$ROOT_DIR/public/mcu_commands/${BASENAME}.serial" \
-  > "$ROOT_DIR/public/mcu_commands/${BASENAME}.txt"
+  "${OUTPUT_BASE}.serial" \
+  > "${OUTPUT_BASE}.txt"

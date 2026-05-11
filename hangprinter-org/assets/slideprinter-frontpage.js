@@ -11,11 +11,11 @@ import moveCommanderWorkerUrl from '../../example_apps/js/slideprinter/moveComma
 
 const MCU_PRESETS = {
   hangprinterLogo: {
-    url: new URL('../../public/mcu_commands/Hangprinter_logo6_flex_and_buildup.serial', import.meta.url).href,
+    url: new URL('../../public/mcu_commands/slideprinter/Hangprinter_logo6_buildup.serial', import.meta.url).href,
     format: FileFormat.MCU_SERIAL,
   },
   straightMoves: {
-    url: new URL('../../public/mcu_commands/draw_squares.serial', import.meta.url).href,
+    url: new URL('../../public/mcu_commands/slideprinter/draw_squares.serial', import.meta.url).href,
     format: FileFormat.MCU_SERIAL,
   },
 };

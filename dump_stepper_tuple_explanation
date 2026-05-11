@@ -66,7 +66,7 @@
   ```
   $ ./scripts/gcode_to_mcu_commands.sh x100.g
   ...
-  $ grep "queue_step oid=0" public/mcu_commands/x100.g.txt
+  $ grep "queue_step oid=0" public/mcu_commands/hp3/x100.g_buildup.txt
   ...
   ```
   and sum up the counts. They sum up to 34. So no problem there. My previous x100.txt must have contained a mistake.
