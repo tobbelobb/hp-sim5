@@ -34,7 +34,7 @@ const HP3_USDA_KEY = 'hp3_rigid_body.usda';
 const HP4_USDA_KEY = 'hp4_rigid_body.usda';
 const FOUR_HIGH_ANCHORS_USDA_KEY = 'four_high_anchors_rigid_body.usda';
 const CUBECORNERS_USDA_KEY = 'cubecorners_rigid_body.usda';
-const KLIPPER_UPLOAD_PIPELINE = 'raw'; // 'player' or 'raw'
+const KLIPPER_UPLOAD_PIPELINE = 'player'; // 'player' or 'raw'
 const PUBLIC_BASE_URL = import.meta.env.BASE_URL || '/';
 
 const RRF_CONFIG_VARIANTS_BY_USDA_KEY = Object.freeze({
