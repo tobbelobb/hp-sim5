@@ -118,6 +118,17 @@ describe('klipper terminal step 1', () => {
     expect(args.noWs).toBe(true);
   });
 
+  test('parseArgs resolves RRF-style Klipper config selectors', () => {
+    expect(parseArgs(['-c', 'config_hp4_w_line_layers.g']).configPath)
+      .toBe('./public/klipper/hp4/printer-hp4-linux-mcu-with-buildup.cfg');
+    expect(parseArgs(['--config=sys/config_skycam.g']).configPath)
+      .toBe('./public/klipper/skycam/printer-skycam-linux-mcu.cfg');
+    expect(parseArgs(['-m', 'hangprinter_4', '--no-line-layers']).configPath)
+      .toBe('./public/klipper/hp4/printer-hp4-linux-mcu.cfg');
+    expect(parseArgs(['--machineType=cubecorners', '--buildup']).configPath)
+      .toBe('./public/klipper/cubecorners/printer-cubecorners-linux-mcu-with-buildup.cfg');
+  });
+
   test('buildKlippyApiLaunchSpec resolves launcher paths through the repo root', () => {
     const spec = buildKlippyApiLaunchSpec({
       cwd: '/repo',

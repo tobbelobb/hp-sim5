@@ -87,14 +87,19 @@ and fan simulator commands out over WebSocket for hp-sim to visualize.
 
 Options:
   --socket <path>          Klippy API socket path (default: ${DEFAULT_KLIPPY_SOCKET_PATH})
-  --config <path>          Klippy printer config for autostart
-                           (default: ${DEFAULT_KLIPPY_CONFIG_PATH})
+  -c, --config <CONFIG>    Klippy config path or RRF config selector for autostart
+                           (config_name.g or sys/config_name.g)
+  -m, --machineType <TYPE> Machine type for autostart when --config is omitted
+                           Supported: hp3, hp4, hp5, slideprinter, skycam, cubecorners
+  --buildup, --line-layers Use printer-<machine>-linux-mcu-with-buildup.cfg
+  --no-buildup, --no_buildup, no_buildup, --no-line-layers
+                           Use printer-<machine>-linux-mcu.cfg
   --log-path <path>        Klippy log path for autostart (default: ${DEFAULT_KLIPPY_LOG_PATH})
   --start-script <path>    Launcher script for autostart
                            (default: ${DEFAULT_KLIPPY_API_START_SCRIPT})
   --ws-port <port>         Port for the hp-sim WebSocket fan-out (default: 8790)
   --no-ws                  Disable WebSocket fan-out entirely
-  --cmd, -c <GCODE>        Send G-code and exit
+  --cmd <GCODE>            Send G-code and exit
   --quiet, -q              Only print command results
   --debug                  Write API ingress logs to ${DEFAULT_DEBUG_LOG_FILENAME}
   --keep-alive             Do not stop a terminal-managed klippy on exit
