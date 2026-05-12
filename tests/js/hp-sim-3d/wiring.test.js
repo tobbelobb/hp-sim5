@@ -18,6 +18,19 @@ describe('hp-sim-3d wiring', () => {
     expect(source).toContain("./hangprinter_input.js");
   });
 
+  test('keeps setupScene as a scene-loading phase coordinator', () => {
+    const source = readWorkspaceFile('hp-sim-3d/app/setupScene.js');
+
+    expect(source).toContain('readMachineSceneSpec');
+    expect(source).toContain('validateMachineSceneSpec');
+    expect(source).toContain('buildEntityPlan');
+    expect(source).toContain('applyEntityPlan');
+    expect(source).toContain('registerSceneSystems');
+    expect(source).not.toContain('getAttribute(');
+    expect(source).not.toContain('getRelationship(');
+    expect(source).not.toContain('GetPrimAtPath(');
+  });
+
   test('declares a Three.js import map in the 3D html entrypoint', () => {
     const html = readWorkspaceFile('hp-sim-3d/index.html');
 
