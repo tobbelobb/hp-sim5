@@ -2,7 +2,12 @@ import fs from 'fs';
 import path from 'path';
 
 function readHpSim3dSource() {
-  const scriptPath = path.resolve(process.cwd(), 'hp-sim-3d/app/hp-sim-3d.js');
+  const scriptPath = path.resolve(process.cwd(), 'hp-sim-3d/app/workerController.js');
+  return fs.readFileSync(scriptPath, 'utf8');
+}
+
+function readHpSim3dBootstrapSource() {
+  const scriptPath = path.resolve(process.cwd(), 'hp-sim-3d/app/appBootstrap.js');
   return fs.readFileSync(scriptPath, 'utf8');
 }
 
@@ -14,7 +19,7 @@ describe('hp-sim-3d Klipper upload pipeline toggle', () => {
   });
 
   test('routes uploaded Klipper files through the selected pipeline', () => {
-    const source = readHpSim3dSource();
+    const source = readHpSim3dBootstrapSource();
 
     expect(source).toContain("const useRawKlipperUploadPipeline = KLIPPER_UPLOAD_PIPELINE === 'raw';");
     expect(source).toContain('worker = useRawKlipperUploadPipeline');

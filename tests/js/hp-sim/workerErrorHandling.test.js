@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 function readHpSimSource() {
-  const scriptPath = path.resolve(process.cwd(), 'hp-sim/app/hp-sim.js');
+  const scriptPath = path.resolve(process.cwd(), 'hp-sim/app/appBootstrap.js');
   return fs.readFileSync(scriptPath, 'utf8');
 }
 

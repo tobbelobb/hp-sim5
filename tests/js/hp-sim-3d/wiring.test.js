@@ -7,7 +7,7 @@ function readWorkspaceFile(filePath) {
 
 describe('hp-sim-3d wiring', () => {
   test('points the app shell at the 3D cable joints and slideprinter modules', () => {
-    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim-3d.js');
+    const source = readWorkspaceFile('hp-sim-3d/app/appBootstrap.js');
 
     expect(source).toContain("../../src/js/cable_joints_3d/ecs.js");
     expect(source).toContain("../../src/js/cable_joints_3d/cable_joints_core.js");
@@ -28,7 +28,7 @@ describe('hp-sim-3d wiring', () => {
 
   test('adds and wires the closed-loop motor toggle in the 3D app shell', () => {
     const html = readWorkspaceFile('hp-sim-3d/index.html');
-    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim-3d.js');
+    const source = readWorkspaceFile('hp-sim-3d/app/appBootstrap.js');
     const lineLayeringToggleIndex = html.indexOf('id="lineLayeringToggleWrapper"');
     const closedLoopToggleIndex = html.indexOf('id="closedLoopMotorsToggleWrapper"');
 
@@ -36,7 +36,7 @@ describe('hp-sim-3d wiring', () => {
     expect(closedLoopToggleIndex).toBeGreaterThan(lineLayeringToggleIndex);
     expect(html).toContain('<input id="closedLoopMotorsToggle" type="checkbox">');
     expect(html).toContain('<span>Closed Loop Motors</span>');
-    expect(source).toContain("import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';");
+    expect(source).toContain('setClosedLoopMotorFeatureFlags');
     expect(source).toContain("const closedLoopMotorsToggle = document.getElementById('closedLoopMotorsToggle');");
     expect(source).toContain('closedLoopMotorsToggle.checked = false;');
     expect(source).toContain('setClosedLoopMotorFeatureFlags(world, next);');
@@ -45,7 +45,7 @@ describe('hp-sim-3d wiring', () => {
 
   test('adds and wires the force sign toggle with the other checkbox controls', () => {
     const html = readWorkspaceFile('hp-sim-3d/index.html');
-    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim-3d.js');
+    const source = readWorkspaceFile('hp-sim-3d/app/appBootstrap.js');
     const qualityToggleIndex = html.indexOf('id="qualityToggleWrapper"');
     const showForcesToggleIndex = html.indexOf('id="showForcesToggleWrapper"');
     const lineLayeringToggleIndex = html.indexOf('id="lineLayeringToggleWrapper"');
@@ -61,18 +61,18 @@ describe('hp-sim-3d wiring', () => {
   });
 
   test('connects motor diagnostics into the 3D quality monitor cards', () => {
-    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim-3d.js');
+    const source = readWorkspaceFile('hp-sim-3d/app/appBootstrap.js');
 
     expect(source).toContain('getMachineMotorDiagnostics,');
-    expect(source).toContain('resetMachineMotorDiagnostics,');
+    expect(source).toContain('resetMachineMotorDiagnostics');
     expect(source).toContain('setMotorDiagnosticsProvider(() => getMachineMotorDiagnostics(world, machine.id));');
     expect(source).toContain('resetMachineMotorDiagnostics(world);');
   });
 
   test('keeps preview-safe worker URL imports for bundled print workers', () => {
-    const source = readWorkspaceFile('hp-sim-3d/app/hp-sim-3d.js');
+    const source = readWorkspaceFile('hp-sim-3d/app/appBootstrap.js');
 
-    expect(source).toContain("?worker&url';");
+    expect(source).toContain('?worker&url";');
     expect(source).toContain('klipperMcuCommandPlayerWorkerUrl');
     expect(source).toContain('rrfCanPlayerWorkerUrl');
     expect(source).toContain('moveCommanderWorkerUrl');

@@ -7,8 +7,8 @@ function readSource(relativePath) {
 
 describe('USDA load-time baking', () => {
   test.each([
-    ['hp-sim', 'hp-sim/app/hp-sim.js'],
-    ['hp-sim-3d', 'hp-sim-3d/app/hp-sim-3d.js'],
+    ['hp-sim', 'hp-sim/app/appBootstrap.js'],
+    ['hp-sim-3d', 'hp-sim-3d/app/appBootstrap.js'],
   ])('%s opens catalog and upload USDA files through the baker', (_name, relativePath) => {
     const source = readSource(relativePath);
 

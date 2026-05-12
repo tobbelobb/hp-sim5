@@ -7,7 +7,7 @@ function readWorkspaceFile(filePath) {
 
 describe('hp-sim quality monitor motor diagnostics wiring', () => {
   test('connects motor diagnostics into the quality monitor cards', () => {
-    const source = readWorkspaceFile('hp-sim/app/hp-sim.js');
+    const source = readWorkspaceFile('hp-sim/app/appBootstrap.js');
 
     expect(source).toContain("import { getMachineMotorDiagnostics } from './motor-diagnostics.js';");
     expect(source).toContain('setMotorDiagnosticsProvider(() => getMachineMotorDiagnostics(world, machine.id));');

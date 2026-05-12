@@ -8,7 +8,7 @@ function readWorkspaceFile(filePath) {
 
 describe('hp-sim reference preset mappings', () => {
   test('registers draw_squares_bigger as its own reference preset', () => {
-    const source = readWorkspaceFile('hp-sim/app/hp-sim.js');
+    const source = readWorkspaceFile('hp-sim/app/appBootstrap.js');
 
     expect(source).toContain('straightMovesBigger');
     expect(source).toContain('draw_squares_bigger.gcode');
@@ -16,7 +16,7 @@ describe('hp-sim reference preset mappings', () => {
   });
 
   test('checks draw_squares_bigger before draw_squares in default matching', () => {
-    const source = readWorkspaceFile('hp-sim/app/hp-sim.js');
+    const source = readWorkspaceFile('hp-sim/app/appBootstrap.js');
     const biggerIndex = source.indexOf("{ substring: 'draw_squares_bigger', presetKey: 'straightMovesBigger' }");
     const defaultIndex = source.indexOf("{ substring: 'draw_squares', presetKey: 'straightMoves' }");
 

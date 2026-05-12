@@ -18,7 +18,7 @@ describe('hp-sim closed-loop motor toggle', () => {
   });
 
   test('wires the toggle through the app shell feature flags', () => {
-    const source = readWorkspaceFile('hp-sim/app/hp-sim.js');
+    const source = readWorkspaceFile('hp-sim/app/appBootstrap.js');
 
     expect(source).toContain("import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';");
     expect(source).toContain("const closedLoopMotorsToggle = document.getElementById('closedLoopMotorsToggle');");
