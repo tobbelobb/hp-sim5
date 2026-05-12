@@ -4,6 +4,10 @@ import {
     readMachineSceneSpec,
     validateMachineSceneSpec,
 } from './machineSceneSpec.js';
+import {
+    createSceneBuildRegistry,
+    discoverScenePrims,
+} from './sceneDiscovery.js';
 import { buildSceneResources } from './sceneResources.js';
 import { buildMachineBodies } from './machineEntityBuilders.js';
 import { buildRigidBodies } from './rigidBodyBuilder.js';
@@ -22,15 +26,17 @@ export {
 
 export function buildEntityPlan(checkedSpec, options = {}) {
     const context = createSceneReadContext(checkedSpec, options);
+    const registry = createSceneBuildRegistry();
+    discoverScenePrims(context, registry);
     return {
         resources: buildSceneResources(context),
         entities: [
-            ...buildMachineBodies(context),
-            ...buildRigidBodies(context),
-            ...buildDistanceJoints(context),
-            ...buildCableJoints(context),
-            ...buildCablePaths(context),
-            ...buildExtruderBindings(context),
+            ...buildMachineBodies(context, registry),
+            ...buildRigidBodies(context, registry),
+            ...buildDistanceJoints(context, registry),
+            ...buildCableJoints(context, registry),
+            ...buildCablePaths(context, registry),
+            ...buildExtruderBindings(context, registry),
         ],
         postApply: [
             resetRemoteSpoolAxisMapping,

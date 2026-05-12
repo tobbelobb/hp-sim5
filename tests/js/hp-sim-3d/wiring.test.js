@@ -48,6 +48,31 @@ describe('hp-sim-3d wiring', () => {
     expect(pipeline).toContain('applyEntityPlan');
   });
 
+  test('keeps scene feature builders as component owners', () => {
+    const files = [
+      'hp-sim-3d/app/scene/machineEntityBuilders.js',
+      'hp-sim-3d/app/scene/rigidBodyBuilder.js',
+      'hp-sim-3d/app/scene/distanceJointBuilder.js',
+      'hp-sim-3d/app/scene/cableJointBuilder.js',
+      'hp-sim-3d/app/scene/cablePathBuilder.js',
+      'hp-sim-3d/app/scene/extruderSceneBinding.js',
+    ];
+    const sources = Object.fromEntries(files.map((file) => [file, readWorkspaceFile(file)]));
+    const filesContaining = (needle) => files.filter((file) => sources[file].includes(needle));
+
+    expect(filesContaining('CableJointComponent')).toEqual(['hp-sim-3d/app/scene/cableJointBuilder.js']);
+    expect(filesContaining('CablePathComponent')).toEqual(['hp-sim-3d/app/scene/cablePathBuilder.js']);
+    expect(filesContaining('DistanceConstraintComponent')).toEqual(['hp-sim-3d/app/scene/distanceJointBuilder.js']);
+    expect(filesContaining('RigidBodyComponent')).toEqual(['hp-sim-3d/app/scene/rigidBodyBuilder.js']);
+    expect(filesContaining('RigidBodyMemberComponent')).toEqual(['hp-sim-3d/app/scene/rigidBodyBuilder.js']);
+    expect(filesContaining('ExtruderComponent')).toEqual(['hp-sim-3d/app/scene/extruderSceneBinding.js']);
+
+    const machineBodiesLineCount = sources['hp-sim-3d/app/scene/machineEntityBuilders.js'].split('\n').length;
+    expect(machineBodiesLineCount).toBeLessThan(350);
+    expect(sources['hp-sim-3d/app/scene/machineEntityBuilders.js']).not.toContain('function readVectorAttribute');
+    expect(sources['hp-sim-3d/app/scene/machineEntityBuilders.js']).not.toContain('function scopedKey');
+  });
+
   test('keeps sceneSystems separate from USD scene interpretation', () => {
     const source = readWorkspaceFile('hp-sim-3d/app/sceneSystems.js');
 
