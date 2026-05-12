@@ -1,7 +1,12 @@
 export const DEFAULT_PRESET_KEY = 'hangprinterLogo';
 export const DEFAULT_VIEW_SCALE = 0.6;
 
-export function createAppState({ qualityEnabled = false, showConstraintForces = false, lineLayeringEnabled = true } = {}) {
+export function createAppState({
+  qualityEnabled = false,
+  showConstraintForces = false,
+  lineLayeringEnabled = true,
+  closedLoopMotorsEnabled = false,
+} = {}) {
   return {
     machines: [],
     machineIdCounter: 0,
@@ -24,11 +29,18 @@ export function createAppState({ qualityEnabled = false, showConstraintForces = 
     qualityEnabled,
     showConstraintForces,
     lineLayeringEnabled,
-    closedLoopMotorsEnabled: false,
+    closedLoopMotorsEnabled,
+    referenceOverlay: {
+      segments: null,
+      metadata: null,
+      color: '#1e90ff',
+      visible: false,
+      dirty: false,
+      key: null,
+    },
     jobSequenceCounter: 0,
     activeJobId: null,
     lastRecordedJobId: null,
     currentJobDescriptor: null,
   };
 }
-

@@ -6,8 +6,8 @@ function readHpSim3dSource() {
   return fs.readFileSync(scriptPath, 'utf8');
 }
 
-function readHpSim3dBootstrapSource() {
-  const scriptPath = path.resolve(process.cwd(), 'hp-sim-3d/app/appBootstrap.js');
+function readHpSim3dCommandJobSource() {
+  const scriptPath = path.resolve(process.cwd(), 'hp-sim-3d/app/commandJobController.js');
   return fs.readFileSync(scriptPath, 'utf8');
 }
 
@@ -19,11 +19,10 @@ describe('hp-sim-3d Klipper upload pipeline toggle', () => {
   });
 
   test('routes uploaded Klipper files through the selected pipeline', () => {
-    const source = readHpSim3dBootstrapSource();
+    const source = readHpSim3dCommandJobSource();
 
-    expect(source).toContain("const useRawKlipperUploadPipeline = KLIPPER_UPLOAD_PIPELINE === 'raw';");
-    expect(source).toContain('worker = useRawKlipperUploadPipeline');
-    expect(source).toContain('? createKlipperRawUploadBridge()');
-    expect(source).toContain(": ensureKlipperMcuCommandPlayerWorker();");
+    expect(source).toContain('shouldUseRawKlipperUploadPipeline(KLIPPER_UPLOAD_PIPELINE)');
+    expect(source).toContain('? workers.createKlipperRawUploadBridge()');
+    expect(source).toContain(": workers.ensureKlipperMcuCommandPlayerWorker();");
   });
 });

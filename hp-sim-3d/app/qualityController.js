@@ -9,6 +9,7 @@ export const QUALITY_HISTORY_MAX_ENTRIES = 20;
 export function createQualityController({
   document,
   world,
+  state,
   hudElement,
   historyHud,
   historyToggle,
@@ -20,8 +21,12 @@ export function createQualityController({
 }) {
   const machineQualityMonitors = new Map();
   const qualityHistoryRecords = [];
-  let qualityEnabled = qualityToggle ? Boolean(qualityToggle.checked) : false;
+  if (state) {
+    state.qualityEnabled = qualityToggle ? Boolean(qualityToggle.checked) : false;
+  }
   let qualityHistoryExpanded = false;
+
+  const isEnabled = () => Boolean(state?.qualityEnabled);
 
   function forEachQualityMonitor(callback) {
     if (typeof callback !== 'function') {
@@ -57,7 +62,7 @@ export function createQualityController({
         tintColor: machine.tintColor || null,
       });
       existing.monitor.setMotorDiagnosticsProvider(() => getMachineMotorDiagnostics(world, machine.id));
-      existing.monitor.setEnabled(qualityEnabled);
+      existing.monitor.setEnabled(isEnabled());
       return existing.monitor;
     }
     const card = document.createElement('div');
@@ -72,7 +77,7 @@ export function createQualityController({
       tintColor: machine.tintColor || null,
     });
     monitor.setMotorDiagnosticsProvider(() => getMachineMotorDiagnostics(world, machine.id));
-    monitor.setEnabled(qualityEnabled);
+    monitor.setEnabled(isEnabled());
     machineQualityMonitors.set(machine.id, { monitor });
     const referenceOverlayState = getReferenceOverlayState?.();
     if (referenceOverlayState?.segments) {
@@ -107,7 +112,9 @@ export function createQualityController({
 
   function setQualityEnabledState(enabled, { fromToggle = false } = {}) {
     const next = Boolean(enabled);
-    qualityEnabled = next;
+    if (state) {
+      state.qualityEnabled = next;
+    }
     forEachQualityMonitor((monitor) => monitor.setEnabled(next));
     if (!fromToggle && qualityToggle) {
       qualityToggle.checked = next;
@@ -199,9 +206,46 @@ export function createQualityController({
     return true;
   }
 
+  function attachToRemoteSystem(remoteSystem) {
+    if (!remoteSystem) {
+      return;
+    }
+    forEachQualityMonitor((monitor) => {
+      monitor.attachRemoteSystem(remoteSystem);
+      monitor.refreshHud();
+    });
+  }
+
+  function runFinalQualityChecks(jobState = {}) {
+    forEachQualityMonitor((monitor) => monitor.runFinalCheck());
+    return recordQualityHistoryEntry(jobState);
+  }
+
+  function bindUi() {
+    if (!qualityToggle) {
+      if (state) {
+        state.qualityEnabled = false;
+      }
+      return;
+    }
+    if (!hudElement) {
+      qualityToggle.checked = false;
+      qualityToggle.disabled = true;
+      qualityToggle.setAttribute('aria-disabled', 'true');
+      if (state) {
+        state.qualityEnabled = false;
+      }
+      return;
+    }
+    qualityToggle.addEventListener('change', () => {
+      setQualityEnabledState(qualityToggle.checked, { fromToggle: true });
+    });
+    setQualityEnabledState(qualityToggle.checked, { fromToggle: true });
+  }
+
   return {
     get enabled() {
-      return qualityEnabled;
+      return isEnabled();
     },
     get monitors() {
       return machineQualityMonitors;
@@ -220,6 +264,8 @@ export function createQualityController({
     updateQualityHistoryUI,
     toggleQualityHistory,
     recordQualityHistoryEntry,
+    attachToRemoteSystem,
+    runFinalQualityChecks,
+    bindUi,
   };
 }
-
