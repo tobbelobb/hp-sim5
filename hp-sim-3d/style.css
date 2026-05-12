@@ -178,6 +178,7 @@ body {
   position: absolute;
   top: 72px;
   right: 24px;
+  width: 136px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -196,7 +197,7 @@ body {
 
 .sim-tool-button {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) 58px;
   align-items: stretch;
   pointer-events: auto;
 }
@@ -207,19 +208,34 @@ body {
 
 .sim-tool-button .sim-tool-main {
   border-radius: 999px;
+  grid-column: 1 / -1;
 }
 
 .sim-tool-button.is-open .sim-tool-main {
+  grid-column: auto;
   border-radius: 999px 0 0 999px;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+
+.sim-tool-button.is-open .sim-tool-clear {
+  border-radius: 0 999px 999px 0;
+  padding-left: 6px;
 }
 
 .sim-tool-clear {
   border-radius: 0 999px 999px 0;
+  min-width: 0;
   border-left-width: 0;
-  padding: 12px 10px;
-  min-width: 48px;
+  padding: 12px 6px;
   font-size: 12px;
   color: rgba(240, 244, 255, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 .sim-tool-clear.sim-hidden {
