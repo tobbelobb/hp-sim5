@@ -45,7 +45,7 @@ if IS_CI:
     # Expectations for the GitHub CI environment
     EXPECTATIONS = {
         "warp": 14,
-        "no_warp": 25,
+        "no_warp": 85,
     }
 else:
     # Expectations for the local environment
