@@ -10,7 +10,7 @@ describe('hp-sim-3d Klipper upload pipeline toggle', () => {
   test('defines a top-level Klipper upload pipeline toggle', () => {
     const source = readHpSim3dSource();
 
-    expect(source).toContain("const KLIPPER_UPLOAD_PIPELINE = 'raw';");
+    expect(source).toContain("const KLIPPER_UPLOAD_PIPELINE = 'player';");
   });
 
   test('routes uploaded Klipper files through the selected pipeline', () => {

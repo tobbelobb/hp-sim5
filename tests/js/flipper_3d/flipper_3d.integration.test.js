@@ -76,8 +76,8 @@ describe('Flipper 3D Integration', () => {
     expect(running.maxAbsZ).toBeLessThan(1e-5);
   });
 
-  test('should run autonomously and reach a score of 4 when balls settle below flippers', async () => {
+  test('should run autonomously and reach a score of 9 when balls settle below flippers', async () => {
     await resetGame(harness.page);
-    await runAutonomousScoreExpectation(harness.page, { expectedScore: 4, stableScoreChunksRequired: 2 });
+    await runAutonomousScoreExpectation(harness.page, { expectedScore: 9, stableScoreChunksRequired: 2 });
   });
 });

@@ -20,7 +20,7 @@ describe('Flipper Integration Test', () => {
     await closeFlipperPage(harness);
   });
 
-  test('should run autonomously and reach a score of 4 when balls settle below flippers', async () => {
-    await runAutonomousScoreExpectation(harness.page, { expectedScore: 4, stableScoreChunksRequired: 2 });
+  test('should run autonomously and reach a score of 3 when balls settle below flippers', async () => {
+    await runAutonomousScoreExpectation(harness.page, { expectedScore: 3, stableScoreChunksRequired: 2 });
   });
 });

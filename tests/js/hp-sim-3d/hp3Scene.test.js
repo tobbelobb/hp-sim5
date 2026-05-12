@@ -19,9 +19,11 @@ import path from 'path';
 import { Open as UsdOpen } from '../../../src/js/usd/stage.js';
 import {
   World,
+  RigidBodyComponent,
   GravityAffectedComponent,
   MassComponent,
   PositionComponent,
+  RigidBodyMemberComponent,
 } from '../../../src/js/cable_joints_3d/ecs.js';
 import {
   CableJointComponent,
@@ -30,7 +32,9 @@ import {
 import { setupScene } from '../../../hp-sim-3d/app/setupScene.js';
 import { ExtruderComponent } from '../../../hp-sim-3d/app/hangprinter_extruder.js';
 
-const usdPath = path.resolve(process.cwd(), 'public/usd_scenes/hp3.usda');
+import { bakeCableSceneUsdaSource } from '../../../src/js/usd/cable_scene_baker.js';
+
+const usdPath = path.resolve(process.cwd(), 'public/usd_scenes/hp3_rigid_body.usda');
 
 function createCanvas() {
   return {
@@ -59,11 +63,9 @@ describe('hp3 USDA scene loading', () => {
   const originalDocument = global.document;
   const originalWindow = global.window;
 
-  beforeAll(async () => {
-    stage = await UsdOpen(readFileSync(usdPath, 'utf8'));
-  });
-
-  beforeEach(() => {
+  beforeEach(async () => {
+    const source = readFileSync(usdPath, 'utf8');
+    stage = await UsdOpen(bakeCableSceneUsdaSource(source).source);
     global.document = {
       getElementById() {
         return { textContent: 'Pause' };
@@ -110,33 +112,41 @@ describe('hp3 USDA scene loading', () => {
     expect(extruder.coldEndPos.z).toBeCloseTo(0.1, 6);
   });
 
-  test('marks the hp3 attachment bodies with positive mass as gravity affected', () => {
+  test('groups the hp3 attachment bodies into a rigid effector', () => {
     const world = new World();
 
     setupScene(world, stage, createCanvas(), { scenePrimPath: '/World/HangprinterScene' });
 
-    const expectedAttachmentPositions = [
-      [-0.346410161513775, -0.2, 0.1],
-      [0.346410161513775, -0.2, 0.1],
-      [0.0, 0.4, 0.1],
+    const rigidBodyEntities = world.query([RigidBodyComponent]);
+    expect(rigidBodyEntities).toHaveLength(1);
+
+    const rigidBody = world.getComponent(rigidBodyEntities[0], RigidBodyComponent);
+    expect(rigidBody.members).toHaveLength(3);
+
+    const memberStates = rigidBody.members.map((entityId) => ({
+      entityId,
+      member: world.getComponent(entityId, RigidBodyMemberComponent),
+      mass: world.getComponent(entityId, MassComponent)?.mass,
+      pos: world.getComponent(entityId, PositionComponent)?.pos,
+      gravityAffected: world.getComponent(entityId, GravityAffectedComponent),
+    }));
+
+    expect(memberStates.every(({ member }) => member)).toBe(true);
+    expect(memberStates.every(({ mass }) => mass === 0)).toBe(true);
+    expect(memberStates.every(({ gravityAffected }) => gravityAffected === undefined)).toBe(true);
+
+    const expectedLocalPositions = [
+      [-0.346410161513775, -0.2, 0.0],
+      [0.346410161513775, -0.2, 0.0],
+      [0.0, 0.4, 0.0],
     ];
 
-    const dynamicAttachmentEntities = world.query([MassComponent, PositionComponent]).filter((entityId) => {
-      const mass = world.getComponent(entityId, MassComponent)?.mass;
-      const pos = world.getComponent(entityId, PositionComponent)?.pos;
-      if (!(typeof mass === 'number' && mass > 0.0 && pos)) {
-        return false;
-      }
-      return expectedAttachmentPositions.some(([x, y, z]) =>
-        Math.abs(pos.x - x) < 1e-9 &&
-        Math.abs(pos.y - y) < 1e-9 &&
-        Math.abs(pos.z - z) < 1e-9
-      );
+    memberStates.forEach(({ member }, index) => {
+      const pos = member.localPosition;
+      const [expectedX, expectedY, expectedZ] = expectedLocalPositions[index];
+      expect(pos.x).toBeCloseTo(expectedX, 12);
+      expect(pos.y).toBeCloseTo(expectedY, 12);
+      expect(pos.z).toBeCloseTo(expectedZ, 12);
     });
-
-    expect(dynamicAttachmentEntities).toHaveLength(3);
-    for (const entityId of dynamicAttachmentEntities) {
-      expect(world.getComponent(entityId, GravityAffectedComponent)).toBeDefined();
-    }
   });
 });
