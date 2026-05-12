@@ -206,15 +206,15 @@ body {
 }
 
 .sim-tool-button .sim-tool-main {
-  border-radius: 8px;
+  border-radius: 999px;
 }
 
 .sim-tool-button.is-open .sim-tool-main {
-  border-radius: 8px 0 0 8px;
+  border-radius: 999px 0 0 999px;
 }
 
 .sim-tool-clear {
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 999px 999px 0;
   border-left-width: 0;
   padding: 12px 10px;
   min-width: 48px;
