@@ -70,12 +70,12 @@ const DEFAULT_TRACE_POINT_SIZE = 3;
 const DEFAULT_EXTRUSION_POINT_SIZE = 2;
 const DEFAULT_TRACE_Z = 0.0;
 const DEFAULT_MARKER_Z = 0.005;
-const TRACE_LABEL_TEXTURE_WIDTH = 256;
+const TRACE_LABEL_TEXTURE_WIDTH = 256*1.3;
 const TRACE_LABEL_TEXTURE_HEIGHT = 64;
-const TRACE_LABEL_WIDTH_PX = 126;
+const TRACE_LABEL_WIDTH_PX = 126*1.3;
 const TRACE_LABEL_HEIGHT_PX = 32;
 const TRACE_LABEL_OFFSET_PX = 14;
-const TRACE_PREVIEW_POINT_SIZE = DEFAULT_TRACE_POINT_SIZE + 1;
+const TRACE_PREVIEW_POINT_SIZE = DEFAULT_TRACE_POINT_SIZE;
 const TRACE_ENTITY_SNAP_RADIUS_PX = 12;
 const DEFAULT_NAV_CURSOR_MIN_SIZE = 0.0012;
 const DEFAULT_NAV_CURSOR_PIXEL_SIZE = 18;
@@ -589,8 +589,8 @@ function createTraceLabelTexture(text, { preview = false } = {}) {
   }
 
   context.clearRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = preview ? 'rgba(18, 38, 52, 0.76)' : 'rgba(12, 17, 31, 0.92)';
-  context.strokeStyle = preview ? 'rgba(45, 212, 191, 0.72)' : 'rgba(56, 189, 248, 0.95)';
+  context.fillStyle = preview ? 'rgba(18, 38, 52, 0.86)' : 'rgba(12, 17, 31, 0.92)';
+  context.strokeStyle = preview ? 'rgba(45, 212, 191, 0.82)' : 'rgba(56, 189, 248, 0.95)';
   context.lineWidth = 3;
   context.beginPath();
   if (typeof context.roundRect === 'function') {
