@@ -68,6 +68,8 @@ const DEFAULT_TRACE_MARKER_COLOR = '#2dd4bf';
 const DEFAULT_NAV_CURSOR_COLOR = '#ffd34d';
 const DEFAULT_TRACE_POINT_SIZE = 3;
 const DEFAULT_EXTRUSION_POINT_SIZE = 2;
+const EXTRUSION_POINT_CHUNK_SIZE = 65536;
+const MAX_EXTRUSION_POINT_CLOUD_POINTS = EXTRUSION_POINT_CHUNK_SIZE * 8;
 const DEFAULT_TRACE_Z = 0.0;
 const DEFAULT_MARKER_Z = 0.005;
 const TRACE_LABEL_TEXTURE_WIDTH = 256*1.3;
@@ -967,7 +969,8 @@ export class RenderSystem3D {
     this.drawnPositionTraceMarkerCount = 0;
     this.drawnExtrusionCount = 0;
     this.extrusionPointCloud = new AppendOnlyPointCloud(this.scene, {
-      chunkSize: 65536,
+      chunkSize: EXTRUSION_POINT_CHUNK_SIZE,
+      maxPoints: MAX_EXTRUSION_POINT_CLOUD_POINTS,
       color: DEFAULT_CABLE_COLOR,
       size: DEFAULT_EXTRUSION_POINT_SIZE,
       zOffset: DEFAULT_TRACE_Z,
@@ -1854,7 +1857,8 @@ export class RenderSystem3D {
   _ensureExtrusionPointCloud() {
     if (!this.extrusionPointCloud) {
       this.extrusionPointCloud = new AppendOnlyPointCloud(this.scene, {
-        chunkSize: 65536,
+        chunkSize: EXTRUSION_POINT_CHUNK_SIZE,
+        maxPoints: MAX_EXTRUSION_POINT_CLOUD_POINTS,
         color: DEFAULT_CABLE_COLOR,
         size: DEFAULT_EXTRUSION_POINT_SIZE,
         zOffset: DEFAULT_TRACE_Z,
@@ -1874,17 +1878,22 @@ export class RenderSystem3D {
 
     const extruderComp = world.getComponent(extruderEntities[0], ExtruderComponent);
     const extrusions = Array.isArray(extruderComp?.extrusions) ? extruderComp.extrusions : [];
-    if (extrusions.length === this.drawnExtrusionCount) {
+    const extrusionStartIndex = Number.isFinite(extruderComp?.extrusionStartIndex)
+      ? Math.max(0, Math.floor(extruderComp.extrusionStartIndex))
+      : 0;
+    const totalExtrusionCount = extrusionStartIndex + extrusions.length;
+    if (totalExtrusionCount === this.drawnExtrusionCount) {
       return;
     }
 
     const pointCloud = this._ensureExtrusionPointCloud();
-    if (this.drawnExtrusionCount > extrusions.length) {
+    if (this.drawnExtrusionCount < extrusionStartIndex || this.drawnExtrusionCount > totalExtrusionCount) {
       pointCloud.clear();
-      this.drawnExtrusionCount = 0;
+      this.drawnExtrusionCount = extrusionStartIndex;
     }
 
-    for (let i = this.drawnExtrusionCount; i < extrusions.length; i += 1) {
+    const startOffset = Math.max(0, this.drawnExtrusionCount - extrusionStartIndex);
+    for (let i = startOffset; i < extrusions.length; i += 1) {
       const extrusion = extrusions[i];
       const point = getExtrusionPoint(extrusion, extruderComp);
       if (!point) {
@@ -1898,7 +1907,7 @@ export class RenderSystem3D {
       );
     }
     pointCloud.flushUpdates();
-    this.drawnExtrusionCount = extrusions.length;
+    this.drawnExtrusionCount = totalExtrusionCount;
   }
 
   _syncPositionTrace(world) {
@@ -3620,13 +3629,15 @@ function getExtrusionPoint(extrusion, extruderComp = null) {
 
 class AppendOnlyPointCloud {
   constructor(scene, {
-    chunkSize = 65536,
+    chunkSize = EXTRUSION_POINT_CHUNK_SIZE,
+    maxPoints = MAX_EXTRUSION_POINT_CLOUD_POINTS,
     color = '#ffffff',
     size = 2,
     zOffset = 0.0,
   } = {}) {
     this.scene = scene;
     this.chunkSize = chunkSize;
+    this.maxPoints = Number.isFinite(maxPoints) && maxPoints > 0 ? Math.floor(maxPoints) : Infinity;
     this.color = color;
     this.size = size;
     this.zOffset = zOffset;
@@ -3671,6 +3682,21 @@ class AppendOnlyPointCloud {
     chunk.geometry.setDrawRange(0, chunk.count);
     chunk.dirtyStart = Math.min(chunk.dirtyStart, base);
     chunk.dirtyEnd = Math.max(chunk.dirtyEnd, base + 3);
+    this.trimOldChunks();
+  }
+
+  trimOldChunks() {
+    while (this.chunks.length > 1 && this.totalPoints > this.maxPoints) {
+      const first = this.chunks[0];
+      if (!first || this.totalPoints - first.count <= 0) {
+        break;
+      }
+      this.scene.remove(first.points);
+      first.geometry.dispose();
+      first.material.dispose();
+      this.chunks.shift();
+      this.totalPoints -= first.count;
+    }
   }
 
   flushUpdates() {

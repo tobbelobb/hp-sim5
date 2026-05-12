@@ -11,6 +11,21 @@ import {
 } from './hangprinter_runtime.js';
 
 const SIMULATION_PLAYBACK_RESOURCE = 'simulationPlayback';
+const MAX_RETAINED_EXTRUSIONS = 524288;
+const TRIMMED_RETAINED_EXTRUSIONS = 458752;
+
+function trimRetainedExtrusions(extruderComp) {
+  const extrusions = extruderComp?.extrusions;
+  if (!Array.isArray(extrusions) || extrusions.length <= MAX_RETAINED_EXTRUSIONS) {
+    return;
+  }
+  const removeCount = Math.max(0, extrusions.length - TRIMMED_RETAINED_EXTRUSIONS);
+  if (removeCount <= 0) {
+    return;
+  }
+  extrusions.splice(0, removeCount);
+  extruderComp.extrusionStartIndex = (extruderComp.extrusionStartIndex || 0) + removeCount;
+}
 
 export class RemoteSpoolSystem {
   constructor() {
@@ -320,6 +335,7 @@ export class RemoteSpoolSystem {
             color,
           };
           extruderComp.extrusions.push(extrusionEvent);
+          trimRetainedExtrusions(extruderComp);
           if (emitEvents && this.onExtrusion) {
             try {
               this.onExtrusion(extrusionEvent);
