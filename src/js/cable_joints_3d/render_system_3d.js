@@ -70,6 +70,13 @@ const DEFAULT_TRACE_POINT_SIZE = 3;
 const DEFAULT_EXTRUSION_POINT_SIZE = 2;
 const DEFAULT_TRACE_Z = 0.0;
 const DEFAULT_MARKER_Z = 0.005;
+const TRACE_LABEL_TEXTURE_WIDTH = 256;
+const TRACE_LABEL_TEXTURE_HEIGHT = 64;
+const TRACE_LABEL_WIDTH_PX = 126;
+const TRACE_LABEL_HEIGHT_PX = 32;
+const TRACE_LABEL_OFFSET_PX = 14;
+const TRACE_PREVIEW_POINT_SIZE = DEFAULT_TRACE_POINT_SIZE + 1;
+const TRACE_ENTITY_SNAP_RADIUS_PX = 12;
 const DEFAULT_NAV_CURSOR_MIN_SIZE = 0.0012;
 const DEFAULT_NAV_CURSOR_PIXEL_SIZE = 18;
 const DEFAULT_ORBIT_AZIMUTH = -Math.PI * 0.25;
@@ -568,6 +575,43 @@ function paintForceSignCanvas(context, text) {
   context.fillText(text, width * 0.5, height * 0.52);
 }
 
+function createTraceLabelTexture(text, { preview = false } = {}) {
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
+    return null;
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = TRACE_LABEL_TEXTURE_WIDTH;
+  canvas.height = TRACE_LABEL_TEXTURE_HEIGHT;
+  const context = canvas.getContext('2d');
+  if (!context) {
+    return null;
+  }
+
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.fillStyle = preview ? 'rgba(18, 38, 52, 0.76)' : 'rgba(12, 17, 31, 0.92)';
+  context.strokeStyle = preview ? 'rgba(45, 212, 191, 0.72)' : 'rgba(56, 189, 248, 0.95)';
+  context.lineWidth = 3;
+  context.beginPath();
+  if (typeof context.roundRect === 'function') {
+    context.roundRect(3, 3, canvas.width - 6, canvas.height - 6, 10);
+  } else {
+    context.rect(3, 3, canvas.width - 6, canvas.height - 6);
+  }
+  context.fill();
+  context.stroke();
+  context.fillStyle = preview ? '#bff8f2' : '#62d5ff';
+  context.font = '600 24px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.fillText(text, canvas.width * 0.5, canvas.height * 0.53);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.needsUpdate = true;
+  return texture;
+}
+
 function finiteVector3Like(value) {
   return Boolean(
     value &&
@@ -916,6 +960,8 @@ export class RenderSystem3D {
     this.positionTraceRadiusPx = 1.25;
     this.positionTracePoints = [];
     this.positionTraceMarkers = [];
+    this.positionTraceMarkerLabels = [];
+    this.positionTracePreview = null;
     this.drawnPositionTraceCount = 0;
     this.drawnPositionTraceMarkerCount = 0;
     this.drawnExtrusionCount = 0;
@@ -1117,6 +1163,24 @@ export class RenderSystem3D {
     this.positionTraceMarkersObject.userData.ownsMaterial = true;
     this.scene.add(this.positionTraceMarkersObject);
 
+    this.positionTracePreviewMaterial = new THREE.PointsMaterial({
+      color: DEFAULT_TRACE_MARKER_COLOR,
+      size: TRACE_PREVIEW_POINT_SIZE,
+      sizeAttenuation: false,
+      transparent: true,
+      opacity: 0.64,
+      depthWrite: false,
+      depthTest: false,
+      toneMapped: false
+    });
+    this.positionTracePreviewObject = new THREE.Points(new THREE.BufferGeometry(), this.positionTracePreviewMaterial);
+    this.positionTracePreviewObject.visible = false;
+    this.positionTracePreviewObject.frustumCulled = false;
+    this.positionTracePreviewObject.renderOrder = 935;
+    this.positionTracePreviewObject.userData.ownsGeometry = true;
+    this.positionTracePreviewObject.userData.ownsMaterial = true;
+    this.scene.add(this.positionTracePreviewObject);
+
     this.navigationCursorVisible = false;
     this.navigationCursorMaterial = new THREE.LineBasicMaterial({
       color: DEFAULT_NAV_CURSOR_COLOR,
@@ -1195,6 +1259,8 @@ export class RenderSystem3D {
     this._rayPlaneNormal = new THREE.Vector3(0, 0, 1);
     this._rayPlanePoint = new THREE.Vector3();
     this._rayHit = new THREE.Vector3();
+    this._traceLabelRight = new THREE.Vector3(1, 0, 0);
+    this._traceLabelUp = new THREE.Vector3(0, 1, 0);
 
     this._lastWidth = width;
     this._lastHeight = height;
@@ -1402,6 +1468,7 @@ export class RenderSystem3D {
     }
     this.positionTraceMaterial.color.set(this.positionTraceColor);
     if (!this.positionTraceEnabled) {
+      this.clearPositionTracePreview();
       this.clearPositionTrace();
       return;
     }
@@ -1432,23 +1499,52 @@ export class RenderSystem3D {
 
   clearPositionTraceMarkers() {
     this.positionTraceMarkers = [];
+    this._clearPositionTraceMarkerLabels();
     this.drawnPositionTraceMarkerCount = 0;
     this._updatePointObject(this.positionTraceMarkersObject, [], null, DEFAULT_MARKER_Z);
     this.requestRender();
   }
 
-  addPositionTraceMarker(simX, simY, label = '') {
+  addPositionTraceMarker(simX, simY, label = '', simZ = DEFAULT_MARKER_Z) {
     if (!Number.isFinite(simX) || !Number.isFinite(simY)) {
       return;
     }
     this.positionTraceMarkers.push({
       x: simX,
       y: simY,
-      z: DEFAULT_MARKER_Z,
+      z: Number.isFinite(simZ) ? simZ : DEFAULT_MARKER_Z,
       label
     });
     this._syncPositionTraceMarkers();
     this.requestRender();
+  }
+
+  setPositionTracePreview(point = null, label = '') {
+    if (
+      !this.positionTraceEnabled
+      || !point
+      || !Number.isFinite(point.x)
+      || !Number.isFinite(point.y)
+    ) {
+      this.positionTracePreview = null;
+      this._syncPositionTracePreview();
+      this.requestRender();
+      return;
+    }
+
+    const z = Number.isFinite(point.z) ? point.z : DEFAULT_MARKER_Z;
+    this.positionTracePreview = {
+      x: point.x,
+      y: point.y,
+      z,
+      label
+    };
+    this._syncPositionTracePreview();
+    this.requestRender();
+  }
+
+  clearPositionTracePreview() {
+    this.setPositionTracePreview(null);
   }
 
   clearExtrusions() {
@@ -1509,6 +1605,33 @@ export class RenderSystem3D {
     return this._projectCanvasToPlane(pixel.x, pixel.y, planePoint, planeNormal);
   }
 
+  resolvePositionTracePoint(world, clientX, clientY) {
+    const pixel = this._clientToCanvasPixels(clientX, clientY);
+    if (!pixel) {
+      return null;
+    }
+
+    const ray = this._setRayFromCanvasPixel(pixel.x, pixel.y);
+    const snapped = ray && world ? this._findPositionTraceSnap(world, ray) : null;
+    if (snapped) {
+      return snapped;
+    }
+
+    const point = this._projectCanvasToSim(pixel.x, pixel.y);
+    if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) {
+      return null;
+    }
+    return {
+      point: {
+        x: point.x,
+        y: point.y,
+        z: Number.isFinite(point.z) ? point.z : DEFAULT_MARKER_Z,
+      },
+      snapped: false,
+      entityId: null,
+    };
+  }
+
   projectCanvasToPlane(pixelX, pixelY, planePoint, planeNormal = null) {
     return this._projectCanvasToPlane(pixelX, pixelY, planePoint, planeNormal);
   }
@@ -1530,11 +1653,7 @@ export class RenderSystem3D {
     if (!planePoint) {
       return null;
     }
-    const width = Math.max(1, this.canvas.width || this.canvas.clientWidth || 1);
-    const height = Math.max(1, this.canvas.height || this.canvas.clientHeight || 1);
-    this._rayNdc.x = (pixelX / width) * 2 - 1;
-    this._rayNdc.y = -(pixelY / height) * 2 + 1;
-    this._raycaster.setFromCamera(this._rayNdc, this.camera);
+    this._setRayFromCanvasPixel(pixelX, pixelY);
 
     const normalX = planeNormal?.x ?? 0.0;
     const normalY = planeNormal?.y ?? 0.0;
@@ -1556,6 +1675,68 @@ export class RenderSystem3D {
       return null;
     }
     return new Vector3(hit.x, hit.y, hit.z);
+  }
+
+  _setRayFromCanvasPixel(pixelX, pixelY) {
+    const width = Math.max(1, this.canvas.width || this.canvas.clientWidth || 1);
+    const height = Math.max(1, this.canvas.height || this.canvas.clientHeight || 1);
+    if (!Number.isFinite(pixelX) || !Number.isFinite(pixelY)) {
+      return null;
+    }
+    this._rayNdc.x = (pixelX / width) * 2 - 1;
+    this._rayNdc.y = -(pixelY / height) * 2 + 1;
+    this._raycaster.setFromCamera(this._rayNdc, this.camera);
+    return this._raycaster.ray;
+  }
+
+  _findPositionTraceSnap(world, ray) {
+    if (!world || !ray || typeof world.query !== 'function') {
+      return null;
+    }
+
+    const viewportHeight = Math.max(1, this.canvas.clientHeight || this.canvas.height || 1);
+    let best = null;
+    for (const entityId of world.query([PositionComponent])) {
+      const pos = world.getComponent(entityId, PositionComponent)?.pos;
+      if (!pos || !Number.isFinite(pos.x) || !Number.isFinite(pos.y) || !Number.isFinite(pos.z)) {
+        continue;
+      }
+      const radiusComp = world.getComponent(entityId, RadiusComponent);
+      const renderComp = world.getComponent(entityId, RenderableComponent);
+      if (!radiusComp && !renderComp) {
+        continue;
+      }
+
+      const target = this._rayPlanePoint.set(pos.x, pos.y, pos.z);
+      const depth = target.clone().sub(ray.origin).dot(ray.direction);
+      if (!(depth > 0)) {
+        continue;
+      }
+
+      const radius = Number.isFinite(radiusComp?.radius) ? Math.max(0.0, radiusComp.radius) : 0.0;
+      const worldUnitsPerPixel = getWorldUnitsPerScreenPixel(this.camera, target, viewportHeight) ?? 0.0;
+      const snapRadius = Math.max(radius, TRACE_ENTITY_SNAP_RADIUS_PX * worldUnitsPerPixel);
+      if (!(snapRadius > 0.0)) {
+        continue;
+      }
+
+      const distSq = ray.distanceSqToPoint(target);
+      if (distSq > snapRadius * snapRadius) {
+        continue;
+      }
+      if (!best || depth < best.depth || (Math.abs(depth - best.depth) <= EPSILON && distSq < best.distSq)) {
+        best = { entityId, pos, depth, distSq };
+      }
+    }
+
+    if (!best) {
+      return null;
+    }
+    return {
+      point: { x: best.pos.x, y: best.pos.y, z: best.pos.z },
+      snapped: true,
+      entityId: best.entityId,
+    };
   }
 
   _updatePointObject(object, points, colors = null, defaultZ = 0.0) {
@@ -1738,10 +1919,133 @@ export class RenderSystem3D {
       this.positionTraceMarkers.length === this.drawnPositionTraceMarkerCount
       && this.positionTraceMarkersObject.visible === (this.positionTraceMarkers.length > 0)
     ) {
+      this._syncPositionTraceMarkerLabels();
       return;
     }
     this.drawnPositionTraceMarkerCount = this.positionTraceMarkers.length;
     this._updatePointObject(this.positionTraceMarkersObject, this.positionTraceMarkers, null, DEFAULT_MARKER_Z);
+    this._syncPositionTraceMarkerLabels();
+  }
+
+  _syncPositionTraceMarkerLabels() {
+    const viewportHeight = Math.max(1, this.canvas?.clientHeight || this.canvas?.height || 1);
+    for (let i = 0; i < this.positionTraceMarkers.length; i += 1) {
+      const marker = this.positionTraceMarkers[i];
+      let sign = this.positionTraceMarkerLabels[i];
+      if (!sign) {
+        sign = this._createPositionTraceLabel(marker?.label || '', false);
+        this.positionTraceMarkerLabels[i] = sign;
+        this.scene.add(sign);
+      }
+      this._updatePositionTraceLabel(sign, marker?.label || '', false);
+      this._positionTraceLabelAt(sign, marker, viewportHeight);
+      sign.visible = Boolean(marker?.label);
+    }
+
+    for (let i = this.positionTraceMarkers.length; i < this.positionTraceMarkerLabels.length; i += 1) {
+      const sign = this.positionTraceMarkerLabels[i];
+      if (!sign) {
+        continue;
+      }
+      this.scene.remove(sign);
+      disposeObject(sign);
+    }
+    this.positionTraceMarkerLabels.length = this.positionTraceMarkers.length;
+  }
+
+  _syncPositionTracePreview() {
+    if (!this.positionTracePreview) {
+      this._updatePointObject(this.positionTracePreviewObject, [], null, DEFAULT_MARKER_Z);
+      if (this.positionTracePreviewLabel) {
+        this.positionTracePreviewLabel.visible = false;
+      }
+      return;
+    }
+
+    this._updatePointObject(this.positionTracePreviewObject, [this.positionTracePreview], null, DEFAULT_MARKER_Z);
+    if (!this.positionTracePreviewLabel) {
+      this.positionTracePreviewLabel = this._createPositionTraceLabel(this.positionTracePreview.label || '', true);
+      this.scene.add(this.positionTracePreviewLabel);
+    }
+    this._updatePositionTraceLabel(this.positionTracePreviewLabel, this.positionTracePreview.label || '', true);
+    this._positionTraceLabelAt(
+      this.positionTracePreviewLabel,
+      this.positionTracePreview,
+      Math.max(1, this.canvas?.clientHeight || this.canvas?.height || 1)
+    );
+    this.positionTracePreviewLabel.visible = Boolean(this.positionTracePreview.label);
+  }
+
+  _createPositionTraceLabel(text, preview) {
+    const texture = createTraceLabelTexture(text, { preview });
+    const material = new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+      toneMapped: false,
+      opacity: preview ? 0.82 : 1.0,
+    });
+    const sign = new THREE.Sprite(material);
+    sign.frustumCulled = false;
+    sign.renderOrder = preview ? 936 : 936;
+    sign.userData.ownsMaterial = true;
+    sign.userData.ownsTexture = true;
+    sign.userData.traceLabelText = text;
+    sign.userData.traceLabelPreview = Boolean(preview);
+    return sign;
+  }
+
+  _updatePositionTraceLabel(sign, text, preview) {
+    if (!sign || sign.userData.traceLabelText === text && sign.userData.traceLabelPreview === Boolean(preview)) {
+      return;
+    }
+    const previous = sign.material?.map || null;
+    const texture = createTraceLabelTexture(text, { preview });
+    if (sign.material) {
+      sign.material.map = texture;
+      sign.material.needsUpdate = true;
+    }
+    if (previous) {
+      previous.dispose();
+    }
+    sign.userData.traceLabelText = text;
+    sign.userData.traceLabelPreview = Boolean(preview);
+  }
+
+  _positionTraceLabelAt(sign, marker, viewportHeight) {
+    if (!sign || !marker) {
+      return;
+    }
+    const worldPosition = this._rayPlanePoint.set(
+      marker.x,
+      marker.y,
+      Number.isFinite(marker.z) ? marker.z : DEFAULT_MARKER_Z
+    );
+    const worldUnitsPerPixel = getWorldUnitsPerScreenPixel(this.camera, worldPosition, viewportHeight)
+      ?? (1.0 / Math.max(1, viewportHeight));
+    const right = this._traceLabelRight.set(1, 0, 0).applyQuaternion(this.camera.quaternion).normalize();
+    const up = this._traceLabelUp.set(0, 1, 0).applyQuaternion(this.camera.quaternion).normalize();
+    sign.position
+      .copy(worldPosition)
+      .addScaledVector(right, TRACE_LABEL_WIDTH_PX * 0.5 * worldUnitsPerPixel + TRACE_LABEL_OFFSET_PX * worldUnitsPerPixel)
+      .addScaledVector(up, TRACE_LABEL_HEIGHT_PX * 0.15 * worldUnitsPerPixel);
+    sign.scale.set(
+      TRACE_LABEL_WIDTH_PX * worldUnitsPerPixel,
+      TRACE_LABEL_HEIGHT_PX * worldUnitsPerPixel,
+      1.0
+    );
+  }
+
+  _clearPositionTraceMarkerLabels() {
+    for (const sign of this.positionTraceMarkerLabels) {
+      if (!sign) {
+        continue;
+      }
+      this.scene.remove(sign);
+      disposeObject(sign);
+    }
+    this.positionTraceMarkerLabels = [];
   }
 
   _syncExtruder(world) {
@@ -1850,6 +2154,9 @@ export class RenderSystem3D {
     });
     this.measureRenderBlock(world, '_syncPositionTraceMarkers', () => {
       this._syncPositionTraceMarkers();
+    });
+    this.measureRenderBlock(world, '_syncPositionTracePreview', () => {
+      this._syncPositionTracePreview();
     });
     this.measureRenderBlock(world, '_updateBumperHitFx', () => {
       this._updateBumperHitFx(world);
@@ -2036,6 +2343,16 @@ export class RenderSystem3D {
     if (this.positionTraceMarkersObject && this.scene) {
       this.scene.remove(this.positionTraceMarkersObject);
       disposeObject(this.positionTraceMarkersObject);
+    }
+    if (this.positionTracePreviewObject && this.scene) {
+      this.scene.remove(this.positionTracePreviewObject);
+      disposeObject(this.positionTracePreviewObject);
+    }
+    this._clearPositionTraceMarkerLabels();
+    if (this.positionTracePreviewLabel && this.scene) {
+      this.scene.remove(this.positionTracePreviewLabel);
+      disposeObject(this.positionTracePreviewLabel);
+      this.positionTracePreviewLabel = null;
     }
     if (this.navigationCursorObject && this.scene) {
       this.scene.remove(this.navigationCursorObject);

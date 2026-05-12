@@ -446,4 +446,36 @@ describe('slideprinter 3D InputSystem orbit interaction', () => {
     expect(ptrPos?.y).toBeCloseTo(0.53, 6);
     expect(ptrPos?.z).toBeCloseTo(0.35, 6);
   });
+
+  test('does not grab a spool from a mouse right click', () => {
+    const world = new World();
+    const renderSystem = {
+      getCameraPlaneNormal: jest.fn(() => ({ x: 0.0, y: 0.0, z: 1.0 })),
+      projectClientToPlane: jest.fn(() => ({ x: 0.4, y: 0.5, z: 0.2 })),
+      projectClientToSim: jest.fn(() => ({ x: 0.4, y: 0.5 })),
+      rotateOrbitByPixels: jest.fn(),
+    };
+    world.setResource('simHeight', 1.7);
+    world.setResource('renderSystem', renderSystem);
+    world.setResource('grabbedBall', null);
+
+    const spoolId = world.createEntity();
+    world.addComponent(spoolId, new SpoolTagComponent());
+    world.addComponent(spoolId, new PositionComponent(0.4, 0.5, 0.2));
+    world.addComponent(spoolId, new RadiusComponent(0.05));
+
+    const canvas = createCanvas();
+    const inputSystem = new InputSystem(canvas, world, null);
+
+    inputSystem.handlePointerDown(createPointerEvent(canvas, {
+      clientX: 100,
+      clientY: 120,
+      pointerId: 12,
+      button: 2,
+    }));
+
+    expect(inputSystem.grabSpring).toBeNull();
+    expect(world.getResource('grabbedBall')).toBeNull();
+    expect(renderSystem.rotateOrbitByPixels).not.toHaveBeenCalled();
+  });
 });

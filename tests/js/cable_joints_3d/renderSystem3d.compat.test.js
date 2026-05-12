@@ -42,6 +42,8 @@ function createCompatStub(canvasOverrides = {}) {
   system.positionTraceRadiusPx = 1.25;
   system.positionTracePoints = [];
   system.positionTraceMarkers = [];
+  system.positionTraceMarkerLabels = [];
+  system.positionTracePreview = null;
   system.drawnPositionTraceCount = 0;
   system.drawnPositionTraceMarkerCount = 0;
   system.drawnExtrusionCount = 0;
@@ -56,6 +58,8 @@ function createCompatStub(canvasOverrides = {}) {
   system.positionTracePointsObject = new THREE.Points(new THREE.BufferGeometry(), system.positionTraceMaterial);
   system.positionTraceMarkerMaterial = new THREE.PointsMaterial({ color: '#2dd4bf', size: 8, sizeAttenuation: false });
   system.positionTraceMarkersObject = new THREE.Points(new THREE.BufferGeometry(), system.positionTraceMarkerMaterial);
+  system.positionTracePreviewMaterial = new THREE.PointsMaterial({ color: '#2dd4bf', size: 7, sizeAttenuation: false });
+  system.positionTracePreviewObject = new THREE.Points(new THREE.BufferGeometry(), system.positionTracePreviewMaterial);
   system.navigationCursorVisible = false;
   system.navigationCursorMaterial = new THREE.LineBasicMaterial({ color: '#ffd34d' });
   system.navigationCursorGeometry = new THREE.BufferGeometry().setFromPoints([
@@ -107,6 +111,12 @@ function createCompatStub(canvasOverrides = {}) {
   system._syncExtruder = RenderSystem3D.prototype._syncExtruder;
   system._syncPositionTrace = RenderSystem3D.prototype._syncPositionTrace;
   system._syncPositionTraceMarkers = RenderSystem3D.prototype._syncPositionTraceMarkers;
+  system._syncPositionTraceMarkerLabels = RenderSystem3D.prototype._syncPositionTraceMarkerLabels;
+  system._syncPositionTracePreview = RenderSystem3D.prototype._syncPositionTracePreview;
+  system._createPositionTraceLabel = RenderSystem3D.prototype._createPositionTraceLabel;
+  system._updatePositionTraceLabel = RenderSystem3D.prototype._updatePositionTraceLabel;
+  system._positionTraceLabelAt = RenderSystem3D.prototype._positionTraceLabelAt;
+  system._clearPositionTraceMarkerLabels = RenderSystem3D.prototype._clearPositionTraceMarkerLabels;
   system._syncBoard = RenderSystem3D.prototype._syncBoard;
   system._computePrintSurfaceHalfExtent = RenderSystem3D.prototype._computePrintSurfaceHalfExtent;
   system._syncRigidGroups = RenderSystem3D.prototype._syncRigidGroups;
@@ -117,6 +127,8 @@ function createCompatStub(canvasOverrides = {}) {
   system.setPositionTraceEnabled = RenderSystem3D.prototype.setPositionTraceEnabled;
   system.setNavigationCursorVisible = RenderSystem3D.prototype.setNavigationCursorVisible;
   system.addPositionTraceMarker = RenderSystem3D.prototype.addPositionTraceMarker;
+  system.setPositionTracePreview = RenderSystem3D.prototype.setPositionTracePreview;
+  system.clearPositionTracePreview = RenderSystem3D.prototype.clearPositionTracePreview;
   system.clearPositionTrace = RenderSystem3D.prototype.clearPositionTrace;
   system.clearPositionTraceMarkers = RenderSystem3D.prototype.clearPositionTraceMarkers;
   system.clearExtrusions = RenderSystem3D.prototype.clearExtrusions;
@@ -124,9 +136,12 @@ function createCompatStub(canvasOverrides = {}) {
   system.projectClientToPlane = RenderSystem3D.prototype.projectClientToPlane;
   system.projectCanvasToPlane = RenderSystem3D.prototype.projectCanvasToPlane;
   system.projectClientToSim = RenderSystem3D.prototype.projectClientToSim;
+  system.resolvePositionTracePoint = RenderSystem3D.prototype.resolvePositionTracePoint;
   system.projectCanvasToSim = RenderSystem3D.prototype.projectCanvasToSim;
   system._projectCanvasToSim = RenderSystem3D.prototype._projectCanvasToSim;
   system._projectCanvasToPlane = RenderSystem3D.prototype._projectCanvasToPlane;
+  system._setRayFromCanvasPixel = RenderSystem3D.prototype._setRayFromCanvasPixel;
+  system._findPositionTraceSnap = RenderSystem3D.prototype._findPositionTraceSnap;
   system._baseCameraDistance = 2.2;
   system.orbitAzimuth = -Math.PI * 0.25;
   system.orbitPolar = 1.05;
@@ -136,9 +151,12 @@ function createCompatStub(canvasOverrides = {}) {
   system._rayPlaneNormal = new THREE.Vector3(0, 0, 1);
   system._rayPlanePoint = new THREE.Vector3();
   system._rayHit = new THREE.Vector3();
+  system._traceLabelRight = new THREE.Vector3(1, 0, 0);
+  system._traceLabelUp = new THREE.Vector3(0, 1, 0);
   system.scene.add(system.referenceLines);
   system.scene.add(system.positionTracePointsObject);
   system.scene.add(system.positionTraceMarkersObject);
+  system.scene.add(system.positionTracePreviewObject);
   system.scene.add(system.root);
   system.scene.add(system.board);
   system.scene.add(system.boardOutline);
@@ -155,6 +173,14 @@ function disposeCompatStub(system) {
   system.positionTraceMaterial.dispose();
   system.positionTraceMarkersObject.geometry.dispose();
   system.positionTraceMarkerMaterial.dispose();
+  system.positionTracePreviewObject.geometry.dispose();
+  system.positionTracePreviewMaterial.dispose();
+  system._clearPositionTraceMarkerLabels?.();
+  if (system.positionTracePreviewLabel) {
+    system.scene.remove(system.positionTracePreviewLabel);
+    system.positionTracePreviewLabel.material?.map?.dispose?.();
+    system.positionTracePreviewLabel.material?.dispose?.();
+  }
   system.navigationCursorObject.geometry.dispose();
   system.navigationCursorMaterial.dispose();
   system.board.geometry.dispose();
@@ -355,6 +381,51 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
       expect(updateSpy).not.toHaveBeenCalled();
       expect(system.drawnPositionTraceMarkerCount).toBe(1);
       updateSpy.mockRestore();
+    } finally {
+      disposeCompatStub(system);
+    }
+  });
+
+  test('creates coordinate label sprites for position-trace markers and preview', () => {
+    const system = createCompatStub();
+
+    try {
+      system.setPositionTraceEnabled(true);
+      system.addPositionTraceMarker(0.1, 0.2, '(100.00, 200.00, 5.00)', 0.005);
+      system.setPositionTracePreview({ x: 0.15, y: 0.25, z: 0.01 }, '(150.00, 250.00, 10.00)');
+
+      expect(system.positionTraceMarkerLabels).toHaveLength(1);
+      expect(system.positionTraceMarkerLabels[0].visible).toBe(true);
+      expect(system.positionTraceMarkerLabels[0].userData.traceLabelText).toBe('(100.00, 200.00, 5.00)');
+      expect(system.positionTracePreviewObject.visible).toBe(true);
+      expect(system.positionTracePreviewLabel.visible).toBe(true);
+      expect(system.positionTracePreviewLabel.userData.traceLabelText).toBe('(150.00, 250.00, 10.00)');
+
+      system.clearPositionTracePreview();
+      expect(system.positionTracePreviewObject.visible).toBe(false);
+      expect(system.positionTracePreviewLabel.visible).toBe(false);
+    } finally {
+      disposeCompatStub(system);
+    }
+  });
+
+  test('snaps position-trace placement to an entity under the camera ray', () => {
+    const system = createCompatStub();
+    const world = new World();
+    const ray = system._setRayFromCanvasPixel(320, 240);
+    const target = ray.origin.clone().addScaledVector(ray.direction, 1.0);
+    const entityId = world.createEntity();
+    world.addComponent(entityId, new PositionComponent(target.x, target.y, target.z));
+    world.addComponent(entityId, new RadiusComponent(0.05));
+
+    try {
+      const resolved = system.resolvePositionTracePoint(world, 320, 240);
+
+      expect(resolved?.snapped).toBe(true);
+      expect(resolved?.entityId).toBe(entityId);
+      expect(resolved?.point.x).toBeCloseTo(target.x, 6);
+      expect(resolved?.point.y).toBeCloseTo(target.y, 6);
+      expect(resolved?.point.z).toBeCloseTo(target.z, 6);
     } finally {
       disposeCompatStub(system);
     }

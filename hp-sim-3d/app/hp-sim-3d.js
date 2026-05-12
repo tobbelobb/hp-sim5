@@ -980,6 +980,54 @@ function initHpSim() {
     const enabled = Boolean(renderSystem?.positionTraceEnabled);
     positionTraceBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
     positionTraceBtn.classList.toggle('is-active', enabled);
+    if (!enabled) {
+      renderSystem?.clearPositionTracePreview?.();
+    }
+  }
+
+  function formatPositionTraceLabel(point) {
+    const mmX = point.x / GCODE_MM_TO_SIM_SCALE;
+    const mmY = point.y / GCODE_MM_TO_SIM_SCALE;
+    const mmZ = (Number.isFinite(point.z) ? point.z : 0.0) / GCODE_MM_TO_SIM_SCALE;
+    return `(${mmX.toFixed(2)}, ${mmY.toFixed(2)}, ${mmZ.toFixed(2)})`;
+  }
+
+  function resolvePositionTracePoint(renderSystem, event) {
+    const resolved = typeof renderSystem.resolvePositionTracePoint === 'function'
+      ? renderSystem.resolvePositionTracePoint(world, event.clientX, event.clientY)
+      : null;
+    if (resolved?.point) {
+      return resolved;
+    }
+    const projected = typeof renderSystem.projectClientToSim === 'function'
+      ? renderSystem.projectClientToSim(event.clientX, event.clientY)
+      : null;
+    if (!projected || !Number.isFinite(projected.x) || !Number.isFinite(projected.y)) {
+      return null;
+    }
+    return {
+      point: {
+        x: projected.x,
+        y: projected.y,
+        z: Number.isFinite(projected.z) ? projected.z : 0.0,
+      },
+      snapped: false,
+      entityId: null,
+    };
+  }
+
+  function updatePositionTracePreviewFromPointer(event) {
+    const renderSystem = world.getResource('renderSystem');
+    if (!renderSystem?.positionTraceEnabled || event.target !== canvas) {
+      renderSystem?.clearPositionTracePreview?.();
+      return;
+    }
+    const resolved = resolvePositionTracePoint(renderSystem, event);
+    if (!resolved?.point) {
+      renderSystem.clearPositionTracePreview?.();
+      return;
+    }
+    renderSystem.setPositionTracePreview?.(resolved.point, formatPositionTraceLabel(resolved.point));
   }
 
   function syncReferenceOverlayToRenderSystem({ force = false } = {}) {
@@ -4489,6 +4537,10 @@ function initHpSim() {
     canvas.addEventListener('click', handleCanvasClick);
     canvas.addEventListener('dblclick', handleCanvasDoubleClick);
     canvas.addEventListener('wheel', handleCanvasWheel, { passive: false });
+    canvas.addEventListener('pointermove', updatePositionTracePreviewFromPointer);
+    canvas.addEventListener('pointerleave', () => {
+      world.getResource('renderSystem')?.clearPositionTracePreview?.();
+    });
     canvas.addEventListener('contextmenu', (event) => {
       const renderSystem = world.getResource('renderSystem');
       if (!renderSystem || !renderSystem.positionTraceEnabled) {
@@ -4536,18 +4588,14 @@ function initHpSim() {
         return;
       }
 
-      const projected = typeof renderSystem.projectClientToSim === 'function'
-        ? renderSystem.projectClientToSim(event.clientX, event.clientY)
-        : null;
-      const simX = projected?.x;
-      const simY = projected?.y;
-      if (!Number.isFinite(simX) || !Number.isFinite(simY)) {
+      const resolved = resolvePositionTracePoint(renderSystem, event);
+      const point = resolved?.point;
+      if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) {
         return;
       }
-      const mmX = simX / GCODE_MM_TO_SIM_SCALE;
-      const mmY = simY / GCODE_MM_TO_SIM_SCALE;
-      const label = `(${mmX.toFixed(2)}, ${mmY.toFixed(2)})`;
-      renderSystem.addPositionTraceMarker?.(simX, simY, label);
+      const label = formatPositionTraceLabel(point);
+      renderSystem.addPositionTraceMarker?.(point.x, point.y, label, point.z);
+      renderSystem.setPositionTracePreview?.(point, label);
       renderSystem.update?.(world, 0);
     });
   }

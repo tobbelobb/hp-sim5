@@ -189,6 +189,9 @@ export class RemoteInputSystem {
     if (!onCanvas) {
       return;
     }
+    if (event.pointerType === 'mouse' && event.button !== 0) {
+      return;
+    }
 
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       const { x, y } = this.toSimCoords(event.clientX, event.clientY);
@@ -926,6 +929,9 @@ export class InputSystem {
     }
     if (usePanMode) {
       this.beginPan(event);
+      return;
+    }
+    if (event.pointerType === 'mouse' && event.button !== 0) {
       return;
     }
 
