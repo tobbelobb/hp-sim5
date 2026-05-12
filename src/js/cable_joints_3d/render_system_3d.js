@@ -2285,8 +2285,7 @@ export class RenderSystem3D {
     this._hideBorderFloor();
     this._clearBorderWalls();
     this.clearExtrusions();
-    this.clearPositionTrace();
-    this.clearPositionTraceMarkers();
+    this.clearPositionTrace({ keepMarkers: true });
     this.referencePaths = [];
     this.referenceVisible = false;
     this.referenceRequestedVisible = false;

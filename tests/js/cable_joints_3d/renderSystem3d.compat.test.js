@@ -450,6 +450,38 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
     }
   });
 
+  test('resetVisuals preserves stored trace and measurement points', () => {
+    const system = createCompatStub();
+
+    try {
+      system.resetVisuals = RenderSystem3D.prototype.resetVisuals;
+      system.circleMeshes = new Map();
+      system.flipperMeshes = new Map();
+      system.jointLines = [];
+      system.wrapArcs = [];
+      system.knotMarkers = [];
+      system.forceSigns = [];
+      system.forceSignConnectors = [];
+      system.borderLine = null;
+      system.borderVertexCount = 0;
+      system.extruderLine = null;
+      system._clearBumperFx = jest.fn();
+      system._hideBorderFloor = jest.fn();
+      system._clearBorderWalls = jest.fn();
+      system.positionTracePoints.push({ x: 0.1, y: 0.2, z: 0.0 });
+      system.setMeasureEnabled(true);
+      system.addMeasureMarker(0.3, 0.4, '(300.00, 400.00, 0.00)', 0.0);
+
+      system.resetVisuals();
+
+      expect(system.positionTracePoints).toHaveLength(1);
+      expect(system.positionTraceMarkers).toHaveLength(1);
+      expect(system.positionTraceMarkers[0]).toEqual(expect.objectContaining({ x: 0.3, y: 0.4 }));
+    } finally {
+      disposeCompatStub(system);
+    }
+  });
+
   test('snaps position-trace placement to an entity under the camera ray', () => {
     const system = createCompatStub();
     const world = new World();
