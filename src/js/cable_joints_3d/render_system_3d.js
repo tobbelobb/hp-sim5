@@ -956,6 +956,7 @@ export class RenderSystem3D {
     this.referenceVisible = false;
     this.referenceDirty = false;
     this.positionTraceEnabled = false;
+    this.measureEnabled = false;
     this.positionTraceColor = DEFAULT_TRACE_COLOR;
     this.positionTraceRadiusPx = 1.25;
     this.positionTracePoints = [];
@@ -1468,10 +1469,21 @@ export class RenderSystem3D {
     }
     this.positionTraceMaterial.color.set(this.positionTraceColor);
     if (!this.positionTraceEnabled) {
-      this.clearPositionTracePreview();
-      this.clearPositionTrace();
+      if (this.positionTracePointsObject.visible) {
+        this._updatePointObject(this.positionTracePointsObject, [], null, DEFAULT_TRACE_Z);
+      }
+      this.requestRender();
       return;
     }
+    this.requestRender();
+  }
+
+  setMeasureEnabled(enabled) {
+    this.measureEnabled = Boolean(enabled);
+    if (!this.measureEnabled) {
+      this.clearPositionTracePreview();
+    }
+    this._syncPositionTraceMarkers();
     this.requestRender();
   }
 
@@ -1505,6 +1517,10 @@ export class RenderSystem3D {
     this.requestRender();
   }
 
+  clearMeasureMarkers() {
+    this.clearPositionTraceMarkers();
+  }
+
   addPositionTraceMarker(simX, simY, label = '', simZ = DEFAULT_MARKER_Z) {
     if (!Number.isFinite(simX) || !Number.isFinite(simY)) {
       return;
@@ -1519,9 +1535,13 @@ export class RenderSystem3D {
     this.requestRender();
   }
 
+  addMeasureMarker(simX, simY, label = '', simZ = DEFAULT_MARKER_Z) {
+    this.addPositionTraceMarker(simX, simY, label, simZ);
+  }
+
   setPositionTracePreview(point = null, label = '') {
     if (
-      !this.positionTraceEnabled
+      !this.measureEnabled
       || !point
       || !Number.isFinite(point.x)
       || !Number.isFinite(point.y)
@@ -1907,7 +1927,10 @@ export class RenderSystem3D {
       }
     }
 
-    if (this.positionTracePoints.length !== this.drawnPositionTraceCount) {
+    if (
+      this.positionTracePoints.length !== this.drawnPositionTraceCount
+      || this.positionTracePointsObject.visible !== (this.positionTracePoints.length > 0)
+    ) {
       this.drawnPositionTraceCount = this.positionTracePoints.length;
       this.positionTraceMaterial.color.set(this.positionTraceColor);
       this._updatePointObject(this.positionTracePointsObject, this.positionTracePoints, null, DEFAULT_TRACE_Z);
@@ -1915,6 +1938,13 @@ export class RenderSystem3D {
   }
 
   _syncPositionTraceMarkers() {
+    if (!this.measureEnabled) {
+      if (this.positionTraceMarkersObject.visible) {
+        this._updatePointObject(this.positionTraceMarkersObject, [], null, DEFAULT_MARKER_Z);
+      }
+      this._syncPositionTraceMarkerLabels();
+      return;
+    }
     if (
       this.positionTraceMarkers.length === this.drawnPositionTraceMarkerCount
       && this.positionTraceMarkersObject.visible === (this.positionTraceMarkers.length > 0)
@@ -1928,6 +1958,14 @@ export class RenderSystem3D {
   }
 
   _syncPositionTraceMarkerLabels() {
+    if (!this.measureEnabled) {
+      for (const sign of this.positionTraceMarkerLabels) {
+        if (sign) {
+          sign.visible = false;
+        }
+      }
+      return;
+    }
     const viewportHeight = Math.max(1, this.canvas?.clientHeight || this.canvas?.height || 1);
     for (let i = 0; i < this.positionTraceMarkers.length; i += 1) {
       const marker = this.positionTraceMarkers[i];

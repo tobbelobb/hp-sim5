@@ -341,6 +341,9 @@ function initHpSim() {
   const pauseBtn = document.getElementById('pauseBtn');
   const finishAsapBtn = document.getElementById('finishAsapBtn');
   const positionTraceBtn = document.getElementById('positionTraceBtn');
+  const positionTraceClearBtn = document.getElementById('positionTraceClearBtn');
+  const measureBtn = document.getElementById('measureBtn');
+  const measureClearBtn = document.getElementById('measureClearBtn');
   const zoomInBtn = document.getElementById('zoomInBtn');
   const zoomOutBtn = document.getElementById('zoomOutBtn');
   const panModeBtn = document.getElementById('panModeBtn');
@@ -402,9 +405,6 @@ function initHpSim() {
   let secondaryControlsHideTimeout = null;
   let secondaryControlsInteractionEnableTimeout = null;
   let lastMobileLayoutMatches = isMobileLayout();
-  let positionTraceRightClickCount = 0;
-  let positionTraceFirstRightClickMs = 0;
-  let positionTraceDoubleClickTimer = null;
   const touchTapStarts = new Map();
   const activeCanvasTouchPointers = new Set();
   let touchGestureHadMultiplePointers = false;
@@ -973,13 +973,29 @@ function initHpSim() {
   }
 
   function updatePositionTraceToggleUI() {
-    if (!positionTraceBtn) {
-      return;
-    }
     const renderSystem = world.getResource('renderSystem');
     const enabled = Boolean(renderSystem?.positionTraceEnabled);
-    positionTraceBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-    positionTraceBtn.classList.toggle('is-active', enabled);
+    if (positionTraceBtn) {
+      positionTraceBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+      positionTraceBtn.classList.toggle('is-active', enabled);
+    }
+    if (positionTraceClearBtn) {
+      positionTraceClearBtn.classList.toggle('sim-hidden', !enabled);
+      positionTraceClearBtn.closest('.sim-tool-button')?.classList.toggle('is-open', enabled);
+    }
+  }
+
+  function updateMeasureToggleUI() {
+    const renderSystem = world.getResource('renderSystem');
+    const enabled = Boolean(renderSystem?.measureEnabled);
+    if (measureBtn) {
+      measureBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+      measureBtn.classList.toggle('is-active', enabled);
+    }
+    if (measureClearBtn) {
+      measureClearBtn.classList.toggle('sim-hidden', !enabled);
+      measureClearBtn.closest('.sim-tool-button')?.classList.toggle('is-open', enabled);
+    }
     if (!enabled) {
       renderSystem?.clearPositionTracePreview?.();
     }
@@ -1018,7 +1034,7 @@ function initHpSim() {
 
   function updatePositionTracePreviewFromPointer(event) {
     const renderSystem = world.getResource('renderSystem');
-    if (!renderSystem?.positionTraceEnabled || event.target !== canvas) {
+    if (!renderSystem?.measureEnabled || event.target !== canvas) {
       renderSystem?.clearPositionTracePreview?.();
       return;
     }
@@ -1028,6 +1044,22 @@ function initHpSim() {
       return;
     }
     renderSystem.setPositionTracePreview?.(resolved.point, formatPositionTraceLabel(resolved.point));
+  }
+
+  function placeMeasurePointFromPointer(event) {
+    const renderSystem = world.getResource('renderSystem');
+    if (!renderSystem?.measureEnabled || event.target !== canvas) {
+      return;
+    }
+    const resolved = resolvePositionTracePoint(renderSystem, event);
+    const point = resolved?.point;
+    if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) {
+      return;
+    }
+    const label = formatPositionTraceLabel(point);
+    renderSystem.addMeasureMarker?.(point.x, point.y, label, point.z);
+    renderSystem.setPositionTracePreview?.(point, label);
+    renderSystem.update?.(world, 0);
   }
 
   function syncReferenceOverlayToRenderSystem({ force = false } = {}) {
@@ -4530,6 +4562,13 @@ function initHpSim() {
       if (isMobileLayout() && secondaryControlsUserPreference !== false) {
         showSecondaryControlsForMobile({ persist: secondaryControlsUserPreference === true });
       }
+      const renderSystem = world.getResource('renderSystem');
+      if (renderSystem?.measureEnabled && event.pointerType === 'mouse' && event.button === 0) {
+        event.preventDefault();
+        event.stopPropagation();
+        placeMeasurePointFromPointer(event);
+        return;
+      }
       handleCanvasTouchPointerDown(event);
     });
     canvas.addEventListener('pointerup', handleCanvasTouchPointerUp);
@@ -4543,60 +4582,10 @@ function initHpSim() {
     });
     canvas.addEventListener('contextmenu', (event) => {
       const renderSystem = world.getResource('renderSystem');
-      if (!renderSystem || !renderSystem.positionTraceEnabled) {
+      if (!renderSystem?.positionTraceEnabled && !renderSystem?.measureEnabled) {
         return;
       }
       event.preventDefault();
-      const nowMs = performance.now();
-      if (positionTraceRightClickCount === 0 || nowMs - positionTraceFirstRightClickMs > 700) {
-        positionTraceRightClickCount = 0;
-        positionTraceFirstRightClickMs = nowMs;
-        if (positionTraceDoubleClickTimer) {
-          clearTimeout(positionTraceDoubleClickTimer);
-          positionTraceDoubleClickTimer = null;
-        }
-      }
-
-      positionTraceRightClickCount += 1;
-
-      if (positionTraceRightClickCount === 2) {
-        if (positionTraceDoubleClickTimer) {
-          clearTimeout(positionTraceDoubleClickTimer);
-        }
-        positionTraceDoubleClickTimer = window.setTimeout(() => {
-          if (positionTraceRightClickCount === 2) {
-            renderSystem.clearPositionTraceMarkers?.();
-            renderSystem.update?.(world, 0);
-          }
-          positionTraceRightClickCount = 0;
-          positionTraceFirstRightClickMs = 0;
-          positionTraceDoubleClickTimer = null;
-        }, 350);
-        return;
-      }
-
-      if (positionTraceRightClickCount === 3 && nowMs - positionTraceFirstRightClickMs <= 700) {
-        if (positionTraceDoubleClickTimer) {
-          clearTimeout(positionTraceDoubleClickTimer);
-          positionTraceDoubleClickTimer = null;
-        }
-        positionTraceRightClickCount = 0;
-        positionTraceFirstRightClickMs = 0;
-        renderSystem.clearPositionTracePoints?.();
-        renderSystem.clearPositionTraceMarkers?.();
-        renderSystem.update?.(world, 0);
-        return;
-      }
-
-      const resolved = resolvePositionTracePoint(renderSystem, event);
-      const point = resolved?.point;
-      if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) {
-        return;
-      }
-      const label = formatPositionTraceLabel(point);
-      renderSystem.addPositionTraceMarker?.(point.x, point.y, label, point.z);
-      renderSystem.setPositionTracePreview?.(point, label);
-      renderSystem.update?.(world, 0);
     });
   }
 
@@ -4739,6 +4728,40 @@ function initHpSim() {
       renderSystem.setPositionTraceEnabled(nextEnabled);
       renderSystem.update?.(world, 0);
       updatePositionTraceToggleUI();
+    });
+  }
+
+  if (positionTraceClearBtn) {
+    positionTraceClearBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const renderSystem = world.getResource('renderSystem');
+      renderSystem?.clearPositionTracePoints?.();
+      renderSystem?.update?.(world, 0);
+    });
+  }
+
+  if (measureBtn) {
+    measureBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      const renderSystem = world.getResource('renderSystem');
+      if (!renderSystem || typeof renderSystem.setMeasureEnabled !== 'function') {
+        return;
+      }
+      const nextEnabled = !renderSystem.measureEnabled;
+      renderSystem.setMeasureEnabled(nextEnabled);
+      renderSystem.update?.(world, 0);
+      updateMeasureToggleUI();
+    });
+  }
+
+  if (measureClearBtn) {
+    measureClearBtn.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const renderSystem = world.getResource('renderSystem');
+      renderSystem?.clearMeasureMarkers?.();
+      renderSystem?.update?.(world, 0);
     });
   }
 

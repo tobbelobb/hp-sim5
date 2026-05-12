@@ -194,6 +194,38 @@ body {
   background: rgba(35, 38, 58, 0.82);
 }
 
+.sim-tool-button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  pointer-events: auto;
+}
+
+.sim-tool-main {
+  min-width: 0;
+}
+
+.sim-tool-button .sim-tool-main {
+  border-radius: 8px;
+}
+
+.sim-tool-button.is-open .sim-tool-main {
+  border-radius: 8px 0 0 8px;
+}
+
+.sim-tool-clear {
+  border-radius: 0 8px 8px 0;
+  border-left-width: 0;
+  padding: 12px 10px;
+  min-width: 48px;
+  font-size: 12px;
+  color: rgba(240, 244, 255, 0.92);
+}
+
+.sim-tool-clear.sim-hidden {
+  display: none;
+}
+
 .sim-zoom {
   display: flex;
   flex-direction: column;
@@ -207,7 +239,8 @@ body {
 
 .sim-zoom-btn[aria-pressed="true"],
 .sim-zoom-btn.is-active,
-#positionTraceBtn.is-active {
+#positionTraceBtn.is-active,
+#measureBtn.is-active {
   background: rgba(255, 255, 255, 0.32);
   color: #151526;
 }

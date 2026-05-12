@@ -38,6 +38,7 @@ function createCompatStub(canvasOverrides = {}) {
   system.referenceVisible = false;
   system.referenceDirty = false;
   system.positionTraceEnabled = false;
+  system.measureEnabled = false;
   system.positionTraceColor = '#ffffff';
   system.positionTraceRadiusPx = 1.25;
   system.positionTracePoints = [];
@@ -125,12 +126,15 @@ function createCompatStub(canvasOverrides = {}) {
   system._hideLines = RenderSystem3D.prototype._hideLines;
   system.setReferencePaths = RenderSystem3D.prototype.setReferencePaths;
   system.setPositionTraceEnabled = RenderSystem3D.prototype.setPositionTraceEnabled;
+  system.setMeasureEnabled = RenderSystem3D.prototype.setMeasureEnabled;
   system.setNavigationCursorVisible = RenderSystem3D.prototype.setNavigationCursorVisible;
   system.addPositionTraceMarker = RenderSystem3D.prototype.addPositionTraceMarker;
+  system.addMeasureMarker = RenderSystem3D.prototype.addMeasureMarker;
   system.setPositionTracePreview = RenderSystem3D.prototype.setPositionTracePreview;
   system.clearPositionTracePreview = RenderSystem3D.prototype.clearPositionTracePreview;
   system.clearPositionTrace = RenderSystem3D.prototype.clearPositionTrace;
   system.clearPositionTraceMarkers = RenderSystem3D.prototype.clearPositionTraceMarkers;
+  system.clearMeasureMarkers = RenderSystem3D.prototype.clearMeasureMarkers;
   system.clearExtrusions = RenderSystem3D.prototype.clearExtrusions;
   system.getCameraPlaneNormal = RenderSystem3D.prototype.getCameraPlaneNormal;
   system.projectClientToPlane = RenderSystem3D.prototype.projectClientToPlane;
@@ -271,6 +275,7 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
       extruder.centerPos = { x: 0.5, y: 0.6, z: -0.003 };
       extruder.tipPos = { x: 0.45, y: 0.55, z: -0.004 };
       system._syncPositionTrace(world);
+      system.setMeasureEnabled(true);
       system.addPositionTraceMarker(0.1, 0.2, 'A');
 
       expect(system.positionTracePoints).toHaveLength(2);
@@ -373,6 +378,7 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
     const system = createCompatStub();
 
     try {
+      system.setMeasureEnabled(true);
       system.addPositionTraceMarker(0.1, 0.2, 'A');
       const updateSpy = jest.spyOn(system, '_updatePointObject');
 
@@ -390,8 +396,8 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
     const system = createCompatStub();
 
     try {
-      system.setPositionTraceEnabled(true);
-      system.addPositionTraceMarker(0.1, 0.2, '(100.00, 200.00, 5.00)', 0.005);
+      system.setMeasureEnabled(true);
+      system.addMeasureMarker(0.1, 0.2, '(100.00, 200.00, 5.00)', 0.005);
       system.setPositionTracePreview({ x: 0.15, y: 0.25, z: 0.01 }, '(150.00, 250.00, 10.00)');
 
       expect(system.positionTraceMarkerLabels).toHaveLength(1);
@@ -404,6 +410,41 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
       system.clearPositionTracePreview();
       expect(system.positionTracePreviewObject.visible).toBe(false);
       expect(system.positionTracePreviewLabel.visible).toBe(false);
+    } finally {
+      disposeCompatStub(system);
+    }
+  });
+
+  test('hides trace and measurement data without clearing stored points', () => {
+    const system = createCompatStub();
+
+    try {
+      system.setPositionTraceEnabled(true);
+      system.positionTracePoints.push({ x: 0.1, y: 0.2, z: 0.0 });
+      system._syncPositionTrace({ query: () => [] });
+      expect(system.positionTracePointsObject.visible).toBe(true);
+
+      system.setPositionTraceEnabled(false);
+      expect(system.positionTracePoints).toHaveLength(1);
+      expect(system.positionTracePointsObject.visible).toBe(false);
+
+      system.setPositionTraceEnabled(true);
+      system._syncPositionTrace({ query: () => [] });
+      expect(system.positionTracePointsObject.visible).toBe(true);
+
+      system.setMeasureEnabled(true);
+      system.addMeasureMarker(0.3, 0.4, '(300.00, 400.00, 0.00)', 0.0);
+      expect(system.positionTraceMarkersObject.visible).toBe(true);
+      expect(system.positionTraceMarkerLabels[0].visible).toBe(true);
+
+      system.setMeasureEnabled(false);
+      expect(system.positionTraceMarkers).toHaveLength(1);
+      expect(system.positionTraceMarkersObject.visible).toBe(false);
+      expect(system.positionTraceMarkerLabels[0].visible).toBe(false);
+
+      system.setMeasureEnabled(true);
+      expect(system.positionTraceMarkersObject.visible).toBe(true);
+      expect(system.positionTraceMarkerLabels[0].visible).toBe(true);
     } finally {
       disposeCompatStub(system);
     }
