@@ -1065,7 +1065,13 @@ function initHpSim() {
 
   function handleMeasurePointerDown(event) {
     const renderSystem = world.getResource('renderSystem');
-    if (!renderSystem?.measureEnabled || event.target !== canvas || event.pointerType !== 'mouse' || event.button !== 0) {
+    const isMousePrimary = event.pointerType === 'mouse' && event.button === 0;
+    const isTouchLike = event.pointerType === 'touch' || event.pointerType === 'pen';
+    if (!renderSystem?.measureEnabled || event.target !== canvas || (!isMousePrimary && !isTouchLike)) {
+      measurePointerCandidate = null;
+      return;
+    }
+    if (isTouchLike && measurePointerCandidate && measurePointerCandidate.pointerId !== event.pointerId) {
       measurePointerCandidate = null;
       return;
     }
