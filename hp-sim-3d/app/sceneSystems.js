@@ -2,7 +2,6 @@ import Vector3 from '../../src/js/cable_joints_3d/vector3.js';
 import { CableAttachmentUpdateSystem, PBDCableConstraintSolver } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import { PBDResolveCableOverCorrections } from '../../src/js/cable_joints_3d/pbdResolveCableOverCorrections.js';
 import { CableAttachmentCacheSystem } from '../../src/js/cable_joints_3d/cable_attachment_cache_system.js';
-import { CableSlackSystem } from '../../src/js/cable_joints_3d/cable_slack_system.js';
 import { CableFrictionSystem } from '../../src/js/cable_joints_3d/cable_friction_system.js';
 import { InputSystem, RemoteInputSystem } from './hangprinter_input.js';
 import { ExtruderSystem } from './hangprinter_extruder.js';

@@ -31,6 +31,34 @@ describe('hp-sim-3d wiring', () => {
     expect(source).not.toContain('GetPrimAtPath(');
   });
 
+  test('keeps scene pipeline separate from system registration', () => {
+    const pipeline = readWorkspaceFile('hp-sim-3d/app/scene/machineScenePipeline.js');
+    const applier = readWorkspaceFile('hp-sim-3d/app/scene/entityPlanApplier.js');
+    const entityBuilders = readWorkspaceFile('hp-sim-3d/app/scene/machineEntityBuilders.js');
+
+    for (const source of [pipeline, applier, entityBuilders]) {
+      expect(source).not.toContain('registerSystem');
+      expect(source).not.toContain('registerSystems');
+      expect(source).not.toContain('RenderSystem3D');
+      expect(source).not.toContain('InputSystem');
+      expect(source).not.toContain('RemoteInputSystem');
+      expect(source).not.toContain('document.getElementById');
+    }
+    expect(pipeline).toContain('buildSceneResources');
+    expect(pipeline).toContain('applyEntityPlan');
+  });
+
+  test('keeps sceneSystems separate from USD scene interpretation', () => {
+    const source = readWorkspaceFile('hp-sim-3d/app/sceneSystems.js');
+
+    expect(source).not.toContain('getAttribute(');
+    expect(source).not.toContain('getRelationship(');
+    expect(source).not.toContain('GetPrimAtPath(');
+    expect(source).not.toContain('CableJoint');
+    expect(source).not.toContain('RigidGroup');
+    expect(source).not.toContain('DistancePhysicsJoint');
+  });
+
   test('declares a Three.js import map in the 3D html entrypoint', () => {
     const html = readWorkspaceFile('hp-sim-3d/index.html');
 

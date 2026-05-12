@@ -1,11 +1,11 @@
-import Vector3 from '../../src/js/cable_joints_3d/vector3.js';
+import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
 import {
   getAttribute,
   getChild,
   getChildren,
   getRelationship,
   materialProperties
-} from "../../src/js/usd/stage.js";
+} from "../../../src/js/usd/stage.js";
 import {
   PositionComponent,
   VelocityComponent,
@@ -20,181 +20,43 @@ import {
   PrevFinalPosComponent,
   RestitutionComponent,
   CoefficientOfFrictionComponent,
-  SimulationErrorStateComponent,
   RenderableComponent,
   DistanceConstraintComponent,
   RigidBodyComponent,
   RigidBodyMemberComponent,
   MachineTagComponent,
-} from "../../src/js/cable_joints_3d/ecs.js";
+} from "../../../src/js/cable_joints_3d/ecs.js";
 import {
   CableLinkComponent,
   CableJointComponent,
   CablePathComponent,
   linecolor1,
-  CableAttachmentUpdateSystem,
-  PBDCableConstraintSolver
-} from '../../src/js/cable_joints_3d/cable_joints_core.js';
-import {
-  PBDResolveCableOverCorrections
-} from '../../src/js/cable_joints_3d/pbdResolveCableOverCorrections.js';
-
-import { CableAttachmentCacheSystem } from '../../src/js/cable_joints_3d/cable_attachment_cache_system.js';
-import { CableSlackSystem } from '../../src/js/cable_joints_3d/cable_slack_system.js';
-import { CableFrictionSystem } from '../../src/js/cable_joints_3d/cable_friction_system.js';
-import {
-  PauseStateComponent,
-} from '../../example_apps/js/flipper/flipper_common.js';
-import {
-  InputSystem,
-  RemoteInputSystem,
-} from './hangprinter_input.js';
-import { ExtruderComponent, ExtruderSystem } from './hangprinter_extruder.js';
-import { RemoteSpoolSystem } from './remoteSpoolSystem.js';
+} from '../../../src/js/cable_joints_3d/cable_joints_core.js';
+import { ExtruderComponent } from '../hangprinter_extruder.js';
 import {
   SpoolTagComponent,
   SpoolStateComponent,
   normalizeSpoolAxisLocal,
-} from './hangprinter_spools.js';
-import { StepperMotorComponent, StepperMotorSystem } from './hangprinter_stepper_motor.js';
-import { TorqueModeSystem } from './torqueModeSystem.js';
-import { MissedStepTrackingSystem } from './motor-diagnostics.js';
-import { RenderSystem3D } from '../../src/js/cable_joints_3d/render_system_3d.js';
-import {
-  PrevFinalPosSystem,
-  PrevFinalOrientationSystem,
-  EncoderUpdateSystem,
-  GravitySystem,
-  MovementSystem,
-  AngularMovementSystem,
-  PBDVelocityUpdateSystem,
-  PBDAngularVelocityUpdateSystem,
-  RigidBodySyncSystem,
-  XPBDDistanceConstraintSystem,
-} from '../../src/js/cable_joints_3d/commonSystems.js';
-import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
-import { initializeRigidBodySyncState } from '../../src/js/cable_joints_3d/rigid_bodies.js';
+} from '../hangprinter_spools.js';
+import { StepperMotorComponent } from '../hangprinter_stepper_motor.js';
+import Quaternion from '../../../src/js/cable_joints_3d/quaternion.js';
+import { initializeRigidBodySyncState } from '../../../src/js/cable_joints_3d/rigid_bodies.js';
 
 const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
 const DEFAULT_PINHOLE_RADIUS = 0.002;
 
-/**
- * @typedef {object} ParsedStage
- * @property {object} stage USD stage object returned by the parser.
- */
-
-/**
- * @typedef {object} MachineSceneSpec
- * @property {ParsedStage} parsedStage
- * @property {string} scenePrimPath
- * @property {object|null} sceneRoot
- * @property {boolean} remote
- */
-
-/**
- * @typedef {MachineSceneSpec & {sceneRootPath: string}} ValidatedMachineSpec
- */
-
-/**
- * @typedef {object} EntityBuildPlan
- * @property {object} stage
- * @property {object} options
- */
-
-export function parseStage(stage) {
-    return { stage };
+export function buildMachineBodies(context) {
+    return [function applyMachineBodies(world) {
+        applyMachineSceneEntities(world, context);
+    }];
 }
 
-export function readMachineSceneSpec(parsedStage, scenePrimPath = '/World/SlideprinterScene', options = {}) {
-    const remote = Boolean(options.remote);
-    const normalizedScenePrimPath = typeof scenePrimPath === 'string' && scenePrimPath.length > 0
-        ? scenePrimPath
-        : '/World/SlideprinterScene';
-    const stage = parsedStage?.stage ?? parsedStage;
-    return {
-        parsedStage: { stage },
-        scenePrimPath: normalizedScenePrimPath,
-        sceneRoot: remote ? null : stage?.GetPrimAtPath?.(normalizedScenePrimPath) ?? null,
-        remote,
-    };
-}
-
-export function validateMachineSceneSpec(spec) {
-    const sceneRootPath = spec.scenePrimPath.endsWith('/')
-        ? spec.scenePrimPath.slice(0, -1)
-        : spec.scenePrimPath;
-    if (!spec.remote && !spec.sceneRoot) {
-        return {
-            ...spec,
-            sceneRootPath,
-            valid: false,
-            warnings: [`setupScene: Unable to find scene root at ${spec.scenePrimPath}.`],
-        };
-    }
-    return {
-        ...spec,
-        sceneRootPath,
-        valid: true,
-        warnings: [],
-    };
-}
-
-export function buildEntityPlan(checkedSpec, options = {}) {
-    return {
-        stage: checkedSpec.parsedStage.stage,
-        sceneRoot: checkedSpec.sceneRoot,
-        sceneRootPath: checkedSpec.sceneRootPath,
-        options: {
-            ...options,
-            registerSystems: false,
-            remote: checkedSpec.remote,
-            scenePrimPath: checkedSpec.scenePrimPath,
-        },
-    };
-}
-
-export function applyEntityPlan(world, plan, canvas) {
-    return loadMachineSceneFromPlan(world, plan, canvas);
-}
-
-function loadMachineSceneFromPlan(world, plan, canvas) {
-    const stage = plan.stage;
-    const options = plan.options || {};
-    const registerSystems = options.registerSystems !== false;
-    const existingRenderSystem = world.getResource('renderSystem');
-    if (existingRenderSystem instanceof RenderSystem3D && !options.append) {
-        existingRenderSystem.resetVisuals();
-    }
-
-    const isRemote = options.remote || false;
-    const append = Boolean(options.append);
+function applyMachineSceneEntities(world, context) {
+    const { stage, sceneRoot, sceneRootPath, options } = context;
+    const isRemote = Boolean(options.remote);
     const palette = options.palette || null;
     const namespace = typeof options.namespace === 'string' && options.namespace.length > 0 ? options.namespace : null;
-    const scenePrimPath = typeof options.scenePrimPath === 'string' && options.scenePrimPath.length > 0
-        ? options.scenePrimPath
-        : '/World/SlideprinterScene';
-
-    const sceneRootPath = scenePrimPath.endsWith('/') ? scenePrimPath.slice(0, -1) : scenePrimPath;
-    const sceneRoot = !isRemote ? stage?.GetPrimAtPath(scenePrimPath) : null;
-
-    if (!isRemote && !sceneRoot) {
-        console.warn(`setupScene: Unable to find scene root at ${scenePrimPath}.`);
-        return;
-    }
     const machineId = namespace || 'default';
-
-    let machineColors = world.getResource('machineColors');
-    if (!machineColors || typeof machineColors.set !== 'function') {
-        machineColors = new Map();
-        world.setResource('machineColors', machineColors);
-    }
-    if (!append) {
-        machineColors.clear();
-    }
-    machineColors.set(machineId, {
-        tintColor: options.tintColor || null,
-        extrusionColor: options.extrusionColor || null,
-    });
 
     function normalizeToPlainArray(value) {
         if (Array.isArray(value)) {
@@ -486,47 +348,6 @@ function loadMachineSceneFromPlan(world, plan, canvas) {
         }
         const sanitized = relative.replace(/\//g, '::');
         return scopedKey(sanitized || relative);
-    }
-
-    if (!isRemote && !append) {
-        world.clear();
-    }
-
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
-
-    const simHeight = 1.7;
-    const cScale = canvas.height / simHeight;
-    const simWidth = canvas.width / cScale;
-
-    if (!isRemote && !append) {
-        // This block remains unchanged, it's for local simulation.
-        const physicsScene = stage.GetPrimAtPath("/World/PhysicsScene");
-        const gravityDir = getAttribute(physicsScene, "physics:gravityDirection");
-        const gravityMag = getAttribute(physicsScene, "physics:gravityMagnitude");
-        const gravity = new Vector3(
-            gravityDir[0] * gravityMag,
-            gravityDir[1] * gravityMag,
-            (gravityDir[2] || 0) * gravityMag
-        );
-        const dt = 1.0 / stage.ast.descriptor.assignments.find(s => s.type === 'assignment' && s.identifier === 'timeCodesPerSecond').value;
-
-        world.setResource('gravity', gravity);
-        world.setResource('dt', dt);
-        world.setResource('defaultPlaneNormal', DEFAULT_PLANE_NORMAL.clone());
-    }
-
-    if (!append) {
-        const existingPauseState = world.getResource('pauseState');
-        const paused = typeof existingPauseState?.paused === 'boolean'
-            ? existingPauseState.paused
-            : false;
-        world.setResource('simWidth', simWidth);
-        world.setResource('simHeight', simHeight);
-        world.setResource('pauseState', new PauseStateComponent(paused));
-        world.setResource('debugRenderPoints', {});
-        world.setResource('errorState', new SimulationErrorStateComponent(false));
-        world.setResource('grabbedBall', null);
     }
 
     if (!isRemote) {
@@ -1128,100 +949,5 @@ function loadMachineSceneFromPlan(world, plan, canvas) {
                 }
             }
         }
-
-        const remoteSpoolSystem = world.systems.find((system) => system instanceof RemoteSpoolSystem);
-        if (remoteSpoolSystem && typeof remoteSpoolSystem.resetAxisMapping === 'function') {
-            remoteSpoolSystem.resetAxisMapping();
-        }
-    }
-
-    if (registerSystems && world.systems.length === 0) {
-      const pauseBtn = document.getElementById("pauseBtn");
-      let inputSys;
-      if (isRemote) {
-          const ws = options.ws;
-          inputSys = new RemoteInputSystem(canvas, world, ws);
-      } else {
-          inputSys = new InputSystem(canvas, world, pauseBtn);
-      }
-      inputSys.scaleMultiplier = 1.1;
-      inputSys.viewOffsetX = 0.0;
-      inputSys.viewOffsetY = -0.0;
-      world.registerSystem(inputSys);
-
-      if (!isRemote) {
-          // hp-sim-3d follows the usual XPBD/PBD frame order:
-          // save previous pose, apply external changes, integrate predicted
-          // pose, sync rigid members, update cable geometry, solve positional
-          // constraints, then derive final velocities. There is no global
-          // per-frame substep loop here yet; the runner supplies fixed dt
-          // updates. See hp-sim-3d/README.md for implementation notes.
-          // 1. Cache state from previous step
-          world.registerSystem(new PrevFinalPosSystem());
-          world.registerSystem(new PrevFinalOrientationSystem());
-
-          // 2. Handle non-physics state changes
-          world.registerSystem(new RemoteSpoolSystem());
-          world.registerSystem(new StepperMotorSystem());
-
-          // 3. PREDICTION: Apply forces and integrate velocity to get predicted positions
-          world.registerSystem(new GravitySystem());
-          world.registerSystem(new MovementSystem());
-          world.registerSystem(new AngularMovementSystem());
-          world.registerSystem(new RigidBodySyncSystem());
-
-          // 4. Update derived geometry and cable state
-          world.registerSystem(new CableAttachmentUpdateSystem(false));
-          world.registerSystem(new CableAttachmentCacheSystem());
-          world.registerSystem(new CableFrictionSystem());
-
-          // 5. POSITIONAL SOLVERS: Correct predicted positions to satisfy constraints.
-          world.registerSystem(new PBDCableConstraintSolver());
-          world.registerSystem(new PBDResolveCableOverCorrections());
-
-          // 7. UPDATE VELOCITY: Derive final velocities from the position changes
-          world.registerSystem(new PBDVelocityUpdateSystem());
-          world.registerSystem(new PBDAngularVelocityUpdateSystem());
-
-          // 8. VELOCITY SOLVERS: Apply restitution and dynamic friction
-          // Velocity-level solvers (which might also do positional adjustments)
-          world.registerSystem(new TorqueModeSystem());
-
-          // 9. Game Logic or similar. Counters and stuff
-          world.registerSystem(new ExtruderSystem());
-          world.registerSystem(new EncoderUpdateSystem());
-          world.registerSystem(new MissedStepTrackingSystem());
-      }
-
-      const renderSystem = new RenderSystem3D(canvas, {
-          planeNormal: DEFAULT_PLANE_NORMAL,
-          targetX: 0.0,
-          targetY: 0.0,
-          cameraZ: 2.2 / Math.max(0.02, inputSys.scaleMultiplier),
-          initialOrbitAzimuth: -Math.PI * 0.25,
-          initialOrbitPolar: 1.05,
-          controlsEnabled: false,
-          renderOnSimulationStep: false
-      });
-      renderSystem.setViewTransform?.({
-          scaleMultiplier: inputSys.scaleMultiplier,
-          offsetX: inputSys.viewOffsetX,
-          offsetY: inputSys.viewOffsetY,
-      });
-      world.setResource('renderSystem', renderSystem);
-    } else if (existingRenderSystem instanceof RenderSystem3D) {
-      existingRenderSystem.setCanvasSize(canvas.clientWidth, canvas.clientHeight);
-    }
-
-    if (!isRemote) {
-        const extruderSystem = world.systems.find((system) => system instanceof ExtruderSystem);
-        if (extruderSystem && typeof extruderSystem.update === 'function') {
-            extruderSystem.update(world, 0);
-        }
-    }
-
-    const renderSystem = world.getResource('renderSystem');
-    if (renderSystem instanceof RenderSystem3D && typeof renderSystem.update === 'function') {
-        renderSystem.update(world, 0);
     }
 }

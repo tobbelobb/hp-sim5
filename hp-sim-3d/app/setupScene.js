@@ -1,11 +1,10 @@
-import { RenderSystem3D } from '../../src/js/cable_joints_3d/render_system_3d.js';
 import {
     applyEntityPlan,
     buildEntityPlan,
     parseStage,
     readMachineSceneSpec,
     validateMachineSceneSpec,
-} from './machineScenePipeline.js';
+} from './scene/machineScenePipeline.js';
 import { registerSceneSystems } from './sceneSystems.js';
 
 export {
@@ -14,15 +13,10 @@ export {
     parseStage,
     readMachineSceneSpec,
     validateMachineSceneSpec,
-} from './machineScenePipeline.js';
+} from './scene/machineScenePipeline.js';
 export { registerSceneSystems } from './sceneSystems.js';
 
 export function setupScene(world, stage, canvas, options = {}) {
-    const existingRenderSystem = world.getResource('renderSystem');
-    if (existingRenderSystem instanceof RenderSystem3D && !options.append) {
-        existingRenderSystem.resetVisuals();
-    }
-
     const scenePrimPath = typeof options.scenePrimPath === 'string' && options.scenePrimPath.length > 0
         ? options.scenePrimPath
         : '/World/SlideprinterScene';
@@ -44,8 +38,9 @@ export function setupScene(world, stage, canvas, options = {}) {
         ...options,
         namespace,
         palette: options.palette || null,
+        canvas,
     });
-    applyEntityPlan(world, plan, canvas);
+    applyEntityPlan(world, plan);
     registerSceneSystems(world, {
         canvas,
         mode: '3d',
