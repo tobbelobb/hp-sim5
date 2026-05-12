@@ -1,8 +1,0 @@
-allocate_oids count=6
-config_stepper oid=0 step_pin=gpiochip0/gpio20 dir_pin=gpiochip0/gpio21 invert_step=0 step_pulse_ticks=100
-config_digital_out oid=3 pin=gpiochip0/gpio16 value=1 default_value=1 max_duration=0
-config_stepper oid=1 step_pin=gpiochip0/gpio19 dir_pin=gpiochip0/gpio26 invert_step=0 step_pulse_ticks=100
-config_digital_out oid=4 pin=gpiochip0/gpio13 value=1 default_value=1 max_duration=0
-config_stepper oid=2 step_pin=gpiochip0/gpio6 dir_pin=gpiochip0/gpio5 invert_step=0 step_pulse_ticks=100
-config_digital_out oid=5 pin=gpiochip0/gpio12 value=1 default_value=1 max_duration=0
-finalize_config crc=3521258467

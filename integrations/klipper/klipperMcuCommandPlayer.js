@@ -358,7 +358,8 @@ export class KlipperMcuCommandPlayer {
                 if (oid == null) {
                     continue;
                 }
-                let axis = STEP_PIN_AXIS_MAP[kv.step_pin];
+                const normalizedPin = kv.step_pin.includes('/') ? kv.step_pin.split('/').pop() : kv.step_pin;
+                let axis = STEP_PIN_AXIS_MAP[normalizedPin] || STEP_PIN_AXIS_MAP[kv.step_pin];
                 if (!axis || this.usedAxes.has(axis)) {
                     axis = DEFAULT_AXIS_ORDER.find((candidate) => !this.usedAxes.has(candidate)) || null;
                 }

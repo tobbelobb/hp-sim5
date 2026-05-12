@@ -24,12 +24,12 @@ describe('Klipper temperature simulation config', () => {
         bedSensorPath: 'public/klipper/hp3/bed.temp',
       },
       {
-        relativePath: 'public/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg.incl_extruder_and_heatbed',
+        relativePath: 'public/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg',
         extruderSensorPath: 'public/klipper/slideprinter/extruder.temp',
         bedSensorPath: 'public/klipper/slideprinter/bed.temp',
       },
       {
-        relativePath: 'public/klipper/slideprinter/printer-slideprinter-linux-mcu.simple.cfg.incl_extruder_and_heatbed',
+        relativePath: 'public/klipper/slideprinter/printer-slideprinter-linux-mcu-with-buildup.cfg',
         extruderSensorPath: 'public/klipper/slideprinter/extruder.temp',
         bedSensorPath: 'public/klipper/slideprinter/bed.temp',
       },
