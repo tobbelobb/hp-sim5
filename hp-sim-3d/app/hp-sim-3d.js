@@ -4580,13 +4580,6 @@ function initHpSim() {
     canvas.addEventListener('pointerleave', () => {
       world.getResource('renderSystem')?.clearPositionTracePreview?.();
     });
-    canvas.addEventListener('contextmenu', (event) => {
-      const renderSystem = world.getResource('renderSystem');
-      if (!renderSystem?.positionTraceEnabled && !renderSystem?.measureEnabled) {
-        return;
-      }
-      event.preventDefault();
-    });
   }
 
   if (secondaryControls) {

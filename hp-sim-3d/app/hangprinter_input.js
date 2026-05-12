@@ -169,8 +169,14 @@ export class RemoteInputSystem {
   }
 
   handlePointerDown(event) {
-    event.preventDefault();
     const onCanvas = event.target === this.canvas;
+    if (!onCanvas) {
+      return;
+    }
+    if (event.pointerType === 'mouse' && event.button !== 0) {
+      return;
+    }
+    event.preventDefault();
     if (onCanvas && this.interactionMode === 'pan') {
       this.isPanning = true;
       this.panPointerId = event.pointerId;
@@ -183,13 +189,6 @@ export class RemoteInputSystem {
           // Ignore pointer capture failures.
         }
       }
-      return;
-    }
-
-    if (!onCanvas) {
-      return;
-    }
-    if (event.pointerType === 'mouse' && event.button !== 0) {
       return;
     }
 
@@ -905,6 +904,9 @@ export class InputSystem {
 
   handlePointerDown(event) {
     if (event.target !== this.canvas) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) {
+      return;
+    }
     event.preventDefault();
     if (typeof this.canvas.setPointerCapture === 'function') {
       try {
@@ -929,9 +931,6 @@ export class InputSystem {
     }
     if (usePanMode) {
       this.beginPan(event);
-      return;
-    }
-    if (event.pointerType === 'mouse' && event.button !== 0) {
       return;
     }
 
