@@ -405,6 +405,7 @@ function initHpSim() {
   let secondaryControlsHideTimeout = null;
   let secondaryControlsInteractionEnableTimeout = null;
   let lastMobileLayoutMatches = isMobileLayout();
+  let measurePointerCandidate = null;
   const touchTapStarts = new Map();
   const activeCanvasTouchPointers = new Set();
   let touchGestureHadMultiplePointers = false;
@@ -1060,6 +1061,45 @@ function initHpSim() {
     renderSystem.addMeasureMarker?.(point.x, point.y, label, point.z);
     renderSystem.setPositionTracePreview?.(point, label);
     renderSystem.update?.(world, 0);
+  }
+
+  function handleMeasurePointerDown(event) {
+    const renderSystem = world.getResource('renderSystem');
+    if (!renderSystem?.measureEnabled || event.target !== canvas || event.pointerType !== 'mouse' || event.button !== 0) {
+      measurePointerCandidate = null;
+      return;
+    }
+    measurePointerCandidate = {
+      pointerId: event.pointerId,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      startedAtMs: performance.now(),
+      moved: false,
+    };
+  }
+
+  function handleMeasurePointerMove(event) {
+    if (!measurePointerCandidate || event.pointerId !== measurePointerCandidate.pointerId) {
+      return;
+    }
+    const dx = event.clientX - measurePointerCandidate.clientX;
+    const dy = event.clientY - measurePointerCandidate.clientY;
+    if ((dx * dx) + (dy * dy) > 36) {
+      measurePointerCandidate.moved = true;
+    }
+  }
+
+  function handleMeasurePointerUp(event) {
+    if (!measurePointerCandidate || event.pointerId !== measurePointerCandidate.pointerId) {
+      return;
+    }
+    const candidate = measurePointerCandidate;
+    measurePointerCandidate = null;
+    const durationMs = performance.now() - candidate.startedAtMs;
+    if (candidate.moved || durationMs > 350 || event.target !== canvas) {
+      return;
+    }
+    placeMeasurePointFromPointer(event);
   }
 
   function syncReferenceOverlayToRenderSystem({ force = false } = {}) {
@@ -4562,22 +4602,26 @@ function initHpSim() {
       if (isMobileLayout() && secondaryControlsUserPreference !== false) {
         showSecondaryControlsForMobile({ persist: secondaryControlsUserPreference === true });
       }
-      const renderSystem = world.getResource('renderSystem');
-      if (renderSystem?.measureEnabled && event.pointerType === 'mouse' && event.button === 0) {
-        event.preventDefault();
-        event.stopPropagation();
-        placeMeasurePointFromPointer(event);
-        return;
-      }
+      handleMeasurePointerDown(event);
       handleCanvasTouchPointerDown(event);
     });
-    canvas.addEventListener('pointerup', handleCanvasTouchPointerUp);
-    canvas.addEventListener('pointercancel', handleCanvasTouchPointerCancel);
+    canvas.addEventListener('pointerup', (event) => {
+      handleMeasurePointerUp(event);
+      handleCanvasTouchPointerUp(event);
+    });
+    canvas.addEventListener('pointercancel', (event) => {
+      measurePointerCandidate = null;
+      handleCanvasTouchPointerCancel(event);
+    });
     canvas.addEventListener('click', handleCanvasClick);
     canvas.addEventListener('dblclick', handleCanvasDoubleClick);
     canvas.addEventListener('wheel', handleCanvasWheel, { passive: false });
-    canvas.addEventListener('pointermove', updatePositionTracePreviewFromPointer);
+    canvas.addEventListener('pointermove', (event) => {
+      handleMeasurePointerMove(event);
+      updatePositionTracePreviewFromPointer(event);
+    });
     canvas.addEventListener('pointerleave', () => {
+      measurePointerCandidate = null;
       world.getResource('renderSystem')?.clearPositionTracePreview?.();
     });
   }

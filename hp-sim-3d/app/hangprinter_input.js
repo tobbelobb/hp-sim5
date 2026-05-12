@@ -934,6 +934,7 @@ export class InputSystem {
       this.beginPan(event);
       return;
     }
+    const measureEnabled = Boolean(this.getRenderSystem()?.measureEnabled);
 
     const { x: simX, y: simY } = this.projectClientToSim(event.clientX, event.clientY);
     const cameraPlaneNormal = this.getCameraPlaneNormal();
@@ -970,7 +971,7 @@ export class InputSystem {
       }
     }
 
-    const shouldOrbit = closestBall === null
+    const shouldOrbit = (closestBall === null || (measureEnabled && event.pointerType === 'mouse' && event.button === 0))
       && (
         (event.pointerType === 'mouse' && event.button === 0)
         || (isTouchLikePointer && (event.pointerType !== 'touch' || this.activePointers.size === 1))
@@ -980,6 +981,10 @@ export class InputSystem {
 
     if (shouldOrbit) {
       this.beginOrbit(event);
+      return;
+    }
+
+    if (measureEnabled && event.pointerType === 'mouse' && event.button === 0) {
       return;
     }
 

@@ -515,4 +515,34 @@ describe('slideprinter 3D InputSystem orbit interaction', () => {
     expect(world.getResource('grabbedBall')).toBeNull();
     expect(renderSystem.rotateOrbitByPixels).not.toHaveBeenCalled();
   });
+
+  test('measure mode left-drag rotates instead of grabbing a spool', () => {
+    const world = new World();
+    const renderSystem = {
+      measureEnabled: true,
+      getCameraPlaneNormal: jest.fn(() => ({ x: 0.0, y: 0.0, z: 1.0 })),
+      projectClientToPlane: jest.fn(() => ({ x: 0.4, y: 0.5, z: 0.2 })),
+      projectClientToSim: jest.fn(() => ({ x: 0.4, y: 0.5 })),
+      rotateOrbitByPixels: jest.fn(),
+    };
+    world.setResource('simHeight', 1.7);
+    world.setResource('renderSystem', renderSystem);
+    world.setResource('grabbedBall', null);
+
+    const spoolId = world.createEntity();
+    world.addComponent(spoolId, new SpoolTagComponent());
+    world.addComponent(spoolId, new PositionComponent(0.4, 0.5, 0.2));
+    world.addComponent(spoolId, new RadiusComponent(0.05));
+
+    const canvas = createCanvas();
+    const inputSystem = new InputSystem(canvas, world, null);
+
+    inputSystem.handlePointerDown(createPointerEvent(canvas, { clientX: 100, clientY: 120, pointerId: 14 }));
+    inputSystem.handlePointerMove(createPointerEvent(canvas, { clientX: 130, clientY: 145, pointerId: 14 }));
+
+    expect(inputSystem.isOrbiting).toBe(true);
+    expect(inputSystem.grabSpring).toBeNull();
+    expect(world.getResource('grabbedBall')).toBeNull();
+    expect(renderSystem.rotateOrbitByPixels).toHaveBeenCalledWith(30, 25);
+  });
 });
