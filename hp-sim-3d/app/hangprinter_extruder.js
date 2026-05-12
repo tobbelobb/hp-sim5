@@ -131,7 +131,6 @@ function estimateRotation(referenceOffsets, currentCenter, entityIds, world) {
 export class ExtruderComponent {
   constructor() {
     this.extrusions = [];
-    this.extrusionStartIndex = 0;
     this.effectorCenterPos = new Vector3(0.0, 0.0, 0.0);
     this.centerPos = new Vector3(0.0, 0.0, 0.0);
     this.tipPos = null;

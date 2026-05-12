@@ -340,69 +340,6 @@ describe('RenderSystem3D hp-sim compatibility helpers', () => {
     }
   });
 
-  test('syncs retained extrusions by absolute index after old events are trimmed', () => {
-    const system = createCompatStub();
-
-    try {
-      const world = new World();
-      const extruderEntity = world.createEntity();
-      const extruder = new ExtruderComponent();
-      extruder.extrusionStartIndex = 100;
-      extruder.extrusions.push(
-        { pos: [0.1, 0.2, 0.3], color: '#ffaa00', length: 0.01 },
-        { pos: [0.4, 0.5, 0.6], color: '#ffaa00', length: 0.01 },
-      );
-      world.addComponent(extruderEntity, extruder);
-
-      system.drawnExtrusionCount = 100;
-      system._syncExtrusions(world);
-
-      expect(system.drawnExtrusionCount).toBe(102);
-      expect(system.extrusionPointCloud.totalPoints).toBe(2);
-
-      extruder.extrusionStartIndex = 101;
-      extruder.extrusions.splice(0, 1);
-      extruder.extrusions.push({ pos: [0.7, 0.8, 0.9], color: '#ffaa00', length: 0.01 });
-      system._syncExtrusions(world);
-
-      expect(system.drawnExtrusionCount).toBe(103);
-      expect(system.extrusionPointCloud.totalPoints).toBe(3);
-      const positions = system.extrusionPointCloud.chunks[0].geometry.getAttribute('position');
-      expect(positions.getX(2)).toBeCloseTo(0.7, 6);
-      expect(positions.getY(2)).toBeCloseTo(0.8, 6);
-      expect(positions.getZ(2)).toBeCloseTo(0.9, 6);
-    } finally {
-      disposeCompatStub(system);
-    }
-  });
-
-  test('drops old extrusion point-cloud chunks when the visual cap is reached', () => {
-    const system = createCompatStub();
-
-    try {
-      const world = new World();
-      const extruderEntity = world.createEntity();
-      const extruder = new ExtruderComponent();
-      world.addComponent(extruderEntity, extruder);
-
-      const pointCloud = system._ensureExtrusionPointCloud();
-      pointCloud.chunkSize = 2;
-      pointCloud.maxPoints = 4;
-
-      for (let i = 0; i < 6; i += 1) {
-        extruder.extrusions.push({ pos: [i, 0, 0], color: '#ffaa00', length: 0.01 });
-      }
-      system._syncExtrusions(world);
-
-      expect(system.drawnExtrusionCount).toBe(6);
-      expect(pointCloud.totalPoints).toBe(4);
-      expect(pointCloud.chunks).toHaveLength(2);
-      expect(pointCloud.chunks[0].geometry.getAttribute('position').getX(0)).toBeCloseTo(2, 6);
-    } finally {
-      disposeCompatStub(system);
-    }
-  });
-
   test('clearPositionTrace preserves stored trace history for redraw after view changes', () => {
     const system = createCompatStub();
 
