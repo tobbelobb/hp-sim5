@@ -15,21 +15,21 @@
         }
       }
     </script>
-    <script type="module" crossorigin src="/hp-sim5/assets/hp-sim-3d/index.html-CuesP2Dx.js"></script>
+    <script type="module" crossorigin src="/hp-sim5/assets/hp-sim-3d/index.html-Cnn1682T.js"></script>
     <link rel="modulepreload" crossorigin href="/hp-sim5/assets/modulepreload-polyfill-B5Qt9EMX.js">
-    <link rel="modulepreload" crossorigin href="/hp-sim5/assets/stage-CKWfrQ3w.js">
+    <link rel="modulepreload" crossorigin href="/hp-sim5/assets/stage-CstypgR2.js">
     <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_joints_core-C4WHTBYx.js">
     <link rel="modulepreload" crossorigin href="/hp-sim5/assets/geometry3-ZC_JhXS9.js">
     <link rel="modulepreload" crossorigin href="/hp-sim5/assets/commonSystems-BmtjHth7.js">
     <link rel="modulepreload" crossorigin href="/hp-sim5/assets/debugUtils-e3_2ZA9J.js">
-    <link rel="modulepreload" crossorigin href="/hp-sim5/assets/OrbitControls-BwATClez.js">
+    <link rel="modulepreload" crossorigin href="/hp-sim5/assets/OrbitControls-pdJAYT2T.js">
     <link rel="modulepreload" crossorigin href="/hp-sim5/assets/flipper_common-DNx5JRIJ.js">
-    <link rel="modulepreload" crossorigin href="/hp-sim5/assets/render_system_3d-BjgAuGj6.js">
+    <link rel="modulepreload" crossorigin href="/hp-sim5/assets/render_system_3d-DgNGfn56.js">
     <link rel="modulepreload" crossorigin href="/hp-sim5/assets/moveCommander-pgzNXpYZ.js">
     <link rel="modulepreload" crossorigin href="/hp-sim5/assets/rrfCanPlayer-yZKN54wL.js">
     <link rel="modulepreload" crossorigin href="/hp-sim5/assets/rrfFirmwareModel-yMdCpvKZ.js">
-    <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_scene_baker-CTU6ZRu6.js">
-    <link rel="stylesheet" crossorigin href="/hp-sim5/assets/index-BSWRGnzd.css">
+    <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_scene_baker-C7u-P7kW.js">
+    <link rel="stylesheet" crossorigin href="/hp-sim5/assets/index-CQkalV4d.css">
   </head>
   <body>
     <main class="layout">
@@ -124,7 +124,14 @@
               <button id="pauseBtn" type="button" class="sim-secondary">Pause</button>
               <button id="resetBtn" type="button" class="sim-secondary">Reset</button>
               <button id="finishAsapBtn" type="button" class="sim-secondary">Finish ASAP</button>
-              <button id="positionTraceBtn" type="button" class="sim-secondary" aria-pressed="false" title="Toggle position trace mode">Trace</button>
+              <div class="sim-tool-button" role="group" aria-label="Trace controls">
+                <button id="positionTraceBtn" type="button" class="sim-secondary sim-tool-main" aria-pressed="false" title="Toggle position trace mode">Trace</button>
+                <button id="positionTraceClearBtn" type="button" class="sim-tool-clear sim-hidden" aria-label="Clear trace">Clear</button>
+              </div>
+              <div class="sim-tool-button" role="group" aria-label="Measure controls">
+                <button id="measureBtn" type="button" class="sim-secondary sim-tool-main" aria-pressed="false" title="Toggle measure mode">Measure</button>
+                <button id="measureClearBtn" type="button" class="sim-tool-clear sim-hidden" aria-label="Clear measurements">Clear</button>
+              </div>
               <div id="viewTools" class="sim-zoom" role="group" aria-label="View controls">
                 <button id="zoomInBtn" type="button" class="sim-secondary sim-zoom-btn" aria-label="Zoom in">+</button>
                 <button id="zoomOutBtn" type="button" class="sim-secondary sim-zoom-btn" aria-label="Zoom out">−</button>
