@@ -173,11 +173,12 @@ export class RemoteInputSystem {
     if (!onCanvas) {
       return;
     }
-    if (event.pointerType === 'mouse' && event.button !== 0) {
+    const wantsAuxPan = event.pointerType === 'mouse' && event.button === 1;
+    if (event.pointerType === 'mouse' && event.button !== 0 && !wantsAuxPan) {
       return;
     }
     event.preventDefault();
-    if (onCanvas && this.interactionMode === 'pan') {
+    if (this.interactionMode === 'pan' || wantsAuxPan) {
       this.isPanning = true;
       this.panPointerId = event.pointerId;
       this.panLastX = event.clientX;
@@ -904,7 +905,8 @@ export class InputSystem {
 
   handlePointerDown(event) {
     if (event.target !== this.canvas) return;
-    if (event.pointerType === 'mouse' && event.button !== 0) {
+    const wantsAuxPan = this.shouldStartAuxPan(event);
+    if (event.pointerType === 'mouse' && event.button !== 0 && !wantsAuxPan) {
       return;
     }
     event.preventDefault();
@@ -918,7 +920,6 @@ export class InputSystem {
     this.trackPointerDown(event);
     const isTouchLikePointer = this.isTouchLikePointer(event);
     const pinchEngaged = this.pinchActive;
-    const wantsAuxPan = this.shouldStartAuxPan(event);
     const usePanMode = this.interactionMode === 'pan' || wantsAuxPan;
     if (isTouchLikePointer && this.interactionMode !== 'pan') {
       if (this.activeGrabPointerId === null) {

@@ -338,6 +338,43 @@ describe('slideprinter 3D InputSystem orbit interaction', () => {
     expect(viewState.offsetZ).toBeCloseTo(0.0, 6);
   });
 
+  test('middle-drag pans without entering pan mode', () => {
+    const world = new World();
+    const renderSystem = {
+      rotateOrbitByPixels: jest.fn(),
+    };
+    world.setResource('simHeight', 480);
+    world.setResource('renderSystem', renderSystem);
+
+    const canvas = createCanvas();
+    const inputSystem = new InputSystem(canvas, world, null);
+    const onViewChange = jest.fn();
+    inputSystem.setViewChangeListener(onViewChange);
+
+    inputSystem.handlePointerDown(createPointerEvent(canvas, {
+      clientX: 100,
+      clientY: 120,
+      pointerId: 10,
+      button: 1,
+    }));
+    expect(inputSystem.isPanning).toBe(true);
+    expect(inputSystem.isOrbiting).toBe(false);
+
+    inputSystem.handlePointerMove(createPointerEvent(canvas, {
+      clientX: 140,
+      clientY: 150,
+      pointerId: 10,
+      button: 1,
+    }));
+
+    expect(renderSystem.rotateOrbitByPixels).not.toHaveBeenCalled();
+    expect(inputSystem.viewOffsetX).toBeCloseTo(-40.0, 6);
+    expect(inputSystem.viewOffsetY).toBeCloseTo(30.0, 6);
+    const [viewState] = onViewChange.mock.calls.at(-1);
+    expect(viewState.offsetX).toBeCloseTo(-40.0, 6);
+    expect(viewState.offsetY).toBeCloseTo(30.0, 6);
+  });
+
   test('pan fallback respects client-to-canvas scaling on high-DPR canvases', () => {
     const world = new World();
     world.setResource('simHeight', 480);
