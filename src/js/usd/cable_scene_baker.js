@@ -169,7 +169,11 @@ function serializeDefinition(statement, indent = '') {
 }
 
 export function serializeUsdaSceneAst(ast) {
-  const chunks = [`#usda ${ast.version ?? '1.0'}`];
+  const version = ast.version ?? '1.0';
+  const versionText = typeof version === 'number' && Number.isFinite(version)
+    ? `${version.toFixed(1)}`
+    : String(version);
+  const chunks = [`#usda ${versionText}`];
   const descriptor = serializeDescriptor(ast.descriptor, '');
   if (descriptor) {
     chunks.push(descriptor);

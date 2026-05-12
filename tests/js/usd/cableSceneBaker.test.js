@@ -54,9 +54,10 @@ def Xform "World"
         }
     }
 }
-`;
+    `;
 
     const baked = bakeCableSceneUsdaSource(source);
+    expect(baked.source.startsWith('#usda 1.0')).toBe(true);
     const stage = await UsdOpen(baked.source);
     const jointPrim = stage.GetPrimAtPath('/World/Scene/JointA');
     const pathPrim = stage.GetPrimAtPath('/World/Scene/CablePathA');
