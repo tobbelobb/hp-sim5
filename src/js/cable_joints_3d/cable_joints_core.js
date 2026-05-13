@@ -33,6 +33,13 @@ import {
   resolveRigidBodySolverEndpoint,
   updateRigidBodyMemberLocalOrientation,
 } from './rigid_bodies.js';
+import {
+  applyWorldInverseInertia,
+  constrainedInvInertiaAboutWorldAxis,
+  effectiveInertiaAboutWorldAxis,
+  hasAnyInverseInertia,
+  inverseInertiaQuadraticForm,
+} from './inertia_tensor.js';
 import { StepperMotorComponent } from '../../../hp-sim-3d/app/hangprinter_stepper_motor.js';
 import { isStepperClosedLoopEnabled } from '../../../hp-sim-3d/app/hangprinter_runtime.js';
 import { SpoolStateComponent } from '../../../hp-sim-3d/app/hangprinter_spools.js';
@@ -1295,7 +1302,7 @@ function _positionStepperConstraintStiffness(world, stepper) {
   return holdingTorque * polePairs * scale;
 }
 
-function _effectiveMotorizedSpinInvInertia(world, entityId, invInertia, dt) {
+function _effectiveMotorizedSpinInvInertia(world, entityId, invInertia, inertia, dt) {
   if (!(invInertia > EPSILON)) {
     return 0.0;
   }
@@ -1310,7 +1317,6 @@ function _effectiveMotorizedSpinInvInertia(world, entityId, invInertia, dt) {
     return invInertia;
   }
 
-  const inertia = world.getComponent(entityId, MomentOfInertiaComponent)?.inertia;
   const effectiveInertia = (
     Number.isFinite(inertia) && inertia > EPSILON
       ? inertia
@@ -2868,7 +2874,7 @@ export class PBDCableConstraintSolver {
       const orientationComp = world.getComponent(entityId, OrientationComponent);
       const moiComp = world.getComponent(entityId, MomentOfInertiaComponent);
       const centerWorld = getEntityWorldPosition(world, entityId);
-      if (!orientationComp?.quaternion || !centerWorld || !(moiComp?.invInertia > EPSILON)) {
+      if (!orientationComp?.quaternion || !centerWorld || !hasAnyInverseInertia(moiComp)) {
         return null;
       }
 
@@ -2878,12 +2884,25 @@ export class PBDCableConstraintSolver {
         return null;
       }
       axisWorld.normalize();
+      const freeInvInertia = constrainedInvInertiaAboutWorldAxis(
+        moiComp,
+        orientationComp.quaternion,
+        axisWorld,
+      );
+      if (!(freeInvInertia > EPSILON)) {
+        return null;
+      }
+      const axisInertia = effectiveInertiaAboutWorldAxis(
+        moiComp,
+        orientationComp.quaternion,
+        axisWorld,
+      );
       const stepper = world.getComponent(entityId, StepperMotorComponent);
       return {
         entityId,
         centerWorld,
-        freeInvInertia: moiComp.invInertia,
-        invInertia: _effectiveMotorizedSpinInvInertia(world, entityId, moiComp.invInertia, dt),
+        freeInvInertia,
+        invInertia: _effectiveMotorizedSpinInvInertia(world, entityId, freeInvInertia, axisInertia, dt),
         holdingTorqueLimit: _openLoopStepperHoldingTorqueLimit(world, stepper),
         torqueMode: Boolean(stepper?.torqueMode),
         axisWorld,
@@ -3132,15 +3151,17 @@ export class PBDCableConstraintSolver {
       const axisOnlySolverA = _hasAxisOnlyCableSpinDof(world, solverEntityA);
       const axisOnlySolverB = _hasAxisOnlyCableSpinDof(world, solverEntityB);
 
-	    const massAComp = world.getComponent(solverEntityA, MassComponent);
-	    const invMassA = (massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
-	    const moiAComp = world.getComponent(solverEntityA, MomentOfInertiaComponent);
-	    const invInertiaA = (!axisOnlySolverA && moiAComp) ? moiAComp.invInertia : 0.0;
+      const massAComp = world.getComponent(solverEntityA, MassComponent);
+      const invMassA = (massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
+      const moiAComp = world.getComponent(solverEntityA, MomentOfInertiaComponent);
+      const orientationAComp = world.getComponent(solverEntityA, OrientationComponent);
+      const useAngularInertiaA = Boolean(!axisOnlySolverA && moiAComp && orientationAComp?.quaternion);
 
-	    const massBComp = world.getComponent(solverEntityB, MassComponent);
-	    const invMassB = (massBComp && massBComp.mass > 0) ? 1.0 / massBComp.mass : 0.0;
-	    const moiBComp = world.getComponent(solverEntityB, MomentOfInertiaComponent);
-	    const invInertiaB = (!axisOnlySolverB && moiBComp) ? moiBComp.invInertia : 0.0;
+      const massBComp = world.getComponent(solverEntityB, MassComponent);
+      const invMassB = (massBComp && massBComp.mass > 0) ? 1.0 / massBComp.mass : 0.0;
+      const moiBComp = world.getComponent(solverEntityB, MomentOfInertiaComponent);
+      const orientationBComp = world.getComponent(solverEntityB, OrientationComponent);
+      const useAngularInertiaB = Boolean(!axisOnlySolverB && moiBComp && orientationBComp?.quaternion);
 
       const memberInvInertiaA = memberSpinA?.invInertia ?? 0.0;
       const memberInvInertiaB = memberSpinB?.invInertia ?? 0.0;
@@ -3155,6 +3176,12 @@ export class PBDCableConstraintSolver {
       const rB = new Vector3().subtractVectors(solverPointB, posBComp.pos);
       const gradAngA = rA.cross(gradPosA);
       const gradAngB = rB.cross(gradPosB);
+      const angularDenomA = useAngularInertiaA
+        ? inverseInertiaQuadraticForm(moiAComp, orientationAComp.quaternion, gradAngA)
+        : 0.0;
+      const angularDenomB = useAngularInertiaB
+        ? inverseInertiaQuadraticForm(moiBComp, orientationBComp.quaternion, gradAngB)
+        : 0.0;
 
       const prevPosA = getPrevPosition(solverEntityA);
       const prevPosB = getPrevPosition(solverEntityB);
@@ -3238,12 +3265,12 @@ export class PBDCableConstraintSolver {
       const mechanicalDenom = (solveMemberInvInertiaA, solveMemberInvInertiaB) => {
         let mechDenom = 0.0;
         mechDenom += invMassA * gradPosA.lengthSq();
-        mechDenom += invInertiaA * gradAngA.lengthSq();
+        mechDenom += angularDenomA;
         if (solveMemberInvInertiaA > 0.0 && Math.abs(solveGradSpinA) > EPSILON) {
           mechDenom += solveMemberInvInertiaA * solveGradSpinA * solveGradSpinA;
         }
         mechDenom += invMassB * gradPosB.lengthSq();
-        mechDenom += invInertiaB * gradAngB.lengthSq();
+        mechDenom += angularDenomB;
         if (solveMemberInvInertiaB > 0.0 && Math.abs(solveGradSpinB) > EPSILON) {
           mechDenom += solveMemberInvInertiaB * solveGradSpinB * solveGradSpinB;
         }
@@ -3330,19 +3357,17 @@ export class PBDCableConstraintSolver {
         const deltaPosA = gradPosA.clone().scale(-invMassA * lambda);
         posAComp.pos.add(deltaPosA);
       }
-	    if (invInertiaA > 0.0) {
-	      const deltaAngA = gradAngA.clone().scale(-invInertiaA * lambda);
-	      const orientationAComp = world.getComponent(solverEntityA, OrientationComponent);
-	      if (orientationAComp) {
+      if (angularDenomA > 0.0 && orientationAComp?.quaternion) {
+        const deltaAngA = applyWorldInverseInertia(moiAComp, orientationAComp.quaternion, gradAngA)
+          .scale(-lambda);
           const angle = deltaAngA.length();
           if (angle > EPSILON) {
             const axis = deltaAngA.clone().scale(1.0 / angle);
             const dq = new Quaternion().setFromAxisAngle(axis, angle);
             orientationAComp.quaternion.multiplyQuaternions(dq, orientationAComp.quaternion).normalize();
             updateRigidBodyMemberLocalOrientation(world, solverEntityA);
-	        }
-	      }
-	    }
+        }
+      }
       if (solveMemberInvInertiaA > 0.0 && memberSpinA?.axisWorld && Math.abs(solveGradSpinA) > EPSILON) {
         const deltaAngleMemberA = -solveMemberInvInertiaA * lambda * solveGradSpinA;
         const memberOrientationAComp = world.getComponent(memberSpinA.entityId, OrientationComponent);
@@ -3356,23 +3381,21 @@ export class PBDCableConstraintSolver {
         }
       }
 
-	    if (invMassB > 0.0) {
-	      const deltaPosB = gradPosB.clone().scale(-invMassB * lambda);
-	      posBComp.pos.add(deltaPosB);
+      if (invMassB > 0.0) {
+        const deltaPosB = gradPosB.clone().scale(-invMassB * lambda);
+        posBComp.pos.add(deltaPosB);
       }
-      if (invInertiaB > 0.0) {
-        const deltaAngB = gradAngB.clone().scale(-invInertiaB * lambda);
-        const orientationBComp = world.getComponent(solverEntityB, OrientationComponent);
-        if (orientationBComp) {
-          const angle = deltaAngB.length();
-          if (angle > EPSILON) {
-            const axis = deltaAngB.clone().scale(1.0 / angle);
-            const dq = new Quaternion().setFromAxisAngle(axis, angle);
-            orientationBComp.quaternion.multiplyQuaternions(dq, orientationBComp.quaternion).normalize();
-            updateRigidBodyMemberLocalOrientation(world, solverEntityB);
-	        }
-	      }
-	    }
+      if (angularDenomB > 0.0 && orientationBComp?.quaternion) {
+        const deltaAngB = applyWorldInverseInertia(moiBComp, orientationBComp.quaternion, gradAngB)
+          .scale(-lambda);
+        const angle = deltaAngB.length();
+        if (angle > EPSILON) {
+          const axis = deltaAngB.clone().scale(1.0 / angle);
+          const dq = new Quaternion().setFromAxisAngle(axis, angle);
+          orientationBComp.quaternion.multiplyQuaternions(dq, orientationBComp.quaternion).normalize();
+          updateRigidBodyMemberLocalOrientation(world, solverEntityB);
+        }
+      }
       if (solveMemberInvInertiaB > 0.0 && memberSpinB?.axisWorld && Math.abs(solveGradSpinB) > EPSILON) {
         const deltaAngleMemberB = -solveMemberInvInertiaB * lambda * solveGradSpinB;
         const memberOrientationBComp = world.getComponent(memberSpinB.entityId, OrientationComponent);

@@ -25,7 +25,6 @@ import {
 import { StepperMotorComponent } from '../hangprinter_stepper_motor.js';
 import Quaternion from '../../../src/js/cable_joints_3d/quaternion.js';
 import {
-    effectiveInertiaAboutAxis,
     readNumericAttribute,
     readOrientationAttribute,
     readSpoolAxisLocal,
@@ -97,7 +96,7 @@ function applySpool(world, context, registry, prim, posArr) {
     addOrientationState(world, ent, initialOrientation);
     world.addComponent(ent, new EncoderComponent());
     world.addComponent(ent, vectorComponent(AngularVelocityComponent, angVelArr));
-    world.addComponent(ent, new MomentOfInertiaComponent(effectiveInertiaAboutAxis(inertiaTensor, spoolAxisLocal) ?? 0.0));
+    world.addComponent(ent, new MomentOfInertiaComponent(inertiaTensor, { axisLocal: spoolAxisLocal }));
     addMaterialComponents(world, ent, restitution, friction);
     if (getAttribute(prim, "cable:linkable")) {
         world.addComponent(ent, new CableLinkComponent(pos.x, pos.y, pos.z, initialOrientation, null, spoolAxisLocal));
@@ -139,7 +138,7 @@ function applyWheel(world, context, registry, prim, posArr) {
     addOrientationState(world, ent, initialOrientation);
     world.addComponent(ent, new EncoderComponent());
     world.addComponent(ent, vectorComponent(AngularVelocityComponent, angVelArr));
-    world.addComponent(ent, new MomentOfInertiaComponent(effectiveInertiaAboutAxis(inertiaTensor, wheelAxisLocal) ?? 0.0));
+    world.addComponent(ent, new MomentOfInertiaComponent(inertiaTensor, { axisLocal: wheelAxisLocal }));
     addMaterialComponents(world, ent, restitution, friction);
     world.addComponent(ent, new CableLinkComponent(pos.x, pos.y, pos.z, initialOrientation, null, wheelAxisLocal));
     registry.nameToEntityId.set(scopedKey(namespace, prim.name), ent);
@@ -188,7 +187,7 @@ function applyPinhole(world, context, registry, prim, posArr) {
         world.addComponent(ent, vectorComponent(AngularVelocityComponent, angVelArr));
     }
     if (inertiaTensor !== null) {
-        world.addComponent(ent, new MomentOfInertiaComponent(effectiveInertiaAboutAxis(inertiaTensor, DEFAULT_PLANE_NORMAL) ?? 0.0));
+        world.addComponent(ent, new MomentOfInertiaComponent(inertiaTensor, { axisLocal: DEFAULT_PLANE_NORMAL }));
     }
     addMaterialComponents(world, ent, restitution, friction);
     if (getAttribute(prim, "cable:linkable")) {

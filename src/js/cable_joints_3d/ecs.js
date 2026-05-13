@@ -1,5 +1,6 @@
 import Vector3 from './vector3.js';
 import Quaternion from './quaternion.js';
+export { MomentOfInertiaComponent } from './inertia_tensor.js';
 
 // 3D analogs of 2D components live here (Vector3 + Quaternion).
 // Reuse the 2D World implementation to avoid duplication.
@@ -7,15 +8,6 @@ export {
   World,
   RadiusComponent,
   MassComponent,
-  // NOTE: This is still a scalar inertia from the 2D implementation.
-  // In 3D we currently interpret it as an effective scalar inertia about
-  // the constraint axis (or isotropic inertia for spheres). Replace with
-  // a full 3x3 tensor when general 3D rigid bodies/groups are required.
-  // If we want general 3D rigid bodies or rigid groups with anisotropic inertia (which PBDBodies explicitly assumes by using an inertia tensor),
-  // then we will need a full 3×3 tensor, and we should use it in the angular part of the constraint  solve:
-  // deltaAng = -lambda * I_world^-1 * gradAng, with I_world^-1 = R * I_body^-1 * R^T.
-  // That becomes important once constraints induce off‑axis rotations, or when rigid groups combine bodies with different mass distributions.
-  MomentOfInertiaComponent,
   RestitutionComponent,
   GravityAffectedComponent,
   SimulationErrorStateComponent,
@@ -108,5 +100,4 @@ function _resourceBool(world, key, fallback = true) {
 export function layeringEnabled(world) {
   return _resourceBool(world, 'enableLayering', true);
 }
-
 

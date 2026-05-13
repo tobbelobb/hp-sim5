@@ -102,4 +102,41 @@ describe('XPBDDistanceConstraintSystem rigid-body endpoint mapping', () => {
     expect(Math.abs(bodyOrientation.z) + Math.abs(bodyOrientation.w - 1.0)).toBeGreaterThan(1e-4);
     expect(finalDistance).toBeLessThan(initialDistance);
   });
+
+  test('uses tensor inertia in angular constraint corrections', () => {
+    const solve = (zInertia) => {
+      const world = new World();
+
+      const body = world.createEntity();
+      world.addComponent(body, new PositionComponent(0.0, 0.0, 0.0));
+      world.addComponent(body, new OrientationComponent(0.0, 0.0, 0.0, 1.0));
+      world.addComponent(body, new MassComponent(1.0));
+      world.addComponent(
+        body,
+        new MomentOfInertiaComponent([
+          [1.0, 0.0, 0.0],
+          [0.0, 1.0, 0.0],
+          [0.0, 0.0, zInertia],
+        ]),
+      );
+
+      const member = world.createEntity();
+      world.addComponent(member, new PositionComponent(1.0, 0.0, 0.0));
+      world.addComponent(member, new MassComponent(0.0));
+      world.addComponent(member, new RigidBodyMemberComponent(body, new Vector3(1.0, 0.0, 0.0)));
+      world.addComponent(body, new RigidBodyComponent([member]));
+
+      const anchor = world.createEntity();
+      world.addComponent(anchor, new PositionComponent(1.0, 1.0, 0.0));
+      world.addComponent(anchor, new MassComponent(-1.0));
+
+      const constraintEntity = world.createEntity();
+      world.addComponent(constraintEntity, new DistanceConstraintComponent(member, anchor, 0.2, 0.0));
+
+      new XPBDDistanceConstraintSystem().update(world, 1.0);
+      return Math.abs(world.getComponent(body, OrientationComponent).quaternion.z);
+    };
+
+    expect(solve(1.0)).toBeGreaterThan(solve(100.0) * 10.0);
+  });
 });

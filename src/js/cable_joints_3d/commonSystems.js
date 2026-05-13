@@ -32,6 +32,11 @@ import {
   resolveRigidBodySolverEndpoint,
   updateRigidBodyMemberLocalOrientation,
 } from './rigid_bodies.js';
+import {
+  applyWorldInverseInertia,
+  hasAnyInverseInertia,
+  inverseInertiaQuadraticForm,
+} from './inertia_tensor.js';
 
 const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
 
@@ -189,8 +194,6 @@ export class XPBDDistanceConstraintSystem {
       const invMassB = massBComp && massBComp.mass > 0 ? 1.0 / massBComp.mass : 0.0;
       const moiAComp = world.getComponent(solverEntityA, MomentOfInertiaComponent);
       const moiBComp = world.getComponent(solverEntityB, MomentOfInertiaComponent);
-      const invInertiaA = moiAComp ? moiAComp.invInertia : 0.0;
-      const invInertiaB = moiBComp ? moiBComp.invInertia : 0.0;
 
       const diff = new Vector3().subtractVectors(solverPointB, solverPointA);
       const currentLength = diff.length();
@@ -206,12 +209,20 @@ export class XPBDDistanceConstraintSystem {
       const rB = new Vector3().subtractVectors(solverPointB, posBComp.pos);
       const gradAngA = rA.cross(gradPosA);
       const gradAngB = rB.cross(gradPosB);
+      const orientationCompA = world.getComponent(solverEntityA, OrientationComponent);
+      const orientationCompB = world.getComponent(solverEntityB, OrientationComponent);
+      const angularDenomA = orientationCompA?.quaternion
+        ? inverseInertiaQuadraticForm(moiAComp, orientationCompA.quaternion, gradAngA)
+        : 0.0;
+      const angularDenomB = orientationCompB?.quaternion
+        ? inverseInertiaQuadraticForm(moiBComp, orientationCompB.quaternion, gradAngB)
+        : 0.0;
       const alphaTilde = constraint.compliance / (dt * dt);
       const denominator = (
         invMassA * gradPosA.lengthSq()
-        + invInertiaA * gradAngA.lengthSq()
+        + angularDenomA
         + invMassB * gradPosB.lengthSq()
-        + invInertiaB * gradAngB.lengthSq()
+        + angularDenomB
         + alphaTilde
       );
       if (denominator <= epsilon) {
@@ -224,33 +235,29 @@ export class XPBDDistanceConstraintSystem {
       if (invMassA > 0.0) {
         posAComp.pos.add(gradPosA.clone().scale(-invMassA * deltaLambda));
       }
-      if (invInertiaA > 0.0) {
-        const deltaAngA = gradAngA.clone().scale(-invInertiaA * deltaLambda);
-        const orientationCompA = world.getComponent(solverEntityA, OrientationComponent);
-        if (orientationCompA?.quaternion) {
-          const angle = deltaAngA.length();
-          if (angle > epsilon) {
-            const axis = deltaAngA.clone().scale(1.0 / angle);
-            const dq = new Quaternion().setFromAxisAngle(axis, angle);
-            orientationCompA.quaternion.multiplyQuaternions(dq, orientationCompA.quaternion).normalize();
-            updateRigidBodyMemberLocalOrientation(world, solverEntityA);
-          }
+      if (angularDenomA > 0.0 && orientationCompA?.quaternion) {
+        const deltaAngA = applyWorldInverseInertia(moiAComp, orientationCompA.quaternion, gradAngA)
+          .scale(-deltaLambda);
+        const angle = deltaAngA.length();
+        if (angle > epsilon) {
+          const axis = deltaAngA.clone().scale(1.0 / angle);
+          const dq = new Quaternion().setFromAxisAngle(axis, angle);
+          orientationCompA.quaternion.multiplyQuaternions(dq, orientationCompA.quaternion).normalize();
+          updateRigidBodyMemberLocalOrientation(world, solverEntityA);
         }
       }
       if (invMassB > 0.0) {
         posBComp.pos.add(gradPosB.clone().scale(-invMassB * deltaLambda));
       }
-      if (invInertiaB > 0.0) {
-        const deltaAngB = gradAngB.clone().scale(-invInertiaB * deltaLambda);
-        const orientationCompB = world.getComponent(solverEntityB, OrientationComponent);
-        if (orientationCompB?.quaternion) {
-          const angle = deltaAngB.length();
-          if (angle > epsilon) {
-            const axis = deltaAngB.clone().scale(1.0 / angle);
-            const dq = new Quaternion().setFromAxisAngle(axis, angle);
-            orientationCompB.quaternion.multiplyQuaternions(dq, orientationCompB.quaternion).normalize();
-            updateRigidBodyMemberLocalOrientation(world, solverEntityB);
-          }
+      if (angularDenomB > 0.0 && orientationCompB?.quaternion) {
+        const deltaAngB = applyWorldInverseInertia(moiBComp, orientationCompB.quaternion, gradAngB)
+          .scale(-deltaLambda);
+        const angle = deltaAngB.length();
+        if (angle > epsilon) {
+          const axis = deltaAngB.clone().scale(1.0 / angle);
+          const dq = new Quaternion().setFromAxisAngle(axis, angle);
+          orientationCompB.quaternion.multiplyQuaternions(dq, orientationCompB.quaternion).normalize();
+          updateRigidBodyMemberLocalOrientation(world, solverEntityB);
         }
       }
     }
@@ -527,7 +534,7 @@ export class PBDAngularVelocityUpdateSystem {
       if (world.getComponent(entityId, RigidBodyMemberComponent)) continue;
 
       const moiComp = world.getComponent(entityId, MomentOfInertiaComponent);
-      if (moiComp && moiComp.invInertia <= 0) continue;
+      if (moiComp && !hasAnyInverseInertia(moiComp)) continue;
 
       const orientationComp = world.getComponent(entityId, OrientationComponent);
       const angularVelComp = world.getComponent(entityId, AngularVelocityComponent);

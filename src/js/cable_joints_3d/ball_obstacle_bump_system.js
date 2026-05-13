@@ -5,10 +5,12 @@ import {
   MassComponent,
   AngularVelocityComponent,
   MomentOfInertiaComponent,
+  OrientationComponent,
   CoefficientOfFrictionComponent,
   ObstaclePushComponent,
   layeringEnabled
 } from './ecs.js';
+import { applyWorldInverseInertia, hasAnyInverseInertia } from './inertia_tensor.js';
 
 export class BallObstacleBumpSystem {
   runInPause = false;
@@ -35,11 +37,13 @@ export class BallObstacleBumpSystem {
       const ballMassComp = world.getComponent(ball_id, MassComponent);
       const ballAngVelComp = world.getComponent(ball_id, AngularVelocityComponent);
       const ballMoiComp = world.getComponent(ball_id, MomentOfInertiaComponent);
+      const ballOrientationComp = world.getComponent(ball_id, OrientationComponent);
 
       const r2Comp = world.getComponent(obs_id, RadiusComponent);
       const pushComp = world.getComponent(obs_id, ObstaclePushComponent);
       const obsAngVelComp = world.getComponent(obs_id, AngularVelocityComponent);
       const obsMoiComp = world.getComponent(obs_id, MomentOfInertiaComponent);
+      const obsOrientationComp = world.getComponent(obs_id, OrientationComponent);
       const obsFrictionComp = world.getComponent(obs_id, CoefficientOfFrictionComponent);
 
       if (!v1Comp || !r1Comp || !ballMassComp || !r2Comp || !pushComp) {
@@ -94,17 +98,21 @@ export class BallObstacleBumpSystem {
         if (Math.abs(deltaVTangential) > epsilon) {
           const jTOnBall = tangentDir.clone().scale(deltaVTangential * ballMassComp.mass);
 
-          if (ballAngVelComp && ballMoiComp && ballMoiComp.invInertia > 0) {
+          if (ballAngVelComp && ballMoiComp && hasAnyInverseInertia(ballMoiComp)) {
             const rContactBall = normal.clone().scale(-r1);
             const deltaLBall = new Vector3().crossVectors(rContactBall, jTOnBall);
-            ballAngVelComp.omega.add(deltaLBall, ballMoiComp.invInertia);
+            ballAngVelComp.omega.add(
+              applyWorldInverseInertia(ballMoiComp, ballOrientationComp?.quaternion, deltaLBall),
+            );
           }
 
-          if (obsAngVelComp && obsMoiComp && obsMoiComp.invInertia > 0) {
+          if (obsAngVelComp && obsMoiComp && hasAnyInverseInertia(obsMoiComp)) {
             const jTOnObs = jTOnBall.clone().scale(-1);
             const rContactObs = normal.clone().scale(r2);
             const deltaLObs = new Vector3().crossVectors(rContactObs, jTOnObs);
-            obsAngVelComp.omega.add(deltaLObs, obsMoiComp.invInertia);
+            obsAngVelComp.omega.add(
+              applyWorldInverseInertia(obsMoiComp, obsOrientationComp?.quaternion, deltaLObs),
+            );
           }
         }
       }

@@ -134,31 +134,6 @@ export function readSpoolAxisLocal(primNode) {
     return normalizeSpoolAxisLocal(axis);
 }
 
-export function effectiveInertiaAboutAxis(inertiaTensor, axisLocal) {
-    if (!Array.isArray(inertiaTensor) || inertiaTensor.length < 3) {
-        return null;
-    }
-    const axis = normalizeSpoolAxisLocal(axisLocal);
-    const rows = inertiaTensor.map((row) => Array.isArray(row) ? row : []);
-    const xx = Number(rows[0][0] ?? 0.0);
-    const xy = Number(rows[0][1] ?? 0.0);
-    const xz = Number(rows[0][2] ?? 0.0);
-    const yx = Number(rows[1][0] ?? 0.0);
-    const yy = Number(rows[1][1] ?? 0.0);
-    const yz = Number(rows[1][2] ?? 0.0);
-    const zx = Number(rows[2][0] ?? 0.0);
-    const zy = Number(rows[2][1] ?? 0.0);
-    const zz = Number(rows[2][2] ?? 0.0);
-    const projectedX = (xx * axis.x) + (xy * axis.y) + (xz * axis.z);
-    const projectedY = (yx * axis.x) + (yy * axis.y) + (yz * axis.z);
-    const projectedZ = (zx * axis.x) + (zy * axis.y) + (zz * axis.z);
-    const inertia =
-        (axis.x * projectedX)
-        + (axis.y * projectedY)
-        + (axis.z * projectedZ);
-    return Number.isFinite(inertia) ? inertia : null;
-}
-
 export function parseRigidGroupRenderSegments(rawValue) {
     if (rawValue === null || rawValue === undefined) {
         return null;

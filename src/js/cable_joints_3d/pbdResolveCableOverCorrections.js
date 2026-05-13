@@ -20,6 +20,11 @@ import {
   resolveRigidBodySolverEndpoint,
   updateRigidBodyMemberLocalOrientation,
 } from './rigid_bodies.js';
+import {
+  applyWorldInverseInertia,
+  hasAnyInverseInertia,
+  inverseInertiaQuadraticForm,
+} from './inertia_tensor.js';
 
 const EPSILON = 1e-9;
 
@@ -48,13 +53,14 @@ function buildExternalMemberAngularSolveInfo(world, entityId, pointWorld, gradPo
   const orientationComp = world.getComponent(entityId, OrientationComponent);
   const moiComp = world.getComponent(entityId, MomentOfInertiaComponent);
   const centerWorld = getEntityWorldPosition(world, entityId);
-  if (!orientationComp?.quaternion || !centerWorld || !(moiComp?.invInertia > EPSILON)) {
+  if (!orientationComp?.quaternion || !centerWorld || !hasAnyInverseInertia(moiComp)) {
     return null;
   }
   return {
     entityId,
     centerWorld,
-    invInertia: moiComp.invInertia,
+    momentOfInertia: moiComp,
+    orientation: orientationComp.quaternion,
     pointWorld: pointWorld.clone(),
     gradPos: gradPos.clone(),
   };
@@ -227,30 +233,39 @@ export class PBDResolveCableOverCorrections {
     const solverEntityB = mappedB.entityId;
     const solverPointA = computeWorldAttachment(world, solverEntityA, mappedA.localPoint);
     const solverPointB = computeWorldAttachment(world, solverEntityB, mappedB.localPoint);
+    if (!solverPointA || !solverPointB) return;
 
-	    const massAComp = world.getComponent(solverEntityA, MassComponent);
-	    const invMassA = massAComp && massAComp.mass > 0 && Number.isFinite(massAComp.mass) ? 1.0 / massAComp.mass : 0.0;
-	    const moiAComp = world.getComponent(solverEntityA, MomentOfInertiaComponent);
-	    const invInertiaA = (moiAComp && !hasAxisOnlyCableSpinDof(world, solverEntityA)) ? moiAComp.invInertia : 0.0;
-	    // Apply reaction torque to the rigid body that owns the endpoint member,
-	    // regardless of whether the solver endpoint was promoted to the body.
-	    const reactionBodyEntityA = getRigidBodyEntityForMember(world, entityA);
-	    const reactionBodyInertiaA = reactionBodyEntityA !== null && reactionBodyEntityA !== undefined
-	      ? world.getComponent(reactionBodyEntityA, MomentOfInertiaComponent)
-	      : null;
-	    const reactionInvInertiaA = reactionBodyInertiaA ? reactionBodyInertiaA.invInertia : 0.0;
+    const massAComp = world.getComponent(solverEntityA, MassComponent);
+    const invMassA = massAComp && massAComp.mass > 0 && Number.isFinite(massAComp.mass) ? 1.0 / massAComp.mass : 0.0;
+    const moiAComp = world.getComponent(solverEntityA, MomentOfInertiaComponent);
+    const orientationAComp = world.getComponent(solverEntityA, OrientationComponent);
+    const useInertiaA = Boolean(moiAComp && orientationAComp?.quaternion && !hasAxisOnlyCableSpinDof(world, solverEntityA));
+    // Apply reaction torque to the rigid body that owns the endpoint member,
+    // regardless of whether the solver endpoint was promoted to the body.
+    const reactionBodyEntityA = getRigidBodyEntityForMember(world, entityA);
+    const reactionBodyInertiaA = reactionBodyEntityA !== null && reactionBodyEntityA !== undefined
+      ? world.getComponent(reactionBodyEntityA, MomentOfInertiaComponent)
+      : null;
+    const reactionBodyOrientationA = reactionBodyEntityA !== null && reactionBodyEntityA !== undefined
+      ? world.getComponent(reactionBodyEntityA, OrientationComponent)
+      : null;
+    const useReactionInertiaA = Boolean(reactionBodyInertiaA && reactionBodyOrientationA?.quaternion);
 
-	    const massBComp = world.getComponent(solverEntityB, MassComponent);
-	    const invMassB = massBComp && massBComp.mass > 0 && Number.isFinite(massBComp.mass) ? 1.0 / massBComp.mass : 0.0;
-	    const moiBComp = world.getComponent(solverEntityB, MomentOfInertiaComponent);
-	    const invInertiaB = (moiBComp && !hasAxisOnlyCableSpinDof(world, solverEntityB)) ? moiBComp.invInertia : 0.0;
-	    // Apply reaction torque to the rigid body that owns the endpoint member,
-	    // regardless of whether the solver endpoint was promoted to the body.
-	    const reactionBodyEntityB = getRigidBodyEntityForMember(world, entityB);
-	    const reactionBodyInertiaB = reactionBodyEntityB !== null && reactionBodyEntityB !== undefined
-	      ? world.getComponent(reactionBodyEntityB, MomentOfInertiaComponent)
-	      : null;
-	    const reactionInvInertiaB = reactionBodyInertiaB ? reactionBodyInertiaB.invInertia : 0.0;
+    const massBComp = world.getComponent(solverEntityB, MassComponent);
+    const invMassB = massBComp && massBComp.mass > 0 && Number.isFinite(massBComp.mass) ? 1.0 / massBComp.mass : 0.0;
+    const moiBComp = world.getComponent(solverEntityB, MomentOfInertiaComponent);
+    const orientationBComp = world.getComponent(solverEntityB, OrientationComponent);
+    const useInertiaB = Boolean(moiBComp && orientationBComp?.quaternion && !hasAxisOnlyCableSpinDof(world, solverEntityB));
+    // Apply reaction torque to the rigid body that owns the endpoint member,
+    // regardless of whether the solver endpoint was promoted to the body.
+    const reactionBodyEntityB = getRigidBodyEntityForMember(world, entityB);
+    const reactionBodyInertiaB = reactionBodyEntityB !== null && reactionBodyEntityB !== undefined
+      ? world.getComponent(reactionBodyEntityB, MomentOfInertiaComponent)
+      : null;
+    const reactionBodyOrientationB = reactionBodyEntityB !== null && reactionBodyEntityB !== undefined
+      ? world.getComponent(reactionBodyEntityB, OrientationComponent)
+      : null;
+    const useReactionInertiaB = Boolean(reactionBodyInertiaB && reactionBodyOrientationB?.quaternion);
 
     const diff = new Vector3().subtractVectors(pB, pA);
     const len = diff.length();
@@ -279,42 +294,50 @@ export class PBDResolveCableOverCorrections {
       pB,
       gradPosB,
     );
-    const memberInvInertiaA = memberAngularA?.invInertia ?? 0.0;
-    const memberInvInertiaB = memberAngularB?.invInertia ?? 0.0;
-
-	    if (
-	      invMassA + invMassB + invInertiaA + invInertiaB + reactionInvInertiaA + reactionInvInertiaB
-        + memberInvInertiaA + memberInvInertiaB
-	      <= EPSILON
-	    ) return;
-
     const posAComp = world.getComponent(solverEntityA, PositionComponent);
+    const posBComp = world.getComponent(solverEntityB, PositionComponent);
+    if (!posAComp?.pos || !posBComp?.pos) return;
+
     const rA = new Vector3().subtractVectors(solverPointA, posAComp.pos);
     const gradAngA = rA.cross(dir);
     const gradAngMemberA = memberAngularA
       ? new Vector3().subtractVectors(memberAngularA.pointWorld, memberAngularA.centerWorld).cross(memberAngularA.gradPos)
       : null;
 
-    const posBComp = world.getComponent(solverEntityB, PositionComponent);
     const rB = new Vector3().subtractVectors(solverPointB, posBComp.pos);
     const gradAngB = rB.cross(dir.clone().scale(-1));
     const gradAngMemberB = memberAngularB
       ? new Vector3().subtractVectors(memberAngularB.pointWorld, memberAngularB.centerWorld).cross(memberAngularB.gradPos)
       : null;
 
-	    let denom = 0;
-	    denom += invMassA * gradPosA.lengthSq();
-	    denom += invInertiaA * gradAngA.lengthSq();
-	    denom += reactionInvInertiaA * gradAngA.lengthSq();
-      if (memberInvInertiaA > 0.0 && gradAngMemberA) {
-        denom += memberInvInertiaA * gradAngMemberA.lengthSq();
-      }
-	    denom += invMassB * gradPosB.lengthSq();
-	    denom += invInertiaB * gradAngB.lengthSq();
-	    denom += reactionInvInertiaB * gradAngB.lengthSq();
-      if (memberInvInertiaB > 0.0 && gradAngMemberB) {
-        denom += memberInvInertiaB * gradAngMemberB.lengthSq();
-      }
+    const angularDenomA = useInertiaA
+      ? inverseInertiaQuadraticForm(moiAComp, orientationAComp.quaternion, gradAngA)
+      : 0.0;
+    const angularDenomB = useInertiaB
+      ? inverseInertiaQuadraticForm(moiBComp, orientationBComp.quaternion, gradAngB)
+      : 0.0;
+    const reactionAngularDenomA = useReactionInertiaA
+      ? inverseInertiaQuadraticForm(reactionBodyInertiaA, reactionBodyOrientationA.quaternion, gradAngA)
+      : 0.0;
+    const reactionAngularDenomB = useReactionInertiaB
+      ? inverseInertiaQuadraticForm(reactionBodyInertiaB, reactionBodyOrientationB.quaternion, gradAngB)
+      : 0.0;
+    const memberAngularDenomA = gradAngMemberA
+      ? inverseInertiaQuadraticForm(memberAngularA?.momentOfInertia, memberAngularA?.orientation, gradAngMemberA)
+      : 0.0;
+    const memberAngularDenomB = gradAngMemberB
+      ? inverseInertiaQuadraticForm(memberAngularB?.momentOfInertia, memberAngularB?.orientation, gradAngMemberB)
+      : 0.0;
+
+    let denom = 0;
+    denom += invMassA * gradPosA.lengthSq();
+    denom += angularDenomA;
+    denom += reactionAngularDenomA;
+    denom += memberAngularDenomA;
+    denom += invMassB * gradPosB.lengthSq();
+    denom += angularDenomB;
+    denom += reactionAngularDenomB;
+    denom += memberAngularDenomB;
 
     const dt = world.getResource('dt');
     if (dt !== undefined && dt > 0) {
@@ -329,33 +352,49 @@ export class PBDResolveCableOverCorrections {
       const delta = gradPosA.clone().scale(invMassA * lambda);
       ensureArrayMapEntry(posCorrections, solverEntityA, delta);
     }
-	    if (invInertiaA > 0) {
-	      const delta = gradAngA.clone().scale(-invInertiaA * lambda);
-	      ensureArrayMapEntry(angCorrections, solverEntityA, delta);
-	    }
-      if (memberInvInertiaA > 0.0 && gradAngMemberA) {
-        const delta = gradAngMemberA.clone().scale(-memberInvInertiaA * lambda);
-        ensureArrayMapEntry(angCorrections, memberAngularA.entityId, delta);
-      }
-	    if (reactionInvInertiaA > 0.0 && reactionBodyEntityA !== null && reactionBodyEntityA !== undefined) {
-	      const delta = gradAngA.clone().scale(reactionInvInertiaA * lambda);
-	      ensureArrayMapEntry(angCorrections, reactionBodyEntityA, delta);
-	    }
-	    if (invMassB > 0) {
-	      const delta = gradPosB.clone().scale(invMassB * lambda);
-	      ensureArrayMapEntry(posCorrections, solverEntityB, delta);
-	    }
-	    if (invInertiaB > 0) {
-	      const delta = gradAngB.clone().scale(-invInertiaB * lambda);
-	      ensureArrayMapEntry(angCorrections, solverEntityB, delta);
-	    }
-      if (memberInvInertiaB > 0.0 && gradAngMemberB) {
-        const delta = gradAngMemberB.clone().scale(-memberInvInertiaB * lambda);
-        ensureArrayMapEntry(angCorrections, memberAngularB.entityId, delta);
-      }
-	    if (reactionInvInertiaB > 0.0 && reactionBodyEntityB !== null && reactionBodyEntityB !== undefined) {
-	      const delta = gradAngB.clone().scale(reactionInvInertiaB * lambda);
-	      ensureArrayMapEntry(angCorrections, reactionBodyEntityB, delta);
-	    }
-	  }
-	}
+    if (angularDenomA > 0.0) {
+      const delta = applyWorldInverseInertia(moiAComp, orientationAComp.quaternion, gradAngA).scale(-lambda);
+      ensureArrayMapEntry(angCorrections, solverEntityA, delta);
+    }
+    if (memberAngularDenomA > 0.0 && gradAngMemberA) {
+      const delta = applyWorldInverseInertia(
+        memberAngularA.momentOfInertia,
+        memberAngularA.orientation,
+        gradAngMemberA,
+      ).scale(-lambda);
+      ensureArrayMapEntry(angCorrections, memberAngularA.entityId, delta);
+    }
+    if (reactionAngularDenomA > 0.0 && reactionBodyEntityA !== null && reactionBodyEntityA !== undefined) {
+      const delta = applyWorldInverseInertia(
+        reactionBodyInertiaA,
+        reactionBodyOrientationA.quaternion,
+        gradAngA,
+      ).scale(lambda);
+      ensureArrayMapEntry(angCorrections, reactionBodyEntityA, delta);
+    }
+    if (invMassB > 0) {
+      const delta = gradPosB.clone().scale(invMassB * lambda);
+      ensureArrayMapEntry(posCorrections, solverEntityB, delta);
+    }
+    if (angularDenomB > 0.0) {
+      const delta = applyWorldInverseInertia(moiBComp, orientationBComp.quaternion, gradAngB).scale(-lambda);
+      ensureArrayMapEntry(angCorrections, solverEntityB, delta);
+    }
+    if (memberAngularDenomB > 0.0 && gradAngMemberB) {
+      const delta = applyWorldInverseInertia(
+        memberAngularB.momentOfInertia,
+        memberAngularB.orientation,
+        gradAngMemberB,
+      ).scale(-lambda);
+      ensureArrayMapEntry(angCorrections, memberAngularB.entityId, delta);
+    }
+    if (reactionAngularDenomB > 0.0 && reactionBodyEntityB !== null && reactionBodyEntityB !== undefined) {
+      const delta = applyWorldInverseInertia(
+        reactionBodyInertiaB,
+        reactionBodyOrientationB.quaternion,
+        gradAngB,
+      ).scale(lambda);
+      ensureArrayMapEntry(angCorrections, reactionBodyEntityB, delta);
+    }
+  }
+}

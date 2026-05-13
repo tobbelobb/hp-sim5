@@ -15,6 +15,7 @@ import {
   getSpoolRotationAngle,
   getSpoolWorldAxis,
 } from './hangprinter_spools.js';
+import { effectiveInertiaAboutWorldAxis } from '../../src/js/cable_joints_3d/inertia_tensor.js';
 
 export function computeTorqueModeTorque(stepper, currentAngle, omegaAlongAxis) {
   const maxSpeedRad = Math.max(1e-6, stepper.maxSpeedRad ?? 600);
@@ -95,6 +96,10 @@ export class TorqueModeSystem {
         : getSpoolRotationAngle(spoolState, currentOrientation);
       const worldAxis = getSpoolWorldAxis(spoolState, currentOrientation);
       const omegaAlongAxis = angVel.omega?.dot?.(worldAxis) ?? 0.0;
+      const axisInertia = effectiveInertiaAboutWorldAxis(inertia, currentOrientation, worldAxis);
+      if (!(axisInertia > 0.0)) {
+        continue;
+      }
       const driveTorque = computeTorqueModeTorque(stepper, currentAngle, omegaAlongAxis);
       const cableLoadTorque = readTorqueModeCableLoadTorque(world, entityId);
       const cableLoadStiffness = readTorqueModeCableLoadScalar(
@@ -111,23 +116,21 @@ export class TorqueModeSystem {
       let deltaOmegaAlongAxis = 0.0;
       if (
         cableLoadStiffness > 0.0
-        && Number.isFinite(inertia.inertia)
-        && inertia.inertia > 0.0
         && Number.isFinite(dt)
         && dt > 0.0
       ) {
         const springLoadTorque = cableLoadTorque + (cableLoadDamping * omegaAlongAxis);
         const implicitDenom = 1.0
-          + ((dt * cableLoadDamping) / inertia.inertia)
-          + ((dt * dt * cableLoadStiffness) / inertia.inertia);
+          + ((dt * cableLoadDamping) / axisInertia)
+          + ((dt * dt * cableLoadStiffness) / axisInertia);
         const nextOmegaAlongAxis = (
           omegaAlongAxis
-          + ((dt / inertia.inertia) * (driveTorque + springLoadTorque))
+          + ((dt / axisInertia) * (driveTorque + springLoadTorque))
         ) / implicitDenom;
         deltaOmegaAlongAxis = nextOmegaAlongAxis - omegaAlongAxis;
       } else {
         const totalTorque = driveTorque + cableLoadTorque;
-        deltaOmegaAlongAxis = (totalTorque / inertia.inertia) * dt;
+        deltaOmegaAlongAxis = (totalTorque / axisInertia) * dt;
       }
 
       angVel.omega.add(worldAxis, deltaOmegaAlongAxis);

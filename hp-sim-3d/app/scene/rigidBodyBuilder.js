@@ -19,6 +19,12 @@ import {
 import { initializeRigidBodySyncState } from '../../../src/js/cable_joints_3d/rigid_bodies.js';
 import { parseRigidGroupRenderSegments } from './usdValueReaders.js';
 import { scopedKeyFromPath } from './sceneNaming.js';
+import {
+    addMatrix3,
+    normalizeInertiaTensor,
+    parallelAxisTensor,
+    transformInertiaTensorToWorld,
+} from '../../../src/js/cable_joints_3d/inertia_tensor.js';
 
 export function buildRigidBodies(context, registry) {
     if (context.options.remote) {
@@ -56,7 +62,7 @@ function applyRigidBodies(world, context, registry) {
         world.addComponent(bodyEnt, new OrientationComponent(bodyState.orientation.x, bodyState.orientation.y, bodyState.orientation.z, bodyState.orientation.w));
         world.addComponent(bodyEnt, new PrevFinalOrientationComponent(bodyState.orientation.x, bodyState.orientation.y, bodyState.orientation.z, bodyState.orientation.w));
         world.addComponent(bodyEnt, new AngularVelocityComponent(bodyState.angularVelocity.x, bodyState.angularVelocity.y, bodyState.angularVelocity.z));
-        world.addComponent(bodyEnt, new MomentOfInertiaComponent(bodyState.inertia));
+        world.addComponent(bodyEnt, new MomentOfInertiaComponent(bodyState.inertiaTensor));
         world.addComponent(bodyEnt, new PrevFinalPosComponent(bodyState.position.x, bodyState.position.y, bodyState.position.z));
         world.addComponent(bodyEnt, new RigidBodyComponent(memberEntities, renderSegments));
         initializeRigidBodySyncState(world, bodyEnt);
@@ -108,17 +114,24 @@ function computeRigidBodyAggregateState(world, memberEntities) {
         linearVelocity.scale(1.0 / totalMass);
     }
 
-    let totalInertia = 0.0;
+    let totalInertiaTensor = normalizeInertiaTensor(0.0);
     for (const entityId of memberEntities) {
         const pos = world.getComponent(entityId, PositionComponent)?.pos;
         const mass = world.getComponent(entityId, MassComponent)?.mass ?? 0.0;
-        const inertia = world.getComponent(entityId, MomentOfInertiaComponent)?.inertia ?? 0.0;
+        const memberInertia = world.getComponent(entityId, MomentOfInertiaComponent);
+        const memberOrientation = world.getComponent(entityId, OrientationComponent)?.quaternion || new Quaternion();
         if (!(mass > 0.0) || !pos) continue;
-        totalInertia += inertia + (mass * pos.clone().subtract(com).lengthSq());
+        const offset = pos.clone().subtract(com);
+        const memberTensor = memberInertia
+            ? transformInertiaTensorToWorld(memberInertia.inertiaTensor, memberOrientation)
+            : normalizeInertiaTensor(0.0);
+        totalInertiaTensor = addMatrix3(totalInertiaTensor, memberTensor);
+        totalInertiaTensor = addMatrix3(totalInertiaTensor, parallelAxisTensor(mass, offset));
     }
 
-    if (!(totalInertia > 0.0)) {
-        totalInertia = totalMass > 0.0 ? totalMass : 0.0;
+    const trace = totalInertiaTensor[0][0] + totalInertiaTensor[1][1] + totalInertiaTensor[2][2];
+    if (!(trace > 0.0)) {
+        totalInertiaTensor = normalizeInertiaTensor(totalMass > 0.0 ? totalMass : 0.0);
     }
 
     return {
@@ -127,7 +140,7 @@ function computeRigidBodyAggregateState(world, memberEntities) {
         orientation: new Quaternion(),
         angularVelocity: new Vector3(0.0, 0.0, 0.0),
         mass: totalMass,
-        inertia: totalInertia,
+        inertiaTensor: totalInertiaTensor,
     };
 }
 

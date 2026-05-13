@@ -17,6 +17,14 @@ import {
   getRigidBodyMemberComponent,
 } from '../../src/js/cable_joints_3d/rigid_bodies.js';
 import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
+import {
+  addMatrix3,
+  applyWorldInverseInertia,
+  effectiveInertiaAboutWorldAxis,
+  normalizeInertiaTensor,
+  parallelAxisTensor,
+  transformInertiaTensorToWorld,
+} from '../../src/js/cable_joints_3d/inertia_tensor.js';
 
 const EPSILON = 1e-12;
 
@@ -54,41 +62,59 @@ export function getRigidBodyMemberSpoolFrame(world, entityId, spoolState) {
   };
 }
 
-function getRigidBodyEffectiveInertiaAboutAxis(world, bodyEntity, worldAxis) {
-  const axis = worldAxis?.clone?.();
-  if (!axis || axis.lengthSq() <= EPSILON) {
-    return world.getComponent(bodyEntity, MomentOfInertiaComponent)?.inertia ?? 0.0;
-  }
-  axis.normalize();
-
+function computeRigidBodyAggregateMomentOfInertia(world, bodyEntity) {
   const body = world.getComponent(bodyEntity, RigidBodyComponent);
-  const bodyOrientation = world.getComponent(bodyEntity, OrientationComponent)?.quaternion;
-  const members = Array.isArray(body?.members) ? body.members : [];
-  if (!bodyOrientation || members.length < 1) {
-    return world.getComponent(bodyEntity, MomentOfInertiaComponent)?.inertia ?? 0.0;
+  if (!Array.isArray(body?.members) || body.members.length < 1) {
+    return null;
   }
 
-  let totalInertia = 0.0;
-  for (const entityId of members) {
+  let tensor = normalizeInertiaTensor(0.0);
+  let hasContribution = false;
+  for (const entityId of body.members) {
     const member = getRigidBodyMemberComponent(world, entityId);
     if (!member?.localPosition) {
       continue;
     }
 
-    const memberInertia = world.getComponent(entityId, MomentOfInertiaComponent)?.inertia ?? 0.0;
+    const memberMoi = world.getComponent(entityId, MomentOfInertiaComponent);
     const memberMass = member.physicalMass ?? (world.getComponent(entityId, MassComponent)?.mass ?? 0.0);
-    const offsetWorld = bodyOrientation.transformVector(member.localPosition);
-    const perpendicularMomentArmSq = offsetWorld.cross(axis).lengthSq();
-    totalInertia += memberInertia + (memberMass * perpendicularMomentArmSq);
+    if (memberMoi) {
+      const memberOrientation = member.localOrientation || new Quaternion();
+      tensor = addMatrix3(
+        tensor,
+        transformInertiaTensorToWorld(memberMoi.inertiaTensor, memberOrientation),
+      );
+      hasContribution = true;
+    }
+    if (memberMass > 0.0) {
+      tensor = addMatrix3(tensor, parallelAxisTensor(memberMass, member.localPosition));
+      hasContribution = true;
+    }
   }
 
-  if (totalInertia > EPSILON) {
-    return totalInertia;
-  }
-  return world.getComponent(bodyEntity, MomentOfInertiaComponent)?.inertia ?? 0.0;
+  return hasContribution ? new MomentOfInertiaComponent(tensor) : null;
 }
 
-function applyRigidBodyReactionRotation(world, rigidBodyMemberFrame, worldAxis, motorAngleDelta, spoolInertia) {
+function getRigidBodyMomentOfInertia(world, bodyEntity) {
+  return (
+    computeRigidBodyAggregateMomentOfInertia(world, bodyEntity)
+    || world.getComponent(bodyEntity, MomentOfInertiaComponent)
+    || null
+  );
+}
+
+function getRigidBodyEffectiveInertiaAboutAxis(world, bodyEntity, worldAxis) {
+  const axis = worldAxis?.clone?.();
+  const bodyMoi = getRigidBodyMomentOfInertia(world, bodyEntity);
+  const bodyOrientation = world.getComponent(bodyEntity, OrientationComponent)?.quaternion;
+  if (!axis || axis.lengthSq() <= EPSILON) {
+    return bodyMoi?.inertia ?? 0.0;
+  }
+  axis.normalize();
+  return effectiveInertiaAboutWorldAxis(bodyMoi, bodyOrientation, axis);
+}
+
+function applyRigidBodyReactionRotation(world, rigidBodyMemberFrame, worldAxis, motorAngleDelta, rotorInertia) {
   const bodyEntity = rigidBodyMemberFrame?.member?.bodyEntity;
   if (
     bodyEntity === null
@@ -100,7 +126,7 @@ function applyRigidBodyReactionRotation(world, rigidBodyMemberFrame, worldAxis, 
 
   const bodyInertia = getRigidBodyEffectiveInertiaAboutAxis(world, bodyEntity, worldAxis);
   const bodyOrientation = world.getComponent(bodyEntity, OrientationComponent)?.quaternion;
-  const motorRotorInertia = Number.isFinite(spoolInertia) ? Math.max(0.0, spoolInertia) : 0.0;
+  const motorRotorInertia = Number.isFinite(rotorInertia) ? Math.max(0.0, rotorInertia) : 0.0;
   if (!bodyOrientation || !(bodyInertia > EPSILON) || !(motorRotorInertia > EPSILON)) {
     return;
   }
@@ -116,14 +142,15 @@ export function applyRigidBodyReactionAngularVelocity(world, rigidBodyMemberFram
     return;
   }
 
-  const bodyInertia = getRigidBodyEffectiveInertiaAboutAxis(world, bodyEntity, worldAxis);
+  const bodyMoi = getRigidBodyMomentOfInertia(world, bodyEntity);
   const bodyAngularVelocity = world.getComponent(bodyEntity, AngularVelocityComponent);
-  if (!bodyAngularVelocity?.omega || !(bodyInertia > EPSILON)) {
+  const bodyOrientation = world.getComponent(bodyEntity, OrientationComponent)?.quaternion;
+  if (!bodyAngularVelocity?.omega || !bodyMoi) {
     return;
   }
 
-  const bodyAngularAcceleration = -totalTorque / bodyInertia;
-  bodyAngularVelocity.omega.add(worldAxis, bodyAngularAcceleration * dt);
+  const angularImpulse = worldAxis.clone().scale(-totalTorque * dt);
+  bodyAngularVelocity.omega.add(applyWorldInverseInertia(bodyMoi, bodyOrientation, angularImpulse));
 }
 
 function addEncoderAngle(world, entityId, deltaAngle) {
@@ -193,6 +220,7 @@ export class StepperMotorSystem {
         : getSpoolRotationAngle(spoolState, currentOrientation);
       const worldAxis = getSpoolWorldAxis(spoolState, currentOrientation);
       const omegaAlongAxis = angVel.omega?.dot?.(worldAxis) ?? 0.0;
+      const axisInertia = effectiveInertiaAboutWorldAxis(inertia, currentOrientation, worldAxis);
 
       if (isStepperClosedLoopEnabled(world, stepper)) {
         const targetAngle = stepper.commandedAngle - stepper.deltaAngle;
@@ -203,7 +231,7 @@ export class StepperMotorSystem {
           rigidBodyMemberFrame,
           worldAxis,
           motorAngleDelta,
-          inertia.inertia,
+          axisInertia,
         );
 
         if (rigidBodyMemberFrame) {
@@ -234,7 +262,10 @@ export class StepperMotorSystem {
       const dampingTorque = -stepper.dampingCoeff * omegaAlongAxis;
       const totalTorque = restoringTorque + dampingTorque;
 
-      const angularAcceleration = totalTorque / inertia.inertia;
+      if (!(axisInertia > EPSILON)) {
+        continue;
+      }
+      const angularAcceleration = totalTorque / axisInertia;
       angVel.omega.add(worldAxis, angularAcceleration * dt);
       // This is a custom motor/reaction path for rigid-body-member spools. A
       // full XPBD hinge motor would instead solve body <-> rotor constraints
