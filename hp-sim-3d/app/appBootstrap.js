@@ -6,9 +6,10 @@ import { buildUploadPresetConfig } from './uploadPresetConfig.js';
 import { createSceneChangeQueue, createSimulationRuntime } from './sceneController.js';
 import { createFeatureFlagsController } from './featureFlagsController.js';
 import { createQualityController } from './qualityController.js';
-import { createReferenceTraceAndMeasurementController } from './referenceTraceAndMeasurementController.js';
+import { createInspectionToolsController } from './inspectionToolsController.js';
 import { createViewController } from './viewController.js';
 import { createWorkerController } from './workerController.js';
+import { createMachineMenuController } from './machineMenuController.js';
 import { createMachineSceneController } from './machineSceneController.js';
 import { createCommandJobController } from './commandJobController.js';
 import { createExternalCommandController, normalizeWsUrl } from './externalCommandSocket.js';
@@ -111,10 +112,13 @@ export function createHpSimApp({
   const sceneQueue = createSceneChangeQueue();
   const runtime = createSimulationRuntime({ world, state });
   const controllers = {
+    machineMenu: null,
     machines: null,
     commands: null,
     external: null,
   };
+  let inspectionTools = null;
+  let view = null;
 
   const quality = createQualityController({
     document: ownerDocument,
@@ -127,9 +131,9 @@ export function createHpSimApp({
     qualityToggle: dom.qualityToggle,
     getMachines: () => controllers.machines.getMachines(),
     getMachineDisplayName: (machineOrId) => controllers.machines.getMachineDisplayName(machineOrId),
-    getReferenceOverlayState: () => referencePaths.getState(),
+    getReferenceOverlayState: () => inspectionTools?.getState?.() || state.referenceOverlay,
   });
-  const referencePaths = createReferenceTraceAndMeasurementController({
+  inspectionTools = createInspectionToolsController({
     world,
     state,
     dom,
@@ -146,7 +150,7 @@ export function createHpSimApp({
     },
     onLineLayeringChanged: () => controllers.commands?.handleUserReset?.(),
   });
-  const view = createViewController({
+  view = createViewController({
     document: ownerDocument,
     window: ownerWindow,
     world,
@@ -155,9 +159,11 @@ export function createHpSimApp({
     runtime,
     machines: {
       getMachines: () => controllers.machines.getMachines(),
-      syncMachineMenuPlacement: () => controllers.machines.syncMachineMenuPlacement(),
     },
-    referencePaths,
+    machineMenu: {
+      syncPlacement: () => controllers.machineMenu?.syncPlacement?.(),
+    },
+    inspectionTools,
     getCommands: () => controllers.commands,
   });
   const workers = createWorkerController({
@@ -167,9 +173,14 @@ export function createHpSimApp({
     onWorkerError: () => controllers.commands?.handleWorkerError?.(),
     klipperPacerDiagnosticsEnabled: parseBooleanParam(urlParams, 'klipper_pacer_debug'),
   });
-  controllers.machines = createMachineSceneController({
+  controllers.machineMenu = createMachineMenuController({
     document: ownerDocument,
     window: ownerWindow,
+    dom,
+    isMobileLayout: () => view.isMobileLayout(),
+  });
+  controllers.machines = createMachineSceneController({
+    document: ownerDocument,
     world,
     state,
     dom,
@@ -189,7 +200,7 @@ export function createHpSimApp({
     state,
     dom,
     machines: controllers.machines,
-    referencePaths,
+    inspectionTools,
     workers,
     quality,
     runtime,
@@ -201,7 +212,7 @@ export function createHpSimApp({
     url: normalizeWsUrl(urlParams?.get('gcode_ws') || urlParams?.get('rrf_ws') || null),
     commands: controllers.commands,
     runtime,
-    referencePaths,
+    inspectionTools,
   });
 
   let defaultScenePromise = null;
@@ -220,8 +231,9 @@ export function createHpSimApp({
       bound = true;
       quality.bindUi();
       featureFlags.bindUi();
-      referencePaths.bindUi();
+      inspectionTools.bindUi();
       view.bindUi();
+      controllers.machineMenu.bindUi();
       controllers.machines.bindUi();
       controllers.commands.bindUi();
     },

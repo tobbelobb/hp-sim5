@@ -2,9 +2,6 @@ import { OpenText as UsdOpenText, getAttribute } from '../../src/js/usd/stage.js
 import { bakeCableSceneUsdaSource } from '../../src/js/usd/cable_scene_baker.js';
 import { setupScene } from './setupScene.js';
 
-const MOBILE_MACHINES_MENU_MARGIN_PX = 12;
-const MACHINE_MENU_HOVER_CLOSE_DELAY_MS = 3000;
-
 async function fetchUsdaText(url) {
   const response = await fetch(url, { cache: 'no-cache' });
   if (!response.ok) {
@@ -158,7 +155,6 @@ function extractTimeCodesPerSecond(stage) {
 
 export function createMachineSceneController({
   document,
-  window,
   world,
   state,
   dom,
@@ -175,13 +171,6 @@ export function createMachineSceneController({
   const presetOptionInputs = new Map();
   const presetOptionLabels = new Map();
   const presetOptionColorChips = new Map();
-  let machineMenuOpen = false;
-  let machineMenuHoverCloseTimeout = null;
-  let machineMenuHoverTrackingEnabled = false;
-  let machineMenuPointerInside = false;
-  let machineMenuFocusInside = false;
-
-  const isMobileLayout = () => view?.isMobileLayout?.() ?? false;
 
   function getMachines() {
     return state.machines;
@@ -528,194 +517,6 @@ export function createMachineSceneController({
     }
   }
 
-  function clearMachineMenuInlinePosition() {
-    if (!dom.machinesMenu) {
-      return;
-    }
-    dom.machinesMenu.style.left = '';
-    dom.machinesMenu.style.right = '';
-    dom.machinesMenu.style.transform = '';
-  }
-
-  function positionMachineMenuForMobile() {
-    if (!dom.machinesMenu || !dom.machinesToggle || !isMobileLayout()) {
-      clearMachineMenuInlinePosition();
-      return;
-    }
-    const parentRect = dom.machinesContainer?.getBoundingClientRect() ?? dom.machinesMenu.parentElement?.getBoundingClientRect();
-    const toggleRect = dom.machinesToggle.getBoundingClientRect();
-    const menuRect = dom.machinesMenu.getBoundingClientRect();
-    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
-    if (!parentRect || !menuRect || viewportWidth <= 0) {
-      return;
-    }
-    const maxTargetLeft = Math.max(MOBILE_MACHINES_MENU_MARGIN_PX, viewportWidth - menuRect.width - MOBILE_MACHINES_MENU_MARGIN_PX);
-    const targetLeft = Math.max(
-      MOBILE_MACHINES_MENU_MARGIN_PX,
-      Math.min(toggleRect.left + toggleRect.width / 2 - menuRect.width / 2, maxTargetLeft)
-    );
-    dom.machinesMenu.style.left = `${targetLeft - (parentRect.left || 0)}px`;
-    dom.machinesMenu.style.right = 'auto';
-    dom.machinesMenu.style.transform = 'none';
-  }
-
-  function syncMachineMenuPlacement() {
-    if (!machineMenuOpen) {
-      if (!isMobileLayout()) {
-        clearMachineMenuInlinePosition();
-      }
-      return;
-    }
-    if (isMobileLayout()) {
-      positionMachineMenuForMobile();
-    } else {
-      clearMachineMenuInlinePosition();
-    }
-  }
-
-  function scheduleMachineMenuPlacementSync() {
-    const syncPlacement = () => syncMachineMenuPlacement();
-    if (typeof window.requestAnimationFrame === 'function') {
-      window.requestAnimationFrame(syncPlacement);
-    } else {
-      window.setTimeout(syncPlacement, 0);
-    }
-  }
-
-  function isHoverCapableDesktop() {
-    if (!window.matchMedia) {
-      return !isMobileLayout();
-    }
-    try {
-      return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-    } catch (_error) {
-      return !isMobileLayout();
-    }
-  }
-
-  function isPointerWithinMachineMenu() {
-    for (const element of [dom.machinesMenu, dom.machinesToggle]) {
-      if (element instanceof HTMLElement && element.matches(':hover')) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  function clearMachineMenuHoverTimeout() {
-    if (machineMenuHoverCloseTimeout !== null) {
-      window.clearTimeout(machineMenuHoverCloseTimeout);
-      machineMenuHoverCloseTimeout = null;
-    }
-  }
-
-  function scheduleMachineMenuHoverClose() {
-    if (!machineMenuHoverTrackingEnabled) {
-      return;
-    }
-    clearMachineMenuHoverTimeout();
-    machineMenuHoverCloseTimeout = window.setTimeout(() => {
-      machineMenuHoverCloseTimeout = null;
-      if (!machineMenuHoverTrackingEnabled || !machineMenuOpen || machineMenuPointerInside || machineMenuFocusInside) {
-        return;
-      }
-      if (dom.machinesMenu?.contains(document.activeElement)) {
-        machineMenuFocusInside = true;
-        return;
-      }
-      closeMachineMenu();
-    }, MACHINE_MENU_HOVER_CLOSE_DELAY_MS);
-  }
-
-  function startMachineMenuHoverTracking() {
-    if (!dom.machinesContainer) {
-      machineMenuHoverTrackingEnabled = false;
-      clearMachineMenuHoverTimeout();
-      return;
-    }
-    machineMenuHoverTrackingEnabled = isHoverCapableDesktop();
-    if (!machineMenuHoverTrackingEnabled) {
-      clearMachineMenuHoverTimeout();
-      return;
-    }
-    machineMenuPointerInside = isPointerWithinMachineMenu();
-    if (machineMenuPointerInside || machineMenuFocusInside) {
-      clearMachineMenuHoverTimeout();
-    } else {
-      scheduleMachineMenuHoverClose();
-    }
-  }
-
-  function stopMachineMenuHoverTracking() {
-    machineMenuHoverTrackingEnabled = false;
-    machineMenuPointerInside = false;
-    machineMenuFocusInside = false;
-    clearMachineMenuHoverTimeout();
-  }
-
-  function openMachineMenu() {
-    if (!dom.machinesMenu || !dom.machinesToggle || machineMenuOpen) {
-      return;
-    }
-    machineMenuOpen = true;
-    dom.machinesMenu.classList.remove('sim-hidden');
-    dom.machinesToggle.setAttribute('aria-expanded', 'true');
-    dom.machinesContainer?.setAttribute('data-open', 'true');
-    scheduleMachineMenuPlacementSync();
-    const firstFocusable = dom.machinesMenu.querySelector('input, button');
-    firstFocusable?.focus?.({ preventScroll: true });
-    addMachineMenuOutsideListeners();
-    startMachineMenuHoverTracking();
-  }
-
-  function closeMachineMenu({ focusToggle = false } = {}) {
-    if (!dom.machinesMenu || !dom.machinesToggle || !machineMenuOpen) {
-      return;
-    }
-    machineMenuOpen = false;
-    dom.machinesMenu.classList.add('sim-hidden');
-    dom.machinesToggle.setAttribute('aria-expanded', 'false');
-    dom.machinesContainer?.setAttribute('data-open', 'false');
-    clearMachineMenuInlinePosition();
-    removeMachineMenuOutsideListeners();
-    stopMachineMenuHoverTracking();
-    if (focusToggle) {
-      dom.machinesToggle.focus({ preventScroll: true });
-    }
-  }
-
-  function handleMachineMenuOutsideInteraction(event) {
-    const target = event.target;
-    if (!machineMenuOpen || !(target instanceof Node)) {
-      return;
-    }
-    if (dom.machinesMenu?.contains(target) || dom.machinesToggle?.contains(target)) {
-      return;
-    }
-    closeMachineMenu();
-  }
-
-  function handleMachineMenuKeydown(event) {
-    if (machineMenuOpen && (event.key === 'Escape' || event.key === 'Esc')) {
-      event.preventDefault();
-      closeMachineMenu({ focusToggle: true });
-    }
-  }
-
-  function addMachineMenuOutsideListeners() {
-    document.addEventListener('mousedown', handleMachineMenuOutsideInteraction, true);
-    document.addEventListener('touchstart', handleMachineMenuOutsideInteraction, true);
-    document.addEventListener('click', handleMachineMenuOutsideInteraction, true);
-    document.addEventListener('keydown', handleMachineMenuKeydown, true);
-  }
-
-  function removeMachineMenuOutsideListeners() {
-    document.removeEventListener('mousedown', handleMachineMenuOutsideInteraction, true);
-    document.removeEventListener('touchstart', handleMachineMenuOutsideInteraction, true);
-    document.removeEventListener('click', handleMachineMenuOutsideInteraction, true);
-    document.removeEventListener('keydown', handleMachineMenuKeydown, true);
-  }
-
   async function addUploadedMachine(file) {
     if (!file) {
       return null;
@@ -835,68 +636,6 @@ export function createMachineSceneController({
   function bindUi() {
     buildPresetMachineOptions();
     updateMachineMenuUI();
-    if (dom.machinesMenu) {
-      dom.machinesMenu.setAttribute('tabindex', '-1');
-      dom.machinesMenu.addEventListener('mouseenter', () => {
-        machineMenuPointerInside = true;
-        clearMachineMenuHoverTimeout();
-      });
-      dom.machinesMenu.addEventListener('mouseleave', (event) => {
-        if (!machineMenuHoverTrackingEnabled) {
-          return;
-        }
-        const nextTarget = event?.relatedTarget;
-        if (nextTarget instanceof Node && (dom.machinesMenu.contains(nextTarget) || dom.machinesToggle?.contains(nextTarget))) {
-          return;
-        }
-        machineMenuPointerInside = false;
-        scheduleMachineMenuHoverClose();
-      });
-      dom.machinesMenu.addEventListener('focusin', () => {
-        machineMenuFocusInside = true;
-        clearMachineMenuHoverTimeout();
-      });
-      dom.machinesMenu.addEventListener('focusout', (event) => {
-        const nextTarget = event?.relatedTarget;
-        if (nextTarget instanceof Node && (dom.machinesMenu.contains(nextTarget) || dom.machinesToggle?.contains(nextTarget))) {
-          return;
-        }
-        machineMenuFocusInside = false;
-        if (machineMenuHoverTrackingEnabled) {
-          scheduleMachineMenuHoverClose();
-        }
-      });
-    }
-    if (dom.machinesToggle) {
-      dom.machinesToggle.addEventListener('click', (event) => {
-        event.preventDefault();
-        if (machineMenuOpen) {
-          closeMachineMenu();
-        } else {
-          openMachineMenu();
-        }
-      });
-      dom.machinesToggle.addEventListener('mouseenter', () => {
-        machineMenuPointerInside = true;
-        clearMachineMenuHoverTimeout();
-      });
-      dom.machinesToggle.addEventListener('mouseleave', () => {
-        if (machineMenuHoverTrackingEnabled) {
-          machineMenuPointerInside = false;
-          scheduleMachineMenuHoverClose();
-        }
-      });
-      dom.machinesToggle.addEventListener('focusin', () => {
-        machineMenuFocusInside = true;
-        clearMachineMenuHoverTimeout();
-      });
-      dom.machinesToggle.addEventListener('focusout', () => {
-        machineMenuFocusInside = false;
-        if (machineMenuHoverTrackingEnabled) {
-          scheduleMachineMenuHoverClose();
-        }
-      });
-    }
     dom.presetMachinesList?.addEventListener('change', (event) => {
       const target = event.target;
       if (!(target instanceof HTMLInputElement) || target.type !== 'checkbox') {
@@ -953,6 +692,5 @@ export function createMachineSceneController({
     getSimDtSec: () => state.simDtSec,
     rebuildScene,
     refreshBakedStages,
-    syncMachineMenuPlacement,
   };
 }

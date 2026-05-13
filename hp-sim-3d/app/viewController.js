@@ -31,7 +31,8 @@ export function createViewController({
   dom,
   runtime,
   machines,
-  referencePaths,
+  machineMenu,
+  inspectionTools,
   getCommands = () => null,
 } = {}) {
   const supportsMatchMedia = typeof window.matchMedia === 'function';
@@ -234,7 +235,7 @@ export function createViewController({
     }
     renderSystem.setViewTransform(viewState);
     renderSystem.setNavigationCursorVisible?.(state.navigationCursorActive);
-    referencePaths?.syncToRenderSystem?.({ force: true });
+    inspectionTools?.syncToRenderSystem?.({ force: true });
     if (clearExtrusions) {
       renderSystem.clearExtrusions?.();
       renderSystem.clearPositionTrace?.({ keepMarkers: true });
@@ -394,14 +395,14 @@ export function createViewController({
   function handleLayoutChange() {
     const mobile = isMobileLayout();
     updateQualityToggleLabel();
-    referencePaths?.updateReferenceToggleUI?.();
+    inspectionTools?.updateReferenceToggleUI?.();
     setPanMode(state.panModeActive);
     if (!mobile && secondaryControlsHideTimeout) {
       clearTimeout(secondaryControlsHideTimeout);
       secondaryControlsHideTimeout = null;
     }
     applySecondaryControlsVisibility();
-    machines?.syncMachineMenuPlacement?.();
+    machineMenu?.syncPlacement?.();
   }
 
   function getCanvasBaseScale() {
@@ -805,15 +806,15 @@ export function createViewController({
       if (isMobileLayout() && secondaryControlsUserPreference !== false) {
         showSecondaryControlsForMobile({ persist: secondaryControlsUserPreference === true });
       }
-      referencePaths?.handleMeasurePointerDown?.(event);
+      inspectionTools?.handleMeasurePointerDown?.(event);
       handleCanvasTouchPointerDown(event);
     });
     dom.canvas?.addEventListener('pointerup', (event) => {
-      referencePaths?.handleMeasurePointerUp?.(event);
+      inspectionTools?.handleMeasurePointerUp?.(event);
       handleCanvasTouchPointerUp(event);
     });
     dom.canvas?.addEventListener('pointercancel', (event) => {
-      referencePaths?.clearMeasurePointer?.();
+      inspectionTools?.clearMeasurePointer?.();
       if (event.pointerType === 'touch') {
         finalizeCanvasTouchPointer(event.pointerId);
       }
@@ -822,11 +823,11 @@ export function createViewController({
     dom.canvas?.addEventListener('dblclick', handleCanvasDoubleClick);
     dom.canvas?.addEventListener('wheel', handleCanvasWheel, { passive: false });
     dom.canvas?.addEventListener('pointermove', (event) => {
-      referencePaths?.handleMeasurePointerMove?.(event);
-      referencePaths?.updatePositionTracePreviewFromPointer?.(event);
+      inspectionTools?.handleMeasurePointerMove?.(event);
+      inspectionTools?.updatePositionTracePreviewFromPointer?.(event);
     });
     dom.canvas?.addEventListener('pointerleave', () => {
-      referencePaths?.clearMeasurePointer?.();
+      inspectionTools?.clearMeasurePointer?.();
     });
     dom.secondaryControls?.addEventListener('pointerdown', () => {
       if (isMobileLayout() && secondaryControlsUserPreference !== false) {

@@ -218,7 +218,7 @@ async function fetchGcodeText(url) {
   return response.text();
 }
 
-export function createReferenceTraceAndMeasurementController({
+export function createInspectionToolsController({
   world,
   state,
   dom,

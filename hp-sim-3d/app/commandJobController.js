@@ -33,7 +33,7 @@ export function createCommandJobController({
   state,
   dom,
   machines,
-  referencePaths,
+  inspectionTools,
   workers,
   quality,
   runtime,
@@ -154,7 +154,7 @@ export function createCommandJobController({
   }
 
   function setReferenceVisibilityForReset() {
-    referencePaths?.setVisibility?.(false);
+    inspectionTools?.setVisibility?.(false);
   }
 
   function handleUserReset() {
@@ -176,7 +176,7 @@ export function createCommandJobController({
     view?.setPanMode?.(false);
     view?.reapplyViewState?.({ clearExtrusions: true });
     quality?.resetQualityMonitors?.({ keepReference: true });
-    referencePaths?.setVisibility?.(false);
+    inspectionTools?.setVisibility?.(false);
     state.currentPresetKey = DEFAULT_PRESET_KEY;
   }
 
@@ -262,7 +262,7 @@ export function createCommandJobController({
     }
     console.info(`hp-sim-3d: ${getPresetActionLabel(presetKey)} selected file`, describeSelectedPresetFile(preset.url));
     const referencePresetKey = preset.referencePresetKey || presetKey;
-    referencePaths?.loadForPreset?.(referencePresetKey, { setActive: true }).catch((error) => {
+    inspectionTools?.loadForPreset?.(referencePresetKey, { setActive: true }).catch((error) => {
       console.warn('hp-sim-3d: failed to prepare reference path for preset', referencePresetKey, error);
     });
     const format = preset.format || detectFileFormat(preset.url);
@@ -368,7 +368,7 @@ export function createCommandJobController({
       const descriptor = PRESET_GCODE_MAP[matchedPresetKey];
       const label = descriptor?.label || matchedPresetKey;
       console.log(`hp-sim-3d: upload "${file.name}" matched preset "${matchedPresetKey}" (${label}).`);
-      void referencePaths?.loadForPreset?.(matchedPresetKey, { setActive: true });
+      void inspectionTools?.loadForPreset?.(matchedPresetKey, { setActive: true });
     }
     const detectedFormat = detectFileFormat(file.name);
     if (detectedFormat === FileFormat.GCODE) {
@@ -376,7 +376,7 @@ export function createCommandJobController({
       if (!wantsSimulation) {
         ensureReadyForNewJob();
       }
-      await referencePaths?.loadFromFile?.(file, { setActive: true, makeVisible: !wantsSimulation });
+      await inspectionTools?.loadFromFile?.(file, { setActive: true, makeVisible: !wantsSimulation });
       if (wantsSimulation) {
         await queueCommandFile(file, detectedFormat);
       }

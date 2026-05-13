@@ -129,7 +129,7 @@ export function createExternalCommandController({
   url,
   commands,
   runtime,
-  referencePaths,
+  inspectionTools,
   WebSocketCtor = globalThis.WebSocket,
   logger = console,
   queueLimit = 5000,
@@ -221,7 +221,7 @@ export function createExternalCommandController({
       const renderSystem = world.getResource('renderSystem');
       renderSystem?.setPositionTraceEnabled?.(Boolean(payload.enabled));
       renderSystem?.update?.(world, 0);
-      referencePaths?.updatePositionTraceToggleUI?.();
+      inspectionTools?.updatePositionTraceToggleUI?.();
       return;
     }
     if (payload.type === 'klipper_api_session_start') {

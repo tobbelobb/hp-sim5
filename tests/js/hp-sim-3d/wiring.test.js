@@ -26,8 +26,9 @@ describe('hp-sim-3d wiring', () => {
       expect(source).not.toContain(detail);
     }
     expect(source).toContain('createMachineSceneController');
+    expect(source).toContain('createMachineMenuController');
     expect(source).toContain('createCommandJobController');
-    expect(source).toContain('createReferencePathController');
+    expect(source).toContain('createInspectionToolsController');
   });
 
   test('points the app shell at the 3D cable joints and slideprinter modules', () => {
@@ -45,6 +46,17 @@ describe('hp-sim-3d wiring', () => {
     expect(readWorkspaceFile('hp-sim-3d/app/scene/extruderSceneBinding.js')).toContain("../hangprinter_extruder.js");
     expect(commandJobs).toContain("./remoteSpoolSystem.js");
     expect(view).toContain("./hangprinter_input.js");
+  });
+
+  test('keeps machine menu behavior out of the machine scene controller', () => {
+    const machineScene = readWorkspaceFile('hp-sim-3d/app/machineSceneController.js');
+    const machineMenu = readWorkspaceFile('hp-sim-3d/app/machineMenuController.js');
+
+    expect(machineScene).not.toContain('MACHINE_MENU_HOVER_CLOSE_DELAY_MS');
+    expect(machineScene).not.toContain('syncMachineMenuPlacement');
+    expect(machineScene).not.toContain('clearMachineMenuHoverTimeout');
+    expect(machineMenu).toContain('function syncPlacement');
+    expect(machineMenu).toContain("dom.machinesToggle.addEventListener('click'");
   });
 
   test('keeps setupScene as a scene-loading phase coordinator', () => {
