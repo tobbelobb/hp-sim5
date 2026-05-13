@@ -2,7 +2,7 @@ import { World } from '../../src/js/cable_joints_3d/ecs.js';
 import { PerformanceMonitor } from './performance-monitor.js';
 import { createAppState } from './appState.js';
 import { HP4_USDA_KEY, createUsdaCatalog } from './machineCatalog.js';
-import { buildUploadPresetConfig } from './uploadPipeline.js';
+import { buildUploadPresetConfig } from './uploadPresetConfig.js';
 import { createSceneChangeQueue, createSimulationRuntime } from './sceneController.js';
 import { createFeatureFlagsController } from './featureFlagsController.js';
 import { createQualityController } from './qualityController.js';
