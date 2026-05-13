@@ -6,7 +6,7 @@ import { buildUploadPresetConfig } from './uploadPresetConfig.js';
 import { createSceneChangeQueue, createSimulationRuntime } from './sceneController.js';
 import { createFeatureFlagsController } from './featureFlagsController.js';
 import { createQualityController } from './qualityController.js';
-import { createReferencePathController } from './referencePathController.js';
+import { createReferenceTraceAndMeasurementController } from './referenceTraceAndMeasurementController.js';
 import { createViewController } from './viewController.js';
 import { createWorkerController } from './workerController.js';
 import { createMachineSceneController } from './machineSceneController.js';
@@ -129,7 +129,7 @@ export function createHpSimApp({
     getMachineDisplayName: (machineOrId) => controllers.machines.getMachineDisplayName(machineOrId),
     getReferenceOverlayState: () => referencePaths.getState(),
   });
-  const referencePaths = createReferencePathController({
+  const referencePaths = createReferenceTraceAndMeasurementController({
     world,
     state,
     dom,

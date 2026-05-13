@@ -218,7 +218,7 @@ async function fetchGcodeText(url) {
   return response.text();
 }
 
-export function createReferencePathController({
+export function createReferenceTraceAndMeasurementController({
   world,
   state,
   dom,
