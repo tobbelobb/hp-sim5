@@ -43,6 +43,26 @@ inline GCodeResult ReturnOk(const StringRef& reply, OutputBuffer*& buffer,
     buffer = nullptr;
     return ReturnOk(reply, message);
 }
+
+void EnsureHostExpansionBoard(CanAddress address) noexcept
+{
+    static bool announced[CanId::MaxCanAddress + 1] = { false };
+    if (address > CanId::MaxCanAddress || announced[address])
+    {
+        return;
+    }
+
+    CanMessageBuffer buf;
+    CanMessageAnnounceV1* const msg = buf.SetupBroadcastMessage<CanMessageAnnounceV1>(address);
+    msg->timeSinceStarted = 0;
+    memset(msg->uniqueId, 0, sizeof(msg->uniqueId));
+    msg->numDrivers = MaxLinearDriversPerCanSlave;
+    msg->usesUf2Binary = false;
+    SafeSnprintf(msg->boardTypeAndFirmwareVersion, ARRAY_SIZE(msg->boardTypeAndFirmwareVersion), "HostRemote|sim");
+    buf.dataLength = msg->GetActualDataLength();
+    reprap.GetExpansion().ProcessAnnouncement(&buf, true);
+    announced[address] = true;
+}
 }  // namespace
 
 void Init() noexcept
@@ -213,9 +233,7 @@ GCodeResult ConfigureRemoteDriver(DriverId driver, GCodeBuffer& gb, const String
     {
         if (gb.Seen('S'))
         {
-            const int32_t directionValue = gb.GetIValue();
-            reprap.GetExpansion().SetDriverDirection(driver.boardAddress, driver.localDriver,
-                                                     directionValue != 0);
+            EnsureHostExpansionBoard(driver.boardAddress);
         }
     }
 
