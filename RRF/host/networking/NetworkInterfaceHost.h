@@ -25,7 +25,7 @@ public:
     void Diagnostics(const StringRef& reply) noexcept override;
 
     GCodeResult EnableInterface(int mode, const StringRef& ssid,
-                                const StringRef& reply, bool tlsAllowed = true) noexcept override;
+                                const StringRef& reply, int tlsParam = 1) noexcept override;
     GCodeResult GetNetworkState(const StringRef& reply) noexcept override;
     int EnableState() const noexcept override;
     bool IsWiFiInterface() const noexcept override;

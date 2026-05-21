@@ -60,7 +60,6 @@ target_sources(rrf_simulator PRIVATE
     ${SIM_ROOT_DIR}/networking/NetworkInterfaceHost.cpp
     ${SIM_ROOT_DIR}/networking/SocketHost.cpp
     ${SIM_ROOT_DIR}/movement/StepTimer.cpp
-    ${SIM_ROOT_DIR}/movement/DriverDataHost.cpp
     ${SIM_ROOT_DIR}/movement/HeightControllerHost.cpp
     ${SIM_ROOT_DIR}/gcodes/GCodeFileInfoHost.cpp # A bit unsure about this
     #${SIM_ROOT_DIR}/gcodes/FileGCodeInputHost.cpp # A bit unsure about this
@@ -115,6 +114,7 @@ set(RRF_SOURCES_TO_USE
     Movement/ExtruderShaper.cpp
     Movement/MovementProfile.cpp
     Movement/MovementError.cpp
+    Movement/StepperDrivers/DriverData.cpp
     Movement/BedProbing/Grid.cpp
     Movement/BedProbing/RandomProbePointSet.cpp
     GCodes/StraightProbeSettings.cpp
@@ -231,10 +231,10 @@ set(RRF_HEADERS_TO_USE
     Platform/MessageBox.h
     CAN/ExpansionManager.h
     Platform/Event.h
-    Movement/StepperDrivers/DriverData.h
     Movement/BedProbing/Grid.h
     Movement/HomingMode.h
     Movement/MovementError.h
+    Movement/StepperDrivers/DriverData.h
     Movement/MoveTiming.h
     Movement/AxisShaper.h
     Movement/ExtruderShaper.h

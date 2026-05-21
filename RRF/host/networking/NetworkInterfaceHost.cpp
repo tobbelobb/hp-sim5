@@ -100,10 +100,10 @@ void NetworkInterfaceHost::Diagnostics(const StringRef& reply) noexcept
 }
 
 GCodeResult NetworkInterfaceHost::EnableInterface(int mode, const StringRef& ssid,
-                                                  const StringRef& reply, bool tlsAllowed) noexcept
+                                                  const StringRef& reply, int tlsParam) noexcept
 {
     (void)ssid;
-    (void)tlsAllowed;
+    (void)tlsParam;
     if (mode == 0)
     {
         Exit();
