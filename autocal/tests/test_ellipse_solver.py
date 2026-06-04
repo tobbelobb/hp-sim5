@@ -272,6 +272,83 @@ def test_run_anchor_least_squares_uses_trf_with_jac_scale(monkeypatch):
     assert np.isclose(float(result.fun), 0.0)
 
 
+def test_run_anchor_least_squares_uses_lm_without_bounds(monkeypatch):
+    seen = {}
+
+    class _FakeResidualCost:
+        def residual_vector(self, x: np.ndarray) -> np.ndarray:
+            return np.asarray(x, dtype=float).reshape(-1) - 0.25
+
+        def evaluate(self, x: np.ndarray) -> float:
+            residual = self.residual_vector(x)
+            return float(0.5 * np.dot(residual, residual))
+
+    def fake_least_squares(fun, x0, **kwargs):
+        seen["method"] = kwargs.get("method")
+        seen["x_scale"] = kwargs.get("x_scale")
+        seen["has_bounds"] = "bounds" in kwargs
+        seen["max_nfev"] = kwargs.get("max_nfev")
+        seen["r0"] = np.asarray(fun(np.asarray(x0, dtype=float)), dtype=float)
+        return OptimizeResult(
+            x=np.asarray([0.25, 0.25], dtype=float),
+            cost=0.0,
+            success=True,
+            message="ok",
+            nfev=3,
+            njev=2,
+            optimality=0.0,
+            active_mask=np.asarray([0, 0], dtype=int),
+        )
+
+    monkeypatch.setattr(ellipse_solver, "least_squares", fake_least_squares)
+
+    result = ellipse_solver._run_anchor_least_squares(
+        _FakeResidualCost(),
+        np.asarray([0.0, 0.5], dtype=float),
+        lb=np.asarray([-1.0, -1.0], dtype=float),
+        ub=np.asarray([1.0, 1.0], dtype=float),
+        max_iterations=7,
+        method="lm",
+    )
+
+    assert seen["method"] == "lm"
+    assert seen["x_scale"] == "jac"
+    assert seen["has_bounds"] is False
+    assert seen["max_nfev"] == 7
+    assert np.allclose(seen["r0"], [-0.25, 0.25])
+    assert np.allclose(result.x, [0.25, 0.25])
+    assert np.isclose(float(result.fun), 0.0)
+
+
+def test_run_anchor_least_squares_lm_rejects_underdetermined_residual_vector(monkeypatch):
+    class _UnderdeterminedCost:
+        def residual_vector(self, x: np.ndarray) -> np.ndarray:
+            vec = np.asarray(x, dtype=float).reshape(-1)
+            return vec[:1] - 0.25
+
+        def evaluate(self, x: np.ndarray) -> float:
+            residual = self.residual_vector(x)
+            return float(0.5 * np.dot(residual, residual))
+
+    def fake_least_squares(*_args, **_kwargs):
+        raise AssertionError("SciPy LM should not be called with m < n")
+
+    monkeypatch.setattr(ellipse_solver, "least_squares", fake_least_squares)
+
+    result = ellipse_solver._run_anchor_least_squares(
+        _UnderdeterminedCost(),
+        np.asarray([0.0, 0.5], dtype=float),
+        lb=np.asarray([-1.0, -1.0], dtype=float),
+        ub=np.asarray([1.0, 1.0], dtype=float),
+        max_iterations=7,
+        method="lm",
+    )
+
+    assert bool(result.success) is False
+    assert "requires at least as many residuals" in str(result.message)
+    assert np.allclose(result.x, [0.0, 0.5])
+
+
 def test_anchor_residual_vector_matches_simple_pointwise_cost():
     cost_fn = ellipse_solver.EllipseCostFunction.__new__(ellipse_solver.EllipseCostFunction)
     cost_fn.machine_type = "slideprinter"
@@ -403,6 +480,95 @@ def test_solve_anchors_trf_uses_reduced_vector_and_lsq_backend(monkeypatch):
     assert seen["method"] == "trf"
     assert np.asarray(seen["x0"], dtype=float).shape == (5,)
     assert result["solver"] == "least_squares_trf"
+    assert np.asarray(result["anchors"], dtype=float).shape == (3, 2)
+
+
+def test_solve_anchors_lm_uses_reduced_vector_and_lsq_backend(monkeypatch):
+    dataset = {
+        "machine_type": "slideprinter",
+        "num_anchors": 3,
+        "dimensions": 2,
+        "sweeps": [],
+    }
+    initial_guess = np.asarray(
+        [
+            [-400.0, 0.0],
+            [400.0, 0.0],
+            [0.0, 500.0],
+        ],
+        dtype=float,
+    )
+    seen = {}
+
+    class _FakeCostFn:
+        sweeps = []
+
+        def residual_vector(self, x: np.ndarray) -> np.ndarray:
+            vec = np.asarray(x, dtype=float).reshape(-1)
+            return vec - 0.1
+
+        def evaluate(self, x: np.ndarray) -> float:
+            residual = self.residual_vector(x)
+            return float(0.5 * np.dot(residual, residual))
+
+        def evaluate_detailed(self, x: np.ndarray):
+            anchors = ellipse_solver.anchor_opt_vec_to_matrix(np.asarray(x, dtype=float), "slideprinter", 3, 2)
+            return ellipse_solver.CostResult(
+                total_cost=float(self.evaluate(x)),
+                per_sweep_costs={},
+                num_valid_sweeps=0,
+                num_invalid_sweeps=0,
+                anchor_estimate=anchors,
+                noise_metrics=None,
+            )
+
+        def pointwise_residual_rows(self, _x: np.ndarray):
+            return []
+
+        def robustness_diagnostics(self, _x: np.ndarray, *, top_n: int = 5):
+            _ = top_n
+            return {}
+
+    def fake_build_restart_cost_fn(*args, **kwargs):
+        _ = args, kwargs
+        return _FakeCostFn(), dataset, {}
+
+    def fake_least_squares(fun, x0, **kwargs):
+        seen["x0"] = np.asarray(x0, dtype=float).copy()
+        seen["method"] = kwargs.get("method")
+        seen["has_bounds"] = "bounds" in kwargs
+        _ = fun(np.asarray(x0, dtype=float))
+        return OptimizeResult(
+            x=np.asarray(x0, dtype=float),
+            cost=0.0,
+            success=True,
+            message="ok",
+            nfev=1,
+            njev=1,
+            optimality=0.0,
+            active_mask=np.zeros_like(np.asarray(x0, dtype=float), dtype=int),
+        )
+
+    monkeypatch.setattr(ellipse_solver, "_build_cost_fn", lambda *args, **kwargs: _FakeCostFn())
+    monkeypatch.setattr(ellipse_solver, "_build_restart_cost_fn", fake_build_restart_cost_fn)
+    monkeypatch.setattr(ellipse_solver, "least_squares", fake_least_squares)
+
+    result = ellipse_solver.solve_anchors(
+        dataset,
+        initial_guess=initial_guess,
+        method="lm",
+        max_iterations=4,
+        num_restarts=1,
+        use_parallel=False,
+        pointwise_filtering=False,
+        pointwise_global_mad=False,
+        sweep_wise_filtering=False,
+    )
+
+    assert seen["method"] == "lm"
+    assert seen["has_bounds"] is False
+    assert np.asarray(seen["x0"], dtype=float).shape == (5,)
+    assert result["solver"] == "least_squares_lm"
     assert np.asarray(result["anchors"], dtype=float).shape == (3, 2)
 
 

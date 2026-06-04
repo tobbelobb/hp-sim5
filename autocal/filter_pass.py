@@ -9,6 +9,7 @@ from autocal.theoretical_ellipse import (
     get_anchor_opt_bounds,
     predict_ellipse_coefficients,
 )
+from autocal.ellipse_solver import solve_anchor_proposal_lsq
 
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.alternating_refinement import run_alternating_refinement
@@ -25,6 +26,13 @@ _LEGACY_FORWARD_TRANSFORM_FN = None
 
 def _objective_name(objective_id: int) -> str:
     return str(_OBJECTIVE_NAMES.get(int(objective_id), f"objective_{int(objective_id)}"))
+
+
+def _normalize_lsq_anchor_solver_method(method: str) -> str:
+    method_norm = str(method or "").strip().replace("_", "-").lower()
+    if method_norm in ("trf", "lm"):
+        return method_norm
+    return method_norm
 
 
 def _resolve_objective_schedule(
@@ -1473,6 +1481,34 @@ def estimate_effective_radii_with_spool_model(
             )
             if isinstance(local_result, dict):
                 return local_result
+        method_lsq = _normalize_lsq_anchor_solver_method(str(solve_optimizer))
+        if int(objective_id) == 1 and method_lsq == "lm":
+            result_lsq = solve_anchor_proposal_lsq(
+                transformed_dataset,
+                np.asarray(initial_guess, dtype=float),
+                method=str(method_lsq),
+                max_iterations=int(max_iterations),
+                residual_threshold=float(residual_threshold),
+                pointwise_residual_mode=str(pointwise_residual_mode),
+                invalid_sweep_penalty=1e6,
+                spring_k_multiplier=float(spring_k_multiplier),
+                use_flex=bool(use_flex),
+                robust_loss=False,
+                huber_delta=1.0,
+                pointwise_filtering=bool(pointwise_filtering),
+                pointwise_global_mad=bool(pointwise_global_mad),
+                sweep_wise_filtering=bool(sweep_wise_filtering),
+                sweep_metric=str(sweep_metric),
+                pointwise_filter_stage=0,
+                use_noise_mean=bool(use_noise_mean),
+                noise_normalized=True,
+                sigma_source=str(sigma_source),
+            )
+            result_out = dict(result_lsq) if isinstance(result_lsq, dict) else {}
+            result_out["objective_id"] = int(objective_id)
+            result_out["objective_name"] = str(objective_name)
+            result_out["solver"] = str(result_out.get("solver") or f"least_squares_{method_lsq}")
+            return result_out
         result = calibrate_elliptical(
             transformed_dataset,
             output_path=None,

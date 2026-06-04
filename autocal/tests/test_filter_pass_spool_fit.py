@@ -3017,6 +3017,153 @@ def test_non_pointwise_objective_schedule_controls_anchor_proposals(monkeypatch,
         assert history[0].get("anchor_step_solver") == "scheduled_local_objective_fake"
 
 
+def test_pointwise_lm_anchor_proposal_uses_lsq_seam(monkeypatch):
+    base = np.array([30.0, 30.0, 30.0], dtype=float)
+    target_r = np.array([39.0, 39.0, 39.0], dtype=float)
+    target_k = np.array([0.636619, 0.636619, 0.636619], dtype=float)
+    _patch_spool_runtime(monkeypatch, target_radii=target_r, target_buildup=target_k)
+
+    proposal_calls = []
+
+    def fake_lsq_anchor_solver(dataset_or_locked_mask, initial_guess, **kwargs):
+        proposal_calls.append(
+            {
+                "dataset": dataset_or_locked_mask,
+                "initial_guess": np.asarray(initial_guess, dtype=float),
+                "method": str(kwargs.get("method")),
+                "max_iterations": int(kwargs.get("max_iterations")),
+            }
+        )
+        return {
+            "anchors": np.asarray(initial_guess, dtype=float) + 1.0,
+            "cost": 0.0,
+            "success": True,
+            "solver": f"least_squares_{kwargs.get('method')}",
+        }
+
+    monkeypatch.setattr(ac, "solve_anchor_proposal_lsq", fake_lsq_anchor_solver)
+
+    dataset = {
+        "machine_type": "slideprinter",
+        "num_anchors": 3,
+        "dimensions": 2,
+        "sweeps": [],
+    }
+    _eff_r, _fit_anchors, _spool_params, _transformed, fit_info = ac._estimate_effective_radii_with_spool_model(
+        dataset,
+        np.zeros((3, 2), dtype=float),
+        find_radii_mode="global",
+        find_buildup_mode="off",
+        base_radii_mm=base,
+        modeled_buildup_factor=target_k,
+        spool_to_motor_gearing_factor=np.ones(3, dtype=float),
+        mechanical_advantage=np.ones(3, dtype=float),
+        lines_per_spool=np.ones(3, dtype=float),
+        r0_bounds=(20.0, 45.0),
+        b_bounds=None,
+        r0_prior_sigma_mm=None,
+        b_prior_sigma=None,
+        spool_outer_iters=1,
+        spool_inner_iters=4,
+        theta0_mode="zero",
+        solve_restarts=1,
+        solve_iterations=10,
+        solve_optimizer="lm",
+        residual_threshold=1.0,
+        spring_k_multiplier=1.0,
+        use_flex=False,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=False,
+        pointwise_global_mad=False,
+        sweep_wise_filtering=False,
+        sweep_metric="mad",
+        use_noise_mean=False,
+        sigma_source="auto",
+        robust_debug=False,
+        objective_schedule=[1],
+    )
+
+    assert proposal_calls
+    assert all(call["method"] == "lm" for call in proposal_calls)
+    bootstrap = fit_info.get("bootstrap_anchor_refresh", {})
+    assert bootstrap.get("solver") == "least_squares_lm"
+
+
+def test_pointwise_trf_anchor_proposal_keeps_calibrate_elliptical_path(monkeypatch):
+    base = np.array([30.0, 30.0, 30.0], dtype=float)
+    target_r = np.array([39.0, 39.0, 39.0], dtype=float)
+    target_k = np.array([0.636619, 0.636619, 0.636619], dtype=float)
+    _patch_spool_runtime(monkeypatch, target_radii=target_r, target_buildup=target_k)
+
+    calibrate_calls = []
+
+    def forbidden_lsq_anchor_solver(*_args, **_kwargs):
+        raise AssertionError("trf should keep the staged calibrate_elliptical proposal path")
+
+    def fake_calibrate_elliptical(dataset_or_path, **kwargs):
+        calibrate_calls.append(
+            {
+                "dataset": dataset_or_path,
+                "method": str(kwargs.get("method")),
+                "initial_guess": np.asarray(kwargs.get("initial_guess"), dtype=float),
+            }
+        )
+        return {
+            "anchors": np.asarray(kwargs.get("initial_guess"), dtype=float) + 1.0,
+            "cost": 0.0,
+            "success": True,
+            "solver": "least_squares_trf",
+        }
+
+    monkeypatch.setattr(ac, "solve_anchor_proposal_lsq", forbidden_lsq_anchor_solver)
+    _patch_runtime_attr(monkeypatch, "calibrate_elliptical", fake_calibrate_elliptical)
+
+    dataset = {
+        "machine_type": "slideprinter",
+        "num_anchors": 3,
+        "dimensions": 2,
+        "sweeps": [],
+    }
+    _eff_r, _fit_anchors, _spool_params, _transformed, fit_info = ac._estimate_effective_radii_with_spool_model(
+        dataset,
+        np.zeros((3, 2), dtype=float),
+        find_radii_mode="global",
+        find_buildup_mode="off",
+        base_radii_mm=base,
+        modeled_buildup_factor=target_k,
+        spool_to_motor_gearing_factor=np.ones(3, dtype=float),
+        mechanical_advantage=np.ones(3, dtype=float),
+        lines_per_spool=np.ones(3, dtype=float),
+        r0_bounds=(20.0, 45.0),
+        b_bounds=None,
+        r0_prior_sigma_mm=None,
+        b_prior_sigma=None,
+        spool_outer_iters=1,
+        spool_inner_iters=4,
+        theta0_mode="zero",
+        solve_restarts=1,
+        solve_iterations=10,
+        solve_optimizer="trf",
+        residual_threshold=1.0,
+        spring_k_multiplier=1.0,
+        use_flex=False,
+        pointwise_residual_mode="sampson",
+        pointwise_filtering=False,
+        pointwise_global_mad=False,
+        sweep_wise_filtering=False,
+        sweep_metric="mad",
+        use_noise_mean=False,
+        sigma_source="auto",
+        robust_debug=False,
+        objective_schedule=[1],
+    )
+
+    assert calibrate_calls
+    assert all(call["method"] == "trf" for call in calibrate_calls)
+    bootstrap = fit_info.get("bootstrap_anchor_refresh", {})
+    assert bootstrap.get("solver") == "least_squares_trf"
+
+
 def test_scale_fix_3_applies_final_polish_on_every_filter_pass(monkeypatch):
     base = np.array([30.0, 30.0, 30.0], dtype=float)
     target_r = np.array([39.0, 39.0, 39.0], dtype=float)

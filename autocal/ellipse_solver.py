@@ -172,14 +172,13 @@ def _run_anchor_least_squares(
     method: str,
 ) -> OptimizeResult:
     method_norm = _normalize_anchor_optimizer_method(method)
-    if method_norm == "lm":
-        raise NotImplementedError(
-            "least_squares method='lm' is not implemented yet; use 'lbfgsb' or 'trf'."
+    if method_norm not in _ANCHOR_LSQ_METHODS:
+        raise ValueError(
+            f"least_squares anchor solver only supports {_ANCHOR_LSQ_METHODS}, got {method!r}"
         )
-    if method_norm != "trf":
-        raise ValueError(f"least_squares anchor solver only supports 'trf', got {method!r}")
 
-    x0_clipped = np.clip(np.asarray(x0, dtype=float).reshape(-1), lb, ub)
+    x0_arr = np.asarray(x0, dtype=float).reshape(-1)
+    x0_start = np.clip(x0_arr, lb, ub)
     expected_size: Optional[int] = None
 
     def _clean_residual_vector(vec: np.ndarray, *, size: Optional[int]) -> np.ndarray:
@@ -195,12 +194,39 @@ def _run_anchor_least_squares(
             fixed[:n] = arr[:n]
         return fixed
 
-    def _raw_residual(anchor_vec: np.ndarray) -> np.ndarray:
-        x_clipped = np.clip(np.asarray(anchor_vec, dtype=float).reshape(-1), lb, ub)
-        return cost_fn.anchor_residual_vector(x_clipped)
+    residual_fn = getattr(cost_fn, "residual_vector", None)
+    if not callable(residual_fn):
+        residual_fn = getattr(cost_fn, "anchor_residual_vector")
 
-    r0 = _clean_residual_vector(_raw_residual(x0_clipped), size=None)
+    def _raw_residual(anchor_vec: np.ndarray) -> np.ndarray:
+        x_eval = np.asarray(anchor_vec, dtype=float).reshape(-1)
+        if method_norm == "trf":
+            x_eval = np.clip(x_eval, lb, ub)
+        return residual_fn(x_eval)
+
+    r0 = _clean_residual_vector(_raw_residual(x0_start), size=None)
     expected_size = int(r0.size)
+    if method_norm == "lm" and expected_size < int(x0_start.size):
+        try:
+            fun0 = float(cost_fn.evaluate(x0_start))
+        except Exception:
+            fun0 = float("inf")
+        if not np.isfinite(fun0):
+            fun0 = float(0.5 * np.dot(r0, r0))
+        return OptimizeResult(
+            x=np.asarray(x0_start, dtype=float),
+            fun=float(fun0),
+            success=False,
+            message=(
+                "least_squares method='lm' requires at least as many residuals "
+                "as variables"
+            ),
+            nit=0,
+            nfev=1,
+            lsq_cost=float(0.5 * np.dot(r0, r0)),
+            optimality=float("nan"),
+            active_mask=np.zeros_like(x0_start, dtype=int),
+        )
 
     def _residual(anchor_vec: np.ndarray) -> np.ndarray:
         try:
@@ -208,16 +234,29 @@ def _run_anchor_least_squares(
         except Exception:
             return np.full(int(expected_size or 1), 1e6, dtype=float)
 
-    result = least_squares(
-        _residual,
-        x0_clipped,
-        method="trf",
-        bounds=(lb, ub),
-        x_scale="jac",
-        max_nfev=int(max(1, max_iterations)),
-    )
-    x = np.clip(np.asarray(result.x, dtype=float).reshape(-1), lb, ub)
-    fun = float(cost_fn.evaluate(x))
+    kwargs: Dict[str, object] = {
+        "method": str(method_norm),
+        "x_scale": "jac",
+        "max_nfev": int(max(1, max_iterations)),
+    }
+    if method_norm == "trf":
+        kwargs["bounds"] = (lb, ub)
+    result = least_squares(_residual, x0_start, **kwargs)
+    x = np.asarray(result.x, dtype=float).reshape(-1)
+    if method_norm == "trf":
+        x = np.clip(x, lb, ub)
+    if x.size != x0_start.size or not np.all(np.isfinite(x)):
+        x = np.asarray(x0_start, dtype=float)
+    try:
+        fun = float(cost_fn.evaluate(x))
+    except Exception:
+        fun = float("inf")
+    if not np.isfinite(fun):
+        lsq_cost = getattr(result, "cost", float("nan"))
+        try:
+            fun = float(lsq_cost)
+        except (TypeError, ValueError):
+            fun = float("inf")
     return OptimizeResult(
         x=x,
         fun=fun,
@@ -282,10 +321,6 @@ def _optimize_restart_worker(payload: dict) -> dict:
     )
 
     method_norm = _normalize_anchor_optimizer_method(method_raw)
-    if method_norm == "lm":
-        raise NotImplementedError(
-            "least_squares method='lm' is not implemented yet; use 'lbfgsb' or 'trf'."
-        )
 
     def _bounded_objective(x: np.ndarray) -> float:
         x = np.asarray(x, dtype=float).reshape(-1)
@@ -330,7 +365,7 @@ def _optimize_restart_worker(payload: dict) -> dict:
         )
     else:
         scipy_method = _method_for_scipy_minimize(method_raw)
-        if method_norm == "trf":
+        if method_norm in _ANCHOR_LSQ_METHODS:
             result = _run_anchor_least_squares(
                 cost_fn,
                 x0_clipped,
@@ -344,7 +379,7 @@ def _optimize_restart_worker(payload: dict) -> dict:
         elif method_norm == "powell":
             scipy_method = "Powell"
 
-        if method_norm != "trf":
+        if method_norm not in _ANCHOR_LSQ_METHODS:
             options: Dict[str, object] = {"maxiter": max_iterations}
             if scipy_method == "L-BFGS-B":
                 options["ftol"] = 1e-12
@@ -697,7 +732,7 @@ def solve_anchor_proposal_lsq(
         "success": bool(getattr(result, "success", True)),
         "details": detailed,
         "raw_result": result,
-        "solver": "least_squares_trf",
+        "solver": f"least_squares_{_normalize_anchor_optimizer_method(method)}",
     }
 
 
@@ -820,10 +855,6 @@ def solve_anchors(
 
     method_raw = str(method or "L-BFGS-B")
     method_norm = _normalize_anchor_optimizer_method(method_raw)
-    if method_norm == "lm":
-        raise NotImplementedError(
-            "least_squares method='lm' is not implemented yet; use 'lbfgsb' or 'trf'."
-        )
     if str(method_raw).strip().replace("_", "-").lower() in ("slsqp", "sqp"):
         # SLSQP has repeatedly shown immediate termination for this objective (often status=4).
         # Keep the CLI/API stable by treating it as an alias for a bounded quasi-Newton method.
@@ -1154,7 +1185,7 @@ def solve_anchors(
         and not bool(verbose)
         and cost_callback is None
         and method_norm != "differential-evolution"
-        and method_norm != "trf"
+        and method_norm not in _ANCHOR_LSQ_METHODS
         and isinstance(dataset, dict)
         and len(initial_guesses) > 1
     )
@@ -1321,7 +1352,7 @@ def solve_anchors(
                     )
                 else:
                     scipy_method = method_raw
-                    if method_norm == "trf":
+                    if method_norm in _ANCHOR_LSQ_METHODS:
                         result = _run_anchor_least_squares(
                             cost_fn,
                             x0_clipped,
@@ -1335,7 +1366,7 @@ def solve_anchors(
                     elif method_norm == "powell":
                         scipy_method = "Powell"
 
-                    if method_norm != "trf":
+                    if method_norm not in _ANCHOR_LSQ_METHODS:
                         options: Dict[str, object] = {"maxiter": max_iterations}
                         if scipy_method == "L-BFGS-B":
                             options["ftol"] = 1e-12
@@ -1468,7 +1499,7 @@ def solve_anchors(
         "success": bool(getattr(best_result, "success", True)),
         "details": detailed,
         "raw_result": best_result,
-        "solver": "least_squares_trf" if method_norm == "trf" else "ellipse_solver",
+        "solver": f"least_squares_{method_norm}" if method_norm in _ANCHOR_LSQ_METHODS else "ellipse_solver",
     }
 
 
