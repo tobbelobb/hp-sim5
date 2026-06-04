@@ -48,6 +48,7 @@ _DEFAULT_RADIUS_PAIR_SIGMA_MM = 2.0
 _COMPUTE_SPOOL_INFO_MATRIX = False
 _SPOOL_PREFIT_GLOBAL_R_GRID_POINTS = 9
 _SPOOL_FIND_MODE_CHOICES = ("off", "global", "per-anchor")
+_SOLVE_OPTIMIZER_CHOICES = ("lbfgsb", "lm", "trf")
 _OPTIMIZER_MODE_CHOICES = ("fast", "fast-fd", "legacy")
 _THETA0_MODE_CHOICES = ("infer", "zero")
 _SCALE_FIX_LEVELS = (1, 2, 3)
@@ -3324,7 +3325,7 @@ def _print_ellipse_plan(
 def _add_solver_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--solve-restarts", type=int, default=4)
     parser.add_argument("--solve-iterations", type=int, default=400)
-    parser.add_argument("--solve-optimizer", default="L-BFGS-B")
+    parser.add_argument("--solve-optimizer", choices=_SOLVE_OPTIMIZER_CHOICES, default="lbfgsb")
     parser.add_argument(
         "--optimizer-mode",
         choices=_OPTIMIZER_MODE_CHOICES,
@@ -4070,7 +4071,7 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     parser.add_argument("--threshold", type=float, default=None)
     parser.add_argument("--solve-restarts", type=int, default=None)
     parser.add_argument("--solve-iterations", type=int, default=None)
-    parser.add_argument("--solve-optimizer", default=None)
+    parser.add_argument("--solve-optimizer", choices=_SOLVE_OPTIMIZER_CHOICES, default=None)
     parser.add_argument("--optimizer-mode", choices=_OPTIMIZER_MODE_CHOICES, default=None)
     return parser
 

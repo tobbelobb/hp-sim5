@@ -173,11 +173,32 @@ def test_spool_cli_parses_optimizer_mode():
     assert str(args.optimizer_mode) == "fast-fd"
 
 
+def test_spool_cli_parses_solve_optimizer_choices():
+    _parser, args = _parse_spool_args()
+    assert str(args.solve_optimizer) == "lbfgsb"
+
+    _parser, args = _parse_spool_args("--solve-optimizer", "trf")
+    assert str(args.solve_optimizer) == "trf"
+
+    _parser, args = _parse_spool_args("--solve-optimizer", "lm")
+    assert str(args.solve_optimizer) == "lm"
+
+    parser = build_semi_auto_parser()
+    with pytest.raises(SystemExit):
+        parser.parse_args(["--machine-type", "slideprinter", "--solve-optimizer", "L-BFGS-B"])
+
+
 def test_full_auto_run_spec_parses_optimizer_mode_override():
     tokens, overrides = _parse_full_auto_run_spec("--optimizer-mode fast-fd --solve-iterations 2")
     assert tokens == ["--optimizer-mode", "fast-fd", "--solve-iterations", "2"]
     assert overrides["optimizer_mode"] == "fast-fd"
     assert overrides["solve_iterations"] == 2
+
+
+def test_full_auto_run_spec_parses_solve_optimizer_override():
+    tokens, overrides = _parse_full_auto_run_spec("--solve-optimizer trf")
+    assert tokens == ["--solve-optimizer", "trf"]
+    assert overrides["solve_optimizer"] == "trf"
 
 
 def test_full_auto_run_spec_parses_fit_structure_override():

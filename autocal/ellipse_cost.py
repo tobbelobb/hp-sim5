@@ -1496,6 +1496,142 @@ class EllipseCostFunction:
 
         return rows
 
+    def anchor_residual_vector(self, anchor_vec: np.ndarray) -> np.ndarray:
+        """
+        Return a fixed-length residual vector for least-squares anchor proposals.
+
+        The vector uses the same normalized point residuals, pointwise robust
+        stages, sweep masks, and underconstrained sentinel as `evaluate`.
+        """
+        anchors = anchor_opt_vec_to_matrix(
+            anchor_vec,
+            self.machine_type,
+            self.num_anchors,
+            self.dimensions,
+            self.low_anchor_z,
+        )
+        if not self.sweeps:
+            return np.zeros(0, dtype=float)
+
+        entries, global_scale, residual_entries = self._pointwise_entries(
+            anchors,
+            include_residual_entries=True,
+        )
+        sweep_metrics = [float(e.get("sweep_metric", float("inf"))) for e in entries]
+        keep_mask, _threshold, _reason = self._sweep_wise_keep_mask(sweep_metrics)
+
+        kept_count = 0
+        for idx, entry in enumerate(entries):
+            if keep_mask is not None and (idx >= len(keep_mask) or not bool(keep_mask[idx])):
+                continue
+            try:
+                entry_cost = float(entry.get("cost", float("inf")))
+            except (TypeError, ValueError):
+                entry_cost = float("inf")
+            if bool(entry.get("valid", False)) and np.isfinite(entry_cost):
+                kept_count += 1
+
+        underconstrained = kept_count < self._min_sweeps_after_trim
+        weight_sum = float(max(kept_count, 1))
+        stage, _stage_name, huber_mult, hard_cut = self._pointwise_stage_settings()
+
+        pieces: List[np.ndarray] = []
+        for idx, raw_entry in enumerate(residual_entries):
+            residuals = raw_entry.get("residuals")
+            num_points = int(raw_entry.get("num_points") or 0)
+            if num_points <= 0:
+                point_zero = np.zeros(0, dtype=float)
+            else:
+                point_zero = np.zeros(num_points, dtype=float)
+
+            entry = entries[idx] if idx < len(entries) else {}
+            dropped_by_sweep = keep_mask is not None and (
+                idx >= len(keep_mask) or not bool(keep_mask[idx])
+            )
+            valid = bool(entry.get("valid", False))
+            if (
+                underconstrained
+                or dropped_by_sweep
+                or (not valid)
+                or not isinstance(residuals, np.ndarray)
+            ):
+                pieces.append(point_zero)
+                pieces.append(np.zeros(1, dtype=float))
+                continue
+
+            residuals_arr = np.asarray(residuals, dtype=float).ravel()
+            if residuals_arr.size != num_points or residuals_arr.size == 0 or not np.all(np.isfinite(residuals_arr)):
+                pieces.append(point_zero)
+                pieces.append(np.zeros(1, dtype=float))
+                continue
+
+            sigma_l2 = raw_entry.get("sigma_l2")
+            r_norm = residuals_arr / float(max(self._l2_scale, 1.0))
+            if bool(self._noise_norm_available) and isinstance(sigma_l2, np.ndarray):
+                sigma_arr = np.asarray(sigma_l2, dtype=float).ravel()
+                if sigma_arr.size == residuals_arr.size and np.all(np.isfinite(sigma_arr)):
+                    r_norm = residuals_arr / sigma_arr
+            if r_norm.size != residuals_arr.size or not np.all(np.isfinite(r_norm)):
+                pieces.append(point_zero)
+                pieces.append(np.zeros(1, dtype=float))
+                continue
+
+            robust_delta: Optional[float] = None
+            if self.pointwise_filtering:
+                scale_raw = entry.get("scale")
+                try:
+                    scale = float(scale_raw)
+                except (TypeError, ValueError):
+                    scale = float("nan")
+                if not np.isfinite(scale) or scale <= 0.0:
+                    scale = self._pointwise_scale(r_norm, scale_override=global_scale)
+                if hard_cut:
+                    inlier_mask = entry.get("_inlier_mask")
+                    if isinstance(inlier_mask, np.ndarray):
+                        mask = np.asarray(inlier_mask, dtype=bool).reshape(-1)
+                        if mask.size == r_norm.size and int(np.sum(mask)) >= _POINTWISE_MIN_INLIERS:
+                            r_norm = np.where(mask, r_norm, 0.0)
+                robust_delta = float(max(float(huber_mult) * float(scale), 1e-12))
+            elif self.robust_loss:
+                robust_delta = float(max(self.huber_delta, 1e-12))
+
+            if robust_delta is not None:
+                element_cost = pseudo_huber_loss(r_norm, delta=float(robust_delta))
+            else:
+                element_cost = np.square(r_norm)
+            element_cost = np.asarray(element_cost, dtype=float).ravel()
+            if element_cost.size != r_norm.size or not np.all(np.isfinite(element_cost)):
+                pieces.append(point_zero)
+            else:
+                scale = float(self.pointwise_cost_weight) / (float(r_norm.size) * weight_sum)
+                signed = np.sign(r_norm) * np.sqrt(np.maximum(2.0 * scale * element_cost, 0.0))
+                pieces.append(np.asarray(signed, dtype=float))
+
+            try:
+                violation = float(entry.get("violation_penalty", 0.0))
+            except (TypeError, ValueError):
+                violation = 0.0
+            if np.isfinite(violation) and violation > 0.0:
+                pieces.append(np.asarray([np.sqrt(2.0 * float(violation) / weight_sum)], dtype=float))
+            else:
+                pieces.append(np.zeros(1, dtype=float))
+
+        if underconstrained:
+            pieces.append(np.asarray([np.sqrt(2.0 * float(_UNDERCONSTRAINED_PENALTY))], dtype=float))
+        else:
+            pieces.append(np.zeros(1, dtype=float))
+
+        if not pieces:
+            return np.zeros(0, dtype=float)
+        out = np.concatenate([np.asarray(piece, dtype=float).ravel() for piece in pieces])
+        if out.size == 0:
+            return np.zeros(0, dtype=float)
+        return np.where(np.isfinite(out), out, 1e6).astype(float)
+
+    def residual_vector(self, anchor_vec: np.ndarray) -> np.ndarray:
+        """Alias for callers that expect a generic residual-vector API."""
+        return self.anchor_residual_vector(anchor_vec)
+
     def _pointwise_cost_unfiltered(
         self, residuals: np.ndarray, *, r_norm_override: Optional[np.ndarray] = None
     ) -> Tuple[float, float, float]:

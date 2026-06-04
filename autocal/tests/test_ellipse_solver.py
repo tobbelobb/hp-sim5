@@ -223,6 +223,189 @@ def test_run_lbfgsb_minimize_value_only_mode_falls_back_when_jax_fun_errors(monk
     assert bool(result.success) is True
 
 
+def test_run_anchor_least_squares_uses_trf_with_jac_scale(monkeypatch):
+    seen = {}
+
+    class _FakeResidualCost:
+        def anchor_residual_vector(self, x: np.ndarray) -> np.ndarray:
+            return np.asarray(x, dtype=float).reshape(-1) - 0.25
+
+        def evaluate(self, x: np.ndarray) -> float:
+            residual = self.anchor_residual_vector(x)
+            return float(0.5 * np.dot(residual, residual))
+
+    def fake_least_squares(fun, x0, **kwargs):
+        seen["method"] = kwargs.get("method")
+        seen["x_scale"] = kwargs.get("x_scale")
+        seen["bounds"] = kwargs.get("bounds")
+        seen["max_nfev"] = kwargs.get("max_nfev")
+        seen["r0"] = np.asarray(fun(np.asarray(x0, dtype=float)), dtype=float)
+        return OptimizeResult(
+            x=np.asarray([0.25, 0.25], dtype=float),
+            cost=0.0,
+            success=True,
+            message="ok",
+            nfev=3,
+            njev=2,
+            optimality=0.0,
+            active_mask=np.asarray([0, 0], dtype=int),
+        )
+
+    monkeypatch.setattr(ellipse_solver, "least_squares", fake_least_squares)
+
+    result = ellipse_solver._run_anchor_least_squares(
+        _FakeResidualCost(),
+        np.asarray([0.0, 0.5], dtype=float),
+        lb=np.asarray([-1.0, -1.0], dtype=float),
+        ub=np.asarray([1.0, 1.0], dtype=float),
+        max_iterations=7,
+        method="trf",
+    )
+
+    assert seen["method"] == "trf"
+    assert seen["x_scale"] == "jac"
+    assert seen["max_nfev"] == 7
+    assert np.allclose(seen["bounds"][0], [-1.0, -1.0])
+    assert np.allclose(seen["bounds"][1], [1.0, 1.0])
+    assert np.allclose(seen["r0"], [-0.25, 0.25])
+    assert np.allclose(result.x, [0.25, 0.25])
+    assert np.isclose(float(result.fun), 0.0)
+
+
+def test_anchor_residual_vector_matches_simple_pointwise_cost():
+    cost_fn = ellipse_solver.EllipseCostFunction.__new__(ellipse_solver.EllipseCostFunction)
+    cost_fn.machine_type = "slideprinter"
+    cost_fn.num_anchors = 3
+    cost_fn.dimensions = 2
+    cost_fn.low_anchor_z = None
+    cost_fn.sweeps = [object()]
+    cost_fn._min_sweeps_after_trim = 1
+    cost_fn.pointwise_filter_stage = 0
+    cost_fn.pointwise_filtering = False
+    cost_fn.robust_loss = False
+    cost_fn.huber_delta = 1.0
+    cost_fn.pointwise_cost_weight = 1.0
+    cost_fn._l2_scale = 1.0
+    cost_fn._noise_norm_available = False
+
+    def fake_pointwise_entries(_anchors, *, include_residual_entries=False):
+        entries = [
+            {
+                "sweep_metric": 0.0,
+                "valid": True,
+                "cost": 2.5,
+                "violation_penalty": 3.0,
+            }
+        ]
+        residual_entries = [
+            {
+                "residuals": np.asarray([1.0, 2.0], dtype=float),
+                "num_points": 2,
+            }
+        ]
+        if include_residual_entries:
+            return entries, None, residual_entries
+        return entries, None
+
+    cost_fn._pointwise_entries = fake_pointwise_entries
+    cost_fn._sweep_wise_keep_mask = lambda _metrics: (None, None, "disabled")
+
+    residual = cost_fn.anchor_residual_vector(np.zeros(5, dtype=float))
+
+    assert residual.shape == (4,)
+    assert np.isclose(float(0.5 * np.dot(residual, residual)), 5.5)
+    assert np.allclose(residual[:2], [1.0, 2.0])
+    assert np.isclose(float(residual[2]), np.sqrt(6.0))
+    assert np.isclose(float(residual[3]), 0.0)
+
+
+def test_solve_anchors_trf_uses_reduced_vector_and_lsq_backend(monkeypatch):
+    dataset = {
+        "machine_type": "slideprinter",
+        "num_anchors": 3,
+        "dimensions": 2,
+        "sweeps": [],
+    }
+    initial_guess = np.asarray(
+        [
+            [-400.0, 0.0],
+            [400.0, 0.0],
+            [0.0, 500.0],
+        ],
+        dtype=float,
+    )
+    seen = {}
+
+    class _FakeCostFn:
+        sweeps = []
+
+        def anchor_residual_vector(self, x: np.ndarray) -> np.ndarray:
+            vec = np.asarray(x, dtype=float).reshape(-1)
+            return vec - 0.1
+
+        def evaluate(self, x: np.ndarray) -> float:
+            residual = self.anchor_residual_vector(x)
+            return float(0.5 * np.dot(residual, residual))
+
+        def evaluate_detailed(self, x: np.ndarray):
+            anchors = ellipse_solver.anchor_opt_vec_to_matrix(np.asarray(x, dtype=float), "slideprinter", 3, 2)
+            return ellipse_solver.CostResult(
+                total_cost=float(self.evaluate(x)),
+                per_sweep_costs={},
+                num_valid_sweeps=0,
+                num_invalid_sweeps=0,
+                anchor_estimate=anchors,
+                noise_metrics=None,
+            )
+
+        def pointwise_residual_rows(self, _x: np.ndarray):
+            return []
+
+        def robustness_diagnostics(self, _x: np.ndarray, *, top_n: int = 5):
+            _ = top_n
+            return {}
+
+    def fake_build_restart_cost_fn(*args, **kwargs):
+        _ = args, kwargs
+        return _FakeCostFn(), dataset, {}
+
+    def fake_least_squares(fun, x0, **kwargs):
+        seen["x0"] = np.asarray(x0, dtype=float).copy()
+        seen["method"] = kwargs.get("method")
+        _ = fun(np.asarray(x0, dtype=float))
+        return OptimizeResult(
+            x=np.asarray(x0, dtype=float),
+            cost=0.0,
+            success=True,
+            message="ok",
+            nfev=1,
+            njev=1,
+            optimality=0.0,
+            active_mask=np.zeros_like(np.asarray(x0, dtype=float), dtype=int),
+        )
+
+    monkeypatch.setattr(ellipse_solver, "_build_cost_fn", lambda *args, **kwargs: _FakeCostFn())
+    monkeypatch.setattr(ellipse_solver, "_build_restart_cost_fn", fake_build_restart_cost_fn)
+    monkeypatch.setattr(ellipse_solver, "least_squares", fake_least_squares)
+
+    result = ellipse_solver.solve_anchors(
+        dataset,
+        initial_guess=initial_guess,
+        method="trf",
+        max_iterations=4,
+        num_restarts=1,
+        use_parallel=False,
+        pointwise_filtering=False,
+        pointwise_global_mad=False,
+        sweep_wise_filtering=False,
+    )
+
+    assert seen["method"] == "trf"
+    assert np.asarray(seen["x0"], dtype=float).shape == (5,)
+    assert result["solver"] == "least_squares_trf"
+    assert np.asarray(result["anchors"], dtype=float).shape == (3, 2)
+
+
 def test_prepare_frozen_dataset_and_flags_filters_points_and_sweeps(monkeypatch):
     dataset = {
         "machine_type": "slideprinter",

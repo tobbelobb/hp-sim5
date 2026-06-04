@@ -304,7 +304,7 @@ def ellipse_prediction_objective_score(
 def _normalize_anchor_solver_method(method: str) -> str:
     method_raw = str(method or "L-BFGS-B")
     method_norm = method_raw.strip().replace("_", "-").lower()
-    if method_norm in ("slsqp", "sqp"):
+    if method_norm in ("slsqp", "sqp", "lbfgsb", "trf", "lm"):
         return "L-BFGS-B"
     if method_norm == "l-bfgs-b":
         return "L-BFGS-B"
@@ -1500,7 +1500,7 @@ def estimate_effective_radii_with_spool_model(
         result_out = dict(result) if isinstance(result, dict) else {}
         result_out["objective_id"] = int(objective_id)
         result_out["objective_name"] = str(objective_name)
-        result_out["solver"] = "ellipse_solver"
+        result_out["solver"] = str(result_out.get("solver") or "ellipse_solver")
         return result_out
 
     def _extract_noise_metrics(cal_result: object) -> Optional[dict]:

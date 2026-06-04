@@ -9,7 +9,7 @@ import os
 from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 import numpy as np
-from scipy.optimize import OptimizeResult, differential_evolution, minimize
+from scipy.optimize import OptimizeResult, differential_evolution, least_squares, minimize
 
 from autocal.ellipse_cost import CostResult, EllipseCostFunction
 from autocal.ellipse_objective_jax import build_compiled_objective, build_compiled_value_and_grad
@@ -23,6 +23,7 @@ from autocal.theoretical_ellipse import (
 )
 
 _BOUND_PENALTY_WEIGHT = 1e4
+_ANCHOR_LSQ_METHODS = ("trf", "lm")
 
 
 def format_anchor_matrix_plain(anchors: np.ndarray, *, decimals: int = 2) -> str:
@@ -59,6 +60,22 @@ def _lbfgsb_jax_mode() -> str:
     if raw in ("fun", "fd", "finite-diff", "finite_diff", "value-only", "value_only", "legacy"):
         return "fun"
     return "jac"
+
+
+def _normalize_anchor_optimizer_method(method: object) -> str:
+    method_norm = str(method or "L-BFGS-B").strip().replace("_", "-").lower()
+    if method_norm in ("slsqp", "sqp", "l-bfgs-b", "lbfgsb"):
+        return "lbfgsb"
+    if method_norm in _ANCHOR_LSQ_METHODS:
+        return method_norm
+    return method_norm
+
+
+def _method_for_scipy_minimize(method: object) -> str:
+    method_norm = _normalize_anchor_optimizer_method(method)
+    if method_norm == "lbfgsb":
+        return "L-BFGS-B"
+    return str(method)
 
 
 def _build_lbfgsb_objective_with_jac(
@@ -145,6 +162,75 @@ def _run_lbfgsb_minimize(
     )
 
 
+def _run_anchor_least_squares(
+    cost_fn: EllipseCostFunction,
+    x0: np.ndarray,
+    *,
+    lb: np.ndarray,
+    ub: np.ndarray,
+    max_iterations: int,
+    method: str,
+) -> OptimizeResult:
+    method_norm = _normalize_anchor_optimizer_method(method)
+    if method_norm == "lm":
+        raise NotImplementedError(
+            "least_squares method='lm' is not implemented yet; use 'lbfgsb' or 'trf'."
+        )
+    if method_norm != "trf":
+        raise ValueError(f"least_squares anchor solver only supports 'trf', got {method!r}")
+
+    x0_clipped = np.clip(np.asarray(x0, dtype=float).reshape(-1), lb, ub)
+    expected_size: Optional[int] = None
+
+    def _clean_residual_vector(vec: np.ndarray, *, size: Optional[int]) -> np.ndarray:
+        arr = np.asarray(vec, dtype=float).reshape(-1)
+        if arr.size == 0:
+            arr = np.zeros(1, dtype=float)
+        arr = np.where(np.isfinite(arr), arr, 1e6).astype(float)
+        if size is None or arr.size == int(size):
+            return arr
+        fixed = np.full(int(size), 1e6, dtype=float)
+        n = min(int(size), int(arr.size))
+        if n > 0:
+            fixed[:n] = arr[:n]
+        return fixed
+
+    def _raw_residual(anchor_vec: np.ndarray) -> np.ndarray:
+        x_clipped = np.clip(np.asarray(anchor_vec, dtype=float).reshape(-1), lb, ub)
+        return cost_fn.anchor_residual_vector(x_clipped)
+
+    r0 = _clean_residual_vector(_raw_residual(x0_clipped), size=None)
+    expected_size = int(r0.size)
+
+    def _residual(anchor_vec: np.ndarray) -> np.ndarray:
+        try:
+            return _clean_residual_vector(_raw_residual(anchor_vec), size=expected_size)
+        except Exception:
+            return np.full(int(expected_size or 1), 1e6, dtype=float)
+
+    result = least_squares(
+        _residual,
+        x0_clipped,
+        method="trf",
+        bounds=(lb, ub),
+        x_scale="jac",
+        max_nfev=int(max(1, max_iterations)),
+    )
+    x = np.clip(np.asarray(result.x, dtype=float).reshape(-1), lb, ub)
+    fun = float(cost_fn.evaluate(x))
+    return OptimizeResult(
+        x=x,
+        fun=fun,
+        success=bool(getattr(result, "success", False)),
+        message=str(getattr(result, "message", "")),
+        nit=int(getattr(result, "njev", 0) or 0),
+        nfev=int(getattr(result, "nfev", 0) or 0),
+        lsq_cost=float(getattr(result, "cost", float("nan"))),
+        optimality=float(getattr(result, "optimality", float("nan"))),
+        active_mask=np.asarray(getattr(result, "active_mask", []), dtype=int),
+    )
+
+
 def _optimize_restart_worker(payload: dict) -> dict:
     """Run a single restart in a separate process; returns an OptimizeResult-compatible dict."""
     dataset = payload["dataset"]
@@ -195,9 +281,11 @@ def _optimize_restart_worker(payload: dict) -> dict:
         sigma_source=str(sigma_source),
     )
 
-    method_norm = method_raw.strip().replace("_", "-").lower()
-    if method_norm in ("slsqp", "sqp"):
-        method_norm = "l-bfgs-b"
+    method_norm = _normalize_anchor_optimizer_method(method_raw)
+    if method_norm == "lm":
+        raise NotImplementedError(
+            "least_squares method='lm' is not implemented yet; use 'lbfgsb' or 'trf'."
+        )
 
     def _bounded_objective(x: np.ndarray) -> float:
         x = np.asarray(x, dtype=float).reshape(-1)
@@ -241,37 +329,47 @@ def _optimize_restart_worker(payload: dict) -> dict:
             max_iterations=max_iterations,
         )
     else:
-        scipy_method = method_raw
-        if method_norm in ("l-bfgs-b", "lbfgsb"):
-            scipy_method = "L-BFGS-B"
-        elif method_norm == "powell":
-            scipy_method = "Powell"
-
-        options: Dict[str, object] = {"maxiter": max_iterations}
-        if scipy_method == "L-BFGS-B":
-            options["ftol"] = 1e-12
-            options["maxls"] = 40
-        elif scipy_method == "Powell":
-            options["xtol"] = 1e-4
-            options["ftol"] = 1e-8
-
-        if scipy_method == "L-BFGS-B":
-            result = _run_lbfgsb_minimize(
+        scipy_method = _method_for_scipy_minimize(method_raw)
+        if method_norm == "trf":
+            result = _run_anchor_least_squares(
                 cost_fn,
                 x0_clipped,
                 lb=lb,
                 ub=ub,
-                bounds=bounds,
                 max_iterations=max_iterations,
+                method=method_norm,
             )
-        else:
-            result = minimize(
-                cost_fn.evaluate,
-                x0_clipped,
-                method=scipy_method,
-                bounds=bounds,
-                options=options,
-            )
+        elif method_norm == "lbfgsb":
+            scipy_method = "L-BFGS-B"
+        elif method_norm == "powell":
+            scipy_method = "Powell"
+
+        if method_norm != "trf":
+            options: Dict[str, object] = {"maxiter": max_iterations}
+            if scipy_method == "L-BFGS-B":
+                options["ftol"] = 1e-12
+                options["maxls"] = 40
+            elif scipy_method == "Powell":
+                options["xtol"] = 1e-4
+                options["ftol"] = 1e-8
+
+            if scipy_method == "L-BFGS-B":
+                result = _run_lbfgsb_minimize(
+                    cost_fn,
+                    x0_clipped,
+                    lb=lb,
+                    ub=ub,
+                    bounds=bounds,
+                    max_iterations=max_iterations,
+                )
+            else:
+                result = minimize(
+                    cost_fn.evaluate,
+                    x0_clipped,
+                    method=scipy_method,
+                    bounds=bounds,
+                    options=options,
+                )
 
     best = OptimizeResult(
         x=np.asarray(result.x, dtype=float),
@@ -520,6 +618,89 @@ def _build_restart_cost_fn(
     return cost_fn, dataset_eff, flags
 
 
+def solve_anchor_proposal_lsq(
+    dataset: Union[dict, "SweepDataset"],
+    initial_guess: np.ndarray,
+    *,
+    method: str = "trf",
+    max_iterations: int = 1000,
+    residual_threshold: float = 0.01,
+    pointwise_residual_mode: str = "sampson",
+    invalid_sweep_penalty: float = 1e6,
+    spring_k_multiplier: float = 1.0,
+    use_flex: bool = True,
+    robust_loss: bool = False,
+    huber_delta: float = 1.0,
+    pointwise_filtering: bool = True,
+    pointwise_global_mad: bool = True,
+    sweep_wise_filtering: bool = True,
+    sweep_metric: str = "outlier_ratio",
+    pointwise_filter_stage: Optional[int] = 0,
+    use_noise_mean: bool = True,
+    noise_normalized: bool = True,
+    sigma_source: str = "auto",
+) -> Dict[str, object]:
+    """Solve one bounded anchor proposal with scipy least_squares."""
+    machine_type, num_anchors, dimensions = _dataset_metadata(dataset)
+    low_anchor_z = _dataset_low_anchor_z(dataset)
+    lb, ub = get_anchor_opt_bounds(machine_type, num_anchors, dimensions, low_anchor_z)
+    guess_matrix = anchor_opt_vec_to_matrix(
+        np.asarray(initial_guess, dtype=float),
+        machine_type,
+        int(num_anchors),
+        int(dimensions),
+        low_anchor_z,
+    )
+    x0 = np.clip(
+        anchors_matrix_to_opt_vec(guess_matrix, machine_type, low_anchor_z),
+        lb,
+        ub,
+    )
+    cost_fn, _dataset_eff, _flags = _build_restart_cost_fn(
+        dataset,
+        x0,
+        residual_threshold=float(residual_threshold),
+        pointwise_residual_mode=str(pointwise_residual_mode),
+        invalid_sweep_penalty=float(invalid_sweep_penalty),
+        spring_k_multiplier=float(spring_k_multiplier),
+        use_flex=bool(use_flex),
+        robust_loss=bool(robust_loss),
+        huber_delta=float(huber_delta),
+        pointwise_filtering=bool(pointwise_filtering),
+        pointwise_global_mad=bool(pointwise_global_mad),
+        sweep_wise_filtering=bool(sweep_wise_filtering),
+        sweep_metric=str(sweep_metric),
+        pointwise_filter_stage=int(pointwise_filter_stage) if pointwise_filter_stage is not None else 0,
+        use_noise_mean=bool(use_noise_mean),
+        noise_normalized=bool(noise_normalized),
+        sigma_source=str(sigma_source),
+    )
+    result = _run_anchor_least_squares(
+        cost_fn,
+        x0,
+        lb=lb,
+        ub=ub,
+        max_iterations=int(max_iterations),
+        method=str(method),
+    )
+    anchors_matrix = anchor_opt_vec_to_matrix(
+        np.asarray(result.x, dtype=float),
+        machine_type,
+        int(num_anchors),
+        int(dimensions),
+        low_anchor_z,
+    )
+    detailed = cost_fn.evaluate_detailed(np.asarray(result.x, dtype=float))
+    return {
+        "anchors": anchors_matrix,
+        "cost": float(result.fun),
+        "success": bool(getattr(result, "success", True)),
+        "details": detailed,
+        "raw_result": result,
+        "solver": "least_squares_trf",
+    }
+
+
 def solve_anchors(
     dataset: Union[dict, "SweepDataset"],
     initial_guess: Optional[np.ndarray] = None,
@@ -638,13 +819,17 @@ def solve_anchors(
     )
 
     method_raw = str(method or "L-BFGS-B")
-    method_norm = method_raw.strip().replace("_", "-").lower()
-    if method_norm in ("slsqp", "sqp"):
+    method_norm = _normalize_anchor_optimizer_method(method_raw)
+    if method_norm == "lm":
+        raise NotImplementedError(
+            "least_squares method='lm' is not implemented yet; use 'lbfgsb' or 'trf'."
+        )
+    if str(method_raw).strip().replace("_", "-").lower() in ("slsqp", "sqp"):
         # SLSQP has repeatedly shown immediate termination for this objective (often status=4).
         # Keep the CLI/API stable by treating it as an alias for a bounded quasi-Newton method.
         if verbose:
             print("[solver] Mapping method SLSQP -> L-BFGS-B for robustness.")
-        method_norm = "l-bfgs-b"
+        method_norm = "lbfgsb"
 
     def _summarize_cost(tag: str, x: np.ndarray, *, include_details: bool = True) -> None:
         detailed: CostResult = cost_fn.evaluate_detailed(np.asarray(x, dtype=float))
@@ -969,6 +1154,7 @@ def solve_anchors(
         and not bool(verbose)
         and cost_callback is None
         and method_norm != "differential-evolution"
+        and method_norm != "trf"
         and isinstance(dataset, dict)
         and len(initial_guesses) > 1
     )
@@ -1135,38 +1321,48 @@ def solve_anchors(
                     )
                 else:
                     scipy_method = method_raw
-                    if method_norm in ("l-bfgs-b", "lbfgsb"):
-                        scipy_method = "L-BFGS-B"
-                    elif method_norm == "powell":
-                        scipy_method = "Powell"
-
-                    options: Dict[str, object] = {"maxiter": max_iterations}
-                    if scipy_method == "L-BFGS-B":
-                        options["ftol"] = 1e-12
-                        options["maxls"] = 40
-                    elif scipy_method == "Powell":
-                        options["xtol"] = 1e-4
-                        options["ftol"] = 1e-8
-
-                    if scipy_method == "L-BFGS-B":
-                        result = _run_lbfgsb_minimize(
+                    if method_norm == "trf":
+                        result = _run_anchor_least_squares(
                             cost_fn,
                             x0_clipped,
                             lb=lb,
                             ub=ub,
-                            bounds=bounds,
                             max_iterations=max_iterations,
-                            callback=(lambda xk: _progress_callback(np.asarray(xk, dtype=float), None)),
+                            method=method_norm,
                         )
-                    else:
-                        result = minimize(
-                            cost_fn.evaluate,
-                            x0_clipped,
-                            method=scipy_method,
-                            bounds=bounds,
-                            callback=(lambda xk: _progress_callback(np.asarray(xk, dtype=float), None)),
-                            options=options,
-                        )
+                    elif method_norm == "lbfgsb":
+                        scipy_method = "L-BFGS-B"
+                    elif method_norm == "powell":
+                        scipy_method = "Powell"
+
+                    if method_norm != "trf":
+                        options: Dict[str, object] = {"maxiter": max_iterations}
+                        if scipy_method == "L-BFGS-B":
+                            options["ftol"] = 1e-12
+                            options["maxls"] = 40
+                        elif scipy_method == "Powell":
+                            options["xtol"] = 1e-4
+                            options["ftol"] = 1e-8
+
+                        if scipy_method == "L-BFGS-B":
+                            result = _run_lbfgsb_minimize(
+                                cost_fn,
+                                x0_clipped,
+                                lb=lb,
+                                ub=ub,
+                                bounds=bounds,
+                                max_iterations=max_iterations,
+                                callback=(lambda xk: _progress_callback(np.asarray(xk, dtype=float), None)),
+                            )
+                        else:
+                            result = minimize(
+                                cost_fn.evaluate,
+                                x0_clipped,
+                                method=scipy_method,
+                                bounds=bounds,
+                                callback=(lambda xk: _progress_callback(np.asarray(xk, dtype=float), None)),
+                                options=options,
+                            )
             if verbose:
                 try:
                     print(
@@ -1272,6 +1468,7 @@ def solve_anchors(
         "success": bool(getattr(best_result, "success", True)),
         "details": detailed,
         "raw_result": best_result,
+        "solver": "least_squares_trf" if method_norm == "trf" else "ellipse_solver",
     }
 
 
