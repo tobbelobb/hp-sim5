@@ -5,14 +5,21 @@ This is the current, fully automated calibration pipeline. It collects sweeps, f
 ## Quick start (simulation)
 
 ```bash
-python autocal/autocal.py \
+.venv/bin/python autocal/autocal.py \
   --sim \
   --machine-type slideprinter \
-  --plot-residual-histogram \
+  --residuals-csv autocal/data/default_dataset.residuals.csv \
   --speedup 25
 ```
 `--speedup` is forwarded to the collector automatically; use `--collector-args` only for other raw collector flags.
-`--plot-residual-histogram` writes `autocal/data/default_dataset.csv` and `autocal/data/default_dataset.png`.
+The working dataset defaults to `autocal/data/default_dataset.json`.
+`--residuals-csv` writes the requested CSV; render it separately with:
+
+```bash
+.venv/bin/python autocal/plot_residual_hist.py \
+  autocal/data/default_dataset.residuals.csv \
+  --output autocal/data/default_dataset.residuals.png
+```
 
 ## Data format recap (current)
 
@@ -69,7 +76,9 @@ The pointwise mode compares each measured point against the predicted ellipse (i
 
 Residuals are written as `residual_mm` (approximate mm via local linearization) along with `cutoff_mm`, which is the per-point trim threshold used in stage 3.
 
-Use `--plot-residual-histogram` to generate a residual CSV and histogram plot (with gamma fit) without needing anchor context.
+Use `--residuals-csv` to emit pointwise residuals, then pass that file to
+`autocal/plot_residual_hist.py` for a histogram and gamma fit without needing
+anchor context.
 
 If most points are far above the cutoff, the solver is likely underconstrained or the dataset is too sparse; collect more sweeps and let active learning plug the gaps.
 
@@ -109,11 +118,19 @@ See `--help` for the full list of options.
 
 `autocal/autocal.py` is the modular full-auto entrypoint.
 
+The current solver choices are `lbfgsb` (default), `lm`, and `trf` through
+`--solve-optimizer`. `--optimizer-mode fast` uses the JAX exact-Jacobian path
+when available; `fast-fd` uses the JAX value with finite differences, and
+`legacy` disables the JAX objective. Simulation uses RRF by default and accepts
+`--firmware klipper` for the Klipper API-mode backend.
+
 If you omit `--dataset`, the loop writes to `autocal/data/default_dataset.json` (and bootstraps it if missing).
 
 The dataset file is updated each iteration; if you point it at an existing dataset, it will be updated in place.
 
-Use `--plot-residual-histogram` to write a residual CSV/PNG next to the dataset (gamma fit included).
+Use `--residuals-csv` and `autocal/plot_residual_hist.py` to write and visualize
+pointwise residuals. The legacy `--plot-residual-histogram` parser flag is not
+currently connected to the full-auto execution path.
 
 ## Related utilities (used by the semi-auto loop)
 
@@ -122,9 +139,9 @@ merge logic as `merge_sweep_datasets.py`. You can invoke them manually:
 
 - Plan a single next sweep (no collection):
   ```bash
-  python autocal/ellipse_active.py autocal/data/merged.json --collector-args --return-to-origin
+  .venv/bin/python autocal/ellipse_active.py autocal/data/merged.json --collector-args --return-to-origin
   ```
 - Merge datasets:
   ```bash
-  python autocal/merge_sweep_datasets.py autocal/data/base.json extra.json -o autocal/data/merged.json
+  .venv/bin/python autocal/merge_sweep_datasets.py autocal/data/base.json extra.json -o autocal/data/merged.json
   ```

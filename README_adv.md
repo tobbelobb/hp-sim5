@@ -15,8 +15,11 @@ But in principle it should work all the time for the js and Python ports to be f
 ## XPBD Physics Engine and Cable Joints Library
 The simulator is built on a physics engine implementing (extended) Position‑Based Dynamics (XPBD).
 Cable segments slide over wheels, wrap, and maintain tension through constraints solved with XPBD.
-The engine lives under `src/js/cable_joints/` with a line‑for‑line Python port in `src/python/cable_joints/`.
-These modules form a small but powerful library that can be used outside of the Slideprinter app for custom robotics experiments.
+The 2D engine lives under `src/js/cable_joints/`, with a related Python
+implementation in `src/python/cable_joints/`. The JavaScript 3D engine lives in
+`src/js/cable_joints_3d/`; it now contains app-specific rigid-body, tensor
+inertia, cable, and motor behavior that does not have a line-for-line Python
+equivalent.
 
 ### Physics Engine Purpose
  - A physics engine for cables interacting with rolling wheels and other obstacles.
@@ -27,7 +30,8 @@ These modules form a small but powerful library that can be used outside of the 
 
 ## Python Port
 
-A complete Python port of the cable joints engine is available in the `src/python/cable_joints/` directory.
+A Python implementation of the cable joints engine is available in the
+`src/python/cable_joints/` directory.
   - Dependencies:
     - python 3.10+
     - numpy
@@ -37,8 +41,9 @@ A complete Python port of the cable joints engine is available in the `src/pytho
     - pytest-asyncio
     - usd-core
   - Usage:
-    1. Install dependencies: `pip install numpy pytest websockets warp-lang[extras] pytest-asyncio usd-core`
-    2. Run Python tests: `python -m pytest`
+    1. Install the core dependencies: `.venv/bin/python -m pip install -r requirements.txt`
+    2. Optionally install Warp: `.venv/bin/python -m pip install -r requirements-warp.txt`
+    3. Run Python tests: `.venv/bin/python -m pytest tests/python`
 
 
 ### Running the basic Python demos
@@ -50,7 +55,7 @@ A complete Python port of the cable joints engine is available in the `src/pytho
       ```
     - Start the demo server (in another terminal)
       ```bash
-      python -m example_apps.python.flipper.server
+      .venv/bin/python -m example_apps.python.flipper.server
       ```
     - Visit <http://localhost:5173/hp-sim5/example_apps/python/flipper/index.html>
   * Slideprinter:
@@ -60,12 +65,12 @@ A complete Python port of the cable joints engine is available in the `src/pytho
     - Start the demo server
       ```bash
       # Assumes npx vite is already running
-      python -m example_apps.python.slideprinter.server
+      .venv/bin/python -m example_apps.python.slideprinter.server
       ```
     - Visit <http://localhost:5173/hp-sim5/example_apps/python/slideprinter/index.html>
     - Send some gcode commands with the Python Move Comander:
       ```bash
-      python -m example_apps.python.slideprinter.move_commander public/gcode/draw_squares.gcode
+      .venv/bin/python -m example_apps.python.slideprinter.move_commander public/gcode/draw_squares.gcode
       ```
 
 
@@ -79,13 +84,13 @@ Run the demo of the current Warp version of the Python Cable Joints library on t
  - Start the flipper server in Warp mode
   ```bash
   # Assumes npx vite is already running
-  python -m example_apps.python.flipper.server --warp
+  .venv/bin/python -m example_apps.python.flipper.server --warp
   ```
  - Visit <http://localhost:5173/hp-sim5/example_apps/python/flipper/index_warp.html>
 
 For a GPU demo give `server` a `--device cuda:0` flag:
 ```bash
-python -m example_apps.python.flipper.server --warp --device cuda:0
+.venv/bin/python -m example_apps.python.flipper.server --warp --device cuda:0
 ```
 
 ### Flipper Overlay
@@ -95,7 +100,7 @@ This is fun and usefult for testing js/Python equivalence.
  - Start the python flipper server
   ```bash
   # Assumes npx vite is already running
-  python -m example_apps.python.flipper.server
+  .venv/bin/python -m example_apps.python.flipper.server
   ```
  - Visit <http://localhost:5173/hp-sim5/example_apps/js/flipper/flipper_overlay.html>
 
@@ -117,20 +122,16 @@ This is fun and usefult for testing js/Python equivalence.
  - Locally: <http://localhost:5173/hp-sim5/tests/html/cable_joints_3d.html>
 
 ## hp-sim-3d Implementation Notes
-The 3D Hangprinter app lives in `hp-sim-3d/`. Its system registration order in
-`hp-sim-3d/app/setupScene.js` is the actual simulation loop: save previous pose,
-apply motor/external changes, integrate predicted pose, sync rigid-body members,
-update cable geometry, solve position constraints, then update velocities.
 
-The current rigid-body model is a practical parent/member design rather than a
-fully general XPBD rigid-body joint graph. Spool rotors keep one local twist DOF
-through direct projection and a custom stepper motor path; they are not yet
-separate rotor bodies connected by hinge/motor constraints. This is deliberate
-for now because hp-sim-3d only needs scalar/effective inertia and plausible motor
-reaction behavior.
+The 3D Hangprinter app lives in `hp-sim-3d/`. Scene interpretation is split
+between the coordinator in `app/setupScene.js`, the builders in `app/scene/`,
+and system registration in `app/sceneSystems.js`. The 3D ECS now uses full 3x3
+inertia tensors in its constraint and motor reaction paths. Spool rotors still
+use a specialized one-axis projection rather than independent rotor bodies and
+generic hinge constraints.
 
-For the detailed tradeoffs and the future hinge-joint direction, see
-`hp-sim-3d/README.md`.
+See [`hp-sim-3d/README.md`](hp-sim-3d/README.md) for the current system order,
+cable behavior, rigid-body model, and remaining hinge-joint gap.
 
 ## Cable Joints Hanging Visual Test
  - Deployed at: <https://tobbelobb.github.io/hp-sim5/tests/html/cable_joints.html>

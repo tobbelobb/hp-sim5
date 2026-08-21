@@ -6,21 +6,24 @@ This directory contains the fully automated elliptical feature calibration pipel
 
 ## Python dependencies
 
-The Python dependencies for this `autocal/` subtree are mostly covered by the requirements.txt at the root level.
+The Python dependencies for this `autocal/` subtree are covered by the root
+`requirements.txt`.
 
-There's an additional Jax dependency that will cut 80% of computation time if you choose to install it.
-You only need jax on the CPU for this, so don't worry about making a full GPU install.
+JAX is optional but recommended for the default `--optimizer-mode fast` path.
+Autocal explicitly uses JAX on the CPU and falls back to numerical gradients
+when JAX is unavailable. Use `--optimizer-mode legacy` to disable the JAX
+objective explicitly.
 
-With venv activated at the root level of the hp-sim5 repo, do
+From the root of the hp-sim5 repo, run:
 
 ```bash
-python -m pip install -r autocal/requirements-jax-cpu.txt
+.venv/bin/python -m pip install -r autocal/requirements-jax-cpu.txt
 ```
 
 Quick verification if jax is present:
 
 ```bash
-python - <<'PYCODE'
+.venv/bin/python - <<'PYCODE'
 import jax
 print(jax.__version__)
 PYCODE
@@ -29,9 +32,12 @@ PYCODE
 
 ## Quick start (simulation)
 
-Follow the hp-sim5 README.md to get an instance of hp-sim available at <http://localhost:5173/hp-sim5/hp-sim>.
+Follow the root README to start Vite. For a Slideprinter, open
+<http://localhost:5173/hp-sim5/hp-sim/>. For a 3D machine, use
+<http://localhost:5173/hp-sim5/hp-sim-3d/>.
 
-The autocal requires a websocket between it and hp-sim5. Open it by adding `?gcode_ws=ws://localhost:8790` to your url, so open
+Autocal simulation requires a WebSocket connection to the open simulator. Add
+`?gcode_ws=ws://localhost:8790` to the selected simulator URL; for example:
 <http://localhost:5173/hp-sim5/hp-sim/?gcode_ws=ws://localhost:8790>.
 
 If you see this, you're good to go:
@@ -40,7 +46,7 @@ If you see this, you're good to go:
 Initiate simulated full-auto calibration with:
 
 ```bash
-python autocal/autocal.py \
+.venv/bin/python autocal/autocal.py \
   --sim \
   --machine-type slideprinter \
   --speedup 25
@@ -48,14 +54,28 @@ python autocal/autocal.py \
 
 `--speedup` is forwarded to the collector automatically; use `--collector-args` only for other raw collector flags.
 
-Replace `slideprinter` with your actual type of machine (one of `slideprinter`,`hangprinter_4`,`hangprinter_5`,`cubecorners`, or `skycam`).
+Replace `slideprinter` with your machine type: `slideprinter`, `hangprinter_4`,
+`hangprinter_5`, `cubecorners`, or `skycam`. The aliases `hp3`, `hp4`, and
+`hangprinter_3` currently normalize to `hangprinter_4`.
 Keep the hp-sim web page visible during the whole procedure, otherwise your browser might pause the simulation and break the autocalibration.
 
 If everything went well you should see something like this:
 ![Image of autocal step1 finished](doc/hp-sim-after-autocal.png)
 
-You can add `--plot-residual-histogram` to learn about the quality of your data.
-It writes `autocal/data/default_dataset.csv` and `autocal/data/default_dataset.png`.
+The default working dataset is `autocal/data/default_dataset.json`. To inspect
+residuals with the currently wired output path, add:
+
+```bash
+--residuals-csv autocal/data/default_dataset.residuals.csv
+```
+
+Then render a histogram with:
+
+```bash
+.venv/bin/python autocal/plot_residual_hist.py \
+  autocal/data/default_dataset.residuals.csv \
+  --output autocal/data/default_dataset.residuals.png
+```
 
 Here's a demo of the autocal loop on a simulated Slideprinter: https://youtu.be/XLmpuAQYbG4
 
@@ -66,14 +86,17 @@ Here's a demo of the autocal loop on a simulated Slideprinter: https://youtu.be/
 - The current modular entrypoint is `autocal/autocal.py`, which runs the full-auto loop.
 
 ```bash
-python autocal/autocal.py \
+.venv/bin/python autocal/autocal.py \
   --machine-type slideprinter
 ```
 
 More quick tips:
 - Use `--dataset` to choose where the working dataset is stored, or to continue working on a pre-existing dataset.
+- Use `--firmware klipper` for the Klipper API-mode simulation backend; RRF is the default.
+- `--solve-optimizer` accepts `lbfgsb` (default), `lm`, or `trf`.
 - Let the loop collect sweeps and stop when you are satisfied with the cost and residuals.
 - There's also a `--shotgun` flag that makes the autocal loop try harder.
 
 
-For the full details and log interpretation, see `autocal/README_elliptical_feature_calibration.md`.
+For full details and log interpretation, see
+[`README_elliptical_feature_calibration.md`](README_elliptical_feature_calibration.md).

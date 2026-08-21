@@ -2,13 +2,14 @@
 
 This is a host (x86_64) version of ReprapFirmware with:
  - No FreeRTOS
- - No reason to be synchronous, we can fake clock ticks and such. We will only run in "batch mode" on x86_64, so no reason to wait for anything or stay synchronous, as long as everything happens in the right order.
+ - Deterministic host timing for batch runs instead of real-time firmware clock waits.
  - No connected boards, but we want to capture packets that would have been sent to external CAN boards, so we need to fake something there
- - No networking
- - No connections to other programs such as DuetWebInterface or DSW or anything like that.
+ - An optional host HTTP server for interactive G-code; it does not run the full embedded networking or DSF/DuetWebControl stack.
  - No fans or heaters or anything like that. No physical pins or connections to anything at all actually.
 
-The binary, `rrf_simulator`, is supposed to mirror the behavior of Klippers "batch mode", also known as "debug mode".
+The binary, `rrf_simulator`, supports both batch execution and an interactive
+HTTP server. Its batch mode is intended to mirror Klipper's "batch" or "debug"
+mode.
 In batch mode, Klipper simply reads a gcode and a config file, and dumps the stepper move commands, as well as a handful of other commands.
 This is very useful for hp-sim5 because we can run our simulation based on the commands read from the batch dump, without needing any special hardware.
 Batch mode basically stubs the USB-interface of Klipper.
@@ -61,16 +62,20 @@ The rrf_simulator supports an HTTP server mode for interactive G-code execution:
     -p 8080
 ```
 
-or just
+For a machine/config-selecting launcher, use:
 
 ```
-./scripts/rrf_server_slideprinter.sh
+./scripts/rrf_server.sh -m slideprinter --no-line-layers
 ```
+
+`scripts/rrf_server.sh --help` lists the supported machine aliases and
+line-layering options. `scripts/rrf_server_slideprinter.sh` remains a thin
+Slideprinter shortcut.
 
 #### Endpoints
 
-- `POST /machine/code` - Execute G-code, returns reply text
-- `GET /machine/status` - Get server status
+- `POST /machine/code` - Execute G-code and return reply text plus captured
+  motion/CAN data
 
 #### Example Usage
 
@@ -93,7 +98,9 @@ or just open the command prompt like this:
 node integrations/rrf/rrf_terminal.mjs
 ```
 
-... Wait for it to connect with the RRF Http Bridge and type the Gcodes in directly, like this:
+The terminal starts `scripts/rrf_server.sh` when no RRF server is already
+available, then exposes the motion stream on WebSocket port 8790. Type G-codes
+directly, for example:
 
 ```
 $ node integrations/rrf/rrf_terminal.mjs
@@ -112,8 +119,9 @@ See `integrations/rrf/rrfHttpBridge.js` for programmatic access.
 
 #### hp-sim CLI bridge (no UI changes)
 
-- Start the simulator in server mode (as above), then run
-  `node integrations/rrf/rrf_terminal.mjs --server http://localhost:8080 --ws-port 8790`
+- Run `node integrations/rrf/rrf_terminal.mjs --ws-port 8790`. It reuses an
+  existing server or starts one; pass `--server http://localhost:8080` to target
+  a specific existing instance.
 - Type G-code lines into the CLI (or pass `--cmd "G1 X10"` for one shots); replies are printed immediately.
 - Open hp-sim locally with `?gcode_ws=ws://localhost:8790` appended to the URL so the visualization consumes the streamed motion without new UI controls.
 

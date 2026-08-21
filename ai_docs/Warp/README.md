@@ -1,31 +1,41 @@
 # Warp Documentation Summary
 
-This document summarizes key points from the official [Warp documentation](https://nvidia.github.io/warp/) as of version 1.7.2. Warp is a Python framework for writing high-performance simulation and graphics code. Regular Python functions are JIT compiled to efficient CPU or GPU kernels. Warp targets spatial computing with primitives for physics simulation, perception, robotics, and geometry processing. Kernels are differentiable and can be used with PyTorch, JAX, or Paddle.
+This document summarizes the Warp concepts used by hp-sim5. The repository's
+current dependency floor is `warp-lang>=1.12.0`, declared in
+`requirements-warp.txt`. Consult the official [Warp
+documentation](https://nvidia.github.io/warp/) for version-specific platform,
+driver, and API details.
+
+Warp is a Python framework for writing high-performance simulation and graphics
+code. Regular Python functions are JIT compiled to efficient CPU or GPU kernels.
 
 ## Quickstart
 
-Install Warp from PyPI:
+Install the repository's core and Warp dependencies into its local environment:
 
 ```bash
-pip install warp-lang
+.venv/bin/python -m pip install -r requirements-warp.txt
 ```
 
-To install additional dependencies for examples and USD features:
+The hp-sim5 Warp cable solver lives in
+`src/python/cable_joints_warp/cable_solver_warp.py`. Run its exercised Flipper
+path on CPU with:
 
 ```bash
-pip install warp-lang[extras]
+.venv/bin/python -m example_apps.python.flipper.server --warp --device cpu
 ```
 
-These wheels require CUDA 12 drivers (minimum 525.60.13 on Linux, 528.33 on Windows). For older drivers you can build from source or use nightly wheels.
+Use `--device cuda:0` instead when a compatible CUDA device and driver are
+available.
 
 ## Running Examples
 
-Warp's `examples` directory provides many simulation scripts. Run any example with:
+Warp's own installed examples can be run with:
 
 ```bash
-python -m warp.examples.<example_subdir>.<example>
+.venv/bin/python -m warp.examples.<example_subdir>.<example>
 ```
 
-Most examples produce USD animations viewable in USD-compatible tools such as Omniverse, UsdView, or Blender. The packages `usd-core`, `matplotlib`, and `pyglet` are required for the examples; they are installed with the `warp-lang[extras]` option above.
-
-See the official site for full documentation and additional examples.
+Those upstream examples can have dependencies beyond hp-sim5's
+`requirements-warp.txt`; follow the documentation for the installed Warp
+version when running them.

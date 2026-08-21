@@ -13,17 +13,19 @@ Example usecases:
  - **Digital Twin**
  - **Automate and Validate Software Design**
 
-Try the live apps:
+Try the apps:
 - A family of Slideprinters (2d Hangprinters) is currently deployed here: [hp-sim](https://tobbelobb.github.io/hp-sim5/hp-sim/).
-- The 3D Hangprinter simulator is under [`hp-sim-3d/`](hp-sim-3d/), with physics implementation notes in [`hp-sim-3d/README.md`](hp-sim-3d/README.md).
+- The 3D Hangprinter simulator is under [`hp-sim-3d/`](hp-sim-3d/), with current architecture and physics notes in [`hp-sim-3d/README.md`](hp-sim-3d/README.md).
 - A flipper game that tests the Cable Physics engine here: [flipper](https://tobbelobb.github.io/hp-sim5/example_apps/js/flipper/index.html).
 
 ## Cable Joints and Physics Engine
 hp-sim5 includes a Cable Joints library and XPBD physics engine inspired and coded from the work of [Matthias
 Müller](https://matthias-research.github.io/pages/index.html).
 
-hp-sim5 includes two implementations of both the physics engine and its Cable Joints library; one JavaScript and one in Python.
-They are equivalent so for simplicity we call sometimes refer to them as "the physics engine".
+hp-sim5 includes JavaScript and Python implementations of the Cable Joints
+physics. They share the same broad design, but the actively developed 3D app
+has JavaScript-specific rigid-body, cable, and motor behavior; see
+[`hp-sim-3d/README.md`](hp-sim-3d/README.md).
 
 The physics engine is the heart of hp-sim5, and lives in the src directory.
 For a deeper dive into the physics engine and the flipper demo see
@@ -77,7 +79,8 @@ hp-sim5 has added quite a bit to each of its sub-projects:
    * Active learning, actively searching for the best places to collect the next data
    * Outlier-robust filtering on two levels. If a few data points are bad, they will be detected and discarded thanks to its GNC-IRLS style pointwise loss.
  - As a result, it will try very hard to find the anchors, without requiring any human guidance.
- - Compatible with all cable driven robots, real and sim. (Currently only been tested on simulated Slideprinters).
+ - Models Slideprinter, four- and five-anchor Hangprinters, CubeCorners, and SkyCam geometries.
+ - Simulation collection supports the RRF host simulator by default and a Klipper API-mode backend via `--firmware klipper`.
  - Learn more in [autocal/README.md](autocal/README.md) and [autocal/README_elliptical_feature_calibration.md](autocal/README_elliptical_feature_calibration.md).
 
 
@@ -95,8 +98,10 @@ hp-sim5 has added quite a bit to each of its sub-projects:
    npm install        # only needed the first time
    npx vite           # Needed every time to serve the html and js
    ```
-3. Open <http://localhost:5173/hp-sim5/hp-sim> in your browser.
-   There's also <http://localhost:5173/hp-sim5/flipper> for the flipper demo.
+3. Open one of the current entry points:
+   - 2D simulator: <http://localhost:5173/hp-sim5/hp-sim/>
+   - 3D simulator: <http://localhost:5173/hp-sim5/hp-sim-3d/>
+   - Flipper demo: <http://localhost:5173/hp-sim5/example_apps/js/flipper/index.html>
 4. Ready to hack away on the js side!
 
 
@@ -108,39 +113,47 @@ Use environment management to install Python dependencies before running Python 
 sudo apt install python3-venv
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -r requirements.txt
 
 # Optional dependency for the warp version of the python version of the physics engine:
-python -m pip install -r requirements-warp.txt
+.venv/bin/python -m pip install -r requirements-warp.txt
 
-# Optional dependency for the jax-driven autocal (5x faster):
-python -m pip install -r autocal/requirements-jax-cpu.txt
+# Optional CPU JAX dependency for autocal's fast optimizer mode:
+.venv/bin/python -m pip install -r autocal/requirements-jax-cpu.txt
 
 # Optional dependency for klipper
-python -m pip install -r klipper/scripts/klippy-requirements.txt
+.venv/bin/python -m pip install -r klipper/scripts/klippy-requirements.txt
 ```
 
 
 
 ## Tests
 
-These commands cover hp-sim5-specific checks. Subrepos (like RRF, klipper, autocal, etc.) often have their own internal test suites; run those from within each subrepo when you need deeper coverage.
+These commands cover hp-sim5-specific checks. Git submodules such as Klipper
+and ReprapFirmware also have their own upstream suites.
 
-### Run the full local suite (no simulator / no visuals)
+### Run the main local suite
+```bash
+scripts/run_ci_tests.sh
+```
+
+The non-E2E parts can also be run separately:
+
 ```bash
 npx jest
-python -m pytest
+.venv/bin/python -m pytest autocal/tests
+.venv/bin/python -m pytest tests/python
 ```
 
 Also check out `scripts/run_ci_tests.sh` which helps you run some more types of tests.
 
 ### Autocal-only filtering
 ```bash
-python -m pytest autocal/tests
-python -m pytest autocal/tests -k autocal
-python -m pytest autocal/tests/test_autocal_cli.py
-python -m pytest autocal/tests/test_filter_pass_spool_fit.py
+.venv/bin/python -m pytest autocal/tests
+.venv/bin/python -m pytest autocal/tests -k autocal
+.venv/bin/python -m pytest autocal/tests/test_autocal_cli.py
+.venv/bin/python -m pytest autocal/tests/test_filter_pass_spool_fit.py
 ```
 
 ### Tests of ReprapFirmware's http endpoint
@@ -176,7 +189,7 @@ RRF/tests/run_logo_slideprinter_determinism_test.sh
 ### Autocal e2e tests
 There's also a bunch of generated autocal datasets, which you can try to solve against with:
 ```bash
-python autocal/tools/regress_calibration_logs.py --no-fail-score-mismatch --keep-going
+.venv/bin/python autocal/tools/regress_calibration_logs.py --no-fail-score-mismatch --keep-going
 ```
 
 ## hp-sim5 context: the Hangprinter Project
