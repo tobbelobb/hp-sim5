@@ -25,6 +25,7 @@ function parseArgs() {
     mode: parsed.mode === '3d' ? '3d' : '2d',
     count: Math.max(3, Math.min(8, Number(parsed.count) || 3)),
     smoke: parsed.smoke === '1',
+    pattern: parsed.pattern === 'bigger' ? 'bigger' : 'small',
   };
 }
 
@@ -473,7 +474,8 @@ try {
     const usdaPath = path.join(WORK_DIR, `${candidate.id}.usda`);
     const configName = `anchor_opt_${candidate.id}.g`;
     const configPath = path.join(VSD_DIR, 'sys', configName);
-    const logName = `draw_squares_bigger_${candidate.id}.csv`;
+    const gcodeStem = args.pattern === 'bigger' ? 'draw_squares_bigger' : 'draw_squares';
+    const logName = `${gcodeStem}_${candidate.id}.csv`;
     const csvPath = path.join(VSD_DIR, 'logs', logName);
     await writeFile(usdaPath, source);
     await makeRrfConfig(candidate, effectiveAnchors, configPath);
@@ -491,7 +493,7 @@ try {
     try {
       const rrf = await runProcess(RRF_BIN, [
         '--vsd', VSD_DIR,
-        '--gcode', 'gcodes/draw_squares_bigger.gcode',
+        '--gcode', `gcodes/${gcodeStem}.gcode`,
         '--can-log', `logs/${logName}`,
         '-c', `sys/${configName}`,
       ]);
@@ -525,10 +527,10 @@ const payload = {
     minForcePerCableN: 3,
     lineLayering: false,
     closedLoopMotors: false,
-    gcode: 'draw_squares_bigger.gcode',
+    gcode: args.pattern === 'bigger' ? 'draw_squares_bigger.gcode' : 'draw_squares.gcode',
   },
   results,
 };
-const outputPath = path.join(RESULT_DIR, `sweep_${args.mode}_n${args.count}${args.smoke ? '_smoke' : ''}.json`);
+const outputPath = path.join(RESULT_DIR, `sweep_${args.mode}_n${args.count}_${args.pattern}${args.smoke ? '_smoke' : ''}.json`);
 await writeFile(outputPath, JSON.stringify(payload, null, 2));
 console.log('ANCHOR_OPT_SWEEP=' + JSON.stringify(payload));
