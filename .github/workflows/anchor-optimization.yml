@@ -5,7 +5,7 @@ on:
     branches:
       - codex/anchor-layout-optimization-20260901
     paths:
-      - 'experiments/anchor_optimization/**'
+      - 'experiments/anchor_optimization/baseline.mjs'
       - '.github/workflows/anchor-optimization.yml'
   workflow_dispatch:
 
