@@ -400,6 +400,7 @@ async function measureCandidate(browser, candidate, usdaPath, csvPath) {
 
   await page.evaluate(async () => {
     window.__anchorOptimizationMetrics = [];
+    window.__anchorOptimizationMonitors = [];
     const moduleUrl = new URL('./app/quality-monitor.js', window.location.href).href;
     const { QualityMonitor } = await import(moduleUrl);
     if (!QualityMonitor.prototype.__anchorOptimizationPatched) {
@@ -413,6 +414,13 @@ async function measureCandidate(browser, candidate, usdaPath, csvPath) {
           motorDiagnostics: this._getMotorDiagnostics(),
         });
         return result;
+      };
+      const originalSetMachineContext = QualityMonitor.prototype.setMachineContext;
+      QualityMonitor.prototype.setMachineContext = function patchedSetMachineContext(...args) {
+        if (!window.__anchorOptimizationMonitors.includes(this)) {
+          window.__anchorOptimizationMonitors.push(this);
+        }
+        return originalSetMachineContext.apply(this, args);
       };
       QualityMonitor.prototype.__anchorOptimizationPatched = true;
     }
@@ -431,18 +439,35 @@ async function measureCandidate(browser, candidate, usdaPath, csvPath) {
     return button && !button.disabled;
   }, null, { timeout: 120000 });
   await page.click('#finishAsapBtn', { force: true });
-  await page.waitForFunction(
-    () => Array.isArray(window.__anchorOptimizationMetrics)
-      && window.__anchorOptimizationMetrics.length > 0,
-    null,
-    { timeout: 900000 }
-  );
+  let completionTimedOut = false;
+  try {
+    await page.waitForFunction(
+      () => Array.isArray(window.__anchorOptimizationMetrics)
+        && window.__anchorOptimizationMetrics.length > 0,
+      null,
+      { timeout: args.pattern === 'bigger' ? 360000 : 180000 }
+    );
+  } catch (error) {
+    completionTimedOut = true;
+    await page.evaluate(() => {
+      for (const monitor of window.__anchorOptimizationMonitors || []) {
+        monitor.runFinalCheck();
+      }
+    });
+    await page.waitForFunction(
+      () => Array.isArray(window.__anchorOptimizationMetrics)
+        && window.__anchorOptimizationMetrics.length > 0,
+      null,
+      { timeout: 10000 }
+    );
+  }
 
   const records = await page.evaluate(() => window.__anchorOptimizationMetrics);
   const hud = await page.locator('#qualityHud').innerText().catch(() => '');
   await page.close();
   return {
     elapsedSeconds: (Date.now() - startedAt) / 1000,
+    completionTimedOut,
     records,
     hud,
     consoleErrors,
