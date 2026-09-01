@@ -9,6 +9,10 @@ on:
       - '.github/workflows/anchor-optimization.yml'
   workflow_dispatch:
 
+concurrency:
+  group: anchor-optimization-baseline
+  cancel-in-progress: true
+
 jobs:
   baseline:
     runs-on: ubuntu-latest
