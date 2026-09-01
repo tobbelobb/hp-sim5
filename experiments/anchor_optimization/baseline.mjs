@@ -85,7 +85,7 @@ async function measureDefault(browser, route, moduleRelativeUrl, label) {
 }
 
 await mkdir(OUTPUT_DIR, { recursive: true });
-const vite = spawn('npx', ['vite', '--host', '127.0.0.1', '--port', '5173'], {
+const vite = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5173'], {
   stdio: ['ignore', 'pipe', 'pipe'],
 });
 vite.stdout.on('data', (chunk) => process.stdout.write(chunk));
@@ -111,4 +111,18 @@ try {
 } finally {
   if (browser) await browser.close();
   vite.kill('SIGTERM');
+  await new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (!settled) {
+        settled = true;
+        resolve();
+      }
+    };
+    vite.once('close', finish);
+    setTimeout(() => {
+      if (!settled) vite.kill('SIGKILL');
+      finish();
+    }, 5000);
+  });
 }
