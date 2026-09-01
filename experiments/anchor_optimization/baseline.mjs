@@ -60,7 +60,9 @@ async function measureDefault(browser, route, moduleRelativeUrl, label) {
     const button = document.querySelector('#finishAsapBtn');
     return button && !button.disabled;
   }, null, { timeout: 120000 });
-  await page.click('#finishAsapBtn', { force: true });
+  for (let index = 0; index < 4; index += 1) {
+    await page.click('#speedFasterBtn', { force: true });
+  }
 
   await page.waitForFunction(
     () => Array.isArray(window.__anchorOptimizationMetrics)
