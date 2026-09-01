@@ -355,17 +355,26 @@ async function makeRrfConfig(candidate, effectiveAnchors, configPath) {
   await writeFile(configPath, config);
 }
 
-async function runProcess(command, args, options = {}) {
+async function runProcess(command, processArgs, options = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { ...options, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(command, processArgs, { ...options, stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '';
     let stderr = '';
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill('SIGKILL');
+    }, 120000);
     child.stdout.on('data', (chunk) => { stdout += chunk; });
     child.stderr.on('data', (chunk) => { stderr += chunk; });
-    child.on('error', reject);
+    child.on('error', (error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
     child.on('close', (code) => {
-      if (code === 0) resolve({ stdout, stderr });
-      else reject(new Error(`${command} exited ${code}\n${stdout}\n${stderr}`));
+      clearTimeout(timer);
+      if (code === 0 && !timedOut) resolve({ stdout, stderr });
+      else reject(new Error(`${command} ${timedOut ? 'timed out' : `exited ${code}`}\n${stdout}\n${stderr}`));
     });
   });
 }
@@ -518,17 +527,21 @@ try {
       error: null,
     };
     try {
+      console.log(`ANCHOR_OPT_PHASE=${candidate.id}:rrf:start`);
       const rrf = await runProcess(RRF_BIN, [
         '--vsd', VSD_DIR,
         '--gcode', `gcodes/${gcodeStem}.gcode`,
         '--can-log', `logs/${logName}`,
         '-c', `sys/${configName}`,
       ]);
+      console.log(`ANCHOR_OPT_PHASE=${candidate.id}:rrf:done`);
       result.rrf = {
         stdoutTail: rrf.stdout.slice(-2000),
         stderrTail: rrf.stderr.slice(-2000),
       };
+      console.log(`ANCHOR_OPT_PHASE=${candidate.id}:physics:start`);
       result.simulation = await measureCandidate(browser, candidate, usdaPath, csvPath);
+      console.log(`ANCHOR_OPT_PHASE=${candidate.id}:physics:done`);
     } catch (error) {
       result.error = error?.stack || String(error);
     }
