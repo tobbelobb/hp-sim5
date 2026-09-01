@@ -59,7 +59,7 @@ async function measureDefault(browser, route, moduleRelativeUrl, label) {
   await page.waitForFunction(() => {
     const button = document.querySelector('#finishAsapBtn');
     return button && !button.disabled;
-  }, { timeout: 120000 });
+  }, null, { timeout: 120000 });
   await page.click('#finishAsapBtn', { force: true });
 
   await page.waitForFunction(
