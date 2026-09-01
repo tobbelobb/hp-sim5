@@ -1,0 +1,62 @@
+name: Anchor Optimization Sweep
+
+on:
+  push:
+    branches:
+      - codex/anchor-layout-optimization-20260901
+    paths:
+      - 'experiments/anchor_optimization/sweep.mjs'
+      - '.github/workflows/anchor-optimization-sweep.yml'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Simulator dimension
+        required: true
+        default: 2d
+        type: choice
+        options:
+          - 2d
+          - 3d
+      count:
+        description: Anchor count (3-8)
+        required: true
+        default: '3'
+        type: string
+      smoke:
+        description: Run one validation case
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch RRF source submodules
+        run: |
+          git config --global url."https://github.com/".insteadOf git@github.com:
+          git submodule update --init RRF/ReprapFirmware RRF/RRFLibraries RRF/CANlib
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Build ReprapFirmware host simulator
+        run: |
+          cmake -S RRF -B RRF/build
+          cmake --build RRF/build --target rrf_simulator -j 2
+      - name: Run sweep
+        env:
+          SWEEP_MODE: ${{ inputs.mode || '2d' }}
+          SWEEP_COUNT: ${{ inputs.count || '3' }}
+          SWEEP_SMOKE: ${{ inputs.smoke == false && '0' || '1' }}
+        run: node experiments/anchor_optimization/sweep.mjs --mode="$SWEEP_MODE" --count="$SWEEP_COUNT" --smoke="$SWEEP_SMOKE"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: anchor-sweep-${{ inputs.mode || '2d' }}-${{ inputs.count || '3' }}-${{ github.run_id }}
+          path: experiments/anchor_optimization/results
+          if-no-files-found: warn
