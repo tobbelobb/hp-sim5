@@ -33,7 +33,7 @@ async function measureDefault(browser, route, moduleRelativeUrl, label) {
   await page.waitForFunction(() => {
     const button = document.querySelector('#printSquareBtn');
     return button && !button.disabled;
-  }, { timeout: 120000 });
+  }, null, { timeout: 120000 });
 
   await page.evaluate(async ({ moduleRelativeUrl }) => {
     window.__anchorOptimizationMetrics = [];
@@ -65,6 +65,7 @@ async function measureDefault(browser, route, moduleRelativeUrl, label) {
   await page.waitForFunction(
     () => Array.isArray(window.__anchorOptimizationMetrics)
       && window.__anchorOptimizationMetrics.length > 0,
+    null,
     { timeout: 600000 }
   );
   const records = await page.evaluate(() => window.__anchorOptimizationMetrics);
