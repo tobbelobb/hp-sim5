@@ -490,7 +490,7 @@ await mkdir(WORK_DIR, { recursive: true });
 await mkdir(path.join(VSD_DIR, 'logs'), { recursive: true });
 await chmod(RRF_BIN, 0o755).catch(() => {});
 const candidates = makeCandidates(args);
-const vite = spawn('npx', ['vite', '--host', '127.0.0.1', '--port', '5173'], {
+const vite = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5173'], {
   stdio: ['ignore', 'pipe', 'pipe'],
 });
 vite.stdout.on('data', (chunk) => process.stdout.write(chunk));
@@ -551,6 +551,20 @@ try {
 } finally {
   if (browser) await browser.close();
   vite.kill('SIGTERM');
+  await new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (!settled) {
+        settled = true;
+        resolve();
+      }
+    };
+    vite.once('close', finish);
+    setTimeout(() => {
+      if (!settled) vite.kill('SIGKILL');
+      finish();
+    }, 5000);
+  });
 }
 
 const payload = {
