@@ -438,7 +438,9 @@ async function measureCandidate(browser, candidate, usdaPath, csvPath) {
     const button = document.querySelector('#finishAsapBtn');
     return button && !button.disabled;
   }, null, { timeout: 120000 });
-  await page.click('#finishAsapBtn', { force: true });
+  for (let index = 0; index < 4; index += 1) {
+    await page.click('#speedFasterBtn', { force: true });
+  }
   let completionTimedOut = false;
   try {
     await page.waitForFunction(
@@ -552,6 +554,7 @@ const payload = {
     minForcePerCableN: 3,
     lineLayering: false,
     closedLoopMotors: false,
+    playbackTimeScale: 16,
     gcode: args.pattern === 'bigger' ? 'draw_squares_bigger.gcode' : 'draw_squares.gcode',
   },
   results,
