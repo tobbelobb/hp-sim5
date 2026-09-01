@@ -1,0 +1,30 @@
+name: Anchor Optimization Baseline
+
+on:
+  push:
+    branches:
+      - codex/anchor-layout-optimization-20260901
+    paths:
+      - 'experiments/anchor_optimization/**'
+      - '.github/workflows/anchor-optimization.yml'
+  workflow_dispatch:
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: node experiments/anchor_optimization/baseline.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: anchor-optimization-baseline
+          path: experiments/anchor_optimization/results
+          if-no-files-found: warn
