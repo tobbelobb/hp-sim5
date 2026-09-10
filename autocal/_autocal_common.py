@@ -3800,6 +3800,11 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
         help="Do not collect new sweeps; stop when replayed data is exhausted.",
     )
     parser.add_argument(
+        "--sparse-recovery",
+        action="store_true",
+        help="Use an endpoint-preserving sparse seed when underconstrained recovery needs it.",
+    )
+    parser.add_argument(
         "--dataset",
         type=Path,
         default=None,

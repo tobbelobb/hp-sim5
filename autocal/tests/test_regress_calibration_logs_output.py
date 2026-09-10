@@ -419,6 +419,29 @@ def test_run_autocal_passes_full_auto_log(monkeypatch, tmp_path):
     assert DEMO_DATASET_SPEC.machine_type in captured["cmd"]
 
 
+def test_run_autocal_forwards_sparse_recovery(monkeypatch, tmp_path):
+    captured = {}
+
+    class DummyProc:
+        returncode = 0
+        stdout = "ok"
+
+    def fake_run(cmd, **kwargs):
+        captured["cmd"] = cmd
+        return DummyProc()
+
+    monkeypatch.setattr(rcl.subprocess, "run", fake_run)
+    rc, _out = rcl.run_autocal(
+        tmp_path,
+        tmp_path / "demo.json",
+        DEMO_DATASET_SPEC,
+        sparse_recovery=True,
+    )
+
+    assert rc == 0
+    assert "--sparse-recovery" in captured["cmd"]
+
+
 def test_run_autocal_flattens_nested_extra_args(monkeypatch, tmp_path):
     captured = {}
 

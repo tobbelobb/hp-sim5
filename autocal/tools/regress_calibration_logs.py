@@ -621,6 +621,7 @@ def run_autocal(
     dataset_path: Path,
     dataset_spec: DatasetSpec,
     full_auto_log: Optional[Path] = None,
+    sparse_recovery: bool = False,
 ) -> Tuple[int, str]:
     extra_args = _flatten_cli_args(dataset_spec.extra_args)
     cmd = [
@@ -638,6 +639,7 @@ def run_autocal(
         "--buildup-factor",
         dataset_spec.buildup_factor,
         "--no-collect",
+        *(('--sparse-recovery',) if sparse_recovery else ()),
         *extra_args,
     ]
     if full_auto_log is not None:
@@ -1104,6 +1106,7 @@ def run_one_dataset(
     fail_on_score_mismatch: bool,
     color: bool,
     scratch_root: Path,
+    sparse_recovery: bool = False,
 ) -> DatasetRunResult:
     name = dataset_spec.name
     isolated_dataset = prepare_isolated_dataset_copy(name, dataset_path, scratch_root)
@@ -1114,6 +1117,7 @@ def run_one_dataset(
         dataset_path=isolated_dataset,
         dataset_spec=dataset_spec,
         full_auto_log=isolated_jsonl,
+        sparse_recovery=sparse_recovery,
     )
     if rc != 0:
         return DatasetRunResult(
@@ -1203,6 +1207,11 @@ def main() -> int:
     ap.add_argument("--tol-mm", type=float, default=0.01, help="Tolerance on total parameter distance (anchors + 2*pi*R).")
     ap.add_argument("--no-fail-score-mismatch", action="store_true", help="Do not fail on score/fit direction mismatch (still reported).")
     ap.add_argument("--keep-going", action="store_true", help="Run all datasets even if one fails.")
+    ap.add_argument(
+        "--sparse-recovery",
+        action="store_true",
+        help="Pass --sparse-recovery to each full-auto regression run.",
+    )
     ap.add_argument("--color", choices=["auto", "always", "never"], default="auto", help="Colorize output verdicts.")
     ap.add_argument(
         "--only",
@@ -1271,6 +1280,7 @@ def main() -> int:
                     fail_on_score_mismatch=not args.no_fail_score_mismatch,
                     color=color,
                     scratch_root=scratch_root,
+                    sparse_recovery=bool(args.sparse_recovery),
                 ): dataset_spec.name
                 for dataset_spec, dataset_path, ref_log_path in jobs
             }

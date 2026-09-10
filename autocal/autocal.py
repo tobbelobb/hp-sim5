@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import atexit
+import copy
 import sys
+import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -10,6 +12,70 @@ if str(REPO_ROOT) not in sys.path:
 
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.planning_pass import plan_next_ellipse_sweep
+from autocal.theoretical_ellipse import get_anchor_bounds
+
+
+def _sparse_recovery_dataset(dataset: Dict[str, object], fraction: float = 0.5) -> Dict[str, object]:
+    """Return a small, endpoint-preserving training subset for recovery seeding."""
+    result = copy.deepcopy(dataset)
+    for sweep in result.get("sweeps", []):
+        if not isinstance(sweep, dict) or not isinstance(sweep.get("data_points"), list):
+            continue
+        points = sweep["data_points"]
+        groups: Dict[object, List[int]] = {}
+        for index, point in enumerate(points):
+            if not isinstance(point, dict):
+                continue
+            direction = point.get("source_drive_anchor", sweep.get("drive_anchor"))
+            groups.setdefault(direction, []).append(index)
+        keep = set()
+        for indices in groups.values():
+            if not indices:
+                continue
+            target = min(len(indices), max(5, int(np.ceil(float(fraction) * len(indices)))))
+            positions = {
+                i: float(points[i].get("drive_setpoint_mm", points[i].get("l_drive", i)))
+                for i in indices
+            }
+            selected = {min(indices, key=positions.get), max(indices, key=positions.get)}
+            while len(selected) < target:
+                selected.add(
+                    max(
+                        (i for i in indices if i not in selected),
+                        key=lambda i: (
+                            min(abs(positions[i] - positions[j]) for j in selected),
+                            -i,
+                        ),
+                    )
+                )
+            keep.update(selected)
+        sweep["data_points"] = [point for i, point in enumerate(points) if i in keep]
+    return result
+
+
+def _recovery_geometry_valid(plan: Dict[str, object]) -> bool:
+    """Reject non-finite, out-of-bounds, or degenerate anchor layouts."""
+    try:
+        anchors = np.asarray(plan.get("anchors"), dtype=float)
+        machine_type = str(plan.get("machine_type", ""))
+        if anchors.ndim != 2 or anchors.size == 0 or not np.all(np.isfinite(anchors)):
+            return False
+        lower, upper = get_anchor_bounds(machine_type)
+        lower = np.asarray(lower, dtype=float).reshape(anchors.shape)
+        upper = np.asarray(upper, dtype=float).reshape(anchors.shape)
+        margin = np.maximum(1e-5, 1e-5 * np.maximum(np.abs(lower), np.abs(upper)))
+        if np.any(anchors <= lower + margin) or np.any(anchors >= upper - margin):
+            return False
+        centered = anchors - np.mean(anchors, axis=0, keepdims=True)
+        if np.linalg.matrix_rank(centered) < min(anchors.shape[1], anchors.shape[0] - 1):
+            return False
+        for i in range(anchors.shape[0]):
+            for j in range(i):
+                if float(np.linalg.norm(anchors[i] - anchors[j])) <= 1e-3:
+                    return False
+        return True
+    except (TypeError, ValueError, np.linalg.LinAlgError):
+        return False
 
 
 def full_auto_loop(
@@ -76,6 +142,7 @@ def full_auto_loop(
     scale_fix: Optional[Sequence[int]] = None,
     fit_structure: Optional[Sequence[int]] = None,
     no_collect: bool = False,
+    sparse_recovery: bool = False,
     firmware: str = "rrf",
     config: Optional[str] = None,
     rrf_config: Optional[str] = None,
@@ -639,6 +706,7 @@ def full_auto_loop(
         collector_output: Path,
         log_prefix: str,
         path_tag: Optional[str] = None,
+        dataset_path_override: Optional[Path] = None,
         initial_guess: Optional[np.ndarray] = None,
         initial_radii_mm: Optional[np.ndarray] = None,
         initial_buildup_factor: Optional[np.ndarray] = None,
@@ -646,7 +714,8 @@ def full_auto_loop(
         _log_line(f"{log_prefix}: flags='{run_flags}'")
 
         cfg_run_id = str(path_tag or run_id)
-        cfg_path = _full_auto_cfg_path(work_path, cfg_run_id)
+        dataset_for_run = Path(dataset_path_override or work_path)
+        cfg_path = _full_auto_cfg_path(dataset_for_run, cfg_run_id)
         residuals_csv_run = None
         if residuals_csv is not None:
             res_base = Path(residuals_csv)
@@ -660,7 +729,7 @@ def full_auto_loop(
 
         with _log_context():
             plan = plan_next_ellipse_sweep(
-                work_path,
+                dataset_for_run,
                 solve_restarts=int(settings["solve_restarts"]),
                 solve_iterations=int(settings["solve_iterations"]),
                 solve_optimizer=str(settings["solve_optimizer"]),
@@ -869,9 +938,15 @@ def full_auto_loop(
         )
 
         warm_start = _warm_start_seeds_from_plan(selected["plan"])
+        started = time.perf_counter()
+        valid_results: List[Dict[str, object]] = []
+        recovery_labels = [label for label, _settings in attempts]
+        if sparse_recovery:
+            recovery_labels.extend(("sparse_seed", "sparse_refine"))
         recovery_info: Dict[str, object] = {
-            "attempts_total": int(len(attempts)),
-            "attempt_labels": [label for label, _settings in attempts],
+            "attempts_total": int(len(recovery_labels)),
+            "attempt_labels": recovery_labels,
+            "sparse_enabled": bool(sparse_recovery),
             "success": False,
         }
         for idx, (label, settings_try) in enumerate(attempts, start=1):
@@ -898,20 +973,98 @@ def full_auto_loop(
                 }
             )
             result["recovery"] = dict(recovery_info)
-            if bool(result["metrics"].get("valid")) and not bool(
-                result["metrics"].get("underconstrained_penalty", False)
-            ):
-                recovery_info["success"] = True
-                result["recovery"] = dict(recovery_info)
-                _log_console(
-                    "; underconstrained recovery succeeded; continuing with the repaired constrained estimate."
+            result_valid = (
+                bool(result["metrics"].get("valid"))
+                and not bool(result["metrics"].get("underconstrained_penalty", False))
+                and _recovery_geometry_valid(result["plan"])
+            )
+            if result_valid:
+                valid_results.append(result)
+                if not sparse_recovery:
+                    recovery_info["success"] = True
+                    result["recovery"] = dict(recovery_info)
+                    _log_console(
+                        "; underconstrained recovery succeeded; continuing with the repaired constrained estimate."
+                    )
+                    return result, dict(recovery_info)
+            if _recovery_geometry_valid(result["plan"]):
+                warm_start = _warm_start_seeds_from_plan(result["plan"])
+
+        if sparse_recovery:
+            sparse_settings = dict(attempts[-1][1])
+            sparse_path = work_path.with_name(
+                f".{work_path.stem}.{run_id}.sparse_recovery.json"
+            )
+            sparse_dataset = _sparse_recovery_dataset(_load_json(work_path))
+            _write_json(sparse_path, sparse_dataset)
+            try:
+                _log_line(
+                    f"; underconstrained_recovery: run={run_id} sparse seed points="
+                    f"{sum(len(s.get('data_points', [])) for s in sparse_dataset.get('sweeps', []))}"
                 )
-                return result, dict(recovery_info)
-            warm_start = _warm_start_seeds_from_plan(result["plan"])
+                sparse_result = _execute_plan_run(
+                    run_id=run_id,
+                    run_flags=run_flags,
+                    overrides=overrides,
+                    settings=sparse_settings,
+                    collector_output=collector_output,
+                    log_prefix=f"; full-auto recovery {run_id} [sparse_seed]",
+                    path_tag=f"{run_id}.sparse_seed",
+                    dataset_path_override=sparse_path,
+                    initial_guess=warm_start.get("initial_guess"),
+                    initial_radii_mm=warm_start.get("initial_radii_mm"),
+                    initial_buildup_factor=warm_start.get("initial_buildup_factor"),
+                )
+                recovery_info["sparse_seed_valid"] = _recovery_geometry_valid(sparse_result["plan"])
+                if recovery_info["sparse_seed_valid"]:
+                    sparse_warm_start = _warm_start_seeds_from_plan(sparse_result["plan"])
+                    refined = _execute_plan_run(
+                        run_id=run_id,
+                        run_flags=run_flags,
+                        overrides=overrides,
+                        settings=sparse_settings,
+                        collector_output=collector_output,
+                        log_prefix=f"; full-auto recovery {run_id} [sparse_refine]",
+                        path_tag=f"{run_id}.sparse_refine",
+                        initial_guess=sparse_warm_start.get("initial_guess"),
+                        initial_radii_mm=sparse_warm_start.get("initial_radii_mm"),
+                        initial_buildup_factor=sparse_warm_start.get("initial_buildup_factor"),
+                    )
+                    refined_valid = (
+                        bool(refined["metrics"].get("valid"))
+                        and not bool(refined["metrics"].get("underconstrained_penalty", False))
+                        and _recovery_geometry_valid(refined["plan"])
+                    )
+                    recovery_info["sparse_refine_valid"] = refined_valid
+                    if refined_valid:
+                        valid_results.append(refined)
+            finally:
+                try:
+                    sparse_path.unlink()
+                except OSError:
+                    pass
+
+        if valid_results:
+            best = min(
+                valid_results,
+                key=lambda item: (
+                    float(item["metrics"].get("rank_score", float("inf"))),
+                    float(item["metrics"].get("primary_cost", float("inf"))),
+                ),
+            )
+            recovery_info["success"] = True
+            recovery_info["valid_candidates"] = int(len(valid_results))
+            recovery_info["elapsed_seconds"] = float(time.perf_counter() - started)
+            best["recovery"] = dict(recovery_info)
+            _log_console(
+                "; underconstrained recovery succeeded; continuing with the best valid repaired estimate."
+            )
+            return best, dict(recovery_info)
 
         _log_console(
             "; underconstrained recovery exhausted current data without re-establishing constraints."
         )
+        recovery_info["elapsed_seconds"] = float(time.perf_counter() - started)
         return None, dict(recovery_info)
 
     def _stop_file_requested() -> bool:
@@ -1463,6 +1616,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         scale_fix=spool_opts.get("scale_fix"),
         fit_structure=spool_opts.get("fit_structure"),
         no_collect=bool(args.no_collect),
+        sparse_recovery=bool(args.sparse_recovery),
         firmware=str(args.firmware),
         config=args.config,
         rrf_config=args.rrf_config,
