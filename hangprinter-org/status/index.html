@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="author" content="Torbjorn Ludvigsen">
+  <meta name="description" content="A September 2026 overview of Hangprinter hardware, motion software, simulation, and active reference projects.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Hangprinter State of the Art">
+  <meta property="og:url" content="https://hangprinter.org/status/">
+  <meta property="og:description" content="The current state of Hangprinter hardware, software, and reference projects.">
+  <meta property="og:image" content="https://hangprinter.org/hangprinter4_small.jpeg">
+  <meta name="twitter:card" content="summary">
+  <link rel="stylesheet" href="../style.css?v=0">
+  <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="../favicon-16x16.png">
+  <link rel="manifest" href="../site.webmanifest">
+  <title>Hangprinter State of the Art | Hangprinter</title>
+</head>
+<body>
+  <div class="masthead">
+    <h3 class="masthead-brand">
+      <a href="../">
+        <img class="logotype" src="../images/hangprinter_logotype.svg" />
+        <!-- <img src="./logo-orange.svg" style="height:50px;width:50px;" /> -->
+      </a>
+    </h3>
+    <nav>
+      <ul>
+        <li>
+          <div class="dropdown">
+            <button class="dropbtn">Documentation</button>
+            <div class="dropdown-content">
+              <div class="link-column">
+                <p>Here you can find the complete resources for the latest and previous versions of the Hangprinter.
+                </p>
+                <div class="links">
+                  <a href="../doc/v4/">Hangprinter Version 4</a>
+                  <a href="../doc/v3/">Hangprinter Version 3</a>
+                </div>
+              </div>
+              <div class="img-column">
+                <img src="../images/menu_img_1.png" alt="">
+                <img src="../images/menu_img_2.png" alt="">
+                <img src="../images/menu_img_3.png" alt="">
+              </div>
+            </div>
+          </div>
+        </li>
+        <li><a href="../about/">About</a></li>
+        <li><a href="../FAQ/">FAQ</a></li>
+        <li><a href="../resources/">Resources</a></li>
+        <li><a class="active" aria-current="page" href="../status/">Status</a></li>
+        <li><a href="../newsletter/">Newsletter</a></li>
+        <li><a id="donate" href="../donate/">Donate</a></li>
+      </ul>
+    </nav>
+
+    <div class="burger">
+      <img src="../images/menu.svg" alt="">
+    </div>
+  </div>
+
+  <div class="blur-overlay"></div>
+  <nav id="mobile-menu">
+    <ul>
+      <li><span>Documentation</span>
+        <div class="sublinks">
+          <a href="../doc/v4/">Hangprinter V4</a>
+          <a href="../doc/v3/">Hangprinter V3</a>
+        </div>
+      </li>
+      <li><a href="../about/">About</a></li>
+      <li><a href="../FAQ/">FAQ</a></li>
+      <li><a href="../resources/">Resources</a></li>
+      <li><a class="active" aria-current="page" href="../status/">Status</a></li>
+      <li><a href="../newsletter/">Newsletter</a></li>
+      <li><a href="../donate/">Donate</a></li>
+    </ul>
+  </nav>
+
+  <main class="status-page">
+    <p class="eyebrow">Project overview · System map</p>
+    <h1>Hangprinter State of the Art</h1>
+    <p class="intro">Hangprinter is a cable-driven 3D printer. The project now combines full-size machines, firmware for predicting cable behavior, a detailed simulator, and two unfinished reference-hardware projects.</p>
+    <p class="snapshot">Status snapshot: September 2026 · Follow the linked project pages for ongoing design work.</p>
+
+    <section class="section" aria-labelledby="system-heading">
+      <h2 id="system-heading">How the pieces fit together</h2>
+      <p class="section-lead">A Hangprinter moves its tool by changing the lengths of lines connected to fixed anchors. Software coordinates the motion and estimates the forces acting through those lines.</p>
+      <ol class="system-list">
+        <li>
+          <span class="step-number">01</span>
+          <div><h3>Machine and geometry</h3><p>HP4 is the established full-size Hangprinter design. Anchor layout, line routing, motor and spool details shape the model each machine uses. <a href="../doc/v4/">HP4 documentation</a></p></div>
+        </li>
+        <li>
+          <span class="step-number">02</span>
+          <div><h3>Firmware and motion transforms</h3><p>RepRapFirmware and tobbelobb’s Klipper fork support Hangprinter motion. A forward transform estimates tool position from line lengths; the current firmware implementations use the quadratic approach. <a href="https://github.com/tobbelobb/hp-sim5">Implementation map in hp-sim5</a></p></div>
+        </li>
+        <li>
+          <span class="step-number">03</span>
+          <div><h3>Flex compensation</h3><p>QP and Tikhonov algorithms calculate line tensions within configured minimum and maximum bounds, then account for line stretch in the commanded lengths. Their trade-offs differ near the bounds. <a href="https://github.com/tobbelobb/klipper/blob/master/docs/Config_Reference.md#cable-winch-flex-compensation">Klipper configuration guide</a></p></div>
+        </li>
+        <li>
+          <span class="step-number">04</span>
+          <div><h3>Simulation and calibration development</h3><p><a href="https://github.com/tobbelobb/hp-sim5">hp-sim5</a> brings together detailed cable, spool, motor, and firmware simulation with development work on transforms, flex compensation, and automatic calibration. It is the project’s main software and simulation workbench.</p></div>
+        </li>
+      </ol>
+    </section>
+
+    <section class="section" aria-labelledby="status-heading">
+      <h2 id="status-heading">What is implemented, and what is still underway?</h2>
+      <div class="status-table-wrap">
+        <table>
+          <thead><tr><th scope="col">Area</th><th scope="col">Status</th><th scope="col">Current picture</th></tr></thead>
+          <tbody>
+            <tr><td>HP4</td><td class="status">Established design</td><td>Full-size machine with published build documentation. Start with the <a href="../doc/v4/">V4 manual</a> and <a href="../FAQ/">FAQ</a>.</td></tr>
+            <tr><td>Flex compensation</td><td class="status">Implemented</td><td>QP and Tikhonov are available in official RepRapFirmware and tobbelobb’s Klipper fork. See the <a href="https://github.com/tobbelobb/klipper/blob/master/docs/Config_Reference.md#cable-winch-flex-compensation">Klipper config guide</a> for algorithm behavior.</td></tr>
+            <tr><td>Forward transform</td><td class="status">Firmware-integrated</td><td>The quadratic method was selected after comparisons with other approaches; hp-sim5 documents tests on simulated Slideprinter, HP3, HP4, CubeCorners, and SkyCam setups.</td></tr>
+            <tr><td>Autocalibration</td><td class="status in-progress">In development</td><td>Automatic calibration methods and data collection are being developed in hp-sim5, with simulation and firmware API workflows.</td></tr>
+            <tr><td>RefWinch</td><td class="status in-progress">In progress</td><td>Experiments seek a more predictable winch, with a controlled line path and stable transmission behavior. There is not yet a finished reference design. <a href="https://refwinch.hangprinter.org/">RefWinch project</a></td></tr>
+            <tr><td>RefRig</td><td class="status in-progress">In progress</td><td>A compact desktop machine intended to bring winches, firmware, calibration, diagnostics, and simulation together. Its build, tests, and documentation are not complete. <a href="https://refrig.hangprinter.org/">RefRig project</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">“Implemented” means the feature is present in the named firmware implementation. Simulation results and physical-machine maturity are called out separately where known.</p>
+    </section>
+
+    <section class="section" aria-labelledby="work-heading">
+      <h2 id="work-heading">The current hardware direction</h2>
+      <p>Recent work has shifted toward a more repeatable foundation beneath future Hangprinters. RefWinch, RefRig, and hp-sim5 form a development path from one actuator to a complete machine:</p>
+      <ol class="project-path">
+        <li><div><h3><a href="https://refwinch.hangprinter.org/">RefWinch</a> — prove a winch</h3><p>Compare mechanisms and line-handling strategies against requirements for predictable line travel, a stable exit point, smooth operation, low added cost, and serviceability. Design findings and experiments are ongoing. I'm currently searching for a reliable odometer or equivalent mechanism.</p></div></li>
+        <li><div><h3><a href="https://refrig.hangprinter.org/">RefRig</a> — combine the parts</h3><p>Build a compact working printer around reference winches. The aim is a documented physical platform where motion, firmware, calibration, and diagnostics can be exercised together. It is not yet a finished build recipe.</p></div></li>
+        <li><div><h3><a href="../">Hangprinter</a> — scale the verified motion</h3><p>Carry tested mechanisms and software into the larger work volumes that motivate Hangprinter.</p></div></li>
+      </ol>
+      <p><a href="https://github.com/tobbelobb/hp-sim5">hp-sim5</a> is the shared simulation environment connecting actuator behavior, machine geometry, firmware, and physical development across these steps.</p>
+      <p class="note">RefWinch and RefRig are active projects, not finished products. The project pages and <a href="https://torbjornludvigsen.com/blog/2026/">development blog</a> describe their current design work.</p>
+    </section>
+
+    <section class="section" aria-labelledby="priorities-heading">
+      <h2 id="priorities-heading">Current modeling priorities</h2>
+      <p>Flex compensation now predicts cable forces and stretch. Catenary sag computation has lower priority because Hangprinter uses light Dyneema line; it can be revisited if the remaining sag effect proves important for a particular machine or span.</p>
+      <p>The two flex algorithms and their configuration are described in the <a href="https://github.com/tobbelobb/klipper/blob/master/docs/Config_Reference.md#cable-winch-flex-compensation">Klipper fork’s config documentation</a>. The <a href="https://github.com/tobbelobb/hp-sim5">hp-sim5 README</a> maps the broader software and simulation work.</p>
+    </section>
+
+    <section class="section" aria-labelledby="start-heading">
+      <h2 id="start-heading">Where to go next</h2>
+      <ul class="link-list">
+        <li>For questions and basic orientation: <a href="../FAQ/">Frequently Asked Questions</a>.</li>
+        <li>For project links, simulators, and documented builds: <a href="../resources/">Resources</a>.</li>
+        <li>For the established HP4 build path: <a href="../doc/v4/">V4 documentation</a>.</li>
+        <li>For software development and the simulator: <a href="https://github.com/tobbelobb/hp-sim5">hp-sim5 on GitHub</a> and the <a href="https://hp-sim-project.hangprinter.org/">hp-sim project page</a>.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <img class="logo" src="../images/hangprinter_logo.svg" alt="">
+
+    <div class="link-container">
+      <div class="link-column">
+        <span>The Project</span>
+        <a href="../donate/">Donate</a>
+        <a href="../doc/v3/">Hangprinter v3</a>
+        <a href="../doc/v4/">Hangprinter v4</a>
+      </div>
+
+      <div class="link-column">
+        <span>Follow</span>
+        <a href="https://www.facebook.com/groups/hangprinter">Facebook</a>
+        <a href="https://twitter.com/tobbelobb">X</a>
+        <a href="https://www.youtube.com/channel/UCw1Nz0VCw4z-dfq4WjSkFzQ">Youtube</a>
+        <a href="https://torbjornludvigsen.com/blog">Dev Blog</a>
+      </div>
+
+      <div class="link-column">
+        <span>Community</span>
+        <a href="https://discord.gg/KAV7x3hgRX">Discord Channel</a>
+        <a href="../resources/">Relevant Repos</a>
+        <a href="../newsletter/">Newsletter</a>
+      </div>
+    </div>
+
+    <span class="copyright">© Torbjørn Ludvigsen 2023. All rights reserved.</span>
+  </footer>
+
+  <script data-goatcounter="https://hangprinter.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+  <script type="module" src="../assets/script.js"></script>
+</body>
+</html>
