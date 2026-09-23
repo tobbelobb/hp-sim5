@@ -80,80 +80,61 @@
     </ul>
   </nav>
 
-  <main class="status-page">
-    <p class="eyebrow">Project overview · System map</p>
-    <h1>Hangprinter State of the Art</h1>
-    <p class="intro">Hangprinter is a cable-driven 3D printer. The project now combines full-size machines, firmware for predicting cable behavior, a detailed simulator, and two unfinished reference-hardware projects.</p>
-    <p class="snapshot">Status snapshot: September 2026 · Follow the linked project pages for ongoing design work.</p>
+  <main id="MainContent" class="half-width">
+    <h3 id="SiteName">Hangprinter State of the Art</h3>
+    <p>Hangprinter is a cable-driven 3D printer. The project now combines full-size machines, firmware for predicting cable behavior, a detailed simulator, and two unfinished reference-hardware projects.</p>
+    <p>Thi status snapshot was written down on September 23, 2026. Follow the linked project pages and sometimes my <a href="https://www.youtube.com/@torbjrnludvigsen-hangprint7605">youtube channel</a> for ongoing design work.</p>
 
-    <section class="section" aria-labelledby="system-heading">
-      <h2 id="system-heading">How the pieces fit together</h2>
-      <p class="section-lead">A Hangprinter moves its tool by changing the lengths of lines connected to fixed anchors. Software coordinates the motion and estimates the forces acting through those lines.</p>
-      <ol class="system-list">
-        <li>
-          <span class="step-number">01</span>
-          <div><h3>Machine and geometry</h3><p>HP4 is the established full-size Hangprinter design. Anchor layout, line routing, motor and spool details shape the model each machine uses. <a href="../doc/v4/">HP4 documentation</a></p></div>
-        </li>
-        <li>
-          <span class="step-number">02</span>
-          <div><h3>Firmware and motion transforms</h3><p>RepRapFirmware and tobbelobb’s Klipper fork support Hangprinter motion. A forward transform estimates tool position from line lengths; the current firmware implementations use the quadratic approach. <a href="https://github.com/tobbelobb/hp-sim5">Implementation map in hp-sim5</a></p></div>
-        </li>
-        <li>
-          <span class="step-number">03</span>
-          <div><h3>Flex compensation</h3><p>QP and Tikhonov algorithms calculate line tensions within configured minimum and maximum bounds, then account for line stretch in the commanded lengths. Their trade-offs differ near the bounds. <a href="https://github.com/tobbelobb/klipper/blob/master/docs/Config_Reference.md#cable-winch-flex-compensation">Klipper configuration guide</a></p></div>
-        </li>
-        <li>
-          <span class="step-number">04</span>
-          <div><h3>Simulation and calibration development</h3><p><a href="https://github.com/tobbelobb/hp-sim5">hp-sim5</a> brings together detailed cable, spool, motor, and firmware simulation with development work on transforms, flex compensation, and automatic calibration. It is the project’s main software and simulation workbench.</p></div>
-        </li>
-      </ol>
-    </section>
+    <h3 id="system-heading">How the pieces fit together</h3>
+    <p>A Hangprinter moves its tool by changing the lengths of lines connected to fixed anchors. Software coordinates the motion and estimates the forces acting through those lines.</p>
+    <h4>Machine and geometry</h4>
+    <p>HP4 is the established full-size Hangprinter design. Anchor layout, line routing, motor and spool details shape the model each machine uses. <a href="../doc/v4/">HP4 documentation</a></p>
+    <h4>Firmware and motion transforms</h4>
+    <p>RepRapFirmware and tobbelobb’s Klipper fork support Hangprinter motion. A forward transform estimates tool position from line lengths; the current firmware implementations use the quadratic approach. <a href="https://github.com/tobbelobb/hp-sim5">Implementation map in hp-sim5</a></p>
+    <h4>Flex compensation</h4>
+    <p>QP and Tikhonov algorithms calculate line tensions within configured minimum and maximum bounds, then account for line stretch in the commanded lengths. Their trade-offs differ near the bounds. <a href="https://github.com/tobbelobb/klipper/blob/master/docs/Config_Reference.md#cable-winch-flex-compensation">Klipper configuration guide</a></p>
+    <h4>Simulation and calibration development</h4>
+    <p><a href="https://github.com/tobbelobb/hp-sim5">hp-sim5</a> brings together detailed cable, spool, motor, and firmware simulation with development work on transforms, flex compensation, and automatic calibration. It is the project’s main software and simulation workbench.</p>
 
-    <section class="section" aria-labelledby="status-heading">
-      <h2 id="status-heading">What is implemented, and what is still underway?</h2>
-      <div class="status-table-wrap">
-        <table>
-          <thead><tr><th scope="col">Area</th><th scope="col">Status</th><th scope="col">Current picture</th></tr></thead>
-          <tbody>
-            <tr><td>HP4</td><td class="status">Established design</td><td>Full-size machine with published build documentation. Start with the <a href="../doc/v4/">V4 manual</a> and <a href="../FAQ/">FAQ</a>.</td></tr>
-            <tr><td>Flex compensation</td><td class="status">Implemented</td><td>QP and Tikhonov are available in official RepRapFirmware and tobbelobb’s Klipper fork. See the <a href="https://github.com/tobbelobb/klipper/blob/master/docs/Config_Reference.md#cable-winch-flex-compensation">Klipper config guide</a> for algorithm behavior.</td></tr>
-            <tr><td>Forward transform</td><td class="status">Firmware-integrated</td><td>The quadratic method was selected after comparisons with other approaches; hp-sim5 documents tests on simulated Slideprinter, HP3, HP4, CubeCorners, and SkyCam setups.</td></tr>
-            <tr><td>Autocalibration</td><td class="status in-progress">In development</td><td>Automatic calibration methods and data collection are being developed in hp-sim5, with simulation and firmware API workflows.</td></tr>
-            <tr><td>RefWinch</td><td class="status in-progress">In progress</td><td>Experiments seek a more predictable winch, with a controlled line path and stable transmission behavior. There is not yet a finished reference design. <a href="https://refwinch.hangprinter.org/">RefWinch project</a></td></tr>
-            <tr><td>RefRig</td><td class="status in-progress">In progress</td><td>A compact desktop machine intended to bring winches, firmware, calibration, diagnostics, and simulation together. Its build, tests, and documentation are not complete. <a href="https://refrig.hangprinter.org/">RefRig project</a></td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p class="note">“Implemented” means the feature is present in the named firmware implementation. Simulation results and physical-machine maturity are called out separately where known.</p>
-    </section>
+    <h3 id="status-heading">What is implemented, and what is still underway?</h3>
+    <p class="q">HP4: Established design</p>
+    <p class="a">Full-size machine with published build documentation. Start with the <a href="../doc/v4/">V4 manual</a> and <a href="../FAQ/">FAQ</a>.</p>
+    <p class="q">Flex compensation: Implemented</p>
+    <p class="a">QP and Tikhonov are available in official RepRapFirmware and tobbelobb’s Klipper fork. See the <a href="https://github.com/tobbelobb/klipper/blob/master/docs/Config_Reference.md#cable-winch-flex-compensation">Klipper config guide</a> for algorithm behavior.</p>
+    <p class="q">Forward transform: Firmware-integrated</p>
+    <p class="a">The quadratic method was selected after comparisons with other approaches; hp-sim5 documents tests on simulated Slideprinter, HP3, HP4, CubeCorners, and SkyCam setups.</p>
+    <p class="q">Autocalibration: In development</p>
+    <p class="a">Automatic calibration methods and data collection are being developed in hp-sim5, with simulation and firmware API workflows.</p>
+    <p class="q">RefWinch: In progress</p>
+    <p class="a">Experiments seek a more predictable winch, with a controlled line path and stable transmission behavior. There is not yet a finished reference design. <a href="https://refwinch.hangprinter.org/">RefWinch project</a></p>
+    <p class="q">RefRig: In progress</p>
+    <p class="a">A compact desktop machine intended to bring winches, firmware, calibration, diagnostics, and simulation together. Its build, tests, and documentation are not complete. <a href="https://refrig.hangprinter.org/">RefRig project</a></p>
+    <p>“Implemented” means the feature is present in the named firmware implementation. Simulation results and physical-machine maturity are called out separately where known.</p>
 
-    <section class="section" aria-labelledby="work-heading">
-      <h2 id="work-heading">The current hardware direction</h2>
-      <p>Recent work has shifted toward a more repeatable foundation beneath future Hangprinters. RefWinch, RefRig, and hp-sim5 form a development path from one actuator to a complete machine:</p>
-      <ol class="project-path">
-        <li><div><h3><a href="https://refwinch.hangprinter.org/">RefWinch</a> — prove a winch</h3><p>Compare mechanisms and line-handling strategies against requirements for predictable line travel, a stable exit point, smooth operation, low added cost, and serviceability. Design findings and experiments are ongoing. I'm currently searching for a reliable odometer or equivalent mechanism.</p></div></li>
-        <li><div><h3><a href="https://refrig.hangprinter.org/">RefRig</a> — combine the parts</h3><p>Build a compact working printer around reference winches. The aim is a documented physical platform where motion, firmware, calibration, and diagnostics can be exercised together. It is not yet a finished build recipe.</p></div></li>
-        <li><div><h3><a href="../">Hangprinter</a> — scale the verified motion</h3><p>Carry tested mechanisms and software into the larger work volumes that motivate Hangprinter.</p></div></li>
-      </ol>
-      <p><a href="https://github.com/tobbelobb/hp-sim5">hp-sim5</a> is the shared simulation environment connecting actuator behavior, machine geometry, firmware, and physical development across these steps.</p>
-      <p class="note">RefWinch and RefRig are active projects, not finished products. The project pages and <a href="https://torbjornludvigsen.com/blog/2026/">development blog</a> describe their current design work.</p>
-    </section>
+    <h3 id="work-heading">The current hardware direction</h3>
+    <p>I sometimes loosely refer to this as "HP5", but it's really a collection of cable driven robotics building blocks that are developed separately and will be made to fit together later. Various "full versions" might be implemented by combining these building blocks to fit more detailed specifications, based on verified use cases.</p>
+    <p>So recent work has shifted toward building a repeatable foundation beneath future Hangprinters. RefWinch, RefRig, and hp-sim5 form a development path from one actuator to a complete machine:</p>
+    <h4><a href="https://refwinch.hangprinter.org/">RefWinch</a>: prove a winch</h4>
+    <p>Compare mechanisms and line-handling strategies against requirements for predictable line travel, a stable exit point, smooth operation, low added cost, and serviceability. Design findings and experiments are ongoing. I'm currently searching for a reliable odometer or equivalent mechanism.</p>
+    <h4><a href="https://refrig.hangprinter.org/">RefRig</a>: combine the parts</h4>
+    <p>Build a compact working printer around reference winches. The aim is a documented physical platform where motion, firmware, calibration, and diagnostics can be exercised together. It is not yet a finished build recipe.</p>
+    <h4><a href="../">Hangprinter</a>: scale the verified motion</h4>
+    <p>Carry tested mechanisms and software into the larger work volumes that motivate Hangprinter.</p>
+    <h4><a href="https://github.com/tobbelobb/hp-sim5">hp-sim5</a>: simulate all of it</h4>
+    <p>A simulation environment connecting actuator behavior, machine geometry, firmware, and physical development across these steps.</p>
+      <p>RefWinch and RefRig are active projects, not finished products. The project pages and <a href="https://torbjornludvigsen.com/blog/2026/">development blog</a> describe their current design work.</p>
 
-    <section class="section" aria-labelledby="priorities-heading">
-      <h2 id="priorities-heading">Current modeling priorities</h2>
-      <p>Flex compensation now predicts cable forces and stretch. Catenary sag computation has lower priority because Hangprinter uses light Dyneema line; it can be revisited if the remaining sag effect proves important for a particular machine or span.</p>
-      <p>The two flex algorithms and their configuration are described in the <a href="https://github.com/tobbelobb/klipper/blob/master/docs/Config_Reference.md#cable-winch-flex-compensation">Klipper fork’s config documentation</a>. The <a href="https://github.com/tobbelobb/hp-sim5">hp-sim5 README</a> maps the broader software and simulation work.</p>
-    </section>
+    <h3 id="priorities-heading">Current modeling priorities</h3>
+    <p>Flex compensation now predicts cable forces and stretch. Catenary sag computation has lower priority because Hangprinter uses light Dyneema line; it can be revisited if the remaining sag effect proves important for a particular machine or span.</p>
+    <p>The two flex algorithms and their configuration are described in the <a href="https://github.com/tobbelobb/klipper/blob/master/docs/Config_Reference.md#cable-winch-flex-compensation">Klipper fork’s config documentation</a>. The <a href="https://github.com/tobbelobb/hp-sim5">hp-sim5 README</a> maps the broader software and simulation work.</p>
 
-    <section class="section" aria-labelledby="start-heading">
-      <h2 id="start-heading">Where to go next</h2>
-      <ul class="link-list">
-        <li>For questions and basic orientation: <a href="../FAQ/">Frequently Asked Questions</a>.</li>
-        <li>For project links, simulators, and documented builds: <a href="../resources/">Resources</a>.</li>
-        <li>For the established HP4 build path: <a href="../doc/v4/">V4 documentation</a>.</li>
-        <li>For software development and the simulator: <a href="https://github.com/tobbelobb/hp-sim5">hp-sim5 on GitHub</a> and the <a href="https://hp-sim-project.hangprinter.org/">hp-sim project page</a>.</li>
-      </ul>
-    </section>
+    <h3 id="start-heading">Where to go next</h3>
+    <ul>
+      <li>For questions and basic orientation: <a href="../FAQ/">Frequently Asked Questions</a>.</li>
+      <li>For project links, simulators, and documented builds: <a href="../resources/">Resources</a>.</li>
+      <li>For the established HP4 build path: <a href="../doc/v4/">V4 documentation</a>.</li>
+      <li>For software development and the simulator: <a href="https://github.com/tobbelobb/hp-sim5">hp-sim5 on GitHub</a> and the <a href="https://hp-sim-project.hangprinter.org/">hp-sim project page</a>.</li>
+    </ul>
   </main>
 
   <footer>

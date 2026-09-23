@@ -1,97 +1,5 @@
 @charset "UTF-8";
 
-/* Hangprinter State of the Art */
-.status-page {
-    box-sizing: border-box;
-    width: min(760px, calc(100% - 48px));
-    margin: 110px auto 0;
-    font-family: Manrope, sans-serif;
-}
-
-.status-page .eyebrow {
-    color: var(--grey);
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-.status-page h1 { margin: 0 0 22px; line-height: 1.15; }
-.status-page h2 { width: 100%; margin: 0 0 18px; font-size: 29px; line-height: 1.25; }
-.status-page h3 { margin: 0; font-size: 17px; font-weight: 700; }
-.status-page p { font-size: 15px; line-height: 1.7; }
-.status-page .intro { font-size: 19px; line-height: 1.55; }
-.status-page .snapshot,
-.status-page .note { color: var(--grey); font-size: 13px; }
-.status-page .section { margin-top: 58px; }
-.status-page .section-lead { margin-bottom: 24px; }
-
-.status-page .system-list,
-.status-page .project-path {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-
-.status-page .system-list li,
-.status-page .project-path li {
-    display: grid;
-    grid-template-columns: 38px minmax(0, 1fr);
-    gap: 12px;
-    padding: 18px 0;
-    border-top: 1px solid #c7cbc1;
-}
-
-.status-page .system-list li:last-child,
-.status-page .project-path li:last-child { border-bottom: 1px solid #c7cbc1; }
-.status-page .system-list p,
-.status-page .project-path p { margin: 5px 0 0; }
-.status-page .step-number,
-.status-page .project-path li::before { color: var(--grey); font-size: 13px; }
-.status-page .project-path { counter-reset: project; }
-.status-page .project-path li { counter-increment: project; }
-.status-page .project-path li::before { content: "0" counter(project); }
-
-.status-page .status-table-wrap { overflow-x: auto; margin: 24px 0 0; }
-.status-page table {
-    width: 100%;
-    min-width: 620px;
-    border-collapse: collapse;
-    border-spacing: 0;
-    font-size: 14px;
-    line-height: 1.55;
-}
-
-.status-page th,
-.status-page td {
-    display: table-cell;
-    padding: 13px 12px 13px 0;
-    border-top: 1px solid #c7cbc1;
-    text-align: left;
-    vertical-align: top;
-    font-family: Manrope, sans-serif;
-}
-
-.status-page tbody tr:last-child td { border-bottom: 1px solid #c7cbc1; }
-.status-page th { color: var(--grey); font-size: 12px; text-transform: uppercase; }
-.status-page td:first-child { width: 135px; font-weight: 700; }
-.status-page td:nth-child(2) { width: 130px; font-weight: 600; }
-.status-page .in-progress { color: #735b18; }
-.status-page .link-list { padding-left: 22px; font: 15px/1.7 Manrope, sans-serif; }
-.status-page .link-list li { margin-bottom: 8px; }
-
-@media screen and (max-width: 600px) {
-    .status-page { width: calc(100% - 40px); margin-top: 90px; }
-    .status-page h2 { font-size: 25px; }
-    .status-page .section { margin-top: 44px; }
-}
-
-@media screen and (min-width: 801px) and (max-width: 900px) {
-    .masthead nav ul { gap: 0; }
-    .masthead nav ul li a,
-    .masthead .dropbtn { padding: 15px 8px; }
-}
-
 @font-face {
     font-family: Manrope;
     src: url("./assets/fonts/Manrope-VariableFont_wght.ttf");
@@ -1660,6 +1568,12 @@ figcaption {
         width: 250px;
         height: 250px;
     }
+}
+
+@media screen and (min-width: 801px) and (max-width: 900px) {
+    .masthead nav ul { gap: 0; }
+    .masthead nav ul li a,
+    .masthead .dropbtn { padding: 15px 8px; }
 }
 
 @media screen and (max-width: 800px) {
