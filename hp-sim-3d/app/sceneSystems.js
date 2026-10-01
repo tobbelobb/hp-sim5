@@ -63,6 +63,8 @@ export function registerSceneSystems(world, { canvas, mode = '3d', remote = fals
             world.registerSystem(new ExtruderSystem());
             world.registerSystem(new EncoderUpdateSystem());
             world.registerSystem(new MissedStepTrackingSystem());
+            const flightRecorder = world.getResource('flightRecorder');
+            if (flightRecorder) world.registerSystem(flightRecorder);
         }
 
         const renderSystem = new RenderSystem3D(canvas, {

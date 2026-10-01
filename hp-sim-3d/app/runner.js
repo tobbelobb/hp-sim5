@@ -203,6 +203,9 @@ export function runGame(world, internalSetupScene, options = {}) {
   };
 
   const remoteQueueReady = () => {
+    if (world.getResource('flightRecorder')?.readyForStep() === false) {
+      return false;
+    }
     const remoteSystem = getRemoteSystem();
     if (!remoteSystem) {
       return true;

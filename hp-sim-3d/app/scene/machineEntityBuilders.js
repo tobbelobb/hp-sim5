@@ -16,6 +16,7 @@ import {
     CoefficientOfFrictionComponent,
     RenderableComponent,
     MachineTagComponent,
+    SceneEntityInfoComponent,
 } from "../../../src/js/cable_joints_3d/ecs.js";
 import { CableLinkComponent } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
 import {
@@ -101,7 +102,7 @@ function applySpool(world, context, registry, prim, posArr) {
     if (getAttribute(prim, "cable:linkable")) {
         world.addComponent(ent, new CableLinkComponent(pos.x, pos.y, pos.z, initialOrientation, null, spoolAxisLocal));
     }
-    registry.nameToEntityId.set(scopedKey(namespace, prim.name), ent);
+    registerNamedEntity(world, registry, namespace, prim, ent);
 }
 
 function applyWheel(world, context, registry, prim, posArr) {
@@ -141,7 +142,7 @@ function applyWheel(world, context, registry, prim, posArr) {
     world.addComponent(ent, new MomentOfInertiaComponent(inertiaTensor, { axisLocal: wheelAxisLocal }));
     addMaterialComponents(world, ent, restitution, friction);
     world.addComponent(ent, new CableLinkComponent(pos.x, pos.y, pos.z, initialOrientation, null, wheelAxisLocal));
-    registry.nameToEntityId.set(scopedKey(namespace, prim.name), ent);
+    registerNamedEntity(world, registry, namespace, prim, ent);
 }
 
 function applyAnchor(world, context, registry, prim, posArr) {
@@ -159,7 +160,7 @@ function applyAnchor(world, context, registry, prim, posArr) {
     if (getAttribute(prim, "cable:linkable")) {
         world.addComponent(ent, new CableLinkComponent(pos.x, pos.y, pos.z, null, DEFAULT_PLANE_NORMAL));
     }
-    registry.nameToEntityId.set(scopedKey(namespace, prim.name), ent);
+    registerNamedEntity(world, registry, namespace, prim, ent);
 }
 
 function applyPinhole(world, context, registry, prim, posArr) {
@@ -193,7 +194,12 @@ function applyPinhole(world, context, registry, prim, posArr) {
     if (getAttribute(prim, "cable:linkable")) {
         world.addComponent(ent, new CableLinkComponent(pos.x, pos.y, pos.z, initialOrientation, DEFAULT_PLANE_NORMAL));
     }
-    registry.nameToEntityId.set(scopedKey(namespace, prim.name), ent);
+    registerNamedEntity(world, registry, namespace, prim, ent);
+}
+
+function registerNamedEntity(world, registry, namespace, prim, entityId) {
+    world.addComponent(entityId, new SceneEntityInfoComponent(prim.name, getAttribute(prim, 'ecs:tags') || []));
+    registry.nameToEntityId.set(scopedKey(namespace, prim.name), entityId);
 }
 
 function addBodyKinematics(world, ent, pos, velArr, mass) {

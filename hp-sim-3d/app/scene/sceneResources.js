@@ -67,6 +67,7 @@ export function applySceneResources(world, resources) {
 
     if (!resources.remote && !resources.append) {
         world.clear();
+        world.setResource('sceneGeneration', (world.getResource('sceneGeneration') || 0) + 1);
     }
 
     if (resources.canvas) {

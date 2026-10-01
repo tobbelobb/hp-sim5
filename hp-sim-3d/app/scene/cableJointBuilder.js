@@ -1,6 +1,6 @@
 import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
 import { getAttribute, getRelationship } from '../../../src/js/usd/stage.js';
-import { MachineTagComponent, RenderableComponent } from '../../../src/js/cable_joints_3d/ecs.js';
+import { MachineTagComponent, RenderableComponent, SceneEntityInfoComponent } from '../../../src/js/cable_joints_3d/ecs.js';
 import {
     CableJointComponent,
     linecolor1,
@@ -36,6 +36,7 @@ function applyCableJoints(world, context, registry) {
 
         const joint = world.createEntity();
         world.addComponent(joint, new MachineTagComponent(machineId));
+        world.addComponent(joint, new SceneEntityInfoComponent(prim.name, ['CableJoint']));
         world.addComponent(
             joint,
             CableJointComponent.fromLocal(

@@ -13,6 +13,7 @@ import { createMachineMenuController } from './machineMenuController.js';
 import { createMachineSceneController } from './machineSceneController.js';
 import { createCommandJobController } from './commandJobController.js';
 import { createExternalCommandController, normalizeWsUrl } from './externalCommandSocket.js';
+import { FlightRecorder } from './flightRecorder.js';
 
 function collectDomRefs(ownerDocument, canvasArg, controlsRootArg) {
   const canvas = canvasArg || ownerDocument.getElementById('myCanvas');
@@ -36,6 +37,7 @@ function collectDomRefs(ownerDocument, canvasArg, controlsRootArg) {
     positionTraceBtn: ownerDocument.getElementById('positionTraceBtn'),
     positionTraceClearBtn: ownerDocument.getElementById('positionTraceClearBtn'),
     measureBtn: ownerDocument.getElementById('measureBtn'),
+    rerunBtn: ownerDocument.getElementById('rerunBtn'),
     measureClearBtn: ownerDocument.getElementById('measureClearBtn'),
     zoomInBtn: ownerDocument.getElementById('zoomInBtn'),
     zoomOutBtn: ownerDocument.getElementById('zoomOutBtn'),
@@ -102,6 +104,14 @@ export function createHpSimApp({
     closedLoopMotorsEnabled: Boolean(dom.closedLoopMotorsToggle?.checked),
   });
   const world = new World();
+  const flightRecorder = new FlightRecorder({
+    world,
+    button: dom.rerunBtn,
+    url: urlParams?.get('rerun_ws') || 'ws://127.0.0.1:9877',
+    WebSocketClass: ownerWindow?.WebSocket,
+  });
+  world.setResource('flightRecorder', flightRecorder);
+  ownerWindow?.addEventListener?.('pagehide', () => flightRecorder.disconnect());
   world.setResource('performanceMonitor', new PerformanceMonitor({
     enabled: parseBooleanParam(urlParams, 'perf'),
     logEverySteps: 3000,
@@ -256,6 +266,9 @@ export function createHpSimApp({
       view.syncCanvasDimensions();
       view.setSceneControlsEnabled(controllers.machines.getMachines().length > 0);
       controllers.external.connect();
+      if (parseBooleanParam(urlParams, 'rerun') || urlParams?.has('rerun_ws')) {
+        flightRecorder.connect();
+      }
     },
   };
 }

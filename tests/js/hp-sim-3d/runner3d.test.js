@@ -209,4 +209,17 @@ describe('slideprinter 3D runner idle loop handling', () => {
 
     expect(world.update).toHaveBeenCalledTimes(1);
   });
+
+  test('recording backpressure retains simulation time until the receiver is ready', () => {
+    const { world, resources, getAnimationLoop } = setupRunner();
+    const recorder = { readyForStep: jest.fn(() => false) };
+    resources.set('flightRecorder', recorder);
+    const loop = getAnimationLoop();
+    loop(1030);
+    expect(world.update).not.toHaveBeenCalled();
+
+    recorder.readyForStep.mockReturnValue(true);
+    loop(1051);
+    expect(world.update).toHaveBeenCalledTimes(5);
+  });
 });

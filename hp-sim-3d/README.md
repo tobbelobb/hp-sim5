@@ -9,6 +9,10 @@ The simulation is intentionally specialized for Hangprinter cable paths,
 rigid assemblies, and driven spools. It is not a general-purpose rigid-body
 joint engine.
 
+The [Rerun flight recorder](FLIGHT_RECORDER.md) records geometry, line lengths,
+and cable forces at every physics timestep, with live viewing and saved `.rrd`
+files for replay.
+
 ## Runtime and Scene Construction
 
 `app/hp-sim-3d.js` boots the application assembled by `app/appBootstrap.js`.

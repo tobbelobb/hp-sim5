@@ -955,6 +955,22 @@ function _hybridStoredDeltaFromRotation(thetaBefore, deltaAngle, cw, baseRadius,
   return signedDeltaTheta * fallbackRadius;
 }
 
+// Predict endpoint winding using the same layer/ramp model as the cable solver.
+export function cableStoredLengthAfterRotation(world, path, linkIndex, entityId, deltaAngle) {
+  const stored = path.stored[linkIndex] ?? 0.0;
+  const baseRadius = world.getComponent(entityId, RadiusComponent)?.radius ?? 0.0;
+  const halfWidth = layeringEnabled(world) ? (path.cableHalfWidth ?? 0.0) : 0.0;
+  const endpointSign = linkIndex === 0 ? 1.0 : -1.0;
+  if (path.linkTypes[linkIndex] !== 'hybrid') {
+    return stored + endpointSign * (path.cw[linkIndex] ? 1.0 : -1.0)
+      * deltaAngle * (baseRadius + halfWidth);
+  }
+  const theta = _storedToThetaSigned(stored, baseRadius, halfWidth, baseRadius * KNOT_SPAN);
+  return stored + _hybridStoredDeltaFromRotation(
+    theta, endpointSign * deltaAngle, path.cw[linkIndex], baseRadius, halfWidth, baseRadius + halfWidth,
+  );
+}
+
 function _hybridAngleCorrectionFromStoredShift(
   thetaBefore,
   deltaAngle,

@@ -1,0 +1,84 @@
+import { captureFlightRecorderSnapshot } from './flightRecorderSnapshot.js';
+
+const MAX_PENDING_STEPS = 32;
+
+export class FlightRecorder {
+  constructor({ world, button, url = 'ws://127.0.0.1:9877', WebSocketClass = globalThis.WebSocket }) {
+    this.world = world;
+    this.button = button;
+    this.url = url;
+    this.WebSocketClass = WebSocketClass;
+    this.socket = null;
+    this.pending = 0;
+    this.generation = null;
+    this.step = 0;
+    this.time = 0;
+    button?.addEventListener('click', () => this.socket ? this.disconnect() : this.connect());
+  }
+
+  setStatus(label, active = Boolean(this.socket)) {
+    if (!this.button) return;
+    this.button.textContent = label;
+    this.button.setAttribute('aria-pressed', String(active));
+  }
+
+  connect() {
+    if (this.socket) return;
+    const socket = new this.WebSocketClass(this.url);
+    this.socket = socket;
+    this.generation = null;
+    this.session = globalThis.crypto.randomUUID();
+    this.pending = 0;
+    this.setStatus('Rerun: connecting');
+    socket.addEventListener('open', () => {
+      if (this.socket !== socket) return;
+      this.setStatus('Rerun: recording');
+      this.update(this.world, 0);
+    });
+    socket.addEventListener('message', (event) => {
+      if (this.socket !== socket) return;
+      const message = JSON.parse(event.data);
+      if (message.type === 'ack') this.pending = Math.max(0, this.pending - 1);
+    });
+    socket.addEventListener('close', () => {
+      if (this.socket !== socket) return;
+      this.socket = null;
+      this.pending = 0;
+      this.setStatus('Rerun: disconnected', false);
+    });
+    socket.addEventListener('error', () => {
+      if (this.socket === socket) this.setStatus('Rerun: connection error');
+    });
+  }
+
+  disconnect() {
+    this.socket?.close();
+    this.socket = null;
+    this.pending = 0;
+    this.setStatus('Rerun', false);
+  }
+
+  // The runner yields until every pending sample has reached Python. No decimation.
+  readyForStep() {
+    return !this.socket || (this.socket.readyState === 1 && this.pending < MAX_PENDING_STEPS);
+  }
+
+  update(world, dt) {
+    if (!this.socket || this.socket.readyState !== 1) return;
+    const generation = world.getResource('sceneGeneration') || 0;
+    if (generation !== this.generation) {
+      this.generation = generation;
+      this.step = 0;
+      this.time = 0;
+    }
+    if (dt > 0) {
+      this.step += 1;
+      this.time += dt;
+    }
+    this.socket.send(JSON.stringify({
+      version: 1, session: this.session, generation, step: this.step, time: this.time, dt,
+      ...captureFlightRecorderSnapshot(world),
+    }));
+    this.pending += 1;
+  }
+}

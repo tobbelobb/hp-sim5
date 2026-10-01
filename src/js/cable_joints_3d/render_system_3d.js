@@ -188,7 +188,7 @@ function writeParabolicSagCablePositions(positions, start, end, cableLength, upD
   }
 }
 
-function writeSlackCablePositions(positions, start, end, cableLength, upDirection, segments) {
+export function writeSlackCablePositions(positions, start, end, cableLength, upDirection, segments) {
   const dx = end.x - start.x;
   const dy = end.y - start.y;
   const dz = end.z - start.z;

@@ -1,5 +1,5 @@
 import { getAttribute, getRelationship } from '../../../src/js/usd/stage.js';
-import { MachineTagComponent } from '../../../src/js/cable_joints_3d/ecs.js';
+import { MachineTagComponent, SceneEntityInfoComponent } from '../../../src/js/cable_joints_3d/ecs.js';
 import { CablePathComponent } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
 import { scopedKeyFromPath } from './sceneNaming.js';
 import { readNumericAttribute } from './usdValueReaders.js';
@@ -36,5 +36,6 @@ function applyCablePaths(world, context, registry) {
         const cablePath = world.createEntity();
         world.addComponent(cablePath, pathComp);
         world.addComponent(cablePath, new MachineTagComponent(machineId));
+        world.addComponent(cablePath, new SceneEntityInfoComponent(prim.name, ['CablePath']));
     }
 }

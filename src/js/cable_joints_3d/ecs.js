@@ -30,6 +30,14 @@ export class PositionComponent {
   }
 }
 
+// Authored scene identity, independent of rendering and physics components.
+export class SceneEntityInfoComponent {
+  constructor(name, tags = []) {
+    this.name = name;
+    this.tags = tags;
+  }
+}
+
 export class PrevFinalPosComponent {
   constructor(x = 0, y = 0, z = 0) {
     this.pos = new Vector3(x, y, z);
@@ -100,4 +108,3 @@ function _resourceBool(world, key, fallback = true) {
 export function layeringEnabled(world) {
   return _resourceBool(world, 'enableLayering', true);
 }
-

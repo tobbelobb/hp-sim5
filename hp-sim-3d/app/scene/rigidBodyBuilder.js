@@ -14,6 +14,7 @@ import {
     RenderableComponent,
     RigidBodyComponent,
     RigidBodyMemberComponent,
+    SceneEntityInfoComponent,
     VelocityComponent,
 } from '../../../src/js/cable_joints_3d/ecs.js';
 import { initializeRigidBodySyncState } from '../../../src/js/cable_joints_3d/rigid_bodies.js';
@@ -54,6 +55,7 @@ function applyRigidBodies(world, context, registry) {
         const renderSegments = parseRigidGroupRenderSegments(renderIndicesAttr);
 
         world.addComponent(bodyEnt, new MachineTagComponent(machineId));
+        world.addComponent(bodyEnt, new SceneEntityInfoComponent(prim.name, ['RigidBody']));
         world.addComponent(bodyEnt, new PositionComponent(bodyState.position.x, bodyState.position.y, bodyState.position.z));
         world.addComponent(bodyEnt, new VelocityComponent(bodyState.velocity.x, bodyState.velocity.y, bodyState.velocity.z));
         world.addComponent(bodyEnt, new MassComponent(bodyState.mass));

@@ -93,7 +93,7 @@ function quaternionFromRotationMatrix(m00, m01, m02, m10, m11, m12, m20, m21, m2
   ).normalize();
 }
 
-function estimateRotation(referenceOffsets, currentCenter, entityIds, world) {
+export function estimateEffectorRotation(referenceOffsets, currentCenter, entityIds, world) {
   if (!Array.isArray(referenceOffsets) || referenceOffsets.length < 3 || !isFiniteVector3(currentCenter)) {
     return new Quaternion();
   }
@@ -230,7 +230,7 @@ export class ExtruderSystem {
       }
       if (effectorCenter) {
         machineEffectorCenters[machineId] = effectorCenter.clone();
-        const rotation = estimateRotation(centerSourceOffsets[machineId], effectorCenter, entityIds, world);
+        const rotation = estimateEffectorRotation(centerSourceOffsets[machineId], effectorCenter, entityIds, world);
         let rootPos = effectorCenter.clone();
         const offset = centerOffsets[machineId];
         if (isFiniteVector3(offset)) {
