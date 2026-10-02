@@ -95,13 +95,15 @@ class World:
         error_state = self.get_resource('errorState')
 
         is_paused = pause_state.paused if pause_state and hasattr(pause_state, 'paused') else False
-        has_error = error_state.has_error if error_state and hasattr(error_state, 'hasError') else False
+        has_error = False
+        if error_state is not None:
+            has_error = getattr(error_state, 'has_error', getattr(error_state, 'hasError', False))
 
         for system in self.systems:
             if not hasattr(system, 'update'):
                 continue
 
-            run_in_pause = getattr(system, 'runInPause', False)
+            run_in_pause = getattr(system, 'run_in_pause', getattr(system, 'runInPause', False))
             if (not run_in_pause and is_paused) or has_error:
                 continue
 
