@@ -20,8 +20,8 @@ not a claim of complete engine parity.
 | Dynamic split/merge (`cable_joints_core.js`) | missing | Attachments + plane geometry are ready. The app registers `CableAttachmentUpdateSystem(false)`; Python currently rejects enabled split/merge before mutating state. Port separately for topology fixtures. Construction-time splitting at fixed attachments is already covered. |
 | Layer/ramp winding (`cable_joints_core.js`) | `cable_layering.py`: equivalent for covered mappings | Signed forward/inverse mappings, radius/ramp transitions, rotation prediction and clamp inversion. `cable_winding.json` covers both endpoint signs, negative stored length, zero-radius/linear limits, wrap boundaries and the 2048-layer cap; motion/clamp fixtures cover integration. |
 | Friction redistribution (`cable_friction_system.js`) | `cable_friction_system.py`: equivalent | Friction fixtures cover equal extension, capstan bounds, free rolling spools, fixed attachments, slack, zero-rest spans, arbitrary 3D pinholes and dt-scaled ordered chain iterations, including 200 steps. Moving attachment/cache/friction integration is covered. |
-| XPBD cable solve (`cable_joints_core.js`) | `pbd_cable_constraint_solver.py`: equivalent for covered specialized dynamics | Body/spool/pinhole fixtures exercise tensor reactions, direct and indirect one-axis dynamics, holding release, closed-loop stiffness, torque-load maps, damping, alternating per-path iterations and force transfers. Eleven scenarios run 200 steps. |
-| Cable over-correction (`pbdResolveCableOverCorrections.js`) | missing | Cable solve + member reaction mapping. |
+| XPBD cable solve (`cable_joints_core.js`) | `pbd_cable_constraint_solver.py`: equivalent for covered specialized dynamics | Body/spool/pinhole fixtures exercise tensor reactions, direct and indirect one-axis dynamics, holding release, closed-loop stiffness, torque-load maps, damping, alternating per-path iterations and force transfers. Fourteen scenarios run 200 steps. |
+| Cable over-correction (`pbdResolveCableOverCorrections.js`) | `pbd_resolve_cable_over_corrections.py`: equivalent for covered reactions | Shared-correction averaging/gates, tensor host/member reactions, hybrid-only pinhole coupling, duplicate joint membership and last-path metadata. Runs immediately after the cable solver in integration fixtures. |
 | Distance XPBD (`commonSystems.js`) | `common_systems.py`: equivalent | `distance_members.json`: off-center tensor corrections, accumulated multipliers and internal endpoints. Used by fixtures; not currently registered by the Hangprinter app. |
 | Ball/obstacle collisions, bump and slack systems (`cable_joints_3d/`) | missing | Relevant fixture coverage after cable core; not currently registered by the Hangprinter app. |
 | Position motors (`hangprinter_stepper_motor.js`) | `stepper_motor.py`: partial | Component state and cable-solver holding/stiffness semantics are covered. Spool state + rigid sync/reactions are ready; motor torque integration and open/closed-loop member-local motion remain missing. |
@@ -119,7 +119,7 @@ counter is compared through pause/resume; optional JS console/debug trace buffer
 are not reproduced. Structured differential snapshots are the current inspection
 path, with richer Rerun output still pending.
 
-Next: cable over-correction, then motor integration and commands. Dynamic topology, USDA construction, full-machine
+Next: motor integration and commands. Dynamic topology, USDA construction, full-machine
 simulation, extrusion/diagnostics and richer Rerun remain on the completion gate.
 
 ## Cable solver follow-up
@@ -127,7 +127,7 @@ simulation, extrusion/diagnostics and richer Rerun remain on the completion gate
 Native cable solving now preserves tensor body reactions and the specialized
 one-axis spool DOF, including direct and pinhole-coupled motor holding release,
 closed-loop stiffness, torque-mode virtual loads and transferred force telemetry.
-Twenty-seven fixtures cover the completed layers, with eleven 200-step
+Thirty fixtures cover the completed layers, with fourteen 200-step
 repeatability cases. Motor components are present; motor integration is still open.
 
 The solver reads the World's `dt` resource, independently of the update argument.
@@ -144,6 +144,20 @@ damping equation. Undamped zero stiffness leaves poses and forces unchanged;
 damping-only results agree with stiffness approaching zero. JS regression tests
 and `cable_zero_stiffness.json` cover both limits. Solver fixture tolerances remain
 absolute `1e-10`, relative `1e-9`; no tolerance was raised to achieve agreement.
+
+Over-correction now rebuilds layered attachment geometry and averages only shared
+position/angular corrections. It retains JS's full-tensor member corrections
+and opposite host reaction signs, even when the ordinary cable solve uses a
+one-axis spool DOF; the next registered rigid sync handles projection. It does not
+add a hidden sync or change encoder state directly. Direct/member/pinhole fixtures
+exercise actual corrections, duplicate joint membership, last-path metadata,
+pause and zero-compliance/zero-stiffness limits, with 200-step repeats.
+
+The over-correction fixtures exposed another JS defect: its attachment helper was
+called without radii and silently used centers for rolling spans. Two regression
+cases show a center distance above rest length while the actual tangent span is
+slack. An isolated JS fix derives omitted radii with the existing layer model;
+Python uses the same attachment rebuilding helper as its regular update path.
 
 ## Completion gate
 

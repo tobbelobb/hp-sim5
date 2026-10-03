@@ -119,6 +119,7 @@
     "CableAttachmentCacheSystem",
     "CableFrictionSystem",
     "PBDCableConstraintSolver",
+    "PBDResolveCableOverCorrections",
     "PBDVelocityUpdateSystem",
     "PBDAngularVelocityUpdateSystem",
     "EncoderUpdateSystem"

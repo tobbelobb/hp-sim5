@@ -21,6 +21,7 @@ from cable_joints_3d.cable_attachment_update_system import CableAttachmentUpdate
 from cable_joints_3d.cable_layering import cable_stored_length_after_rotation
 from cable_joints_3d.stepper_motor import StepperMotorComponent
 from cable_joints_3d.pbd_cable_constraint_solver import PBDCableConstraintSolver
+from cable_joints_3d.pbd_resolve_cable_over_corrections import PBDResolveCableOverCorrections
 
 ROOT = Path(__file__).resolve().parents[3]
 CONTRACT = json.loads((ROOT / 'tests/parity3d/contract.json').read_text())
@@ -123,7 +124,8 @@ def run_python(fixture):
     for name in fixture.get('initializeRigidBodies', []):
         rigid.initialize_rigid_body_sync_state(world, ids[name])
     systems = {'CableAttachmentCacheSystem': CableAttachmentCacheSystem, 'CableFrictionSystem': CableFrictionSystem,
-               'CableAttachmentUpdateSystem': CableAttachmentUpdateSystem, 'PBDCableConstraintSolver': PBDCableConstraintSolver}
+               'CableAttachmentUpdateSystem': CableAttachmentUpdateSystem, 'PBDCableConstraintSolver': PBDCableConstraintSolver,
+               'PBDResolveCableOverCorrections': PBDResolveCableOverCorrections}
     for definition in fixture['systems']:
         name = definition if isinstance(definition, str) else definition['name']
         args = [] if isinstance(definition, str) else definition.get('args', [])

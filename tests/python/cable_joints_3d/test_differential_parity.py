@@ -86,11 +86,42 @@ def test_solver_oracle_reaches_spin_load_and_limit_cases(name):
         assert maps['torqueModeCableLoadTorques']['torque_down_spool'] > 0
 
 
+@pytest.mark.parametrize('name', ['cable_over_correction', 'cable_over_correction_members',
+                                 'cable_over_correction_pinhole'])
+def test_over_correction_oracle_reaches_shared_reactions(name):
+    fixture = json.loads((FIXTURES / f'{name}.json').read_text())
+    snapshots = run_js(fixture)['snapshots']
+    before, after = [s['entities'] for s in snapshots[:2]]
+    if name == 'cable_over_correction':
+        for prefix in ['rolling', 'hybrid']:
+            assert after[prefix + '_wheel']['PositionComponent'] != before[prefix + '_wheel']['PositionComponent']
+        for prefix in ['single', 'zero', 'slack_before', 'shared']:
+            assert after[prefix + '_wheel']['PositionComponent'] == before[prefix + '_wheel']['PositionComponent']
+        assert snapshots[7]['entities'] == snapshots[6]['entities']
+        # All paths share just one qualifying joint; the global gate also applies.
+        fixture['entities'] = [e for e in fixture['entities'] if e['name'].startswith('single')]
+        assert_equivalent(run_python(fixture), run_js(fixture), **fixture['tolerance'])
+    elif name == 'cable_over_correction_members':
+        for prefix in ['external_first', 'external_last']:
+            assert after[prefix + '_body']['PositionComponent'] != before[prefix + '_body']['PositionComponent']
+            assert after[prefix + '_spool']['OrientationComponent'] != before[prefix + '_spool']['OrientationComponent']
+            assert after[prefix + '_spool']['PositionComponent'] == before[prefix + '_spool']['PositionComponent']
+        assert after['internal_body']['OrientationComponent'] != before['internal_body']['OrientationComponent']
+        assert after['internal_spool']['OrientationComponent'] == before['internal_spool']['OrientationComponent']
+        assert after['internal_full_tensor_spool']['OrientationComponent'] != before['internal_full_tensor_spool']['OrientationComponent']
+    else:
+        for prefix in ['upstream', 'downstream', 'attached']:
+            assert after[prefix + '_spool']['OrientationComponent'] != before[prefix + '_spool']['OrientationComponent']
+        assert after['rolling_spool']['OrientationComponent'] == before['rolling_spool']['OrientationComponent']
+
+
 @pytest.mark.parametrize('name', ['rigid_members', 'distance_members', 'spool_projection',
                                  'cable_cache_members', 'cable_friction_chain',
                                  'cable_attachment_motion', 'cable_attachment_members',
                                  'cable_solver_bodies', 'cable_solver_spools',
-                                 'cable_solver_pinhole', 'cable_solver_pinhole_stale_inlet'])
+                                 'cable_solver_pinhole', 'cable_solver_pinhole_stale_inlet',
+                                 'cable_over_correction', 'cable_over_correction_members',
+                                 'cable_over_correction_pinhole'])
 def test_long_sequence_is_deterministic_and_matches_js(name):
     fixture = json.loads((FIXTURES / f'{name}.json').read_text())
     fixture['steps'] = [{'dt': .002, 'resources': {'dt': .002}} for _ in range(200)]

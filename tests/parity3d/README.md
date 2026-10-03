@@ -86,11 +86,14 @@ Current coverage:
   backdriving, rolling/hybrid spools, torque load deferral, force transfer and
   attachment/cache/friction/solve integration.
 - `cable_zero_stiffness`: zero vs near-zero stiffness, with and without damping.
+- `cable_over_correction` and its member/pinhole variants: actual shared pushes,
+  tensor rotor/host reactions, hybrid-only pinhole coupling, layered tangent
+  rebuilding, duplicate joints, last-path metadata, zero stiffness and pause.
 
 Rigid-member, distance, spool, cache, friction-chain, two moving-attachment
-and four cable-solver fixtures run for 200 steps;
+four cable-solver and three over-correction fixtures run for 200 steps;
 both engines must reproduce their own snapshots exactly on a second run.
 
 These fixtures establish the covered ECS behavior. Authored USDA construction,
-dynamic split/merge, over-correction, motor integration, full machines
+dynamic split/merge, motor integration, full machines
 and richer Rerun recordings remain on the checklist in `PYTHON_3D_PARITY.md`.
