@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from cable_joints.ecs import (World, RadiusComponent, MassComponent,
     RestitutionComponent, GravityAffectedComponent, CoefficientOfFrictionComponent,
-    RenderableComponent, DistanceConstraintComponent)
+    RenderableComponent, DistanceConstraintComponent, MachineTagComponent)
 from .inertia_tensor import MomentOfInertiaComponent
 from .quaternion import Quaternion
 

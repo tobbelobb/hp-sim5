@@ -181,6 +181,12 @@ class RenderableComponent:
 
 
 @dataclass
+class MachineTagComponent:
+    """Identifies which machine namespace owns an entity."""
+    id: str = ''
+
+
+@dataclass
 class RestitutionComponent:
     """Stores the restitution for an entity."""
     restitution: float = 0.5

@@ -91,6 +91,15 @@ def test_small_rotated_inertia_tensor_is_invertible():
     assert np.allclose(moment.inv_inertia_tensor @ tensor, np.eye(3))
 
 
+def test_rotated_rank_two_inertia_preserves_supported_dofs():
+    rotation = np.array([[.8, -.6, 0], [.6, .8, 0], [0, 0, 1.]])
+    tensor = rotation @ np.diag([0., 1e-6, 2e-6]) @ rotation.T
+    moment = MomentOfInertiaComponent(tensor)
+    expected = rotation @ np.diag([0., 1e6, .5e6]) @ rotation.T
+    assert np.allclose(moment.inv_inertia_tensor, expected)
+    assert np.linalg.matrix_rank(moment.inv_inertia_tensor) == 2
+
+
 def test_rigid_body_member_copies_and_normalizes_constructor_values():
     position = np.array([1., 2., 3.])
     orientation = Quaternion(0, 0, 2, 2)

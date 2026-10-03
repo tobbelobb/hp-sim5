@@ -1,7 +1,9 @@
 import sys
 from types import SimpleNamespace
 
-from cable_joints.ecs import RadiusComponent, RenderableComponent, World
+from cable_joints.ecs import (
+    MachineTagComponent, RadiusComponent, RenderableComponent, World,
+)
 from cable_joints_3d.ecs import PositionComponent, SceneEntityInfoComponent
 from cable_joints_3d.rerun_system import RerunSystem
 
@@ -10,12 +12,20 @@ class Recording:
     def __init__(self):
         self.times = []
         self.logs = []
+        self.static = {}
 
     def set_time(self, timeline, duration):
         self.times.append((timeline, duration))
 
     def log(self, path, value, **kwargs):
         self.logs.append((path, value, kwargs))
+        if kwargs.get("static"):
+            if value[0] == "clear":
+                for stored_path in list(self.static):
+                    if stored_path == path or stored_path.startswith(f"{path}/"):
+                        del self.static[stored_path]
+            else:
+                self.static[path] = value
 
 
 def _fake_rerun():
@@ -49,8 +59,10 @@ def test_rerun_time_static_styles_and_removed_entities(monkeypatch):
     world.destroy_entity(entity)
     system.update(world, .1)
     assert recording.logs[-1] == (
-        "world/entities/test_ball", ("clear", {"recursive": True}), {}
+        "world/machines/default/test_ball_0",
+        ("clear", {"recursive": True}), {},
     )
+    assert recording.static == {}
 
 
 def test_rerun_clears_reused_path_during_scene_reset(monkeypatch):
@@ -69,6 +81,33 @@ def test_rerun_clears_reused_path_during_scene_reset(monkeypatch):
     world.add_component(new_entity, SceneEntityInfoComponent("effector"))
     system.update(world, .1)
 
-    clears = [value for path, value, _ in recording.logs
-              if path == "world/entities/effector" and value[0] == "clear"]
-    assert len(clears) == 1
+    shape_path = "world/machines/default/effector_0/shape"
+    static_clears = [value for path, value, kwargs in recording.logs
+                     if path == shape_path and value[0] == "clear"
+                     and kwargs.get("static")]
+    assert len(static_clears) == 1
+    assert shape_path not in recording.static
+
+
+def test_rerun_paths_include_machine_and_entity_identity(monkeypatch):
+    monkeypatch.setitem(sys.modules, "rerun", _fake_rerun())
+    world = World(); recording = Recording(); system = RerunSystem(recording)
+    for machine_id in ("left", "right"):
+        entity = world.create_entity()
+        world.add_component(entity, PositionComponent())
+        world.add_component(entity, SceneEntityInfoComponent("anchor"))
+        world.add_component(entity, MachineTagComponent(machine_id))
+    duplicate = world.create_entity()
+    world.add_component(duplicate, PositionComponent())
+    world.add_component(duplicate, SceneEntityInfoComponent("anchor"))
+    world.add_component(duplicate, MachineTagComponent("left"))
+
+    system.update(world, .1)
+
+    transform_paths = [path for path, value, _ in recording.logs
+                       if value[0] == "transform"]
+    assert transform_paths == [
+        "world/machines/left/anchor_0",
+        "world/machines/right/anchor_1",
+        "world/machines/left/anchor_2",
+    ]
