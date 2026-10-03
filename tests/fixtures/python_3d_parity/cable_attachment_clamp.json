@@ -1,0 +1,115 @@
+{
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "entities": [
+    {
+      "name": "body",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "RigidBodyComponent": [["rotor"]]
+      }
+    },
+    {
+      "name": "anchor",
+      "components": {
+        "PositionComponent": [0, 2, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, 2, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "rotor",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0.24740395925452294, 0.9689124217106447],
+        "CableLinkComponent": [0, 0, 0, [0, 0, 0, 1], null, [0, 0, 1]],
+        "RadiusComponent": [1],
+        "RigidBodyMemberComponent": ["body", [0, 0, 0], [0, 0, 0.24740395925452294, 0.9689124217106447], 0.2]
+      }
+    },
+    {
+      "name": "rolling_clamp_joint",
+      "components": {
+        "CableJointComponent": ["anchor", "rotor", 0.01, [0, 2, 0], [-0.8660254037844386, 0.5, 0], "world"]
+      }
+    },
+    {
+      "name": "rolling_clamp",
+      "components": {
+        "CablePathComponent": [["rolling_clamp_joint"], ["attachment", "rolling"], [true, false], 12000, [0, 0], 0, 0.001, 2]
+      }
+    },
+    {
+      "name": "hybrid_body",
+      "components": {
+        "PositionComponent": [4, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "RigidBodyComponent": [["ha", "hb"]]
+      }
+    },
+    {
+      "name": "ha",
+      "components": {
+        "PositionComponent": [4, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [4, 0, 0, [0, 0, 0, 1], null, [0, 0, 1]],
+        "RadiusComponent": [0.1],
+        "RigidBodyMemberComponent": ["hybrid_body", [0, 0, 0], [0, 0, 0, 1], 0.2],
+        "SpoolStateComponent": ["ha", [0, 0, 1], [0, 0, 0, 1]]
+      }
+    },
+    {
+      "name": "hb",
+      "components": {
+        "PositionComponent": [6, 2, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [6, 2, 0, [0, 0, 0, 1], null, [0, 0, 1]],
+        "RadiusComponent": [0.2],
+        "RigidBodyMemberComponent": ["hybrid_body", [2, 2, 0], [0, 0, 0, 1], 0.2],
+        "SpoolStateComponent": ["hb", [0, 0, 1], [0, 0, 0, 1]]
+      }
+    },
+    {
+      "name": "hybrid_clamp_joint",
+      "components": {
+        "CableJointComponent": ["ha", "hb", 0.02, [4.082669595290682, -0.06634559529068161, 0.0], [5.842459827842286, 2.126432172157714, 0.0], "world"]
+      }
+    },
+    {
+      "name": "hybrid_clamp",
+      "components": {
+        "CablePathComponent": [["hybrid_clamp_joint"], ["hybrid", "hybrid"], [true, true], 12000, [0.8, 0.8], 0.002, 0.001, 2]
+      }
+    }
+  ],
+  "systems": [
+    "RigidBodySyncSystem",
+    {
+      "name": "CableAttachmentUpdateSystem",
+      "args": [false]
+    },
+    "CableAttachmentCacheSystem",
+    "EncoderUpdateSystem"
+  ],
+  "steps": [
+    {
+      "dt": 0
+    },
+    {
+      "dt": 0.002,
+      "set": [["ha", "RigidBodyMemberComponent", "localOrientation", [0, 0, -0.24740395925452294, 0.9689124217106447]], ["hb", "RigidBodyMemberComponent", "localOrientation", [0, 0, -0.24740395925452294, 0.9689124217106447]], ["ha", "OrientationComponent", "quaternion", [0, 0, -0.24740395925452294, 0.9689124217106447]], ["hb", "OrientationComponent", "quaternion", [0, 0, -0.24740395925452294, 0.9689124217106447]]]
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    }
+  ],
+  "snapshotResources": ["cableHybridTransitionStep"],
+  "initializeRigidBodies": ["body", "hybrid_body"]
+}

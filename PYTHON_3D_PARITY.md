@@ -16,8 +16,9 @@ not a claim of complete engine parity.
 | One-axis spool state/helpers (`hangprinter_spools.js`) | `spools.py`: equivalent | `spool_projection.json`, `rigid_members.json`: tilted axes, swing/velocity projection and reference transport. Motor-driven free-twist integration still missing. |
 | Cable components/path construction (`cable_joints_core.js`, `createCablePaths.js`) | `cable_joints_components.py`, `create_cable_paths.py`, `cable_frames.py`: equivalent for valid authored paths | Construction fixtures cover local/world joints, live tilted member planes, intermediate wraps, hybrid knots, stored overrides, endpoint cuts, empty paths, parameter clamps and zero/infinite stiffness. Python factories intentionally keep the World out of data components. |
 | Attachment cache (`cable_attachment_cache_system.js`) | `cable_attachment_cache_system.py`: equivalent | `cable_cache_members.json` covers member-local vs world orientation and moving parents for 200 steps; ownership tests check copies and mutable cache identity. Register after attachment rebuilding, before friction. |
-| Dynamic attachments, hybrid transitions, split/merge (`cable_joints_core.js`) | missing | Components + frames/cache are present. Next: rebuild attachments, rotation/stored changes and topology updates, preserving length and cache timing. |
-| Layer/ramp winding (`cable_joints_core.js`) | `cable_layering.py`: equivalent for covered mappings | Signed forward/inverse mappings, radius/ramp transitions, rotation prediction and clamp inversion. `cable_winding.json` covers both endpoint signs, negative stored length, zero-radius/linear limits, wrap boundaries and the 2048-layer cap; dynamic integration follows. |
+| Dynamic attachments and hybrid transitions (`cable_joints_core.js`) | `cable_attachment_update_system.py`: equivalent for covered Hangprinter configuration | Motion/member/clamp/transition fixtures cover world vs onboard frames, rolling non-slip payout, skew planes, center placeholders, layered hybrid winding, clamp reactions before phase projection, hysteresis, degeneracy, feature flags and pause/step counter. Seven scenarios now run 200 steps. |
+| Dynamic split/merge (`cable_joints_core.js`) | missing | Attachments + plane geometry are ready. The app registers `CableAttachmentUpdateSystem(false)`; Python currently rejects enabled split/merge before mutating state. Port separately for topology fixtures. Construction-time splitting at fixed attachments is already covered. |
+| Layer/ramp winding (`cable_joints_core.js`) | `cable_layering.py`: equivalent for covered mappings | Signed forward/inverse mappings, radius/ramp transitions, rotation prediction and clamp inversion. `cable_winding.json` covers both endpoint signs, negative stored length, zero-radius/linear limits, wrap boundaries and the 2048-layer cap; motion/clamp fixtures cover integration. |
 | Friction redistribution (`cable_friction_system.js`) | `cable_friction_system.py`: equivalent | Friction fixtures cover equal extension, capstan bounds, free rolling spools, fixed attachments, slack, zero-rest spans, arbitrary 3D pinholes and dt-scaled ordered chain iterations, including 200 steps. Dynamic attachment integration remains open. |
 | XPBD cable solve (`cable_joints_core.js`) | missing | Attachments/cache + friction + tensor reactions + motor state; per-path iterations and force/load telemetry. |
 | Cable over-correction (`pbdResolveCableOverCorrections.js`) | missing | Cable solve + member reaction mapping. |
@@ -102,10 +103,25 @@ split/merge and cable XPBD still follow; USDA loading,
 motors/commands/extrusion, the complete Hangprinter composition root and rich
 Rerun snapshots remain open.
 
-The next dependency slice adds forward/signed winding mappings and cable rotation
-prediction, plus internal/external member arc frames and per-path knot helpers.
-Its standalone winding fixture probes both endpoint signs and nonlinear layer
-boundaries before integrating these helpers into moving attachments.
+## Moving attachment follow-up
+
+The next dependency slice adds forward/signed winding, cable rotation prediction,
+internal/external member arc frames and per-path knot helpers, then integrates
+them into moving attachments and hybrid transitions. The app's explicit
+split/merge-disabled configuration is supported; enabled dynamic topology still
+fails explicitly. Twenty-one shared fixtures and seven 200-step repeatability
+cases cover the completed layers, using the same tolerances. Guard checks ensure
+the clamp, member-frame and hybrid fixtures actually reach their target behavior.
+
+Per-path knot maps serialize named relationships rather than raw engine IDs.
+Attachment vectors and cache objects retain mutable identity. The transition
+counter is compared through pause/resume; optional JS console/debug trace buffers
+are not reproduced. Structured differential snapshots are the current inspection
+path, with richer Rerun output still pending.
+
+Next: cable XPBD and over-correction with full tensor/member/spool reactions,
+then motor state and commands. Dynamic topology, USDA construction, full-machine
+simulation, extrusion/diagnostics and richer Rerun remain on the completion gate.
 
 ## Completion gate
 

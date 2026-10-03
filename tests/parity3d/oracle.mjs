@@ -16,7 +16,8 @@ import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
 const contract = JSON.parse(fs.readFileSync(new URL('./contract.json', import.meta.url)));
 const geometryContract = JSON.parse(fs.readFileSync(new URL('./geometry_contract.json', import.meta.url)));
 const components = { ...ecs, ...spools, ...cable };
-const systems = { ...commonSystems, CableAttachmentCacheSystem, CableFrictionSystem };
+const systems = { ...commonSystems, CableAttachmentCacheSystem, CableFrictionSystem,
+  CableAttachmentUpdateSystem: cable.CableAttachmentUpdateSystem };
 const vector = (value) => value == null ? null : new Vector3(...value);
 const quaternion = (value) => value == null ? null : new Quaternion(...value);
 

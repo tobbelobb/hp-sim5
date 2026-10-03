@@ -17,6 +17,7 @@ from cable_joints_3d import cable_joints_components as cable
 from cable_joints_3d.create_cable_paths import create_cable_paths
 from cable_joints_3d.cable_attachment_cache_system import CableAttachmentCacheSystem
 from cable_joints_3d.cable_friction_system import CableFrictionSystem
+from cable_joints_3d.cable_attachment_update_system import CableAttachmentUpdateSystem
 from cable_joints_3d.cable_layering import cable_stored_length_after_rotation
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -105,7 +106,8 @@ def run_python(fixture):
             ids[name], names[entity] = entity, name
     for name in fixture.get('initializeRigidBodies', []):
         rigid.initialize_rigid_body_sync_state(world, ids[name])
-    systems = {'CableAttachmentCacheSystem': CableAttachmentCacheSystem, 'CableFrictionSystem': CableFrictionSystem}
+    systems = {'CableAttachmentCacheSystem': CableAttachmentCacheSystem, 'CableFrictionSystem': CableFrictionSystem,
+               'CableAttachmentUpdateSystem': CableAttachmentUpdateSystem}
     for definition in fixture['systems']:
         name = definition if isinstance(definition, str) else definition['name']
         args = [] if isinstance(definition, str) else definition.get('args', [])

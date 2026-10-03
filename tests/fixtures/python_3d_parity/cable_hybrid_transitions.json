@@ -1,0 +1,289 @@
+{
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "entities": [
+    {
+      "name": "unwind_first_wheel",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [1]
+      }
+    },
+    {
+      "name": "unwind_first_anchor",
+      "components": {
+        "PositionComponent": [0, 3, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, 3, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "unwind_first_joint",
+      "components": {
+        "CableJointComponent": ["unwind_first_wheel", "unwind_first_anchor", 3.2, [1, 0, 0], [0, 3, 0], "world"]
+      }
+    },
+    {
+      "name": "unwind_first",
+      "components": {
+        "CablePathComponent": [["unwind_first_joint"], ["hybrid", "attachment"], [false, false], 12000, [-0.2, 0], 0, 0.001, 2]
+      }
+    },
+    {
+      "name": "unwind_last_wheel",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [1]
+      }
+    },
+    {
+      "name": "unwind_last_anchor",
+      "components": {
+        "PositionComponent": [-1, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [-1, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "unwind_last_joint",
+      "components": {
+        "CableJointComponent": ["unwind_last_anchor", "unwind_last_wheel", 3.2, [-1, 0, 0], [1, 0, 0], "world"]
+      }
+    },
+    {
+      "name": "unwind_last",
+      "components": {
+        "CablePathComponent": [["unwind_last_joint"], ["attachment", "hybrid"], [false, false], 12000, [0, -0.15], 0, 0.001, 2]
+      }
+    },
+    {
+      "name": "hysteresis_wheel",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [1]
+      }
+    },
+    {
+      "name": "hysteresis_anchor",
+      "components": {
+        "PositionComponent": [0, 3, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, 3, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "hysteresis_joint",
+      "components": {
+        "CableJointComponent": ["hysteresis_wheel", "hysteresis_anchor", 3.2, [1, 0, 0], [0, 3, 0], "world"]
+      }
+    },
+    {
+      "name": "hysteresis",
+      "components": {
+        "CablePathComponent": [["hysteresis_joint"], ["hybrid", "attachment"], [false, false], 12000, [-0.001, 0], 0.01, 0.001, 2]
+      }
+    },
+    {
+      "name": "rewrap_first_wheel",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [1]
+      }
+    },
+    {
+      "name": "rewrap_first_anchor",
+      "components": {
+        "PositionComponent": [0, 3, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, 3, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "rewrap_first_joint",
+      "components": {
+        "CableJointComponent": ["rewrap_first_wheel", "rewrap_first_anchor", 3.2, [1, 0, 0], [0, 3, 0], "world"]
+      }
+    },
+    {
+      "name": "rewrap_first",
+      "components": {
+        "CablePathComponent": [["rewrap_first_joint"], ["hybrid-attachment", "attachment"], [false, false], 12000, [0, 0], 0, 0.001, 2]
+      }
+    },
+    {
+      "name": "rewrap_last_wheel",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [1]
+      }
+    },
+    {
+      "name": "rewrap_last_anchor",
+      "components": {
+        "PositionComponent": [0, -3, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, -3, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "rewrap_last_joint",
+      "components": {
+        "CableJointComponent": ["rewrap_last_anchor", "rewrap_last_wheel", 3.2, [0, -3, 0], [1, 0, 0], "world"]
+      }
+    },
+    {
+      "name": "rewrap_last",
+      "components": {
+        "CablePathComponent": [["rewrap_last_joint"], ["attachment", "hybrid-attachment"], [false, false], 12000, [0, 0], 0, 0.001, 2]
+      }
+    },
+    {
+      "name": "tiny_arc_wheel",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [1]
+      }
+    },
+    {
+      "name": "tiny_arc_anchor",
+      "components": {
+        "PositionComponent": [0, 2, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, 2, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "tiny_arc_joint",
+      "components": {
+        "CableJointComponent": ["tiny_arc_wheel", "tiny_arc_anchor", 3.2, [0.8351686186228515, 0.5499939803921475, 0], [0, 2, 0], "world"]
+      }
+    },
+    {
+      "name": "tiny_arc",
+      "components": {
+        "CablePathComponent": [["tiny_arc_joint"], ["hybrid-attachment", "attachment"], [false, false], 12000, [0, 0], 0.1, 0.001, 2]
+      }
+    },
+    {
+      "name": "degenerate_wheel",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [1]
+      }
+    },
+    {
+      "name": "degenerate_anchor",
+      "components": {
+        "PositionComponent": [1.0005, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [1.0005, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "degenerate_joint",
+      "components": {
+        "CableJointComponent": ["degenerate_wheel", "degenerate_anchor", 3.2, [1, 0, 0], [1.0005, 0, 0], "world"]
+      }
+    },
+    {
+      "name": "degenerate",
+      "components": {
+        "CablePathComponent": [["degenerate_joint"], ["hybrid-attachment", "attachment"], [false, false], 12000, [0, 0], 0.01, 0.001, 2]
+      }
+    },
+    {
+      "name": "zero_radius_wheel",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "zero_radius_anchor",
+      "components": {
+        "PositionComponent": [0, 3, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, 3, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "zero_radius_joint",
+      "components": {
+        "CableJointComponent": ["zero_radius_wheel", "zero_radius_anchor", 3.2, [1, 0, 0], [0, 3, 0], "world"]
+      }
+    },
+    {
+      "name": "zero_radius",
+      "components": {
+        "CablePathComponent": [["zero_radius_joint"], ["hybrid", "attachment"], [false, false], 12000, [-0.2, 0], 0, 0.001, 2]
+      }
+    }
+  ],
+  "systems": [
+    {
+      "name": "CableAttachmentUpdateSystem",
+      "args": [false]
+    }
+  ],
+  "steps": [
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": true
+        }
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": false
+        },
+        "layeringHybridLinkStates": false
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "layeringHybridLinkStates": true
+      }
+    }
+  ],
+  "snapshotResources": ["cableHybridTransitionStep"],
+  "resources": {
+    "layeringAttachmentUpdatePoints": false
+  }
+}
