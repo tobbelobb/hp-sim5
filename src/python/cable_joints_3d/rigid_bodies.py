@@ -93,6 +93,14 @@ def update_rigid_body_member_local_orientation(world, entity):
         )
 
 
+def apply_world_angular_correction(world, entity, delta, epsilon=1e-9):
+    orientation = world.get_component(entity, OrientationComponent)
+    angle = np.linalg.norm(delta)
+    if orientation is not None and angle > epsilon:
+        orientation.quaternion.premultiply(Quaternion().set_from_axis_angle(delta / angle, angle)).normalize()
+        update_rigid_body_member_local_orientation(world, entity)
+
+
 def initialize_rigid_body_sync_state(world, entity):
     body = world.get_component(entity, RigidBodyComponent)
     if body is None:

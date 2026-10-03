@@ -1,0 +1,200 @@
+{
+  "entities": [
+    {
+      "name": "bodyA",
+      "components": {
+        "PositionComponent": [1, 2, 0.5],
+        "PrevFinalPosComponent": [1, 2, 0.5],
+        "VelocityComponent": [0.1, -0.2, 0.3],
+        "MassComponent": [2],
+        "OrientationComponent": [0.2, -0.3, 0.4, 0.8426149773176358],
+        "PrevFinalOrientationComponent": [0.2, -0.3, 0.4, 0.8426149773176358],
+        "AngularVelocityComponent": [0.4, -0.3, 0.2],
+        "MomentOfInertiaComponent": [[[0.2, 0.01, -0.03], [0.01, 0.3, 0.02], [-0.03, 0.02, 0.4]]],
+        "RigidBodyComponent": [["tipA", "internalA"]],
+        "GravityAffectedComponent": [],
+        "CableLinkComponent": [1, 2, 0.5, null, [0, 0, 1], null]
+      }
+    },
+    {
+      "name": "bodyB",
+      "components": {
+        "PositionComponent": [3, -0.5, 2],
+        "PrevFinalPosComponent": [3, -0.5, 2],
+        "VelocityComponent": [0.1, -0.2, 0.3],
+        "MassComponent": [4],
+        "OrientationComponent": [0.3, 0.4, 0, 0.8660254037844386],
+        "PrevFinalOrientationComponent": [0.3, 0.4, 0, 0.8660254037844386],
+        "AngularVelocityComponent": [0.4, -0.3, 0.2],
+        "MomentOfInertiaComponent": [[[0.2, 0.01, -0.03], [0.01, 0.3, 0.02], [-0.03, 0.02, 0.4]]],
+        "RigidBodyComponent": [["tipB"]],
+        "GravityAffectedComponent": [],
+        "CableLinkComponent": [3, -0.5, 2, null, [0, 0, 1], null]
+      }
+    },
+    {
+      "name": "tipA",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "MassComponent": [0],
+        "RigidBodyMemberComponent": ["bodyA", [0.3, 0.4, -0.2], [0, 0, 0, 1], 0.1],
+        "CableLinkComponent": [0, 0, 0, null, [0, 0, 1], null]
+      }
+    },
+    {
+      "name": "tipB",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "MassComponent": [0],
+        "RigidBodyMemberComponent": ["bodyB", [-0.2, 0.3, 0.4], [0, 0, 0, 1], 0.1],
+        "CableLinkComponent": [0, 0, 0, null, [0, 0, 1], null]
+      }
+    },
+    {
+      "name": "internalA",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "MassComponent": [0],
+        "RigidBodyMemberComponent": ["bodyA", [0.1, 0, 0], [0, 0, 0, 1], 0.1],
+        "CableLinkComponent": [0, 0, 0, null, [0, 0, 1], null]
+      }
+    },
+    {
+      "name": "anchor",
+      "components": {
+        "PositionComponent": [4, -1, 3],
+        "MassComponent": [0],
+        "CableLinkComponent": [4, -1, 3, null, [0, 0, 1], null]
+      }
+    },
+    {
+      "name": "external_joint",
+      "components": {
+        "CableJointComponent": ["tipA", "tipB", 1.2, [0, 0, 0], [0, 0, 0], "local"]
+      }
+    },
+    {
+      "name": "external",
+      "components": {
+        "CablePathComponent": [["external_joint"], ["attachment", "attachment"], [false, false], 9000, null, 0, 1.5, 3]
+      }
+    },
+    {
+      "name": "second_joint",
+      "components": {
+        "CableJointComponent": ["tipB", "anchor", 1, [0, 0, 0], [0, 0, 0], "local"]
+      }
+    },
+    {
+      "name": "second",
+      "components": {
+        "CablePathComponent": [["second_joint"], ["attachment", "attachment"], [false, false], 9000, null, 0, 1.5, 2]
+      }
+    },
+    {
+      "name": "internal_joint",
+      "components": {
+        "CableJointComponent": ["tipA", "internalA", 0.1, [0, 0, 0], [0, 0, 0], "local"]
+      }
+    },
+    {
+      "name": "internal",
+      "components": {
+        "CablePathComponent": [["internal_joint"], ["attachment", "attachment"], [false, false], 9000, null, 0, 1.5, 2]
+      }
+    }
+  ],
+  "initializeRigidBodies": ["bodyA", "bodyB"],
+  "systems": [
+    "PrevFinalPosSystem",
+    "PrevFinalOrientationSystem",
+    "GravitySystem",
+    "MovementSystem",
+    "AngularMovementSystem",
+    "RigidBodySyncSystem",
+    {
+      "name": "CableAttachmentUpdateSystem",
+      "args": [false]
+    },
+    "CableAttachmentCacheSystem",
+    "CableFrictionSystem",
+    "PBDCableConstraintSolver",
+    "PBDVelocityUpdateSystem",
+    "PBDAngularVelocityUpdateSystem",
+    "EncoderUpdateSystem"
+  ],
+  "steps": [
+    {
+      "dt": 0.002,
+      "resources": {
+        "dt": 0.002
+      }
+    },
+    {
+      "dt": 0.004,
+      "resources": {
+        "dt": 0.004
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "dt": 0.002
+      }
+    },
+    {
+      "dt": 0.01,
+      "resources": {
+        "dt": 0.01
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "dt": 0.002
+      }
+    },
+    {
+      "dt": 0,
+      "resources": {
+        "dt": 0.002
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "dt": 0.002,
+        "pauseState": {
+          "paused": true
+        }
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "dt": 0.002,
+        "pauseState": {
+          "paused": false
+        }
+      }
+    }
+  ],
+  "attachments": [
+    {
+      "entity": "tipA",
+      "counterpart": "tipB",
+      "localPoint": [0, 0, 0]
+    }
+  ],
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "initialSet": [["external_joint", "CableJointComponent", "constraintLambda", 3], ["external_joint", "CableJointComponent", "constraintForce", [3, -2, 1]]],
+  "resources": {
+    "dt": 0.002,
+    "gravity": [0, 0, -9.81]
+  },
+  "snapshotResources": ["dt", "cableHybridTransitionStep"],
+  "snapshotEntityMaps": ["torqueModeCableLoadTorques", "torqueModeCableLoadStiffnesses", "torqueModeCableLoadDampings"]
+}

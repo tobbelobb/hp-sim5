@@ -7,6 +7,7 @@ import { CableAttachmentCacheSystem } from '../../src/js/cable_joints_3d/cable_a
 import { CableFrictionSystem } from '../../src/js/cable_joints_3d/cable_friction_system.js';
 import * as rigid from '../../src/js/cable_joints_3d/rigid_bodies.js';
 import * as spools from '../../hp-sim-3d/app/hangprinter_spools.js';
+import { StepperMotorComponent } from '../../hp-sim-3d/app/hangprinter_stepper_motor.js';
 import * as geometry from '../../src/js/cable_joints_3d/geometry3.js';
 import * as cable from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import { createCablePaths } from '../../src/js/cable_joints_3d/createCablePaths.js';
@@ -15,9 +16,10 @@ import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
 
 const contract = JSON.parse(fs.readFileSync(new URL('./contract.json', import.meta.url)));
 const geometryContract = JSON.parse(fs.readFileSync(new URL('./geometry_contract.json', import.meta.url)));
-const components = { ...ecs, ...spools, ...cable };
+const components = { ...ecs, ...spools, ...cable, StepperMotorComponent };
 const systems = { ...commonSystems, CableAttachmentCacheSystem, CableFrictionSystem,
-  CableAttachmentUpdateSystem: cable.CableAttachmentUpdateSystem };
+  CableAttachmentUpdateSystem: cable.CableAttachmentUpdateSystem,
+  PBDCableConstraintSolver: cable.PBDCableConstraintSolver };
 const vector = (value) => value == null ? null : new Vector3(...value);
 const quaternion = (value) => value == null ? null : new Quaternion(...value);
 
@@ -70,6 +72,15 @@ export function runFixture(fixture) {
         : key === 'grabbedBall' && value != null ? ids[value] : value);
     }
   }
+  function mutate(values = []) {
+    for (const [entity, typeName, field, value] of values) {
+      const definition = contract[typeName].find(([jsField]) => jsField === field);
+      const component = world.getComponent(ids[entity], components[typeName]);
+      const decoded = decode(value, definition[2]);
+      if (['vector', 'quaternion'].includes(definition[2])) component[field].set(decoded);
+      else component[field] = decoded;
+    }
+  }
   resources(fixture.resources);
   for (const entity of fixture.entities) {
     for (const [name, args] of Object.entries(entity.components)) add(entity.name, name, args);
@@ -82,6 +93,7 @@ export function runFixture(fixture) {
     if (created.length !== pathNames.length) throw new Error('Unexpected number of split paths');
     created.forEach((id, i) => { ids[pathNames[i]] = id; names[id] = pathNames[i]; });
   }
+  mutate(fixture.initialSet);
   for (const name of fixture.initializeRigidBodies ?? []) rigid.initializeRigidBodySyncState(world, ids[name]);
   for (const definition of fixture.systems) {
     const name = typeof definition === 'string' ? definition : definition.name;
@@ -127,6 +139,10 @@ export function runFixture(fixture) {
     const state = { step, entities, queries, attachments };
     if (fixture.snapshotResources) state.resources = Object.fromEntries(fixture.snapshotResources.map(
       key => [key, world.getResource(key) ?? null]));
+    if (fixture.snapshotEntityMaps) state.entityMaps = Object.fromEntries(fixture.snapshotEntityMaps.map(key => {
+      const value = world.getResource(key);
+      return [key, value == null ? null : Object.fromEntries([...value].map(([id, number]) => [names[id], number]))];
+    }));
     if (fixture.cableRotations) state.cableRotations = fixture.cableRotations.map(probe =>
       cable.cableStoredLengthAfterRotation(world, world.getComponent(ids[probe.path], cable.CablePathComponent),
         probe.index, ids[probe.entity], probe.delta));
@@ -135,13 +151,7 @@ export function runFixture(fixture) {
   const snapshots = [snapshot(0)];
   for (const [index, step] of fixture.steps.entries()) {
     resources(step.resources);
-    for (const [entity, typeName, field, value] of step.set ?? []) {
-      const definition = contract[typeName].find(([jsField]) => jsField === field);
-      const component = world.getComponent(ids[entity], components[typeName]);
-      const decoded = decode(value, definition[2]);
-      if (['vector', 'quaternion'].includes(definition[2])) component[field].set(decoded);
-      else component[field] = decoded;
-    }
+    mutate(step.set);
     world.update(step.dt);
     snapshots.push(snapshot(index + 1));
   }

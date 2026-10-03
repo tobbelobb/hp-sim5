@@ -3,6 +3,20 @@ from dataclasses import dataclass
 import math
 import numpy as np
 
+
+def rotation_vector_between(previous, current):
+    if previous is None or current is None:
+        return np.zeros(3)
+    delta = current.copy().multiply(previous.copy().conjugate().normalize()).normalize()
+    if delta.w < 0:
+        delta.x, delta.y, delta.z, delta.w = -delta.x, -delta.y, -delta.z, -delta.w
+    w = float(np.clip(delta.w, -1., 1.))
+    angle = 2 * math.acos(w)
+    sin_half = math.sqrt(max(0., 1 - w * w))
+    if angle <= 1e-9 or sin_half <= 1e-9:
+        return np.zeros(3)
+    return delta.as_xyzw()[:3] / sin_half * angle
+
 @dataclass
 class Quaternion:
     x: float = 0.; y: float = 0.; z: float = 0.; w: float = 1.

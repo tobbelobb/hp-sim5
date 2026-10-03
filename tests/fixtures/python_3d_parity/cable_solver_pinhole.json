@@ -1,0 +1,395 @@
+{
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "entities": [
+    {
+      "name": "upstream_body",
+      "components": {
+        "PositionComponent": [0.0, 0.0, 0.0],
+        "OrientationComponent": [0.0, 0.24740395925452294, 0.0, 0.9689124217106447],
+        "VelocityComponent": [0, 0, 0],
+        "AngularVelocityComponent": [0, 0, 0],
+        "MassComponent": [1.5],
+        "RigidBodyComponent": [["upstream_spool", "upstream_pin"]],
+        "MomentOfInertiaComponent": [[[0.03, 0.002, -0.001], [0.002, 0.04, 0.001], [-0.001, 0.001, 0.05]]]
+      }
+    },
+    {
+      "name": "upstream_spool",
+      "components": {
+        "RadiusComponent": [0.05],
+        "PositionComponent": [0.0, 0.0, 0.0],
+        "VelocityComponent": [0, 0, 0],
+        "MassComponent": [0],
+        "OrientationComponent": [0.0, 0.24740395925452294, 0.0, 0.9689124217106447],
+        "AngularVelocityComponent": [0, 0, 0],
+        "MomentOfInertiaComponent": [[[0.002, 0.0001, 0], [0.0001, 0.003, 0], [0, 0, 0.001]]],
+        "CableLinkComponent": [0.0, 0.0, 0.0, [0.0, 0.24740395925452294, 0.0, 0.9689124217106447], null, [0, 0, 1]],
+        "SpoolStateComponent": ["upstream_spool", [0, 0, 1], [0.0, 0.24740395925452294, 0.0, 0.9689124217106447]],
+        "EncoderComponent": [18.84955592153876, 0.4794255386042031, 0.0, 0.8775825618903729],
+        "RigidBodyMemberComponent": ["upstream_body", [0, 0, 0], [0, 0, 0, 1], 0.2],
+        "StepperMotorComponent": [0, 0, 0.001, 50, 0.01, 600]
+      }
+    },
+    {
+      "name": "upstream_pin",
+      "components": {
+        "PositionComponent": [0.0, 0.20000000000000004, 0.0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0.0, 0.20000000000000004, 0.0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0],
+        "RigidBodyMemberComponent": ["upstream_body", [0, 0.2, 0], [0, 0, 0, 1], 0.1]
+      }
+    },
+    {
+      "name": "upstream_anchor",
+      "components": {
+        "PositionComponent": [0.7, 0.5, 0.4],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0.7, 0.5, 0.4, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "upstream_j0",
+      "components": {
+        "CableJointComponent": ["upstream_spool", "upstream_pin", 0.19638821060240466, [-0.04327710093146256, 0.013004999999999989, 0.02364238799207902], [0.0, 0.20000000000000004, 0.0], "world"]
+      }
+    },
+    {
+      "name": "upstream_j1",
+      "components": {
+        "CableJointComponent": ["upstream_pin", "upstream_anchor", 0.8502325267042626, [0.0, 0.20000000000000004, 0.0], [0.7, 0.5, 0.4], "world"]
+      }
+    },
+    {
+      "name": "upstream",
+      "components": {
+        "CablePathComponent": [["upstream_j0", "upstream_j1"], ["hybrid", "pinhole", "attachment"], [false, true, true], 7000, [0.3, 0, 0], 0.001, 0.1, 3]
+      }
+    },
+    {
+      "name": "downstream_body",
+      "components": {
+        "PositionComponent": [3.0, 0.0, 0.0],
+        "OrientationComponent": [0.0, 0.24740395925452294, 0.0, 0.9689124217106447],
+        "VelocityComponent": [0, 0, 0],
+        "AngularVelocityComponent": [0, 0, 0],
+        "MassComponent": [1.5],
+        "RigidBodyComponent": [["downstream_spool", "downstream_pin"]],
+        "MomentOfInertiaComponent": [[[0.03, 0.002, -0.001], [0.002, 0.04, 0.001], [-0.001, 0.001, 0.05]]]
+      }
+    },
+    {
+      "name": "downstream_spool",
+      "components": {
+        "RadiusComponent": [0.05],
+        "PositionComponent": [3.0, 0.0, 0.0],
+        "VelocityComponent": [0, 0, 0],
+        "MassComponent": [0],
+        "OrientationComponent": [0.0, 0.24740395925452294, 0.0, 0.9689124217106447],
+        "AngularVelocityComponent": [0, 0, 0],
+        "MomentOfInertiaComponent": [[[0.002, 0.0001, 0], [0.0001, 0.003, 0], [0, 0, 0.001]]],
+        "CableLinkComponent": [3.0, 0.0, 0.0, [0.0, 0.24740395925452294, 0.0, 0.9689124217106447], null, [0, 0, 1]],
+        "SpoolStateComponent": ["downstream_spool", [0, 0, 1], [0.0, 0.24740395925452294, 0.0, 0.9689124217106447]],
+        "EncoderComponent": [18.84955592153876, 0.4794255386042031, 0.0, 0.8775825618903729],
+        "RigidBodyMemberComponent": ["downstream_body", [0, 0, 0], [0, 0, 0, 1], 0.2],
+        "StepperMotorComponent": [0, 0, 0.001, 50, 0.01, 600]
+      }
+    },
+    {
+      "name": "downstream_pin",
+      "components": {
+        "PositionComponent": [3.0, 0.20000000000000004, 0.0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [3.0, 0.20000000000000004, 0.0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0],
+        "RigidBodyMemberComponent": ["downstream_body", [0, 0.2, 0], [0, 0, 0, 1], 0.1]
+      }
+    },
+    {
+      "name": "downstream_anchor",
+      "components": {
+        "PositionComponent": [3.7, 0.5, 0.4],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [3.7, 0.5, 0.4, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "downstream_j0",
+      "components": {
+        "CableJointComponent": ["downstream_anchor", "downstream_pin", 0.8502325267042627, [3.7, 0.5, 0.4], [3.0, 0.20000000000000004, 0.0], "world"]
+      }
+    },
+    {
+      "name": "downstream_j1",
+      "components": {
+        "CableJointComponent": ["downstream_pin", "downstream_spool", 0.19638821060240466, [3.0, 0.20000000000000004, 0.0], [3.0432771009314625, 0.013004999999999994, -0.02364238799207902], "world"]
+      }
+    },
+    {
+      "name": "downstream",
+      "components": {
+        "CablePathComponent": [["downstream_j0", "downstream_j1"], ["attachment", "pinhole", "hybrid"], [false, true, true], 7000, [0, 0, 0.3], 0.001, 0.1, 3]
+      }
+    },
+    {
+      "name": "torque_up_body",
+      "components": {
+        "PositionComponent": [6.0, 0.0, 0.0],
+        "OrientationComponent": [0.0, 0.24740395925452294, 0.0, 0.9689124217106447],
+        "VelocityComponent": [0, 0, 0],
+        "AngularVelocityComponent": [0, 0, 0],
+        "MassComponent": [1.5],
+        "RigidBodyComponent": [["torque_up_spool", "torque_up_pin"]],
+        "MomentOfInertiaComponent": [[[0.03, 0.002, -0.001], [0.002, 0.04, 0.001], [-0.001, 0.001, 0.05]]]
+      }
+    },
+    {
+      "name": "torque_up_spool",
+      "components": {
+        "RadiusComponent": [0.05],
+        "PositionComponent": [6.0, 0.0, 0.0],
+        "VelocityComponent": [0, 0, 0],
+        "MassComponent": [0],
+        "OrientationComponent": [0.0, 0.24740395925452294, 0.0, 0.9689124217106447],
+        "AngularVelocityComponent": [0, 0, 0],
+        "MomentOfInertiaComponent": [[[0.002, 0.0001, 0], [0.0001, 0.003, 0], [0, 0, 0.001]]],
+        "CableLinkComponent": [6.0, 0.0, 0.0, [0.0, 0.24740395925452294, 0.0, 0.9689124217106447], null, [0, 0, 1]],
+        "SpoolStateComponent": ["torque_up_spool", [0, 0, 1], [0.0, 0.24740395925452294, 0.0, 0.9689124217106447]],
+        "EncoderComponent": [18.84955592153876, 0.4794255386042031, 0.0, 0.8775825618903729],
+        "RigidBodyMemberComponent": ["torque_up_body", [0, 0, 0], [0, 0, 0, 1], 0.2],
+        "StepperMotorComponent": [0, 0, 0.5, 50, 0.01, 600]
+      }
+    },
+    {
+      "name": "torque_up_pin",
+      "components": {
+        "PositionComponent": [6.0, 0.20000000000000004, 0.0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [6.0, 0.20000000000000004, 0.0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0],
+        "RigidBodyMemberComponent": ["torque_up_body", [0, 0.2, 0], [0, 0, 0, 1], 0.1]
+      }
+    },
+    {
+      "name": "torque_up_anchor",
+      "components": {
+        "PositionComponent": [6.7, 0.5, 0.4],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [6.7, 0.5, 0.4, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "torque_up_j0",
+      "components": {
+        "CableJointComponent": ["torque_up_spool", "torque_up_pin", 0.19638821060240477, [5.956722899068537, 0.013004999999999989, 0.02364238799207902], [6.0, 0.20000000000000004, 0.0], "world"]
+      }
+    },
+    {
+      "name": "torque_up_j1",
+      "components": {
+        "CableJointComponent": ["torque_up_pin", "torque_up_anchor", 0.8502325267042627, [6.0, 0.20000000000000004, 0.0], [6.7, 0.5, 0.4], "world"]
+      }
+    },
+    {
+      "name": "torque_up",
+      "components": {
+        "CablePathComponent": [["torque_up_j0", "torque_up_j1"], ["hybrid", "pinhole", "attachment"], [false, true, true], 7000, [0.3, 0, 0], 0.001, 0.1, 3]
+      }
+    },
+    {
+      "name": "torque_down_body",
+      "components": {
+        "PositionComponent": [9.0, 0.0, 0.0],
+        "OrientationComponent": [0.0, 0.24740395925452294, 0.0, 0.9689124217106447],
+        "VelocityComponent": [0, 0, 0],
+        "AngularVelocityComponent": [0, 0, 0],
+        "MassComponent": [1.5],
+        "RigidBodyComponent": [["torque_down_spool", "torque_down_pin"]],
+        "MomentOfInertiaComponent": [[[0.03, 0.002, -0.001], [0.002, 0.04, 0.001], [-0.001, 0.001, 0.05]]]
+      }
+    },
+    {
+      "name": "torque_down_spool",
+      "components": {
+        "RadiusComponent": [0.05],
+        "PositionComponent": [9.0, 0.0, 0.0],
+        "VelocityComponent": [0, 0, 0],
+        "MassComponent": [0],
+        "OrientationComponent": [0.0, 0.24740395925452294, 0.0, 0.9689124217106447],
+        "AngularVelocityComponent": [0, 0, 0],
+        "MomentOfInertiaComponent": [[[0.002, 0.0001, 0], [0.0001, 0.003, 0], [0, 0, 0.001]]],
+        "CableLinkComponent": [9.0, 0.0, 0.0, [0.0, 0.24740395925452294, 0.0, 0.9689124217106447], null, [0, 0, 1]],
+        "SpoolStateComponent": ["torque_down_spool", [0, 0, 1], [0.0, 0.24740395925452294, 0.0, 0.9689124217106447]],
+        "EncoderComponent": [18.84955592153876, 0.4794255386042031, 0.0, 0.8775825618903729],
+        "RigidBodyMemberComponent": ["torque_down_body", [0, 0, 0], [0, 0, 0, 1], 0.2],
+        "StepperMotorComponent": [0, 0, 0.5, 50, 0.01, 600]
+      }
+    },
+    {
+      "name": "torque_down_pin",
+      "components": {
+        "PositionComponent": [9.0, 0.20000000000000004, 0.0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [9.0, 0.20000000000000004, 0.0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0],
+        "RigidBodyMemberComponent": ["torque_down_body", [0, 0.2, 0], [0, 0, 0, 1], 0.1]
+      }
+    },
+    {
+      "name": "torque_down_anchor",
+      "components": {
+        "PositionComponent": [9.7, 0.5, 0.4],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [9.7, 0.5, 0.4, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "torque_down_j0",
+      "components": {
+        "CableJointComponent": ["torque_down_anchor", "torque_down_pin", 0.8502325267042621, [9.7, 0.5, 0.4], [9.0, 0.20000000000000004, 0.0], "world"]
+      }
+    },
+    {
+      "name": "torque_down_j1",
+      "components": {
+        "CableJointComponent": ["torque_down_pin", "torque_down_spool", 0.19638821060240458, [9.0, 0.20000000000000004, 0.0], [9.043277100931462, 0.013004999999999994, -0.02364238799207902], "world"]
+      }
+    },
+    {
+      "name": "torque_down",
+      "components": {
+        "CablePathComponent": [["torque_down_j0", "torque_down_j1"], ["attachment", "pinhole", "hybrid"], [false, true, true], 7000, [0, 0, 0.3], 0.001, 0.1, 3]
+      }
+    },
+    {
+      "name": "rolling_body",
+      "components": {
+        "PositionComponent": [12.0, 0.0, 0.0],
+        "OrientationComponent": [0.0, 0.24740395925452294, 0.0, 0.9689124217106447],
+        "VelocityComponent": [0, 0, 0],
+        "AngularVelocityComponent": [0, 0, 0],
+        "MassComponent": [1.5],
+        "RigidBodyComponent": [["rolling_spool", "rolling_pin"]],
+        "MomentOfInertiaComponent": [[[0.03, 0.002, -0.001], [0.002, 0.04, 0.001], [-0.001, 0.001, 0.05]]]
+      }
+    },
+    {
+      "name": "rolling_spool",
+      "components": {
+        "RadiusComponent": [0.05],
+        "PositionComponent": [12.0, 0.0, 0.0],
+        "VelocityComponent": [0, 0, 0],
+        "MassComponent": [0],
+        "OrientationComponent": [0.0, 0.24740395925452294, 0.0, 0.9689124217106447],
+        "AngularVelocityComponent": [0, 0, 0],
+        "MomentOfInertiaComponent": [[[0.002, 0.0001, 0], [0.0001, 0.003, 0], [0, 0, 0.001]]],
+        "CableLinkComponent": [12.0, 0.0, 0.0, [0.0, 0.24740395925452294, 0.0, 0.9689124217106447], null, [0, 0, 1]],
+        "SpoolStateComponent": ["rolling_spool", [0, 0, 1], [0.0, 0.24740395925452294, 0.0, 0.9689124217106447]],
+        "EncoderComponent": [18.84955592153876, 0.4794255386042031, 0.0, 0.8775825618903729],
+        "RigidBodyMemberComponent": ["rolling_body", [0, 0, 0], [0, 0, 0, 1], 0.2]
+      }
+    },
+    {
+      "name": "rolling_pin",
+      "components": {
+        "PositionComponent": [12.0, 0.20000000000000004, 0.0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [12.0, 0.20000000000000004, 0.0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0],
+        "RigidBodyMemberComponent": ["rolling_body", [0, 0.2, 0], [0, 0, 0, 1], 0.1]
+      }
+    },
+    {
+      "name": "rolling_anchor",
+      "components": {
+        "PositionComponent": [12.7, 0.5, 0.4],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [12.7, 0.5, 0.4, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "rolling_j0",
+      "components": {
+        "CableJointComponent": ["rolling_spool", "rolling_pin", 0.19638821060240458, [11.956722899068538, 0.013004999999999989, 0.02364238799207902], [12.0, 0.20000000000000004, 0.0], "world"]
+      }
+    },
+    {
+      "name": "rolling_j1",
+      "components": {
+        "CableJointComponent": ["rolling_pin", "rolling_anchor", 0.8502325267042621, [12.0, 0.20000000000000004, 0.0], [12.7, 0.5, 0.4], "world"]
+      }
+    },
+    {
+      "name": "rolling",
+      "components": {
+        "CablePathComponent": [["rolling_j0", "rolling_j1"], ["rolling", "pinhole", "attachment"], [false, true, true], 7000, [0.3, 0, 0], 0.001, 0.1, 3]
+      }
+    }
+  ],
+  "systems": [
+    "PrevFinalPosSystem",
+    "PrevFinalOrientationSystem",
+    "GravitySystem",
+    "MovementSystem",
+    "AngularMovementSystem",
+    "RigidBodySyncSystem",
+    {
+      "name": "CableAttachmentUpdateSystem",
+      "args": [false]
+    },
+    "CableAttachmentCacheSystem",
+    "CableFrictionSystem",
+    "PBDCableConstraintSolver",
+    "PBDVelocityUpdateSystem",
+    "PBDAngularVelocityUpdateSystem",
+    "EncoderUpdateSystem"
+  ],
+  "steps": [
+    {
+      "dt": 0.002,
+      "resources": {
+        "dt": 0.002
+      }
+    },
+    {
+      "dt": 0.004,
+      "resources": {
+        "dt": 0.004
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "dt": 0.002
+      }
+    },
+    {
+      "dt": 0.01,
+      "resources": {
+        "dt": 0.01
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "dt": 0.002
+      }
+    }
+  ],
+  "snapshotResources": ["dt", "cableHybridTransitionStep"],
+  "resources": {
+    "dt": 0.002,
+    "gravity": [0, 0, -9.81]
+  },
+  "snapshotEntityMaps": ["torqueModeCableLoadTorques", "torqueModeCableLoadStiffnesses", "torqueModeCableLoadDampings"],
+  "initializeRigidBodies": ["upstream_body", "downstream_body", "torque_up_body", "torque_down_body", "rolling_body"],
+  "initialSet": [["torque_up_spool", "StepperMotorComponent", "torqueMode", true], ["torque_down_spool", "StepperMotorComponent", "torqueMode", true]]
+}
