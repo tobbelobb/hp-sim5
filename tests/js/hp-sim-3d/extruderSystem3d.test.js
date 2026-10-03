@@ -1,11 +1,63 @@
 import {
   World,
   PositionComponent,
+  OrientationComponent,
+  MassComponent,
+  MomentOfInertiaComponent,
+  RigidBodyComponent,
+  RigidBodyMemberComponent,
+  DistanceConstraintComponent,
 } from '../../../src/js/cable_joints_3d/ecs.js';
+import { RigidBodySyncSystem, XPBDDistanceConstraintSystem } from '../../../src/js/cable_joints_3d/commonSystems.js';
+import { computeWorldAttachment } from '../../../src/js/cable_joints_3d/rigid_bodies.js';
+import { SpoolTagComponent } from '../../../hp-sim-3d/app/hangprinter_spools.js';
 import { ExtruderComponent, ExtruderSystem } from '../../../hp-sim-3d/app/hangprinter_extruder.js';
 import { RemoteSpoolSystem } from '../../../hp-sim-3d/app/remoteSpoolSystem.js';
 
 describe('ExtruderSystem (3D)', () => {
+  test.each([true, false])('uses final rigid-body poses after constraints (authored sources: %s)', (authored) => {
+    const world = new World();
+    const body = world.createEntity();
+    world.addComponent(body, new PositionComponent());
+    world.addComponent(body, new OrientationComponent());
+    world.addComponent(body, new MassComponent(1));
+    world.addComponent(body, new MomentOfInertiaComponent(1));
+    const offsets = [[-1, -1 / 3, 0], [1, -1 / 3, 0], [0, 2 / 3, 0]]
+      .map(p => new PositionComponent(...p).pos);
+    const members = offsets.map(offset => {
+      const id = world.createEntity();
+      world.addComponent(id, new PositionComponent(offset.x, offset.y, offset.z));
+      world.addComponent(id, new RigidBodyMemberComponent(body, offset));
+      world.addComponent(id, new SpoolTagComponent());
+      return id;
+    });
+    world.addComponent(body, new RigidBodyComponent(members));
+    const anchor = world.createEntity();
+    world.addComponent(anchor, new PositionComponent(0, 5, 2));
+    world.addComponent(anchor, new MassComponent(0));
+    world.addComponent(world.createEntity(), new DistanceConstraintComponent(members[0], anchor, 1));
+    const extruder = new ExtruderComponent();
+    const tipOffset = new PositionComponent(0.1, 0, -0.1).pos;
+    extruder.tipOffsets.default = tipOffset;
+    if (authored) {
+      extruder.centerSources.default = members;
+      extruder.centerSourceOffsets.default = offsets;
+    }
+    world.addComponent(world.createEntity(), extruder);
+    world.registerSystem(new RigidBodySyncSystem());
+    world.registerSystem(new XPBDDistanceConstraintSystem());
+    world.registerSystem(new ExtruderSystem());
+    world.update(0.002);
+
+    // A hidden sync would conceal the bug and change the simulation pipeline.
+    expect(world.getComponent(members[0], PositionComponent).pos).toEqual(offsets[0]);
+    const finalCenter = world.getComponent(body, PositionComponent).pos;
+    expect(finalCenter.length()).toBeGreaterThan(1);
+    for (const key of ['x', 'y', 'z']) expect(extruder.centerPos[key]).toBeCloseTo(finalCenter[key], 12);
+    const finalTip = authored ? computeWorldAttachment(world, body, tipOffset) : finalCenter.clone().add(tipOffset);
+    for (const key of ['x', 'y', 'z']) expect(extruder.tipPos[key]).toBeCloseTo(finalTip[key], 12);
+  });
+
   test('rotates the authored extruder frame with the effector plane', () => {
     const world = new World();
     const sourceA = world.createEntity();
