@@ -7,23 +7,23 @@ not a claim of complete engine parity.
 
 | Simulation functionality (JS source) | Python location / status | Dependencies / evidence needed |
 | --- | --- | --- |
-| World scheduling, pause/error, ECS query ordering (`cable_joints/ecs.js`) | `cable_joints/ecs.py`: partial | Differential query-order and paused-step fixtures. |
+| World scheduling, pause/error, ECS query ordering (`cable_joints/ecs.js`) | `cable_joints/ecs.py`: equivalent | `query_order.json` and paused/error steps in `motion.json`; preserve smallest-store insertion order. Python's single-class query shorthand is an intentional API divergence. |
 | Vectors, quaternions, geometry (`cable_joints_3d/`) | `vector3.py`, `quaternion.py`, `geometry3.py`: partial | NumPy vectors are intentional divergence in API; missing plane-projected tangents/arcs. Test arbitrary axes and noncommuting rotations. |
 | Full inertia tensors (`inertia_tensor.js`) | `inertia_tensor.py`: equivalent for covered PSD tensors | `inertia.json` differentially covers rotated small SPD, rank-2/rank-1 and zero tensors. Isolated JS fix preserves Python's PR #61 scale-aware pseudoinverse. |
-| Prediction, previous poses, PBD velocities (`commonSystems.js`) | `common_systems.py`: partial | Differential initial/one/many-step fixtures; remaining member exclusions. |
-| Rigid-member frames, endpoint reaction mapping (`rigid_bodies.js`) | missing | Foundation for cable, distance and motor reactions. |
-| Rigid-body synchronization (`commonSystems.js`) | missing | Member frames + spool state/projection; verify body deltas, member velocities, references and repeated sync. |
-| One-axis spool state/helpers (`hangprinter_spools.js`) | missing | Quaternion/frame semantics; preserve specialized twist projection, not generic hinges. |
+| Prediction, previous poses, PBD velocities (`commonSystems.js`) | `common_systems.py`: equivalent | `motion.json`, `rigid_members.json`; explicit member exclusions preserve kinematic zero-mass motion and world angular frames. |
+| Rigid-member frames, endpoint reaction mapping (`rigid_bodies.js`) | `rigid_bodies.py`: equivalent | `rigid_members.json`, `distance_members.json` probe live attachments, world/local inversion and internal/external reactions. Foundation for cable/motor reactions. |
+| Rigid-body synchronization (`commonSystems.js`) | `common_systems.py`: equivalent | `rigid_members.json`: body deltas, member offset velocities, spool references, repeated/paused sync; no hidden post-constraint resync. |
+| One-axis spool state/helpers (`hangprinter_spools.js`) | `spools.py`: equivalent | `spool_projection.json`, `rigid_members.json`: tilted axes, swing/velocity projection and reference transport. Motor-driven free-twist integration still missing. |
 | Cable components/path construction (`cable_joints_core.js`, `createCablePaths.js`) | missing | Rigid frames + plane geometry; inspect/reuse Python 2D algorithms without their scalar-orientation assumptions. |
 | Attachments/cache, hybrid transitions, split/merge, layering (`cable_joints_core.js`, `cable_attachment_cache_system.js`) | missing | Cable components + spool/member frames. Test stored/rest/geometric length conservation and cache timing. |
 | Friction redistribution (`cable_friction_system.js`) | missing | Cable components + attachments; equal extension, capstan bounds, free rolling guides, dt-scaled iterations. |
 | XPBD cable solve (`cable_joints_core.js`) | missing | Attachments/cache + friction + tensor reactions + motor state; per-path iterations and force/load telemetry. |
 | Cable over-correction (`pbdResolveCableOverCorrections.js`) | missing | Cable solve + member reaction mapping. |
-| Distance XPBD (`commonSystems.js`) | missing | Rigid endpoints + tensor angular corrections. Used by fixtures; not currently registered by the Hangprinter app. |
+| Distance XPBD (`commonSystems.js`) | `common_systems.py`: equivalent | `distance_members.json`: off-center tensor corrections, accumulated multipliers and internal endpoints. Used by fixtures; not currently registered by the Hangprinter app. |
 | Ball/obstacle collisions, bump and slack systems (`cable_joints_3d/`) | missing | Relevant fixture coverage after cable core; not currently registered by the Hangprinter app. |
 | Position motors (`hangprinter_stepper_motor.js`) | missing | Spool state + rigid sync/reactions; open/closed-loop and member-local integration. |
 | Torque motors (`torqueModeSystem.js`) | missing | Position-motor reactions + cable load torque/stiffness/damping; update after PBD velocities. |
-| Encoder unwrapping (`commonSystems.js`) | missing | Spool/member frames; parent motion must not count as rotor turns. |
+| Encoder unwrapping (`commonSystems.js`) | `common_systems.py`: equivalent | `spool_projection.json`, `rigid_members.json`: several turns, fallback axes and parent/reference motion. Motor-integrated encoder updates remain part of the motor slice. |
 | Missed-step state (`motor-diagnostics.js`) | missing | Encoder + motor state, reference changes and torque/position transitions. |
 | Effector frames/extrusion (`hangprinter_extruder.js`) | missing | Rigid/member state + authored center/tip offsets + commands. |
 | USDA machine builders (`app/scene/`) | missing | Components and scene semantics above. Reuse `pxr.Usd`, `UsdGeom`, `UsdShade` patterns from Python demo loaders; keep web server imports out of simulation. |
@@ -70,6 +70,20 @@ Python. This is a deliberate correction of the reference, in a separate commit,
 not a relaxation of parity tolerances. The inertia fixture uses absolute
 `1e-8` and relative `1e-12` tolerance on inverse moments (order `1e6`);
 motion fixtures use absolute `1e-10` and relative `1e-9`.
+
+## First PR boundary
+
+The first PR adds the executable differential harness and closes the covered
+World/order, prediction/PBD velocity, rigid frames/sync, spool projection,
+distance-constraint and encoder layers above. The inertia correction is its
+own commit with JS unit and cross-language regressions. All PR #61 corrections
+remain, including its Rerun lifecycle tests.
+
+Next: plane geometry and cable components/path construction, then attachment
+updating/cache, friction and cable XPBD. USDA loading, motors/commands/extrusion,
+the complete Hangprinter composition root and rich Rerun snapshots remain open.
+Six shared fixtures prove the covered synthetic ECS pipeline; none claims
+full authored-machine parity.
 
 ## Completion gate
 

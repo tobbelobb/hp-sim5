@@ -19,7 +19,10 @@ The 2D engine lives under `src/js/cable_joints/`, with a related Python
 implementation in `src/python/cable_joints/`. The JavaScript and Python 3D
 engines live in `src/js/cable_joints_3d/` and `src/python/cable_joints_3d/`.
 The Python package provides native quaternion integration, full 3x3 inertia
-tensors, matching ECS components, and a Rerun output system. Rerun is the
+tensors, rigid-member synchronization, distance constraints, encoders and a
+Rerun output system. A [live JS differential harness](tests/parity3d/README.md)
+checks the covered foundations; full Hangprinter cable/motor/USDA parity is still
+tracked in [PYTHON_3D_PARITY.md](PYTHON_3D_PARITY.md). Rerun is the
 preferred Python visualization target; browser rendering remains available for
 the older Python demos.
 

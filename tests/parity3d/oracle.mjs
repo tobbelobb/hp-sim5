@@ -22,7 +22,7 @@ export function runFixture(fixture) {
     if (kind === 'quaternion') return quaternion(value);
     if (kind === 'entity') return value == null ? null : ids[value];
     if (kind === 'entities') return value.map(name => ids[name]);
-    return value;
+    return structuredClone(value);
   };
   function add(entity, name, args) {
     const Type = components[name];
@@ -65,7 +65,7 @@ export function runFixture(fixture) {
     if (kind === 'entities') return value.map(id => names[id]);
     if (kind === 'vector') return [value.x, value.y, value.z];
     if (kind === 'quaternion') return [value.x, value.y, value.z, value.w];
-    return value;
+    return structuredClone(value);
   }
   function snapshot(step) {
     const entities = {};
@@ -74,7 +74,10 @@ export function runFixture(fixture) {
       for (const [typeName, fields] of Object.entries(contract)) {
         const component = world.getComponent(id, components[typeName]);
         if (component) entities[name][typeName] = Object.fromEntries(fields.map(
-          ([jsField, , kind]) => [jsField, encode(component[jsField], kind)]));
+          ([jsField, , kind]) => {
+            if (!(jsField in component)) throw new Error(`Missing ${typeName}.${jsField}`);
+            return [jsField, encode(component[jsField], kind)];
+          }));
       }
     }
     const queries = (fixture.queries ?? []).map(types => world.query(types.map(t => components[t])).map(id => names[id]));

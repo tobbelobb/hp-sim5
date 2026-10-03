@@ -27,6 +27,26 @@ def test_comparator_rejects_changed_physics_and_structure():
         assert_equivalent(changed, expected, **fixture['tolerance'])
 
 
+@pytest.mark.parametrize('name', ['rigid_members', 'distance_members', 'spool_projection'])
+def test_long_sequence_is_deterministic_and_matches_js(name):
+    fixture = json.loads((FIXTURES / f'{name}.json').read_text())
+    fixture['steps'] = [{'dt': .002} for _ in range(200)]
+    expected = run_js(fixture)
+    actual = run_python(fixture)
+    assert_equivalent(actual, expected, **fixture['tolerance'], path=name)
+    assert actual == run_python(fixture)
+    assert expected == run_js(fixture)
+
+
+def test_comparator_accepts_quaternion_sign_only():
+    state = {'quaternion': [.2, -.3, .4, .8426149773176358]}
+    opposite = {'quaternion': [-v for v in state['quaternion']]}
+    assert_equivalent(state, opposite, atol=1e-10, rtol=1e-9)
+    opposite['quaternion'][0] += .01
+    with pytest.raises(AssertionError, match='quaternion'):
+        assert_equivalent(state, opposite, atol=1e-10, rtol=1e-9)
+
+
 @pytest.mark.parametrize('value', [float('nan'), float('inf'), -float('inf')])
 def test_comparator_rejects_nonfinite_values(value):
     with pytest.raises(AssertionError, match='nonfinite'):
