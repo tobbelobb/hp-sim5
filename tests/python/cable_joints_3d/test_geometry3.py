@@ -46,10 +46,16 @@ def test_passes_through():
     assert line_segment_sphere_intersection(p1, p2, CENTER, RADIUS)
 
 
-def test_one_endpoint_inside():
+def test_one_endpoint_inside_is_not_an_intersection_by_default():
     p1 = np.array([0.5, 0.0, 0.0])
     p2 = np.array([2.0, 0.0, 0.0])
-    assert line_segment_sphere_intersection(p1, p2, CENTER, RADIUS)
+    assert not line_segment_sphere_intersection(p1, p2, CENTER, RADIUS)
+
+
+def test_one_endpoint_inside_can_count_as_a_pierce():
+    p1 = np.array([0.5, 0.0, 0.0])
+    p2 = np.array([2.0, 0.0, 0.0])
+    assert line_segment_sphere_intersection(p1, p2, CENTER, RADIUS, True)
 
 
 def test_tangent():
@@ -58,7 +64,7 @@ def test_tangent():
     assert line_segment_sphere_intersection(p1, p2, CENTER, RADIUS)
 
 
-def test_completely_inside():
+def test_completely_inside_is_not_an_intersection_by_default():
     p1 = np.array([-0.5, 0.0, 0.0])
     p2 = np.array([0.5, 0.0, 0.0])
-    assert line_segment_sphere_intersection(p1, p2, CENTER, RADIUS)
+    assert not line_segment_sphere_intersection(p1, p2, CENTER, RADIUS)

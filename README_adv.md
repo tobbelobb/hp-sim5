@@ -16,10 +16,12 @@ But in principle it should work all the time for the js and Python ports to be f
 The simulator is built on a physics engine implementing (extended) Position‑Based Dynamics (XPBD).
 Cable segments slide over wheels, wrap, and maintain tension through constraints solved with XPBD.
 The 2D engine lives under `src/js/cable_joints/`, with a related Python
-implementation in `src/python/cable_joints/`. The JavaScript 3D engine lives in
-`src/js/cable_joints_3d/`; it now contains app-specific rigid-body, tensor
-inertia, cable, and motor behavior that does not have a line-for-line Python
-equivalent.
+implementation in `src/python/cable_joints/`. The JavaScript and Python 3D
+engines live in `src/js/cable_joints_3d/` and `src/python/cable_joints_3d/`.
+The Python package provides native quaternion integration, full 3x3 inertia
+tensors, matching ECS components, and a Rerun output system. Rerun is the
+preferred Python visualization target; browser rendering remains available for
+the older Python demos.
 
 ### Physics Engine Purpose
  - A physics engine for cables interacting with rolling wheels and other obstacles.
@@ -32,6 +34,13 @@ equivalent.
 
 A Python implementation of the cable joints engine is available in the
 `src/python/cable_joints/` directory.
+
+The 3D API mirrors the JavaScript component names while following Python
+naming conventions. Register
+`cable_joints_3d.rerun_system.RerunSystem(recording)` as the last system to
+stream transforms and shapes directly to a Rerun viewer or `.rrd` recording.
+The SDK is imported only when that system runs, so headless simulation does not
+require a viewer process.
   - Dependencies:
     - python 3.10+
     - numpy

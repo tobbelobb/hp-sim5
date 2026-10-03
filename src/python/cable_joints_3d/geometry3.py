@@ -12,9 +12,9 @@ def closest_point_on_segment(p, a, b):
     t = t / denom
     return a + ab * t
 
-def line_segment_sphere_intersection(p1, p2, center, radius):
+def line_segment_sphere_intersection(p1, p2, center, radius, is_a_pierce_an_intersection=False):
     if np.linalg.norm(p1 - center) <= radius or np.linalg.norm(p2 - center) <= radius:
-        return True
+        return is_a_pierce_an_intersection
     d = p2 - p1
     lc = center - p1
     d_len_sq = np.dot(d, d)
