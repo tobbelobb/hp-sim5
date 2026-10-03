@@ -5,10 +5,12 @@ import * as ecs from '../../src/js/cable_joints_3d/ecs.js';
 import * as systems from '../../src/js/cable_joints_3d/commonSystems.js';
 import * as rigid from '../../src/js/cable_joints_3d/rigid_bodies.js';
 import * as spools from '../../hp-sim-3d/app/hangprinter_spools.js';
+import * as geometry from '../../src/js/cable_joints_3d/geometry3.js';
 import Vector3 from '../../src/js/cable_joints_3d/vector3.js';
 import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
 
 const contract = JSON.parse(fs.readFileSync(new URL('./contract.json', import.meta.url)));
+const geometryContract = JSON.parse(fs.readFileSync(new URL('./geometry_contract.json', import.meta.url)));
 const components = { ...ecs, ...spools };
 const vector = (value) => value == null ? null : new Vector3(...value);
 const quaternion = (value) => value == null ? null : new Quaternion(...value);
@@ -103,7 +105,19 @@ export function runFixture(fixture) {
     world.update(step.dt);
     snapshots.push(snapshot(index + 1));
   }
-  return { schema: 1, snapshots };
+  const result = { schema: 1, snapshots };
+  if (fixture.geometry) {
+    const plain = value => {
+      if (value instanceof Vector3) return [value.x, value.y, value.z];
+      if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, plain(item)]));
+      return value;
+    };
+    result.geometry = fixture.geometry.map(({ method, args }) => {
+      const [, kinds] = geometryContract[method];
+      return plain(geometry[method](...args.map((arg, i) => decode(arg, kinds[i]))));
+    });
+  }
+  return result;
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

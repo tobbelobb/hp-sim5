@@ -10,11 +10,13 @@ from types import SimpleNamespace
 import numpy as np
 from cable_joints_3d import ecs, common_systems
 from cable_joints_3d import rigid_bodies as rigid
+from cable_joints_3d import geometry3 as geometry
 from cable_joints_3d.quaternion import Quaternion
 from cable_joints_3d.spools import SpoolStateComponent
 
 ROOT = Path(__file__).resolve().parents[3]
 CONTRACT = json.loads((ROOT / 'tests/parity3d/contract.json').read_text())
+GEOMETRY_CONTRACT = json.loads((ROOT / 'tests/parity3d/geometry_contract.json').read_text())
 FIXTURES = ROOT / 'tests/fixtures/python_3d_parity'
 
 
@@ -133,6 +135,20 @@ def run_python(fixture):
         world.update(step['dt'])
         snapshots.append(snapshot(index))
     result = {'schema': 1, 'snapshots': snapshots}
+    if 'geometry' in fixture:
+        def plain(value):
+            if isinstance(value, np.ndarray):
+                return value.tolist()
+            if isinstance(value, np.generic):
+                return value.item()
+            if isinstance(value, dict):
+                return {key: plain(item) for key, item in value.items()}
+            return value
+        result['geometry'] = []
+        for probe in fixture['geometry']:
+            method, kinds = GEOMETRY_CONTRACT[probe['method']]
+            args = [decode(arg, kind) for arg, kind in zip(probe['args'], kinds)]
+            result['geometry'].append(plain(getattr(geometry, method)(*args)))
     json.dumps(result, allow_nan=False)
     return result
 
