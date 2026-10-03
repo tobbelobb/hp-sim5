@@ -17,6 +17,39 @@ import {
 import { GravitySystem } from '../../../src/js/cable_joints_3d/commonSystems.js';
 
 describe('PBDCableConstraintSolver (3D)', () => {
+  test.each([0, 4])('zero stiffness preserves the finite damping limit (damping=%s)', damping => {
+    const solve = stiffness => {
+      const world = new World();
+      world.setResource('dt', 0.002);
+      const a = world.createEntity();
+      const b = world.createEntity();
+      world.addComponent(a, new PositionComponent(0, 0, 0));
+      world.addComponent(b, new PositionComponent(2, 0, 0));
+      world.addComponent(a, new PrevFinalPosComponent(0, 0, 0));
+      world.addComponent(b, new PrevFinalPosComponent(1.8, 0, 0));
+      world.addComponent(a, new MassComponent(1));
+      world.addComponent(b, new MassComponent(1));
+      const jointId = world.createEntity();
+      const joint = CableJointComponent.fromWorld(a, b, 1, new Vector3(), new Vector3(2, 0, 0));
+      world.addComponent(jointId, joint);
+      const pathId = world.createEntity();
+      world.addComponent(pathId, new CablePathComponent(
+        world, [jointId], ['attachment', 'attachment'], [false, false], stiffness, null, 0, damping, 2,
+      ));
+      new PBDCableConstraintSolver().update(world, 0.002);
+      return [world.getComponent(a, PositionComponent).pos.x,
+        world.getComponent(b, PositionComponent).pos.x, joint.constraintForceMagnitude];
+    };
+    const actual = solve(0);
+    const finiteLimit = solve(1e-12);
+    actual.forEach((value, i) => {
+      expect(Number.isFinite(value)).toBe(true);
+      expect(value).toBeCloseTo(finiteLimit[i], 10);
+    });
+    if (damping === 0) expect(actual).toEqual([0, 2, 0]);
+    else expect(actual[2]).toBeGreaterThan(0);
+  });
+
   test('does nothing when compliance is zero', () => {
     const world = new World();
     // Create entities and positions
