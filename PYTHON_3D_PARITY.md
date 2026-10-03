@@ -9,7 +9,7 @@ not a claim of complete engine parity.
 | --- | --- | --- |
 | World scheduling, pause/error, ECS query ordering (`cable_joints/ecs.js`) | `cable_joints/ecs.py`: partial | Differential query-order and paused-step fixtures. |
 | Vectors, quaternions, geometry (`cable_joints_3d/`) | `vector3.py`, `quaternion.py`, `geometry3.py`: partial | NumPy vectors are intentional divergence in API; missing plane-projected tangents/arcs. Test arbitrary axes and noncommuting rotations. |
-| Full inertia tensors (`inertia_tensor.js`) | `inertia_tensor.py`: partial | PR #61 fixed Python small/singular PSD inversion; JS still has an absolute determinant cutoff. Demonstrate and resolve separately, preserving Python corrections. |
+| Full inertia tensors (`inertia_tensor.js`) | `inertia_tensor.py`: equivalent for covered PSD tensors | `inertia.json` differentially covers rotated small SPD, rank-2/rank-1 and zero tensors. Isolated JS fix preserves Python's PR #61 scale-aware pseudoinverse. |
 | Prediction, previous poses, PBD velocities (`commonSystems.js`) | `common_systems.py`: partial | Differential initial/one/many-step fixtures; remaining member exclusions. |
 | Rigid-member frames, endpoint reaction mapping (`rigid_bodies.js`) | missing | Foundation for cable, distance and motor reactions. |
 | Rigid-body synchronization (`commonSystems.js`) | missing | Member frames + spool state/projection; verify body deltas, member velocities, references and repeated sync. |
@@ -62,6 +62,14 @@ fixture does not establish full-machine parity.
   (or an explicit intentional divergence).
 - Rerun static archetypes require static clearing; preserve namespace/id paths
   and record actual simulation time through pause/reset.
+
+The new inertia fixture demonstrated JS returning zero inverse inertia where
+Python returned `1640000` for a rotated small SPD tensor. JS now uses a scaled
+symmetric eigendecomposition with the same supported-eigenvalue cutoff as
+Python. This is a deliberate correction of the reference, in a separate commit,
+not a relaxation of parity tolerances. The inertia fixture uses absolute
+`1e-8` and relative `1e-12` tolerance on inverse moments (order `1e6`);
+motion fixtures use absolute `1e-10` and relative `1e-9`.
 
 ## Completion gate
 
