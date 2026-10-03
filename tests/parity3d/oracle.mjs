@@ -30,6 +30,8 @@ export function runFixture(fixture) {
     if (kind === 'quaternion') return quaternion(value);
     if (kind === 'entity') return value == null ? null : ids[value];
     if (kind === 'entities') return value.map(name => ids[name]);
+    if (kind === 'entityMap') return Object.fromEntries(Object.entries(value).map(
+      ([name, angle]) => [name === '__default__' ? name : ids[name], angle]));
     if (kind === 'parameter' && value === 'Infinity') return Infinity;
     return structuredClone(value);
   };
@@ -80,14 +82,18 @@ export function runFixture(fixture) {
     created.forEach((id, i) => { ids[pathNames[i]] = id; names[id] = pathNames[i]; });
   }
   for (const name of fixture.initializeRigidBodies ?? []) rigid.initializeRigidBodySyncState(world, ids[name]);
-  for (const name of fixture.systems) {
+  for (const definition of fixture.systems) {
+    const name = typeof definition === 'string' ? definition : definition.name;
+    const args = typeof definition === 'string' ? [] : definition.args ?? [];
     if (!systems[name]) throw new Error(`Unsupported system ${name}`);
-    world.registerSystem(new systems[name]());
+    world.registerSystem(new systems[name](...args));
   }
   function encode(value, kind) {
     if (value == null) return null;
     if (kind === 'entity') return names[value];
     if (kind === 'entities') return value.map(id => names[id]);
+    if (kind === 'entityMap') return Object.fromEntries(Object.entries(value).map(
+      ([id, angle]) => [id === '__default__' ? id : names[id], angle]));
     if (kind === 'vector') return [value.x, value.y, value.z];
     if (kind === 'quaternion') return [value.x, value.y, value.z, value.w];
     if (kind === 'parameter' && value === Infinity) return 'Infinity';
@@ -117,7 +123,13 @@ export function runFixture(fixture) {
         solverEntity: encode(endpoint.entityId, 'entity'), solverLocalPoint: encode(endpoint.localPoint, 'vector'),
         internalToBody: Boolean(endpoint.internalToBody) };
     });
-    return { step, entities, queries, attachments };
+    const state = { step, entities, queries, attachments };
+    if (fixture.snapshotResources) state.resources = Object.fromEntries(fixture.snapshotResources.map(
+      key => [key, world.getResource(key) ?? null]));
+    if (fixture.cableRotations) state.cableRotations = fixture.cableRotations.map(probe =>
+      cable.cableStoredLengthAfterRotation(world, world.getComponent(ids[probe.path], cable.CablePathComponent),
+        probe.index, ids[probe.entity], probe.delta));
+    return state;
   }
   const snapshots = [snapshot(0)];
   for (const [index, step] of fixture.steps.entries()) {
