@@ -54,20 +54,13 @@ class World:
         if not isinstance(component_classes, (list, tuple)):
             component_classes = [component_classes]
 
-        first_class = component_classes[0]
-        if first_class not in self.components:
+        stores = [self.components.get(component_class) for component_class in component_classes]
+        if any(store is None for store in stores):
             return []
-
-        candidate_ids = set(self.components[first_class].keys())
-        if not candidate_ids:
-            return []
-
-        for component_class in component_classes[1:]:
-            if component_class not in self.components:
-                return []
-            candidate_ids.intersection_update(self.components[component_class].keys())
-
-        return list(candidate_ids)
+        # JS visits the smallest store in insertion order (stable ties). Sets
+        # lose that order, which changes sequential constraint corrections.
+        primary, *others = sorted(stores, key=len)
+        return [entity for entity in primary if all(entity in store for store in others)]
 
     def register_system(self, system):
         self.systems.append(system)
