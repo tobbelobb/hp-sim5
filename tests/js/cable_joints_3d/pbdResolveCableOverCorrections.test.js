@@ -22,6 +22,35 @@ import { PBDResolveCableOverCorrections } from '../../../src/js/cable_joints_3d/
 import { _updateAttachmentPoints } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
 
 describe('PBDResolveCableOverCorrections (3D)', () => {
+  test.each(['rolling', 'hybrid'])('rebuilds %s tangents when detecting slack', (linkType) => {
+    const world = new World();
+    world.setResource('dt', 0.002);
+    const anchor = world.createEntity();
+    world.addComponent(anchor, new PositionComponent(1.02, 0, 0));
+    world.addComponent(anchor, new MassComponent(0));
+    world.addComponent(anchor, new CableLinkComponent(1.02, 0, 0));
+    const wheel = world.createEntity();
+    world.addComponent(wheel, new PositionComponent(0, 0, 0));
+    world.addComponent(wheel, new MassComponent(1));
+    world.addComponent(wheel, new RadiusComponent(1));
+    world.addComponent(wheel, new CableLinkComponent());
+
+    // Centers are farther apart than rest length, but the actual tangent span
+    // is shorter. Two formerly taut spans must produce a shared correction.
+    for (let i = 0; i < 2; i++) {
+      const joint = world.createEntity();
+      world.addComponent(joint, new CableJointComponent(
+        anchor, wheel, 0.8, new Vector3(1.02, 0, 0), new Vector3(0, 0, 0)
+      ));
+      const path = world.createEntity();
+      world.addComponent(path, new CablePathComponent(
+        world, [joint], ['attachment', linkType], [false, false], Infinity, [0, 0], 0.01
+      ));
+    }
+    new PBDResolveCableOverCorrections().update(world, 0.002);
+    expect(world.getComponent(wheel, PositionComponent).pos.length()).toBeGreaterThan(0.1);
+  });
+
   test('test_resolve_over_correction_pushes_apart', () => {
     const world = new World();
     const dt = 1.0 / 60.0;

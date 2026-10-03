@@ -1376,6 +1376,14 @@ function _isSpinBackdrivableThroughPinhole(linkType) {
 }
 
 export function calculateAttachmentPoints(world, joint, path, i, radiusA, radiusB) {
+  // Over-correction calls this without radii. Rebuild the same layered tangents
+  // as attachment updates instead of silently comparing endpoint centers.
+  if (radiusA === undefined) {
+    radiusA = _effectiveRollingRadius(world, path, i, world.getComponent(joint.entityA, RadiusComponent)?.radius).radius;
+  }
+  if (radiusB === undefined) {
+    radiusB = _effectiveRollingRadius(world, path, i + 1, world.getComponent(joint.entityB, RadiusComponent)?.radius).radius;
+  }
   const A = i;
   const B = i + 1;
 
