@@ -13,7 +13,7 @@ not a claim of complete engine parity.
 | Prediction, previous poses, PBD velocities (`commonSystems.js`) | `common_systems.py`: equivalent | `motion.json`, `rigid_members.json`; explicit member exclusions preserve kinematic zero-mass motion and world angular frames. |
 | Rigid-member frames, endpoint reaction mapping (`rigid_bodies.js`) | `rigid_bodies.py`: equivalent | `rigid_members.json`, `distance_members.json` probe live attachments, world/local inversion and internal/external reactions. Foundation for cable/motor reactions. |
 | Rigid-body synchronization (`commonSystems.js`) | `common_systems.py`: equivalent | `rigid_members.json`: body deltas, member offset velocities, spool references, repeated/paused sync; no hidden post-constraint resync. |
-| One-axis spool state/helpers (`hangprinter_spools.js`) | `spools.py`: equivalent | `spool_projection.json`, `rigid_members.json`: tilted axes, swing/velocity projection and reference transport. Motor-driven free-twist integration still missing. |
+| One-axis spool state/helpers (`hangprinter_spools.js`) | `spools.py`: equivalent | `spool_projection.json`, `rigid_members.json`: tilted axes, swing/velocity projection and reference transport. Position motor free-twist integration is covered; torque-mode integration remains open. |
 | Cable components/path construction (`cable_joints_core.js`, `createCablePaths.js`) | `cable_joints_components.py`, `create_cable_paths.py`, `cable_frames.py`: equivalent for valid authored paths | Construction fixtures cover local/world joints, live tilted member planes, intermediate wraps, hybrid knots, stored overrides, endpoint cuts, empty paths, parameter clamps and zero/infinite stiffness. Python factories intentionally keep the World out of data components. |
 | Attachment cache (`cable_attachment_cache_system.js`) | `cable_attachment_cache_system.py`: equivalent | `cable_cache_members.json` covers member-local vs world orientation and moving parents for 200 steps; ownership tests check copies and mutable cache identity. Register after attachment rebuilding, before friction. |
 | Dynamic attachments and hybrid transitions (`cable_joints_core.js`) | `cable_attachment_update_system.py`: equivalent for covered Hangprinter configuration | Motion/member/clamp/transition fixtures cover world vs onboard frames, rolling non-slip payout, skew planes, center placeholders, layered hybrid winding, clamp reactions before phase projection, hysteresis, degeneracy, feature flags and pause/step counter. Seven scenarios now run 200 steps. |
@@ -24,9 +24,9 @@ not a claim of complete engine parity.
 | Cable over-correction (`pbdResolveCableOverCorrections.js`) | `pbd_resolve_cable_over_corrections.py`: equivalent for covered reactions | Shared-correction averaging/gates, tensor host/member reactions, hybrid-only pinhole coupling, duplicate joint membership and last-path metadata. Runs immediately after the cable solver in integration fixtures. |
 | Distance XPBD (`commonSystems.js`) | `common_systems.py`: equivalent | `distance_members.json`: off-center tensor corrections, accumulated multipliers and internal endpoints. Used by fixtures; not currently registered by the Hangprinter app. |
 | Ball/obstacle collisions, bump and slack systems (`cable_joints_3d/`) | missing | Relevant fixture coverage after cable core; not currently registered by the Hangprinter app. |
-| Position motors (`hangprinter_stepper_motor.js`) | `stepper_motor.py`: partial | Component state and cable-solver holding/stiffness semantics are covered. Spool state + rigid sync/reactions are ready; motor torque integration and open/closed-loop member-local motion remain missing. |
+| Position motors (`hangprinter_stepper_motor.js`) | `stepper_motor.py`: equivalent for covered integration | Open/closed-loop torque and pose updates, live member aggregate inertia with physical-mass fallback, host reaction, member-local vs standalone integration and cable/PBD/encoder ordering. Standalone/member/cable scenarios run 200 steps. |
 | Torque motors (`torqueModeSystem.js`) | missing | Position-motor reactions + cable load torque/stiffness/damping; update after PBD velocities. |
-| Encoder unwrapping (`commonSystems.js`) | `common_systems.py`: equivalent | `spool_projection.json`, `rigid_members.json`: several turns, fallback axes and parent/reference motion. Motor-integrated encoder updates remain part of the motor slice. |
+| Encoder unwrapping (`commonSystems.js`) | `common_systems.py`: equivalent | `spool_projection.json`, `rigid_members.json`: several turns, fallback axes and parent/reference motion. Position-motor and constraint encoder updates are covered; torque-mode integration remains open. |
 | Missed-step state (`motor-diagnostics.js`) | missing | Encoder + motor state, reference changes and torque/position transitions. |
 | Effector frames/extrusion (`hangprinter_extruder.js`) | missing | Rigid/member state + authored center/tip offsets + commands. |
 | USDA machine builders (`app/scene/`) | missing | Components and scene semantics above. Reuse `pxr.Usd`, `UsdGeom`, `UsdShade` patterns from Python demo loaders; keep web server imports out of simulation. |
@@ -158,6 +158,24 @@ called without radii and silently used centers for rolling spans. Two regression
 cases show a center distance above rest length while the actual tangent span is
 slack. An isolated JS fix derives omitted radii with the existing layer model;
 Python uses the same attachment rebuilding helper as its regular update path.
+
+## Position motor follow-up
+
+Position motors preserve the live member aggregate inertia (rotated tensors plus
+parallel-axis contributions and retained physical mass) before falling back to
+the parent's authored tensor. Closed-loop reactions mutate the live parent
+quaternion before member recomposition. Open-loop members integrate free twist
+inside the motor system; standalone spools wait for angular prediction. Torque
+mode is excluded. No new speed clamp or mass-based reaction exclusion is added.
+
+Thirty-three fixtures cover the completed layers; seventeen scenarios now have
+200-step repeatability checks. Motor guards compare live/preserved mass reactions,
+zero-inertia closed-loop pose updates, standalone deferred integration, and member
+exclusion from angular prediction. The cable pipeline includes previous poses
+and PBD velocity reconstruction. The authored 0.5 Nm motor scale is used there;
+a separate 100 Nm stress case uses 20 microsecond steps. That synthetic stiffness
+at millisecond steps produces violent motion and roundoff amplification. No hidden
+substeps are introduced and comparison tolerances remain unchanged.
 
 ## Completion gate
 

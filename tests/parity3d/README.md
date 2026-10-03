@@ -86,14 +86,20 @@ Current coverage:
   backdriving, rolling/hybrid spools, torque load deferral, force transfer and
   attachment/cache/friction/solve integration.
 - `cable_zero_stiffness`: zero vs near-zero stiffness, with and without damping.
+- `position_motor_standalone`, `position_motor_members`, `position_motor_cables`:
+  open/closed-loop drive, torque-mode exclusion, zero inertia, tilted references,
+  live aggregate inertia and preserved mass, parent reaction rotation/velocity,
+  member vs standalone integration, commands and full cable/PBD/encoder order.
+  A separate 100 Nm stress case uses 20 microsecond timesteps.
 - `cable_over_correction` and its member/pinhole variants: actual shared pushes,
   tensor rotor/host reactions, hybrid-only pinhole coupling, layered tangent
   rebuilding, duplicate joints, last-path metadata, zero stiffness and pause.
 
 Rigid-member, distance, spool, cache, friction-chain, two moving-attachment
-four cable-solver and three over-correction fixtures run for 200 steps;
+four cable-solver, three over-correction and three position-motor fixtures run
+for 200 steps;
 both engines must reproduce their own snapshots exactly on a second run.
 
 These fixtures establish the covered ECS behavior. Authored USDA construction,
-dynamic split/merge, motor integration, full machines
+dynamic split/merge, torque-motor integration, commands, full machines
 and richer Rerun recordings remain on the checklist in `PYTHON_3D_PARITY.md`.

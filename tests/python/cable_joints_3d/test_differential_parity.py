@@ -115,13 +115,52 @@ def test_over_correction_oracle_reaches_shared_reactions(name):
         assert after['rolling_spool']['OrientationComponent'] == before['rolling_spool']['OrientationComponent']
 
 
+@pytest.mark.parametrize('name', ['position_motor_standalone', 'position_motor_members'])
+def test_position_motor_oracle_exercises_reactions_and_integration(name):
+    fixture = json.loads((FIXTURES / f'{name}.json').read_text())
+    snapshots = run_js(fixture)['snapshots']
+    before, after = [s['entities'] for s in snapshots[:2]]
+    if name == 'position_motor_standalone':
+        assert after['open']['OrientationComponent'] == before['open']['OrientationComponent']
+        assert after['open']['AngularVelocityComponent'] != before['open']['AngularVelocityComponent']
+        for prefix in ['torque', 'zero']:
+            assert after[prefix]['OrientationComponent'] == before[prefix]['OrientationComponent']
+            assert after[prefix]['AngularVelocityComponent'] == before[prefix]['AngularVelocityComponent']
+        for prefix in ['closed', 'zero_closed']:
+            assert after[prefix]['OrientationComponent'] != before[prefix]['OrientationComponent']
+            assert after[prefix]['AngularVelocityComponent']['omega'] == [0, 0, 0]
+    else:
+        assert after['open_body']['AngularVelocityComponent']['omega'] != [0, 0, 0]
+        assert after['open_body']['AngularVelocityComponent']['omega'] == pytest.approx(
+            after['live_mass_body']['AngularVelocityComponent']['omega'], abs=1e-12)
+        for prefix in ['closed', 'fallback']:
+            assert after[prefix + '_body']['OrientationComponent'] != before[prefix + '_body']['OrientationComponent']
+        assert after['open_body']['OrientationComponent'] == before['open_body']['OrientationComponent']
+        # AngularMovement may move the host but must not integrate member rotors again.
+        fixture['steps'] = fixture['steps'][:1]
+        fixture['systems'].append('AngularMovementSystem')
+        moved = run_js(fixture)
+        assert moved['snapshots'][1]['entities']['open_spool']['RigidBodyMemberComponent'] == after['open_spool']['RigidBodyMemberComponent']
+        assert_equivalent(run_python(fixture), moved, **fixture['tolerance'])
+
+
+def test_stiff_position_motor_integration_at_small_timestep():
+    fixture = json.loads((FIXTURES / 'position_motor_cables.json').read_text())
+    motor = next(e for e in fixture['entities'] if e['name'] == 'held_spool')
+    motor['components']['StepperMotorComponent'][2] = 100
+    fixture['steps'] = [{'dt': .00002, 'resources': {'dt': .00002}} for _ in range(200)]
+    fixture['steps'][0]['set'] = [['held_spool', 'StepperMotorComponent', 'commandedAngle', .07]]
+    assert_equivalent(run_python(fixture), run_js(fixture), **fixture['tolerance'])
+
+
 @pytest.mark.parametrize('name', ['rigid_members', 'distance_members', 'spool_projection',
                                  'cable_cache_members', 'cable_friction_chain',
                                  'cable_attachment_motion', 'cable_attachment_members',
                                  'cable_solver_bodies', 'cable_solver_spools',
                                  'cable_solver_pinhole', 'cable_solver_pinhole_stale_inlet',
                                  'cable_over_correction', 'cable_over_correction_members',
-                                 'cable_over_correction_pinhole'])
+                                 'cable_over_correction_pinhole', 'position_motor_standalone',
+                                 'position_motor_members', 'position_motor_cables'])
 def test_long_sequence_is_deterministic_and_matches_js(name):
     fixture = json.loads((FIXTURES / f'{name}.json').read_text())
     fixture['steps'] = [{'dt': .002, 'resources': {'dt': .002}} for _ in range(200)]

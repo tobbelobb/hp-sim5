@@ -19,7 +19,7 @@ from cable_joints_3d.cable_attachment_cache_system import CableAttachmentCacheSy
 from cable_joints_3d.cable_friction_system import CableFrictionSystem
 from cable_joints_3d.cable_attachment_update_system import CableAttachmentUpdateSystem
 from cable_joints_3d.cable_layering import cable_stored_length_after_rotation
-from cable_joints_3d.stepper_motor import StepperMotorComponent
+from cable_joints_3d.stepper_motor import StepperMotorComponent, StepperMotorSystem
 from cable_joints_3d.pbd_cable_constraint_solver import PBDCableConstraintSolver
 from cable_joints_3d.pbd_resolve_cable_over_corrections import PBDResolveCableOverCorrections
 
@@ -125,7 +125,7 @@ def run_python(fixture):
         rigid.initialize_rigid_body_sync_state(world, ids[name])
     systems = {'CableAttachmentCacheSystem': CableAttachmentCacheSystem, 'CableFrictionSystem': CableFrictionSystem,
                'CableAttachmentUpdateSystem': CableAttachmentUpdateSystem, 'PBDCableConstraintSolver': PBDCableConstraintSolver,
-               'PBDResolveCableOverCorrections': PBDResolveCableOverCorrections}
+               'PBDResolveCableOverCorrections': PBDResolveCableOverCorrections, 'StepperMotorSystem': StepperMotorSystem}
     for definition in fixture['systems']:
         name = definition if isinstance(definition, str) else definition['name']
         args = [] if isinstance(definition, str) else definition.get('args', [])

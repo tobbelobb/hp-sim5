@@ -8,7 +8,7 @@ import { CableFrictionSystem } from '../../src/js/cable_joints_3d/cable_friction
 import { PBDResolveCableOverCorrections } from '../../src/js/cable_joints_3d/pbdResolveCableOverCorrections.js';
 import * as rigid from '../../src/js/cable_joints_3d/rigid_bodies.js';
 import * as spools from '../../hp-sim-3d/app/hangprinter_spools.js';
-import { StepperMotorComponent } from '../../hp-sim-3d/app/hangprinter_stepper_motor.js';
+import { StepperMotorComponent, StepperMotorSystem } from '../../hp-sim-3d/app/hangprinter_stepper_motor.js';
 import * as geometry from '../../src/js/cable_joints_3d/geometry3.js';
 import * as cable from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import { createCablePaths } from '../../src/js/cable_joints_3d/createCablePaths.js';
@@ -18,7 +18,7 @@ import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
 const contract = JSON.parse(fs.readFileSync(new URL('./contract.json', import.meta.url)));
 const geometryContract = JSON.parse(fs.readFileSync(new URL('./geometry_contract.json', import.meta.url)));
 const components = { ...ecs, ...spools, ...cable, StepperMotorComponent };
-const systems = { ...commonSystems, CableAttachmentCacheSystem, CableFrictionSystem, PBDResolveCableOverCorrections,
+const systems = { ...commonSystems, CableAttachmentCacheSystem, CableFrictionSystem, PBDResolveCableOverCorrections, StepperMotorSystem,
   CableAttachmentUpdateSystem: cable.CableAttachmentUpdateSystem,
   PBDCableConstraintSolver: cable.PBDCableConstraintSolver };
 const vector = (value) => value == null ? null : new Vector3(...value);
