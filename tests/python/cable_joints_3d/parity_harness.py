@@ -13,19 +13,25 @@ from cable_joints_3d import rigid_bodies as rigid
 from cable_joints_3d import geometry3 as geometry
 from cable_joints_3d.quaternion import Quaternion
 from cable_joints_3d.spools import SpoolStateComponent
+from cable_joints_3d import cable_joints_components as cable
+from cable_joints_3d.create_cable_paths import create_cable_paths
+from cable_joints_3d.cable_attachment_cache_system import CableAttachmentCacheSystem
 
 ROOT = Path(__file__).resolve().parents[3]
 CONTRACT = json.loads((ROOT / 'tests/parity3d/contract.json').read_text())
 GEOMETRY_CONTRACT = json.loads((ROOT / 'tests/parity3d/geometry_contract.json').read_text())
 FIXTURES = ROOT / 'tests/fixtures/python_3d_parity'
+QUATERNION_FIELDS = tuple(js for fields in CONTRACT.values() for js, _, kind in fields if kind == 'quaternion')
 
 
 def run_python(fixture):
+    fixture = copy.deepcopy(fixture)
     world = ecs.World()
     ids = {entity['name']: world.create_entity() for entity in fixture['entities']}
     names = {value: key for key, value in ids.items()}
     components = {name: getattr(ecs, name) for name in CONTRACT if hasattr(ecs, name)}
     components['SpoolStateComponent'] = SpoolStateComponent
+    components.update({name: getattr(cable, name) for name in CONTRACT if hasattr(cable, name)})
 
     def decode(value, kind):
         if value is None:
@@ -38,6 +44,8 @@ def run_python(fixture):
             return ids[value]
         if kind == 'entities':
             return [ids[name] for name in value]
+        if kind == 'parameter' and value == 'Infinity':
+            return math.inf
         return value
 
     def add(entity, name, args):
@@ -54,6 +62,15 @@ def run_python(fixture):
             component = component_type(args[0], *[np.array(a) for a in args[1:]])
         elif name == 'EncoderComponent':
             component = component_type(args[0], np.array(args[1:4]))
+        elif name == 'CableLinkComponent':
+            component = component_type(*args[:3], decode(args[3], 'quaternion'), decode(args[4], 'vector'), decode(args[5], 'vector'))
+        elif name == 'CableJointComponent':
+            values = [ids[args[0]], ids[args[1]], args[2], np.array(args[3]), np.array(args[4])]
+            component = component_type.from_local(world, *values) if args[5] == 'local' else component_type.from_world(*values)
+        elif name == 'CablePathComponent':
+            values = list(args[1:])
+            values[2] = decode(values[2], 'parameter')
+            component = cable.create_cable_path_component(world, [ids[name] for name in args[0]], *values)
         else:
             component = component_type(*args)
         world.add_component(ids[entity], component)
@@ -74,10 +91,19 @@ def run_python(fixture):
             add(entity['name'], name, args)
     for addition in fixture.get('addComponents', []):
         add(*addition)
+    for definition in fixture.get('createPaths', []):
+        args = definition['args']
+        values = list(args[1:])
+        values[2] = decode(values[2], 'parameter')
+        created = create_cable_paths(world, [ids[name] for name in args[0]], *values)
+        assert len(created) == len(definition['names']), 'Unexpected number of split paths'
+        for name, entity in zip(definition['names'], created):
+            ids[name], names[entity] = entity, name
     for name in fixture.get('initializeRigidBodies', []):
         rigid.initialize_rigid_body_sync_state(world, ids[name])
     for name in fixture['systems']:
-        world.register_system(getattr(common_systems, name)())
+        system = {'CableAttachmentCacheSystem': CableAttachmentCacheSystem}.get(name)
+        world.register_system((system if system is not None else getattr(common_systems, name))())
 
     def encode(value, kind):
         if value is None:
@@ -88,6 +114,8 @@ def run_python(fixture):
             return [names[entity] for entity in value]
         if kind == 'quaternion':
             return value.as_xyzw().tolist()
+        if kind == 'parameter' and value == math.inf:
+            return 'Infinity'
         if isinstance(value, np.ndarray):
             return value.tolist()
         return copy.deepcopy(value)
@@ -103,6 +131,9 @@ def run_python(fixture):
                 if component is not None:
                     state[type_name] = {js: encode(getattr(component, py), kind)
                                         for js, py, kind in fields}
+                    if type_name == 'CableJointComponent':
+                        state[type_name]['geometricLength'] = float(np.linalg.norm(
+                            component.attachment_point_a_world - component.attachment_point_b_world))
         queries = [[names[e] for e in world.query([components[t] for t in types])]
                    for types in fixture.get('queries', [])]
         attachments = []
@@ -172,7 +203,7 @@ def assert_equivalent(actual, expected, *, atol, rtol, path='state'):
             pending.extend((actual[key], expected[key], f'{path}.{key}') for key in reversed(expected))
         elif isinstance(expected, list):
             assert isinstance(actual, list) and len(actual) == len(expected), f'{path}: lengths differ'
-            if path.endswith(('quaternion', 'localOrientation', 'syncedOrientation', 'referenceOrientation')):
+            if path.endswith(QUATERNION_FIELDS):
                 assert np.isfinite(actual).all() and np.isfinite(expected).all(), f'{path}: nonfinite'
                 if np.dot(actual, expected) < 0:
                     actual = [-v for v in actual]
