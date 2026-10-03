@@ -16,10 +16,18 @@ def normalize_inertia_tensor(value):
 
 def invert_matrix3(matrix):
     matrix = normalize_inertia_tensor(matrix)
-    if abs(np.linalg.det(matrix)) > EPSILON: return np.linalg.inv(matrix)
-    if np.allclose(matrix, np.diag(np.diag(matrix)), atol=EPSILON):
-        d = np.diag(matrix); return np.diag(np.divide(1., d, out=np.zeros(3), where=d > EPSILON))
-    return np.zeros((3, 3))
+    try:
+        # An absolute determinant threshold is scale-dependent: valid tensors
+        # in hp-sim are commonly around 1e-6 kg m^2 and have determinants far
+        # below 1e-12. LAPACK's solve detects singularity at the matrix's scale.
+        return np.linalg.inv(matrix)
+    except np.linalg.LinAlgError:
+        if np.array_equal(matrix, np.diag(np.diag(matrix))):
+            diagonal = np.diag(matrix)
+            return np.diag(
+                np.divide(1., diagonal, out=np.zeros(3), where=diagonal > 0.)
+            )
+        return np.zeros((3, 3))
 
 def rotation_matrix_from_quaternion(quaternion):
     if quaternion is None: return np.eye(3)

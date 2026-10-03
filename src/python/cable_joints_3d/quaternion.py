@@ -23,13 +23,19 @@ class Quaternion:
         self.x, self.y, self.z = axis * (math.sin(angle / 2) / norm)
         self.w = math.cos(angle / 2); return self
     def multiply(self, q):
-        ax, ay, az, aw = self.x, self.y, self.z, self.w
-        bx, by, bz, bw = q.x, q.y, q.z, q.w
+        return self.multiply_quaternions(self.copy(), q)
+
+    def multiply_quaternions(self, a, b):
+        ax, ay, az, aw = a.x, a.y, a.z, a.w
+        bx, by, bz, bw = b.x, b.y, b.z, b.w
         self.x = ax*bw + aw*bx + ay*bz - az*by
         self.y = ay*bw + aw*by + az*bx - ax*bz
         self.z = az*bw + aw*bz + ax*by - ay*bx
         self.w = aw*bw - ax*bx - ay*by - az*bz
         return self
+
+    def premultiply(self, q):
+        return self.multiply_quaternions(q, self.copy())
     def transform_vector(self, vector):
         q = self.copy().normalize(); v = Quaternion(*np.asarray(vector, dtype=float), 0.)
         result = q.copy().multiply(v).multiply(q.copy().conjugate())

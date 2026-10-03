@@ -45,12 +45,28 @@ class RigidBodyComponent:
     render_segments: list | None = None
     synced_position: np.ndarray = field(default_factory=lambda: np.zeros(3))
     synced_orientation: Quaternion = field(default_factory=Quaternion)
-@dataclass
+@dataclass(init=False)
 class RigidBodyMemberComponent:
     body_entity: int | None = None
     local_position: np.ndarray = field(default_factory=lambda: np.zeros(3))
     local_orientation: Quaternion = field(default_factory=Quaternion)
     physical_mass: float | None = None
+
+    def __init__(self, body_entity=None, local_position=None,
+                 local_orientation=None, physical_mass=None):
+        self.body_entity = body_entity
+        self.local_position = (
+            np.asarray(local_position, dtype=float).copy()
+            if local_position is not None else np.zeros(3)
+        )
+        self.local_orientation = (
+            local_orientation.copy().normalize()
+            if local_orientation is not None else Quaternion()
+        )
+        self.physical_mass = (
+            float(physical_mass) if physical_mass is not None
+            and np.isfinite(physical_mass) else None
+        )
 
 def layering_enabled(world):
     value = world.get_resource("enableLayering")
