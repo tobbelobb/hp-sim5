@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import * as ecs from '../../src/js/cable_joints_3d/ecs.js';
 import * as commonSystems from '../../src/js/cable_joints_3d/commonSystems.js';
 import { CableAttachmentCacheSystem } from '../../src/js/cable_joints_3d/cable_attachment_cache_system.js';
+import { CableFrictionSystem } from '../../src/js/cable_joints_3d/cable_friction_system.js';
 import * as rigid from '../../src/js/cable_joints_3d/rigid_bodies.js';
 import * as spools from '../../hp-sim-3d/app/hangprinter_spools.js';
 import * as geometry from '../../src/js/cable_joints_3d/geometry3.js';
@@ -15,7 +16,7 @@ import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
 const contract = JSON.parse(fs.readFileSync(new URL('./contract.json', import.meta.url)));
 const geometryContract = JSON.parse(fs.readFileSync(new URL('./geometry_contract.json', import.meta.url)));
 const components = { ...ecs, ...spools, ...cable };
-const systems = { ...commonSystems, CableAttachmentCacheSystem };
+const systems = { ...commonSystems, CableAttachmentCacheSystem, CableFrictionSystem };
 const vector = (value) => value == null ? null : new Vector3(...value);
 const quaternion = (value) => value == null ? null : new Quaternion(...value);
 

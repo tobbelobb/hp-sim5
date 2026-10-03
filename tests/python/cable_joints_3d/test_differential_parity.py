@@ -28,7 +28,7 @@ def test_comparator_rejects_changed_physics_and_structure():
 
 
 @pytest.mark.parametrize('name', ['rigid_members', 'distance_members', 'spool_projection',
-                                 'cable_cache_members'])
+                                 'cable_cache_members', 'cable_friction_chain'])
 def test_long_sequence_is_deterministic_and_matches_js(name):
     fixture = json.loads((FIXTURES / f'{name}.json').read_text())
     fixture['steps'] = [{'dt': .002} for _ in range(200)]

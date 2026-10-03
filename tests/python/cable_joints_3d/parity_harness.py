@@ -16,6 +16,7 @@ from cable_joints_3d.spools import SpoolStateComponent
 from cable_joints_3d import cable_joints_components as cable
 from cable_joints_3d.create_cable_paths import create_cable_paths
 from cable_joints_3d.cable_attachment_cache_system import CableAttachmentCacheSystem
+from cable_joints_3d.cable_friction_system import CableFrictionSystem
 
 ROOT = Path(__file__).resolve().parents[3]
 CONTRACT = json.loads((ROOT / 'tests/parity3d/contract.json').read_text())
@@ -102,7 +103,7 @@ def run_python(fixture):
     for name in fixture.get('initializeRigidBodies', []):
         rigid.initialize_rigid_body_sync_state(world, ids[name])
     for name in fixture['systems']:
-        system = {'CableAttachmentCacheSystem': CableAttachmentCacheSystem}.get(name)
+        system = {'CableAttachmentCacheSystem': CableAttachmentCacheSystem, 'CableFrictionSystem': CableFrictionSystem}.get(name)
         world.register_system((system if system is not None else getattr(common_systems, name))())
 
     def encode(value, kind):

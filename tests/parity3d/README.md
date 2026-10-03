@@ -51,8 +51,12 @@ Current coverage:
   path splitting at attachments, empty paths and parameter limits.
 - `cable_cache_members`: live world poses and member-local orientation through
   parent motion, constraint-like pose edits and pause/resume.
+- `cable_friction`, its layering-off variant, and `cable_friction_chain`: capstan
+  rolling/pinhole friction, frictionless and free rolling guides, attachment
+  barriers, slack/zero-rest spans, changed attachments and dt-scaled ordered
+  redistribution through several guides.
 
-Rigid-member, distance, spool and cable-cache fixtures also run for 200 steps;
+Rigid-member, distance, spool, cable-cache and friction-chain fixtures run for 200 steps;
 both engines must reproduce their own snapshots exactly on a second run.
 
 These fixtures establish the covered ECS behavior. Authored USDA construction,
