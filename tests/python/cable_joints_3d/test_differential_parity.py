@@ -1,6 +1,7 @@
 import copy
 import json
 
+import numpy as np
 import pytest
 
 from parity_harness import FIXTURES, assert_equivalent, run_js, run_python
@@ -153,6 +154,47 @@ def test_stiff_position_motor_integration_at_small_timestep():
     assert_equivalent(run_python(fixture), run_js(fixture), **fixture['tolerance'])
 
 
+@pytest.mark.parametrize('name', ['torque_motor_standalone', 'torque_motor_loads',
+                                 'torque_motor_members', 'torque_motor_cables'])
+def test_torque_motor_oracle_exercises_loads_and_drive_only_reactions(name):
+    fixture = json.loads((FIXTURES / f'{name}.json').read_text())
+    snapshots = run_js(fixture)['snapshots']
+    before, after = [s['entities'] for s in snapshots[:2]]
+    speed = lambda name: np.linalg.norm(after[name]['AngularVelocityComponent']['omega'])
+    if name == 'torque_motor_standalone':
+        for prefix in ['fast', 'reverse_fast']:
+            assert speed(prefix) < np.linalg.norm(before[prefix]['AngularVelocityComponent']['omega'])
+        for prefix in ['zero', 'position']:
+            assert after[prefix]['AngularVelocityComponent'] == before[prefix]['AngularVelocityComponent']
+        assert speed('no_losses') > speed('forward')
+        assert after['tuned']['AngularVelocityComponent'] != after['reverse']['AngularVelocityComponent']
+        assert speed('rest') > 0
+        assert after['rest']['OrientationComponent'] == before['rest']['OrientationComponent']
+    elif name == 'torque_motor_loads':
+        assert after['invalid']['AngularVelocityComponent'] == after['free']['AngularVelocityComponent']
+        assert after['negative_coefficients']['AngularVelocityComponent'] == after['signed']['AngularVelocityComponent']
+        assert speed('implicit') < speed('signed') < speed('free')
+        # Both supported JS resource encodings have identical physics.
+        fixture['steps'] = fixture['steps'][:1]
+        for definition in fixture['entityResources'].values():
+            definition['kind'] = 'object'
+        objects = run_js(fixture)
+        assert objects['snapshots'][1]['entities'] == after
+        assert_equivalent(run_python(fixture), objects, **fixture['tolerance'])
+    elif name == 'torque_motor_members':
+        assert speed('live_mass_spool') < speed('open_spool')
+        assert after['live_mass_body']['AngularVelocityComponent'] == after['open_body']['AngularVelocityComponent']
+        assert after['open_body']['OrientationComponent'] == before['open_body']['OrientationComponent']
+        assert after['open_spool']['OrientationComponent'] != before['open_spool']['OrientationComponent']
+        assert after['open_spool']['EncoderComponent'] == before['open_spool']['EncoderComponent']
+    else:
+        assert snapshots[2]['entityMaps']['torqueModeCableLoadTorques']['held_spool'] != 0
+        assert 'held_spool' not in snapshots[3]['entityMaps']['torqueModeCableLoadTorques']
+        assert snapshots[4]['entities']['held_spool']['StepperMotorComponent']['torqueMode'] is False
+        assert snapshots[4]['entities']['held_spool']['StepperMotorComponent']['closedLoop'] is True
+        assert snapshots[5]['entities']['held_spool']['StepperMotorComponent']['torqueMode'] is True
+
+
 @pytest.mark.parametrize('name', ['rigid_members', 'distance_members', 'spool_projection',
                                  'cable_cache_members', 'cable_friction_chain',
                                  'cable_attachment_motion', 'cable_attachment_members',
@@ -160,7 +202,9 @@ def test_stiff_position_motor_integration_at_small_timestep():
                                  'cable_solver_pinhole', 'cable_solver_pinhole_stale_inlet',
                                  'cable_over_correction', 'cable_over_correction_members',
                                  'cable_over_correction_pinhole', 'position_motor_standalone',
-                                 'position_motor_members', 'position_motor_cables'])
+                                 'position_motor_members', 'position_motor_cables',
+                                 'torque_motor_standalone', 'torque_motor_loads',
+                                 'torque_motor_members', 'torque_motor_cables', 'torque_motor_pinhole'])
 def test_long_sequence_is_deterministic_and_matches_js(name):
     fixture = json.loads((FIXTURES / f'{name}.json').read_text())
     fixture['steps'] = [{'dt': .002, 'resources': {'dt': .002}} for _ in range(200)]

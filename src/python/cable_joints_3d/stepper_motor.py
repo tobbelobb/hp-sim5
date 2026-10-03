@@ -1,4 +1,4 @@
-"""Hangprinter motor state and cable-solver holding semantics."""
+"""Motor state, position drive and the specialized rigid-member reaction path."""
 from dataclasses import dataclass
 import math
 import numbers
@@ -34,6 +34,12 @@ class StepperMotorComponent:
     missed_steps: float = 0
     current_missed_steps: float = 0
     missed_step_encoder_offset: float | None = None
+    windage_coeff: float | None = None
+    coulomb_friction: float | None = None
+    stiction_torque: float | None = None
+    stiction_speed: float | None = None
+    cogging_torque: float | None = None
+    cogging_freq: float | None = None
 
 
 MOTOR_COMPONENTS = [StepperMotorComponent, SpoolStateComponent, OrientationComponent,

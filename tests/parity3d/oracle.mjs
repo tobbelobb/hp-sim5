@@ -9,6 +9,7 @@ import { PBDResolveCableOverCorrections } from '../../src/js/cable_joints_3d/pbd
 import * as rigid from '../../src/js/cable_joints_3d/rigid_bodies.js';
 import * as spools from '../../hp-sim-3d/app/hangprinter_spools.js';
 import { StepperMotorComponent, StepperMotorSystem } from '../../hp-sim-3d/app/hangprinter_stepper_motor.js';
+import { TorqueModeSystem } from '../../hp-sim-3d/app/torqueModeSystem.js';
 import * as geometry from '../../src/js/cable_joints_3d/geometry3.js';
 import * as cable from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import { createCablePaths } from '../../src/js/cable_joints_3d/createCablePaths.js';
@@ -18,7 +19,7 @@ import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
 const contract = JSON.parse(fs.readFileSync(new URL('./contract.json', import.meta.url)));
 const geometryContract = JSON.parse(fs.readFileSync(new URL('./geometry_contract.json', import.meta.url)));
 const components = { ...ecs, ...spools, ...cable, StepperMotorComponent };
-const systems = { ...commonSystems, CableAttachmentCacheSystem, CableFrictionSystem, PBDResolveCableOverCorrections, StepperMotorSystem,
+const systems = { ...commonSystems, CableAttachmentCacheSystem, CableFrictionSystem, PBDResolveCableOverCorrections, StepperMotorSystem, TorqueModeSystem,
   CableAttachmentUpdateSystem: cable.CableAttachmentUpdateSystem,
   PBDCableConstraintSolver: cable.PBDCableConstraintSolver };
 const vector = (value) => value == null ? null : new Vector3(...value);
@@ -67,10 +68,14 @@ export function runFixture(fixture) {
     }
     world.addComponent(ids[entity], component);
   }
-  function resources(values = {}) {
+  function resources(values = {}, entityValues = {}) {
     for (const [key, value] of Object.entries(values)) {
       world.setResource(key, ['gravity', 'defaultPlaneNormal'].includes(key) ? vector(value)
         : key === 'grabbedBall' && value != null ? ids[value] : value);
+    }
+    for (const [key, definition] of Object.entries(entityValues)) {
+      const entries = Object.entries(definition.values).map(([name, value]) => [ids[name], value]);
+      world.setResource(key, definition.kind === 'object' ? Object.fromEntries(entries) : new Map(entries));
     }
   }
   function mutate(values = []) {
@@ -82,7 +87,7 @@ export function runFixture(fixture) {
       else component[field] = decoded;
     }
   }
-  resources(fixture.resources);
+  resources(fixture.resources, fixture.entityResources);
   for (const entity of fixture.entities) {
     for (const [name, args] of Object.entries(entity.components)) add(entity.name, name, args);
   }
@@ -121,7 +126,7 @@ export function runFixture(fixture) {
         const component = world.getComponent(id, components[typeName]);
         if (component) entities[name][typeName] = Object.fromEntries(fields.map(
           ([jsField, , kind]) => {
-            if (!(jsField in component)) throw new Error(`Missing ${typeName}.${jsField}`);
+            if (!(jsField in component) && kind !== 'optionalNumber') throw new Error(`Missing ${typeName}.${jsField}`);
             return [jsField, encode(component[jsField], kind)];
           }));
         if (component && typeName === 'CableJointComponent') {
@@ -142,7 +147,8 @@ export function runFixture(fixture) {
       key => [key, world.getResource(key) ?? null]));
     if (fixture.snapshotEntityMaps) state.entityMaps = Object.fromEntries(fixture.snapshotEntityMaps.map(key => {
       const value = world.getResource(key);
-      return [key, value == null ? null : Object.fromEntries([...value].map(([id, number]) => [names[id], number]))];
+      const entries = value instanceof Map ? [...value] : Object.entries(value ?? {});
+      return [key, value == null ? null : Object.fromEntries(entries.map(([id, number]) => [names[id], number]))];
     }));
     if (fixture.cableRotations) state.cableRotations = fixture.cableRotations.map(probe =>
       cable.cableStoredLengthAfterRotation(world, world.getComponent(ids[probe.path], cable.CablePathComponent),
@@ -151,7 +157,7 @@ export function runFixture(fixture) {
   }
   const snapshots = [snapshot(0)];
   for (const [index, step] of fixture.steps.entries()) {
-    resources(step.resources);
+    resources(step.resources, step.entityResources);
     mutate(step.set);
     world.update(step.dt);
     snapshots.push(snapshot(index + 1));
