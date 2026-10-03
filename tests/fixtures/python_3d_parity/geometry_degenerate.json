@@ -1,0 +1,22 @@
+{
+  "tolerance": {"atol": 1e-10, "rtol": 1e-09},
+  "entities": [], "systems": [], "steps": [],
+  "geometry": [
+    {"method": "tangentFromSphereToSphere", "args": [[0, 0, 0], 0.3, false, [0, 0, 0], 0.3, false, [0, 0, 1]]},
+    {"method": "tangentFromSphereToSphere", "args": [[0, 0, 0], 0.3, false, [1e-10, 0, 0], 0.3, false, [0, 0, 1]]},
+    {"method": "tangentFromSphereToSphere", "args": [[0, 0, 0], 0.3, false, [0, 0, 0], 0.3, true, [0, 0, 1]]},
+    {"method": "tangentFromSphereToSphere", "args": [[0, 0, 0], 0.3, false, [1e-10, 0, 0], 0.3, true, [0, 0, 1]]},
+    {"method": "tangentFromSphereToSphere", "args": [[0, 0, 0], 0.3, true, [0, 0, 0], 0.3, false, [0, 0, 1]]},
+    {"method": "tangentFromSphereToSphere", "args": [[0, 0, 0], 0.3, true, [1e-10, 0, 0], 0.3, false, [0, 0, 1]]},
+    {"method": "tangentFromSphereToSphere", "args": [[0, 0, 0], 0.3, true, [0, 0, 0], 0.3, true, [0, 0, 1]]},
+    {"method": "tangentFromSphereToSphere", "args": [[0, 0, 0], 0.3, true, [1e-10, 0, 0], 0.3, true, [0, 0, 1]]},
+    {"method": "tangentFromSphereToSphere", "args": [[0, 0, 0], 0.3, false, [0, 0, 0], 0.3, false, [1, 2, -3]]},
+    {"method": "tangentFromSphereToSphere", "args": [[0, 0, 0], 0.3, false, [1e-10, 0, 0], 0.3, false, [1, 2, -3]]},
+    {"method": "tangentFromSphereToSphere", "args": [[0, 0, 0], 0.3, false, [0, 0, 0], 0.3, true, [1, 2, -3]]},
+    {"method": "tangentFromSphereToSphere", "args": [[0, 0, 0], 0.3, false, [1e-10, 0, 0], 0.3, true, [1, 2, -3]]},
+    {"method": "tangentFromSphereToSphere", "args": [[0, 0, 0], 0.3, true, [0, 0, 0], 0.3, false, [1, 2, -3]]},
+    {"method": "tangentFromSphereToSphere", "args": [[0, 0, 0], 0.3, true, [1e-10, 0, 0], 0.3, false, [1, 2, -3]]},
+    {"method": "tangentFromSphereToSphere", "args": [[0, 0, 0], 0.3, true, [0, 0, 0], 0.3, true, [1, 2, -3]]},
+    {"method": "tangentFromSphereToSphere", "args": [[0, 0, 0], 0.3, true, [1e-10, 0, 0], 0.3, true, [1, 2, -3]]}
+  ]
+}
