@@ -1,0 +1,56 @@
+{
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "entities": [
+    {
+      "name": "source0",
+      "components": {
+        "PositionComponent": [-1, -0.3333333333333333, 0],
+        "SpoolTagComponent": [],
+        "VelocityComponent": [0.01, -0.02, 0.03]
+      }
+    },
+    {
+      "name": "source1",
+      "components": {
+        "PositionComponent": [1, -0.3333333333333333, 0],
+        "SpoolTagComponent": [],
+        "VelocityComponent": [0.01, -0.02, 0.03]
+      }
+    },
+    {
+      "name": "source2",
+      "components": {
+        "PositionComponent": [0, 0.6666666666666666, 0],
+        "SpoolTagComponent": [],
+        "VelocityComponent": [0.01, -0.02, 0.03]
+      }
+    },
+    {
+      "name": "extruder",
+      "components": {
+        "ExtruderComponent": []
+      }
+    }
+  ],
+  "systems": ["MovementSystem", "ExtruderSystem"],
+  "steps": [
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002,
+      "removeComponents": [["source0", "SpoolTagComponent"], ["source1", "SpoolTagComponent"], ["source2", "SpoolTagComponent"]]
+    },
+    {
+      "dt": 0.01
+    }
+  ],
+  "snapshotResources": [],
+  "initialSet": [["extruder", "ExtruderComponent", "centerOffsets", {"default": [0.1, -0.2, 0.3]}], ["extruder", "ExtruderComponent", "tipOffsets", {"default": [0.01, 0.02, -0.1]}]]
+}

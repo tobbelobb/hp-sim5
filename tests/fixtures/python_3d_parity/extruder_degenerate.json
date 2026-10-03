@@ -1,0 +1,202 @@
+{
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "entities": [
+    {
+      "name": "later_triangle_0",
+      "components": {
+        "PositionComponent": [0.0, 0.0, 1.0],
+        "SpoolTagComponent": [],
+        "MachineTagComponent": ["later_triangle"]
+      }
+    },
+    {
+      "name": "later_triangle_1",
+      "components": {
+        "PositionComponent": [0.0, 0.0, 1.0],
+        "SpoolTagComponent": [],
+        "MachineTagComponent": ["later_triangle"]
+      }
+    },
+    {
+      "name": "later_triangle_2",
+      "components": {
+        "PositionComponent": [1.0, 0.0, 1.0],
+        "SpoolTagComponent": [],
+        "MachineTagComponent": ["later_triangle"]
+      }
+    },
+    {
+      "name": "later_triangle_3",
+      "components": {
+        "PositionComponent": [0.0, 1.0, 1.0],
+        "SpoolTagComponent": [],
+        "MachineTagComponent": ["later_triangle"]
+      }
+    },
+    {
+      "name": "bad_reference_0",
+      "components": {
+        "PositionComponent": [4.0, -0.3333333333333333, 1.0],
+        "SpoolTagComponent": [],
+        "MachineTagComponent": ["bad_reference"]
+      }
+    },
+    {
+      "name": "bad_reference_1",
+      "components": {
+        "PositionComponent": [6.0, -0.3333333333333333, 1.0],
+        "SpoolTagComponent": [],
+        "MachineTagComponent": ["bad_reference"]
+      }
+    },
+    {
+      "name": "bad_reference_2",
+      "components": {
+        "PositionComponent": [5.0, 0.6666666666666666, 1.0],
+        "SpoolTagComponent": [],
+        "MachineTagComponent": ["bad_reference"]
+      }
+    },
+    {
+      "name": "bad_current_0",
+      "components": {
+        "PositionComponent": [10.0, 0.0, 1.0],
+        "SpoolTagComponent": [],
+        "MachineTagComponent": ["bad_current"]
+      }
+    },
+    {
+      "name": "bad_current_1",
+      "components": {
+        "PositionComponent": [11.0, 0.0, 1.0],
+        "SpoolTagComponent": [],
+        "MachineTagComponent": ["bad_current"]
+      }
+    },
+    {
+      "name": "bad_current_2",
+      "components": {
+        "PositionComponent": [12.0, 0.0, 1.0],
+        "SpoolTagComponent": [],
+        "MachineTagComponent": ["bad_current"]
+      }
+    },
+    {
+      "name": "short_reference_0",
+      "components": {
+        "PositionComponent": [14.0, -0.3333333333333333, 1.0],
+        "SpoolTagComponent": [],
+        "MachineTagComponent": ["short_reference"]
+      }
+    },
+    {
+      "name": "short_reference_1",
+      "components": {
+        "PositionComponent": [16.0, -0.3333333333333333, 1.0],
+        "SpoolTagComponent": [],
+        "MachineTagComponent": ["short_reference"]
+      }
+    },
+    {
+      "name": "short_reference_2",
+      "components": {
+        "PositionComponent": [15.0, 0.6666666666666666, 1.0],
+        "SpoolTagComponent": [],
+        "MachineTagComponent": ["short_reference"]
+      }
+    },
+    {
+      "name": "missing_position_0",
+      "components": {
+        "PositionComponent": [19.0, -0.3333333333333333, 1.0],
+        "SpoolTagComponent": [],
+        "MachineTagComponent": ["missing_position"]
+      }
+    },
+    {
+      "name": "missing_position_1",
+      "components": {
+        "PositionComponent": [21.0, -0.3333333333333333, 1.0],
+        "SpoolTagComponent": [],
+        "MachineTagComponent": ["missing_position"]
+      }
+    },
+    {
+      "name": "missing_position_2",
+      "components": {
+        "SpoolTagComponent": [],
+        "MachineTagComponent": ["missing_position"]
+      }
+    },
+    {
+      "name": "empty_sources_0",
+      "components": {
+        "PositionComponent": [24.0, -0.3333333333333333, 1.0],
+        "SpoolTagComponent": [],
+        "MachineTagComponent": ["empty_sources"]
+      }
+    },
+    {
+      "name": "empty_sources_1",
+      "components": {
+        "PositionComponent": [26.0, -0.3333333333333333, 1.0],
+        "SpoolTagComponent": [],
+        "MachineTagComponent": ["empty_sources"]
+      }
+    },
+    {
+      "name": "empty_sources_2",
+      "components": {
+        "PositionComponent": [25.0, 0.6666666666666666, 1.0],
+        "SpoolTagComponent": [],
+        "MachineTagComponent": ["empty_sources"]
+      }
+    },
+    {
+      "name": "extruder",
+      "components": {
+        "ExtruderComponent": []
+      }
+    }
+  ],
+  "systems": ["ExtruderSystem"],
+  "steps": [
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0
+    }
+  ],
+  "snapshotResources": [],
+  "initialSet": [["extruder", "ExtruderComponent", "centerSources", {"later_triangle": ["later_triangle_0", "later_triangle_1", "later_triangle_2", "later_triangle_3"], "bad_reference": ["bad_reference_0", "bad_reference_1", "bad_reference_2"], "bad_current": ["bad_current_0", "bad_current_1", "bad_current_2"], "short_reference": ["short_reference_0", "short_reference_1", "short_reference_2"], "missing_position": ["missing_position_0", "missing_position_1", "missing_position_2"], "empty_sources": []}], ["extruder", "ExtruderComponent", "centerSourceOffsets", {"later_triangle": [[0, 0, 0], [0, 0, 0], [1, 0, 0], [0, 1, 0]], "bad_reference": [[0, 0, 0], [1, 0, 0], [2, 0, 0]], "bad_current": [[-1, -0.3333333333333333, 0], [1, -0.3333333333333333, 0], [0, 0.6666666666666666, 0]], "short_reference": [[-1, -0.3333333333333333, 0], [1, -0.3333333333333333, 0]], "missing_position": [[-1, -0.3333333333333333, 0], [1, -0.3333333333333333, 0], [0, 0.6666666666666666, 0]], "empty_sources": [[-1, -0.3333333333333333, 0], [1, -0.3333333333333333, 0], [0, 0.6666666666666666, 0]]}], ["extruder", "ExtruderComponent", "centerOffsets", {"later_triangle": [0.1, -0.1, 0.05], "bad_reference": [0.1, -0.1, 0.05], "bad_current": [0.1, -0.1, 0.05], "short_reference": [0.1, -0.1, 0.05], "missing_position": [0.1, -0.1, 0.05], "empty_sources": [0.1, -0.1, 0.05]}], ["extruder", "ExtruderComponent", "tipOffsets", {"later_triangle": [0, 0.03, -0.1], "bad_reference": [0, 0.03, -0.1], "bad_current": [0, 0.03, -0.1], "short_reference": [0, 0.03, -0.1], "missing_position": [0, 0.03, -0.1], "empty_sources": [0, 0.03, -0.1]}], ["extruder", "ExtruderComponent", "coldEndOffsets", {"later_triangle": [0.1, 0.2, 0.3], "bad_reference": [0.1, 0.2, 0.3], "bad_current": [0.1, 0.2, 0.3], "short_reference": [0.1, 0.2, 0.3], "missing_position": [0.1, 0.2, 0.3], "empty_sources": [0.1, 0.2, 0.3]}]],
+  "effectorRotations": [
+    {
+      "extruder": "extruder",
+      "machine": "later_triangle"
+    },
+    {
+      "extruder": "extruder",
+      "machine": "bad_reference"
+    },
+    {
+      "extruder": "extruder",
+      "machine": "bad_current"
+    },
+    {
+      "extruder": "extruder",
+      "machine": "short_reference"
+    },
+    {
+      "extruder": "extruder",
+      "machine": "missing_position"
+    },
+    {
+      "extruder": "extruder",
+      "machine": "empty_sources"
+    }
+  ]
+}

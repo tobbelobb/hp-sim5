@@ -1,0 +1,93 @@
+{
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "entities": [
+    {
+      "name": "body",
+      "components": {
+        "OrientationComponent": [0.0, 0.24740395925452294, 0.0, 0.9689124217106447],
+        "AngularVelocityComponent": [0.2, -0.1, 0.3]
+      }
+    },
+    {
+      "name": "world",
+      "components": {
+        "StepperMotorComponent": [19.049555921538758, 0, 0.5, 50, 0.01, 600],
+        "SpoolStateComponent": ["world", [0, 0, 1], [0, 0, 0, 1]],
+        "MachineTagComponent": ["m1"],
+        "OrientationComponent": [0.0, 0.0, 0.34414443987360926, 0.9389167186199635]
+      }
+    },
+    {
+      "name": "member",
+      "components": {
+        "StepperMotorComponent": [19.249555921538757, 0, 0.5, 50, 0.01, 600],
+        "SpoolStateComponent": ["member", [0, 0, 1], [0.0, 0.24740395925452294, 0.0, 0.9689124217106447]],
+        "MachineTagComponent": ["m1"],
+        "OrientationComponent": [0, 0, 0, 1],
+        "RigidBodyMemberComponent": ["body", [0.1, 0, 0], [-0.0, -0.0, -0.09983341664682815, 0.9950041652780258], 0.2]
+      }
+    },
+    {
+      "name": "positive_small",
+      "components": {
+        "StepperMotorComponent": [18.84955592153876, 0, 0.5, 1, 0.01, 600],
+        "SpoolStateComponent": ["positive_small", [0, 0, 1], [0, 0, 0, 1]],
+        "MachineTagComponent": ["m1"],
+        "OrientationComponent": [0.0, 0.0, 0.24740395925452294, 0.9689124217106447]
+      }
+    },
+    {
+      "name": "negative_small",
+      "components": {
+        "StepperMotorComponent": [18.84955592153876, 0, 0.5, 1, 0.01, 600],
+        "SpoolStateComponent": ["negative_small", [0, 0, 1], [0, 0, 0, 1]],
+        "MachineTagComponent": ["m1"],
+        "OrientationComponent": [-0.0, -0.0, -0.24740395925452294, 0.9689124217106447]
+      }
+    },
+    {
+      "name": "missing_pose",
+      "components": {
+        "StepperMotorComponent": [18.84955592153876, 0, 0.5, 50, 0.01, 600],
+        "SpoolStateComponent": ["missing_pose", [0, 0, 1], [0, 0, 0, 1]],
+        "MachineTagComponent": ["m1"]
+      }
+    }
+  ],
+  "systems": ["AngularMovementSystem", "MissedStepTrackingSystem"],
+  "steps": [
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002,
+      "set": [["world", "StepperMotorComponent", "deltaAngle", 0.2]]
+    },
+    {
+      "dt": 0.002,
+      "set": [["member", "StepperMotorComponent", "torqueMode", true]]
+    },
+    {
+      "dt": 0.002,
+      "resetMotorDiagnostics": ["m1"]
+    },
+    {
+      "dt": 0.002,
+      "set": [["member", "StepperMotorComponent", "torqueMode", false]]
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    }
+  ],
+  "snapshotResources": [],
+  "motorDiagnostics": [null]
+}

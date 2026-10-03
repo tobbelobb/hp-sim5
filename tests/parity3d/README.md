@@ -13,6 +13,10 @@ components, invoke systems and serialize fields. Relationships use fixture
 names, quaternions use XYZW order and compare up to sign. Query and solver order
 remain observable. Arrays are copied when snapshots are taken.
 Per-path knot-map keys also use fixture entity names.
+Machine-keyed vector/source maps retain authored machine names. `effectorRotations`
+probes the production frame estimator; `motorDiagnostics` reads production reports
+before serializing their state changes. `removeComponents` and
+`resetMotorDiagnostics` exercise encoder fallback and baseline resets.
 
 For JSON snapshots of a single fixture:
 
@@ -43,6 +47,14 @@ without changing the reference World scheduling API.
 
 Current coverage:
 
+- `motor_diagnostics_encoders`, `motor_diagnostics_frames`, and
+  `motor_diagnostics_cables`: full-turn encoder slips, peak/current counts, JS
+  rounding, machine resets, mode transitions, fallback angles and moving members.
+- `extruder_frames`, `extruder_degenerate`, and `extruder_fallback`: authored
+  triangle selection, all rotation conversion branches, numeric machine-key order,
+  degenerate/missing sources, unrotated fallback offsets and pause.
+- `extruder_rigid_constraints` and `extruder_rigid_fallback`: live body transforms
+  after constraints with deliberately stale member ECS positions.
 - `motion`: prediction, world angular frames, PBD velocities, kinematic/static,
   grabbed, zero-dt, pause/error behavior.
 - `inertia`: small rotated SPD and rotated rank-2/rank-1/zero PSD inverse moments.
