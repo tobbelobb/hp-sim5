@@ -1,0 +1,231 @@
+{
+  "entities": [
+    {
+      "name": "dynamic_a",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [1],
+        "BallTagComponent": [],
+        "MassComponent": [2]
+      }
+    },
+    {
+      "name": "dynamic_b",
+      "components": {
+        "PositionComponent": [0.8, 0.3, 0.6],
+        "RadiusComponent": [1],
+        "BallTagComponent": [],
+        "MassComponent": [3]
+      }
+    },
+    {
+      "name": "static_a",
+      "components": {
+        "PositionComponent": [10, 0, 0],
+        "RadiusComponent": [1],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "static_b",
+      "components": {
+        "PositionComponent": [11, 0, 0],
+        "RadiusComponent": [1],
+        "BallTagComponent": [],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "negative_a",
+      "components": {
+        "PositionComponent": [20, 0, 0],
+        "RadiusComponent": [1],
+        "BallTagComponent": [],
+        "MassComponent": [-1]
+      }
+    },
+    {
+      "name": "negative_b",
+      "components": {
+        "PositionComponent": [20, 0.7, 0],
+        "RadiusComponent": [1],
+        "BallTagComponent": [],
+        "MassComponent": [2]
+      }
+    },
+    {
+      "name": "immovable_a",
+      "components": {
+        "PositionComponent": [30, 0, 0],
+        "RadiusComponent": [1],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "immovable_b",
+      "components": {
+        "PositionComponent": [30, 0, 0.8],
+        "RadiusComponent": [1],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "threshold_a",
+      "components": {
+        "PositionComponent": [40, 0, 0],
+        "RadiusComponent": [1],
+        "BallTagComponent": [],
+        "MassComponent": [10000000000.0]
+      }
+    },
+    {
+      "name": "threshold_b",
+      "components": {
+        "PositionComponent": [40.5, 0.5, 0],
+        "RadiusComponent": [1],
+        "BallTagComponent": [],
+        "MassComponent": [10000000000.0]
+      }
+    },
+    {
+      "name": "coincident_a",
+      "components": {
+        "PositionComponent": [50, 0, 0],
+        "RadiusComponent": [1],
+        "BallTagComponent": [],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "coincident_b",
+      "components": {
+        "PositionComponent": [50, 0, 0],
+        "RadiusComponent": [1],
+        "BallTagComponent": [],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "missing_mass_a",
+      "components": {
+        "PositionComponent": [60, 0, 0],
+        "RadiusComponent": [1],
+        "BallTagComponent": []
+      }
+    },
+    {
+      "name": "missing_mass_b",
+      "components": {
+        "PositionComponent": [60.7, 0, 0],
+        "RadiusComponent": [1],
+        "BallTagComponent": [],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "separate_a",
+      "components": {
+        "PositionComponent": [70, 0, 0],
+        "RadiusComponent": [1],
+        "BallTagComponent": [],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "separate_b",
+      "components": {
+        "PositionComponent": [74, 0, 0],
+        "RadiusComponent": [1],
+        "BallTagComponent": [],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "touching_a",
+      "components": {
+        "PositionComponent": [80, 0, 0],
+        "RadiusComponent": [1],
+        "BallTagComponent": [],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "touching_b",
+      "components": {
+        "PositionComponent": [82, 0, 0],
+        "RadiusComponent": [1],
+        "BallTagComponent": [],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "chain_a",
+      "components": {
+        "PositionComponent": [100, 0, 0],
+        "RadiusComponent": [1],
+        "BallTagComponent": [],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "chain_b",
+      "components": {
+        "PositionComponent": [101, 0.2, 0.3],
+        "RadiusComponent": [1],
+        "BallTagComponent": [],
+        "MassComponent": [2]
+      }
+    },
+    {
+      "name": "chain_c",
+      "components": {
+        "PositionComponent": [102, 0.1, 0.2],
+        "RadiusComponent": [1],
+        "BallTagComponent": [],
+        "MassComponent": [3]
+      }
+    }
+  ],
+  "systems": ["PBDBallBallCollisions"],
+  "resources": {
+    "dt": 0.002,
+    "enableLayering": true
+  },
+  "steps": [
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.004
+    },
+    {
+      "dt": 0
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": true
+        }
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": false
+        }
+      }
+    }
+  ],
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "queries": [
+    ["BallTagComponent", "PositionComponent", "RadiusComponent", "MassComponent"]
+  ]
+}

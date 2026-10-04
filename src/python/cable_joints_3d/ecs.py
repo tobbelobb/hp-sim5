@@ -41,6 +41,13 @@ class RenderableComponent:
         if self.height is not None and (not np.isfinite(self.height) or self.height <= 0):
             self.height = None
 @dataclass
+class BallTagComponent: pass
+@dataclass
+class ObstacleTagComponent: pass
+@dataclass
+class ObstaclePushComponent:
+    push_vel: float = 2.
+@dataclass
 class SceneEntityInfoComponent:
     name: str
     tags: list[str] = field(default_factory=list)

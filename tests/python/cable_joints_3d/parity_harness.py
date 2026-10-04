@@ -27,6 +27,9 @@ from cable_joints_3d.torque_mode_system import TorqueModeSystem
 from cable_joints_3d.motor_diagnostics import MissedStepTrackingSystem, get_machine_motor_diagnostics, reset_machine_motor_diagnostics
 from cable_joints_3d.extruder import ExtruderComponent, ExtruderSystem, estimate_effector_rotation
 from cable_joints_3d.remote_spool_system import RemoteSpoolSystem
+from cable_joints_3d.pbd_ball_collisions import PBDBallBallCollisions, PBDBallObstacleCollisions
+from cable_joints_3d.ball_obstacle_bump_system import BallObstacleBumpSystem
+from cable_joints_3d.cable_slack_system import CableSlackSystem, SlideLooseCableSystem
 
 ROOT = Path(__file__).resolve().parents[3]
 CONTRACT = json.loads((ROOT / 'tests/parity3d/contract.json').read_text())
@@ -79,6 +82,9 @@ def run_python(fixture):
             return [ids[name] for name in value]
         if kind == 'vectors':
             return [decode(point, 'vector') for point in value]
+        if kind == 'contacts':
+            return [dict(contact, ball_id=ids[contact['ball_id']], obs_id=ids[contact['obs_id']],
+                         direction=decode(contact['direction'], 'vector')) for contact in value]
         if kind.endswith('Map') and kind != 'entityMap':
             return {key: decode(item, kind[:-3]) for key, item in value.items()}
         if kind == 'entityMap':
@@ -118,6 +124,8 @@ def run_python(fixture):
         for key, value in (values or {}).items():
             if key in ('gravity', 'defaultPlaneNormal'):
                 value = np.array(value, dtype=float)
+            elif key == 'ball_obstacle_contacts':
+                value = decode(value, 'contacts')
             elif key == 'grabbedBall' and value is not None:
                 value = ids[value]
             elif isinstance(value, dict):
@@ -161,6 +169,9 @@ def run_python(fixture):
                'CableAttachmentUpdateSystem': CableAttachmentUpdateSystem, 'PBDCableConstraintSolver': PBDCableConstraintSolver,
                'PBDResolveCableOverCorrections': PBDResolveCableOverCorrections, 'StepperMotorSystem': StepperMotorSystem,
                'TorqueModeSystem': TorqueModeSystem, 'MissedStepTrackingSystem': MissedStepTrackingSystem,
+               'PBDBallBallCollisions': PBDBallBallCollisions, 'PBDBallObstacleCollisions': PBDBallObstacleCollisions,
+               'BallObstacleBumpSystem': BallObstacleBumpSystem, 'CableSlackSystem': CableSlackSystem,
+               'SlideLooseCableSystem': SlideLooseCableSystem,
                'ExtruderSystem': ExtruderSystem, 'RemoteSpoolSystem': RemoteSpoolSystem}
     for definition in fixture['systems']:
         name = definition if isinstance(definition, str) else definition['name']
@@ -210,6 +221,9 @@ def run_python(fixture):
             return [bool(item) for item in value]
         if kind == 'vectors':
             return [encode(point, 'vector') for point in value]
+        if kind == 'contacts':
+            return [dict(contact, ball_id=names[contact['ball_id']], obs_id=names[contact['obs_id']],
+                         direction=encode(contact['direction'], 'vector')) for contact in value]
         if kind.endswith('Map') and kind != 'entityMap':
             return {key: encode(item, kind[:-3]) for key, item in value.items()}
         if kind == 'entityMap':
@@ -285,7 +299,8 @@ def run_python(fixture):
                     component.machine_effector_centers.get(machine), component.center_sources.get(machine), world)
                 state['effectorRotations'].append({'quaternion': encode(rotation, 'quaternion')})
         if 'snapshotResources' in fixture:
-            state['resources'] = {key: encode(world.get_resource(key), 'vector') if key in ('gravity', 'defaultPlaneNormal')
+            state['resources'] = {key: encode(world.get_resource(key), 'contacts') if key == 'ball_obstacle_contacts'
+                                  else encode(world.get_resource(key), 'vector') if key in ('gravity', 'defaultPlaneNormal')
                                   else world.get_resource(key) for key in fixture['snapshotResources']}
         if 'snapshotMapResources' in fixture:
             state['mapResources'] = {key: copy.deepcopy(world.get_resource(key) or {})

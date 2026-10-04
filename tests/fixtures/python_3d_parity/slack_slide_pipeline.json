@@ -1,0 +1,168 @@
+{
+  "entities": [
+    {
+      "name": "anchor",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0],
+        "MassComponent": [0],
+        "PrevFinalPosComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "PrevFinalOrientationComponent": [0, 0, 0, 1],
+        "VelocityComponent": [0, 0, 0],
+        "AngularVelocityComponent": [0, 0, 0],
+        "MomentOfInertiaComponent": [0],
+        "CableLinkComponent": [
+          0,
+          0,
+          0,
+          [0, 0, 0, 1],
+          [0, 0, 1],
+          null
+        ]
+      }
+    },
+    {
+      "name": "pin",
+      "components": {
+        "PositionComponent": [3, 1, 0.2],
+        "RadiusComponent": [0],
+        "MassComponent": [0],
+        "PrevFinalPosComponent": [3, 1, 0.2],
+        "OrientationComponent": [0, 0, 0, 1],
+        "PrevFinalOrientationComponent": [0, 0, 0, 1],
+        "VelocityComponent": [0, 0, 0],
+        "AngularVelocityComponent": [0, 0, 0],
+        "MomentOfInertiaComponent": [0],
+        "CableLinkComponent": [
+          3,
+          1,
+          0.2,
+          [0, 0, 0, 1],
+          [0, 0, 1],
+          null
+        ]
+      }
+    },
+    {
+      "name": "body",
+      "components": {
+        "PositionComponent": [6, 2, 1],
+        "RadiusComponent": [0],
+        "MassComponent": [1],
+        "PrevFinalPosComponent": [6, 2, 1],
+        "OrientationComponent": [0, 0, 0, 1],
+        "PrevFinalOrientationComponent": [0, 0, 0, 1],
+        "VelocityComponent": [0, 0, 0],
+        "AngularVelocityComponent": [0, 0, 0],
+        "MomentOfInertiaComponent": [0.2],
+        "CableLinkComponent": [
+          6,
+          2,
+          1,
+          [0, 0, 0, 1],
+          [0, 0, 1],
+          null
+        ],
+        "EncoderComponent": [0, 0, 0, 1]
+      }
+    },
+    {
+      "name": "left",
+      "components": {
+        "CableJointComponent": [
+          "anchor",
+          "pin",
+          4.2,
+          [0, 0, 0],
+          [3, 1, 0.2],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "right",
+      "components": {
+        "CableJointComponent": [
+          "pin",
+          "body",
+          2.2,
+          [3, 1, 0.2],
+          [6, 2, 1.2],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "path",
+      "components": {
+        "CablePathComponent": [
+          ["left", "right"],
+          ["attachment", "pinhole", "attachment"],
+          [false, false, false],
+          10000,
+          [0, 0, 0],
+          0,
+          0.1,
+          3
+        ]
+      }
+    }
+  ],
+  "systems": [
+    "PrevFinalPosSystem",
+    "PrevFinalOrientationSystem",
+    "MovementSystem",
+    "AngularMovementSystem",
+    {
+      "name": "CableAttachmentUpdateSystem",
+      "args": [false]
+    },
+    "CableAttachmentCacheSystem",
+    "SlideLooseCableSystem",
+    "PBDCableConstraintSolver",
+    "PBDResolveCableOverCorrections",
+    "PBDVelocityUpdateSystem",
+    "PBDAngularVelocityUpdateSystem",
+    "EncoderUpdateSystem"
+  ],
+  "resources": {
+    "dt": 0.002,
+    "enableLayering": true
+  },
+  "steps": [
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.004
+    },
+    {
+      "dt": 0
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": true
+        }
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": false
+        }
+      }
+    }
+  ],
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "queries": [
+    ["CableJointComponent"],
+    ["CablePathComponent"]
+  ]
+}

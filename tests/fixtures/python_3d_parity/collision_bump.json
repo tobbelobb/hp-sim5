@@ -1,0 +1,575 @@
+{
+  "entities": [
+    {
+      "name": "tensor_ball",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.4],
+        "BallTagComponent": [],
+        "MassComponent": [1.5],
+        "VelocityComponent": [1.2, -0.7, 0.4],
+        "AngularVelocityComponent": [0.2, -0.3, 0.4],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "OrientationComponent": [0.1, -0.2, 0.3, 0.9273618495495703]
+      }
+    },
+    {
+      "name": "tensor_obstacle",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.8],
+        "ObstacleTagComponent": [],
+        "ObstaclePushComponent": [1.7],
+        "AngularVelocityComponent": [-1, 2, -0.5],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "OrientationComponent": [-0.2, 0.1, 0.3, 0.9273618495495703],
+        "CoefficientOfFrictionComponent": [0.8]
+      }
+    },
+    {
+      "name": "scalar_ball",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.4],
+        "BallTagComponent": [],
+        "MassComponent": [1.5],
+        "VelocityComponent": [1.2, -0.7, 0.4],
+        "AngularVelocityComponent": [0.2, -0.3, 0.4],
+        "MomentOfInertiaComponent": [0.5],
+        "OrientationComponent": [0.1, -0.2, 0.3, 0.9273618495495703]
+      }
+    },
+    {
+      "name": "scalar_obstacle",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.8],
+        "ObstacleTagComponent": [],
+        "ObstaclePushComponent": [1.7],
+        "AngularVelocityComponent": [-1, 2, -0.5],
+        "MomentOfInertiaComponent": [0.7],
+        "OrientationComponent": [-0.2, 0.1, 0.3, 0.9273618495495703],
+        "CoefficientOfFrictionComponent": [0.8]
+      }
+    },
+    {
+      "name": "zero_inertia_ball",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.4],
+        "BallTagComponent": [],
+        "MassComponent": [1.5],
+        "VelocityComponent": [1.2, -0.7, 0.4],
+        "AngularVelocityComponent": [0.2, -0.3, 0.4],
+        "MomentOfInertiaComponent": [0],
+        "OrientationComponent": [0.1, -0.2, 0.3, 0.9273618495495703]
+      }
+    },
+    {
+      "name": "zero_inertia_obstacle",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.8],
+        "ObstacleTagComponent": [],
+        "ObstaclePushComponent": [1.7],
+        "AngularVelocityComponent": [-1, 2, -0.5],
+        "MomentOfInertiaComponent": [0],
+        "OrientationComponent": [-0.2, 0.1, 0.3, 0.9273618495495703],
+        "CoefficientOfFrictionComponent": [0.8]
+      }
+    },
+    {
+      "name": "zero_mass_ball",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.4],
+        "BallTagComponent": [],
+        "MassComponent": [0],
+        "VelocityComponent": [1.2, -0.7, 0.4],
+        "AngularVelocityComponent": [0.2, -0.3, 0.4],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "OrientationComponent": [0.1, -0.2, 0.3, 0.9273618495495703]
+      }
+    },
+    {
+      "name": "zero_mass_obstacle",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.8],
+        "ObstacleTagComponent": [],
+        "ObstaclePushComponent": [1.7],
+        "AngularVelocityComponent": [-1, 2, -0.5],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "OrientationComponent": [-0.2, 0.1, 0.3, 0.9273618495495703],
+        "CoefficientOfFrictionComponent": [0.8]
+      }
+    },
+    {
+      "name": "negative_mass_ball",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.4],
+        "BallTagComponent": [],
+        "MassComponent": [-1],
+        "VelocityComponent": [1.2, -0.7, 0.4],
+        "AngularVelocityComponent": [0.2, -0.3, 0.4],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "OrientationComponent": [0.1, -0.2, 0.3, 0.9273618495495703]
+      }
+    },
+    {
+      "name": "negative_mass_obstacle",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.8],
+        "ObstacleTagComponent": [],
+        "ObstaclePushComponent": [1.7],
+        "AngularVelocityComponent": [-1, 2, -0.5],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "OrientationComponent": [-0.2, 0.1, 0.3, 0.9273618495495703],
+        "CoefficientOfFrictionComponent": [0.8]
+      }
+    },
+    {
+      "name": "no_angular_ball",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.4],
+        "BallTagComponent": [],
+        "MassComponent": [1.5],
+        "VelocityComponent": [1.2, -0.7, 0.4]
+      }
+    },
+    {
+      "name": "no_angular_obstacle",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.8],
+        "ObstacleTagComponent": [],
+        "ObstaclePushComponent": [1.7],
+        "CoefficientOfFrictionComponent": [0.8]
+      }
+    },
+    {
+      "name": "missing_required_ball",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.4],
+        "BallTagComponent": [],
+        "VelocityComponent": [1.2, -0.7, 0.4],
+        "AngularVelocityComponent": [0.2, -0.3, 0.4],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "OrientationComponent": [0.1, -0.2, 0.3, 0.9273618495495703]
+      }
+    },
+    {
+      "name": "missing_required_obstacle",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.8],
+        "ObstacleTagComponent": [],
+        "ObstaclePushComponent": [1.7],
+        "AngularVelocityComponent": [-1, 2, -0.5],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "OrientationComponent": [-0.2, 0.1, 0.3, 0.9273618495495703],
+        "CoefficientOfFrictionComponent": [0.8]
+      }
+    },
+    {
+      "name": "zero_tangent_ball",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.4],
+        "BallTagComponent": [],
+        "MassComponent": [1.5],
+        "VelocityComponent": [2, 0, 0],
+        "AngularVelocityComponent": [0, 0, 0],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "OrientationComponent": [0.1, -0.2, 0.3, 0.9273618495495703]
+      }
+    },
+    {
+      "name": "zero_tangent_obstacle",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.8],
+        "ObstacleTagComponent": [],
+        "ObstaclePushComponent": [1.7],
+        "AngularVelocityComponent": [0, 0, 0],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "OrientationComponent": [-0.2, 0.1, 0.3, 0.9273618495495703],
+        "CoefficientOfFrictionComponent": [0.8]
+      }
+    },
+    {
+      "name": "zero_normal_ball",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.4],
+        "BallTagComponent": [],
+        "MassComponent": [1.5],
+        "VelocityComponent": [1.2, -0.7, 0.4],
+        "AngularVelocityComponent": [0.2, -0.3, 0.4],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "OrientationComponent": [0.1, -0.2, 0.3, 0.9273618495495703]
+      }
+    },
+    {
+      "name": "zero_normal_obstacle",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.8],
+        "ObstacleTagComponent": [],
+        "ObstaclePushComponent": [1.7],
+        "AngularVelocityComponent": [-1, 2, -0.5],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "OrientationComponent": [-0.2, 0.1, 0.3, 0.9273618495495703],
+        "CoefficientOfFrictionComponent": [0.8]
+      }
+    },
+    {
+      "name": "override_ball",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.4],
+        "BallTagComponent": [],
+        "MassComponent": [1.5],
+        "VelocityComponent": [1.2, -0.7, 0.4],
+        "AngularVelocityComponent": [0.2, -0.3, 0.4],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "OrientationComponent": [0.1, -0.2, 0.3, 0.9273618495495703]
+      }
+    },
+    {
+      "name": "override_obstacle",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.8],
+        "ObstacleTagComponent": [],
+        "ObstaclePushComponent": [1.7],
+        "AngularVelocityComponent": [-1, 2, -0.5],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "OrientationComponent": [-0.2, 0.1, 0.3, 0.9273618495495703],
+        "CoefficientOfFrictionComponent": [0.8]
+      }
+    },
+    {
+      "name": "negative_mu_ball",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.4],
+        "BallTagComponent": [],
+        "MassComponent": [1.5],
+        "VelocityComponent": [1.2, -0.7, 0.4],
+        "AngularVelocityComponent": [0.2, -0.3, 0.4],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "OrientationComponent": [0.1, -0.2, 0.3, 0.9273618495495703]
+      }
+    },
+    {
+      "name": "negative_mu_obstacle",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.8],
+        "ObstacleTagComponent": [],
+        "ObstaclePushComponent": [1.7],
+        "AngularVelocityComponent": [-1, 2, -0.5],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "OrientationComponent": [-0.2, 0.1, 0.3, 0.9273618495495703],
+        "CoefficientOfFrictionComponent": [0.8]
+      }
+    },
+    {
+      "name": "tiny_spin_ball",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.4],
+        "BallTagComponent": [],
+        "MassComponent": [1.5],
+        "VelocityComponent": [1.2, -0.7, 0.4],
+        "AngularVelocityComponent": [1e-07, -1e-07, 1e-07],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "OrientationComponent": [0.1, -0.2, 0.3, 0.9273618495495703]
+      }
+    },
+    {
+      "name": "tiny_spin_obstacle",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.8],
+        "ObstacleTagComponent": [],
+        "ObstaclePushComponent": [1.7],
+        "AngularVelocityComponent": [1e-07, -1e-07, 1e-07],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "OrientationComponent": [-0.2, 0.1, 0.3, 0.9273618495495703],
+        "CoefficientOfFrictionComponent": [0.8]
+      }
+    },
+    {
+      "name": "raw_filtered_ball",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.4],
+        "BallTagComponent": [],
+        "MassComponent": [1.5],
+        "VelocityComponent": [1.2, -0.7, 0.4],
+        "AngularVelocityComponent": [0.2, -0.3, 0.4],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "OrientationComponent": [0.1, -0.2, 0.3, 0.9273618495495703]
+      }
+    },
+    {
+      "name": "raw_filtered_obstacle",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.8],
+        "ObstacleTagComponent": [],
+        "ObstaclePushComponent": [1.7],
+        "AngularVelocityComponent": [-1, 2, -0.5],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "OrientationComponent": [-0.2, 0.1, 0.3, 0.9273618495495703],
+        "CoefficientOfFrictionComponent": [0.8]
+      }
+    }
+  ],
+  "systems": ["BallObstacleBumpSystem"],
+  "resources": {
+    "dt": 0.002,
+    "enableLayering": true,
+    "ball_obstacle_contacts": [
+      {
+        "ball_id": "tensor_ball",
+        "obs_id": "tensor_obstacle",
+        "direction": [3, 4, 1]
+      },
+      {
+        "ball_id": "scalar_ball",
+        "obs_id": "scalar_obstacle",
+        "direction": [3, 4, 1]
+      },
+      {
+        "ball_id": "zero_inertia_ball",
+        "obs_id": "zero_inertia_obstacle",
+        "direction": [3, 4, 1]
+      },
+      {
+        "ball_id": "zero_mass_ball",
+        "obs_id": "zero_mass_obstacle",
+        "direction": [3, 4, 1],
+        "raw_hit": 0
+      },
+      {
+        "ball_id": "negative_mass_ball",
+        "obs_id": "negative_mass_obstacle",
+        "direction": [3, 4, 1]
+      },
+      {
+        "ball_id": "no_angular_ball",
+        "obs_id": "no_angular_obstacle",
+        "direction": [3, 4, 1]
+      },
+      {
+        "ball_id": "missing_required_ball",
+        "obs_id": "missing_required_obstacle",
+        "direction": [3, 4, 1]
+      },
+      {
+        "ball_id": "zero_tangent_ball",
+        "obs_id": "zero_tangent_obstacle",
+        "direction": [1, 0, 0]
+      },
+      {
+        "ball_id": "zero_normal_ball",
+        "obs_id": "zero_normal_obstacle",
+        "direction": [0, 0, 0]
+      },
+      {
+        "ball_id": "override_ball",
+        "obs_id": "override_obstacle",
+        "direction": [3, 4, 1],
+        "obstacle_friction": 0.2,
+        "ball_friction": 1.2
+      },
+      {
+        "ball_id": "negative_mu_ball",
+        "obs_id": "negative_mu_obstacle",
+        "direction": [3, 4, 1],
+        "obstacle_friction": -0.4,
+        "ball_friction": -0.8
+      },
+      {
+        "ball_id": "tiny_spin_ball",
+        "obs_id": "tiny_spin_obstacle",
+        "direction": [3, 4, 1],
+        "obstacle_friction": true,
+        "ball_friction": false
+      },
+      {
+        "ball_id": "raw_filtered_ball",
+        "obs_id": "raw_filtered_obstacle",
+        "direction": [3, 4, 1],
+        "raw_hit": false
+      }
+    ]
+  },
+  "steps": [
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "layeringObstacleRawHitFilter": false
+      }
+    },
+    {
+      "dt": 0,
+      "resources": {
+        "enableLayering": false,
+        "layeringObstacleRawHitFilter": true
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "enableLayering": true,
+        "pauseState": {
+          "paused": true
+        }
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": false
+        }
+      }
+    }
+  ],
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "snapshotResources": ["ball_obstacle_contacts"]
+}
