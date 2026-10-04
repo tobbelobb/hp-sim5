@@ -23,8 +23,9 @@ hp-sim5 includes a Cable Joints library and XPBD physics engine inspired and cod
 Müller](https://matthias-research.github.io/pages/index.html).
 
 hp-sim5 includes JavaScript and Python implementations of the Cable Joints
-physics. They share the same broad design, but the actively developed 3D app
-has JavaScript-specific rigid-body, cable, and motor behavior; see
+physics. Python can load authored 3D Hangprinter USD machines and run the headless
+cable, rigid-body and motor pipeline. The [parity checklist](PYTHON_3D_PARITY.md)
+records cross-language evidence, tolerances and remaining work; see also
 [`hp-sim-3d/README.md`](hp-sim-3d/README.md).
 
 The physics engine is the heart of hp-sim5, and lives in the src directory.

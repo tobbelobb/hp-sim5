@@ -15,6 +15,23 @@ files for replay.
 
 ## Runtime and Scene Construction
 
+The native Python headless entry point loads the same authored machine files:
+
+```bash
+PYTHONPATH=src/python .venv/bin/python - <<'PY'
+from cable_joints_3d.machine_simulation import load_machine_world
+
+world = load_machine_world('public/usd_scenes/hp4_rigid_body.usda')
+for _ in range(200):
+    world.update(world.get_resource('dt'))
+PY
+```
+
+It registers the meaningful simulation systems in the JS app's order. Optional
+`recording=` accepts a Rerun recording stream. See the
+[Python parity checklist](../PYTHON_3D_PARITY.md) for covered machines, numerical
+bounds and remaining recording/topology work.
+
 `app/hp-sim-3d.js` boots the application assembled by `app/appBootstrap.js`.
 The bootstrap is a composition root for controllers that own machine loading,
 print jobs, workers, feature flags, quality checks, inspection tools, and view

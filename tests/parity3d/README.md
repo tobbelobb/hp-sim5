@@ -27,6 +27,9 @@ Python dictionaries, including authored extrusion colors.
 baker and native `pxr.Usd` baker. It compares resolved joint world/local points,
 rest lengths and stored wraps before ECS construction. Optional `deriveAll` and
 `cablePathHalfWidthOverride` retain load-time policy semantics.
+`scenes` executes native USD baking and each production ECS builder independently.
+`pipeline: true` uses actual production registration in both languages and records
+the system order; it forbids a fixture-supplied substitute system list.
 
 For JSON snapshots of a single fixture:
 
@@ -54,6 +57,11 @@ relationships. `entityResources` seeds those maps from `{kind, values}` definiti
 at initialization or before a timestep (`kind` selects JS Map or object); Python
 uses dictionaries. Optional torque-tuning fields serialize absent/None as null. The solver reads the resource `dt`; fixtures set it explicitly
 without changing the reference World scheduling API.
+Optional `tolerance.fields` selects qualified component fields by suffix, ignoring
+array indices, and overrides their absolute/relative bounds. Unselected fields
+retain the default bound. Structural/type checks and nonfinite rejection still
+apply. Full-machine cases use explicit physical-unit bounds listed in
+`PYTHON_3D_PARITY.md`; deposited extrusion lengths retain the default bound.
 
 Current coverage:
 
@@ -61,7 +69,7 @@ Current coverage:
   complete authored cable initialization before scene construction.
 - `usd_bake_frames` and policy/width variants: hierarchical frames, parallel/skew
   rolling tangents, layered endpoint radii, authored/manual values, auto wraps,
-forced rederivation and width override. Both bakers reject invalid manual data,
+  forced rederivation and width override. Both bakers reject invalid manual data,
   stored lengths/modes, missing radii and duplicate joint relationships.
 - `usd_scene_*`: eight authored files, a strict double-precision construction
   fixture and appended machines execute both production scene builders. They
@@ -70,7 +78,17 @@ forced rederivation and width override. Both bakers reject invalid manual data,
   extruder bindings. `snapshotMapResources` preserves machine-color maps.
   Native USD float32 opinions differ from JS literal doubles; authored initial
   states use atol `5e-10` / rtol `6e-8`. The double-precision fixture and native bake
-  cases retain atol `1e-10` / rtol `1e-9`. This does not establish full-machine motion.
+  cases retain atol `1e-10` / rtol `1e-9`.
+- `machine_pipeline_*`: the production 19-system pipeline runs HP3, HP4, rigid
+  pinhole and a double-authored minimal machine for 200 steps, with exact
+  within-engine repeatability. Full authored input uses documented per-field
+  bounds; the same machines with shared double-authored input retain strict engine
+  tolerances over 20 steps. No loader changes authored precision or adds substeps.
+- `machine_pipeline_hp4_commands`: full-machine command playback, position/torque
+  transitions, encoder diagnostics, extrusion at the pre-prediction tip, pause
+  and zero update dt with a retained cable dt resource.
+- `pbd_small_rotations`: recover representable quaternion-vector rotations when
+  the scalar rounds to one; preserve sign and the existing cutoff.
 - `commands_state`, `commands_playback`, and `commands_numeric_order`: one record
   per step, pause/zero-dt, motor/reference transitions, multiple machines per axis,
   cached mapping reset, queue/history restoration, callback timing and colors.
@@ -149,6 +167,6 @@ four cable-solver, three over-correction, three position-motor and five
 torque-motor fixtures run for 200 steps;
 both engines must reproduce their own snapshots exactly on a second run.
 
-These fixtures establish the covered ECS behavior. Authored USDA construction,
-dynamic split/merge, commands, extrusion/diagnostics, full machines
-and richer Rerun recordings remain on the checklist in `PYTHON_3D_PARITY.md`.
+These fixtures establish the covered authored-machine pipeline. Dynamic split/merge,
+optional collision fixtures and richer Rerun recordings remain on the checklist
+in `PYTHON_3D_PARITY.md`.
