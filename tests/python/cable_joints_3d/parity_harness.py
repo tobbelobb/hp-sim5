@@ -223,9 +223,15 @@ def run_python(fixture):
         return copy.deepcopy(value)
 
     def snapshot(step):
+        for entity in world.entities:
+            if entity not in names:
+                name = f'@{entity}'
+                assert name not in ids, f'Dynamic entity name collision {name}'
+                names[entity], ids[name] = name, entity
         diagnostics = [get_machine_motor_diagnostics(world, machine) for machine in fixture.get('motorDiagnostics', [])]
         entities = {}
-        for name, entity in ids.items():
+        for entity in world.entities:
+            name = names[entity]
             state = entities[name] = {}
             for type_name, fields in CONTRACT.items():
                 if type_name not in components:
@@ -252,6 +258,9 @@ def run_python(fixture):
                 'internalToBody': bool(endpoint.internal_to_body),
             })
         state = {'step': step, 'entities': entities, 'queries': queries, 'attachments': attachments}
+        if fixture.get('snapshotAllocator'):
+            state['allocator'] = {'nextEntityId': world.next_entity_id,
+                                  'entityOrder': [names[entity] for entity in world.entities]}
         if fixture.get('flightSnapshot'):
             from cable_joints_3d.machine_snapshot import capture_machine_snapshot
             state['flightSnapshot'] = capture_machine_snapshot(world)
@@ -301,6 +310,10 @@ def run_python(fixture):
         for machine in step.get('resetMotorDiagnostics', []):
             reset_machine_motor_diagnostics(world, machine)
         command_actions(step.get('commandActions'))
+        for operation in step.get('topology', []):
+            from cable_joints_3d.cable_topology import merge_joints, split_joints
+            assert operation in ('split', 'merge'), f'Unknown topology operation {operation}'
+            (split_joints if operation == 'split' else merge_joints)(world)
         world.update(step['dt'])
         snapshots.append(snapshot(index))
     result = {'schema': 1, 'snapshots': snapshots}

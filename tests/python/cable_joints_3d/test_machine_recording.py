@@ -167,3 +167,39 @@ def test_native_cli_records_authored_machine_commands_and_final_json(tmp_path):
     assert any('/members/' in frame['path'] for frame in data['frames'])
     extruder = load_machine_world(ROOT / 'public/usd_scenes/hp4_rigid_body.usda').query([ExtruderComponent])[0]
     assert any(value > 0 for _, values in rows(output, f'/extrusion_lengths/default/{extruder}/deposited_length', 'Scalars:scalars') for value in values)
+
+
+def test_native_rrd_keeps_joint_series_identity_through_split_merge(tmp_path):
+    from cable_joints_3d.cable_joints_components import CablePathComponent
+    from cable_joints_3d.cable_topology import merge_joints, split_joints
+    from test_cable_topology_parity import make_topology_world
+
+    output = tmp_path / 'topology.rrd'
+    stream = rr.RecordingStream('topology recording test')
+    stream.set_sinks(rr.FileSink(output))
+    world, joint_id, path_id = make_topology_world()
+    path = world.get_component(path_id, CablePathComponent)
+    recording = RerunSystem(stream)
+    try:
+        recording.update(world, 0)
+        split_joints(world)
+        removed_id = path.joint_entities[1]
+        recording.update(world, .002)
+        path.stored[1] = -.01
+        merge_joints(world)
+        recording.update(world, .002)
+        split_joints(world)
+        created_id = path.joint_entities[1]
+        recording.update(world, .002)
+        stream.flush(timeout_sec=5)
+    finally:
+        stream.disconnect()
+    cable = capture_machine_snapshot(world)['cables'][0]
+    key = f"{cable['machine']}/{cable['name']}"
+    force_path = lambda entity: f'/cable_forces/{key}/entity_{entity}'
+    assert [step for step, _ in rows(output, force_path(joint_id), 'Scalars:scalars')] == [0, 1, 2, 3]
+    assert [step for step, _ in rows(output, force_path(removed_id), 'Scalars:scalars')] == [1]
+    assert rows(output, force_path(removed_id), 'Clear:is_recursive') == [(2, [True])]
+    assert [step for step, _ in rows(output, force_path(created_id), 'Scalars:scalars')] == [3]
+    strips = rows(output, f"/world/machines/{cable['machine']}/cables/{cable['name']}/segments", 'LineStrips3D:strips')
+    assert [(step, len(value)) for step, value in strips] == [(0, 1), (1, 2), (2, 1), (3, 2)]

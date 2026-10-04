@@ -1,5 +1,6 @@
 import copy
 import json
+from contextlib import nullcontext
 
 import numpy as np
 import pytest
@@ -11,7 +12,9 @@ from parity_harness import FIXTURES, assert_equivalent, run_js, run_python
 def test_live_js_differential(fixture_path):
     fixture = json.loads(fixture_path.read_text())
     expected = run_js(fixture)
-    actual = run_python(fixture)
+    warning = pytest.warns(UserWarning, match='Insufficient available rest length') if fixture_path.stem == 'topology_split_abort' else nullcontext()
+    with warning:
+        actual = run_python(fixture)
     assert_equivalent(actual, expected, **fixture['tolerance'], path=fixture_path.stem)
 
 

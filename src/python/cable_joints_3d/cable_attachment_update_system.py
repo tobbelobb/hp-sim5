@@ -309,8 +309,6 @@ class CableAttachmentUpdateSystem:
         self.merge_and_split_feature = merge_and_split_feature
 
     def update(self, world, dt):
-        if feature_flag(world, 'layeringMergeJoints', self.merge_and_split_feature) or feature_flag(world, 'layeringSplitJoints', self.merge_and_split_feature):
-            raise NotImplementedError('Dynamic cable split/merge is not ported yet; Hangprinter uses CableAttachmentUpdateSystem(False).')
         step = world.get_resource('cableHybridTransitionStep')
         step = math.floor(step) if isinstance(step, (int, float)) and not isinstance(step, bool) and math.isfinite(step) else 0
         world.set_resource('cableHybridTransitionStep', step + 1)
@@ -319,5 +317,11 @@ class CableAttachmentUpdateSystem:
             debug_points.clear()
         if feature_flag(world, 'layeringAttachmentUpdatePoints'):
             update_attachment_points(world)
+        if feature_flag(world, 'layeringMergeJoints', self.merge_and_split_feature):
+            from .cable_topology import merge_joints
+            merge_joints(world)
+        if feature_flag(world, 'layeringSplitJoints', self.merge_and_split_feature):
+            from .cable_topology import split_joints
+            split_joints(world)
         if feature_flag(world, 'layeringHybridLinkStates'):
             update_hybrid_link_states(world)
