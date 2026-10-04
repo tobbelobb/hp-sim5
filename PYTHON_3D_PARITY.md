@@ -3,7 +3,7 @@
 Behavioral reference: JS main after [PR #61](https://github.com/tobbelobb/hp-sim5/pull/61)
 (`7d47fedc`), plus the isolated reference corrections below. Goal: same relevant
 USDA data, ECS state and timestep pipeline, with materially equivalent physics.
-Python uses Rerun. This working checklist does **not** claim full-machine parity.
+Python uses Rerun. This working checklist does **not** claim the goal is complete.
 
 Statuses describe covered behavior; synthetic ECS fixtures do not establish USD
 loading or complete-machine equivalence. NumPy vectors, Python component factories
@@ -21,7 +21,7 @@ and optional configuration represented by `None` are intentional API divergences
 | Cable components/path construction (`cable_joints_core.js`, `createCablePaths.js`) | `cable_joints_components.py`, `create_cable_paths.py`, `cable_frames.py`: equivalent for valid authored paths | Construction fixtures cover local/world joints, live tilted member planes, intermediate wraps, hybrid knots, stored overrides, endpoint cuts, empty paths, parameter clamps and zero/infinite stiffness. Python factories intentionally keep the World out of data components. |
 | Attachment cache (`cable_attachment_cache_system.js`) | `cable_attachment_cache_system.py`: equivalent | `cable_cache_members.json` covers member-local vs world orientation and moving parents for 200 steps; ownership tests check copies and mutable cache identity. Register after attachment rebuilding, before friction. |
 | Dynamic attachments and hybrid transitions (`cable_joints_core.js`) | `cable_attachment_update_system.py`: equivalent for covered Hangprinter configuration | Motion/member/clamp/transition fixtures cover world vs onboard frames, rolling non-slip payout, skew planes, center placeholders, layered hybrid winding, clamp reactions before phase projection, hysteresis, degeneracy, feature flags and pause/step counter. Seven scenarios now run 200 steps. |
-| Dynamic split/merge (`cable_joints_core.js`) | missing | Attachments + plane geometry are ready. The app registers `CableAttachmentUpdateSystem(false)`; Python currently rejects enabled split/merge before mutating state. Port separately for topology fixtures. Construction-time splitting at fixed attachments is already covered. |
+| Dynamic split/merge (`cable_joints_core.js`) | `cable_topology.py`: equivalent for covered valid paths | Thirteen fixtures cover ordered live-span splitting, cascading merge traversal, layered/rolling endpoint radii, stale tilted member frames, machine isolation, allocation/removal and feature flags. Attachment/cache/friction/solver/PBD/encoder integration and repeated topology cycles run 200 steps. Preserve component/list/point identity and total cable length; allocate only successful splits. The app retains its existing disabled default. |
 | Layer/ramp winding (`cable_joints_core.js`) | `cable_layering.py`: equivalent for covered mappings | Signed forward/inverse mappings, radius/ramp transitions, rotation prediction and clamp inversion. `cable_winding.json` covers both endpoint signs, negative stored length, zero-radius/linear limits, wrap boundaries and the 2048-layer cap; motion/clamp fixtures cover integration. |
 | Friction redistribution (`cable_friction_system.js`) | `cable_friction_system.py`: equivalent | Friction fixtures cover equal extension, capstan bounds, free rolling spools, fixed attachments, slack, zero-rest spans, arbitrary 3D pinholes and dt-scaled ordered chain iterations, including 200 steps. Moving attachment/cache/friction integration is covered. |
 | XPBD cable solve (`cable_joints_core.js`) | `pbd_cable_constraint_solver.py`: equivalent for covered specialized dynamics | Body/spool/pinhole fixtures exercise tensor reactions, direct and indirect one-axis dynamics, holding release, closed-loop stiffness, torque-load maps, damping, alternating per-path iterations and force transfers. Four solver integration scenarios run 200 steps. |
@@ -38,19 +38,22 @@ and optional configuration represented by `None` are intentional API divergences
 | Commands (`remoteSpoolSystem.js`, `hangprinter_runtime.js`) | `remote_spool_system.py`, `machine_runtime.py`: equivalent for covered headless records | One queued record per step, pause/zero-dt, mode/reference updates, machine targeting, playback history/reset, callbacks and extrusion colors. Python deque ownership/API is intentional divergence; worker/backpressure transport is browser-only/not required. |
 | Composition root (`sceneSystems.js`, `simulationSystems.js`) | `machine_simulation.py`: equivalent for the registered headless pipeline | Production JS and Python registration, exact 19-system order; initial extruder update, no global substep loop. HP3, HP4, rigid pinhole and double-authored minimal machines run 200 repeatable steps; HP4 commands exercise modes, extrusion, diagnostics, pause and distinct update/resource dt. |
 | Snapshot / Rerun (`flightRecorderSnapshot.js`, `FLIGHT_RECORDER.md`) | `machine_snapshot.py`, `rerun_system.py`, `__main__.py`: equivalent for covered recording data | Six fixture families compare native frames/lengths/forces with production JS recorder data. Live body hierarchy, solver-sampled cable endpoints, copied snapshots, initial/every-step RRD, Z-up coordinates, pause/reset clocks, static clearing, encoder/motor/velocity and tool/extrusion state. Straight-span/point visuals and stable per-quantity plot paths are intentional presentation divergences. |
+| Optional cable event buffer / console summaries (`cable_joints_core.js`) | intentional divergence | Python records deterministic ECS snapshots and primary Rerun traces instead of the optional JS `cableEventTrace*` buffer/console API. These diagnostics do not feed simulation state. Saved-RRD topology coverage checks joint identity and clearing; no physics field is removed. |
 | Three.js renderer, DOM/pointer/UI, upload controllers, workers | browser-only/not required | Do not port. Render-only slack/wrap geometry may be reused for Rerun presentation. |
 
 ## Differential evidence
 
-Seventy-four shared JSON fixtures under `tests/fixtures/python_3d_parity/` execute
+Eighty-seven shared JSON fixtures under `tests/fixtures/python_3d_parity/` execute
 production JS in Node (`tests/parity3d/oracle.mjs`) and the native Python engine.
 Adapters construct/serialize state; they contain no physics oracle formulas.
 Snapshots compare initial state and every timestep, including named relationships,
 query order, poses/velocities, attachments, cable lengths/forces, spool/motor/encoder
 state, effector frames, command playback/callbacks and entity-keyed torque loads.
+Topology fixtures also compare every live entity, allocator state and creation/
+removal order; deleted entities cannot survive as empty snapshot rows.
 Structural fields compare exactly; quaternions
 compare up to sign. Nonfinite physics state fails. Guard checks ensure targeted
-constraints, transitions and reactions activate. Thirty-two scenarios run 200 steps
+constraints, transitions and reactions activate. Thirty-four scenarios run 200 steps
 and require exact repeatability within each engine; a further stiff-motor probe
 runs 200 steps at 20 microseconds. See `tests/parity3d/README.md` for fixture coverage.
 The recording oracle also calls the production JS flight-recorder snapshot for
@@ -116,6 +119,11 @@ widening a global tolerance.
 - Native Rerun has a stable path for each quantity/segment, so entering torque
   mode or changing topology cannot relabel earlier plot indices. World transforms
   are relative to live rigid parents; velocity traces expose the stored ECS state.
+- Dynamic splitting preserves attachment-array references through the inner
+  splitter loop. Reverse guide insertion order can split the kept span again;
+  copying those arrays or stopping after the first guide changes the topology.
+  Merge traversal revisits shortened paths when neighboring stored lengths turn
+  negative. Removed joints leave every component store; entity IDs are not reused.
 - Effector systems read live parent/member transforms after constraints without
   adding a sync. Command deposition precedes current-step prediction. Numeric
   machine and axis keys retain JS array-index ordering. Python queues copy their
@@ -157,6 +165,10 @@ Each is isolated in its own commit, with JS and differential regression evidence
   operation order before vector multiplication. The deterministic flipper demo's
   contact trajectory changes its stable score from 10 to 18; its regression records
   the corrected result, with the pre-correction checkout confirming the old score.
+- Aborted dynamic split: JS allocated a machine-tag-only entity before checking
+  available rest/wrap lengths. An insufficient-rest regression demonstrated the
+  unused entity and advanced allocator. Allocation now follows those checks in
+  both engines; successful topology and the full flipper trajectory remain stable.
 
 ## Reviewable slices and next dependencies
 
@@ -169,9 +181,10 @@ Each is isolated in its own commit, with JS and differential regression evidence
 | [#66](https://github.com/tobbelobb/hp-sim5/pull/66) | Position/torque integration and body reactions | #65 |
 | [#67](https://github.com/tobbelobb/hp-sim5/pull/67) | Commands, effector/extrusion state and missed-step diagnostics | #66 |
 | [#68](https://github.com/tobbelobb/hp-sim5/pull/68) | Native USD baking, construction, semantic composition and full-machine differentials | #67 |
-| Native recording follow-up | Read-only snapshots, richer primary Rerun and headless recording CLI | #68 |
+| [#69](https://github.com/tobbelobb/hp-sim5/pull/69) | Read-only snapshots, richer primary Rerun and headless recording CLI | #68 |
+| [#70](https://github.com/tobbelobb/hp-sim5/pull/70) | Live split/merge, entity lifecycle oracle and coupled topology cycles | #69 |
 
-Next: dynamic topology and relevant optional collision fixtures. Full-machine tests
+Next: relevant optional collision, obstacle bump and cable slack fixtures. Full-machine tests
 cover the app's current registered pipeline, not every optional engine system.
 
 ## Completion gate
