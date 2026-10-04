@@ -1,4 +1,5 @@
 """Integration systems for the Python 3D engine."""
+import math
 import numpy as np
 from cable_joints.ecs import GravityAffectedComponent, MassComponent
 from .ecs import (AngularVelocityComponent, OrientationComponent, PositionComponent,
@@ -91,17 +92,18 @@ class PBDAngularVelocityUpdateSystem:
                 delta.x *= -1.; delta.y *= -1.; delta.z *= -1.; delta.w *= -1.
 
             w = float(np.clip(delta.w, -1., 1.))
-            sin_half = np.linalg.norm([delta.x, delta.y, delta.z])
-            angle = 2. * np.arctan2(sin_half, w)
+            sin_half = math.hypot(delta.x, delta.y, delta.z)
+            angle = 2. * math.atan2(sin_half, w)
             angular_velocity = world.get_component(
                 entity, AngularVelocityComponent
             ).omega
             if sin_half <= 1e-12 or angle <= 1e-9:
                 angular_velocity[:] = 0.
             else:
+                scale = angle / (dt * sin_half)
                 angular_velocity[:] = np.array(
                     [delta.x, delta.y, delta.z]
-                ) * angle / (dt * sin_half)
+                ) * scale
 
 
 class RigidBodySyncSystem:
