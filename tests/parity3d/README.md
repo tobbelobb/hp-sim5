@@ -23,6 +23,10 @@ record playback state and callback values at invocation time. Per-step
 direct processing and event/history options. `initializeExtruder` performs the same
 zero-dt initialization as the app. `mapResources` seeds machine-keyed JS Maps and
 Python dictionaries, including authored extrusion colors.
+`usdBake` sends the same authored path (or in-memory source) to the production JS
+baker and native `pxr.Usd` baker. It compares resolved joint world/local points,
+rest lengths and stored wraps before ECS construction. Optional `deriveAll` and
+`cablePathHalfWidthOverride` retain load-time policy semantics.
 
 For JSON snapshots of a single fixture:
 
@@ -53,6 +57,12 @@ without changing the reference World scheduling API.
 
 Current coverage:
 
+- `usd_bake_hp4_rigid_body`, `usd_bake_hp3_rigid_body`, and the rigid pinhole case:
+  complete authored cable initialization before scene construction.
+- `usd_bake_frames` and policy/width variants: hierarchical frames, parallel/skew
+  rolling tangents, layered endpoint radii, authored/manual values, auto wraps,
+  forced rederivation and width override. Both bakers reject invalid manual data,
+  stored lengths/modes, missing radii and duplicate joint relationships.
 - `commands_state`, `commands_playback`, and `commands_numeric_order`: one record
   per step, pause/zero-dt, motor/reference transitions, multiple machines per axis,
   cached mapping reset, queue/history restoration, callback timing and colors.

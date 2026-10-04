@@ -1,0 +1,12 @@
+{
+  "entities": [],
+  "systems": [],
+  "steps": [],
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "usdBake": {
+    "path": "public/usd_scenes/slideprinter_single_pinholes_rigid_body.usda"
+  }
+}

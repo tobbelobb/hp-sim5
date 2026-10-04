@@ -18,6 +18,7 @@ import * as cable from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import { createCablePaths } from '../../src/js/cable_joints_3d/createCablePaths.js';
 import Vector3 from '../../src/js/cable_joints_3d/vector3.js';
 import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
+import { bakeCableSceneUsdaSource } from '../../src/js/usd/cable_scene_baker.js';
 
 const contract = JSON.parse(fs.readFileSync(new URL('./contract.json', import.meta.url)));
 const geometryContract = JSON.parse(fs.readFileSync(new URL('./geometry_contract.json', import.meta.url)));
@@ -209,6 +210,16 @@ export function runFixture(fixture) {
     snapshots.push(snapshot(index + 1));
   }
   const result = { schema: 1, snapshots };
+  if (fixture.usdBake) {
+    const source = fixture.usdBake.source ?? fs.readFileSync(new URL('../../' + fixture.usdBake.path, import.meta.url), 'utf8');
+    const baked = bakeCableSceneUsdaSource(source, fixture.usdBake.options ?? {});
+    result.usdBake = baked.resolvedPaths.map(path => ({ ...path,
+      jointResults: path.jointResults.map(joint => ({ ...joint,
+        ...Object.fromEntries(['world0', 'world1', 'local0', 'local1'].map(key =>
+          [key, encode(joint[key], 'vector')])),
+      })),
+    }));
+  }
   if (fixture.geometry) {
     const plain = value => {
       if (value instanceof Vector3) return [value.x, value.y, value.z];

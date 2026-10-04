@@ -267,6 +267,14 @@ def run_python(fixture):
         world.update(step['dt'])
         snapshots.append(snapshot(index))
     result = {'schema': 1, 'snapshots': snapshots}
+    if 'usdBake' in fixture:
+        from usd.cable_scene_loader import bake_cable_stage, open_stage
+
+        definition = fixture['usdBake']
+        options = definition.get('options', {})
+        stage = open_stage(definition.get('source') or ROOT / definition['path'])
+        result['usdBake'] = bake_cable_stage(stage, derive_all=options.get('deriveAll', False),
+            cable_path_half_width_override=options.get('cablePathHalfWidthOverride'))
     if 'geometry' in fixture:
         def plain(value):
             if isinstance(value, np.ndarray):
