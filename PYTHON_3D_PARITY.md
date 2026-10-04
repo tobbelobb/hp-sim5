@@ -31,24 +31,25 @@ and optional configuration represented by `None` are intentional API divergences
 | Position motors (`hangprinter_stepper_motor.js`) | `stepper_motor.py`: equivalent for covered integration | Open/closed-loop torque and pose updates, live member aggregate inertia with physical-mass fallback, host reaction, member-local vs standalone integration and cable/PBD/encoder ordering. Standalone/member/cable scenarios run 200 steps. |
 | Torque motors (`torqueModeSystem.js`) | `torque_mode_system.py`: equivalent for covered integration | Droop, windage/friction/cogging defaults and overrides, signed/implicit cable loads, drive-only host reaction, mode transitions and member-local integration. Update after PBD velocities; five scenarios run 200 steps. |
 | Encoder unwrapping (`commonSystems.js`) | `common_systems.py`: equivalent | `spool_projection.json`, `rigid_members.json`: several turns, fallback axes and parent/reference motion. Position/torque motor and constraint encoder integration is covered. |
-| Missed-step state (`motor-diagnostics.js`) | missing | Encoder + motor state, reference changes and torque/position transitions. |
-| Effector frames/extrusion (`hangprinter_extruder.js`) | missing | Rigid/member state + authored center/tip offsets + commands. |
+| Missed-step state (`motor-diagnostics.js`) | `motor_diagnostics.py`: equivalent for covered state | Persistent full-turn encoder baselines, current/peak counts, half-step rounding, machine resets, torque transitions and member-local fallback. Diagnostic reads preserve their state updates. |
+| Effector frames/extrusion (`hangprinter_extruder.js`) | `extruder.py`: equivalent for covered state | Authored triangle frames, center/root/tip/cold offsets, numeric machine-key order, degenerate/missing source fallback and live constrained members. Integrated command deposition is covered; USD bindings remain missing. |
 | USDA machine builders (`app/scene/`) | missing | Components and scene semantics above. Reuse `pxr.Usd`, `UsdGeom`, `UsdShade` patterns from Python demo loaders; keep web server imports out of simulation. |
-| Commands (`remoteSpoolSystem.js`, `hangprinter_runtime.js`) | missing | Motor/extruder state; one queued command per step and mode/reference transitions. Worker/backpressure transport is browser-only/not required. |
+| Commands (`remoteSpoolSystem.js`, `hangprinter_runtime.js`) | `remote_spool_system.py`, `machine_runtime.py`: equivalent for covered headless records | One queued record per step, pause/zero-dt, mode/reference updates, machine targeting, playback history/reset, callbacks and extrusion colors. Python deque ownership/API is intentional divergence; worker/backpressure transport is browser-only/not required. |
 | Composition root (`sceneSystems.js`) | missing | Register meaningful systems in JS order, no global substep loop; run full authored machines, especially `hp4_rigid_body.usda`. |
 | Snapshot / Rerun (`flightRecorderSnapshot.js`, `FLIGHT_RECORDER.md`) | `rerun_system.py`: partial | Preserve PR #61 color, identity, static clearing and pause fixes. Add authoritative time/step, member hierarchy, cables, forces and lengths; reuse recorder contract where practical. |
 | Three.js renderer, DOM/pointer/UI, upload controllers, workers | browser-only/not required | Do not port. Render-only slack/wrap geometry may be reused for Rerun presentation. |
 
 ## Differential evidence
 
-Thirty-eight shared JSON fixtures under `tests/fixtures/python_3d_parity/` execute
+Fifty-one shared JSON fixtures under `tests/fixtures/python_3d_parity/` execute
 production JS in Node (`tests/parity3d/oracle.mjs`) and the native Python engine.
 Adapters construct/serialize state; they contain no physics oracle formulas.
 Snapshots compare initial state and every timestep, including named relationships,
 query order, poses/velocities, attachments, cable lengths/forces, spool/motor/encoder
-state and entity-keyed torque loads. Structural fields compare exactly; quaternions
+state, effector frames, command playback/callbacks and entity-keyed torque loads.
+Structural fields compare exactly; quaternions
 compare up to sign. Nonfinite physics state fails. Guard checks ensure targeted
-constraints, transitions and reactions activate. Twenty-two scenarios run 200 steps
+constraints, transitions and reactions activate. Twenty-eight scenarios run 200 steps
 and require exact repeatability within each engine; a further stiff-motor probe
 runs 200 steps at 20 microseconds. See `tests/parity3d/README.md` for fixture coverage.
 
@@ -78,6 +79,10 @@ steps. Neither engine receives hidden substeps, speed clamps or relaxed toleranc
   standalone rotors wait for angular prediction. Torque-mode housing reactions
   use drive torque only; external cable loads already react through constraints.
 - Rerun must preserve actual time through pause/reset and clear static archetypes.
+- Effector systems read live parent/member transforms after constraints without
+  adding a sync. Command deposition precedes current-step prediction. Numeric
+  machine and axis keys retain JS array-index ordering. Python queues copy their
+  containers and use a deque; playback snapshots copy records as the reference does.
 
 ## Demonstrated reference corrections
 
@@ -94,6 +99,10 @@ Each is isolated in its own commit, with JS and differential regression evidence
 - Over-correction tangents: omitted radii silently caused center comparisons and
   missed slack spans. Attachment rebuilding now defaults to the existing layered
   radii; rolling and hybrid regressions demonstrate the correction.
+- Effector pose: constraints changed live body transforms while cached member
+  positions remained stale. Extruder source/average/frame reads now use the existing
+  live-world helper. Authored and fallback regressions require the final body center
+  and preserve the distinct rotated/unrotated offset rules; no extra sync is added.
 
 ## Reviewable slices and next dependencies
 
@@ -103,10 +112,10 @@ Each is isolated in its own commit, with JS and differential regression evidence
 | [#63](https://github.com/tobbelobb/hp-sim5/pull/63) | Geometry, cable construction/cache/friction | #62 |
 | [#64](https://github.com/tobbelobb/hp-sim5/pull/64) | Signed winding, attachments/clamps, hybrid transitions | #63 |
 | [#65](https://github.com/tobbelobb/hp-sim5/pull/65) | Cable solving, load telemetry and shared over-correction | #64 |
-| Motor follow-up | Position/torque integration and body reactions | #65 |
+| [#66](https://github.com/tobbelobb/hp-sim5/pull/66) | Position/torque integration and body reactions | #65 |
+| Machine runtime follow-up | Commands, effector/extrusion state and missed-step diagnostics | #66 |
 
-Next: commands, extrusion and missed-step diagnostics, then shared USD construction
-and the semantic composition root. Add complete authored machines, including
+Next: shared USD construction and the semantic composition root. Add complete authored machines, including
 `hp4_rigid_body.usda`, before claiming completion. Dynamic topology, relevant
 collision fixtures and richer Rerun recording remain open checklist items.
 
