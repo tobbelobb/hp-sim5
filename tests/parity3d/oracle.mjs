@@ -12,6 +12,7 @@ import { StepperMotorComponent, StepperMotorSystem } from '../../hp-sim-3d/app/h
 import { TorqueModeSystem } from '../../hp-sim-3d/app/torqueModeSystem.js';
 import { MissedStepTrackingSystem, getMachineMotorDiagnostics, resetMachineMotorDiagnostics } from '../../hp-sim-3d/app/motor-diagnostics.js';
 import { ExtruderComponent, ExtruderSystem, estimateEffectorRotation } from '../../hp-sim-3d/app/hangprinter_extruder.js';
+import { RemoteSpoolSystem } from '../../hp-sim-3d/app/remoteSpoolSystem.js';
 import * as geometry from '../../src/js/cable_joints_3d/geometry3.js';
 import * as cable from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import { createCablePaths } from '../../src/js/cable_joints_3d/createCablePaths.js';
@@ -21,7 +22,7 @@ import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
 const contract = JSON.parse(fs.readFileSync(new URL('./contract.json', import.meta.url)));
 const geometryContract = JSON.parse(fs.readFileSync(new URL('./geometry_contract.json', import.meta.url)));
 const components = { ...ecs, ...spools, ...cable, StepperMotorComponent, ExtruderComponent };
-const systems = { ...commonSystems, CableAttachmentCacheSystem, CableFrictionSystem, PBDResolveCableOverCorrections, StepperMotorSystem, TorqueModeSystem, MissedStepTrackingSystem, ExtruderSystem,
+const systems = { ...commonSystems, CableAttachmentCacheSystem, CableFrictionSystem, PBDResolveCableOverCorrections, StepperMotorSystem, TorqueModeSystem, MissedStepTrackingSystem, ExtruderSystem, RemoteSpoolSystem,
   CableAttachmentUpdateSystem: cable.CableAttachmentUpdateSystem,
   PBDCableConstraintSolver: cable.PBDCableConstraintSolver };
 const vector = (value) => value == null ? null : new Vector3(...value);
@@ -114,7 +115,25 @@ export function runFixture(fixture) {
     if (!systems[name]) throw new Error(`Unsupported system ${name}`);
     world.registerSystem(new systems[name](...args));
   }
+  const remote = world.systems.find(system => system instanceof RemoteSpoolSystem);
   if (fixture.initializeExtruder) world.systems.find(system => system instanceof ExtruderSystem).update(world, 0);
+  const events = [];
+  if (fixture.commands) remote.commands = fixture.commands;
+  if (fixture.observeCommands) {
+    remote.setCommandExecutedListener(value => events.push({ kind: 'command', value: structuredClone(value) }));
+    remote.setExtrusionListener(value => events.push({ kind: 'extrusion', value: structuredClone(value) }));
+  }
+  function commandActions(actions = []) {
+    for (const action of actions) {
+      if (action.method === 'processCommand') remote._processCommand(world, action.command,
+        { recordHistory: action.recordHistory ?? true, emitEvents: action.emitEvents ?? true });
+      else if (action.method === 'setCommands') remote.commands = action.commands;
+      else if (action.method === 'addCommand') remote.addCommand(action.command);
+      else if (action.method === 'setPlaybackState') remote.setPlaybackState(action.state);
+      else if (['clearCommandQueue', 'clearPlaybackState', 'resetAxisMapping'].includes(action.method)) remote[action.method]();
+      else throw new Error(`Unsupported command action ${action.method}`);
+    }
+  }
   function encode(value, kind) {
     if (value == null) return null;
     if (kind === 'entity') return names[value];
@@ -156,6 +175,12 @@ export function runFixture(fixture) {
     });
     const state = { step, entities, queries, attachments };
     if (motorDiagnostics) state.motorDiagnostics = motorDiagnostics;
+    if (fixture.commandState) state.commandState = {
+      ...structuredClone(remote.getPlaybackState()), queueLength: remote.getQueueLength(),
+      axisToEntity: Object.fromEntries(Object.entries(remote.axisToEntity).map(([axis, value]) =>
+        [axis, encode(value, Array.isArray(value) ? 'entities' : 'entity')])),
+    };
+    if (fixture.observeCommands) state.commandEvents = structuredClone(events);
     if (fixture.effectorRotations) state.effectorRotations = fixture.effectorRotations.map(({ extruder, machine }) => {
       const component = world.getComponent(ids[extruder], ExtruderComponent);
       return { quaternion: encode(estimateEffectorRotation(component.centerSourceOffsets[machine],
@@ -179,6 +204,7 @@ export function runFixture(fixture) {
     mutate(step.set);
     for (const [entity, type] of step.removeComponents ?? []) world.removeComponent(ids[entity], components[type]);
     for (const machine of step.resetMotorDiagnostics ?? []) resetMachineMotorDiagnostics(world, machine);
+    commandActions(step.commandActions);
     world.update(step.dt);
     snapshots.push(snapshot(index + 1));
   }

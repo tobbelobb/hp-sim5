@@ -17,6 +17,12 @@ Machine-keyed vector/source maps retain authored machine names. `effectorRotatio
 probes the production frame estimator; `motorDiagnostics` reads production reports
 before serializing their state changes. `removeComponents` and
 `resetMotorDiagnostics` exercise encoder fallback and baseline resets.
+`commands` seeds the production command queue; `commandState` and `observeCommands`
+record playback state and callback values at invocation time. Per-step
+`commandActions` exercise append, queue/history clearing, restoration, mapping reset,
+direct processing and event/history options. `initializeExtruder` performs the same
+zero-dt initialization as the app. `mapResources` seeds machine-keyed JS Maps and
+Python dictionaries, including authored extrusion colors.
 
 For JSON snapshots of a single fixture:
 
@@ -47,6 +53,12 @@ without changing the reference World scheduling API.
 
 Current coverage:
 
+- `commands_state`, `commands_playback`, and `commands_numeric_order`: one record
+  per step, pause/zero-dt, motor/reference transitions, multiple machines per axis,
+  cached mapping reset, queue/history restoration, callback timing and colors.
+- `commands_extrusion_order` and `commands_cable_pipeline`: deposition before
+  current-step physics, live effector state, commands with motor/cable/encoder
+  integration and diagnostics. Both also run 200 repeatable timesteps.
 - `motor_diagnostics_encoders`, `motor_diagnostics_frames`, and
   `motor_diagnostics_cables`: full-turn encoder slips, peak/current counts, JS
   rounding, machine resets, mode transitions, fallback angles and moving members.

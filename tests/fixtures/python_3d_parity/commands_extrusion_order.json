@@ -1,0 +1,143 @@
+{
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "entities": [
+    {
+      "name": "source0",
+      "components": {
+        "PositionComponent": [-1, -0.3333333333333333, 0],
+        "SpoolTagComponent": [],
+        "SpoolStateComponent": ["A", [0, 0, 1], [0, 0, 0, 1]],
+        "MachineTagComponent": ["default"],
+        "VelocityComponent": [0.01, -0.02, 0.03],
+        "StepperMotorComponent": []
+      }
+    },
+    {
+      "name": "source1",
+      "components": {
+        "PositionComponent": [1, -0.3333333333333333, 0],
+        "SpoolTagComponent": [],
+        "SpoolStateComponent": ["B", [0, 0, 1], [0, 0, 0, 1]],
+        "MachineTagComponent": ["default"],
+        "VelocityComponent": [0.01, -0.02, 0.03],
+        "StepperMotorComponent": []
+      }
+    },
+    {
+      "name": "source2",
+      "components": {
+        "PositionComponent": [0, 0.6666666666666666, 0],
+        "SpoolTagComponent": [],
+        "SpoolStateComponent": ["C", [0, 0, 1], [0, 0, 0, 1]],
+        "MachineTagComponent": ["default"],
+        "VelocityComponent": [0.01, -0.02, 0.03],
+        "StepperMotorComponent": []
+      }
+    },
+    {
+      "name": "extruder",
+      "components": {
+        "ExtruderComponent": []
+      }
+    }
+  ],
+  "systems": ["RemoteSpoolSystem", "MovementSystem", "ExtruderSystem"],
+  "steps": [
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": true
+        }
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": false
+        }
+      }
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    }
+  ],
+  "snapshotResources": [],
+  "initialSet": [["extruder", "ExtruderComponent", "centerSources", {"default": ["source0", "source1", "source2"]}], ["extruder", "ExtruderComponent", "centerSourceOffsets", {"default": [[-1, -0.3333333333333333, 0], [1, -0.3333333333333333, 0], [0, 0.6666666666666666, 0]]}], ["extruder", "ExtruderComponent", "centerOffsets", {"default": [0.1, -0.1, 0.05]}], ["extruder", "ExtruderComponent", "tipOffsets", {"default": [0, 0.03, -0.1]}], ["extruder", "ExtruderComponent", "coldEndOffsets", {"default": [0.1, 0.2, 0.3]}]],
+  "effectorRotations": [
+    {
+      "extruder": "extruder",
+      "machine": "default"
+    }
+  ],
+  "commands": [
+    {
+      "type": "Move",
+      "A": 0.03,
+      "E": 0.01
+    },
+    {
+      "type": "Move",
+      "A": 0.03,
+      "E": 0.01
+    },
+    {
+      "type": "Move",
+      "A": 0.03,
+      "E": 0.01
+    },
+    {
+      "type": "Move",
+      "A": 0.03,
+      "E": 0.01
+    },
+    {
+      "type": "Move",
+      "A": 0.03,
+      "E": 0.01
+    },
+    {
+      "type": "Move",
+      "A": 0.03,
+      "E": 0.01
+    },
+    {
+      "type": "Move",
+      "A": 0.03,
+      "E": 0.01
+    },
+    {
+      "type": "Move",
+      "A": 0.03,
+      "E": 0.01
+    }
+  ],
+  "initializeExtruder": true,
+  "commandState": true,
+  "observeCommands": true
+}

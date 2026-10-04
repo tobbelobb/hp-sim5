@@ -25,6 +25,7 @@ from cable_joints_3d.pbd_resolve_cable_over_corrections import PBDResolveCableOv
 from cable_joints_3d.torque_mode_system import TorqueModeSystem
 from cable_joints_3d.motor_diagnostics import MissedStepTrackingSystem, get_machine_motor_diagnostics, reset_machine_motor_diagnostics
 from cable_joints_3d.extruder import ExtruderComponent, ExtruderSystem, estimate_effector_rotation
+from cable_joints_3d.remote_spool_system import RemoteSpoolSystem
 
 ROOT = Path(__file__).resolve().parents[3]
 CONTRACT = json.loads((ROOT / 'tests/parity3d/contract.json').read_text())
@@ -140,15 +141,39 @@ def run_python(fixture):
                'CableAttachmentUpdateSystem': CableAttachmentUpdateSystem, 'PBDCableConstraintSolver': PBDCableConstraintSolver,
                'PBDResolveCableOverCorrections': PBDResolveCableOverCorrections, 'StepperMotorSystem': StepperMotorSystem,
                'TorqueModeSystem': TorqueModeSystem, 'MissedStepTrackingSystem': MissedStepTrackingSystem,
-               'ExtruderSystem': ExtruderSystem}
+               'ExtruderSystem': ExtruderSystem, 'RemoteSpoolSystem': RemoteSpoolSystem}
     for definition in fixture['systems']:
         name = definition if isinstance(definition, str) else definition['name']
         args = [] if isinstance(definition, str) else definition.get('args', [])
         system = systems.get(name)
         world.register_system((system if system is not None else getattr(common_systems, name))(*args))
 
+    remote = world.get_system(RemoteSpoolSystem)
     if fixture.get('initializeExtruder'):
         world.get_system(ExtruderSystem).update(world, 0)
+    events = []
+    if 'commands' in fixture:
+        remote.commands = fixture['commands']
+    if fixture.get('observeCommands'):
+        remote.set_command_executed_listener(lambda value: events.append({'kind': 'command', 'value': copy.deepcopy(value)}))
+        remote.set_extrusion_listener(lambda value: events.append({'kind': 'extrusion', 'value': copy.deepcopy(value)}))
+
+    def command_actions(actions):
+        methods = {'clearCommandQueue': remote.clear_command_queue, 'clearPlaybackState': remote.clear_playback_state,
+                   'resetAxisMapping': remote.reset_axis_mapping} if remote is not None else {}
+        for action in actions or []:
+            method = action['method']
+            if method == 'processCommand':
+                remote.process_command(world, action['command'], record_history=action.get('recordHistory', True), emit_events=action.get('emitEvents', True))
+            elif method == 'setCommands':
+                remote.commands = action['commands']
+            elif method == 'addCommand':
+                remote.add_command(action['command'])
+            elif method == 'setPlaybackState':
+                remote.set_playback_state(action['state'])
+            else:
+                methods[method]()
+
     def encode(value, kind):
         if value is None:
             return None
@@ -202,6 +227,13 @@ def run_python(fixture):
         state = {'step': step, 'entities': entities, 'queries': queries, 'attachments': attachments}
         if 'motorDiagnostics' in fixture:
             state['motorDiagnostics'] = diagnostics
+        if fixture.get('commandState'):
+            state['commandState'] = copy.deepcopy(remote.get_playback_state())
+            state['commandState']['queueLength'] = remote.get_queue_length()
+            state['commandState']['axisToEntity'] = {axis: encode(value, 'entities' if isinstance(value, list) else 'entity')
+                                                    for axis, value in remote.axis_to_entity.items()}
+        if fixture.get('observeCommands'):
+            state['commandEvents'] = copy.deepcopy(events)
         if 'effectorRotations' in fixture:
             state['effectorRotations'] = []
             for probe in fixture['effectorRotations']:
@@ -231,6 +263,7 @@ def run_python(fixture):
             world.remove_component(ids[entity], components[type_name])
         for machine in step.get('resetMotorDiagnostics', []):
             reset_machine_motor_diagnostics(world, machine)
+        command_actions(step.get('commandActions'))
         world.update(step['dt'])
         snapshots.append(snapshot(index))
     result = {'schema': 1, 'snapshots': snapshots}
