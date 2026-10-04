@@ -12,7 +12,7 @@ and optional configuration represented by `None` are intentional API divergences
 | Simulation functionality (JS source) | Python location / status | Dependencies / evidence needed |
 | --- | --- | --- |
 | World scheduling, pause/error, ECS query ordering (`cable_joints/ecs.js`) | `cable_joints/ecs.py`: equivalent | `query_order.json` and paused/error steps in `motion.json`; preserve smallest-store insertion order. Python's single-class query shorthand is an intentional API divergence. |
-| Vectors, quaternions, geometry (`cable_joints_3d/`) | `vector3.py`, `quaternion.py`, `geometry3.py`: equivalent for covered simulation operations | NumPy vectors are intentional divergence in API. `geometry.json` and `geometry_degenerate.json` cover projected tangents/arcs, all winding choices, arbitrary/zero axes, axial offsets and intersections; reuse Python 2D geometry. |
+| Vectors, quaternions, geometry (`cable_joints_3d/`) | `vector3.py`, `quaternion.py`, `geometry3.py`: equivalent for covered simulation operations | NumPy vectors are intentional divergence in API. `quaternion_raw_frames.json` covers stored nonunit/zero parent frames and explicitly normalized member frames. Geometry fixtures cover projected tangents/arcs, all winding choices, arbitrary/zero axes, axial offsets and intersections; reuse Python 2D geometry. |
 | Full inertia tensors (`inertia_tensor.js`) | `inertia_tensor.py`: equivalent for covered PSD tensors | `inertia.json` differentially covers rotated small SPD, rank-2/rank-1 and zero tensors. Isolated JS fix preserves Python's PR #61 scale-aware pseudoinverse. |
 | Prediction, previous poses, PBD velocities (`commonSystems.js`) | `common_systems.py`: equivalent | `motion.json`, `rigid_members.json`; explicit member exclusions preserve kinematic zero-mass motion and world angular frames. |
 | Rigid-member frames, endpoint reaction mapping (`rigid_bodies.js`) | `rigid_bodies.py`: equivalent | `rigid_members.json`, `distance_members.json` probe live attachments, world/local inversion and internal/external reactions. Foundation for cable/motor reactions. |
@@ -45,7 +45,7 @@ and optional configuration represented by `None` are intentional API divergences
 
 ## Differential evidence
 
-Ninety-five shared JSON fixtures under `tests/fixtures/python_3d_parity/` execute
+Ninety-six shared JSON fixtures under `tests/fixtures/python_3d_parity/` execute
 production JS in Node (`tests/parity3d/oracle.mjs`) and the native Python engine.
 Adapters construct/serialize state; they contain no physics oracle formulas.
 Snapshots compare initial state and every timestep, including named relationships,
@@ -104,6 +104,10 @@ widening a global tolerance.
   member exclusion/copy and Rerun identity/color/static-clear/pause corrections.
 - Preserve live parent/member frames, cached copies and mutable component identity.
   Constraint systems leave member ECS poses stale until the next registered sync.
+- Quaternion vector transforms use the stored quaternion without implicit
+  normalization, matching JS. Frame helpers and member constructors normalize
+  explicitly where required. The raw-parent attachment fixture failed before
+  removing Python's hidden normalization; owned float outputs leave inputs intact.
 - Query insertion order and system registration order affect coupled dynamics.
   The cable solver reads the World `dt` resource; motors use the update argument.
 - Cable solving captures local attachments once, alternates path/joint iterations,

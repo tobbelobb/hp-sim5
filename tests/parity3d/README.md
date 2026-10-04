@@ -102,6 +102,9 @@ Current coverage:
   and zero update dt with a retained cable dt resource.
 - `pbd_small_rotations`: recover representable quaternion-vector rotations when
   the scalar rounds to one; preserve sign and the existing cutoff.
+- `quaternion_raw_frames`: nonunit and zero live parent poses with deliberately
+  stale cached members; raw vector transforms and explicit member/frame
+  normalization remain distinct operations.
 - `commands_state`, `commands_playback`, and `commands_numeric_order`: one record
   per step, pause/zero-dt, motor/reference transitions, multiple machines per axis,
   cached mapping reset, queue/history restoration, callback timing and colors.
