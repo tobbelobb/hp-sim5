@@ -91,8 +91,8 @@ class PBDAngularVelocityUpdateSystem:
                 delta.x *= -1.; delta.y *= -1.; delta.z *= -1.; delta.w *= -1.
 
             w = float(np.clip(delta.w, -1., 1.))
-            angle = 2. * np.arccos(w)
-            sin_half = np.sqrt(max(0., 1. - w*w))
+            sin_half = np.linalg.norm([delta.x, delta.y, delta.z])
+            angle = 2. * np.arctan2(sin_half, w)
             angular_velocity = world.get_component(
                 entity, AngularVelocityComponent
             ).omega
