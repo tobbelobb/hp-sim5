@@ -18,13 +18,13 @@ Cable segments slide over wheels, wrap, and maintain tension through constraints
 The 2D engine lives under `src/js/cable_joints/`, with a related Python
 implementation in `src/python/cable_joints/`. The JavaScript and Python 3D
 engines live in `src/js/cable_joints_3d/` and `src/python/cable_joints_3d/`.
-The Python package provides native quaternion integration, full 3x3 inertia
-tensors, rigid-member synchronization, distance constraints, encoders and a
-Rerun output system. A [live JS differential harness](tests/parity3d/README.md)
-checks the covered foundations; full Hangprinter cable/motor/USDA parity is still
-tracked in [PYTHON_3D_PARITY.md](PYTHON_3D_PARITY.md). Rerun is the
-preferred Python visualization target; browser rendering remains available for
-the older Python demos.
+Python loads the authored USDA Hangprinter machines and runs the cable,
+rigid-body, spool/motor, encoder, command and extrusion systems headlessly.
+The [live JS differential harness](tests/parity3d/README.md) compares construction
+and every timestep, including complete machines. [PYTHON_3D_PARITY.md](PYTHON_3D_PARITY.md)
+records coverage, tolerances, explicit differences and the review stack.
+Rerun is the primary Python visualization and recording path; browser rendering
+remains available for the older Python demos.
 
 ### Physics Engine Purpose
  - A physics engine for cables interacting with rolling wheels and other obstacles.
@@ -38,18 +38,26 @@ the older Python demos.
 A Python implementation of the cable joints engine is available in the
 `src/python/cable_joints/` directory.
 
-The 3D API mirrors the JavaScript component names while following Python
-naming conventions. Register
-`cable_joints_3d.rerun_system.RerunSystem(recording)` as the last system to
-stream transforms and shapes directly to a Rerun viewer or `.rrd` recording.
-The SDK is imported only when that system runs, so headless simulation does not
-require a viewer process.
+Run the native 3D machine and save its recording:
+
+```bash
+PYTHONPATH=src/python .venv/bin/python -m cable_joints_3d \
+  public/usd_scenes/hp4_rigid_body.usda --steps 200 \
+  --output output/rerun/hp4-python.rrd
+```
+
+`cable_joints_3d.machine_simulation.load_machine_world(path, recording=stream)`
+provides the same authored construction and system registration in Python.
+The [recording guide](hp-sim-3d/FLIGHT_RECORDER.md) covers commands, live sinks
+and detached snapshots. Headless physics does not require a viewer process;
+the Rerun SDK is imported when recording runs.
   - Dependencies:
     - python 3.10+
     - numpy
     - pytest
     - websockets
-    - warp-lang[extras]
+    - rerun-sdk
+    - warp-lang[extras] (optional)
     - pytest-asyncio
     - usd-core
   - Usage:
