@@ -34,7 +34,7 @@ and optional configuration represented by `None` are intentional API divergences
 | Missed-step state (`motor-diagnostics.js`) | `motor_diagnostics.py`: equivalent for covered state | Persistent full-turn encoder baselines, current/peak counts, half-step rounding, machine resets, torque transitions and member-local fallback. Diagnostic reads preserve their state updates. |
 | Effector frames/extrusion (`hangprinter_extruder.js`) | `extruder.py`: equivalent for covered state | Authored triangle frames, center/root/tip/cold offsets, numeric machine-key order, degenerate/missing source fallback and live constrained members. Integrated command deposition is covered; USD bindings remain missing. |
 | USD cable initialization (`usd/cable_scene_baker.js`) | `usd/cable_scene_loader.py`, `usd/value_readers.py`: equivalent for covered baking | Native pxr.Usd stage, reuse tangent/arc/layer helpers; authored/manual/automatic/derive-all policies, layered radii, parent frames and width overrides. Same hp4/hp3/rigid-pinhole files and dedicated policy fixtures compare before ECS construction. |
-| USDA machine builders (`app/scene/`) | missing | Components and scene semantics above. Reuse `pxr.Usd`, `UsdGeom`, `UsdShade` patterns from Python demo loaders; keep web server imports out of simulation. |
+| USDA machine builders (`app/scene/`) | `machine_scene.py`: equivalent for covered construction | Native pxr.Usd stage and shared value readers; body/gravity/material/axis state, rigid mass/tensor aggregation, member conversion, distance/cable joints, path initialization, extruder bindings and append/namespaces. Eight authored scenes plus strict double-precision and append fixtures compare initial ECS. Full timestep composition remains missing. |
 | Commands (`remoteSpoolSystem.js`, `hangprinter_runtime.js`) | `remote_spool_system.py`, `machine_runtime.py`: equivalent for covered headless records | One queued record per step, pause/zero-dt, mode/reference updates, machine targeting, playback history/reset, callbacks and extrusion colors. Python deque ownership/API is intentional divergence; worker/backpressure transport is browser-only/not required. |
 | Composition root (`sceneSystems.js`) | missing | Register meaningful systems in JS order, no global substep loop; run full authored machines, especially `hp4_rigid_body.usda`. |
 | Snapshot / Rerun (`flightRecorderSnapshot.js`, `FLIGHT_RECORDER.md`) | `rerun_system.py`: partial | Preserve PR #61 color, identity, static clearing and pause fixes. Add authoritative time/step, member hierarchy, cables, forces and lengths; reuse recorder contract where practical. |
@@ -42,7 +42,7 @@ and optional configuration represented by `None` are intentional API divergences
 
 ## Differential evidence
 
-Fifty-eight shared JSON fixtures under `tests/fixtures/python_3d_parity/` execute
+Sixty-eight shared JSON fixtures under `tests/fixtures/python_3d_parity/` execute
 production JS in Node (`tests/parity3d/oracle.mjs`) and the native Python engine.
 Adapters construct/serialize state; they contain no physics oracle formulas.
 Snapshots compare initial state and every timestep, including named relationships,
@@ -59,6 +59,12 @@ around `1e6` use absolute `1e-8`, relative `1e-12`. The commanded cable case use
 the authored 0.5 Nm motor scale. Synthetic 100 Nm stiffness at millisecond steps
 produces violent motion and amplifies roundoff; the stress case uses 20 microsecond
 steps. Neither engine receives hidden substeps, speed clamps or relaxed tolerances.
+Native USD honors authored float32 types while JS's parser retains numeric literals
+as doubles. Initial authored-scene comparisons use absolute `5e-10`, relative `6e-8`
+to cover float32 input quantization and aggregate-center subtraction. A guard
+demonstrates the source rounding and rejects a changed member frame. The authored
+double-precision scene and native baking retain `1e-10`/`1e-9`. Full-machine motion
+tolerances still require evidence; construction agreement does not prove dynamics.
 
 ## Architectural checks
 
@@ -104,6 +110,15 @@ Each is isolated in its own commit, with JS and differential regression evidence
   positions remained stale. Extruder source/average/frame reads now use the existing
   live-world helper. Authored and fallback regressions require the final body center
   and preserve the distinct rotated/unrotated offset rules; no extra sync is added.
+- Authored cube USD: a three-value Euler rotation was declared `quatf`, which USD
+  rejected. Its declaration is now `double3`, preserving values and the complete JS
+  construction snapshot. Native USD parsing is covered by a regression.
+- Authored zero stiffness: the JS scene builder's truthy fallback replaced zero
+  with infinity. Both builders now retain zero. A production-loader regression
+  failed before the isolated JS correction and passes after it.
+- Rigid-group relationship fallback: an empty JS array hid the supported legacy
+  member spelling and produced no assembly. The fallback now checks array length;
+  a loader regression and a strict cross-language fixture require three members.
 
 ## Reviewable slices and next dependencies
 

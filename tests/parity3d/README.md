@@ -61,8 +61,16 @@ Current coverage:
   complete authored cable initialization before scene construction.
 - `usd_bake_frames` and policy/width variants: hierarchical frames, parallel/skew
   rolling tangents, layered endpoint radii, authored/manual values, auto wraps,
-  forced rederivation and width override. Both bakers reject invalid manual data,
+forced rederivation and width override. Both bakers reject invalid manual data,
   stored lengths/modes, missing radii and duplicate joint relationships.
+- `usd_scene_*`: eight authored files, a strict double-precision construction
+  fixture and appended machines execute both production scene builders. They
+  compare component presence, relationships, aggregate tensors/masses, material
+  state, rigid members, attachments/rest/stored lengths, solver settings and
+  extruder bindings. `snapshotMapResources` preserves machine-color maps.
+  Native USD float32 opinions differ from JS literal doubles; authored initial
+  states use atol `5e-10` / rtol `6e-8`. The double-precision fixture and native bake
+  cases retain atol `1e-10` / rtol `1e-9`. This does not establish full-machine motion.
 - `commands_state`, `commands_playback`, and `commands_numeric_order`: one record
   per step, pause/zero-dt, motor/reference transitions, multiple machines per axis,
   cached mapping reset, queue/history restoration, callback timing and colors.

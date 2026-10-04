@@ -1,10 +1,10 @@
 import sys
 from types import SimpleNamespace
 
-from cable_joints.ecs import (
+from cable_joints_3d.ecs import (
     MachineTagComponent, RadiusComponent, RenderableComponent, World,
+    PositionComponent, SceneEntityInfoComponent,
 )
-from cable_joints_3d.ecs import PositionComponent, SceneEntityInfoComponent
 from cable_joints_3d.rerun_system import RerunSystem
 
 

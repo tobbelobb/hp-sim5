@@ -38,6 +38,25 @@ def run_python(fixture):
     fixture = copy.deepcopy(fixture)
     world = ecs.World()
     ids = {entity['name']: world.create_entity() for entity in fixture['entities']}
+    for definition in fixture.get('scenes', []):
+        from usd.cable_scene_loader import open_cable_scene
+        from cable_joints_3d.machine_scene import populate_machine_scene
+
+        bake_options = definition.get('bakeOptions', {})
+        stage = open_cable_scene(definition.get('source') or ROOT / definition['path'],
+            derive_all=bake_options.get('deriveAll', False),
+            cable_path_half_width_override=bake_options.get('cablePathHalfWidthOverride'))
+        options = definition.get('options', {})
+        populate_machine_scene(world, stage, definition.get('scenePrimPath', '/World/SlideprinterScene'),
+            namespace=options.get('namespace'), append=options.get('append', False), palette=options.get('palette'),
+            tint_color=options.get('tintColor'), extrusion_color=options.get('extrusionColor'))
+    if 'scenes' in fixture:
+        for entity in world.entities:
+            info = world.get_component(entity, ecs.SceneEntityInfoComponent)
+            tag = world.get_component(entity, ecs.MachineTagComponent)
+            name = f'{tag.id}::{info.name}' if info else f'@{entity}'
+            assert name not in ids, f'Duplicate scene entity name {name}'
+            ids[name] = entity
     names = {value: key for key, value in ids.items()}
     components = {name: getattr(ecs, name) for name in CONTRACT if hasattr(ecs, name)}
     components['SpoolStateComponent'] = SpoolStateComponent
@@ -181,6 +200,8 @@ def run_python(fixture):
             return names[value]
         if kind == 'entities':
             return [names[entity] for entity in value]
+        if kind == 'booleans':
+            return [bool(item) for item in value]
         if kind == 'vectors':
             return [encode(point, 'vector') for point in value]
         if kind.endswith('Map') and kind != 'entityMap':
@@ -243,7 +264,11 @@ def run_python(fixture):
                     component.machine_effector_centers.get(machine), component.center_sources.get(machine), world)
                 state['effectorRotations'].append({'quaternion': encode(rotation, 'quaternion')})
         if 'snapshotResources' in fixture:
-            state['resources'] = {key: world.get_resource(key) for key in fixture['snapshotResources']}
+            state['resources'] = {key: encode(world.get_resource(key), 'vector') if key in ('gravity', 'defaultPlaneNormal')
+                                  else world.get_resource(key) for key in fixture['snapshotResources']}
+        if 'snapshotMapResources' in fixture:
+            state['mapResources'] = {key: copy.deepcopy(world.get_resource(key) or {})
+                                     for key in fixture['snapshotMapResources']}
         if 'snapshotEntityMaps' in fixture:
             state['entityMaps'] = {}
             for key in fixture['snapshotEntityMaps']:

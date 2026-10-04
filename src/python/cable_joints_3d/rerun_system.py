@@ -1,10 +1,10 @@
 """Rerun renderer for interactive Python simulations and RRD recordings."""
 from dataclasses import dataclass, field
 import re
-from cable_joints.ecs import (
+from .ecs import (
     MachineTagComponent, RadiusComponent, RenderableComponent,
+    OrientationComponent, PositionComponent, SceneEntityInfoComponent,
 )
-from .ecs import OrientationComponent, PositionComponent, SceneEntityInfoComponent
 
 def _safe_path(name): return re.sub(r"[^A-Za-z0-9_.-]+", "_", name).strip("_") or "entity"
 

@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from cable_joints.ecs import (World, RadiusComponent, MassComponent,
     RestitutionComponent, GravityAffectedComponent, CoefficientOfFrictionComponent,
-    RenderableComponent, DistanceConstraintComponent, MachineTagComponent)
+    DistanceConstraintComponent, MachineTagComponent)
 from .inertia_tensor import MomentOfInertiaComponent
 from .quaternion import Quaternion
 
@@ -31,6 +31,15 @@ class AngularVelocityComponent:
 class EncoderComponent:
     angle: float = 0.
     axis: np.ndarray = field(default_factory=lambda: np.array([0., 0., 1.]))
+@dataclass
+class RenderableComponent:
+    shape: str = 'circle'
+    color: str = '#888888'
+    height: float | None = None
+
+    def __post_init__(self):
+        if self.height is not None and (not np.isfinite(self.height) or self.height <= 0):
+            self.height = None
 @dataclass
 class SceneEntityInfoComponent:
     name: str
