@@ -21,6 +21,7 @@ import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
 import { bakeCableSceneUsdaSource } from '../../src/js/usd/cable_scene_baker.js';
 import { OpenText } from '../../src/js/usd/stage.js';
 import { parseStage, readMachineSceneSpec, validateMachineSceneSpec, buildEntityPlan, applyEntityPlan } from '../../hp-sim-3d/app/scene/machineScenePipeline.js';
+import { registerSimulationSystems } from '../../hp-sim-3d/app/simulationSystems.js';
 
 const contract = JSON.parse(fs.readFileSync(new URL('./contract.json', import.meta.url)));
 const geometryContract = JSON.parse(fs.readFileSync(new URL('./geometry_contract.json', import.meta.url)));
@@ -134,6 +135,11 @@ export function runFixture(fixture) {
     if (!systems[name]) throw new Error(`Unsupported system ${name}`);
     world.registerSystem(new systems[name](...args));
   }
+  if (fixture.pipeline) {
+    if (fixture.systems.length) throw new Error('Pipeline fixtures must use production system registration');
+    registerSimulationSystems(world);
+    world.systems.find(system => system instanceof ExtruderSystem).update(world, 0);
+  }
   const remote = world.systems.find(system => system instanceof RemoteSpoolSystem);
   if (fixture.initializeExtruder) world.systems.find(system => system instanceof ExtruderSystem).update(world, 0);
   const events = [];
@@ -194,6 +200,7 @@ export function runFixture(fixture) {
         internalToBody: Boolean(endpoint.internalToBody) };
     });
     const state = { step, entities, queries, attachments };
+    if (fixture.pipeline) state.systemOrder = world.systems.map(system => system.constructor.name);
     if (motorDiagnostics) state.motorDiagnostics = motorDiagnostics;
     if (fixture.commandState) state.commandState = {
       ...structuredClone(remote.getPlaybackState()), queueLength: remote.getQueueLength(),

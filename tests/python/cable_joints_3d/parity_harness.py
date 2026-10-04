@@ -3,6 +3,7 @@ import copy
 import json
 import math
 import numbers
+import re
 from pathlib import Path
 import subprocess
 from types import SimpleNamespace
@@ -166,6 +167,11 @@ def run_python(fixture):
         args = [] if isinstance(definition, str) else definition.get('args', [])
         system = systems.get(name)
         world.register_system((system if system is not None else getattr(common_systems, name))(*args))
+    if fixture.get('pipeline'):
+        from cable_joints_3d.machine_simulation import register_machine_systems
+
+        assert not fixture['systems'], 'Pipeline fixtures must use production system registration'
+        register_machine_systems(world)
 
     remote = world.get_system(RemoteSpoolSystem)
     if fixture.get('initializeExtruder'):
@@ -246,6 +252,9 @@ def run_python(fixture):
                 'internalToBody': bool(endpoint.internal_to_body),
             })
         state = {'step': step, 'entities': entities, 'queries': queries, 'attachments': attachments}
+        if fixture.get('pipeline'):
+            state['systemOrder'] = ['StepperMotorSystem' if isinstance(system, StepperMotorSystem)
+                                    else type(system).__name__ for system in world.systems]
         if 'motorDiagnostics' in fixture:
             state['motorDiagnostics'] = diagnostics
         if fixture.get('commandState'):
@@ -328,21 +337,28 @@ def run_js(fixture):
     return json.loads(result.stdout)
 
 
-def assert_equivalent(actual, expected, *, atol, rtol, path='state'):
+def assert_equivalent(actual, expected, *, atol, rtol, fields=None, path='state'):
     """Report a precise state path, rejecting shape differences and nonfinites."""
-    pending = [(actual, expected, path)]
+    fields = fields or {}
+    pending = [(actual, expected, path, atol, rtol)]
     while pending:
-        actual, expected, path = pending.pop()
+        actual, expected, path, atol, rtol = pending.pop()
         if isinstance(expected, dict):
             assert isinstance(actual, dict) and actual.keys() == expected.keys(), f'{path}: keys differ'
-            pending.extend((actual[key], expected[key], f'{path}.{key}') for key in reversed(expected))
+            for key in reversed(expected):
+                child_path = f'{path}.{key}'
+                selection_path = re.sub(r'\[\d+\]', '', child_path)
+                tolerance = next((value for selector, value in fields.items()
+                                  if selection_path.endswith('.' + selector)), {})
+                pending.append((actual[key], expected[key], child_path,
+                                tolerance.get('atol', atol), tolerance.get('rtol', rtol)))
         elif isinstance(expected, list):
             assert isinstance(actual, list) and len(actual) == len(expected), f'{path}: lengths differ'
             if path.endswith(QUATERNION_FIELDS):
                 assert np.isfinite(actual).all() and np.isfinite(expected).all(), f'{path}: nonfinite'
                 if np.dot(actual, expected) < 0:
                     actual = [-v for v in actual]
-            pending.extend((actual[i], expected[i], f'{path}[{i}]') for i in reversed(range(len(expected))))
+            pending.extend((actual[i], expected[i], f'{path}[{i}]', atol, rtol) for i in reversed(range(len(expected))))
         elif isinstance(expected, numbers.Real) and not isinstance(expected, bool):
             assert isinstance(actual, numbers.Real) and not isinstance(actual, bool), f'{path}: numeric type differs'
             assert math.isfinite(actual) and math.isfinite(expected), f'{path}: nonfinite'
