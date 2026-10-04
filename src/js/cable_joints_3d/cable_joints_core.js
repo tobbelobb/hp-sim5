@@ -2182,8 +2182,6 @@ export function _splitJoints(world) {
         if (lineSegmentSphereIntersection(pA, pB, posSplitter, radiusSplitter)) {
           const entityA = joint.entityA;
           const entityB = joint.entityB;
-          const newJointId = world.createEntity();
-          ensureMachineTag(world, newJointId, pathMachine);
 
           const posA = getEntityWorldPosition(world, entityA);
           const linkTypeA = path.linkTypes[i];
@@ -2325,6 +2323,8 @@ export function _splitJoints(world) {
               });
               console.warn("Split occurred with near-zero distance between new segments:", totalDist);
           }
+          const newJointId = world.createEntity();
+          ensureMachineTag(world, newJointId, pathMachine);
           path.stored[i + 1] -= sB;
           joint.restLength += sB;
           path.jointEntities.splice(i + 1, 0, newJointId);
