@@ -30,6 +30,10 @@ rest lengths and stored wraps before ECS construction. Optional `deriveAll` and
 `scenes` executes native USD baking and each production ECS builder independently.
 `pipeline: true` uses actual production registration in both languages and records
 the system order; it forbids a fixture-supplied substitute system list.
+`flightSnapshot: true` invokes the production JS flight recorder and native
+read-only snapshot. The adapter keeps span endpoints and excludes browser sag/wrap
+tessellation, an intentional native presentation difference. All frame transforms,
+lengths and forces remain in the differential comparison.
 
 For JSON snapshots of a single fixture:
 
@@ -168,5 +172,5 @@ torque-motor fixtures run for 200 steps;
 both engines must reproduce their own snapshots exactly on a second run.
 
 These fixtures establish the covered authored-machine pipeline. Dynamic split/merge,
-optional collision fixtures and richer Rerun recordings remain on the checklist
+optional collision fixtures remain on the checklist
 in `PYTHON_3D_PARITY.md`.

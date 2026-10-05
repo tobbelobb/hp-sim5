@@ -252,6 +252,9 @@ def run_python(fixture):
                 'internalToBody': bool(endpoint.internal_to_body),
             })
         state = {'step': step, 'entities': entities, 'queries': queries, 'attachments': attachments}
+        if fixture.get('flightSnapshot'):
+            from cable_joints_3d.machine_snapshot import capture_machine_snapshot
+            state['flightSnapshot'] = capture_machine_snapshot(world)
         if fixture.get('pipeline'):
             state['systemOrder'] = ['StepperMotorSystem' if isinstance(system, StepperMotorSystem)
                                     else type(system).__name__ for system in world.systems]

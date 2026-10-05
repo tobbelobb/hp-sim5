@@ -37,7 +37,7 @@ and optional configuration represented by `None` are intentional API divergences
 | USDA machine builders (`app/scene/`) | `machine_scene.py`: equivalent for covered construction | Native pxr.Usd stage and shared value readers; body/gravity/material/axis state, rigid mass/tensor aggregation, member conversion, distance/cable joints, path initialization, extruder bindings and append/namespaces. Eight authored scenes plus strict double-precision and append fixtures compare initial ECS. |
 | Commands (`remoteSpoolSystem.js`, `hangprinter_runtime.js`) | `remote_spool_system.py`, `machine_runtime.py`: equivalent for covered headless records | One queued record per step, pause/zero-dt, mode/reference updates, machine targeting, playback history/reset, callbacks and extrusion colors. Python deque ownership/API is intentional divergence; worker/backpressure transport is browser-only/not required. |
 | Composition root (`sceneSystems.js`, `simulationSystems.js`) | `machine_simulation.py`: equivalent for the registered headless pipeline | Production JS and Python registration, exact 19-system order; initial extruder update, no global substep loop. HP3, HP4, rigid pinhole and double-authored minimal machines run 200 repeatable steps; HP4 commands exercise modes, extrusion, diagnostics, pause and distinct update/resource dt. |
-| Snapshot / Rerun (`flightRecorderSnapshot.js`, `FLIGHT_RECORDER.md`) | `rerun_system.py`: partial | Preserve PR #61 color, identity, static clearing and pause fixes. Add authoritative time/step, member hierarchy, cables, forces and lengths; reuse recorder contract where practical. |
+| Snapshot / Rerun (`flightRecorderSnapshot.js`, `FLIGHT_RECORDER.md`) | `machine_snapshot.py`, `rerun_system.py`, `__main__.py`: equivalent for covered recording data | Six fixture families compare native frames/lengths/forces with production JS recorder data. Live body hierarchy, solver-sampled cable endpoints, copied snapshots, initial/every-step RRD, Z-up coordinates, pause/reset clocks, static clearing, encoder/motor/velocity and tool/extrusion state. Straight-span/point visuals and stable per-quantity plot paths are intentional presentation divergences. |
 | Three.js renderer, DOM/pointer/UI, upload controllers, workers | browser-only/not required | Do not port. Render-only slack/wrap geometry may be reused for Rerun presentation. |
 
 ## Differential evidence
@@ -53,6 +53,11 @@ compare up to sign. Nonfinite physics state fails. Guard checks ensure targeted
 constraints, transitions and reactions activate. Thirty-two scenarios run 200 steps
 and require exact repeatability within each engine; a further stiff-motor probe
 runs 200 steps at 20 microseconds. See `tests/parity3d/README.md` for fixture coverage.
+The recording oracle also calls the production JS flight-recorder snapshot for
+six existing fixture families. It compares frame trees, live effector frames,
+span endpoints, commanded/actual/geometric lengths and force telemetry. Browser
+sag subdivisions and wrap tessellation are projected out explicitly; no physical
+field is dropped. Native snapshots own their data and recording is read-only.
 
 Motion/solver tolerances remain absolute `1e-10`, relative `1e-9`. Inverse moments
 around `1e6` use absolute `1e-8`, relative `1e-12`. The commanded cable case uses
@@ -108,6 +113,9 @@ widening a global tolerance.
   standalone rotors wait for angular prediction. Torque-mode housing reactions
   use drive torque only; external cable loads already react through constraints.
 - Rerun must preserve actual time through pause/reset and clear static archetypes.
+- Native Rerun has a stable path for each quantity/segment, so entering torque
+  mode or changing topology cannot relabel earlier plot indices. World transforms
+  are relative to live rigid parents; velocity traces expose the stored ECS state.
 - Effector systems read live parent/member transforms after constraints without
   adding a sync. Command deposition precedes current-step prediction. Numeric
   machine and axis keys retain JS array-index ordering. Python queues copy their
@@ -160,11 +168,11 @@ Each is isolated in its own commit, with JS and differential regression evidence
 | [#65](https://github.com/tobbelobb/hp-sim5/pull/65) | Cable solving, load telemetry and shared over-correction | #64 |
 | [#66](https://github.com/tobbelobb/hp-sim5/pull/66) | Position/torque integration and body reactions | #65 |
 | [#67](https://github.com/tobbelobb/hp-sim5/pull/67) | Commands, effector/extrusion state and missed-step diagnostics | #66 |
-| Authored-scene follow-up | Native USD baking, construction, semantic composition and full-machine differentials | #67 |
+| [#68](https://github.com/tobbelobb/hp-sim5/pull/68) | Native USD baking, construction, semantic composition and full-machine differentials | #67 |
+| Native recording follow-up | Read-only snapshots, richer primary Rerun and headless recording CLI | #68 |
 
-Next: richer native Rerun recording and a headless recording entry point. Dynamic
-topology and relevant collision fixtures remain open checklist items. Full-machine
-tests cover the app's current registered pipeline, not every optional engine system.
+Next: dynamic topology and relevant optional collision fixtures. Full-machine tests
+cover the app's current registered pipeline, not every optional engine system.
 
 ## Completion gate
 

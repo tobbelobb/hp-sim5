@@ -14,8 +14,8 @@ class Recording:
         self.logs = []
         self.static = {}
 
-    def set_time(self, timeline, duration):
-        self.times.append((timeline, duration))
+    def set_time(self, timeline, **values):
+        self.times.append((timeline, values))
 
     def log(self, path, value, **kwargs):
         self.logs.append((path, value, kwargs))
@@ -31,9 +31,16 @@ class Recording:
 def _fake_rerun():
     return SimpleNamespace(
         Transform3D=lambda **kwargs: ("transform", kwargs),
+        TransformAxes3D=lambda value: ("axes", value),
         Quaternion=lambda **kwargs: ("quaternion", kwargs),
         Points3D=lambda *args, **kwargs: ("points", args, kwargs),
         Clear=lambda **kwargs: ("clear", kwargs),
+        LineStrips3D=lambda *args, **kwargs: ("lines", args, kwargs),
+        Arrows3D=lambda **kwargs: ("arrows", kwargs),
+        SeriesLines=lambda **kwargs: ("series", kwargs),
+        Scalars=lambda values: ("scalars", values),
+        Radius=SimpleNamespace(ui_points=lambda value: value),
+        ViewCoordinates=SimpleNamespace(RIGHT_HAND_Z_UP=("coordinates", "z_up")),
     )
 
 
@@ -51,7 +58,8 @@ def test_rerun_time_static_styles_and_removed_entities(monkeypatch):
     world.get_resource("pauseState").paused = True
     system.update(world, .1)
 
-    assert recording.times == [("sim_time", .1), ("sim_time", .1)]
+    assert recording.times == [("scene_generation", {"sequence": 0}), ("sim_step", {"sequence": 1}),
+                               ("sim_time", {"duration": .1})] * 2
     shapes = [log for log in recording.logs if log[0].endswith("/shape")]
     assert len(shapes) == 1
     assert shapes[0][1][2]["colors"] == [26, 43, 60]
@@ -59,10 +67,10 @@ def test_rerun_time_static_styles_and_removed_entities(monkeypatch):
     world.destroy_entity(entity)
     system.update(world, .1)
     assert recording.logs[-1] == (
-        "world/machines/default/test_ball_0",
+        "world/machines/default/bodies/test_ball_0",
         ("clear", {"recursive": True}), {},
     )
-    assert recording.static == {}
+    assert set(recording.static) == {"world"}
 
 
 def test_rerun_clears_reused_path_during_scene_reset(monkeypatch):
@@ -81,9 +89,9 @@ def test_rerun_clears_reused_path_during_scene_reset(monkeypatch):
     world.add_component(new_entity, SceneEntityInfoComponent("effector"))
     system.update(world, .1)
 
-    shape_path = "world/machines/default/effector_0/shape"
+    shape_path = "world/machines/default/bodies/effector_0/shape"
     static_clears = [value for path, value, kwargs in recording.logs
-                     if path == shape_path and value[0] == "clear"
+                     if path == shape_path[:-6] and value[0] == "clear"
                      and kwargs.get("static")]
     assert len(static_clears) == 1
     assert shape_path not in recording.static
@@ -107,7 +115,7 @@ def test_rerun_paths_include_machine_and_entity_identity(monkeypatch):
     transform_paths = [path for path, value, _ in recording.logs
                        if value[0] == "transform"]
     assert transform_paths == [
-        "world/machines/left/anchor_0",
-        "world/machines/right/anchor_1",
-        "world/machines/left/anchor_2",
+        "world/machines/left/bodies/anchor_0",
+        "world/machines/right/bodies/anchor_1",
+        "world/machines/left/bodies/anchor_2",
     ]

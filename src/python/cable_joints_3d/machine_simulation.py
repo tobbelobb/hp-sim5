@@ -28,12 +28,20 @@ def register_machine_systems(world, recording=None):
             TorqueModeSystem(), ExtruderSystem(), common.EncoderUpdateSystem(), MissedStepTrackingSystem(),
         ]:
             world.register_system(system)
-        if recording is not None:
-            from .rerun_system import RerunSystem
-            world.register_system(RerunSystem(recording))
+    recorder = None
+    if recording is not None:
+        from .rerun_system import RerunSystem
+        recorder = world.get_system(RerunSystem)
+        if recorder is None:
+            recorder = RerunSystem(recording)
+            world.register_system(recorder)
+        elif recorder.recording is not recording:
+            raise ValueError('This world already has a different recording stream')
     extruder = world.get_system(ExtruderSystem)
     if extruder is not None:
         extruder.update(world, 0.)
+    if recorder is not None:
+        recorder.update(world, 0.)
 
 
 def load_machine_world(path, scene_prim_path=None, *, recording=None, **options):

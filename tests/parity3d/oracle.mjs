@@ -22,6 +22,7 @@ import { bakeCableSceneUsdaSource } from '../../src/js/usd/cable_scene_baker.js'
 import { OpenText } from '../../src/js/usd/stage.js';
 import { parseStage, readMachineSceneSpec, validateMachineSceneSpec, buildEntityPlan, applyEntityPlan } from '../../hp-sim-3d/app/scene/machineScenePipeline.js';
 import { registerSimulationSystems } from '../../hp-sim-3d/app/simulationSystems.js';
+import { captureFlightRecorderSnapshot } from '../../hp-sim-3d/app/flightRecorderSnapshot.js';
 
 const contract = JSON.parse(fs.readFileSync(new URL('./contract.json', import.meta.url)));
 const geometryContract = JSON.parse(fs.readFileSync(new URL('./geometry_contract.json', import.meta.url)));
@@ -200,6 +201,15 @@ export function runFixture(fixture) {
         internalToBody: Boolean(endpoint.internalToBody) };
     });
     const state = { step, entities, queries, attachments };
+    if (fixture.flightSnapshot) {
+      const recorded = captureFlightRecorderSnapshot(world);
+      state.flightSnapshot = {
+        frames: recorded.frames,
+        cables: recorded.cables.map(({ wraps, ...cable }) => ({ ...cable,
+          segments: cable.segments.map(segment => ({ ...segment, points: [segment.points[0], segment.points.at(-1)] })),
+        })),
+      };
+    }
     if (fixture.pipeline) state.systemOrder = world.systems.map(system => system.constructor.name);
     if (motorDiagnostics) state.motorDiagnostics = motorDiagnostics;
     if (fixture.commandState) state.commandState = {
