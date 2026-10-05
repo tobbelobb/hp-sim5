@@ -12,6 +12,7 @@ native Python implementation, and compares initial state and every timestep.
 components, invoke systems and serialize fields. Relationships use fixture
 names, quaternions use XYZW order and compare up to sign. Query and solver order
 remain observable. Arrays are copied when snapshots are taken.
+Per-path knot-map keys also use fixture entity names.
 
 For JSON snapshots of a single fixture:
 
@@ -31,6 +32,9 @@ browser or worker is needed. Unknown components/systems and nonfinite outputs
 fail. The material parameters stiffness/compliance alone permit positive
 infinity, encoded as the string `"Infinity"` (rigid/zero-stiffness limits).
 Nonfinite poses, lengths, forces and other numerical state still fail.
+Systems may be names or `{ "name": "CableAttachmentUpdateSystem", "args": [false] }`
+constructor definitions. `snapshotResources` selects simple resources to record;
+`cableRotations` invokes production stored-length prediction at each snapshot.
 
 Current coverage:
 
@@ -55,10 +59,23 @@ Current coverage:
   rolling/pinhole friction, frictionless and free rolling guides, attachment
   barriers, slack/zero-rest spans, changed attachments and dt-scaled ordered
   redistribution through several guides.
+- `cable_winding`: signed stored-length prediction at both ends, nonlinear ramps,
+  wrap boundaries, negative stored length, linear/zero-radius limits and layer cap.
+- `cable_attachment_motion` and its layering-off variant: world prediction,
+  rolling payout, moving hybrid endpoints, parallel/skew wrap planes and
+  attachment/cache/friction ordering.
+- `cable_attachment_members`: carrier compound motion affects external spans,
+  leaves onboard spool winding unchanged, then a commanded spool turn changes
+  winding and encoder state. Separate knot angles share one spool across paths.
+- `cable_attachment_clamp`: rolling and layered hybrid rest-length clamps change
+  world/member-local orientation before knot phase projection.
+- `cable_hybrid_transitions`: unwrapping/rewrapping at both ends, hysteresis,
+  degenerate attachments, zero radius, flags and pause/transition-step counting.
 
-Rigid-member, distance, spool, cable-cache and friction-chain fixtures run for 200 steps;
+Rigid-member, distance, spool, cache, friction-chain and the two moving-attachment
+fixtures run for 200 steps;
 both engines must reproduce their own snapshots exactly on a second run.
 
 These fixtures establish the covered ECS behavior. Authored USDA construction,
-dynamic attachment rebuilding, the cable solver/motor pipeline, full machines
+dynamic split/merge, the cable solver/motor pipeline, full machines
 and richer Rerun recordings remain on the checklist in `PYTHON_3D_PARITY.md`.

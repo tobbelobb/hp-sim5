@@ -1,0 +1,119 @@
+{
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "entities": [
+    {
+      "name": "body",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "RigidBodyComponent": [["spool", "guide"]],
+        "MassComponent": [2],
+        "VelocityComponent": [0.02, -0.01, 0.03],
+        "AngularVelocityComponent": [0.17, -0.11, 0.23]
+      }
+    },
+    {
+      "name": "spool",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, 0, 0, [0, 0, 0, 1], null, [0, 0, 1]],
+        "RadiusComponent": [0.05],
+        "RigidBodyMemberComponent": ["body", [0, 0, 0], [0, 0, 0, 1], 0.2],
+        "SpoolStateComponent": ["A", [0, 0, 1], [0, 0, 0, 1]],
+        "EncoderComponent": [0, 0, 0, 1]
+      }
+    },
+    {
+      "name": "guide",
+      "components": {
+        "PositionComponent": [0, -0.2, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, -0.2, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0],
+        "RigidBodyMemberComponent": ["body", [0, -0.2, 0], [0, 0, 0, 1], 0.1]
+      }
+    },
+    {
+      "name": "outside",
+      "components": {
+        "PositionComponent": [0.4, 0.3, 0.5],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0.4, 0.3, 0.5, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "internal_joint",
+      "components": {
+        "CableJointComponent": ["guide", "spool", 0.25, [0, -0.2, 0], [-0.049313993703613175, -0.01300499999999999, 0.0], "world"]
+      }
+    },
+    {
+      "name": "internal",
+      "components": {
+        "CablePathComponent": [["internal_joint"], ["pinhole", "hybrid"], [true, true], 12000, [0, 0.08], 0.001, 0.001, 2]
+      }
+    },
+    {
+      "name": "external_joint",
+      "components": {
+        "CableJointComponent": ["spool", "outside", 1, [-0.026278802601805384, 0.04370840346907384, 0.0], [0.4, 0.3, 0.5], "world"]
+      }
+    },
+    {
+      "name": "external",
+      "components": {
+        "CablePathComponent": [["external_joint"], ["hybrid", "attachment"], [false, false], 12000, [0.15, 0], 0.001, 0.001, 2]
+      }
+    }
+  ],
+  "systems": [
+    "PrevFinalPosSystem",
+    "PrevFinalOrientationSystem",
+    "MovementSystem",
+    "AngularMovementSystem",
+    "RigidBodySyncSystem",
+    {
+      "name": "CableAttachmentUpdateSystem",
+      "args": [false]
+    },
+    "CableAttachmentCacheSystem",
+    "CableFrictionSystem",
+    "PBDVelocityUpdateSystem",
+    "PBDAngularVelocityUpdateSystem",
+    "EncoderUpdateSystem"
+  ],
+  "steps": [
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002,
+      "set": [["spool", "RigidBodyMemberComponent", "localOrientation", [0, 0, 0.09983341664682815, 0.9950041652780258]], ["spool", "OrientationComponent", "quaternion", [0, 0, 0.09983341664682815, 0.9950041652780258]]]
+    },
+    {
+      "dt": 0.005
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    }
+  ],
+  "snapshotResources": ["cableHybridTransitionStep"],
+  "initializeRigidBodies": ["body"]
+}

@@ -17,6 +17,8 @@ from cable_joints_3d import cable_joints_components as cable
 from cable_joints_3d.create_cable_paths import create_cable_paths
 from cable_joints_3d.cable_attachment_cache_system import CableAttachmentCacheSystem
 from cable_joints_3d.cable_friction_system import CableFrictionSystem
+from cable_joints_3d.cable_attachment_update_system import CableAttachmentUpdateSystem
+from cable_joints_3d.cable_layering import cable_stored_length_after_rotation
 
 ROOT = Path(__file__).resolve().parents[3]
 CONTRACT = json.loads((ROOT / 'tests/parity3d/contract.json').read_text())
@@ -45,6 +47,8 @@ def run_python(fixture):
             return ids[value]
         if kind == 'entities':
             return [ids[name] for name in value]
+        if kind == 'entityMap':
+            return {name if name == '__default__' else str(ids[name]): angle for name, angle in value.items()}
         if kind == 'parameter' and value == 'Infinity':
             return math.inf
         return value
@@ -102,9 +106,13 @@ def run_python(fixture):
             ids[name], names[entity] = entity, name
     for name in fixture.get('initializeRigidBodies', []):
         rigid.initialize_rigid_body_sync_state(world, ids[name])
-    for name in fixture['systems']:
-        system = {'CableAttachmentCacheSystem': CableAttachmentCacheSystem, 'CableFrictionSystem': CableFrictionSystem}.get(name)
-        world.register_system((system if system is not None else getattr(common_systems, name))())
+    systems = {'CableAttachmentCacheSystem': CableAttachmentCacheSystem, 'CableFrictionSystem': CableFrictionSystem,
+               'CableAttachmentUpdateSystem': CableAttachmentUpdateSystem}
+    for definition in fixture['systems']:
+        name = definition if isinstance(definition, str) else definition['name']
+        args = [] if isinstance(definition, str) else definition.get('args', [])
+        system = systems.get(name)
+        world.register_system((system if system is not None else getattr(common_systems, name))(*args))
 
     def encode(value, kind):
         if value is None:
@@ -113,6 +121,8 @@ def run_python(fixture):
             return names[value]
         if kind == 'entities':
             return [names[entity] for entity in value]
+        if kind == 'entityMap':
+            return {key if key == '__default__' else names[int(key)]: angle for key, angle in value.items()}
         if kind == 'quaternion':
             return value.as_xyzw().tolist()
         if kind == 'parameter' and value == math.inf:
@@ -149,7 +159,14 @@ def run_python(fixture):
                 'solverLocalPoint': encode(endpoint.local_point, 'vector'),
                 'internalToBody': bool(endpoint.internal_to_body),
             })
-        return {'step': step, 'entities': entities, 'queries': queries, 'attachments': attachments}
+        state = {'step': step, 'entities': entities, 'queries': queries, 'attachments': attachments}
+        if 'snapshotResources' in fixture:
+            state['resources'] = {key: world.get_resource(key) for key in fixture['snapshotResources']}
+        if 'cableRotations' in fixture:
+            state['cableRotations'] = [cable_stored_length_after_rotation(
+                world, world.get_component(ids[p['path']], cable.CablePathComponent),
+                p['index'], ids[p['entity']], p['delta']) for p in fixture['cableRotations']]
+        return state
 
     snapshots = [snapshot(0)]
     for index, step in enumerate(fixture['steps'], 1):

@@ -2,7 +2,8 @@
 import numpy as np
 
 from cable_joints_3d.cable_attachment_cache_system import CableAttachmentCacheSystem
-from cable_joints_3d.cable_joints_components import CableJointComponent, CableLinkComponent
+from cable_joints_3d.cable_attachment_update_system import update_attachment_points
+from cable_joints_3d.cable_joints_components import CableJointComponent, CableLinkComponent, create_cable_path_component
 from cable_joints_3d.ecs import OrientationComponent, PositionComponent, World
 from cable_joints_3d.quaternion import Quaternion
 
@@ -55,3 +56,22 @@ def test_cache_updates_existing_frame_objects_without_aliasing_live_pose():
     orientation.quaternion.x = 40
     assert np.array_equal(previous_position, [1, 2, 3])
     assert np.array_equal(previous_orientation.as_xyzw(), snapshot)
+
+
+def test_attachment_rebuild_preserves_storage_and_does_not_alias_live_positions():
+    world = World()
+    a, b, joint_entity, path_entity = [world.create_entity() for _ in range(4)]
+    for entity in (a, b):
+        world.add_component(entity, PositionComponent(entity, 0, 0))
+        world.add_component(entity, CableLinkComponent(entity, 0, 0))
+    joint = CableJointComponent.from_world(a, b, 2, np.zeros(3), np.ones(3))
+    world.add_component(joint_entity, joint)
+    world.add_component(path_entity, create_cable_path_component(
+        world, [joint_entity], ['attachment', 'attachment'], [False, False]))
+    first, second = joint.attachment_point_a_world, joint.attachment_point_b_world
+    update_attachment_points(world)
+    assert joint.attachment_point_a_world is first
+    assert joint.attachment_point_b_world is second
+    saved = first.copy()
+    world.get_component(a, PositionComponent).pos[:] = 100
+    assert np.array_equal(first, saved)

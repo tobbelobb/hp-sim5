@@ -1,0 +1,272 @@
+{
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "entities": [
+    {
+      "name": "layered_a",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0.05]
+      }
+    },
+    {
+      "name": "layered_b",
+      "components": {
+        "PositionComponent": [2, 1, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [2, 1, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0.05]
+      }
+    },
+    {
+      "name": "layered_joint",
+      "components": {
+        "CableJointComponent": ["layered_a", "layered_b", 10, [0.05, 0, 0], [2.05, 1, 0], "world"]
+      }
+    },
+    {
+      "name": "layered",
+      "components": {
+        "CablePathComponent": [["layered_joint"], ["hybrid", "hybrid"], [true, false], 12000, [0.8, -0.4], 0.002, 0.001, 2]
+      }
+    },
+    {
+      "name": "linear_a",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0.05]
+      }
+    },
+    {
+      "name": "linear_b",
+      "components": {
+        "PositionComponent": [2, 1, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [2, 1, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0.05]
+      }
+    },
+    {
+      "name": "linear_joint",
+      "components": {
+        "CableJointComponent": ["linear_a", "linear_b", 10, [0.05, 0, 0], [2.05, 1, 0], "world"]
+      }
+    },
+    {
+      "name": "linear",
+      "components": {
+        "CablePathComponent": [["linear_joint"], ["hybrid", "hybrid"], [true, false], 12000, [0.8, -0.4], 0, 0.001, 2]
+      }
+    },
+    {
+      "name": "rolling_a",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0.05]
+      }
+    },
+    {
+      "name": "rolling_b",
+      "components": {
+        "PositionComponent": [2, 1, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [2, 1, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0.05]
+      }
+    },
+    {
+      "name": "rolling_joint",
+      "components": {
+        "CableJointComponent": ["rolling_a", "rolling_b", 10, [0.05, 0, 0], [2.05, 1, 0], "world"]
+      }
+    },
+    {
+      "name": "rolling",
+      "components": {
+        "CablePathComponent": [["rolling_joint"], ["rolling", "rolling"], [true, false], 12000, [0.8, -0.4], 0.002, 0.001, 2]
+      }
+    },
+    {
+      "name": "zero_a",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "zero_b",
+      "components": {
+        "PositionComponent": [2, 1, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [2, 1, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "zero_joint",
+      "components": {
+        "CableJointComponent": ["zero_a", "zero_b", 10, [0, 0, 0], [2, 1, 0], "world"]
+      }
+    },
+    {
+      "name": "zero",
+      "components": {
+        "CablePathComponent": [["zero_joint"], ["hybrid", "hybrid"], [true, false], 12000, [0.8, 0], 0, 0.001, 2]
+      }
+    },
+    {
+      "name": "ramp_a",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0.05]
+      }
+    },
+    {
+      "name": "ramp_b",
+      "components": {
+        "PositionComponent": [2, 1, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [2, 1, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0.05]
+      }
+    },
+    {
+      "name": "ramp_joint",
+      "components": {
+        "CableJointComponent": ["ramp_a", "ramp_b", 10, [0.05, 0, 0], [2.05, 1, 0], "world"]
+      }
+    },
+    {
+      "name": "ramp",
+      "components": {
+        "CablePathComponent": [["ramp_joint"], ["hybrid", "hybrid"], [true, false], 12000, [0.326, 0.326], 0.002, 0.001, 2]
+      }
+    }
+  ],
+  "systems": [],
+  "steps": [],
+  "cableRotations": [
+    {"path": "layered", "index": 0, "entity": "layered_a", "delta": -50},
+    {"path": "layered", "index": 0, "entity": "layered_a", "delta": -6.283185317179586},
+    {"path": "layered", "index": 0, "entity": "layered_a", "delta": -6.283185297179586},
+    {"path": "layered", "index": 0, "entity": "layered_a", "delta": -0.03},
+    {"path": "layered", "index": 0, "entity": "layered_a", "delta": 0},
+    {"path": "layered", "index": 0, "entity": "layered_a", "delta": 1e-10},
+    {"path": "layered", "index": 0, "entity": "layered_a", "delta": 0.03},
+    {"path": "layered", "index": 0, "entity": "layered_a", "delta": 6.283185297179586},
+    {"path": "layered", "index": 0, "entity": "layered_a", "delta": 6.283185317179586},
+    {"path": "layered", "index": 0, "entity": "layered_a", "delta": 50},
+    {"path": "layered", "index": 0, "entity": "layered_a", "delta": 12880.529879718151},
+    {"path": "layered", "index": 1, "entity": "layered_b", "delta": -50},
+    {"path": "layered", "index": 1, "entity": "layered_b", "delta": -6.283185317179586},
+    {"path": "layered", "index": 1, "entity": "layered_b", "delta": -6.283185297179586},
+    {"path": "layered", "index": 1, "entity": "layered_b", "delta": -0.03},
+    {"path": "layered", "index": 1, "entity": "layered_b", "delta": 0},
+    {"path": "layered", "index": 1, "entity": "layered_b", "delta": 1e-10},
+    {"path": "layered", "index": 1, "entity": "layered_b", "delta": 0.03},
+    {"path": "layered", "index": 1, "entity": "layered_b", "delta": 6.283185297179586},
+    {"path": "layered", "index": 1, "entity": "layered_b", "delta": 6.283185317179586},
+    {"path": "layered", "index": 1, "entity": "layered_b", "delta": 50},
+    {"path": "layered", "index": 1, "entity": "layered_b", "delta": 12880.529879718151},
+    {"path": "linear", "index": 0, "entity": "linear_a", "delta": -50},
+    {"path": "linear", "index": 0, "entity": "linear_a", "delta": -6.283185317179586},
+    {"path": "linear", "index": 0, "entity": "linear_a", "delta": -6.283185297179586},
+    {"path": "linear", "index": 0, "entity": "linear_a", "delta": -0.03},
+    {"path": "linear", "index": 0, "entity": "linear_a", "delta": 0},
+    {"path": "linear", "index": 0, "entity": "linear_a", "delta": 1e-10},
+    {"path": "linear", "index": 0, "entity": "linear_a", "delta": 0.03},
+    {"path": "linear", "index": 0, "entity": "linear_a", "delta": 6.283185297179586},
+    {"path": "linear", "index": 0, "entity": "linear_a", "delta": 6.283185317179586},
+    {"path": "linear", "index": 0, "entity": "linear_a", "delta": 50},
+    {"path": "linear", "index": 0, "entity": "linear_a", "delta": 12880.529879718151},
+    {"path": "linear", "index": 1, "entity": "linear_b", "delta": -50},
+    {"path": "linear", "index": 1, "entity": "linear_b", "delta": -6.283185317179586},
+    {"path": "linear", "index": 1, "entity": "linear_b", "delta": -6.283185297179586},
+    {"path": "linear", "index": 1, "entity": "linear_b", "delta": -0.03},
+    {"path": "linear", "index": 1, "entity": "linear_b", "delta": 0},
+    {"path": "linear", "index": 1, "entity": "linear_b", "delta": 1e-10},
+    {"path": "linear", "index": 1, "entity": "linear_b", "delta": 0.03},
+    {"path": "linear", "index": 1, "entity": "linear_b", "delta": 6.283185297179586},
+    {"path": "linear", "index": 1, "entity": "linear_b", "delta": 6.283185317179586},
+    {"path": "linear", "index": 1, "entity": "linear_b", "delta": 50},
+    {"path": "linear", "index": 1, "entity": "linear_b", "delta": 12880.529879718151},
+    {"path": "rolling", "index": 0, "entity": "rolling_a", "delta": -50},
+    {"path": "rolling", "index": 0, "entity": "rolling_a", "delta": -6.283185317179586},
+    {"path": "rolling", "index": 0, "entity": "rolling_a", "delta": -6.283185297179586},
+    {"path": "rolling", "index": 0, "entity": "rolling_a", "delta": -0.03},
+    {"path": "rolling", "index": 0, "entity": "rolling_a", "delta": 0},
+    {"path": "rolling", "index": 0, "entity": "rolling_a", "delta": 1e-10},
+    {"path": "rolling", "index": 0, "entity": "rolling_a", "delta": 0.03},
+    {"path": "rolling", "index": 0, "entity": "rolling_a", "delta": 6.283185297179586},
+    {"path": "rolling", "index": 0, "entity": "rolling_a", "delta": 6.283185317179586},
+    {"path": "rolling", "index": 0, "entity": "rolling_a", "delta": 50},
+    {"path": "rolling", "index": 0, "entity": "rolling_a", "delta": 12880.529879718151},
+    {"path": "rolling", "index": 1, "entity": "rolling_b", "delta": -50},
+    {"path": "rolling", "index": 1, "entity": "rolling_b", "delta": -6.283185317179586},
+    {"path": "rolling", "index": 1, "entity": "rolling_b", "delta": -6.283185297179586},
+    {"path": "rolling", "index": 1, "entity": "rolling_b", "delta": -0.03},
+    {"path": "rolling", "index": 1, "entity": "rolling_b", "delta": 0},
+    {"path": "rolling", "index": 1, "entity": "rolling_b", "delta": 1e-10},
+    {"path": "rolling", "index": 1, "entity": "rolling_b", "delta": 0.03},
+    {"path": "rolling", "index": 1, "entity": "rolling_b", "delta": 6.283185297179586},
+    {"path": "rolling", "index": 1, "entity": "rolling_b", "delta": 6.283185317179586},
+    {"path": "rolling", "index": 1, "entity": "rolling_b", "delta": 50},
+    {"path": "rolling", "index": 1, "entity": "rolling_b", "delta": 12880.529879718151},
+    {"path": "zero", "index": 0, "entity": "zero_a", "delta": -50},
+    {"path": "zero", "index": 0, "entity": "zero_a", "delta": -6.283185317179586},
+    {"path": "zero", "index": 0, "entity": "zero_a", "delta": -6.283185297179586},
+    {"path": "zero", "index": 0, "entity": "zero_a", "delta": -0.03},
+    {"path": "zero", "index": 0, "entity": "zero_a", "delta": 0},
+    {"path": "zero", "index": 0, "entity": "zero_a", "delta": 1e-10},
+    {"path": "zero", "index": 0, "entity": "zero_a", "delta": 0.03},
+    {"path": "zero", "index": 0, "entity": "zero_a", "delta": 6.283185297179586},
+    {"path": "zero", "index": 0, "entity": "zero_a", "delta": 6.283185317179586},
+    {"path": "zero", "index": 0, "entity": "zero_a", "delta": 50},
+    {"path": "zero", "index": 0, "entity": "zero_a", "delta": 12880.529879718151},
+    {"path": "zero", "index": 1, "entity": "zero_b", "delta": -50},
+    {"path": "zero", "index": 1, "entity": "zero_b", "delta": -6.283185317179586},
+    {"path": "zero", "index": 1, "entity": "zero_b", "delta": -6.283185297179586},
+    {"path": "zero", "index": 1, "entity": "zero_b", "delta": -0.03},
+    {"path": "zero", "index": 1, "entity": "zero_b", "delta": 0},
+    {"path": "zero", "index": 1, "entity": "zero_b", "delta": 1e-10},
+    {"path": "zero", "index": 1, "entity": "zero_b", "delta": 0.03},
+    {"path": "zero", "index": 1, "entity": "zero_b", "delta": 6.283185297179586},
+    {"path": "zero", "index": 1, "entity": "zero_b", "delta": 6.283185317179586},
+    {"path": "zero", "index": 1, "entity": "zero_b", "delta": 50},
+    {"path": "zero", "index": 1, "entity": "zero_b", "delta": 12880.529879718151},
+    {"path": "ramp", "index": 0, "entity": "ramp_a", "delta": -50},
+    {"path": "ramp", "index": 0, "entity": "ramp_a", "delta": -6.283185317179586},
+    {"path": "ramp", "index": 0, "entity": "ramp_a", "delta": -6.283185297179586},
+    {"path": "ramp", "index": 0, "entity": "ramp_a", "delta": -0.03},
+    {"path": "ramp", "index": 0, "entity": "ramp_a", "delta": 0},
+    {"path": "ramp", "index": 0, "entity": "ramp_a", "delta": 1e-10},
+    {"path": "ramp", "index": 0, "entity": "ramp_a", "delta": 0.03},
+    {"path": "ramp", "index": 0, "entity": "ramp_a", "delta": 6.283185297179586},
+    {"path": "ramp", "index": 0, "entity": "ramp_a", "delta": 6.283185317179586},
+    {"path": "ramp", "index": 0, "entity": "ramp_a", "delta": 50},
+    {"path": "ramp", "index": 0, "entity": "ramp_a", "delta": 12880.529879718151},
+    {"path": "ramp", "index": 1, "entity": "ramp_b", "delta": -50},
+    {"path": "ramp", "index": 1, "entity": "ramp_b", "delta": -6.283185317179586},
+    {"path": "ramp", "index": 1, "entity": "ramp_b", "delta": -6.283185297179586},
+    {"path": "ramp", "index": 1, "entity": "ramp_b", "delta": -0.03},
+    {"path": "ramp", "index": 1, "entity": "ramp_b", "delta": 0},
+    {"path": "ramp", "index": 1, "entity": "ramp_b", "delta": 1e-10},
+    {"path": "ramp", "index": 1, "entity": "ramp_b", "delta": 0.03},
+    {"path": "ramp", "index": 1, "entity": "ramp_b", "delta": 6.283185297179586},
+    {"path": "ramp", "index": 1, "entity": "ramp_b", "delta": 6.283185317179586},
+    {"path": "ramp", "index": 1, "entity": "ramp_b", "delta": 50},
+    {"path": "ramp", "index": 1, "entity": "ramp_b", "delta": 12880.529879718151}
+  ]
+}
