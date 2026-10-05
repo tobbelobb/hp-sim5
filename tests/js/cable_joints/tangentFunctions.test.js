@@ -39,6 +39,18 @@ describe('tangentFromCircleToPoint', () => {
 });
 
 describe('tangentFromCircleToCircle', () => {
+  test.each([0, 1e-10])('coincident/near-coincident centers produce finite radial fallback at separation %s', (separation) => {
+    const posA = new Vector2(2, -1);
+    const posB = new Vector2(2 + separation, -1);
+    const result = tangentFromCircleToCircle(posA, .3, true, posB, .3, false);
+    expect(result.a_circle.x).toBeCloseTo(2.3, 12);
+    expect(result.b_circle.x).toBeCloseTo(2.3 + separation, 12);
+    expect(result.a_circle.y).toBe(-1);
+    expect(result.b_circle.y).toBe(-1);
+    expect(posA.x).toBe(2);
+    expect(posB.x).toBe(2 + separation);
+  });
+
   test('two identical circles of radius 1 centered at (0,0) and (4,0)', () => {
     const posA = new Vector2(0, 0);
     const radiusA = 1;

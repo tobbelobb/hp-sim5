@@ -23,8 +23,14 @@ PYTHONPATH=src/python:tests/python/cable_joints_3d .venv/bin/python -m parity_ha
 Fixtures specify `entities`, `systems` in execution order, `steps` with `dt`, and
 explicit numeric `tolerance` (`atol`, `rtol`). Optional `resources`, `set` mutations
 before each step, deferred `addComponents`, `queries`, `initializeRigidBodies`
-and `attachments` exercise state transitions and frames. No viewer, browser or
-worker is needed. Unknown components/systems and nonfinite outputs fail.
+and `attachments` exercise state transitions and frames. `createPaths` invokes
+production path construction and assigns names to generated paths; `geometry`
+probes production operations listed in `geometry_contract.json`. Cable snapshots
+include rest, stored and geometric lengths as well as force state. No viewer,
+browser or worker is needed. Unknown components/systems and nonfinite outputs
+fail. The material parameters stiffness/compliance alone permit positive
+infinity, encoded as the string `"Infinity"` (rigid/zero-stiffness limits).
+Nonfinite poses, lengths, forces and other numerical state still fail.
 
 Current coverage:
 
@@ -38,10 +44,21 @@ Current coverage:
   compliant accumulated multipliers, internal endpoints and successive steps.
 - `spool_projection`: tilted axes, swing rejection, off-axis angular velocity,
   encoder fallback axes and angle unwrapping through several turns.
+- `geometry`, `geometry_degenerate`: plane-projected tangents/arcs in all winding
+  directions, axial offsets, intersections and finite coincident-guide fallback.
+- `cable_construction` and variants: live tilted member axes, local/world joints,
+  initial wraps and hybrid knots, layering toggle, authored knots/overrides,
+  path splitting at attachments, empty paths and parameter limits.
+- `cable_cache_members`: live world poses and member-local orientation through
+  parent motion, constraint-like pose edits and pause/resume.
+- `cable_friction`, its layering-off variant, and `cable_friction_chain`: capstan
+  rolling/pinhole friction, frictionless and free rolling guides, attachment
+  barriers, slack/zero-rest spans, changed attachments and dt-scaled ordered
+  redistribution through several guides.
 
-Rigid-member, distance and spool fixtures also run for 200 successive steps;
+Rigid-member, distance, spool, cable-cache and friction-chain fixtures run for 200 steps;
 both engines must reproduce their own snapshots exactly on a second run.
 
 These fixtures establish the covered ECS behavior. Authored USDA construction,
-the cable/motor pipeline, full machines and richer Rerun recordings remain on
-the checklist in `PYTHON_3D_PARITY.md`.
+dynamic attachment rebuilding, the cable solver/motor pipeline, full machines
+and richer Rerun recordings remain on the checklist in `PYTHON_3D_PARITY.md`.

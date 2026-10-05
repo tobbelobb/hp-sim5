@@ -59,6 +59,15 @@ export function tangentFromCircleToCircle(posA, radiusA, cwA, posB, radiusB, cwB
   let dVec = new Vector2().subtractVectors(posB, posA);
   let d = dVec.length();
 
+  // Coincident centers have no unique tangent. Match Python's deterministic
+  // radial fallback instead of producing NaN for equal radii (0 / 0).
+  if (d < 1e-9) {
+    return {
+      a_circle: posA.clone().add(new Vector2(radiusA, 0)),
+      b_circle: posB.clone().add(new Vector2(radiusB, 0)),
+    };
+  }
+
   cwA = Boolean(cwA);
   cwB = Boolean(cwB);
 

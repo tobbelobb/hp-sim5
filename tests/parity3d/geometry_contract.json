@@ -1,0 +1,9 @@
+{
+  "closestPointOnSegment": ["closest_point_on_segment", ["vector", "vector", "vector"]],
+  "lineSegmentSphereIntersection": ["line_segment_sphere_intersection", ["vector", "vector", "vector", "number", "boolean"]],
+  "tangentFromPointToSphere": ["tangent_from_point_to_sphere", ["vector", "vector", "number", "vector", "boolean"]],
+  "tangentFromSphereToPoint": ["tangent_from_sphere_to_point", ["vector", "vector", "number", "vector", "boolean"]],
+  "tangentFromSphereToSphere": ["tangent_from_sphere_to_sphere", ["vector", "number", "boolean", "vector", "number", "boolean", "vector"]],
+  "signedArcLengthOnWheel": ["signed_arc_length_on_wheel", ["vector", "vector", "vector", "number", "boolean", "vector", "boolean"]],
+  "rightOfPlane": ["right_of_plane", ["vector", "vector", "vector", "vector"]]
+}
