@@ -1,0 +1,330 @@
+{
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "entities": [
+    {
+      "name": "rolling_anchor",
+      "components": {
+        "PositionComponent": [1.02, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [1.02, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "rolling_wheel",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [0, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [1],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "rolling0_joint",
+      "components": {
+        "CableJointComponent": ["rolling_anchor", "rolling_wheel", 0.8, [1.02, 0, 0], [0, 0, 0], "world"]
+      }
+    },
+    {
+      "name": "rolling0",
+      "components": {
+        "CablePathComponent": [["rolling0_joint"], ["attachment", "rolling"], [false, false], "Infinity", [0, 0.3], 0.01, 0.001, 2]
+      }
+    },
+    {
+      "name": "rolling1_joint",
+      "components": {
+        "CableJointComponent": ["rolling_anchor", "rolling_wheel", 0.8, [1.02, 0, 0], [0, 0, 0], "world"]
+      }
+    },
+    {
+      "name": "rolling1",
+      "components": {
+        "CablePathComponent": [["rolling1_joint"], ["attachment", "rolling"], [false, false], "Infinity", [0, 0.3], 0.01, 0.001, 2]
+      }
+    },
+    {
+      "name": "hybrid_anchor",
+      "components": {
+        "PositionComponent": [4.02, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [4.02, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "hybrid_wheel",
+      "components": {
+        "PositionComponent": [3, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [3, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [1],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "hybrid0_joint",
+      "components": {
+        "CableJointComponent": ["hybrid_anchor", "hybrid_wheel", 0.8, [4.02, 0, 0], [3, 0, 0], "world"]
+      }
+    },
+    {
+      "name": "hybrid0",
+      "components": {
+        "CablePathComponent": [["hybrid0_joint"], ["attachment", "hybrid"], [false, false], 12000, [0, 0.3], 0.01, 0.001, 2]
+      }
+    },
+    {
+      "name": "hybrid1_joint",
+      "components": {
+        "CableJointComponent": ["hybrid_anchor", "hybrid_wheel", 0.8, [4.02, 0, 0], [3, 0, 0], "world"]
+      }
+    },
+    {
+      "name": "hybrid1",
+      "components": {
+        "CablePathComponent": [["hybrid1_joint"], ["attachment", "hybrid"], [false, false], 12000, [0, 0.3], 0.01, 0.001, 2]
+      }
+    },
+    {
+      "name": "single_anchor",
+      "components": {
+        "PositionComponent": [7.02, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [7.02, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "single_wheel",
+      "components": {
+        "PositionComponent": [6, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [6, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [1],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "single0_joint",
+      "components": {
+        "CableJointComponent": ["single_anchor", "single_wheel", 0.8, [7.02, 0, 0], [6, 0, 0], "world"]
+      }
+    },
+    {
+      "name": "single0",
+      "components": {
+        "CablePathComponent": [["single0_joint"], ["attachment", "rolling"], [false, false], "Infinity", [0, 0.3], 0.01, 0.001, 2]
+      }
+    },
+    {
+      "name": "zero_anchor",
+      "components": {
+        "PositionComponent": [10.02, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [10.02, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "zero_wheel",
+      "components": {
+        "PositionComponent": [9, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [9, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [1],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "zero0_joint",
+      "components": {
+        "CableJointComponent": ["zero_anchor", "zero_wheel", 0.8, [10.02, 0, 0], [9, 0, 0], "world"]
+      }
+    },
+    {
+      "name": "zero0",
+      "components": {
+        "CablePathComponent": [["zero0_joint"], ["attachment", "rolling"], [false, false], 0, [0, 0.3], 0.01, 0.001, 2]
+      }
+    },
+    {
+      "name": "zero1_joint",
+      "components": {
+        "CableJointComponent": ["zero_anchor", "zero_wheel", 0.8, [10.02, 0, 0], [9, 0, 0], "world"]
+      }
+    },
+    {
+      "name": "zero1",
+      "components": {
+        "CablePathComponent": [["zero1_joint"], ["attachment", "rolling"], [false, false], 0, [0, 0.3], 0.01, 0.001, 2]
+      }
+    },
+    {
+      "name": "slack_before_anchor",
+      "components": {
+        "PositionComponent": [13.02, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [13.02, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "slack_before_wheel",
+      "components": {
+        "PositionComponent": [12, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [12, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [1],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "slack_before0_joint",
+      "components": {
+        "CableJointComponent": ["slack_before_anchor", "slack_before_wheel", 0.8, [13.02, 0, 0], [12.5, 0, 0], "world"]
+      }
+    },
+    {
+      "name": "slack_before0",
+      "components": {
+        "CablePathComponent": [["slack_before0_joint"], ["attachment", "rolling"], [false, false], "Infinity", [0, 0.3], 0.01, 0.001, 2]
+      }
+    },
+    {
+      "name": "slack_before1_joint",
+      "components": {
+        "CableJointComponent": ["slack_before_anchor", "slack_before_wheel", 0.8, [13.02, 0, 0], [12.5, 0, 0], "world"]
+      }
+    },
+    {
+      "name": "slack_before1",
+      "components": {
+        "CablePathComponent": [["slack_before1_joint"], ["attachment", "rolling"], [false, false], "Infinity", [0, 0.3], 0.01, 0.001, 2]
+      }
+    },
+    {
+      "name": "single_duplicate",
+      "components": {
+        "CablePathComponent": [["single0_joint"], ["attachment", "rolling"], [false, false], "Infinity", [0, 0.3], 0.01, 0.001, 2]
+      }
+    },
+    {
+      "name": "shared_anchor",
+      "components": {
+        "PositionComponent": [16.02, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [16.02, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [0]
+      }
+    },
+    {
+      "name": "shared_wheel",
+      "components": {
+        "PositionComponent": [15, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [15, 0, 0, [0, 0, 0, 1], [0, 0, 1], null],
+        "RadiusComponent": [1],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "shared0_joint",
+      "components": {
+        "CableJointComponent": ["shared_anchor", "shared_wheel", 0.8, [16.02, 0, 0], [15, 0, 0], "world"]
+      }
+    },
+    {
+      "name": "shared0",
+      "components": {
+        "CablePathComponent": [["shared0_joint"], ["attachment", "rolling"], [false, false], "Infinity", [0, 0], 0.01, 0.001, 2]
+      }
+    },
+    {
+      "name": "shared1_joint",
+      "components": {
+        "CableJointComponent": ["shared_anchor", "shared_wheel", 0.8, [16.02, 0, 0], [15, 0, 0], "world"]
+      }
+    },
+    {
+      "name": "shared1",
+      "components": {
+        "CablePathComponent": [["shared1_joint"], ["attachment", "rolling"], [false, false], "Infinity", [0, 0], 0.01, 0.001, 2]
+      }
+    },
+    {
+      "name": "shared_last",
+      "components": {
+        "CablePathComponent": [["shared0_joint"], ["attachment", "attachment"], [false, false], "Infinity", [0, 0], 0, 0, 1]
+      }
+    }
+  ],
+  "systems": ["PBDResolveCableOverCorrections"],
+  "steps": [
+    {
+      "dt": 0.002,
+      "resources": {
+        "dt": 0.002
+      }
+    },
+    {
+      "dt": 0.004,
+      "resources": {
+        "dt": 0.004
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "dt": 0.002
+      }
+    },
+    {
+      "dt": 0.01,
+      "resources": {
+        "dt": 0.01
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "dt": 0.002
+      }
+    },
+    {
+      "dt": 0,
+      "resources": {
+        "dt": 0
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "dt": 0.002,
+        "pauseState": {
+          "paused": true
+        }
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "dt": 0.002,
+        "pauseState": {
+          "paused": false,
+          "enableLineLayering": false
+        }
+      }
+    }
+  ],
+  "snapshotResources": ["dt", "cableHybridTransitionStep"],
+  "resources": {
+    "dt": 0.002,
+    "gravity": [0, 0, -9.81]
+  },
+  "snapshotEntityMaps": ["torqueModeCableLoadTorques", "torqueModeCableLoadStiffnesses", "torqueModeCableLoadDampings"]
+}

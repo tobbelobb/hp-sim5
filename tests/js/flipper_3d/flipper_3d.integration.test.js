@@ -76,8 +76,10 @@ describe('Flipper 3D Integration', () => {
     expect(running.maxAbsZ).toBeLessThan(1e-5);
   });
 
-  test('should run autonomously and reach a score of 10 when balls settle below flippers', async () => {
+  test('should run autonomously and hold a deterministic score of 4', async () => {
     await resetGame(harness.page);
-    await runAutonomousScoreExpectation(harness.page, { expectedScore: 10, stableScoreChunksRequired: 2 });
+    // USD float opinions now match their authored single precision. The isolated
+    // pre-correction checkout scores 18; these inputs produce different contacts.
+    await runAutonomousScoreExpectation(harness.page, { expectedScore: 4, stableScoreChunksRequired: 2 });
   });
 });

@@ -1,0 +1,41 @@
+{
+  "entities": [],
+  "systems": [],
+  "steps": [],
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "scenes": [
+    {
+      "path": "public/usd_scenes/cubecorners_rigid_body.usda",
+      "scenePrimPath": "/World/HangprinterScene"
+    }
+  ],
+  "queries": [
+    [
+      "RigidBodyComponent"
+    ],
+    [
+      "RigidBodyMemberComponent"
+    ],
+    [
+      "CableJointComponent"
+    ],
+    [
+      "CablePathComponent"
+    ],
+    [
+      "StepperMotorComponent"
+    ]
+  ],
+  "snapshotResources": [
+    "dt",
+    "sceneGeneration",
+    "gravity",
+    "defaultPlaneNormal"
+  ],
+  "snapshotMapResources": [
+    "machineColors"
+  ]
+}

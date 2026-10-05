@@ -1,0 +1,135 @@
+{
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "entities": [
+    {
+      "name": "slip",
+      "components": {
+        "StepperMotorComponent": [0.2, 0, 0.5, 50, 0.01, 600],
+        "SpoolStateComponent": ["a10", [0, 0, 1], [0, 0, 0, 1]],
+        "EncoderComponent": [19.049555921538758, 0, 0, 1],
+        "OrientationComponent": [0, 0, 0, 1],
+        "MachineTagComponent": ["m1"]
+      }
+    },
+    {
+      "name": "steady",
+      "components": {
+        "StepperMotorComponent": [0.2, 0, 0.5, 50, 0.01, 600],
+        "SpoolStateComponent": ["A2", [0, 0, 1], [0, 0, 0, 1]],
+        "EncoderComponent": [19.049555921538758, 0, 0, 1],
+        "OrientationComponent": [0, 0, 0, 1],
+        "MachineTagComponent": ["m1"]
+      }
+    },
+    {
+      "name": "positive_half",
+      "components": {
+        "StepperMotorComponent": [0, 0, 0.5, 1, 0.01, 600],
+        "SpoolStateComponent": ["b", [0, 0, 1], [0, 0, 0, 1]],
+        "EncoderComponent": [3.141592653589793, 0, 0, 1],
+        "OrientationComponent": [0, 0, 0, 1],
+        "MachineTagComponent": ["m2"]
+      }
+    },
+    {
+      "name": "negative_half",
+      "components": {
+        "StepperMotorComponent": [0, 0, 0.5, 1, 0.01, 600],
+        "SpoolStateComponent": ["\u00e12", [0, 0, 1], [0, 0, 0, 1]],
+        "EncoderComponent": [-3.141592653589793, 0, 0, 1],
+        "OrientationComponent": [0, 0, 0, 1],
+        "MachineTagComponent": ["m2"]
+      }
+    },
+    {
+      "name": "rounded_pairs",
+      "components": {
+        "StepperMotorComponent": [0, 0, 0.5, 1.5, 0.01, 600],
+        "SpoolStateComponent": ["a1", [0, 0, 1], [0, 0, 0, 1]],
+        "EncoderComponent": [1.5707963267948966, 0, 0, 1],
+        "OrientationComponent": [0, 0, 0, 1],
+        "MachineTagComponent": ["m2"]
+      }
+    },
+    {
+      "name": "negative_pairs",
+      "components": {
+        "StepperMotorComponent": [0, 0, 0.5, -1.5, 0.01, 600],
+        "SpoolStateComponent": ["a01", [0, 0, 1], [0, 0, 0, 1]],
+        "EncoderComponent": [1.5707963267948966, 0, 0, 1],
+        "OrientationComponent": [0, 0, 0, 1],
+        "MachineTagComponent": ["m2"]
+      }
+    },
+    {
+      "name": "zero_pairs",
+      "components": {
+        "StepperMotorComponent": [0, 0, 0.5, 0, 0.01, 600],
+        "SpoolStateComponent": [null, [0, 0, 1], [0, 0, 0, 1]],
+        "EncoderComponent": [1.0, 0, 0, 1],
+        "OrientationComponent": [0, 0, 0, 1]
+      }
+    },
+    {
+      "name": "peak",
+      "components": {
+        "StepperMotorComponent": [0.2, 0, 0.5, 50, 0.01, 600],
+        "SpoolStateComponent": ["Z", [0, 0, 1], [0, 0, 0, 1]],
+        "EncoderComponent": [0.2, 0, 0, 1],
+        "OrientationComponent": [0, 0, 0, 1],
+        "MachineTagComponent": ["m1"]
+      }
+    }
+  ],
+  "systems": ["MissedStepTrackingSystem"],
+  "steps": [
+    {
+      "dt": 0.002,
+      "set": [["slip", "EncoderComponent", "angle", 25.332741228718344], ["steady", "EncoderComponent", "angle", 19.426547039969535]]
+    },
+    {
+      "dt": 0,
+      "set": [["slip", "EncoderComponent", "angle", 19.049555921538758], ["steady", "EncoderComponent", "angle", 19.049555921538758]]
+    },
+    {
+      "dt": 0.002,
+      "set": [["slip", "StepperMotorComponent", "torqueMode", true], ["slip", "StepperMotorComponent", "missedSteps", 2.5], ["slip", "StepperMotorComponent", "currentMissedSteps", 12]]
+    },
+    {
+      "dt": 0.002,
+      "resetMotorDiagnostics": ["m1"]
+    },
+    {
+      "dt": 0.002,
+      "set": [["slip", "StepperMotorComponent", "torqueMode", false]]
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": true
+        }
+      },
+      "set": [["slip", "EncoderComponent", "angle", 31.61592653589793]]
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": false
+        }
+      },
+      "resetMotorDiagnostics": [null]
+    },
+    {
+      "dt": 0.002,
+      "removeComponents": [["steady", "EncoderComponent"]]
+    }
+  ],
+  "snapshotResources": [],
+  "motorDiagnostics": [null, "m1", "m2", "default", "absent"],
+  "initialSet": [["peak", "StepperMotorComponent", "missedSteps", 2.5], ["positive_half", "StepperMotorComponent", "missedStepEncoderOffset", 0]]
+}

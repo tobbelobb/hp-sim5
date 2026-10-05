@@ -1,0 +1,310 @@
+{
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "entities": [
+    {
+      "name": "pinhole_guide",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.1],
+        "CoefficientOfFrictionComponent": [0.4]
+      }
+    },
+    {
+      "name": "pinhole_a",
+      "components": {
+        "PositionComponent": [0, 0, 2]
+      }
+    },
+    {
+      "name": "pinhole_b",
+      "components": {
+        "PositionComponent": [3, 1, 0]
+      }
+    },
+    {
+      "name": "pinhole_j0",
+      "components": {
+        "CableJointComponent": ["pinhole_a", "pinhole_guide", 1.2, [0, 0, 2], [0, 0.1, 0], "world"]
+      }
+    },
+    {
+      "name": "pinhole_j1",
+      "components": {
+        "CableJointComponent": ["pinhole_guide", "pinhole_b", 0.8, [0.1, 0, 0], [3, 1, 0], "world"]
+      }
+    },
+    {
+      "name": "pinhole_path",
+      "components": {
+        "CablePathComponent": [["pinhole_j0", "pinhole_j1"], ["attachment", "pinhole", "attachment"], [false, false, false], 1000, [0, 0, 0], 0.002, 0, 1]
+      }
+    },
+    {
+      "name": "rolling_guide",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.1],
+        "CoefficientOfFrictionComponent": [0.3]
+      }
+    },
+    {
+      "name": "rolling_a",
+      "components": {
+        "PositionComponent": [0, 0, 2]
+      }
+    },
+    {
+      "name": "rolling_b",
+      "components": {
+        "PositionComponent": [3, 1, 0]
+      }
+    },
+    {
+      "name": "rolling_j0",
+      "components": {
+        "CableJointComponent": ["rolling_a", "rolling_guide", 1.2, [0, 0, 2], [0, 0.1, 0], "world"]
+      }
+    },
+    {
+      "name": "rolling_j1",
+      "components": {
+        "CableJointComponent": ["rolling_guide", "rolling_b", 0.8, [0.1, 0, 0], [3, 1, 0], "world"]
+      }
+    },
+    {
+      "name": "rolling_path",
+      "components": {
+        "CablePathComponent": [["rolling_j0", "rolling_j1"], ["attachment", "rolling", "attachment"], [false, false, false], 1000, [0, 0.2, 0], 0.002, 0, 1]
+      }
+    },
+    {
+      "name": "free_guide",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.1],
+        "CoefficientOfFrictionComponent": [0.3],
+        "SpoolStateComponent": [null, [0, 0, 1], [0, 0, 0, 1]]
+      }
+    },
+    {
+      "name": "free_a",
+      "components": {
+        "PositionComponent": [0, 0, 2]
+      }
+    },
+    {
+      "name": "free_b",
+      "components": {
+        "PositionComponent": [3, 1, 0]
+      }
+    },
+    {
+      "name": "free_j0",
+      "components": {
+        "CableJointComponent": ["free_a", "free_guide", 1.2, [0, 0, 2], [0, 0.1, 0], "world"]
+      }
+    },
+    {
+      "name": "free_j1",
+      "components": {
+        "CableJointComponent": ["free_guide", "free_b", 0.8, [0.1, 0, 0], [3, 1, 0], "world"]
+      }
+    },
+    {
+      "name": "free_path",
+      "components": {
+        "CablePathComponent": [["free_j0", "free_j1"], ["attachment", "rolling", "attachment"], [false, false, false], 1000, [0, 0.2, 0], 0.002, 0, 1]
+      }
+    },
+    {
+      "name": "attachment_guide",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.1],
+        "CoefficientOfFrictionComponent": [0.3]
+      }
+    },
+    {
+      "name": "attachment_a",
+      "components": {
+        "PositionComponent": [0, 0, 2]
+      }
+    },
+    {
+      "name": "attachment_b",
+      "components": {
+        "PositionComponent": [3, 1, 0]
+      }
+    },
+    {
+      "name": "attachment_j0",
+      "components": {
+        "CableJointComponent": ["attachment_a", "attachment_guide", 1.2, [0, 0, 2], [0, 0.1, 0], "world"]
+      }
+    },
+    {
+      "name": "attachment_j1",
+      "components": {
+        "CableJointComponent": ["attachment_guide", "attachment_b", 0.8, [0.1, 0, 0], [3, 1, 0], "world"]
+      }
+    },
+    {
+      "name": "attachment_path",
+      "components": {
+        "CablePathComponent": [["attachment_j0", "attachment_j1"], ["attachment", "attachment", "attachment"], [false, false, false], 1000, [0, 0, 0], 0.002, 0, 1]
+      }
+    },
+    {
+      "name": "frictionless_guide",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.1],
+        "CoefficientOfFrictionComponent": [0]
+      }
+    },
+    {
+      "name": "frictionless_a",
+      "components": {
+        "PositionComponent": [0, 0, 2]
+      }
+    },
+    {
+      "name": "frictionless_b",
+      "components": {
+        "PositionComponent": [3, 1, 0]
+      }
+    },
+    {
+      "name": "frictionless_j0",
+      "components": {
+        "CableJointComponent": ["frictionless_a", "frictionless_guide", 1.2, [0, 0, 2], [0, 0.1, 0], "world"]
+      }
+    },
+    {
+      "name": "frictionless_j1",
+      "components": {
+        "CableJointComponent": ["frictionless_guide", "frictionless_b", 0.8, [0.1, 0, 0], [3, 1, 0], "world"]
+      }
+    },
+    {
+      "name": "frictionless_path",
+      "components": {
+        "CablePathComponent": [["frictionless_j0", "frictionless_j1"], ["attachment", "rolling", "attachment"], [false, false, false], 1000, [0, 0.2, 0], 0.002, 0, 1]
+      }
+    },
+    {
+      "name": "slack_guide",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.1],
+        "CoefficientOfFrictionComponent": [0.4]
+      }
+    },
+    {
+      "name": "slack_a",
+      "components": {
+        "PositionComponent": [0, 0, 2]
+      }
+    },
+    {
+      "name": "slack_b",
+      "components": {
+        "PositionComponent": [3, 1, 0]
+      }
+    },
+    {
+      "name": "slack_j0",
+      "components": {
+        "CableJointComponent": ["slack_a", "slack_guide", 3, [0, 0, 2], [0, 0.1, 0], "world"]
+      }
+    },
+    {
+      "name": "slack_j1",
+      "components": {
+        "CableJointComponent": ["slack_guide", "slack_b", 7, [0.1, 0, 0], [3, 1, 0], "world"]
+      }
+    },
+    {
+      "name": "slack_path",
+      "components": {
+        "CablePathComponent": [["slack_j0", "slack_j1"], ["attachment", "pinhole", "attachment"], [false, false, false], 1000, [0, 0, 0], 0.002, 0, 1]
+      }
+    },
+    {
+      "name": "zero_rest_guide",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.1],
+        "CoefficientOfFrictionComponent": [0.4]
+      }
+    },
+    {
+      "name": "zero_rest_a",
+      "components": {
+        "PositionComponent": [0, 0, 2]
+      }
+    },
+    {
+      "name": "zero_rest_b",
+      "components": {
+        "PositionComponent": [3, 1, 0]
+      }
+    },
+    {
+      "name": "zero_rest_j0",
+      "components": {
+        "CableJointComponent": ["zero_rest_a", "zero_rest_guide", 0, [0, 0, 2], [0, 0.1, 0], "world"]
+      }
+    },
+    {
+      "name": "zero_rest_j1",
+      "components": {
+        "CableJointComponent": ["zero_rest_guide", "zero_rest_b", 2, [0.1, 0, 0], [3, 1, 0], "world"]
+      }
+    },
+    {
+      "name": "zero_rest_path",
+      "components": {
+        "CablePathComponent": [["zero_rest_j0", "zero_rest_j1"], ["attachment", "pinhole", "attachment"], [false, false, false], 1000, [0, 0, 0], 0.002, 0, 1]
+      }
+    }
+  ],
+  "systems": ["CableFrictionSystem"],
+  "steps": [
+    {
+      "dt": 0.0001
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.005
+    },
+    {
+      "dt": 0.002,
+      "set": [["pinhole_j1", "CableJointComponent", "attachmentPointB_world", [0.2, -0.1, 4]], ["rolling_j0", "CableJointComponent", "restLength", 0.5]]
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": true
+        }
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": false
+        }
+      }
+    }
+  ],
+  "resources": {
+    "enableLayering": false
+  }
+}

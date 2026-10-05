@@ -32,6 +32,7 @@ export async function readUsdaSource(pathOrSource) {
 
 export function OpenText(source) {
   const ast = parseUsdaAst(source);
+  resolveAttributePrecision(ast.statements);
   const primIndex = indexPrims(ast.statements);
 
   return {
@@ -50,7 +51,7 @@ export function OpenText(source) {
       }
     },
 
-    /** The raw AST from @kroxilon/usda-parser. */
+    /** Parsed AST with USD attribute precision resolved. */
     ast,
   };
 }
@@ -72,6 +73,18 @@ function indexPrims(statements, parent = "", out = {}) {
     }
   }
   return out;
+}
+
+function resolveAttributePrecision(statements) {
+  const singlePrecision = /^(?:float[234]?|(?:point3|vector3|normal3|color[34]|texCoord[23]|quat)f)(?:\[\])?$/;
+  const round = value => Array.isArray(value) ? value.map(round)
+    : typeof value === 'number' ? Math.fround(value) : value;
+  for (const statement of statements ?? []) {
+    if (statement.type === 'declaration' && singlePrecision.test(statement.defineType)) {
+      statement.value = round(statement.value);
+    }
+    if (statement.statements) resolveAttributePrecision(statement.statements);
+  }
 }
 
 

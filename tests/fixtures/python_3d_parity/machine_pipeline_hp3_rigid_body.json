@@ -1,0 +1,250 @@
+{
+  "entities": [],
+  "systems": [],
+  "steps": [
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    }
+  ],
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09,
+    "fields": {
+      "PositionComponent.pos": {
+        "atol": 1e-08,
+        "rtol": 1e-09
+      },
+      "PrevFinalPosComponent.pos": {
+        "atol": 1e-08,
+        "rtol": 1e-09
+      },
+      "RigidBodyComponent.syncedPosition": {
+        "atol": 1e-08,
+        "rtol": 1e-09
+      },
+      "CableLinkComponent.prevCableAttachmentTimePos": {
+        "atol": 1e-08,
+        "rtol": 1e-09
+      },
+      "CableJointComponent.attachmentPointA_world": {
+        "atol": 1e-08,
+        "rtol": 1e-09
+      },
+      "CableJointComponent.attachmentPointB_world": {
+        "atol": 1e-08,
+        "rtol": 1e-09
+      },
+      "CableJointComponent.restLength": {
+        "atol": 1e-08,
+        "rtol": 1e-09
+      },
+      "CableJointComponent.geometricLength": {
+        "atol": 1e-08,
+        "rtol": 1e-09
+      },
+      "CablePathComponent.stored": {
+        "atol": 1e-08,
+        "rtol": 1e-09
+      },
+      "CablePathComponent.totalRestLength": {
+        "atol": 1e-08,
+        "rtol": 1e-09
+      },
+      "OrientationComponent.quaternion": {
+        "atol": 3e-07,
+        "rtol": 1e-09
+      },
+      "PrevFinalOrientationComponent.quaternion": {
+        "atol": 3e-07,
+        "rtol": 1e-09
+      },
+      "RigidBodyMemberComponent.localOrientation": {
+        "atol": 3e-07,
+        "rtol": 1e-09
+      },
+      "RigidBodyComponent.syncedOrientation": {
+        "atol": 3e-07,
+        "rtol": 1e-09
+      },
+      "CableLinkComponent.prevCableAttachmentTimeOrientation": {
+        "atol": 3e-07,
+        "rtol": 1e-09
+      },
+      "CableLinkComponent.prevCableAttachmentTimeLocalOrientation": {
+        "atol": 3e-07,
+        "rtol": 1e-09
+      },
+      "CableLinkComponent.cablePlaneNormal": {
+        "atol": 3e-07,
+        "rtol": 1e-09
+      },
+      "CableLinkComponent.cablePlaneNormalLocal": {
+        "atol": 3e-07,
+        "rtol": 1e-09
+      },
+      "VelocityComponent.vel": {
+        "atol": 1e-06,
+        "rtol": 1e-09
+      },
+      "AngularVelocityComponent.omega": {
+        "atol": 2e-05,
+        "rtol": 1e-09
+      },
+      "EncoderComponent.angle": {
+        "atol": 5e-07,
+        "rtol": 1e-09
+      },
+      "CableJointComponent.constraintForce": {
+        "atol": 2e-05,
+        "rtol": 1e-09
+      },
+      "CableJointComponent.constraintForceMagnitude": {
+        "atol": 2e-05,
+        "rtol": 1e-09
+      },
+      "CableJointComponent.transferredConstraintForceMagnitude": {
+        "atol": 2e-05,
+        "rtol": 1e-09
+      },
+      "ExtruderComponent.effectorCenterPos": {
+        "atol": 1e-08,
+        "rtol": 1e-09
+      },
+      "ExtruderComponent.centerPos": {
+        "atol": 1e-08,
+        "rtol": 1e-09
+      },
+      "ExtruderComponent.tipPos": {
+        "atol": 1e-08,
+        "rtol": 1e-09
+      },
+      "ExtruderComponent.coldEndPos": {
+        "atol": 1e-08,
+        "rtol": 1e-09
+      },
+      "ExtruderComponent.machineEffectorCenters": {
+        "atol": 1e-08,
+        "rtol": 1e-09
+      },
+      "ExtruderComponent.machineCenters": {
+        "atol": 1e-08,
+        "rtol": 1e-09
+      },
+      "ExtruderComponent.machineTips": {
+        "atol": 1e-08,
+        "rtol": 1e-09
+      },
+      "ExtruderComponent.machineColdEnds": {
+        "atol": 1e-08,
+        "rtol": 1e-09
+      },
+      "ExtruderComponent.extrusions.pos": {
+        "atol": 1e-08,
+        "rtol": 1e-09
+      },
+      "EncoderComponent.axis": {
+        "atol": 3e-07,
+        "rtol": 1e-09
+      },
+      "SpoolStateComponent.referenceOrientation": {
+        "atol": 3e-07,
+        "rtol": 1e-09
+      }
+    }
+  },
+  "scenes": [
+    {
+      "path": "public/usd_scenes/hp3_rigid_body.usda",
+      "scenePrimPath": "/World/HangprinterScene"
+    }
+  ],
+  "queries": [
+    [
+      "RigidBodyComponent"
+    ],
+    [
+      "RigidBodyMemberComponent"
+    ],
+    [
+      "CableJointComponent"
+    ],
+    [
+      "CablePathComponent"
+    ],
+    [
+      "StepperMotorComponent"
+    ]
+  ],
+  "snapshotResources": [
+    "dt",
+    "sceneGeneration",
+    "gravity",
+    "defaultPlaneNormal"
+  ],
+  "snapshotMapResources": [
+    "machineColors"
+  ],
+  "pipeline": true,
+  "snapshotEntityMaps": [
+    "torqueModeCableLoadTorques",
+    "torqueModeCableLoadStiffnesses",
+    "torqueModeCableLoadDampings"
+  ]
+}

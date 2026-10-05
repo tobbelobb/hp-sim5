@@ -1,0 +1,117 @@
+{
+  "entities": [
+    {
+      "name": "a",
+      "components": {
+        "PositionComponent": [-4, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [
+          -4,
+          0,
+          0,
+          null,
+          [0, 0, 1],
+          null
+        ],
+        "MachineTagComponent": ["1"],
+        "RadiusComponent": [0.6]
+      }
+    },
+    {
+      "name": "b",
+      "components": {
+        "PositionComponent": [4, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [
+          4,
+          0,
+          0,
+          null,
+          [0, 0, 1],
+          null
+        ],
+        "MachineTagComponent": ["1"],
+        "RadiusComponent": [0.6]
+      }
+    },
+    {
+      "name": "guide",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [
+          0,
+          0,
+          0,
+          null,
+          [0, 0, 1],
+          null
+        ],
+        "MachineTagComponent": ["1"],
+        "RadiusComponent": [1.2]
+      }
+    },
+    {
+      "name": "joint",
+      "components": {
+        "CableJointComponent": [
+          "a",
+          "b",
+          9,
+          [-4, 0, 0],
+          [3.93875, 0.6973151636813874, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "path",
+      "components": {
+        "MachineTagComponent": ["1"],
+        "CablePathComponent": [
+          ["joint"],
+          ["attachment", "rolling"],
+          [false, true],
+          10000,
+          [0.5, 0.5],
+          0.1,
+          0,
+          2
+        ]
+      }
+    }
+  ],
+  "systems": [],
+  "steps": [
+    {
+      "dt": 0.002,
+      "topology": ["split"]
+    },
+    {
+      "dt": 0.002,
+      "set": [
+        [
+          "path",
+          "CablePathComponent",
+          "stored",
+          [0.5, -0.01, 0.5]
+        ]
+      ],
+      "topology": ["merge"]
+    }
+  ],
+  "resources": {
+    "enableLayering": true,
+    "dt": 0.002
+  },
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "snapshotAllocator": true,
+  "queries": [
+    ["CableJointComponent"],
+    ["CablePathComponent"],
+    ["MachineTagComponent"]
+  ]
+}

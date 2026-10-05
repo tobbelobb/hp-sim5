@@ -23,6 +23,36 @@ import {
 
 
 describe('_splitJoints (3D)', () => {
+  test('aborting a split with insufficient rest does not allocate an unused entity', () => {
+    const world = new World();
+    const a = world.createEntity();
+    const b = world.createEntity();
+    const wheel = world.createEntity();
+    world.addComponent(a, new PositionComponent(-4, 0, 0));
+    world.addComponent(b, new PositionComponent(4, 0, 0));
+    world.addComponent(wheel, new PositionComponent(0, 0, 0));
+    world.addComponent(wheel, new RadiusComponent(1.5));
+    world.addComponent(wheel, new CableLinkComponent());
+    const joint = world.createEntity();
+    world.addComponent(joint, new CableJointComponent(a, b, .01,
+      new Vector3(-4, 0, 0), new Vector3(4, 0, 0)));
+    const path = world.createEntity();
+    const cable = new CablePathComponent(world, [joint], ['attachment', 'attachment'], [false, false]);
+    world.addComponent(path, cable);
+    const entities = [...world.entities.keys()];
+    const nextId = world.nextEntityId;
+    const warning = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      _splitJoints(world);
+    } finally {
+      warning.mockRestore();
+    }
+    expect([...world.entities.keys()]).toEqual(entities);
+    expect(world.nextEntityId).toBe(nextId);
+    expect(cable.jointEntities).toEqual([joint]);
+    expect(world.getComponent(joint, CableJointComponent).restLength).toBe(.01);
+  });
+
   test('_splitJoints does nothing for a single-joint path that misses every wheel', () => {
     const world  = new World();
 

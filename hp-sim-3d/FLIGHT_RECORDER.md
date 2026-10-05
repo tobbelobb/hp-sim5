@@ -1,5 +1,44 @@
 # Hangprinter flight recorder
 
+## Native Python simulation
+
+Run the machine directly without Vite or a browser:
+
+```bash
+PYTHONPATH=src/python .venv/bin/python -m cable_joints_3d \
+  public/usd_scenes/hp4_rigid_body.usda --steps 200 \
+  --output output/rerun/hp4-python.rrd --snapshot output/rerun/hp4-python.json
+.venv/bin/rerun output/rerun/hp4-python.rrd
+```
+
+`--commands PATH` accepts a JSON array of headless command records, including
+`Move`, `SetTorqueMode`, `SetPositionMode` and `Add to reference`. One record is
+processed per timestep. `--dt SECONDS` explicitly changes both the update argument
+and cable-solver timestep resource. `--scene-prim` selects another authored root.
+`--connect URI` adds a live Rerun gRPC sink alongside the saved file. Omitting
+`--output` creates a timestamped file in `output/rerun`.
+
+The native recording includes the initial state and every completed step, with
+live rigid-member hierarchies, cable lengths/forces, motor and encoder state,
+stored ECS velocities, tool points and extrusion deposits. `sim_time` and
+`sim_step` advance on positive unpaused updates; scene resets restart them and
+set the `scene_generation` timeline. Use a separate recording stream/file for
+independent scene runs. Removed geometry clears both static and temporal data.
+
+Native visuals use straight constraint spans, points and frame axes. Stored
+intermediate wraps remain in length traces; browser sag and wrap tessellation are
+presentation differences. Each scalar/segment has a stable plot path. Entering
+torque mode clears only the commanded/error traces and preserves actual/geometric
+series identities. Snapshots and scalar traces retain Python numerical precision;
+Rerun's transform/geometry archetypes encode float32 values.
+
+The optional JSON contains detached final frames and cable telemetry. The
+native recording path reads the ECS without synchronizing members or mutating
+physics state. See [the parity checklist](../PYTHON_3D_PARITY.md) for cross-language
+recording checks and numerical bounds.
+
+## Browser simulation
+
 Run from the repository root, with the simulator served by Vite:
 
 ```bash

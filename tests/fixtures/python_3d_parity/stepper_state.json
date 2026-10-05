@@ -1,0 +1,20 @@
+{
+  "tolerance": {"atol": 1e-10, "rtol": 1e-9},
+  "entities": [
+    {"name": "default", "components": {"StepperMotorComponent": []}},
+    {"name": "configured", "components": {"StepperMotorComponent": [3.4, -0.2, 0.8, 40, 0.03, 90]}},
+    {"name": "torque", "components": {"StepperMotorComponent": []}}
+  ],
+  "initialSet": [
+    ["configured", "StepperMotorComponent", "closedLoop", true],
+    ["configured", "StepperMotorComponent", "missedStepEncoderOffset", 0.3],
+    ["torque", "StepperMotorComponent", "torqueMode", true],
+    ["torque", "StepperMotorComponent", "targetTorque", -0.7]
+  ],
+  "queries": [["StepperMotorComponent"]],
+  "systems": [],
+  "steps": [
+    {"dt": 0.002, "set": [["configured", "StepperMotorComponent", "commandedAngle", 8.2], ["torque", "StepperMotorComponent", "torqueMode", false]]},
+    {"dt": 0.002, "set": [["default", "StepperMotorComponent", "missedSteps", 5], ["default", "StepperMotorComponent", "currentMissedSteps", -2]]}
+  ]
+}

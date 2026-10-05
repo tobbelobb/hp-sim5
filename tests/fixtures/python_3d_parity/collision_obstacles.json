@@ -1,0 +1,139 @@
+{
+  "entities": [
+    {
+      "name": "ball",
+      "components": {
+        "PositionComponent": [0.8, 0.2, 0.1],
+        "RadiusComponent": [0.5],
+        "BallTagComponent": [],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "second_ball",
+      "components": {
+        "PositionComponent": [10.7, 0.2, 0.3],
+        "RadiusComponent": [0.5],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "coincident_ball",
+      "components": {
+        "PositionComponent": [20, 0, 0],
+        "RadiusComponent": [0.5],
+        "BallTagComponent": [],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "missing_push_ball",
+      "components": {
+        "PositionComponent": [30.8, 0, 0],
+        "RadiusComponent": [0.5],
+        "BallTagComponent": [],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "first",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [1],
+        "ObstacleTagComponent": [],
+        "ObstaclePushComponent": [2]
+      }
+    },
+    {
+      "name": "second",
+      "components": {
+        "PositionComponent": [2, 0, 0],
+        "RadiusComponent": [1],
+        "ObstacleTagComponent": [],
+        "ObstaclePushComponent": [2]
+      }
+    },
+    {
+      "name": "static",
+      "components": {
+        "PositionComponent": [10, 0, 0],
+        "RadiusComponent": [1],
+        "ObstacleTagComponent": [],
+        "ObstaclePushComponent": [2]
+      }
+    },
+    {
+      "name": "coincident",
+      "components": {
+        "PositionComponent": [20, 0, 0],
+        "RadiusComponent": [1],
+        "ObstacleTagComponent": [],
+        "ObstaclePushComponent": [2]
+      }
+    },
+    {
+      "name": "missing_push",
+      "components": {
+        "PositionComponent": [30, 0, 0],
+        "RadiusComponent": [1],
+        "ObstacleTagComponent": []
+      }
+    }
+  ],
+  "systems": ["PBDBallObstacleCollisions"],
+  "resources": {
+    "dt": 0.002,
+    "enableLayering": true
+  },
+  "steps": [
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.004,
+      "set": [
+        [
+          "ball",
+          "PositionComponent",
+          "pos",
+          [4, 4, 4]
+        ],
+        [
+          "second_ball",
+          "PositionComponent",
+          "pos",
+          [14, 4, 4]
+        ]
+      ]
+    },
+    {
+      "dt": 0
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": true
+        }
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": false
+        }
+      }
+    }
+  ],
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "snapshotResources": ["ball_obstacle_contacts"],
+  "queries": [
+    ["BallTagComponent", "PositionComponent", "RadiusComponent"],
+    ["ObstacleTagComponent", "PositionComponent", "RadiusComponent", "ObstaclePushComponent"]
+  ]
+}

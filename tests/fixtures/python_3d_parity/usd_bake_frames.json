@@ -1,0 +1,13 @@
+{
+  "entities": [],
+  "systems": [],
+  "steps": [],
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "usdBake": {
+    "path": "tests/fixtures/python_3d_parity/usd_bake_frames.usda",
+    "options": {}
+  }
+}

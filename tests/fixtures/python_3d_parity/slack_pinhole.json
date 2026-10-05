@@ -1,0 +1,1132 @@
+{
+  "entities": [
+    {
+      "name": "pinhole_0",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "pinhole_1",
+      "components": {
+        "PositionComponent": [10, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "pinhole_2",
+      "components": {
+        "PositionComponent": [22, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "pinhole_joint0",
+      "components": {
+        "CableJointComponent": [
+          "pinhole_0",
+          "pinhole_1",
+          10,
+          [0, 0, 0],
+          [10, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "pinhole_joint1",
+      "components": {
+        "CableJointComponent": [
+          "pinhole_1",
+          "pinhole_2",
+          10,
+          [10, 0, 0],
+          [22, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "pinhole_path",
+      "components": {
+        "CablePathComponent": [
+          ["pinhole_joint0", "pinhole_joint1"],
+          ["attachment", "pinhole", "attachment"],
+          [false, false, false],
+          10000,
+          [0, 0, 0],
+          0,
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "name": "pinhole_loose_0",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "pinhole_loose_1",
+      "components": {
+        "PositionComponent": [3, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "pinhole_loose_2",
+      "components": {
+        "PositionComponent": [7, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "pinhole_loose_joint0",
+      "components": {
+        "CableJointComponent": [
+          "pinhole_loose_0",
+          "pinhole_loose_1",
+          5,
+          [0, 0, 0],
+          [3, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "pinhole_loose_joint1",
+      "components": {
+        "CableJointComponent": [
+          "pinhole_loose_1",
+          "pinhole_loose_2",
+          2,
+          [3, 0, 0],
+          [7, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "pinhole_loose_path",
+      "components": {
+        "CablePathComponent": [
+          ["pinhole_loose_joint0", "pinhole_loose_joint1"],
+          ["attachment", "pinhole", "attachment"],
+          [false, false, false],
+          10000,
+          [0, 0, 0],
+          0,
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "name": "pinhole_reverse_0",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "pinhole_reverse_1",
+      "components": {
+        "PositionComponent": [3, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "pinhole_reverse_2",
+      "components": {
+        "PositionComponent": [7, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "pinhole_reverse_joint0",
+      "components": {
+        "CableJointComponent": [
+          "pinhole_reverse_0",
+          "pinhole_reverse_1",
+          1,
+          [0, 0, 0],
+          [3, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "pinhole_reverse_joint1",
+      "components": {
+        "CableJointComponent": [
+          "pinhole_reverse_1",
+          "pinhole_reverse_2",
+          6,
+          [3, 0, 0],
+          [7, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "pinhole_reverse_path",
+      "components": {
+        "CablePathComponent": [
+          ["pinhole_reverse_joint0", "pinhole_reverse_joint1"],
+          ["attachment", "pinhole", "attachment"],
+          [false, false, false],
+          10000,
+          [0, 0, 0],
+          0,
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "name": "rolling_0",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "rolling_1",
+      "components": {
+        "PositionComponent": [10, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "rolling_2",
+      "components": {
+        "PositionComponent": [22, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "rolling_joint0",
+      "components": {
+        "CableJointComponent": [
+          "rolling_0",
+          "rolling_1",
+          10,
+          [0, 0, 0],
+          [10, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "rolling_joint1",
+      "components": {
+        "CableJointComponent": [
+          "rolling_1",
+          "rolling_2",
+          10,
+          [10, 0, 0],
+          [22, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "rolling_path",
+      "components": {
+        "CablePathComponent": [
+          ["rolling_joint0", "rolling_joint1"],
+          ["attachment", "rolling", "attachment"],
+          [false, false, false],
+          10000,
+          [0, 0, 0],
+          0,
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "name": "rolling_loose_0",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "rolling_loose_1",
+      "components": {
+        "PositionComponent": [3, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "rolling_loose_2",
+      "components": {
+        "PositionComponent": [7, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "rolling_loose_joint0",
+      "components": {
+        "CableJointComponent": [
+          "rolling_loose_0",
+          "rolling_loose_1",
+          5,
+          [0, 0, 0],
+          [3, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "rolling_loose_joint1",
+      "components": {
+        "CableJointComponent": [
+          "rolling_loose_1",
+          "rolling_loose_2",
+          2,
+          [3, 0, 0],
+          [7, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "rolling_loose_path",
+      "components": {
+        "CablePathComponent": [
+          ["rolling_loose_joint0", "rolling_loose_joint1"],
+          ["attachment", "rolling", "attachment"],
+          [false, false, false],
+          10000,
+          [0, 0, 0],
+          0,
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "name": "rolling_reverse_0",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "rolling_reverse_1",
+      "components": {
+        "PositionComponent": [3, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "rolling_reverse_2",
+      "components": {
+        "PositionComponent": [7, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "rolling_reverse_joint0",
+      "components": {
+        "CableJointComponent": [
+          "rolling_reverse_0",
+          "rolling_reverse_1",
+          1,
+          [0, 0, 0],
+          [3, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "rolling_reverse_joint1",
+      "components": {
+        "CableJointComponent": [
+          "rolling_reverse_1",
+          "rolling_reverse_2",
+          6,
+          [3, 0, 0],
+          [7, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "rolling_reverse_path",
+      "components": {
+        "CablePathComponent": [
+          ["rolling_reverse_joint0", "rolling_reverse_joint1"],
+          ["attachment", "rolling", "attachment"],
+          [false, false, false],
+          10000,
+          [0, 0, 0],
+          0,
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "name": "hybrid_0",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "hybrid_1",
+      "components": {
+        "PositionComponent": [10, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "hybrid_2",
+      "components": {
+        "PositionComponent": [22, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "hybrid_joint0",
+      "components": {
+        "CableJointComponent": [
+          "hybrid_0",
+          "hybrid_1",
+          10,
+          [0, 0, 0],
+          [10, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "hybrid_joint1",
+      "components": {
+        "CableJointComponent": [
+          "hybrid_1",
+          "hybrid_2",
+          10,
+          [10, 0, 0],
+          [22, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "hybrid_path",
+      "components": {
+        "CablePathComponent": [
+          ["hybrid_joint0", "hybrid_joint1"],
+          ["attachment", "hybrid-attachment", "attachment"],
+          [false, false, false],
+          10000,
+          [0, 0, 0],
+          0,
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "name": "hybrid_loose_0",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "hybrid_loose_1",
+      "components": {
+        "PositionComponent": [3, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "hybrid_loose_2",
+      "components": {
+        "PositionComponent": [7, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "hybrid_loose_joint0",
+      "components": {
+        "CableJointComponent": [
+          "hybrid_loose_0",
+          "hybrid_loose_1",
+          5,
+          [0, 0, 0],
+          [3, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "hybrid_loose_joint1",
+      "components": {
+        "CableJointComponent": [
+          "hybrid_loose_1",
+          "hybrid_loose_2",
+          2,
+          [3, 0, 0],
+          [7, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "hybrid_loose_path",
+      "components": {
+        "CablePathComponent": [
+          ["hybrid_loose_joint0", "hybrid_loose_joint1"],
+          ["attachment", "hybrid-attachment", "attachment"],
+          [false, false, false],
+          10000,
+          [0, 0, 0],
+          0,
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "name": "hybrid_reverse_0",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "hybrid_reverse_1",
+      "components": {
+        "PositionComponent": [3, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "hybrid_reverse_2",
+      "components": {
+        "PositionComponent": [7, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "hybrid_reverse_joint0",
+      "components": {
+        "CableJointComponent": [
+          "hybrid_reverse_0",
+          "hybrid_reverse_1",
+          1,
+          [0, 0, 0],
+          [3, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "hybrid_reverse_joint1",
+      "components": {
+        "CableJointComponent": [
+          "hybrid_reverse_1",
+          "hybrid_reverse_2",
+          6,
+          [3, 0, 0],
+          [7, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "hybrid_reverse_path",
+      "components": {
+        "CablePathComponent": [
+          ["hybrid_reverse_joint0", "hybrid_reverse_joint1"],
+          ["attachment", "hybrid-attachment", "attachment"],
+          [false, false, false],
+          10000,
+          [0, 0, 0],
+          0,
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "name": "fixed_0",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "fixed_1",
+      "components": {
+        "PositionComponent": [10, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "fixed_2",
+      "components": {
+        "PositionComponent": [22, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "fixed_joint0",
+      "components": {
+        "CableJointComponent": [
+          "fixed_0",
+          "fixed_1",
+          10,
+          [0, 0, 0],
+          [10, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "fixed_joint1",
+      "components": {
+        "CableJointComponent": [
+          "fixed_1",
+          "fixed_2",
+          10,
+          [10, 0, 0],
+          [22, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "fixed_path",
+      "components": {
+        "CablePathComponent": [
+          ["fixed_joint0", "fixed_joint1"],
+          ["attachment", "attachment", "attachment"],
+          [false, false, false],
+          10000,
+          [0, 0, 0],
+          0,
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "name": "fixed_loose_0",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "fixed_loose_1",
+      "components": {
+        "PositionComponent": [3, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "fixed_loose_2",
+      "components": {
+        "PositionComponent": [7, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "fixed_loose_joint0",
+      "components": {
+        "CableJointComponent": [
+          "fixed_loose_0",
+          "fixed_loose_1",
+          5,
+          [0, 0, 0],
+          [3, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "fixed_loose_joint1",
+      "components": {
+        "CableJointComponent": [
+          "fixed_loose_1",
+          "fixed_loose_2",
+          2,
+          [3, 0, 0],
+          [7, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "fixed_loose_path",
+      "components": {
+        "CablePathComponent": [
+          ["fixed_loose_joint0", "fixed_loose_joint1"],
+          ["attachment", "attachment", "attachment"],
+          [false, false, false],
+          10000,
+          [0, 0, 0],
+          0,
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "name": "fixed_reverse_0",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "fixed_reverse_1",
+      "components": {
+        "PositionComponent": [3, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "fixed_reverse_2",
+      "components": {
+        "PositionComponent": [7, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "fixed_reverse_joint0",
+      "components": {
+        "CableJointComponent": [
+          "fixed_reverse_0",
+          "fixed_reverse_1",
+          1,
+          [0, 0, 0],
+          [3, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "fixed_reverse_joint1",
+      "components": {
+        "CableJointComponent": [
+          "fixed_reverse_1",
+          "fixed_reverse_2",
+          6,
+          [3, 0, 0],
+          [7, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "fixed_reverse_path",
+      "components": {
+        "CablePathComponent": [
+          ["fixed_reverse_joint0", "fixed_reverse_joint1"],
+          ["attachment", "attachment", "attachment"],
+          [false, false, false],
+          10000,
+          [0, 0, 0],
+          0,
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "name": "chain_0",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "chain_1",
+      "components": {
+        "PositionComponent": [2, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "chain_2",
+      "components": {
+        "PositionComponent": [5, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "chain_3",
+      "components": {
+        "PositionComponent": [9, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "chain_joint0",
+      "components": {
+        "CableJointComponent": [
+          "chain_0",
+          "chain_1",
+          4,
+          [0, 0, 0],
+          [2, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "chain_joint1",
+      "components": {
+        "CableJointComponent": [
+          "chain_1",
+          "chain_2",
+          2,
+          [2, 0, 0],
+          [5, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "chain_joint2",
+      "components": {
+        "CableJointComponent": [
+          "chain_2",
+          "chain_3",
+          2,
+          [5, 0, 0],
+          [9, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "chain_path",
+      "components": {
+        "CablePathComponent": [
+          ["chain_joint0", "chain_joint1", "chain_joint2"],
+          ["attachment", "pinhole", "pinhole", "attachment"],
+          [false, false, false, false],
+          10000,
+          [0, 0, 0, 0],
+          0,
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "name": "zero_distance_0",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "zero_distance_1",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "zero_distance_2",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "zero_distance_joint0",
+      "components": {
+        "CableJointComponent": [
+          "zero_distance_0",
+          "zero_distance_1",
+          1,
+          [0, 0, 0],
+          [0, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "zero_distance_joint1",
+      "components": {
+        "CableJointComponent": [
+          "zero_distance_1",
+          "zero_distance_2",
+          2,
+          [0, 0, 0],
+          [0, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "zero_distance_path",
+      "components": {
+        "CablePathComponent": [
+          ["zero_distance_joint0", "zero_distance_joint1"],
+          ["attachment", "pinhole", "attachment"],
+          [false, false, false],
+          10000,
+          [0, 0, 0],
+          0,
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "name": "zero_rest_0",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "zero_rest_1",
+      "components": {
+        "PositionComponent": [1, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "zero_rest_2",
+      "components": {
+        "PositionComponent": [3, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "zero_rest_joint0",
+      "components": {
+        "CableJointComponent": [
+          "zero_rest_0",
+          "zero_rest_1",
+          0,
+          [0, 0, 0],
+          [1, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "zero_rest_joint1",
+      "components": {
+        "CableJointComponent": [
+          "zero_rest_1",
+          "zero_rest_2",
+          0,
+          [1, 0, 0],
+          [3, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "zero_rest_path",
+      "components": {
+        "CablePathComponent": [
+          ["zero_rest_joint0", "zero_rest_joint1"],
+          ["attachment", "pinhole", "attachment"],
+          [false, false, false],
+          10000,
+          [0, 0, 0],
+          0,
+          0,
+          2
+        ]
+      }
+    },
+    {
+      "name": "single_0",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "single_1",
+      "components": {
+        "PositionComponent": [2, 0, 0],
+        "RadiusComponent": [0],
+        "BallTagComponent": [],
+        "MassComponent": [0]
+      }
+    },
+    {
+      "name": "single_joint0",
+      "components": {
+        "CableJointComponent": [
+          "single_0",
+          "single_1",
+          1,
+          [0, 0, 0],
+          [2, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "single_path",
+      "components": {
+        "CablePathComponent": [
+          ["single_joint0"],
+          ["attachment", "attachment"],
+          [false, false],
+          10000,
+          [0, 0],
+          0,
+          0,
+          2
+        ]
+      }
+    }
+  ],
+  "systems": ["CableSlackSystem"],
+  "resources": {
+    "dt": 0.002,
+    "enableLayering": true
+  },
+  "steps": [
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.004
+    },
+    {
+      "dt": 0
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": true
+        }
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": false
+        }
+      }
+    }
+  ],
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "queries": [
+    ["CableJointComponent"],
+    ["CablePathComponent"]
+  ]
+}

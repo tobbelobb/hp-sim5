@@ -1,0 +1,72 @@
+{
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "entities": [
+    {
+      "name": "point0",
+      "components": {
+        "PositionComponent": [-2, 0, 1],
+        "CoefficientOfFrictionComponent": [0.2]
+      }
+    },
+    {
+      "name": "point1",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "CoefficientOfFrictionComponent": [0.30000000000000004]
+      }
+    },
+    {
+      "name": "point2",
+      "components": {
+        "PositionComponent": [0.1, 1, 1],
+        "CoefficientOfFrictionComponent": [0.4]
+      }
+    },
+    {
+      "name": "point3",
+      "components": {
+        "PositionComponent": [0, 0, 5],
+        "CoefficientOfFrictionComponent": [0.5]
+      }
+    },
+    {
+      "name": "span0",
+      "components": {
+        "CableJointComponent": ["point0", "point1", 0.1, [-2, 0, 1], [0, 0, 0], "world"]
+      }
+    },
+    {
+      "name": "span1",
+      "components": {
+        "CableJointComponent": ["point1", "point2", 1.4, [0, 0, 0], [0.1, 1, 1], "world"]
+      }
+    },
+    {
+      "name": "span2",
+      "components": {
+        "CableJointComponent": ["point2", "point3", 0.2, [0.1, 1, 1], [0, 0, 5], "world"]
+      }
+    },
+    {
+      "name": "path",
+      "components": {
+        "CablePathComponent": [["span0", "span1", "span2"], ["attachment", "pinhole", "pinhole", "attachment"], [false, false, false, false], 1000, null, 0, 0, 1]
+      }
+    }
+  ],
+  "systems": ["CableFrictionSystem"],
+  "steps": [
+    {
+      "dt": 0.0001
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.005
+    }
+  ]
+}

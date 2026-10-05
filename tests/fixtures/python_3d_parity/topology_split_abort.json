@@ -1,0 +1,132 @@
+{
+  "entities": [
+    {
+      "name": "a",
+      "components": {
+        "PositionComponent": [-4, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [
+          -4,
+          0,
+          0,
+          null,
+          [0, 0, 1],
+          null
+        ],
+        "MachineTagComponent": ["1"]
+      }
+    },
+    {
+      "name": "b",
+      "components": {
+        "PositionComponent": [4, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [
+          4,
+          0,
+          0,
+          null,
+          [0, 0, 1],
+          null
+        ],
+        "MachineTagComponent": ["1"]
+      }
+    },
+    {
+      "name": "guide",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [
+          0,
+          0,
+          0,
+          null,
+          [0, 0, 1],
+          null
+        ],
+        "MachineTagComponent": ["1"],
+        "RadiusComponent": [1.5]
+      }
+    },
+    {
+      "name": "foreign",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [
+          0,
+          0,
+          0,
+          null,
+          [0, 0, 1],
+          null
+        ],
+        "MachineTagComponent": ["2"],
+        "RadiusComponent": [2]
+      }
+    },
+    {
+      "name": "joint",
+      "components": {
+        "CableJointComponent": [
+          "a",
+          "b",
+          0.01,
+          [-4, 0, 0],
+          [4, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "path",
+      "components": {
+        "MachineTagComponent": ["1"],
+        "CablePathComponent": [
+          ["joint"],
+          ["attachment", "attachment"],
+          [false, false],
+          10000,
+          null,
+          0,
+          0,
+          2
+        ]
+      }
+    }
+  ],
+  "systems": [],
+  "steps": [
+    {
+      "dt": 0.002,
+      "topology": ["split"]
+    },
+    {
+      "dt": 0.002,
+      "topology": ["split"],
+      "set": [
+        ["joint", "CableJointComponent", "restLength", 8],
+        ["path", "CablePathComponent", "totalRestLength", 8]
+      ]
+    },
+    {
+      "dt": 0.002,
+      "topology": ["split"]
+    }
+  ],
+  "resources": {
+    "enableLayering": true,
+    "dt": 0.002
+  },
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "snapshotAllocator": true,
+  "queries": [
+    ["CableJointComponent"],
+    ["CablePathComponent"],
+    ["MachineTagComponent"]
+  ]
+}

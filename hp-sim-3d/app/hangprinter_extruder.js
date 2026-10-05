@@ -5,6 +5,7 @@ import {
   MachineTagComponent,
 } from '../../src/js/cable_joints_3d/ecs.js';
 import { SpoolTagComponent } from './hangprinter_spools.js';
+import { getEntityWorldPosition } from '../../src/js/cable_joints_3d/rigid_bodies.js';
 
 function isFiniteVector3(value) {
   return Boolean(value)
@@ -98,7 +99,7 @@ export function estimateEffectorRotation(referenceOffsets, currentCenter, entity
     return new Quaternion();
   }
   const currentOffsets = entityIds.map((entityId) => {
-    const pos = world.getComponent(entityId, PositionComponent)?.pos;
+    const pos = getEntityWorldPosition(world, entityId);
     return pos ? pos.clone().subtract(currentCenter) : null;
   });
   if (currentOffsets.length !== referenceOffsets.length || currentOffsets.some((offset) => !isFiniteVector3(offset))) {
@@ -164,7 +165,7 @@ export class ExtruderSystem {
     const countByMachine = {};
 
     for (const entityId of spoolEntities) {
-      const pos = world.getComponent(entityId, PositionComponent)?.pos;
+      const pos = getEntityWorldPosition(world, entityId);
       if (!pos) {
         continue;
       }
@@ -192,7 +193,7 @@ export class ExtruderSystem {
       const sum = new Vector3();
       let count = 0;
       for (const entityId of entityIds) {
-        const pos = world.getComponent(entityId, PositionComponent)?.pos;
+        const pos = getEntityWorldPosition(world, entityId);
         if (pos) {
           sum.add(pos);
           count += 1;

@@ -1,0 +1,62 @@
+{
+  "entities": [],
+  "systems": [],
+  "steps": [],
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "scenes": [
+    {
+      "path": "public/usd_scenes/hp3_rigid_body.usda",
+      "scenePrimPath": "/World/HangprinterScene",
+      "options": {
+        "namespace": "2",
+        "extrusionColor": "#ff0000",
+        "palette": {
+          "spool": "#222222",
+          "rigidBody": "#00ffff"
+        }
+      }
+    },
+    {
+      "path": "public/usd_scenes/slideprinter_single_pinholes_rigid_body.usda",
+      "scenePrimPath": "/World/SlideprinterScene",
+      "options": {
+        "append": true,
+        "namespace": "1",
+        "extrusionColor": "#00ff00",
+        "palette": {
+          "pinhole": "#112233",
+          "cable": "#aabbcc"
+        }
+      }
+    }
+  ],
+  "queries": [
+    [
+      "RigidBodyComponent"
+    ],
+    [
+      "RigidBodyMemberComponent"
+    ],
+    [
+      "CableJointComponent"
+    ],
+    [
+      "CablePathComponent"
+    ],
+    [
+      "StepperMotorComponent"
+    ]
+  ],
+  "snapshotResources": [
+    "dt",
+    "sceneGeneration",
+    "gravity",
+    "defaultPlaneNormal"
+  ],
+  "snapshotMapResources": [
+    "machineColors"
+  ]
+}

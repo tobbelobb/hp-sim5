@@ -1,0 +1,47 @@
+{
+  "entities": [],
+  "systems": [],
+  "steps": [
+    {
+      "dt": 0.002
+    }
+  ],
+  "scenes": [
+    {
+      "path": "tests/fixtures/python_3d_parity/usd_scene_minimal.usda",
+      "scenePrimPath": "/World/Scene"
+    }
+  ],
+  "queries": [
+    [
+      "RigidBodyComponent"
+    ],
+    [
+      "RigidBodyMemberComponent"
+    ],
+    [
+      "DistanceConstraintComponent"
+    ],
+    [
+      "CablePathComponent"
+    ]
+  ],
+  "snapshotResources": [
+    "dt",
+    "gravity",
+    "sceneGeneration"
+  ],
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "snapshotMapResources": [
+    "machineColors"
+  ],
+  "pipeline": true,
+  "snapshotEntityMaps": [
+    "torqueModeCableLoadTorques",
+    "torqueModeCableLoadStiffnesses",
+    "torqueModeCableLoadDampings"
+  ]
+}

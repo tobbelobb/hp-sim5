@@ -3,6 +3,20 @@ from dataclasses import dataclass
 import math
 import numpy as np
 
+
+def rotation_vector_between(previous, current):
+    if previous is None or current is None:
+        return np.zeros(3)
+    delta = current.copy().multiply(previous.copy().conjugate().normalize()).normalize()
+    if delta.w < 0:
+        delta.x, delta.y, delta.z, delta.w = -delta.x, -delta.y, -delta.z, -delta.w
+    w = float(np.clip(delta.w, -1., 1.))
+    angle = 2 * math.acos(w)
+    sin_half = math.sqrt(max(0., 1 - w * w))
+    if angle <= 1e-9 or sin_half <= 1e-9:
+        return np.zeros(3)
+    return delta.as_xyzw()[:3] / sin_half * angle
+
 @dataclass
 class Quaternion:
     x: float = 0.; y: float = 0.; z: float = 0.; w: float = 1.
@@ -11,9 +25,11 @@ class Quaternion:
     def set(self, q):
         self.x, self.y, self.z, self.w = q.x, q.y, q.z, q.w; return self
     def normalize(self):
-        length = math.sqrt(self.x**2 + self.y**2 + self.z**2 + self.w**2)
+        length = math.sqrt(self.x*self.x + self.y*self.y + self.z*self.z + self.w*self.w)
         if length == 0: self.x = self.y = self.z = 0.; self.w = 1.
-        else: self.x /= length; self.y /= length; self.z /= length; self.w /= length
+        else:
+            inverse = 1 / length
+            self.x *= inverse; self.y *= inverse; self.z *= inverse; self.w *= inverse
         return self
     def conjugate(self):
         self.x, self.y, self.z = -self.x, -self.y, -self.z; return self
@@ -37,7 +53,15 @@ class Quaternion:
     def premultiply(self, q):
         return self.multiply_quaternions(q, self.copy())
     def transform_vector(self, vector):
-        q = self.copy().normalize(); v = Quaternion(*np.asarray(vector, dtype=float), 0.)
-        result = q.copy().multiply(v).multiply(q.copy().conjugate())
-        return np.array([result.x, result.y, result.z])
+        # Callers normalize their frames explicitly. Normalizing here changes
+        # raw component semantics and adds another rounding step to live frames.
+        x, y, z = vector
+        qx, qy, qz, qw = self.x, self.y, self.z, self.w
+        ix = qw*x + qy*z - qz*y
+        iy = qw*y + qz*x - qx*z
+        iz = qw*z + qx*y - qy*x
+        iw = -qx*x - qy*y - qz*z
+        return np.array([ix*qw + iw*-qx + iy*-qz - iz*-qy,
+                         iy*qw + iw*-qy + iz*-qx - ix*-qz,
+                         iz*qw + iw*-qz + ix*-qy - iy*-qx], dtype=float)
     def as_xyzw(self): return np.array([self.x, self.y, self.z, self.w])
