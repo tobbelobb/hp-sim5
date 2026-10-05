@@ -105,6 +105,45 @@ hp-sim5 has added quite a bit to each of its sub-projects:
    - Flipper demo: <http://localhost:5173/hp-sim5/example_apps/js/flipper/index.html>
 4. Ready to hack away on the js side!
 
+### Using the 3D Hangprinter simulator
+
+The default machine is Hangprinter v4, authored in
+`public/usd_scenes/hp4_rigid_body.usda`. Choose a workflow for your experiment:
+
+| Goal | Workflow |
+| --- | --- |
+| Print a logo, load G-code or interact with machines | Open the 3D browser app and use **Print Logo**, **Print Squares**, **Upload File** or **Machines**. |
+| Inspect a browser print step by step | Run the Python flight-recorder receiver, then connect with the browser's **Rerun** button. JS still runs the physics. |
+| Run machine physics without a browser or firmware | Use the native Python CLI with the same USDA and a JSON sequence of motor commands. |
+| Check numerical agreement between JS and Python | Run the headless differential tests; visual inspection alone does not establish parity. |
+
+To record a browser print, keep Vite running and start this in another terminal
+after installing the [Python dependencies](#python-dependencies):
+
+```bash
+.venv/bin/python scripts/hangprinter_flight_recorder.py
+```
+
+Open the **viewer URL printed by that process**. In the simulator, expand **▼**,
+click **Reset**, click **Rerun**, wait for **Rerun: recording**, then **Print Logo**.
+Click **Rerun** again to finish. The receiver prints the saved `.rrd` path.
+Opening that file with `.venv/bin/rerun PATH.rrd` replays it; it does not start
+another simulation or recording.
+
+For native Python, start with the reproducible
+[motion-and-extrusion recipe](hp-sim-3d/FLIGHT_RECORDER.md#record-a-visible-motion-and-extrusion-run).
+It generates motor commands, records two seconds of HP4 motion and explains the
+expected displacement, extrusion and plots. Native commands use **motor radians
+and metres of extrusion**. The native CLI does not consume G-code directly.
+
+The [recording and manual-test guide](hp-sim-3d/FLIGHT_RECORDER.md) covers both
+workflows, CLI options, torque transitions, live/saved viewing and locating the
+effector marker. The [3D README](hp-sim-3d/README.md) lists machine presets and
+the manual checklist. The [advanced guide](README_adv.md#native-python-3d-experiments)
+shows Python stepping, diagnostics and multi-machine scene loading. Geometry,
+physics and known presentation differences are described in the
+[parity inventory](PYTHON_3D_PARITY.md).
+
 
 ## Python dependencies
 

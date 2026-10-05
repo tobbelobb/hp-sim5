@@ -1,4 +1,4 @@
-# hp-sim-3d Implementation Notes
+# 3D Hangprinter simulator
 
 hp-sim-3d is the 3D Hangprinter application built on the shared JavaScript
 cable-joints PBD/XPBD code in `src/js/cable_joints_3d/`. Machine geometry and
@@ -12,6 +12,92 @@ joint engine.
 The [Rerun flight recorder](FLIGHT_RECORDER.md) records geometry, line lengths,
 and cable forces at every physics timestep, with live viewing and saved `.rrd`
 files for replay.
+
+## Start here
+
+From the repository root, run `npx vite` and open
+<http://localhost:5173/hp-sim5/hp-sim-3d/>. The default is Hangprinter v4. Use
+**Print Logo** or **Print Squares** for a built-in print, **Upload File** for
+G-code/command logs or an authored USDA, and **Machines** to add/remove presets.
+Expand **▼** for **Pause**, **Reset**, **Finish ASAP**, **Rerun** and view tools.
+**Show Forces** is a rendering overlay; the recorder logs forces independently.
+**Line Layering** changes the winding model and rebuilds cable initialization.
+**Closed Loop Motors** changes position-drive behavior. Keep these settings the
+same when comparing runs; quality checks and reference paths aid inspection.
+
+To record a browser print, run
+`.venv/bin/python scripts/hangprinter_flight_recorder.py`, open its printed viewer
+URL, then click **Rerun** in the simulator before starting the print. This records
+JS physics. For native Python physics, use the CLI or API below. Both read the
+same authored machine data, but the native CLI consumes timestep-scheduled motor
+JSON rather than G-code and has no browser print/upload UI.
+
+The [recording guide](FLIGHT_RECORDER.md) has complete copy-and-run recipes for
+browser logo recording, native settling, two-second motion/extrusion, torque
+transitions, live connections and replay. It also explains the effector marker,
+plot units, output-file naming and common connection problems. Opening an RRD
+replays saved state; it does not run or record another simulation.
+
+### Authored machine presets
+
+All files are under `public/usd_scenes/`. The native CLI selects one by path.
+The scene's default root is used automatically; `--scene-prim` overrides it.
+
+| Browser label | USDA file |
+| --- | --- |
+| Hangprinter v4 (default) | `hp4_rigid_body.usda` |
+| Hangprinter v3 | `hp3_rigid_body.usda` |
+| Four High Anchors | `four_high_anchors_rigid_body.usda` |
+| CubeCorners | `cubecorners_rigid_body.usda` |
+| Slideprinter Multi Unit | `slideprinter_multi_unit_rigid_body.usda` |
+| Slideprinter Original | `slideprinter_rigid_body.usda` |
+| Slideprinter (hexagon) | `slideprinter_hexagon_rigid_body.usda` |
+| Slideprinter (single pinholes) | `slideprinter_single_pinholes_rigid_body.usda` |
+
+Initial-construction differentials cover these catalog scenes. The complete
+machine timestep suite specifically covers HP3, HP4, single-pinhole Slideprinter
+and a minimal fixture; do not infer equal trajectory coverage for every preset.
+
+### Manual acceptance checklist
+
+Work through these checks one run at a time. Keep the machine, settings,
+command source and RRD path with any result you report.
+
+- [ ] **Browser baseline:** print the HP4 logo; pause/resume and reset. Confirm
+  the effector/toolpath behaves as expected, and note any quality/missed-step report.
+- [ ] **Browser recording:** start the receiver, connect Rerun, print again,
+  disconnect, then open the printed RRD path. Check consecutive simulation steps,
+  cable forces and length traces. Repeat with **Finish ASAP**; recording can slow
+  execution, but it retains every physics step.
+- [ ] **Native construction/settling:** record 200 steps of the same HP4. Find
+  `world/machines/default/effector` (orange point/axes), body/member frames and
+  nine cable paths. Select `sim_step` 0–200 / `sim_time` 0–0.4 seconds.
+- [ ] **Native movement/extrusion:** run the guide's 1,000-command ramp. Compare
+  first/last effector positions, zoom to see about 29 mm travel, and inspect ten
+  deposition points totaling 0.01 m, encoder tracking and zero missed steps.
+- [ ] **Torque/position:** run the guide's D-axis example. Check motor mode/torque
+  traces, force response, loss of commanded-length/error traces in torque mode,
+  and their return when position mode resumes.
+- [ ] **Another machine and lifecycle:** record HP3 or single-pinhole Slideprinter
+  into a separate file. In the browser, add/remove machines and reset while
+  recording; check file boundaries and names. For native append/replacement,
+  follow the [API example](../README_adv.md#append-or-replace-authored-machines).
+- [ ] **Numerical confirmation:** run the focused differential commands below;
+  shape/plot similarity alone cannot establish ordering/frame/constraint parity.
+
+```bash
+.venv/bin/python -m pytest -q \
+  tests/python/cable_joints_3d/test_machine_scene_parity.py \
+  tests/python/cable_joints_3d/test_machine_pipeline_parity.py \
+  tests/python/cable_joints_3d/test_machine_lifecycle_parity.py \
+  tests/python/cable_joints_3d/test_machine_snapshot.py \
+  tests/python/cable_joints_3d/test_machine_recording.py
+```
+
+These execute the live JS oracle in Node and/or read real saved RRD data. The
+[harness README](../tests/parity3d/README.md) explains fixtures, numerical bounds
+and running the whole 3D suite. The [main README](../README.md#tests) lists the
+full JS, Python and autocal suites.
 
 ## Runtime and Scene Construction
 

@@ -5,6 +5,11 @@ Behavioral reference: JS main after [PR #61](https://github.com/tobbelobb/hp-sim
 USDA data, ECS state and timestep pipeline, with materially equivalent physics.
 Python uses Rerun. This working checklist does **not** claim the goal is complete.
 
+The implementation is integrated into main by
+[#73](https://github.com/tobbelobb/hp-sim5/pull/73) (`f534f309`). For usage, start
+with the [recording guide](hp-sim-3d/FLIGHT_RECORDER.md) and
+[manual acceptance checklist](hp-sim-3d/README.md#manual-acceptance-checklist).
+
 Statuses describe covered behavior; synthetic ECS fixtures do not establish USD
 loading or complete-machine equivalence. NumPy vectors, Python component factories
 and optional configuration represented by `None` are intentional API divergences.
@@ -241,11 +246,13 @@ Each is isolated in its own commit, with JS and differential regression evidence
 | [#70](https://github.com/tobbelobb/hp-sim5/pull/70) | Live split/merge, entity lifecycle oracle and coupled topology cycles | #69 |
 | [#71](https://github.com/tobbelobb/hp-sim5/pull/71) | Sphere contacts, tensor bump and single-pass slack differentials | #70 |
 | [#72](https://github.com/tobbelobb/hp-sim5/pull/72) | Stored quaternion frames, identical authored USD precision and 1,000-step full-machine evidence | #71 |
-| Live-scene audit (this slice) | Paused append/replacement, loaded full-machine torque and real RRD lifecycle evidence | #72 |
+| [#73](https://github.com/tobbelobb/hp-sim5/pull/73) | Paused append/replacement, loaded full-machine torque, real RRD lifecycle evidence and integration of the stack into main | #72 |
 
-The implementation checklist now covers the meaningful Hangprinter pipeline and
-the shared optional engine systems. Review and merge the stacked slices in order;
-incorporate review corrections with differential evidence. Full-machine tests use
+The implementation checklist covers the meaningful Hangprinter pipeline and
+the shared optional engine systems. Slices #62–#72 were merged into their stacked
+feature branches; #73 then integrated their implementation commits and the
+live-scene slice into main. Future corrections should retain differential
+evidence. Full-machine tests use
 the app's production registration, while optional systems have explicit fixture
 registration and remain absent from the app pipeline.
 
@@ -268,6 +275,7 @@ active full-machine torque loads. Final validation is 365 simulator Python tests
 287 autocal Python tests, and 665 JS tests (one skipped). A real two-second RRD contains the initial
 state and every one of the 1,000 updates, with encoder/length/force telemetry.
 Saved-RRD lifecycle tests also verify generation clocks, clearing and resumed
-deposition. The implementation handoff is ready. The stack remains open for
-review and merge; further work resumes from review findings or integration
-failures. This audit does not claim integration into main or approval.
+deposition. These validation counts refer to the tested `452ec64a` tree,
+subsequently integrated into main by #73. The manual checklist records user
+acceptance separately from automated numerical evidence; visual inspection is
+not a substitute for the differential bounds.
