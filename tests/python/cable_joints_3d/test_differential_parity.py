@@ -195,6 +195,93 @@ def test_torque_motor_oracle_exercises_loads_and_drive_only_reactions(name):
         assert snapshots[5]['entities']['held_spool']['StepperMotorComponent']['torqueMode'] is True
 
 
+def test_diagnostics_oracle_preserves_full_turn_slips_and_rounding():
+    fixture = json.loads((FIXTURES / 'motor_diagnostics_encoders.json').read_text())
+    snapshots = run_js(fixture)['snapshots']
+    motor = lambda step, name: snapshots[step]['entities'][name]['StepperMotorComponent']
+    assert motor(0, 'positive_half')['currentMissedSteps'] == 1
+    assert motor(0, 'negative_half')['currentMissedSteps'] == 0
+    assert motor(0, 'rounded_pairs')['currentMissedSteps'] == 1
+    assert motor(0, 'peak')['missedSteps'] == 3
+    assert motor(1, 'slip')['currentMissedSteps'] == 50
+    assert motor(2, 'slip')['currentMissedSteps'] == 0
+    assert motor(2, 'slip')['missedSteps'] == 50
+    assert motor(3, 'slip')['currentMissedSteps'] == 0
+    assert motor(3, 'slip')['missedSteps'] == 3
+    assert motor(4, 'slip')['missedStepEncoderOffset'] is None
+    # A diagnostic read updates encoder-derived state even while World is paused.
+    assert motor(6, 'slip')['currentMissedSteps'] == 100
+    assert motor(7, 'slip')['currentMissedSteps'] == 0
+
+
+@pytest.mark.parametrize('name', ['extruder_rigid_constraints', 'extruder_rigid_fallback'])
+def test_extruder_oracle_reads_live_constrained_members(name):
+    fixture = json.loads((FIXTURES / f'{name}.json').read_text())
+    entities = run_js(fixture)['snapshots'][1]['entities']
+    extruder = entities['extruder']['ExtruderComponent']
+    assert extruder['effectorCenterPos'] == pytest.approx(entities['body']['PositionComponent']['pos'])
+    assert entities['member0']['PositionComponent']['pos'] == [-1, -1 / 3, 0]
+    assert np.linalg.norm(extruder['effectorCenterPos']) > 1
+    offset = np.array(extruder['tipPos']) - extruder['centerPos']
+    if name == 'extruder_rigid_fallback':
+        assert offset == pytest.approx([.1, 0, -.1])
+    else:
+        assert abs(offset[1]) > .01
+
+
+def test_extruder_oracle_selects_numeric_machine_keys_in_js_order():
+    fixture = json.loads((FIXTURES / 'extruder_frames.json').read_text())
+    snapshots = run_js(fixture)['snapshots']
+    extruder = snapshots[1]['entities']['extruder']['ExtruderComponent']
+    assert extruder['effectorCenterPos'] == extruder['machineEffectorCenters']['1']
+    assert extruder['effectorCenterPos'] != extruder['machineEffectorCenters']['2']
+    assert snapshots[4] | {'step': 3} == snapshots[3]
+    assert snapshots[1]['entities']['ignored_extruder'] == snapshots[0]['entities']['ignored_extruder']
+
+
+def test_command_oracle_exercises_order_modes_history_and_callbacks():
+    fixture = json.loads((FIXTURES / 'commands_state.json').read_text())
+    snapshots = run_js(fixture)['snapshots']
+    first = snapshots[1]
+    assert first['commandState']['queueLength'] == 12
+    assert first['commandState']['history'][0]['__touchedMachines'] == ['alpha', 'beta', 'other']
+    assert '__touchedMachines' not in first['commandEvents'][0]['value']
+    extrusions = first['entities']['extruder']['ExtruderComponent']['extrusions']
+    assert [entry['color'] for entry in extrusions] == ['#00aa00', '#222222', '#ff00ff']
+    assert snapshots[2] | {'step': 1} == first
+    assert snapshots[3]['entities']['alphaA']['StepperMotorComponent']['torqueMode'] is True
+    assert snapshots[4]['entities']['alphaA']['StepperMotorComponent']['commandedAngle'] == .03
+    assert snapshots[4]['entities']['alphaB']['StepperMotorComponent']['commandedAngle'] == .05
+    assert snapshots[5]['entities']['alphaA']['StepperMotorComponent']['deltaAngle'] == .02
+    assert len(snapshots[-1]['commandState']['history']) == 12  # null consumes a step without history
+    assert snapshots[-1]['commandState']['queueLength'] == 0
+
+
+def test_command_oracle_preserves_numeric_axis_order_and_playback_state():
+    fixture = json.loads((FIXTURES / 'commands_numeric_order.json').read_text())
+    state = run_js(fixture)['snapshots'][1]
+    assert state['commandState']['history'][0]['__touchedMachines'] == ['1', '2']
+    assert [entry['machineId'] for entry in state['entities']['extruder']['ExtruderComponent']['extrusions']] == ['1', '2']
+    fixture = json.loads((FIXTURES / 'commands_playback.json').read_text())
+    snapshots = run_js(fixture)['snapshots']
+    assert 'D' not in snapshots[2]['commandState']['axisToEntity']
+    assert 'D' in snapshots[3]['commandState']['axisToEntity']
+    assert snapshots[4]['commandState']['queueLength'] == 1
+    assert snapshots[4]['commandState']['history'][0]['type'] == 'restored'
+    assert snapshots[7]['commandState']['history'] == []
+    assert snapshots[7]['entities']['extruder']['ExtruderComponent']['extrusions']
+
+
+def test_extrusion_oracle_records_the_tip_before_current_step_physics():
+    fixture = json.loads((FIXTURES / 'commands_extrusion_order.json').read_text())
+    snapshots = run_js(fixture)['snapshots']
+    extruder = lambda step: snapshots[step]['entities']['extruder']['ExtruderComponent']
+    for step in [1, 2, 4, 5]:
+        assert extruder(step)['extrusions'][-1]['pos'] == extruder(step - 1)['tipPos']
+        assert extruder(step)['tipPos'] != extruder(step - 1)['tipPos']
+    assert snapshots[3] | {'step': 2} == snapshots[2]
+
+
 @pytest.mark.parametrize('name', ['rigid_members', 'distance_members', 'spool_projection',
                                  'cable_cache_members', 'cable_friction_chain',
                                  'cable_attachment_motion', 'cable_attachment_members',
@@ -204,7 +291,10 @@ def test_torque_motor_oracle_exercises_loads_and_drive_only_reactions(name):
                                  'cable_over_correction_pinhole', 'position_motor_standalone',
                                  'position_motor_members', 'position_motor_cables',
                                  'torque_motor_standalone', 'torque_motor_loads',
-                                 'torque_motor_members', 'torque_motor_cables', 'torque_motor_pinhole'])
+                                 'torque_motor_members', 'torque_motor_cables', 'torque_motor_pinhole',
+                                 'motor_diagnostics_cables', 'motor_diagnostics_frames',
+                                 'extruder_frames', 'extruder_rigid_constraints',
+                                 'commands_extrusion_order', 'commands_cable_pipeline'])
 def test_long_sequence_is_deterministic_and_matches_js(name):
     fixture = json.loads((FIXTURES / f'{name}.json').read_text())
     fixture['steps'] = [{'dt': .002, 'resources': {'dt': .002}} for _ in range(200)]

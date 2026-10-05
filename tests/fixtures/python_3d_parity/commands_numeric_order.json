@@ -1,0 +1,52 @@
+{
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "entities": [
+    {
+      "name": "second",
+      "components": {
+        "SpoolTagComponent": [],
+        "SpoolStateComponent": ["2", [0, 0, 1], [0, 0, 0, 1]],
+        "MachineTagComponent": ["2"],
+        "StepperMotorComponent": []
+      }
+    },
+    {
+      "name": "first",
+      "components": {
+        "SpoolTagComponent": [],
+        "SpoolStateComponent": ["1", [0, 0, 1], [0, 0, 0, 1]],
+        "MachineTagComponent": ["1"],
+        "StepperMotorComponent": []
+      }
+    },
+    {
+      "name": "extruder",
+      "components": {
+        "ExtruderComponent": []
+      }
+    }
+  ],
+  "systems": ["RemoteSpoolSystem"],
+  "steps": [
+    {
+      "dt": 0.002
+    }
+  ],
+  "snapshotResources": [],
+  "initialSet": [["extruder", "ExtruderComponent", "machineTips", {"2": [2, 0, 0], "1": [1, 0, 0]}]],
+  "commands": [
+    {
+      "type": "Move",
+      "axes": {
+        "2": 0.02,
+        "1": 0.01
+      },
+      "E": 0.03
+    }
+  ],
+  "commandState": true,
+  "observeCommands": true
+}

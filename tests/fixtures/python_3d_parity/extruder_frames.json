@@ -1,0 +1,176 @@
+{
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "entities": [
+    {
+      "name": "2_0",
+      "components": {
+        "PositionComponent": [-1.0, 0.3333333333333333, 1.0],
+        "VelocityComponent": [0.01, -0.02, 0.03],
+        "MachineTagComponent": ["2"],
+        "SpoolTagComponent": []
+      }
+    },
+    {
+      "name": "2_1",
+      "components": {
+        "PositionComponent": [1.0, 0.3333333333333333, 1.0],
+        "VelocityComponent": [0.01, -0.02, 0.03],
+        "MachineTagComponent": ["2"],
+        "SpoolTagComponent": []
+      }
+    },
+    {
+      "name": "2_2",
+      "components": {
+        "PositionComponent": [0.0, -0.6666666666666666, 1.0],
+        "VelocityComponent": [0.01, -0.02, 0.03],
+        "MachineTagComponent": ["2"],
+        "SpoolTagComponent": []
+      }
+    },
+    {
+      "name": "1_0",
+      "components": {
+        "PositionComponent": [6.0, -0.3333333333333333, 1.0000000000000002],
+        "VelocityComponent": [0.01, -0.02, 0.03],
+        "MachineTagComponent": ["1"],
+        "SpoolTagComponent": []
+      }
+    },
+    {
+      "name": "1_1",
+      "components": {
+        "PositionComponent": [4.0, -0.3333333333333333, 0.9999999999999999],
+        "VelocityComponent": [0.01, -0.02, 0.03],
+        "MachineTagComponent": ["1"],
+        "SpoolTagComponent": []
+      }
+    },
+    {
+      "name": "1_2",
+      "components": {
+        "PositionComponent": [5.0, 0.6666666666666666, 1.0],
+        "VelocityComponent": [0.01, -0.02, 0.03],
+        "MachineTagComponent": ["1"],
+        "SpoolTagComponent": []
+      }
+    },
+    {
+      "name": "beta_0",
+      "components": {
+        "PositionComponent": [11.0, 0.3333333333333332, 1.0],
+        "VelocityComponent": [0.01, -0.02, 0.03],
+        "MachineTagComponent": ["beta"],
+        "SpoolTagComponent": []
+      }
+    },
+    {
+      "name": "beta_1",
+      "components": {
+        "PositionComponent": [9.0, 0.3333333333333334, 1.0],
+        "VelocityComponent": [0.01, -0.02, 0.03],
+        "MachineTagComponent": ["beta"],
+        "SpoolTagComponent": []
+      }
+    },
+    {
+      "name": "beta_2",
+      "components": {
+        "PositionComponent": [10.0, -0.6666666666666666, 1.0],
+        "VelocityComponent": [0.01, -0.02, 0.03],
+        "MachineTagComponent": ["beta"],
+        "SpoolTagComponent": []
+      }
+    },
+    {
+      "name": "alpha_0",
+      "components": {
+        "PositionComponent": [14.37933725416438, -0.8274606086292364, 1.2029724321424757],
+        "VelocityComponent": [0.01, -0.02, 0.03],
+        "MachineTagComponent": ["alpha"],
+        "SpoolTagComponent": []
+      }
+    },
+    {
+      "name": "alpha_1",
+      "components": {
+        "PositionComponent": [15.94261560197843, 0.27277385277948024, 0.6150566752653146],
+        "VelocityComponent": [0.01, -0.02, 0.03],
+        "MachineTagComponent": ["alpha"],
+        "SpoolTagComponent": []
+      }
+    },
+    {
+      "name": "alpha_2",
+      "components": {
+        "PositionComponent": [14.678047143857192, 0.5546867558497562, 1.1819708925922097],
+        "VelocityComponent": [0.01, -0.02, 0.03],
+        "MachineTagComponent": ["alpha"],
+        "SpoolTagComponent": []
+      }
+    },
+    {
+      "name": "extruder",
+      "components": {
+        "ExtruderComponent": []
+      }
+    },
+    {
+      "name": "ignored_extruder",
+      "components": {
+        "ExtruderComponent": []
+      }
+    }
+  ],
+  "systems": ["MovementSystem", "ExtruderSystem"],
+  "steps": [
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": true
+        }
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": false
+        }
+      }
+    }
+  ],
+  "snapshotResources": [],
+  "initialSet": [["extruder", "ExtruderComponent", "centerSources", {"2": ["2_0", "2_1", "2_2"], "1": ["1_0", "1_1", "1_2"], "beta": ["beta_0", "beta_1", "beta_2"], "alpha": ["alpha_0", "alpha_1", "alpha_2"]}], ["extruder", "ExtruderComponent", "centerSourceOffsets", {"2": [[-1, -0.3333333333333333, 0], [1, -0.3333333333333333, 0], [0, 0.6666666666666666, 0]], "1": [[-1, -0.3333333333333333, 0], [1, -0.3333333333333333, 0], [0, 0.6666666666666666, 0]], "beta": [[-1, -0.3333333333333333, 0], [1, -0.3333333333333333, 0], [0, 0.6666666666666666, 0]], "alpha": [[-1, -0.3333333333333333, 0], [1, -0.3333333333333333, 0], [0, 0.6666666666666666, 0]]}], ["extruder", "ExtruderComponent", "centerOffsets", {"2": [0.1, -0.1, 0.05], "1": [0.1, -0.1, 0.05], "beta": [0.1, -0.1, 0.05], "alpha": [0.1, -0.1, 0.05]}], ["extruder", "ExtruderComponent", "tipOffsets", {"2": [0, 0.03, -0.1], "1": [0, 0.03, -0.1], "beta": [0, 0.03, -0.1], "alpha": [0, 0.03, -0.1]}], ["extruder", "ExtruderComponent", "coldEndOffsets", {"2": [0.1, 0.2, 0.3], "1": [0.1, 0.2, 0.3], "beta": [0.1, 0.2, 0.3], "alpha": [0.1, 0.2, 0.3]}]],
+  "effectorRotations": [
+    {
+      "extruder": "extruder",
+      "machine": "2"
+    },
+    {
+      "extruder": "extruder",
+      "machine": "1"
+    },
+    {
+      "extruder": "extruder",
+      "machine": "beta"
+    },
+    {
+      "extruder": "extruder",
+      "machine": "alpha"
+    }
+  ]
+}

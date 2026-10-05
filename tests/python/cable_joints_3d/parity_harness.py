@@ -12,7 +12,7 @@ from cable_joints_3d import ecs, common_systems
 from cable_joints_3d import rigid_bodies as rigid
 from cable_joints_3d import geometry3 as geometry
 from cable_joints_3d.quaternion import Quaternion
-from cable_joints_3d.spools import SpoolStateComponent
+from cable_joints_3d.spools import SpoolStateComponent, SpoolTagComponent
 from cable_joints_3d import cable_joints_components as cable
 from cable_joints_3d.create_cable_paths import create_cable_paths
 from cable_joints_3d.cable_attachment_cache_system import CableAttachmentCacheSystem
@@ -23,6 +23,9 @@ from cable_joints_3d.stepper_motor import StepperMotorComponent, StepperMotorSys
 from cable_joints_3d.pbd_cable_constraint_solver import PBDCableConstraintSolver
 from cable_joints_3d.pbd_resolve_cable_over_corrections import PBDResolveCableOverCorrections
 from cable_joints_3d.torque_mode_system import TorqueModeSystem
+from cable_joints_3d.motor_diagnostics import MissedStepTrackingSystem, get_machine_motor_diagnostics, reset_machine_motor_diagnostics
+from cable_joints_3d.extruder import ExtruderComponent, ExtruderSystem, estimate_effector_rotation
+from cable_joints_3d.remote_spool_system import RemoteSpoolSystem
 
 ROOT = Path(__file__).resolve().parents[3]
 CONTRACT = json.loads((ROOT / 'tests/parity3d/contract.json').read_text())
@@ -38,6 +41,8 @@ def run_python(fixture):
     names = {value: key for key, value in ids.items()}
     components = {name: getattr(ecs, name) for name in CONTRACT if hasattr(ecs, name)}
     components['SpoolStateComponent'] = SpoolStateComponent
+    components['SpoolTagComponent'] = SpoolTagComponent
+    components['ExtruderComponent'] = ExtruderComponent
     components['StepperMotorComponent'] = StepperMotorComponent
     components.update({name: getattr(cable, name) for name in CONTRACT if hasattr(cable, name)})
 
@@ -52,6 +57,10 @@ def run_python(fixture):
             return ids[value]
         if kind == 'entities':
             return [ids[name] for name in value]
+        if kind == 'vectors':
+            return [decode(point, 'vector') for point in value]
+        if kind.endswith('Map') and kind != 'entityMap':
+            return {key: decode(item, kind[:-3]) for key, item in value.items()}
         if kind == 'entityMap':
             return {name if name == '__default__' else str(ids[name]): angle for name, angle in value.items()}
         if kind == 'parameter' and value == 'Infinity':
@@ -85,7 +94,7 @@ def run_python(fixture):
             component = component_type(*args)
         world.add_component(ids[entity], component)
 
-    def resources(values, entity_values=None):
+    def resources(values, entity_values=None, map_values=None):
         for key, value in (values or {}).items():
             if key in ('gravity', 'defaultPlaneNormal'):
                 value = np.array(value, dtype=float)
@@ -96,20 +105,22 @@ def run_python(fixture):
             world.set_resource(key, value)
         for key, definition in (entity_values or {}).items():
             world.set_resource(key, {ids[name]: value for name, value in definition['values'].items()})
+        for key, value in (map_values or {}).items():
+            world.set_resource(key, value)
 
     def mutate(values):
         for entity, type_name, field, value in values or []:
             _, py, kind = next(f for f in CONTRACT[type_name] if f[0] == field)
             component = world.get_component(ids[entity], components[type_name])
             decoded = decode(value, kind)
-            if kind == 'vector':
+            if kind == 'vector' and getattr(component, py) is not None and decoded is not None:
                 getattr(component, py)[:] = decoded
-            elif kind == 'quaternion':
+            elif kind == 'quaternion' and getattr(component, py) is not None and decoded is not None:
                 getattr(component, py).set(decoded)
             else:
                 setattr(component, py, decoded)
 
-    resources(fixture.get('resources'), fixture.get('entityResources'))
+    resources(fixture.get('resources'), fixture.get('entityResources'), fixture.get('mapResources'))
     for entity in fixture['entities']:
         for name, args in entity['components'].items():
             add(entity['name'], name, args)
@@ -129,12 +140,39 @@ def run_python(fixture):
     systems = {'CableAttachmentCacheSystem': CableAttachmentCacheSystem, 'CableFrictionSystem': CableFrictionSystem,
                'CableAttachmentUpdateSystem': CableAttachmentUpdateSystem, 'PBDCableConstraintSolver': PBDCableConstraintSolver,
                'PBDResolveCableOverCorrections': PBDResolveCableOverCorrections, 'StepperMotorSystem': StepperMotorSystem,
-               'TorqueModeSystem': TorqueModeSystem}
+               'TorqueModeSystem': TorqueModeSystem, 'MissedStepTrackingSystem': MissedStepTrackingSystem,
+               'ExtruderSystem': ExtruderSystem, 'RemoteSpoolSystem': RemoteSpoolSystem}
     for definition in fixture['systems']:
         name = definition if isinstance(definition, str) else definition['name']
         args = [] if isinstance(definition, str) else definition.get('args', [])
         system = systems.get(name)
         world.register_system((system if system is not None else getattr(common_systems, name))(*args))
+
+    remote = world.get_system(RemoteSpoolSystem)
+    if fixture.get('initializeExtruder'):
+        world.get_system(ExtruderSystem).update(world, 0)
+    events = []
+    if 'commands' in fixture:
+        remote.commands = fixture['commands']
+    if fixture.get('observeCommands'):
+        remote.set_command_executed_listener(lambda value: events.append({'kind': 'command', 'value': copy.deepcopy(value)}))
+        remote.set_extrusion_listener(lambda value: events.append({'kind': 'extrusion', 'value': copy.deepcopy(value)}))
+
+    def command_actions(actions):
+        methods = {'clearCommandQueue': remote.clear_command_queue, 'clearPlaybackState': remote.clear_playback_state,
+                   'resetAxisMapping': remote.reset_axis_mapping} if remote is not None else {}
+        for action in actions or []:
+            method = action['method']
+            if method == 'processCommand':
+                remote.process_command(world, action['command'], record_history=action.get('recordHistory', True), emit_events=action.get('emitEvents', True))
+            elif method == 'setCommands':
+                remote.commands = action['commands']
+            elif method == 'addCommand':
+                remote.add_command(action['command'])
+            elif method == 'setPlaybackState':
+                remote.set_playback_state(action['state'])
+            else:
+                methods[method]()
 
     def encode(value, kind):
         if value is None:
@@ -143,6 +181,10 @@ def run_python(fixture):
             return names[value]
         if kind == 'entities':
             return [names[entity] for entity in value]
+        if kind == 'vectors':
+            return [encode(point, 'vector') for point in value]
+        if kind.endswith('Map') and kind != 'entityMap':
+            return {key: encode(item, kind[:-3]) for key, item in value.items()}
         if kind == 'entityMap':
             return {key if key == '__default__' else names[int(key)]: angle for key, angle in value.items()}
         if kind == 'quaternion':
@@ -154,6 +196,7 @@ def run_python(fixture):
         return copy.deepcopy(value)
 
     def snapshot(step):
+        diagnostics = [get_machine_motor_diagnostics(world, machine) for machine in fixture.get('motorDiagnostics', [])]
         entities = {}
         for name, entity in ids.items():
             state = entities[name] = {}
@@ -182,6 +225,23 @@ def run_python(fixture):
                 'internalToBody': bool(endpoint.internal_to_body),
             })
         state = {'step': step, 'entities': entities, 'queries': queries, 'attachments': attachments}
+        if 'motorDiagnostics' in fixture:
+            state['motorDiagnostics'] = diagnostics
+        if fixture.get('commandState'):
+            state['commandState'] = copy.deepcopy(remote.get_playback_state())
+            state['commandState']['queueLength'] = remote.get_queue_length()
+            state['commandState']['axisToEntity'] = {axis: encode(value, 'entities' if isinstance(value, list) else 'entity')
+                                                    for axis, value in remote.axis_to_entity.items()}
+        if fixture.get('observeCommands'):
+            state['commandEvents'] = copy.deepcopy(events)
+        if 'effectorRotations' in fixture:
+            state['effectorRotations'] = []
+            for probe in fixture['effectorRotations']:
+                component = world.get_component(ids[probe['extruder']], ExtruderComponent)
+                machine = probe['machine']
+                rotation = estimate_effector_rotation(component.center_source_offsets.get(machine),
+                    component.machine_effector_centers.get(machine), component.center_sources.get(machine), world)
+                state['effectorRotations'].append({'quaternion': encode(rotation, 'quaternion')})
         if 'snapshotResources' in fixture:
             state['resources'] = {key: world.get_resource(key) for key in fixture['snapshotResources']}
         if 'snapshotEntityMaps' in fixture:
@@ -197,8 +257,13 @@ def run_python(fixture):
 
     snapshots = [snapshot(0)]
     for index, step in enumerate(fixture['steps'], 1):
-        resources(step.get('resources'), step.get('entityResources'))
+        resources(step.get('resources'), step.get('entityResources'), step.get('mapResources'))
         mutate(step.get('set'))
+        for entity, type_name in step.get('removeComponents', []):
+            world.remove_component(ids[entity], components[type_name])
+        for machine in step.get('resetMotorDiagnostics', []):
+            reset_machine_motor_diagnostics(world, machine)
+        command_actions(step.get('commandActions'))
         world.update(step['dt'])
         snapshots.append(snapshot(index))
     result = {'schema': 1, 'snapshots': snapshots}

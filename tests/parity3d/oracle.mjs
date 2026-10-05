@@ -10,6 +10,9 @@ import * as rigid from '../../src/js/cable_joints_3d/rigid_bodies.js';
 import * as spools from '../../hp-sim-3d/app/hangprinter_spools.js';
 import { StepperMotorComponent, StepperMotorSystem } from '../../hp-sim-3d/app/hangprinter_stepper_motor.js';
 import { TorqueModeSystem } from '../../hp-sim-3d/app/torqueModeSystem.js';
+import { MissedStepTrackingSystem, getMachineMotorDiagnostics, resetMachineMotorDiagnostics } from '../../hp-sim-3d/app/motor-diagnostics.js';
+import { ExtruderComponent, ExtruderSystem, estimateEffectorRotation } from '../../hp-sim-3d/app/hangprinter_extruder.js';
+import { RemoteSpoolSystem } from '../../hp-sim-3d/app/remoteSpoolSystem.js';
 import * as geometry from '../../src/js/cable_joints_3d/geometry3.js';
 import * as cable from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import { createCablePaths } from '../../src/js/cable_joints_3d/createCablePaths.js';
@@ -18,8 +21,8 @@ import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
 
 const contract = JSON.parse(fs.readFileSync(new URL('./contract.json', import.meta.url)));
 const geometryContract = JSON.parse(fs.readFileSync(new URL('./geometry_contract.json', import.meta.url)));
-const components = { ...ecs, ...spools, ...cable, StepperMotorComponent };
-const systems = { ...commonSystems, CableAttachmentCacheSystem, CableFrictionSystem, PBDResolveCableOverCorrections, StepperMotorSystem, TorqueModeSystem,
+const components = { ...ecs, ...spools, ...cable, StepperMotorComponent, ExtruderComponent };
+const systems = { ...commonSystems, CableAttachmentCacheSystem, CableFrictionSystem, PBDResolveCableOverCorrections, StepperMotorSystem, TorqueModeSystem, MissedStepTrackingSystem, ExtruderSystem, RemoteSpoolSystem,
   CableAttachmentUpdateSystem: cable.CableAttachmentUpdateSystem,
   PBDCableConstraintSolver: cable.PBDCableConstraintSolver };
 const vector = (value) => value == null ? null : new Vector3(...value);
@@ -31,10 +34,14 @@ export function runFixture(fixture) {
   const ids = Object.fromEntries(fixture.entities.map(e => [e.name, world.createEntity()]));
   const names = Object.fromEntries(Object.entries(ids).map(([name, id]) => [id, name]));
   const decode = (value, kind) => {
+    if (value == null) return null;
     if (kind === 'vector') return vector(value);
     if (kind === 'quaternion') return quaternion(value);
     if (kind === 'entity') return value == null ? null : ids[value];
     if (kind === 'entities') return value.map(name => ids[name]);
+    if (kind === 'vectors') return value.map(point => vector(point));
+    if (kind.endsWith('Map') && kind !== 'entityMap') return Object.fromEntries(Object.entries(value).map(
+      ([key, item]) => [key, decode(item, kind.slice(0, -3))]));
     if (kind === 'entityMap') return Object.fromEntries(Object.entries(value).map(
       ([name, angle]) => [name === '__default__' ? name : ids[name], angle]));
     if (kind === 'parameter' && value === 'Infinity') return Infinity;
@@ -68,7 +75,7 @@ export function runFixture(fixture) {
     }
     world.addComponent(ids[entity], component);
   }
-  function resources(values = {}, entityValues = {}) {
+  function resources(values = {}, entityValues = {}, mapValues = {}) {
     for (const [key, value] of Object.entries(values)) {
       world.setResource(key, ['gravity', 'defaultPlaneNormal'].includes(key) ? vector(value)
         : key === 'grabbedBall' && value != null ? ids[value] : value);
@@ -77,17 +84,18 @@ export function runFixture(fixture) {
       const entries = Object.entries(definition.values).map(([name, value]) => [ids[name], value]);
       world.setResource(key, definition.kind === 'object' ? Object.fromEntries(entries) : new Map(entries));
     }
+    for (const [key, values] of Object.entries(mapValues)) world.setResource(key, new Map(Object.entries(values)));
   }
   function mutate(values = []) {
     for (const [entity, typeName, field, value] of values) {
       const definition = contract[typeName].find(([jsField]) => jsField === field);
       const component = world.getComponent(ids[entity], components[typeName]);
       const decoded = decode(value, definition[2]);
-      if (['vector', 'quaternion'].includes(definition[2])) component[field].set(decoded);
+      if (['vector', 'quaternion'].includes(definition[2]) && component[field] != null && decoded != null) component[field].set(decoded);
       else component[field] = decoded;
     }
   }
-  resources(fixture.resources, fixture.entityResources);
+  resources(fixture.resources, fixture.entityResources, fixture.mapResources);
   for (const entity of fixture.entities) {
     for (const [name, args] of Object.entries(entity.components)) add(entity.name, name, args);
   }
@@ -107,10 +115,32 @@ export function runFixture(fixture) {
     if (!systems[name]) throw new Error(`Unsupported system ${name}`);
     world.registerSystem(new systems[name](...args));
   }
+  const remote = world.systems.find(system => system instanceof RemoteSpoolSystem);
+  if (fixture.initializeExtruder) world.systems.find(system => system instanceof ExtruderSystem).update(world, 0);
+  const events = [];
+  if (fixture.commands) remote.commands = fixture.commands;
+  if (fixture.observeCommands) {
+    remote.setCommandExecutedListener(value => events.push({ kind: 'command', value: structuredClone(value) }));
+    remote.setExtrusionListener(value => events.push({ kind: 'extrusion', value: structuredClone(value) }));
+  }
+  function commandActions(actions = []) {
+    for (const action of actions) {
+      if (action.method === 'processCommand') remote._processCommand(world, action.command,
+        { recordHistory: action.recordHistory ?? true, emitEvents: action.emitEvents ?? true });
+      else if (action.method === 'setCommands') remote.commands = action.commands;
+      else if (action.method === 'addCommand') remote.addCommand(action.command);
+      else if (action.method === 'setPlaybackState') remote.setPlaybackState(action.state);
+      else if (['clearCommandQueue', 'clearPlaybackState', 'resetAxisMapping'].includes(action.method)) remote[action.method]();
+      else throw new Error(`Unsupported command action ${action.method}`);
+    }
+  }
   function encode(value, kind) {
     if (value == null) return null;
     if (kind === 'entity') return names[value];
     if (kind === 'entities') return value.map(id => names[id]);
+    if (kind === 'vectors') return value.map(point => encode(point, 'vector'));
+    if (kind.endsWith('Map') && kind !== 'entityMap') return Object.fromEntries(Object.entries(value).map(
+      ([key, item]) => [key, encode(item, kind.slice(0, -3))]));
     if (kind === 'entityMap') return Object.fromEntries(Object.entries(value).map(
       ([id, angle]) => [id === '__default__' ? id : names[id], angle]));
     if (kind === 'vector') return [value.x, value.y, value.z];
@@ -119,6 +149,7 @@ export function runFixture(fixture) {
     return structuredClone(value);
   }
   function snapshot(step) {
+    const motorDiagnostics = fixture.motorDiagnostics?.map(machine => getMachineMotorDiagnostics(world, machine));
     const entities = {};
     for (const [name, id] of Object.entries(ids)) {
       entities[name] = {};
@@ -143,6 +174,18 @@ export function runFixture(fixture) {
         internalToBody: Boolean(endpoint.internalToBody) };
     });
     const state = { step, entities, queries, attachments };
+    if (motorDiagnostics) state.motorDiagnostics = motorDiagnostics;
+    if (fixture.commandState) state.commandState = {
+      ...structuredClone(remote.getPlaybackState()), queueLength: remote.getQueueLength(),
+      axisToEntity: Object.fromEntries(Object.entries(remote.axisToEntity).map(([axis, value]) =>
+        [axis, encode(value, Array.isArray(value) ? 'entities' : 'entity')])),
+    };
+    if (fixture.observeCommands) state.commandEvents = structuredClone(events);
+    if (fixture.effectorRotations) state.effectorRotations = fixture.effectorRotations.map(({ extruder, machine }) => {
+      const component = world.getComponent(ids[extruder], ExtruderComponent);
+      return { quaternion: encode(estimateEffectorRotation(component.centerSourceOffsets[machine],
+        component.machineEffectorCenters[machine], component.centerSources[machine], world), 'quaternion') };
+    });
     if (fixture.snapshotResources) state.resources = Object.fromEntries(fixture.snapshotResources.map(
       key => [key, world.getResource(key) ?? null]));
     if (fixture.snapshotEntityMaps) state.entityMaps = Object.fromEntries(fixture.snapshotEntityMaps.map(key => {
@@ -157,8 +200,11 @@ export function runFixture(fixture) {
   }
   const snapshots = [snapshot(0)];
   for (const [index, step] of fixture.steps.entries()) {
-    resources(step.resources, step.entityResources);
+    resources(step.resources, step.entityResources, step.mapResources);
     mutate(step.set);
+    for (const [entity, type] of step.removeComponents ?? []) world.removeComponent(ids[entity], components[type]);
+    for (const machine of step.resetMotorDiagnostics ?? []) resetMachineMotorDiagnostics(world, machine);
+    commandActions(step.commandActions);
     world.update(step.dt);
     snapshots.push(snapshot(index + 1));
   }

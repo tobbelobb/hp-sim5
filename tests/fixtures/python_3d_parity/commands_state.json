@@ -1,0 +1,208 @@
+{
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "entities": [
+    {
+      "name": "alphaA",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "SpoolTagComponent": [],
+        "SpoolStateComponent": ["A", [0, 0, 1], [0, 0, 0, 1]],
+        "RenderableComponent": ["spool", "#111111"],
+        "StepperMotorComponent": [],
+        "MachineTagComponent": ["alpha"]
+      }
+    },
+    {
+      "name": "betaA",
+      "components": {
+        "PositionComponent": [1, 0, 0],
+        "SpoolTagComponent": [],
+        "SpoolStateComponent": ["A", [0, 0, 1], [0, 0, 0, 1]],
+        "RenderableComponent": ["spool", "#222222"],
+        "StepperMotorComponent": [],
+        "MachineTagComponent": ["beta"]
+      }
+    },
+    {
+      "name": "alphaB",
+      "components": {
+        "PositionComponent": [2, 0, 0],
+        "SpoolTagComponent": [],
+        "SpoolStateComponent": ["B", [0, 0, 1], [0, 0, 0, 1]],
+        "RenderableComponent": ["spool", "#333333"],
+        "StepperMotorComponent": [],
+        "MachineTagComponent": ["alpha"]
+      }
+    },
+    {
+      "name": "untagged",
+      "components": {
+        "PositionComponent": [3, 0, 0],
+        "SpoolTagComponent": [],
+        "SpoolStateComponent": ["C", [0, 0, 1], [0, 0, 0, 1]],
+        "RenderableComponent": ["spool", "#555555"],
+        "StepperMotorComponent": []
+      }
+    },
+    {
+      "name": "without_motor",
+      "components": {
+        "PositionComponent": [4, 0, 0],
+        "SpoolTagComponent": [],
+        "SpoolStateComponent": ["A", [0, 0, 1], [0, 0, 0, 1]],
+        "RenderableComponent": ["spool", "#ff00ff"],
+        "MachineTagComponent": ["other"]
+      }
+    },
+    {
+      "name": "extruder",
+      "components": {
+        "ExtruderComponent": []
+      }
+    }
+  ],
+  "systems": ["RemoteSpoolSystem"],
+  "steps": [
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": true
+        }
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": false
+        }
+      }
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    }
+  ],
+  "snapshotResources": [],
+  "initialSet": [["extruder", "ExtruderComponent", "machineTips", {"alpha": [0.1, 0.2, 0.3], "beta": [1.1, 1.2, 1.3], "other": [2.1, 2.2, 2.3]}], ["extruder", "ExtruderComponent", "machineCenters", {"alpha": [0, 0, 0], "beta": [1, 1, 1], "other": [2, 2, 2]}]],
+  "mapResources": {
+    "machineColors": {
+      "alpha": {
+        "extrusionColor": "#00aa00"
+      },
+      "beta": {
+        "extrusionColor": ""
+      }
+    }
+  },
+  "commandState": true,
+  "observeCommands": true,
+  "commands": [
+    {
+      "type": "Move",
+      "A": 0.03,
+      "B": 0.07,
+      "E": 0.02,
+      "label": "first"
+    },
+    {
+      "type": "SetTorqueMode",
+      "axis": "A",
+      "torqueNm": 0.06,
+      "E": 1
+    },
+    {
+      "type": "Move",
+      "axes": {
+        "A": 0.04,
+        "B": 0.05
+      },
+      "E": 0.01
+    },
+    {
+      "type": "Add to reference",
+      "axes": {
+        "A": 0.02,
+        "B": -0.03
+      },
+      "E": 0
+    },
+    {
+      "type": "SetPositionMode",
+      "axis": "A"
+    },
+    {
+      "type": "unknown",
+      "A": 0,
+      "E": 0.005
+    },
+    {
+      "type": "Move",
+      "E": 0.003,
+      "__touchedMachines": ["beta"]
+    },
+    {
+      "type": "Move",
+      "E": 0.003
+    },
+    {
+      "type": "Move",
+      "C": 1,
+      "E": 0.003
+    },
+    {
+      "type": "SetTorqueMode",
+      "axis": "C",
+      "torqueNm": -0.01
+    },
+    {},
+    null,
+    {
+      "type": "Add to reference",
+      "A": 0.2,
+      "E": -0.01
+    }
+  ]
+}
