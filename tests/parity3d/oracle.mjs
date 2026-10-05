@@ -23,11 +23,16 @@ import { OpenText } from '../../src/js/usd/stage.js';
 import { parseStage, readMachineSceneSpec, validateMachineSceneSpec, buildEntityPlan, applyEntityPlan } from '../../hp-sim-3d/app/scene/machineScenePipeline.js';
 import { registerSimulationSystems } from '../../hp-sim-3d/app/simulationSystems.js';
 import { captureFlightRecorderSnapshot } from '../../hp-sim-3d/app/flightRecorderSnapshot.js';
+import { PBDBallBallCollisions } from '../../src/js/cable_joints_3d/pbd_ball_ball_collisions.js';
+import { PBDBallObstacleCollisions } from '../../src/js/cable_joints_3d/pbd_ball_obstacle_collisions.js';
+import { BallObstacleBumpSystem } from '../../src/js/cable_joints_3d/ball_obstacle_bump_system.js';
+import { CableSlackSystem, SlideLooseCableSystem } from '../../src/js/cable_joints_3d/cable_slack_system.js';
 
 const contract = JSON.parse(fs.readFileSync(new URL('./contract.json', import.meta.url)));
 const geometryContract = JSON.parse(fs.readFileSync(new URL('./geometry_contract.json', import.meta.url)));
 const components = { ...ecs, ...spools, ...cable, StepperMotorComponent, ExtruderComponent };
 const systems = { ...commonSystems, CableAttachmentCacheSystem, CableFrictionSystem, PBDResolveCableOverCorrections, StepperMotorSystem, TorqueModeSystem, MissedStepTrackingSystem, ExtruderSystem, RemoteSpoolSystem,
+  PBDBallBallCollisions, PBDBallObstacleCollisions, BallObstacleBumpSystem, CableSlackSystem, SlideLooseCableSystem,
   CableAttachmentUpdateSystem: cable.CableAttachmentUpdateSystem,
   PBDCableConstraintSolver: cable.PBDCableConstraintSolver };
 const vector = (value) => value == null ? null : new Vector3(...value);
@@ -61,6 +66,9 @@ export function runFixture(fixture) {
     if (kind === 'entity') return value == null ? null : ids[value];
     if (kind === 'entities') return value.map(name => ids[name]);
     if (kind === 'vectors') return value.map(point => vector(point));
+    if (kind === 'contacts') return value.map(contact => ({ ...contact,
+      ball_id: ids[contact.ball_id], obs_id: ids[contact.obs_id], direction: vector(contact.direction),
+    }));
     if (kind.endsWith('Map') && kind !== 'entityMap') return Object.fromEntries(Object.entries(value).map(
       ([key, item]) => [key, decode(item, kind.slice(0, -3))]));
     if (kind === 'entityMap') return Object.fromEntries(Object.entries(value).map(
@@ -99,6 +107,7 @@ export function runFixture(fixture) {
   function resources(values = {}, entityValues = {}, mapValues = {}) {
     for (const [key, value] of Object.entries(values)) {
       world.setResource(key, ['gravity', 'defaultPlaneNormal'].includes(key) ? vector(value)
+        : key === 'ball_obstacle_contacts' ? decode(value, 'contacts')
         : key === 'grabbedBall' && value != null ? ids[value] : value);
     }
     for (const [key, definition] of Object.entries(entityValues)) {
@@ -166,6 +175,9 @@ export function runFixture(fixture) {
     if (kind === 'entities') return value.map(id => names[id]);
     if (kind === 'booleans') return value.map(Boolean);
     if (kind === 'vectors') return value.map(point => encode(point, 'vector'));
+    if (kind === 'contacts') return value.map(contact => ({ ...contact,
+      ball_id: names[contact.ball_id], obs_id: names[contact.obs_id], direction: encode(contact.direction, 'vector'),
+    }));
     if (kind.endsWith('Map') && kind !== 'entityMap') return Object.fromEntries(Object.entries(value).map(
       ([key, item]) => [key, encode(item, kind.slice(0, -3))]));
     if (kind === 'entityMap') return Object.fromEntries(Object.entries(value).map(
@@ -236,7 +248,7 @@ export function runFixture(fixture) {
         component.machineEffectorCenters[machine], component.centerSources[machine], world), 'quaternion') };
     });
     if (fixture.snapshotResources) state.resources = Object.fromEntries(fixture.snapshotResources.map(
-      key => [key, ['gravity', 'defaultPlaneNormal'].includes(key)
+      key => [key, key === 'ball_obstacle_contacts' ? encode(world.getResource(key), 'contacts') : ['gravity', 'defaultPlaneNormal'].includes(key)
         ? encode(world.getResource(key), 'vector') : world.getResource(key) ?? null]));
     if (fixture.snapshotMapResources) state.mapResources = Object.fromEntries(fixture.snapshotMapResources.map(
       key => [key, Object.fromEntries(world.getResource(key) ?? [])]));

@@ -27,7 +27,8 @@ and optional configuration represented by `None` are intentional API divergences
 | XPBD cable solve (`cable_joints_core.js`) | `pbd_cable_constraint_solver.py`: equivalent for covered specialized dynamics | Body/spool/pinhole fixtures exercise tensor reactions, direct and indirect one-axis dynamics, holding release, closed-loop stiffness, torque-load maps, damping, alternating per-path iterations and force transfers. Four solver integration scenarios run 200 steps. |
 | Cable over-correction (`pbdResolveCableOverCorrections.js`) | `pbd_resolve_cable_over_corrections.py`: equivalent for covered reactions | Shared-correction averaging/gates, tensor host/member reactions, hybrid-only pinhole coupling, duplicate joint membership and last-path metadata. Runs immediately after the cable solver in integration fixtures. |
 | Distance XPBD (`commonSystems.js`) | `common_systems.py`: equivalent | `distance_members.json`: off-center tensor corrections, accumulated multipliers and internal endpoints. Used by fixtures; not currently registered by the Hangprinter app. |
-| Ball/obstacle collisions, bump and slack systems (`cable_joints_3d/`) | missing | Relevant fixture coverage after cable core; not currently registered by the Hangprinter app. |
+| Ball/obstacle collisions and bump (`cable_joints_3d/`) | `pbd_ball_collisions.py`, `ball_obstacle_bump_system.py`: equivalent for covered core sphere contacts | Ordered unequal/zero/negative-mass pairs, query-store reordering, coincident/separated/touching gates, geometric obstacle contacts, contact-specific friction and raw-hit filtering, rotated tensor angular impulses and post-PBD bump/encoder order. Four fixtures run 200 repeatable steps. Not registered by the Hangprinter app. |
+| Optional slack (`cable_slack_system.js`) | `cable_slack_system.py`: equivalent | Pinhole tension equalization and literal attachment-gated loose transfer, shortened/zero paths, ordered chains, rest conservation and pause. Four fixtures run 200 repeatable steps, including active attachment/cache/XPBD/PBD/encoder integration. Preserve the single-pass 3D policy rather than Python 2D's dt-scaled iterations. |
 | Position motors (`hangprinter_stepper_motor.js`) | `stepper_motor.py`: equivalent for covered integration | Open/closed-loop torque and pose updates, live member aggregate inertia with physical-mass fallback, host reaction, member-local vs standalone integration and cable/PBD/encoder ordering. Standalone/member/cable scenarios run 200 steps. |
 | Torque motors (`torqueModeSystem.js`) | `torque_mode_system.py`: equivalent for covered integration | Droop, windage/friction/cogging defaults and overrides, signed/implicit cable loads, drive-only host reaction, mode transitions and member-local integration. Update after PBD velocities; five scenarios run 200 steps. |
 | Encoder unwrapping (`commonSystems.js`) | `common_systems.py`: equivalent | `spool_projection.json`, `rigid_members.json`: several turns, fallback axes and parent/reference motion. Position/torque motor and constraint encoder integration is covered. |
@@ -40,10 +41,11 @@ and optional configuration represented by `None` are intentional API divergences
 | Snapshot / Rerun (`flightRecorderSnapshot.js`, `FLIGHT_RECORDER.md`) | `machine_snapshot.py`, `rerun_system.py`, `__main__.py`: equivalent for covered recording data | Six fixture families compare native frames/lengths/forces with production JS recorder data. Live body hierarchy, solver-sampled cable endpoints, copied snapshots, initial/every-step RRD, Z-up coordinates, pause/reset clocks, static clearing, encoder/motor/velocity and tool/extrusion state. Straight-span/point visuals and stable per-quantity plot paths are intentional presentation divergences. |
 | Optional cable event buffer / console summaries (`cable_joints_core.js`) | intentional divergence | Python records deterministic ECS snapshots and primary Rerun traces instead of the optional JS `cableEventTrace*` buffer/console API. These diagnostics do not feed simulation state. Saved-RRD topology coverage checks joint identity and clearing; no physics field is removed. |
 | Three.js renderer, DOM/pointer/UI, upload controllers, workers | browser-only/not required | Do not port. Render-only slack/wrap geometry may be reused for Rerun presentation. |
+| Separate flipper demo application (`example_apps/js/flipper_3d/`) | browser-only/not required for this goal | Extended sector/border/flipper contact machinery is outside the specialized Hangprinter app pipeline. The shared optional core sphere/slack systems above are covered; the existing JS demo regression remains required and passes. |
 
 ## Differential evidence
 
-Eighty-seven shared JSON fixtures under `tests/fixtures/python_3d_parity/` execute
+Ninety-five shared JSON fixtures under `tests/fixtures/python_3d_parity/` execute
 production JS in Node (`tests/parity3d/oracle.mjs`) and the native Python engine.
 Adapters construct/serialize state; they contain no physics oracle formulas.
 Snapshots compare initial state and every timestep, including named relationships,
@@ -53,7 +55,7 @@ Topology fixtures also compare every live entity, allocator state and creation/
 removal order; deleted entities cannot survive as empty snapshot rows.
 Structural fields compare exactly; quaternions
 compare up to sign. Nonfinite physics state fails. Guard checks ensure targeted
-constraints, transitions and reactions activate. Thirty-four scenarios run 200 steps
+constraints, transitions and reactions activate. Forty-two scenarios run 200 steps
 and require exact repeatability within each engine; a further stiff-motor probe
 runs 200 steps at 20 microseconds. See `tests/parity3d/README.md` for fixture coverage.
 The recording oracle also calls the production JS flight-recorder snapshot for
@@ -124,6 +126,13 @@ widening a global tolerance.
   copying those arrays or stopping after the first guide changes the topology.
   Merge traversal revisits shortened paths when neighboring stored lengths turn
   negative. Removed joints leave every component store; entity IDs are not reused.
+- Optional sphere contacts retain the reference's simple model: ordered cached
+  `PositionComponent` poses, coincident-center pairs skipped, and geometric
+  obstacle projection regardless of ball mass. They do not redirect rigid-member
+  reactions or replace the specialized spool model. Bump friction is the mean of
+  contact/obstacle coefficients, uses relative surface velocity and applies world
+  inertia tensors after PBD velocity reconstruction. Contact buffers keep list
+  identity; contact directions are owned copies and remain unchanged by bump.
 - Effector systems read live parent/member transforms after constraints without
   adding a sync. Command deposition precedes current-step prediction. Numeric
   machine and axis keys retain JS array-index ordering. Python queues copy their
@@ -183,9 +192,13 @@ Each is isolated in its own commit, with JS and differential regression evidence
 | [#68](https://github.com/tobbelobb/hp-sim5/pull/68) | Native USD baking, construction, semantic composition and full-machine differentials | #67 |
 | [#69](https://github.com/tobbelobb/hp-sim5/pull/69) | Read-only snapshots, richer primary Rerun and headless recording CLI | #68 |
 | [#70](https://github.com/tobbelobb/hp-sim5/pull/70) | Live split/merge, entity lifecycle oracle and coupled topology cycles | #69 |
+| [#71](https://github.com/tobbelobb/hp-sim5/pull/71) | Sphere contacts, tensor bump and single-pass slack differentials | #70 |
 
-Next: relevant optional collision, obstacle bump and cable slack fixtures. Full-machine tests
-cover the app's current registered pipeline, not every optional engine system.
+The implementation checklist now covers the meaningful Hangprinter pipeline and
+the shared optional engine systems. Review and merge the stacked slices in order;
+incorporate review corrections with differential evidence. Full-machine tests use
+the app's production registration, while optional systems have explicit fixture
+registration and remain absent from the app pipeline.
 
 ## Completion gate
 
@@ -195,3 +208,11 @@ rigid poses/velocities, cable lengths/forces/friction, spool/motor/encoder and
 effector/extruder state, including representative complete machines. Remaining
 differences are browser-only or documented intentional divergences. Existing JS
 and Python tests pass. Keep this checklist open until the whole gate is met.
+
+Implementation audit through #71: same authored HP3/HP4/pinhole inputs, native ECS
+construction, exact production system order, shared engine/command state,
+representative 200-step machines, coupled topology/friction/motor/constraint
+scenarios, and primary native Rerun/CLI are covered. Final validation is 344
+simulator Python tests, 287 autocal Python tests, and 650 JS tests (one skipped);
+JS production is unchanged by #71. The stack remains open for review and merge,
+so this audit does not claim integration into main or approval of the changes.

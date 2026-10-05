@@ -66,6 +66,10 @@ relationships. `entityResources` seeds those maps from `{kind, values}` definiti
 at initialization or before a timestep (`kind` selects JS Map or object); Python
 uses dictionaries. Optional torque-tuning fields serialize absent/None as null. The solver reads the resource `dt`; fixtures set it explicitly
 without changing the reference World scheduling API.
+The `ball_obstacle_contacts` resource is decoded/encoded as contact records:
+entity IDs use fixture names, direction uses XYZ arrays and friction/raw-hit
+metadata remains exact. Contacts are captured through `snapshotResources` before
+and after each step, including clearing and post-PBD bump.
 Optional `tolerance.fields` selects qualified component fields by suffix, ignoring
 array indices, and overrides their absolute/relative bounds. Unselected fields
 retain the default bound. Structural/type checks and nonfinite rejection still
@@ -158,6 +162,25 @@ Current coverage:
   PBD/encoder integration, nonzero force and endpoint motion, explicit flag
   overrides, pause and error. Two cycle cases run 200 repeatable steps at unchanged
   atol `1e-10` / rtol `1e-9`; guards reject lifecycle and relationship drift.
+- `collision_ball_pairs` and `collision_obstacles`: ordered core sphere pairs,
+  unequal/zero/negative masses, inverse-mass cutoff, missing components,
+  touching/coincident/separated centers, ordered obstacle pushes, owned contact
+  normals and contact clearing. Reversing the primary query store changes the
+  coupled three-ball result and remains differential.
+- `collision_bump`: rotated full-tensor reactions on both bodies, scalar/zero
+  inertia, zero/negative mass, surface velocity, friction overrides/defaults,
+  tiny-spin/tangent gates, zero normals, raw-hit filtering and pause.
+- `collision_pipeline`: prediction, contacts, PBD velocity reconstruction, bump
+  and encoder order. Removing bump changes velocity/angular state while retaining
+  the current corrected pose; it does not insert an extra prediction.
+- `slack_pinhole` and `slack_slide`: single ordered 3D passes, literal attachment
+  gate (including the distinct hybrid-attachment policy), pinhole ratio
+  equalization, loose transfer in both directions, chain order, zero gates and
+  rest conservation. The 2D dt-scaled slack system is not substituted.
+- `slack_pinhole_pipeline` and `slack_slide_pipeline`: slack before XPBD changes
+  the off-center endpoint pose and force. Activation guards compare against the
+  same production systems with the optional pass removed. All eight optional
+  fixtures also run 200 repeatable steps at atol `1e-10` / rtol `1e-9`.
 
 - `stepper_state`: constructor defaults and state mutations; motor integration
   remains outside this fixture.
@@ -189,6 +212,6 @@ four cable-solver, three over-correction, three position-motor and five
 torque-motor fixtures run for 200 steps;
 both engines must reproduce their own snapshots exactly on a second run.
 
-These fixtures establish the covered authored-machine pipeline and dynamic
-topology. Optional collision/bump/slack fixtures remain on the checklist
-in `PYTHON_3D_PARITY.md`.
+These fixtures establish the covered authored-machine pipeline, dynamic topology
+and shared optional constraints. Remaining presentation/API/scope differences
+and the review stack are explicit in `PYTHON_3D_PARITY.md`.

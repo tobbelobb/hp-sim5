@@ -1,0 +1,109 @@
+{
+  "entities": [
+    {
+      "name": "ball",
+      "components": {
+        "PositionComponent": [0.7, 0.3, 0.2],
+        "RadiusComponent": [0.4],
+        "BallTagComponent": [],
+        "MassComponent": [1.5],
+        "PrevFinalPosComponent": [0.7, 0.3, 0.2],
+        "OrientationComponent": [0.1, -0.2, 0.3, 0.9273618495495703],
+        "PrevFinalOrientationComponent": [0.1, -0.2, 0.3, 0.9273618495495703],
+        "VelocityComponent": [-0.02, 0.01, 0],
+        "AngularVelocityComponent": [0.1, -0.2, 0.3],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "EncoderComponent": [0, 0, 0, 1]
+      }
+    },
+    {
+      "name": "obstacle",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "RadiusComponent": [0.8],
+        "ObstacleTagComponent": [],
+        "MassComponent": [0],
+        "PrevFinalPosComponent": [0, 0, 0],
+        "OrientationComponent": [0.1, -0.2, 0.3, 0.9273618495495703],
+        "PrevFinalOrientationComponent": [0.1, -0.2, 0.3, 0.9273618495495703],
+        "VelocityComponent": [0, 0, 0],
+        "AngularVelocityComponent": [0.1, -0.2, 0.3],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "EncoderComponent": [0, 0, 0, 1],
+        "ObstaclePushComponent": [0.2],
+        "CoefficientOfFrictionComponent": [0.7]
+      }
+    },
+    {
+      "name": "neighbor",
+      "components": {
+        "PositionComponent": [1.2, 0.5, 0.4],
+        "RadiusComponent": [0.3],
+        "BallTagComponent": [],
+        "MassComponent": [2],
+        "PrevFinalPosComponent": [1.2, 0.5, 0.4],
+        "OrientationComponent": [0.1, -0.2, 0.3, 0.9273618495495703],
+        "PrevFinalOrientationComponent": [0.1, -0.2, 0.3, 0.9273618495495703],
+        "VelocityComponent": [-0.02, 0.01, 0],
+        "AngularVelocityComponent": [0.1, -0.2, 0.3],
+        "MomentOfInertiaComponent": [
+          [
+            [0.2, 0.02, 0.01],
+            [0.02, 0.3, 0.025],
+            [0.01, 0.025, 0.4]
+          ]
+        ],
+        "EncoderComponent": [0, 0, 0, 1]
+      }
+    }
+  ],
+  "systems": ["PrevFinalPosSystem", "PrevFinalOrientationSystem", "MovementSystem", "AngularMovementSystem", "PBDBallBallCollisions", "PBDBallObstacleCollisions", "PBDVelocityUpdateSystem", "PBDAngularVelocityUpdateSystem", "BallObstacleBumpSystem", "EncoderUpdateSystem"],
+  "resources": {
+    "dt": 0.002,
+    "enableLayering": true
+  },
+  "steps": [
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.004
+    },
+    {
+      "dt": 0
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": true
+        }
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": false
+        }
+      }
+    }
+  ],
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "snapshotResources": ["ball_obstacle_contacts"]
+}

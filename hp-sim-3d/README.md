@@ -30,7 +30,7 @@ PY
 It registers the meaningful simulation systems in the JS app's order. Optional
 `recording=` accepts a Rerun recording stream. See the
 [Python parity checklist](../PYTHON_3D_PARITY.md) for covered machines, numerical
-bounds and remaining optional collision/slack work. For primary native Rerun recording,
+bounds, fixture coverage and explicit differences. For primary native Rerun recording,
 use `PYTHONPATH=src/python .venv/bin/python -m cable_joints_3d PATH --steps 200`;
 the [recording guide](FLIGHT_RECORDER.md) describes saved files, commands and live sinks.
 
