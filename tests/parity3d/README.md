@@ -12,6 +12,11 @@ native Python implementation, and compares initial state and every timestep.
 components, invoke systems and serialize fields. Relationships use fixture
 names, quaternions use XYZW order and compare up to sign. Query and solver order
 remain observable. Arrays are copied when snapshots are taken.
+Every live entity is captured, including newly allocated joints with stable `@id`
+names. Removed entities disappear from snapshots. `snapshotAllocator: true` adds
+the next entity ID and live entity insertion order. Per-step `topology: ["split",
+"merge"]` invokes the production operations in the supplied order before World
+update; topology integration fixtures use the actual attachment system instead.
 Per-path knot-map keys also use fixture entity names.
 Machine-keyed vector/source maps retain authored machine names. `effectorRotations`
 probes the production frame estimator; `motorDiagnostics` reads production reports
@@ -140,6 +145,19 @@ Current coverage:
   world/member-local orientation before knot phase projection.
 - `cable_hybrid_transitions`: unwrapping/rewrapping at both ends, hysteresis,
   degenerate attachments, zero radius, flags and pause/transition-step counting.
+- `topology_split_abort`, `topology_split_multiple`, and `topology_split_reverse`:
+  abort without allocation, machine filtering, ordered multi-guide splitting and
+  reuse of the kept span's live attachment arrays.
+- `topology_split_layered`, `topology_split_rigid_member`, and `topology_rolling_*`:
+  layered hybrid/rolling endpoints, raw new-guide radius, tilted live member
+  planes with stale cached poses, tangent rebuilding and stored-length shifts.
+- `topology_merge` and `topology_merge_cascade`: removal from all live ECS state,
+  shortened-list traversal, cascading negative wraps and invariant total rest.
+- `topology_attachment_cycle`, `topology_solver_cycle`, and `topology_feature_flags`:
+  repeated allocation/removal, merge-before-split order, cache/friction/solver/
+  PBD/encoder integration, nonzero force and endpoint motion, explicit flag
+  overrides, pause and error. Two cycle cases run 200 repeatable steps at unchanged
+  atol `1e-10` / rtol `1e-9`; guards reject lifecycle and relationship drift.
 
 - `stepper_state`: constructor defaults and state mutations; motor integration
   remains outside this fixture.
@@ -171,6 +189,6 @@ four cable-solver, three over-correction, three position-motor and five
 torque-motor fixtures run for 200 steps;
 both engines must reproduce their own snapshots exactly on a second run.
 
-These fixtures establish the covered authored-machine pipeline. Dynamic split/merge,
-optional collision fixtures remain on the checklist
+These fixtures establish the covered authored-machine pipeline and dynamic
+topology. Optional collision/bump/slack fixtures remain on the checklist
 in `PYTHON_3D_PARITY.md`.

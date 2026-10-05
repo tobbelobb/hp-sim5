@@ -1,0 +1,139 @@
+{
+  "entities": [
+    {
+      "name": "body",
+      "components": {
+        "PositionComponent": [0.4, -0.2, 1.3],
+        "OrientationComponent": [0.10407642978888754, 0.20815285957777507, 0.3122292893666626, 0.9210609940028851],
+        "CableLinkComponent": [
+          0.4,
+          -0.2,
+          1.3,
+          null,
+          [0, 0, 1],
+          null
+        ],
+        "MachineTagComponent": ["1"],
+        "RigidBodyComponent": [
+          ["guide"]
+        ]
+      }
+    },
+    {
+      "name": "a",
+      "components": {
+        "PositionComponent": [-2.473482063289471, -2.673968208768602, 2.5738061602755584],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [
+          -2.473482063289471,
+          -2.673968208768602,
+          2.5738061602755584,
+          null,
+          [0, 0, 1],
+          null
+        ],
+        "MachineTagComponent": ["1"]
+      }
+    },
+    {
+      "name": "b",
+      "components": {
+        "PositionComponent": [3.273482063289471, 2.2739682087686015, 0.026193839724441892],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [
+          3.273482063289471,
+          2.2739682087686015,
+          0.026193839724441892,
+          null,
+          [0, 0, 1],
+          null
+        ],
+        "MachineTagComponent": ["1"]
+      }
+    },
+    {
+      "name": "guide",
+      "components": {
+        "PositionComponent": [99, 99, 99],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [
+          0.4,
+          -0.2,
+          1.3,
+          null,
+          null,
+          [0, 0, 1]
+        ],
+        "MachineTagComponent": ["1"],
+        "RadiusComponent": [1.5],
+        "RigidBodyMemberComponent": [
+          "body",
+          [0, 0, 0],
+          [0, 0, 0, 1],
+          0.1
+        ]
+      }
+    },
+    {
+      "name": "joint",
+      "components": {
+        "CableJointComponent": [
+          "a",
+          "b",
+          8,
+          [-2.473482063289471, -2.673968208768602, 2.5738061602755584],
+          [3.273482063289471, 2.2739682087686015, 0.026193839724441892],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "path",
+      "components": {
+        "MachineTagComponent": ["1"],
+        "CablePathComponent": [
+          ["joint"],
+          ["attachment", "attachment"],
+          [false, false],
+          10000,
+          null,
+          0,
+          0,
+          2
+        ]
+      }
+    }
+  ],
+  "systems": [],
+  "steps": [
+    {
+      "dt": 0.002,
+      "topology": ["split"]
+    },
+    {
+      "dt": 0.002,
+      "topology": ["split"]
+    }
+  ],
+  "resources": {
+    "enableLayering": true,
+    "dt": 0.002
+  },
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "snapshotAllocator": true,
+  "queries": [
+    ["CableJointComponent"],
+    ["CablePathComponent"],
+    ["MachineTagComponent"]
+  ],
+  "attachments": [
+    {
+      "entity": "guide",
+      "localPoint": [0, 0, 0],
+      "counterpart": "a"
+    }
+  ]
+}

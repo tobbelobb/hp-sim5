@@ -1,0 +1,150 @@
+{
+  "entities": [
+    {
+      "name": "a",
+      "components": {
+        "PositionComponent": [-4, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [
+          -4,
+          0,
+          0,
+          null,
+          [0, 0, 1],
+          null
+        ],
+        "MachineTagComponent": ["1"]
+      }
+    },
+    {
+      "name": "b",
+      "components": {
+        "PositionComponent": [4, 0, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [
+          4,
+          0,
+          0,
+          null,
+          [0, 0, 1],
+          null
+        ],
+        "MachineTagComponent": ["1"]
+      }
+    },
+    {
+      "name": "left",
+      "components": {
+        "PositionComponent": [-2, -0.51, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [
+          -2,
+          -0.51,
+          0,
+          null,
+          [0, 0, 1],
+          null
+        ],
+        "MachineTagComponent": ["1"],
+        "RadiusComponent": [0.5]
+      }
+    },
+    {
+      "name": "right",
+      "components": {
+        "PositionComponent": [2, 0.51, 0],
+        "OrientationComponent": [0, 0, 0, 1],
+        "CableLinkComponent": [
+          2,
+          0.51,
+          0,
+          null,
+          [0, 0, 1],
+          null
+        ],
+        "MachineTagComponent": ["1"],
+        "RadiusComponent": [0.5]
+      }
+    },
+    {
+      "name": "joint",
+      "components": {
+        "CableJointComponent": [
+          "a",
+          "left",
+          2.0025234081028866,
+          [-4, 0, 0],
+          [-1.9975015917311245, -0.010006242082841565, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "middle",
+      "components": {
+        "CableJointComponent": [
+          "left",
+          "right",
+          4.005046816205773,
+          [-2.0024984082688753, -0.010006242082841565, 0],
+          [2.0024984082688757, 0.01000624208284151, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "last",
+      "components": {
+        "CableJointComponent": [
+          "right",
+          "b",
+          2.0025234081028866,
+          [1.9975015917311243, 0.010006242082841565, 0],
+          [4, 0, 0],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "path",
+      "components": {
+        "MachineTagComponent": ["1"],
+        "CablePathComponent": [
+          ["joint", "middle", "last"],
+          ["attachment", "rolling", "rolling", "attachment"],
+          [false, true, false, true],
+          10000,
+          [0, -0.01, -0.01, 0],
+          0,
+          0,
+          2
+        ]
+      }
+    }
+  ],
+  "systems": [],
+  "steps": [
+    {
+      "dt": 0.002,
+      "topology": ["merge"]
+    },
+    {
+      "dt": 0.002,
+      "topology": ["merge"]
+    }
+  ],
+  "resources": {
+    "enableLayering": true,
+    "dt": 0.002
+  },
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "snapshotAllocator": true,
+  "queries": [
+    ["CableJointComponent"],
+    ["CablePathComponent"],
+    ["MachineTagComponent"]
+  ]
+}

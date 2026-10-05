@@ -176,9 +176,18 @@ export function runFixture(fixture) {
     return structuredClone(value);
   }
   function snapshot(step) {
+    for (const id of world.entities.keys()) {
+      if (!(id in names)) {
+        const name = `@${id}`;
+        if (name in ids) throw new Error(`Dynamic entity name collision ${name}`);
+        names[id] = name;
+        ids[name] = id;
+      }
+    }
     const motorDiagnostics = fixture.motorDiagnostics?.map(machine => getMachineMotorDiagnostics(world, machine));
     const entities = {};
-    for (const [name, id] of Object.entries(ids)) {
+    for (const id of world.entities.keys()) {
+      const name = names[id];
       entities[name] = {};
       for (const [typeName, fields] of Object.entries(contract)) {
         const component = world.getComponent(id, components[typeName]);
@@ -201,6 +210,9 @@ export function runFixture(fixture) {
         internalToBody: Boolean(endpoint.internalToBody) };
     });
     const state = { step, entities, queries, attachments };
+    if (fixture.snapshotAllocator) state.allocator = {
+      nextEntityId: world.nextEntityId, entityOrder: [...world.entities.keys()].map(id => names[id]),
+    };
     if (fixture.flightSnapshot) {
       const recorded = captureFlightRecorderSnapshot(world);
       state.flightSnapshot = {
@@ -245,6 +257,10 @@ export function runFixture(fixture) {
     for (const [entity, type] of step.removeComponents ?? []) world.removeComponent(ids[entity], components[type]);
     for (const machine of step.resetMotorDiagnostics ?? []) resetMachineMotorDiagnostics(world, machine);
     commandActions(step.commandActions);
+    for (const operation of step.topology ?? []) {
+      if (!['split', 'merge'].includes(operation)) throw new Error(`Unknown topology operation ${operation}`);
+      cable[operation === 'split' ? '_splitJoints' : '_mergeJoints'](world);
+    }
     world.update(step.dt);
     snapshots.push(snapshot(index + 1));
   }
