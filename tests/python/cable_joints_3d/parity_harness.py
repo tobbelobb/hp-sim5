@@ -19,6 +19,9 @@ from cable_joints_3d.cable_attachment_cache_system import CableAttachmentCacheSy
 from cable_joints_3d.cable_friction_system import CableFrictionSystem
 from cable_joints_3d.cable_attachment_update_system import CableAttachmentUpdateSystem
 from cable_joints_3d.cable_layering import cable_stored_length_after_rotation
+from cable_joints_3d.stepper_motor import StepperMotorComponent
+from cable_joints_3d.pbd_cable_constraint_solver import PBDCableConstraintSolver
+from cable_joints_3d.pbd_resolve_cable_over_corrections import PBDResolveCableOverCorrections
 
 ROOT = Path(__file__).resolve().parents[3]
 CONTRACT = json.loads((ROOT / 'tests/parity3d/contract.json').read_text())
@@ -34,6 +37,7 @@ def run_python(fixture):
     names = {value: key for key, value in ids.items()}
     components = {name: getattr(ecs, name) for name in CONTRACT if hasattr(ecs, name)}
     components['SpoolStateComponent'] = SpoolStateComponent
+    components['StepperMotorComponent'] = StepperMotorComponent
     components.update({name: getattr(cable, name) for name in CONTRACT if hasattr(cable, name)})
 
     def decode(value, kind):
@@ -90,6 +94,18 @@ def run_python(fixture):
                 value = SimpleNamespace(**value)
             world.set_resource(key, value)
 
+    def mutate(values):
+        for entity, type_name, field, value in values or []:
+            _, py, kind = next(f for f in CONTRACT[type_name] if f[0] == field)
+            component = world.get_component(ids[entity], components[type_name])
+            decoded = decode(value, kind)
+            if kind == 'vector':
+                getattr(component, py)[:] = decoded
+            elif kind == 'quaternion':
+                getattr(component, py).set(decoded)
+            else:
+                setattr(component, py, decoded)
+
     resources(fixture.get('resources'))
     for entity in fixture['entities']:
         for name, args in entity['components'].items():
@@ -104,10 +120,12 @@ def run_python(fixture):
         assert len(created) == len(definition['names']), 'Unexpected number of split paths'
         for name, entity in zip(definition['names'], created):
             ids[name], names[entity] = entity, name
+    mutate(fixture.get('initialSet'))
     for name in fixture.get('initializeRigidBodies', []):
         rigid.initialize_rigid_body_sync_state(world, ids[name])
     systems = {'CableAttachmentCacheSystem': CableAttachmentCacheSystem, 'CableFrictionSystem': CableFrictionSystem,
-               'CableAttachmentUpdateSystem': CableAttachmentUpdateSystem}
+               'CableAttachmentUpdateSystem': CableAttachmentUpdateSystem, 'PBDCableConstraintSolver': PBDCableConstraintSolver,
+               'PBDResolveCableOverCorrections': PBDResolveCableOverCorrections}
     for definition in fixture['systems']:
         name = definition if isinstance(definition, str) else definition['name']
         args = [] if isinstance(definition, str) else definition.get('args', [])
@@ -162,6 +180,11 @@ def run_python(fixture):
         state = {'step': step, 'entities': entities, 'queries': queries, 'attachments': attachments}
         if 'snapshotResources' in fixture:
             state['resources'] = {key: world.get_resource(key) for key in fixture['snapshotResources']}
+        if 'snapshotEntityMaps' in fixture:
+            state['entityMaps'] = {}
+            for key in fixture['snapshotEntityMaps']:
+                value = world.get_resource(key)
+                state['entityMaps'][key] = None if value is None else {names[entity]: number for entity, number in value.items()}
         if 'cableRotations' in fixture:
             state['cableRotations'] = [cable_stored_length_after_rotation(
                 world, world.get_component(ids[p['path']], cable.CablePathComponent),
@@ -171,16 +194,7 @@ def run_python(fixture):
     snapshots = [snapshot(0)]
     for index, step in enumerate(fixture['steps'], 1):
         resources(step.get('resources'))
-        for entity, type_name, field, value in step.get('set', []):
-            _, py, kind = next(f for f in CONTRACT[type_name] if f[0] == field)
-            component = world.get_component(ids[entity], components[type_name])
-            decoded = decode(value, kind)
-            if kind == 'vector':
-                getattr(component, py)[:] = decoded
-            elif kind == 'quaternion':
-                getattr(component, py).set(decoded)
-            else:
-                setattr(component, py, decoded)
+        mutate(step.get('set'))
         world.update(step['dt'])
         snapshots.append(snapshot(index))
     result = {'schema': 1, 'snapshots': snapshots}

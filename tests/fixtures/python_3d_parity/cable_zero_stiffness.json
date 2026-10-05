@@ -1,0 +1,118 @@
+{
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "entities": [
+    {
+      "name": "undamped_a",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "PrevFinalPosComponent": [0, 0, 0],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "undamped_b",
+      "components": {
+        "PositionComponent": [2, 0, 0],
+        "PrevFinalPosComponent": [1.8, 0, 0],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "undamped_joint",
+      "components": {
+        "CableJointComponent": ["undamped_a", "undamped_b", 1, [0, 0, 0], [2, 0, 0], "world"]
+      }
+    },
+    {
+      "name": "undamped",
+      "components": {
+        "CablePathComponent": [["undamped_joint"], ["attachment", "attachment"], [false, false], 0, null, 0, 0, 2]
+      }
+    },
+    {
+      "name": "damped_a",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "PrevFinalPosComponent": [0, 0, 0],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "damped_b",
+      "components": {
+        "PositionComponent": [2, 0, 0],
+        "PrevFinalPosComponent": [1.8, 0, 0],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "damped_joint",
+      "components": {
+        "CableJointComponent": ["damped_a", "damped_b", 1, [0, 0, 0], [2, 0, 0], "world"]
+      }
+    },
+    {
+      "name": "damped",
+      "components": {
+        "CablePathComponent": [["damped_joint"], ["attachment", "attachment"], [false, false], 0, null, 0, 4, 2]
+      }
+    },
+    {
+      "name": "near_zero_a",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "PrevFinalPosComponent": [0, 0, 0],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "near_zero_b",
+      "components": {
+        "PositionComponent": [2, 0, 0],
+        "PrevFinalPosComponent": [1.8, 0, 0],
+        "MassComponent": [1]
+      }
+    },
+    {
+      "name": "near_zero_joint",
+      "components": {
+        "CableJointComponent": ["near_zero_a", "near_zero_b", 1, [0, 0, 0], [2, 0, 0], "world"]
+      }
+    },
+    {
+      "name": "near_zero",
+      "components": {
+        "CablePathComponent": [["near_zero_joint"], ["attachment", "attachment"], [false, false], 1e-12, null, 0, 4, 2]
+      }
+    }
+  ],
+  "systems": ["PBDCableConstraintSolver"],
+  "steps": [
+    {
+      "dt": 0.002,
+      "resources": {
+        "dt": 0.002
+      }
+    },
+    {
+      "dt": 0.005,
+      "resources": {
+        "dt": 0.005
+      }
+    },
+    {
+      "dt": 0.001,
+      "resources": {
+        "dt": 0.001
+      }
+    }
+  ],
+  "snapshotEntityMaps": ["torqueModeCableLoadTorques", "torqueModeCableLoadStiffnesses", "torqueModeCableLoadDampings"],
+  "resources": {
+    "dt": 0.002
+  },
+  "snapshotResources": ["dt"]
+}

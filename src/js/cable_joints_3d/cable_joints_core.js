@@ -1376,6 +1376,14 @@ function _isSpinBackdrivableThroughPinhole(linkType) {
 }
 
 export function calculateAttachmentPoints(world, joint, path, i, radiusA, radiusB) {
+  // Over-correction calls this without radii. Rebuild the same layered tangents
+  // as attachment updates instead of silently comparing endpoint centers.
+  if (radiusA === undefined) {
+    radiusA = _effectiveRollingRadius(world, path, i, world.getComponent(joint.entityA, RadiusComponent)?.radius).radius;
+  }
+  if (radiusB === undefined) {
+    radiusB = _effectiveRollingRadius(world, path, i + 1, world.getComponent(joint.entityB, RadiusComponent)?.radius).radius;
+  }
   const A = i;
   const B = i + 1;
 
@@ -3271,10 +3279,11 @@ export class PBDCableConstraintSolver {
       const spinDispA = solveGradSpinA * spinAngleDispA;
       const spinDispB = solveGradSpinB * spinAngleDispB;
 
-      const alphaTilde = (Number.isFinite(dt) && dt > EPSILON)
+      const zeroStiffness = compliance === Infinity;
+      const alphaTilde = (!zeroStiffness && Number.isFinite(dt) && dt > EPSILON)
         ? (compliance ?? 0.0) / (dt * dt)
         : 0.0;
-      const gamma = (Number.isFinite(dt) && dt > EPSILON)
+      const gamma = (!zeroStiffness && Number.isFinite(dt) && dt > EPSILON)
         ? Math.max(0.0, (compliance ?? 0.0) * (path?.damping ?? 0.0) / dt)
         : 0.0;
       const jDx = translationalDispA + rotationalDispA + spinDispA + translationalDispB + rotationalDispB + spinDispB;
@@ -3295,6 +3304,14 @@ export class PBDCableConstraintSolver {
 
       const solveLambda = (solveMemberInvInertiaA, solveMemberInvInertiaB) => {
         const mechDenom = mechanicalDenom(solveMemberInvInertiaA, solveMemberInvInertiaB);
+        if (zeroStiffness) {
+          // Divide the existing damped equation by compliance before taking
+          // its infinite-compliance limit; avoid Infinity * 0 and Infinity / Infinity.
+          const dampingStep = Number.isFinite(dt) && dt > EPSILON
+            ? Math.max(0.0, path?.damping ?? 0.0) * dt
+            : 0.0;
+          return dampingStep * jDx / (1.0 + dampingStep * mechDenom);
+        }
         const denom = ((1.0 + gamma) * mechDenom) + alphaTilde;
         if (denom <= EPSILON) {
           return null;

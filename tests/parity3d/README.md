@@ -23,7 +23,7 @@ PYTHONPATH=src/python:tests/python/cable_joints_3d .venv/bin/python -m parity_ha
 
 Fixtures specify `entities`, `systems` in execution order, `steps` with `dt`, and
 explicit numeric `tolerance` (`atol`, `rtol`). Optional `resources`, `set` mutations
-before each step, deferred `addComponents`, `queries`, `initializeRigidBodies`
+before each step, `initialSet` mutations before rigid initialization, deferred `addComponents`, `queries`, `initializeRigidBodies`
 and `attachments` exercise state transitions and frames. `createPaths` invokes
 production path construction and assigns names to generated paths; `geometry`
 probes production operations listed in `geometry_contract.json`. Cable snapshots
@@ -35,6 +35,9 @@ Nonfinite poses, lengths, forces and other numerical state still fail.
 Systems may be names or `{ "name": "CableAttachmentUpdateSystem", "args": [false] }`
 constructor definitions. `snapshotResources` selects simple resources to record;
 `cableRotations` invokes production stored-length prediction at each snapshot.
+`snapshotEntityMaps` records entity-keyed solver load resources using named
+relationships. The solver reads the resource `dt`; fixtures set it explicitly
+without changing the reference World scheduling API.
 
 Current coverage:
 
@@ -72,10 +75,25 @@ Current coverage:
 - `cable_hybrid_transitions`: unwrapping/rewrapping at both ends, hysteresis,
   degenerate attachments, zero radius, flags and pause/transition-step counting.
 
-Rigid-member, distance, spool, cache, friction-chain and the two moving-attachment
-fixtures run for 200 steps;
+- `stepper_state`: constructor defaults and state mutations; motor integration
+  remains outside this fixture.
+- `cable_solver_bodies`: full tensor reactions, external/internal members, damping,
+  ordered per-path iterations, force resets, independent resource/update dt and pause.
+- `cable_solver_spools`: direct tilted one-axis dynamics, holding release,
+  component/global closed-loop stiffness, torque loads on mobile/static bodies and
+  encoder turns. Static virtual loads also guard per-iteration accumulation.
+- `cable_solver_pinhole` and its stale-inlet variant: upstream/downstream
+  backdriving, rolling/hybrid spools, torque load deferral, force transfer and
+  attachment/cache/friction/solve integration.
+- `cable_zero_stiffness`: zero vs near-zero stiffness, with and without damping.
+- `cable_over_correction` and its member/pinhole variants: actual shared pushes,
+  tensor rotor/host reactions, hybrid-only pinhole coupling, layered tangent
+  rebuilding, duplicate joints, last-path metadata, zero stiffness and pause.
+
+Rigid-member, distance, spool, cache, friction-chain, two moving-attachment
+four cable-solver and three over-correction fixtures run for 200 steps;
 both engines must reproduce their own snapshots exactly on a second run.
 
 These fixtures establish the covered ECS behavior. Authored USDA construction,
-dynamic split/merge, the cable solver/motor pipeline, full machines
+dynamic split/merge, motor integration, full machines
 and richer Rerun recordings remain on the checklist in `PYTHON_3D_PARITY.md`.

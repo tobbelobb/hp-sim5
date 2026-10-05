@@ -140,6 +140,12 @@ def _calculate_attachments(path, first, second):
     return a, b
 
 
+def calculate_attachment_points(world, joint, path, index):
+    first = _endpoint_frame(world, path, index, joint.entity_a, joint.entity_b, joint.attachment_point_a_world)
+    second = _endpoint_frame(world, path, index + 1, joint.entity_b, joint.entity_a, joint.attachment_point_b_world)
+    return _calculate_attachments(path, first, second)
+
+
 def _stored_delta(world, state, attachment, half_width):
     if not state.rolling or state.radius is None or any(p is None for p in (state.position, state.previous_position, attachment)):
         return 0.
