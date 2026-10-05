@@ -66,6 +66,10 @@ Together these steps let the loop calibrate from scratch with minimal operator i
 5. **Collect and merge**
    - Calls the node collector with the chosen sweep and merges it back into the dataset.
 
+Fit scores measure fit quality, not anchor accuracy.
+The calibration-log regression tool reports within-run score/ground-truth
+disagreements and selection regret separately from its reference-log comparison.
+
 ## Pointwise cost mode (default)
 
 The pointwise mode compares each measured point against the predicted ellipse (in the squared-length plane). It uses a robust loss with a GNC schedule:

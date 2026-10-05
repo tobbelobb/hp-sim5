@@ -28,6 +28,9 @@ Exit code
     no score/fit direction mismatches
 - 1 otherwise
 
+Within-run ranking/ground-truth disagreements and selection regret are also
+reported as diagnostics, even when generated and reference logs are identical.
+
 Tip: put this file somewhere like tools/regress_autocal.py and run from repo root.
 """
 
@@ -687,6 +690,33 @@ def iteration_effective_rank_score(iteration: Iteration) -> Optional[float]:
     return None
 
 
+def history_ranking_audit(iterations: List[Iteration], spec: DatasetSpec) -> str:
+    """Audit within one run; equal regressions can still select worse geometry."""
+    rows = []
+    for index, iteration in enumerate(iterations, start=1):
+        error = error_to_true(iteration.anchors, iteration.radii, spec.true_anchors, spec.true_radii)
+        rank = iteration_effective_rank_score(iteration)
+        if error is not None and rank is not None and math.isfinite(error[0]) and math.isfinite(rank):
+            rows.append((index, rank, error, iteration_effective_rank_kind(iteration)))
+    if not rows:
+        return "HISTORY_AUDIT: unavailable (missing rank or ground-truth parameters)"
+    if len({row[3] for row in rows}) > 1:
+        return "HISTORY_AUDIT: unavailable (mixed history/raw rank scales)"
+    mismatches = sum(
+        right[0] == left[0] + 1 and (right[1] - left[1]) * (right[2][0] - left[2][0]) < 0
+        for left, right in zip(rows, rows[1:])
+    )
+    selected = min(rows, key=lambda row: row[1])
+    best = min(rows, key=lambda row: row[2][0])
+    return (
+        f"HISTORY_AUDIT: adjacent_rank_true_mismatches={mismatches} "
+        f"score_selected_iter={selected[0]} physical_best_iter={best[0]} "
+        f"selected_anchor_error_sum_mm={fmt(selected[2][1])} "
+        f"selected_radius_error_sum_mm={fmt(selected[2][2] / (2 * math.pi))} "
+        f"selection_regret_mm={fmt(selected[2][0] - best[2][0])} (diagnostic)"
+    )
+
+
 def iteration_effective_rank_kind(iteration: Iteration) -> Optional[str]:
     if iteration.history_rank_score is not None:
         return "history_rank"
@@ -725,6 +755,7 @@ def report_dataset(
 
     # ---- Summary ----
     lines.append(f"\n========= {name} =========")
+    lines.append(history_ranking_audit(gen.iterations, dataset_spec))
     if ref.summary is None:
         lines.append("REF: ERROR: could not parse calibration summary")
         ok = False
@@ -1348,7 +1379,8 @@ def main() -> int:
                 print(
                     f"RUN_TRACKER: final_score={fmt(final_score)} "
                     f"(sum_true_err_total_delta + sum_true_mean_delta, "
-                    f"sum_true_mean_delta={fmt(sum_true_mean_delta)})"
+                    f"sum_true_mean_delta={fmt(sum_true_mean_delta)}) "
+                    f"[diagnostic only; does not establish selected calibration improvement]"
                 )
             else:
                 print("RUN_TRACKER: sum_true_err_total_delta(gen-ref)=N/A (parse missing)")

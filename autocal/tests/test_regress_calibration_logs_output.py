@@ -39,6 +39,36 @@ def _make_dataset_spec(name="demo", machine_type="slideprinter"):
 DEMO_DATASET_SPEC = _make_dataset_spec()
 
 
+def test_history_ranking_audit_detects_worse_geometry_inside_unchanged_run():
+    spec = _make_dataset_spec()
+    worse = [(x + 10.0, y, z) for x, y, z in spec.true_anchors]
+    iterations = [
+        rcl.Iteration(anchors=spec.true_anchors, radii=spec.true_radii, history_rank_score=2.0),
+        rcl.Iteration(anchors=worse, radii=spec.true_radii, history_rank_score=1.0),
+    ]
+    audit = rcl.history_ranking_audit(iterations, spec)
+    assert "adjacent_rank_true_mismatches=1" in audit
+    assert "score_selected_iter=2 physical_best_iter=1" in audit
+    assert "selected_anchor_error_sum_mm=30.000" in audit
+    assert "selected_radius_error_sum_mm=0.000" in audit
+    assert "selection_regret_mm=30.000" in audit
+
+
+def test_history_ranking_audit_does_not_invent_missing_measurements():
+    assert "unavailable" in rcl.history_ranking_audit(
+        [rcl.Iteration(anchors=None, radii=None, rank_score=1.0)], _make_dataset_spec()
+    )
+
+
+def test_history_ranking_audit_does_not_compare_different_rank_scales():
+    spec = _make_dataset_spec()
+    iterations = [
+        rcl.Iteration(anchors=spec.true_anchors, radii=spec.true_radii, history_rank_score=2.0),
+        rcl.Iteration(anchors=spec.true_anchors, radii=spec.true_radii, rank_score=1.0),
+    ]
+    assert "mixed history/raw rank scales" in rcl.history_ranking_audit(iterations, spec)
+
+
 def _parsed(*, fit_score_ui_ref=10.0, fit_score_ui_gen=11.0, rank_ref=2.0, rank_gen=3.0):
     ref_summary = rcl.Params(
         anchors=DEMO_DATASET_SPEC.true_anchors,
