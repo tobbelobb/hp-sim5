@@ -3,6 +3,7 @@ import copy
 import json
 import math
 import numbers
+import re
 from pathlib import Path
 import subprocess
 from types import SimpleNamespace
@@ -38,6 +39,25 @@ def run_python(fixture):
     fixture = copy.deepcopy(fixture)
     world = ecs.World()
     ids = {entity['name']: world.create_entity() for entity in fixture['entities']}
+    for definition in fixture.get('scenes', []):
+        from usd.cable_scene_loader import open_cable_scene
+        from cable_joints_3d.machine_scene import populate_machine_scene
+
+        bake_options = definition.get('bakeOptions', {})
+        stage = open_cable_scene(definition.get('source') or ROOT / definition['path'],
+            derive_all=bake_options.get('deriveAll', False),
+            cable_path_half_width_override=bake_options.get('cablePathHalfWidthOverride'))
+        options = definition.get('options', {})
+        populate_machine_scene(world, stage, definition.get('scenePrimPath', '/World/SlideprinterScene'),
+            namespace=options.get('namespace'), append=options.get('append', False), palette=options.get('palette'),
+            tint_color=options.get('tintColor'), extrusion_color=options.get('extrusionColor'))
+    if 'scenes' in fixture:
+        for entity in world.entities:
+            info = world.get_component(entity, ecs.SceneEntityInfoComponent)
+            tag = world.get_component(entity, ecs.MachineTagComponent)
+            name = f'{tag.id}::{info.name}' if info else f'@{entity}'
+            assert name not in ids, f'Duplicate scene entity name {name}'
+            ids[name] = entity
     names = {value: key for key, value in ids.items()}
     components = {name: getattr(ecs, name) for name in CONTRACT if hasattr(ecs, name)}
     components['SpoolStateComponent'] = SpoolStateComponent
@@ -147,6 +167,11 @@ def run_python(fixture):
         args = [] if isinstance(definition, str) else definition.get('args', [])
         system = systems.get(name)
         world.register_system((system if system is not None else getattr(common_systems, name))(*args))
+    if fixture.get('pipeline'):
+        from cable_joints_3d.machine_simulation import register_machine_systems
+
+        assert not fixture['systems'], 'Pipeline fixtures must use production system registration'
+        register_machine_systems(world)
 
     remote = world.get_system(RemoteSpoolSystem)
     if fixture.get('initializeExtruder'):
@@ -181,6 +206,8 @@ def run_python(fixture):
             return names[value]
         if kind == 'entities':
             return [names[entity] for entity in value]
+        if kind == 'booleans':
+            return [bool(item) for item in value]
         if kind == 'vectors':
             return [encode(point, 'vector') for point in value]
         if kind.endswith('Map') and kind != 'entityMap':
@@ -225,6 +252,9 @@ def run_python(fixture):
                 'internalToBody': bool(endpoint.internal_to_body),
             })
         state = {'step': step, 'entities': entities, 'queries': queries, 'attachments': attachments}
+        if fixture.get('pipeline'):
+            state['systemOrder'] = ['StepperMotorSystem' if isinstance(system, StepperMotorSystem)
+                                    else type(system).__name__ for system in world.systems]
         if 'motorDiagnostics' in fixture:
             state['motorDiagnostics'] = diagnostics
         if fixture.get('commandState'):
@@ -243,7 +273,11 @@ def run_python(fixture):
                     component.machine_effector_centers.get(machine), component.center_sources.get(machine), world)
                 state['effectorRotations'].append({'quaternion': encode(rotation, 'quaternion')})
         if 'snapshotResources' in fixture:
-            state['resources'] = {key: world.get_resource(key) for key in fixture['snapshotResources']}
+            state['resources'] = {key: encode(world.get_resource(key), 'vector') if key in ('gravity', 'defaultPlaneNormal')
+                                  else world.get_resource(key) for key in fixture['snapshotResources']}
+        if 'snapshotMapResources' in fixture:
+            state['mapResources'] = {key: copy.deepcopy(world.get_resource(key) or {})
+                                     for key in fixture['snapshotMapResources']}
         if 'snapshotEntityMaps' in fixture:
             state['entityMaps'] = {}
             for key in fixture['snapshotEntityMaps']:
@@ -267,6 +301,14 @@ def run_python(fixture):
         world.update(step['dt'])
         snapshots.append(snapshot(index))
     result = {'schema': 1, 'snapshots': snapshots}
+    if 'usdBake' in fixture:
+        from usd.cable_scene_loader import bake_cable_stage, open_stage
+
+        definition = fixture['usdBake']
+        options = definition.get('options', {})
+        stage = open_stage(definition.get('source') or ROOT / definition['path'])
+        result['usdBake'] = bake_cable_stage(stage, derive_all=options.get('deriveAll', False),
+            cable_path_half_width_override=options.get('cablePathHalfWidthOverride'))
     if 'geometry' in fixture:
         def plain(value):
             if isinstance(value, np.ndarray):
@@ -295,21 +337,28 @@ def run_js(fixture):
     return json.loads(result.stdout)
 
 
-def assert_equivalent(actual, expected, *, atol, rtol, path='state'):
+def assert_equivalent(actual, expected, *, atol, rtol, fields=None, path='state'):
     """Report a precise state path, rejecting shape differences and nonfinites."""
-    pending = [(actual, expected, path)]
+    fields = fields or {}
+    pending = [(actual, expected, path, atol, rtol)]
     while pending:
-        actual, expected, path = pending.pop()
+        actual, expected, path, atol, rtol = pending.pop()
         if isinstance(expected, dict):
             assert isinstance(actual, dict) and actual.keys() == expected.keys(), f'{path}: keys differ'
-            pending.extend((actual[key], expected[key], f'{path}.{key}') for key in reversed(expected))
+            for key in reversed(expected):
+                child_path = f'{path}.{key}'
+                selection_path = re.sub(r'\[\d+\]', '', child_path)
+                tolerance = next((value for selector, value in fields.items()
+                                  if selection_path.endswith('.' + selector)), {})
+                pending.append((actual[key], expected[key], child_path,
+                                tolerance.get('atol', atol), tolerance.get('rtol', rtol)))
         elif isinstance(expected, list):
             assert isinstance(actual, list) and len(actual) == len(expected), f'{path}: lengths differ'
             if path.endswith(QUATERNION_FIELDS):
                 assert np.isfinite(actual).all() and np.isfinite(expected).all(), f'{path}: nonfinite'
                 if np.dot(actual, expected) < 0:
                     actual = [-v for v in actual]
-            pending.extend((actual[i], expected[i], f'{path}[{i}]') for i in reversed(range(len(expected))))
+            pending.extend((actual[i], expected[i], f'{path}[{i}]', atol, rtol) for i in reversed(range(len(expected))))
         elif isinstance(expected, numbers.Real) and not isinstance(expected, bool):
             assert isinstance(actual, numbers.Real) and not isinstance(actual, bool), f'{path}: numeric type differs'
             assert math.isfinite(actual) and math.isfinite(expected), f'{path}: nonfinite'

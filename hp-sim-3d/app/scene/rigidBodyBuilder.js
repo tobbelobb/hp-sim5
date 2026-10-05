@@ -40,7 +40,8 @@ function applyRigidBodies(world, context, registry) {
     const namespace = context.options.namespace || null;
 
     for (const prim of registry.rigidBodyPrims) {
-        const memberPaths = getRelationship(prim, 'rigidBody:members') || getRelationship(prim, 'rigidGroup:members');
+        const bodyMembers = getRelationship(prim, 'rigidBody:members');
+        const memberPaths = bodyMembers.length > 0 ? bodyMembers : getRelationship(prim, 'rigidGroup:members');
         if (!memberPaths || memberPaths.length === 0) continue;
         const memberEntities = memberPaths
             .map((path) => registry.nameToEntityId.get(scopedKeyFromPath(namespace, context.sceneRootPath, path)))

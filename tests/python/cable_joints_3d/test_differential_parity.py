@@ -28,6 +28,17 @@ def test_comparator_rejects_changed_physics_and_structure():
         assert_equivalent(changed, expected, **fixture['tolerance'])
 
 
+def test_pbd_oracle_recovers_small_rotations_without_changing_its_cutoff():
+    fixture = json.loads((FIXTURES / 'pbd_small_rotations.json').read_text())
+    snapshots = run_js(fixture)['snapshots']
+    omega = lambda name: snapshots[1]['entities'][name]['AngularVelocityComponent']['omega']
+    assert omega('x') == pytest.approx([5e-6, 0, 0], abs=1e-14)
+    assert omega('negative_y') == pytest.approx([0, -5e-6, 0], abs=1e-14)
+    assert omega('opposite_sign') == pytest.approx([0, 0, 5e-6], abs=1e-14)
+    assert omega('below_cutoff') == [0, 0, 0]
+    assert snapshots[2]['entities'] == snapshots[1]['entities']
+
+
 @pytest.mark.parametrize('name', ['cable_attachment_clamp', 'cable_attachment_members', 'cable_hybrid_transitions'])
 def test_reference_fixtures_exercise_the_targeted_behavior(name):
     fixture = json.loads((FIXTURES / f'{name}.json').read_text())

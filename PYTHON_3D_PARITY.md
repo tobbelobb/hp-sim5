@@ -32,16 +32,17 @@ and optional configuration represented by `None` are intentional API divergences
 | Torque motors (`torqueModeSystem.js`) | `torque_mode_system.py`: equivalent for covered integration | Droop, windage/friction/cogging defaults and overrides, signed/implicit cable loads, drive-only host reaction, mode transitions and member-local integration. Update after PBD velocities; five scenarios run 200 steps. |
 | Encoder unwrapping (`commonSystems.js`) | `common_systems.py`: equivalent | `spool_projection.json`, `rigid_members.json`: several turns, fallback axes and parent/reference motion. Position/torque motor and constraint encoder integration is covered. |
 | Missed-step state (`motor-diagnostics.js`) | `motor_diagnostics.py`: equivalent for covered state | Persistent full-turn encoder baselines, current/peak counts, half-step rounding, machine resets, torque transitions and member-local fallback. Diagnostic reads preserve their state updates. |
-| Effector frames/extrusion (`hangprinter_extruder.js`) | `extruder.py`: equivalent for covered state | Authored triangle frames, center/root/tip/cold offsets, numeric machine-key order, degenerate/missing source fallback and live constrained members. Integrated command deposition is covered; USD bindings remain missing. |
-| USDA machine builders (`app/scene/`) | missing | Components and scene semantics above. Reuse `pxr.Usd`, `UsdGeom`, `UsdShade` patterns from Python demo loaders; keep web server imports out of simulation. |
+| Effector frames/extrusion (`hangprinter_extruder.js`) | `extruder.py`: equivalent for covered state | Authored triangle frames, center/root/tip/cold offsets, numeric machine-key order, degenerate/missing source fallback and live constrained members. Authored USD bindings and full-machine command deposition are covered. |
+| USD cable initialization (`usd/cable_scene_baker.js`) | `usd/cable_scene_loader.py`, `usd/value_readers.py`: equivalent for covered baking | Native pxr.Usd stage, reuse tangent/arc/layer helpers; authored/manual/automatic/derive-all policies, layered radii, parent frames and width overrides. Same hp4/hp3/rigid-pinhole files and dedicated policy fixtures compare before ECS construction. |
+| USDA machine builders (`app/scene/`) | `machine_scene.py`: equivalent for covered construction | Native pxr.Usd stage and shared value readers; body/gravity/material/axis state, rigid mass/tensor aggregation, member conversion, distance/cable joints, path initialization, extruder bindings and append/namespaces. Eight authored scenes plus strict double-precision and append fixtures compare initial ECS. |
 | Commands (`remoteSpoolSystem.js`, `hangprinter_runtime.js`) | `remote_spool_system.py`, `machine_runtime.py`: equivalent for covered headless records | One queued record per step, pause/zero-dt, mode/reference updates, machine targeting, playback history/reset, callbacks and extrusion colors. Python deque ownership/API is intentional divergence; worker/backpressure transport is browser-only/not required. |
-| Composition root (`sceneSystems.js`) | missing | Register meaningful systems in JS order, no global substep loop; run full authored machines, especially `hp4_rigid_body.usda`. |
+| Composition root (`sceneSystems.js`, `simulationSystems.js`) | `machine_simulation.py`: equivalent for the registered headless pipeline | Production JS and Python registration, exact 19-system order; initial extruder update, no global substep loop. HP3, HP4, rigid pinhole and double-authored minimal machines run 200 repeatable steps; HP4 commands exercise modes, extrusion, diagnostics, pause and distinct update/resource dt. |
 | Snapshot / Rerun (`flightRecorderSnapshot.js`, `FLIGHT_RECORDER.md`) | `rerun_system.py`: partial | Preserve PR #61 color, identity, static clearing and pause fixes. Add authoritative time/step, member hierarchy, cables, forces and lengths; reuse recorder contract where practical. |
 | Three.js renderer, DOM/pointer/UI, upload controllers, workers | browser-only/not required | Do not port. Render-only slack/wrap geometry may be reused for Rerun presentation. |
 
 ## Differential evidence
 
-Fifty-one shared JSON fixtures under `tests/fixtures/python_3d_parity/` execute
+Seventy-four shared JSON fixtures under `tests/fixtures/python_3d_parity/` execute
 production JS in Node (`tests/parity3d/oracle.mjs`) and the native Python engine.
 Adapters construct/serialize state; they contain no physics oracle formulas.
 Snapshots compare initial state and every timestep, including named relationships,
@@ -49,7 +50,7 @@ query order, poses/velocities, attachments, cable lengths/forces, spool/motor/en
 state, effector frames, command playback/callbacks and entity-keyed torque loads.
 Structural fields compare exactly; quaternions
 compare up to sign. Nonfinite physics state fails. Guard checks ensure targeted
-constraints, transitions and reactions activate. Twenty-eight scenarios run 200 steps
+constraints, transitions and reactions activate. Thirty-two scenarios run 200 steps
 and require exact repeatability within each engine; a further stiff-motor probe
 runs 200 steps at 20 microseconds. See `tests/parity3d/README.md` for fixture coverage.
 
@@ -58,6 +59,34 @@ around `1e6` use absolute `1e-8`, relative `1e-12`. The commanded cable case use
 the authored 0.5 Nm motor scale. Synthetic 100 Nm stiffness at millisecond steps
 produces violent motion and amplifies roundoff; the stress case uses 20 microsecond
 steps. Neither engine receives hidden substeps, speed clamps or relaxed tolerances.
+Native USD honors authored float32 types while JS's parser retains numeric literals
+as doubles. Initial authored-scene comparisons use absolute `5e-10`, relative `6e-8`
+to cover float32 input quantization and aggregate-center subtraction. A guard
+demonstrates the source rounding and rejects a changed member frame. The authored
+double-precision scene and native baking retain `1e-10`/`1e-9`.
+
+Full authored-machine runs use field-specific absolute bounds, with relative
+`1e-9` on those fields. Unlisted parameters retain the initial float32 input bound;
+categorical fields, relationships, query order and system order remain exact.
+Only extrusion positions receive the length bound; deposited lengths and command
+records retain the default comparison.
+
+| Dynamic field | Absolute bound |
+| --- | --- |
+| Positions, attachments, geometric/rest/stored lengths, effector points | `1e-8` m |
+| Quaternions and transported axes | `3e-7` per component |
+| Linear velocity | `1e-6` m/s |
+| Angular velocity | `2e-5` rad/s |
+| Encoder angle | `5e-7` rad |
+| Cable force vectors/magnitudes | `2e-5` N |
+
+The 200-step original-file comparisons cover HP3, HP4 and rigid pinhole machines.
+Existing numerical cutoffs amplify small roundoff differences near rest, even
+with identical double-authored inputs. A separate 20-step comparison promotes
+the shared fixture's USD types to doubles and retains `1e-10`/`1e-9` for every
+engine field. Production loaders never rewrite authored numeric types. Guards
+reject changed frames, velocities, forces and deposited lengths rather than
+widening a global tolerance.
 
 ## Architectural checks
 
@@ -103,6 +132,23 @@ Each is isolated in its own commit, with JS and differential regression evidence
   positions remained stale. Extruder source/average/frame reads now use the existing
   live-world helper. Authored and fallback regressions require the final body center
   and preserve the distinct rotated/unrotated offset rules; no extra sync is added.
+- Authored cube USD: a three-value Euler rotation was declared `quatf`, which USD
+  rejected. Its declaration is now `double3`, preserving values and the complete JS
+  construction snapshot. Native USD parsing is covered by a regression.
+- Authored zero stiffness: the JS scene builder's truthy fallback replaced zero
+  with infinity. Both builders now retain zero. A production-loader regression
+  failed before the isolated JS correction and passes after it.
+- Rigid-group relationship fallback: an empty JS array hid the supported legacy
+  member spelling and produced no assembly. The fallback now checks array length;
+  a loader regression and a strict cross-language fixture require three members.
+- Small PBD rotations: `acos(w)` returned zero when the quaternion scalar rounded
+  to one, discarding a representable `1e-8` rad rotation. Both engines now recover
+  the angle with `atan2(norm(vector), w)`. JS and differential regressions require
+  the expected angular velocity while retaining world frames, quaternion sign
+  handling and the existing small-angle/time cutoffs. Python follows the JS scalar
+  operation order before vector multiplication. The deterministic flipper demo's
+  contact trajectory changes its stable score from 10 to 18; its regression records
+  the corrected result, with the pre-correction checkout confirming the old score.
 
 ## Reviewable slices and next dependencies
 
@@ -113,11 +159,12 @@ Each is isolated in its own commit, with JS and differential regression evidence
 | [#64](https://github.com/tobbelobb/hp-sim5/pull/64) | Signed winding, attachments/clamps, hybrid transitions | #63 |
 | [#65](https://github.com/tobbelobb/hp-sim5/pull/65) | Cable solving, load telemetry and shared over-correction | #64 |
 | [#66](https://github.com/tobbelobb/hp-sim5/pull/66) | Position/torque integration and body reactions | #65 |
-| Machine runtime follow-up | Commands, effector/extrusion state and missed-step diagnostics | #66 |
+| [#67](https://github.com/tobbelobb/hp-sim5/pull/67) | Commands, effector/extrusion state and missed-step diagnostics | #66 |
+| Authored-scene follow-up | Native USD baking, construction, semantic composition and full-machine differentials | #67 |
 
-Next: shared USD construction and the semantic composition root. Add complete authored machines, including
-`hp4_rigid_body.usda`, before claiming completion. Dynamic topology, relevant
-collision fixtures and richer Rerun recording remain open checklist items.
+Next: richer native Rerun recording and a headless recording entry point. Dynamic
+topology and relevant collision fixtures remain open checklist items. Full-machine
+tests cover the app's current registered pipeline, not every optional engine system.
 
 ## Completion gate
 

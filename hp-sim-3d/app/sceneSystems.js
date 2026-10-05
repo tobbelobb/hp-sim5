@@ -1,26 +1,8 @@
 import Vector3 from '../../src/js/cable_joints_3d/vector3.js';
-import { CableAttachmentUpdateSystem, PBDCableConstraintSolver } from '../../src/js/cable_joints_3d/cable_joints_core.js';
-import { PBDResolveCableOverCorrections } from '../../src/js/cable_joints_3d/pbdResolveCableOverCorrections.js';
-import { CableAttachmentCacheSystem } from '../../src/js/cable_joints_3d/cable_attachment_cache_system.js';
-import { CableFrictionSystem } from '../../src/js/cable_joints_3d/cable_friction_system.js';
 import { InputSystem, RemoteInputSystem } from './hangprinter_input.js';
 import { ExtruderSystem } from './hangprinter_extruder.js';
-import { RemoteSpoolSystem } from './remoteSpoolSystem.js';
-import { StepperMotorSystem } from './hangprinter_stepper_motor.js';
-import { TorqueModeSystem } from './torqueModeSystem.js';
-import { MissedStepTrackingSystem } from './motor-diagnostics.js';
 import { RenderSystem3D } from '../../src/js/cable_joints_3d/render_system_3d.js';
-import {
-    PrevFinalPosSystem,
-    PrevFinalOrientationSystem,
-    EncoderUpdateSystem,
-    GravitySystem,
-    MovementSystem,
-    AngularMovementSystem,
-    PBDVelocityUpdateSystem,
-    PBDAngularVelocityUpdateSystem,
-    RigidBodySyncSystem,
-} from '../../src/js/cable_joints_3d/commonSystems.js';
+import { registerSimulationSystems } from './simulationSystems.js';
 
 const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
 
@@ -44,27 +26,7 @@ export function registerSceneSystems(world, { canvas, mode = '3d', remote = fals
         world.registerSystem(inputSys);
 
         if (!remote) {
-            world.registerSystem(new PrevFinalPosSystem());
-            world.registerSystem(new PrevFinalOrientationSystem());
-            world.registerSystem(new RemoteSpoolSystem());
-            world.registerSystem(new StepperMotorSystem());
-            world.registerSystem(new GravitySystem());
-            world.registerSystem(new MovementSystem());
-            world.registerSystem(new AngularMovementSystem());
-            world.registerSystem(new RigidBodySyncSystem());
-            world.registerSystem(new CableAttachmentUpdateSystem(false));
-            world.registerSystem(new CableAttachmentCacheSystem());
-            world.registerSystem(new CableFrictionSystem());
-            world.registerSystem(new PBDCableConstraintSolver());
-            world.registerSystem(new PBDResolveCableOverCorrections());
-            world.registerSystem(new PBDVelocityUpdateSystem());
-            world.registerSystem(new PBDAngularVelocityUpdateSystem());
-            world.registerSystem(new TorqueModeSystem());
-            world.registerSystem(new ExtruderSystem());
-            world.registerSystem(new EncoderUpdateSystem());
-            world.registerSystem(new MissedStepTrackingSystem());
-            const flightRecorder = world.getResource('flightRecorder');
-            if (flightRecorder) world.registerSystem(flightRecorder);
+            registerSimulationSystems(world);
         }
 
         const renderSystem = new RenderSystem3D(canvas, {

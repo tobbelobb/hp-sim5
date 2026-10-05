@@ -18,6 +18,10 @@ import * as cable from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import { createCablePaths } from '../../src/js/cable_joints_3d/createCablePaths.js';
 import Vector3 from '../../src/js/cable_joints_3d/vector3.js';
 import Quaternion from '../../src/js/cable_joints_3d/quaternion.js';
+import { bakeCableSceneUsdaSource } from '../../src/js/usd/cable_scene_baker.js';
+import { OpenText } from '../../src/js/usd/stage.js';
+import { parseStage, readMachineSceneSpec, validateMachineSceneSpec, buildEntityPlan, applyEntityPlan } from '../../hp-sim-3d/app/scene/machineScenePipeline.js';
+import { registerSimulationSystems } from '../../hp-sim-3d/app/simulationSystems.js';
 
 const contract = JSON.parse(fs.readFileSync(new URL('./contract.json', import.meta.url)));
 const geometryContract = JSON.parse(fs.readFileSync(new URL('./geometry_contract.json', import.meta.url)));
@@ -32,6 +36,22 @@ export function runFixture(fixture) {
   fixture = structuredClone(fixture);
   const world = new ecs.World();
   const ids = Object.fromEntries(fixture.entities.map(e => [e.name, world.createEntity()]));
+  for (const definition of fixture.scenes ?? []) {
+    const source = definition.source ?? fs.readFileSync(new URL('../../' + definition.path, import.meta.url), 'utf8');
+    const stage = OpenText(bakeCableSceneUsdaSource(source, definition.bakeOptions ?? {}).source);
+    const checked = validateMachineSceneSpec(readMachineSceneSpec(parseStage(stage), definition.scenePrimPath, definition.options));
+    if (!checked.valid) throw new Error(checked.warnings.join('\n'));
+    applyEntityPlan(world, buildEntityPlan(checked, definition.options ?? {}));
+  }
+  if (fixture.scenes) {
+    for (const id of world.entities.keys()) {
+      const info = world.getComponent(id, ecs.SceneEntityInfoComponent);
+      const machine = world.getComponent(id, ecs.MachineTagComponent)?.id;
+      const name = info ? `${machine}::${info.name}` : `@${id}`;
+      if (name in ids) throw new Error(`Duplicate scene entity name ${name}`);
+      ids[name] = id;
+    }
+  }
   const names = Object.fromEntries(Object.entries(ids).map(([name, id]) => [id, name]));
   const decode = (value, kind) => {
     if (value == null) return null;
@@ -115,6 +135,11 @@ export function runFixture(fixture) {
     if (!systems[name]) throw new Error(`Unsupported system ${name}`);
     world.registerSystem(new systems[name](...args));
   }
+  if (fixture.pipeline) {
+    if (fixture.systems.length) throw new Error('Pipeline fixtures must use production system registration');
+    registerSimulationSystems(world);
+    world.systems.find(system => system instanceof ExtruderSystem).update(world, 0);
+  }
   const remote = world.systems.find(system => system instanceof RemoteSpoolSystem);
   if (fixture.initializeExtruder) world.systems.find(system => system instanceof ExtruderSystem).update(world, 0);
   const events = [];
@@ -138,6 +163,7 @@ export function runFixture(fixture) {
     if (value == null) return null;
     if (kind === 'entity') return names[value];
     if (kind === 'entities') return value.map(id => names[id]);
+    if (kind === 'booleans') return value.map(Boolean);
     if (kind === 'vectors') return value.map(point => encode(point, 'vector'));
     if (kind.endsWith('Map') && kind !== 'entityMap') return Object.fromEntries(Object.entries(value).map(
       ([key, item]) => [key, encode(item, kind.slice(0, -3))]));
@@ -174,6 +200,7 @@ export function runFixture(fixture) {
         internalToBody: Boolean(endpoint.internalToBody) };
     });
     const state = { step, entities, queries, attachments };
+    if (fixture.pipeline) state.systemOrder = world.systems.map(system => system.constructor.name);
     if (motorDiagnostics) state.motorDiagnostics = motorDiagnostics;
     if (fixture.commandState) state.commandState = {
       ...structuredClone(remote.getPlaybackState()), queueLength: remote.getQueueLength(),
@@ -187,7 +214,10 @@ export function runFixture(fixture) {
         component.machineEffectorCenters[machine], component.centerSources[machine], world), 'quaternion') };
     });
     if (fixture.snapshotResources) state.resources = Object.fromEntries(fixture.snapshotResources.map(
-      key => [key, world.getResource(key) ?? null]));
+      key => [key, ['gravity', 'defaultPlaneNormal'].includes(key)
+        ? encode(world.getResource(key), 'vector') : world.getResource(key) ?? null]));
+    if (fixture.snapshotMapResources) state.mapResources = Object.fromEntries(fixture.snapshotMapResources.map(
+      key => [key, Object.fromEntries(world.getResource(key) ?? [])]));
     if (fixture.snapshotEntityMaps) state.entityMaps = Object.fromEntries(fixture.snapshotEntityMaps.map(key => {
       const value = world.getResource(key);
       const entries = value instanceof Map ? [...value] : Object.entries(value ?? {});
@@ -209,6 +239,16 @@ export function runFixture(fixture) {
     snapshots.push(snapshot(index + 1));
   }
   const result = { schema: 1, snapshots };
+  if (fixture.usdBake) {
+    const source = fixture.usdBake.source ?? fs.readFileSync(new URL('../../' + fixture.usdBake.path, import.meta.url), 'utf8');
+    const baked = bakeCableSceneUsdaSource(source, fixture.usdBake.options ?? {});
+    result.usdBake = baked.resolvedPaths.map(path => ({ ...path,
+      jointResults: path.jointResults.map(joint => ({ ...joint,
+        ...Object.fromEntries(['world0', 'world1', 'local0', 'local1'].map(key =>
+          [key, encode(joint[key], 'vector')])),
+      })),
+    }));
+  }
   if (fixture.geometry) {
     const plain = value => {
       if (value instanceof Vector3) return [value.x, value.y, value.z];

@@ -552,8 +552,10 @@ export class PBDAngularVelocityUpdateSystem {
       }
 
       const w = Math.max(-1.0, Math.min(1.0, qDelta.w));
-      const angle = 2.0 * Math.acos(w);
-      const sinHalf = Math.sqrt(Math.max(0.0, 1.0 - w * w));
+      // w rounds to one for small, valid rotations. Recover their angle from
+      // the vector part instead of cancelling 1 - w*w.
+      const sinHalf = Math.hypot(qDelta.x, qDelta.y, qDelta.z);
+      const angle = 2.0 * Math.atan2(sinHalf, w);
 
       if (sinHalf <= 1e-12 || angle <= epsilon) {
         angularVelComp.omega.x = 0.0;

@@ -1,0 +1,114 @@
+#usda 1.0
+(
+    timeCodesPerSecond = 500
+)
+def Xform "World" {
+    def PhysicsScene "PhysicsScene" {
+        vector3d physics:gravityDirection = (0, 0, -1)
+        double physics:gravityMagnitude = 0.1
+        def Material "Material" {
+            double physics:staticFriction = 0.2
+            double physics:restitution = 0.4
+            def Shader "Shader" {
+                color3d inputs:diffuseColor = (0.1, 0.2, 0.3)
+            }
+        }
+    }
+    def Xform "Scene" {
+        def Circle "SpoolA" {
+            token[] ecs:tags = ["Spool"]
+            double3 xformOp:translate = (-1, 0, 0)
+            double3 xformOp:rotateXZY = (20, 10, 30)
+            uniform token[] xformOpOrder = ["xformOp:rotateXZY", "xformOp:translate"]
+            double3 spool:axisLocal = (0, 1, 2)
+            double radius = 0.05
+            double physics:mass = -1
+            double3 physics:angularVelocity = (0, 0, 0)
+            matrix3d physics:inertiaTensor = ((0.01, 0, 0), (0, 0.02, 0), (0, 0, 0.03))
+            double stepper:holdingTorque = 0.7
+            double stepper:numPolePairs = 1.5
+            double stepper:dampingCoeff = 0.02
+            double stepper:maxSpeedRad = 70
+            bool cable:linkable = 1
+            rel material:binding = </World/PhysicsScene/Material>
+        }
+        def Circle "Wheel" {
+            token[] ecs:tags = ["Wheel"]
+            double3 xformOp:translate = (0.5, 0, 0.2)
+            double3 xformOp:rotateZYX = (30, 20, 10)
+            double radius = 0.1
+            double height = 0.04
+            double physics:mass = 0.4
+            double3 physics:velocity = (0.01, -0.02, 0.03)
+            double3 physics:angularVelocity = (0.01, 0.02, -0.01)
+            matrix3d physics:inertiaTensor = ((0.02, 0.001, 0), (0.001, 0.03, 0), (0, 0, 0.04))
+            rel material:binding = </World/PhysicsScene/Material>
+        }
+        def Circle "Pinhole" {
+            token[] ecs:tags = ["Eyelet"]
+            double3 xformOp:translate = (1, 1, 0.1)
+            double physics:mass = 0.3
+            double3 physics:velocity = (-0.01, 0.02, 0)
+            double3 physics:angularVelocity = (0, 0, 0)
+            bool cable:linkable = 1
+        }
+        def Circle "Corner" {
+            token[] ecs:tags = ["Attachment"]
+            double3 xformOp:translate = (1, -1, 0)
+            double physics:mass = 0.1
+        }
+        def Xform "Anchor" {
+            token[] ecs:tags = ["Anchor"]
+            double3 xformOp:translate = (2, 1, 0)
+        }
+        def RigidBody "Effector" {
+            rel rigidBody:members = [</World/Scene/Wheel>, </World/Scene/Pinhole>, </World/Scene/Corner>]
+            string rigidBody:renderIndices = "[[0,1,2,0]]"
+        }
+        def DistancePhysicsJoint "Internal" {
+            rel physics:body0 = </World/Scene/Wheel>
+            rel physics:body1 = </World/Scene/Pinhole>
+            double physics:minDistance = 1
+            double physics:maxDistance = 1
+        }
+        def DistancePhysicsJoint "External" {
+            rel physics:body0 = </World/Scene/Pinhole>
+            rel physics:body1 = </World/Scene/Anchor>
+            double physics:minDistance = 1.5
+            double physics:maxDistance = 1.5
+        }
+        def CableJoint "J0" {
+            rel physics:body0 = </World/Scene/SpoolA>
+            rel physics:body1 = </World/Scene/Wheel>
+        }
+        def CableJoint "J1" {
+            rel physics:body0 = </World/Scene/Wheel>
+            rel physics:body1 = </World/Scene/Pinhole>
+        }
+        def CableJoint "J2" {
+            rel physics:body0 = </World/Scene/Pinhole>
+            rel physics:body1 = </World/Scene/Anchor>
+        }
+        def Xform "Path" (apiSchemas = ["CablePathAPI"]) {
+            rel cablePath:joints = [</World/Scene/J0>, </World/Scene/J1>, </World/Scene/J2>]
+            token[] cablePath:linkTypes = ["hybrid", "rolling", "pinhole", "attachment"]
+            bool[] cablePath:clockwise = [1, 0, 0, 0]
+            double[] cablePath:stored = [1, 0, 0, 0]
+            token[] cablePath:storedMode = ["manual", "auto", "manual", "manual"]
+            double cablePath:stiffness = 0
+            double cablePath:damping = 0
+            double cablePath:halfWidth = 0.001
+        }
+        def Xform "Extruder" {
+            token[] ecs:tags = ["Extruder"]
+            double3 xformOp:translate = (0.01, -0.02, 0.03)
+            rel machine:centerSources = [</World/Scene/Wheel>, </World/Scene/Pinhole>, </World/Scene/Corner>]
+            def Xform "Tip" {
+                double3 xformOp:translate = (0, 0, -0.1)
+            }
+            def Xform "ColdEnd" {
+                double3 xformOp:translate = (0, 0, 0.2)
+            }
+        }
+    }
+}
