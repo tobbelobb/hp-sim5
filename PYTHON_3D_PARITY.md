@@ -202,6 +202,12 @@ Each is isolated in its own commit, with JS and differential regression evidence
   initial scene bounds are tightened, rather than compensating for unequal inputs.
   The separate flipper demo's deterministic score changes from 18 to 4. An isolated
   pre-correction checkout confirms 18; repeated corrected runs confirm 4.
+- Scene replacement: a paused HP4-to-HP3 load reused entity IDs while retaining
+  Spool D's torque/stiffness/damping maps, relabeling its previous cable load as
+  the new `CablePathD1`. Production-loader regressions failed in both engines.
+  Replacement now initializes empty entity-load maps; appending preserves the
+  existing maps and their identity. Retained systems, queued commands and paused
+  state remain covered, and scene construction resets the command axis cache.
 
 ## Reviewable slices and next dependencies
 

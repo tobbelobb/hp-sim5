@@ -176,6 +176,9 @@ def populate_machine_scene(world, stage, scene_prim_path='/World/SlideprinterSce
     machine, palette = namespace or 'default', palette or {}
     if not append:
         world.clear()
+        # Entity IDs are reused after clear; loads belong to the discarded scene.
+        for key in ['torqueModeCableLoadTorques', 'torqueModeCableLoadStiffnesses', 'torqueModeCableLoadDampings']:
+            world.set_resource(key, {})
         world.set_resource('sceneGeneration', (world.get_resource('sceneGeneration') or 0) + 1)
         physics = stage.GetPrimAtPath('/World/PhysicsScene')
         direction = vector_attribute(physics, 'physics:gravityDirection')

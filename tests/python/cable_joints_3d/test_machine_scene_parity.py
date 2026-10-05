@@ -5,6 +5,10 @@ import numpy as np
 import pytest
 
 from parity_harness import FIXTURES, ROOT, assert_equivalent, run_js, run_python
+from cable_joints_3d.machine_scene import populate_machine_scene
+from cable_joints_3d.machine_simulation import load_machine_world
+from cable_joints_3d.remote_spool_system import RemoteSpoolSystem
+from usd.cable_scene_loader import open_cable_scene
 
 
 def _fixture(name='usd_scene_minimal'):
@@ -71,3 +75,28 @@ def test_float32_authored_values_give_both_engines_identical_initial_inputs():
     changed['entities']['default::WheelAL_top']['RigidBodyMemberComponent']['localPosition'][2] += 1e-4
     with pytest.raises(AssertionError, match='localPosition'):
         assert_equivalent(changed, reference, **fixture['tolerance'])
+
+
+@pytest.mark.parametrize('append', [False, True])
+def test_paused_scene_load_resets_entity_loads_only_when_replacing(append):
+    world = load_machine_world(ROOT / 'public/usd_scenes/hp4_rigid_body.usda', namespace='old')
+    remote = world.get_system(RemoteSpoolSystem)
+    remote.commands = [{'type': 'SetTorqueMode', 'axis': 'D', 'torqueNm': -.01}]
+    world.update(.002)
+    keys = ['torqueModeCableLoadTorques', 'torqueModeCableLoadStiffnesses', 'torqueModeCableLoadDampings']
+    loads = [world.get_resource(key) for key in keys]
+    assert all(loads)  # actual solver loads, not seeded stand-ins
+    systems = world.systems[:]
+    remote.commands = [{'type': 'Move', 'A': .001}]
+    world.get_resource('pauseState').paused = True
+    stage = open_cable_scene(ROOT / 'public/usd_scenes/hp3_rigid_body.usda')
+    populate_machine_scene(world, stage, '/World/HangprinterScene', namespace='new', append=append)
+    assert world.systems == systems
+    assert remote.axis_to_entity == {}
+    assert remote.get_queue_length() == 1
+    world.update(.002)
+    for key, previous in zip(keys, loads):
+        if append:
+            assert world.get_resource(key) is previous
+        else:
+            assert world.get_resource(key) == {}

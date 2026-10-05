@@ -67,6 +67,10 @@ export function applySceneResources(world, resources) {
 
     if (!resources.remote && !resources.append) {
         world.clear();
+        // Entity IDs are reused after clear; loads belong to the discarded scene.
+        for (const key of ['torqueModeCableLoadTorques', 'torqueModeCableLoadStiffnesses', 'torqueModeCableLoadDampings']) {
+            world.setResource(key, new Map());
+        }
         world.setResource('sceneGeneration', (world.getResource('sceneGeneration') || 0) + 1);
     }
 
