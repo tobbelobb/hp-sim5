@@ -217,7 +217,7 @@ Each is isolated in its own commit, with JS and differential regression evidence
 | [#69](https://github.com/tobbelobb/hp-sim5/pull/69) | Read-only snapshots, richer primary Rerun and headless recording CLI | #68 |
 | [#70](https://github.com/tobbelobb/hp-sim5/pull/70) | Live split/merge, entity lifecycle oracle and coupled topology cycles | #69 |
 | [#71](https://github.com/tobbelobb/hp-sim5/pull/71) | Sphere contacts, tensor bump and single-pass slack differentials | #70 |
-| Sustained-motion audit (this slice) | Stored quaternion frames, identical authored USD precision and 1,000-step full-machine evidence | #71 |
+| [#72](https://github.com/tobbelobb/hp-sim5/pull/72) | Stored quaternion frames, identical authored USD precision and 1,000-step full-machine evidence | #71 |
 
 The implementation checklist now covers the meaningful Hangprinter pipeline and
 the shared optional engine systems. Review and merge the stacked slices in order;
@@ -234,7 +234,7 @@ effector/extruder state, including representative complete machines. Remaining
 differences are browser-only or documented intentional divergences. Existing JS
 and Python tests pass. Keep this checklist open until the whole gate is met.
 
-Implementation audit through the sustained-motion slice: same authored
+Implementation audit through #72: same authored
 HP3/HP4/pinhole inputs with identical numeric opinions, native ECS
 construction, exact production system order, shared engine/command state,
 representative 200-step machines, 1,000-step commanded motion and settling,
