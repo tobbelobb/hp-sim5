@@ -19,9 +19,10 @@ from cable_joints_3d.cable_attachment_cache_system import CableAttachmentCacheSy
 from cable_joints_3d.cable_friction_system import CableFrictionSystem
 from cable_joints_3d.cable_attachment_update_system import CableAttachmentUpdateSystem
 from cable_joints_3d.cable_layering import cable_stored_length_after_rotation
-from cable_joints_3d.stepper_motor import StepperMotorComponent
+from cable_joints_3d.stepper_motor import StepperMotorComponent, StepperMotorSystem
 from cable_joints_3d.pbd_cable_constraint_solver import PBDCableConstraintSolver
 from cable_joints_3d.pbd_resolve_cable_over_corrections import PBDResolveCableOverCorrections
+from cable_joints_3d.torque_mode_system import TorqueModeSystem
 
 ROOT = Path(__file__).resolve().parents[3]
 CONTRACT = json.loads((ROOT / 'tests/parity3d/contract.json').read_text())
@@ -84,7 +85,7 @@ def run_python(fixture):
             component = component_type(*args)
         world.add_component(ids[entity], component)
 
-    def resources(values):
+    def resources(values, entity_values=None):
         for key, value in (values or {}).items():
             if key in ('gravity', 'defaultPlaneNormal'):
                 value = np.array(value, dtype=float)
@@ -93,6 +94,8 @@ def run_python(fixture):
             elif isinstance(value, dict):
                 value = SimpleNamespace(**value)
             world.set_resource(key, value)
+        for key, definition in (entity_values or {}).items():
+            world.set_resource(key, {ids[name]: value for name, value in definition['values'].items()})
 
     def mutate(values):
         for entity, type_name, field, value in values or []:
@@ -106,7 +109,7 @@ def run_python(fixture):
             else:
                 setattr(component, py, decoded)
 
-    resources(fixture.get('resources'))
+    resources(fixture.get('resources'), fixture.get('entityResources'))
     for entity in fixture['entities']:
         for name, args in entity['components'].items():
             add(entity['name'], name, args)
@@ -125,7 +128,8 @@ def run_python(fixture):
         rigid.initialize_rigid_body_sync_state(world, ids[name])
     systems = {'CableAttachmentCacheSystem': CableAttachmentCacheSystem, 'CableFrictionSystem': CableFrictionSystem,
                'CableAttachmentUpdateSystem': CableAttachmentUpdateSystem, 'PBDCableConstraintSolver': PBDCableConstraintSolver,
-               'PBDResolveCableOverCorrections': PBDResolveCableOverCorrections}
+               'PBDResolveCableOverCorrections': PBDResolveCableOverCorrections, 'StepperMotorSystem': StepperMotorSystem,
+               'TorqueModeSystem': TorqueModeSystem}
     for definition in fixture['systems']:
         name = definition if isinstance(definition, str) else definition['name']
         args = [] if isinstance(definition, str) else definition.get('args', [])
@@ -193,7 +197,7 @@ def run_python(fixture):
 
     snapshots = [snapshot(0)]
     for index, step in enumerate(fixture['steps'], 1):
-        resources(step.get('resources'))
+        resources(step.get('resources'), step.get('entityResources'))
         mutate(step.get('set'))
         world.update(step['dt'])
         snapshots.append(snapshot(index))
@@ -220,8 +224,9 @@ def run_js(fixture):
     result = subprocess.run(
         ['node', str(ROOT / 'tests/parity3d/oracle.mjs')],
         input=json.dumps(fixture, allow_nan=False), text=True,
-        capture_output=True, cwd=ROOT, timeout=30, check=True,
+        capture_output=True, cwd=ROOT, timeout=30,
     )
+    assert result.returncode == 0, f'JS oracle failed:\n{result.stderr}'
     return json.loads(result.stdout)
 
 

@@ -1,0 +1,272 @@
+{
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "entities": [
+    {
+      "name": "open_body",
+      "components": {
+        "PositionComponent": [0.0, 0.0, 0.0],
+        "OrientationComponent": [0.0, 0.24740395925452294, 0.0, 0.9689124217106447],
+        "AngularVelocityComponent": [0, 0, 0],
+        "VelocityComponent": [0.01, -0.02, 0.005],
+        "MassComponent": [1.5],
+        "MomentOfInertiaComponent": [[[0.2, 0.015, -0.02], [0.015, 0.3, 0.01], [-0.02, 0.01, 0.4]]],
+        "RigidBodyComponent": [["open_spool", "open_ballast"]]
+      }
+    },
+    {
+      "name": "open_spool",
+      "components": {
+        "PositionComponent": [0.08775825618903728, -0.05000000000000001, -0.04794255386042031],
+        "OrientationComponent": [0, 0, 0, 1],
+        "AngularVelocityComponent": [0, 0, 0],
+        "VelocityComponent": [0, 0, 0],
+        "MassComponent": [0],
+        "MomentOfInertiaComponent": [[[0.002, 0.0001, 0], [0.0001, 0.003, 0.0002], [0, 0.0002, 0.001]]],
+        "RigidBodyMemberComponent": ["open_body", [0.1, -0.05, 0], [0.08447354801085656, 0.008475625739563857, -0.09947298551718464, 0.9914118763697953], 0.2],
+        "SpoolStateComponent": ["open_spool", [0.0, 0.0, 1.0], [0.08225841944171108, 0.24651075043219206, -0.02100402285685235, 0.9654143324894954]],
+        "EncoderComponent": [18.64955592153876, 0.0, 0.0, 1.0],
+        "StepperMotorComponent": [0.8, 0.1, 0.5, 50, 0.01, 600]
+      }
+    },
+    {
+      "name": "open_ballast",
+      "components": {
+        "PositionComponent": [0.1036026815874441, 0.10000000000000002, -0.22752249200439656],
+        "MassComponent": [0],
+        "MomentOfInertiaComponent": [[[0.01, 0, 0], [0, 0.02, 0.001], [0, 0.001, 0.03]]],
+        "RigidBodyMemberComponent": ["open_body", [0.2, 0.1, -0.15], [0.0, 0.14943813247359922, 0.0, 0.9887710779360422], 0.5]
+      }
+    },
+    {
+      "name": "closed_body",
+      "components": {
+        "PositionComponent": [3.0, 0.0, 0.0],
+        "OrientationComponent": [0.0, 0.24740395925452294, 0.0, 0.9689124217106447],
+        "AngularVelocityComponent": [0, 0, 0],
+        "VelocityComponent": [0.01, -0.02, 0.005],
+        "MassComponent": [1.5],
+        "MomentOfInertiaComponent": [[[0.2, 0.015, -0.02], [0.015, 0.3, 0.01], [-0.02, 0.01, 0.4]]],
+        "RigidBodyComponent": [["closed_spool", "closed_ballast"]]
+      }
+    },
+    {
+      "name": "closed_spool",
+      "components": {
+        "PositionComponent": [3.087758256189037, -0.05000000000000001, -0.04794255386042031],
+        "OrientationComponent": [0, 0, 0, 1],
+        "AngularVelocityComponent": [0, 0, 0],
+        "VelocityComponent": [0, 0, 0],
+        "MassComponent": [0],
+        "MomentOfInertiaComponent": [[[0.002, 0.0001, 0], [0.0001, 0.003, 0.0002], [0, 0.0002, 0.001]]],
+        "RigidBodyMemberComponent": ["closed_body", [0.1, -0.05, 0], [0.08447354801085656, 0.008475625739563857, -0.09947298551718464, 0.9914118763697953], 0.2],
+        "SpoolStateComponent": ["closed_spool", [0.0, 0.0, 1.0], [0.08225841944171108, 0.24651075043219206, -0.02100402285685235, 0.9654143324894954]],
+        "EncoderComponent": [18.64955592153876, 0.0, 0.0, 1.0],
+        "StepperMotorComponent": [0.8, 0.1, 0.5, 50, 0.01, 600]
+      }
+    },
+    {
+      "name": "closed_ballast",
+      "components": {
+        "PositionComponent": [3.1036026815874442, 0.10000000000000002, -0.22752249200439656],
+        "MassComponent": [0],
+        "MomentOfInertiaComponent": [[[0.01, 0, 0], [0, 0.02, 0.001], [0, 0.001, 0.03]]],
+        "RigidBodyMemberComponent": ["closed_body", [0.2, 0.1, -0.15], [0.0, 0.14943813247359922, 0.0, 0.9887710779360422], 0.5]
+      }
+    },
+    {
+      "name": "live_mass_body",
+      "components": {
+        "PositionComponent": [6.0, 0.0, 0.0],
+        "OrientationComponent": [0.0, 0.24740395925452294, 0.0, 0.9689124217106447],
+        "AngularVelocityComponent": [0, 0, 0],
+        "VelocityComponent": [0.01, -0.02, 0.005],
+        "MassComponent": [1.5],
+        "MomentOfInertiaComponent": [[[0.2, 0.015, -0.02], [0.015, 0.3, 0.01], [-0.02, 0.01, 0.4]]],
+        "RigidBodyComponent": [["live_mass_spool", "live_mass_ballast"]]
+      }
+    },
+    {
+      "name": "live_mass_spool",
+      "components": {
+        "PositionComponent": [6.087758256189037, -0.05000000000000001, -0.04794255386042031],
+        "OrientationComponent": [0, 0, 0, 1],
+        "AngularVelocityComponent": [0, 0, 0],
+        "VelocityComponent": [0, 0, 0],
+        "MassComponent": [0.2],
+        "MomentOfInertiaComponent": [[[0.002, 0.0001, 0], [0.0001, 0.003, 0.0002], [0, 0.0002, 0.001]]],
+        "RigidBodyMemberComponent": ["live_mass_body", [0.1, -0.05, 0], [0.08447354801085656, 0.008475625739563857, -0.09947298551718464, 0.9914118763697953], null],
+        "SpoolStateComponent": ["live_mass_spool", [0.0, 0.0, 1.0], [0.08225841944171108, 0.24651075043219206, -0.02100402285685235, 0.9654143324894954]],
+        "EncoderComponent": [18.64955592153876, 0.0, 0.0, 1.0],
+        "StepperMotorComponent": [0.8, 0.1, 0.5, 50, 0.01, 600]
+      }
+    },
+    {
+      "name": "live_mass_ballast",
+      "components": {
+        "PositionComponent": [6.103602681587444, 0.10000000000000002, -0.22752249200439656],
+        "MassComponent": [0.5],
+        "MomentOfInertiaComponent": [[[0.01, 0, 0], [0, 0.02, 0.001], [0, 0.001, 0.03]]],
+        "RigidBodyMemberComponent": ["live_mass_body", [0.2, 0.1, -0.15], [0.0, 0.14943813247359922, 0.0, 0.9887710779360422], null]
+      }
+    },
+    {
+      "name": "fallback_body",
+      "components": {
+        "PositionComponent": [9.0, 0.0, 0.0],
+        "OrientationComponent": [0.0, 0.24740395925452294, 0.0, 0.9689124217106447],
+        "AngularVelocityComponent": [0, 0, 0],
+        "VelocityComponent": [0.01, -0.02, 0.005],
+        "MassComponent": [0],
+        "MomentOfInertiaComponent": [[[0.2, 0.015, -0.02], [0.015, 0.3, 0.01], [-0.02, 0.01, 0.4]]],
+        "RigidBodyComponent": [[]]
+      }
+    },
+    {
+      "name": "fallback_spool",
+      "components": {
+        "PositionComponent": [9.087758256189037, -0.05000000000000001, -0.04794255386042031],
+        "OrientationComponent": [0, 0, 0, 1],
+        "AngularVelocityComponent": [0, 0, 0],
+        "VelocityComponent": [0, 0, 0],
+        "MassComponent": [0],
+        "MomentOfInertiaComponent": [[[0.002, 0.0001, 0], [0.0001, 0.003, 0.0002], [0, 0.0002, 0.001]]],
+        "RigidBodyMemberComponent": ["fallback_body", [0.1, -0.05, 0], [0.08447354801085656, 0.008475625739563857, -0.09947298551718464, 0.9914118763697953], 0.2],
+        "SpoolStateComponent": ["fallback_spool", [0.0, 0.0, 1.0], [0.08225841944171108, 0.24651075043219206, -0.02100402285685235, 0.9654143324894954]],
+        "EncoderComponent": [18.64955592153876, 0.0, 0.0, 1.0],
+        "StepperMotorComponent": [0.8, 0.1, 0.5, 50, 0.01, 600]
+      }
+    },
+    {
+      "name": "fallback_ballast",
+      "components": {
+        "PositionComponent": [9.103602681587445, 0.10000000000000002, -0.22752249200439656],
+        "MassComponent": [0],
+        "MomentOfInertiaComponent": [[[0.01, 0, 0], [0, 0.02, 0.001], [0, 0.001, 0.03]]],
+        "RigidBodyMemberComponent": ["fallback_body", [0.2, 0.1, -0.15], [0.0, 0.14943813247359922, 0.0, 0.9887710779360422], 0.5]
+      }
+    },
+    {
+      "name": "pair_body",
+      "components": {
+        "PositionComponent": [12.0, 0.0, 0.0],
+        "OrientationComponent": [0.0, 0.24740395925452294, 0.0, 0.9689124217106447],
+        "AngularVelocityComponent": [0, 0, 0],
+        "VelocityComponent": [0.01, -0.02, 0.005],
+        "MassComponent": [1.5],
+        "MomentOfInertiaComponent": [[[0.2, 0.015, -0.02], [0.015, 0.3, 0.01], [-0.02, 0.01, 0.4]]],
+        "RigidBodyComponent": [["pair_spool", "pair_ballast", "pair_second"]]
+      }
+    },
+    {
+      "name": "pair_spool",
+      "components": {
+        "PositionComponent": [12.087758256189037, -0.05000000000000001, -0.04794255386042031],
+        "OrientationComponent": [0, 0, 0, 1],
+        "AngularVelocityComponent": [0, 0, 0],
+        "VelocityComponent": [0, 0, 0],
+        "MassComponent": [0],
+        "MomentOfInertiaComponent": [[[0.002, 0.0001, 0], [0.0001, 0.003, 0.0002], [0, 0.0002, 0.001]]],
+        "RigidBodyMemberComponent": ["pair_body", [0.1, -0.05, 0], [0.08447354801085656, 0.008475625739563857, -0.09947298551718464, 0.9914118763697953], 0.2],
+        "SpoolStateComponent": ["pair_spool", [0.0, 0.0, 1.0], [0.08225841944171108, 0.24651075043219206, -0.02100402285685235, 0.9654143324894954]],
+        "EncoderComponent": [18.64955592153876, 0.0, 0.0, 1.0],
+        "StepperMotorComponent": [0.8, 0.1, 0.5, 50, 0.01, 600]
+      }
+    },
+    {
+      "name": "pair_second",
+      "components": {
+        "PositionComponent": [11.960184297671383, 0.0, 0.1357008100494576],
+        "OrientationComponent": [0, 0, 0, 1],
+        "AngularVelocityComponent": [0, 0, 0],
+        "VelocityComponent": [0, 0, 0],
+        "MassComponent": [0],
+        "MomentOfInertiaComponent": [[[0.002, 0.0001, 0], [0.0001, 0.003, 0.0002], [0, 0.0002, 0.001]]],
+        "RigidBodyMemberComponent": ["pair_body", [-0.1, 0, 0.1], [-0.014999437506328081, 0.0, 0.0, 0.9998875021093592], 0.2],
+        "SpoolStateComponent": ["pair_second", [1.0, 0.0, 0.0], [0.08225841944171108, 0.24651075043219206, -0.02100402285685235, 0.9654143324894954]],
+        "EncoderComponent": [18.64955592153876, 1.0, 0.0, 0.0],
+        "StepperMotorComponent": [-0.3, 0.1, 0.5, 50, 0.01, 600]
+      }
+    },
+    {
+      "name": "pair_ballast",
+      "components": {
+        "PositionComponent": [12.103602681587445, 0.10000000000000002, -0.22752249200439656],
+        "MassComponent": [0],
+        "MomentOfInertiaComponent": [[[0.01, 0, 0], [0, 0.02, 0.001], [0, 0.001, 0.03]]],
+        "RigidBodyMemberComponent": ["pair_body", [0.2, 0.1, -0.15], [0.0, 0.14943813247359922, 0.0, 0.9887710779360422], 0.5]
+      }
+    }
+  ],
+  "systems": ["StepperMotorSystem", "TorqueModeSystem"],
+  "steps": [
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "closedLoopMotorsEnabled": true
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "closedLoopMotorsEnabled": false
+      },
+      "set": [["closed_spool", "StepperMotorComponent", "commandedAngle", 25.432741228718346]]
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": true
+        }
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": false
+        }
+      }
+    }
+  ],
+  "snapshotResources": ["closedLoopMotorsEnabled"],
+  "resources": {
+    "closedLoopMotorsEnabled": false
+  },
+  "initialSet": [["open_spool", "StepperMotorComponent", "closedLoop", false], ["closed_spool", "StepperMotorComponent", "closedLoop", true], ["live_mass_spool", "StepperMotorComponent", "closedLoop", false], ["fallback_spool", "StepperMotorComponent", "closedLoop", true], ["pair_spool", "StepperMotorComponent", "closedLoop", true], ["pair_second", "StepperMotorComponent", "closedLoop", false], ["open_spool", "StepperMotorComponent", "torqueMode", true], ["open_spool", "StepperMotorComponent", "targetTorque", 0.07], ["closed_spool", "StepperMotorComponent", "torqueMode", true], ["closed_spool", "StepperMotorComponent", "targetTorque", 0.07], ["live_mass_spool", "StepperMotorComponent", "torqueMode", true], ["live_mass_spool", "StepperMotorComponent", "targetTorque", 0.07], ["fallback_spool", "StepperMotorComponent", "torqueMode", true], ["fallback_spool", "StepperMotorComponent", "targetTorque", 0.07], ["pair_spool", "StepperMotorComponent", "torqueMode", true], ["pair_spool", "StepperMotorComponent", "targetTorque", 0.07], ["pair_second", "StepperMotorComponent", "torqueMode", true], ["pair_second", "StepperMotorComponent", "targetTorque", 0.07]],
+  "initializeRigidBodies": ["open_body", "closed_body", "live_mass_body", "fallback_body", "pair_body"],
+  "entityResources": {
+    "torqueModeCableLoadTorques": {
+      "kind": "map",
+      "values": {
+        "live_mass_spool": -0.02,
+        "closed_spool": -0.01
+      }
+    },
+    "torqueModeCableLoadStiffnesses": {
+      "kind": "map",
+      "values": {
+        "closed_spool": 20
+      }
+    },
+    "torqueModeCableLoadDampings": {
+      "kind": "map",
+      "values": {
+        "closed_spool": 0.05
+      }
+    }
+  },
+  "snapshotEntityMaps": ["torqueModeCableLoadTorques", "torqueModeCableLoadStiffnesses", "torqueModeCableLoadDampings"]
+}

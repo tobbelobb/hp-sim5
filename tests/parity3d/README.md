@@ -36,7 +36,9 @@ Systems may be names or `{ "name": "CableAttachmentUpdateSystem", "args": [false
 constructor definitions. `snapshotResources` selects simple resources to record;
 `cableRotations` invokes production stored-length prediction at each snapshot.
 `snapshotEntityMaps` records entity-keyed solver load resources using named
-relationships. The solver reads the resource `dt`; fixtures set it explicitly
+relationships. `entityResources` seeds those maps from `{kind, values}` definitions
+at initialization or before a timestep (`kind` selects JS Map or object); Python
+uses dictionaries. Optional torque-tuning fields serialize absent/None as null. The solver reads the resource `dt`; fixtures set it explicitly
 without changing the reference World scheduling API.
 
 Current coverage:
@@ -86,14 +88,25 @@ Current coverage:
   backdriving, rolling/hybrid spools, torque load deferral, force transfer and
   attachment/cache/friction/solve integration.
 - `cable_zero_stiffness`: zero vs near-zero stiffness, with and without damping.
+- `position_motor_standalone`, `position_motor_members`, `position_motor_cables`:
+  open/closed-loop drive, torque-mode exclusion, zero inertia, tilted references,
+  live aggregate inertia and preserved mass, parent reaction rotation/velocity,
+  member vs standalone integration, commands and full cable/PBD/encoder order.
+  A separate 100 Nm stress case uses 20 microsecond timesteps.
+- `torque_motor_standalone`, `torque_motor_loads`, `torque_motor_members`,
+  `torque_motor_cables`, `torque_motor_pinhole`: speed droop, friction/windage/cogging
+  defaults and overrides, zero inertia, explicit/implicit signed cable loading,
+  negative/malformed load coefficients, Map/object resources, drive-only housing
+  reactions, torque/position transitions and complete motor/cable/PBD/encoder order.
 - `cable_over_correction` and its member/pinhole variants: actual shared pushes,
   tensor rotor/host reactions, hybrid-only pinhole coupling, layered tangent
   rebuilding, duplicate joints, last-path metadata, zero stiffness and pause.
 
-Rigid-member, distance, spool, cache, friction-chain, two moving-attachment
-four cable-solver and three over-correction fixtures run for 200 steps;
+Rigid-member, distance, spool, cache, friction-chain, two moving-attachment,
+four cable-solver, three over-correction, three position-motor and five
+torque-motor fixtures run for 200 steps;
 both engines must reproduce their own snapshots exactly on a second run.
 
 These fixtures establish the covered ECS behavior. Authored USDA construction,
-dynamic split/merge, motor integration, full machines
+dynamic split/merge, commands, extrusion/diagnostics, full machines
 and richer Rerun recordings remain on the checklist in `PYTHON_3D_PARITY.md`.

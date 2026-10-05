@@ -1,0 +1,167 @@
+{
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "entities": [
+    {
+      "name": "free",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "MassComponent": [0],
+        "OrientationComponent": [0.027422571864409443, 0.2780144529243299, 0.042618621402459866, 0.9592390836633382],
+        "AngularVelocityComponent": [0.0618939399927185, 0.053452248382484885, 0.0575499551262632],
+        "MomentOfInertiaComponent": [0.002],
+        "SpoolStateComponent": ["free", [0.2672612419124244, 0.5345224838248488, 0.8017837257372732], [0.0, 0.24740395925452294, 0.0, 0.9689124217106447]],
+        "StepperMotorComponent": [0.8, 0.2, 0.5, 50, 0.01, 100],
+        "EncoderComponent": [18.96955592153876, 0.2672612419124244, 0.5345224838248488, 0.8017837257372732]
+      }
+    },
+    {
+      "name": "signed",
+      "components": {
+        "PositionComponent": [3, 0, 0],
+        "MassComponent": [0],
+        "OrientationComponent": [0.027422571864409443, 0.2780144529243299, 0.042618621402459866, 0.9592390836633382],
+        "AngularVelocityComponent": [0.0618939399927185, 0.053452248382484885, 0.0575499551262632],
+        "MomentOfInertiaComponent": [0.002],
+        "SpoolStateComponent": ["signed", [0.2672612419124244, 0.5345224838248488, 0.8017837257372732], [0.0, 0.24740395925452294, 0.0, 0.9689124217106447]],
+        "StepperMotorComponent": [0.8, 0.2, 0.5, 50, 0.01, 100],
+        "EncoderComponent": [18.96955592153876, 0.2672612419124244, 0.5345224838248488, 0.8017837257372732]
+      }
+    },
+    {
+      "name": "implicit",
+      "components": {
+        "PositionComponent": [6, 0, 0],
+        "MassComponent": [0],
+        "OrientationComponent": [0.027422571864409443, 0.2780144529243299, 0.042618621402459866, 0.9592390836633382],
+        "AngularVelocityComponent": [0.0618939399927185, 0.053452248382484885, 0.0575499551262632],
+        "MomentOfInertiaComponent": [0.002],
+        "SpoolStateComponent": ["implicit", [0.2672612419124244, 0.5345224838248488, 0.8017837257372732], [0.0, 0.24740395925452294, 0.0, 0.9689124217106447]],
+        "StepperMotorComponent": [0.8, 0.2, 0.5, 50, 0.01, 100],
+        "EncoderComponent": [18.96955592153876, 0.2672612419124244, 0.5345224838248488, 0.8017837257372732]
+      }
+    },
+    {
+      "name": "negative_coefficients",
+      "components": {
+        "PositionComponent": [9, 0, 0],
+        "MassComponent": [0],
+        "OrientationComponent": [0.027422571864409443, 0.2780144529243299, 0.042618621402459866, 0.9592390836633382],
+        "AngularVelocityComponent": [0.0618939399927185, 0.053452248382484885, 0.0575499551262632],
+        "MomentOfInertiaComponent": [0.002],
+        "SpoolStateComponent": ["negative_coefficients", [0.2672612419124244, 0.5345224838248488, 0.8017837257372732], [0.0, 0.24740395925452294, 0.0, 0.9689124217106447]],
+        "StepperMotorComponent": [0.8, 0.2, 0.5, 50, 0.01, 100],
+        "EncoderComponent": [18.96955592153876, 0.2672612419124244, 0.5345224838248488, 0.8017837257372732]
+      }
+    },
+    {
+      "name": "invalid",
+      "components": {
+        "PositionComponent": [12, 0, 0],
+        "MassComponent": [0],
+        "OrientationComponent": [0.027422571864409443, 0.2780144529243299, 0.042618621402459866, 0.9592390836633382],
+        "AngularVelocityComponent": [0.0618939399927185, 0.053452248382484885, 0.0575499551262632],
+        "MomentOfInertiaComponent": [0.002],
+        "SpoolStateComponent": ["invalid", [0.2672612419124244, 0.5345224838248488, 0.8017837257372732], [0.0, 0.24740395925452294, 0.0, 0.9689124217106447]],
+        "StepperMotorComponent": [0.8, 0.2, 0.5, 50, 0.01, 100],
+        "EncoderComponent": [18.96955592153876, 0.2672612419124244, 0.5345224838248488, 0.8017837257372732]
+      }
+    }
+  ],
+  "systems": ["TorqueModeSystem"],
+  "steps": [
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002,
+      "entityResources": {
+        "torqueModeCableLoadTorques": {
+          "kind": "object",
+          "values": {
+            "signed": -0.02,
+            "implicit": -0.02,
+            "negative_coefficients": -0.02,
+            "invalid": "invalid"
+          }
+        },
+        "torqueModeCableLoadStiffnesses": {
+          "kind": "object",
+          "values": {
+            "implicit": 100,
+            "negative_coefficients": -100,
+            "invalid": "invalid"
+          }
+        },
+        "torqueModeCableLoadDampings": {
+          "kind": "object",
+          "values": {
+            "implicit": 0.1,
+            "negative_coefficients": -0.1,
+            "invalid": null
+          }
+        }
+      }
+    },
+    {
+      "dt": 0
+    },
+    {
+      "dt": -0.002
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": true
+        }
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": false
+        }
+      }
+    }
+  ],
+  "snapshotResources": ["dt"],
+  "resources": {
+    "dt": 0.01
+  },
+  "initialSet": [["free", "StepperMotorComponent", "torqueMode", true], ["free", "StepperMotorComponent", "targetTorque", 0.05], ["signed", "StepperMotorComponent", "torqueMode", true], ["signed", "StepperMotorComponent", "targetTorque", 0.05], ["implicit", "StepperMotorComponent", "torqueMode", true], ["implicit", "StepperMotorComponent", "targetTorque", 0.05], ["negative_coefficients", "StepperMotorComponent", "torqueMode", true], ["negative_coefficients", "StepperMotorComponent", "targetTorque", 0.05], ["invalid", "StepperMotorComponent", "torqueMode", true], ["invalid", "StepperMotorComponent", "targetTorque", 0.05]],
+  "entityResources": {
+    "torqueModeCableLoadTorques": {
+      "kind": "map",
+      "values": {
+        "signed": -0.02,
+        "implicit": -0.02,
+        "negative_coefficients": -0.02,
+        "invalid": "invalid"
+      }
+    },
+    "torqueModeCableLoadStiffnesses": {
+      "kind": "map",
+      "values": {
+        "implicit": 100,
+        "negative_coefficients": -100,
+        "invalid": "invalid"
+      }
+    },
+    "torqueModeCableLoadDampings": {
+      "kind": "map",
+      "values": {
+        "implicit": 0.1,
+        "negative_coefficients": -0.1,
+        "invalid": null
+      }
+    }
+  },
+  "snapshotEntityMaps": ["torqueModeCableLoadTorques", "torqueModeCableLoadStiffnesses", "torqueModeCableLoadDampings"]
+}
