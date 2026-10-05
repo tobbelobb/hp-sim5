@@ -94,6 +94,49 @@ def test_full_machine_commands_exercise_modes_pause_diagnostics_and_pre_predicti
     assert snapshots[-1]['motorDiagnostics']
 
 
+def test_full_machine_settling_after_commands_for_1000_steps():
+    definition = fixture('hp4_commands')
+    definition['steps'].extend({'dt': .002} for _ in range(1000 - len(definition['steps'])))
+    expected = run_js(definition)
+    assert_equivalent(run_python(definition), expected, **definition['tolerance'])
+    final = expected['snapshots'][-1]
+    assert final['step'] == 1000
+    assert final['commandState']['queueLength'] == 0
+    assert len(final['motorDiagnostics'][0]['motors']) == 4
+    assert all(not value['StepperMotorComponent']['torqueMode'] for value in final['entities'].values()
+               if 'StepperMotorComponent' in value)
+
+
+def test_sustained_hp4_motion_and_extrusion_for_1000_strict_repeatable_steps():
+    definition = fixture('hp4_rigid_body')
+    definition['steps'] = [{'dt': .002} for _ in range(1000)]
+    rates = {'A': .0016, 'B': -.0012, 'C': .0008, 'D': .0004}
+    # Commands are absolute radians, not cable lengths. A turns at .8 rad/s;
+    # its authored .03 m spool pays out about .048 m over these two seconds.
+    definition['commands'] = [dict(type='Move', **{axis: rate * i for axis, rate in rates.items()},
+                                   **({'E': .001} if i % 100 == 0 else {})) for i in range(1000)]
+    expected, actual = run_js(definition), run_python(definition)
+    assert_equivalent(actual, expected, atol=1e-10, rtol=1e-9)
+    assert run_js(definition) == expected
+    assert run_python(definition) == actual
+    before, after = [snapshot['entities'] for snapshot in (expected['snapshots'][0], expected['snapshots'][-1])]
+    displacement = np.array(after['default::Effector']['PositionComponent']['pos']) - before['default::Effector']['PositionComponent']['pos']
+    assert np.linalg.norm(displacement) > .02  # exercise commanded motion beyond initial settling
+    for axis, rate in rates.items():
+        motor = after[f'default::Spool{axis}']['StepperMotorComponent']
+        assert motor['commandedAngle'] == rate * 999
+        assert motor['missedSteps'] == 0
+        assert after[f'default::Spool{axis}']['EncoderComponent']['angle'] == pytest.approx(rate * 999, abs=.003)
+    extruder = lambda step: next(state['ExtruderComponent'] for state in expected['snapshots'][step]['entities'].values()
+                                if 'ExtruderComponent' in state)
+    deposits = extruder(1000)['extrusions']
+    assert [record['length'] for record in deposits] == [.001] * 10
+    assert [record['pos'] for record in deposits] == [extruder(i)['tipPos'] for i in range(0, 1000, 100)]
+    assert np.linalg.norm(np.array(deposits[-1]['pos']) - deposits[0]['pos']) > .015
+    assert any(value['CableJointComponent']['constraintForceMagnitude'] > 0
+               for value in after.values() if 'CableJointComponent' in value)
+
+
 def test_machine_tolerances_reject_material_drift_and_keep_deposited_length_strict():
     definition = fixture('hp4_commands')
     expected = run_js(definition)

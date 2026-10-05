@@ -37,7 +37,7 @@ and optional configuration represented by `None` are intentional API divergences
 | USD cable initialization (`usd/cable_scene_baker.js`) | `usd/cable_scene_loader.py`, `usd/value_readers.py`: equivalent for covered baking | Native pxr.Usd stage, reuse tangent/arc/layer helpers; authored/manual/automatic/derive-all policies, layered radii, parent frames and width overrides. Same hp4/hp3/rigid-pinhole files and dedicated policy fixtures compare before ECS construction. |
 | USDA machine builders (`app/scene/`) | `machine_scene.py`: equivalent for covered construction | Native pxr.Usd stage and shared value readers; body/gravity/material/axis state, rigid mass/tensor aggregation, member conversion, distance/cable joints, path initialization, extruder bindings and append/namespaces. Eight authored scenes plus strict double-precision and append fixtures compare initial ECS. |
 | Commands (`remoteSpoolSystem.js`, `hangprinter_runtime.js`) | `remote_spool_system.py`, `machine_runtime.py`: equivalent for covered headless records | One queued record per step, pause/zero-dt, mode/reference updates, machine targeting, playback history/reset, callbacks and extrusion colors. Python deque ownership/API is intentional divergence; worker/backpressure transport is browser-only/not required. |
-| Composition root (`sceneSystems.js`, `simulationSystems.js`) | `machine_simulation.py`: equivalent for the registered headless pipeline | Production JS and Python registration, exact 19-system order; initial extruder update, no global substep loop. HP3, HP4, rigid pinhole and double-authored minimal machines run 200 repeatable steps; HP4 commands exercise modes, extrusion, diagnostics, pause and distinct update/resource dt. |
+| Composition root (`sceneSystems.js`, `simulationSystems.js`) | `machine_simulation.py`: equivalent for the registered headless pipeline | Production JS and Python registration, exact 19-system order; initial extruder update, no global substep loop. Representative machines run 200 repeatable steps. HP4 sustained motion/extrusion runs 1,000 strictly compared repeatable steps; another 1,000-step case settles after modes, diagnostics, extrusion, pause and distinct update/resource dt. |
 | Snapshot / Rerun (`flightRecorderSnapshot.js`, `FLIGHT_RECORDER.md`) | `machine_snapshot.py`, `rerun_system.py`, `__main__.py`: equivalent for covered recording data | Six fixture families compare native frames/lengths/forces with production JS recorder data. Live body hierarchy, solver-sampled cable endpoints, copied snapshots, initial/every-step RRD, Z-up coordinates, pause/reset clocks, static clearing, encoder/motor/velocity and tool/extrusion state. Straight-span/point visuals and stable per-quantity plot paths are intentional presentation divergences. |
 | Optional cable event buffer / console summaries (`cable_joints_core.js`) | intentional divergence | Python records deterministic ECS snapshots and primary Rerun traces instead of the optional JS `cableEventTrace*` buffer/console API. These diagnostics do not feed simulation state. Saved-RRD topology coverage checks joint identity and clearing; no physics field is removed. |
 | Three.js renderer, DOM/pointer/UI, upload controllers, workers | browser-only/not required | Do not port. Render-only slack/wrap geometry may be reused for Rerun presentation. |
@@ -57,7 +57,9 @@ Structural fields compare exactly; quaternions
 compare up to sign. Nonfinite physics state fails. Guard checks ensure targeted
 constraints, transitions and reactions activate. Forty-two scenarios run 200 steps
 and require exact repeatability within each engine; a further stiff-motor probe
-runs 200 steps at 20 microseconds. See `tests/parity3d/README.md` for fixture coverage.
+runs 200 steps at 20 microseconds. Two HP4 scenarios run 1,000 steps, including
+strictly compared and exactly repeatable sustained motion/extrusion. See
+`tests/parity3d/README.md` for fixture coverage.
 The recording oracle also calls the production JS flight-recorder snapshot for
 six existing fixture families. It compares frame trees, live effector frames,
 span endpoints, commanded/actual/geometric lengths and force telemetry. Browser
@@ -96,6 +98,17 @@ the shared fixture's USD types to doubles and retains `1e-10`/`1e-9` for every
 engine field. Production loaders never rewrite authored numeric types. Guards
 reject changed frames, velocities, forces and deposited lengths rather than
 widening a global tolerance.
+
+The 1,000-step HP4 motion case uses the original USDA, absolute angle ramps on all
+four motors, and ten extrusion commands over two seconds. It moves the effector
+about 29 mm and compares every field at `1e-10`/`1e-9`, with exact repeatability in
+each engine. A precision probe measured maximum position error `1.8e-14` m,
+encoder error `4.3e-11` rad and cable-force error `2.1e-11` N. A second case extends
+the existing mixed command/pause sequence to 1,000 steps at unchanged dynamic
+bounds. Near-rest cutoff amplification remains visible: maximum encoder error
+`3.5e-7` rad and angular-velocity error `1.3e-5` rad/s, with identical missed-step
+counts. The tests retain all initial and intermediate snapshots; neither case
+widens tolerances or rewrites source types to hide drift.
 
 ## Architectural checks
 
@@ -204,6 +217,7 @@ Each is isolated in its own commit, with JS and differential regression evidence
 | [#69](https://github.com/tobbelobb/hp-sim5/pull/69) | Read-only snapshots, richer primary Rerun and headless recording CLI | #68 |
 | [#70](https://github.com/tobbelobb/hp-sim5/pull/70) | Live split/merge, entity lifecycle oracle and coupled topology cycles | #69 |
 | [#71](https://github.com/tobbelobb/hp-sim5/pull/71) | Sphere contacts, tensor bump and single-pass slack differentials | #70 |
+| Sustained-motion audit (this slice) | Stored quaternion frames, identical authored USD precision and 1,000-step full-machine evidence | #71 |
 
 The implementation checklist now covers the meaningful Hangprinter pipeline and
 the shared optional engine systems. Review and merge the stacked slices in order;
@@ -220,10 +234,13 @@ effector/extruder state, including representative complete machines. Remaining
 differences are browser-only or documented intentional divergences. Existing JS
 and Python tests pass. Keep this checklist open until the whole gate is met.
 
-Implementation audit through #71: same authored HP3/HP4/pinhole inputs, native ECS
+Implementation audit through the sustained-motion slice: same authored
+HP3/HP4/pinhole inputs with identical numeric opinions, native ECS
 construction, exact production system order, shared engine/command state,
-representative 200-step machines, coupled topology/friction/motor/constraint
-scenarios, and primary native Rerun/CLI are covered. Final validation is 344
-simulator Python tests, 287 autocal Python tests, and 650 JS tests (one skipped);
-JS production is unchanged by #71. The stack remains open for review and merge,
-so this audit does not claim integration into main or approval of the changes.
+representative 200-step machines, 1,000-step commanded motion and settling,
+coupled topology/friction/motor/constraint scenarios, and primary native Rerun/CLI
+are covered. Final validation is 349 simulator Python tests, 287 autocal Python
+tests, and 663 JS tests (one skipped). A real two-second RRD contains the initial
+state and every one of the 1,000 updates, with encoder/length/force telemetry.
+The stack remains open for review and merge, so this audit does not claim
+integration into main or approval of the changes.
