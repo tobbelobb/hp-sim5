@@ -86,11 +86,14 @@ def test_paused_scene_load_resets_entity_loads_only_when_replacing(append):
     keys = ['torqueModeCableLoadTorques', 'torqueModeCableLoadStiffnesses', 'torqueModeCableLoadDampings']
     loads = [world.get_resource(key) for key in keys]
     assert all(loads)  # actual solver loads, not seeded stand-ins
+    colors = world.get_resource('machineColors')
     systems = world.systems[:]
     remote.commands = [{'type': 'Move', 'A': .001}]
     world.get_resource('pauseState').paused = True
     stage = open_cable_scene(ROOT / 'public/usd_scenes/hp3_rigid_body.usda')
     populate_machine_scene(world, stage, '/World/HangprinterScene', namespace='new', append=append)
+    assert world.get_resource('machineColors') is colors
+    assert list(colors) == (['old', 'new'] if append else ['new'])
     assert world.systems == systems
     assert remote.axis_to_entity == {}
     assert remote.get_queue_length() == 1

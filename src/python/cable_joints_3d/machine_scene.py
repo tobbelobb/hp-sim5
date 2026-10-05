@@ -194,7 +194,10 @@ def populate_machine_scene(world, stage, scene_prim_path='/World/SlideprinterSce
         world.set_resource('grabbedBall', None)
         world.set_resource('debugRenderPoints', {})
     colors = world.get_resource('machineColors')
-    colors = colors if append and isinstance(colors, dict) else {}
+    if not isinstance(colors, dict):
+        colors = {}
+    elif not append:
+        colors.clear()
     colors[machine] = {'tintColor': tint_color, 'extrusionColor': extrusion_color}
     world.set_resource('machineColors', colors)
     named, joint_entities, body_members = {}, {}, {}

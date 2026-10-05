@@ -44,10 +44,13 @@ test.each([false, true])('paused scene load resets entity loads only when replac
   const keys = ['torqueModeCableLoadTorques', 'torqueModeCableLoadStiffnesses', 'torqueModeCableLoadDampings'];
   const loads = keys.map(key => world.getResource(key));
   expect(loads.every(map => map.size > 0)).toBe(true); // actual solver loads, not seeded stand-ins
+  const colors = world.getResource('machineColors');
   const systems = world.systems.slice();
   remote.commands = [{ type: 'Move', A: .001 }];
   world.getResource('pauseState').paused = true;
   applyScene(world, source('hp3'), '/World/HangprinterScene', { namespace: 'new', append });
+  expect(world.getResource('machineColors')).toBe(colors);
+  expect([...colors.keys()]).toEqual(append ? ['old', 'new'] : ['new']);
   expect(world.systems).toEqual(systems);
   expect(remote.axisToEntity).toEqual({});
   expect(remote.getQueueLength()).toBe(1);
