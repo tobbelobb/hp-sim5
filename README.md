@@ -186,6 +186,11 @@ npx jest
 .venv/bin/python -m pytest tests/python
 ```
 
+Default Python/CI runs exclude tests marked `slow`. Use `-m slow` to select
+those extended checks, or `-m ""` to include all tests. The
+[3D harness guide](tests/parity3d/README.md) lists the opt-in lifecycle
+repeatability command; short lifecycle and loaded-torque checks remain in CI.
+
 Also check out `scripts/run_ci_tests.sh` which helps you run some more types of tests.
 
 ### Autocal-only filtering

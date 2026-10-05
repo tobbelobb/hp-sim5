@@ -55,6 +55,7 @@ def test_scene_lifecycle_oracle_exercises_loaded_pause_cache_reset_and_depositio
     assert [record['color'] for record in deposits] == ['#ff0000' if machine == old else '#00ff00' for machine in touched]
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('name', ['machine_lifecycle_replace', 'machine_lifecycle_append', 'machine_pipeline_hp4_loaded_torque'])
 def test_live_scene_and_loaded_torque_pipeline_for_200_repeatable_steps(name):
     definition = fixture(name)
@@ -70,9 +71,14 @@ def test_live_scene_and_loaded_torque_pipeline_for_200_repeatable_steps(name):
         assert expected['snapshots'][-1]['entities']['default::SpoolD']['EncoderComponent']['angle'] != 0
 
 
-def test_load_map_comparison_rejects_changed_torque_and_implicit_coefficients():
+def test_loaded_torque_parity_and_load_map_comparison():
     definition = fixture('machine_pipeline_hp4_loaded_torque')
     expected = run_js(definition)
+    assert_equivalent(run_python(definition), expected, **definition['tolerance'])
+    for state in expected['snapshots'][1:]:
+        assert all(state['entityMaps'][key]['default::SpoolD'] > 0 for key in LOADS)
+        assert state['entities']['default::SpoolD']['StepperMotorComponent']['torqueMode']
+    assert expected['snapshots'][-1]['entities']['default::SpoolD']['EncoderComponent']['angle'] != 0
     for key, change in zip(LOADS, [1e-6, 1e-4, 1e-7]):
         changed = copy.deepcopy(expected)
         changed['snapshots'][-1]['entityMaps'][key]['default::SpoolD'] += change

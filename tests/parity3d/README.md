@@ -11,8 +11,19 @@ the complete 3D suite, including authored machines, commands, sustained motion,
 scene lifecycle and saved Rerun recordings, use:
 
 ```bash
-.venv/bin/python -m pytest tests/python/cable_joints_3d -q
+.venv/bin/python -m pytest tests/python/cable_joints_3d -q -m ""
 ```
+
+Default pytest/CI runs exclude `slow` tests. The lifecycle suite retains short
+replacement/append and loaded-torque differentials; its three 200-step,
+twice-per-engine repeatability cases are opt-in:
+
+```bash
+.venv/bin/python -m pytest tests/python/cable_joints_3d/test_machine_lifecycle_parity.py -q -m slow
+```
+
+Use `-m ""` to include both default and slow tests, as in the complete-suite
+command above. The extended cases retain their original steps and tolerances.
 
 For a focused full-machine selection and a manual visual checklist, see the
 [3D README](../../hp-sim-3d/README.md#manual-acceptance-checklist). The
