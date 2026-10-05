@@ -1,0 +1,98 @@
+{
+  "entities": [
+    {
+      "name": "bodyA",
+      "components": {
+        "PositionComponent": [1, 2, 0.5],
+        "PrevFinalPosComponent": [1, 2, 0.5],
+        "VelocityComponent": [0.1, -0.2, 0.3],
+        "MassComponent": [2],
+        "OrientationComponent": [0.2, -0.3, 0.4, 0.8426149773176358],
+        "PrevFinalOrientationComponent": [0.2, -0.3, 0.4, 0.8426149773176358],
+        "AngularVelocityComponent": [0.4, -0.3, 0.2],
+        "MomentOfInertiaComponent": [[[0.2, 0.01, -0.03], [0.01, 0.3, 0.02], [-0.03, 0.02, 0.4]]],
+        "RigidBodyComponent": [["tipA", "internalA"]]
+      }
+    },
+    {
+      "name": "bodyB",
+      "components": {
+        "PositionComponent": [3, -0.5, 2],
+        "PrevFinalPosComponent": [3, -0.5, 2],
+        "VelocityComponent": [0.1, -0.2, 0.3],
+        "MassComponent": [4],
+        "OrientationComponent": [0.3, 0.4, 0, 0.8660254037844386],
+        "PrevFinalOrientationComponent": [0.3, 0.4, 0, 0.8660254037844386],
+        "AngularVelocityComponent": [0.4, -0.3, 0.2],
+        "MomentOfInertiaComponent": [[[0.2, 0.01, -0.03], [0.01, 0.3, 0.02], [-0.03, 0.02, 0.4]]],
+        "RigidBodyComponent": [["tipB"]]
+      }
+    },
+    {
+      "name": "tipA",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "MassComponent": [0],
+        "RigidBodyMemberComponent": ["bodyA", [0.3, 0.4, -0.2], [0, 0, 0, 1], 0.1]
+      }
+    },
+    {
+      "name": "tipB",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "MassComponent": [0],
+        "RigidBodyMemberComponent": ["bodyB", [-0.2, 0.3, 0.4], [0, 0, 0, 1], 0.1]
+      }
+    },
+    {
+      "name": "internalA",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "MassComponent": [0],
+        "RigidBodyMemberComponent": ["bodyA", [0.1, 0, 0], [0, 0, 0, 1], 0.1]
+      }
+    },
+    {
+      "name": "constraint",
+      "components": {
+        "DistanceConstraintComponent": ["tipA", "tipB", 1.2, 0.0001]
+      }
+    },
+    {
+      "name": "internalConstraint",
+      "components": {
+        "DistanceConstraintComponent": ["tipA", "internalA", 0.5, 0]
+      }
+    }
+  ],
+  "initializeRigidBodies": ["bodyA", "bodyB"],
+  "systems": ["PrevFinalPosSystem", "PrevFinalOrientationSystem", "MovementSystem", "AngularMovementSystem", "RigidBodySyncSystem", "XPBDDistanceConstraintSystem", "PBDVelocityUpdateSystem", "PBDAngularVelocityUpdateSystem"],
+  "steps": [
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.004
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.002
+    }
+  ],
+  "attachments": [
+    {
+      "entity": "tipA",
+      "counterpart": "tipB",
+      "localPoint": [0, 0, 0]
+    }
+  ],
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  }
+}

@@ -5,9 +5,28 @@ import {
   applyWorldInverseInertia,
   effectiveInertiaAboutWorldAxis,
   inverseInertiaQuadraticForm,
+  invertMatrix3,
+  multiplyMatrix3,
+  transformInertiaTensorToWorld,
 } from '../../../src/js/cable_joints_3d/inertia_tensor.js';
 
 describe('3D moment of inertia tensor', () => {
+  test.each([1, 1e-6, 1e-12])('inverts rotated SPD inertia independently of scale %s', (scale) => {
+    const rotation = new Quaternion().setFromAxisAngle(new Vector3(1, 2, 3).normalize(), .7);
+    const tensor = transformInertiaTensorToWorld([
+      [scale * .5, 0, 0], [0, scale, 0], [0, 0, scale * 1.5],
+    ], rotation);
+    const identity = multiplyMatrix3(invertMatrix3(tensor), tensor);
+    identity.forEach((row, i) => row.forEach((value, j) => expect(value).toBeCloseTo(i === j ? 1 : 0, 12)));
+  });
+
+  test.each([[[0, 1, 2]], [[1, 0, 0]], [[0, 0, 0]]])('preserves supported directions of rotated PSD inertia %s', (moments) => {
+    const rotation = new Quaternion().setFromAxisAngle(new Vector3(1, 2, 3).normalize(), .7);
+    const tensor = transformInertiaTensorToWorld(moments.map((value, i) => moments.map((_, j) => i === j ? value * 1e-6 : 0)), rotation);
+    const expected = transformInertiaTensorToWorld(moments.map((value, i) => moments.map((_, j) => i === j && value > 0 ? 1e6 / value : 0)), rotation);
+    invertMatrix3(tensor).forEach((row, i) => row.forEach((value, j) => expect(value).toBeCloseTo(expected[i][j], 7)));
+  });
+
   test('stores full tensor and inverse tensor while preserving axis scalar compatibility', () => {
     const inertia = new MomentOfInertiaComponent(
       [

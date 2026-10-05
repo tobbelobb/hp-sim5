@@ -1,0 +1,269 @@
+{
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "resources": {
+    "gravity": [
+      0,
+      0,
+      -9.81
+    ],
+    "grabbedBall": "grabbed"
+  },
+  "entities": [
+    {
+      "name": "dynamic",
+      "components": {
+        "PositionComponent": [
+          1,
+          -2,
+          0.3
+        ],
+        "PrevFinalPosComponent": [
+          1,
+          -2,
+          0.3
+        ],
+        "VelocityComponent": [
+          0.5,
+          -0.1,
+          0.7
+        ],
+        "OrientationComponent": [
+          0.2,
+          -0.3,
+          0.4,
+          0.8426149773176358
+        ],
+        "PrevFinalOrientationComponent": [
+          0.2,
+          -0.3,
+          0.4,
+          0.8426149773176358
+        ],
+        "AngularVelocityComponent": [
+          0.3,
+          0.8,
+          -0.2
+        ],
+        "MassComponent": [
+          2
+        ],
+        "MomentOfInertiaComponent": [
+          [
+            [
+              0.2,
+              0.02,
+              0
+            ],
+            [
+              0.02,
+              0.3,
+              0
+            ],
+            [
+              0,
+              0,
+              0.4
+            ]
+          ]
+        ],
+        "GravityAffectedComponent": []
+      }
+    },
+    {
+      "name": "kinematic",
+      "components": {
+        "PositionComponent": [
+          1,
+          -2,
+          0.3
+        ],
+        "PrevFinalPosComponent": [
+          1,
+          -2,
+          0.3
+        ],
+        "VelocityComponent": [
+          0.5,
+          -0.1,
+          0.7
+        ],
+        "OrientationComponent": [
+          0.2,
+          -0.3,
+          0.4,
+          0.8426149773176358
+        ],
+        "PrevFinalOrientationComponent": [
+          0.2,
+          -0.3,
+          0.4,
+          0.8426149773176358
+        ],
+        "AngularVelocityComponent": [
+          0.3,
+          0.8,
+          -0.2
+        ],
+        "MassComponent": [
+          0
+        ],
+        "MomentOfInertiaComponent": [
+          1
+        ]
+      }
+    },
+    {
+      "name": "static",
+      "components": {
+        "PositionComponent": [
+          1,
+          -2,
+          0.3
+        ],
+        "PrevFinalPosComponent": [
+          1,
+          -2,
+          0.3
+        ],
+        "VelocityComponent": [
+          0.5,
+          -0.1,
+          0.7
+        ],
+        "OrientationComponent": [
+          0.2,
+          -0.3,
+          0.4,
+          0.8426149773176358
+        ],
+        "PrevFinalOrientationComponent": [
+          0.2,
+          -0.3,
+          0.4,
+          0.8426149773176358
+        ],
+        "AngularVelocityComponent": [
+          0.3,
+          0.8,
+          -0.2
+        ],
+        "MassComponent": [
+          -1
+        ],
+        "MomentOfInertiaComponent": [
+          0
+        ]
+      }
+    },
+    {
+      "name": "grabbed",
+      "components": {
+        "PositionComponent": [
+          1,
+          -2,
+          0.3
+        ],
+        "PrevFinalPosComponent": [
+          1,
+          -2,
+          0.3
+        ],
+        "VelocityComponent": [
+          0.5,
+          -0.1,
+          0.7
+        ],
+        "OrientationComponent": [
+          0.2,
+          -0.3,
+          0.4,
+          0.8426149773176358
+        ],
+        "PrevFinalOrientationComponent": [
+          0.2,
+          -0.3,
+          0.4,
+          0.8426149773176358
+        ],
+        "AngularVelocityComponent": [
+          0.3,
+          0.8,
+          -0.2
+        ],
+        "MassComponent": [
+          1
+        ],
+        "MomentOfInertiaComponent": [
+          1
+        ],
+        "GravityAffectedComponent": []
+      }
+    }
+  ],
+  "systems": [
+    "PrevFinalPosSystem",
+    "PrevFinalOrientationSystem",
+    "GravitySystem",
+    "MovementSystem",
+    "AngularMovementSystem",
+    "PBDVelocityUpdateSystem",
+    "PBDAngularVelocityUpdateSystem"
+  ],
+  "steps": [
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.002
+    },
+    {
+      "dt": 0.005
+    },
+    {
+      "dt": 0.001
+    },
+    {
+      "dt": 0
+    },
+    {
+      "dt": 0.1
+    },
+    {
+      "dt": 0.1,
+      "resources": {
+        "pauseState": {
+          "paused": true
+        }
+      }
+    },
+    {
+      "dt": 0.002,
+      "resources": {
+        "pauseState": {
+          "paused": false
+        }
+      }
+    },
+    {
+      "dt": 0.1,
+      "resources": {
+        "errorState": {
+          "hasError": true
+        }
+      }
+    }
+  ],
+  "queries": [
+    [
+      "PositionComponent",
+      "MassComponent"
+    ],
+    [
+      "OrientationComponent",
+      "MomentOfInertiaComponent"
+    ]
+  ]
+}

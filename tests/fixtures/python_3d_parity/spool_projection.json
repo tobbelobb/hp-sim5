@@ -1,0 +1,133 @@
+{
+  "resources": {
+    "defaultPlaneNormal": [1, 2, 3]
+  },
+  "entities": [
+    {
+      "name": "spool",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "PrevFinalPosComponent": [0, 0, 0],
+        "VelocityComponent": [0.1, -0.2, 0.3],
+        "MassComponent": [0],
+        "OrientationComponent": [0, 0, 0.9999417202299663, 0.010796117058267392],
+        "PrevFinalOrientationComponent": [0, 0, 0.9999417202299663, 0.010796117058267392],
+        "AngularVelocityComponent": [0, 0, 20],
+        "MomentOfInertiaComponent": [[[0.2, 0.01, -0.03], [0.01, 0.3, 0.02], [-0.03, 0.02, 0.4]]],
+        "SpoolStateComponent": ["B", [0, 0, 2], [0, 0, 0, 1]],
+        "EncoderComponent": [3.12, 0, 0, 1]
+      }
+    },
+    {
+      "name": "tilted_wheel",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "PrevFinalPosComponent": [0, 0, 0],
+        "VelocityComponent": [0.1, -0.2, 0.3],
+        "MassComponent": [0],
+        "OrientationComponent": [0.2, -0.3, 0.4, 0.8426149773176358],
+        "PrevFinalOrientationComponent": [0.2, -0.3, 0.4, 0.8426149773176358],
+        "AngularVelocityComponent": [0.7, -0.2, 0.8],
+        "MomentOfInertiaComponent": [[[0.2, 0.01, -0.03], [0.01, 0.3, 0.02], [-0.03, 0.02, 0.4]]],
+        "SpoolStateComponent": [null, [0.1, 1, -0.3], [0.3, 0.4, 0, 0.8660254037844386]],
+        "EncoderComponent": [0, 0, 0, 0]
+      }
+    },
+    {
+      "name": "plain",
+      "components": {
+        "PositionComponent": [0, 0, 0],
+        "PrevFinalPosComponent": [0, 0, 0],
+        "VelocityComponent": [0.1, -0.2, 0.3],
+        "MassComponent": [0],
+        "OrientationComponent": [0.2, -0.3, 0.4, 0.8426149773176358],
+        "PrevFinalOrientationComponent": [0.2, -0.3, 0.4, 0.8426149773176358],
+        "AngularVelocityComponent": [0.3, 0.2, 1.4],
+        "MomentOfInertiaComponent": [[[0.2, 0.01, -0.03], [0.01, 0.3, 0.02], [-0.03, 0.02, 0.4]]],
+        "EncoderComponent": [0, 0, 0, 0]
+      }
+    }
+  ],
+  "systems": ["AngularMovementSystem", "RigidBodySyncSystem", "EncoderUpdateSystem"],
+  "steps": [
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    },
+    {
+      "dt": 0.01
+    }
+  ],
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  }
+}

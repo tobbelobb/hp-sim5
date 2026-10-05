@@ -45,6 +45,9 @@ class RigidBodyComponent:
     render_segments: list | None = None
     synced_position: np.ndarray = field(default_factory=lambda: np.zeros(3))
     synced_orientation: Quaternion = field(default_factory=Quaternion)
+
+    def __post_init__(self):
+        self.members = list(self.members)
 @dataclass(init=False)
 class RigidBodyMemberComponent:
     body_entity: int | None = None

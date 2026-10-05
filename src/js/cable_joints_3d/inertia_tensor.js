@@ -88,19 +88,58 @@ export function normalizeInertiaTensor(value) {
   return zeroMatrix3();
 }
 
-function isDiagonalMatrix3(matrix) {
-  return (
-    Math.abs(matrix[0][1]) <= EPSILON
-    && Math.abs(matrix[0][2]) <= EPSILON
-    && Math.abs(matrix[1][0]) <= EPSILON
-    && Math.abs(matrix[1][2]) <= EPSILON
-    && Math.abs(matrix[2][0]) <= EPSILON
-    && Math.abs(matrix[2][1]) <= EPSILON
-  );
+function symmetricInverse(matrix, scale) {
+  // Jacobi eigendecomposition of a scaled symmetric tensor. Like Python's
+  // eigh path, preserve supported PSD directions even for singular tensors.
+  const m = matrix.map(row => row.map(value => value / scale));
+  const vectors = diagonalMatrix3(1.0);
+  for (let sweep = 0; sweep < 32; sweep += 1) {
+    let p = 0, q = 1;
+    for (const [a, b] of [[0, 2], [1, 2]]) {
+      if (Math.abs(m[a][b]) > Math.abs(m[p][q])) [p, q] = [a, b];
+    }
+    if (Math.abs(m[p][q]) <= Number.EPSILON) break;
+    const tau = (m[q][q] - m[p][p]) / (2 * m[p][q]);
+    const t = (tau >= 0 ? 1 : -1) / (Math.abs(tau) + Math.hypot(1, tau));
+    const c = 1 / Math.hypot(1, t), s = t * c;
+    const offDiagonal = m[p][q];
+    m[p][p] -= t * offDiagonal;
+    m[q][q] += t * offDiagonal;
+    m[p][q] = m[q][p] = 0;
+    for (let k = 0; k < 3; k += 1) {
+      if (k !== p && k !== q) {
+        const kp = m[k][p], kq = m[k][q];
+        m[k][p] = m[p][k] = c * kp - s * kq;
+        m[k][q] = m[q][k] = s * kp + c * kq;
+      }
+      const vp = vectors[k][p], vq = vectors[k][q];
+      vectors[k][p] = c * vp - s * vq;
+      vectors[k][q] = s * vp + c * vq;
+    }
+  }
+  const tolerance = Number.EPSILON * 3 * Math.max(...m.map((row, k) => Math.abs(row[k])));
+  const result = zeroMatrix3();
+  for (let k = 0; k < 3; k += 1) {
+    const inverse = m[k][k] > tolerance ? 1 / (m[k][k] * scale) : 0;
+    for (let row = 0; row < 3; row += 1) {
+      for (let col = 0; col < 3; col += 1) {
+        result[row][col] += vectors[row][k] * inverse * vectors[col][k];
+      }
+    }
+  }
+  return result;
 }
 
 export function invertMatrix3(matrix) {
-  const m = cloneMatrix3(matrix);
+  const tensor = cloneMatrix3(matrix);
+  const scale = Math.max(...tensor.flat().map(Math.abs));
+  if (!(scale > 0)) return zeroMatrix3();
+  const symmetric = [[0, 1], [0, 2], [1, 2]].every(([a, b]) => (
+    Math.abs(tensor[a][b] - tensor[b][a]) <= 1e-12 * Math.max(Math.abs(tensor[a][b]), Math.abs(tensor[b][a]))
+  ));
+  if (symmetric) return symmetricInverse(tensor, scale);
+
+  const m = tensor.map(row => row.map(value => value / scale));
   const a = m[0][0], b = m[0][1], c = m[0][2];
   const d = m[1][0], e = m[1][1], f = m[1][2];
   const g = m[2][0], h = m[2][1], i = m[2][2];
@@ -111,8 +150,8 @@ export function invertMatrix3(matrix) {
     + c * ((d * h) - (e * g))
   );
 
-  if (Number.isFinite(det) && Math.abs(det) > EPSILON) {
-    const invDet = 1.0 / det;
+  if (Number.isFinite(det) && det !== 0) {
+    const invDet = 1.0 / (det * scale);
     return [
       [
         ((e * i) - (f * h)) * invDet,
@@ -130,14 +169,6 @@ export function invertMatrix3(matrix) {
         ((a * e) - (b * d)) * invDet,
       ],
     ];
-  }
-
-  if (isDiagonalMatrix3(m)) {
-    return diagonalMatrix3(
-      m[0][0] > EPSILON ? 1.0 / m[0][0] : 0.0,
-      m[1][1] > EPSILON ? 1.0 / m[1][1] : 0.0,
-      m[2][2] > EPSILON ? 1.0 / m[2][2] : 0.0,
-    );
   }
 
   return zeroMatrix3();

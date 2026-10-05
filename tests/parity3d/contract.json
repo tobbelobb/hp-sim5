@@ -1,0 +1,19 @@
+{
+  "PositionComponent": [["pos", "pos", "vector"]],
+  "PrevFinalPosComponent": [["pos", "pos", "vector"]],
+  "VelocityComponent": [["vel", "vel", "vector"]],
+  "OrientationComponent": [["quaternion", "quaternion", "quaternion"]],
+  "PrevFinalOrientationComponent": [["quaternion", "quaternion", "quaternion"]],
+  "AngularVelocityComponent": [["omega", "omega", "vector"]],
+  "MassComponent": [["mass", "mass", "number"]],
+  "RadiusComponent": [["radius", "radius", "number"]],
+  "GravityAffectedComponent": [],
+  "MomentOfInertiaComponent": [["inertiaTensor", "inertia_tensor", "matrix"], ["invInertiaTensor", "inv_inertia_tensor", "matrix"], ["inertia", "inertia", "number"], ["invInertia", "inv_inertia", "number"]],
+  "RigidBodyComponent": [["members", "members", "entities"], ["syncedPosition", "synced_position", "vector"], ["syncedOrientation", "synced_orientation", "quaternion"]],
+  "RigidBodyMemberComponent": [["bodyEntity", "body_entity", "entity"], ["localPosition", "local_position", "vector"], ["localOrientation", "local_orientation", "quaternion"], ["physicalMass", "physical_mass", "number"]],
+  "DistanceConstraintComponent": [["entityA", "entity_a", "entity"], ["entityB", "entity_b", "entity"], ["restLength", "rest_length", "number"], ["compliance", "compliance", "number"], ["lambda", "lambda_val", "number"]],
+  "EncoderComponent": [["angle", "angle", "number"], ["axis", "axis", "vector"]],
+  "SpoolStateComponent": [["axis", "axis", "string"], ["axisLocal", "axis_local", "vector"], ["referenceOrientation", "reference_orientation", "quaternion"]],
+  "SceneEntityInfoComponent": [["name", "name", "string"], ["tags", "tags", "strings"]],
+  "MachineTagComponent": [["id", "id", "string"]]
+}
