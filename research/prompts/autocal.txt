@@ -1,0 +1,22 @@
+Improve encoder-based CDPR autocalibration in hp-sim5. The current algorithm can
+be slow, fragile, or choose worse anchors because its selection score disagrees
+with physical accuracy. First reproduce and measure those cases.
+
+Investigate structured trial-and-error inspired by manual calibration: predict
+sensor observations from an approximate model, choose a controlled informative
+movement, collect encoder observations, compare with the prediction, make a
+bounded calibration adjustment, and validate it with another movement. Preserve
+the one-click user experience and automatic stopping; no manual print inspection.
+
+Read the existing fitting, active-learning and candidate-selection code before
+brainstorming. Record the leading hypotheses and test the promising ones on
+recorded and synthetic data, then use simulated collection when warranted.
+Separate anchor/radius error, held-out sensor prediction error, score ranking,
+failure rate, movement count and elapsed time. Hold out entire sweeps and test
+noise, bad points, elasticity, winding buildup and poor initial estimates.
+
+Use native physics and Rerun when they can test the hypothesis, while respecting
+the existing browser/firmware collector boundary and metre/millimetre conversion.
+Retain failed experiments. Implement the best supported change, run the relevant
+autocal regressions and explain measured improvements and remaining limitations.
+Do not call a lower objective value an improvement when the calibration is worse.

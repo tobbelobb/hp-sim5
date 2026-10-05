@@ -8,6 +8,10 @@ Lines, spools, motors, and firmware are all simulated in great detail.
 Simulation makes experimentation fast and cheap.
 Structured experiments enable us to improve Hangprinter.
 
+Run prompt-driven simulation research with [`hp-sim5-research-agent`](research/README.md).
+It connects Codex to native experiment tools and the Rerun Viewer, saves numeric
+and visual evidence, and uses your existing Codex ChatGPT login.
+
 Example usecases:
  - **Automate and Validate Hardware Design**
  - **Digital Twin**

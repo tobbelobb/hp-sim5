@@ -9,3 +9,4 @@ usd-core>=26.3
 pytest-asyncio>=1.3.0
 websockets>=16.0
 rerun-sdk>=0.38.1,<0.39
+mcp>=2.3,<3
