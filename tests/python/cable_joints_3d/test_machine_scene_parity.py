@@ -59,15 +59,14 @@ def test_appended_scene_preserves_machine_identity_colors_and_first_timestep():
     assert state['entities']['1::JointA_0']['RenderableComponent']['color'] == '#aabbcc'
 
 
-def test_float32_authored_values_explain_the_scene_precision_bound():
+def test_float32_authored_values_give_both_engines_identical_initial_inputs():
     fixture = _fixture('usd_scene_hp4_rigid_body')
     native, reference = [run(fixture)['snapshots'][0] for run in (run_python, run_js)]
     py_friction = native['entities']['default::SpoolA']['CoefficientOfFrictionComponent']['mu']
     js_friction = reference['entities']['default::SpoolA']['CoefficientOfFrictionComponent']['mu']
-    assert py_friction != js_friction
-    assert py_friction == float(np.float32(js_friction))
-    assert native['resources']['gravity'][2] == float(np.float32(reference['resources']['gravity'][2]))
-    assert_equivalent(native, reference, **fixture['tolerance'])
+    assert py_friction == js_friction == float(np.float32(.2))
+    assert native['resources']['gravity'] == reference['resources']['gravity']
+    assert_equivalent(native, reference, atol=1e-10, rtol=1e-9)
     changed = copy.deepcopy(native)
     changed['entities']['default::WheelAL_top']['RigidBodyMemberComponent']['localPosition'][2] += 1e-4
     with pytest.raises(AssertionError, match='localPosition'):

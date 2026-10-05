@@ -12,7 +12,7 @@ and optional configuration represented by `None` are intentional API divergences
 | Simulation functionality (JS source) | Python location / status | Dependencies / evidence needed |
 | --- | --- | --- |
 | World scheduling, pause/error, ECS query ordering (`cable_joints/ecs.js`) | `cable_joints/ecs.py`: equivalent | `query_order.json` and paused/error steps in `motion.json`; preserve smallest-store insertion order. Python's single-class query shorthand is an intentional API divergence. |
-| Vectors, quaternions, geometry (`cable_joints_3d/`) | `vector3.py`, `quaternion.py`, `geometry3.py`: equivalent for covered simulation operations | NumPy vectors are intentional divergence in API. `geometry.json` and `geometry_degenerate.json` cover projected tangents/arcs, all winding choices, arbitrary/zero axes, axial offsets and intersections; reuse Python 2D geometry. |
+| Vectors, quaternions, geometry (`cable_joints_3d/`) | `vector3.py`, `quaternion.py`, `geometry3.py`: equivalent for covered simulation operations | NumPy vectors are intentional divergence in API. `quaternion_raw_frames.json` covers stored nonunit/zero parent frames and explicitly normalized member frames. Geometry fixtures cover projected tangents/arcs, all winding choices, arbitrary/zero axes, axial offsets and intersections; reuse Python 2D geometry. |
 | Full inertia tensors (`inertia_tensor.js`) | `inertia_tensor.py`: equivalent for covered PSD tensors | `inertia.json` differentially covers rotated small SPD, rank-2/rank-1 and zero tensors. Isolated JS fix preserves Python's PR #61 scale-aware pseudoinverse. |
 | Prediction, previous poses, PBD velocities (`commonSystems.js`) | `common_systems.py`: equivalent | `motion.json`, `rigid_members.json`; explicit member exclusions preserve kinematic zero-mass motion and world angular frames. |
 | Rigid-member frames, endpoint reaction mapping (`rigid_bodies.js`) | `rigid_bodies.py`: equivalent | `rigid_members.json`, `distance_members.json` probe live attachments, world/local inversion and internal/external reactions. Foundation for cable/motor reactions. |
@@ -37,7 +37,7 @@ and optional configuration represented by `None` are intentional API divergences
 | USD cable initialization (`usd/cable_scene_baker.js`) | `usd/cable_scene_loader.py`, `usd/value_readers.py`: equivalent for covered baking | Native pxr.Usd stage, reuse tangent/arc/layer helpers; authored/manual/automatic/derive-all policies, layered radii, parent frames and width overrides. Same hp4/hp3/rigid-pinhole files and dedicated policy fixtures compare before ECS construction. |
 | USDA machine builders (`app/scene/`) | `machine_scene.py`: equivalent for covered construction | Native pxr.Usd stage and shared value readers; body/gravity/material/axis state, rigid mass/tensor aggregation, member conversion, distance/cable joints, path initialization, extruder bindings and append/namespaces. Eight authored scenes plus strict double-precision and append fixtures compare initial ECS. |
 | Commands (`remoteSpoolSystem.js`, `hangprinter_runtime.js`) | `remote_spool_system.py`, `machine_runtime.py`: equivalent for covered headless records | One queued record per step, pause/zero-dt, mode/reference updates, machine targeting, playback history/reset, callbacks and extrusion colors. Python deque ownership/API is intentional divergence; worker/backpressure transport is browser-only/not required. |
-| Composition root (`sceneSystems.js`, `simulationSystems.js`) | `machine_simulation.py`: equivalent for the registered headless pipeline | Production JS and Python registration, exact 19-system order; initial extruder update, no global substep loop. HP3, HP4, rigid pinhole and double-authored minimal machines run 200 repeatable steps; HP4 commands exercise modes, extrusion, diagnostics, pause and distinct update/resource dt. |
+| Composition root (`sceneSystems.js`, `simulationSystems.js`) | `machine_simulation.py`: equivalent for the registered headless pipeline | Production JS and Python registration, exact 19-system order; initial extruder update, no global substep loop. Representative machines run 200 repeatable steps. HP4 sustained motion/extrusion runs 1,000 strictly compared repeatable steps; another 1,000-step case settles after modes, diagnostics, extrusion, pause and distinct update/resource dt. |
 | Snapshot / Rerun (`flightRecorderSnapshot.js`, `FLIGHT_RECORDER.md`) | `machine_snapshot.py`, `rerun_system.py`, `__main__.py`: equivalent for covered recording data | Six fixture families compare native frames/lengths/forces with production JS recorder data. Live body hierarchy, solver-sampled cable endpoints, copied snapshots, initial/every-step RRD, Z-up coordinates, pause/reset clocks, static clearing, encoder/motor/velocity and tool/extrusion state. Straight-span/point visuals and stable per-quantity plot paths are intentional presentation divergences. |
 | Optional cable event buffer / console summaries (`cable_joints_core.js`) | intentional divergence | Python records deterministic ECS snapshots and primary Rerun traces instead of the optional JS `cableEventTrace*` buffer/console API. These diagnostics do not feed simulation state. Saved-RRD topology coverage checks joint identity and clearing; no physics field is removed. |
 | Three.js renderer, DOM/pointer/UI, upload controllers, workers | browser-only/not required | Do not port. Render-only slack/wrap geometry may be reused for Rerun presentation. |
@@ -45,7 +45,7 @@ and optional configuration represented by `None` are intentional API divergences
 
 ## Differential evidence
 
-Ninety-five shared JSON fixtures under `tests/fixtures/python_3d_parity/` execute
+Ninety-six shared JSON fixtures under `tests/fixtures/python_3d_parity/` execute
 production JS in Node (`tests/parity3d/oracle.mjs`) and the native Python engine.
 Adapters construct/serialize state; they contain no physics oracle formulas.
 Snapshots compare initial state and every timestep, including named relationships,
@@ -57,7 +57,9 @@ Structural fields compare exactly; quaternions
 compare up to sign. Nonfinite physics state fails. Guard checks ensure targeted
 constraints, transitions and reactions activate. Forty-two scenarios run 200 steps
 and require exact repeatability within each engine; a further stiff-motor probe
-runs 200 steps at 20 microseconds. See `tests/parity3d/README.md` for fixture coverage.
+runs 200 steps at 20 microseconds. Two HP4 scenarios run 1,000 steps, including
+strictly compared and exactly repeatable sustained motion/extrusion. See
+`tests/parity3d/README.md` for fixture coverage.
 The recording oracle also calls the production JS flight-recorder snapshot for
 six existing fixture families. It compares frame trees, live effector frames,
 span endpoints, commanded/actual/geometric lengths and force telemetry. Browser
@@ -69,14 +71,13 @@ around `1e6` use absolute `1e-8`, relative `1e-12`. The commanded cable case use
 the authored 0.5 Nm motor scale. Synthetic 100 Nm stiffness at millisecond steps
 produces violent motion and amplifies roundoff; the stress case uses 20 microsecond
 steps. Neither engine receives hidden substeps, speed clamps or relaxed tolerances.
-Native USD honors authored float32 types while JS's parser retains numeric literals
-as doubles. Initial authored-scene comparisons use absolute `5e-10`, relative `6e-8`
-to cover float32 input quantization and aggregate-center subtraction. A guard
-demonstrates the source rounding and rejects a changed member frame. The authored
-double-precision scene and native baking retain `1e-10`/`1e-9`.
+Both USD loaders now honor authored single-precision attributes, including vectors,
+quaternions and arrays. Initial authored-scene comparisons retain `1e-10`/`1e-9`,
+matching native baking and the double-authored control. A guard requires identical
+float32 friction/gravity inputs and rejects a changed member frame.
 
 Full authored-machine runs use field-specific absolute bounds, with relative
-`1e-9` on those fields. Unlisted parameters retain the initial float32 input bound;
+`1e-9` on those fields. Unlisted parameters retain `1e-10`/`1e-9`;
 categorical fields, relationships, query order and system order remain exact.
 Only extrusion positions receive the length bound; deposited lengths and command
 records retain the default comparison.
@@ -98,12 +99,27 @@ engine field. Production loaders never rewrite authored numeric types. Guards
 reject changed frames, velocities, forces and deposited lengths rather than
 widening a global tolerance.
 
+The 1,000-step HP4 motion case uses the original USDA, absolute angle ramps on all
+four motors, and ten extrusion commands over two seconds. It moves the effector
+about 29 mm and compares every field at `1e-10`/`1e-9`, with exact repeatability in
+each engine. A precision probe measured maximum position error `1.8e-14` m,
+encoder error `4.3e-11` rad and cable-force error `2.1e-11` N. A second case extends
+the existing mixed command/pause sequence to 1,000 steps at unchanged dynamic
+bounds. Near-rest cutoff amplification remains visible: maximum encoder error
+`3.5e-7` rad and angular-velocity error `1.3e-5` rad/s, with identical missed-step
+counts. The tests retain all initial and intermediate snapshots; neither case
+widens tolerances or rewrites source types to hide drift.
+
 ## Architectural checks
 
 - Preserve PR #61 world angular/PBD, scale-aware inertia, zero-mass kinematic,
   member exclusion/copy and Rerun identity/color/static-clear/pause corrections.
 - Preserve live parent/member frames, cached copies and mutable component identity.
   Constraint systems leave member ECS poses stale until the next registered sync.
+- Quaternion vector transforms use the stored quaternion without implicit
+  normalization, matching JS. Frame helpers and member constructors normalize
+  explicitly where required. The raw-parent attachment fixture failed before
+  removing Python's hidden normalization; owned float outputs leave inputs intact.
 - Query insertion order and system registration order affect coupled dynamics.
   The cable solver reads the World `dt` resource; motors use the update argument.
 - Cable solving captures local attachments once, alternates path/joint iterations,
@@ -178,6 +194,14 @@ Each is isolated in its own commit, with JS and differential regression evidence
   available rest/wrap lengths. An insufficient-rest regression demonstrated the
   unused entity and advanced allocator. Allocation now follows those checks in
   both engines; successful topology and the full flipper trajectory remain stable.
+- USD single precision: JS ignored declared `float` precision, starting from
+  different masses, gravity and friction than native USD. Thirteen JS loader
+  regressions failed before resolving scalar/vector/quaternion/array values to
+  their authored binary32 opinions. Double values, metadata, relationships and
+  unauthored values remain unchanged. Native USD already follows this contract;
+  initial scene bounds are tightened, rather than compensating for unequal inputs.
+  The separate flipper demo's deterministic score changes from 18 to 4. An isolated
+  pre-correction checkout confirms 18; repeated corrected runs confirm 4.
 
 ## Reviewable slices and next dependencies
 
@@ -193,6 +217,7 @@ Each is isolated in its own commit, with JS and differential regression evidence
 | [#69](https://github.com/tobbelobb/hp-sim5/pull/69) | Read-only snapshots, richer primary Rerun and headless recording CLI | #68 |
 | [#70](https://github.com/tobbelobb/hp-sim5/pull/70) | Live split/merge, entity lifecycle oracle and coupled topology cycles | #69 |
 | [#71](https://github.com/tobbelobb/hp-sim5/pull/71) | Sphere contacts, tensor bump and single-pass slack differentials | #70 |
+| [#72](https://github.com/tobbelobb/hp-sim5/pull/72) | Stored quaternion frames, identical authored USD precision and 1,000-step full-machine evidence | #71 |
 
 The implementation checklist now covers the meaningful Hangprinter pipeline and
 the shared optional engine systems. Review and merge the stacked slices in order;
@@ -209,10 +234,13 @@ effector/extruder state, including representative complete machines. Remaining
 differences are browser-only or documented intentional divergences. Existing JS
 and Python tests pass. Keep this checklist open until the whole gate is met.
 
-Implementation audit through #71: same authored HP3/HP4/pinhole inputs, native ECS
+Implementation audit through #72: same authored
+HP3/HP4/pinhole inputs with identical numeric opinions, native ECS
 construction, exact production system order, shared engine/command state,
-representative 200-step machines, coupled topology/friction/motor/constraint
-scenarios, and primary native Rerun/CLI are covered. Final validation is 344
-simulator Python tests, 287 autocal Python tests, and 650 JS tests (one skipped);
-JS production is unchanged by #71. The stack remains open for review and merge,
-so this audit does not claim integration into main or approval of the changes.
+representative 200-step machines, 1,000-step commanded motion and settling,
+coupled topology/friction/motor/constraint scenarios, and primary native Rerun/CLI
+are covered. Final validation is 349 simulator Python tests, 287 autocal Python
+tests, and 663 JS tests (one skipped). A real two-second RRD contains the initial
+state and every one of the 1,000 updates, with encoder/length/force telemetry.
+The stack remains open for review and merge, so this audit does not claim
+integration into main or approval of the changes.

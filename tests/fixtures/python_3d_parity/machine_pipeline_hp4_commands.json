@@ -158,8 +158,8 @@
     }
   ],
   "tolerance": {
-    "atol": 5e-10,
-    "rtol": 6e-08,
+    "atol": 1e-10,
+    "rtol": 1e-09,
     "fields": {
       "PositionComponent.pos": {
         "atol": 1e-08,

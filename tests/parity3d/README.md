@@ -89,9 +89,9 @@ Current coverage:
   compare component presence, relationships, aggregate tensors/masses, material
   state, rigid members, attachments/rest/stored lengths, solver settings and
   extruder bindings. `snapshotMapResources` preserves machine-color maps.
-  Native USD float32 opinions differ from JS literal doubles; authored initial
-  states use atol `5e-10` / rtol `6e-8`. The double-precision fixture and native bake
-  cases retain atol `1e-10` / rtol `1e-9`.
+  Both loaders honor authored float32 opinions; all initial construction and
+  native bake cases retain atol `1e-10` / rtol `1e-9`. JS loader regressions check
+  binary32 scalars, vectors, quaternions and arrays against fixed IEEE values.
 - `machine_pipeline_*`: the production 19-system pipeline runs HP3, HP4, rigid
   pinhole and a double-authored minimal machine for 200 steps, with exact
   within-engine repeatability. Full authored input uses documented per-field
@@ -99,9 +99,20 @@ Current coverage:
   tolerances over 20 steps. No loader changes authored precision or adds substeps.
 - `machine_pipeline_hp4_commands`: full-machine command playback, position/torque
   transitions, encoder diagnostics, extrusion at the pre-prediction tip, pause
-  and zero update dt with a retained cable dt resource.
+  and zero update dt with a retained cable dt resource. A 1,000-step extension
+  compares settling at the unchanged documented dynamic bounds.
+- A 1,000-step sustained HP4 ramp uses the same authored file, absolute-radian
+  commands on all motors and ten deposits over two seconds. It requires more than
+  20 mm effector movement, encoder tracking, zero missed steps, loaded cables and
+  deposition at the previous step's tip. Every field retains atol `1e-10` /
+  rtol `1e-9`; each engine reproduces its complete snapshots exactly on a second
+  run. This test lives in `test_machine_pipeline_parity.py`, generating shared
+  command data without embedding any physics formulas.
 - `pbd_small_rotations`: recover representable quaternion-vector rotations when
   the scalar rounds to one; preserve sign and the existing cutoff.
+- `quaternion_raw_frames`: nonunit and zero live parent poses with deliberately
+  stale cached members; raw vector transforms and explicit member/frame
+  normalization remain distinct operations.
 - `commands_state`, `commands_playback`, and `commands_numeric_order`: one record
   per step, pause/zero-dt, motor/reference transitions, multiple machines per axis,
   cached mapping reset, queue/history restoration, callback timing and colors.

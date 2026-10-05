@@ -21,6 +21,18 @@ def test_quaternion_rotates_vector_like_js_engine():
     assert np.allclose(rotation.transform_vector([1, 0, 0]), [0, 1, 0], atol=1e-12)
 
 
+def test_raw_quaternion_transform_owns_float_output_without_normalizing_inputs():
+    rotation = Quaternion(0, 0, 0, 2)
+    vector = np.array([1, 2, 3])
+    result = rotation.transform_vector(vector)
+    assert result.tolist() == [4, 8, 12]
+    assert result.dtype == np.float64
+    result[:] = 0
+    assert vector.tolist() == [1, 2, 3]
+    assert rotation.as_xyzw().tolist() == [0, 0, 0, 2]
+    assert Quaternion(0, 0, 0, 0).transform_vector(vector).tolist() == [0, 0, 0]
+
+
 def test_full_inertia_tensor_and_world_rotation():
     moment = MomentOfInertiaComponent([[2, 0, 0], [0, 4, 0], [0, 0, 8]])
     orientation = Quaternion().set_from_axis_angle([0, 0, 1], math.pi / 2)

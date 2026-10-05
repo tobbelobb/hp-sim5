@@ -42,6 +42,20 @@ def test_pbd_oracle_recovers_small_rotations_without_changing_its_cutoff():
     assert snapshots[2]['entities'] == snapshots[1]['entities']
 
 
+def test_raw_frame_oracle_exercises_live_parent_and_explicit_member_normalization():
+    fixture = json.loads((FIXTURES / 'quaternion_raw_frames.json').read_text())
+    expected = run_js(fixture)
+    snapshots = expected['snapshots']
+    before = snapshots[0]
+    assert before['entities']['member']['PositionComponent']['pos'] == [99, 99, 99]
+    assert before['attachments'][0]['worldPoint'] == pytest.approx(
+        [2.2389588250164665, 2.216493908231517, 1.7428910186654045], abs=1e-12)
+    local_orientation = before['entities']['member']['RigidBodyMemberComponent']['localOrientation']
+    assert np.linalg.norm(local_orientation) == pytest.approx(1, abs=1e-15)
+    assert snapshots[-1]['attachments'][0]['worldPoint'] == pytest.approx([1.1, 1.8, .8])
+    assert_equivalent(run_python(fixture), expected, **fixture['tolerance'])
+
+
 @pytest.mark.parametrize('name', ['cable_attachment_clamp', 'cable_attachment_members', 'cable_hybrid_transitions'])
 def test_reference_fixtures_exercise_the_targeted_behavior(name):
     fixture = json.loads((FIXTURES / f'{name}.json').read_text())
