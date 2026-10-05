@@ -89,9 +89,9 @@ Current coverage:
   compare component presence, relationships, aggregate tensors/masses, material
   state, rigid members, attachments/rest/stored lengths, solver settings and
   extruder bindings. `snapshotMapResources` preserves machine-color maps.
-  Native USD float32 opinions differ from JS literal doubles; authored initial
-  states use atol `5e-10` / rtol `6e-8`. The double-precision fixture and native bake
-  cases retain atol `1e-10` / rtol `1e-9`.
+  Both loaders honor authored float32 opinions; all initial construction and
+  native bake cases retain atol `1e-10` / rtol `1e-9`. JS loader regressions check
+  binary32 scalars, vectors, quaternions and arrays against fixed IEEE values.
 - `machine_pipeline_*`: the production 19-system pipeline runs HP3, HP4, rigid
   pinhole and a double-authored minimal machine for 200 steps, with exact
   within-engine repeatability. Full authored input uses documented per-field

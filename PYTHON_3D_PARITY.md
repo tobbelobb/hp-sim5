@@ -69,14 +69,13 @@ around `1e6` use absolute `1e-8`, relative `1e-12`. The commanded cable case use
 the authored 0.5 Nm motor scale. Synthetic 100 Nm stiffness at millisecond steps
 produces violent motion and amplifies roundoff; the stress case uses 20 microsecond
 steps. Neither engine receives hidden substeps, speed clamps or relaxed tolerances.
-Native USD honors authored float32 types while JS's parser retains numeric literals
-as doubles. Initial authored-scene comparisons use absolute `5e-10`, relative `6e-8`
-to cover float32 input quantization and aggregate-center subtraction. A guard
-demonstrates the source rounding and rejects a changed member frame. The authored
-double-precision scene and native baking retain `1e-10`/`1e-9`.
+Both USD loaders now honor authored single-precision attributes, including vectors,
+quaternions and arrays. Initial authored-scene comparisons retain `1e-10`/`1e-9`,
+matching native baking and the double-authored control. A guard requires identical
+float32 friction/gravity inputs and rejects a changed member frame.
 
 Full authored-machine runs use field-specific absolute bounds, with relative
-`1e-9` on those fields. Unlisted parameters retain the initial float32 input bound;
+`1e-9` on those fields. Unlisted parameters retain `1e-10`/`1e-9`;
 categorical fields, relationships, query order and system order remain exact.
 Only extrusion positions receive the length bound; deposited lengths and command
 records retain the default comparison.
@@ -182,6 +181,14 @@ Each is isolated in its own commit, with JS and differential regression evidence
   available rest/wrap lengths. An insufficient-rest regression demonstrated the
   unused entity and advanced allocator. Allocation now follows those checks in
   both engines; successful topology and the full flipper trajectory remain stable.
+- USD single precision: JS ignored declared `float` precision, starting from
+  different masses, gravity and friction than native USD. Thirteen JS loader
+  regressions failed before resolving scalar/vector/quaternion/array values to
+  their authored binary32 opinions. Double values, metadata, relationships and
+  unauthored values remain unchanged. Native USD already follows this contract;
+  initial scene bounds are tightened, rather than compensating for unequal inputs.
+  The separate flipper demo's deterministic score changes from 18 to 4. An isolated
+  pre-correction checkout confirms 18; repeated corrected runs confirm 4.
 
 ## Reviewable slices and next dependencies
 
