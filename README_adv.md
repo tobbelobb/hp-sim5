@@ -1,15 +1,14 @@
 # hp-sim5 Advanced Guide
 
-This guide expands on the main `README.md`.  It covers how to run the Python
-equivalents of the demos, describes the Flipper example and gives an
-overview of the XPBD‑based cable joints library that powers the simulator.
+This guide expands on the main `README.md`. It covers native 3D machine
+experiments, the older Python demos and the XPBD cable-joints library.
 
 ## Slideprinter Demo Advanced
-Both the js and Python implementations of the Slideprinter demo consist of a "firmware" called MoveCommander and a simulated "3d printer" called Slideprinter.
-Communication between them goes via (real or simulated) websockets.
-This means the Python MoveCommander can in principle command the js Slideprinter and vice versa.
-This demo frequently breaks and depends on fiddling with port numbers, so is not presented in the main README.md.
-But in principle it should work all the time for the js and Python ports to be fully equivalent.
+The older 2D Slideprinter demo uses MoveCommander and WebSocket communication.
+Its Python browser integration is currently broken. For current machines, use
+the 3D browser app or the native Python workflow below. Native 3D parity covers
+machine physics and command semantics; it does not require that older browser
+integration.
 
 
 ## XPBD Physics Engine and Cable Joints Library
@@ -35,22 +34,15 @@ remains available for the older Python demos.
 
 ## Python Port
 
-A Python implementation of the cable joints engine is available in the
-`src/python/cable_joints/` directory.
+A Python implementation of the 2D cable-joints engine is available in
+`src/python/cable_joints/`; the native 3D engine is in
+`src/python/cable_joints_3d/`. Use the
+[recording guide](hp-sim-3d/FLIGHT_RECORDER.md#native-python-simulation) to create
+your own native RRD: its settling, motion/extrusion and torque examples include
+the exact commands and expected results. A 200-step HP4 settling run lasts only
+0.4 simulated seconds and has no commanded travel. Opening an existing RRD
+does not execute the simulation.
 
-Run the native 3D machine and save its recording:
-
-```bash
-PYTHONPATH=src/python .venv/bin/python -m cable_joints_3d \
-  public/usd_scenes/hp4_rigid_body.usda --steps 200 \
-  --output output/rerun/hp4-python.rrd
-```
-
-`cable_joints_3d.machine_simulation.load_machine_world(path, recording=stream)`
-provides the same authored construction and system registration in Python.
-The [recording guide](hp-sim-3d/FLIGHT_RECORDER.md) covers commands, live sinks
-and detached snapshots. Headless physics does not require a viewer process;
-the Rerun SDK is imported when recording runs.
   - Dependencies:
     - python 3.10+
     - numpy
@@ -65,6 +57,127 @@ the Rerun SDK is imported when recording runs.
     2. Optionally install Warp: `.venv/bin/python -m pip install -r requirements-warp.txt`
     3. Run Python tests: `.venv/bin/python -m pytest tests/python`
 
+### Native Python 3D experiments
+
+For programmatic control, use the same production composition root as the CLI.
+Run this from the repository root with `PYTHONPATH=src/python`:
+
+```bash
+PYTHONPATH=src/python .venv/bin/python - <<'PY'
+from cable_joints_3d.machine_simulation import load_machine_world
+from cable_joints_3d.remote_spool_system import RemoteSpoolSystem
+from cable_joints_3d.motor_diagnostics import get_machine_motor_diagnostics
+from cable_joints_3d.machine_snapshot import capture_machine_snapshot
+
+world = load_machine_world('public/usd_scenes/hp4_rigid_body.usda')
+remote = world.get_system(RemoteSpoolSystem)
+remote.commands = [{'type': 'Move', 'A': .0001}] + [None] * 9
+dt = world.get_resource('dt')
+for _ in range(10):
+    world.update(dt)
+print(remote.get_playback_state())
+print(get_machine_motor_diagnostics(world))
+print(next(frame for frame in capture_machine_snapshot(world)['frames']
+           if frame['kind'] == 'effector'))
+PY
+```
+
+The loader bakes authored cable initialization, builds the ECS and registers
+systems in the JS simulation order. `world.update(dt)` executes one whole
+pipeline step; there is no hidden whole-step substep loop. Use the authored
+`world.get_resource('dt')` for both execution and parity experiments. If you
+change the timestep programmatically, also set `world.set_resource('dt', dt)`:
+the cable solver reads that resource independently of the update argument.
+
+`remote.add_command(record)` appends to the queue. `get_playback_state()` returns
+copied history/queue records, and `set_playback_state(state)` restores them.
+`clear_command_queue()` removes queued work; `clear_playback_state()` also
+removes history. Commands are consumed before prediction, including deposition
+at the previous final tool tip. The [command table](hp-sim-3d/FLIGHT_RECORDER.md#command-records-and-cli-options)
+defines angles, reference offsets, torque transitions and extrusion units.
+
+Set `world.get_resource('pauseState').paused = True` to pause simulation
+systems and command consumption. A registered native Rerun recorder can still
+observe the paused state without advancing `sim_step` or `sim_time`. Set it to
+`False` and call `world.update(dt)` for the next active step. `world.update(0)`
+does not represent a pause: unpaused command processing can still consume work.
+
+`get_machine_motor_diagnostics(world, machine_id=None)` reports tracking/missed
+steps; `reset_machine_motor_diagnostics(world, machine_id=None)` resets their
+baseline and peak. These are diagnostics, not a replacement for inspecting
+physical encoder/pose state. Native Rerun also exposes stored velocities, motor
+targets, encoder angles, tool points and deposited length.
+
+To record from this API, create a `rerun.RecordingStream`, attach a `rr.FileSink`,
+and pass `recording=stream` to `load_machine_world`. This records initial state
+and each update; flush and disconnect the stream after the run. The CLI handles
+that lifecycle and provides a default viewer layout. Physics-only API runs do
+not need a viewer process.
+
+#### Append or replace authored machines
+
+The CLI creates one fresh world per invocation. For a shared world, use unique
+namespaces and the existing native USD loader:
+
+```python
+from usd.cable_scene_loader import open_cable_scene
+from cable_joints_3d.machine_scene import populate_machine_scene
+from cable_joints_3d.machine_simulation import load_machine_world, register_machine_systems
+
+world = load_machine_world('public/usd_scenes/hp4_rigid_body.usda', namespace='hp4')
+populate_machine_scene(world, open_cable_scene('public/usd_scenes/hp3_rigid_body.usda'),
+                       '/World/HangprinterScene', namespace='hp3', append=True)
+register_machine_systems(world)  # reuse systems; initialize updated tool bindings
+```
+
+Append retains the first machine's gravity/timestep and existing entity/load
+state. Axis commands broadcast to all matching spools, so an `A` target affects
+both machines above. Positive `E` deposits for machines touched by that command;
+without touched axes, a sole available machine supplies the default tool.
+
+Use `append=False` to replace the scene. Replacement clears entities and their
+cable-load maps, increments `sceneGeneration`, and reloads gravity/timestep.
+System instances, pause state and command history/queue are retained; clear
+playback explicitly if the old queued commands should not drive the new machine.
+The axis cache is rebuilt for the live entities. Call `register_machine_systems`
+after loading to initialize tool bindings; if recording, pass the same stream
+again. Registration is idempotent and rejects a different stream on that world.
+Native Rerun resets its clock on replacement and clears obsolete shapes/traces;
+append retains its clock. Use fresh worlds and files for independent experiments.
+
+#### Feature settings and authored data
+
+The API defaults to line layering enabled and position motors in open-loop mode,
+matching the browser defaults. Set `world.set_resource('enableLayering', False)`
+to disable layering or `world.set_resource('closedLoopMotorsEnabled', True)` for
+closed-loop position drive; these are API settings, not native CLI switches.
+Compare engines with identical settings. Changing layering during a browser
+session rebuilds its authored cable initialization with zero cable half-width.
+To match that initialization in a native experiment, set the flag before scene
+construction and use the baker's half-width override:
+
+```python
+from cable_joints_3d.ecs import World
+from usd.cable_scene_loader import open_cable_scene
+from cable_joints_3d.machine_scene import populate_machine_scene
+from cable_joints_3d.machine_simulation import register_machine_systems
+
+world = World()
+world.set_resource('enableLayering', False)
+stage = open_cable_scene('public/usd_scenes/hp4_rigid_body.usda',
+                        cable_path_half_width_override=0.)
+populate_machine_scene(world, stage, '/World/HangprinterScene')
+register_machine_systems(world)
+```
+
+Edit USDA to change masses/inertia, attachment frames, spool axes/radii, cable
+stored/rest lengths, stiffness/damping, friction or `cablePath:solverIterations`.
+Gravity and timestep come from the stage. Keep declared USD float/double types
+consistent: both loaders preserve authored precision, which can affect a long
+trajectory. The rigid-body/member and spool semantics are explained in the
+[3D README](hp-sim-3d/README.md); browser UI, firmware planning and generic hinge
+physics are separate from the native simulation pipeline.
+
 
 ### Running the basic Python demos
 
@@ -78,20 +191,10 @@ the Rerun SDK is imported when recording runs.
       .venv/bin/python -m example_apps.python.flipper.server
       ```
     - Visit <http://localhost:5173/hp-sim5/example_apps/python/flipper/index.html>
-  * Slideprinter:
-    - Note: The Python Slideprinter Demo is broken, as the js hp-sim demo has replaced the js slideprinter demo, and no equivalent Python hp-sim demo has been developed.
-      The core Python physics engine and all python tests still work, but the js part of python slideprinter demo has changed and need to be refitted.
-      /tobben on Nov 4, 2025
-    - Start the demo server
-      ```bash
-      # Assumes npx vite is already running
-      .venv/bin/python -m example_apps.python.slideprinter.server
-      ```
-    - Visit <http://localhost:5173/hp-sim5/example_apps/python/slideprinter/index.html>
-    - Send some gcode commands with the Python Move Comander:
-      ```bash
-      .venv/bin/python -m example_apps.python.slideprinter.move_commander public/gcode/draw_squares.gcode
-      ```
+The older Python 2D Slideprinter browser demo is not a supported quick start.
+Use the [native 3D experiments](#native-python-3d-experiments) for current
+Slideprinter USDA machines and the [3D browser app](hp-sim-3d/README.md) for
+G-code printing.
 
 
 ### Warp Version of Cable Joints

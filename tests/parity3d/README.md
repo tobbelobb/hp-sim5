@@ -6,6 +6,21 @@ Run with Node on PATH and the repository Python environment:
 .venv/bin/python -m pytest tests/python/cable_joints_3d/test_differential_parity.py -q
 ```
 
+That command runs the component/system differential cases in one file. For
+the complete 3D suite, including authored machines, commands, sustained motion,
+scene lifecycle and saved Rerun recordings, use:
+
+```bash
+.venv/bin/python -m pytest tests/python/cable_joints_3d -q
+```
+
+For a focused full-machine selection and a manual visual checklist, see the
+[3D README](../../hp-sim-3d/README.md#manual-acceptance-checklist). The
+[recording guide](../../hp-sim-3d/FLIGHT_RECORDER.md) is the usage entry point;
+this document describes the test protocol rather than a user command format.
+The production CLI's `--commands` accepts an array of records, **not** an entire
+differential fixture object.
+
 Every fixture executes the **production JavaScript implementation**, then the
 native Python implementation, and compares initial state and every timestep.
 `contract.json` lists the state fields to compare; adapters only construct ECS
