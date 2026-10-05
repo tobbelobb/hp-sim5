@@ -42,23 +42,29 @@ export function runFixture(fixture) {
   fixture = structuredClone(fixture);
   const world = new ecs.World();
   const ids = Object.fromEntries(fixture.entities.map(e => [e.name, world.createEntity()]));
-  for (const definition of fixture.scenes ?? []) {
-    const source = definition.source ?? fs.readFileSync(new URL('../../' + definition.path, import.meta.url), 'utf8');
-    const stage = OpenText(bakeCableSceneUsdaSource(source, definition.bakeOptions ?? {}).source);
-    const checked = validateMachineSceneSpec(readMachineSceneSpec(parseStage(stage), definition.scenePrimPath, definition.options));
-    if (!checked.valid) throw new Error(checked.warnings.join('\n'));
-    applyEntityPlan(world, buildEntityPlan(checked, definition.options ?? {}));
-  }
-  if (fixture.scenes) {
+  const names = Object.fromEntries(Object.entries(ids).map(([name, id]) => [id, name]));
+  function loadScenes(definitions = []) {
+    if (!definitions.length) return;
+    const preservedNames = definitions.every(definition => definition.options?.append) ? { ...names } : {};
+    for (const definition of definitions) {
+      const source = definition.source ?? fs.readFileSync(new URL('../../' + definition.path, import.meta.url), 'utf8');
+      const stage = OpenText(bakeCableSceneUsdaSource(source, definition.bakeOptions ?? {}).source);
+      const checked = validateMachineSceneSpec(readMachineSceneSpec(parseStage(stage), definition.scenePrimPath, definition.options));
+      if (!checked.valid) throw new Error(checked.warnings.join('\n'));
+      applyEntityPlan(world, buildEntityPlan(checked, definition.options ?? {}));
+    }
+    for (const key of Object.keys(ids)) delete ids[key];
+    for (const key of Object.keys(names)) delete names[key];
     for (const id of world.entities.keys()) {
       const info = world.getComponent(id, ecs.SceneEntityInfoComponent);
       const machine = world.getComponent(id, ecs.MachineTagComponent)?.id;
-      const name = info ? `${machine}::${info.name}` : `@${id}`;
+      const name = info ? `${machine}::${info.name}` : preservedNames[id] ?? `@${id}`;
       if (name in ids) throw new Error(`Duplicate scene entity name ${name}`);
       ids[name] = id;
+      names[id] = name;
     }
   }
-  const names = Object.fromEntries(Object.entries(ids).map(([name, id]) => [id, name]));
+  loadScenes(fixture.scenes);
   const decode = (value, kind) => {
     if (value == null) return null;
     if (kind === 'vector') return vector(value);
@@ -264,6 +270,10 @@ export function runFixture(fixture) {
   }
   const snapshots = [snapshot(0)];
   for (const [index, step] of fixture.steps.entries()) {
+    if (step.scenes?.length) {
+      loadScenes(step.scenes);
+      world.systems.find(system => system instanceof ExtruderSystem)?.update(world, 0);
+    }
     resources(step.resources, step.entityResources, step.mapResources);
     mutate(step.set);
     for (const [entity, type] of step.removeComponents ?? []) world.removeComponent(ids[entity], components[type]);

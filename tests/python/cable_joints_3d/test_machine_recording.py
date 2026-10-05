@@ -203,3 +203,57 @@ def test_native_rrd_keeps_joint_series_identity_through_split_merge(tmp_path):
     assert [step for step, _ in rows(output, force_path(created_id), 'Scalars:scalars')] == [3]
     strips = rows(output, f"/world/machines/{cable['machine']}/cables/{cable['name']}/segments", 'LineStrips3D:strips')
     assert [(step, len(value)) for step, value in strips] == [(0, 1), (1, 2), (2, 1), (3, 2)]
+
+
+@pytest.mark.parametrize('append', [False, True])
+def test_saved_native_rrd_tracks_live_scene_loading_while_paused(tmp_path, append):
+    from cable_joints_3d.machine_scene import populate_machine_scene
+    from usd.cable_scene_loader import open_cable_scene
+
+    output = tmp_path / 'scenes.rrd'
+    stream = rr.RecordingStream('live authored scenes')
+    stream.set_sinks(rr.FileSink(output))
+    try:
+        world = load_machine_world(ROOT / 'public/usd_scenes/hp4_rigid_body.usda', namespace='old',
+                                   extrusion_color='#ff0000', recording=stream)
+        remote = world.get_system(RemoteSpoolSystem)
+        remote.commands = [{'type': 'SetTorqueMode', 'axis': 'D', 'torqueNm': -.01}]
+        world.update(.002)
+        assert world.get_resource('torqueModeCableLoadTorques')
+        before = capture_machine_snapshot(world)
+        systems = world.systems[:]
+        clock = world.get_system(RerunSystem)
+        assert (clock.step, clock.elapsed) == (1, .002)
+        remote.commands = [{'type': 'Move', 'A': .0001, 'E': .001}]
+        world.get_resource('pauseState').paused = True
+        stage = open_cable_scene(ROOT / 'public/usd_scenes/hp3_rigid_body.usda')
+        populate_machine_scene(world, stage, '/World/HangprinterScene', namespace='new', append=append,
+                               extrusion_color='#00ff00')
+        register_machine_systems(world, stream)  # initialize tools/recording without another simulation pass
+        assert world.systems == systems
+        assert (clock.step, clock.elapsed) == ((1, .002) if append else (0, 0))
+        world.update(.002)
+        assert remote.get_queue_length() == 1
+        world.get_resource('pauseState').paused = False
+        world.update(.002)
+        final = capture_machine_snapshot(world)
+        extruder_id = world.query([ExtruderComponent])[0]
+        stream.flush(timeout_sec=5)
+    finally:
+        stream.disconnect()
+    cable = next(cable for cable in final['cables'] if cable['machine'] == 'new')
+    key = f"{cable['machine']}/{cable['name']}"
+    lengths = rows(output, '/line_lengths/' + key + '/actual', 'Scalars:scalars')
+    assert [step for step, _ in lengths] == ([1, 1, 2] if append else [0, 0, 1])
+    assert lengths[-1][1] == [cable['lengths']['actual']]
+    chunks = RrdReader(output).stream().filter(content='/line_lengths/' + key + '/actual',
+                                              components='Scalars:scalars').to_chunks()
+    generations = [generation for chunk in chunks for generation in chunk.to_record_batch().column('scene_generation').to_pylist()]
+    assert generations == ([1] * 3 if append else [2] * 3)
+    old_frame = next(frame for frame in before['frames'] if frame['name'] == 'SpoolA')
+    clears = rows(output, '/' + old_frame['path'], 'Clear:is_recursive')
+    assert clears == ([] if append else [(1, [True])])
+    points = rows(output, f'/world/machines/new/extrusions/{extruder_id}', 'Points3D:positions')
+    assert len(points[-1][1]) == 1
+    deposits = rows(output, f'/extrusion_lengths/new/{extruder_id}/deposited_length', 'Scalars:scalars')
+    assert deposits[-1][1] == [.001]

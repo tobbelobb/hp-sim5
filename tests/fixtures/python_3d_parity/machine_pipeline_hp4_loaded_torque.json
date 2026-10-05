@@ -15,100 +15,6 @@
       "dt": 0.002
     },
     {
-      "dt": 0.002,
-      "resources": {
-        "pauseState": {
-          "paused": true
-        }
-      }
-    },
-    {
-      "dt": 0.002,
-      "resources": {
-        "pauseState": {
-          "paused": false
-        }
-      }
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
       "dt": 0.002
     },
     {
@@ -300,6 +206,10 @@
       "SpoolStateComponent.referenceOrientation": {
         "atol": 3e-07,
         "rtol": 1e-09
+      },
+      "entityMaps.torqueModeCableLoadTorques": {
+        "atol": 1e-08,
+        "rtol": 1e-09
       }
     }
   },
@@ -341,59 +251,15 @@
     "torqueModeCableLoadStiffnesses",
     "torqueModeCableLoadDampings"
   ],
-  "commandState": true,
-  "observeCommands": true,
+  "commands": [
+    {
+      "type": "SetTorqueMode",
+      "axis": "D",
+      "torqueNm": -0.01
+    }
+  ],
   "motorDiagnostics": [
     null,
     "default"
-  ],
-  "commands": [
-    {
-      "type": "Move",
-      "A": 0.0003,
-      "B": -0.0002,
-      "C": 0.0001,
-      "D": 0,
-      "E": 0.002
-    },
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    {
-      "type": "SetTorqueMode",
-      "axis": "A",
-      "torqueNm": 0.003
-    },
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    {
-      "type": "Move",
-      "A": 0.2,
-      "E": 0.001
-    },
-    {
-      "type": "Add to reference",
-      "A": 0.0001
-    },
-    {
-      "type": "SetPositionMode",
-      "axis": "A"
-    },
-    {
-      "type": "Move",
-      "D": 0.0002,
-      "E": 0.001
-    },
-    {
-      "type": "Move",
-      "E": 0.001
-    }
   ]
 }

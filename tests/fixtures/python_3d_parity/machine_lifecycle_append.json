@@ -12,9 +12,6 @@
       "dt": 0.002
     },
     {
-      "dt": 0.002
-    },
-    {
       "dt": 0.002,
       "resources": {
         "pauseState": {
@@ -23,135 +20,26 @@
       }
     },
     {
+      "dt": 0,
+      "scenes": [
+        {
+          "path": "public/usd_scenes/hp3_rigid_body.usda",
+          "scenePrimPath": "/World/HangprinterScene",
+          "options": {
+            "namespace": "1",
+            "extrusionColor": "#00ff00",
+            "append": true
+          }
+        }
+      ]
+    },
+    {
       "dt": 0.002,
       "resources": {
         "pauseState": {
           "paused": false
         }
       }
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
-    },
-    {
-      "dt": 0.002
     },
     {
       "dt": 0.002
@@ -300,13 +188,21 @@
       "SpoolStateComponent.referenceOrientation": {
         "atol": 3e-07,
         "rtol": 1e-09
+      },
+      "entityMaps.torqueModeCableLoadTorques": {
+        "atol": 1e-08,
+        "rtol": 1e-09
       }
     }
   },
   "scenes": [
     {
       "path": "public/usd_scenes/hp4_rigid_body.usda",
-      "scenePrimPath": "/World/HangprinterScene"
+      "scenePrimPath": "/World/HangprinterScene",
+      "options": {
+        "namespace": "2",
+        "extrusionColor": "#ff0000"
+      }
     }
   ],
   "queries": [
@@ -345,55 +241,27 @@
   "observeCommands": true,
   "motorDiagnostics": [
     null,
-    "default"
+    "2",
+    "1"
   ],
   "commands": [
     {
       "type": "Move",
       "A": 0.0003,
-      "B": -0.0002,
-      "C": 0.0001,
-      "D": 0,
-      "E": 0.002
+      "E": 0.001
     },
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
     {
       "type": "SetTorqueMode",
-      "axis": "A",
-      "torqueNm": 0.003
+      "axis": "D",
+      "torqueNm": -0.01
     },
-    null,
-    null,
-    null,
-    null,
-    null,
     null,
     {
       "type": "Move",
-      "A": 0.2,
-      "E": 0.001
-    },
-    {
-      "type": "Add to reference",
-      "A": 0.0001
-    },
-    {
-      "type": "SetPositionMode",
-      "axis": "A"
-    },
-    {
-      "type": "Move",
-      "D": 0.0002,
-      "E": 0.001
-    },
-    {
-      "type": "Move",
-      "E": 0.001
+      "A": 0.0001,
+      "C": 0.0001,
+      "E": 0.002
     }
-  ]
+  ],
+  "snapshotAllocator": true
 }

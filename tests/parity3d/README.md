@@ -35,6 +35,11 @@ rest lengths and stored wraps before ECS construction. Optional `deriveAll` and
 `scenes` executes native USD baking and each production ECS builder independently.
 `pipeline: true` uses actual production registration in both languages and records
 the system order; it forbids a fixture-supplied substitute system list.
+Per-step `scenes` invokes those same production builders during execution. Named
+relationships are rebuilt from live scene entities, so reused IDs cannot retain
+discarded names. Append preserves existing unnamed fixture aliases. Existing
+systems, queue and history remain alive, the production axis-cache reset runs,
+and tool initialization uses the app's explicit zero-dt update.
 `flightSnapshot: true` invokes the production JS flight recorder and native
 read-only snapshot. The adapter keeps span endpoints and excludes browser sag/wrap
 tessellation, an intentional native presentation difference. All frame transforms,
@@ -101,6 +106,15 @@ Current coverage:
   transitions, encoder diagnostics, extrusion at the pre-prediction tip, pause
   and zero update dt with a retained cable dt resource. A 1,000-step extension
   compares settling at the unchanged documented dynamic bounds.
+- `machine_lifecycle_replace` and `machine_lifecycle_append`: loaded HP4 state,
+  pause, live authored replacement by a two-axis pinhole machine or append of a
+  second 3D machine, retained systems/queue/history, namespace and allocator
+  changes, axis-cache reset/repopulation, numeric machine selection, colors and
+  pre-prediction deposition. Both continue for 200 exactly repeatable steps.
+- `machine_pipeline_hp4_loaded_torque`: negative D-axis torque activates all
+  three actual cable-load maps at every step. It runs 200 repeatable steps;
+  stiffness/damping retain strict bounds and torque uses the documented `1e-8`
+  Nm bound. Changed torque/implicit coefficients must fail the comparison.
 - A 1,000-step sustained HP4 ramp uses the same authored file, absolute-radian
   commands on all motors and ten deposits over two seconds. It requires more than
   20 mm effector movement, encoder tracking, zero missed steps, loaded cables and

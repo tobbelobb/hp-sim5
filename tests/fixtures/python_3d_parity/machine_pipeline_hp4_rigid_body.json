@@ -244,6 +244,7 @@
   "pipeline": true,
   "snapshotEntityMaps": [
     "torqueModeCableLoadTorques",
-    "torqueModeCableLoadCoeffs"
+    "torqueModeCableLoadStiffnesses",
+    "torqueModeCableLoadDampings"
   ]
 }

@@ -42,26 +42,35 @@ def run_python(fixture):
     fixture = copy.deepcopy(fixture)
     world = ecs.World()
     ids = {entity['name']: world.create_entity() for entity in fixture['entities']}
-    for definition in fixture.get('scenes', []):
+    names = {value: key for key, value in ids.items()}
+
+    def load_scenes(definitions):
+        if not definitions:
+            return
         from usd.cable_scene_loader import open_cable_scene
         from cable_joints_3d.machine_scene import populate_machine_scene
 
-        bake_options = definition.get('bakeOptions', {})
-        stage = open_cable_scene(definition.get('source') or ROOT / definition['path'],
-            derive_all=bake_options.get('deriveAll', False),
-            cable_path_half_width_override=bake_options.get('cablePathHalfWidthOverride'))
-        options = definition.get('options', {})
-        populate_machine_scene(world, stage, definition.get('scenePrimPath', '/World/SlideprinterScene'),
-            namespace=options.get('namespace'), append=options.get('append', False), palette=options.get('palette'),
-            tint_color=options.get('tintColor'), extrusion_color=options.get('extrusionColor'))
-    if 'scenes' in fixture:
+        preserved_names = names.copy() if all(definition.get('options', {}).get('append') for definition in definitions) else {}
+        for definition in definitions:
+            bake_options = definition.get('bakeOptions', {})
+            stage = open_cable_scene(definition.get('source') or ROOT / definition['path'],
+                derive_all=bake_options.get('deriveAll', False),
+                cable_path_half_width_override=bake_options.get('cablePathHalfWidthOverride'))
+            options = definition.get('options', {})
+            populate_machine_scene(world, stage, definition.get('scenePrimPath', '/World/SlideprinterScene'),
+                namespace=options.get('namespace'), append=options.get('append', False), palette=options.get('palette'),
+                tint_color=options.get('tintColor'), extrusion_color=options.get('extrusionColor'))
+        ids.clear()
+        names.clear()
         for entity in world.entities:
             info = world.get_component(entity, ecs.SceneEntityInfoComponent)
             tag = world.get_component(entity, ecs.MachineTagComponent)
-            name = f'{tag.id}::{info.name}' if info else f'@{entity}'
+            name = f'{tag.id}::{info.name}' if info else preserved_names.get(entity, f'@{entity}')
             assert name not in ids, f'Duplicate scene entity name {name}'
             ids[name] = entity
-    names = {value: key for key, value in ids.items()}
+            names[entity] = name
+
+    load_scenes(fixture.get('scenes'))
     components = {name: getattr(ecs, name) for name in CONTRACT if hasattr(ecs, name)}
     components['SpoolStateComponent'] = SpoolStateComponent
     components['SpoolTagComponent'] = SpoolTagComponent
@@ -318,6 +327,11 @@ def run_python(fixture):
 
     snapshots = [snapshot(0)]
     for index, step in enumerate(fixture['steps'], 1):
+        if step.get('scenes'):
+            load_scenes(step['scenes'])
+            extruder = world.get_system(ExtruderSystem)
+            if extruder is not None:
+                extruder.update(world, 0)
         resources(step.get('resources'), step.get('entityResources'), step.get('mapResources'))
         mutate(step.get('set'))
         for entity, type_name in step.get('removeComponents', []):
