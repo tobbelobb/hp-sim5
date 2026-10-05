@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 
 import numpy as np
+from .vector3 import cross, length as norm3
 from cable_joints.util import is_hybrid
 
 from .cable_attachment_update_system import calculate_attachment_points
@@ -42,7 +43,7 @@ def _member_angular_contribution(world, entity, point, gradient):
     center = get_entity_world_position(world, entity)
     if link is None or link.cable_plane_normal_local is None or center is None or not has_any_inverse_inertia(moment):
         return None
-    return _angular_contribution(world, entity, np.cross(point - center, gradient))
+    return _angular_contribution(world, entity, cross(point - center, gradient))
 
 
 def _external_member_contribution(world, path, index, first, entity, mapped, point, gradient):
@@ -70,7 +71,7 @@ def _external_member_contribution(world, path, index, first, entity, mapped, poi
     gradient = point - spin_point
     if np.dot(gradient, gradient) <= EPSILON:
         return None
-    gradient = gradient / np.linalg.norm(gradient)
+    gradient = gradient / norm3(gradient)
     return _member_angular_contribution(world, spin_entity, spin_point, gradient)
 
 
@@ -99,7 +100,7 @@ def _correction_end(world, path, index, first, entity, counterpart, point, direc
         return None
     mass = world.get_component(mapped.entity_id, MassComponent)
     inv_mass = 1 / mass.mass if mass is not None and finite_number(mass.mass) and mass.mass > 0 else 0.
-    angular_gradient = np.cross(solver_point - position.pos, direction)
+    angular_gradient = cross(solver_point - position.pos, direction)
     angular = None if has_axis_only_cable_spin_dof(world, mapped.entity_id) else _angular_contribution(world, mapped.entity_id, angular_gradient)
     body = get_rigid_body_entity_for_member(world, entity)
     reaction = _angular_contribution(world, body, angular_gradient) if body is not None else None
@@ -112,7 +113,7 @@ def _calculate_joint_correction(world, joint, path, index, position_corrections,
     points = calculate_attachment_points(world, joint, path, index)
     if any(point is None for point in points):
         return
-    length = np.linalg.norm(points[1] - points[0])
+    length = norm3(points[1] - points[0])
     error = length - joint.rest_length
     if error >= -EPSILON or length <= EPSILON:
         return
@@ -150,10 +151,10 @@ class PBDResolveCableOverCorrections:
         over_corrected = []
         for joint_entity, (path, index) in joint_paths.items():
             joint = world.get_component(joint_entity, CableJointComponent)
-            before = np.linalg.norm(joint.attachment_point_b_world - joint.attachment_point_a_world)
+            before = norm3(joint.attachment_point_b_world - joint.attachment_point_a_world)
             if before >= joint.rest_length:
                 points = calculate_attachment_points(world, joint, path, index)
-                if all(point is not None for point in points) and np.linalg.norm(points[1] - points[0]) < joint.rest_length:
+                if all(point is not None for point in points) and norm3(points[1] - points[0]) < joint.rest_length:
                     over_corrected.append(joint_entity)
         if len(over_corrected) < 2:
             return
@@ -170,5 +171,5 @@ class PBDResolveCableOverCorrections:
                 # JS refreshes member-local orientation even for zero averages.
                 delta = sum(deltas, np.zeros(3)) / len(deltas)
                 apply_world_angular_correction(world, entity, delta)
-                if np.linalg.norm(delta) <= EPSILON:
+                if norm3(delta) <= EPSILON:
                     update_rigid_body_member_local_orientation(world, entity)

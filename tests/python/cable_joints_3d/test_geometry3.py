@@ -1,5 +1,19 @@
 import numpy as np
-from cable_joints_3d.geometry3 import closest_point_on_segment, line_segment_sphere_intersection
+from cable_joints_3d.geometry3 import build_plane_basis, closest_point_on_segment, line_segment_sphere_intersection
+
+
+def test_plane_basis_cache_returns_owned_arrays_and_tracks_mutated_normals():
+    axis = np.array([0., 0., 1.])
+    original = build_plane_basis(axis)
+    returned = build_plane_basis(axis)
+    for vector in returned:
+        vector[:] = 42.
+    for expected, actual in zip(original, build_plane_basis(axis)):
+        np.testing.assert_array_equal(actual, expected)
+    axis[:] = [1., 0., 0.]
+    normal, u, v = build_plane_basis(axis)
+    np.testing.assert_array_equal(normal, axis)
+    np.testing.assert_allclose(np.cross(u, v), normal)
 
 # These tests mirror the JavaScript geometry3 tests under cable_joints_3d/tests/geometry3.js
 

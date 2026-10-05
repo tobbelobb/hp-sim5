@@ -101,6 +101,9 @@ full JS, Python and autocal suites.
 
 ## Runtime and Scene Construction
 
+For firmware-driven logo runs, repeatable performance measurements and CPU
+profiles, see the [native HP4 logo benchmark](../tests/benchmark/README.md).
+
 The native Python headless entry point loads the same authored machine files:
 
 ```bash

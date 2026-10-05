@@ -1,6 +1,7 @@
 """Three-dimensional inertia helpers equivalent to ``inertia_tensor.js``."""
 from dataclasses import dataclass, field
 import numpy as np
+from .vector3 import length as norm3
 from .quaternion import Quaternion
 
 EPSILON = 1e-12
@@ -49,7 +50,7 @@ def parallel_axis_tensor(mass, offset):
     return mass * (np.dot(offset, offset) * np.eye(3) - np.outer(offset, offset))
 
 def _axis(axis):
-    axis = np.asarray(axis, dtype=float); norm = np.linalg.norm(axis)
+    axis = np.asarray(axis, dtype=float); norm = norm3(axis)
     return axis / norm if norm > EPSILON else DEFAULT_AXIS.copy()
 
 def effective_inertia_about_local_axis(moment, axis_local=DEFAULT_AXIS):

@@ -1,6 +1,7 @@
 """Integration systems for the Python 3D engine."""
 import math
 import numpy as np
+from .vector3 import cross, length as norm3
 from cable_joints.ecs import GravityAffectedComponent, MassComponent
 from .ecs import (AngularVelocityComponent, OrientationComponent, PositionComponent,
     PrevFinalOrientationComponent, PrevFinalPosComponent,
@@ -40,7 +41,7 @@ class AngularMovementSystem:
             if (world.get_component(entity, RigidBodyMemberComponent) is not None
                     and world.get_component(entity, SpoolStateComponent) is not None):
                 continue
-            omega = world.get_component(entity, AngularVelocityComponent).omega; speed = np.linalg.norm(omega)
+            omega = world.get_component(entity, AngularVelocityComponent).omega; speed = norm3(omega)
             if speed > 1e-12:
                 delta = Quaternion().set_from_axis_angle(omega / speed, speed * dt)
                 orientation = world.get_component(entity, OrientationComponent)
@@ -153,7 +154,7 @@ class RigidBodySyncSystem:
                 if member_velocity is not None:
                     member_velocity.vel[:] = velocity.vel if velocity is not None else 0.
                     if angular_velocity is not None:
-                        member_velocity.vel += np.cross(angular_velocity.omega, offset)
+                        member_velocity.vel += cross(angular_velocity.omega, offset)
                 member_angular_velocity = world.get_component(member_entity, AngularVelocityComponent)
                 if spool is not None and member_angular_velocity is not None and member_orientation is not None:
                     member_angular_velocity.omega[:] = constrain_spool_angular_velocity(
@@ -184,7 +185,7 @@ class XPBDDistanceConstraintSystem:
             if any(p is None for p in positions):
                 continue
             difference = point_b - point_a
-            length = np.linalg.norm(difference)
+            length = norm3(difference)
             if length <= 1e-9:
                 continue
             direction = difference / length
@@ -195,7 +196,7 @@ class XPBDDistanceConstraintSystem:
                 inverse_mass = 1 / mass.mass if mass is not None and mass.mass > 0 else 0.
                 moment = world.get_component(endpoint.entity_id, MomentOfInertiaComponent)
                 orientation = world.get_component(endpoint.entity_id, OrientationComponent)
-                angular_gradient = np.cross(point - position.pos, gradient)
+                angular_gradient = cross(point - position.pos, gradient)
                 angular_denominator = inverse_inertia_quadratic_form(moment, orientation.quaternion, angular_gradient) if orientation else 0.
                 endpoints.append((endpoint, position, gradient, inverse_mass, moment, orientation, angular_gradient, angular_denominator))
             alpha = constraint.compliance / (dt * dt)
@@ -209,7 +210,7 @@ class XPBDDistanceConstraintSystem:
                     position.pos += gradient * (-inverse_mass * delta_lambda)
                 if angular_denominator > 0 and orientation is not None:
                     correction = apply_world_inverse_inertia(moment, orientation.quaternion, angular_gradient) * -delta_lambda
-                    angle = np.linalg.norm(correction)
+                    angle = norm3(correction)
                     if angle > 1e-9:
                         orientation.quaternion.premultiply(Quaternion().set_from_axis_angle(correction / angle, angle)).normalize()
                         update_rigid_body_member_local_orientation(world, endpoint.entity_id)
@@ -237,20 +238,20 @@ class EncoderUpdateSystem:
                     axis = np.asarray(default, dtype=float).copy() if default is not None else np.array([0., 0., 1.])
                     if np.dot(axis, axis) <= 1e-12:
                         axis = np.array([0., 0., 1.])
-                axis /= np.linalg.norm(axis)
+                axis /= norm3(axis)
                 reference = np.array([1., 0., 0.]) if abs(axis[0]) < .9 else np.array([0., 1., 0.])
                 u = reference - axis * np.dot(axis, reference)
                 if np.dot(u, u) <= 1e-12:
                     reference = np.array([0., 0., 1.])
                     u = reference - axis * np.dot(axis, reference)
-                u /= np.linalg.norm(u)
+                u /= norm3(u)
                 rotated = orientation.transform_vector(u) if orientation else u
                 projected = rotated - axis * np.dot(rotated, axis)
                 if np.dot(projected, projected) <= 1e-12:
                     angle = 0.
                 else:
-                    projected /= np.linalg.norm(projected)
-                    angle = np.arctan2(np.dot(projected, np.cross(axis, u)), np.dot(projected, u))
+                    projected /= norm3(projected)
+                    angle = np.arctan2(np.dot(projected, cross(axis, u)), np.dot(projected, u))
             if not np.isfinite(angle):
                 continue
             if np.isfinite(encoder.angle):

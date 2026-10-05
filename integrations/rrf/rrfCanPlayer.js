@@ -4,7 +4,7 @@ import {
   DEFAULT_AXIS_ORDER,
   MOTOR_AXIS_MAP,
   computeTicksPerBucket,
-} from './rrfFirmwareModel';
+} from './rrfFirmwareModel.js';
 
 import { detectFileFormat, FileFormat, isRrfFormat } from '../shared/fileFormatUtils.js';
 import {

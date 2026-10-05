@@ -4,6 +4,7 @@ import itertools
 import math
 
 import numpy as np
+from .vector3 import cross, length as norm3
 
 from .ecs import MachineTagComponent, PositionComponent
 from .machine_runtime import object_keys
@@ -20,13 +21,13 @@ def _frame(a, b, c):
     x = b - a
     if np.dot(x, x) <= 1e-12:
         return None
-    x = x / np.linalg.norm(x)
-    z = np.cross(x, c - a)
+    x = x / norm3(x)
+    z = cross(x, c - a)
     if np.dot(z, z) <= 1e-12:
         return None
-    z = z / np.linalg.norm(z)
-    y = np.cross(z, x)
-    y = y / np.linalg.norm(y)
+    z = z / norm3(z)
+    y = cross(z, x)
+    y = y / norm3(y)
     return np.column_stack((x, y, z))
 
 
@@ -59,8 +60,8 @@ def estimate_effector_rotation(reference_offsets, center, entities, world):
         if not all(_finite_vector(point) for point in (a, b, c)):
             continue
         edge = b - a
-        cross = np.cross(edge, c - a)
-        if np.dot(edge, edge) <= 1e-12 or np.dot(cross, cross) <= 1e-12:
+        normal = cross(edge, c - a)
+        if np.dot(edge, edge) <= 1e-12 or np.dot(normal, normal) <= 1e-12:
             continue
         rest_frame = _frame(a, b, c)
         current_frame = _frame(current[i], current[j], current[k])

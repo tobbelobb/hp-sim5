@@ -1,14 +1,16 @@
 """Rigid-member attachment frames and constraint reaction redirection."""
 from dataclasses import dataclass
+import math
 
 import numpy as np
+from .vector3 import length as norm3
 
 from .ecs import PositionComponent, OrientationComponent, RigidBodyComponent, RigidBodyMemberComponent
 from .quaternion import Quaternion
 
 
 def _finite_quaternion(value):
-    return value is not None and np.isfinite(value.as_xyzw()).all()
+    return value is not None and all(math.isfinite(v) for v in (value.x, value.y, value.z, value.w))
 
 
 def get_rigid_body_entity_for_member(world, entity):
@@ -68,11 +70,15 @@ class SolverEndpoint:
     internal_to_body: bool
 
 
-def resolve_rigid_body_solver_endpoint(world, entity, counterpart, world_point):
+def resolve_rigid_body_solver_entity(world, entity, counterpart):
     member = world.get_component(entity, RigidBodyMemberComponent)
     other = world.get_component(counterpart, RigidBodyMemberComponent)
     internal = member is not None and other is not None and member.body_entity == other.body_entity
-    solver_entity = member.body_entity if member is not None and not internal else entity
+    return (member.body_entity if member is not None and not internal else entity), internal
+
+
+def resolve_rigid_body_solver_endpoint(world, entity, counterpart, world_point):
+    solver_entity, internal = resolve_rigid_body_solver_entity(world, entity, counterpart)
     return SolverEndpoint(
         solver_entity, compute_local_attachment(world, solver_entity, world_point),
         np.asarray(world_point, dtype=float).copy() if world_point is not None else None, internal,
@@ -95,7 +101,7 @@ def update_rigid_body_member_local_orientation(world, entity):
 
 def apply_world_angular_correction(world, entity, delta, epsilon=1e-9):
     orientation = world.get_component(entity, OrientationComponent)
-    angle = np.linalg.norm(delta)
+    angle = norm3(delta)
     if orientation is not None and angle > epsilon:
         orientation.quaternion.premultiply(Quaternion().set_from_axis_angle(delta / angle, angle)).normalize()
         update_rigid_body_member_local_orientation(world, entity)

@@ -2,6 +2,7 @@
 import math
 
 import numpy as np
+from .vector3 import length as norm3
 
 from .cable_joints_components import CableJointComponent, CableLinkComponent
 from .cable_layering import KNOT_SPAN, stored_to_theta_signed
@@ -37,7 +38,7 @@ def arc_frame_for_endpoint(world, entity, counterpart, previous, current, normal
     current_body_inverse = current_world.copy().multiply(current_frame.copy().conjugate().normalize()).normalize().conjugate().normalize()
     frame_normal = current_body_inverse.transform_vector(normal)
     if np.dot(frame_normal, frame_normal) > EPSILON:
-        frame_normal /= np.linalg.norm(frame_normal)
+        frame_normal /= norm3(frame_normal)
     return previous_body_inverse.transform_vector(previous), current_body_inverse.transform_vector(current), frame_normal
 
 
@@ -54,13 +55,14 @@ def delta_angle_for_entity(world, entity, previous, current, previous_local=None
         relative = inverse_previous.multiply(current).normalize()
         return orientation_angle_for_entity(world, entity, relative, relative)
     relative = current.copy().multiply(inverse_previous).normalize()
-    w = float(np.clip(relative.w, -1., 1.))
+    w = relative.w
+    w = 1. if w > 1. else (-1. if w < -1. else w)
     angle = 2 * math.acos(w)
     if angle < EPSILON:
         return 0.
     sin_half = math.sqrt(max(0., 1 - w * w))
     axis = get_plane_normal(world, entity)
-    axis_relative = axis / np.linalg.norm(axis) if sin_half < EPSILON and np.linalg.norm(axis) > 0 else (
+    axis_relative = axis / norm3(axis) if sin_half < EPSILON and norm3(axis) > 0 else (
         axis.copy() if sin_half < EPSILON else relative.as_xyzw()[:3] / sin_half)
     sign = np.sign(np.dot(axis_relative, axis))
     if sign == 0:
@@ -76,9 +78,9 @@ def get_plane_normal(world, entity):
         if orientation is not None:
             axis = orientation.transform_vector(local_axis)
             if np.dot(axis, axis) > EPSILON:
-                return axis / np.linalg.norm(axis)
+                return axis / norm3(axis)
         if np.dot(local_axis, local_axis) > EPSILON:
-            return local_axis / np.linalg.norm(local_axis)
+            return local_axis / norm3(local_axis)
     return link.cable_plane_normal if link is not None and link.cable_plane_normal is not None else DEFAULT_PLANE_NORMAL
 
 
@@ -89,7 +91,7 @@ def orientation_angle_for_entity(world, entity, quaternion, local_quaternion=Non
         if q is None:
             return 0.
         axis = link.cable_plane_normal_local.copy()
-        norm = np.linalg.norm(axis)
+        norm = norm3(axis)
         if norm > 0:
             axis /= norm
         projection = np.dot(q.as_xyzw()[:3], axis)
@@ -105,7 +107,7 @@ def orientation_angle_for_entity(world, entity, quaternion, local_quaternion=Non
     projected = rotated - normal * np.dot(rotated, normal)
     if np.dot(projected, projected) <= EPSILON:
         return 0.
-    projected /= np.linalg.norm(projected)
+    projected /= norm3(projected)
     return math.atan2(np.dot(projected, v), np.dot(projected, u))
 
 

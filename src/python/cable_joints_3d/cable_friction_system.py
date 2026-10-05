@@ -6,7 +6,7 @@ import numpy as np
 from .cable_joints_components import CableJointComponent, CablePathComponent
 from .ecs import CoefficientOfFrictionComponent, RadiusComponent, layering_enabled
 from .spools import SpoolStateComponent
-from .vector3 import normalize
+from .vector3 import length as norm3, normalize
 
 EPSILON = 1e-9
 BASE_ITERATIONS = 4
@@ -36,8 +36,8 @@ def _redistribute_path(world, path):
             continue
         if not np.isfinite([first.rest_length, second.rest_length]).all() or min(first.rest_length, second.rest_length) < 0:
             continue
-        distance_first = np.linalg.norm(first.attachment_point_a_world - first.attachment_point_b_world)
-        distance_second = np.linalg.norm(second.attachment_point_a_world - second.attachment_point_b_world)
+        distance_first = norm3(first.attachment_point_a_world - first.attachment_point_b_world)
+        distance_second = norm3(second.attachment_point_a_world - second.attachment_point_b_world)
         link_type = path.link_types[index + 1]
         friction_active, threshold = False, 1.
         if link_type in ('rolling', 'pinhole'):

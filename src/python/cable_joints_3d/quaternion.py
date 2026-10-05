@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 import math
 import numpy as np
+from .vector3 import length as norm3
 
 
 def rotation_vector_between(previous, current):
@@ -10,7 +11,8 @@ def rotation_vector_between(previous, current):
     delta = current.copy().multiply(previous.copy().conjugate().normalize()).normalize()
     if delta.w < 0:
         delta.x, delta.y, delta.z, delta.w = -delta.x, -delta.y, -delta.z, -delta.w
-    w = float(np.clip(delta.w, -1., 1.))
+    w = delta.w
+    w = 1. if w > 1. else (-1. if w < -1. else w)
     angle = 2 * math.acos(w)
     sin_half = math.sqrt(max(0., 1 - w * w))
     if angle <= 1e-9 or sin_half <= 1e-9:
@@ -25,18 +27,19 @@ class Quaternion:
     def set(self, q):
         self.x, self.y, self.z, self.w = q.x, q.y, q.z, q.w; return self
     def normalize(self):
-        length = math.sqrt(self.x*self.x + self.y*self.y + self.z*self.z + self.w*self.w)
+        x, y, z, w = float(self.x), float(self.y), float(self.z), float(self.w)
+        length = math.sqrt(x*x + y*y + z*z + w*w)
         if length == 0: self.x = self.y = self.z = 0.; self.w = 1.
         else:
             inverse = 1 / length
-            self.x *= inverse; self.y *= inverse; self.z *= inverse; self.w *= inverse
+            self.x, self.y, self.z, self.w = x*inverse, y*inverse, z*inverse, w*inverse
         return self
     def conjugate(self):
         self.x, self.y, self.z = -self.x, -self.y, -self.z; return self
     def set_from_axis_angle(self, axis, angle):
-        axis = np.asarray(axis, dtype=float); norm = np.linalg.norm(axis)
+        axis = np.asarray(axis, dtype=float); norm = norm3(axis)
         if norm == 0: return self.set(Quaternion())
-        self.x, self.y, self.z = axis * (math.sin(angle / 2) / norm)
+        self.x, self.y, self.z = map(float, axis * (math.sin(angle / 2) / norm))
         self.w = math.cos(angle / 2); return self
     def multiply(self, q):
         return self.multiply_quaternions(self.copy(), q)
@@ -55,7 +58,7 @@ class Quaternion:
     def transform_vector(self, vector):
         # Callers normalize their frames explicitly. Normalizing here changes
         # raw component semantics and adds another rounding step to live frames.
-        x, y, z = vector
+        x, y, z = map(float, vector)
         qx, qy, qz, qw = self.x, self.y, self.z, self.w
         ix = qw*x + qy*z - qz*y
         iy = qw*y + qz*x - qx*z

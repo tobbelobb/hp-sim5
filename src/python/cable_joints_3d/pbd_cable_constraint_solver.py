@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import math
 
 import numpy as np
+from .vector3 import cross, length as norm3
 from cable_joints.util import effective_cw, is_hybrid
 
 from .cable_attachment_update_system import effective_rolling_radius
@@ -13,13 +14,13 @@ from .ecs import (
     PositionComponent, PrevFinalOrientationComponent, PrevFinalPosComponent, RigidBodyMemberComponent,
 )
 from .inertia_tensor import (
-    apply_world_inverse_inertia, constrained_inv_inertia_about_world_axis,
+    apply_world_inverse_inertia,
     effective_inertia_about_world_axis, has_any_inverse_inertia, inverse_inertia_quadratic_form,
 )
 from .quaternion import rotation_vector_between
 from .rigid_bodies import (
     apply_world_angular_correction, compute_local_attachment, compute_world_attachment,
-    get_entity_world_position, resolve_rigid_body_solver_endpoint,
+    get_entity_world_position, resolve_rigid_body_solver_entity,
 )
 from .spools import SpoolStateComponent
 from .stepper_motor import (
@@ -64,11 +65,11 @@ def _build_spin_info(world, entity, point, gradient, dt):
     axis = orientation.quaternion.transform_vector(link.cable_plane_normal_local)
     if np.dot(axis, axis) <= EPSILON:
         return None
-    axis /= np.linalg.norm(axis)
-    free_inverse = constrained_inv_inertia_about_world_axis(moment, orientation.quaternion, axis)
+    axis /= norm3(axis)
+    inertia = effective_inertia_about_world_axis(moment, orientation.quaternion, axis)
+    free_inverse = 1. / inertia if inertia > 0 else 0.
     if free_inverse <= EPSILON:
         return None
-    inertia = effective_inertia_about_world_axis(moment, orientation.quaternion, axis)
     stepper = world.get_component(entity, StepperMotorComponent)
     return SpinSolveInfo(
         entity, center, free_inverse, effective_motorized_spin_inv_inertia(world, entity, free_inverse, inertia, dt),
@@ -92,7 +93,7 @@ def _hybrid_stored_gradient(world, path, index, first, entity):
     return gradient if first else -gradient
 
 
-def _spin_info(world, path, index, first, entity, mapped, point, gradient, joint_locals, dt):
+def _spin_info(world, path, index, first, entity, internal, point, gradient, joint_locals, dt):
     link_index = index if first else index + 1
     if has_axis_only_cable_spin_dof(world, entity) and link_index < len(path.link_types):
         info = _build_spin_info(world, entity, point, gradient, dt)
@@ -104,7 +105,7 @@ def _spin_info(world, path, index, first, entity, mapped, point, gradient, joint
                     (first and path.link_types[index + 1] == 'pinhole' and index + 1 < len(path.joint_entities))
                     or (not first and path.link_types[index] == 'pinhole' and index > 0))
             return info
-    if mapped.internal_to_body or len(path.joint_entities) < 2 or path.link_types[link_index] != 'pinhole':
+    if internal or len(path.joint_entities) < 2 or path.link_types[link_index] != 'pinhole':
         return None
     if first and link_index > 0 and (path.link_types[link_index - 1] == 'rolling' or is_hybrid(path.link_types[link_index - 1])):
         internal_index, spin_first = index - 1, True
@@ -126,7 +127,7 @@ def _spin_info(world, path, index, first, entity, mapped, point, gradient, joint
     coupled_gradient = point - spin_point
     if np.dot(coupled_gradient, coupled_gradient) <= EPSILON:
         return None
-    coupled_gradient /= np.linalg.norm(coupled_gradient)
+    coupled_gradient /= norm3(coupled_gradient)
     info = _build_spin_info(world, spin_entity, spin_point, coupled_gradient, dt)
     if info is not None:
         info.transferred_joint = internal_id
@@ -170,9 +171,8 @@ class SolverEnd:
 
 
 def _solver_end(world, path, index, first, entity, other, point, gradient, joint_locals, dt):
-    mapped = resolve_rigid_body_solver_endpoint(world, entity, other, point)
-    spin = _spin_info(world, path, index, first, entity, mapped, point, gradient, joint_locals, dt)
-    solver_entity = mapped.entity_id
+    solver_entity, internal = resolve_rigid_body_solver_entity(world, entity, other)
+    spin = _spin_info(world, path, index, first, entity, internal, point, gradient, joint_locals, dt)
     position = world.get_component(solver_entity, PositionComponent)
     if position is None:
         return None
@@ -180,14 +180,14 @@ def _solver_end(world, path, index, first, entity, other, point, gradient, joint
     inv_mass = 1 / mass.mass if mass is not None and mass.mass > 0 else 0.
     moment = world.get_component(solver_entity, MomentOfInertiaComponent)
     orientation = world.get_component(solver_entity, OrientationComponent)
-    angular_gradient = np.cross(point - position.pos, gradient)
+    angular_gradient = cross(point - position.pos, gradient)
     angular_denominator = inverse_inertia_quadratic_form(moment, orientation.quaternion, angular_gradient) if orientation is not None and not has_axis_only_cable_spin_dof(world, solver_entity) else 0.
     previous_position = world.get_component(solver_entity, PrevFinalPosComponent)
     displacement = float(np.dot(gradient, position.pos - previous_position.pos)) if previous_position is not None else 0.
     displacement += np.dot(angular_gradient, rotation_vector_between(_quaternion(world, solver_entity, True), _quaternion(world, solver_entity)))
     solve_spin_gradient = load_spin_gradient = 0.
     if spin is not None:
-        lever_gradient = np.dot(np.cross(spin.point - spin.center, spin.gradient), spin.axis)
+        lever_gradient = np.dot(cross(spin.point - spin.center, spin.gradient), spin.axis)
         solve_spin_gradient = spin.stored_gradient if spin.solve_uses_stored_gradient and spin.torque_mode else lever_gradient
         load_spin_gradient = spin.stored_gradient if spin.use_stored_only_for_load else solve_spin_gradient
         link = world.get_component(spin.entity, CableLinkComponent)
@@ -250,8 +250,7 @@ def _apply_end_correction(world, end, inverse, multiplier):
                 encoder.angle += delta_angle
 
 
-def _solve_joint(world, path, index, joint, points, error, iteration, joint_locals, dt, loads):
-    direction = (points[1] - points[0]) / np.linalg.norm(points[1] - points[0])
+def _solve_joint(world, path, index, joint, points, direction, error, iteration, joint_locals, dt, loads):
     first = _solver_end(world, path, index, True, joint.entity_a, joint.entity_b, points[0], direction, joint_locals, dt)
     second = _solver_end(world, path, index, False, joint.entity_b, joint.entity_a, points[1], -direction, joint_locals, dt)
     if first is None or second is None:
@@ -336,7 +335,8 @@ class PBDCableConstraintSolver:
                     joint = world.get_component(joint_id, CableJointComponent)
                     points = (compute_world_attachment(world, joint.entity_a, joint_locals[joint_id][0]),
                               compute_world_attachment(world, joint.entity_b, joint_locals[joint_id][1]))
-                    length = np.linalg.norm(points[1] - points[0])
+                    difference = points[1] - points[0]
+                    length = norm3(difference)
                     if length <= EPSILON or length - joint.rest_length <= EPSILON:
                         continue
-                    _solve_joint(world, path, index, joint, points, length - joint.rest_length, iteration, joint_locals, dt, loads)
+                    _solve_joint(world, path, index, joint, points, difference / length, length - joint.rest_length, iteration, joint_locals, dt, loads)

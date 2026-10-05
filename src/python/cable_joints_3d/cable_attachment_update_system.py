@@ -6,6 +6,7 @@ import numpy as np
 from cable_joints.util import effective_cw, is_hybrid, is_rolling
 
 from .cable_frames import (
+    DEFAULT_PLANE_NORMAL,
     arc_frame_for_endpoint, attachment_relative_orientation,
     delta_angle_for_entity, ensure_hybrid_knot_angle_for_endpoint,
     get_plane_normal, hybrid_knot_angle_for_path, orientation_angle_for_entity,
@@ -27,7 +28,7 @@ from .rigid_bodies import (
     update_rigid_body_member_local_orientation,
 )
 from .spools import normalize_angle
-from .vector3 import normalize
+from .vector3 import cross, length as norm3, normalize
 
 EPSILON = 1e-9
 MIN_JOINT_REST_LENGTH = 1e-6
@@ -52,7 +53,7 @@ def _rotate(vector, axis, angle):
     # Match Vector3's Rodrigues rotation, including its zero-axis convention.
     axis = normalize(axis)
     cosine, sine = math.cos(angle), math.sin(angle)
-    return vector * cosine + np.cross(axis, vector) * sine + axis * np.dot(vector, axis) * (1 - cosine)
+    return vector * cosine + cross(axis, vector) * sine + axis * np.dot(vector, axis) * (1 - cosine)
 
 
 @dataclass
@@ -79,25 +80,33 @@ class EndpointFrame:
     previous_attachment: np.ndarray
 
 
-def _endpoint_frame(world, path, index, entity, counterpart, attachment):
+def _endpoint_frame(world, path, index, entity, counterpart, attachment, *, geometry_only=False):
     link = world.get_component(entity, CableLinkComponent)
     position = get_entity_world_position(world, entity)
-    quaternion = get_entity_world_orientation(world, entity)
+    rolling, hybrid = is_rolling(path.link_types[index]), is_hybrid(path.link_types[index])
+    winding = rolling or hybrid
+    quaternion = get_entity_world_orientation(world, entity) if winding else None
     previous_quaternion = link.prev_cable_attachment_time_orientation if link else None
-    current_frame, previous_frame = orientation_frame_for_endpoint(
-        world, entity, counterpart, quaternion, previous_quaternion, link)
+    current_frame = previous_frame = None
+    if winding:
+        current_frame, previous_frame = orientation_frame_for_endpoint(
+            world, entity, counterpart, quaternion, previous_quaternion, link)
     radius = world.get_component(entity, RadiusComponent)
     base_radius = radius.radius if radius else None
     effective_radius, theta = effective_rolling_radius(world, path, index, base_radius)
+    # Angles only affect winding. Geometry-only callers need delta solely for
+    # rotating hybrid attachments; fixed attachments and pinholes need neither.
+    needs_delta = winding if not geometry_only else path.link_types[index] == 'hybrid-attachment'
+    needs_angles = hybrid and not geometry_only
     return EndpointFrame(
         entity, counterpart, index, position, link.prev_cable_attachment_time_pos if link else None,
-        quaternion, previous_quaternion, current_frame, previous_frame, get_plane_normal(world, entity),
+        quaternion, previous_quaternion, current_frame, previous_frame,
+        get_plane_normal(world, entity) if winding else DEFAULT_PLANE_NORMAL,
         base_radius, effective_radius, theta,
-        orientation_angle_for_entity(world, entity, quaternion, current_frame),
-        orientation_angle_for_entity(world, entity, previous_quaternion, previous_frame),
-        delta_angle_for_entity(world, entity, previous_quaternion, quaternion, previous_frame, current_frame),
-        effective_cw(path, index, index == 0), is_rolling(path.link_types[index]),
-        is_hybrid(path.link_types[index]), attachment.copy(),
+        orientation_angle_for_entity(world, entity, quaternion, current_frame) if needs_angles else 0.,
+        orientation_angle_for_entity(world, entity, previous_quaternion, previous_frame) if needs_angles else 0.,
+        delta_angle_for_entity(world, entity, previous_quaternion, quaternion, previous_frame, current_frame) if needs_delta else 0.,
+        effective_cw(path, index, index == 0), rolling, hybrid, attachment.copy(),
     )
 
 
@@ -122,7 +131,8 @@ def _calculate_attachments(path, first, second):
     b = second.position.copy() if second.position is not None else None
     rotated_a = path.link_types[first.index] == 'hybrid-attachment' and abs(first.delta) > EPSILON
     rotated_b = path.link_types[second.index] == 'hybrid-attachment' and abs(second.delta) > EPSILON
-    parallel = (np.dot(first.normal, first.normal) > EPSILON and np.dot(second.normal, second.normal) > EPSILON
+    parallel = (first.rolling and second.rolling
+                and np.dot(first.normal, first.normal) > EPSILON and np.dot(second.normal, second.normal) > EPSILON
                 and abs(abs(np.dot(normalize(first.normal), normalize(second.normal))) - 1) <= 1e-6)
     if first.rolling and second.rolling and parallel and not rotated_a and not rotated_b:
         if a is not None and b is not None and first.radius is not None and second.radius is not None:
@@ -141,15 +151,15 @@ def _calculate_attachments(path, first, second):
 
 
 def calculate_attachment_points(world, joint, path, index):
-    first = _endpoint_frame(world, path, index, joint.entity_a, joint.entity_b, joint.attachment_point_a_world)
-    second = _endpoint_frame(world, path, index + 1, joint.entity_b, joint.entity_a, joint.attachment_point_b_world)
+    first = _endpoint_frame(world, path, index, joint.entity_a, joint.entity_b, joint.attachment_point_a_world, geometry_only=True)
+    second = _endpoint_frame(world, path, index + 1, joint.entity_b, joint.entity_a, joint.attachment_point_b_world, geometry_only=True)
     return _calculate_attachments(path, first, second)
 
 
 def _stored_delta(world, state, attachment, half_width):
     if not state.rolling or state.radius is None or any(p is None for p in (state.position, state.previous_position, attachment)):
         return 0.
-    if np.linalg.norm(state.previous_attachment - state.previous_position) < 1e-4:
+    if norm3(state.previous_attachment - state.previous_position) < 1e-4:
         return 0.
     previous, current, normal = arc_frame_for_endpoint(
         world, state.entity, state.counterpart, state.previous_attachment - state.previous_position,
@@ -282,7 +292,7 @@ def update_hybrid_link_states(world):
             elif path.link_types[index] == 'hybrid-attachment':
                 if center is None or radius is None or not math.isfinite(radius) or radius <= EPSILON:
                     continue
-                if np.linalg.norm(point - neighbor) <= max(1e-6, 2 * path.cable_half_width + 1e-6):
+                if norm3(point - neighbor) <= max(1e-6, 2 * path.cable_half_width + 1e-6):
                     continue
                 cw_point = tangent_from_sphere_to_point(neighbor, center, radius, normal, True)['a_sphere']
                 ccw_point = tangent_from_sphere_to_point(neighbor, center, radius, normal, False)['a_sphere']

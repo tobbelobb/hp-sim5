@@ -1,0 +1,114 @@
+{
+  "baseline_commit": "0535d9a775b9516b3e8eb387ff2dd2996b5bea63",
+  "date": "2026-10-05",
+  "cpu": "Intel Core i7-12700K",
+  "gcode_sha256": "95fc8727bb77d615754b37433a6c49f3b6944f40e976cc837a9d6811b84726a1",
+  "runs": [
+    {
+      "firmware": "rrf",
+      "before": {
+        "python": "3.12.3",
+        "platform": "Linux-6.8.0-142-generic-x86_64-with-glibc2.39",
+        "commands": "/tmp/hp4-rrf-generated.json",
+        "commands_sha256": "5cedc27e32a101e78a152a0684271716f141761be43a666f97573d724c016ce8",
+        "total_commands": 1038258,
+        "steps": 3000,
+        "dt": 0.002,
+        "recording": false,
+        "parse_seconds": 1.1400252230014303,
+        "load_seconds": [
+          0.04651899400050752,
+          0.031896785003482364,
+          0.031976942998880986
+        ],
+        "wall_seconds": [
+          120.32380046299659,
+          120.05037167299452,
+          120.40598296200187
+        ],
+        "median_seconds": 120.32380046299659,
+        "steps_per_second": 24.932723105954384,
+        "simulated_seconds": 6.0
+      },
+      "after": {
+        "python": "3.12.3",
+        "platform": "Linux-6.8.0-142-generic-x86_64-with-glibc2.39",
+        "commands": "/tmp/hp4-rrf-generated.json",
+        "commands_sha256": "5cedc27e32a101e78a152a0684271716f141761be43a666f97573d724c016ce8",
+        "total_commands": 1038258,
+        "steps": 3000,
+        "dt": 0.002,
+        "recording": false,
+        "parse_seconds": 1.178004139001132,
+        "load_seconds": [
+          0.04267733699816745,
+          0.028559139995195437,
+          0.02885414699994726
+        ],
+        "wall_seconds": [
+          59.87699479499861,
+          60.022299891999864,
+          60.141615693006315
+        ],
+        "median_seconds": 60.022299891999864,
+        "steps_per_second": 49.9814236608394,
+        "simulated_seconds": 6.0
+      },
+      "speedup": 2.0046516158077785,
+      "exact_final_frame_cable_match": true
+    },
+    {
+      "firmware": "klipper",
+      "before": {
+        "python": "3.12.3",
+        "platform": "Linux-6.8.0-142-generic-x86_64-with-glibc2.39",
+        "commands": "/tmp/hp4-klipper.json",
+        "commands_sha256": "647fd8e041163c7b1911c8f97e08a02376c44ec2871e2c03615a620b55a048b0",
+        "total_commands": 1025675,
+        "steps": 3000,
+        "dt": 0.002,
+        "recording": false,
+        "parse_seconds": 1.060691713995766,
+        "load_seconds": [
+          0.041037556002265774,
+          0.03302492099464871,
+          0.03202936900197528
+        ],
+        "wall_seconds": [
+          118.7773314310034,
+          119.16222451400245,
+          119.78030744899297
+        ],
+        "median_seconds": 119.16222451400245,
+        "steps_per_second": 25.175763646871815,
+        "simulated_seconds": 6.0
+      },
+      "after": {
+        "python": "3.12.3",
+        "platform": "Linux-6.8.0-142-generic-x86_64-with-glibc2.39",
+        "commands": "/tmp/hp4-klipper.json",
+        "commands_sha256": "647fd8e041163c7b1911c8f97e08a02376c44ec2871e2c03615a620b55a048b0",
+        "total_commands": 1025675,
+        "steps": 3000,
+        "dt": 0.002,
+        "recording": false,
+        "parse_seconds": 1.072436356000253,
+        "load_seconds": [
+          0.03670818700629752,
+          0.02827859399985755,
+          0.02812623199861264
+        ],
+        "wall_seconds": [
+          59.968314908997854,
+          59.766688963005436,
+          59.58111232000374
+        ],
+        "median_seconds": 59.766688963005436,
+        "steps_per_second": 50.19518484380068,
+        "simulated_seconds": 6.0
+      },
+      "speedup": 1.99378996195961,
+      "exact_final_frame_cable_match": true
+    }
+  ]
+}
