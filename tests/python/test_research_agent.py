@@ -136,7 +136,8 @@ def test_launcher_dry_run_works_outside_repo_and_preserves_prompt():
     assert f'mcp_servers.hp_sim5.command="{ROOT / ".venv/bin/python"}"' in launch['argv']
 
 
-def test_launcher_preserves_written_report_and_cleans_api_key_environment(tmp_path, monkeypatch):
+@pytest.mark.parametrize('real_runtime', [False, pytest.param(True, marks=pytest.mark.slow)])
+def test_launcher_preserves_written_report_and_cleans_api_key_environment(tmp_path, monkeypatch, real_runtime):
     codex = tmp_path / 'codex'
     codex.write_text(f'#!{sys.executable}\n' + '''
 import json
@@ -173,17 +174,38 @@ else:
         def start(self):
             return self
 
+        def call(self, operation):
+            assert operation == 'status', 'Startup must leave experiment selection to the agent'
+            return {'connected': True, 'step': 0, 'queue_length': 0}
+
         def close(self):
             self.closed = True
 
-    monkeypatch.setattr(launcher, 'RuntimeService', Service)
-    monkeypatch.setattr(launcher, 'doctor', lambda runtime: {'ok': True, 'checks': {'native_collection': {'ok': True}}})
+    if real_runtime:
+        runtime_service = launcher.RuntimeService
+
+        def start_real_service(root, directory, viewer_endpoint):
+            service = runtime_service(root, directory, viewer_endpoint)
+            services.append(service)
+            return service
+
+        monkeypatch.setattr(launcher, 'RuntimeService', start_real_service)
+    else:
+        monkeypatch.setattr(launcher, 'RuntimeService', Service)
+
+    def forbidden_doctor():
+        pytest.fail('Normal research startup must not run doctor or collect sweeps')
+
+    monkeypatch.setattr(launcher, 'doctor', forbidden_doctor)
     monkeypatch.setenv('PATH', str(tmp_path) + os.pathsep + os.environ['PATH'])
     monkeypatch.setenv('OPENAI_API_KEY', 'test-sentinel')
     monkeypatch.setenv('CODEX_API_KEY', 'test-sentinel')
     monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--viewer', 'none', '--prompt', 'preservation check'])
     assert launcher.main() == 0
-    assert services[0].closed
+    if real_runtime:
+        assert services[0].process.poll() == 0
+    else:
+        assert services[0].closed
     session = services[0].directory.parent
     assert (session / 'report.md').read_text() == 'Full research evidence.\n'
     assert (session / 'final-message.md').read_text() == 'Short final response.\n'
@@ -191,3 +213,8 @@ else:
     assert json.loads((session / 'events.jsonl').read_text())['item']['text'] == 'Done'
     launch = (session / 'launch.json').read_text()
     assert 'test-runtime-secret' not in launch and '<runtime token>' in launch
+    metadata = json.loads(launch)
+    assert 'preflight' not in metadata
+    assert metadata['runtime_status']['connected']
+    assert metadata['runtime_status']['step'] == 0
+    assert metadata['runtime_status']['queue_length'] == 0

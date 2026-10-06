@@ -1,6 +1,10 @@
 Use `.venv/bin/python` and keep source changes small. Read `research/README.md`
 for the tools and `research/investigation.md` for the integration rationale.
 
+Choose experiments and collections according to the user's prompt and your
+current hypothesis. The launcher prepares tools; it does not prescribe an
+autocal collection or run experiments before you start.
+
 You can perform experiments yourself. For design or optimization tasks, define a
 measurable hypothesis, run a baseline, change one relevant variable, run a trial,
 and compare the observations. Keep failed trials and revise the hypothesis when

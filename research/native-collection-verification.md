@@ -119,3 +119,10 @@ Checks passed:
 See [native collection usage](native-collection.md) for tool contracts and
 reproduction commands. Klipper streamed motion and a human control UI remain
 future work.
+
+Startup correction: normal prompt launches now prepare services and start the
+agent at step zero without running the collection proof. Collection remains an
+agent-selected tool; the diagnostic above runs only with explicit `--doctor`.
+The startup regression passed with real supervised RRF services and a stub
+Codex executable in 1.12 seconds. It verifies the agent is launched with the
+world at step zero, an empty command queue, and no doctor or collection call.

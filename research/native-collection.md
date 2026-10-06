@@ -70,7 +70,11 @@ Python physics; reset the session to reload changed JS bridge/collector code.
 `start_browser_service` supervises Vite on a free loopback port. Its ordinary web
 scene is independent of the native world; native visualization uses Rerun.
 
-## What preflight proves
+## What explicit doctor proves
+
+`./hp-sim5-research-agent --doctor` explicitly runs the collection proof. Normal
+prompt launches prepare services without collecting data; the agent chooses
+whether and when to call `collect_sweeps`.
 
 Doctor performs actual collection and checks version-2 schema, raw-angle presence,
 canonical roles, angle-to-millimetre conversion, noise statistics, drive travel,

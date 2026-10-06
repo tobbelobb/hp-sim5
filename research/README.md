@@ -17,8 +17,15 @@ From the repository root:
 ```bash
 .venv/bin/python -m pip install -r requirements.txt
 codex login                       # choose ChatGPT
-./hp-sim5-research-agent --doctor
 ./hp-sim5-research-agent --prompt "Compare HP4 settling with a small A-axis movement. Run both experiments, inspect their recordings and explain the measured difference."
+```
+
+`--doctor` is an optional, explicit diagnostic command. Ordinary prompt runs
+start the supervised tools and let the agent decide which experiments to run;
+they do not invoke doctor or collect autocal data automatically.
+
+```bash
+./hp-sim5-research-agent --doctor  # optional collection diagnostic (~14 minutes)
 ```
 
 The doctor imports dependencies, checks Codex login and Rerun MCP, then runs
@@ -38,9 +45,10 @@ the log path and suggest numerical mode.
 The parent launcher also owns a persistent native runtime, RRF and the collector
 bridge. MCP proxies to these services; the agent's shell does not need permission
 to bind their ports. Readiness requires a firmware identification reply and a
-connected native encoder client. Preflight archives its evidence and resets world
-and firmware before research starts. Vite starts on demand through
-`start_browser_service`. All owned services stop with the launcher.
+connected native encoder client. Normal startup leaves the world at step zero,
+records service status in `launch.json`, and starts the agent. Explicit doctor
+runs archive collection evidence and stop their services. Vite starts on demand
+through `start_browser_service`. All owned services stop with the launcher.
 
 ```bash
 ./hp-sim5-research-agent --prompt-file research/prompts/autocal.txt

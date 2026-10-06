@@ -23,7 +23,7 @@ def codex_environment():
     return {key: value for key, value in os.environ.items() if key not in ('OPENAI_API_KEY', 'CODEX_API_KEY')}
 
 
-def doctor(runtime=None):
+def doctor():
     checks = {}
     for module, package in [('numpy', 'numpy'), ('pxr', 'usd-core'), ('rerun', 'rerun-sdk'), ('mcp', 'mcp')]:
         try:
@@ -57,24 +57,20 @@ def doctor(runtime=None):
                                  'dt_s': dt, 'cable_paths': len(observed['cables'])}
         except Exception as error:
             checks['physics'] = {'ok': False, 'error': str(error)}
-    owned_runtime = None
+    runtime = None
     if checks.get('physics', {}).get('ok'):
         try:
-            if runtime is None:
-                owned_runtime = RuntimeService(ROOT, ROOT / 'output/research/preflight' / uuid.uuid4().hex).start()
-                runtime = owned_runtime
+            runtime = RuntimeService(ROOT, ROOT / 'output/research/preflight' / uuid.uuid4().hex).start()
             collection = runtime.call('collect', options={'sweepPoints': 3, 'noiseSamples': 4})
             from hp_sim5_research.validation import validate_collection
             validation = validate_collection(collection['artifacts']['dataset'])
             checks['native_collection'] = {'ok': True, 'run_id': collection['run_id'],
                                            'artifacts': collection['artifacts'], 'validation': validation}
-            # Leave the researcher a fresh firmware/world/reference pair after the proof.
-            runtime.call('reset')
         except Exception as error:
             checks['native_collection'] = {'ok': False, 'error': str(error)}
         finally:
-            if owned_runtime is not None:
-                owned_runtime.close()
+            if runtime is not None:
+                runtime.close()
     return {'ok': all(check['ok'] for check in checks.values()), 'repo': str(ROOT), 'checks': checks}
 
 
@@ -141,7 +137,7 @@ def main():
     task = parser.add_mutually_exclusive_group()
     task.add_argument('--prompt', help='Research or robot design task')
     task.add_argument('--prompt-file', type=Path, help='UTF-8 task file')
-    parser.add_argument('--doctor', action='store_true', help='Check dependencies, login, real RRF/native collection and autocal loading')
+    parser.add_argument('--doctor', action='store_true', help='Explicitly run diagnostics, including real RRF/native collection and autocal loading')
     parser.add_argument('--dry-run', action='store_true', help='Show the Codex command and task without starting processes')
     parser.add_argument('--viewer', choices=['headless', 'window', 'none'], default='headless')
     parser.add_argument('--model', help='Optional Codex model; otherwise use your existing Codex setting')
@@ -170,15 +166,12 @@ def main():
         if args.viewer != 'none':
             viewer, endpoint = start_viewer(args.viewer, session)
         runtime = RuntimeService(ROOT, session / 'native', endpoint).start()
-        preflight = doctor(runtime)
-        if not preflight['ok']:
-            print(json.dumps(preflight, indent=2), file=sys.stderr)
-            return 1
+        runtime_status = runtime.call('status')
         (session / 'prompt.txt').write_text(full_prompt)
         command = codex_command(session, args.model, endpoint, runtime)
         # Keep bearer credentials out of launch artifacts.
         saved_command = [arg.replace(runtime.token, '<runtime token>') for arg in command]
-        (session / 'launch.json').write_text(json.dumps({'argv': saved_command, 'preflight': preflight,
+        (session / 'launch.json').write_text(json.dumps({'argv': saved_command, 'runtime_status': runtime_status,
                                                        'viewer_endpoint': endpoint, 'runtime_endpoint': runtime.endpoint}, indent=2) + '\n')
         print(f'Research session: {session}', file=sys.stderr, flush=True)
         agent = subprocess.Popen(command, cwd=ROOT, env=codex_environment(),
