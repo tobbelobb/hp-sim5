@@ -21,6 +21,7 @@ sys.path.insert(0, str(ROOT))
 from hp_sim5_research.experiments import encode, write_json
 from hp_sim5_research.services import free_port, request, stop_process, wait_ready
 from hp_sim5_research.session import NativeSession
+from hp_sim5_research.browser import BrowserConnection
 
 
 class Runtime:
@@ -32,6 +33,11 @@ class Runtime:
         self.stop = asyncio.Event()
         self.busy = False
         self.handlers = set()
+        self.browser_lock = asyncio.Lock()
+        self.browser = None
+        self.browser_recorder_port = None
+        self.jobs = {}
+        self.active_job = None
         self.browser_url = None
         self.python_source_hash = self.hash_sources([ROOT / 'src/python', ROOT / 'scripts'], '*.py')
 
@@ -71,7 +77,8 @@ class Runtime:
         self.session.event('session_started', session_id=self.session_id, rrf_url=self.rrf_url)
 
     def status(self):
-        return {**self.session.status(), 'session_id': self.session_id, 'busy': self.busy, 'browser_url': self.browser_url,
+        return {**self.session.status(), 'backend': 'native-python', 'session_id': self.session_id, 'busy': self.busy,
+                'active_job': self.active_job, 'reset_required': bool(self.session.error), 'browser_url': self.browser_url,
                 'source_changed': {
                     'python_requires_launcher_restart': self.python_source_hash != self.hash_sources([ROOT / 'src/python', ROOT / 'scripts'], '*.py'),
                     'bridge_requires_session_reset': self.bridge_source_hash != self.hash_sources(
@@ -82,7 +89,7 @@ class Runtime:
                 'artifacts': {'rrd': str(self.session.recording_path),
                               'events': str(self.session_dir / 'events.jsonl'), 'scene': str(self.session_dir / 'scene.usda')}}
 
-    async def collect(self, args):
+    async def collect(self, args, job=None):
         configs = args.get('configs', [{'fixed': [2, 3], 'drive': 0, 'sensor': 1}])
         if not isinstance(configs, list) or not 1 <= len(configs) <= 12:
             raise ValueError('Supply 1–12 HP4 sweep configurations')
@@ -101,7 +108,7 @@ class Runtime:
         settling = args.get('settling_timeout_s', 30)
         if not isinstance(settling, (int, float)) or not 1 <= settling <= 120:
             raise ValueError('settling_timeout_s must be in [1, 120]')
-        run_id = uuid.uuid4().hex
+        run_id = job['job_id'] if job else uuid.uuid4().hex
         directory = self.session_dir / run_id
         directory.mkdir()
         artifacts = {'dataset': str(directory / 'sweeps.json'), 'manifest': str(directory / 'manifest.json'),
@@ -109,7 +116,7 @@ class Runtime:
                      'scene': str(self.session_dir / 'scene.usda'),
                      'firmware_config': str(self.session_dir / 'firmware-config.g')}
         manifest = {'schema_version': 1, 'kind': 'native_collection',
-                    'run_id': run_id, 'session_id': self.session_id, 'status': 'running',
+                    'run_id': run_id, 'backend': 'native-python', 'session_id': self.session_id, 'status': 'running',
                     'configs': configs, 'options': {**options, 'sweepPoints': points},
                     'start_step': self.session.step, 'dt_s': self.session.dt,
                     'events_start_byte': self.session.events.tell(),
@@ -120,6 +127,8 @@ class Runtime:
                     'python': sys.executable,
                     'packages': {name: version(name) for name in ('numpy', 'usd-core', 'rerun-sdk', 'websockets')},
                     'git_revision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()}
+        if job is not None:
+            job['result'] = manifest
         write_json(directory / 'manifest.json', manifest)
         started = time.monotonic()
         wall_timeout = min(14400, max(900, 900 * len(configs) * points / 3))
@@ -130,7 +139,8 @@ class Runtime:
             collected = await asyncio.to_thread(request, self.collector_url, 'collect',
                                     {'configs': configs, 'options': manifest['options'],
                                      'settlingTimeoutMs': settling * 1000,
-                                     'sweepConfigFile': str(directory / 'configs.txt'), 'outputFile': artifacts['dataset']},
+                                     'sweepConfigFile': str(directory / 'configs.txt'), 'outputFile': artifacts['dataset'],
+                                     'partialFile': str(directory / 'partial-points.jsonl')},
                                     token=self.token, timeout=wall_timeout + 5)
             manifest['collector_options'] = collected['collectionOptions']
             from autocal.json_schema import load_json_file
@@ -147,12 +157,21 @@ class Runtime:
             manifest.update(status='complete', sweep_count=len(data['sweeps']), point_count=count,
                             dataset_sha256=hashlib.sha256(Path(artifacts['dataset']).read_bytes()).hexdigest())
         except Exception as error:
-            manifest.update(status='failed', error=str(error))
-            self.session.error = str(error)
-            await asyncio.to_thread(stop_process, self.processes['collector'])
-            raise RuntimeError(f'{error}; collection evidence: {artifacts["manifest"]}') from None
+            if job is not None and job.get('cancel_boundary'):
+                manifest.update(status='cancelled', cancel_boundary=job['cancel_boundary'],
+                                collector_boundary=job.get('collector_boundary'), reset_required=True)
+            else:
+                manifest.update(status='failed', error=str(error), reset_required=True)
+                self.session.error = str(error)
+                await asyncio.to_thread(stop_process, self.processes['collector'])
+                raise RuntimeError(f'{error}; collection evidence: {artifacts["manifest"]}') from None
         finally:
-            manifest.update(end_step=self.session.step, wall_s=time.monotonic() - started)
+            manifest.update(end_step=self.session.step, steps_executed=self.session.step - manifest['start_step'],
+                            wall_s=time.monotonic() - started)
+            partial = directory / 'partial-points.jsonl'
+            if partial.exists():
+                artifacts['partial_points'] = str(partial)
+                manifest['partial_point_count'] = len(partial.read_text().splitlines())
             self.session.deadline = None
             if manifest['status'] == 'complete':
                 self.session.start_recording(self.session_dir / f'live-{uuid.uuid4().hex}.rrd')
@@ -167,7 +186,143 @@ class Runtime:
             write_json(directory / 'manifest.json', manifest)
         return manifest
 
+    async def start_browser(self, args):
+        if self.browser_url and self.processes['vite'].poll() is not None:
+            self.browser_url = None
+        if self.browser_recorder_port and self.processes['browser-recorder'].poll() is not None:
+            self.browser_recorder_port = None
+        if self.browser is None:
+            self.browser = await BrowserConnection(self.directory).start()
+        if args.get('record') and self.browser_recorder_port is None:
+            self.browser_recorder_port = free_port()
+            command = [sys.executable, str(ROOT / 'scripts/hangprinter_flight_recorder.py'),
+                       '--port', str(self.browser_recorder_port), '--output', str(self.directory / 'browser-recordings'), '--no-viewer']
+            viewer = os.environ.get('HP_SIM5_VIEWER_URL')
+            if viewer:
+                command += ['--viewer-endpoint', viewer]
+            process, log = self.spawn('browser-recorder', command)
+            for _ in range(150):
+                if process.poll() is not None:
+                    raise RuntimeError(f'Browser recorder failed; read {log}')
+                try:
+                    reader, writer = await asyncio.open_connection('127.0.0.1', self.browser_recorder_port)
+                    writer.close()
+                    await writer.wait_closed()
+                    break
+                except OSError:
+                    await asyncio.sleep(.1)
+            else:
+                raise RuntimeError(f'Browser recorder did not become ready; read {log}')
+        if self.browser_url is None:
+            port = free_port()
+            process, log = self.spawn('vite', ['node', 'node_modules/vite/bin/vite.js',
+                                               '--host', '127.0.0.1', '--port', str(port), '--strictPort'])
+            self.browser_url = f'http://127.0.0.1:{port}/hp-sim5/hp-sim-3d/'
+            def check_vite():
+                deadline = time.monotonic() + 15
+                while time.monotonic() < deadline and process.poll() is None:
+                    try:
+                        with urlopen(self.browser_url, timeout=1) as response:
+                            if response.status == 200:
+                                return
+                    except OSError:
+                        time.sleep(.1)
+                raise RuntimeError(f'Vite failed readiness; read {log}')
+            await asyncio.to_thread(check_vite)
+        from urllib.parse import urlencode
+        query = {'research_ws': self.browser.url}
+        if self.browser_recorder_port:
+            query['rerun_ws'] = f'ws://127.0.0.1:{self.browser_recorder_port}'
+        return {'url': self.browser_url + '?' + urlencode(query), 'backend': 'browser-js',
+                'native_session_id': self.session_id, 'shared_with_native': False,
+                'recordings': str(self.directory / 'browser-recordings'),
+                'log': str(self.directory / 'vite.log')}
+
+    async def run_job(self, job, args):
+        try:
+            job['result'] = await self.collect(args, job)
+            if job['status'] != 'cancelling':
+                job['status'] = job['result']['status']
+        except Exception as error:
+            job.update(status='failed', error=str(error), reset_required=bool(self.session.error))
+        finally:
+            if job['status'] != 'cancelling':
+                self.busy = False
+                self.active_job = None
+
+    async def cancel_job(self, job):
+        job['cancel_boundary'] = self.session.stop_execution()
+        try:
+            job['collector_boundary'] = await asyncio.to_thread(request, self.collector_url, 'cancel',
+                                                               token=self.token, timeout=5)
+        except (OSError, RuntimeError, ValueError) as error:
+            job['collector_cancel_error'] = str(error)
+        for name in ('rrf', 'collector'):
+            await asyncio.to_thread(stop_process, self.processes[name])
+        await job['task']
+        job['status'] = 'cancelled'
+        result = job.get('result')
+        if result is not None:
+            result.update(status='cancelled', collector_boundary=job.get('collector_boundary'),
+                          cancel_boundary=job['cancel_boundary'], reset_required=True)
+            write_json(Path(result['artifacts']['manifest']), result)
+        self.busy = False
+        self.active_job = None
+
     async def dispatch(self, operation, args):
+        if operation in ('job_status', 'cancel_job'):
+            job = self.jobs.get(args.get('job_id'))
+            if job is None:
+                raise ValueError('Unknown collection job')
+            if operation == 'cancel_job':
+                if job['status'] == 'running':
+                    job['status'] = 'cancelling'
+                    job['cancel_task'] = asyncio.create_task(self.cancel_job(job))
+                if job.get('cancel_task'):
+                    await asyncio.shield(job['cancel_task'])
+            result = {key: value for key, value in job.items() if key not in ('task', 'cancel_task')}
+            if job['status'] in ('running', 'cancelling'):
+                result['progress'] = {'step': self.session.step, 'sim_time_s': self.session.step * self.session.dt,
+                                      'queue_length': self.session.remote.get_queue_length()}
+            return result
+        if operation == 'capture_context':
+            message = args.get('message')
+            if not isinstance(message, str) or not message.strip():
+                raise ValueError('Supply a research message')
+            step = args.get('step', self.session.step)
+            if type(step) is not int or not 0 <= step <= self.session.step:
+                raise ValueError('Select a recorded native step in this session')
+            if step == self.session.step and self.session.recording is not None:
+                self.session.observe()
+            observation = recording = scene_generation = None
+            with (self.session_dir / 'events.jsonl').open() as events:
+                for line in events:
+                    event = json.loads(line)
+                    if event['type'] == 'observation' and event['step'] == step and event['epoch'] == self.session.epoch:
+                        observation = event['sample']
+                        recording = event.get('recording')
+                        scene_generation = event.get('scene_generation')
+            if observation is None:
+                raise ValueError('No numerical observation exists at this step; select an observed sim_step')
+            context = {'capture_id': uuid.uuid4().hex, 'backend': 'native-python', 'session_id': self.session_id,
+                       'scene_generation': scene_generation, 'sim_step': step, 'sim_time_s': step * self.session.dt,
+                       'timeline': 'sim_step', 'selected_entity': args.get('selected_entity'), 'message': message,
+                       'recording': recording, 'observation': observation}
+            with (self.directory / 'native-context.jsonl').open('a') as output:
+                output.write(encode(context) + '\n')
+            return context
+        if operation == 'browser':
+            async with self.browser_lock:
+                return await self.start_browser(args)
+        if operation == 'browser_status':
+            status = self.browser.status() if self.browser else {'backend': 'browser-js', 'connected': False}
+            status['recordings'] = [json.loads(path.read_text()) for path in
+                                    sorted((self.directory / 'browser-recordings').glob('*.json'))]
+            return status
+        if operation == 'browser_action':
+            if not self.browser:
+                raise RuntimeError('Start the browser service first')
+            return await self.browser.call(args['action'], args.get('args', {}), args['page_id'])
         if operation == 'status':
             return self.status()
         if operation == 'clock':
@@ -178,14 +333,23 @@ class Runtime:
                 raise ValueError('seconds must be a number')
             return await self.session.advance(seconds * self.session.speed)
         if operation == 'shutdown':
+            if self.active_job is not None:
+                await self.dispatch('cancel_job', {'job_id': self.active_job})
             self.stop.set()
             return {'stopping': True}
         if self.busy:
             raise ValueError('Session has an active operation')
-        if operation != 'reset' and (self.session.error or any(p.poll() is not None for p in self.processes.values())):
+        if operation != 'reset' and (self.session.error or any(self.processes[name].poll() is not None for name in ('rrf', 'collector'))):
             raise RuntimeError(f'Session failed; inspect status and reset_session: {self.session.error}')
         self.busy = True
         try:
+            if operation == 'start_collection':
+                job = {'job_id': uuid.uuid4().hex, 'status': 'running', 'session_id': self.session_id,
+                       'backend': 'native-python'}
+                self.jobs[job['job_id']] = job
+                self.active_job = job['job_id']
+                job['task'] = asyncio.create_task(self.run_job(job, args))
+                return {key: value for key, value in job.items() if key != 'task'}
             if operation == 'collect':
                 return await self.collect(args)
             if operation == 'gcode':
@@ -201,31 +365,15 @@ class Runtime:
                 self.session.observe()
                 self.session.recording.flush(timeout_sec=5)
                 return result
-            if operation == 'browser':
-                if self.browser_url is None:
-                    port = free_port()
-                    process, log = self.spawn('vite', ['node', 'node_modules/vite/bin/vite.js',
-                                                       '--host', '127.0.0.1', '--port', str(port), '--strictPort'])
-                    self.browser_url = f'http://127.0.0.1:{port}/hp-sim5/hp-sim-3d/'
-                    def check_vite():
-                        deadline = time.monotonic() + 15
-                        while time.monotonic() < deadline and process.poll() is None:
-                            try:
-                                with urlopen(self.browser_url, timeout=1) as response:
-                                    if response.status == 200:
-                                        return
-                            except OSError:
-                                time.sleep(.1)
-                        raise RuntimeError(f'Vite failed readiness; read {log}')
-                    await asyncio.to_thread(check_vite)
-                return {'url': self.browser_url, 'log': str(self.directory / 'vite.log')}
             if operation == 'reset':
-                await self.close_session()
-                await self.start()
+                async with self.browser_lock:
+                    await self.close_session()
+                    await self.start()
                 return self.status()
             raise ValueError('Unknown runtime operation')
         finally:
-            self.busy = False
+            if operation != 'start_collection' or self.active_job is None:
+                self.busy = False
 
     async def connection(self, reader, writer):
         task = asyncio.current_task()
@@ -258,6 +406,10 @@ class Runtime:
         await writer.wait_closed()
 
     async def close_session(self):
+        if self.browser is not None:
+            await self.browser.close()
+            self.browser = None
+        self.browser_recorder_port = None
         if self.socket_task is not None:
             self.socket_task.cancel()
             await asyncio.gather(self.socket_task, return_exceptions=True)
@@ -290,7 +442,9 @@ async def main():
     finally:
         if server is not None:
             server.close()
-        pending = list(runtime.handlers) + [task for task in (starting, stopping) if task is not None]
+        if runtime.active_job is not None:
+            await runtime.dispatch('cancel_job', {'job_id': runtime.active_job})
+        pending = [task for job in runtime.jobs.values() for key, task in job.items() if key in ('task', 'cancel_task')] + list(runtime.handlers) + [task for task in (starting, stopping) if task is not None]
         for task in pending:
             task.cancel()
         await asyncio.gather(*pending, return_exceptions=True)

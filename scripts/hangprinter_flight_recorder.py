@@ -49,7 +49,11 @@ class FlightRecording:
         self.last_time = None
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
         self.path = output_dir / f"hangprinter-{stamp}-{uuid.uuid4().hex[:8]}.rrd"
-        self.stream = rr.RecordingStream("hp-sim5 Hangprinter flight recorder")
+        self.manifest = {"backend": "browser-js", "browser_session": sample["session"],
+                         "scene_generation": sample["generation"], "recording_id": uuid.uuid4().hex,
+                         "rrd": str(self.path.resolve()), "status": "recording", "start_step": sample["step"]}
+        self.stream = rr.RecordingStream("hp-sim5 Hangprinter flight recorder", recording_id=self.manifest["recording_id"])
+        self.write_manifest()
         sinks = [rr.FileSink(self.path)]
         if viewer_sink is not None:
             sinks.append(viewer_sink)
@@ -71,6 +75,12 @@ class FlightRecording:
             static=True,
         )
         print(f"Recording: {self.path}", flush=True)
+
+    def write_manifest(self):
+        target = self.path.with_suffix('.json')
+        temporary = target.with_suffix('.json.tmp')
+        temporary.write_text(json.dumps(self.manifest, indent=2) + '\n')
+        temporary.replace(target)
 
     def log_sample(self, sample):
         step, time = sample["step"], sample["time"]
@@ -154,6 +164,8 @@ class FlightRecording:
             print(f"Recorder flush: {error}", flush=True)
         finally:
             self.stream.disconnect()
+        self.manifest.update(status="finalized", end_step=self.last_step, end_time_s=self.last_time)
+        self.write_manifest()
         print(f"Saved: {self.path} (last timestep {self.last_step})", flush=True)
 
 
@@ -162,7 +174,9 @@ async def run(args):
     output_dir.mkdir(parents=True, exist_ok=True)
     viewer_sink = None
     viewer_server = None
-    if not args.no_viewer:
+    if args.viewer_endpoint:
+        viewer_sink = rr.GrpcSink(args.viewer_endpoint.replace('http://', 'rerun+http://') + '/proxy')
+    elif not args.no_viewer:
         viewer_uri = f"rerun+http://127.0.0.1:{args.grpc_port}/proxy"
         # Keep the server alive across recordings. A GrpcServerSink configuration
         # on each recording would start a separate listener on the same port.
@@ -220,7 +234,8 @@ def main():
     parser.add_argument("--web-port", type=int, default=9090, help="Rerun web viewer port")
     parser.add_argument("--grpc-port", type=int, default=9876, help="Rerun gRPC port")
     parser.add_argument("--force-scale", type=float, default=0.01, help="3D force arrow length in metres per newton")
-    parser.add_argument("--no-viewer", action="store_true", help="Only save recordings to disk")
+    parser.add_argument("--viewer-endpoint", help="Use an existing supervisor-owned native Viewer")
+    parser.add_argument("--no-viewer", action="store_true", help="Do not start a separate Viewer; retain disk and any supplied Viewer endpoint")
     args = parser.parse_args()
     try:
         asyncio.run(run(args))

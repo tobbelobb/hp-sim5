@@ -149,6 +149,20 @@ async def test_supervised_services_stdio_gcode_and_browser(tmp_path):
             browser = await client.call_tool('start_browser_service', {})
             assert not browser.is_error, browser.content
             assert browser.structured_content['url'].startswith('http://127.0.0.1:')
+            # Optional browser failure cannot poison the independent native backend.
+            import asyncio
+            import os
+            import signal
+            state = service.call('status')
+            os.kill(state['services']['vite']['pid'], signal.SIGTERM)
+            for _ in range(50):
+                if service.call('status')['services']['vite']['exit_code'] is not None:
+                    break
+                await asyncio.sleep(.1)
+            assert service.call('step', steps=1)['step'] > 0
+            restarted = service.call('browser')
+            assert restarted['url'] != browser.structured_content['url']
+            assert service.call('status')['session_id'] == before['session_id']
             reset = await client.call_tool('reset_session', {})
             assert not reset.is_error, reset.content
             assert reset.structured_content['session_id'] != before['session_id']
@@ -164,9 +178,22 @@ def test_real_rrf_native_collection_autocal_and_process_cleanup(tmp_path):
     try:
         service.start()
         before = service.call('status')
-        result = service.call('collect', options={'sweepPoints': 3, 'noiseSamples': 4})
+        import time
+        job = service.call('start_collection', options={'sweepPoints': 3, 'noiseSamples': 4})
+        deadline = time.monotonic() + 920
+        while True:
+            status = service.call('job_status', job_id=job['job_id'])
+            if status['status'] not in ('running', 'cancelling'):
+                break
+            assert time.monotonic() < deadline
+            time.sleep(1)
+        assert status['status'] == 'complete', status
+        result = status['result']
         assert result['session_id'] == before['session_id']
         assert result['status'] == 'complete' and result['point_count'] == 6
+        assert result['backend'] == 'native-python' and result['partial_point_count'] == 6
+        points = [json.loads(line) for line in Path(result['artifacts']['partial_points']).read_text().splitlines()]
+        assert all('raw_angles_deg' in point['point'] for point in points)
         validation = validate_collection(result['artifacts']['dataset'])
         assert validation['autocal_residual_count'] == 6
         after = service.call('status')
@@ -179,3 +206,100 @@ def test_real_rrf_native_collection_autocal_and_process_cleanup(tmp_path):
     finally:
         service.close()
     assert service.process.poll() == 0
+
+
+@pytest.mark.asyncio
+async def test_cancel_freezes_at_fixed_step_boundary_and_rejects_later_payloads(tmp_path):
+    import asyncio
+    session = NativeSession(ROOT, tmp_path)
+    try:
+        await session.handle({'commands': [{'type': 'Move', 'A': .001}] * 100})
+        advance = asyncio.create_task(session.advance(.2))
+        await asyncio.sleep(0)
+        boundary = session.stop_execution()
+        with pytest.raises(RuntimeError, match='cancelled'):
+            await advance
+        assert session.step == boundary['step'] < 100
+        assert session.remote.get_queue_length() == 0
+        with pytest.raises(RuntimeError, match='cancelled'):
+            await session.handle({'commands': [{'type': 'Move', 'A': 1}]})
+        with pytest.raises(RuntimeError, match='cancelled'):
+            await session.advance(.002)
+        assert session.step == boundary['step']
+    finally:
+        session.close()
+
+
+@pytest.mark.slow
+def test_live_collection_job_cancel_preserves_boundary_and_requires_reset(tmp_path):
+    import time
+    from rerun.chunk import RrdReader
+    service = RuntimeService(ROOT, tmp_path).start()
+    try:
+        job = service.call('start_collection', options={'sweepPoints': 3, 'noiseSamples': 4})
+        deadline = time.monotonic() + 30
+        while service.call('status')['step'] < 20:
+            assert time.monotonic() < deadline
+            time.sleep(.1)
+        cancelled = service.call('cancel_job', job_id=job['job_id'])
+        assert cancelled['status'] == 'cancelled', cancelled
+        result = cancelled['result']
+        boundary = result['cancel_boundary']
+        assert boundary['reset_required']
+        assert result['end_step'] == boundary['step']
+        assert result['collector_boundary']['cancelled']
+        assert result['steps_executed'] > 0
+        assert Path(result['artifacts']['events']).stat().st_size > 0
+        assert RrdReader(result['artifacts']['rrd']).store()
+        before = service.call('status')
+        time.sleep(.2)
+        after = service.call('status')
+        assert before['step'] == after['step'] == boundary['step']
+        assert after['queue_length'] == 0 and after['reset_required']
+        assert all(after['services'][name]['exit_code'] is not None for name in ('rrf', 'collector'))
+        assert service.call('job_status', job_id=job['job_id'])['status'] == 'cancelled'
+        with pytest.raises(RuntimeError, match='reset_session'):
+            service.call('step', steps=1)
+        reset = service.call('reset')
+        assert reset['step'] == 0 and not reset['reset_required']
+        assert reset['session_id'] != job['session_id']
+    finally:
+        service.close()
+
+
+@pytest.mark.slow
+@pytest.mark.asyncio
+async def test_attachment_reconnect_isolation_reset_and_dead_supervisor(tmp_path):
+    import subprocess
+    import sys
+    from mcp import Client, StdioServerParameters
+    service = RuntimeService(ROOT, tmp_path / 'runtime').start()
+    descriptor = tmp_path / 'connection.json'
+    descriptor.touch(mode=0o600)
+    descriptor.write_text(json.dumps({'repo': str(ROOT), 'session_id': service.call('status')['session_id'],
+        'runtime_endpoint': service.endpoint, 'runtime_token': service.token, 'viewer_endpoint': None}))
+    command = [sys.executable, str(ROOT / 'scripts/research_attach.py'), str(descriptor)]
+    parameters = StdioServerParameters(command=command[0], args=command[1:])
+    try:
+        async with Client(parameters, read_timeout_seconds=30) as client:
+            before = (await client.call_tool('runtime_status', {})).structured_content
+            await client.call_tool('step_physics', {'steps': 3})
+            competing = subprocess.run(command, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=5)
+            assert competing.returncode != 0 and 'another chat' in competing.stderr
+            assert service.token not in competing.stdout + competing.stderr
+        async with Client(parameters, read_timeout_seconds=30) as client:
+            reconnected = (await client.call_tool('runtime_status', {})).structured_content
+            assert reconnected['session_id'] == before['session_id'] and reconnected['step'] == 3
+            captured = await client.call_tool('capture_native_context', {'message': 'Inspect the continuing world', 'step': 3})
+            assert captured.structured_content['sim_step'] == 3
+            assert captured.structured_content['session_id'] == before['session_id']
+            reset = (await client.call_tool('reset_session', {})).structured_content
+            assert reset['session_id'] != before['session_id'] and reset['step'] == 0
+        async with Client(parameters, read_timeout_seconds=30) as client:
+            after = (await client.call_tool('runtime_status', {})).structured_content
+            assert after['session_id'] == reset['session_id'] and after['step'] == 0
+    finally:
+        service.close()
+    stale = subprocess.run(command, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=5)
+    assert stale.returncode != 0 and 'restart --serve' in stale.stderr
+    assert service.token not in stale.stdout + stale.stderr

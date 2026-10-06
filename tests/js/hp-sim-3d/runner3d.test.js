@@ -222,4 +222,31 @@ describe('slideprinter 3D runner idle loop handling', () => {
     loop(1051);
     expect(world.update).toHaveBeenCalledTimes(5);
   });
+
+  test('bounded research stepping keeps the same paused world and exact clock', async () => {
+    const { controls, world, resources, getAnimationLoop } = setupRunner();
+    controls.pause();
+    await controls.advanceFixedSteps(3);
+    expect(world.update).toHaveBeenCalledTimes(3);
+    expect(world.update.mock.calls.every(([dt]) => dt === .01)).toBe(true);
+    expect(resources.get('pauseState').paused).toBe(true);
+    expect(resources.get('researchClock')).toMatchObject({ step: 3, time: .03 });
+    expect(getAnimationLoop()).toBeNull();
+    controls.resume();
+    expect(resources.get('researchClock').step).toBe(3);
+    await expect(controls.advanceFixedSteps(1)).rejects.toThrow('Pause');
+    controls.reset();
+    expect(resources.get('researchClock').step).toBe(0);
+  });
+
+  test('bounded stepping rejects active firmware workers and invalid counts', async () => {
+    const remote = new RemoteSpoolSystem();
+    remote.worker = { postMessage: jest.fn() };
+    const { controls, world } = setupRunner({ systems: [remote] });
+    controls.pause();
+    await expect(controls.advanceFixedSteps(1)).rejects.toThrow('worker');
+    await expect(controls.advanceFixedSteps(10001)).rejects.toThrow('steps');
+    expect(world.update).not.toHaveBeenCalled();
+  });
+
 });

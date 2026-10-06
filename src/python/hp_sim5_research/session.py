@@ -41,6 +41,7 @@ class NativeSession:
         self.lock = asyncio.Lock()
         self.error = None
         self.deadline = None
+        self.cancel_requested = False
         self.recording_id = uuid.uuid4().hex
         self.events = (self.directory / 'events.jsonl').open('w')
         self.recording = None
@@ -66,7 +67,7 @@ class NativeSession:
 
     def event(self, kind, **values):
         self.events.write(encode({'type': kind, 'epoch': self.epoch, 'step': self.step,
-                                 'sim_time_s': self.step * self.dt, **values}) + '\n')
+                                 'sim_time_s': self.step * self.dt, 'scene_generation': self.world.get_resource('sceneGeneration'), **values}) + '\n')
         self.events.flush()
 
     def observe(self):
@@ -77,7 +78,7 @@ class NativeSession:
         self.recorder.step = self.step
         self.recorder.elapsed = self.step * self.dt
         self.recorder.update(self.world, 0.)
-        self.event('observation', sample=sample(self.world, self.step, self.dt))
+        self.event('observation', sample=sample(self.world, self.step, self.dt), recording=str(self.recording_path))
         if self.live_viewer and time.monotonic() >= self.next_live_flush:
             # Explicit delivery also updates the Viewer during long collector advances.
             self.recording.flush(timeout_sec=5)
@@ -96,6 +97,18 @@ class NativeSession:
             result.append(angle)
         return result
 
+    def stop_execution(self):
+        # Called on the event loop between fixed steps. No later payload may mutate this world.
+        self.cancel_requested = True
+        queued = self.remote.get_queue_length()
+        self.remote.clear_command_queue()
+        self.error = 'Collection cancelled; reset_session is required'
+        self.observe()
+        self.event('execution_cancelled', discarded_commands=queued)
+        return {'step': self.step, 'sim_time_s': self.step * self.dt,
+                'discarded_commands': queued, 'boundary': 'before next fixed physics step',
+                'reset_required': True}
+
     async def advance(self, seconds=0., *, drain=False):
         if isinstance(seconds, bool) or not isinstance(seconds, (int, float)) or not math.isfinite(seconds) or not 0 <= seconds <= 120:
             raise ValueError('Advance seconds must be finite and in [0, 120]')
@@ -104,6 +117,8 @@ class NativeSession:
             if count > 60_000:
                 raise ValueError('Motion exceeds the 60,000-step completion bound')
             for index in range(count):
+                if self.cancel_requested:
+                    raise RuntimeError(self.error)
                 if self.deadline is not None and time.monotonic() > self.deadline:
                     raise TimeoutError('Collection exceeded its wall-time budget')
                 self.world.update(self.dt)
@@ -122,6 +137,8 @@ class NativeSession:
                 'clock': 'fixed-step; collector delays advance simulation time', 'error': self.error}
 
     async def handle(self, payload):
+        if self.cancel_requested:
+            raise RuntimeError(self.error)
         kind = payload.get('type')
         self.event('bridge_payload', payload=payload)
         if kind == 'encoder_request':

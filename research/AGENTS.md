@@ -35,14 +35,18 @@ continue with telemetry and state explicitly that visual inspection was skipped.
 
 For autocal research, inspect `autocal/README.md`, `autocal/active_learning.py`,
 `autocal/ellipse_active.py`, `autocal/dataset_roles.py` and
-`autocal/tools/regress_calibration_logs.py`. Use `collect_sweeps` for online
+`autocal/tools/regress_calibration_logs.py`. Use `start_collection`, `collection_status` and `cancel_collection` for online
 native HP4/RRF collection: it runs the existing collector against a continuing
 Python world. `runtime_status`, `send_gcode`, `step_physics` and `reset_session`
 operate that same session. A G-code reply acknowledges firmware planning; an
 M569.3 read drains queued motor commands, and collector settling has a
 simulation-time bound. Collector waits advance fixed physics steps, so simulation
-time differs from wall time. Failed collection preserves evidence and requires
-`reset_session`. The launcher owns RRF, its bridge and optional Vite outside your
+time differs from wall time. Failed or cancelled collection preserves evidence and requires
+`reset_session`. Poll jobs while continuing the conversation. An interrupted Codex
+turn does not stop movement: explicitly cancel the active job and inspect its
+actual step boundary, partial artifacts and reset-required state before changing
+the experiment. Cancel freezes native physics before its next fixed step and
+retires RRF/bridge queues. Rerun playback pause only affects inspection. The launcher owns RRF, its bridge and optional Vite outside your
 command sandbox; use `start_browser_service` instead of starting Vite yourself.
 That web scene is independent of native physics. Inspect native live/saved
 recordings in Rerun. Read `research/native-collection.md` for units, references
@@ -60,3 +64,36 @@ candidate only when its selected result improves those measurements; detect and
 report cases where score ranking disagrees with physical accuracy. Do not claim
 a new calibration algorithm works until actual collector and regression
 evidence supports that claim.
+
+
+Research runs in an ordinary Codex conversation. Use Codex Goal mode when the
+user asks for autonomous continuation; do not build an outer prompt loop. Keep
+`research.md` in the supplied session directory current with objective,
+hypothesis, constraints, movement/experiment/compute budgets, experiment IDs,
+accepted steering and the next decision. Update it when steering changes the
+experiment choice. Preserve the conversation and prior evidence across turns.
+
+For shared browser work call `start_browser_service(record=True)` when recording
+is needed, open its exact URL, inspect `browser_status`, and pass that page's
+`page_id` to `browser_action`. Browser JS, standalone JS parity fixtures, and
+native Python are distinct backends. The browser API uses the existing scene,
+worker, motor, timing and inspection controllers. Pause before bounded stepping;
+finish active workers before direct motor commands. The optional WebMCP site
+tools operate the same API in the open desktop page; use local MCP when those
+site tools are unavailable. The supervisor owns the requested browser flight
+recorder and sends recordings to its assigned Viewer.
+
+When accepting “investigate this”, immediately capture the selected native run
+or continuing session with `capture_native_context`, or the selected browser
+page with `browser_action(action="capture_context")`. Include the user's words,
+selected entity/measurement and selected `sim_step`. Browser users can also use
+“Capture for research”; `browser_status` exposes those immutable submissions.
+Inspect the captured observation/time, not whichever state is current later.
+Navigation alone does not change the objective. Browser mutations and human
+control interventions are retained with their state/time for comparisons.
+
+Resume restores the Codex conversation, not a physics checkpoint. The CLI
+launcher explicitly starts a fresh world. Desktop attachment reconnects only
+to an explicitly selected live supervisor; an ended supervisor requires a new
+one. Never represent a final snapshot as restored simulation state. Use a
+separate supervisor and worktree for an independent chat.

@@ -1,4 +1,5 @@
 from copy import deepcopy
+import json
 
 import numpy as np
 import pytest
@@ -55,6 +56,12 @@ def test_saved_rrd_retains_every_timestep_and_requested_archetypes(tmp_path):
     assert [step for step, _ in strips] == [0, 1, 2]
     assert np.allclose(strips[-1][1], [[[0, 0, 0], [1, 0, 0]]])
     assert RrdReader(recording.path).blueprints()
+    manifest = json.loads(recording.path.with_suffix('.json').read_text())
+    assert manifest['backend'] == 'browser-js' and manifest['browser_session'] == 'test'
+    assert manifest['scene_generation'] == 1 and manifest['status'] == 'finalized'
+    assert manifest['start_step'] == 0 and manifest['end_step'] == 2
+    assert manifest['end_time_s'] == .02 and manifest['recording_id']
+    assert manifest['rrd'] == str(recording.path.resolve())
 
 
 def test_timestep_gaps_are_rejected_before_logging(tmp_path):

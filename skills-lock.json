@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "skills": {
+    "rerun-blueprint": {
+      "source": "rerun-io/rerun",
+      "sourceType": "github",
+      "skillPath": "skills/rerun-blueprint/SKILL.md",
+      "computedHash": "39f1657baf9e127d74ebf208b788a33227384b806a0cfbf8b0107ce7d6807947"
+    },
+    "rerun-catalog-queries": {
+      "source": "rerun-io/rerun",
+      "sourceType": "github",
+      "skillPath": "skills/rerun-catalog-queries/SKILL.md",
+      "computedHash": "9c5029e3ddee453dea047542cbe2851bf754d38b11eda726b2f2e9df8f0626e7"
+    },
+    "rerun-chunk-processing": {
+      "source": "rerun-io/rerun",
+      "sourceType": "github",
+      "skillPath": "skills/rerun-chunk-processing/SKILL.md",
+      "computedHash": "707dc5177d2d55962684ecfb50ea024efdc55eb0be6ffc5b25ae7ca0b6af10fc"
+    },
+    "rerun-data-model": {
+      "source": "rerun-io/rerun",
+      "sourceType": "github",
+      "skillPath": "skills/rerun-data-model/SKILL.md",
+      "computedHash": "0e0055c0a74287d83fdf4f13134284576b2ce766ceb79d751fcfe9fa570a12d6"
+    },
+    "rerun-docs": {
+      "source": "rerun-io/rerun",
+      "sourceType": "github",
+      "skillPath": "skills/rerun-docs/SKILL.md",
+      "computedHash": "2c2967aadcc65a5434023ca6112391e85e5b1a8bc94e5a37040db1e6f80cf325"
+    }
+  }
+}

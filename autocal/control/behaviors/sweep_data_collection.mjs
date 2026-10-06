@@ -1246,6 +1246,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
         point.noise_warnings = warnings;
       }
     }
+    await options.onPoint?.(dataPoints.at(-1), sweepConfig);
     const lengths = collected?.lengths;
     if (Array.isArray(lengths)) {
       currentDrive = lengths[driveAnchor] ?? currentDrive;
@@ -1528,6 +1529,7 @@ export async function collectSweepData(send, context) {
         fixedTargets,
         projectZeroTension: options.projectZeroTension,
         forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
+        onPoint: context.onPoint,
         baseRadiusMm: Array.isArray(m666ForCollection?.R)
           ? m666ForCollection.R[subCfg.driveAnchor]
           : m666ForCollection?.R,

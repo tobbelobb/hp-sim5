@@ -105,8 +105,9 @@ async def test_stdio_mcp_discovery_execution_readback_and_error():
     async with Client(parameters, read_timeout_seconds=30) as client:
         tools = (await client.list_tools()).tools
         assert {tool.name for tool in tools} == {'capabilities', 'run_experiment', 'read_experiment', 'compare_experiments',
-                                               'runtime_status', 'send_gcode', 'collect_sweeps', 'reset_session',
-                                               'step_physics', 'start_browser_service'}
+                                               'runtime_status', 'send_gcode', 'capture_native_context', 'reset_session',
+                                               'step_physics', 'start_browser_service', 'start_collection', 'collection_status', 'cancel_collection',
+                                               'browser_status', 'browser_action'}
         result = await client.call_tool('capabilities', {})
         assert not result.is_error
         assert SCENE in result.structured_content['scenes']
@@ -118,6 +119,12 @@ async def test_stdio_mcp_discovery_execution_readback_and_error():
         assert [row['step'] for row in result.structured_content['samples']] == [2, 3]
         result = await client.call_tool('compare_experiments', {'baseline_id': run['run_id'], 'candidate_id': run['run_id']})
         assert result.structured_content['changed_inputs'] == []
+        captured = await client.call_tool('capture_native_context', {'message': 'Investigate this selected step',
+            'run_id': run['run_id'], 'step': 1, 'selected_entity': 'effector'})
+        assert not captured.is_error, captured.content
+        assert captured.structured_content['sim_step'] == 1
+        assert captured.structured_content['run_id'] == run['run_id']
+        assert captured.structured_content['backend'] == 'native-python'
         result = await client.call_tool('run_experiment', {'commands': [{'type': 'Move', 'A': 'bad'}]})
         assert result.is_error
 
@@ -137,7 +144,8 @@ def test_launcher_dry_run_works_outside_repo_and_preserves_prompt():
 
 
 @pytest.mark.parametrize('real_runtime', [False, pytest.param(True, marks=pytest.mark.slow)])
-def test_launcher_preserves_written_report_and_cleans_api_key_environment(tmp_path, monkeypatch, real_runtime):
+@pytest.mark.parametrize('batch', [False, True])
+def test_launcher_preserves_written_report_and_cleans_api_key_environment(tmp_path, monkeypatch, real_runtime, batch):
     codex = tmp_path / 'codex'
     codex.write_text(f'#!{sys.executable}\n' + '''
 import json
@@ -148,9 +156,17 @@ assert 'OPENAI_API_KEY' not in os.environ and 'CODEX_API_KEY' not in os.environ
 if sys.argv[1:] == ['login', 'status']:
     print('Logged in using ChatGPT')
 else:
-    prompt = sys.stdin.read()
+    batch = 'exec' in sys.argv
+    prompt = sys.stdin.read() if batch else sys.argv[-1]
     assert 'preservation check' in prompt
-    final = Path(sys.argv[sys.argv.index('--output-last-message') + 1])
+    settings = [value for value in sys.argv if value.startswith('developer_instructions=')]
+    instructions = json.loads(settings[0].split('=', 1)[1])
+    session = Path(instructions.split('Session artifacts: ')[1].splitlines()[0])
+    final = session / 'final-message.md'
+    if batch:
+        assert sys.argv[sys.argv.index('--output-last-message') + 1] == str(final)
+    else:
+        assert '--json' not in sys.argv and sys.stdin.fileno() == 0
     (final.parent / 'report.md').write_text('Full research evidence.\\n')
     final.write_text('Short final response.\\n')
     print(json.dumps({'type': 'item.completed', 'item': {'type': 'agent_message', 'text': 'Done'}}))
@@ -176,7 +192,7 @@ else:
 
         def call(self, operation):
             assert operation == 'status', 'Startup must leave experiment selection to the agent'
-            return {'connected': True, 'step': 0, 'queue_length': 0}
+            return {'connected': True, 'step': 0, 'queue_length': 0, 'session_id': 'test-session'}
 
         def close(self):
             self.closed = True
@@ -200,7 +216,7 @@ else:
     monkeypatch.setenv('PATH', str(tmp_path) + os.pathsep + os.environ['PATH'])
     monkeypatch.setenv('OPENAI_API_KEY', 'test-sentinel')
     monkeypatch.setenv('CODEX_API_KEY', 'test-sentinel')
-    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--viewer', 'none', '--prompt', 'preservation check'])
+    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--viewer', 'none', '--prompt', 'preservation check'] + (['--batch'] if batch else []))
     assert launcher.main() == 0
     if real_runtime:
         assert services[0].process.poll() == 0
@@ -210,11 +226,48 @@ else:
     assert (session / 'report.md').read_text() == 'Full research evidence.\n'
     assert (session / 'final-message.md').read_text() == 'Short final response.\n'
     assert json.loads((session / 'exit.json').read_text()) == {'returncode': 0}
-    assert json.loads((session / 'events.jsonl').read_text())['item']['text'] == 'Done'
+    if batch:
+        assert json.loads((session / 'events.jsonl').read_text())['item']['text'] == 'Done'
+    else:
+        assert not (session / 'events.jsonl').exists()
+    assert (session / 'connection.json').stat().st_mode & 0o077 == 0
+    assert 'test-runtime-secret' not in (session / 'attachment.toml').read_text()
     launch = (session / 'launch.json').read_text()
-    assert 'test-runtime-secret' not in launch and '<runtime token>' in launch
+    assert 'test-runtime-secret' not in launch
+    assert 'research_attach.py' in launch
     metadata = json.loads(launch)
     assert 'preflight' not in metadata
     assert metadata['runtime_status']['connected']
     assert metadata['runtime_status']['step'] == 0
     assert metadata['runtime_status']['queue_length'] == 0
+
+def test_launcher_refuses_existing_session_without_overwriting_evidence(tmp_path):
+    (tmp_path / 'exit.json').write_text('{"returncode": 42}')
+    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--viewer', 'none',
+                             '--session-dir', str(tmp_path)], capture_output=True, text=True, timeout=10)
+    assert result.returncode == 1
+    assert (tmp_path / 'exit.json').read_text() == '{"returncode": 42}'
+
+
+@pytest.mark.slow
+def test_service_only_launcher_exits_cleanly_on_supervisor_shutdown(tmp_path):
+    import time
+    from hp_sim5_research.services import request
+    directory = tmp_path / 'desktop-session'
+    process = subprocess.Popen([str(ROOT / 'hp-sim5-research-agent'), '--serve', '--viewer', 'none',
+                                '--session-dir', str(directory)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    try:
+        deadline = time.monotonic() + 20
+        while not (directory / 'connection.json').exists():
+            assert time.monotonic() < deadline and process.poll() is None
+            time.sleep(.1)
+        config = json.loads((directory / 'connection.json').read_text())
+        request(config['runtime_endpoint'], 'shutdown', token=config['runtime_token'], timeout=10)
+        stdout, stderr = process.communicate(timeout=10)
+        assert process.returncode == 0, stderr
+        assert config['runtime_token'] not in stdout + stderr
+        assert json.loads((directory / 'exit.json').read_text()) == {'returncode': 0}
+    finally:
+        if process.poll() is None:
+            process.terminate()
+            process.wait(timeout=10)

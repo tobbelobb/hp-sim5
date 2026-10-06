@@ -14,6 +14,7 @@ import { createMachineSceneController } from './machineSceneController.js';
 import { createCommandJobController } from './commandJobController.js';
 import { createExternalCommandController, normalizeWsUrl } from './externalCommandSocket.js';
 import { FlightRecorder } from './flightRecorder.js';
+import { createResearchControls, attachResearchControls } from './researchControls.js';
 
 function collectDomRefs(ownerDocument, canvasArg, controlsRootArg) {
   const canvas = canvasArg || ownerDocument.getElementById('myCanvas');
@@ -225,11 +226,14 @@ export function createHpSimApp({
     inspectionTools,
   });
 
+  const research = createResearchControls({ world, runtime, machines: controllers.machines,
+    commands: controllers.commands, recorder: flightRecorder, inspection: inspectionTools, scenes: [...catalog.keys()] });
   let defaultScenePromise = null;
   let bound = false;
   let started = false;
 
   return {
+    research,
     loadDefaultScene() {
       defaultScenePromise ||= controllers.machines.loadDefaultMachine();
       return defaultScenePromise;
@@ -266,6 +270,7 @@ export function createHpSimApp({
       view.syncCanvasDimensions();
       view.setSceneControlsEnabled(controllers.machines.getMachines().length > 0);
       controllers.external.connect();
+      await attachResearchControls({ api: research, document: ownerDocument, window: ownerWindow, url: urlParams?.get('research_ws') });
       if (parseBooleanParam(urlParams, 'rerun') || urlParams?.has('rerun_ws')) {
         flightRecorder.connect();
       }

@@ -146,8 +146,8 @@ def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=No
     for path in sorted((root / 'src/python').rglob('*.py')):
         source.update(str(path.relative_to(root)).encode() + b'\0' + path.read_bytes())
     revision = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=root, capture_output=True, text=True)
-    manifest = {'schema_version': 2, 'run_id': run_id, 'label': label, 'status': 'running',
-                'scene': str(scene_path.relative_to(root)), 'steps': steps, 'dt_s': dt,
+    manifest = {'schema_version': 2, 'backend': 'native-python', 'run_id': run_id, 'label': label, 'status': 'running',
+                'scene': str(scene_path.relative_to(root)), 'scene_generation': world.get_resource('sceneGeneration'), 'steps': steps, 'dt_s': dt,
                 'commands_sha256': digest(encode(commands).encode()), 'scene_sha256': digest(frozen_scene.encode()),
                 'python_source_sha256': source.hexdigest(), 'git_revision': revision.stdout.strip(),
                 'python': platform.python_version(), 'platform': platform.platform(),

@@ -12,7 +12,8 @@ Call `capabilities()` first, then `runtime_status()`. For example:
 {"configs":[{"fixed":[2,3],"drive":0,"sensor":1}],"options":{"sweepPoints":6,"noiseSamples":16}}
 ```
 
-Pass that object to `collect_sweeps`. Indices 0–3 correspond to physical spools
+Pass that object to `start_collection` and retain its `job_id`. Poll
+`collection_status(job_id)` while continuing the Codex conversation. Indices 0–3 correspond to physical spools
 A/B/C/D and CAN addresses 40–43; firmware movement axes are X/Y/Z/U. HP4 always
 keeps anchor 3 fixed. The production collector performs both physical drive
 directions and stores them in canonical drive/sensor orientation. The default
@@ -51,7 +52,7 @@ separately names raw and offset-adjusted diagnostic angles.
 
 ## Evidence and lifecycle
 
-`collect_sweeps` returns absolute paths to the collector's version-2 JSON, a
+A completed `collection_status` result returns absolute paths to the collector's version-2 JSON, a
 finalized RRD, frozen authored scene and firmware configuration, an immutable
 command/sensor trace, and a manifest. The manifest records step ranges, hashes
 of loaded sources/firmware/inputs, package versions, effective collector options,
@@ -64,7 +65,14 @@ Each collection finalizes its own RRD without replacing the physics world.
 Later collections cannot change already returned evidence.
 
 `reset_session` archives the old world and restarts world, firmware and bridge
-references together. A failed collection saves evidence and requires that reset.
+references together. A failed or cancelled collection saves evidence and requires that reset.
+`cancel_collection` freezes execution before the next native timestep, aborts
+collector waits before further commands, flushes completed-point evidence, retires
+firmware/bridge queues and reports the exact stopped step. Polling a job or
+interrupting Codex is not cancellation; Rerun playback pause is only inspection.
+The cancelled manifest and finalized RRD/events preserve partial observations.
+Completed raw measurements also survive in `partial-points.jsonl` with their
+actual physical drive/sensor roles, even if the full dataset was not completed.
 `runtime_status` reports stale source changes: restart the launcher to load changed
 Python physics; reset the session to reload changed JS bridge/collector code.
 `start_browser_service` supervises Vite on a free loopback port. Its ordinary web
@@ -74,7 +82,7 @@ scene is independent of the native world; native visualization uses Rerun.
 
 `./hp-sim5-research-agent --doctor` explicitly runs the collection proof. Normal
 prompt launches prepare services without collecting data; the agent chooses
-whether and when to call `collect_sweeps`.
+whether and when to call `start_collection`.
 
 Doctor performs actual collection and checks version-2 schema, raw-angle presence,
 canonical roles, angle-to-millimetre conversion, noise statistics, drive travel,

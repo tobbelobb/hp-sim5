@@ -202,6 +202,47 @@ export function runGame(world, internalSetupScene, options = {}) {
     return cachedRemoteSystem;
   };
 
+  const advancePhysics = (dt) => {
+    const generation = world.getResource('sceneGeneration');
+    let clock = world.getResource('researchClock');
+    if (!clock || clock.generation !== generation) clock = { generation, step: 0, time: 0 };
+    world.update(dt);
+    clock.step += 1;
+    clock.time += dt;
+    world.setResource('researchClock', clock);
+  };
+
+  const advanceFixedSteps = async (steps) => {
+    if (!Number.isInteger(steps) || steps < 1 || steps > 10000) throw new Error('steps must be in [1, 10000]');
+    if (!getPauseState()?.paused) throw new Error('Pause before bounded stepping');
+    if (getRemoteSystem()?.worker) throw new Error('Finish the active worker before bounded stepping');
+    stopLoops();
+    doStep = false;
+    let executed = 0;
+    try {
+      while (executed < steps) {
+        const recorder = world.getResource('flightRecorder');
+        if (recorder?.readyForStep() === false) {
+          const deadline = performance.now() + 5000;
+          while (recorder.readyForStep() === false) {
+            if (performance.now() > deadline) throw new Error('Flight recorder did not acknowledge samples');
+            await new Promise((resolve) => setTimeout(resolve, 5));
+          }
+        }
+        const pauseState = getPauseState();
+        if (!pauseState?.paused || getRemoteSystem()?.worker) throw new Error(`Human intervention stopped bounded stepping after ${executed} steps`);
+        pauseState.paused = false;
+        try { advancePhysics(world.getResource('dt')); } finally { pauseState.paused = true; }
+        executed += 1;
+      }
+      return { steps_executed: executed };
+    } finally {
+      stopLoops();
+      if (getPauseState()) getPauseState().paused = true;
+      enterIdleMode();
+    }
+  };
+
   const remoteQueueReady = () => {
     if (world.getResource('flightRecorder')?.readyForStep() === false) {
       return false;
@@ -252,7 +293,7 @@ export function runGame(world, internalSetupScene, options = {}) {
           if (doStep) {
             pauseState.paused = false;
           }
-          world.update(dt);
+          advancePhysics(dt);
           simTimeProcessed += dt;
           if (doStep) {
             pauseState.paused = true;
@@ -307,7 +348,7 @@ export function runGame(world, internalSetupScene, options = {}) {
       if (doStep) {
         pauseState.paused = false;
       }
-      world.update(dt);
+      advancePhysics(dt);
       totalSim += dt;
       stepsRun += 1;
       if (doStep) {
@@ -400,6 +441,7 @@ export function runGame(world, internalSetupScene, options = {}) {
 
   const resetGame = ({ autoPause = true } = {}) => {
     internalSetupScene();
+    world.setResource('researchClock', { generation: world.getResource('sceneGeneration'), step: 0, time: 0 });
     for (const system of world.systems) {
       if (system instanceof InputSystem && typeof system.reset === 'function') {
         system.reset();
@@ -580,5 +622,6 @@ export function runGame(world, internalSetupScene, options = {}) {
     setRenderEveryNth,
     resume: resumeSimulation,
     pause: pauseSimulation,
+    advanceFixedSteps,
   };
 }
