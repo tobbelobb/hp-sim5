@@ -3,6 +3,7 @@ import path from 'node:path';
 import {
   computeMmPerDegree,
   parseM666,
+  parseM669,
   runMoveWithWait,
   sleep as baseSleep,
 } from '../primitives/encoder_utils.mjs';
@@ -1126,7 +1127,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
     const point = {
       l_drive: lengths[driveAnchor],
       l_sensor: lengths[sensorAnchor],
-      timestamp_ms: Date.now() - datasetStartMs,
+      timestamp_ms: (sendFn.simulationClock?.now() ?? Date.now()) - datasetStartMs,
       raw_angles_deg: angles,
       drive_setpoint_mm: driveSetpointMm,
       step_index: stepIndex,
@@ -1309,12 +1310,12 @@ export async function collectSweepData(send, context) {
   }
 
   const sweeps = [];
-  const datasetStartMs = Date.now();
+  const datasetStartMs = send.simulationClock?.now() ?? Date.now();
 
   const m666BeforeReply = await send('M666');
   const m666Before = parseM666(m666BeforeReply?.reply);
   const m669Reply = await send('M669');
-  const m669Values = parseM666(m669Reply?.reply);
+  const m669Values = parseM669(m669Reply?.reply);
   const m92Reply = await send('M92');
   const m92Values = parseM666(m92Reply?.reply);
 
@@ -1673,5 +1674,5 @@ export async function collectSweepData(send, context) {
     }
   }
 
-  return { sweeps, outputFile };
+  return { sweeps, outputFile, collectionOptions: options };
 }

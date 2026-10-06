@@ -14,6 +14,8 @@ import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src/python'))
+sys.path.insert(0, str(ROOT))
+from hp_sim5_research.services import RuntimeService
 
 
 def codex_environment():
@@ -21,7 +23,7 @@ def codex_environment():
     return {key: value for key, value in os.environ.items() if key not in ('OPENAI_API_KEY', 'CODEX_API_KEY')}
 
 
-def doctor():
+def doctor(runtime=None):
     checks = {}
     for module, package in [('numpy', 'numpy'), ('pxr', 'usd-core'), ('rerun', 'rerun-sdk'), ('mcp', 'mcp')]:
         try:
@@ -55,19 +57,40 @@ def doctor():
                                  'dt_s': dt, 'cable_paths': len(observed['cables'])}
         except Exception as error:
             checks['physics'] = {'ok': False, 'error': str(error)}
+    owned_runtime = None
+    if checks.get('physics', {}).get('ok'):
+        try:
+            if runtime is None:
+                owned_runtime = RuntimeService(ROOT, ROOT / 'output/research/preflight' / uuid.uuid4().hex).start()
+                runtime = owned_runtime
+            collection = runtime.call('collect', options={'sweepPoints': 3, 'noiseSamples': 4})
+            from hp_sim5_research.validation import validate_collection
+            validation = validate_collection(collection['artifacts']['dataset'])
+            checks['native_collection'] = {'ok': True, 'run_id': collection['run_id'],
+                                           'artifacts': collection['artifacts'], 'validation': validation}
+            # Leave the researcher a fresh firmware/world/reference pair after the proof.
+            runtime.call('reset')
+        except Exception as error:
+            checks['native_collection'] = {'ok': False, 'error': str(error)}
+        finally:
+            if owned_runtime is not None:
+                owned_runtime.close()
     return {'ok': all(check['ok'] for check in checks.values()), 'repo': str(ROOT), 'checks': checks}
 
 
-def codex_command(session, model, viewer_endpoint):
+def codex_command(session, model, viewer_endpoint, runtime=None):
     command = ['codex', 'exec', '--cd', str(ROOT), '--sandbox', 'workspace-write', '--json',
                '--output-last-message', str(session / 'final-message.md'), '-c', 'approval_policy="never"']
     settings = {'mcp_servers.hp_sim5.command': sys.executable,
                 'model_provider': 'openai',
                 'mcp_servers.hp_sim5.args': [str(ROOT / 'scripts/hp_sim5_mcp.py')],
                 'mcp_servers.hp_sim5.cwd': str(ROOT), 'mcp_servers.hp_sim5.required': True,
-                'mcp_servers.hp_sim5.startup_timeout_sec': 30, 'mcp_servers.hp_sim5.tool_timeout_sec': 300,
+                'mcp_servers.hp_sim5.startup_timeout_sec': 30, 'mcp_servers.hp_sim5.tool_timeout_sec': 14500,
                 'mcp_servers.hp_sim5.default_tools_approval_mode': 'approve',
                 'mcp_servers.rerun.enabled': viewer_endpoint is not None}
+    if runtime is not None:
+        settings['mcp_servers.hp_sim5.env'] = {'HP_SIM5_RUNTIME_URL': runtime.endpoint,
+                                             'HP_SIM5_RUNTIME_TOKEN': runtime.token}
     if viewer_endpoint is not None:
         settings.update({'mcp_servers.rerun.command': str(ROOT / '.venv/bin/rerun'),
                          'mcp_servers.rerun.args': ['viewer-mcp', '--endpoint', viewer_endpoint],
@@ -118,12 +141,12 @@ def main():
     task = parser.add_mutually_exclusive_group()
     task.add_argument('--prompt', help='Research or robot design task')
     task.add_argument('--prompt-file', type=Path, help='UTF-8 task file')
-    parser.add_argument('--doctor', action='store_true', help='Check dependencies, login and one actual native physics step')
+    parser.add_argument('--doctor', action='store_true', help='Check dependencies, login, real RRF/native collection and autocal loading')
     parser.add_argument('--dry-run', action='store_true', help='Show the Codex command and task without starting processes')
     parser.add_argument('--viewer', choices=['headless', 'window', 'none'], default='headless')
     parser.add_argument('--model', help='Optional Codex model; otherwise use your existing Codex setting')
     args = parser.parse_args()
-    viewer = agent = session = None
+    viewer = agent = session = runtime = None
     returncode = 1
     try:
         if args.doctor:
@@ -142,18 +165,21 @@ def main():
             endpoint = None if args.viewer == 'none' else 'http://127.0.0.1:PORT'
             print(json.dumps({'argv': codex_command(session, args.model, endpoint), 'prompt': full_prompt}, indent=2))
             return 0
-        preflight = doctor()
-        if not preflight['ok']:
-            print(json.dumps(preflight, indent=2), file=sys.stderr)
-            return 1
         session.mkdir(parents=True)
-        (session / 'prompt.txt').write_text(full_prompt)
         endpoint = None
         if args.viewer != 'none':
             viewer, endpoint = start_viewer(args.viewer, session)
-        command = codex_command(session, args.model, endpoint)
-        (session / 'launch.json').write_text(json.dumps({'argv': command, 'preflight': preflight,
-                                                       'viewer_endpoint': endpoint}, indent=2) + '\n')
+        runtime = RuntimeService(ROOT, session / 'native', endpoint).start()
+        preflight = doctor(runtime)
+        if not preflight['ok']:
+            print(json.dumps(preflight, indent=2), file=sys.stderr)
+            return 1
+        (session / 'prompt.txt').write_text(full_prompt)
+        command = codex_command(session, args.model, endpoint, runtime)
+        # Keep bearer credentials out of launch artifacts.
+        saved_command = [arg.replace(runtime.token, '<runtime token>') for arg in command]
+        (session / 'launch.json').write_text(json.dumps({'argv': saved_command, 'preflight': preflight,
+                                                       'viewer_endpoint': endpoint, 'runtime_endpoint': runtime.endpoint}, indent=2) + '\n')
         print(f'Research session: {session}', file=sys.stderr, flush=True)
         agent = subprocess.Popen(command, cwd=ROOT, env=codex_environment(),
                                  stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
@@ -177,6 +203,8 @@ def main():
         parser.exit(1, f'hp-sim5-research-agent: {error}\n')
     finally:
         stop_process(agent)
+        if runtime is not None:
+            runtime.close()
         stop_process(viewer)
         if session is not None and session.is_dir() and not args.dry_run:
             (session / 'exit.json').write_text(json.dumps({'returncode': returncode}) + '\n')

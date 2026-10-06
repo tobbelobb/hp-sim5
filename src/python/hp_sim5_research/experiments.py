@@ -86,7 +86,9 @@ def sample(world, step, dt):
         motors.append({'name': entity_name(world, entity), 'axis': state.axis,
                        'mode': 'torque' if motor.torque_mode else 'position',
                        'target_angle_rad': None if motor.torque_mode else target,
-                       'encoder_angle_rad': measured,
+                       'encoder_angle_rad': None if encoder is None else encoder.angle,
+                       'diagnostic_encoder_angle_rad': measured,
+                       'diagnostic_encoder_offset_rad': motor.missed_step_encoder_offset or 0.,
                        'tracking_error_rad': None if motor.torque_mode or measured is None else measured - target,
                        'peak_missed_steps': motor.missed_steps})
     return {'step': step, 'sim_time_s': step * dt,
@@ -144,7 +146,7 @@ def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=No
     for path in sorted((root / 'src/python').rglob('*.py')):
         source.update(str(path.relative_to(root)).encode() + b'\0' + path.read_bytes())
     revision = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=root, capture_output=True, text=True)
-    manifest = {'schema_version': 1, 'run_id': run_id, 'label': label, 'status': 'running',
+    manifest = {'schema_version': 2, 'run_id': run_id, 'label': label, 'status': 'running',
                 'scene': str(scene_path.relative_to(root)), 'steps': steps, 'dt_s': dt,
                 'commands_sha256': digest(encode(commands).encode()), 'scene_sha256': digest(frozen_scene.encode()),
                 'python_source_sha256': source.hexdigest(), 'git_revision': revision.stdout.strip(),

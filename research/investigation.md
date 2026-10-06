@@ -106,6 +106,13 @@ firmware movement/force control into native commands, reproduce encoder queries
 and sweep records, then compare collector output against the browser path.
 That needs explicit parity evidence before replacing the one-click collector.
 
+Update, 2026-10-06: the [native collection adapter](native-collection.md) now runs
+the production HP4/RRF collector against a persistent, launcher-owned Python
+world. Doctor checks actual collection and autocal residual ingestion. Native
+physics drives live Rerun and saves finalized recordings. The remaining
+calibration work is accuracy and identifiability across independent sweeps and
+held-out configurations; a short preflight does not establish that result.
+
 For the proposed algorithm, the strongest starting experiment is a ranking
 audit: find candidates whose fitted score improves while known anchor error or
 held-out sensor prediction worsens. Then compare bounded residual-driven updates

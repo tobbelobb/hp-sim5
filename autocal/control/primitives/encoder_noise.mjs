@@ -106,8 +106,8 @@ export async function sampleEncoderNoise(sendFn, motorIds, options = {}) {
     sampleRateHz = DEFAULT_NOISE_SAMPLE_RATE_HZ,
     sampleIntervalMs = null,
     speedup,
-    sleepFn = baseSleep,
-    nowFn = () => Date.now(),
+    sleepFn = sendFn.simulationClock?.sleep ?? baseSleep,
+    nowFn = sendFn.simulationClock?.now ?? (() => Date.now()),
   } = options;
 
   const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;

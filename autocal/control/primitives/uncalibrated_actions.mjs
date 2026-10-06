@@ -87,9 +87,9 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions, 
     stableWindowMs = DEFAULT_STABILITY_WINDOW_MS,
     toleranceDeg = DEFAULT_STABILITY_TOLERANCE_DEG,
     vibrationWindowMs = DEFAULT_VIBRATION_WINDOW_MS,
-    timeoutMs = null,
-    sleepFn = baseSleep,
-    nowFn = () => Date.now(),
+    timeoutMs = sendFn.simulationClock?.settlingTimeoutMs ?? null,
+    sleepFn = sendFn.simulationClock?.sleep ?? baseSleep,
+    nowFn = sendFn.simulationClock?.now ?? (() => Date.now()),
   } = normalizedOptions;
   const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
   const pollMs = pollIntervalMs / timeScale;

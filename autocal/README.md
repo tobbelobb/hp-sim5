@@ -32,6 +32,13 @@ PYCODE
 
 ## Quick start (simulation)
 
+For autonomous native HP4/RRF research, use
+[`hp-sim5-research-agent`](../research/README.md) and its `collect_sweeps` MCP
+operation. The launcher supervises firmware and a persistent Python world;
+collector waits advance simulation time. `--doctor` proves actual collection and
+autocal measurement ingestion. See the [native collection guide](../research/native-collection.md)
+for encoder references, force settings and calibration limits.
+
 Follow the root README to start Vite. For a Slideprinter, open
 <http://localhost:5173/hp-sim5/hp-sim/>. For a 3D machine, use
 <http://localhost:5173/hp-sim5/hp-sim-3d/>.

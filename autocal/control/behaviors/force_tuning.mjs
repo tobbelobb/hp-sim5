@@ -300,7 +300,7 @@ export async function calibrateEncoderNoise(sendFn, options = {}) {
       samples += 1;
     }
     // eslint-disable-next-line no-await-in-loop
-    await baseSleep(intervalMs);
+    await (sendFn.simulationClock?.sleep ?? baseSleep)(intervalMs);
   }
 
   const sigmaByMotorDeg = sums.map((sum, idx) => {
@@ -395,7 +395,7 @@ export async function runForceTrial(sendFn, options = {}) {
       await sendFn(`M569.4 P${motorIds[activeAnchor]} T${force}`);
       if (rampWaitMs > 0) {
         // eslint-disable-next-line no-await-in-loop
-        await baseSleep(rampWaitMs);
+        await (sendFn.simulationClock?.sleep ?? baseSleep)(rampWaitMs);
       }
     }
     const lastForce = rampForces[rampForces.length - 1];
@@ -422,19 +422,20 @@ export async function runForceTrial(sendFn, options = {}) {
 
   let lastAngles = startAngles;
   let endAngles = startAngles;
-  let lastMs = Date.now();
+  const now = sendFn.simulationClock?.now ?? (() => Date.now());
+  let lastMs = now();
   const startMs = lastMs;
   let stallDurationMs = 0;
   let stalled = false;
   let stallAngle = null;
 
-  while (Date.now() - startMs < stopAfterMs) {
+  while (now() - startMs < stopAfterMs) {
     // eslint-disable-next-line no-await-in-loop
-    await baseSleep(intervalMs);
+    await (sendFn.simulationClock?.sleep ?? baseSleep)(intervalMs);
     // eslint-disable-next-line no-await-in-loop
     const reply = await sendFn(`M569.3 P${motorIds.join(':')}`);
     const angles = parseEncoderReply(reply?.reply);
-    const nowMs = Date.now();
+    const nowMs = now();
     if (angles.length === motorIds.length && angles.every((v) => Number.isFinite(v))) {
       endAngles = angles;
       const dtSec = Math.max(1e-6, (nowMs - lastMs) / 1000);

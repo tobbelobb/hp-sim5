@@ -48,6 +48,17 @@ export function parseM666(reply) {
   return values;
 }
 
+export function parseM669(reply) {
+  const values = parseM666(reply);
+  // RRF reports anchors as "A:0.00, -1900.00, -280.00", unlike M666 colon lists.
+  const number = '[-+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)';
+  const pattern = new RegExp(`^([A-Z]):\\s*(${number}),\\s*(${number}),\\s*(${number})\\s*$`, 'gm');
+  for (const match of (reply ?? '').matchAll(pattern)) {
+    values[match[1]] = match.slice(2).map(Number);
+  }
+  return values;
+}
+
 export function parseEncoderReply(reply) {
   if (typeof reply !== 'string') {
     return [];
@@ -192,7 +203,7 @@ function formatForceValue(value) {
 export async function runMoveWithWait(sendFn, gcode, speedup = 1, {
   defaultFeed = DEFAULT_FEED,
   axes = null,
-  delayFn = sleep,
+  delayFn = sendFn.simulationClock?.sleep ?? sleep,
 } = {}) {
   const debugState = getDebugState(sendFn);
   if (debugState?.enabled) {

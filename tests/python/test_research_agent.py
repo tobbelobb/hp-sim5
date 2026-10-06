@@ -104,7 +104,9 @@ async def test_stdio_mcp_discovery_execution_readback_and_error():
     parameters = StdioServerParameters(command=sys.executable, args=[str(ROOT / 'scripts/hp_sim5_mcp.py')])
     async with Client(parameters, read_timeout_seconds=30) as client:
         tools = (await client.list_tools()).tools
-        assert {tool.name for tool in tools} == {'capabilities', 'run_experiment', 'read_experiment', 'compare_experiments'}
+        assert {tool.name for tool in tools} == {'capabilities', 'run_experiment', 'read_experiment', 'compare_experiments',
+                                               'runtime_status', 'send_gcode', 'collect_sweeps', 'reset_session',
+                                               'step_physics', 'start_browser_service'}
         result = await client.call_tool('capabilities', {})
         assert not result.is_error
         assert SCENE in result.structured_content['scenes']
@@ -134,7 +136,7 @@ def test_launcher_dry_run_works_outside_repo_and_preserves_prompt():
     assert f'mcp_servers.hp_sim5.command="{ROOT / ".venv/bin/python"}"' in launch['argv']
 
 
-def test_launcher_preserves_written_report_and_cleans_api_key_environment(tmp_path):
+def test_launcher_preserves_written_report_and_cleans_api_key_environment(tmp_path, monkeypatch):
     codex = tmp_path / 'codex'
     codex.write_text(f'#!{sys.executable}\n' + '''
 import json
@@ -153,13 +155,39 @@ else:
     print(json.dumps({'type': 'item.completed', 'item': {'type': 'agent_message', 'text': 'Done'}}))
 ''')
     codex.chmod(0o755)
-    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--viewer', 'none', '--prompt', 'preservation check'],
-                            capture_output=True, text=True, timeout=30,
-                            env={**os.environ, 'PATH': str(tmp_path) + os.pathsep + os.environ['PATH'],
-                                 'OPENAI_API_KEY': 'test-sentinel', 'CODEX_API_KEY': 'test-sentinel'})
-    assert result.returncode == 0, result.stderr
-    session = Path(next(line.split(': ', 1)[1] for line in result.stderr.splitlines() if line.startswith('Research session: ')))
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('research_agent', ROOT / 'scripts/research_agent.py')
+    launcher = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(launcher)
+    services = []
+
+    class Service:
+        endpoint = 'http://127.0.0.1:12345'
+        token = 'test-runtime-secret'
+
+        def __init__(self, root, directory, viewer_endpoint):
+            self.directory = directory
+            self.closed = False
+            services.append(self)
+
+        def start(self):
+            return self
+
+        def close(self):
+            self.closed = True
+
+    monkeypatch.setattr(launcher, 'RuntimeService', Service)
+    monkeypatch.setattr(launcher, 'doctor', lambda runtime: {'ok': True, 'checks': {'native_collection': {'ok': True}}})
+    monkeypatch.setenv('PATH', str(tmp_path) + os.pathsep + os.environ['PATH'])
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-sentinel')
+    monkeypatch.setenv('CODEX_API_KEY', 'test-sentinel')
+    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--viewer', 'none', '--prompt', 'preservation check'])
+    assert launcher.main() == 0
+    assert services[0].closed
+    session = services[0].directory.parent
     assert (session / 'report.md').read_text() == 'Full research evidence.\n'
     assert (session / 'final-message.md').read_text() == 'Short final response.\n'
     assert json.loads((session / 'exit.json').read_text()) == {'returncode': 0}
     assert json.loads((session / 'events.jsonl').read_text())['item']['text'] == 'Done'
+    launch = (session / 'launch.json').read_text()
+    assert 'test-runtime-secret' not in launch and '<runtime token>' in launch
