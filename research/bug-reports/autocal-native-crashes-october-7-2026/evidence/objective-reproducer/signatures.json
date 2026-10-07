@@ -1,0 +1,7226 @@
+[
+  {
+    "id": "003a106feb4e7470",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "064d42f9827e9ded",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "098f0547c7e1a38d",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "0ab1def89ab324dd",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "0bc00920756dbbc5",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "10126b0023320b82",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "107a3eb163d040a4",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "12a9d3751f6b4806",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          2
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          2
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          2
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          2
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          2
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          2
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          2,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          2,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          2,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          2,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          2,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          2
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          2
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "1322ce4a55915a13",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "135182d560af4bf9",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "1ddfb8d807843fc5",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "284dd1ea6790e051",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "2debe4f496493604",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "3a72be772010e740",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "42b7a7585c24f7d7",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "45f20db8fdff24ae",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "467406616b55f431",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          9,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "4ac739e660e29035",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "4b1321c26ea451d3",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "52a5d2e170fc095c",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "53684fc4f77372ba",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "5b9026dba7b6b50f",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "74bbf8cccabd23ca",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "756f4842217a7e66",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "7830e8286a4ae75c",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "798d059045b48674",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3,
+          19
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          19
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          19
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          19
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          19
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "7e4f6633630a210e",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "807eae121f9205b0",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "809b3647f6c85b30",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          9,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "8690093d72d4956e",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "95c3a9949c32ef16",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "98c5de16d4394bc5",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "9e477289726d48e2",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "9e668c88d5a8b291",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          2
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          2
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          2
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          2
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          2
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          2
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          2,
+          17
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          2,
+          17
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          2,
+          17
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          2,
+          17
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          2,
+          17
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          2
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          2
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "af31d2411cca4de4",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "afd88bdc8c25e5f0",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          9,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "b0f370be9dd66ec3",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "b13a75f48c7169a7",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "b42bbf56ccff6b52",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "b6c0506c94f16501",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "bbd82f23ebef3365",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "bcba9115289b0c8a",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          4,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          4
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "c321ce11bbb4de6e",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          9,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "c499bdbe6ea363a8",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "c7ee3d19a3cc952a",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3,
+          17
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          17
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          17
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          17
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          17
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "cc25d86768efa08b",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "d0824e6423f1e6d8",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "d9ef10c335b39402",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "da4d367104f4056c",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "de8f0a8d3cd59e35",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "df056cdbb8b80b3b",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "dfcb51a0d5493a98",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          3,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          3
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 3.0
+    }
+  },
+  {
+    "id": "e7dc9733738c355b",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          8,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          8
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "efa625952f59697f",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": true,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "f371aad391f79e30",
+    "arguments": [
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          6,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          6
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          9
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 4,
+      "dimensions": 3,
+      "constraint_mode": 2,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 300000000.0,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 4.801846647165951e-05,
+      "huber_mult": 10.0
+    }
+  },
+  {
+    "id": "f8f69a793ecb13e5",
+    "arguments": [
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          7,
+          20
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "bool"
+      },
+      {
+        "shape": [
+          7
+        ],
+        "dtype": "int32"
+      },
+      {
+        "shape": [],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      },
+      {
+        "shape": [
+          5
+        ],
+        "dtype": "float64"
+      }
+    ],
+    "kwargs": {
+      "num_anchors": 3,
+      "dimensions": 2,
+      "constraint_mode": 1,
+      "pointwise_filtering": false,
+      "pointwise_global_mad": true,
+      "sweep_wise_filtering": false,
+      "noise_norm_available": true,
+      "robust_loss_unfiltered": false,
+      "hard_cut": false,
+      "metric_mode": 1,
+      "pointwise_cost_weight": 1.0,
+      "l2_scale": 32000000.000000004,
+      "min_points": 10,
+      "min_sweeps_after_trim": 3,
+      "huber_delta_unfiltered": 1.0,
+      "floor_norm": 0.00013048691540708428,
+      "huber_mult": 3.0
+    }
+  }
+]

@@ -1,0 +1,41 @@
+{
+  "baseline_revision": "b60856d9d347c3bcacfd9a5bbf34c44aeda5176b",
+  "baseline_branch": "main",
+  "candidate_revision": "4daac40c77276c14d62c86db51abfc2a40292998",
+  "interpreter": "/home/torbjorn/repos/hp-sim5/.venv/bin/python",
+  "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+  "dependencies": {
+    "numpy": "2.4.3",
+    "scipy": "1.17.1",
+    "jax": "0.9.2",
+    "jaxlib": "0.9.2"
+  },
+  "thread_environment": {
+    "OMP_NUM_THREADS": "1 (runner default)",
+    "OPENBLAS_NUM_THREADS": "1 (runner default)",
+    "MKL_NUM_THREADS": "1 (runner default)",
+    "NUMEXPR_NUM_THREADS": "1 (runner default)"
+  },
+  "command": ".venv/bin/python autocal/tools/regress_calibration_logs.py --no-fail-score-mismatch --keep-going",
+  "reference_sources": {
+    "flexible_lines_2000": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/flexible_lines_2000_dc401614/flexible_lines_2000.full_auto.log",
+    "ten_points_w_buildup": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/ten_points_w_buildup_88662ec0/ten_points_w_buildup.full_auto.log",
+    "nineteenth_hp3_dataset_even_more_pressure": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/nineteenth_hp3_dataset_even_more_pressure_ce6e4114/nineteenth_hp3_dataset_even_more_pressure.full_auto.log",
+    "five_points_bigger_deltas": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_609cb8a8/five_points_bigger_deltas.full_auto.log",
+    "ten_points_bigger_deltas": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/ten_points_bigger_deltas_4d3371f4/ten_points_bigger_deltas.full_auto.log",
+    "seventh_hp3_dataset": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/seventh_hp3_dataset_214023aa/seventh_hp3_dataset.full_auto.log",
+    "sixteenth_hp3_dataset_even_more_pressure": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/sixteenth_hp3_dataset_even_more_pressure_41e297c2/sixteenth_hp3_dataset_even_more_pressure.full_auto.log",
+    "23_april_2026": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_415a6acb/23_april_2026.full_auto.log",
+    "ten_points_w_buildup2": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/ten_points_w_buildup2_7bf37134/ten_points_w_buildup2.full_auto.log",
+    "layered_manual_some_bad_points": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/layered_manual_some_bad_points_e341c124/layered_manual_some_bad_points.full_auto.log",
+    "fifth_hp3_dataset": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/fifth_hp3_dataset_fe0fc719/fifth_hp3_dataset.full_auto.log"
+  },
+  "reference_suffix": "full_auto_reference_run_october_7_2026.log",
+  "baseline_verification": "baseline-verification-bounded.log",
+  "verification_runtime": {
+    "max_concurrent_datasets": 2,
+    "startup_hook": "/home/torbjorn/repos/hp-sim5/output/research/reference-refresh-october-7-2026/runtime-bounded-workers/sitecustomize.py",
+    "PYTHONFAULTHANDLER": "1",
+    "gc": "normal"
+  }
+}

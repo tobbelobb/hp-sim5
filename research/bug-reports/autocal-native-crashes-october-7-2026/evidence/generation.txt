@@ -1,0 +1,357 @@
+
+========= flexible_lines_2000 =========
+HISTORY_AUDIT: adjacent_rank_true_mismatches=0 score_selected_iter=3 physical_best_iter=3 selected_anchor_error_sum_mm=21.244 selected_radius_error_sum_mm=0.342 selection_regret_mm=0.000 (diagnostic)
+RUN_TRACKER: true_err_total delta(gen-ref)=0.000 [equal], true_iter_mean_delta=0.000 [equal], true_gen_iter_std=35.663 (n=4)
+Calibration summary:
+  metric           | ref    | gen    | delta(gen-ref) | verdict
+  -----------------+--------+--------+----------------+--------
+  param_total      | -      | -      | 0.000          | exact  
+  param_anchors    | -      | -      | 0.000          | -      
+  param_R*2π       | -      | -      | 0.000          | -      
+  fit_score_ui     | 4.653  | 4.653  | 0.000          | equal  
+  true_err_total   | 23.393 | 23.393 | 0.000          | equal  
+  true_err_anchors | 21.244 | 21.244 | 0.000          | -      
+  true_err_R*2π    | 2.149  | 2.149  | 0.000          | -      
+SUMMARY: EXACTLY EQUAL
+ITERATIONS: ref=4 gen=4
+ITERATIONS: worst_param_delta_total=0.000 (tol=0.01mm)
+ITERATIONS: rank columns use history_rank when present, otherwise raw rank_score
+ITERATIONS: rank/true direction mismatches: 0
+Generated log: /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/flexible_lines_2000_dc401614/flexible_lines_2000.full_auto.log
+Reference log: /home/torbjorn/repos/hp-sim5/autocal/data/references/flexible_lines_2000.full_auto_reference_run_march_24_2026.log
+
+========= ten_points_w_buildup =========
+HISTORY_AUDIT: adjacent_rank_true_mismatches=0 score_selected_iter=3 physical_best_iter=3 selected_anchor_error_sum_mm=3.062 selected_radius_error_sum_mm=0.252 selection_regret_mm=0.000 (diagnostic)
+RUN_TRACKER: true_err_total delta(gen-ref)=0.000 [equal], true_iter_mean_delta=0.000 [equal], true_gen_iter_std=18.115 (n=5)
+Calibration summary:
+  metric           | ref   | gen   | delta(gen-ref) | verdict
+  -----------------+-------+-------+----------------+--------
+  param_total      | -     | -     | 0.000          | exact  
+  param_anchors    | -     | -     | 0.000          | -      
+  param_R*2π       | -     | -     | 0.000          | -      
+  fit_score_ui     | 1.544 | 1.544 | 0.000          | equal  
+  true_err_total   | 4.645 | 4.645 | 0.000          | equal  
+  true_err_anchors | 3.062 | 3.062 | 0.000          | -      
+  true_err_R*2π    | 1.583 | 1.583 | 0.000          | -      
+SUMMARY: EXACTLY EQUAL
+ITERATIONS: ref=5 gen=5
+ITERATIONS: worst_param_delta_total=0.000 (tol=0.01mm)
+ITERATIONS: rank columns use history_rank when present, otherwise raw rank_score
+ITERATIONS: rank/true direction mismatches: 0
+Generated log: /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/ten_points_w_buildup_88662ec0/ten_points_w_buildup.full_auto.log
+Reference log: /home/torbjorn/repos/hp-sim5/autocal/data/references/ten_points_w_buildup.full_auto_reference_run_march_24_2026.log
+
+========= nineteenth_hp3_dataset_even_more_pressure =========
+HISTORY_AUDIT: adjacent_rank_true_mismatches=1 score_selected_iter=2 physical_best_iter=2 selected_anchor_error_sum_mm=165.005 selected_radius_error_sum_mm=0.738 selection_regret_mm=0.000 (diagnostic)
+RUN_TRACKER: true_err_total delta(gen-ref)=-0.000 [better], true_iter_mean_delta=3.447 [worse], true_gen_iter_std=7946.455 (n=5)
+Calibration summary:
+  metric           | ref     | gen     | delta(gen-ref) | verdict        
+  -----------------+---------+---------+----------------+----------------
+  param_total      | -       | -       | 0.020          | exceeds 0.010mm
+  param_anchors    | -       | -       | 0.020          | -              
+  param_R*2π       | -       | -       | 0.000          | -              
+  fit_score_ui     | 6.752   | 6.752   | 0.000          | equal          
+  true_err_total   | 169.642 | 169.642 | -0.000         | better         
+  true_err_anchors | 165.005 | 165.005 | -0.000         | -              
+  true_err_R*2π    | 4.637   | 4.637   | 0.000          | -              
+SUMMARY: CHANGED and EXCEEDS tolerance (0.01mm) => FAIL
+REF summary block (for quick eyeballing):
+  == Calibration summary ==
+  Wrote to console: Found parameters of usable quality
+  Wrote to console: Fit quality score (lower is better): 6.752
+  Wrote to console: Anchors (M669): M669 A0.00:-1913.99:-312.19 B1661.82:967.74:-312.19 C-1656.71:951.68:-312.19 D-7.05:3.60:1954.96
+  Wrote to console: Spools (M666): M666 R39:39:39:39 Q0.636619
+  Wrote to console: Interpretation: A Quality score between 5 and 10 is borderline but often usable.
+  Wrote to console: ; --sim + --no-collect set; skipping M669 send.
+GEN summary block (for quick eyeballing):
+  == Calibration summary ==
+  Wrote to console: Found parameters of usable quality
+  Wrote to console: Fit quality score (lower is better): 6.752
+  Wrote to console: Anchors (M669): M669 A0.00:-1914.00:-312.19 B1661.81:967.74:-312.19 C-1656.71:951.68:-312.19 D-7.05:3.60:1954.96
+  Wrote to console: Spools (M666): M666 R39:39:39:39 Q0.636619
+  Wrote to console: Interpretation: A Quality score between 5 and 10 is borderline but often usable.
+  Wrote to console: ; --sim + --no-collect set; skipping M669 send.
+ITERATIONS: ref=5 gen=5
+ITERATIONS: worst_param_delta_total=80.006 (tol=0.01mm)
+ITERATIONS: rank columns use history_rank when present, otherwise raw rank_score
+ITERATIONS: rank/true direction mismatches: 0
+ITERATIONS detail:
+  iter | Δparam_total | Δanchors | ΔR*2π | tol   | true_ref  | true_gen  | Δtrue  | true_verdict | rank_ref | rank_gen | Δrank | rank_verdict | fit_ui_ref | fit_ui_gen | reflect
+  -----+--------------+----------+-------+-------+-----------+-----------+--------+--------------+----------+----------+-------+--------------+------------+------------+--------
+  0    | 0.000        | 0.000    | 0.000 | exact | 20085.898 | 20085.898 | 0.000  | equal        | 12.660   | 12.660   | 0.000 | equal        | 27.980     | 27.980     | OK     
+  1    | 0.020        | 0.020    | 0.000 | >=tol | 169.642   | 169.642   | -0.000 | better       | 4.465    | 4.465    | 0.000 | equal        | 6.752      | 6.752      | OK     
+  2    | 80.006       | 78.247   | 1.759 | >=tol | 173.111   | 176.045   | 2.933  | worse        | 5.122    | 6.214    | 1.092 | worse        | 18.600     | 25.280     | OK     
+  3    | 0.000        | 0.000    | 0.000 | exact | 173.111   | 173.111   | 0.000  | equal        | 6.644    | 6.644    | 0.000 | equal        | 25.450     | 25.450     | OK     
+  4    | 37.845       | 37.845   | 0.000 | >=tol | 349.374   | 363.677   | 14.303 | worse        | 6.704    | 6.805    | 0.101 | worse        | 25.480     | 25.520     | OK     
+Generated log: /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/nineteenth_hp3_dataset_even_more_pressure_ce6e4114/nineteenth_hp3_dataset_even_more_pressure.full_auto.log
+Reference log: /home/torbjorn/repos/hp-sim5/autocal/data/references/nineteenth_hp3_dataset_even_more_pressure.full_auto_reference_run_march_23_2026.log
+
+========= five_points_bigger_deltas =========
+HISTORY_AUDIT: adjacent_rank_true_mismatches=4 score_selected_iter=4 physical_best_iter=3 selected_anchor_error_sum_mm=11.127 selected_radius_error_sum_mm=0.108 selection_regret_mm=5.565 (diagnostic)
+RUN_TRACKER: true_err_total delta(gen-ref)=0.000 [equal], true_iter_mean_delta=0.002 [worse], true_gen_iter_std=2.564 (n=6)
+Calibration summary:
+  metric           | ref    | gen    | delta(gen-ref) | verdict
+  -----------------+--------+--------+----------------+--------
+  param_total      | -      | -      | 0.000          | exact  
+  param_anchors    | -      | -      | 0.000          | -      
+  param_R*2π       | -      | -      | 0.000          | -      
+  fit_score_ui     | 8.597  | 8.597  | 0.000          | equal  
+  true_err_total   | 11.805 | 11.805 | 0.000          | equal  
+  true_err_anchors | 11.127 | 11.127 | 0.000          | -      
+  true_err_R*2π    | 0.679  | 0.679  | 0.000          | -      
+SUMMARY: EXACTLY EQUAL
+ITERATIONS: ref=6 gen=6
+ITERATIONS: worst_param_delta_total=0.014 (tol=0.01mm)
+ITERATIONS: rank columns use history_rank when present, otherwise raw rank_score
+ITERATIONS: rank/true direction mismatches: 0
+ITERATIONS detail:
+  iter | Δparam_total | Δanchors | ΔR*2π | tol   | true_ref | true_gen | Δtrue | true_verdict | rank_ref | rank_gen | Δrank  | rank_verdict | fit_ui_ref | fit_ui_gen | reflect
+  -----+--------------+----------+-------+-------+----------+----------+-------+--------------+----------+----------+--------+--------------+------------+------------+--------
+  0    | 0.000        | 0.000    | 0.000 | exact | 6.809    | 6.809    | 0.000 | equal        | 5.155    | 5.155    | 0.000  | equal        | 19.100     | 19.100     | OK     
+  1    | 0.000        | 0.000    | 0.000 | exact | 7.087    | 7.087    | 0.000 | equal        | 4.766    | 4.766    | 0.000  | equal        | 13.030     | 13.030     | OK     
+  2    | 0.014        | 0.014    | 0.000 | >=tol | 6.227    | 6.241    | 0.014 | worse        | 6.190    | 6.195    | 0.005  | worse        | 25.270     | 25.270     | OK     
+  3    | 0.000        | 0.000    | 0.000 | exact | 11.805   | 11.805   | 0.000 | equal        | 4.536    | 4.536    | 0.000  | equal        | 8.597      | 8.597      | OK     
+  4    | 0.000        | 0.000    | 0.000 | exact | 10.980   | 10.980   | 0.000 | equal        | 5.437    | 5.437    | 0.000  | equal        | 23.810     | 23.810     | OK     
+  5    | 0.000        | 0.000    | 0.000 | <tol  | 12.447   | 12.447   | 0.000 | equal        | 6.975    | 6.973    | -0.002 | better       | 25.590     | 25.590     | OK     
+Generated log: /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_609cb8a8/five_points_bigger_deltas.full_auto.log
+Reference log: /home/torbjorn/repos/hp-sim5/autocal/data/references/five_points_bigger_deltas.full_auto_reference_run_march_24_2026.log
+
+========= ten_points_bigger_deltas =========
+HISTORY_AUDIT: adjacent_rank_true_mismatches=4 score_selected_iter=3 physical_best_iter=1 selected_anchor_error_sum_mm=17.529 selected_radius_error_sum_mm=0.108 selection_regret_mm=14.901 (diagnostic)
+RUN_TRACKER: true_err_total delta(gen-ref)=0.000 [equal], true_iter_mean_delta=0.000 [equal], true_gen_iter_std=9.271 (n=6)
+Calibration summary:
+  metric           | ref    | gen    | delta(gen-ref) | verdict
+  -----------------+--------+--------+----------------+--------
+  param_total      | -      | -      | 0.000          | exact  
+  param_anchors    | -      | -      | 0.000          | -      
+  param_R*2π       | -      | -      | 0.000          | -      
+  fit_score_ui     | 5.740  | 5.740  | 0.000          | equal  
+  true_err_total   | 18.207 | 18.207 | 0.000          | equal  
+  true_err_anchors | 17.529 | 17.529 | 0.000          | -      
+  true_err_R*2π    | 0.679  | 0.679  | 0.000          | -      
+SUMMARY: EXACTLY EQUAL
+ITERATIONS: ref=6 gen=6
+ITERATIONS: worst_param_delta_total=0.000 (tol=0.01mm)
+ITERATIONS: rank columns use history_rank when present, otherwise raw rank_score
+ITERATIONS: rank/true direction mismatches: 0
+Generated log: /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/ten_points_bigger_deltas_4d3371f4/ten_points_bigger_deltas.full_auto.log
+Reference log: /home/torbjorn/repos/hp-sim5/autocal/data/references/ten_points_bigger_deltas.full_auto_reference_run_march_24_2026.log
+
+========= seventh_hp3_dataset =========
+HISTORY_AUDIT: adjacent_rank_true_mismatches=2 score_selected_iter=2 physical_best_iter=3 selected_anchor_error_sum_mm=257.599 selected_radius_error_sum_mm=0.738 selection_regret_mm=100.737 (diagnostic)
+RUN_TRACKER: true_err_total delta(gen-ref)=39.453 [worse], true_iter_mean_delta=-79.039 [better], true_gen_iter_std=2421.983 (n=5)
+Calibration summary:
+  metric           | ref     | gen     | delta(gen-ref) | verdict        
+  -----------------+---------+---------+----------------+----------------
+  param_total      | -       | -       | 413.048        | exceeds 0.010mm
+  param_anchors    | -       | -       | 413.048        | -              
+  param_R*2π       | -       | -       | 0.000          | -              
+  fit_score_ui     | 9.928   | 11.900  | 1.972          | worse          
+  true_err_total   | 222.783 | 262.236 | 39.453         | worse          
+  true_err_anchors | 218.146 | 257.599 | 39.453         | -              
+  true_err_R*2π    | 4.637   | 4.637   | 0.000          | -              
+SUMMARY: CHANGED and EXCEEDS tolerance (0.01mm) => FAIL
+REF summary block (for quick eyeballing):
+  == Calibration summary ==
+  Wrote to console: Found parameters of usable quality
+  Wrote to console: Fit quality score (lower is better): 9.928
+  Wrote to console: Anchors (M669): M669 A0.00:-1928.59:-300.49 B1704.03:1013.32:-300.49 C-1584.19:895.63:-300.49 D-6.76:4.53:1905.60
+  Wrote to console: Spools (M666): M666 R39:39:39:39 Q0.636619
+  Wrote to console: Interpretation: A Quality score between 5 and 10 is borderline but often usable.
+  Wrote to console: Sending M669 A0.00:-1928.59:-300.49 B1704.03:1013.32:-300.49 C-1584.19:895.63:-300.49 D-6.76:4.53:1905.60 to http://localhost:8081
+GEN summary block (for quick eyeballing):
+  == Calibration summary ==
+  Wrote to console: Found parameters of concerning quality
+  Wrote to console: Fit quality score (lower is better): 11.9
+  Wrote to console: Anchors (M669): M669 A0.00:-1887.18:-253.40 B1631.16:950.03:-253.40 C-1626.95:935.56:-253.40 D-6.58:3.09:1737.76
+  Wrote to console: Spools (M666): M666 R39:39:39:39 Q0.636619
+  Wrote to console: Interpretation: A Quality score above 10 is concerning; this fit is probably bad.
+  Wrote to console: ; --sim + --no-collect set; skipping M669 send.
+ITERATIONS: ref=8 gen=5
+ITERATIONS: COUNT MISMATCH => FAIL
+ITERATIONS: worst_param_delta_total=591.357 (tol=0.01mm)
+ITERATIONS: rank columns use history_rank when present, otherwise raw rank_score
+ITERATIONS: rank/true direction mismatches: 3 (warn-only)
+ITERATIONS detail:
+  iter | Δparam_total | Δanchors | ΔR*2π | tol     | true_ref | true_gen | Δtrue    | true_verdict | rank_ref | rank_gen | Δrank  | rank_verdict | fit_ui_ref | fit_ui_gen | reflect 
+  -----+--------------+----------+-------+---------+----------+----------+----------+--------------+----------+----------+--------+--------------+------------+------------+---------
+  0    | 591.357      | 590.351  | 1.005 | >=tol   | 6654.913 | 6266.418 | -388.494 | better       | 5.458    | 5.621    | 0.163  | worse        | 24.190     | 25.050     | MISMATCH
+  1    | 0.000        | 0.000    | 0.000 | exact   | 262.236  | 262.236  | 0.000    | equal        | 4.713    | 4.713    | 0.000  | equal        | 11.900     | 11.900     | OK      
+  2    | 42.728       | 42.728   | 0.000 | >=tol   | 172.261  | 161.499  | -10.762  | better       | 5.576    | 5.359    | -0.217 | better       | 25.030     | 22.410     | OK      
+  3    | 7.570        | 7.319    | 0.251 | >=tol   | 197.433  | 202.974  | 5.541    | worse        | 5.690    | 5.651    | -0.039 | better       | 25.070     | 25.060     | MISMATCH
+  4    | 12.650       | 12.399   | 0.251 | >=tol   | 222.783  | 221.301  | -1.482   | better       | 4.607    | 4.846    | 0.239  | worse        | 9.928      | 14.890     | MISMATCH
+  5    | N/A          | N/A      | N/A   | missing | 222.734  | N/A      | N/A      | N/A          | 6.783    | N/A      | N/A    | N/A          | 25.510     | N/A        | N/A     
+  6    | N/A          | N/A      | N/A   | missing | 124.349  | N/A      | N/A      | N/A          | 6.850    | N/A      | N/A    | N/A          | 25.540     | N/A        | N/A     
+  7    | N/A          | N/A      | N/A   | missing | 179.146  | N/A      | N/A      | N/A          | 6.295    | N/A      | N/A    | N/A          | 25.310     | N/A        | N/A     
+Generated log: /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/seventh_hp3_dataset_214023aa/seventh_hp3_dataset.full_auto.log
+Reference log: /home/torbjorn/repos/hp-sim5/autocal/data/references/seventh_hp3_dataset.full_auto_reference_run_march_20_2026.log
+
+========= sixteenth_hp3_dataset_even_more_pressure =========
+HISTORY_AUDIT: adjacent_rank_true_mismatches=2 score_selected_iter=3 physical_best_iter=5 selected_anchor_error_sum_mm=47.371 selected_radius_error_sum_mm=0.738 selection_regret_mm=10.142 (diagnostic)
+RUN_TRACKER: true_err_total delta(gen-ref)=0.000 [equal], true_iter_mean_delta=-4.610 [better], true_gen_iter_std=2409.371 (n=6)
+Calibration summary:
+  metric           | ref    | gen    | delta(gen-ref) | verdict
+  -----------------+--------+--------+----------------+--------
+  param_total      | -      | -      | 0.000          | exact  
+  param_anchors    | -      | -      | 0.000          | -      
+  param_R*2π       | -      | -      | 0.000          | -      
+  fit_score_ui     | 3.054  | 3.054  | 0.000          | equal  
+  true_err_total   | 52.008 | 52.008 | 0.000          | equal  
+  true_err_anchors | 47.371 | 47.371 | 0.000          | -      
+  true_err_R*2π    | 4.637  | 4.637  | 0.000          | -      
+SUMMARY: EXACTLY EQUAL
+ITERATIONS: ref=6 gen=6
+ITERATIONS: worst_param_delta_total=267.129 (tol=0.01mm)
+ITERATIONS: rank columns use history_rank when present, otherwise raw rank_score
+ITERATIONS: rank/true direction mismatches: 0
+ITERATIONS detail:
+  iter | Δparam_total | Δanchors | ΔR*2π | tol   | true_ref | true_gen | Δtrue   | true_verdict | rank_ref | rank_gen | Δrank  | rank_verdict | fit_ui_ref | fit_ui_gen | reflect
+  -----+--------------+----------+-------+-------+----------+----------+---------+--------------+----------+----------+--------+--------------+------------+------------+--------
+  0    | 0.000        | 0.000    | 0.000 | exact | 244.963  | 244.963  | 0.000   | equal        | 4.575    | 4.575    | 0.000  | equal        | 9.407      | 9.407      | OK     
+  1    | 267.129      | 267.129  | 0.000 | >=tol | 6575.856 | 6547.956 | -27.900 | better       | 7.303    | 7.211    | -0.092 | better       | 25.720     | 25.680     | OK     
+  2    | 0.000        | 0.000    | 0.000 | exact | 52.008   | 52.008   | 0.000   | equal        | 4.282    | 4.282    | 0.000  | equal        | 3.054      | 3.054      | OK     
+  3    | 0.926        | 0.926    | 0.000 | >=tol | 42.234   | 42.545   | 0.311   | worse        | 4.349    | 4.352    | 0.003  | worse        | 4.464      | 4.540      | OK     
+  4    | 0.173        | 0.173    | 0.000 | >=tol | 41.919   | 41.866   | -0.054  | better       | 4.646    | 4.646    | 0.000  | equal        | 10.630     | 10.630     | OK     
+  5    | 0.071        | 0.071    | 0.000 | >=tol | 48.028   | 48.013   | -0.015  | better       | 5.141    | 5.141    | 0.000  | equal        | 18.890     | 18.890     | OK     
+Generated log: /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/sixteenth_hp3_dataset_even_more_pressure_41e297c2/sixteenth_hp3_dataset_even_more_pressure.full_auto.log
+Reference log: /home/torbjorn/repos/hp-sim5/autocal/data/references/sixteenth_hp3_dataset_even_more_pressure.full_auto_reference_run_march_23_2026.log
+
+========= 23_april_2026 =========
+HISTORY_AUDIT: adjacent_rank_true_mismatches=4 score_selected_iter=3 physical_best_iter=6 selected_anchor_error_sum_mm=256.983 selected_radius_error_sum_mm=0.698 selection_regret_mm=163.828 (diagnostic)
+RUN_TRACKER: true_err_total delta(gen-ref)=0.000 [equal], true_iter_mean_delta=0.000 [equal], true_gen_iter_std=2294.680 (n=6)
+Calibration summary:
+  metric           | ref     | gen     | delta(gen-ref) | verdict
+  -----------------+---------+---------+----------------+--------
+  param_total      | -       | -       | 0.000          | exact  
+  param_anchors    | -       | -       | 0.000          | -      
+  param_R*2π       | -       | -       | 0.000          | -      
+  fit_score_ui     | 1.684   | 1.684   | 0.000          | equal  
+  true_err_total   | 261.369 | 261.369 | 0.000          | equal  
+  true_err_anchors | 256.983 | 256.983 | 0.000          | -      
+  true_err_R*2π    | 4.386   | 4.386   | 0.000          | -      
+SUMMARY: EXACTLY EQUAL
+ITERATIONS: ref=6 gen=6
+ITERATIONS: worst_param_delta_total=0.000 (tol=0.01mm)
+ITERATIONS: rank columns use history_rank when present, otherwise raw rank_score
+ITERATIONS: rank/true direction mismatches: 0
+Generated log: /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_415a6acb/23_april_2026.full_auto.log
+Reference log: /home/torbjorn/repos/hp-sim5/autocal/data/references/23_april_2026.full_auto_reference_run_april_23_2026.log
+
+========= ten_points_w_buildup2 =========
+HISTORY_AUDIT: adjacent_rank_true_mismatches=1 score_selected_iter=6 physical_best_iter=3 selected_anchor_error_sum_mm=4.204 selected_radius_error_sum_mm=0.192 selection_regret_mm=1.281 (diagnostic)
+RUN_TRACKER: true_err_total delta(gen-ref)=0.000 [equal], true_iter_mean_delta=0.000 [equal], true_gen_iter_std=2.022 (n=7)
+Calibration summary:
+  metric           | ref   | gen   | delta(gen-ref) | verdict
+  -----------------+-------+-------+----------------+--------
+  param_total      | -     | -     | 0.000          | exact  
+  param_anchors    | -     | -     | 0.000          | -      
+  param_R*2π       | -     | -     | 0.000          | -      
+  fit_score_ui     | 1.168 | 1.168 | 0.000          | equal  
+  true_err_total   | 5.411 | 5.411 | 0.000          | equal  
+  true_err_anchors | 4.204 | 4.204 | 0.000          | -      
+  true_err_R*2π    | 1.206 | 1.206 | 0.000          | -      
+SUMMARY: EXACTLY EQUAL
+ITERATIONS: ref=7 gen=7
+ITERATIONS: worst_param_delta_total=0.000 (tol=0.01mm)
+ITERATIONS: rank columns use history_rank when present, otherwise raw rank_score
+ITERATIONS: rank/true direction mismatches: 0
+Generated log: /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/ten_points_w_buildup2_7bf37134/ten_points_w_buildup2.full_auto.log
+Reference log: /home/torbjorn/repos/hp-sim5/autocal/data/references/ten_points_w_buildup2.full_auto_reference_run_march_24_2026.log
+
+========= layered_manual_some_bad_points =========
+HISTORY_AUDIT: adjacent_rank_true_mismatches=1 score_selected_iter=4 physical_best_iter=3 selected_anchor_error_sum_mm=5.299 selected_radius_error_sum_mm=0.132 selection_regret_mm=1.209 (diagnostic)
+RUN_TRACKER: true_err_total delta(gen-ref)=2.543 [worse], true_iter_mean_delta=2.876 [worse], true_gen_iter_std=7.164 (n=7)
+Calibration summary:
+  metric           | ref   | gen   | delta(gen-ref) | verdict        
+  -----------------+-------+-------+----------------+----------------
+  param_total      | -     | -     | 6.873          | exceeds 0.010mm
+  param_anchors    | -     | -     | 5.930          | -              
+  param_R*2π       | -     | -     | 0.942          | -              
+  fit_score_ui     | 3.921 | 5.009 | 1.088          | worse          
+  true_err_total   | 3.585 | 6.129 | 2.543          | worse          
+  true_err_anchors | 1.813 | 5.299 | 3.486          | -              
+  true_err_R*2π    | 1.772 | 0.829 | -0.942         | -              
+SUMMARY: CHANGED and EXCEEDS tolerance (0.01mm) => FAIL
+REF summary block (for quick eyeballing):
+  == Calibration summary ==
+  Wrote to console: Found parameters of good quality
+  Wrote to console: Fit quality score (lower is better): 3.921
+  Wrote to console: Anchors (M669): M669 A0.00:-1898.79:0.00 B1645.73:950.30:0.00 C-1645.64:950.00:0.00
+  Wrote to console: Spools (M666): M666 R39.09:39.09:39.09 Q0.636619
+  Wrote to console: Interpretation: A Quality score between 2 and 5 is a useful fit.
+  Wrote to console: ; --sim + --no-collect set; skipping M669 send.
+GEN summary block (for quick eyeballing):
+  == Calibration summary ==
+  Wrote to console: Found parameters of usable quality
+  Wrote to console: Fit quality score (lower is better): 5.009
+  Wrote to console: Anchors (M669): M669 A0.00:-1902.48:0.00 B1646.57:951.02:0.00 C-1646.62:950.57:0.00
+  Wrote to console: Spools (M666): M666 R39.14:39.14:39.14 Q0.636619
+  Wrote to console: Interpretation: A Quality score between 5 and 10 is borderline but often usable.
+  Wrote to console: ; --sim + --no-collect set; skipping M669 send.
+ITERATIONS: ref=6 gen=7
+ITERATIONS: COUNT MISMATCH => FAIL
+ITERATIONS: worst_param_delta_total=16.815 (tol=0.01mm)
+ITERATIONS: rank columns use history_rank when present, otherwise raw rank_score
+ITERATIONS: rank/true direction mismatches: 1 (warn-only)
+ITERATIONS detail:
+  iter | Δparam_total | Δanchors | ΔR*2π | tol     | true_ref | true_gen | Δtrue  | true_verdict | rank_ref | rank_gen | Δrank | rank_verdict | fit_ui_ref | fit_ui_gen | reflect 
+  -----+--------------+----------+-------+---------+----------+----------+--------+--------------+----------+----------+-------+--------------+------------+------------+---------
+  0    | 1.112        | 0.924    | 0.188 | >=tol   | 20.659   | 19.974   | -0.685 | better       | 4.883    | 4.923    | 0.040 | worse        | 15.400     | 15.890     | MISMATCH
+  1    | 0.000        | 0.000    | 0.000 | exact   | 11.314   | 11.314   | 0.000  | equal        | 4.706    | 4.706    | 0.000 | equal        | 11.760     | 11.760     | OK      
+  2    | 1.423        | 1.423    | 0.000 | >=tol   | 3.585    | 4.919    | 1.334  | worse        | 4.325    | 4.406    | 0.081 | worse        | 3.921      | 5.496      | OK      
+  3    | 0.000        | 0.000    | 0.000 | exact   | 6.129    | 6.129    | 0.000  | equal        | 4.380    | 4.380    | 0.000 | equal        | 5.009      | 5.009      | OK      
+  4    | 16.815       | 16.815   | 0.000 | >=tol   | 8.763    | 25.367   | 16.605 | worse        | 4.379    | 4.649    | 0.270 | worse        | 5.004      | 10.680     | OK      
+  5    | 0.000        | 0.000    | 0.000 | exact   | 6.291    | 6.291    | 0.000  | equal        | 4.403    | 4.403    | 0.000 | equal        | 5.436      | 5.436      | OK      
+  6    | N/A          | N/A      | N/A   | missing | N/A      | 12.403   | N/A    | N/A          | N/A      | 4.426    | N/A   | N/A          | N/A        | 5.896      | N/A     
+Generated log: /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/layered_manual_some_bad_points_e341c124/layered_manual_some_bad_points.full_auto.log
+Reference log: /home/torbjorn/repos/hp-sim5/autocal/data/references/layered_manual_some_bad_points.full_auto_reference_run_march_24_2026.log
+
+========= fifth_hp3_dataset =========
+HISTORY_AUDIT: adjacent_rank_true_mismatches=1 score_selected_iter=3 physical_best_iter=3 selected_anchor_error_sum_mm=65.677 selected_radius_error_sum_mm=0.738 selection_regret_mm=0.000 (diagnostic)
+RUN_TRACKER: true_err_total delta(gen-ref)=0.000 [equal], true_iter_mean_delta=390.788 [worse], true_gen_iter_std=3641.275 (n=7)
+Calibration summary:
+  metric           | ref    | gen    | delta(gen-ref) | verdict
+  -----------------+--------+--------+----------------+--------
+  param_total      | -      | -      | 0.000          | exact  
+  param_anchors    | -      | -      | 0.000          | -      
+  param_R*2π       | -      | -      | 0.000          | -      
+  fit_score_ui     | 6.010  | 6.010  | 0.000          | equal  
+  true_err_total   | 70.314 | 70.314 | 0.000          | equal  
+  true_err_anchors | 65.677 | 65.677 | 0.000          | -      
+  true_err_R*2π    | 4.637  | 4.637  | 0.000          | -      
+SUMMARY: EXACTLY EQUAL
+ITERATIONS: ref=7 gen=7
+ITERATIONS: worst_param_delta_total=5561.359 (tol=0.01mm)
+ITERATIONS: rank columns use history_rank when present, otherwise raw rank_score
+ITERATIONS: rank/true direction mismatches: 1 (warn-only)
+ITERATIONS detail:
+  iter | Δparam_total | Δanchors | ΔR*2π | tol   | true_ref  | true_gen  | Δtrue     | true_verdict | rank_ref | rank_gen | Δrank   | rank_verdict | fit_ui_ref | fit_ui_gen | reflect 
+  -----+--------------+----------+-------+-------+-----------+-----------+-----------+--------------+----------+----------+---------+--------------+------------+------------+---------
+  0    | 395.429      | 395.429  | 0.000 | >=tol | 158.564   | 275.508   | 116.944   | worse        | 4.809    | 4.561    | -0.248  | better       | 14.010     | 9.173      | MISMATCH
+  1    | 0.000        | 0.000    | 0.000 | exact | 70.787    | 70.787    | 0.000     | equal        | 4.473    | 4.473    | 0.000   | equal        | 6.952      | 6.952      | OK      
+  2    | 0.000        | 0.000    | 0.000 | exact | 70.314    | 70.314    | 0.000     | equal        | 4.431    | 4.431    | 0.000   | equal        | 6.010      | 6.010      | OK      
+  3    | 0.000        | 0.000    | 0.000 | exact | 10504.746 | 10504.746 | 0.000     | equal        | 49.740   | 49.740   | 0.000   | equal        | 49.800     | 49.800     | OK      
+  4    | 3905.042     | 3905.042 | 0.000 | >=tol | 381.810   | 3790.717  | 3408.907  | worse        | 5.223    | 49.760   | 44.537  | worse        | 20.140     | 49.810     | OK      
+  5    | 5561.359     | 5561.359 | 0.000 | >=tol | 5906.690  | 371.980   | -5534.711 | better       | 49.790   | 5.764    | -44.026 | better       | 49.840     | 25.100     | OK      
+  6    | 4972.571     | 4972.571 | 0.000 | >=tol | 368.704   | 5113.083  | 4744.379  | worse        | 5.583    | 49.840   | 44.257  | worse        | 25.030     | 49.880     | OK      
+Generated log: /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/fifth_hp3_dataset_fe0fc719/fifth_hp3_dataset.full_auto.log
+Reference log: /home/torbjorn/repos/hp-sim5/autocal/data/references/fifth_hp3_dataset.full_auto_reference_run_march_23_2026.log
+
+RUN_TRACKER: true_err_total delta(gen-ref) and true_iter mean delta by dataset
+  dataset                                   | delta(gen-ref) | verdict | true_iter_mean_delta | true_gen_std | n_true_gen
+  ------------------------------------------+----------------+---------+----------------------+--------------+-----------
+  23_april_2026                             | 0.000          | equal   | 0.000                | 2294.680     | 6         
+  fifth_hp3_dataset                         | 0.000          | equal   | 390.788              | 3641.275     | 7         
+  five_points_bigger_deltas                 | 0.000          | equal   | 0.002                | 2.564        | 6         
+  flexible_lines_2000                       | 0.000          | equal   | 0.000                | 35.663       | 4         
+  layered_manual_some_bad_points            | 2.543          | worse   | 2.876                | 7.164        | 7         
+  nineteenth_hp3_dataset_even_more_pressure | -0.000         | better  | 3.447                | 7946.455     | 5         
+  seventh_hp3_dataset                       | 39.453         | worse   | -79.039              | 2421.983     | 5         
+  sixteenth_hp3_dataset_even_more_pressure  | 0.000          | equal   | -4.610               | 2409.371     | 6         
+  ten_points_bigger_deltas                  | 0.000          | equal   | 0.000                | 9.271        | 6         
+  ten_points_w_buildup                      | 0.000          | equal   | 0.000                | 18.115       | 5         
+  ten_points_w_buildup2                     | 0.000          | equal   | 0.000                | 2.022        | 7         
+RUN_TRACKER: sum_true_err_total_delta(gen-ref)=41.997 over 11 datasets [worse]
+RUN_TRACKER: final_score=355.461 (sum_true_err_total_delta + sum_true_mean_delta, sum_true_mean_delta=313.465) [diagnostic only; does not establish selected calibration improvement]
+
+ONE OR MORE DATASETS: FAIL
