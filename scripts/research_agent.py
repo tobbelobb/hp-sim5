@@ -75,7 +75,22 @@ def doctor():
     return {'ok': all(check['ok'] for check in checks.values()), 'repo': str(ROOT), 'checks': checks}
 
 
-def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, codex_args=(), instructions=''):
+def toml_literal(value):
+    if isinstance(value, dict):
+        return '{ ' + ', '.join(f'{json.dumps(key)} = {toml_literal(item)}' for key, item in value.items()) + ' }'
+    if isinstance(value, list):
+        return '[' + ', '.join(toml_literal(item) for item in value) + ']'
+    return json.dumps(value)
+
+
+def sidebar_hooks(section_id):
+    return {'UserPromptSubmit': [{'hooks': [{
+        'type': 'mcp_tool', 'server': 'codex_app', 'tool': 'move_thread_to_sidebar_section',
+        'input': {'threadId': '${session_id}', 'sectionId': section_id}, 'timeout': 10,
+    }]}]}
+
+
+def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, codex_args=(), instructions='', sidebar_section=None):
     command = ['codex'] + (['exec'] if batch else [])
     command += ['--cd', str(ROOT), '--sandbox', 'workspace-write', '-c', 'approval_policy="never"']
     if batch:
@@ -97,8 +112,10 @@ def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, codex_
                          'mcp_servers.rerun.required': True,
                          'mcp_servers.rerun.startup_timeout_sec': 30,
                          'mcp_servers.rerun.default_tools_approval_mode': 'approve'})
+    if sidebar_section:
+        settings['hooks.UserPromptSubmit'] = sidebar_hooks(sidebar_section)['UserPromptSubmit']
     for key, value in settings.items():
-        command += ['-c', f'{key}={json.dumps(value)}']
+        command += ['-c', f'{key}={toml_literal(value)}']
     if instructions:
         command += ['-c', f'developer_instructions={json.dumps(instructions)}']
     return command + list(codex_args) + (['-'] if batch else [])
@@ -152,6 +169,7 @@ def main():
     mode.add_argument('--batch', action='store_true', help='Run codex exec and save JSONL events')
     mode.add_argument('--serve', action='store_true', help='Supervise services for desktop MCP attachment until interrupted')
     parser.add_argument('--session-dir', type=Path, help='New session artifact directory (must not exist)')
+    parser.add_argument('--sidebar-section', help='Desktop sidebar section UUID, or none; defaults to output/research/sidebar.json')
     # Everything after -- belongs to Codex, including resume and its normal options.
     argv = sys.argv[1:]
     split = argv.index('--') if '--' in argv else len(argv)
@@ -171,6 +189,14 @@ def main():
             parser.error('Batch mode requires --prompt or --prompt-file')
         if args.serve and (prompt or codex_args):
             parser.error('--serve accepts neither a task nor Codex arguments')
+        sidebar_section = args.sidebar_section
+        sidebar_config = ROOT / 'output/research/sidebar.json'
+        if sidebar_section is None and sidebar_config.exists():
+            sidebar_section = json.loads(sidebar_config.read_text())['section_id']
+        if sidebar_section == 'none':
+            sidebar_section = None
+        if sidebar_section:
+            sidebar_section = str(uuid.UUID(sidebar_section))
         session = (args.session_dir.resolve() if args.session_dir else
                    ROOT / 'output/research/sessions' / ('dry-run' if args.dry_run else uuid.uuid4().hex))
         instructions = (ROOT / 'research/AGENTS.md').read_text()
@@ -181,7 +207,7 @@ def main():
         if args.dry_run:
             endpoint = None if args.viewer == 'none' else 'http://127.0.0.1:PORT'
             print(json.dumps({'mode': 'serve' if args.serve else 'batch' if args.batch else 'interactive',
-                              'argv': codex_command(session, endpoint, batch=args.batch, codex_args=codex_args, instructions=instructions) + ([] if args.batch or not prompt else [prompt]),
+                              'argv': codex_command(session, endpoint, batch=args.batch, codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section) + ([] if args.batch or not prompt else [prompt]),
                               'prompt': full_prompt}, indent=2))
             return 0
         session.mkdir(parents=True)
@@ -205,8 +231,10 @@ def main():
             attachment += (f'\n[mcp_servers.rerun]\ncommand = {json.dumps(sys.executable)}\n'
                            f'args = {json.dumps([str(ROOT / "scripts/research_attach.py"), str(descriptor), "--rerun"])}\n'
                            'required = true\n')
+        if sidebar_section:
+            attachment += '\n[hooks]\n' + '\n'.join(f'{key} = {toml_literal(value)}' for key, value in sidebar_hooks(sidebar_section).items()) + '\n'
         (session / 'attachment.toml').write_text(attachment)
-        command = codex_command(session, endpoint, runtime, batch=args.batch, codex_args=codex_args, instructions=instructions)
+        command = codex_command(session, endpoint, runtime, batch=args.batch, codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section)
         if not args.batch and prompt:
             command += [prompt]
         # Keep bearer credentials out of launch artifacts.

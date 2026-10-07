@@ -78,10 +78,21 @@ from ChatGPT project membership: the CLI uses its working directory as its local
 project and does not expose the ChatGPT Projects view. See
 [Projects and chats](https://learn.chatgpt.com/docs/projects).
 
-Research instructions ask agents with app sidebar tools to reuse this section
-and move their own conversation into it. Clients without those tools require
-moving the chat through the desktop sidebar. The launcher itself does not assign
-ChatGPT project membership or guarantee automatic categorization in every client.
+Categorization uses a `UserPromptSubmit` MCP lifecycle hook, outside the model's
+instructions. It passes the exact `${session_id}` from the lifecycle event to
+`codex_app.move_thread_to_sidebar_section`. Select an existing section with
+`--sidebar-section SECTION_UUID`, or save `{"section_id":"SECTION_UUID"}` in
+the ignored local file `output/research/sidebar.json`. Use `--sidebar-section none`
+to disable it. The launcher includes the hook in its Codex configuration and the
+desktop `attachment.toml`; merge that hook only into a dedicated research
+worktree's configuration when using desktop attachment.
+
+Codex requires reviewing and trusting the hook with `/hooks` before it runs.
+The connected `codex_app` MCP server must expose the sidebar tool. Missing servers
+or disabled/untrusted hooks leave categorization unavailable without asking the
+model to compensate or blocking research. This does not launch the desktop app
+or assign ChatGPT project membership. See the official
+[MCP lifecycle hooks](https://learn.chatgpt.com/docs/hooks).
 
 The launcher uses the existing Codex ChatGPT login, makes no OpenAI API calls,
 selects the OpenAI provider, and removes API-key variables from its Codex child.

@@ -73,16 +73,6 @@ hypothesis, constraints, movement/experiment/compute budgets, experiment IDs,
 accepted steering and the next decision. Update it when steering changes the
 experiment choice. Preserve the conversation and prior evidence across turns.
 
-For research-run conversations, when the Codex app sidebar tools are available,
-use `list_threads` to find the custom section named `Autonomous research`, create
-it only if missing, and move your own conversation into it with
-`move_thread_to_sidebar_section`. Identify your exact current thread from the
-client context or `CODEX_THREAD_ID`/`CODEX_SESSION_ID`; never guess from the most
-recent chat. Reuse the section on resume. Do not move other conversations or
-change the working directory to achieve categorization. When these tools or the
-current thread identity are unavailable, state that sidebar organization needs
-the desktop app; do not claim it happened.
-
 For shared browser work call `start_browser_service(record=True)` when recording
 is needed, open its exact URL, inspect `browser_status`, and pass that page's
 `page_id` to `browser_action`. Browser JS, standalone JS parity fixtures, and

@@ -143,6 +143,29 @@ def test_launcher_dry_run_works_outside_repo_and_preserves_prompt():
     assert f'mcp_servers.hp_sim5.command="{ROOT / ".venv/bin/python"}"' in launch['argv']
 
 
+@pytest.mark.parametrize('batch', [False, True])
+def test_sidebar_hook_uses_lifecycle_identity_without_model_instructions(batch):
+    import tomllib
+    section = '6f8f42eb-e2ae-4882-a538-5bf0202ec59b'
+    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--dry-run', '--viewer', 'none',
+                             '--sidebar-section', section, '--prompt', 'Research check'] + (['--batch'] if batch else []),
+                            capture_output=True, text=True, timeout=15)
+    assert result.returncode == 0, result.stderr
+    argv = json.loads(result.stdout)['argv']
+    config = next(value for value in argv if value.startswith('hooks.UserPromptSubmit='))
+    hook = tomllib.loads(config)['hooks']['UserPromptSubmit'][0]['hooks'][0]
+    assert hook['type'] == 'mcp_tool' and hook['server'] == 'codex_app'
+    assert hook['tool'] == 'move_thread_to_sidebar_section'
+    assert hook['input'] == {'threadId': '${session_id}', 'sectionId': section}
+    instructions = next(value for value in argv if value.startswith('developer_instructions='))
+    assert 'move_thread_to_sidebar_section' not in instructions
+    assert section not in instructions
+    disabled = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--dry-run', '--sidebar-section', 'none'],
+                              capture_output=True, text=True, timeout=15)
+    assert disabled.returncode == 0, disabled.stderr
+    assert not any(value.startswith('hooks.') for value in json.loads(disabled.stdout)['argv'])
+
+
 @pytest.mark.parametrize('real_runtime', [False, pytest.param(True, marks=pytest.mark.slow)])
 @pytest.mark.parametrize('batch', [False, True])
 def test_launcher_preserves_written_report_and_cleans_api_key_environment(tmp_path, monkeypatch, real_runtime, batch):
@@ -216,7 +239,8 @@ else:
     monkeypatch.setenv('PATH', str(tmp_path) + os.pathsep + os.environ['PATH'])
     monkeypatch.setenv('OPENAI_API_KEY', 'test-sentinel')
     monkeypatch.setenv('CODEX_API_KEY', 'test-sentinel')
-    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--viewer', 'none', '--prompt', 'preservation check'] + (['--batch'] if batch else []))
+    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--viewer', 'none', '--prompt', 'preservation check',
+                                    '--sidebar-section', '6f8f42eb-e2ae-4882-a538-5bf0202ec59b'] + (['--batch'] if batch else []))
     assert launcher.main() == 0
     if real_runtime:
         assert services[0].process.poll() == 0
@@ -232,6 +256,9 @@ else:
         assert not (session / 'events.jsonl').exists()
     assert (session / 'connection.json').stat().st_mode & 0o077 == 0
     assert 'test-runtime-secret' not in (session / 'attachment.toml').read_text()
+    import tomllib
+    attachment = tomllib.loads((session / 'attachment.toml').read_text())
+    assert attachment['hooks']['UserPromptSubmit'][0]['hooks'][0]['input']['threadId'] == '${session_id}'
     launch = (session / 'launch.json').read_text()
     assert 'test-runtime-secret' not in launch
     assert 'research_attach.py' in launch
