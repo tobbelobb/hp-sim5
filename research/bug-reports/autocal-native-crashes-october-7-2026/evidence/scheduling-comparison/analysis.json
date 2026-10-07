@@ -1,0 +1,156 @@
+{
+  "runs": [
+    {
+      "run": 1,
+      "workers": 11,
+      "started_utc": "2026-10-07T13:56:06.515364+00:00",
+      "elapsed_s": 105.3319570019994,
+      "cpu_s": 1532.402029,
+      "average_cpu_cores": 14.548310623061074,
+      "returncode": 1,
+      "timed_out": false,
+      "sampled_peaks": {
+        "calibration_processes": 11,
+        "native_threads": 990,
+        "aggregate_rss_bytes": 9286131712
+      },
+      "output_dir": "/home/torbjorn/repos/hp-sim5/output/research/autocal-crash-fix-20261007/scheduling-comparison/01-workers-11",
+      "dataset_attempts": 11,
+      "native_failures": [],
+      "other_child_failures": [],
+      "generated_logs": 11,
+      "all_datasets_pass": false,
+      "exact_summaries": 3,
+      "verified_peak_active": 11,
+      "normal_gc": true,
+      "fixture_copies_match_provenance": true
+    },
+    {
+      "run": 2,
+      "workers": 2,
+      "started_utc": "2026-10-07T13:57:51.848236+00:00",
+      "elapsed_s": 281.4091156709983,
+      "cpu_s": 1135.3434709999997,
+      "average_cpu_cores": 4.034494292385877,
+      "returncode": 1,
+      "timed_out": false,
+      "sampled_peaks": {
+        "calibration_processes": 2,
+        "native_threads": 180,
+        "aggregate_rss_bytes": 2165932032
+      },
+      "output_dir": "/home/torbjorn/repos/hp-sim5/output/research/autocal-crash-fix-20261007/scheduling-comparison/02-workers-2",
+      "dataset_attempts": 11,
+      "native_failures": [],
+      "other_child_failures": [],
+      "generated_logs": 11,
+      "all_datasets_pass": false,
+      "exact_summaries": 3,
+      "verified_peak_active": 2,
+      "normal_gc": true,
+      "fixture_copies_match_provenance": true
+    },
+    {
+      "run": 3,
+      "workers": 2,
+      "started_utc": "2026-10-07T14:02:33.257872+00:00",
+      "elapsed_s": 281.3873333010015,
+      "cpu_s": 1133.3819840000003,
+      "average_cpu_cores": 4.027835832921505,
+      "returncode": 1,
+      "timed_out": false,
+      "sampled_peaks": {
+        "calibration_processes": 2,
+        "native_threads": 180,
+        "aggregate_rss_bytes": 2163060736
+      },
+      "output_dir": "/home/torbjorn/repos/hp-sim5/output/research/autocal-crash-fix-20261007/scheduling-comparison/03-workers-2",
+      "dataset_attempts": 11,
+      "native_failures": [],
+      "other_child_failures": [],
+      "generated_logs": 11,
+      "all_datasets_pass": false,
+      "exact_summaries": 3,
+      "verified_peak_active": 2,
+      "normal_gc": true,
+      "fixture_copies_match_provenance": true
+    },
+    {
+      "run": 4,
+      "workers": 11,
+      "started_utc": "2026-10-07T14:07:14.647896+00:00",
+      "elapsed_s": 106.98579502999928,
+      "cpu_s": 1535.6231690000006,
+      "average_cpu_cores": 14.353523928755264,
+      "returncode": 1,
+      "timed_out": false,
+      "sampled_peaks": {
+        "calibration_processes": 11,
+        "native_threads": 990,
+        "aggregate_rss_bytes": 9096052736
+      },
+      "output_dir": "/home/torbjorn/repos/hp-sim5/output/research/autocal-crash-fix-20261007/scheduling-comparison/04-workers-11",
+      "dataset_attempts": 11,
+      "native_failures": [],
+      "other_child_failures": [],
+      "generated_logs": 11,
+      "all_datasets_pass": false,
+      "exact_summaries": 3,
+      "verified_peak_active": 11,
+      "normal_gc": true,
+      "fixture_copies_match_provenance": true
+    }
+  ],
+  "pairs": [
+    {
+      "eleven_worker_run": 1,
+      "two_worker_run": 2,
+      "completion_timing_comparable": true,
+      "slowdown_ratio": 2.6716404373428344,
+      "slower_percent": 167.16404373428344,
+      "compared_datasets": 11,
+      "identical_numerical_outputs": [
+        "23_april_2026",
+        "fifth_hp3_dataset",
+        "five_points_bigger_deltas",
+        "flexible_lines_2000",
+        "layered_manual_some_bad_points",
+        "nineteenth_hp3_dataset_even_more_pressure",
+        "seventh_hp3_dataset",
+        "sixteenth_hp3_dataset_even_more_pressure",
+        "ten_points_bigger_deltas",
+        "ten_points_w_buildup",
+        "ten_points_w_buildup2"
+      ],
+      "different_numerical_outputs": []
+    },
+    {
+      "eleven_worker_run": 4,
+      "two_worker_run": 3,
+      "completion_timing_comparable": true,
+      "slowdown_ratio": 2.630137330120314,
+      "slower_percent": 163.01373301203142,
+      "compared_datasets": 11,
+      "identical_numerical_outputs": [
+        "23_april_2026",
+        "fifth_hp3_dataset",
+        "five_points_bigger_deltas",
+        "flexible_lines_2000",
+        "layered_manual_some_bad_points",
+        "nineteenth_hp3_dataset_even_more_pressure",
+        "seventh_hp3_dataset",
+        "sixteenth_hp3_dataset_even_more_pressure",
+        "ten_points_bigger_deltas",
+        "ten_points_w_buildup",
+        "ten_points_w_buildup2"
+      ],
+      "different_numerical_outputs": []
+    }
+  ],
+  "all_completed_runs_identical_to_first": {
+    "1": true,
+    "2": true,
+    "3": true,
+    "4": true
+  }
+}

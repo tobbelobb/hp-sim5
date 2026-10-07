@@ -1,0 +1,22 @@
+{
+  "run": 4,
+  "workers": 11,
+  "started_utc": "2026-10-07T14:07:14.647896+00:00",
+  "elapsed_s": 106.98579502999928,
+  "cpu_s": 1535.6231690000006,
+  "average_cpu_cores": 14.353523928755264,
+  "returncode": 1,
+  "timed_out": false,
+  "sampled_peaks": {
+    "calibration_processes": 11,
+    "native_threads": 990,
+    "aggregate_rss_bytes": 9096052736
+  },
+  "output_dir": "/home/torbjorn/repos/hp-sim5/output/research/autocal-crash-fix-20261007/scheduling-comparison/04-workers-11",
+  "dataset_attempts": 11,
+  "native_failures": [],
+  "other_child_failures": [],
+  "generated_logs": 11,
+  "all_datasets_pass": false,
+  "exact_summaries": 3
+}

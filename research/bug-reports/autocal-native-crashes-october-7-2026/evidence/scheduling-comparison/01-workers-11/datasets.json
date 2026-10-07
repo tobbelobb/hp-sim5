@@ -1,0 +1,106 @@
+{
+  "workers": 11,
+  "peak_active": 11,
+  "gc_enabled": true,
+  "datasets": [
+    {
+      "dataset": "23_april_2026",
+      "fixture_sha256": "0eeba9c452fe08a7ff32851ec5759cf598c3f78a3b20d32e62a8635b0bf01fa1",
+      "scratch_dir": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_eb08eb2d",
+      "start_s": 0.008465704002446728,
+      "returncode": 0,
+      "end_s": 95.81329115600238,
+      "elapsed_s": 95.80482545199993
+    },
+    {
+      "dataset": "fifth_hp3_dataset",
+      "fixture_sha256": "6d35e856277c96fef419db4933d950db1f9ae4ac75043c381c765b58cc8b0887",
+      "scratch_dir": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/fifth_hp3_dataset_f1da1955",
+      "start_s": 0.008236822999606375,
+      "returncode": 0,
+      "end_s": 105.12777259599898,
+      "elapsed_s": 105.11953577299937
+    },
+    {
+      "dataset": "five_points_bigger_deltas",
+      "fixture_sha256": "c3885bb2a9e7d27207605cccc27fa2b7d4be7b0c7543c41e3ed20bd7402e1812",
+      "scratch_dir": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_449a44f4",
+      "start_s": 0.005169785999896703,
+      "returncode": 0,
+      "end_s": 84.96452343300189,
+      "elapsed_s": 84.95935364700199
+    },
+    {
+      "dataset": "flexible_lines_2000",
+      "fixture_sha256": "c083d0a764aa8b08a1633e9d12a660403a935ef073de7688ef2e52ffbff0a789",
+      "scratch_dir": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/flexible_lines_2000_adc403b0",
+      "start_s": 0.006747183000697987,
+      "returncode": 0,
+      "end_s": 65.92097697400095,
+      "elapsed_s": 65.91422979100025
+    },
+    {
+      "dataset": "layered_manual_some_bad_points",
+      "fixture_sha256": "dec1d5633b3dd9ee6c8b82cbb4abbc0809e4feb48f2eb2d667214f36bd0f2ab2",
+      "scratch_dir": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/layered_manual_some_bad_points_d67e444f",
+      "start_s": 0.00647557400225196,
+      "returncode": 0,
+      "end_s": 103.49075982900104,
+      "elapsed_s": 103.48428425499878
+    },
+    {
+      "dataset": "nineteenth_hp3_dataset_even_more_pressure",
+      "fixture_sha256": "726e4dd98e6354c6837b1aa1b951245d13cee8ab0061971a3875154a6542a2b5",
+      "scratch_dir": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/nineteenth_hp3_dataset_even_more_pressure_155e8ff8",
+      "start_s": 0.00904408100177534,
+      "returncode": 0,
+      "end_s": 84.44810017100099,
+      "elapsed_s": 84.43905608999921
+    },
+    {
+      "dataset": "seventh_hp3_dataset",
+      "fixture_sha256": "49844ddf21eb5429a2e8527f269a88ca68b82951ce072ca9cd21a4b6bc01ae0d",
+      "scratch_dir": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/seventh_hp3_dataset_abf3167a",
+      "start_s": 0.005956414999673143,
+      "returncode": 0,
+      "end_s": 87.99851683300221,
+      "elapsed_s": 87.99256041800254
+    },
+    {
+      "dataset": "sixteenth_hp3_dataset_even_more_pressure",
+      "fixture_sha256": "3ba7c0e662c19d12be15dc4c08df131d220897e0b5b638c2805c3e071b8f7a8a",
+      "scratch_dir": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/sixteenth_hp3_dataset_even_more_pressure_d4823865",
+      "start_s": 0.0070217440006672405,
+      "returncode": 0,
+      "end_s": 91.28566235300241,
+      "elapsed_s": 91.27864060900174
+    },
+    {
+      "dataset": "ten_points_bigger_deltas",
+      "fixture_sha256": "15318b548501745f5df758408d4835d0d056cc3bee58f485c56e0b09934b5db5",
+      "scratch_dir": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/ten_points_bigger_deltas_eacf2901",
+      "start_s": 0.005393454001023201,
+      "returncode": 0,
+      "end_s": 86.14211092400001,
+      "elapsed_s": 86.13671746999898
+    },
+    {
+      "dataset": "ten_points_w_buildup",
+      "fixture_sha256": "3abbb09d76d5ca1b604a773bb33ac733b6cbb4ed6ea956c3036b019d2f9574dd",
+      "scratch_dir": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/ten_points_w_buildup_a7e262e7",
+      "start_s": 0.007238296002469724,
+      "returncode": 0,
+      "end_s": 76.48087707200102,
+      "elapsed_s": 76.47363877599855
+    },
+    {
+      "dataset": "ten_points_w_buildup2",
+      "fixture_sha256": "71a226b31c1a0ace743e861aae885430861d97a3e201608ba949a8798a8497f1",
+      "scratch_dir": "/home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/ten_points_w_buildup2_7a92c394",
+      "start_s": 0.0053049830021336675,
+      "returncode": 0,
+      "end_s": 98.18148195600224,
+      "elapsed_s": 98.17617697300011
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "git_revision": "054362b79f13d429399aff75e3bebba08efa9d8f",
+  "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+  "interpreter": "/home/torbjorn/repos/hp-sim5/.venv/bin/python",
+  "versions": {
+    "jax": "0.9.2",
+    "jaxlib": "0.9.2",
+    "numpy": "2.4.3",
+    "scipy": "1.17.1",
+    "psutil": "7.2.2"
+  },
+  "runner_sha256": "9a2707b6631274d1d33203a17f573ef8ee81548572813a4d8db0b94025e1f2a8",
+  "fixtures": {
+    "23_april_2026.json": "0eeba9c452fe08a7ff32851ec5759cf598c3f78a3b20d32e62a8635b0bf01fa1",
+    "fifth_hp3_dataset.json": "6d35e856277c96fef419db4933d950db1f9ae4ac75043c381c765b58cc8b0887",
+    "five_points_bigger_deltas.json": "c3885bb2a9e7d27207605cccc27fa2b7d4be7b0c7543c41e3ed20bd7402e1812",
+    "flexible_lines_2000.json": "c083d0a764aa8b08a1633e9d12a660403a935ef073de7688ef2e52ffbff0a789",
+    "layered_manual_some_bad_points.json": "dec1d5633b3dd9ee6c8b82cbb4abbc0809e4feb48f2eb2d667214f36bd0f2ab2",
+    "nineteenth_hp3_dataset_even_more_pressure.json": "726e4dd98e6354c6837b1aa1b951245d13cee8ab0061971a3875154a6542a2b5",
+    "seventh_hp3_dataset.json": "49844ddf21eb5429a2e8527f269a88ca68b82951ce072ca9cd21a4b6bc01ae0d",
+    "sixteenth_hp3_dataset_even_more_pressure.json": "3ba7c0e662c19d12be15dc4c08df131d220897e0b5b638c2805c3e071b8f7a8a",
+    "sweep_data_slideprinter_for_test_slideprinter_training_data_fits.json": "7f6a267bd527d3132ec97a187c7ba40dc23ae900d5974fa359c2f790c76ec976",
+    "ten_points_bigger_deltas.json": "15318b548501745f5df758408d4835d0d056cc3bee58f485c56e0b09934b5db5",
+    "ten_points_w_buildup.json": "3abbb09d76d5ca1b604a773bb33ac733b6cbb4ed6ea956c3036b019d2f9574dd",
+    "ten_points_w_buildup2.json": "71a226b31c1a0ace743e861aae885430861d97a3e201608ba949a8798a8497f1"
+  },
+  "environment": {
+    "XLA_FLAGS": null,
+    "JAX_CPU_ENABLE_ASYNC_DISPATCH": null,
+    "OMP_NUM_THREADS": null,
+    "OPENBLAS_NUM_THREADS": null,
+    "MKL_NUM_THREADS": null,
+    "NUMEXPR_NUM_THREADS": null
+  },
+  "cpu_affinity": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+  ],
+  "order": [
+    11,
+    2,
+    2,
+    11
+  ]
+}
