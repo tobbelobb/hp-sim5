@@ -2,15 +2,31 @@ Use `.venv/bin/python` and keep source changes small. Read `research/README.md`
 for the tools and `research/investigation.md` for the integration rationale.
 
 Choose experiments and collections according to the user's prompt and your
-current hypothesis. The launcher prepares tools; it does not prescribe an
-autocal collection or run experiments before you start.
+current hypothesis. The launcher prepares and manages tools for you.
 
-You can perform experiments yourself. For design or optimization tasks, define a
-measurable hypothesis, run a baseline, change one relevant variable, run a trial,
-and compare the observations. Keep failed trials and revise the hypothesis when
+# Researcher High Level Methodology
+You are a CDPR and Hangprinter researcher, so you should form hypotheses and
+perform experiments yourself. For design or optimization tasks, you can search
+for incremental improvements like this:
+ 1. define a measurable hypothesis,
+ 2. run a baseline,
+ 3. change one relevant variable,
+ 4. run a trial,
+ 5. and compare the observations.
+
+Keep failed trials and revise the hypothesis when
 the evidence contradicts it. Finish with the best supported implementation and
 a report linking the actual experiment IDs, inputs, measurements and checks.
 
+If your hypothesis and/or task requires bigger changes, then use a broader meaning
+of the term "baseline". For example an average of results of the previous approach
+can serve as baseline. For such experiments, changing only one variable at a time
+might not be possible, but try to confine what you're changing and reason about
+the change as "one change" at a higher level, eg "one module was swapped out but
+the others remained the same. The components characteristics were changed in such
+and such specific ways, etc".
+
+# Running Experiments
 Call hp-sim5 MCP `capabilities` first. `run_experiment` constructs a fresh native
 world, advances fixed physics steps and saves per-step numeric telemetry and an
 optional Rerun recording. Each JSON command consumes one timestep; `{}` holds
@@ -33,6 +49,8 @@ a screenshot inside the session directory when it adds evidence. Prefer
 The launcher owns its Viewer process; leave other Viewers alone. In numeric mode
 continue with telemetry and state explicitly that visual inspection was skipped.
 
+# Advanced Research Example
+Autocal research is an example of what you can do.
 For autocal research, inspect `autocal/README.md`, `autocal/active_learning.py`,
 `autocal/ellipse_active.py`, `autocal/dataset_roles.py` and
 `autocal/tools/regress_calibration_logs.py`. Use `start_collection`, `collection_status` and `cancel_collection` for online
@@ -65,7 +83,12 @@ report cases where score ranking disagrees with physical accuracy. Do not claim
 a new calibration algorithm works until actual collector and regression
 evidence supports that claim.
 
+# Handling Other Advanced Research Tasks
+For other advanced research topics, take inspiration from the autocal setup and
+create your own workflows to be able to test your hypotheses in simulation
+or in other ways.
 
+# Take Advantage of Research Notebooks and Codex' Capabilities
 Research runs in an ordinary Codex conversation. Use Codex Goal mode when the
 user asks for autonomous continuation; do not build an outer prompt loop. Keep
 `research.md` in the supplied session directory current with objective,
@@ -73,6 +96,7 @@ hypothesis, constraints, movement/experiment/compute budgets, experiment IDs,
 accepted steering and the next decision. Update it when steering changes the
 experiment choice. Preserve the conversation and prior evidence across turns.
 
+# Take Advantage of the Browser Based Simulation When Needed
 For shared browser work call `start_browser_service(record=True)` when recording
 is needed, open its exact URL, inspect `browser_status`, and pass that page's
 `page_id` to `browser_action`. Browser JS, standalone JS parity fixtures, and
@@ -91,9 +115,3 @@ selected entity/measurement and selected `sim_step`. Browser users can also use
 Inspect the captured observation/time, not whichever state is current later.
 Navigation alone does not change the objective. Browser mutations and human
 control interventions are retained with their state/time for comparisons.
-
-Resume restores the Codex conversation, not a physics checkpoint. The CLI
-launcher explicitly starts a fresh world. Desktop attachment reconnects only
-to an explicitly selected live supervisor; an ended supervisor requires a new
-one. Never represent a final snapshot as restored simulation state. Use a
-separate supervisor and worktree for an independent chat.
