@@ -97,6 +97,14 @@ accepted steering and the next decision. Update it when steering changes the
 experiment choice. Preserve the conversation and prior evidence across turns.
 
 # Take Advantage of the Browser Based Simulation When Needed
+The hp-sim-3d js app is a usable interactive simulator, while the Python version
+is primarily a headless tool for scripted runs and analysis.
+Use the browser based simulation whenever you want to
+ - see and control a run as it happens,
+ - try a print without preparing a simulation script,
+ - explore machines interactively. (The browser UI lets you choose presets, upload authored scenes, and add or remove machines.)
+ - Inspect browser-specific behavior.
+
 For shared browser work call `start_browser_service(record=True)` when recording
 is needed, open its exact URL, inspect `browser_status`, and pass that page's
 `page_id` to `browser_action`. Browser JS, standalone JS parity fixtures, and
