@@ -90,6 +90,29 @@ def sidebar_hooks(section_id):
     }]}]}
 
 
+def sidebar_server_enabled(codex_args):
+    # Ask Codex for effective configuration, including plugin servers and CLI overrides.
+    overrides = []
+    arguments = iter(codex_args)
+    for argument in arguments:
+        if argument in ('-c', '--config', '-p', '--profile', '--enable', '--disable'):
+            value = next(arguments, None)
+            if value is None:
+                return False  # Let the Codex invocation report its invalid arguments.
+            overrides.extend((argument, value))
+        elif argument.startswith(('--config=', '--profile=', '--enable=', '--disable=')):
+            overrides.append(argument)
+    try:
+        result = subprocess.run(['codex', *overrides, 'mcp', 'list', '--json'],
+                                capture_output=True, text=True, env=codex_environment(), timeout=10)
+        if result.returncode == 0:
+            return any(server['name'] == 'codex_app' and server['enabled']
+                       for server in json.loads(result.stdout))
+    except (OSError, subprocess.TimeoutExpired, ValueError):
+        pass
+    return False
+
+
 def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, dont_ask=False, codex_args=(), instructions='', sidebar_section=None):
     command = ['codex'] + (['exec'] if batch else [])
     command += ['--cd', str(ROOT), '--sandbox', 'workspace-write', '-c', 'approval_policy="never"']
@@ -191,6 +214,10 @@ def main():
             sidebar_section = None
         if sidebar_section:
             sidebar_section = str(uuid.UUID(sidebar_section))
+            if not args.serve and not sidebar_server_enabled(codex_args):
+                print('Sidebar categorization skipped: codex_app MCP server is not enabled in this Codex CLI configuration.',
+                      file=sys.stderr)
+                sidebar_section = None
         session = (args.session_dir.resolve() if args.session_dir else
                    ROOT / 'output/research/sessions' / ('dry-run' if args.dry_run else uuid.uuid4().hex))
         instructions = (ROOT / 'research/AGENTS.md').read_text()

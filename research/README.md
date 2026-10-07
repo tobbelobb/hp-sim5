@@ -121,11 +121,20 @@ to disable it. The launcher includes the hook in its Codex configuration and the
 desktop `attachment.toml`; merge that hook only into a dedicated research
 worktree's configuration when using desktop attachment.
 
+For CLI sessions, the launcher checks `codex mcp list --json` and skips its
+sidebar hook with a startup notice when `codex_app` is absent or disabled.
+The bundled app-tools server is disabled by default and requires a
+desktop-provided `CODEX_APP_TOOLS_PIPE_PATH`; enabling it alone in a terminal
+does not establish that connection. Use `--sidebar-section none` to suppress
+the startup notice when you do not need categorization. Service-only mode keeps
+the hook in `attachment.toml` for the desktop client's configuration.
+
 Codex requires reviewing and trusting the hook with `/hooks` before it runs.
-The connected `codex_app` MCP server must expose the sidebar tool. Missing servers
-or disabled/untrusted hooks leave categorization unavailable without asking the
-model to compensate or blocking research. This does not launch the desktop app
-or assign ChatGPT project membership. See the official
+The connected `codex_app` MCP server must expose the sidebar tool. An enabled
+server can still fail to connect or lack the tool; those errors and
+disabled/untrusted hooks leave categorization unavailable without blocking
+research. This does not launch the desktop app or assign ChatGPT project
+membership. See the official
 [MCP lifecycle hooks](https://learn.chatgpt.com/docs/hooks).
 
 The launcher uses the existing Codex ChatGPT login, makes no OpenAI API calls,

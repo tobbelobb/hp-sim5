@@ -159,26 +159,41 @@ def test_launcher_clarification_setting(options, enabled):
     assert '--dont-ask' not in argv
 
 
-@pytest.mark.parametrize('batch', [False, True])
-def test_sidebar_hook_uses_lifecycle_identity_without_model_instructions(batch):
+@pytest.mark.parametrize('mode', [[], ['--batch'], ['--serve']])
+@pytest.mark.parametrize('servers', [[], [{'name': 'codex_app', 'enabled': False}],
+                                    [{'name': 'codex_app', 'enabled': True}]])
+def test_sidebar_hook_uses_lifecycle_identity_without_model_instructions(tmp_path, monkeypatch, mode, servers):
     import tomllib
+    codex = tmp_path / 'codex'
+    codex.write_text(f'#!{sys.executable}\nimport sys\n'
+                     'assert sys.argv[1:] == ["-c", "features.apps=true", "mcp", "list", "--json"]\n'
+                     f'print({json.dumps(json.dumps(servers))})\n')
+    codex.chmod(0o755)
+    monkeypatch.setenv('PATH', str(tmp_path) + os.pathsep + os.environ['PATH'])
     section = '6f8f42eb-e2ae-4882-a538-5bf0202ec59b'
-    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--dry-run', '--viewer', 'none',
-                             '--sidebar-section', section, '--prompt', 'Research check'] + (['--batch'] if batch else []),
-                            capture_output=True, text=True, timeout=15)
+    command = [str(ROOT / 'hp-sim5-research-agent'), '--dry-run', '--viewer', 'none',
+               '--sidebar-section', section, *mode]
+    if '--serve' not in mode:
+        command += ['--prompt', 'Research check', '--', '-c', 'features.apps=true']
+    result = subprocess.run(command, capture_output=True, text=True, timeout=15)
     assert result.returncode == 0, result.stderr
     argv = json.loads(result.stdout)['argv']
-    config = next(value for value in argv if value.startswith('hooks.UserPromptSubmit='))
-    hook = tomllib.loads(config)['hooks']['UserPromptSubmit'][0]['hooks'][0]
-    assert hook['type'] == 'mcp_tool' and hook['server'] == 'codex_app'
-    assert hook['tool'] == 'move_thread_to_sidebar_section'
-    assert hook['input'] == {'threadId': '${session_id}', 'sectionId': section}
+    config = next((value for value in argv if value.startswith('hooks.UserPromptSubmit=')), None)
+    enabled = '--serve' in mode or any(server['enabled'] for server in servers)
+    assert (config is not None) == enabled
+    assert ('Sidebar categorization skipped' in result.stderr) == (not enabled)
+    if enabled:
+        hook = tomllib.loads(config)['hooks']['UserPromptSubmit'][0]['hooks'][0]
+        assert hook['type'] == 'mcp_tool' and hook['server'] == 'codex_app'
+        assert hook['tool'] == 'move_thread_to_sidebar_section'
+        assert hook['input'] == {'threadId': '${session_id}', 'sectionId': section}
     instructions = next(value for value in argv if value.startswith('developer_instructions='))
     assert 'move_thread_to_sidebar_section' not in instructions
     assert section not in instructions
     disabled = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--dry-run', '--sidebar-section', 'none'],
                               capture_output=True, text=True, timeout=15)
     assert disabled.returncode == 0, disabled.stderr
+    assert not disabled.stderr
     assert not any(value.startswith('hooks.') for value in json.loads(disabled.stdout)['argv'])
 
 
@@ -194,6 +209,8 @@ import sys
 assert 'OPENAI_API_KEY' not in os.environ and 'CODEX_API_KEY' not in os.environ
 if sys.argv[1:] == ['login', 'status']:
     print('Logged in using ChatGPT')
+elif sys.argv[1:] == ['mcp', 'list', '--json']:
+    print(json.dumps([{'name': 'codex_app', 'enabled': True}]))
 else:
     batch = 'exec' in sys.argv
     prompt = sys.stdin.read() if batch else sys.argv[-1]
