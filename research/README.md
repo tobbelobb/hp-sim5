@@ -44,6 +44,45 @@ supervisor remains alive. Use a separate worktree and supervisor for each
 independent research chat; do not forward `--cd` or `--worktree` to move the
 conversation away from its attached tools.
 
+### Recover an interrupted conversation
+
+If `codex resume` says “This conversation is open in another app”, the transcript
+has loaded but another client owns the conversation. Close that conversation in
+the other Codex client and press `r` to retry. If the desktop app retains it,
+quit the app before retrying. An idle conversation can still be open in a client.
+Use the exact conversation ID rather than `--last`, which can select an unrelated
+chat. After releasing the other client, resume with fresh supervised tools:
+
+```bash
+./hp-sim5-research-agent -- resume CONVERSATION_ID
+```
+
+Read the previous session's `research.md`, experiment manifests and current Git
+diff before continuing. The new session has a new artifact directory and world;
+link the previous evidence in its research record. A cancelled collection cannot
+continue from its final snapshot or partial-point journal. Keep that evidence
+and start a new collection when needed. A live service-only supervisor can be
+reattached through its existing `attachment.toml` instead.
+
+The terminal's `f` shortcut offers a fork if the other client cannot be closed.
+That creates a separate conversation with copied history; it does not restore
+physics or release the original client's tool attachment. See the official
+[resume and fork commands](https://learn.chatgpt.com/docs/developer-commands).
+
+### Keep research conversations together
+
+Use an **Autonomous research** custom sidebar section in the desktop app for
+research runs and validation conversations. A section organizes existing chats
+without changing their working directories or tool attachments. It is distinct
+from ChatGPT project membership: the CLI uses its working directory as its local
+project and does not expose the ChatGPT Projects view. See
+[Projects and chats](https://learn.chatgpt.com/docs/projects).
+
+Research instructions ask agents with app sidebar tools to reuse this section
+and move their own conversation into it. Clients without those tools require
+moving the chat through the desktop sidebar. The launcher itself does not assign
+ChatGPT project membership or guarantee automatic categorization in every client.
+
 The launcher uses the existing Codex ChatGPT login, makes no OpenAI API calls,
 selects the OpenAI provider, and removes API-key variables from its Codex child.
 ChatGPT plan limits apply. Its defaults are `workspace-write` and
