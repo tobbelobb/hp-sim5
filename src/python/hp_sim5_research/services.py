@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import secrets
+import signal
 import socket
 import subprocess
 import sys
@@ -19,11 +20,23 @@ def free_port():
 
 def stop_process(process):
     if process is not None and process.poll() is None:
-        process.terminate()
+        # Detached services own their process group, including CLI wrapper children.
+        try:
+            group = os.getpgid(process.pid) == process.pid
+            if group:
+                os.killpg(process.pid, signal.SIGTERM)
+            else:
+                process.terminate()
+        except ProcessLookupError:
+            process.wait()
+            return
         try:
             process.wait(timeout=5)
         except subprocess.TimeoutExpired:
-            process.kill()
+            if group:
+                os.killpg(process.pid, signal.SIGKILL)
+            else:
+                process.kill()
             process.wait()
 
 
@@ -68,7 +81,8 @@ class RuntimeService:
                 [sys.executable, str(self.root / 'scripts/research_runtime.py'), self.endpoint, str(self.directory)],
                 cwd=self.root, env={**os.environ, 'HP_SIM5_RUNTIME_TOKEN': self.token,
                                     'HP_SIM5_VIEWER_URL': self.viewer_endpoint or '',
-                                    'MPLCONFIGDIR': str(self.directory / 'matplotlib')}, stdout=log, stderr=log)
+                                    'MPLCONFIGDIR': str(self.directory / 'matplotlib')},
+                stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
         try:
             wait_ready(self.process, self.endpoint, 'status', log_path, token=self.token, timeout=45)
         except Exception:

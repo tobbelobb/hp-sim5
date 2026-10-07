@@ -20,7 +20,9 @@ codex login                       # choose ChatGPT
 ```
 
 The terminal goes directly to Codex. Continue talking and steering in that same
-conversation; services remain alive between turns. Ctrl-C interrupts a Codex
+conversation; services remain alive between turns. Background services have
+closed input and separate process groups, so collection cancellation or session
+reset cannot restore Codex's terminal modes or consume its keys. Ctrl-C interrupts a Codex
 turn without shutting down the supervisor. It does **not** cancel an experiment
 job: call `cancel_collection` and inspect its stopped boundary. Exit Codex to
 stop owned services. Use `/goal` for autonomous continuation with a measurable
@@ -102,6 +104,12 @@ startup leaves physics at step zero and never selects experiments or runs doctor
 Default Viewer mode is `--viewer headless`; use `--viewer window` for a desktop
 window or `--viewer none` for numerical research. Headless Rerun still requires
 a graphics backend. Failed Viewer startup names its log and suggests numeric mode.
+
+The CLI warning “Running without the shared background server … requires
+embedded mode” is expected. Per-session `-c` overrides attach the experiment
+tools and instructions, so Codex runs its backend inside the CLI process instead
+of using the shared daemon. This still uses the normal Codex conversation and
+ChatGPT login. It does not refer to embedding the Rerun Viewer.
 
 ## Desktop attachment
 

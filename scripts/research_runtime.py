@@ -51,7 +51,9 @@ class Runtime:
     def spawn(self, name, command):
         log_path = self.directory / f'{name}.log'
         with log_path.open('a') as log:
-            process = subprocess.Popen(command, cwd=ROOT, stdout=log, stderr=log)
+            # Node restores inherited TTY modes on SIGTERM; resets must not touch Codex's TTY.
+            process = subprocess.Popen(command, cwd=ROOT, stdin=subprocess.DEVNULL,
+                                       stdout=log, stderr=log, start_new_session=True)
         self.processes[name] = process
         return process, log_path
 

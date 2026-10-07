@@ -16,7 +16,7 @@ import uuid
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src/python'))
 sys.path.insert(0, str(ROOT))
-from hp_sim5_research.services import RuntimeService
+from hp_sim5_research.services import RuntimeService, stop_process
 
 
 def codex_environment():
@@ -131,7 +131,9 @@ def start_viewer(mode, session):
     environment = {**os.environ, 'XDG_DATA_HOME': str(session / 'viewer-data'),
                    'XDG_CONFIG_HOME': str(session / 'viewer-config'), 'XDG_CACHE_HOME': str(session / 'viewer-cache')}
     with (session / 'viewer.log').open('w') as log:
-        viewer = subprocess.Popen(command, cwd=ROOT, env=environment, stdout=log, stderr=log)
+        # Only Codex may own terminal input and receive terminal interrupt signals.
+        viewer = subprocess.Popen(command, cwd=ROOT, env=environment, stdin=subprocess.DEVNULL,
+                                  stdout=log, stderr=log, start_new_session=True)
     deadline = time.monotonic() + 30
     while time.monotonic() < deadline and viewer.poll() is None:
         try:
@@ -141,16 +143,6 @@ def start_viewer(mode, session):
             time.sleep(.1)
     stop_process(viewer)
     raise RuntimeError(f'Rerun did not become ready. Read {session / "viewer.log"}; use --viewer none for numeric experiments.')
-
-
-def stop_process(process):
-    if process is not None and process.poll() is None:
-        process.terminate()
-        try:
-            process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait()
 
 
 def interrupted(_signum, _frame):
