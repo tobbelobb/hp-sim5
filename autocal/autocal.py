@@ -12,6 +12,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.planning_pass import plan_next_ellipse_sweep
+from autocal.predictive_validation import score_future_sweeps
 from autocal.theoretical_ellipse import get_anchor_bounds
 
 
@@ -552,7 +553,22 @@ def full_auto_loop(
         fallback_meta: Optional[Dict[str, object]] = None,
     ) -> Tuple[Optional[Dict[str, object]], Optional[Dict[str, object]]]:
         if history_candidates:
-            scored: List[Tuple[Tuple[float, float, float, float, float], Dict[str, object], Dict[str, Optional[float]]]] = []
+            validation_dataset = next(
+                (
+                    candidate["plan"].get("dataset_for_estimation")
+                    for candidate in reversed(history_candidates)
+                    if isinstance(candidate.get("plan"), dict)
+                    and isinstance(candidate["plan"].get("dataset_for_estimation"), dict)
+                ),
+                None,
+            )
+            scored: List[
+                Tuple[
+                    Tuple[float, float, float, float, float, float],
+                    Dict[str, object],
+                    Dict[str, Optional[float]],
+                ]
+            ] = []
             for candidate in history_candidates:
                 candidate_rank = _float_or_none(candidate.get("rank_score"))
                 selection_score, selection_info = _full_auto_history_selection_score(
@@ -562,15 +578,30 @@ def full_auto_loop(
                 )
                 rel_std = _float_or_none(candidate.get("rel_std"))
                 cost = _float_or_none(candidate.get("cost"))
+                prediction = None
+                candidate_plan = candidate.get("plan")
+                if isinstance(validation_dataset, dict) and isinstance(candidate_plan, dict):
+                    prediction = score_future_sweeps(
+                        validation_dataset,
+                        np.asarray(candidate_plan.get("anchors"), dtype=float),
+                        candidate.get("training_sweep_ids", ()),
+                    )
                 sort_key = (
+                    float(prediction[0]) if prediction is not None else float("inf"),
                     float(selection_score),
                     float(candidate_rank) if candidate_rank is not None else float("inf"),
                     float(rel_std) if rel_std is not None else float("inf"),
                     float(cost) if cost is not None else float("inf"),
                     -float(candidate.get("iteration", 0)),
                 )
+                selection_info = dict(selection_info)
+                selection_info["prediction_score"] = prediction[0] if prediction else None
+                selection_info["prediction_sweeps"] = float(prediction[1]) if prediction else None
                 scored.append((sort_key, candidate, selection_info))
 
+            validated = [item for item in scored if item[2].get("prediction_score") is not None]
+            if validated:
+                scored = validated
             scored.sort(key=lambda item: item[0])
             chosen = scored[0][1]
             chosen_info = scored[0][2]
@@ -584,6 +615,8 @@ def full_auto_loop(
                     f"iter={candidate.get('iteration')} "
                     f"run={candidate.get('run_id')} "
                     f"rank={_fmt_float(_float_or_none(candidate.get('rank_score')))} "
+                    f"heldout_prediction={_fmt_float(info.get('prediction_score'))} "
+                    f"heldout_sweeps={_fmt_float(info.get('prediction_sweeps'), fmt='.0f')} "
                     f"iteration_adjust={_fmt_float(info.get('iteration_adjust'))} "
                     f"coverage_adjust={_fmt_float(info.get('coverage_adjust'))} "
                     f"selection_score={_fmt_float(info.get('selection_score'))}"
@@ -594,6 +627,8 @@ def full_auto_loop(
                     "history_iteration_adjust": chosen_info.get("iteration_adjust"),
                     "history_coverage_adjust": chosen_info.get("coverage_adjust"),
                     "history_selection_score": chosen_info.get("selection_score"),
+                    "heldout_prediction_score": chosen_info.get("prediction_score"),
+                    "heldout_prediction_sweeps": chosen_info.get("prediction_sweeps"),
                 }
             )
             return chosen.get("plan"), summary_meta
@@ -1299,6 +1334,12 @@ def full_auto_loop(
             score_rank: Optional[int] = None
             history_improved = False
             if (not selected_underconstrained) and np.isfinite(selected_rank_score):
+                training_dataset = plan.get("dataset")
+                training_sweeps = (
+                    training_dataset.get("sweeps", [])
+                    if isinstance(training_dataset, dict)
+                    else []
+                )
                 history_candidates.append(
                     {
                         "plan": plan,
@@ -1314,6 +1355,11 @@ def full_auto_loop(
                         "cost": selected_cost,
                         "rel_std": selected_rel_std,
                         "max_std_mm": selected_max_std,
+                        "training_sweep_ids": [
+                            str(sweep.get("id", ""))
+                            for sweep in training_sweeps
+                            if isinstance(sweep, dict)
+                        ],
                         "summary_meta": dict(selected_summary_meta),
                     }
                 )
