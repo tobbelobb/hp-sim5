@@ -90,12 +90,13 @@ def sidebar_hooks(section_id):
     }]}]}
 
 
-def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, codex_args=(), instructions='', sidebar_section=None):
+def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, dont_ask=False, codex_args=(), instructions='', sidebar_section=None):
     command = ['codex'] + (['exec'] if batch else [])
     command += ['--cd', str(ROOT), '--sandbox', 'workspace-write', '-c', 'approval_policy="never"']
     if batch:
         command += ['--json', '--output-last-message', str(session / 'final-message.md')]
-    settings = {'mcp_servers.hp_sim5.command': sys.executable,
+    settings = {'features.default_mode_request_user_input': not (dont_ask or batch),
+                'mcp_servers.hp_sim5.command': sys.executable,
                 'model_provider': 'openai',
                 'mcp_servers.hp_sim5.args': [str(ROOT / 'scripts/hp_sim5_mcp.py')],
                 'mcp_servers.hp_sim5.cwd': str(ROOT), 'mcp_servers.hp_sim5.required': True,
@@ -157,6 +158,7 @@ def main():
     parser.add_argument('--doctor', action='store_true', help='Explicitly run diagnostics, including real RRF/native collection and autocal loading')
     parser.add_argument('--dry-run', action='store_true', help='Show the Codex command and task without starting processes')
     parser.add_argument('--viewer', choices=['headless', 'window', 'none'], default='headless')
+    parser.add_argument('--dont-ask', action='store_true', help='Disable structured clarification questions in Default mode')
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--batch', action='store_true', help='Run codex exec and save JSONL events')
     mode.add_argument('--serve', action='store_true', help='Supervise services for desktop MCP attachment until interrupted')
@@ -199,7 +201,7 @@ def main():
         if args.dry_run:
             endpoint = None if args.viewer == 'none' else 'http://127.0.0.1:PORT'
             print(json.dumps({'mode': 'serve' if args.serve else 'batch' if args.batch else 'interactive',
-                              'argv': codex_command(session, endpoint, batch=args.batch, codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section) + ([] if args.batch or not prompt else [prompt]),
+                              'argv': codex_command(session, endpoint, batch=args.batch, dont_ask=args.dont_ask, codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section) + ([] if args.batch or not prompt else [prompt]),
                               'prompt': full_prompt}, indent=2))
             return 0
         session.mkdir(parents=True)
@@ -216,7 +218,9 @@ def main():
         descriptor.write_text(json.dumps({'repo': str(ROOT), 'session_id': runtime_status['session_id'],
                                           'runtime_endpoint': runtime.endpoint, 'runtime_token': runtime.token,
                                           'viewer_endpoint': endpoint}) + '\n')
-        attachment = (f'[mcp_servers.hp_sim5]\ncommand = {json.dumps(sys.executable)}\n'
+        attachment = ('[features]\n'
+                      f'default_mode_request_user_input = {toml_literal(not (args.dont_ask or args.batch))}\n\n'
+                      f'[mcp_servers.hp_sim5]\ncommand = {json.dumps(sys.executable)}\n'
                       f'args = {json.dumps([str(ROOT / "scripts/research_attach.py"), str(descriptor)])}\n'
                       'required = true\ntool_timeout_sec = 14500\n')
         if endpoint:
@@ -226,7 +230,7 @@ def main():
         if sidebar_section:
             attachment += '\n[hooks]\n' + '\n'.join(f'{key} = {toml_literal(value)}' for key, value in sidebar_hooks(sidebar_section).items()) + '\n'
         (session / 'attachment.toml').write_text(attachment)
-        command = codex_command(session, endpoint, runtime, batch=args.batch, codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section)
+        command = codex_command(session, endpoint, runtime, batch=args.batch, dont_ask=args.dont_ask, codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section)
         if not args.batch and prompt:
             command += [prompt]
         # Keep bearer credentials out of launch artifacts.

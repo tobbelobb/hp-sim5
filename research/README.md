@@ -38,6 +38,38 @@ Put normal Codex arguments after `--`; the launcher forwards them unchanged:
 ./hp-sim5-research-agent -- resume --last
 ```
 
+Structured clarification questions are enabled by default during interactive
+research, including Default mode. Codex can present short questions with answer
+choices and free-text input when your answer would materially improve the work.
+Use `--dont-ask` before the argument separator to disable these Default-mode
+question prompts:
+
+```bash
+./hp-sim5-research-agent --dont-ask --prompt-file research/prompts/autocal.txt
+```
+
+The underlying Codex feature is `default_mode_request_user_input`. You can also
+enable it explicitly with a forwarded Codex option:
+
+```bash
+./hp-sim5-research-agent -- --enable default_mode_request_user_input
+```
+
+Forwarded Codex options can override launcher defaults. Codex 0.160.1 labels
+this feature “under development”. Batch mode disables it because `codex exec`
+does not support interactive answers. The desktop `attachment.toml` includes
+the selected feature setting too; merge its `[features]` section as well as the
+MCP sections when attaching a desktop chat.
+
+Codex already supplies generic instructions for `request_user_input`: use it
+when available for optional questions whose answers materially improve the work,
+and continue with best judgment if no answer is returned. Comparing
+`codex debug prompt-input` with the feature off and on in 0.160.1 showed identical
+Default-mode instructions. The feature enables the tool; it does not add a
+research-specific policy for when to ask. No extra questioning instructions in
+`AGENTS.md` are needed for the basic behavior. Disabling the feature does not
+prohibit questions in ordinary conversation or change action-approval settings.
+
 Resume preserves the Codex conversation and experiment history, but this CLI
 invocation starts a **fresh native world**. It states this in the session
 instructions. Final snapshots are observations, not resumable checkpoints.
@@ -120,8 +152,8 @@ Start a supervisor in a dedicated worktree and keep its terminal open:
 ```
 
 The directory must be new. The launcher prints the path to `attachment.toml`.
-Copy its MCP sections into that trusted worktree's `.codex/config.toml`, merging
-with existing settings, then open or restart the Codex desktop chat in that
+Copy its feature and MCP sections into that trusted worktree's `.codex/config.toml`,
+merging with existing settings, then open or restart the Codex desktop chat in that
 worktree. This is project configuration shared by local Codex clients; see the
 [official MCP documentation](https://learn.chatgpt.com/docs/extend/mcp).
 The launcher never changes global or project configuration automatically.

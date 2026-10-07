@@ -143,6 +143,22 @@ def test_launcher_dry_run_works_outside_repo_and_preserves_prompt():
     assert f'mcp_servers.hp_sim5.command="{ROOT / ".venv/bin/python"}"' in launch['argv']
 
 
+@pytest.mark.parametrize('options, enabled', [
+    ([], True), (['--dont-ask'], False), (['--batch'], False),
+    (['--batch', '--dont-ask'], False), (['--serve'], True),
+    (['--serve', '--dont-ask'], False),
+])
+def test_launcher_clarification_setting(options, enabled):
+    command = [str(ROOT / 'hp-sim5-research-agent'), '--dry-run', '--viewer', 'none', *options]
+    if '--serve' not in options:
+        command += ['--prompt', 'Research check']
+    result = subprocess.run(command, capture_output=True, text=True, timeout=15)
+    assert result.returncode == 0, result.stderr
+    argv = json.loads(result.stdout)['argv']
+    assert f'features.default_mode_request_user_input={str(enabled).lower()}' in argv
+    assert '--dont-ask' not in argv
+
+
 @pytest.mark.parametrize('batch', [False, True])
 def test_sidebar_hook_uses_lifecycle_identity_without_model_instructions(batch):
     import tomllib
@@ -258,6 +274,7 @@ else:
     assert 'test-runtime-secret' not in (session / 'attachment.toml').read_text()
     import tomllib
     attachment = tomllib.loads((session / 'attachment.toml').read_text())
+    assert attachment['features']['default_mode_request_user_input'] == (not batch)
     assert attachment['hooks']['UserPromptSubmit'][0]['hooks'][0]['input']['threadId'] == '${session_id}'
     launch = (session / 'launch.json').read_text()
     assert 'test-runtime-secret' not in launch
