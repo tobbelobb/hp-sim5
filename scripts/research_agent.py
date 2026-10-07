@@ -16,7 +16,7 @@ import uuid
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src/python'))
 sys.path.insert(0, str(ROOT))
-from hp_sim5_research.services import RuntimeService, stop_process
+from hp_sim5_research.services import RuntimeService, free_port, stop_process
 
 
 def codex_environment():
@@ -146,9 +146,7 @@ def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, dont_a
 
 
 def start_viewer(mode, session):
-    with socket.socket() as listener:
-        listener.bind(('127.0.0.1', 0))
-        port = listener.getsockname()[1]
+    port = free_port()
     command = [str(ROOT / '.venv/bin/rerun'), '--bind', '127.0.0.1', '--port', str(port), '--memory-limit', '1GB']
     if mode == 'headless':
         command.append('--headless')
@@ -181,6 +179,10 @@ def main():
     parser.add_argument('--doctor', action='store_true', help='Explicitly run diagnostics, including real RRF/native collection and autocal loading')
     parser.add_argument('--dry-run', action='store_true', help='Show the Codex command and task without starting processes')
     parser.add_argument('--viewer', choices=['headless', 'window', 'none'], default='headless')
+    parser.add_argument('--physics-backend', choices=['headless-js', 'native-python'], default='headless-js',
+                        help='Continuing collection physics: production JS by default; Python for differential research')
+    parser.add_argument('--no-record', action='store_true', help='Keep numerical collection evidence without Rerun logging')
+    parser.add_argument('--machine', choices=['hp3', 'hp4'], default='hp4', help='Matched scene and RRF configuration')
     parser.add_argument('--dont-ask', action='store_true', help='Disable structured clarification questions in Default mode')
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--batch', action='store_true', help='Run codex exec and save JSONL events')
@@ -236,7 +238,8 @@ def main():
         endpoint = None
         if args.viewer != 'none':
             viewer, endpoint = start_viewer(args.viewer, session)
-        runtime = RuntimeService(ROOT, session / 'native', endpoint).start()
+        runtime = RuntimeService(ROOT, session / 'native', endpoint,
+                                 backend=args.physics_backend, record=not args.no_record, machine=args.machine).start()
         runtime_status = runtime.call('status')
         (session / 'prompt.txt').write_text(full_prompt)
         (session / 'research.md').write_text(f'# Research record\n\nObjective: {prompt or "Set in the Codex conversation"}\n\nCurrent hypothesis: pending.\nConstraints and budgets: set before experiments.\nExperiment IDs: none yet.\nAccepted steering: none yet.\nNext decision: establish a measurable baseline.\n')

@@ -1,10 +1,24 @@
-# Native HP4/RRF collection
+# Headless HP3/HP4/RRF collection
 
-The researcher launcher owns one continuing Python world, a private RRF
+The researcher launcher owns one continuing physics world, a private RRF
 simulator and the production WebSocket bridge. Collection uses
 `autocal/control/behaviors/sweep_data_collection.mjs`; it does not synthesize
-records from motor targets. RRF plans G-code and converts force to torque, Python
+records from motor targets. RRF plans G-code and converts force to torque, physics
 executes those motor records, and the collector observes actual encoders.
+
+The default backend is `headless-js`: the production browser physics pipeline
+runs in Node without rendering. Python supervises it and mirrors detached
+observation fields for the existing numerical telemetry and Rerun recorder;
+Python does not advance that mirror. `--physics-backend native-python` retains
+the slower independent Python engine for differential experiments. Backend
+identity is explicit in status, context, point journals and manifests.
+
+Use `--machine hp3` to select the HP3 scene and `config_hp3.g` together. HP4
+remains the default. Both designs use the collector's existing `hangprinter_4`
+four-anchor role schema; their physical geometry and mechanical advantages differ.
+For numerical batches, `--viewer none --no-record` skips Rerun while retaining
+the frozen scene, command/sensor trace, point journal, dataset and manifest.
+See [performance measurements and limitations](collection-performance.md).
 
 Call `capabilities()` first, then `runtime_status()`. For example:
 
@@ -14,7 +28,7 @@ Call `capabilities()` first, then `runtime_status()`. For example:
 
 Pass that object to `start_collection` and retain its `job_id`. Poll
 `collection_status(job_id)` while continuing the Codex conversation. Indices 0–3 correspond to physical spools
-A/B/C/D and CAN addresses 40–43; firmware movement axes are X/Y/Z/U. HP4 always
+A/B/C/D and CAN addresses 40–43; firmware movement axes are X/Y/Z/U. Both designs
 keeps anchor 3 fixed. The production collector performs both physical drive
 directions and stores them in canonical drive/sensor orientation. The default
 six points per direction produce twelve measurements in one combined sweep.
@@ -32,7 +46,7 @@ millimetres), `feed`, `forceLow`, `forceMid`, `forceMax`, `sensorCollectionForce
 Physics uses the RRF bridge's 0.002 s buckets. A world survives positioning,
 force transitions, settling, noise sampling and subsequent calls. The runtime
 advances when the collector waits or a caller requests `step_physics`; it does
-not consume CPU while idle. This makes simulation time independent of Python
+not consume CPU while idle. This makes simulation time independent of engine
 throughput. A requested delay rounds up to whole timesteps; the default 25 ms
 noise interval becomes 26 ms and its reported effective rate reflects that.
 
@@ -53,7 +67,7 @@ separately names raw and offset-adjusted diagnostic angles.
 ## Evidence and lifecycle
 
 A completed `collection_status` result returns absolute paths to the collector's version-2 JSON, a
-finalized RRD, frozen authored scene and firmware configuration, an immutable
+finalized RRD when recording is enabled, frozen authored scene and firmware configuration, an immutable
 command/sensor trace, and a manifest. The manifest records step ranges, hashes
 of loaded sources/firmware/inputs, package versions, effective collector options,
 validation and wall time. A trace includes earlier session actions so replay can
@@ -61,14 +75,16 @@ reconstruct the world; byte offsets identify the individual collection.
 
 Rerun records at 10 simulated Hz and at encoder observations. It batches output
 for up to five wall seconds and streams to the launcher's Viewer when enabled.
-Each collection finalizes its own RRD without replacing the physics world.
+Each recorded collection finalizes its own RRD without replacing the physics world.
 Later collections cannot change already returned evidence.
 
 `reset_session` archives the old world and restarts world, firmware and bridge
 references together. A failed or cancelled collection saves evidence and requires that reset.
-`cancel_collection` freezes execution before the next native timestep, aborts
+`cancel_collection` freezes execution at a reported fixed-step boundary, aborts
 collector waits before further commands, flushes completed-point evidence, retires
-firmware/bridge queues and reports the exact stopped step. Polling a job or
+firmware/bridge queues and reports the exact stopped step. The JS worker yields
+between batches of at most 50 steps (0.1 simulation seconds); cancellation
+reports the completed batch boundary and submits no further batch. Polling a job or
 interrupting Codex is not cancellation; Rerun playback pause is only inspection.
 The cancelled manifest and finalized RRD/events preserve partial observations.
 Completed raw measurements also survive in `partial-points.jsonl` with their

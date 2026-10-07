@@ -60,17 +60,25 @@ class Runtime:
     async def start(self):
         self.session_id = uuid.uuid4().hex
         self.session_dir = self.directory / self.session_id
-        self.session = NativeSession(ROOT, self.session_dir)
+        self.machine = os.environ.get('HP_SIM5_MACHINE', 'hp4')
+        if self.machine not in ('hp3', 'hp4'):
+            raise ValueError('Machine must be hp3 or hp4')
+        config = f'sys/config_{self.machine}.g'
+        self.session = NativeSession(ROOT, self.session_dir,
+                                     scene=f'public/usd_scenes/{self.machine}_rigid_body.usda',
+                                     backend=os.environ.get('HP_SIM5_PHYSICS_BACKEND', 'headless-js'),
+                                     record=os.environ.get('HP_SIM5_RECORD', '1') != '0')
+        self.physics_source_hash = self.hash_sources([ROOT / 'src/js', ROOT / 'hp-sim-3d'], '*.js')
         self.bridge_source_hash = self.hash_sources([ROOT / 'integrations/rrf', ROOT / 'integrations/shared',
                                                     ROOT / 'autocal/control', ROOT / 'scripts'], '*.*js')
         self.rrf_hash = hashlib.sha256((ROOT / 'RRF/build/rrf_simulator').read_bytes()).hexdigest()
-        self.config_hash = hashlib.sha256((ROOT / 'RRF/run/vsd/sys/config_hp4.g').read_bytes()).hexdigest()
-        shutil.copyfile(ROOT / 'RRF/run/vsd/sys/config_hp4.g', self.session_dir / 'firmware-config.g')
+        self.config_hash = hashlib.sha256((ROOT / 'RRF/run/vsd' / config).read_bytes()).hexdigest()
+        shutil.copyfile(ROOT / 'RRF/run/vsd' / config, self.session_dir / 'firmware-config.g')
         rrf_port, ws_port, collector_port = [free_port() for _ in range(3)]
         self.rrf_url = f'http://127.0.0.1:{rrf_port}'
         self.collector_url = f'http://127.0.0.1:{collector_port}'
         self.spawn('rrf', [str(ROOT / 'RRF/build/rrf_simulator'), '--vsd', str(ROOT / 'RRF/run/vsd'),
-                           '-c', 'sys/config_hp4.g', '--server', '-p', str(rrf_port)])
+                           '-c', config, '--server', '-p', str(rrf_port)])
         process, log = self.spawn('collector', ['node', 'scripts/research_collector.mjs', self.rrf_url,
                                                str(ws_port), str(collector_port), self.endpoint])
         await asyncio.to_thread(wait_ready, process, self.collector_url, 'status', log, token=self.token, timeout=40)
@@ -79,26 +87,32 @@ class Runtime:
         self.session.event('session_started', session_id=self.session_id, rrf_url=self.rrf_url)
 
     def status(self):
-        return {**self.session.status(), 'backend': 'native-python', 'session_id': self.session_id, 'busy': self.busy,
+        processes = dict(self.processes)
+        if self.session.js_physics is not None:
+            processes['physics-js'] = self.session.js_physics.process
+        return {**self.session.status(), 'machine_design': self.machine, 'session_id': self.session_id, 'busy': self.busy,
                 'active_job': self.active_job, 'reset_required': bool(self.session.error), 'browser_url': self.browser_url,
                 'source_changed': {
                     'python_requires_launcher_restart': self.python_source_hash != self.hash_sources([ROOT / 'src/python', ROOT / 'scripts'], '*.py'),
                     'bridge_requires_session_reset': self.bridge_source_hash != self.hash_sources(
-                        [ROOT / 'integrations/rrf', ROOT / 'integrations/shared', ROOT / 'autocal/control', ROOT / 'scripts'], '*.*js')},
+                        [ROOT / 'integrations/rrf', ROOT / 'integrations/shared', ROOT / 'autocal/control', ROOT / 'scripts'], '*.*js'),
+                    'js_physics_requires_session_reset': self.session.backend == 'headless-js' and self.physics_source_hash !=
+                        self.hash_sources([ROOT / 'src/js', ROOT / 'hp-sim-3d'], '*.js')},
                 'services': {name: {'pid': process.pid, 'exit_code': process.poll(),
-                                    'log': str(self.directory / f'{name}.log')}
-                             for name, process in self.processes.items()},
-                'artifacts': {'rrd': str(self.session.recording_path),
+                                    'log': str(self.session_dir / 'physics-js.log') if name == 'physics-js'
+                                    else str(self.directory / f'{name}.log')}
+                             for name, process in processes.items()},
+                'artifacts': {'rrd': str(self.session.recording_path) if self.session.recording is not None else None,
                               'events': str(self.session_dir / 'events.jsonl'), 'scene': str(self.session_dir / 'scene.usda')}}
 
     async def collect(self, args, job=None):
         configs = args.get('configs', [{'fixed': [2, 3], 'drive': 0, 'sensor': 1}])
         if not isinstance(configs, list) or not 1 <= len(configs) <= 12:
-            raise ValueError('Supply 1–12 HP4 sweep configurations')
+            raise ValueError('Supply 1–12 Hangprinter sweep configurations')
         for cfg in configs:
             roles = cfg.get('fixed', []) + [cfg.get('drive'), cfg.get('sensor')]
             if len(roles) != 4 or any(type(i) is not int for i in roles) or set(roles) != set(range(4)) or 3 not in cfg['fixed']:
-                raise ValueError('HP4 requires two distinct fixed anchors including 3, plus distinct drive and sensor')
+                raise ValueError('Hangprinter requires two distinct fixed anchors including 3, plus distinct drive and sensor')
         options = args.get('options', {})
         allowed = {'sweepPoints', 'fixedTargets', 'feed', 'forceLow', 'forceMid', 'forceMax',
                    'sensorCollectionForce', 'noiseSamples', 'returnToOrigin', 'projectZeroTension', 'preserveBuildupFactor'}
@@ -117,15 +131,18 @@ class Runtime:
                      'events': str(directory / 'events.jsonl'), 'rrd': str(directory / 'recording.rrd'),
                      'scene': str(self.session_dir / 'scene.usda'),
                      'firmware_config': str(self.session_dir / 'firmware-config.g')}
+        if not self.session.recording_enabled:
+            artifacts['rrd'] = None
         manifest = {'schema_version': 1, 'kind': 'native_collection',
-                    'run_id': run_id, 'backend': 'native-python', 'session_id': self.session_id, 'status': 'running',
-                    'configs': configs, 'options': {**options, 'sweepPoints': points},
+                    'run_id': run_id, 'backend': self.session.backend, 'session_id': self.session_id, 'status': 'running',
+                    'machine_design': self.machine, 'configs': configs, 'options': {**options, 'sweepPoints': points},
                     'start_step': self.session.step, 'dt_s': self.session.dt,
                     'events_start_byte': self.session.events.tell(),
                     'clock': self.session.status()['clock'], 'artifacts': artifacts,
                     'scene_sha256': hashlib.sha256(self.session.frozen_scene.encode()).hexdigest(),
                     'rrf_sha256': self.rrf_hash, 'firmware_config_sha256': self.config_hash,
                     'python_source_sha256': self.python_source_hash, 'bridge_source_sha256': self.bridge_source_hash,
+                    'js_physics_source_sha256': self.physics_source_hash if self.session.backend == 'headless-js' else None,
                     'python': sys.executable,
                     'packages': {name: version(name) for name in ('numpy', 'usd-core', 'rerun-sdk', 'websockets')},
                     'git_revision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()}
@@ -133,16 +150,19 @@ class Runtime:
             job['result'] = manifest
         write_json(directory / 'manifest.json', manifest)
         started = time.monotonic()
+        physics_started = self.session.physics_wall_s
+        observation_started = self.session.observation_wall_s
+        worker_started = self.session.worker_wall_s
         wall_timeout = min(14400, max(900, 900 * len(configs) * points / 3))
         manifest['wall_timeout_s'] = wall_timeout
         self.session.deadline = started + wall_timeout
         try:
-            self.session.start_recording(artifacts['rrd'])
+            self.session.start_recording(directory / 'recording.rrd')
             collected = await asyncio.to_thread(request, self.collector_url, 'collect',
                                     {'configs': configs, 'options': manifest['options'],
                                      'settlingTimeoutMs': settling * 1000,
                                      'sweepConfigFile': str(directory / 'configs.txt'), 'outputFile': artifacts['dataset'],
-                                     'partialFile': str(directory / 'partial-points.jsonl')},
+                                     'partialFile': str(directory / 'partial-points.jsonl'), 'backend': self.session.backend},
                                     token=self.token, timeout=wall_timeout + 5)
             manifest['collector_options'] = collected['collectionOptions']
             from autocal.json_schema import load_json_file
@@ -169,7 +189,12 @@ class Runtime:
                 raise RuntimeError(f'{error}; collection evidence: {artifacts["manifest"]}') from None
         finally:
             manifest.update(end_step=self.session.step, steps_executed=self.session.step - manifest['start_step'],
-                            wall_s=time.monotonic() - started)
+                            wall_s=time.monotonic() - started,
+                            physics_wall_s=self.session.physics_wall_s - physics_started,
+                            worker_wall_s=self.session.worker_wall_s - worker_started,
+                            observation_wall_s=self.session.observation_wall_s - observation_started)
+            manifest['simulated_s'] = manifest['steps_executed'] * self.session.dt
+            manifest['realtime_factor'] = manifest['simulated_s'] / manifest['wall_s']
             partial = directory / 'partial-points.jsonl'
             if partial.exists():
                 artifacts['partial_points'] = str(partial)
@@ -177,7 +202,7 @@ class Runtime:
             self.session.deadline = None
             if manifest['status'] == 'complete':
                 self.session.start_recording(self.session_dir / f'live-{uuid.uuid4().hex}.rrd')
-            else:
+            elif self.session.recording is not None:
                 self.session.recording.flush(timeout_sec=5)
                 self.session.recording.disconnect()
                 self.session.recording = None
@@ -253,7 +278,7 @@ class Runtime:
                 self.active_job = None
 
     async def cancel_job(self, job):
-        job['cancel_boundary'] = self.session.stop_execution()
+        job['cancel_boundary'] = await self.session.stop_at_boundary()
         try:
             job['collector_boundary'] = await asyncio.to_thread(request, self.collector_url, 'cancel',
                                                                token=self.token, timeout=5)
@@ -285,7 +310,7 @@ class Runtime:
             result = {key: value for key, value in job.items() if key not in ('task', 'cancel_task')}
             if job['status'] in ('running', 'cancelling'):
                 result['progress'] = {'step': self.session.step, 'sim_time_s': self.session.step * self.session.dt,
-                                      'queue_length': self.session.remote.get_queue_length()}
+                                      'queue_length': self.session.queue_length()}
             return result
         if operation == 'capture_context':
             message = args.get('message')
@@ -294,7 +319,7 @@ class Runtime:
             step = args.get('step', self.session.step)
             if type(step) is not int or not 0 <= step <= self.session.step:
                 raise ValueError('Select a recorded native step in this session')
-            if step == self.session.step and self.session.recording is not None:
+            if step == self.session.step:
                 self.session.observe()
             observation = recording = scene_generation = None
             with (self.session_dir / 'events.jsonl').open() as events:
@@ -306,7 +331,7 @@ class Runtime:
                         scene_generation = event.get('scene_generation')
             if observation is None:
                 raise ValueError('No numerical observation exists at this step; select an observed sim_step')
-            context = {'capture_id': uuid.uuid4().hex, 'backend': 'native-python', 'session_id': self.session_id,
+            context = {'capture_id': uuid.uuid4().hex, 'backend': self.session.backend, 'session_id': self.session_id,
                        'scene_generation': scene_generation, 'sim_step': step, 'sim_time_s': step * self.session.dt,
                        'timeline': 'sim_step', 'selected_entity': args.get('selected_entity'), 'message': message,
                        'recording': recording, 'observation': observation}
@@ -341,13 +366,15 @@ class Runtime:
             return {'stopping': True}
         if self.busy:
             raise ValueError('Session has an active operation')
-        if operation != 'reset' and (self.session.error or any(self.processes[name].poll() is not None for name in ('rrf', 'collector'))):
+        worker_failed = self.session.js_physics is not None and self.session.js_physics.process.poll() is not None
+        if operation != 'reset' and (self.session.error or worker_failed or
+                                    any(self.processes[name].poll() is not None for name in ('rrf', 'collector'))):
             raise RuntimeError(f'Session failed; inspect status and reset_session: {self.session.error}')
         self.busy = True
         try:
             if operation == 'start_collection':
                 job = {'job_id': uuid.uuid4().hex, 'status': 'running', 'session_id': self.session_id,
-                       'backend': 'native-python'}
+                       'backend': self.session.backend}
                 self.jobs[job['job_id']] = job
                 self.active_job = job['job_id']
                 job['task'] = asyncio.create_task(self.run_job(job, args))
@@ -365,7 +392,8 @@ class Runtime:
                     raise ValueError('steps must be an integer in [1, 10000]')
                 result = await self.session.advance(steps * self.session.dt)
                 self.session.observe()
-                self.session.recording.flush(timeout_sec=5)
+                if self.session.recording is not None:
+                    self.session.recording.flush(timeout_sec=5)
                 return result
             if operation == 'reset':
                 async with self.browser_lock:

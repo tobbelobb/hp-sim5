@@ -1,6 +1,7 @@
 import json
 import math
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -191,7 +192,7 @@ def test_real_rrf_native_collection_autocal_and_process_cleanup(tmp_path):
         result = status['result']
         assert result['session_id'] == before['session_id']
         assert result['status'] == 'complete' and result['point_count'] == 6
-        assert result['backend'] == 'native-python' and result['partial_point_count'] == 6
+        assert result['backend'] == 'headless-js' and result['partial_point_count'] == 6
         points = [json.loads(line) for line in Path(result['artifacts']['partial_points']).read_text().splitlines()]
         assert all('raw_angles_deg' in point['point'] for point in points)
         validation = validate_collection(result['artifacts']['dataset'])
@@ -228,6 +229,125 @@ async def test_cancel_freezes_at_fixed_step_boundary_and_rejects_later_payloads(
         assert session.step == boundary['step']
     finally:
         session.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('machine', ['hp3', 'hp4'])
+async def test_headless_js_encoder_motion_and_recording_match_python(tmp_path, machine):
+    import numpy as np
+    from cable_joints_3d.machine_snapshot import capture_machine_snapshot
+    sessions = [NativeSession(ROOT, tmp_path / backend, backend=backend,
+                              scene=f'public/usd_scenes/{machine}_rigid_body.usda')
+                for backend in ('native-python', 'headless-js')]
+    try:
+        commands = [{'type': 'Move', 'A': index * .0002, 'E': .00001} for index in range(60)]
+        commands += [{'type': 'SetTorqueMode', 'axis': 'B', 'torqueNm': -.003}] + [{}] * 39
+        commands += [{'type': 'SetPositionMode', 'axis': 'B'}, {'type': 'Add to reference', 'A': .001}]
+        for session in sessions:
+            await session.handle({'commands': commands})
+            await session.advance(.01)
+            assert session.queue_length() == len(commands) - 5
+            response = await session.handle({'type': 'encoder_request', 'requestId': 1, 'axes': list('ABCD')})
+            assert session.step == len(commands) and session.queue_length() == 0
+            assert len(response['anglesDeg']) == 4
+        assert sessions[1].encoder_angles('ABCD') == pytest.approx(sessions[0].encoder_angles('ABCD'), abs=.01)
+        snapshots = [capture_machine_snapshot(session.world) for session in sessions]
+        for first, second in zip(snapshots[0]['frames'], snapshots[1]['frames']):
+            assert first['path'] == second['path']
+            np.testing.assert_allclose(first['position'], second['position'], atol=5e-5, rtol=0)
+        for first, second in zip(snapshots[0]['cables'], snapshots[1]['cables']):
+            for key in ('actual', 'geometric', 'commanded', 'stretch'):
+                assert first['lengths'][key] == pytest.approx(second['lengths'][key], abs=5e-5)
+        js = sessions[1]
+        world = js.world
+        await js.handle({'type': 'reset'})
+        assert js.step == 0 and js.epoch == 1 and js.world is not world
+        await js.advance(.002)
+        assert js.step == 1
+    finally:
+        for session in sessions:
+            session.close()
+
+
+@pytest.mark.asyncio
+async def test_headless_js_cancellation_and_worker_cleanup(tmp_path):
+    import asyncio
+    session = NativeSession(ROOT, tmp_path, backend='headless-js')
+    process = session.js_physics.process
+    try:
+        await session.handle({'commands': [{'type': 'Move', 'A': .001}] * 1000})
+        advance = asyncio.create_task(session.advance(2))
+        await asyncio.sleep(0)
+        boundary = await session.stop_at_boundary()
+        with pytest.raises(RuntimeError, match='cancelled'):
+            await advance
+        assert 0 < session.step == boundary['step'] < 1000
+        assert session.queue_length() == 0
+        assert session.js_physics.request()['queue_length'] == 0
+        with pytest.raises(RuntimeError, match='cancelled'):
+            await session.handle({'commands': [{}]})
+        assert session.step == boundary['step']
+    finally:
+        session.close()
+    assert process.poll() == 0
+
+
+@pytest.mark.asyncio
+async def test_numeric_only_retains_encoder_observations_without_rrd(tmp_path):
+    session = NativeSession(ROOT, tmp_path, backend='headless-js', record=False)
+    try:
+        await session.handle({'commands': [{'type': 'Move', 'A': .001}] * 100})
+        await session.handle({'type': 'encoder_request', 'requestId': 1, 'axes': list('ABCD')})
+        assert session.step == 100 and session.recording is None
+        session.start_recording(tmp_path / 'rotated.rrd')
+        assert session.recording is None and session.step == 100
+    finally:
+        session.close()
+    assert not list(tmp_path.glob('*.rrd'))
+    events = [json.loads(line) for line in (tmp_path / 'events.jsonl').read_text().splitlines()]
+    assert any(event['type'] == 'encoder_response' and event['step'] == 100 for event in events)
+    assert all(event['recording'] is None for event in events if event['type'] == 'observation')
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('record', [False, True])
+async def test_failed_collection_finalizes_evidence_with_optional_recording(tmp_path, monkeypatch, record):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('research_runtime', ROOT / 'scripts/research_runtime.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    monkeypatch.setenv('HP_SIM5_RUNTIME_TOKEN', 'test-token')
+    runtime = module.Runtime('unused', tmp_path)
+    runtime.session_dir = tmp_path
+    runtime.session_id = 'test-session'
+    runtime.machine = 'hp4'
+    runtime.collector_url = 'unused'
+    runtime.physics_source_hash = runtime.bridge_source_hash = runtime.rrf_hash = runtime.config_hash = 'test-hash'
+    runtime.processes = {'collector': SimpleNamespace(pid=1, poll=lambda: None)}
+    runtime.session = NativeSession(ROOT, tmp_path, backend='headless-js', record=record)
+    def fail_request(*args, **kwargs):
+        raise RuntimeError('Deliberate collector failure')
+    async def direct_call(function, *args, **kwargs):
+        return function(*args, **kwargs)
+    monkeypatch.setattr(module, 'request', fail_request)
+    monkeypatch.setattr(module, 'stop_process', lambda process: None)
+    # No HTTP server or executor is needed to exercise manifest finalization.
+    monkeypatch.setattr(module.asyncio, 'to_thread', direct_call)
+    try:
+        old_worker = runtime.session.js_physics.process
+        await runtime.session.handle({'type': 'reset'})
+        assert old_worker.poll() == 0
+        assert runtime.status()['services']['physics-js']['pid'] == runtime.session.js_physics.process.pid
+        with pytest.raises(RuntimeError, match='Deliberate collector failure'):
+            await runtime.collect({})
+        path, = tmp_path.glob('*/manifest.json')
+        manifest = json.loads(path.read_text())
+        assert manifest['status'] == 'failed' and manifest['reset_required']
+        assert runtime.session.error == 'Deliberate collector failure'
+        assert (manifest['artifacts']['rrd'] is not None) == record
+        assert Path(manifest['artifacts']['events']).exists()
+    finally:
+        runtime.session.close()
 
 
 @pytest.mark.slow

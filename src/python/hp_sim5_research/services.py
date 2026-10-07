@@ -65,7 +65,7 @@ def wait_ready(process, endpoint, operation, log, *, token='', timeout=30):
 
 
 class RuntimeService:
-    def __init__(self, root, directory, viewer_endpoint=None):
+    def __init__(self, root, directory, viewer_endpoint=None, *, backend='headless-js', record=True, machine='hp4'):
         self.root = Path(root)
         self.directory = Path(directory).resolve()
         self.directory.mkdir(parents=True, exist_ok=True)
@@ -73,6 +73,13 @@ class RuntimeService:
         self.endpoint = f'http://127.0.0.1:{free_port()}'
         self.process = None
         self.viewer_endpoint = viewer_endpoint
+        if backend not in ('native-python', 'headless-js'):
+            raise ValueError('Physics backend must be native-python or headless-js')
+        self.backend = backend
+        self.record = record
+        if machine not in ('hp3', 'hp4'):
+            raise ValueError('Machine must be hp3 or hp4')
+        self.machine = machine
 
     def start(self):
         log_path = self.directory / 'runtime.log'
@@ -80,6 +87,9 @@ class RuntimeService:
             self.process = subprocess.Popen(
                 [sys.executable, str(self.root / 'scripts/research_runtime.py'), self.endpoint, str(self.directory)],
                 cwd=self.root, env={**os.environ, 'HP_SIM5_RUNTIME_TOKEN': self.token,
+                                    'HP_SIM5_PHYSICS_BACKEND': self.backend,
+                                    'HP_SIM5_RECORD': '1' if self.record else '0',
+                                    'HP_SIM5_MACHINE': self.machine,
                                     'HP_SIM5_VIEWER_URL': self.viewer_endpoint or '',
                                     'MPLCONFIGDIR': str(self.directory / 'matplotlib')},
                 stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)

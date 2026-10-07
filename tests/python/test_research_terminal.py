@@ -47,6 +47,7 @@ def test_service_shutdown_preserves_codex_terminal(tmp_path, monkeypatch, servic
         if service == 'viewer':
             launcher = load_script('research_agent')
             monkeypatch.setattr(launcher, 'ROOT', tmp_path)
+            monkeypatch.setattr(launcher, 'free_port', lambda: 12345)
             executable = tmp_path / '.venv/bin/rerun'
             executable.parent.mkdir(parents=True)
             executable.write_text(f'#!{shutil.which("python3")}\n' + wrapper)
@@ -56,6 +57,7 @@ def test_service_shutdown_preserves_codex_terminal(tmp_path, monkeypatch, servic
             log = tmp_path / 'viewer.log'
         elif service == 'runtime':
             import hp_sim5_research.services as services
+            monkeypatch.setattr(services, 'free_port', lambda: 12345)
             script = tmp_path / 'scripts/research_runtime.py'
             script.parent.mkdir()
             script.write_text(wrapper)

@@ -27,7 +27,8 @@ MUTATION = ToolAnnotations(read_only_hint=False, destructive_hint=False, open_wo
 @mcp.tool(annotations=READ_ONLY)
 def capabilities() -> dict[str, Any]:
     """Discover native scenes, command units, artifact contracts and limits."""
-    return {'backends': {'native-python': 'Fresh trials and continuing HP4/RRF collection',
+    return {'backends': {'native-python': 'Fresh trials; optional continuing HP3/HP4/RRF backend (slow)',
+                         'headless-js': 'Default continuing HP3/HP4/RRF collection; production JS physics without browser/rendering',
                          'browser-js': 'The exact open 3D page via browser_status/browser_action',
                          'standalone-js': 'Production JS parity harness in tests/parity3d'},
             'session_artifacts': os.environ.get('HP_SIM5_SESSION_DIR'), 'scenes': [str(path.relative_to(ROOT)) for path in sorted((ROOT / 'public/usd_scenes').glob('*rigid_body.usda'))],
@@ -37,7 +38,7 @@ def capabilities() -> dict[str, Any]:
                          'SetTorqueMode': 'axis and torqueNm', 'SetPositionMode': 'axis',
                          '{}': 'hold current targets for one fixed timestep', 'E': 'deposited length in m'},
             'telemetry': 'Every step including zero: effectors, encoders, tracking errors, missed steps, lengths and forces',
-            'native_collection': {'machine': 'HP4', 'firmware': 'RRF',
+            'native_collection': {'machines': ['HP3', 'HP4'], 'firmware': 'RRF',
                                   'operations': ['start_collection', 'collection_status', 'cancel_collection', 'runtime_status', 'send_gcode', 'step_physics', 'reset_session', 'start_browser_service'],
                                   'encoders': 'Raw unwrapped degrees; A/B/C/D mapped to CAN 40/41/42/43',
                                   'clock': 'Persistent fixed-step world; collector delays advance physics; reads drain motion',
@@ -67,7 +68,7 @@ def send_gcode(line: str) -> dict[str, Any]:
 @mcp.tool(annotations=MUTATION)
 def start_collection(configs: list[dict] | None = None, options: dict | None = None,
                      settling_timeout_s: float = 30) -> dict[str, Any]:
-    """Start a long HP4/RRF collection job; poll collection_status and explicitly cancel_collection to stop movement.
+    """Start an HP3/HP4 RRF collection job; poll collection_status and explicitly cancel_collection to stop movement.
 
     Config: {fixed:[2,3], drive:0, sensor:1}. Options: sweepPoints (3–100), fixedTargets
     (comma-separated mm), feed, forceLow/Mid/Max (N), sensorCollectionForce, noiseSamples,

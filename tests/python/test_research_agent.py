@@ -238,7 +238,10 @@ else:
         endpoint = 'http://127.0.0.1:12345'
         token = 'test-runtime-secret'
 
-        def __init__(self, root, directory, viewer_endpoint):
+        def __init__(self, root, directory, viewer_endpoint, *, backend, record, machine):
+            assert backend == 'headless-js'
+            assert record
+            assert machine == 'hp4'
             self.directory = directory
             self.closed = False
             services.append(self)
@@ -256,8 +259,8 @@ else:
     if real_runtime:
         runtime_service = launcher.RuntimeService
 
-        def start_real_service(root, directory, viewer_endpoint):
-            service = runtime_service(root, directory, viewer_endpoint)
+        def start_real_service(root, directory, viewer_endpoint, *, backend, record, machine):
+            service = runtime_service(root, directory, viewer_endpoint, backend=backend, record=record, machine=machine)
             services.append(service)
             return service
 

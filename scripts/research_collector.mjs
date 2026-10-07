@@ -105,7 +105,7 @@ const server = http.createServer(async (request, response) => {
         delayFn: send.simulationClock.sleep,
         onPoint: async (point, config) => {
           checkCancellation();
-          partialWrite = fs.appendFile(args.partialFile, `${JSON.stringify({ backend: 'native-python', config, point })}\n`);
+          partialWrite = fs.appendFile(args.partialFile, `${JSON.stringify({ backend: args.backend, config, point })}\n`);
           await partialWrite;
         },
       });

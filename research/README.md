@@ -3,7 +3,7 @@
 `hp-sim5-research-agent` opens an ordinary interactive Codex conversation with
 native experiment tools and an assigned Rerun Viewer. Conversation, steering,
 interrupts, resume and Goal mode belong to Codex. The launcher owns the continuing
-Python world, real RRF planner, production collector bridge, optional browser
+physics world, real RRF planner, production collector bridge, optional browser
 service and requested browser recorder for the lifetime of the session.
 
 ## Setup and interactive use
@@ -17,7 +17,16 @@ codex login                       # choose ChatGPT
 ./hp-sim5-research-agent --prompt "Compare HP4 settling with a small A-axis movement. Run both experiments, inspect their recordings and explain the measured difference."
 ./hp-sim5-research-agent --prompt-file research/prompts/autocal.txt
 ./hp-sim5-research-agent --viewer none --prompt "Investigate autocal candidate ranking on recorded datasets."
+./hp-sim5-research-agent --machine hp3 --viewer none --no-record --prompt "Collect independent HP3 calibration sweeps."
 ```
+
+Continuing collection defaults to the production JavaScript physics pipeline in
+headless Node, with the same fixed steps, forces, motors, encoders and cable
+solver as the browser. `--machine hp3` selects the HP3 scene and matching RRF
+configuration; HP4 remains the default. Use `--physics-backend native-python`
+for the independent Python engine, or `--viewer none --no-record` for numerical
+batches without Rerun logging. Fresh `run_experiment` trials still use Python.
+See [measured collection performance](collection-performance.md).
 
 The terminal goes directly to Codex. Continue talking and steering in that same
 conversation; services remain alive between turns. Background services have
@@ -199,7 +208,8 @@ credentials live in mode-600 `connection.json`. Default directories are under
 and continuing collection evidence is under each session's `native/` directory.
 All are ignored by Git. The explicit doctor checks dependencies/login/Viewer
 MCP and performs real RRF/native HP4 collection with autocal validation; it takes
-about fourteen minutes. It does not establish calibration accuracy or model
+about fourteen minutes on the historical Python backend; the default backend
+has since changed. It does not establish calibration accuracy or model
 access. See [collection evidence](native-collection-verification.md).
 
 ## Experiment tools
@@ -318,7 +328,7 @@ and evidence tools; it does not itself introduce a new calibration solver.
 
 Offline datasets and fitting/regression tools remain available. Native HP4/RRF
 collection now uses collection jobs, which reuses the production collector and
-bridge with a continuing Python world. It preserves version-2 millimetre records,
+bridge with a continuing headless world. It preserves version-2 millimetre records,
 configuration, canonical roles and noise statistics, and rejects stationary
 physical sensors. The [native collection guide](native-collection.md) explains
 the clock, artifacts and calibration limits. Browser full-auto and Klipper
