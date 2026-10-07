@@ -57,6 +57,81 @@ def test_build_semi_auto_parser_accepts_no_collect():
     assert args.no_collect is True
 
 
+def test_full_auto_stops_when_every_future_prediction_fails(tmp_path, monkeypatch, capsys):
+    dataset = tmp_path / "invalid_validation.json"
+    _write_dataset(dataset, sweeps=5)
+
+    def fake_plan(path, **_kwargs):
+        plan = _fake_plan()
+        plan["dataset"] = ac._load_json(path)
+        return plan
+
+    monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fake_plan)
+    monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(ac, "_plan_hits_underconstrained_penalty", lambda *_args: False)
+    rc = ac.main([
+        "--sim", "--machine-type", "slideprinter", "--dataset", str(dataset),
+        "--no-collect", "--max-steps", "3",
+    ])
+
+    assert rc == 2
+    output = capsys.readouterr().out
+    assert "all held-out predictions failed" in output
+    assert "== Calibration summary ==" not in output
+
+
+def test_full_auto_breaks_anchor_prediction_tie_using_frozen_radius(tmp_path, monkeypatch, capsys):
+    import copy
+
+    from autocal.spool_model import build_spool_model_params, dataset_with_modeled_lengths
+
+    anchors = np.array([[0.0, -400.0], [400.0, 0.0], [-300.0, 300.0]])
+    phi = np.linspace(0.0, np.pi, 40)
+    positions = anchors[0] + 600.0 * np.column_stack([np.cos(phi), np.sin(phi)])
+    deltas = np.linalg.norm(positions[:, None, :] - anchors, axis=2) - np.linalg.norm(anchors, axis=1)
+    deltas[:, 0] = 200.0
+    sweep = {
+        "fixed_anchors": [0], "fixed_lengths": [150.0], "drive_anchor": 1,
+        "sensor_anchor": 2,
+        "data_points": [
+            {"l_drive": row[1] * 0.75, "l_sensor": row[2] * 0.75,
+             "raw_angles_deg": (row * 180.0 / (np.pi * 40.0)).tolist()}
+            for row in deltas
+        ],
+    }
+    data = {"version": "1.0", "machine_type": "slideprinter", "num_anchors": 3, "dimensions": 2,
+            "sweeps": [dict(copy.deepcopy(sweep), id=f"sweep_{i:03d}") for i in range(1, 6)]}
+    path = tmp_path / "radii.json"
+    ac._write_json(path, data)
+
+    def fake_plan(path, **_kwargs):
+        raw = ac._load_json(path)
+        radius = 35.0 if len(raw["sweeps"]) == 3 else 40.0
+        params = build_spool_model_params(
+            raw, base_radii_mm=[30.0] * 3, modeled_radii_mm=[radius] * 3,
+            modeled_buildup_factor=[0.0] * 3, spool_to_motor_gearing_factor=[1.0] * 3,
+            mechanical_advantage=[1.0] * 3, lines_per_spool=[1.0] * 3,
+        )
+        plan = _fake_plan()
+        plan.update(anchors=anchors, radius=radius, dataset=raw, spool_model_params=params,
+                    dataset_for_estimation=dataset_with_modeled_lengths(raw, params))
+        return plan
+
+    monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fake_plan)
+    monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(ac, "_plan_hits_underconstrained_penalty", lambda *_args: False)
+    monkeypatch.setattr(ac, "_m666_from_plan", lambda plan: f"M666 R{plan['radius']}")
+    rc = ac.main([
+        "--sim", "--machine-type", "slideprinter", "--dataset", str(path),
+        "--no-collect", "--max-steps", "3",
+    ])
+
+    assert rc == 0
+    output = capsys.readouterr().out
+    assert "M666 R40.0" in output
+    assert "M666 R35.0" not in output
+
+
 def test_default_delta_range_with_max_travel_is_bidirectional_even_if_observed_positive_only():
     lo, hi = ac._default_delta_range(
         max_travel_mm=600.0,

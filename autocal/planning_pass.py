@@ -631,6 +631,7 @@ def plan_next_ellipse_sweep(
         "force_tuning": force_tuning,
         "force_args_applied": force_args_applied,
         "length_model": length_model,
+        "spool_model_params": spool_params,
         "line_width_mm": float(line_width),
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
         "sigma_used_mm": (None if sigma_used_mm is None else float(sigma_used_mm)),

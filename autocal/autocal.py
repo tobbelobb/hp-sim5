@@ -555,6 +555,15 @@ def full_auto_loop(
         if history_candidates:
             validation_dataset = next(
                 (
+                    candidate["plan"].get("dataset")
+                    for candidate in reversed(history_candidates)
+                    if isinstance(candidate.get("plan"), dict)
+                    and isinstance(candidate["plan"].get("dataset"), dict)
+                ),
+                None,
+            )
+            comparison_dataset = next(
+                (
                     candidate["plan"].get("dataset_for_estimation")
                     for candidate in reversed(history_candidates)
                     if isinstance(candidate.get("plan"), dict)
@@ -564,7 +573,7 @@ def full_auto_loop(
             )
             scored: List[
                 Tuple[
-                    Tuple[float, float, float, float, float, float],
+                    Tuple[float, ...],
                     Dict[str, object],
                     Dict[str, Optional[float]],
                 ]
@@ -579,14 +588,45 @@ def full_auto_loop(
                 rel_std = _float_or_none(candidate.get("rel_std"))
                 cost = _float_or_none(candidate.get("cost"))
                 prediction = None
+                comparison = None
                 candidate_plan = candidate.get("plan")
                 if isinstance(validation_dataset, dict) and isinstance(candidate_plan, dict):
+                    settings = candidate.get("settings") or {}
                     prediction = score_future_sweeps(
                         validation_dataset,
                         np.asarray(candidate_plan.get("anchors"), dtype=float),
                         candidate.get("training_sweep_ids", ()),
+                        spool_params=candidate_plan.get("spool_model_params"),
+                        prefer_zero_tension_angles=_arg_has_flag(
+                            collector_args_eff, "--project-zero-tension"
+                        ),
+                        use_flex=bool(settings.get("use_flex", use_flex)),
+                        spring_k_multiplier=float(
+                            settings.get("spring_k_multiplier", spring_k_multiplier)
+                        ),
+                        use_noise_mean=bool(settings.get("use_noise_mean", use_noise_mean)),
+                        pointwise_residual_mode=str(
+                            settings.get("pointwise_residual_mode", pointwise_residual_mode)
+                        ),
+                        sigma_source=str(settings.get("sigma_source", sigma_source)),
                     )
+                    if prediction is not None and not np.isfinite(prediction[0]):
+                        _log_line(
+                            f"; history_validate: iter={candidate.get('iteration')} "
+                            f"run={candidate.get('run_id')} heldout_sweeps={prediction[1]} "
+                            "failed_prediction=True"
+                        )
+                    if isinstance(comparison_dataset, dict):
+                        # Keep the common length model for comparing anchors.
+                        # A lower own-model residual can instead reflect radius/
+                        # elasticity compensation; it is a veto and tie-breaker.
+                        comparison = score_future_sweeps(
+                            comparison_dataset,
+                            np.asarray(candidate_plan.get("anchors"), dtype=float),
+                            candidate.get("training_sweep_ids", ()),
+                        )
                 sort_key = (
+                    float(comparison[0]) if comparison is not None else float("inf"),
                     float(prediction[0]) if prediction is not None else float("inf"),
                     float(selection_score),
                     float(candidate_rank) if candidate_rank is not None else float("inf"),
@@ -597,11 +637,22 @@ def full_auto_loop(
                 selection_info = dict(selection_info)
                 selection_info["prediction_score"] = prediction[0] if prediction else None
                 selection_info["prediction_sweeps"] = float(prediction[1]) if prediction else None
+                selection_info["anchor_comparison_score"] = comparison[0] if comparison else None
                 scored.append((sort_key, candidate, selection_info))
 
-            validated = [item for item in scored if item[2].get("prediction_score") is not None]
+            validated = [
+                item for item in scored
+                if item[2].get("prediction_score") is not None
+                and np.isfinite(item[2]["prediction_score"])
+            ]
             if validated:
                 scored = validated
+            elif any(item[2].get("prediction_score") is not None for item in scored):
+                _log_console(
+                    "; full-auto: all held-out predictions failed; "
+                    "stopping without applying calibration."
+                )
+                return None, None
             scored.sort(key=lambda item: item[0])
             chosen = scored[0][1]
             chosen_info = scored[0][2]
@@ -615,6 +666,7 @@ def full_auto_loop(
                     f"iter={candidate.get('iteration')} "
                     f"run={candidate.get('run_id')} "
                     f"rank={_fmt_float(_float_or_none(candidate.get('rank_score')))} "
+                    f"anchor_comparison={_fmt_float(info.get('anchor_comparison_score'))} "
                     f"heldout_prediction={_fmt_float(info.get('prediction_score'))} "
                     f"heldout_sweeps={_fmt_float(info.get('prediction_sweeps'), fmt='.0f')} "
                     f"iteration_adjust={_fmt_float(info.get('iteration_adjust'))} "
@@ -629,6 +681,7 @@ def full_auto_loop(
                     "history_selection_score": chosen_info.get("selection_score"),
                     "heldout_prediction_score": chosen_info.get("prediction_score"),
                     "heldout_prediction_sweeps": chosen_info.get("prediction_sweeps"),
+                    "anchor_comparison_score": chosen_info.get("anchor_comparison_score"),
                 }
             )
             return chosen.get("plan"), summary_meta
@@ -1361,6 +1414,7 @@ def full_auto_loop(
                             if isinstance(sweep, dict)
                         ],
                         "summary_meta": dict(selected_summary_meta),
+                        "settings": dict(selected["settings"]),
                     }
                 )
                 score_rank = _current_history_rank_position(iteration=step)
