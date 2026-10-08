@@ -1,4 +1,5 @@
 import { createGcodeBridge } from '../../../integrations/rrf/rrfSimulatorBridge.mjs';
+import { createHeadlessBridge } from './headless_bridge.mjs';
 import { KlippyApiClient } from '../../../integrations/klipper/klippyApiClient.js';
 import { KlippyRuntimeState } from '../../../integrations/klipper/klippyRuntimeState.js';
 import { createKlipperTerminalBridge } from '../../../integrations/klipper/klipperTerminalBridge.js';
@@ -8,6 +9,7 @@ import {
 } from '../../../integrations/klipper/klippy_api_cli_config.mjs';
 
 export async function createBridge(firmware, options = {}) {
+  if (options.headlessUrl) return createHeadlessBridge(options.headlessUrl);
   if (firmware !== 'klipper') {
     return createGcodeBridge(options);
   }

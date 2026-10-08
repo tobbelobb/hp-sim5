@@ -948,7 +948,7 @@ async function measureMaxTravelMm(sendFn, options = {}) {
     });
     await applyForceModeState(sendFn, { motorIds, modes: modesPullPair });
     if (i < pullFractions.length - 1) {
-      await baseSleep(100);
+      await (sendFn.simulationClock?.sleep ?? baseSleep)(100);
     }
   }
   await waitForStableEncoders(sendFn, motorIds, speedup);

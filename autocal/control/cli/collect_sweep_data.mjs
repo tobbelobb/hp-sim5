@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import path from 'node:path';
 import readline from 'node:readline';
+import fs from 'node:fs/promises';
 import { spawn } from 'node:child_process';
 import { createBridge } from '../primitives/bridge_factory.mjs';
 import { attachDebugState } from '../primitives/debug_trace.mjs';
@@ -237,6 +238,8 @@ export function parseBridgeArgs(argv) {
     const arg = argv[i];
     if (arg === '--config') {
       args.config = argv[++i] || null;
+    } else if (arg === '--headless-url') {
+      args.headlessUrl = argv[++i];
     } else if (arg === '--socket') {
       args.socket = argv[++i] || null;
     } else if (arg === '--server' || arg === '--rrf') {
@@ -562,6 +565,7 @@ async function main() {
       encoderTimeoutMs,
       speedup,
       sim: args.sim,
+      headlessUrl: args.headlessUrl,
     });
 
     const send = async (line, options = {}) => {
@@ -590,6 +594,7 @@ async function main() {
       return res;
     };
     send.firmware = args.firmware;
+    send.simulationClock = bridgeCtx.simulationClock;
 
     attachDebugState(send, {
       enabled: debugSweepActions,
@@ -616,7 +621,10 @@ async function main() {
       machineConfig,
       motorIds,
       speedup,
-      delayFn: sleep,
+      delayFn: send.simulationClock?.sleep ?? sleep,
+      onPoint: args.headlessUrl ? async (point, config) => {
+        await fs.appendFile(`${args.outputFile}.partial-points.jsonl`, `${JSON.stringify({ backend: send.simulationClock.backend, service_url: args.headlessUrl, config, point })}\n`);
+      } : undefined,
     });
     success = true;
   } catch (err) {

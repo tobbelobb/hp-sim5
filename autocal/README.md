@@ -38,6 +38,67 @@ PYCODE
 
 ## Quick start (simulation)
 
+Run complete simulated full-auto calibration without a browser:
+
+```bash
+.venv/bin/python autocal/autocal.py \
+  --headless-sim --machine-type hangprinter_3 \
+  --dataset output/headless-trial/sweeps.json \
+  --find-radii global --base-radii 30 \
+  --buildup-factor 0.636619 --r0-bounds 39,40
+```
+
+`--headless-sim` implies `--sim` and requires the built RRF simulator and Node
+dependencies. It starts RRF and the production JavaScript physics/collector in
+Node. `hangprinter_3`/`hp3` select the HP3 scene and firmware configuration;
+`hangprinter_4`/`hp4` select HP4. Slideprinter, Cubecorners and Skycam also have
+scene/config pairs. There is currently no headless preset for `hangprinter_5`
+or Klipper. The fitting model still calls both HP3 and HP4 `hangprinter_4`.
+
+Bootstrap, force autotuning, default point counts/noise sampling, fitting,
+adaptive sweep selection and automatic stopping use the existing full-auto
+loop. At acceptance, the headless backend applies both M669 and M666. One world
+continues across collections and fitting passes. Collector waits advance fixed
+physics steps; settling/noise timestamps use simulation time. `--speedup` retains
+its collector timing semantics and is independent of Node's wall throughput.
+
+Dataset/replay, fitting, logging, `--no-collect`, `--hp-sim-reset`, configuration
+overrides and raw `--collector-args` work as usual. `--hp-sim-reset` resets once
+before the first collection. Owned services stop at exit; `--keep-sim-alive`
+retains them after a successful run. Explicit `--server` or
+`--no-spawn-rrf-simulator` uses an existing RRF service, which autocal does not
+stop. Its reported initial/final firmware parameters are captured separately
+from the requested configuration file.
+
+The printed `<dataset-stem>.headless/manifest.json` records backend, scene,
+baked scene, configuration, RRF and source hashes, service ownership, simulated
+and wall time, stopping reason and applied parameters. Repeated invocations
+retain numbered artifact directories. Each collector output has an adjacent
+`<output>.partial-points.jsonl` with completed measurements and their sweep
+configuration/service identity, including on failure or interruption. Partial
+journals are evidence; they are not complete datasets or resumable worlds.
+
+Verification includes a fresh HP3 global-radius run through normal automatic
+acceptance and independent three-sweep Chromium/Node collection with identical
+forces/span and the default 10 points per direction (60 points total):
+
+```bash
+.venv/bin/python -m pytest autocal/tests/test_headless_sim.py -q -m slow
+```
+
+The matched-input comparison allows three RRF reporting quanta (0.03 degrees)
+for raw encoders and noise means/deviations, 0.01 mm for collected
+lengths/setpoints, and one 2 ms fixed step for sample durations. Timestamps must
+be finite and monotonic; absolute timestamp differences are reported separately
+because independent settling can cross a quiet-window boundary later.
+Force/span selection is held
+fixed for parity; independent adaptive autotuning can choose different spans.
+The fresh full-auto test separately exercises default autotuning, later sweep
+selection, patience stopping, final firmware application and process cleanup.
+Automatic completion does not guarantee calibration accuracy: inspect the
+solver's reported fit quality and uncertainty.
+See [measured verification results](../research/headless-autocal-verification.md).
+
 For autonomous headless HP3/HP4/RRF research, use
 [`hp-sim5-research-agent`](../research/README.md) and its `start_collection` MCP
 operation. Poll the returned job with `collection_status`.

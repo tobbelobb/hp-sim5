@@ -4,6 +4,7 @@ import atexit
 import copy
 import sys
 import time
+from contextlib import nullcontext
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -148,6 +149,7 @@ def full_auto_loop(
     config: Optional[str] = None,
     rrf_config: Optional[str] = None,
     klipper_config: Optional[str] = None,
+    headless_sim=None,
 ) -> int:
     if work_dataset is not None:
         dataset_path = Path(work_dataset)
@@ -226,6 +228,13 @@ def full_auto_loop(
         _log_console(_solution_quality_message(summary_fit_score_for_quality))
 
         skip_sim_send = bool(sim and no_collect and not server_explicit)
+        if headless_sim is not None and not no_collect:
+            try:
+                headless_sim.apply_parameters([m669, m666])
+            except Exception as exc:
+                _log_console(f"; failed to apply parameters: {exc}")
+                return _finalize(1)
+            return _finalize(0)
         if m669:
             if skip_sim_send:
                 _log_console(f"; --sim + --no-collect set; skipping M669 send.")
@@ -377,6 +386,19 @@ def full_auto_loop(
         _cleanup()
         return code
 
+    def _run_collection_command(cmd):
+        if headless_sim is None:
+            subprocess.run(cmd, check=True, stdout=log_handle, stderr=log_handle)
+            return
+        process = subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=log_handle,
+                                   stderr=log_handle, start_new_session=True)
+        try:
+            code = process.wait()
+            if code:
+                raise subprocess.CalledProcessError(code, cmd)
+        finally:
+            _stop_process(process)
+
     if not dataset_path.exists():
         dataset_path.parent.mkdir(parents=True, exist_ok=True)
         bootstrap_cfg = dataset_path.with_suffix(".bootstrap_cfg.txt")
@@ -436,7 +458,7 @@ def full_auto_loop(
         _log_line(f"; bootstrapping dataset ({bootstrap_sweep_count} sweeps, auto size-tune):")
         _log_line(";   " + " ".join(cmd))
         with _log_context():
-            subprocess.run(cmd, check=True, stdout=log_handle, stderr=log_handle)
+            _run_collection_command(cmd)
         reset_pending = False
         _log_line(f"; bootstrap dataset written to {dataset_path}")
 
@@ -720,6 +742,8 @@ def full_auto_loop(
         return None
 
     def _accept_best(reason: str) -> int:
+        if headless_sim is not None:
+            headless_sim.manifest["stop_reason"] = reason
         summary_plan, summary_meta = _select_history_summary_candidate(reason=reason)
         if summary_plan is None:
             _log_console(f"; full-auto: stop requested ({reason}) but no best plan available; stopping.")
@@ -1528,6 +1552,8 @@ def full_auto_loop(
             )
 
             if decision == "accept":
+                if headless_sim is not None:
+                    headless_sim.manifest["stop_reason"] = "patience-or-threshold"
                 summary_plan, summary_meta = _select_history_summary_candidate(reason="patience-or-threshold")
                 if summary_plan is None:
                     _log_console("; full-auto: no best plan available; stopping.")
@@ -1598,7 +1624,7 @@ def full_auto_loop(
             _log_line(f"; collecting next sweep ({selected_id})")
             _log_line(f"; running: {' '.join(str(x) for x in cmd)}")
             with _log_context():
-                subprocess.run(cmd, check=True, stdout=log_handle, stderr=log_handle)
+                _run_collection_command(cmd)
             reset_pending = False
 
             base_dataset = _load_json(work_path)
@@ -1624,6 +1650,8 @@ def full_auto_loop(
         return _accept_best("Ctrl-C")
 
     _log_line(f"; reached max steps; dataset={work_path}")
+    if headless_sim is not None:
+        headless_sim.manifest["stop_reason"] = "max-steps"
     _log_console(f"; reached max steps; dataset={work_path}")
     _log_console(_solution_quality_message(best_score_ui if np.isfinite(best_score_ui) else None))
     return _finalize(0)
@@ -1631,7 +1659,18 @@ def full_auto_loop(
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_semi_auto_parser()
+    parser.add_argument("--headless-sim", action="store_true",
+                        help="Run simulated RRF and production JS physics/collector in Node without a browser; implies --sim")
     args = parser.parse_args(argv)
+    from autocal.headless_sim import HeadlessSimulation, MACHINES
+    if args.headless_sim:
+        if args.firmware != "rrf":
+            parser.error("--headless-sim requires --firmware rrf")
+        if args.machine_type not in MACHINES:
+            parser.error(f"No headless scene/configuration for {args.machine_type}")
+        args.sim = True
+        if args.dataset is None:
+            args.dataset = Path("autocal/data/default_dataset.json")
     _apply_optimizer_mode_env(str(args.optimizer_mode))
     spool_opts = _resolve_spool_cli_options(parser, args)
     machine_type = _normalize_machine_type(str(args.machine_type))
@@ -1653,6 +1692,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         collector_args.append("--project-zero-tension")
     if bool(args.debug_sweep_actions) and not _arg_has_flag(collector_args, "--debug-sweep-actions"):
         collector_args.append("--debug-sweep-actions")
+    context = HeadlessSimulation(args, collector_args) if args.headless_sim and not args.no_collect else nullcontext()
+    with context as headless:
+        if headless is not None:
+            print(f"; headless simulator manifest: {headless.directory / 'manifest.json'}")
+        result = _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_args, headless)
+        if headless is not None and result:
+            headless.manifest["exit_code"] = result
+        return result
+
+
+def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_args, headless):
     return full_auto_loop(
         work_dataset=args.dataset,
         machine_type=str(machine_type),
@@ -1721,8 +1771,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         config=args.config,
         rrf_config=args.rrf_config,
         klipper_config=args.klipper_config,
+        headless_sim=headless,
     )
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        exit_code = main()
+    except KeyboardInterrupt:
+        print("; interrupted; completed measurements and partial-point journals retained", file=sys.stderr)
+        exit_code = 130
+    except (OSError, RuntimeError, subprocess.CalledProcessError) as exc:
+        print(f"; autocal failed: {exc}", file=sys.stderr)
+        exit_code = 1
+    raise SystemExit(exit_code)

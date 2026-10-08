@@ -1,0 +1,80 @@
+# Headless autocal verification
+
+The implementation uses the production cable baker, machine scene pipeline,
+simulation system registration and command/encoder controller in Node. The
+ordinary collector CLI uses a remote simulation clock; the full-auto fitting,
+selection, recovery and patience logic is unchanged. No browser or independent
+Python physics engine runs during headless calibration.
+
+## Verification contract
+
+`autocal/tests/test_headless_sim.py` includes two extended tests:
+
+- A fresh HP3 dataset with global radius fitting and the example bounds,
+  default collection and fitting settings, no shortened sweep count, manual
+  stop or acceptance threshold. It must collect beyond bootstrap, reach normal
+  automatic acceptance, apply/read back M669 and M666, and stop owned services.
+  This same test runs independent matched collection through Chromium and Node:
+  three paired sweeps, ten points per direction, sixty measurements per backend.
+- SIGTERM during a real bootstrap after a completed measurement. The journal,
+  interrupted manifest and final simulation time must survive, and all owned
+  services must exit.
+
+For matched collection, both fresh worlds use identical firmware config,
+forces, 300 mm span, spool overrides, role configurations, default sampling and
+fixed-step waits. Forces come from the full-auto run. Holding these inputs fixed
+separates backend parity from independent adaptive tuning/span decisions.
+The browser uses the production ECS/system pipeline and actual external command
+WebSocket controller in Chromium, with bounded stepping controlled by the
+collector clock rather than animation frames. This verifies physics/collector
+measurements, not UI rendering, browser workers or foreground-tab scheduling.
+
+RRF formats encoders to hundredths of degrees. The measurement contract allows
+0.03 degrees for raw angles and noise means/deviations, 0.01 mm for lengths and
+setpoints, and one 2 ms physics step for sample durations. Field shapes, sweep
+roles, point counts and sample metadata must match. Simulation timestamps must
+be finite and monotonic. Absolute timestamp offsets are diagnostics: small
+differences can make an independent settling trial cross a quiet-window
+boundary later. No wall-time criterion decides physical settling.
+
+```bash
+.venv/bin/python -m pytest autocal/tests/test_headless_sim.py -q -m slow
+npx jest --runInBand autocal/control/tests/primitives \
+  autocal/control/tests/behaviors autocal/control/tests/cli
+```
+
+## Local results, 2026-10-08
+
+The final fresh HP3 global-radius run completed normally after nine iterations
+and eleven sweeps (220 points), applying a global radius of 39.02 mm and
+Q=0.636619. It used 6487.832 simulated seconds and 435.65 wall seconds, including
+fitting. Both parameter commands were read back from firmware. The solver
+reported an ideal fit score of 1.039. The fitted D height, 1852.29 mm, differs
+from the preset's nominal 1900 mm; a low fit score does not by itself establish
+parameter accuracy or hardware validity. Earlier trials, before routing the
+size-tuning ramp wait through the simulation clock, stopped after six iterations
+and eight sweeps with radius 39.16 mm and a concerning score of 25.01. Their
+evidence is retained rather than substituted for the final run.
+
+Initial independent adaptive Chromium/Node runs selected different spans and
+failed a strict parity comparison (up to 1.60745 mm length difference). Matched
+forces/span reduced observed differences to 0.02 degrees raw angles, 0.005236 mm
+lengths and 0.01 degrees noise means. A 1000 ms timestamp offset followed an
+independent settling boundary. The first assertion of identical timestamps
+failed; the documented contract separates these offsets from measurement error.
+The final extended suite passed both tests in 573.81 seconds, including the
+clock-corrected fresh full-auto run, matched-input parity and interruption
+cleanup. Its [parity result](../output/headless-verification/final-clock/test_fresh_hp3_full_auto_globa0/browser/parity.json)
+and [full-auto manifest](../output/headless-verification/final-clock/test_fresh_hp3_full_auto_globa0/hp3/sweeps.headless/manifest.json)
+record these bounds and the source hashes.
+
+The live interruption test passed and retained partial points while stopping
+owned services. Fast Python checks passed 75 tests; collector regressions passed
+55 tests across 13 suites, including motion, settling and noise sampling with
+the simulation clock. The two extended checks passed too.
+
+Artifacts are retained in [headless verification output](../output/headless-verification/).
+The [notebook](../output/research/headless-autocal-validation/research.md) records
+failed trials, tolerance decisions and completed work. Per-run manifests contain
+the actual scene/config/source hashes and clock bounds; earlier failed runs
+remain in numbered directories.
