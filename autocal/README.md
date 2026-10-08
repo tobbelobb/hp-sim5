@@ -2,17 +2,17 @@
 
 ![Autocal's own logo](autocal_logo_shine.jpeg)
 
-This directory contains the fully automated elliptical feature calibration pipeline. The default workflow uses active learning and pointwise robust fitting.
+Autocal collects circular sweeps and fits anchor positions from their ellipse geometry.
+It chooses new sweeps by information gain. It can also fit spool radii and buildup.
+At final acceptance, it checks saved estimates against sweeps collected after their fit.
 
 ## Python dependencies
 
-The Python dependencies for this `autocal/` subtree are covered by the root
-`requirements.txt`.
+The root `requirements.txt` covers the Python dependencies in `autocal/`.
 
-JAX is optional but recommended for the default `--optimizer-mode fast` path.
-Autocal explicitly uses JAX on the CPU and falls back to numerical gradients
-when JAX is unavailable. Use `--optimizer-mode legacy` to disable the JAX
-objective explicitly.
+JAX is optional. The default `--optimizer-mode fast` uses it on the CPU.
+Autocal falls back to numerical gradients when JAX is unavailable.
+Use `--optimizer-mode legacy` to disable the JAX objective.
 
 From the root of the hp-sim5 repo, run:
 
@@ -20,7 +20,7 @@ From the root of the hp-sim5 repo, run:
 .venv/bin/python -m pip install -r autocal/requirements-jax-cpu.txt
 ```
 
-Quick verification if jax is present:
+Check the installed JAX version:
 
 ```bash
 .venv/bin/python - <<'PYCODE'
@@ -32,10 +32,12 @@ PYCODE
 
 ## Quick start (simulation)
 
-For autonomous native HP4/RRF research, use
-[`hp-sim5-research-agent`](../research/README.md) and its `collect_sweeps` MCP
-operation. The launcher supervises firmware and a persistent Python world;
-collector waits advance simulation time. `--doctor` proves actual collection and
+For autonomous headless HP3/HP4/RRF research, use
+[`hp-sim5-research-agent`](../research/README.md) and its `start_collection` MCP
+operation. Poll the returned job with `collection_status`.
+The launcher supervises firmware and a continuing physics world.
+Collection defaults to the production JavaScript engine in headless Node.
+Collector waits advance simulation time. `--doctor` checks collection and
 autocal measurement ingestion. See the [native collection guide](../research/native-collection.md)
 for encoder references, force settings and calibration limits.
 
@@ -43,7 +45,7 @@ Follow the root README to start Vite. For a Slideprinter, open
 <http://localhost:5173/hp-sim5/hp-sim/>. For a 3D machine, use
 <http://localhost:5173/hp-sim5/hp-sim-3d/>.
 
-Autocal simulation requires a WebSocket connection to the open simulator. Add
+Browser simulation requires a WebSocket connection to the open simulator. Add
 `?gcode_ws=ws://localhost:8790` to the selected simulator URL; for example:
 <http://localhost:5173/hp-sim5/hp-sim/?gcode_ws=ws://localhost:8790>.
 
@@ -59,18 +61,37 @@ Initiate simulated full-auto calibration with:
   --speedup 25
 ```
 
-`--speedup` is forwarded to the collector automatically; use `--collector-args` only for other raw collector flags.
+`--speedup` is forwarded to the collector.
+Use `--collector-args` for other raw collector flags.
 
 Replace `slideprinter` with your machine type: `slideprinter`, `hangprinter_4`,
 `hangprinter_5`, `cubecorners`, or `skycam`. The aliases `hp3`, `hp4`, and
 `hangprinter_3` currently normalize to `hangprinter_4`.
-Keep the hp-sim web page visible during the whole procedure, otherwise your browser might pause the simulation and break the autocalibration.
+Keep the hp-sim page visible during calibration.
+The browser may pause the simulation when the page is hidden.
 
 If everything went well you should see something like this:
 ![Image of autocal step1 finished](doc/hp-sim-after-autocal.png)
 
-The default working dataset is `autocal/data/default_dataset.json`. To inspect
-residuals with the currently wired output path, add:
+The default working dataset is `autocal/data/default_dataset.json`.
+Missing datasets are bootstrapped. Existing datasets with more than three sweeps
+are replayed from their first three sweeps in a temporary file.
+After replay, the loop can collect new sweeps into the original dataset.
+
+To fit stored data without starting firmware or collecting new sweeps, use an
+existing dataset:
+
+```bash
+.venv/bin/python autocal/autocal.py \
+  --sim --no-collect \
+  --machine-type slideprinter \
+  --dataset autocal/data/default_dataset.json
+```
+
+Patience or a stop threshold can end replay before all stored sweeps are used.
+`--no-collect` does not prevent bootstrap if the dataset is missing.
+
+To inspect residuals from the default anchor-only fit, add:
 
 ```bash
 --residuals-csv autocal/data/default_dataset.residuals.csv
@@ -84,26 +105,45 @@ Then render a histogram with:
   --output autocal/data/default_dataset.residuals.png
 ```
 
+The default spool-fit schedule currently skips residual CSV and report output.
+See [the detailed guide](README_elliptical_feature_calibration.md#residuals-and-logs)
+for this limitation.
+
 Here's a demo of the autocal loop on a simulated Slideprinter: https://youtu.be/XLmpuAQYbG4
 
 
 ## Typical workflow (real machine)
 
-- Remove `--sim` and any `--speedup` args.
-- The current modular entrypoint is `autocal/autocal.py`, which runs the full-auto loop.
+Remove `--sim` and `--speedup` to use a real machine:
 
 ```bash
 .venv/bin/python autocal/autocal.py \
   --machine-type slideprinter
 ```
 
-More quick tips:
-- Use `--dataset` to choose where the working dataset is stored, or to continue working on a pre-existing dataset.
-- Use `--firmware klipper` for the Klipper API-mode simulation backend; RRF is the default.
+The loop stops after three non-improving iterations by default.
+Ctrl-C during the loop requests best-so-far acceptance.
+Final selection favors successful held-out predictions when available.
+These scores measure fit and prediction quality. They do not prove anchor accuracy.
+
+On acceptance, RRF receives M669 for the selected anchors.
+Fitted M666 spool settings are printed but are not sent automatically.
+Klipper skips the M669 send.
+Reaching `--max-steps` ends the loop without applying calibration.
+
+Useful options:
+
+- `--dataset` chooses the working dataset.
+- `--firmware klipper` selects the Klipper API-mode backend. RRF is the default.
 - `--solve-optimizer` accepts `lbfgsb` (default), `lm`, or `trf`.
-- Let the loop collect sweeps and stop when you are satisfied with the cost and residuals.
-- There's also a `--shotgun` flag that makes the autocal loop try harder.
+- `--find-radii` and `--find-buildup-factor` enable spool fitting.
+  Each accepts `global` or `per-anchor`. Both default to `off`.
+- `--sparse-recovery` adds a sparse seed fit during underconstrained recovery.
+- `--shotgun` adds solver variants from `shotgun.conf`.
 
 
 For full details and log interpretation, see
 [`README_elliptical_feature_calibration.md`](README_elliptical_feature_calibration.md).
+The [algorithm overview](optimization_algorithm_overview) describes the loops.
+The [objective overview](objective_functions_overview) explains optimization,
+patience, prediction ranking, and displayed quality.

@@ -1,158 +1,147 @@
-There are multiple objectives in play. They are related, but not identical.
+# Autocal objectives and scores
 
-Recommended terminology:
+Autocal uses different objectives to propose, accept, and select parameters.
+Lower scores are better. The next-sweep information score is the exception.
 
-- spool seed prefit
-- spool step
-- anchor proposal solve
-- anchor acceptance / rollback
-- final uniform scale polish
-- full-auto run selection
+## Solver objectives
 
-1. Seed anchor calibration
+The seed anchor solve uses `calibrate_elliptical(...)` in `calibrate.py`.
+It compares measured points with the ellipse predicted by the anchors.
+The final anchor solve after each filter pass uses the same solver.
 
-- Before spool fitting starts, `_plan_next_ellipse_sweep(...)` runs an initial
-  `calibrate_elliptical(...)` to get seed anchors on the base dataset.
-- Objective optimized: the ellipse solver's own internal objective.
+The spool seed prefit uses an ellipse-fit proxy plus spool priors.
+The proxy fits ellipses to transformed length deltas without squaring them.
+It combines sweep RMS residuals with a robust loss and an invalid-sweep penalty.
+This prefit changes spool parameters only.
 
-2. Spool seed prefit
+`--objective-schedule` selects an objective for each spool/filter pass.
+It controls both the spool step and anchor proposal generation.
 
-- This is an optional spool-only seed improvement step before the main
-  alternating rounds.
-- Objective optimized:
-  - ellipse proxy score over the transformed sweeps
-  - plus `_prior_cost(...)`
-- It does not move anchors.
+| ID / word | Spool step, with anchors fixed | Anchor proposal, with spool parameters fixed |
+| --- | --- | --- |
+| `0` / `prefit` | Ellipse-fit proxy plus priors | Mismatch between predicted and data-fitted ellipse coefficients |
+| `1` / `pointwise` | `_data_cost(...)` plus priors | Pointwise forward-model solve |
+| `2` / `position` | Position-reconstruction spread plus priors | Position-reconstruction spread |
 
-3. Bootstrap anchor refresh
+Objective `2` uses the legacy forward transform. It sums reconstruction spread
+and penalizes invalid points. It falls back to `_data_cost(...)` when no valid
+position score is available. Objective `0` anchor scoring also falls back to
+`_data_cost(...)` when ellipse comparison is unavailable.
 
-- This is a one-time anchor recalibration before the main alternating rounds.
-- Proposal generation now follows the current `--objective-schedule` entry:
-  - objective `0`: predicted-ellipse vs data-fit ellipse mismatch
-  - objective `1`: `calibrate_elliptical(...)` / pointwise forward-model objective
-  - objective `2`: position-reconstruction / forward-transform spread
-- Acceptance is by `_data_cost(...)` only, tested at `alpha in {1.0, 0.5, 0.25}`.
+The default schedule is `1,1,1,1`.
+The schedule does not replace the seed solve or final per-pass anchor solve.
+For objective `1`, `lm` anchor proposals use a single least-squares stage.
+Other objective `1` proposals use `calibrate_elliptical(...)`.
 
-4. Spool step
+## Acceptance inside spool fitting
 
-- Anchors are fixed.
-- Objective optimized: `_data_cost(...) + _prior_cost(...)`
-- This is the objective minimized by the coordinate-descent spool solver.
+`_data_cost(...)` is a noise-normalized ellipse cost plus a trimmed-risk term.
+`_spool_rank_score(...)` builds a layered metric from residual diagnostics.
+It blends that metric with trimmed risk, then maps it to a ranking scalar.
+These functions share residuals but produce different scores.
 
-5. Anchor proposal solve
+The bootstrap anchor refresh tests move fractions `1.0`, `0.5`, and `0.25`.
+It accepts an improvement in `_data_cost(...)` only.
 
-- Spool parameters are fixed.
-- Proposal generation follows the current `--objective-schedule` entry:
-  - objective `0`: predicted-ellipse vs data-fit ellipse mismatch
-  - objective `1`: `calibrate_elliptical(...)` / pointwise forward-model objective
-  - objective `2`: position-reconstruction / forward-transform spread
-- Final acceptance is still separate from proposal generation and still uses the
-  rank-first comparator with `_data_cost + prior` as tie-break.
+Each spool step minimizes the scheduled objective plus priors.
+An anchor proposal is attempted only after enough improvement in that objective.
+Anchor moves and whole rounds use `_rank_better(...)` for acceptance.
+It compares `_spool_rank_score(...)` first.
+Within its rank tolerance, it compares `_data_cost(...) + _prior_cost(...)`.
+A rejected round rolls back both anchors and spool parameters.
+The best solution within a filter pass uses this same comparator.
 
-6. Anchor acceptance / rollback
+The final uniform scale polish searches a shared scale for radii and anchors.
+Buildup stays fixed. Its search minimizes `_data_cost(...) + _prior_cost(...)`.
+The total cost must improve. The result must also pass `_rank_better(...)`.
 
-- Candidate anchor updates are tested at `alpha in {1.0, 0.5, 0.25}`.
-- Primary comparator: `_spool_rank_score(...)`
-- Tie-breaker: total cost = `_data_cost(...) + _prior_cost(...)`
-- So accepted anchor moves are decided by rank first, total objective second.
+## Spool priors
 
-7. Final uniform scale polish
+Priors apply to spool parameters. They do not directly regularize anchors.
 
-- It searches a single uniform scale factor for radii and anchors.
-- Internal search objective: `_data_cost(...) + _prior_cost(...)`
-- Final acceptance is still rank-gated:
-  - first the total objective must improve
-  - then `_rank_better(...)` must still prefer the polished candidate
+- The optional radius prior keeps radii near the base radii.
+- The buildup prior keeps buildup near its modeled seed. Its default sigma is
+  `0.1` when buildup fitting is enabled.
+- The radius-pair prior keeps per-anchor radii near their mean.
+  It applies even when no radius prior sigma is supplied.
 
-8. Plan-level scoring
+## Plan scores and patience
 
-- `_plan_score_ui(...)` returns:
-  - `raw_fit_score_ui`
-  - `rank_score`
-  - `score_basis`
-- In layered mode:
-  - `raw_fit_score_ui` is the calibrated fit/UI number from
-    `_compute_score_ui_layered(...)`
-  - `rank_score` is the monotone ranking scalar derived from the same layered
-    internal metric
-- These two numbers are related, but they are not interchangeable:
-  - `raw_fit_score_ui` is for interpretation
-  - `rank_score` is for candidate ordering
+`_plan_score_ui(...)` returns `raw_fit_score_ui`, `rank_score`, and `score_basis`.
+Without spool fitting, the score basis is `standard-noise`.
+Both scores then use the primary noise-normalized cost.
 
-9. Full-auto history selection
+With spool fitting, the score basis is `layered-calibrated`.
+It combines residual diagnostics, trimmed risk, and structural penalties.
+`raw_fit_score_ui` is the per-plan quality score.
+`rank_score` orders run variants within an iteration.
+Relative uncertainty and primary cost break ties.
+Constrained variants take priority over variants with an underconstrained sentinel.
 
-- Full-auto does not stop at raw `rank_score`.
-- `_full_auto_history_selection_score(...)` builds:
-  - `history_rank_score = rank_score + iteration_adjust + coverage_adjust`
-- `history_rank_score` is used for:
-  - `The best try so far.`
-  - patience reset / patience countdown
-  - final best-so-far selection when full-auto stops
+Full-auto computes a history score for the selected plan from each iteration:
 
-10. Full-auto displayed fit/UI score
+```text
+history_rank_score = rank_score + iteration_adjust + 0.20 * coverage_adjust
+```
 
-- In layered full-auto mode, the displayed `fit_score_ui` shown in:
-  - selected-run log lines
-  - the calibration summary
-  is derived from `history_rank_score`, not from `raw_fit_score_ui`
-- That mapping is performed by:
-  - `_fit_score_ui_from_history_rank_score(...)`
-  - `_full_auto_display_fit_score_ui(...)`
-- The mapping is tuned so the user-facing interpretation bands remain useful:
-  - `< 2` near-perfect
-  - `2 to 5` useful
-  - `5 to 10` concerning
-  - `> 10` probably unusable
-- The raw plan score is still logged separately as `raw_fit_score_ui`
+The iteration adjustment gives a small early bonus and a growing linear penalty.
+The coverage adjustment rewards retained observations and penalizes filtering.
+`history_rank_score` controls "The best try so far" and patience resets.
+Prediction scores do not control patience.
 
-About `_data_cost` vs `_spool_rank_score`
+## Final history selection by prediction
 
-- They both come from the same residual engine, but they are not the same
-  derived scalar.
+`_select_history_summary_candidate(...)` runs when full-auto accepts a result.
+It evaluates saved, frozen models on whole sweeps absent from their training IDs.
+It uses the latest saved history plan's datasets.
+Stored replay sweeps that have not entered that dataset are not used.
+Sweeps trimmed during fitting still count as training sweeps.
 
-- `_data_cost(...)`
-  - starts from the noise-normalized ellipse cost
-  - adds a risk blend term
-  - is used for spool optimization, bootstrap refresh acceptance, and scale
-    polish search
+`score_future_sweeps(...)` in `predictive_validation.py` computes two scores:
 
-- `_spool_rank_score(...)`
-  - builds a layered ranking metric from the noise diagnostics
-  - blends that with risk
-  - is used for anchor acceptance / rollback and final best-solution selection
-    inside the spool-fitting pipeline
+- `heldout_prediction` uses the raw dataset and the candidate's own spool model.
+  It uses that candidate's flex, spring, noise-mean, residual, and sigma settings.
+- `anchor_comparison` uses the latest saved plan's transformed estimation dataset.
+  All candidates share this length model and the helper's default validation settings.
+  This score compares anchors before considering each candidate's own-model score.
 
-So: same residual source, different derived objective.
+Validation keeps pointwise and sweep filtering off. It uses a robust loss.
+It does not refit anchors or spool parameters. One held-out sweep is enough.
+Every observation must produce a residual. Invalid or incomplete predictions
+receive infinity. No held-out sweeps means the score is unavailable.
 
-What "priors" mean here
+If any candidate has a finite own-model prediction, only those candidates compete.
+If held-out predictions exist but all fail, calibration is not applied.
+If no candidate has held-out sweeps, selection falls back to history ranking.
 
-- Priors regularize spool parameters only.
-- They apply to:
-  - fitted radii relative to the base radii
-  - fitted buildup relative to the modeled buildup seed
-  - pairwise radius similarity when fitting per-anchor radii
-- Priors do not directly regularize anchors.
+The final ordering is:
 
-Do spool parameters and anchors optimize the same metric?
+1. `anchor_comparison`
+2. `heldout_prediction`
+3. `history_rank_score`
+4. `rank_score`
+5. Relative uncertainty
+6. Primary cost
+7. Later iteration
 
-- No.
-- Spool step optimizes `_data_cost + prior`.
-- Anchor proposal solve optimizes the schedule-selected anchor objective.
-- Final acceptance is by rank comparator with total-cost tie-break.
+Candidates can have different numbers of held-out sweeps.
+These prediction scores are residual costs, not the displayed quality score.
 
-Important current detail about `fit_structure`
+## Displayed quality and structural penalties
 
-- `normalized_sweep_bias` now affects:
-  - layered plan / full-auto scoring
-- `--fit-structure 2` is now only an additional above-reference sweep-bias
-  penalty on top of that always-on term.
+In layered full-auto mode, displayed `fit_score_ui` comes from `history_rank_score`.
+In standard mode, it equals `raw_fit_score_ui`.
+It is not remapped from either prediction score.
+The interpretation bands are below `2` (ideal), `2` to below `5` (good),
+`5` to below `10` (usable), and `10` or above (concerning).
+Fit quality does not establish anchor accuracy.
 
-Practical reading guide
+`normalized_sweep_bias` always contributes to layered plan scoring when its
+trimmed-risk scale is available. `--fit-structure 2` adds an above-reference penalty.
+Levels `1` and `3` add tail-ratio and tail-factor penalties. The default is `3`.
+These penalties affect plan ranking and displayed quality.
+They do not affect `_data_cost(...)`, `_spool_rank_score(...)`, or spool priors.
 
-- If you want to know what the inner solver preferred, look at `rank_score`.
-- If you want to know what full-auto history preferred across multiple
-  iterations, look at `history_rank_score`.
-- If you want to know what the user saw in the summary, look at the displayed
-  `fit_score_ui`.
-- If you want the older per-plan interpretability number for diagnostics, look
-  at `raw_fit_score_ui`.
+The implementation is in `filter_pass.py`, `initialize_pass.py`,
+`alternating_refinement.py`, `scale_polish.py`, `_autocal_common.py`, and `autocal.py`.
+See `optimization_algorithm_overview` for the loop structure.
