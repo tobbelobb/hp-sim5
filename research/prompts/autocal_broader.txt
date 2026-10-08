@@ -1,0 +1,31 @@
+Improve encoder-based CDPR autocalibration in hp-sim5. The current algorithm can
+be slow, fragile, or choose worse anchors because its selection score disagrees
+with physical accuracy. First reproduce and measure those cases.
+
+Investigate ideas for improving the autocal speed, robustness, and/or user experience.
+Preserve the one-click user experience and automatic stopping when finished.
+
+Gather ideas on how one could calibrate a CDPR based solely on encoder data first.
+Use every too here, like web search and first principles thinking.
+Once you've arrived at a list of ideas, it is good to grep through old research reports in output/research/sessions/ to see if earlier runs explored similar ideas, and what their findings were.
+
+Then learn about how the current autocal code works.
+It is the state-of-the art that we're trying to improve upon.
+Good starting points for such learning are
+ - autocal/README.md
+ - autocal/optimization_algorithm_overview
+ - autocal/objective_functions_overview
+ - and maybe autocal/README_elliptical_feature_calibration.md
+
+Your favourite ideas might be better than those already researched or implemented.
+Record the leading hypotheses and test the promising ones on
+recorded and synthetic data, unless your improvement idea requires another way of collecting data.
+Note down your disproved hypotheses as well, with very short notes in the output report.
+
+Use simulated collection to test your ideas when warranted.
+Code for collecting simulated calibration data in the browser environment are available in the autocal part of the repo.
+Invent your own ways of collecting synthetic calibration data if required.
+
+Implement the best supported change.
+If data collection routines are kept similar or equivalent to your changed algorithm then you can run the relevant autocal regressions.
+Otherwise find ways compare your changed or new algorithm to the old one.
