@@ -238,8 +238,12 @@ RRF/tests/run_logo_slideprinter_determinism_test.sh
 ### Autocal e2e tests
 There's also a bunch of generated autocal datasets, which you can try to solve against with:
 ```bash
-.venv/bin/python autocal/tools/regress_calibration_logs.py --no-fail-score-mismatch --keep-going
+.venv/bin/python autocal/tools/regress_calibration_logs.py
 ```
+By default, all datasets run in parallel even if one fails, and score/fit
+direction mismatches are reported as warnings. Use `--no-keep-going` to run
+sequentially and stop after the first failure, and `--fail-score-mismatch` to
+make direction mismatches fail the run. Both options can be used together.
 
 ## hp-sim5 context: the Hangprinter Project
 hp-sim5 is part of an effort to automate the Hangprinter Project.

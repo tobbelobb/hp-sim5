@@ -24,14 +24,18 @@ True values (simulation ground truth) used for "closer/further" reporting
 - buildup factor is provided via CLI and not evaluated here
 
 Exit code
-- 0 if everything is EXACTLY EQUAL, or changed but stays within tolerance (default 10mm total) AND
-    no score/fit direction mismatches
+- 0 if everything is EXACTLY EQUAL, or changed but stays within tolerance (default 0.01mm total)
 - 1 otherwise
+- Score/fit direction mismatches are reported as warnings by default;
+  --fail-score-mismatch makes them failures.
+
+All datasets run in parallel by default. Use --no-keep-going to run sequentially
+and stop after the first failure.
 
 Within-run ranking/ground-truth disagreements and selection regret are also
 reported as diagnostics, even when generated and reference logs are identical.
 
-Tip: put this file somewhere like tools/regress_autocal.py and run from repo root.
+Run from the repo root: .venv/bin/python autocal/tools/regress_calibration_logs.py
 """
 
 from __future__ import annotations
@@ -1236,8 +1240,18 @@ def main() -> int:
     ap.add_argument("--data-dir", type=str, default="autocal/data/references", help="Directory containing the datasets (.json).")
     ap.add_argument("--ref-dir", type=str, default="autocal/data/references", help="Directory containing the reference logs (.log).")
     ap.add_argument("--tol-mm", type=float, default=0.01, help="Tolerance on total parameter distance (anchors + 2*pi*R).")
-    ap.add_argument("--no-fail-score-mismatch", action="store_true", help="Do not fail on score/fit direction mismatch (still reported).")
-    ap.add_argument("--keep-going", action="store_true", help="Run all datasets even if one fails.")
+    ap.add_argument(
+        "--fail-score-mismatch",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Fail on score/fit direction mismatch (default: warn only).",
+    )
+    ap.add_argument(
+        "--keep-going",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Run all datasets in parallel even if one fails (default: enabled); --no-keep-going runs sequentially and stops on failure.",
+    )
     ap.add_argument(
         "--sparse-recovery",
         action="store_true",
@@ -1286,11 +1300,15 @@ def main() -> int:
             print(f"=== {ds} ===")
             print(f"ERROR: dataset not found (tried {data_dir}/{ds}.json and /mnt/data/{ds}.json)")
             overall_ok = False
+            if not args.keep_going:
+                return 1
             continue
         if ref_log_path is None:
             print(f"=== {ds} ===")
             print(f"ERROR: reference log not found for {ds} in {ref_dir} or {alt_dir}")
             overall_ok = False
+            if not args.keep_going:
+                return 1
             continue
         jobs.append((dataset_spec, dataset_path, ref_log_path))
 
@@ -1300,29 +1318,36 @@ def main() -> int:
     if jobs:
         completed_results: List[DatasetRunResult] = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(jobs)) as pool:
-            fut_to_name = {
-                pool.submit(
+            def submit_job(job):
+                dataset_spec, dataset_path, ref_log_path = job
+                return pool.submit(
                     run_one_dataset,
                     dataset_spec=dataset_spec,
                     repo_root=repo_root,
                     dataset_path=dataset_path,
                     ref_log_path=ref_log_path,
                     tol_mm_total=float(args.tol_mm),
-                    fail_on_score_mismatch=not args.no_fail_score_mismatch,
+                    fail_on_score_mismatch=args.fail_score_mismatch,
                     color=color,
                     scratch_root=scratch_root,
                     sparse_recovery=bool(args.sparse_recovery),
-                ): dataset_spec.name
-                for dataset_spec, dataset_path, ref_log_path in jobs
-            }
-            for fut in concurrent.futures.as_completed(fut_to_name):
-                ds = fut_to_name[fut]
+                )
+
+            if args.keep_going:
+                fut_to_name = {submit_job(job): job[0].name for job in jobs}
+                results = ((fut_to_name[fut], fut) for fut in concurrent.futures.as_completed(fut_to_name))
+            else:
+                # Submit the next dataset only after the previous one passed.
+                results = ((job[0].name, submit_job(job)) for job in jobs)
+            for ds, fut in results:
                 try:
                     result = fut.result()
                 except Exception as exc:
                     print(f"=== {ds} ===")
                     print(f"ERROR: unexpected worker failure: {exc}")
                     overall_ok = False
+                    if not args.keep_going:
+                        break
                     continue
 
                 print("\n".join(result.lines))
@@ -1333,6 +1358,8 @@ def main() -> int:
                 completed_results.append(result)
                 if not result.ok:
                     overall_ok = False
+                    if not args.keep_going:
+                        break
 
         if completed_results:
             completed_sorted = sorted(completed_results, key=lambda r: r.name)

@@ -3,6 +3,8 @@ import math
 import sys
 from pathlib import Path
 
+import pytest
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 MODULE_PATH = Path(__file__).resolve().parents[1] / "tools" / "regress_calibration_logs.py"
@@ -210,6 +212,24 @@ def test_report_dataset_can_colorize_verdicts():
     )
     text = "\n".join(lines)
     assert "\x1b[31mworse\x1b[0m" in text
+
+
+@pytest.mark.parametrize("fail_on_score_mismatch", [False, True])
+def test_report_dataset_score_mismatch_can_warn_or_fail(fail_on_score_mismatch):
+    ref, gen = _parsed(rank_ref=2.0, rank_gen=1.0)
+    ok, lines, _ = rcl.report_dataset(
+        name="demo",
+        ref=ref,
+        gen=gen,
+        dataset_spec=DEMO_DATASET_SPEC,
+        tol_mm_total=10.0,
+        fail_on_score_mismatch=fail_on_score_mismatch,
+        color=False,
+    )
+
+    assert ok == (not fail_on_score_mismatch)
+    assert "rank/true direction mismatches: 1" in "\n".join(lines)
+    assert (" => FAIL" if fail_on_score_mismatch else " (warn-only)") in "\n".join(lines)
 
 
 def test_report_dataset_ignores_extra_generated_iterations_in_true_iter_mean_delta():
@@ -512,6 +532,57 @@ def test_run_autocal_flattens_nested_extra_args(monkeypatch, tmp_path):
     assert "--filter-schedule" in captured["cmd"]
     idx = captured["cmd"].index("--filter-schedule")
     assert captured["cmd"][idx + 1] == "0"
+
+
+@pytest.mark.parametrize(
+    "flags, fail_on_score_mismatch, keep_going",
+    [
+        ([], False, True),
+        (["--no-fail-score-mismatch", "--keep-going"], False, True),
+        (["--fail-score-mismatch"], True, True),
+        (["--no-keep-going"], False, False),
+        (["--fail-score-mismatch", "--no-keep-going"], True, False),
+    ],
+)
+@pytest.mark.parametrize("first_ok, worker_raises", [(False, False), (False, True), (True, False)])
+def test_main_run_options(monkeypatch, tmp_path, flags, fail_on_score_mismatch, keep_going, first_ok, worker_raises):
+    (tmp_path / "autocal").mkdir()
+    (tmp_path / "autocal" / "autocal.py").write_text("# stub\n", encoding="utf-8")
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    specs = [_make_dataset_spec(name=name) for name in ("first", "second")]
+    for spec in specs:
+        (data_dir / f"{spec.name}.json").write_text("{}", encoding="utf-8")
+        (data_dir / f"{spec.name}.full_auto_reference_run_october_7_2026.log").write_text("log", encoding="utf-8")
+    monkeypatch.setattr(rcl, "DATASETS", specs)
+    called = {}
+
+    def fake_run_one_dataset(**kwargs):
+        name = kwargs["dataset_spec"].name
+        called[name] = kwargs["fail_on_score_mismatch"]
+        if name == "first" and worker_raises:
+            raise RuntimeError("worker failed")
+        return rcl.DatasetRunResult(
+            name=name,
+            ok=first_ok or name != "first",
+            lines=[name],
+            generated_log=None,
+            reference_log=kwargs["ref_log_path"],
+            true_err_total_delta=None,
+            true_iter_mean_delta=None,
+            true_gen_iter_std=None,
+            true_gen_iter_count=0,
+        )
+
+    monkeypatch.setattr(rcl, "run_one_dataset", fake_run_one_dataset)
+    monkeypatch.setattr(
+        sys, "argv",
+        ["prog", "--repo-root", str(tmp_path), "--data-dir", "data", "--ref-dir", "data", *flags],
+    )
+
+    assert rcl.main() == (0 if first_ok else 1)
+    expected_names = ["first", "second"] if keep_going or first_ok else ["first"]
+    assert called == {name: fail_on_score_mismatch for name in expected_names}
 
 
 def test_main_run_tracker_summary_includes_true_iter_mean_delta(monkeypatch, tmp_path, capsys):
