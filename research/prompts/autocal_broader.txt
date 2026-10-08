@@ -3,6 +3,7 @@ be slow, fragile, or choose worse anchors because its selection score disagrees
 with physical accuracy. First reproduce and measure those cases.
 
 Investigate ideas for improving the autocal speed, robustness, and/or user experience.
+I'm especially interested in changes that can produce robust results with fewer or in other ways faster to collect data points, since data collection currently takes a long time, and having to redo it would wreck user experience.
 Preserve the one-click user experience and automatic stopping when finished.
 
 Gather ideas on how one could calibrate a CDPR based solely on encoder data first.
