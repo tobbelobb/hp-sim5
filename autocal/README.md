@@ -14,6 +14,12 @@ JAX is optional. The default `--optimizer-mode fast` uses it on the CPU.
 Autocal falls back to numerical gradients when JAX is unavailable.
 Use `--optimizer-mode legacy` to disable the JAX objective.
 
+JAX saves compiled CPU objectives in `output/autocal-jax-cache`.
+Later launches with matching solver settings and data shapes can reuse them.
+The first run still compiles; caching does not change calibration or stopping.
+Set `JAX_COMPILATION_CACHE_DIR` to choose another directory, or
+`JAX_ENABLE_COMPILATION_CACHE=false` to disable it. Cache files can be deleted.
+
 From the root of the hp-sim5 repo, run:
 
 ```bash
