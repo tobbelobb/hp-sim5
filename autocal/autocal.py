@@ -13,7 +13,8 @@ if str(REPO_ROOT) not in sys.path:
 
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.planning_pass import plan_next_ellipse_sweep
-from autocal.predictive_validation import score_future_sweeps
+from autocal.history_selection import evaluate_history_candidates, rank_history_candidates
+from autocal.stage_artifacts import write_stage_artifact
 from autocal.theoretical_ellipse import get_anchor_bounds
 
 
@@ -150,6 +151,7 @@ def full_auto_loop(
     rrf_config: Optional[str] = None,
     klipper_config: Optional[str] = None,
     headless_sim=None,
+    stage_artifacts: Optional[Path] = None,
 ) -> int:
     if work_dataset is not None:
         dataset_path = Path(work_dataset)
@@ -170,6 +172,11 @@ def full_auto_loop(
     def _log_console(msg: str) -> None:
         print(msg)
         _log_line(f"Wrote to console: {msg}")
+
+    if stage_artifacts is not None:
+        stage_artifacts = _unique_path(Path(stage_artifacts))
+        stage_artifacts.mkdir(parents=True)
+        _log_console(f"Writing stage artifacts to: {stage_artifacts}")
 
     def _log_context():
         stack = contextlib.ExitStack()
@@ -575,107 +582,29 @@ def full_auto_loop(
         fallback_meta: Optional[Dict[str, object]] = None,
     ) -> Tuple[Optional[Dict[str, object]], Optional[Dict[str, object]]]:
         if history_candidates:
-            validation_dataset = next(
-                (
-                    candidate["plan"].get("dataset")
-                    for candidate in reversed(history_candidates)
-                    if isinstance(candidate.get("plan"), dict)
-                    and isinstance(candidate["plan"].get("dataset"), dict)
-                ),
-                None,
+            scored = evaluate_history_candidates(
+                history_candidates, collector_args=collector_args_eff,
+                use_flex=use_flex, spring_k_multiplier=spring_k_multiplier,
+                use_noise_mean=use_noise_mean,
+                pointwise_residual_mode=pointwise_residual_mode,
+                sigma_source=sigma_source, log_line=_log_line,
             )
-            comparison_dataset = next(
-                (
-                    candidate["plan"].get("dataset_for_estimation")
-                    for candidate in reversed(history_candidates)
-                    if isinstance(candidate.get("plan"), dict)
-                    and isinstance(candidate["plan"].get("dataset_for_estimation"), dict)
-                ),
-                None,
-            )
-            scored: List[
-                Tuple[
-                    Tuple[float, ...],
-                    Dict[str, object],
-                    Dict[str, Optional[float]],
-                ]
-            ] = []
-            for candidate in history_candidates:
-                candidate_rank = _float_or_none(candidate.get("rank_score"))
-                selection_score, selection_info = _full_auto_history_selection_score(
-                    candidate_rank,
-                    iteration_index=int(candidate.get("iteration", 1)),
-                    coverage_adjust=_float_or_none(candidate.get("rank_coverage_adjust")),
-                )
-                rel_std = _float_or_none(candidate.get("rel_std"))
-                cost = _float_or_none(candidate.get("cost"))
-                prediction = None
-                comparison = None
-                candidate_plan = candidate.get("plan")
-                if isinstance(validation_dataset, dict) and isinstance(candidate_plan, dict):
-                    settings = candidate.get("settings") or {}
-                    prediction = score_future_sweeps(
-                        validation_dataset,
-                        np.asarray(candidate_plan.get("anchors"), dtype=float),
-                        candidate.get("training_sweep_ids", ()),
-                        spool_params=candidate_plan.get("spool_model_params"),
-                        prefer_zero_tension_angles=_arg_has_flag(
-                            collector_args_eff, "--project-zero-tension"
-                        ),
-                        use_flex=bool(settings.get("use_flex", use_flex)),
-                        spring_k_multiplier=float(
-                            settings.get("spring_k_multiplier", spring_k_multiplier)
-                        ),
-                        use_noise_mean=bool(settings.get("use_noise_mean", use_noise_mean)),
-                        pointwise_residual_mode=str(
-                            settings.get("pointwise_residual_mode", pointwise_residual_mode)
-                        ),
-                        sigma_source=str(settings.get("sigma_source", sigma_source)),
-                    )
-                    if prediction is not None and not np.isfinite(prediction[0]):
-                        _log_line(
-                            f"; history_validate: iter={candidate.get('iteration')} "
-                            f"run={candidate.get('run_id')} heldout_sweeps={prediction[1]} "
-                            "failed_prediction=True"
-                        )
-                    if isinstance(comparison_dataset, dict):
-                        # Keep the common length model for comparing anchors.
-                        # A lower own-model residual can instead reflect radius/
-                        # elasticity compensation; it is a veto and tie-breaker.
-                        comparison = score_future_sweeps(
-                            comparison_dataset,
-                            np.asarray(candidate_plan.get("anchors"), dtype=float),
-                            candidate.get("training_sweep_ids", ()),
-                        )
-                sort_key = (
-                    float(comparison[0]) if comparison is not None else float("inf"),
-                    float(prediction[0]) if prediction is not None else float("inf"),
-                    float(selection_score),
-                    float(candidate_rank) if candidate_rank is not None else float("inf"),
-                    float(rel_std) if rel_std is not None else float("inf"),
-                    float(cost) if cost is not None else float("inf"),
-                    -float(candidate.get("iteration", 0)),
-                )
-                selection_info = dict(selection_info)
-                selection_info["prediction_score"] = prediction[0] if prediction else None
-                selection_info["prediction_sweeps"] = float(prediction[1]) if prediction else None
-                selection_info["anchor_comparison_score"] = comparison[0] if comparison else None
-                scored.append((sort_key, candidate, selection_info))
-
-            validated = [
-                item for item in scored
-                if item[2].get("prediction_score") is not None
-                and np.isfinite(item[2]["prediction_score"])
-            ]
-            if validated:
-                scored = validated
-            elif any(item[2].get("prediction_score") is not None for item in scored):
+            if stage_artifacts is not None:
+                write_stage_artifact(stage_artifacts / f"history-{history_total_iterations:03d}.json", "history", {
+                    "candidates": history_candidates, "evaluated": scored,
+                    "validation_options": {
+                        "collector_args": collector_args_eff, "use_flex": use_flex,
+                        "spring_k_multiplier": spring_k_multiplier, "use_noise_mean": use_noise_mean,
+                        "pointwise_residual_mode": pointwise_residual_mode, "sigma_source": sigma_source,
+                    },
+                })
+            scored = rank_history_candidates(scored)
+            if not scored:
                 _log_console(
                     "; full-auto: all held-out predictions failed; "
                     "stopping without applying calibration."
                 )
                 return None, None
-            scored.sort(key=lambda item: item[0])
             chosen = scored[0][1]
             chosen_info = scored[0][2]
             _log_line(
@@ -918,6 +847,10 @@ def full_auto_loop(
                 collector_args=collector_args_eff,
                 scale_fix=settings.get("scale_fix"),
                 fit_structure=settings.get("fit_structure"),
+                stage_artifact=(
+                    stage_artifacts / f"fit-{step:03d}-{cfg_run_id}.json"
+                    if stage_artifacts is not None else None
+                ),
                 initial_guess=initial_guess,
                 initial_radii_mm=initial_radii_mm,
                 initial_buildup_factor=initial_buildup_factor,
@@ -1772,6 +1705,7 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         rrf_config=args.rrf_config,
         klipper_config=args.klipper_config,
         headless_sim=headless,
+        stage_artifacts=args.stage_artifacts,
     )
 
 

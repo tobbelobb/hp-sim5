@@ -538,6 +538,7 @@ def test_run_autocal_flattens_nested_extra_args(monkeypatch, tmp_path):
     "flags, fail_on_score_mismatch, keep_going",
     [
         ([], False, True),
+        (["--jobs", "1"], False, True),
         (["--no-fail-score-mismatch", "--keep-going"], False, True),
         (["--fail-score-mismatch"], True, True),
         (["--no-keep-going"], False, False),
@@ -733,3 +734,10 @@ def test_main_uses_latest_reference_log_when_multiple_logs_exist(monkeypatch, tm
 def test_compute_final_score_uses_requested_formula():
     score = rcl.compute_final_score(total_error_sum=8.0, mean_delta_sum=6.0)
     assert math.isclose(score, 14.0, rel_tol=1e-9, abs_tol=1e-9)
+
+
+def test_main_rejects_nonpositive_jobs(monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["prog", "--jobs", "0"])
+    with pytest.raises(SystemExit) as exc:
+        rcl.main()
+    assert exc.value.code == 2

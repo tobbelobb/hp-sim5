@@ -1258,12 +1258,17 @@ def main() -> int:
         help="Pass --sparse-recovery to each full-auto regression run.",
     )
     ap.add_argument("--color", choices=["auto", "always", "never"], default="auto", help="Colorize output verdicts.")
+    ap.add_argument("--jobs", type=int, default=None, help="Maximum concurrent dataset replays (default: all datasets).")
+    ap.add_argument("--dataset-name", action="append", choices=[spec.name for spec in DATASETS],
+                    help="Replay only these named fixtures (repeatable).")
     ap.add_argument(
         "--only",
         choices=sorted({dataset.machine_type for dataset in DATASETS}),
         help="Run only datasets for one machine type.",
     )
     args = ap.parse_args()
+    if args.jobs is not None and args.jobs < 1:
+        ap.error("--jobs must be at least 1")
     color = use_color(args.color)
 
     repo_root = Path(args.repo_root).resolve()
@@ -1282,6 +1287,8 @@ def main() -> int:
     dataset_specs = DATASETS
     if args.only is not None:
         dataset_specs = [dataset for dataset in DATASETS if dataset.machine_type == args.only]
+    if args.dataset_name:
+        dataset_specs = [dataset for dataset in dataset_specs if dataset.name in args.dataset_name]
 
     for dataset_spec in dataset_specs:
         ds = dataset_spec.name
@@ -1317,7 +1324,7 @@ def main() -> int:
 
     if jobs:
         completed_results: List[DatasetRunResult] = []
-        with concurrent.futures.ThreadPoolExecutor(max_workers=len(jobs)) as pool:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs or len(jobs)) as pool:
             def submit_job(job):
                 dataset_spec, dataset_path, ref_log_path = job
                 return pool.submit(

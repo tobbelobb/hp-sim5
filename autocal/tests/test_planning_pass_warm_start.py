@@ -3,6 +3,7 @@ import json
 import numpy as np
 
 import autocal.planning_pass as pp
+import autocal.fit_stage as fs
 
 
 def _write_dataset(path) -> None:
@@ -40,13 +41,13 @@ def test_plan_next_ellipse_sweep_uses_explicit_warm_start_seeds(monkeypatch, tmp
     calibrate_calls = []
     spool_calls = []
 
-    monkeypatch.setattr(pp, "_normalize_dataset_point_roles", lambda dataset: 0)
-    monkeypatch.setattr(pp, "_require_machine_type", lambda dataset, **_kwargs: "slideprinter")
-    monkeypatch.setattr(pp, "_annotate_dataset_noise_model", lambda *args, **kwargs: None)
-    monkeypatch.setattr(pp, "_resolve_buildup_factor_seed", lambda *_args, **_kwargs: 0.636619)
-    monkeypatch.setattr(pp, "validate_dataset_has_raw_angles", lambda *args, **kwargs: None)
+    monkeypatch.setattr(fs, "_normalize_dataset_point_roles", lambda dataset: 0)
+    monkeypatch.setattr(fs, "_require_machine_type", lambda dataset, **_kwargs: "slideprinter")
+    monkeypatch.setattr(fs, "_annotate_dataset_noise_model", lambda *args, **kwargs: None)
+    monkeypatch.setattr(fs, "_resolve_buildup_factor_seed", lambda *_args, **_kwargs: 0.636619)
+    monkeypatch.setattr(fs, "validate_dataset_has_raw_angles", lambda *args, **kwargs: None)
     monkeypatch.setattr(
-        pp,
+        fs,
         "_resolve_length_model_base_params",
         lambda *_args, **_kwargs: {
             "base_radii_mm": [30.0, 30.0, 30.0],
@@ -56,12 +57,12 @@ def test_plan_next_ellipse_sweep_uses_explicit_warm_start_seeds(monkeypatch, tmp
         },
     )
     monkeypatch.setattr(
-        pp,
+        fs,
         "_default_modeled_buildup_values",
         lambda num_anchors, **_kwargs: np.full(int(num_anchors), 0.636619, dtype=float),
     )
     monkeypatch.setattr(
-        pp,
+        fs,
         "build_anchor_initial_guess",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(
             AssertionError("explicit warm start should bypass build_anchor_initial_guess")
@@ -96,12 +97,12 @@ def test_plan_next_ellipse_sweep_uses_explicit_warm_start_seeds(monkeypatch, tmp
             {"best_modeled_buildup_factor": np.asarray(initial_buildup, dtype=float)},
         )
 
-    monkeypatch.setattr(pp, "calibrate_elliptical", fake_calibrate)
-    monkeypatch.setattr(pp, "estimate_effective_radii_with_spool_model", fake_estimate)
-    monkeypatch.setattr(pp, "dataset_sweep_configs", lambda dataset: [])
-    monkeypatch.setattr(pp, "sweep_configs_with_modeled_lengths", lambda cfgs, _sp: list(cfgs))
-    monkeypatch.setattr(pp, "total_information_matrix", lambda *args, **kwargs: np.eye(6, dtype=float))
-    monkeypatch.setattr(pp, "_evaluate_cost_at_anchors", lambda *args, **kwargs: 1.0)
+    monkeypatch.setattr(fs, "calibrate_elliptical", fake_calibrate)
+    monkeypatch.setattr(fs, "estimate_effective_radii_with_spool_model", fake_estimate)
+    monkeypatch.setattr(fs, "dataset_sweep_configs", lambda dataset: [])
+    monkeypatch.setattr(fs, "sweep_configs_with_modeled_lengths", lambda cfgs, _sp: list(cfgs))
+    monkeypatch.setattr(fs, "total_information_matrix", lambda *args, **kwargs: np.eye(6, dtype=float))
+    monkeypatch.setattr(fs, "_evaluate_cost_at_anchors", lambda *args, **kwargs: 1.0)
     monkeypatch.setattr(pp, "generate_candidate_sweeps", lambda *args, **kwargs: [])
     monkeypatch.setattr(pp, "_filter_candidates_by_spacing", lambda candidates, *_args, **_kwargs: candidates)
     monkeypatch.setattr(pp, "rank_candidates_d_optimal", lambda *args, **kwargs: [])

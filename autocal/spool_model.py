@@ -381,8 +381,32 @@ def dataset_with_modeled_lengths(
     spool_params: SpoolModelParams,
     *,
     prefer_zero_tension_angles: bool = False,
+    copy_metadata: bool = True,
 ) -> dict:
-    out = copy.deepcopy(dataset)
+    """Rewrite lengths without modifying input records.
+
+    Full metadata isolation is the default. Fitting can borrow unmodified
+    metadata with copy_metadata=False: record dictionaries and config are still
+    copied, but nested encoder/noise metadata must then be treated as read-only.
+    """
+    if copy_metadata:
+        out = copy.deepcopy(dataset)
+    else:
+        out = dict(dataset)
+        if "config" in out:
+            out["config"] = copy.deepcopy(out["config"])
+        sweeps = out.get("sweeps")
+        if isinstance(sweeps, list):
+            out["sweeps"] = []
+            for sweep in sweeps:
+                if not isinstance(sweep, dict):
+                    out["sweeps"].append(sweep)
+                    continue
+                cloned = dict(sweep)
+                points = cloned.get("data_points")
+                if isinstance(points, list):
+                    cloned["data_points"] = [dict(point) if isinstance(point, dict) else point for point in points]
+                out["sweeps"].append(cloned)
     num_anchors = int(out.get("num_anchors", 0))
     sweeps = out.get("sweeps")
     if num_anchors <= 0 or not isinstance(sweeps, list):

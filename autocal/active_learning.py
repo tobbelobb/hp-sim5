@@ -417,18 +417,24 @@ def rank_candidates_d_optimal(
     exclude_existing: bool = True,
     existing_tol_mm: float = 1e-3,
     top_k: int = 10,
+    observed_information: Optional[np.ndarray] = None,
 ) -> List[Tuple[float, SweepConfig]]:
     anchors = np.asarray(anchors, dtype=float)
-    base_info = total_information_matrix(
-        anchors,
-        observed,
-        machine_type=machine_type,
-        num_anchors=num_anchors,
-        dimensions=dimensions,
-        l2_scale=l2_scale,
-        geometry_weights=geometry_weights,
-        fd_eps_mm=fd_eps_mm,
-    )
+    if observed_information is None:
+        base_info = total_information_matrix(
+            anchors,
+            observed,
+            machine_type=machine_type,
+            num_anchors=num_anchors,
+            dimensions=dimensions,
+            l2_scale=l2_scale,
+            geometry_weights=geometry_weights,
+            fd_eps_mm=fd_eps_mm,
+        )
+    else:
+        base_info = np.asarray(observed_information, dtype=float)
+        if base_info.shape != (anchors.size, anchors.size):
+            raise ValueError("observed_information must match the anchor parameter count")
     reg = float(regularization)
     if not np.isfinite(reg) or reg < 0.0:
         reg = 0.0

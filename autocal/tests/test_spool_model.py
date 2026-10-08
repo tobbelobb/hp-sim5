@@ -1,4 +1,7 @@
+import copy
+
 import numpy as np
+import pytest
 
 from autocal.active_learning import SweepConfig
 from autocal.spool_model import (
@@ -233,3 +236,31 @@ def test_constant_spool_model_mm_per_degree_is_independent_of_lines_per_spool():
             float(model_l3.theta_deg_to_linepos_mm(theta)),
             atol=1e-9,
         )
+
+
+@pytest.mark.parametrize("buildup", [0.0, 0.636619])
+@pytest.mark.parametrize("zero_tension", [False, True])
+def test_borrowed_metadata_matches_full_transform_and_keeps_input_records(buildup, zero_tension):
+    dataset = _sample_dataset()
+    for point in dataset["sweeps"][0]["data_points"]:
+        point["raw_angles_zero_tension_deg"] = list(point["raw_angles_deg"])
+        point["noise"] = {"samples": [1.0, 2.0, 3.0]}
+    before = copy.deepcopy(dataset)
+    params = build_spool_model_params(
+        dataset, base_radii_mm=[10.0]*3, modeled_radii_mm=[20.0, 10.0, 5.0],
+        modeled_buildup_factor=[buildup]*3, spool_to_motor_gearing_factor=[1.0]*3,
+        mechanical_advantage=[1.0]*3, lines_per_spool=[1.0]*3,
+        theta0_mode="infer", prefer_zero_tension_angles=zero_tension)
+    full = dataset_with_modeled_lengths(dataset, params, prefer_zero_tension_angles=zero_tension)
+    borrowed = dataset_with_modeled_lengths(dataset, params, prefer_zero_tension_angles=zero_tension,
+                                            copy_metadata=False)
+    assert borrowed == full
+    assert dataset == before
+    # All fields the fitting pipeline may rewrite have independent containers.
+    borrowed["sweeps"][0]["data_points"][0]["l_drive"] = -123.0
+    borrowed["sweeps"][0]["fixed_lengths"][0] = -123.0
+    borrowed["config"]["m666"]["R"][0] = -123.0
+    assert dataset == before
+    # The public default still isolates nested measurement metadata too.
+    full["sweeps"][0]["data_points"][0]["noise"]["samples"][0] = -123.0
+    assert dataset == before

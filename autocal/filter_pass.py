@@ -1005,6 +1005,7 @@ def estimate_effective_radii_with_spool_model(
             dataset,
             spool_params,
             prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
+            copy_metadata=False,
         )
         result = (spool_params, transformed)
         dataset_params_cache[key] = result

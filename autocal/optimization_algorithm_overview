@@ -1,7 +1,12 @@
 # Autocal optimization algorithm
 
 `autocal.py` runs the full-auto loop.
-`planning_pass.py` fits the current dataset and ranks possible next sweeps.
+`fit_stage.py` fits and assesses the current dataset.
+`planning_pass.py` ranks possible next sweeps from that frozen fit;
+`plan_next_ellipse_sweep(...)` composes both stages for existing callers.
+`history_selection.py` separates frozen prediction evaluation from pure ordering.
+The opt-in `--stage-artifacts` snapshots and `tools/replay_stage.py` let each
+stage run independently; see README.md for commands.
 Spool fitting is optional. Both `--find-radii` and `--find-buildup-factor`
 default to `off`.
 
@@ -113,7 +118,10 @@ Then it runs the spool/filter pipeline on modeled lengths.
 It uses the last filter pass's final calibration when available.
 Otherwise, it runs a final anchor calibration on the transformed dataset.
 
-The pass estimates an anchor information matrix and covariance.
+The fitting stage estimates an anchor information matrix and covariance.
+Planning reuses that unregularized information matrix at the same finite-
+difference setting; changing that setting recomputes it. Candidate ranking
+applies regularization once and does not mutate the fitted matrix.
 It generates candidate sweeps, removes duplicates and candidates too close to
 existing fixed deltas, and ranks the remaining candidates by D-optimal gain.
 This gain is the increase in the information matrix's log determinant.
@@ -197,6 +205,11 @@ It stops at step tolerance, a small-progress plateau, or `--spool-inner-iters`
 exact `(radii, buildup)` pair. The cache holds up to 16 entries and evicts the
 oldest inserted entry when full. Keys are not rounded, so even small parameter
 changes produce a separate transformation.
+
+Each new modeled dataset copies the dictionaries whose lengths are rewritten
+and the configuration. Fitting borrows unmodified nested encoder/noise metadata
+as read-only, avoiding repeated deep copies. The public transformation helper
+retains full-copy isolation by default.
 
 Repeated parameters reuse the same dataset object. This also enables the
 existing cost-function cache and residual-evaluation cache to hit; residual

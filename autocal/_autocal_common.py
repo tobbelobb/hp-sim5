@@ -3836,6 +3836,10 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
         help="Append full-auto runs from shotgun.conf.",
     )
     parser.add_argument(
+        "--stage-artifacts", type=Path, default=None,
+        help="Save frozen fit/history JSON artifacts for independent stage experiments (opt-in).",
+    )
+    parser.add_argument(
         "--full-auto-log",
         type=Path,
         default=None,

@@ -42,6 +42,9 @@ These functions share residuals but produce different scores.
 
 Within a fixed filter pass, repeated exact radius/buildup pairs reuse a cached
 spool model and transformed length dataset (up to 16 entries, FIFO eviction).
+New fitting transformations copy length records and configuration while sharing
+read-only nested measurement metadata; scalar length calculations are unchanged.
+The public transformation helper retains full-copy isolation by default.
 The same dataset object enables cost-function reuse. With an identical anchor
 vector, the existing evaluation bundle also reuses residuals and diagnostics
 across data-cost and spool-rank calculations. Cache keys are not rounded, and
@@ -153,3 +156,13 @@ They do not affect `_data_cost(...)`, `_spool_rank_score(...)`, or spool priors.
 The implementation is in `filter_pass.py`, `initialize_pass.py`,
 `alternating_refinement.py`, `scale_polish.py`, `_autocal_common.py`, and `autocal.py`.
 See `optimization_algorithm_overview` for the loop structure.
+
+## Testing one score at a time
+
+`history_selection.evaluate_history_candidates` produces prediction scores and
+ordering keys from frozen history models. `rank_history_candidates` applies the
+existing eligibility and ordering policy to those evaluated records. A saved
+history artifact permits ranking trials without fitting or re-evaluating
+residuals. `fit_stage.fit_ellipse_dataset` and
+`planning_pass.plan_ellipse_sweep` likewise separate fitting from movement
+ranking. These boundaries do not redefine any objective or acceptance score.

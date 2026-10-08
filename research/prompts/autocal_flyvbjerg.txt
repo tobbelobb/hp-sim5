@@ -1,0 +1,19 @@
+Improve encoder-based CDPR autocalibration in hp-sim5. The current algorithm can
+be slow, fragile, or choose worse anchors because its selection score disagrees
+with physical accuracy. First reproduce and measure those cases.
+
+My main problem with the current algorithm is that it's not Flyvbjergian, as in not adhering to Bent Flyvbjerg's advice on how to get big projects done. It is "one big thing" instead of separate legos that can be developed and tested independently. Therefore, it's very slow and time consuming to test changes, and thus fewer things get tested and high level reasoning is not easy enough.
+
+Make the autocal more Flyvbjergian.
+
+Learn about how the current autocal code works first.
+Good starting points for such learning are
+ - autocal/README.md
+ - autocal/optimization_algorithm_overview
+ - autocal/objective_functions_overview
+ - and maybe autocal/README_elliptical_feature_calibration.md
+
+Use simulated collection to test your ideas when warranted.
+
+Record how your changes affect speed, accuracy and so on.
+We can not allow the algorithm to be slower or `autocal/tools/regress_calibration_logs.py` to produce worse results.

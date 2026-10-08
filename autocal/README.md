@@ -23,6 +23,9 @@ Set `JAX_COMPILATION_CACHE_DIR` to choose another directory, or
 Within each spool/filter pass, repeated exact radius/buildup models reuse up to
 16 transformed datasets and their existing residual evaluations. This bounded
 cache is discarded after the pass and needs no setting.
+Model transformations inside fitting copy length records and configuration,
+while borrowing read-only encoder/noise metadata. The public transformation
+helper still deep-copies metadata by default.
 
 From the root of the hp-sim5 repo, run:
 
@@ -182,6 +185,66 @@ for this limitation.
 
 Here's a demo of the autocal loop on a simulated Slideprinter: https://youtu.be/XLmpuAQYbG4
 
+
+## Independent stage experiments
+
+The one-click loop composes independently callable stages:
+
+| Stage | API | Runs an optimizer? |
+| --- | --- | --- |
+| Transform encoder observations into modeled lengths | `spool_model.dataset_with_modeled_lengths` | No |
+| Fit and assess anchors/spools | `fit_stage.fit_ellipse_dataset` | Yes |
+| Plan the next sweep from a frozen fit | `planning_pass.plan_ellipse_sweep` | No |
+| Evaluate frozen history models on future sweeps | `history_selection.evaluate_history_candidates` | No |
+| Rank already evaluated candidates | `history_selection.rank_history_candidates` | No |
+
+Existing collection backends and inner initialization, refinement, filter-pass
+and scale-polish modules remain separate. `plan_next_ellipse_sweep` composes fit
+and planning for existing callers. Treat its fit input as a frozen value;
+planning options change candidate generation, not anchors or the measurement model.
+
+Add `--stage-artifacts output/stages` to an ordinary run to save versioned JSON
+fit snapshots and, at final acceptance, evaluated history. This is opt-in;
+normal runs write no stage artifacts. Existing artifact directories get a numbered
+sibling so prior trials remain intact. Each snapshot includes sweep data, model
+parameters, settings and source hashes. It is data for offline experiments,
+not a physics checkpoint. Keep failed trials alongside successful ones.
+
+For example, after a recorded replay produces `fit-001-default.json` and
+`history-006.json`:
+
+```bash
+.venv/bin/python -m autocal.tools.replay_stage plan \
+  output/stages/fit-001-default.json --output output/trial-plan.json
+.venv/bin/python -m autocal.tools.replay_stage evaluate \
+  output/stages/history-006.json --output output/trial-evaluation.json
+.venv/bin/python -m autocal.tools.replay_stage rank \
+  output/trial-evaluation.json --output output/trial-selection.json
+.venv/bin/python -m autocal.tools.replay_stage fit \
+  output/stages/fit-001-default.json --output output/trial-fit.json
+```
+
+`--options options.json` overrides saved keyword options for fit, plan or
+evaluate, for example `{"candidate_count": 21}` for planning. Fit replay uses
+the embedded sweep snapshot and disables plots/residual CSV output. Planning
+writes its suggested config beside the output artifact. None of these commands
+starts firmware, collects measurements or applies calibration. Stage times
+exclude interpreter startup and artifact I/O; measure wall time separately when
+comparing commands. A changed ranking policy can be tested against saved
+predictions without rerunning optimization or prediction evaluation.
+
+For an inexpensive fixture check, use:
+
+```bash
+.venv/bin/python autocal/tools/regress_calibration_logs.py \
+  --jobs 2 --dataset-name ten_points_bigger_deltas
+```
+
+Then run the full matrix with `--jobs 2`. This bounds concurrency for reproducible
+research; the default concurrency and regression acceptance rules are unchanged.
+Compare returned parameters and each intermediate fit, not only the aggregate
+score. Lower prediction or history scores can still choose worse physical
+parameters. These stage boundaries preserve the existing selection policy.
 
 ## Typical workflow (real machine)
 

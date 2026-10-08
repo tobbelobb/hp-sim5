@@ -62,6 +62,7 @@ def _patch_spool_runtime(monkeypatch, *, target_radii: np.ndarray, target_buildu
         spool_params,
         *,
         prefer_zero_tension_angles=False,
+        copy_metadata=True,
     ):
         _ = prefer_zero_tension_angles
         out = dict(dataset)
@@ -1063,6 +1064,7 @@ def test_global_b_prior_penalty_is_not_multiplied_by_anchor_count(monkeypatch):
         spool_params,
         *,
         prefer_zero_tension_angles=False,
+        copy_metadata=True,
     ):
         _ = prefer_zero_tension_angles
         out = dict(dataset)
@@ -1243,6 +1245,7 @@ def test_spool_prefit_grid_avoids_false_basin_for_low_base_radius(monkeypatch):
         spool_params,
         *,
         prefer_zero_tension_angles=False,
+        copy_metadata=True,
     ):
         _ = prefer_zero_tension_angles
         out = {
@@ -1375,6 +1378,7 @@ def test_spool_prefit_monotonic_boundary_is_guarded_for_base30_vs_38p7(monkeypat
         spool_params,
         *,
         prefer_zero_tension_angles=False,
+        copy_metadata=True,
     ):
         _ = prefer_zero_tension_angles
         out = {
@@ -1531,6 +1535,7 @@ def test_spool_prefit_ellipse_can_reseed_before_anchor_step(monkeypatch):
         spool_params,
         *,
         prefer_zero_tension_angles=False,
+        copy_metadata=True,
     ):
         _ = prefer_zero_tension_angles
         out = {
@@ -1656,6 +1661,7 @@ def test_bootstrap_anchor_refresh_runs_before_first_spool_radius_step(monkeypatc
         spool_params,
         *,
         prefer_zero_tension_angles=False,
+        copy_metadata=True,
     ):
         _ = prefer_zero_tension_angles
         return {
@@ -1772,6 +1778,7 @@ def test_scale_fix_1_scales_anchor_seed_for_first_anchor_step(monkeypatch):
         spool_params,
         *,
         prefer_zero_tension_angles=False,
+        copy_metadata=True,
     ):
         _ = prefer_zero_tension_angles
         return {
@@ -1876,6 +1883,7 @@ def test_scale_fix_2_runs_final_uniform_scale_polish(monkeypatch):
         spool_params,
         *,
         prefer_zero_tension_angles=False,
+        copy_metadata=True,
     ):
         _ = prefer_zero_tension_angles
         return {
@@ -1982,6 +1990,7 @@ def test_scale_fix_3_keeps_final_polish_only_in_single_pass(monkeypatch):
         spool_params,
         *,
         prefer_zero_tension_angles=False,
+        copy_metadata=True,
     ):
         _ = prefer_zero_tension_angles
         return {
@@ -2087,6 +2096,7 @@ def test_final_scale_polish_requires_rank_improvement(monkeypatch):
         spool_params,
         *,
         prefer_zero_tension_angles=False,
+        copy_metadata=True,
     ):
         _ = prefer_zero_tension_angles
         return {
@@ -2215,6 +2225,7 @@ def test_final_scale_polish_requires_total_objective_improvement(monkeypatch):
         spool_params,
         *,
         prefer_zero_tension_angles=False,
+        copy_metadata=True,
     ):
         _ = prefer_zero_tension_angles
         return {
@@ -2357,6 +2368,7 @@ def test_spool_block_update_rolls_back_when_not_improving(monkeypatch):
         spool_params,
         *,
         prefer_zero_tension_angles=False,
+        copy_metadata=True,
     ):
         _ = (spool_params, prefer_zero_tension_angles)
         return {"num_anchors": int(dataset.get("num_anchors", 3)), "sweeps": []}
@@ -2453,6 +2465,7 @@ def test_spool_block_update_prefers_layered_rank_objective(monkeypatch):
         spool_params,
         *,
         prefer_zero_tension_angles=False,
+        copy_metadata=True,
     ):
         _ = prefer_zero_tension_angles
         k_vals = np.asarray(spool_params["buildup_factor"], dtype=float).reshape(-1)
@@ -2576,6 +2589,7 @@ def test_spool_block_update_inner_loop_ignores_sweep_bias(monkeypatch):
         spool_params,
         *,
         prefer_zero_tension_angles=False,
+        copy_metadata=True,
     ):
         _ = prefer_zero_tension_angles
         k_vals = np.asarray(spool_params["buildup_factor"], dtype=float).reshape(-1)
@@ -3633,6 +3647,7 @@ def test_spool_fit_reuses_single_eval_bundle_per_dataset_anchor(monkeypatch, fil
         spool_params,
         *,
         prefer_zero_tension_angles=False,
+        copy_metadata=True,
     ):
         _ = prefer_zero_tension_angles
         transformed_counter["next"] += 1
