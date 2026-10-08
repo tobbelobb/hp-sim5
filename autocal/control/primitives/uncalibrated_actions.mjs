@@ -99,20 +99,29 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions, 
   const startMs = nowFn();
   const samples = [];
 
-  // This function is only sent samples collected within the current window,
-  // so looking at all samples is ok.
   const isStable = () => {
     if (samples.length < 2) {
       return false;
     }
-    const windowSpan = samples[samples.length - 1].timestampMs - samples[0].timestampMs;
+    const nowMs = samples[samples.length - 1].timestampMs;
+    const cutoff = nowMs - windowMs;
+    let first = 0;
+    // Cover the full quiet window, including its boundary when polls have jitter.
+    // Older samples remain available for the longer vibration check.
+    while (first + 1 < samples.length && samples[first + 1].timestampMs <= cutoff) {
+      first += 1;
+    }
+    const windowSpan = nowMs - samples[first].timestampMs;
     if (windowSpan < windowMs) {
       return false;
     }
+    // Preserve the drift rate allowed by the longer history while returning
+    // sooner after a transient. Larger stationary noise can use the vibration check.
+    const quietTolerance = tol * windowMs / vibrationMs;
     for (let motorIdx = 0; motorIdx < motorIds.length; motorIdx += 1) {
       let minVal = Number.POSITIVE_INFINITY;
       let maxVal = Number.NEGATIVE_INFINITY;
-      for (let i = 0; i < samples.length; i += 1) {
+      for (let i = first; i < samples.length; i += 1) {
         const v = samples[i].anglesDeg[motorIdx];
         if (!Number.isFinite(v)) {
           return false;
@@ -120,7 +129,7 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions, 
         minVal = Math.min(minVal, v);
         maxVal = Math.max(maxVal, v);
       }
-      if (maxVal - minVal > tol + 1e-9) {
+      if (maxVal - minVal > quietTolerance + 1e-9) {
         return false;
       }
     }

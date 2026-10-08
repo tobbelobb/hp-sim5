@@ -1,6 +1,49 @@
 import { waitForStableEncoders } from '../../primitives/uncalibrated_actions.mjs';
 
 describe('waitForStableEncoders', () => {
+  async function replay(readingAt, { pollIntervalMs = 500, ...options } = {}) {
+    let nowMs = 0;
+    const send = async () => ({ reply: readingAt(nowMs) });
+    return waitForStableEncoders(send, ['40.0', '41.0'], 1, {
+      pollIntervalMs,
+      stableWindowMs: 1500,
+      toleranceDeg: 0.1,
+      timeoutMs: 15000,
+      sleepFn: async (ms) => { nowMs += ms; },
+      nowFn: () => nowMs,
+      ...options,
+    });
+  }
+
+  test('uses the recent quiet window while retaining older vibration history', async () => {
+    const result = await replay((ms) => `${ms < 1000 ? 10 : 0} 0`);
+    expect(result.elapsedMs).toBe(2500);
+    expect(result.anglesDeg).toEqual([0, 0]);
+  });
+
+  test('requires a full quiet window on every motor', async () => {
+    const result = await replay((ms) => `0 ${ms < 3000 ? 30 - ms / 100 : 0}`);
+    expect(result.elapsedMs).toBe(4500);
+  });
+
+  test('covers the quiet-window boundary when polls have jitter', async () => {
+    const result = await replay((ms) => `${ms < 1100 ? 10 : 0} 0`, {
+      pollIntervalMs: 510,
+    });
+    expect(result.elapsedMs).toBe(3060);
+  });
+
+  test('restarts the quiet window after a malformed encoder reply', async () => {
+    const result = await replay((ms) => (ms === 2000 ? 'invalid' : `${ms < 1000 ? 10 : 0} 0`));
+    expect(result.elapsedMs).toBe(4000);
+  });
+
+  test('rejects drift that fits the short-window range but exceeds the long-window rate', async () => {
+    await expect(replay((ms) => `${ms * 0.0008} 0`, {
+      toleranceDeg: 1.5,
+    })).rejects.toThrow('Timed out waiting for encoder stability');
+  });
+
   test('resolves once encoder values stabilize', async () => {
     const send = async () => ({ reply: '0 0' });
 

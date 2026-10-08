@@ -132,6 +132,11 @@ Ctrl-C during the loop requests best-so-far acceptance.
 Final selection favors successful held-out predictions when available.
 These scores measure fit and prediction quality. They do not prove anchor accuracy.
 
+Collection checks the latest 1.5 seconds of encoder readings for quiet settling,
+with a range limit scaled to the longer 5-second vibration window's drift allowance.
+It retains that longer history for the existing vibration check. This reduces
+waiting after transients while keeping point counts and automatic stopping.
+
 On acceptance, RRF receives M669 for the selected anchors.
 Fitted M666 spool settings are printed but are not sent automatically.
 Klipper skips the M669 send.

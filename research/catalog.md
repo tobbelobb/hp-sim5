@@ -4,6 +4,14 @@ These summaries describe archived evidence, not new experiments or a statement a
 
 Four hash-named sessions contain substantive autocal work: three have final reports and one has an unfinished notebook. Missing research.md does not imply that no research happened.
 
+## Faster collection with guarded encoder settling
+
+Status: complete. Topics: autocalibration, encoder-only, HP4, settling, collection time, point thinning.
+
+Fresh replays reproduce 20 ranking/physical-error disagreements. Halving points worsens anchors on three of four fixtures. A small collector change checks the recent quiet window with a tighter range limit, retaining the longer vibration fallback. Matched 36-point production-JS/RRF collection takes 320.364 versus 429.668 simulation seconds (25.4% less); all eleven recorded calibration regressions and stopping decisions remain unchanged. New-data anchor accuracy and hardware transfer remain unverified.
+
+[Report, measurements and limitations](../output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-c812e7b9/report.md).
+
 ## Autocal history ranking with held-out sweeps
 
 Status: complete.
