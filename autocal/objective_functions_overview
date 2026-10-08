@@ -40,6 +40,14 @@ Other objective `1` proposals use `calibrate_elliptical(...)`.
 It blends that metric with trimmed risk, then maps it to a ranking scalar.
 These functions share residuals but produce different scores.
 
+Within a fixed filter pass, repeated exact radius/buildup pairs reuse a cached
+spool model and transformed length dataset (up to 16 entries, FIFO eviction).
+The same dataset object enables cost-function reuse. With an identical anchor
+vector, the existing evaluation bundle also reuses residuals and diagnostics
+across data-cost and spool-rank calculations. Cache keys are not rounded, and
+each filter pass starts fresh. This changes evaluation work, not the objective
+definitions, priors, acceptance comparisons, or final history selection.
+
 The bootstrap anchor refresh tests move fractions `1.0`, `0.5`, and `0.25`.
 It accepts an improvement in `_data_cost(...)` only.
 

@@ -972,10 +972,23 @@ def estimate_effective_radii_with_spool_model(
     outer_iters = max(1, int(spool_outer_iters))
     inner_iters = max(1, int(spool_inner_iters))
 
+    dataset_params_cache: Dict[
+        Tuple[Tuple[float, ...], Tuple[float, ...]], Tuple[SpoolModelParams, dict]
+    ] = {}
+
     def _build_dataset_and_params(
         radii_mm: np.ndarray,
         buildup_factor: np.ndarray,
     ) -> Tuple[SpoolModelParams, dict]:
+        # Fixed pass inputs make exact spool parameters sufficient; reuse also
+        # enables the identity-keyed residual caches below. Never round keys.
+        key = (
+            tuple(np.asarray(radii_mm, dtype=float).reshape(-1)),
+            tuple(np.asarray(buildup_factor, dtype=float).reshape(-1)),
+        )
+        cached = dataset_params_cache.get(key)
+        if cached is not None:
+            return cached
         spool_params = build_spool_model_params(
             dataset,
             base_radii_mm=base,
@@ -993,7 +1006,11 @@ def estimate_effective_radii_with_spool_model(
             spool_params,
             prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
         )
-        return spool_params, transformed
+        result = (spool_params, transformed)
+        dataset_params_cache[key] = result
+        if len(dataset_params_cache) > 16:
+            del dataset_params_cache[next(iter(dataset_params_cache))]
+        return result
 
     def _prior_cost(radii_mm: np.ndarray, buildup_factor: np.ndarray) -> float:
         prior = 0.0

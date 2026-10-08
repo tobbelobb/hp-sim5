@@ -20,6 +20,10 @@ The first run still compiles; caching does not change calibration or stopping.
 Set `JAX_COMPILATION_CACHE_DIR` to choose another directory, or
 `JAX_ENABLE_COMPILATION_CACHE=false` to disable it. Cache files can be deleted.
 
+Within each spool/filter pass, repeated exact radius/buildup models reuse up to
+16 transformed datasets and their existing residual evaluations. This bounded
+cache is discarded after the pass and needs no setting.
+
 From the root of the hp-sim5 repo, run:
 
 ```bash

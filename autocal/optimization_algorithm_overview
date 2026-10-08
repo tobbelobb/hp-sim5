@@ -191,6 +191,20 @@ An unsuccessful coordinate halves its step.
 It stops at step tolerance, a small-progress plateau, or `--spool-inner-iters`
 (default 30 rounds).
 
+### Within-pass evaluation reuse
+
+`filter_pass.py` caches the spool model and transformed length dataset for each
+exact `(radii, buildup)` pair. The cache holds up to 16 entries and evicts the
+oldest inserted entry when full. Keys are not rounded, so even small parameter
+changes produce a separate transformation.
+
+Repeated parameters reuse the same dataset object. This also enables the
+existing cost-function cache and residual-evaluation cache to hit; residual
+evaluations additionally require the same exact anchor vector.
+Each filter pass starts fresh, keeping reuse within fixed data and model settings.
+The cache needs no setting. It reduces repeated fitting work while preserving
+collection point counts, objectives, ranking, and automatic stopping.
+
 ## Uniform scale polish
 
 `scale_polish.py` can search one shared scale for radii and anchors.

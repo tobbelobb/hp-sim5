@@ -3593,7 +3593,8 @@ def test_filter_schedule_warmup_clears_mask_and_later_dynamic_rebuilds_it(monkey
     assert bool(filter_schedule_history[4].get("constant_mask_applied", False)) is True
 
 
-def test_spool_fit_reuses_single_eval_bundle_per_dataset_anchor(monkeypatch):
+@pytest.mark.parametrize("filter_schedule", [["warmup"], ["warmup", "warmup"]])
+def test_spool_fit_reuses_single_eval_bundle_per_dataset_anchor(monkeypatch, filter_schedule):
     base = np.array([30.0, 30.0, 30.0], dtype=float)
     detailed_calls = {}
     row_calls = {}
@@ -3686,6 +3687,33 @@ def test_spool_fit_reuses_single_eval_bundle_per_dataset_anchor(monkeypatch):
                 }
             ]
 
+    initialize = ac.run_initialize_pass
+    pass_datasets = []
+
+    def check_dataset_cache(**kwargs):
+        build = kwargs["build_dataset_and_params"]
+        radii = kwargs["base"].copy()
+        buildup = kwargs["modeled_b"].copy()
+        first = build(radii, buildup)
+        assert build(radii.copy(), buildup.copy()) is first
+        # Distinct values must stay distinct even below the optimizer's rounded
+        # search-cache precision. Anchor evaluations depend on these deltas.
+        nearby_radii = build(radii + 1e-10, buildup)
+        nearby_buildup = build(radii, buildup + 1e-10)
+        assert nearby_radii is not first
+        assert nearby_buildup is not first
+        assert nearby_radii is not nearby_buildup
+        assert build(radii + 1e-10, buildup) is nearby_radii
+        assert all(first[1] is not previous for previous in pass_datasets)
+        pass_datasets.append(first[1])
+        # Revisiting an evicted value rebuilds it, bounding retained datasets.
+        for i in range(20):
+            build(radii + i + 1.0, buildup)
+        assert build(radii, buildup) is not first
+        return initialize(**kwargs)
+
+    monkeypatch.setattr(ac, "run_initialize_pass", check_dataset_cache)
+
     def fake_calibrate_elliptical(dataset_or_path, **kwargs):
         _ = dataset_or_path
         initial = np.asarray(kwargs.get("initial_guess"), dtype=float)
@@ -3727,7 +3755,7 @@ def test_spool_fit_reuses_single_eval_bundle_per_dataset_anchor(monkeypatch):
         "sweeps": [],
     }
     seed_anchors = np.ones((3, 2), dtype=float)
-    _eff_r, _fit_anchors, _spool_params, _transformed, _fit_info = ac._estimate_effective_radii_with_spool_model(
+    _eff_r, _fit_anchors, _spool_params, _transformed, _fit_info = ac.estimate_effective_radii_with_spool_model(
         dataset,
         seed_anchors,
         find_radii_mode="global",
@@ -3759,10 +3787,13 @@ def test_spool_fit_reuses_single_eval_bundle_per_dataset_anchor(monkeypatch):
         sigma_source="auto",
         robust_debug=False,
         scale_fix_levels=(),
+        filter_schedule=filter_schedule,
         enable_prefit=False,
         enable_bootstrap_anchor_refresh=False,
     )
 
+    assert len(pass_datasets) == len(filter_schedule)
+    assert dataset["sweeps"] == []
     assert detailed_calls
     assert max(int(v) for v in detailed_calls.values()) == 1
     if row_calls:
