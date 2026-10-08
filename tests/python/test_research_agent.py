@@ -275,14 +275,16 @@ else:
     monkeypatch.setenv('PATH', str(tmp_path) + os.pathsep + os.environ['PATH'])
     monkeypatch.setenv('OPENAI_API_KEY', 'test-sentinel')
     monkeypatch.setenv('CODEX_API_KEY', 'test-sentinel')
+    session = tmp_path / 'session'
     monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--viewer', 'none', '--prompt', 'preservation check',
+                                    '--session-dir', str(session),
                                     '--sidebar-section', '6f8f42eb-e2ae-4882-a538-5bf0202ec59b'] + (['--batch'] if batch else []))
     assert launcher.main() == 0
     if real_runtime:
         assert services[0].process.poll() == 0
     else:
         assert services[0].closed
-    session = services[0].directory.parent
+    assert services[0].directory.parent == session
     assert (session / 'report.md').read_text() == 'Full research evidence.\n'
     assert (session / 'final-message.md').read_text() == 'Short final response.\n'
     assert json.loads((session / 'exit.json').read_text()) == {'returncode': 0}
