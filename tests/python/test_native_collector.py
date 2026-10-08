@@ -393,8 +393,12 @@ async def test_attachment_reconnect_isolation_reset_and_dead_supervisor(tmp_path
     import subprocess
     import sys
     from mcp import Client, StdioServerParameters
-    service = RuntimeService(ROOT, tmp_path / 'runtime').start()
-    descriptor = tmp_path / 'connection.json'
+    session = tmp_path / 'hp3-radius-validation'
+    session.mkdir()
+    alias = tmp_path / ('a' * 32)
+    alias.symlink_to(session.name, target_is_directory=True)
+    service = RuntimeService(ROOT, session / 'native').start()
+    descriptor = alias / 'connection.json'
     descriptor.touch(mode=0o600)
     descriptor.write_text(json.dumps({'repo': str(ROOT), 'session_id': service.call('status')['session_id'],
         'runtime_endpoint': service.endpoint, 'runtime_token': service.token, 'viewer_endpoint': None}))

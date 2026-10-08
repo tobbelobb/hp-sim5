@@ -9,6 +9,7 @@ import pytest
 from rerun.chunk import RrdReader
 
 from hp_sim5_research.experiments import compare_runs, read_run, run_experiment
+from hp_sim5_research.archive import session_name
 
 ROOT = Path(__file__).resolve().parents[2]
 SCENE = 'public/usd_scenes/hp4_rigid_body.usda'
@@ -143,6 +144,22 @@ def test_launcher_dry_run_works_outside_repo_and_preserves_prompt():
     assert f'mcp_servers.hp_sim5.command="{ROOT / ".venv/bin/python"}"' in launch['argv']
 
 
+def test_launcher_named_session_keeps_explicit_path_and_summary_instructions(tmp_path):
+    session = tmp_path / 'HP3 radius validation'
+    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--dry-run', '--viewer', 'none',
+                             '--sidebar-section', 'none', '--name', 'HP3 radius validation',
+                             '--session-dir', str(session), '--prompt', 'Test candidate ranking'],
+                            capture_output=True, text=True, timeout=15)
+    assert result.returncode == 0, result.stderr
+    argv = json.loads(result.stdout)['argv']
+    instructions = json.loads(next(arg.split('=', 1)[1] for arg in argv
+                                   if arg.startswith('developer_instructions=')))
+    assert f'Session artifacts: {session}' in instructions
+    assert str(session / 'abstract.md') in instructions
+    assert 'actually tested hypothesis' in instructions
+    assert not session.exists()
+
+
 @pytest.mark.parametrize('options, enabled', [
     ([], True), (['--dont-ask'], False), (['--batch'], False),
     (['--batch', '--dont-ask'], False), (['--serve'], True),
@@ -275,7 +292,7 @@ else:
     monkeypatch.setenv('PATH', str(tmp_path) + os.pathsep + os.environ['PATH'])
     monkeypatch.setenv('OPENAI_API_KEY', 'test-sentinel')
     monkeypatch.setenv('CODEX_API_KEY', 'test-sentinel')
-    session = tmp_path / 'session'
+    session = tmp_path / session_name('HP3 held-out validation')
     monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--viewer', 'none', '--prompt', 'preservation check',
                                     '--session-dir', str(session),
                                     '--sidebar-section', '6f8f42eb-e2ae-4882-a538-5bf0202ec59b'] + (['--batch'] if batch else []))
@@ -285,6 +302,8 @@ else:
     else:
         assert services[0].closed
     assert services[0].directory.parent == session
+    assert 'Status: not yet summarized' in (session / 'abstract.md').read_text()
+    assert session.name in (tmp_path / 'index.md').read_text()
     assert (session / 'report.md').read_text() == 'Full research evidence.\n'
     assert (session / 'final-message.md').read_text() == 'Short final response.\n'
     assert json.loads((session / 'exit.json').read_text()) == {'returncode': 0}

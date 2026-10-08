@@ -23,3 +23,33 @@ Do not build an outer prompt loop.
 Keep `research.md` in the supplied session directory current with objective, hypothesis, constraints, movement/experiment/compute budgets, experiment IDs, accepted steering and the next decision.
 Update it when steering changes the experiment choice.
 Preserve the conversation and prior evidence across turns.
+
+# Make research discoverable
+
+Keep `abstract.md` beside `research.md` and `report.md`, using
+`research/abstract-template.md`. Update it when experiments finish or steering
+changes the topic. Use a descriptive title and topic keywords. Write a short
+abstract with the question, method, measured result and main limitation.
+Start `report.md` with this abstract too.
+
+List each actually tested hypothesis with experiment IDs, its outcome
+(supported, rejected, mixed or inconclusive) and a link to evidence. Mark
+proposed experiments as not tested; a planned or blocked experiment is not a
+negative research result. Preserve failed trials. Distinguish simulated or
+synthetic evidence from hardware measurements and successful tool checks from
+calibration accuracy. Pending sessions must say that no result is available yet.
+
+Add references to the reports, datasets, manifests, code revisions and external
+papers or documentation actually used. Give each source a useful label and link;
+include authors/year and DOI or URL for papers, and experiment IDs or revisions
+for local evidence. Do not invent citations. Explain which claim each reference
+supports. Prefer relative links for artifacts within the session. Link preceding
+sessions when continuing their research.
+
+Before ending a research turn, regenerate the catalog with
+`.venv/bin/python scripts/research_index.py`. Keep the assigned session path
+stable while services are running; filenames do not determine world identity.
+
+Reserachers before you have made their research discoverable.
+Use your the search skills you already have to search through and discover their results if relevant.
+Also use the research index tooling when relevant.

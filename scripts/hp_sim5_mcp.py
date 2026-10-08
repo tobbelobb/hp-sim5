@@ -18,7 +18,7 @@ mcp = MCPServer('hp-sim5', instructions=(
     'Experiments write immutable inputs, JSON telemetry and Rerun recordings. '
     'Use Rerun MCP for Viewer inspection. Motor angles are radians, geometry metres, forces newtons. '
     + (ROOT / 'research/AGENTS.md').read_text()
-    + f'\nSession artifacts: {os.environ.get("HP_SIM5_SESSION_DIR", ROOT / "output/research")}. Maintain research.md and report.md there.'
+    + f'\nSession artifacts: {os.environ.get("HP_SIM5_SESSION_DIR", ROOT / "output/research")}. Maintain research.md, report.md and abstract.md there.'
 ))
 READ_ONLY = ToolAnnotations(read_only_hint=True, open_world_hint=False)
 MUTATION = ToolAnnotations(read_only_hint=False, destructive_hint=False, open_world_hint=False)

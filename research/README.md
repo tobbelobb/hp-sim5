@@ -16,6 +16,7 @@ codex login                       # choose ChatGPT
 ./hp-sim5-research-agent
 ./hp-sim5-research-agent --prompt "Compare HP4 settling with a small A-axis movement. Run both experiments, inspect their recordings and explain the measured difference."
 ./hp-sim5-research-agent --prompt-file research/prompts/autocal.txt
+./hp-sim5-research-agent --name "HP3 held-out sweep ranking" --prompt-file research/prompts/autocal.txt
 ./hp-sim5-research-agent --viewer none --prompt "Investigate autocal candidate ranking on recorded datasets."
 ./hp-sim5-research-agent --machine hp3 --viewer none --no-record --prompt "Collect independent HP3 calibration sweeps."
 ```
@@ -190,6 +191,40 @@ Research instructions are supplied through MCP initialization for every entry
 route and through Codex developer instructions for launcher sessions. Maintain
 `research.md` in the session artifact directory with the objective, hypothesis,
 constraints/budgets, experiment IDs, accepted steering and next decision.
+
+## Finding previous research
+
+Open the [research topic guide](catalog.md) for the main investigations and
+the local [session catalog](../output/research/index.md) for short abstracts,
+tested hypotheses, outcomes and evidence links. The local catalog includes
+sessions under `output/research/sessions/` and explicitly named sessions directly
+under `output/research/`. It reads `abstract.md`, so searching it does not require
+reading long reports or raw telemetry:
+
+```bash
+.venv/bin/python scripts/research_index.py
+.venv/bin/python scripts/research_index.py --search "winding"
+```
+
+New default directories use `YYYY-MM-DD-topic-unique-suffix`, with a UTC date. The topic comes
+from `--name` or the first prompt line. Use `--name` for a short, specific topic;
+interactive sessions without an initial prompt start as `interactive-research`.
+`--session-dir` still selects an exact new directory. Runtime world IDs and
+experiment IDs remain independent of these names.
+
+Each agent maintains `abstract.md` using the [abstract template](abstract-template.md),
+alongside its notebook and report. It records pending, completed, interrupted or
+blocked work explicitly and links the measurements behind each tested claim.
+The launcher creates a pending abstract and refreshes the local catalog at
+startup and exit; the agent refreshes it during research turns, including desktop
+attachment. Legacy sessions without an abstract are labeled as missing a summary.
+
+Older hash paths contain absolute references in reports, manifests, attachment
+configuration and conversation history. Descriptive directory aliases let readers
+browse those sessions without moving the evidence. The catalog lists each
+physical session once and prefers its descriptive alias. Keep both paths stable
+while a supervisor is running. Session artifacts and aliases are ignored by Git;
+the topic guide preserves a short account of the existing findings in the repo.
 
 ## Batch mode and diagnostics
 

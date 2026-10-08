@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src/python'))
 sys.path.insert(0, str(ROOT))
 from hp_sim5_research.services import RuntimeService, free_port, stop_process
+from hp_sim5_research.archive import initial_abstract, session_name, write_index
 
 
 def codex_environment():
@@ -188,6 +189,7 @@ def main():
     mode.add_argument('--batch', action='store_true', help='Run codex exec and save JSONL events')
     mode.add_argument('--serve', action='store_true', help='Supervise services for desktop MCP attachment until interrupted')
     parser.add_argument('--session-dir', type=Path, help='New session artifact directory (must not exist)')
+    parser.add_argument('--name', help='Short research topic used in the default session directory name')
     parser.add_argument('--sidebar-section', help='Desktop sidebar section UUID, or none; defaults to output/research/sidebar.json')
     # Everything after -- belongs to Codex, including resume and its normal options.
     argv = sys.argv[1:]
@@ -220,11 +222,16 @@ def main():
                 print('Sidebar categorization skipped: codex_app MCP server is not enabled in this Codex CLI configuration.',
                       file=sys.stderr)
                 sidebar_section = None
+        topic = args.name or (prompt.strip().splitlines()[0] if prompt and prompt.strip() else
+                              'service research' if args.serve else 'interactive research')
         session = (args.session_dir.resolve() if args.session_dir else
-                   ROOT / 'output/research/sessions' / ('dry-run' if args.dry_run else uuid.uuid4().hex))
+                   ROOT / 'output/research/sessions' / ('dry-run' if args.dry_run else session_name(topic)))
+        catalog_root = (ROOT / 'output/research' if session.is_relative_to(ROOT / 'output/research')
+                        else session.parent)
         instructions = (ROOT / 'research/AGENTS.md').read_text()
         instructions += (f'\nSession artifacts: {session}\n'
                          f'Write the research record to {session / "research.md"} and final report to {session / "report.md"}.\n'
+                         f'Keep the searchable abstract at {session / "abstract.md"} current too.\n'
                          'This launcher started a fresh native world. Conversation resume does not restore physics checkpoints.\n')
         full_prompt = prompt or ''
         if args.dry_run:
@@ -235,14 +242,16 @@ def main():
             return 0
         session.mkdir(parents=True)
         session_created = True
+        (session / 'prompt.txt').write_text(full_prompt)
+        (session / 'research.md').write_text(f'# Research record\n\nObjective: {prompt or "Set in the Codex conversation"}\n\nCurrent hypothesis: pending.\nConstraints and budgets: set before experiments.\nExperiment IDs: none yet.\nAccepted steering: none yet.\nNext decision: establish a measurable baseline.\n')
+        (session / 'abstract.md').write_text(initial_abstract(topic))
+        write_index(catalog_root)
         endpoint = None
         if args.viewer != 'none':
             viewer, endpoint = start_viewer(args.viewer, session)
         runtime = RuntimeService(ROOT, session / 'native', endpoint,
                                  backend=args.physics_backend, record=not args.no_record, machine=args.machine).start()
         runtime_status = runtime.call('status')
-        (session / 'prompt.txt').write_text(full_prompt)
-        (session / 'research.md').write_text(f'# Research record\n\nObjective: {prompt or "Set in the Codex conversation"}\n\nCurrent hypothesis: pending.\nConstraints and budgets: set before experiments.\nExperiment IDs: none yet.\nAccepted steering: none yet.\nNext decision: establish a measurable baseline.\n')
         descriptor = session / 'connection.json'
         descriptor.touch(mode=0o600)
         descriptor.write_text(json.dumps({'repo': str(ROOT), 'session_id': runtime_status['session_id'],
@@ -314,6 +323,10 @@ def main():
         stop_process(viewer)
         if session_created:
             (session / 'exit.json').write_text(json.dumps({'returncode': returncode}) + '\n')
+            try:
+                write_index(catalog_root)
+            except OSError as error:
+                print(f'Research catalog refresh failed: {error}; run scripts/research_index.py.', file=sys.stderr)
 
 
 if __name__ == '__main__':
