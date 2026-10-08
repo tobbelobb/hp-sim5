@@ -307,7 +307,15 @@ def _solve_joint(world, path, index, joint, points, direction, error, iteration,
 
 
 class PBDCableConstraintSolver:
+    def __init__(self, device=None):
+        self.compiled = None
+        if device is not None:
+            from .warp_solver import WarpCableConstraintSolver
+            self.compiled = WarpCableConstraintSolver(device)
+
     def update(self, world, dt_unused):
+        if self.compiled is not None:
+            return self.compiled.update(world, dt_unused)
         paths = world.query([CablePathComponent])
         dt = world.get_resource('dt')
         loads = ({}, {}, {})

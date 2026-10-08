@@ -27,7 +27,11 @@ solver as the browser. `--machine hp3` selects the HP3 scene and matching RRF
 configuration; HP4 remains the default. Use `--physics-backend native-python`
 for the independent Python engine, or `--viewer none --no-record` for numerical
 batches without Rerun logging. Fresh `run_experiment` trials still use Python.
-See [measured collection performance](collection-performance.md).
+Fresh trials can select `cable_solver_device='cpu'` for the optional compiled
+Warp cable solver. Continuing sessions use `--physics-backend native-warp`;
+`native-warp-cuda` is experimental and requires a CUDA device. Other physics
+systems still execute in Python. See the [compiled solver measurements and
+limits](compiled-python-solver.md) and [measured collection performance](collection-performance.md).
 
 The terminal goes directly to Codex. Continue talking and steering in that same
 conversation; services remain alive between turns. Background services have

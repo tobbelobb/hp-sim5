@@ -99,6 +99,20 @@ def test_input_and_artifact_path_boundaries(experiment_root):
         read_run(experiment_root, '../outside')
 
 
+def test_compiled_fresh_experiment_records_backend(experiment_root):
+    pytest.importorskip('warp')
+    trial = run_experiment(experiment_root, steps=5, record=False, cable_solver_device='cpu')
+    assert trial['status'] == 'complete'
+    assert trial['backend'] == 'native-warp' and trial['cable_solver_device'] == 'cpu'
+    assert trial['packages']['warp-lang']
+    assert read_run(experiment_root, trial['run_id']) == trial
+    baseline = run_experiment(experiment_root, steps=5, record=False)
+    comparison = compare_runs(experiment_root, baseline['run_id'], trial['run_id'])
+    assert comparison['changed_inputs'] == ['packages', 'backend', 'cable_solver_device']
+    with pytest.raises(ValueError, match='cable_solver_device'):
+        run_experiment(experiment_root, cable_solver_device='automatic')
+
+
 @pytest.mark.asyncio
 async def test_stdio_mcp_discovery_execution_readback_and_error():
     from mcp import Client, StdioServerParameters

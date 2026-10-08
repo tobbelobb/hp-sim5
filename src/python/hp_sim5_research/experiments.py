@@ -115,8 +115,11 @@ def metrics(samples):
     }
 
 
-def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=None, label='', record=True):
+def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=None, label='', record=True,
+                   cable_solver_device=None):
     root = Path(root).resolve()
+    if cable_solver_device not in (None, 'cpu', 'cuda:0'):
+        raise ValueError('cable_solver_device must be cpu, cuda:0, or None')
     if isinstance(steps, bool) or not isinstance(steps, int) or not 1 <= steps <= MAX_STEPS:
         raise ValueError(f'steps must be an integer in [1, {MAX_STEPS}]')
     if dt is not None and (isinstance(dt, bool) or not isinstance(dt, (int, float)) or not math.isfinite(dt) or dt <= 0):
@@ -126,7 +129,7 @@ def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=No
     # Freeze composed USD inputs, including referenced layers and baked cable initialization.
     started = time.perf_counter()
     frozen_scene = open_cable_scene(scene_path).Flatten().ExportToString()
-    world = load_machine_world(frozen_scene)
+    world = load_machine_world(frozen_scene, cable_solver_device=cable_solver_device)
     dt = world.get_resource('dt') if dt is None else dt
     if not isinstance(dt, (int, float)) or not math.isfinite(dt) or dt <= 0:
         raise ValueError('Authored dt must be positive and finite')
@@ -146,7 +149,9 @@ def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=No
     for path in sorted((root / 'src/python').rglob('*.py')):
         source.update(str(path.relative_to(root)).encode() + b'\0' + path.read_bytes())
     revision = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=root, capture_output=True, text=True)
-    manifest = {'schema_version': 2, 'backend': 'native-python', 'run_id': run_id, 'label': label, 'status': 'running',
+    backend = {None: 'native-python', 'cpu': 'native-warp', 'cuda:0': 'native-warp-cuda'}[cable_solver_device]
+    manifest = {'schema_version': 2, 'backend': backend, 'cable_solver_device': cable_solver_device,
+                'run_id': run_id, 'label': label, 'status': 'running',
                 'scene': str(scene_path.relative_to(root)), 'scene_generation': world.get_resource('sceneGeneration'), 'steps': steps, 'dt_s': dt,
                 'commands_sha256': digest(encode(commands).encode()), 'scene_sha256': digest(frozen_scene.encode()),
                 'python_source_sha256': source.hexdigest(), 'git_revision': revision.stdout.strip(),
@@ -156,6 +161,8 @@ def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=No
                 'artifacts': {name: str(directory / file) for name, file in
                               [('manifest', 'manifest.json'), ('scene', 'scene.usda'), ('commands', 'commands.json'),
                                ('telemetry', 'telemetry.jsonl'), ('snapshot', 'final.json')]}}
+    if cable_solver_device is not None:
+        manifest['packages']['warp-lang'] = version('warp-lang')
     recording = None
     write_json(directory / 'manifest.json', manifest)
     try:
@@ -215,8 +222,9 @@ def compare_runs(root, baseline_id, candidate_id):
     if set(positions) != {frame['path'] for frame in after['effectors']}:
         raise ValueError('Compare runs with identical effector identities')
     return {'baseline_id': baseline_id, 'candidate_id': candidate_id,
-            'changed_inputs': [key for key in ('scene_sha256', 'commands_sha256', 'python_source_sha256', 'packages', 'record')
-                               if baseline[key] != candidate[key]],
+            'changed_inputs': [key for key in ('scene_sha256', 'commands_sha256', 'python_source_sha256', 'packages',
+                                              'record', 'backend', 'cable_solver_device')
+                               if baseline.get(key) != candidate.get(key)],
             'metric_delta_candidate_minus_baseline': {key: candidate['metrics'][key] - value
                                                       for key, value in baseline['metrics'].items() if isinstance(value, (int, float))},
             'final_effector_distance_m': {frame['path']: math.dist(positions[frame['path']], frame['position'])

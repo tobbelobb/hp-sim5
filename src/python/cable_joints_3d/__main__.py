@@ -31,6 +31,8 @@ def main():
     parser.add_argument('--output', type=Path, help='RRD file; defaults to a timestamped file in output/rerun')
     parser.add_argument('--snapshot', type=Path, help='Also save final frames and cable telemetry as JSON')
     parser.add_argument('--connect', help='Optional Rerun gRPC sink URI for live viewing')
+    parser.add_argument('--cable-solver-device', choices=['cpu', 'cuda:0'],
+                        help='Opt-in compiled Warp solver; CUDA is experimental')
     args = parser.parse_args()
     if args.steps < 0 or (args.dt is not None and (not math.isfinite(args.dt) or args.dt <= 0)):
         parser.error('steps must be nonnegative and dt must be positive and finite')
@@ -39,7 +41,7 @@ def main():
         commands = json.loads(args.commands.read_text()) if args.commands is not None else None
         if commands is not None and not isinstance(commands, list):
             parser.error('commands must be a JSON array')
-        world = load_machine_world(args.scene, args.scene_prim)
+        world = load_machine_world(args.scene, args.scene_prim, cable_solver_device=args.cable_solver_device)
         if args.dt is not None:
             world.set_resource('dt', args.dt)
         dt = world.get_resource('dt')

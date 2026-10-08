@@ -180,8 +180,8 @@ def main():
     parser.add_argument('--doctor', action='store_true', help='Explicitly run diagnostics, including real RRF/native collection and autocal loading')
     parser.add_argument('--dry-run', action='store_true', help='Show the Codex command and task without starting processes')
     parser.add_argument('--viewer', choices=['headless', 'window', 'none'], default='headless')
-    parser.add_argument('--physics-backend', choices=['headless-js', 'native-python'], default='headless-js',
-                        help='Continuing collection physics: production JS by default; Python for differential research')
+    parser.add_argument('--physics-backend', choices=['headless-js', 'native-python', 'native-warp', 'native-warp-cuda'], default='headless-js',
+                        help='Continuing physics: JS by default; native-warp compiles the Python cable solver (CUDA experimental)')
     parser.add_argument('--no-record', action='store_true', help='Keep numerical collection evidence without Rerun logging')
     parser.add_argument('--machine', choices=['hp3', 'hp4'], default='hp4', help='Matched scene and RRF configuration')
     parser.add_argument('--dont-ask', action='store_true', help='Disable structured clarification questions in Default mode')

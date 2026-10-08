@@ -81,7 +81,7 @@ if __name__ == '__main__':
     parser.add_argument('scene', type=Path)
     parser.add_argument('events', type=Path)
     parser.add_argument('--output', required=True, type=Path, help='New artifact directory')
-    parser.add_argument('--backend', choices=['headless-js', 'native-python'], default='headless-js')
+    parser.add_argument('--backend', choices=['headless-js', 'native-python', 'native-warp', 'native-warp-cuda'], default='headless-js')
     parser.add_argument('--no-record', action='store_true')
     result = asyncio.run(replay(parser.parse_args()))
     print(json.dumps(result, indent=2))

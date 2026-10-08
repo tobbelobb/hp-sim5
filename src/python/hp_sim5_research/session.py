@@ -21,9 +21,10 @@ from .experiments import DEFAULT_SCENE, encode, repo_path, sample, validate_comm
 
 class NativeSession:
     def __init__(self, root, directory, scene=DEFAULT_SCENE, *, backend='native-python', record=True):
-        if backend not in ('native-python', 'headless-js'):
-            raise ValueError('Physics backend must be native-python or headless-js')
+        if backend not in ('native-python', 'headless-js', 'native-warp', 'native-warp-cuda'):
+            raise ValueError('Unknown physics backend')
         self.backend = backend
+        self.cable_solver_device = {'native-warp': 'cpu', 'native-warp-cuda': 'cuda:0'}.get(backend)
         self.recording_enabled = record
         self.root = Path(root)
         self.js_physics = None
@@ -35,7 +36,7 @@ class NativeSession:
         self.directory.mkdir(parents=True, exist_ok=True)
         self.frozen_scene = open_cable_scene(repo_path(root, scene)).Flatten().ExportToString()
         (self.directory / 'scene.usda').write_text(self.frozen_scene)
-        self.world = load_machine_world(self.frozen_scene)
+        self.world = load_machine_world(self.frozen_scene, cable_solver_device=self.cable_solver_device)
         self.dt = self.world.get_resource('dt')
         if not math.isclose(self.dt, .002, abs_tol=1e-12):
             raise ValueError('RRF bridge requires a 0.002 s physics timestep')
@@ -227,7 +228,7 @@ class NativeSession:
                     'axes': payload['axes'], 'anglesDeg': angles}
         if kind == 'reset':
             async with self.lock:
-                self.world = load_machine_world(self.frozen_scene)
+                self.world = load_machine_world(self.frozen_scene, cable_solver_device=self.cable_solver_device)
                 self.epoch += 1
                 self.world.set_resource('sceneGeneration', self.epoch + 1)
                 self.remote = self.world.get_system(RemoteSpoolSystem)

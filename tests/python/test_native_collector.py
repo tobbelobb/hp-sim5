@@ -16,6 +16,32 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.mark.asyncio
+async def test_compiled_session_encoder_barrier_reset_and_cancel(tmp_path):
+    pytest.importorskip('warp')
+    from cable_joints_3d.pbd_cable_constraint_solver import PBDCableConstraintSolver
+    session = NativeSession(ROOT, tmp_path, backend='native-warp', record=False)
+    try:
+        compiled = session.world.get_system(PBDCableConstraintSolver).compiled
+        assert compiled.device.is_cpu
+        await session.handle({'commands': [{'type': 'Move', 'A': -.001}, {},
+                                          {'type': 'SetTorqueMode', 'axis': 'B', 'torqueNm': -.003}]})
+        result = await session.handle({'type': 'encoder_request', 'requestId': 1, 'axes': list('ABCD')})
+        assert session.step == 3 and all(math.isfinite(v) for v in result['anglesDeg'])
+        assert session.status()['backend'] == 'native-warp'
+        await session.handle({'type': 'reset'})
+        assert session.step == 0
+        assert session.world.get_system(PBDCableConstraintSolver).compiled is not compiled
+        await session.advance(.004)
+        assert session.step == 2
+        await session.stop_at_boundary()
+        with pytest.raises(RuntimeError, match='cancel'):
+            await session.advance(.002)
+        assert session.step == 2
+    finally:
+        session.close()
+
+
+@pytest.mark.asyncio
 async def test_bridge_encoder_order_unwrapping_and_diagnostic_offset(tmp_path):
     session = NativeSession(ROOT, tmp_path)
     try:

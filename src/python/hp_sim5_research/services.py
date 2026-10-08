@@ -73,8 +73,8 @@ class RuntimeService:
         self.endpoint = f'http://127.0.0.1:{free_port()}'
         self.process = None
         self.viewer_endpoint = viewer_endpoint
-        if backend not in ('native-python', 'headless-js'):
-            raise ValueError('Physics backend must be native-python or headless-js')
+        if backend not in ('native-python', 'headless-js', 'native-warp', 'native-warp-cuda'):
+            raise ValueError('Unknown physics backend')
         self.backend = backend
         self.record = record
         if machine not in ('hp3', 'hp4'):

@@ -16,14 +16,14 @@ from .stepper_motor import StepperMotorSystem
 from .torque_mode_system import TorqueModeSystem
 
 
-def register_machine_systems(world, recording=None):
+def register_machine_systems(world, recording=None, *, cable_solver_device=None):
     if not world.systems:
         for system in [
             common.PrevFinalPosSystem(), common.PrevFinalOrientationSystem(),
             RemoteSpoolSystem(), StepperMotorSystem(), common.GravitySystem(),
             common.MovementSystem(), common.AngularMovementSystem(), common.RigidBodySyncSystem(),
             CableAttachmentUpdateSystem(False), CableAttachmentCacheSystem(), CableFrictionSystem(),
-            PBDCableConstraintSolver(), PBDResolveCableOverCorrections(),
+            PBDCableConstraintSolver(device=cable_solver_device), PBDResolveCableOverCorrections(),
             common.PBDVelocityUpdateSystem(), common.PBDAngularVelocityUpdateSystem(),
             TorqueModeSystem(), ExtruderSystem(), common.EncoderUpdateSystem(), MissedStepTrackingSystem(),
         ]:
@@ -44,12 +44,12 @@ def register_machine_systems(world, recording=None):
         recorder.update(world, 0.)
 
 
-def load_machine_world(path, scene_prim_path=None, *, recording=None, **options):
+def load_machine_world(path, scene_prim_path=None, *, recording=None, cable_solver_device=None, **options):
     stage = open_cable_scene(path)
     if scene_prim_path is None:
         default = stage.GetMetadata('defaultPrim')
         scene_prim_path = '/World/' + default if default else '/World/SlideprinterScene'
     world = World()
     populate_machine_scene(world, stage, scene_prim_path, **options)
-    register_machine_systems(world, recording)
+    register_machine_systems(world, recording, cable_solver_device=cable_solver_device)
     return world
