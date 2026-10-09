@@ -1,4 +1,6 @@
 import { EncoderComponent } from '../../src/js/cable_joints_3d/ecs.js';
+import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
+import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
 
 export function normalizeWsUrl(raw) {
   if (!raw || typeof raw !== 'string') {
@@ -130,12 +132,15 @@ export function createExternalCommandController({
   commands,
   runtime,
   inspectionTools,
+  featureFlags,
   WebSocketCtor = globalThis.WebSocket,
   logger = console,
   queueLimit = 5000,
 } = {}) {
   const externalCommandQueue = [];
   let socketController = null;
+  let recordingReady = null;
+  let recordingError = null;
 
   function getRemoteSystem() {
     return commands?.getRemoteSystem?.() || null;
@@ -196,6 +201,12 @@ export function createExternalCommandController({
       requestId,
       axes,
       anglesDeg: resolveEncoderAngles(axes),
+      simulationSettings: {
+        closedLoopMotorsEnabled: world.getResource('closedLoopMotorsEnabled') === true,
+        lineLayeringEnabled: world.getResource('enableLayering') === true,
+        recording: world.getResource('flightRecorder')?.socket?.readyState === 1,
+        recordingError,
+      },
       simulationClock: {
         time_ms: (world.getResource('researchClock')?.time ?? 0) * 1000,
         generation: world.getResource('sceneGeneration') || 0,
@@ -215,8 +226,36 @@ export function createExternalCommandController({
     }
     if (payload.type === 'encoder_request') {
       if (payload.requestId != null && Array.isArray(payload.axes)) {
-        respondToEncoderRequest(payload.requestId, payload.axes);
+        if (recordingReady) recordingReady.then(() => respondToEncoderRequest(payload.requestId, payload.axes));
+        else respondToEncoderRequest(payload.requestId, payload.axes);
       }
+      return;
+    }
+    if (payload.type === 'simulation_settings') {
+      if (typeof payload.closedLoopMotorsEnabled === 'boolean') {
+        if (featureFlags) featureFlags.setClosedLoopMotorsEnabledState(payload.closedLoopMotorsEnabled);
+        else setClosedLoopMotorFeatureFlags(world, payload.closedLoopMotorsEnabled);
+      }
+      if (typeof payload.lineLayeringEnabled === 'boolean') {
+        if (featureFlags) {
+          const changed = featureFlags.lineLayeringEnabled !== payload.lineLayeringEnabled;
+          featureFlags.setLineLayeringEnabledState(payload.lineLayeringEnabled);
+          // Layering changes the baked initial cable lengths, as with the UI toggle.
+          if (changed) commands?.handleUserReset?.();
+        } else setLineLayeringFeatureFlags(world, payload.lineLayeringEnabled);
+      }
+      if (payload.recordingUrl) {
+        const recorder = world.getResource('flightRecorder');
+        recordingReady = Promise.resolve().then(() => {
+          if (!recorder) throw new Error('This simulator has no browser flight recorder');
+          recorder.extendedReference = true;
+          return recorder.ensureConnected(payload.recordingUrl);
+        }).then(() => { recordingError = null; }).catch(error => {
+          recordingError = error.message;
+          logger.warn('hp-sim-3d: recording startup failed:', recordingError);
+        });
+      }
+      world.getResource('flightRecorder')?.recordEvent('simulation_settings_applied', payload);
       return;
     }
     if (payload.type === 'reset') {

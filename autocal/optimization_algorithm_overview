@@ -131,6 +131,31 @@ With spool fitting, information is evaluated in modeled lengths.
 The suggested collection command still uses the collector's base-length coordinates.
 Force settings from the dataset are reused. The command requests return to origin.
 
+## Fixed encoder deviations: proposed refinement boundary
+
+Collection now records fixed encoder targets/errors and recollects a direction
+at reduced forces if a fixed encoder exceeds 1.5 degrees of drift. Small measured
+deviations remain useful data; a stationary encoder is not proof of an exact target.
+
+The current spool transformation converts all raw fixed angles but reduces them
+to one median fixed length per sweep. Pointwise fitting then uses that same fixed
+length for every observation. Drive/sensor means and noise are used, but the
+association between a fixed encoder angle and its corresponding point is lost.
+
+The first refinement should retain per-point fixed lengths in
+`dataset_with_modeled_lengths`, then use them in the pointwise objective and its
+JAX implementation. Recompute them for each candidate spool model, using the same
+encoder reference and winding transform as drive/sensor lengths. Keep ellipse
+prefit as an approximate initializer. Final fits and frozen held-out predictions
+must use the same corrected pointwise model.
+
+This is a proposed extension, not an implemented optimization stage. Preserve raw
+data instead of projecting it onto the fitted ellipse. Validate with known small
+fixed-angle perturbations, compare finite-difference/JAX residuals and gradients,
+and test held-out physical predictions. Unknown zero offsets or cogging bias can
+later be bounded nuisance parameters with priors; free per-point corrections
+would let the solver absorb wrong anchors and overstate fit quality.
+
 ## Filter and objective schedules
 
 The default schedules are:

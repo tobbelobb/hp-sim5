@@ -14,6 +14,7 @@ import {
 } from '../../../integrations/klipper/klipperMotorAddressConfig.js';
 import { DEFAULT_KLIPPY_CONFIG_PATH } from '../../../integrations/klipper/klippy_api_cli_config.mjs';
 import { ENCODER_NOISE_DEFAULTS } from '../primitives/encoder_noise.mjs';
+import { collectWithSlipRecovery } from './slip_recovery.mjs';
 import {
   angleToLength,
   assertFixedAnchorAngles,
@@ -1154,6 +1155,14 @@ async function performForceSweep(sendFn, sweepConfig, options) {
       drive_setpoint_mm: driveSetpointMm,
       step_index: stepIndex,
       step_count: stepCount,
+      collection_attempt: options.collectionAttempt ?? 0,
+      fixed_target_angles_deg: fixedTargetByAnchor.map((target, idx) => (
+        Number.isFinite(target) ? target / mmPerDeg[idx] : null
+      )),
+      fixed_error_angles_deg: fixedTargetByAnchor.map((target, idx) => (
+        Number.isFinite(target) ? angles[idx] - target / mmPerDeg[idx] : null
+      )),
+      sensor_force_n: resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce }),
     };
     if (extraFields && typeof extraFields === 'object') {
       Object.assign(point, extraFields);
@@ -1254,6 +1263,10 @@ async function performForceSweep(sendFn, sweepConfig, options) {
         point.sample_duration_ms = noiseStats.durationMs;
       }
       if (Array.isArray(noiseStats.muByMotorDeg)) {
+        settleOptions.validateAngles(noiseStats.muByMotorDeg);
+        point.fixed_error_angles_mu_deg = point.fixed_target_angles_deg.map((target, idx) => (
+          Number.isFinite(target) ? noiseStats.muByMotorDeg[idx] - target : null
+        ));
         const muLengths = noiseStats.muByMotorDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
         if (Number.isFinite(muLengths[driveAnchor])) {
           point.l_drive_mu = muLengths[driveAnchor];
@@ -1310,9 +1323,8 @@ export async function collectSweepData(send, context) {
     forceBuildupFactor,
     preserveBuildupFactor,
     forceBaseRadii,
-    sensorCollectionForce,
   } = options;
-  let { forceLow, forceMid, forceMax } = options;
+  let { forceLow, forceMid, forceMax, sensorCollectionForce } = options;
 
   const sweepConfigs = await resolveSweepConfigs({
     sweepConfigFile: options.sweepConfigFile,
@@ -1364,6 +1376,9 @@ export async function collectSweepData(send, context) {
   }
 
   const m666ForCollection = (m666Adjusted && typeof m666Adjusted === 'object') ? m666Adjusted : m666Before;
+  if (Number(m666ForCollection?.Q) !== 0 && Number.isFinite(Number(m666ForCollection?.Q))) {
+    await context.configureSimulator?.({ lineLayeringEnabled: true });
+  }
   let mmPerDeg = machineConfig.axes.map((_, idx) => computeMmPerDegree(m666ForCollection, idx));
 
   if (firmware === 'klipper' && mmPerDeg.some((value) => !Number.isFinite(value))) {
@@ -1449,7 +1464,7 @@ export async function collectSweepData(send, context) {
         motorIds,
         mmPerDeg,
         forceLow,
-        forceMax,
+        forceMax: resolveCollectionForce({ forceMid, forceMax, preloadMultiplier: 20 }),
         pairAnchors: sizeTunePair,
         forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
         speedup,
@@ -1511,6 +1526,8 @@ export async function collectSweepData(send, context) {
     }
 
     const aggregatedPoints = [];
+    const recoveryEvents = [];
+    const directionForces = [];
     for (let i = 0; i < subSweeps.length; i += 1) {
       const subCfg = subSweeps[i];
       console.log(
@@ -1520,44 +1537,58 @@ export async function collectSweepData(send, context) {
       // Re-apply positioning for each sub-sweep to cover the full circle arc in both directions.
       // This ensures fixed anchors are retightened before changing drive/sensor roles.
       // eslint-disable-next-line no-await-in-loop
-      await prepareSweepPositioning(send, subCfg, {
-        motorIds,
-        axes: machineConfig.axes,
-        mmPerDeg,
-        forceMid,
-        forceMax,
-        forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
-        fixedTargets,
-        feed,
-        speedup,
-      });
+      const sweepResult = await collectWithSlipRecovery(send, async (forces, attempt) => {
+        if (attempt > 0) {
+          await returnMotorsToOriginOneAtATime(send, {
+            motorIds, axes: machineConfig.axes, mmPerDeg, feed, speedup,
+            midForce: forces.forceLow,
+            forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
+          });
+        }
+        await prepareSweepPositioning(send, subCfg, {
+          motorIds,
+          axes: machineConfig.axes,
+          mmPerDeg,
+          ...forces,
+          forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
+          fixedTargets,
+          feed,
+          speedup,
+        });
 
-      // eslint-disable-next-line no-await-in-loop
-      const sweepResult = await performForceSweep(send, subCfg, {
-        axes: machineConfig.axes,
-        motorIds,
-        sweepPoints,
-        feed,
-        speedup,
-        mmPerDeg,
-        datasetStartMs,
-        forceLow,
-        forceMid,
-        forceMax,
-        sensorCollectionForce,
-        noiseSampleCount,
-        noiseSampleIntervalMs,
-        noiseMinSamples,
-        noiseSigmaFloorDeg,
-        fixedAnchors: sweepConfig.fixedAnchors,
-        fixedTargets,
-        projectZeroTension: options.projectZeroTension,
-        forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
-        onPoint: context.onPoint,
-        baseRadiusMm: Array.isArray(m666ForCollection?.R)
-          ? m666ForCollection.R[subCfg.driveAnchor]
-          : m666ForCollection?.R,
+        return performForceSweep(send, subCfg, {
+          axes: machineConfig.axes,
+          motorIds,
+          sweepPoints,
+          feed,
+          speedup,
+          mmPerDeg,
+          datasetStartMs,
+          ...forces,
+          collectionAttempt: attempt,
+          noiseSampleCount,
+          noiseSampleIntervalMs,
+          noiseMinSamples,
+          noiseSigmaFloorDeg,
+          fixedAnchors: sweepConfig.fixedAnchors,
+          fixedTargets,
+          projectZeroTension: options.projectZeroTension,
+          forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
+          onPoint: context.onPoint,
+          baseRadiusMm: Array.isArray(m666ForCollection?.R)
+            ? m666ForCollection.R[subCfg.driveAnchor]
+            : m666ForCollection?.R,
+        });
+      }, {
+        motorIds, forceLow, forceMid, forceMax, sensorCollectionForce,
+        onRecovery: recovery => context.onRecovery?.({ ...recovery, sweep: subCfg, direction: i }),
       });
+      ({ forceMid, forceMax } = sweepResult.forces);
+      sensorCollectionForce = sweepResult.forces.sensorCollectionForce;
+      recoveryEvents.push(...sweepResult.recoveries.map(event => ({ ...event, direction: i })));
+      directionForces.push({ drive_anchor: subCfg.driveAnchor, sensor_anchor: subCfg.sensorAnchor,
+        sensor_force_n: resolveCollectionForce(sweepResult.forces),
+        pullout_force_n: resolveCollectionForce({ forceMid, forceMax, preloadMultiplier: 20 }) });
       const remapped = remapDataPointsToCanonical(
         sweepResult.dataPoints,
         sweepConfig,
@@ -1597,6 +1628,8 @@ export async function collectSweepData(send, context) {
         sweep_method: 'position',
         feed_rate: feed,
         sensor_force_n: resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce }),
+        direction_forces: directionForces,
+        slip_recoveries: recoveryEvents,
         settle_ms: settleMs,
       },
     });

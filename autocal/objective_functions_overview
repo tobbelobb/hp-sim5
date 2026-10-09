@@ -76,6 +76,30 @@ Priors apply to spool parameters. They do not directly regularize anchors.
 - The radius-pair prior keeps per-anchor radii near their mean.
   It applies even when no radius prior sigma is supplied.
 
+## Fixed encoder errors and uncertainty
+
+Current residuals use drive/sensor lengths, means and encoder noise. The noise
+model also has aggregate friction/cogging and flex terms. Fixed encoder angles
+contribute only through the spool transform's sweep median; their per-point
+deviations and uncertainty are not used by the NumPy or JAX pointwise residual.
+New collector target/error fields do not change this behavior yet.
+
+A measured difference from a commanded fixed angle is primarily an observed
+change in geometry, not an unknown measurement error. The proposed pointwise
+extension should evaluate each observation with its actual modeled fixed lengths,
+rather than pretending that every point shares a constant fixed length. That
+belongs in `_pointwise_sweep_residuals` and the equivalent JAX geometry/residual
+path, after candidate-dependent spool conversion.
+
+Separately, propagate fixed encoder uncertainty through the geometry sensitivity
+into residual variance, alongside drive/sensor uncertainty. A quiet sample's zero
+standard deviation does not bound systematic bias; retain a defensible floor or
+bounded prior. Anchor estimates can supply these sensitivities during fitting.
+Do not freely adjust each observation to fit the current anchors: that would
+remove the evidence the optimizer is meant to explain. This model change is
+proposed and needs synthetic perturbation, derivative-parity and held-out tests
+before affecting scores, filtering or final history selection.
+
 ## Plan scores and patience
 
 `_plan_score_ui(...)` returns `raw_fit_score_ui`, `rank_score`, and `score_basis`.

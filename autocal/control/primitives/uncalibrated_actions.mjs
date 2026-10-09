@@ -289,6 +289,14 @@ export function resolveCollectionForce({ forceMid, forceMax, sensorCollectionFor
   return Number.isFinite(forceMax) ? Math.min(forceMax, preload) : (preload ?? 0);
 }
 
+export class FixedAnchorDriftError extends Error {
+  constructor(anchor, driftDeg, toleranceDeg) {
+    super(`Fixed anchor ${anchor} drifted ${driftDeg.toFixed(3)}deg from its target (limit ${toleranceDeg}deg)`);
+    this.anchor = anchor;
+    this.driftDeg = driftDeg;
+  }
+}
+
 export function assertFixedAnchorAngles(anglesDeg, {
   fixedTargetByAnchor, mmPerDeg, toleranceDeg = DEFAULT_STABILITY_TOLERANCE_DEG,
 } = {}) {
@@ -297,9 +305,8 @@ export function assertFixedAnchorAngles(anglesDeg, {
     if (!Number.isFinite(targetMm)) continue;
     const targetDeg = targetMm / mmPerDeg[idx];
     const driftDeg = anglesDeg[idx] - targetDeg;
-    if (!Number.isFinite(driftDeg) || Math.abs(driftDeg) > toleranceDeg) {
-      throw new Error(`Fixed anchor ${idx} drifted ${driftDeg.toFixed(3)}deg from its target (limit ${toleranceDeg}deg); reduce sweep force before collecting data`);
-    }
+    if (!Number.isFinite(driftDeg)) throw new Error(`Fixed anchor ${idx} has an invalid encoder/target conversion`);
+    if (Math.abs(driftDeg) > toleranceDeg) throw new FixedAnchorDriftError(idx, driftDeg, toleranceDeg);
   }
 }
 

@@ -11,6 +11,7 @@ import {
   sendHpSimPositionTraceMode,
   sendHpSimReset,
   sendHpSimSpeedScale,
+  sendHpSimSettings,
   sleep as baseSleep,
   startRrfSimulator,
   stopProcess,
@@ -364,6 +365,8 @@ export function parseBridgeArgs(argv) {
       args.debugSweepActions = true;
     } else if (arg === '--trace' || arg === '--trace-positions') {
       args.trace = true;
+    } else if (arg === '--line-layering') {
+      args.lineLayering = true;
     } else if (arg === '--sweep-config-file' || arg === '--sweep-config' || arg === '--sweepFile') {
       args.sweepConfigFile = argv[++i] || null;
     } else if (arg === '--continuous') {
@@ -415,6 +418,7 @@ Options:
   --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor per line)
   --debug-sweep              Print planned sweep permutations before collecting
   --trace                    Tell hp-sim to plot a trace of its movements (default: on)
+  --line-layering             Enable simulator line layering (also automatic for nonzero M666 Q)
   --no-trace                 Disable hp-sim trace plotting
   --project-zero-tension     Project encoder readings to zero tension during each data point
   --output-file <path>       Output JSON path (default: sweep_data_<machine>_<timestamp>.json)
@@ -628,6 +632,15 @@ async function main() {
       if (args.hpSimReset) {
         await sendHpSimReset(bridgeCtx, { quiet: args.quiet });
       }
+      if (args.sim) {
+        await sendHpSimSettings(bridgeCtx, {
+          closedLoopMotorsEnabled: true,
+          ...(args.lineLayering || (Number.isFinite(Number(args.forceBuildupFactor)) && Number(args.forceBuildupFactor) !== 0)
+            ? { lineLayeringEnabled: true } : {}),
+          ...(!args.headlessUrl && process.env.AUTOCAL_REFERENCE_WS
+            ? { recordingUrl: process.env.AUTOCAL_REFERENCE_WS } : {}),
+        });
+      }
       if (speedup !== 1) {
         await sendHpSimSpeedScale(bridgeCtx, speedup, { quiet: args.quiet });
       }
@@ -644,6 +657,14 @@ async function main() {
       motorIds,
       speedup,
       delayFn: send.simulationClock?.sleep ?? sleep,
+      configureSimulator: args.sim && !args.noWs
+        ? async settings => {
+          await sendHpSimSettings(bridgeCtx, settings);
+          // Enabling layering rebakes/reset the browser scene, including its speed.
+          if (speedup !== 1) await sendHpSimSpeedScale(bridgeCtx, speedup, { quiet: args.quiet });
+          if (args.trace) await sendHpSimPositionTraceMode(bridgeCtx, true, { quiet: args.quiet });
+        } : null,
+      onRecovery: recovery => reference.emit('sweep_recovery', recovery, bridgeCtx.simulationClock),
       onPoint: async (point, config) => {
         reference.emit('measurement', { point, config }, bridgeCtx.simulationClock);
         if (args.headlessUrl) await fs.appendFile(`${args.outputFile}.partial-points.jsonl`, `${JSON.stringify({ backend: send.simulationClock.backend, service_url: args.headlessUrl, config, point })}\n`);

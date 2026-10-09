@@ -333,7 +333,8 @@ async def run(args):
                 if sample.get("type") == "autocal_event":
                     if extended_recording is None:
                         raise ValueError("Events require --extended-reference")
-                    if sample.get("kind") in ("run_start", "collection_start", "gcode_send") and active_browser is None:
+                    # Startup metadata precedes the collector's browser recorder request.
+                    if sample.get("kind") == "gcode_send" and active_browser is None:
                         raise ValueError("Connect the visual browser recorder before starting autocal")
                     await write(extended_recording.log_event, sample)
                     await socket.send(json.dumps({"type": "event_ack"}))

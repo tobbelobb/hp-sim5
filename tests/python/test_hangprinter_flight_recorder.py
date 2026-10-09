@@ -183,6 +183,11 @@ def test_live_recorder_negotiates_sampling_and_drains_collector_events(tmp_path)
                     raise AssertionError('Recorder startup timed out')
                 time.sleep(.05)
         with browser:
+            # Autocal metadata is emitted before its collector starts the browser recorder.
+            browser.send(json.dumps(dict(version=1, type='autocal_event', source='python',
+                                         kind='run_start', wall_time_ms=1_800_000_000_100,
+                                         sim_time_s=None, sim_time_source='unavailable')))
+            assert json.loads(browser.recv())['type'] == 'event_ack'
             browser.send(json.dumps(dict(sample(), wall_time_ms=1_800_000_000_123)))
             assert json.loads(browser.recv()) == {'type': 'recording_config', 'sample_stride': 10, 'geometry_detail': 'compact'}
             assert json.loads(browser.recv())['type'] == 'ack'
@@ -204,6 +209,8 @@ def test_live_recorder_negotiates_sampling_and_drains_collector_events(tmp_path)
     assert len(reader.recordings()) == 1
     events = reader.stream().filter(content='/autocal/collector', components='event_json').to_chunks()
     assert sum(chunk.num_rows for chunk in events) == 151
+    startup = reader.stream().filter(content='/autocal/python', components='event_json').to_chunks()
+    assert sum(chunk.num_rows for chunk in startup) == 1
     assert all('wall_time' in chunk.timeline_names for chunk in events)
     physics = reader.stream().filter(content='/line_lengths/test/A', components='Scalars:scalars').to_chunks()
     steps = sorted(step for chunk in physics for step in chunk.to_record_batch().column('sim_step').to_pylist())

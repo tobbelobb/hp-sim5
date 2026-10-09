@@ -19,9 +19,13 @@ Open the **visual 3D simulator**, with these query parameters:
 
 <http://localhost:5173/hp-sim5/hp-sim-3d/?gcode_ws=ws://localhost:8790&rerun_ws=ws://127.0.0.1:9877&extended_autocal=1>
 
-Select the intended machine and scene options, leave physics paused initially,
-and check that the Rerun button says **recording**. The first snapshot must reach
-the recorder before autocal starts; it rejects collection if no browser is connected.
+Select the intended machine and scene options and leave physics paused initially.
+Autocal enables **Closed Loop Motors** and, for nonzero buildup, **Line Layering**.
+Changing layering rebakes/resets the scene before movement; the collector then
+reapplies the requested speed and Trace. `--extended-reference-ws` also connects
+the browser recorder if needed, preserving an existing recording at that address.
+It waits for the first physics sample to be acknowledged before sending G-codes.
+You can still connect with the Rerun button yourself.
 Use one simulator tab. For example, for the HP3 scene (`hangprinter_4`):
 
 ```bash
@@ -102,7 +106,8 @@ every five wall seconds; a paused clock eventually fails instead of waiting fore
 Requested speed never divides poll intervals, motion waits or force windows.
 
 Sweep positioning and pullout use at most 20 times the tuned start force;
-measurement preload uses at most five times that force. Both defaults are bounded
+measurement preload uses at most five times that force. Travel measurement also
+uses the capped pullout force. Both defaults are bounded
 by the tuned maximum. The edge force measured during tuning can overload a held
 motor in another geometry, so it is not used directly for these operations.
 `--sensor-collection-force` overrides the measurement preload. Dataset metadata
@@ -112,9 +117,20 @@ maximum.
 During sweep settling and before accepting a point, fixed motor encoders must
 remain within 1.5 degrees of their requested targets. This check uses `M569.3`
 encoder readings and requires no force sensors. An encoder that becomes quiet
-after slipping is rejected; collection errors request position hold for all
-motors before disconnecting. Active pullout has a 120-second selected-clock
+after slipping triggers recovery: hold all motors, halve the free-motor force
+commands (keeping idle preload), return to encoder origin, restore the fixed
+targets, and recollect the affected direction. Points from failed attempts are
+excluded from the final dataset. Up to three retries are allowed; reduced forces
+carry into subsequent directions and sweeps. Other collection errors or exhausted
+recovery request position hold before disconnecting. Active pullout has a 120-second selected-clock
 deadline as well as the independent wall deadline.
+
+Points retain requested fixed angles, raw/mean fixed encoder errors and the actual
+sensor force command. Sweep metadata records each direction's force commands and
+slip recoveries; timestamped `sweep_recovery` events identify discarded attempts
+in the extended recording. These fields describe measurements and commands, not
+measured cable tensions. The current optimizer does not yet consume pointwise
+fixed errors; see `objective_functions_overview` for the proposed model change.
 
 ## What is preserved
 

@@ -359,3 +359,23 @@ export async function sendHpSimPositionTraceMode(bridgeCtx, enabled, { quiet = f
   }
   await sleep(25);
 }
+
+export async function sendHpSimSettings(bridgeCtx, settings) {
+  bridgeCtx.broadcast({ type: 'simulation_settings', ...settings });
+  const response = bridgeCtx.sendEncoderRequest
+    ? await bridgeCtx.sendEncoderRequest([], 10000)
+    : await bridgeCtx.waitForHpSimConnection();
+  const applied = response?.simulationSettings;
+  if (bridgeCtx.sendEncoderRequest && !applied) {
+    throw new Error('Simulator settings acknowledgement missing; reload the simulator page');
+  }
+  for (const key of ['closedLoopMotorsEnabled', 'lineLayeringEnabled']) {
+    if (applied && typeof settings[key] === 'boolean' && applied[key] !== settings[key]) {
+      throw new Error(`Simulator did not apply ${key}=${settings[key]}`);
+    }
+  }
+  if (settings.recordingUrl && applied && (applied.recordingError || !applied.recording)) {
+    throw new Error(`Rerun recording could not start: ${applied.recordingError ?? 'not connected'}`);
+  }
+  return applied;
+}

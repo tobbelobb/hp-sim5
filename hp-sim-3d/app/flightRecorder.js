@@ -16,6 +16,7 @@ export class FlightRecorder {
     this.sampleStride = 1;
     this.geometryDetail = 'full';
     this.lastSentStep = null;
+    this.acknowledged = false;
     button?.addEventListener('click', () => this.socket ? this.disconnect() : this.connect());
   }
 
@@ -32,6 +33,7 @@ export class FlightRecorder {
     this.generation = null;
     this.session = globalThis.crypto.randomUUID();
     this.pending = 0;
+    this.acknowledged = false;
     this.setStatus('Rerun: connecting');
     socket.addEventListener('open', () => {
       if (this.socket !== socket) return;
@@ -45,7 +47,10 @@ export class FlightRecorder {
         this.sampleStride = message.sample_stride;
         this.geometryDetail = message.geometry_detail;
       }
-      if (message.type === 'ack') this.pending = Math.max(0, this.pending - 1);
+      if (message.type === 'ack') {
+        this.acknowledged = true;
+        this.pending = Math.max(0, this.pending - 1);
+      }
     });
     socket.addEventListener('close', () => {
       if (this.socket !== socket) return;
@@ -63,6 +68,36 @@ export class FlightRecorder {
     this.socket = null;
     this.pending = 0;
     this.setStatus('Rerun', false);
+  }
+
+  async ensureConnected(url, timeoutMs = 5000) {
+    if (this.socket && this.url !== url) throw new Error(`Already recording to ${this.url}`);
+    this.url = url;
+    this.connect();
+    const socket = this.socket;
+    if (socket.readyState === 1 && this.acknowledged) return;
+    try {
+      await new Promise((resolve, reject) => {
+        const timer = setTimeout(() => finish(new Error('Rerun connection timed out')), timeoutMs);
+        const acknowledged = event => {
+          if (JSON.parse(event.data).type === 'ack') finish();
+        };
+        const failed = () => finish(new Error('Rerun connection failed'));
+        function finish(error) {
+          clearTimeout(timer);
+          socket.removeEventListener('message', acknowledged);
+          socket.removeEventListener('error', failed);
+          socket.removeEventListener('close', failed);
+          if (error) reject(error); else resolve();
+        }
+        socket.addEventListener('message', acknowledged);
+        socket.addEventListener('error', failed);
+        socket.addEventListener('close', failed);
+      });
+    } catch (error) {
+      if (this.socket === socket) this.disconnect();
+      throw error;
+    }
   }
 
   // Backpressure applies to sampled physics, never to G-code dispatch.

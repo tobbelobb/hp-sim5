@@ -101,6 +101,15 @@ def test_planning_recomputes_information_when_difference_step_changes(tmp_path, 
     assert calls == [2.0]
 
 
+@pytest.mark.parametrize("buildup,enabled", [([0.0]*3, False), ([0.0, 0.6, 0.0], True)])
+def test_planning_enables_layering_from_fitted_buildup(tmp_path, buildup, enabled):
+    fit = _frozen_fit(False)
+    fit["collection_settings"]["buildup_factor"] = None
+    fit["length_model"] = {"modeled_buildup_factor": buildup}
+    plan = plan_ellipse_sweep(fit, tmp_path / "sweeps.json", candidate_deltas=[100.0], collector_args=["--sim"])
+    assert ("--line-layering" in plan["collect_command"]) is enabled
+
+
 def test_history_ranking_preserves_veto_and_unvalidated_fallback(tmp_path):
     def item(iteration, prediction, key):
         return ((key,), {"iteration": iteration}, {"prediction_score": prediction})

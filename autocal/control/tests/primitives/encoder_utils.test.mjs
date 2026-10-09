@@ -1,4 +1,4 @@
-import { runMoveWithWait } from '../../primitives/encoder_utils.mjs';
+import { runMoveWithWait, sendHpSimSettings } from '../../primitives/encoder_utils.mjs';
 
 describe('runMoveWithWait', () => {
   test('skips fallback delay for klipper motion commands that already waited in the bridge', async () => {
@@ -31,4 +31,18 @@ describe('runMoveWithWait', () => {
     expect(delays).toHaveLength(1);
     expect(delays[0]).toBeCloseTo(1100, 6);
   });
+});
+
+test('simulator configuration is acknowledged before collection proceeds', async () => {
+  const settings = { closedLoopMotorsEnabled: true, lineLayeringEnabled: true };
+  const bridge = {
+    broadcast: jest.fn(),
+    sendEncoderRequest: jest.fn(async () => ({ simulationSettings: settings })),
+  };
+  await expect(sendHpSimSettings(bridge, settings)).resolves.toEqual(settings);
+  expect(bridge.broadcast).toHaveBeenCalledWith({ type: 'simulation_settings', ...settings });
+  bridge.sendEncoderRequest.mockResolvedValue({});
+  await expect(sendHpSimSettings(bridge, settings)).rejects.toThrow('reload the simulator page');
+  bridge.sendEncoderRequest.mockResolvedValue({ simulationSettings: { closedLoopMotorsEnabled: false } });
+  await expect(sendHpSimSettings(bridge, settings)).rejects.toThrow('did not apply');
 });

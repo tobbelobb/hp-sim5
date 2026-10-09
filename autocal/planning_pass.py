@@ -172,6 +172,9 @@ def plan_ellipse_sweep(
         base_radii=base_radii,
         buildup_factor=buildup_factor,
     )
+    modeled_buildup = np.asarray((fit.get("length_model") or {}).get("modeled_buildup_factor", []), dtype=float)
+    if np.any(np.isfinite(modeled_buildup) & (modeled_buildup != 0)) and "--line-layering" not in collector_args_eff:
+        collector_args_eff.append("--line-layering")
     if "--return-to-origin" not in collector_args_eff and "--returnToOrigin" not in collector_args_eff:
         collector_args_eff.append("--return-to-origin")
 
