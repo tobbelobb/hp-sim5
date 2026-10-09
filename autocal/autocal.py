@@ -1626,13 +1626,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_semi_auto_parser()
     parser.add_argument("--extended-reference-ws", metavar="URL",
                         help="Record timestamped logs and collector events in an --extended-reference flight recorder")
+    parser.add_argument("--extended-reference", action="store_true",
+                        help="Record headless physics and all autocal events in one RRD; starts an owned recorder unless a WebSocket URL is supplied")
     parser.add_argument("--headless-sim", action="store_true",
                         help="Run simulated RRF and production JS physics/collector in Node without a browser; implies --sim")
     args = parser.parse_args(argv)
     if args.extended_reference_ws:
         os.environ['AUTOCAL_REFERENCE_WS'] = args.extended_reference_ws
-    if extended_reference.enabled() and args.headless_sim:
-        parser.error("Extended reference collection currently requires the visual browser")
+    if args.extended_reference and not args.headless_sim:
+        parser.error("--extended-reference requires --headless-sim; use --extended-reference-ws for browser collection")
+    if args.extended_reference and args.no_collect and not extended_reference.enabled():
+        parser.error("--extended-reference requires collection; use --extended-reference-ws to record offline fitting events")
     from autocal.headless_sim import HeadlessSimulation, MACHINES
     if args.headless_sim:
         if args.firmware != "rrf":

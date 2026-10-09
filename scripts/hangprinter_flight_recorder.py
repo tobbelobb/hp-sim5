@@ -60,7 +60,8 @@ class FlightRecording:
         self.last_time = None
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
         self.path = output_dir / f"hangprinter-{stamp}-{uuid.uuid4().hex[:8]}.rrd"
-        self.manifest = {"backend": "browser-js", "browser_session": sample["session"],
+        source = sample.get("source", "browser")
+        self.manifest = {"backend": f"{source}-js", f"{source}_session": sample["session"],
                          "scene_generation": sample["generation"], "recording_id": uuid.uuid4().hex,
                          "rrd": str(self.path.resolve()), "status": "recording", "start_step": sample["step"]}
         self.stream = rr.RecordingStream("hp-sim5 Hangprinter flight recorder", recording_id=self.manifest["recording_id"])
@@ -81,14 +82,15 @@ class FlightRecording:
                 "Cable force includes force transferred through guides; arrows show force on endpoint A.\n"
                 f"Force arrows use {force_scale:g} metres per newton.\n"
                 "Torque-controlled cables have no commanded-length series.\n"
-                + ("Shared reference: browser sessions and generations are recorded with samples."
+                + ("Shared reference: physics sessions and generations are recorded with samples."
                  if extended else f"Browser session: {sample['session']}; scene generation: {sample['generation']}.")
             ),
             static=True,
         )
         if extended:
+            self.manifest.pop(f"{source}_session")
             self.manifest.update(format_version=1, extended_reference=True, autocal_complete=False,
-                                 browser_session=None, scene_generation=None, browser_segments=[], rejected_messages=[])
+                                 backend="extended-reference", scene_generation=None, rejected_messages=[])
             root = Path(__file__).resolve().parents[1]
             for label, command in (("revision", ["git", "rev-parse", "HEAD"]),
                                    ("working_diff", ["git", "diff", "HEAD"]),
@@ -115,7 +117,7 @@ class FlightRecording:
         if not self.extended:
             raise ValueError("Events require --extended-reference")
         source = event["source"]
-        if source not in ("python", "collector", "browser"):
+        if source not in ("python", "collector", "browser", "headless"):
             raise ValueError("Unknown event source")
         self.stream.reset_time()
         wall_ms = int(event["wall_time_ms"])
@@ -136,7 +138,7 @@ class FlightRecording:
             body = f"gcode_send: {payload.get('line', '')} ({payload.get('source')})"
         elif kind == "gcode_reply":
             body = f"gcode_reply: {(payload.get('result') or {}).get('reply', '')}"
-        elif source == "browser":
+        elif source in ("browser", "headless"):
             body = f"{kind}: {payload.get('type', '')}"
         else:
             body = kind
@@ -144,7 +146,7 @@ class FlightRecording:
         self.stream.log(f"autocal/{source}", rr.TextLog(body),
                         rr.AnyValues(event_json=json.dumps(event), received_wall_time_ms=wall_clock.time_ns() // 1_000_000), strict=True)
         if event.get("sim_time_s") is not None:
-            clock_path = "clocks/browser/research_clock" if source == "browser" else f"clocks/{source}"
+            clock_path = f"clocks/{source}/research_clock" if source in ("browser", "headless") else f"clocks/{source}"
             context = {"sim_time_source": event["sim_time_source"]}
             if event.get("sim_time_observed_wall_ms") is not None:
                 context["sim_time_observed_wall_ms"] = event["sim_time_observed_wall_ms"]
@@ -152,6 +154,9 @@ class FlightRecording:
                             rr.AnyValues(**context), strict=True)
 
     def log_sample(self, sample):
+        source = sample.get("source", "browser")
+        if source not in ("browser", "headless"):
+            raise ValueError("Unknown physics source")
         if self.extended and self.key != (sample["session"], sample["generation"]):
             self.key = (sample["session"], sample["generation"])
             self.last_step = self.last_time = None
@@ -177,19 +182,19 @@ class FlightRecording:
         self.stream.set_time("sim_step", sequence=step)
         self.stream.set_time("sim_time", duration=time)
         context = (sample["session"], sample.get("speed_scale", 1),
-                   "browser.Date.now" if "wall_time_ms" in sample else "recorder.receive",
+                   f"{source}.Date.now" if "wall_time_ms" in sample else "recorder.receive",
                    stride, sample.get("geometry_detail", "full"))
         context_values = []
         if context != self.clock_context:
-            context_values = [rr.AnyValues(sim_time_source="browser.flightRecorder", session=context[0],
+            context_values = [rr.AnyValues(sim_time_source=f"{source}.flightRecorder", session=context[0],
                                           speed_scale=context[1], wall_time_source=context[2],
                                           sample_stride=context[3], geometry_detail=context[4])]
             self.clock_context = context
-        self.stream.log("clocks/browser/flight_recorder", rr.Scalars(time), *context_values)
+        self.stream.log(f"clocks/{source}/flight_recorder", rr.Scalars(time), *context_values)
         research_clock = sample.get("research_clock")
         if research_clock is not None:
-            self.stream.log("clocks/browser/research_clock", rr.Scalars(research_clock["time"]),
-                            *([rr.AnyValues(sim_time_source="browser.researchClock",
+            self.stream.log(f"clocks/{source}/research_clock", rr.Scalars(research_clock["time"]),
+                            *([rr.AnyValues(sim_time_source=f"{source}.researchClock",
                                             observation_phase="world.update before runner advances researchClock")]
                               if self.last_step is None else []))
         current_paths = set()
@@ -264,14 +269,14 @@ class FlightRecording:
         self.paths = current_paths
         self.last_step, self.last_time = step, time
         self.physics_samples += 1
-        self.manifest.update(sample_stride=stride, geometry_detail=sample.get("geometry_detail", "full"))
+        self.manifest.update(backend=f"{source}-js", sample_stride=stride, geometry_detail=sample.get("geometry_detail", "full"))
         if self.extended:
-            segments = self.manifest["browser_segments"]
+            segments = self.manifest.setdefault(f"{source}_segments", [])
             if not segments or (segments[-1]["session"], segments[-1]["generation"]) != self.key:
                 segments.append(dict(session=sample["session"], generation=sample["generation"],
                                      start_step=step, start_time_s=time, start_wall_time_ms=sample["wall_time_ms"]))
             segments[-1].update(end_step=step, end_time_s=time, end_wall_time_ms=sample["wall_time_ms"])
-            self.manifest.update(browser_session=sample["session"], scene_generation=sample["generation"])
+            self.manifest.update({f"{source}_session": sample["session"], "scene_generation": sample["generation"]})
 
     def close(self):
         self.manifest.update(status="finalized", end_step=self.last_step, end_time_s=self.last_time,
@@ -319,10 +324,10 @@ async def run(args):
         async with writer_lock:
             return await asyncio.to_thread(function, *values)
 
-    active_browser = None
+    active_physics = None
 
     async def receive(socket):
-        nonlocal active_browser
+        nonlocal active_physics
         recording = None
         configured = False
         try:
@@ -333,18 +338,18 @@ async def run(args):
                 if sample.get("type") == "autocal_event":
                     if extended_recording is None:
                         raise ValueError("Events require --extended-reference")
-                    # Startup metadata precedes the collector's browser recorder request.
-                    if sample.get("kind") == "gcode_send" and active_browser is None:
-                        raise ValueError("Connect the visual browser recorder before starting autocal")
+                    # Startup metadata may precede the physics recorder connection.
+                    if sample.get("kind") == "gcode_send" and active_physics is None:
+                        raise ValueError("Connect the physics recorder before starting autocal")
                     await write(extended_recording.log_event, sample)
                     await socket.send(json.dumps({"type": "event_ack"}))
                     continue
                 if extended_recording is not None:
-                    if active_browser is not None and active_browser is not socket:
-                        raise ValueError("Extended reference already has an active browser")
-                    active_browser = socket
+                    if active_physics is not None and active_physics is not socket:
+                        raise ValueError("Extended reference already has an active physics source")
+                    active_physics = socket
                     if "wall_time_ms" not in sample:
-                        raise ValueError("Extended recording requires browser wall_time_ms")
+                        raise ValueError("Extended recording requires source wall_time_ms")
                     if not configured:
                         await socket.send(json.dumps({"type": "recording_config", "sample_stride": args.sample_stride,
                                                       "geometry_detail": args.geometry_detail}))
@@ -364,8 +369,9 @@ async def run(args):
                 await write(recording.log_sample, sample)
                 # Acknowledge only after logging: the browser bounds its queue and waits here.
                 await socket.send(json.dumps({"type": "ack", "step": sample["step"]}))
-        except ConnectionClosed:
-            pass
+        except ConnectionClosed as error:
+            if error.code not in (1000, 1001):
+                print(f"Recorder transport closed: {error}", flush=True)
         except (ValueError, KeyError, TypeError) as error:
             if extended_recording is not None:
                 extended_recording.manifest["rejected_messages"].append(str(error))
@@ -373,8 +379,8 @@ async def run(args):
             print(f"Recorder rejected a sample: {error}", flush=True)
             await socket.close(code=1008, reason=str(error)[:100])
         finally:
-            if active_browser is socket:
-                active_browser = None
+            if active_physics is socket:
+                active_physics = None
             if recording is not None:
                 await write(recording.close)
 
@@ -383,9 +389,12 @@ async def run(args):
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, stop.set)
     try:
-        async with serve(receive, "127.0.0.1", args.port, max_size=None if args.extended_reference else 16 * 1024 * 1024, compression=None):
+        # Extended sources have explicit acknowledgement watchdogs. Receive
+        # backpressure can otherwise leave a healthy pong behind telemetry data.
+        async with serve(receive, "127.0.0.1", args.port, max_size=None if args.extended_reference else 16 * 1024 * 1024,
+                         compression=None, ping_interval=None if args.extended_reference else 20):
             print(f"Flight recorder: ws://127.0.0.1:{args.port}", flush=True)
-            print("Click Rerun in the simulator controls, then start playback. Ctrl-C stops recording.", flush=True)
+            print("Connect the simulator recorder, then start collection or playback. Ctrl-C stops recording.", flush=True)
             await stop.wait()
     finally:
         if extended_recording is not None:
@@ -396,7 +405,7 @@ async def run(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--extended-reference", action="store_true", help="One wall-clock RRD for browser physics and autocal events; stop after autocal exits")
+    parser.add_argument("--extended-reference", action="store_true", help="One wall-clock RRD for browser or headless physics and autocal events; stop after autocal exits")
     parser.add_argument("--sample-stride", type=int, help="Record every N physics steps (extended default: 10, ordinary: 1); control events are never sampled")
     parser.add_argument("--geometry-detail", choices=["compact", "full"], help="Compact endpoints or full sag/guide geometry (extended default: compact)")
     parser.add_argument("--output", type=Path, default=Path("output/rerun"), help="Directory for per-scene RRD recordings")

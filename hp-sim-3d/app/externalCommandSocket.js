@@ -210,7 +210,7 @@ export function createExternalCommandController({
       simulationClock: {
         time_ms: (world.getResource('researchClock')?.time ?? 0) * 1000,
         generation: world.getResource('sceneGeneration') || 0,
-        wall_time_ms: Date.now(), source: 'browser.researchClock',
+        wall_time_ms: Date.now(), source: world.getResource('researchClock')?.source || 'browser.researchClock',
       },
     };
     if (axes.length) world.getResource('flightRecorder')?.recordEvent('encoder_response_sent', payload);

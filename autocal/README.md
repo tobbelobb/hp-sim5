@@ -85,6 +85,14 @@ retain numbered artifact directories. Each collector output has an adjacent
 configuration/service identity, including on failure or interruption. Partial
 journals are evidence; they are not complete datasets or resumable worlds.
 
+Add `--extended-reference` to record physics, Python logs and stage artifacts,
+collector commands/replies and measurements in one `.rrd`, without a browser
+or live Viewer. Autocal starts and finalizes its own recorder in the headless
+artifact directory. An existing recorder can instead be selected with
+`--extended-reference-ws URL`. See the
+[extended reference guide](data/references/extended-reference.md#headless-full-auto-collection)
+for sampling, clocks and ownership.
+
 Verification includes a fresh HP3 global-radius run through normal automatic
 acceptance and independent three-sweep Chromium/Node collection with identical
 forces/span and the default 10 points per direction (60 points total):
@@ -135,10 +143,10 @@ Initiate simulated full-auto calibration with:
   --speedup 25
 ```
 
-For a complete recorded browser collection, follow
+For a complete recorded browser or headless collection, follow
 [extended autocal reference data](data/references/extended-reference.md).
 `--extended-reference-ws ws://127.0.0.1:9877` sends timestamped Python and collector
-events to the extended flight recorder, alongside browser physics in one `.rrd`.
+events to the extended flight recorder, alongside physics in one `.rrd`.
 
 `--speedup` is forwarded to the collector.
 Use `--collector-args` for other raw collector flags.

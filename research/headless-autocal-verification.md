@@ -68,6 +68,56 @@ cleanup. Its [parity result](../output/headless-verification/final-clock/test_fr
 and [full-auto manifest](../output/headless-verification/final-clock/test_fresh_hp3_full_auto_globa0/hp3/sweeps.headless/manifest.json)
 record these bounds and the source hashes.
 
+## Extended reference recording, 2026-10-09
+
+`autocal.py --headless-sim --extended-reference` now uses the production flight
+recorder protocol in Node. Autocal owns the disk-only recorder by default;
+`--extended-reference-ws` selects an external recorder. Physics, headless command
+boundaries, collector requests/replies and measurements, Python text writes and
+stage artifacts share one RRD across resets and collector processes.
+
+The fresh HP3 global-radius check reached normal automatic acceptance in
+1525.41 wall seconds and 5354.192 simulated seconds. It collected eight sweeps
+and 160 points across six collector processes, applied/read back M669 and M666,
+and finalized one 1,320,323,251-byte RRD with 267,711 sampled physics observations
+and 616,025 events. The default stride was ten with compact geometry. No messages
+were rejected. The RRD retains all 160 measurement events, paired outcomes for
+13,212 collector G-code requests, seven numerical stage artifacts, exact final
+dataset/text/JSONL files and the exact concatenated timestamped text-log writes.
+Source clocks were checked separately from wall time. See the
+[RRD verification](../output/headless-extended-verification-no-ping/test_fresh_hp3_full_auto_globa0/hp3/rrd-verification.json)
+and [run manifest](../output/headless-extended-verification-no-ping/test_fresh_hp3_full_auto_globa0/hp3/sweeps.headless/manifest.json).
+
+The solver reported score 7.245, global radius 39.01 mm and D height 1835.96 mm.
+This verifies recording and execution, not calibration accuracy. Later source
+label/provenance additions have separate live lifecycle checks; each trial's
+hashes/provenance describe the code actually loaded for that trial.
+
+Two earlier full runs exposed a drain wait that required the whole event stream
+to become empty and a backlog-sensitive transport disconnect. The physics wait
+now resumes when sample capacity is available, with a progress-based
+acknowledgement watchdog. Extended transport uses that watchdog instead of
+WebSocket keepalive. Partial RRDs and failed trials remain in the
+[validation notebook](../output/research/headless-extended-autocal-validation/research.md).
+A real SIGTERM after the first bootstrap measurement passed in 53.44 seconds,
+retaining partial points and a finalized incomplete RRD while stopping services.
+Live checks also cover an external recorder, every-step/full geometry, explicit
+25× clock differences, reset generations and recorder disconnection failure.
+
+The combined slow suite's archive/automatic-completion assertions passed, but
+its subsequent browser comparison failed at one point: 0.16 degrees and
+0.0837758 mm, against unchanged 0.03-degree/0.01-mm tolerances. A focused rerun
+and a diagnostic using the original `HEAD:scripts/autocal_headless.mjs` reproduced
+exactly the same differences with the recorded run's force inputs. Other encoder
+differences were at most 0.01 degrees. This is a pre-existing comparison issue
+for those inputs; recording verification does not establish universal backend
+parity. See the [original-service baseline](../output/headless-extended-parity-baseline/parity.json),
+[baseline source identity](../output/headless-extended-parity-baseline/baseline-source.json)
+and [current-service repeat](../output/headless-extended-parity-repeat/parity.json).
+The final fast Python regression run passed 78 tests; the targeted JavaScript
+regressions passed 104 tests. The slow suite remains one failure (parity) and
+one pass (interruption); no tolerance was relaxed.
+
 The live interruption test passed and retained partial points while stopping
 owned services. Fast Python checks passed 75 tests; collector regressions passed
 55 tests across 13 suites, including motion, settling and noise sampling with

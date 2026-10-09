@@ -11,11 +11,13 @@ export async function createHeadlessBridge(url) {
     if (!response.ok) throw new Error(result.error);
     timeMs = result.collector_time_s * 1000;
     backend = result.backend;
+    if (simulationClock) simulationClock.observedWallMs = Date.now();
     return result;
   }
+  let simulationClock;
   await request('status');
-  const simulationClock = {
-    backend,
+  simulationClock = {
+    backend, source: 'headless.collectorClock', observedWallMs: Date.now(),
     now: () => timeMs,
     sleep: async ms => { await pending; await request('advance', { seconds: ms / 1000 }); },
   };

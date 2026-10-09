@@ -7,6 +7,7 @@ import { createHeadlessWorld } from '../hp-sim-3d/app/headlessWorld.js';
 import { bakeCableSceneUsdaSource } from '../src/js/usd/cable_scene_baker.js';
 import { createExternalCommandController } from '../hp-sim-3d/app/externalCommandSocket.js';
 import { createGcodeBridge } from '../integrations/rrf/rrfSimulatorBridge.mjs';
+import { FlightRecorder } from '../hp-sim-3d/app/flightRecorder.js';
 
 const [scene, rrfUrl, wsPort, apiPort, directory] = process.argv.slice(2);
 const sceneText = fs.readFileSync(scene, 'utf8');
@@ -14,6 +15,24 @@ fs.writeFileSync(`${directory}/baked-scene.usda`, bakeCableSceneUsdaSource(scene
 let { world, remote, dt } = createHeadlessWorld(sceneText);
 let step = 0, epoch = 0, totalSteps = 0, speed = 1, collectorTime = 0, stopped = false, failure = null;
 const started = performance.now();
+const recorder = process.env.AUTOCAL_REFERENCE_WS ? new FlightRecorder({ world,
+  url: process.env.AUTOCAL_REFERENCE_WS, WebSocketClass: WebSocket, source: 'headless' }) : null;
+function attachRecorder() {
+  world.setResource('sceneGeneration', epoch);
+  world.setResource('researchClock', { generation: epoch, step: 0, time: 0, source: 'headless.researchClock' });
+  world.setResource('timeScale', speed);
+  if (!recorder) return;
+  recorder.world = world;
+  recorder.extendedReference = true;
+  recorder.contextProvider = () => ({ backend: 'headless-js', scene, sourceText: sceneText,
+    node_version: process.version, settings: Object.fromEntries(['gravity', 'dt', 'timeScale', 'enableLayering',
+      'layeringFrictionEffectiveRadius', 'closedLoopMotorsEnabled'].map(key => [key, world.getResource(key)])) });
+  world.setResource('flightRecorder', recorder);
+  world.registerSystem(recorder);
+  if (recorder.socket?.readyState === 1) recorder.update(world, 0);
+}
+attachRecorder();
+if (recorder) await recorder.ensureConnected(recorder.url);
 const events = fs.openSync(`${directory}/events.jsonl`, 'a');
 function event(type, values = {}) {
   fs.writeSync(events, JSON.stringify({ type, epoch, step, sim_time_s: step * dt, ...values }) + '\n');
@@ -28,7 +47,12 @@ async function advance(seconds = 0, drain = false) {
   const count = Math.max(Math.ceil(seconds * speed / dt - 1e-9), drain ? remote.getQueueLength() : 0);
   for (let i = 0; i < count; i++) {
     if (stopped || failure) throw new Error(failure ?? 'Simulation stopped');
+    if (recorder) {
+      if (!recorder.socket || recorder.socket.readyState !== 1) throw new Error(recorder.error || 'Flight recorder disconnected');
+      if (!recorder.readyForStep()) await recorder.drain(10000, { all: false });
+    }
     world.update(dt); step++; totalSteps++; collectorTime += dt / speed;
+    world.setResource('researchClock', { generation: epoch, step, time: step * dt, source: 'headless.researchClock' });
     if (i % 50 === 49) await yieldStep();
   }
 }
@@ -49,10 +73,11 @@ function attachController() {
       pushExternalCommands(batch) { batch.forEach(command => remote.addCommand(command)); return true; },
       handleUserReset() {
         ({ world, remote, dt } = createHeadlessWorld(sceneText)); epoch++; step = 0;
+        attachRecorder();
         attachController();
       },
-      applyTimeScaleChange(value) { speed = value; },
-    }, runtime: { resume() {} }, logger: { info() {}, log() {} },
+      applyTimeScaleChange(value) { speed = value; world.setResource('timeScale', speed); },
+    }, runtime: { resume() {} }, logger: { info() {}, log() {}, warn() {} },
   });
   controller.connect();
 }
@@ -84,12 +109,16 @@ const server = http.createServer(async (request, reply) => {
     const args = text ? JSON.parse(text) : {};
     let result;
     if (failure) throw new Error(failure);
+    if (recorder && (!recorder.socket || recorder.socket.readyState !== 1)) throw new Error(recorder.error || 'Flight recorder disconnected');
     if (request.url === '/gcode') {
+      const commandId = `${process.pid}:${totalSteps}:${Date.now()}`;
+      recorder?.recordEvent('service_gcode_send', { commandId, line: args.line });
       // Drain outside RRF's short encoder resolver timeout before its M569.3 query.
       if (/^M569\.3\b/i.test(args.line)) await advance(0, true);
       result = await bridge.sendGcodeLine(args.line, { timeout: 120000 });
       if (/^Error:/im.test(result?.reply ?? '')) throw new Error(result.reply);
       await bridge.sendEncoderRequest([], 120000); // barrier for all preceding CAN payloads
+      recorder?.recordEvent('service_gcode_reply', { commandId, result });
     } else if (request.url === '/advance') {
       await delivered;
       await advance(args.seconds);
@@ -105,12 +134,21 @@ const server = http.createServer(async (request, reply) => {
   } finally { busy = false; }
 });
 server.listen(Number(apiPort), '127.0.0.1');
-function close() {
+async function close() {
+  if (stopped) return;
   stopped = true;
+  try {
+    await delivered;
+    if (recorder) {
+      recorder.recordEvent('service_stopped', status());
+      await recorder.drain(10000, { wallTimeoutMs: 10000 });
+      recorder.disconnect();
+    }
+  } catch (error) { failure = error.message; }
   fs.writeFileSync(`${directory}/clock.json`, JSON.stringify(status(), null, 2));
   event('service_stopped'); fs.closeSync(events);
   socket.close(); bridge.close(); server.close();
-  process.exit(0);
+  process.exit(failure ? 1 : 0);
 }
 process.once('SIGTERM', close);
 process.once('SIGINT', close);

@@ -3,13 +3,17 @@ import { captureFlightRecorderSnapshot } from './flightRecorderSnapshot.js';
 const MAX_PENDING_STEPS = 32;
 
 export class FlightRecorder {
-  constructor({ world, button, url = 'ws://127.0.0.1:9877', WebSocketClass = globalThis.WebSocket }) {
+  constructor({ world, button, url = 'ws://127.0.0.1:9877', WebSocketClass = globalThis.WebSocket, source = 'browser' }) {
     this.world = world;
     this.button = button;
     this.url = url;
     this.WebSocketClass = WebSocketClass;
+    this.source = source;
     this.socket = null;
     this.pending = 0;
+    this.pendingEvents = 0;
+    this.ackSequence = 0;
+    this.error = null;
     this.generation = null;
     this.step = 0;
     this.time = 0;
@@ -33,6 +37,8 @@ export class FlightRecorder {
     this.generation = null;
     this.session = globalThis.crypto.randomUUID();
     this.pending = 0;
+    this.pendingEvents = 0;
+    this.error = null;
     this.acknowledged = false;
     this.setStatus('Rerun: connecting');
     socket.addEventListener('open', () => {
@@ -48,18 +54,27 @@ export class FlightRecorder {
         this.geometryDetail = message.geometry_detail;
       }
       if (message.type === 'ack') {
+        this.ackSequence += 1;
         this.acknowledged = true;
         this.pending = Math.max(0, this.pending - 1);
       }
+      if (message.type === 'event_ack') {
+        this.ackSequence += 1;
+        this.pendingEvents = Math.max(0, this.pendingEvents - 1);
+      }
     });
-    socket.addEventListener('close', () => {
+    socket.addEventListener('close', (event) => {
       if (this.socket !== socket) return;
+      this.error = event.reason ? `Flight recorder disconnected: ${event.reason}` : 'Flight recorder disconnected';
       this.socket = null;
       this.pending = 0;
       this.setStatus('Rerun: disconnected', false);
     });
     socket.addEventListener('error', () => {
-      if (this.socket === socket) this.setStatus('Rerun: connection error');
+      if (this.socket === socket) {
+        this.error = 'Flight recorder connection error';
+        this.setStatus('Rerun: connection error');
+      }
     });
   }
 
@@ -105,15 +120,33 @@ export class FlightRecorder {
     return !this.socket || (this.socket.readyState === 1 && this.pending < MAX_PENDING_STEPS);
   }
 
+  async drain(timeoutMs = 10000, { all = true, wallTimeoutMs = 120000 } = {}) {
+    const socket = this.socket;
+    let sequence = this.ackSequence;
+    let deadline = performance.now() + timeoutMs;
+    const wallDeadline = performance.now() + wallTimeoutMs;
+    while (true) {
+      if (!socket || this.socket !== socket || socket.readyState !== 1) throw new Error(this.error || 'Flight recorder disconnected');
+      if (all ? !this.pending && !this.pendingEvents : this.readyForStep()) return;
+      if (sequence !== this.ackSequence) {
+        sequence = this.ackSequence;
+        deadline = performance.now() + timeoutMs;
+      }
+      if (performance.now() > deadline || performance.now() > wallDeadline) throw new Error('Flight recorder did not acknowledge samples');
+      await new Promise(resolve => setTimeout(resolve, 5));
+    }
+  }
+
   recordEvent(kind, payload) {
     if (!this.socket || this.socket.readyState !== 1 || !this.extendedReference) return;
     const clock = this.world.getResource('researchClock');
-    this.socket.send(JSON.stringify({ version: 1, type: 'autocal_event', source: 'browser',
-      wall_time_ms: Date.now(), wall_time_source: 'browser.Date.now',
+    this.socket.send(JSON.stringify({ version: 1, type: 'autocal_event', source: this.source,
+      wall_time_ms: Date.now(), wall_time_source: `${this.source}.Date.now`,
       monotonic_ms: performance.now(), kind, payload, sim_time_s: clock?.time ?? null,
-      sim_time_source: clock ? 'browser.researchClock' : 'unavailable',
+      sim_time_source: clock ? `${this.source}.researchClock` : 'unavailable',
       session: this.session, generation: this.world.getResource('sceneGeneration') || 0,
       recorder_sim_time_s: this.time }));
+    this.pendingEvents += 1;
   }
 
   update(world, dt) {
@@ -133,6 +166,7 @@ export class FlightRecorder {
     if (this.lastSentStep !== null && this.step - this.lastSentStep < this.sampleStride) return;
     this.lastSentStep = this.step;
     this.socket.send(JSON.stringify({
+      source: this.source,
       sample_stride: this.sampleStride, geometry_detail: this.geometryDetail,
       research_clock: world.getResource('researchClock') || null,
       wall_time_ms: Date.now(), speed_scale: world.getResource('timeScale') || 1,

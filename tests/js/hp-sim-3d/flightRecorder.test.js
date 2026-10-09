@@ -194,6 +194,39 @@ describe('flight recorder delivery', () => {
     expect(samples[2].sample_stride).toBe(10);
     expect(socket.samples.filter(sample => sample.type === 'autocal_event')).toHaveLength(21);
   });
+
+  test('headless drain waits for physics and event acknowledgements and fails on disconnect', async () => {
+    const recorder = new FlightRecorder({ world: new World(), WebSocketClass: FakeSocket, source: 'headless' });
+    recorder.connect();
+    const socket = recorder.socket;
+    socket.readyState = 1; socket.emit('open');
+    recorder.extendedReference = true;
+    recorder.recordEvent('test', {});
+    const drained = recorder.drain(1000);
+    socket.emit('message', { type: 'ack' });
+    expect(recorder.pendingEvents).toBe(1);
+    socket.emit('message', { type: 'event_ack' });
+    await drained;
+    expect(socket.samples.at(-1)).toMatchObject({ source: 'headless', wall_time_source: 'headless.Date.now' });
+    recorder.update(recorder.world, .002);
+    await expect(recorder.drain(0)).rejects.toThrow('did not acknowledge');
+    recorder.disconnect();
+    await expect(recorder.drain()).rejects.toThrow('disconnected');
+  });
+
+  test('physics resumes when capacity returns without waiting for a continuing event stream to drain', async () => {
+    const recorder = new FlightRecorder({ world: new World(), WebSocketClass: FakeSocket });
+    recorder.connect();
+    const socket = recorder.socket;
+    socket.readyState = 1; socket.emit('open');
+    recorder.pending = 32;
+    recorder.pendingEvents = 100;
+    const ready = recorder.drain(1000, { all: false });
+    socket.emit('message', { type: 'ack' });
+    await ready;
+    expect(recorder.pendingEvents).toBe(100);
+    expect(recorder.readyForStep()).toBe(true);
+  });
 });
 
 test('extended browser events preserve both clocks and do not release physics backpressure', () => {

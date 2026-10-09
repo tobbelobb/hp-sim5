@@ -8,6 +8,7 @@ import socket
 import subprocess
 import time
 import signal
+import sys
 from urllib.request import Request, urlopen
 
 from autocal._autocal_common import REPO_ROOT, RRF_SIM_BINARY, RRF_SIM_VSD_PATH, _stop_process
@@ -48,6 +49,8 @@ class HeadlessSimulation:
         self.scene = REPO_ROOT / "public/usd_scenes" / scene
         self.args, self.collector_args = args, collector_args
         self.processes = []
+        self.recorder = None
+        self.reference_url = os.environ.get('AUTOCAL_REFERENCE_WS')
         self.signal_handlers = {}
         self.started = time.monotonic()
         self.directory = Path(args.dataset).resolve().with_suffix(".headless")
@@ -85,6 +88,24 @@ class HeadlessSimulation:
             for sig in (signal.SIGTERM, signal.SIGHUP):
                 self.signal_handlers[sig] = signal.getsignal(sig)
                 signal.signal(sig, self.interrupt)
+            if getattr(self.args, 'extended_reference', False) and not self.reference_url:
+                from websockets.sync.client import connect
+                port = free_port()
+                self.recorder = self.spawn('recorder', [sys.executable, 'scripts/hangprinter_flight_recorder.py',
+                    '--extended-reference', '--no-viewer', '--port', str(port), '--output', str(self.directory)])
+                self.reference_url = f'ws://127.0.0.1:{port}'
+                deadline = time.monotonic() + 30
+                while True:
+                    try:
+                        with connect(self.reference_url, open_timeout=1, close_timeout=1):
+                            break
+                    except OSError:
+                        if self.recorder.poll() is not None or time.monotonic() > deadline:
+                            raise RuntimeError(f'Reference recorder did not start; see {self.directory / "recorder.log"}') from None
+                        time.sleep(.1)
+                os.environ['AUTOCAL_REFERENCE_WS'] = self.reference_url
+            if self.reference_url:
+                self.manifest.update(extended_reference_ws=self.reference_url, owned_recorder=self.recorder is not None)
             from autocal._autocal_common import _arg_has_flag, _arg_value, _resolve_rrf_target, _wait_for_rrf_server
             rrf_url, explicit, port = _resolve_rrf_target(self.collector_args)
             if not explicit:
@@ -121,6 +142,11 @@ class HeadlessSimulation:
                                  firmware_initial={command: self.request("gcode", line=command)["result"]["reply"]
                                                    for command in ("M115", "M669", "M666")})
             self.write_manifest()
+            if self.reference_url:
+                from autocal import extended_reference
+                extended_reference.emit('headless_start', **self.manifest)
+                for name in ('scene.usda', 'baked-scene.usda', 'firmware-config.g'):
+                    extended_reference.artifact(self.directory / name)
             return self
         except BaseException as error:
             self.__exit__(type(error), error, error.__traceback__)
@@ -128,13 +154,23 @@ class HeadlessSimulation:
 
     def __exit__(self, error_type, error, traceback):
         failed = bool(error or self.manifest.get("exit_code"))
+        capture_error = None
         self.manifest.update(status="interrupted" if error_type is KeyboardInterrupt else "failed" if error else "complete",
                              wall_s=time.monotonic() - self.started)
         if error:
             self.manifest["error"] = str(error)
         if not self.args.keep_sim_alive or failed:
             for process in reversed(self.processes):
-                _stop_process(process)
+                if self.reference_url and process.poll() is None:
+                    process.terminate()
+                    try:
+                        process.wait(timeout=45 if process is self.recorder else 15)
+                    except subprocess.TimeoutExpired:
+                        capture_error = 'Reference services did not drain before shutdown'
+                        process.kill()
+                        process.wait()
+                else:
+                    _stop_process(process)
         self.manifest["kept_alive"] = bool(self.args.keep_sim_alive and not failed)
         clock = self.directory / "clock.json"
         if clock.exists():
@@ -142,15 +178,31 @@ class HeadlessSimulation:
             self.manifest["service_wall_s"] = state.pop("wall_s")
             if not state.get("error"):
                 state.pop("error", None)
+            elif self.reference_url:
+                capture_error = state['error']
             self.manifest.update(state)
         if self.manifest.get("exit_code"):
             self.manifest["status"] = "failed"
         self.manifest["normal_completion"] = self.manifest["status"] == "complete" and self.manifest.get("stop_reason") == "patience-or-threshold" and bool(self.manifest.get("applied_parameters"))
         if self.manifest.get("stop_reason") == "Ctrl-C":
             self.manifest["status"] = "interrupted"
+        if self.reference_url:
+            from autocal import extended_reference
+            extended_reference.close()
+            if self.recorder:
+                os.environ.pop('AUTOCAL_REFERENCE_WS', None)
+                self.manifest['recordings'] = [json.loads(path.read_text()) for path in self.directory.glob('hangprinter-*.json')]
+                if not self.manifest['kept_alive'] and (self.recorder.returncode != 0 or
+                        any(recording['status'] != 'finalized' for recording in self.manifest['recordings'])):
+                    capture_error = 'Reference recorder did not finalize; see recorder.log'
+        if capture_error:
+            self.manifest.update(status='failed' if not error else self.manifest['status'], recording_error=capture_error,
+                                 normal_completion=False)
         for sig, handler in self.signal_handlers.items():
             signal.signal(sig, handler)
         self.write_manifest()
+        if capture_error and not error:
+            raise RuntimeError(capture_error)
 
     @staticmethod
     def interrupt(signum, frame):

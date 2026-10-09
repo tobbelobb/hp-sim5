@@ -8,6 +8,13 @@ import json
 _socket = None
 
 
+def close():
+    global _socket
+    if _socket is not None:
+        _socket.close()
+        _socket = None
+
+
 def enabled():
     return bool(os.environ.get('AUTOCAL_REFERENCE_WS'))
 
@@ -23,7 +30,7 @@ def emit(kind, **payload):
     if _socket is None:
         from websockets.sync.client import connect
         _socket = connect(os.environ['AUTOCAL_REFERENCE_WS'], open_timeout=5, close_timeout=2)
-        atexit.register(_socket.close)
+        atexit.register(close)
     _socket.send(json.dumps(event))
     reply = json.loads(_socket.recv(timeout=10))
     if reply.get('type') != 'event_ack':

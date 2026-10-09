@@ -373,6 +373,12 @@ physical sensors. The [native collection guide](native-collection.md) explains
 the clock, artifacts and calibration limits. Browser full-auto and Klipper
 collection retain their existing [autocal setup](../autocal/README.md).
 
+For a standalone full-auto run with one extended reference RRD, use
+`autocal/autocal.py --headless-sim --extended-reference` with the intended
+machine, dataset and optimizer flags. It owns the Node/RRF/recorder services and
+finalizes physics, collection events, Python logs and stage artifacts together
+without a browser. See the [headless extended reference guide](../autocal/data/references/extended-reference.md#headless-full-auto-collection).
+
 The [investigation](investigation.md) maps Robium skills and OmniSim's architecture
 to this integration, and separates the working features from future work.
 

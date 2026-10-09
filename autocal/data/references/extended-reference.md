@@ -1,9 +1,54 @@
 # Extended autocal reference data
 
-New browser collection can record physics, calibration output and communication
+New browser or headless collection can record physics, calibration output and communication
 in **one `.rrd`**, written live by the flight recorder. `.rrd` is Rerun's recording
 format; RRF is the firmware. No separate timeline format is needed. Historical
 fixtures cannot acquire missing physics or original collection events retroactively.
+
+## Headless full-auto collection
+
+Add `--extended-reference` to a headless autocal run:
+
+```bash
+.venv/bin/python autocal/autocal.py \
+  --headless-sim --extended-reference --machine-type hangprinter_3 \
+  --dataset output/extended-autocal/headless-001/sweeps.json \
+  --find-radii global --base-radii 30 \
+  --buildup-factor 0.636619 --r0-bounds 39,40
+```
+
+Autocal owns the recorder, RRF and Node physics processes. It starts recording
+and waits for an acknowledged physics sample before collection. No browser or
+live Viewer is needed. The single `.rrd` and recorder manifest are saved beside
+the service logs in `<dataset-stem>.headless/`; the headless manifest lists their
+paths and finalized coverage. Python logs/artifacts, collector commands/replies
+and measurements, and headless command/encoder boundaries share this recording.
+Scene resets preserve the recording and start a new scene generation. Normal
+exit and interruption drain pending physics/events and finalize the RRD.
+The original and baked USDA scene, firmware configuration and headless startup
+manifest are embedded as Python artifacts/events too.
+With `--keep-sim-alive`, the owned services and recording remain open after a
+successful run; stop physics first, then the recorder to finalize it.
+
+The defaults match browser extended recording: every tenth physics step and
+compact cable geometry. To choose another stride/detail or use a live Viewer,
+start the recorder yourself with the desired options and pass
+`--extended-reference-ws ws://127.0.0.1:9877` to `--headless-sim`. The inherited
+`AUTOCAL_REFERENCE_WS` setting works too. Autocal connects the headless physics
+to that recorder and leaves the externally owned recorder running at exit.
+Use one physics source per recorder.
+
+Headless boundary events are under `/autocal/headless`; clocks are under
+`/clocks/headless/flight_recorder` and `/clocks/headless/research_clock`.
+`headless.researchClock` counts actual fixed physics steps within each scene
+generation. As in browser mode, snapshots observe it before the runner advances
+the clock for that step. The collector's `headless.collectorClock` is cumulative
+across resets and advances by `dt / speed_scale` per physics step, preserving
+the existing headless wait semantics. At 25×, these clocks intentionally differ;
+neither is estimated from wall time. Source UTC timestamps and clock labels
+remain explicit. The recorder manifest reports `headless_segments`, sampled
+physics coverage and `backend=headless-js`. Collection success remains separate
+from calibration accuracy and from recorder finalization.
 
 ## Manual collection at 25×
 
@@ -59,7 +104,7 @@ remain ordinary files too. Extended mode automatically enables the existing
 stage-artifact writer; `--stage-artifacts` can select its directory. Keep the
 whole run directory, including failed trials. `AUTOCAL_REFERENCE_WS` is the
 inherited transport setting; the CLI option sets it for Python and child collectors.
-This route currently requires the visual browser, not `--headless-sim`.
+The same transport also supports `--headless-sim`, as described above.
 
 ## Data model and clocks
 
@@ -68,7 +113,9 @@ This route currently requires the visual browser, not `--headless-sim`.
 | Browser physics | `/world`, `/line_lengths`, `/line_errors`, `/cable_forces` | Transforms, geometry, lengths and forces at the configured stride | UTC `wall_time`, `sim_time`, `sim_step`, `scene_generation` |
 | Browser recorder clock | `/clocks/browser/flight_recorder` | Simulation seconds, session, configured speed scale, sampling stride and geometry detail | UTC `wall_time` and physics indices |
 | Browser runner clock | `/clocks/browser/research_clock` | Independently observed simulation seconds and source | UTC `wall_time` |
-| Python, collector and browser events | `/autocal/python`, `/autocal/collector`, `/autocal/browser` | `TextLog` plus complete JSON in `event_json` | UTC `wall_time`, receipt `event_order` |
+| Headless physics | `/world`, `/line_lengths`, `/line_errors`, `/cable_forces` | Same production snapshots and sampling as browser physics | UTC `wall_time`, `sim_time`, `sim_step`, `scene_generation` |
+| Headless clocks | `/clocks/headless/flight_recorder`, `/clocks/headless/research_clock` | Actual fixed-step simulation seconds, session and sampling context | UTC `wall_time`; physics indices on snapshots |
+| Python, collector and simulator events | `/autocal/python`, `/autocal/collector`, `/autocal/browser` or `/autocal/headless` | `TextLog` plus complete JSON in `event_json` | UTC `wall_time`, receipt `event_order` |
 | Collector clock, when available | `/clocks/collector` | Latest browser clock observation, or native clock, with source and observation wall time | UTC `wall_time` |
 | Source provenance | `/provenance` | Revision, working diff, untracked source files and runtime versions | Static |
 
