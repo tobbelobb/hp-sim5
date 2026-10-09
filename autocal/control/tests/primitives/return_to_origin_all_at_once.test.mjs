@@ -1,6 +1,22 @@
 import { returnMotorsToOriginAllAtOnce } from '../../primitives/uncalibrated_actions.mjs';
 
 describe('returnMotorsToOriginAllAtOnce', () => {
+  test('holds ongoing force motion before the first encoder read', async () => {
+    let nowMs = 0, held = false;
+    const commands = [];
+    const send = async line => {
+      commands.push(line);
+      if (line === 'M569.4 P40.0:41.0 T0.0:0.0') held = true;
+      return { reply: held ? '10 20' : `${nowMs} ${nowMs}` };
+    };
+    send.simulationClock = { now: () => nowMs, sleep: async ms => { nowMs += ms; } };
+    await returnMotorsToOriginAllAtOnce(send, {
+      motorIds: ['40.0', '41.0'], axes: ['X', 'Y'], mmPerDeg: [1, 1], feed: 1000,
+    });
+    expect(commands[0]).toBe('M569.4 P40.0:41.0 T0.0:0.0');
+    expect(commands.some(line => line.startsWith('G1 H2'))).toBe(true);
+  });
+
   test('returns all motors to origin in a single move', async () => {
     const sent = [];
     const encoderReply = '10 20 5';

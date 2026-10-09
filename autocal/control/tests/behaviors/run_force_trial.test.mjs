@@ -1,6 +1,46 @@
 import { runForceTrial } from '../../behaviors/force_tuning.mjs';
 
 describe('runForceTrial', () => {
+  test('a continuously moving trial is held before return settling, without releasing it to idle first', async () => {
+    let nowMs = 0;
+    const angles = [0, 0, 0];
+    let modes = [0, 0, 0];
+    const commands = [];
+    const send = async line => {
+      commands.push(line);
+      if (line.startsWith('M569.4')) modes = line.split(' T')[1].split(':').map(Number);
+      if (line.startsWith('G1 H2')) {
+        const axes = ['X', 'Y', 'Z'];
+        for (const match of line.matchAll(/([XYZ])(-?[\d.]+)/g)) angles[axes.indexOf(match[1])] += Number(match[2]);
+      }
+      return { reply: angles.join(' ') };
+    };
+    send.simulationClock = {
+      now: () => nowMs,
+      sleep: async ms => {
+        // Both observed motors keep moving for as long as the pullout force is applied.
+        if (modes[0] > .02) { angles[0] += ms / 500; angles[1] += ms / 1000; }
+        nowMs += ms;
+      },
+    };
+    const result = await runForceTrial(send, {
+      motorIds: ['40.0', '41.0', '42.0'], activeAnchor: 0, fixedAnchor: 2, restAnchors: [1],
+      idleForce: .011363575731199994, testForce: .6236330361282555, speedup: 25,
+      sampleWindowMs: 1000, stallTimeoutMs: 30000, waitForStall: true,
+      axes: ['X', 'Y', 'Z'], mmPerDeg: [1, 1, 1], feed: 1000,
+    });
+    expect(result.moved).toBe(true);
+    expect(result.stalled).toBe(false);
+    const trial = commands.findIndex(line => line.includes('T0.6236330361282555:'));
+    const hold = commands.findIndex((line, index) => index > trial && line.endsWith('T0.0:0.0:0.0'));
+    const move = commands.findIndex(line => line.startsWith('G1 H2'));
+    const idle = commands.findIndex((line, index) => index > trial && line.includes('T0.011363575731199994:0.011363575731199994:'));
+    expect(hold).toBeGreaterThan(trial);
+    expect(move).toBeGreaterThan(hold);
+    expect(idle).toBeGreaterThan(move);
+    expect(angles).toEqual([0, 0, 0]);
+  });
+
   test('requested 25x never shortens the observed force trial window', async () => {
     let simulationMs = 0;
     const forceChanges = [];

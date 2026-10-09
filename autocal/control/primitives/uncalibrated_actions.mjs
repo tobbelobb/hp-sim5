@@ -568,7 +568,10 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
     throw new Error('returnMotorsToOriginOneAtATime requires full axes mapping');
   }
 
-  const stableBefore = await waitForStableEncoders(sendFn, motorIds,  speedup, settleOptions);
+  // A force trial can still be pulling. Hold the motors before waiting for
+  // return coordinates, rather than waiting for the trial force to stop moving.
+  await applyForceModeState(sendFn, { motorIds, modes: motorIds.map(() => 'position') });
+  const stableBefore = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
   const lengths = anglesToLengths(stableBefore.anglesDeg, mmPerDeg);
   const order = calculateReturnOrder({ fixedAnchors, currentLengths: lengths });
   const forbidden = new Set(forbiddenForceAnchors ?? []);
@@ -601,11 +604,12 @@ export async function returnMotorsToOriginOneAtATime(sendFn, options = {}) {
         speedup,
         { axes, delayFn },
       );
-      await applyForceModeState(sendFn, {
-        motorIds,
-        modes: motorIds.map(() => 'position')
-      });
     }
+    // Also hold after a zero-distance return: its other motors entered force mode.
+    await applyForceModeState(sendFn, {
+      motorIds,
+      modes: motorIds.map(() => 'position')
+    });
   }
 
   const stableAfter = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
@@ -629,6 +633,7 @@ export async function returnMotorsToOriginAllAtOnce(sendFn, options = {}) {
     throw new Error('returnMotorsToOriginAllAtOnce requires full axes mapping');
   }
 
+  await applyForceModeState(sendFn, { motorIds, modes: motorIds.map(() => 'position') });
   const stableBefore = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
   const lengths = anglesToLengths(stableBefore.anglesDeg, mmPerDeg);
   const moveParts = [];
@@ -641,7 +646,6 @@ export async function returnMotorsToOriginAllAtOnce(sendFn, options = {}) {
     }
   }
 
-  await sendFn(`M569.4 P${motorIds.join(':')} T0.0`);
   if (moveParts.length > 0) {
     await runMoveWithWait(
       sendFn,

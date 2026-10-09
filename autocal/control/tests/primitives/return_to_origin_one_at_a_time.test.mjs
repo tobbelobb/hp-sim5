@@ -1,6 +1,20 @@
 import { returnMotorsToOriginOneAtATime } from '../../primitives/uncalibrated_actions.mjs';
 
 describe('returnMotorsToOriginOneAtATime', () => {
+  test('a zero-distance return leaves every motor held', async () => {
+    let nowMs = 0;
+    const commands = [];
+    const send = async line => { commands.push(line); return { reply: '0 0' }; };
+    send.simulationClock = { now: () => nowMs, sleep: async ms => { nowMs += ms; } };
+    await returnMotorsToOriginOneAtATime(send, {
+      motorIds: ['40.0', '41.0'], axes: ['X', 'Y'], mmPerDeg: [1, 1], feed: 1000,
+    });
+    expect(commands[0]).toBe('M569.4 P40.0:41.0 T0.0:0.0');
+    const modes = commands.filter(line => line.startsWith('M569.4'));
+    expect(modes.at(-1)).toBe('M569.4 P40.0:41.0 T0.0:0.0');
+    expect(commands.some(line => line.startsWith('G1'))).toBe(false);
+  });
+
   test('returns motors in expected order', async () => {
     const sent = [];
     const encoderReply = '10 20 5';
