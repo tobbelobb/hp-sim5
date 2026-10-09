@@ -196,8 +196,13 @@ export function createExternalCommandController({
       requestId,
       axes,
       anglesDeg: resolveEncoderAngles(axes),
+      simulationClock: {
+        time_ms: (world.getResource('researchClock')?.time ?? 0) * 1000,
+        generation: world.getResource('sceneGeneration') || 0,
+        wall_time_ms: Date.now(), source: 'browser.researchClock',
+      },
     };
-    world.getResource('flightRecorder')?.recordEvent('encoder_response_sent', payload);
+    if (axes.length) world.getResource('flightRecorder')?.recordEvent('encoder_response_sent', payload);
     socketController?.send?.(payload);
   }
 
@@ -205,7 +210,9 @@ export function createExternalCommandController({
     if (!payload) {
       return;
     }
-    world.getResource('flightRecorder')?.recordEvent('external_payload_received', payload);
+    if (payload.type !== 'encoder_request' || payload.axes?.length) {
+      world.getResource('flightRecorder')?.recordEvent('external_payload_received', payload);
+    }
     if (payload.type === 'encoder_request') {
       if (payload.requestId != null && Array.isArray(payload.axes)) {
         respondToEncoderRequest(payload.requestId, payload.axes);

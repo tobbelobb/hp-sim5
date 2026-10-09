@@ -269,9 +269,8 @@ export async function calibrateEncoderNoise(sendFn, options = {}) {
   if (!Array.isArray(motorIds) || motorIds.length === 0) {
     return { sigmaByMotorDeg: [], samples: 0, durationMs: 0 };
   }
-  const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
-  const durationMs = Math.max(1, sampleDurationMs / timeScale);
-  const intervalMs = Math.max(10, sampleIntervalMs / timeScale);
+  const durationMs = Math.max(1, sampleDurationMs);
+  const intervalMs = Math.max(10, sampleIntervalMs);
   const sampleCount = Math.max(3, Math.floor(durationMs / intervalMs));
 
   await setForceTrialModes(sendFn, motorIds, {
@@ -340,6 +339,7 @@ export async function runForceTrial(sendFn, options = {}) {
     forbiddenForceAnchors = [],
     previousTrialMoved = false,
     settleOptions = {},
+    wallTimeoutMs = 120000,
   } = options;
 
   if (!Array.isArray(motorIds) || motorIds.length === 0) {
@@ -361,15 +361,14 @@ export async function runForceTrial(sendFn, options = {}) {
     };
   }
 
-  const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
-  const windowMs = Math.max(1, sampleWindowMs / timeScale);
-  const intervalMs = Math.max(20, sampleIntervalMs / timeScale);
-  const stallWindowScaledMs = Math.max(intervalMs, stallWindowMs / timeScale);
+  const windowMs = Math.max(1, sampleWindowMs);
+  const intervalMs = Math.max(20, sampleIntervalMs);
+  const effectiveStallWindowMs = Math.max(intervalMs, stallWindowMs);
   const sampleIntervalSec = intervalMs / 1000;
   const maxWindowRawMs = Number.isFinite(stallTimeoutMs) && stallTimeoutMs > 0
     ? stallTimeoutMs
     : (waitForStall ? sampleWindowMs * 3 : sampleWindowMs);
-  const maxWindowMs = Math.max(windowMs, maxWindowRawMs / timeScale);
+  const maxWindowMs = Math.max(windowMs, maxWindowRawMs);
   const stopAfterMs = waitForStall ? maxWindowMs : windowMs;
   const speedThreshold = Number.isFinite(stallSpeedDegPerSec) && stallSpeedDegPerSec > 0
     ? stallSpeedDegPerSec
@@ -385,7 +384,7 @@ export async function runForceTrial(sendFn, options = {}) {
   const stableStart = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
   let startAngles = stableStart.anglesDeg;
 
-  const rampWaitMs = Math.max(0, rampStepWaitMs / timeScale);
+  const rampWaitMs = Math.max(0, rampStepWaitMs);
   if (Array.isArray(rampForces) && rampForces.length > 0) {
     for (let idx = 0; idx < rampForces.length; idx += 1) {
       const force = rampForces[idx];
@@ -422,6 +421,7 @@ export async function runForceTrial(sendFn, options = {}) {
 
   let lastAngles = startAngles;
   let endAngles = startAngles;
+  await sendFn.simulationClock?.refresh?.();
   const now = sendFn.simulationClock?.now ?? (() => Date.now());
   let lastMs = now();
   const startMs = lastMs;
@@ -429,9 +429,16 @@ export async function runForceTrial(sendFn, options = {}) {
   let stalled = false;
   let stallAngle = null;
 
+  const wallStart = Date.now();
+  let lastProgress = wallStart;
   while (now() - startMs < stopAfterMs) {
+    if (Date.now() - wallStart >= wallTimeoutMs) throw new Error('Force trial exceeded its wall-clock deadline');
+    if (Date.now() - lastProgress >= 5000) {
+      console.log(`; force trial running: ${((Date.now() - wallStart) / 1000).toFixed(1)}s wall, ${((now() - startMs) / 1000).toFixed(1)}s ${sendFn.simulationClock ? 'simulation' : 'wall'}`);
+      lastProgress = Date.now();
+    }
     // eslint-disable-next-line no-await-in-loop
-    await (sendFn.simulationClock?.sleep ?? baseSleep)(intervalMs);
+    await (sendFn.simulationClock?.sleep ?? baseSleep)(intervalMs, { wallDeadlineMs: wallStart + wallTimeoutMs });
     // eslint-disable-next-line no-await-in-loop
     const reply = await sendFn(`M569.3 P${motorIds.join(':')}`);
     const angles = parseEncoderReply(reply?.reply);
@@ -448,7 +455,7 @@ export async function runForceTrial(sendFn, options = {}) {
         } else {
           stallDurationMs = 0;
         }
-        if (!stalled && stallDurationMs >= stallWindowScaledMs) {
+        if (!stalled && stallDurationMs >= effectiveStallWindowMs) {
           stalled = true;
           stallAngle = curAngle;
         }
@@ -963,8 +970,7 @@ export async function tuneForce(sendFn, plan, options = {}) {
     restAnchors,
   });
 
-  const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
-  const intervalMs = Math.max(20, AUTO_TUNE_SAMPLE_INTERVAL_MS / timeScale);
+  const intervalMs = Math.max(20, AUTO_TUNE_SAMPLE_INTERVAL_MS);
   const stallSpeedDegPerSec = computeStallSpeedThresholdDegPerSec(thresholds.sigmaAct, intervalMs / 1000);
 
   const formatValue = (value, digits = 4) => (Number.isFinite(value) ? value.toFixed(digits) : 'n/a');

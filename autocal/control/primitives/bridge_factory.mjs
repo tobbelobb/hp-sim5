@@ -1,3 +1,4 @@
+import { createBrowserClock } from './browser_clock.mjs';
 import { createGcodeBridge } from '../../../integrations/rrf/rrfSimulatorBridge.mjs';
 import { createHeadlessBridge } from './headless_bridge.mjs';
 import { KlippyApiClient } from '../../../integrations/klipper/klippyApiClient.js';
@@ -16,12 +17,9 @@ export async function createBridge(firmware, options = {}) {
 
   const socketPath = options.socketPath || DEFAULT_KLIPPY_SOCKET_PATH;
   const configPath = options.configPath || DEFAULT_KLIPPY_CONFIG_PATH;
-  const speedScale = Number.isFinite(options.speedup) && options.speedup > 0 ? options.speedup : 1;
   const motionIdleMs = Number.isFinite(options.motionIdleMs)
     ? options.motionIdleMs
-    : options.sim
-      ? Math.max(40, Math.round(650 / speedScale))
-      : 650;
+    : 650;
 
   const client = new KlippyApiClient({ socketPath });
   const klippyState = new KlippyRuntimeState({ client });
@@ -56,6 +54,13 @@ export async function createBridge(firmware, options = {}) {
     throw error;
   }
 
+  if (options.sim && !klipperBridge.wss) {
+    klippyState.off('gcode-output', onGcodeOutput);
+    klipperBridge.close();
+    client.close();
+    throw new Error('Browser simulation collection requires a WebSocket connection');
+  }
+  const simulationClock = options.sim ? createBrowserClock(() => klipperBridge.sendEncoderRequest([])) : undefined;
   const sendGcodeLine = async (line) => {
     const trimmed = line?.trim?.();
     if (!trimmed) {
@@ -70,10 +75,12 @@ export async function createBridge(firmware, options = {}) {
     const timeoutMs = typeof klipperBridge.estimateGcodeScriptTimeoutMs === 'function'
       ? klipperBridge.estimateGcodeScriptTimeoutMs(rewritten, client.requestTimeoutMs)
       : client.requestTimeoutMs;
-    return klipperBridge.runGcodeCommand(
+    const result = await klipperBridge.runGcodeCommand(
       trimmed,
       () => client.request('gcode/script', { script: rewritten }, { timeoutMs }),
     );
+    await simulationClock?.refresh();
+    return result;
   };
 
   const close = () => {
@@ -87,6 +94,7 @@ export async function createBridge(firmware, options = {}) {
     client,
     klippyState,
     sendGcodeLine,
+    simulationClock,
     close,
   };
 }

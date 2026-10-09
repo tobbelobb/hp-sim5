@@ -87,17 +87,23 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions, 
     stableWindowMs = DEFAULT_STABILITY_WINDOW_MS,
     toleranceDeg = DEFAULT_STABILITY_TOLERANCE_DEG,
     vibrationWindowMs = DEFAULT_VIBRATION_WINDOW_MS,
-    timeoutMs = sendFn.simulationClock?.settlingTimeoutMs ?? null,
+    timeoutMs = sendFn.simulationClock?.settlingTimeoutMs ?? 30000,
+    wallTimeoutMs = 120000,
+    wallNowFn = () => Date.now(),
+    progressIntervalMs = 5000,
+    onProgress = message => console.log(message),
     sleepFn = sendFn.simulationClock?.sleep ?? baseSleep,
     nowFn = sendFn.simulationClock?.now ?? (() => Date.now()),
   } = normalizedOptions;
-  const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
-  const pollMs = pollIntervalMs / timeScale;
-  const windowMs = Math.max(pollMs * 2, stableWindowMs / timeScale);
-  const vibrationMs = Math.max(windowMs, vibrationWindowMs / timeScale);
+  const pollMs = pollIntervalMs;
+  const windowMs = Math.max(pollMs * 2, stableWindowMs);
+  const vibrationMs = Math.max(windowMs, vibrationWindowMs);
   const tol = Math.max(0, Number.isFinite(toleranceDeg) ? toleranceDeg : DEFAULT_STABILITY_TOLERANCE_DEG);
+  await sendFn.simulationClock?.refresh?.();
   const startMs = nowFn();
   const samples = [];
+  const wallStart = wallNowFn();
+  let lastProgress = wallStart;
 
   const isStable = () => {
     if (samples.length < 2) {
@@ -141,7 +147,9 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions, 
       return false;
     }
     const cutoff = samples[samples.length - 1].timestampMs - vibrationMs;
-    const vibrationSamples = samples.filter((sample) => sample.timestampMs >= cutoff);
+    let first = 0;
+    while (first + 1 < samples.length && samples[first + 1].timestampMs <= cutoff) first += 1;
+    const vibrationSamples = samples.slice(first);
     if (vibrationSamples.length < 3) {
       return false;
     }
@@ -193,7 +201,7 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions, 
     if (anglesDeg.length === motorIds.length && anglesDeg.every((v) => Number.isFinite(v))) {
       samples.push({ timestampMs: nowMs, anglesDeg });
       const cutoff = nowMs - Math.max(windowMs, vibrationMs) - pollMs;
-      while (samples.length > 0 && samples[0].timestampMs < cutoff) {
+      while (samples.length > 1 && samples[1].timestampMs <= cutoff) {
         samples.shift();
       }
     } else {
@@ -210,12 +218,18 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions, 
       return result;
     }
 
+    const wallElapsed = wallNowFn() - wallStart;
+    if (wallElapsed >= wallTimeoutMs) throw new Error('Timed out waiting for encoder stability (wall-clock deadline)');
+    if (wallNowFn() - lastProgress >= progressIntervalMs) {
+      onProgress(`; waiting for encoder stability: ${(wallElapsed / 1000).toFixed(1)}s wall, ${((nowMs - startMs) / 1000).toFixed(1)}s ${sendFn.simulationClock ? 'simulation' : 'wall'}, ${samples.length} samples`);
+      lastProgress = wallNowFn();
+    }
     if (Number.isFinite(timeoutMs) && timeoutMs > 0 && nowMs - startMs > timeoutMs) {
       throw new Error(`Timed out waiting for encoder stability after ${Math.round(timeoutMs)}ms`);
     }
 
     // eslint-disable-next-line no-await-in-loop
-    await sleepFn(pollMs);
+    await sleepFn(pollMs, { wallDeadlineMs: wallStart + wallTimeoutMs });
   }
 }
 

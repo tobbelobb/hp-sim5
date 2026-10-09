@@ -13,6 +13,9 @@ export class FlightRecorder {
     this.generation = null;
     this.step = 0;
     this.time = 0;
+    this.sampleStride = 1;
+    this.geometryDetail = 'full';
+    this.lastSentStep = null;
     button?.addEventListener('click', () => this.socket ? this.disconnect() : this.connect());
   }
 
@@ -38,6 +41,10 @@ export class FlightRecorder {
     socket.addEventListener('message', (event) => {
       if (this.socket !== socket) return;
       const message = JSON.parse(event.data);
+      if (message.type === 'recording_config') {
+        this.sampleStride = message.sample_stride;
+        this.geometryDetail = message.geometry_detail;
+      }
       if (message.type === 'ack') this.pending = Math.max(0, this.pending - 1);
     });
     socket.addEventListener('close', () => {
@@ -58,7 +65,7 @@ export class FlightRecorder {
     this.setStatus('Rerun', false);
   }
 
-  // The runner yields until every pending sample has reached Python. No decimation.
+  // Backpressure applies to sampled physics, never to G-code dispatch.
   readyForStep() {
     return !this.socket || (this.socket.readyState === 1 && this.pending < MAX_PENDING_STEPS);
   }
@@ -81,17 +88,21 @@ export class FlightRecorder {
       this.generation = generation;
       this.step = 0;
       this.time = 0;
+      this.lastSentStep = null;
       this.recordEvent('scene_context', this.contextProvider?.() || {});
     }
     if (dt > 0) {
       this.step += 1;
       this.time += dt;
     }
+    if (this.lastSentStep !== null && this.step - this.lastSentStep < this.sampleStride) return;
+    this.lastSentStep = this.step;
     this.socket.send(JSON.stringify({
+      sample_stride: this.sampleStride, geometry_detail: this.geometryDetail,
       research_clock: world.getResource('researchClock') || null,
       wall_time_ms: Date.now(), speed_scale: world.getResource('timeScale') || 1,
       version: 1, session: this.session, generation, step: this.step, time: this.time, dt,
-      ...captureFlightRecorderSnapshot(world),
+      ...captureFlightRecorderSnapshot(world, { geometryDetail: this.geometryDetail }),
     }));
     this.pending += 1;
   }

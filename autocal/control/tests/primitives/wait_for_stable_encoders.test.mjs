@@ -33,6 +33,47 @@ describe('waitForStableEncoders', () => {
     expect(result.elapsedMs).toBe(3060);
   });
 
+  test('keeps the previous observation when transport exceeds the entire history window', async () => {
+    const result = await replay(() => '0 0', {
+      speedup: 25, pollIntervalMs: 20, stableWindowMs: 60, vibrationWindowMs: 200,
+      sleepFn: undefined,
+      // The requested speed must not shorten the selected clock's window.
+      ...(() => {
+        let now = 0;
+        return { nowFn: () => now, sleepFn: async () => { now += 272; } };
+      })(),
+    });
+    expect(result.elapsedMs).toBe(272);
+    expect(result.samples).toBe(2);
+  });
+
+  test('stationary vibration covers a boundary between polls', async () => {
+    const result = await replay(ms => `${Math.round(ms / 510) % 2 ? .5 : -.5} 0`, {
+      pollIntervalMs: 510, stableWindowMs: 1020, vibrationWindowMs: 5000,
+      toleranceDeg: .1,
+    });
+    expect(result.elapsedMs).toBe(5100);
+  });
+
+  test('hardware settling has a finite default timeout', async () => {
+    let now = 0;
+    const send = async () => ({ reply: `${now} 0` });
+    await expect(waitForStableEncoders(send, ['A', 'B'], 25, {
+      nowFn: () => now, sleepFn: async ms => { now += ms; },
+    })).rejects.toThrow('after 30000ms');
+  });
+
+  test('a stalled simulation reaches the wall deadline and reports progress', async () => {
+    let wall = 0;
+    const progress = [];
+    const send = async () => ({ reply: '0 0' });
+    send.simulationClock = { now: () => 0, sleep: async () => { wall += 1000; } };
+    await expect(waitForStableEncoders(send, ['A', 'B'], 25, {
+      wallTimeoutMs: 6000, wallNowFn: () => wall, onProgress: message => progress.push(message),
+    })).rejects.toThrow('wall-clock deadline');
+    expect(progress[0]).toContain('5.0s wall, 0.0s simulation');
+  });
+
   test('restarts the quiet window after a malformed encoder reply', async () => {
     const result = await replay((ms) => (ms === 2000 ? 'invalid' : `${ms < 1000 ? 10 : 0} 0`));
     expect(result.elapsedMs).toBe(4000);

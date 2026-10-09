@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { WebSocketServer } from 'ws';
+import { createBrowserClock } from '../../autocal/control/primitives/browser_clock.mjs';
 import { RrfHttpBridge } from './rrfHttpBridge.js';
 
 const MAX_PENDING_WS_PAYLOADS = 5000;
@@ -237,8 +238,11 @@ export function createGcodeBridge({
   onClientChange = null,
   encoderTimeoutMs = DEFAULT_ENCODER_TIMEOUT_MS,
   driverToAxis = null,
+  sim = false,
 } = {}) {
   const helpers = buildWsHelpers({ wsPort, quiet, onClientChange });
+  if (sim && !helpers.wss) throw new Error('Browser simulation collection requires a WebSocket connection');
+  const simulationClock = sim ? createBrowserClock(() => helpers.sendEncoderRequest([])) : undefined;
   let currentGcode = null;
 
   const encoderResolver = helpers.wss
@@ -247,6 +251,7 @@ export function createGcodeBridge({
         ? Math.max(1, Math.min(timeoutMs, 5000))
         : encoderTimeoutMs;
       const response = await helpers.sendEncoderRequest(axes, timeout);
+      simulationClock?.observe(response.simulationClock);
       if (response && Array.isArray(response.anglesDeg)) {
         return response.anglesDeg;
       }
@@ -287,5 +292,6 @@ export function createGcodeBridge({
     bridge,
     ...helpers,
     sendGcodeLine,
+    simulationClock,
   };
 }

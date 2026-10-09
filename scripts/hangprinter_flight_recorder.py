@@ -54,6 +54,8 @@ class FlightRecording:
         self.force_scale = force_scale
         self.paths = set()
         self.styles = {}
+        self.poses = {}
+        self.clock_context = None
         self.last_step = None
         self.last_time = None
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
@@ -130,15 +132,24 @@ class FlightRecording:
             body = payload["text"]
         elif kind == "artifact":
             body = f"artifact: {payload['path']} ({len(payload['content'])} characters)"
+        elif kind == "gcode_send":
+            body = f"gcode_send: {payload.get('line', '')} ({payload.get('source')})"
+        elif kind == "gcode_reply":
+            body = f"gcode_reply: {(payload.get('result') or {}).get('reply', '')}"
+        elif source == "browser":
+            body = f"{kind}: {payload.get('type', '')}"
         else:
-            body = f"{kind}: {json.dumps(payload, ensure_ascii=False)}"
+            body = kind
         # Never assign a guessed physics time to an event from another clock.
         self.stream.log(f"autocal/{source}", rr.TextLog(body),
                         rr.AnyValues(event_json=json.dumps(event), received_wall_time_ms=wall_clock.time_ns() // 1_000_000), strict=True)
         if event.get("sim_time_s") is not None:
             clock_path = "clocks/browser/research_clock" if source == "browser" else f"clocks/{source}"
+            context = {"sim_time_source": event["sim_time_source"]}
+            if event.get("sim_time_observed_wall_ms") is not None:
+                context["sim_time_observed_wall_ms"] = event["sim_time_observed_wall_ms"]
             self.stream.log(clock_path, rr.Scalars(event["sim_time_s"]),
-                            rr.AnyValues(sim_time_source=event["sim_time_source"]), strict=True)
+                            rr.AnyValues(**context), strict=True)
 
     def log_sample(self, sample):
         if self.extended and self.key != (sample["session"], sample["generation"]):
@@ -150,25 +161,37 @@ class FlightRecording:
                 self.stream.log(path, rr.Clear(recursive=True))
             self.paths.clear()
             self.styles.clear()
+            self.poses.clear()
+            self.clock_context = None
         step, time = sample["step"], sample["time"]
-        if self.last_step is not None and step != self.last_step + 1:
-            raise ValueError(f"Nonconsecutive timestep: expected {self.last_step + 1}, received {step}")
-        if self.last_time is not None and not np.isclose(time - self.last_time, sample["dt"], rtol=1e-8, atol=1e-10):
+        stride = sample.get("sample_stride", 1)
+        if not isinstance(stride, int) or stride < 1:
+            raise ValueError("Invalid physics sample stride")
+        if self.last_step is not None and step != self.last_step + stride:
+            raise ValueError(f"Nonconsecutive timestep: expected {self.last_step + stride}, received {step}")
+        if self.last_time is not None and not np.isclose(time - self.last_time, sample["dt"] * stride, rtol=1e-8, atol=1e-10):
             raise ValueError("Simulation clock did not advance by dt")
         self.stream.reset_time()
         self.stream.set_time("wall_time", timestamp=np.datetime64(int(sample.get("wall_time_ms", wall_clock.time_ns() // 1_000_000)), "ms"))
         self.stream.set_time("scene_generation", sequence=sample["generation"])
         self.stream.set_time("sim_step", sequence=step)
         self.stream.set_time("sim_time", duration=time)
-        self.stream.log("clocks/browser/flight_recorder", rr.Scalars(time), rr.AnyValues(
-            sim_time_source="browser.flightRecorder", session=sample["session"],
-            speed_scale=sample.get("speed_scale", 1),
-            wall_time_source="browser.Date.now" if "wall_time_ms" in sample else "recorder.receive"))
+        context = (sample["session"], sample.get("speed_scale", 1),
+                   "browser.Date.now" if "wall_time_ms" in sample else "recorder.receive",
+                   stride, sample.get("geometry_detail", "full"))
+        context_values = []
+        if context != self.clock_context:
+            context_values = [rr.AnyValues(sim_time_source="browser.flightRecorder", session=context[0],
+                                          speed_scale=context[1], wall_time_source=context[2],
+                                          sample_stride=context[3], geometry_detail=context[4])]
+            self.clock_context = context
+        self.stream.log("clocks/browser/flight_recorder", rr.Scalars(time), *context_values)
         research_clock = sample.get("research_clock")
         if research_clock is not None:
             self.stream.log("clocks/browser/research_clock", rr.Scalars(research_clock["time"]),
-                            rr.AnyValues(sim_time_source="browser.researchClock",
-                                         observation_phase="world.update before runner advances researchClock"))
+                            *([rr.AnyValues(sim_time_source="browser.researchClock",
+                                            observation_phase="world.update before runner advances researchClock")]
+                              if self.last_step is None else []))
         current_paths = set()
 
         def log(path, *archetypes):
@@ -191,7 +214,11 @@ class FlightRecording:
                     rr.Points3D([[0, 0, 0]], colors=color, radii=0.02 if kind == "anchor" else 0.008),
                     rr.TransformAxes3D(0.15 if kind == "effector" else 0.025),
                 )
-            log(path, rr.Transform3D(translation=frame["position"], rotation=rr.Quaternion(xyzw=frame["quaternion"])))
+            pose = (tuple(frame["position"]), tuple(frame["quaternion"]))
+            current_paths.add(path)
+            if self.poses.get(path) != pose:
+                log(path, rr.Transform3D(translation=frame["position"], rotation=rr.Quaternion(xyzw=frame["quaternion"])))
+                self.poses[path] = pose
 
         for cable in sample["cables"]:
             key = f"{cable['machine']}/{cable['name']}"
@@ -233,9 +260,11 @@ class FlightRecording:
         for path in self.paths - current_paths:
             self.stream.log(path, rr.Clear(recursive=True))
             self.styles.pop(path, None)
+            self.poses.pop(path, None)
         self.paths = current_paths
         self.last_step, self.last_time = step, time
         self.physics_samples += 1
+        self.manifest.update(sample_stride=stride, geometry_detail=sample.get("geometry_detail", "full"))
         if self.extended:
             segments = self.manifest["browser_segments"]
             if not segments or (segments[-1]["session"], segments[-1]["generation"]) != self.key:
@@ -284,11 +313,18 @@ async def run(args):
         extended_recording = FlightRecording(output_dir, viewer_sink,
             {"session": "extended-reference", "generation": 0, "step": 0}, args.force_scale, extended=True)
 
+    writer_lock = asyncio.Lock()
+    async def write(function, *values):
+        # SDK serialization is CPU-heavy; keep it off the WebSocket event loop.
+        async with writer_lock:
+            return await asyncio.to_thread(function, *values)
+
     active_browser = None
 
     async def receive(socket):
         nonlocal active_browser
         recording = None
+        configured = False
         try:
             async for message in socket:
                 sample = json.loads(message)
@@ -299,7 +335,7 @@ async def run(args):
                         raise ValueError("Events require --extended-reference")
                     if sample.get("kind") in ("run_start", "collection_start", "gcode_send") and active_browser is None:
                         raise ValueError("Connect the visual browser recorder before starting autocal")
-                    extended_recording.log_event(sample)
+                    await write(extended_recording.log_event, sample)
                     await socket.send(json.dumps({"type": "event_ack"}))
                     continue
                 if extended_recording is not None:
@@ -308,15 +344,23 @@ async def run(args):
                     active_browser = socket
                     if "wall_time_ms" not in sample:
                         raise ValueError("Extended recording requires browser wall_time_ms")
-                    extended_recording.log_sample(sample)
+                    if not configured:
+                        await socket.send(json.dumps({"type": "recording_config", "sample_stride": args.sample_stride,
+                                                      "geometry_detail": args.geometry_detail}))
+                        configured = True
+                    await write(extended_recording.log_sample, sample)
                     await socket.send(json.dumps({"type": "ack", "step": sample["step"]}))
                     continue
                 key = (sample["session"], sample["generation"])
                 if recording is None or recording.key != key:
                     if recording is not None:
-                        recording.close()
+                        await write(recording.close)
                     recording = FlightRecording(output_dir, viewer_sink, sample, args.force_scale)
-                recording.log_sample(sample)
+                if not configured:
+                    await socket.send(json.dumps({"type": "recording_config", "sample_stride": args.sample_stride,
+                                                  "geometry_detail": args.geometry_detail}))
+                    configured = True
+                await write(recording.log_sample, sample)
                 # Acknowledge only after logging: the browser bounds its queue and waits here.
                 await socket.send(json.dumps({"type": "ack", "step": sample["step"]}))
         except ConnectionClosed:
@@ -331,7 +375,7 @@ async def run(args):
             if active_browser is socket:
                 active_browser = None
             if recording is not None:
-                recording.close()
+                await write(recording.close)
 
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
@@ -352,6 +396,8 @@ async def run(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--extended-reference", action="store_true", help="One wall-clock RRD for browser physics and autocal events; stop after autocal exits")
+    parser.add_argument("--sample-stride", type=int, help="Record every N physics steps (extended default: 10, ordinary: 1); control events are never sampled")
+    parser.add_argument("--geometry-detail", choices=["compact", "full"], help="Compact endpoints or full sag/guide geometry (extended default: compact)")
     parser.add_argument("--output", type=Path, default=Path("output/rerun"), help="Directory for per-scene RRD recordings")
     parser.add_argument("--port", type=int, default=9877, help="Browser telemetry WebSocket port")
     parser.add_argument("--web-port", type=int, default=9090, help="Rerun web viewer port")
@@ -360,6 +406,9 @@ def main():
     parser.add_argument("--viewer-endpoint", help="Use an existing supervisor-owned native Viewer")
     parser.add_argument("--no-viewer", action="store_true", help="Do not start a separate Viewer; retain disk and any supplied Viewer endpoint")
     args = parser.parse_args()
+    if args.sample_stride is None: args.sample_stride = 10 if args.extended_reference else 1
+    if args.sample_stride < 1: parser.error("--sample-stride must be positive")
+    if args.geometry_detail is None: args.geometry_detail = "compact" if args.extended_reference else "full"
     try:
         asyncio.run(run(args))
     except (OSError, RuntimeError) as error:

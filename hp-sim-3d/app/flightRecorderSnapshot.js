@@ -88,7 +88,7 @@ function guideWrap(world, path, index, before, after) {
   return points;
 }
 
-function collectCables(world) {
+function collectCables(world, geometryDetail) {
   const gravity = world.getResource('gravity');
   const up = gravity?.lengthSq() > 1e-9 ? gravity.clone().normalize().scale(-1) : new Vector3(0, 0, 1);
   return world.query([CablePathComponent]).map((id) => {
@@ -96,9 +96,13 @@ function collectCables(world) {
     const joints = path.jointEntities.map((jointId) => world.getComponent(jointId, CableJointComponent));
     const segments = joints.map((joint, index) => {
       const geometricLength = joint.attachmentPointA_world.distanceTo(joint.attachmentPointB_world);
-      const subdivisions = joint.restLength > geometricLength + 1e-9 ? 16 : 1;
+      const subdivisions = geometryDetail === 'full' && joint.restLength > geometricLength + 1e-9 ? 16 : 1;
       const positions = new Float64Array((subdivisions + 1) * 3);
-      writeSlackCablePositions(positions, joint.attachmentPointA_world, joint.attachmentPointB_world, joint.restLength, up, subdivisions);
+      if (geometryDetail === 'full') writeSlackCablePositions(positions, joint.attachmentPointA_world, joint.attachmentPointB_world, joint.restLength, up, subdivisions);
+      else {
+        positions.set(xyz(joint.attachmentPointA_world), 0);
+        positions.set(xyz(joint.attachmentPointB_world), 3);
+      }
       const force = Math.max(0, joint.constraintForceMagnitude || 0, joint.transferredConstraintForceMagnitude || 0);
       const direction = joint.attachmentPointB_world.clone().subtract(joint.attachmentPointA_world).normalize();
       return {
@@ -129,7 +133,7 @@ function collectCables(world) {
       }
     }
     const wraps = [];
-    for (let index = 1; index < joints.length; index += 1) {
+    for (let index = 1; geometryDetail === 'full' && index < joints.length; index += 1) {
       const wrap = guideWrap(world, path, index, joints[index - 1], joints[index]);
       if (wrap) wraps.push(wrap);
     }
@@ -142,6 +146,6 @@ function collectCables(world) {
   });
 }
 
-export function captureFlightRecorderSnapshot(world) {
-  return { frames: collectFrames(world), cables: collectCables(world) };
+export function captureFlightRecorderSnapshot(world, { geometryDetail = 'full' } = {}) {
+  return { frames: collectFrames(world), cables: collectCables(world, geometryDetail) };
 }

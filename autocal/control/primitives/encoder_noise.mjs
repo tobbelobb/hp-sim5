@@ -110,11 +110,10 @@ export async function sampleEncoderNoise(sendFn, motorIds, options = {}) {
     nowFn = sendFn.simulationClock?.now ?? (() => Date.now()),
   } = options;
 
-  const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
   const intervalRaw = Number.isFinite(sampleIntervalMs)
     ? sampleIntervalMs
     : (1000 / Math.max(1e-6, Number.isFinite(sampleRateHz) ? sampleRateHz : DEFAULT_NOISE_SAMPLE_RATE_HZ));
-  const intervalMsEff = Math.max(1, intervalRaw / timeScale);
+  const intervalMsEff = Math.max(1, intervalRaw);
   const targetSamples = Math.max(1, Math.floor(sampleCount));
 
   const samplesByMotor = Array.from({ length: motorIds.length }, () => []);

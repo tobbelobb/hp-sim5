@@ -84,6 +84,18 @@ describe('flight recorder ECS snapshot', () => {
     expect(segment.points[0]).toEqual([0, 0, 0]);
   });
 
+  test('compact geometry preserves lengths and forces while simplifying the drawing', () => {
+    const { world, joint } = drivenCable();
+    joint.restLength = 1.2;
+    const full = captureFlightRecorderSnapshot(world).cables[0];
+    const compact = captureFlightRecorderSnapshot(world, { geometryDetail: 'compact' }).cables[0];
+    expect(compact.lengths).toEqual(full.lengths);
+    expect(compact.segments[0].force_vector_n).toEqual(full.segments[0].force_vector_n);
+    expect(compact.segments[0].points).toEqual([[0, 0, 0], [1, 0, 0]]);
+    expect(full.segments[0].points.length).toBeGreaterThan(2);
+    expect(compact.wraps).toEqual([]);
+  });
+
   test('uses the final rigid-body pose for the effector and logs members in their parent frame', () => {
     const world = new World();
     const parent = body(world, 'EffectorBody', [10, 20, 30], ['RigidBody']);
@@ -159,6 +171,28 @@ describe('flight recorder delivery', () => {
     expect(recorder.readyForStep()).toBe(true);
     socket.emit('message', { type: 'ack' });
     expect(recorder.pending).toBe(0);
+  });
+
+  test('sampling preserves actual step indices and both clocks; events remain unsampled', () => {
+    const world = new World();
+    world.setResource('sceneGeneration', 1);
+    const recorder = new FlightRecorder({ world, WebSocketClass: FakeSocket });
+    recorder.connect();
+    const socket = recorder.socket;
+    socket.readyState = 1; socket.emit('open');
+    socket.emit('message', { type: 'recording_config', sample_stride: 10, geometry_detail: 'compact' });
+    recorder.extendedReference = true;
+    for (let step = 1; step <= 21; step++) {
+      world.setResource('researchClock', { time: step * .001 });
+      recorder.update(world, .001);
+      recorder.recordEvent('test', { step });
+    }
+    const samples = socket.samples.filter(sample => sample.type !== 'autocal_event');
+    expect(samples.map(sample => sample.step)).toEqual([0, 10, 20]);
+    expect(samples[2].time).toBeCloseTo(.020);
+    expect(samples[2].research_clock.time).toBe(.020);
+    expect(samples[2].sample_stride).toBe(10);
+    expect(socket.samples.filter(sample => sample.type === 'autocal_event')).toHaveLength(21);
   });
 });
 

@@ -29,6 +29,6 @@ describe('runMoveWithWait', () => {
     });
 
     expect(delays).toHaveLength(1);
-    expect(delays[0]).toBeCloseTo(110, 6);
+    expect(delays[0]).toBeCloseTo(1100, 6);
   });
 });

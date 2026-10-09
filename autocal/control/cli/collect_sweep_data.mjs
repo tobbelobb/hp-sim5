@@ -159,6 +159,7 @@ async function ensureKlippySimulator({
     return null;
   }
   const simSpeedup = Number.isFinite(speedup) && speedup > 1 ? speedup : 1;
+  // Queue capacity for requested playback, not an estimate of achieved clock speed.
   const queueAheadScale = Math.min(simSpeedup, 20);
   const motionQueueStepGenLowTime = (0.450 * queueAheadScale).toFixed(3);
   const motionQueueStepGenHighTime = (0.700 * queueAheadScale).toFixed(3);
@@ -492,7 +493,6 @@ async function main() {
       return;
     }
     cleanupStarted = true;
-    reference.close();
     if (rrfProcess && !args.persistRrfSimulator) {
       stopProcess(rrfProcess);
       rrfProcess = null;
@@ -509,6 +509,7 @@ async function main() {
       bridgeCtx.close();
       bridgeCtx = null;
     }
+    await reference.close();
   };
 
   const onSigInt = () => {
@@ -571,7 +572,9 @@ async function main() {
       headlessUrl: args.headlessUrl,
     });
 
-    await reference.emit('collection_start', { argv: process.argv, speedup, machineType, timing_source: 'collector.Date.now', node_version: process.version });
+    reference.emit('collection_start', { argv: process.argv, speedup, machineType,
+      timing_source: bridgeCtx.simulationClock?.source ?? bridgeCtx.simulationClock?.backend ?? 'collector.Date.now',
+      wall_deadline_ms: 120000, node_version: process.version });
     if (args.sweepConfigFile) await reference.artifact(args.sweepConfigFile);
     if (args.config) await reference.artifact(args.config);
     const send = async (line, options = {}) => {
@@ -589,15 +592,15 @@ async function main() {
         console.log(`[rrf_gcode] ${trimmed}`);
       }
       const commandId = `${process.pid}:${Date.now()}:${Math.random()}`;
-      await reference.emit('gcode_send', { commandId, line, options, source }, bridgeCtx.simulationClock);
+      reference.emit('gcode_send', { commandId, line, options, source }, bridgeCtx.simulationClock);
       let res;
       try {
         res = await bridgeCtx.sendGcodeLine(line, options);
       } catch (error) {
-        await reference.emit('gcode_error', { commandId, error: String(error) }, bridgeCtx.simulationClock);
+        reference.emit('gcode_error', { commandId, error: String(error) }, bridgeCtx.simulationClock);
         throw error;
       }
-      await reference.emit('gcode_reply', { commandId, result: res }, bridgeCtx.simulationClock);
+      reference.emit('gcode_reply', { commandId, result: res }, bridgeCtx.simulationClock);
       if (args.stepGcode) {
         const reply = res?.reply?.trim?.() || '';
         console.log(reply.length > 0 ? `[rrf_reply] ${reply}` : '[rrf_reply] <empty>');
@@ -631,6 +634,7 @@ async function main() {
       }
     }
 
+    await send.simulationClock?.refresh?.();
     await collectSweepData(send, {
       args,
       machineType,
@@ -639,13 +643,13 @@ async function main() {
       speedup,
       delayFn: send.simulationClock?.sleep ?? sleep,
       onPoint: async (point, config) => {
-        await reference.emit('measurement', { point, config }, bridgeCtx.simulationClock);
+        reference.emit('measurement', { point, config }, bridgeCtx.simulationClock);
         if (args.headlessUrl) await fs.appendFile(`${args.outputFile}.partial-points.jsonl`, `${JSON.stringify({ backend: send.simulationClock.backend, service_url: args.headlessUrl, config, point })}\n`);
       },
     });
     await reference.artifact(args.outputFile, bridgeCtx.simulationClock);
-    await reference.emit('collection_complete', { outputFile: args.outputFile }, bridgeCtx.simulationClock);
-    reference.close();
+    reference.emit('collection_complete', { outputFile: args.outputFile }, bridgeCtx.simulationClock);
+    await reference.close();
     success = true;
   } catch (err) {
     console.error(`Failed to collect sweeps: ${err?.message || err}`);

@@ -97,6 +97,7 @@ async function main() {
     wsPort: useWs ? args.wsPort : 0,
     quiet: args.quiet,
     encoderTimeoutMs,
+    sim: isSimulation,
   });
 
   if (useWs) {
@@ -126,6 +127,7 @@ async function main() {
     }
     return res;
   };
+  send.simulationClock = bridgeCtx.simulationClock;
 
   let success = false;
   try {
@@ -142,7 +144,7 @@ async function main() {
       pollIntervalMs,
     });
 
-    console.log(`Stable after ${stable.elapsedMs}ms (wall clock time) which is ${stable.elapsedMs*speedup}ms (sim time).`);
+    console.log(`Stable after ${stable.elapsedMs}ms (${send.simulationClock ? 'simulation' : 'wall'} time).`);
     console.log(`Angles (deg): ${stable.anglesDeg.map((val) => val.toFixed(3)).join(', ')}`);
     success = true;
   } catch (err) {

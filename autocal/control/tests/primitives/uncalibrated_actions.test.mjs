@@ -17,13 +17,14 @@ function createCollectDataSend(reply = '1 2 3') {
 }
 
 function createSettleOptions() {
+  let nowMs = 0;
   return {
-    pollIntervalMs: 0,
-    stableWindowMs: 0,
-    vibrationWindowMs: 0,
+    pollIntervalMs: 1,
+    stableWindowMs: 2,
+    vibrationWindowMs: 2,
     toleranceDeg: 0.01,
-    sleepFn: async () => {},
-    nowFn: () => 0,
+    sleepFn: async ms => { nowMs += ms; },
+    nowFn: () => nowMs,
   };
 }
 

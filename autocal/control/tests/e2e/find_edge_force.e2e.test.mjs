@@ -148,6 +148,7 @@ async function main() {
     wsPort: useWs ? args.wsPort : 0,
     quiet: args.quiet,
     encoderTimeoutMs,
+    sim: isSimulation,
   });
 
   if (useWs) {
@@ -174,6 +175,7 @@ async function main() {
     }
     return res;
   };
+  send.simulationClock = bridgeCtx.simulationClock;
 
   let success = false;
   try {
@@ -199,8 +201,7 @@ async function main() {
       restAnchors,
     });
 
-    const timeScale = Number.isFinite(speedup) && speedup > 0 ? speedup : 1;
-    const intervalMs = Math.max(20, FORCE_TUNING_CONSTANTS.AUTO_TUNE_SAMPLE_INTERVAL_MS / timeScale);
+    const intervalMs = Math.max(20, FORCE_TUNING_CONSTANTS.AUTO_TUNE_SAMPLE_INTERVAL_MS);
     computeStallSpeedThresholdDegPerSec(thresholds.sigmaAct, intervalMs / 1000);
 
     const formatValue = (value, digits = 4) => (Number.isFinite(value) ? value.toFixed(digits) : 'n/a');

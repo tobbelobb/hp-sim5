@@ -1,6 +1,22 @@
 import { runForceTrial } from '../../behaviors/force_tuning.mjs';
 
 describe('runForceTrial', () => {
+  test('requested 25x never shortens the observed force trial window', async () => {
+    let simulationMs = 0;
+    const forceChanges = [];
+    const send = async line => {
+      if (line.startsWith('M569.4')) forceChanges.push(simulationMs);
+      return { reply: '0 0' };
+    };
+    send.simulationClock = { now: () => simulationMs, sleep: async ms => { simulationMs += ms; } };
+    await runForceTrial(send, {
+      motorIds: ['A', 'B'], activeAnchor: 0, fixedAnchor: 1,
+      speedup: 25, idleForce: .01, testForce: 1,
+      sampleWindowMs: 1000, sampleIntervalMs: 100,
+    });
+    expect(forceChanges).toEqual([0, 1500, 2500]);
+  });
+
   test('returns to origin before releasing a moved pullout to idle force', async () => {
     const commands = [];
     let activeForce = 0;

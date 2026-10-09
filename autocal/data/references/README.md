@@ -61,7 +61,8 @@ exact collection command or all browser UI overrides; do not invent them.
 For new collections, use [extended autocal reference data](extended-reference.md)
 to preserve physics, timestamped communication, original collection output,
 scene/config provenance and numerical stage inputs in one Rerun recording. The
-manual procedure uses the visual browser at 25×. Existing fixtures retain the
+manual procedure requests 25× in the visual browser, with sampled physics by
+default and timing based on the observed simulation clock. Existing fixtures retain the
 historical limitations described above.
 
 For new fixtures, put the collection revision and any nondefault browser

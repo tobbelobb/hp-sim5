@@ -187,6 +187,7 @@ async function main() {
     wsPort: useWs ? args.wsPort : 0,
     quiet: args.quiet,
     encoderTimeoutMs,
+    sim: isSimulation,
   });
 
   if (useWs) {
@@ -213,6 +214,7 @@ async function main() {
     }
     return res;
   };
+  send.simulationClock = bridgeCtx.simulationClock;
 
   let success = false;
   try {
@@ -222,7 +224,7 @@ async function main() {
       machineConfig,
       motorIds,
       speedup,
-      delayFn: baseSleep,
+      delayFn: send.simulationClock?.sleep ?? baseSleep,
     });
     success = true;
   } catch (err) {
