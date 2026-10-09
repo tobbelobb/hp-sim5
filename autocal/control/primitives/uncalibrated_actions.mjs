@@ -92,6 +92,7 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions, 
     wallNowFn = () => Date.now(),
     progressIntervalMs = 5000,
     onProgress = message => console.log(message),
+    validateAngles = null,
     sleepFn = sendFn.simulationClock?.sleep ?? baseSleep,
     nowFn = sendFn.simulationClock?.now ?? (() => Date.now()),
   } = normalizedOptions;
@@ -199,6 +200,7 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions, 
     const nowMs = nowFn();
 
     if (anglesDeg.length === motorIds.length && anglesDeg.every((v) => Number.isFinite(v))) {
+      validateAngles?.(anglesDeg);
       samples.push({ timestampMs: nowMs, anglesDeg });
       const cutoff = nowMs - Math.max(windowMs, vibrationMs) - pollMs;
       while (samples.length > 1 && samples[1].timestampMs <= cutoff) {
@@ -279,6 +281,28 @@ export async function applyForceModeState(sendFn, {
   await sendFn(`M569.4 P${motorIds.join(':')} T${forces.join(':')}`);
 }
 
+// An edge force measured in one geometry can overload held motors elsewhere.
+// Use the existing five-times-start preload, bounded by the measured force cap.
+export function resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce, preloadMultiplier = 5 } = {}) {
+  if (Number.isFinite(sensorCollectionForce)) return sensorCollectionForce;
+  const preload = Number.isFinite(forceMid) ? forceMid * preloadMultiplier : forceMax;
+  return Number.isFinite(forceMax) ? Math.min(forceMax, preload) : (preload ?? 0);
+}
+
+export function assertFixedAnchorAngles(anglesDeg, {
+  fixedTargetByAnchor, mmPerDeg, toleranceDeg = DEFAULT_STABILITY_TOLERANCE_DEG,
+} = {}) {
+  for (let idx = 0; idx < (fixedTargetByAnchor?.length ?? 0); idx += 1) {
+    const targetMm = fixedTargetByAnchor[idx];
+    if (!Number.isFinite(targetMm)) continue;
+    const targetDeg = targetMm / mmPerDeg[idx];
+    const driftDeg = anglesDeg[idx] - targetDeg;
+    if (!Number.isFinite(driftDeg) || Math.abs(driftDeg) > toleranceDeg) {
+      throw new Error(`Fixed anchor ${idx} drifted ${driftDeg.toFixed(3)}deg from its target (limit ${toleranceDeg}deg); reduce sweep force before collecting data`);
+    }
+  }
+}
+
 function buildDataPointModes({
   motorIds,
   driveAnchor,
@@ -318,18 +342,7 @@ function buildDataPointModes({
       ? forceMid * 2.0
       : (Number.isFinite(forceMax) ? forceMax : fallbackForce),
   );
-  const defaultSensorCollectionForce = Number.isFinite(forceMax)
-    ? Math.min(
-      forceMax,
-      Math.max(
-        Number.isFinite(forceMid) ? forceMid * 5.0 : fallbackForce,
-        forceMax * 0.5,
-      ),
-    )
-    : (Number.isFinite(forceMid) ? forceMid * 5.0 : fallbackForce);
-  const measurementSensorForce = Number.isFinite(sensorCollectionForce)
-    ? sensorCollectionForce
-    : defaultSensorCollectionForce;
+  const measurementSensorForce = resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce });
   // Pull slack out of the sensor line before sampling encoder angles.
   const measurementModes = buildModes(measurementSensorForce);
 

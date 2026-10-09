@@ -118,7 +118,7 @@ describe('collect_sweep_data CLI helpers', () => {
     )).toEqual([0.3182, 0.3182, 0.3182, 'position']);
   });
 
-  test('buildSymmetricPulloutModes uses max force on free anchors', () => {
+  test('buildSymmetricPulloutModes limits free-anchor preload from the start force', () => {
     expect(buildSymmetricPulloutModes({
       motorIds: ['40.0', '41.0', '42.0', '43.0'],
       movingAnchors: new Set([0]),
@@ -126,7 +126,7 @@ describe('collect_sweep_data CLI helpers', () => {
       forbiddenForceAnchors: MACHINE_CONFIGS.hangprinter_4.mustBeInFixedSet,
       forceMid: 0.3182,
       forceMax: 9.2035,
-    })).toEqual(['position', 9.2035, 9.2035, 'position']);
+    })).toEqual(['position', 6.364, 6.364, 'position']);
   });
 
   test('angleToLength', () => {

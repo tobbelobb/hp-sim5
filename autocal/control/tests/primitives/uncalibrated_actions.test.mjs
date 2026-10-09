@@ -98,7 +98,7 @@ describe('uncalibrated_actions', () => {
     ]);
   });
 
-  test('collectDataPoint defaults sensor collection force from force max', async () => {
+  test('collectDataPoint bounds sensor force by the start-force preload', async () => {
     const { commands, send } = createCollectDataSend('5 6 7');
 
     await collectDataPoint(send, {
@@ -115,7 +115,7 @@ describe('uncalibrated_actions', () => {
     });
 
     expect(commands.filter((command) => command.startsWith('M569.4 '))).toEqual([
-      'M569.4 P40.0:41.0:42.0 T0.0:5:0.2',
+      'M569.4 P40.0:41.0:42.0 T0.0:1:0.2',
     ]);
   });
 

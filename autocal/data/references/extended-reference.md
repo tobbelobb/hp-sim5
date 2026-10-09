@@ -101,6 +101,21 @@ clock waits also have wall deadlines. Settling and active trials print progress
 every five wall seconds; a paused clock eventually fails instead of waiting forever.
 Requested speed never divides poll intervals, motion waits or force windows.
 
+Sweep positioning and pullout use at most 20 times the tuned start force;
+measurement preload uses at most five times that force. Both defaults are bounded
+by the tuned maximum. The edge force measured during tuning can overload a held
+motor in another geometry, so it is not used directly for these operations.
+`--sensor-collection-force` overrides the measurement preload. Dataset metadata
+records the actual measurement and pullout commands separately from the tuning
+maximum.
+
+During sweep settling and before accepting a point, fixed motor encoders must
+remain within 1.5 degrees of their requested targets. This check uses `M569.3`
+encoder readings and requires no force sensors. An encoder that becomes quiet
+after slipping is rejected; collection errors request position hold for all
+motors before disconnecting. Active pullout has a 120-second selected-clock
+deadline as well as the independent wall deadline.
+
 ## What is preserved
 
 Collector events capture each G-code request, response or error with a shared

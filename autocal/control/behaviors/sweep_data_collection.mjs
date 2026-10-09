@@ -16,12 +16,14 @@ import { DEFAULT_KLIPPY_CONFIG_PATH } from '../../../integrations/klipper/klippy
 import { ENCODER_NOISE_DEFAULTS } from '../primitives/encoder_noise.mjs';
 import {
   angleToLength,
+  assertFixedAnchorAngles,
   applyDataPointPreloadModes,
   applyForceModeState,
   collectDataPoint,
   getCurrentLengths,
   primeEncoders,
   returnMotorsToOriginOneAtATime,
+  resolveCollectionForce,
   waitForStableEncoders,
 } from '../primitives/uncalibrated_actions.mjs';
 import { attachDebugState } from '../primitives/debug_trace.mjs';
@@ -251,7 +253,8 @@ export function buildSymmetricPulloutModes({
     ? movingAnchors
     : new Set((movingAnchors ?? []).filter((idx) => Number.isFinite(idx)));
   const forbidden = new Set((forbiddenForceAnchors ?? []).filter((idx) => Number.isFinite(idx)));
-  const pullForce = Number.isFinite(forceMax) ? forceMax : forceMid;
+  // Pullout needs more preload than measurement to traverse the workspace.
+  const pullForce = resolveCollectionForce({ forceMid, forceMax, preloadMultiplier: 20 });
   return motorIds.map((_, idx) => (
     (movingSet.has(idx) || fixedSet.has(idx) || forbidden.has(idx)) ? 'position' : pullForce
   ));
@@ -1099,14 +1102,17 @@ async function performForceSweep(sendFn, sweepConfig, options) {
   const forbidden = new Set(forbiddenForceAnchors ?? []);
   const fixedSet = new Set(fixedAnchors ?? []);
   const fixedTargetByAnchor = buildFixedTargetByAnchor(fixedAnchors, fixedTargets, motorIds.length);
+  const settleOptions = {
+    validateAngles: angles => assertFixedAnchorAngles(angles, { fixedTargetByAnchor, mmPerDeg }),
+  };
 
-  await waitForStableEncoders(sendFn, motorIds, speedup);
+  await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
   const initialLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
   const driveStartPointMm = initialLengths[driveAnchor] ?? 0;
 
   const modesPullout = motorIds.map((_, idx) => {
     if (idx === driveAnchor) {
-      return forceMax;
+      return resolveCollectionForce({ forceMid, forceMax, preloadMultiplier: 20 });
     }
     if (fixedSet.has(idx) || forbidden.has(idx)) {
       return 'position';
@@ -1115,6 +1121,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
   });
   await applyForceModeState(sendFn, { motorIds, modes: modesPullout });
   await waitForStableEncoders(sendFn, motorIds, speedup, {
+    ...settleOptions,
     timeoutMs: FORCE_TRAVEL_TIMEOUT_MS,
     onProgress: message => console.log(`; sweep pullout: ${message.replace(/^; /, '')}`),
   });
@@ -1129,7 +1136,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
     return forceMid*2.0;
   });
   await applyForceModeState(sendFn, { motorIds, modes: preloadModes });
-  const forceStable = await waitForStableEncoders(sendFn, motorIds, speedup);
+  const forceStable = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
   const endAngles = forceStable.anglesDeg;
   const endLengths = endAngles.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
 
@@ -1137,6 +1144,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
 
   const dataPoints = [];
   const recordPoint = (angles, driveSetpointMm, stepIndex, stepCount, extraFields = null) => {
+    settleOptions.validateAngles(angles);
     const lengths = angles.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
     const point = {
       l_drive: lengths[driveAnchor],
@@ -1182,6 +1190,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
           forceMid,
           sensorCollectionForce,
           speedup,
+          settleOptions,
         });
       }
       if (fixedTargetByAnchor) {
@@ -1203,7 +1212,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
         { axes },
       );
       // eslint-disable-next-line no-await-in-loop
-      await waitForStableEncoders(sendFn, motorIds, speedup);
+      await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
       measurementPreloadActive = false;
     }
     // eslint-disable-next-line no-await-in-loop
@@ -1220,6 +1229,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
       forceMid,
       sensorCollectionForce,
       speedup,
+      settleOptions,
       recordPoint,
       driveSetpointMm: target,
       stepIndex: stepIdx - 1,
@@ -1586,7 +1596,7 @@ export async function collectSweepData(send, context) {
       metadata: {
         sweep_method: 'position',
         feed_rate: feed,
-        sensor_force_n: forceMid,
+        sensor_force_n: resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce }),
         settle_ms: settleMs,
       },
     });
@@ -1616,6 +1626,7 @@ export async function collectSweepData(send, context) {
     force_low_n: forceLow,
     force_mid_n: forceMid,
     force_max_n: forceMax,
+    pullout_force_n: resolveCollectionForce({ forceMid, forceMax, preloadMultiplier: 20 }),
     ...(forceTuningMeta ?? {}),
   };
   const noiseOriginDeg = Array.isArray(forceTuning?.noise_sigma_deg)
