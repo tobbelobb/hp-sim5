@@ -49,6 +49,7 @@ class HeadlessSimulation:
         self.scene = REPO_ROOT / "public/usd_scenes" / scene
         self.args, self.collector_args = args, collector_args
         self.processes = []
+        self.physics = None
         self.recorder = None
         self.reference_url = os.environ.get('AUTOCAL_REFERENCE_WS')
         self.signal_handlers = {}
@@ -123,7 +124,7 @@ class HeadlessSimulation:
             _wait_for_rrf_server(rrf_url)
             ws_port, api_port = free_port(), free_port()
             self.url = f"http://127.0.0.1:{api_port}"
-            service = self.spawn("physics", ["node", "scripts/autocal_headless.mjs", str(self.directory / "scene.usda"),
+            service = self.physics = self.spawn("physics", ["node", "scripts/autocal_headless.mjs", str(self.directory / "scene.usda"),
                                             rrf_url, str(ws_port), str(api_port), str(self.directory)])
             deadline = time.monotonic() + 30
             while True:
@@ -153,7 +154,8 @@ class HeadlessSimulation:
             raise
 
     def __exit__(self, error_type, error, traceback):
-        failed = bool(error or self.manifest.get("exit_code"))
+        failed = bool(error or self.manifest.get("exit_code") or
+                      (self.physics is not None and self.physics.poll() is not None))
         capture_error = None
         self.manifest.update(status="interrupted" if error_type is KeyboardInterrupt else "failed" if error else "complete",
                              wall_s=time.monotonic() - self.started)
@@ -181,6 +183,13 @@ class HeadlessSimulation:
             elif self.reference_url:
                 capture_error = state['error']
             self.manifest.update(state)
+        if self.physics is not None and not self.manifest["kept_alive"]:
+            self.manifest["physics_returncode"] = self.physics.poll()
+            if self.reference_url:
+                if self.physics.returncode != 0:
+                    capture_error = capture_error or f'Headless physics exited with status {self.physics.returncode}; see physics.log'
+                if not self.manifest.get("recording_drained"):
+                    capture_error = capture_error or 'Headless physics did not confirm recording drain; see physics.log'
         if self.manifest.get("exit_code"):
             self.manifest["status"] = "failed"
         self.manifest["normal_completion"] = self.manifest["status"] == "complete" and self.manifest.get("stop_reason") == "patience-or-threshold" and bool(self.manifest.get("applied_parameters"))

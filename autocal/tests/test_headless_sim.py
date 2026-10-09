@@ -84,6 +84,8 @@ def test_extended_headless_records_resets_clocks_and_finalizes(tmp_path, monkeyp
         assert state['step'] == 125 and state['collector_time_s'] == pytest.approx(.06)
         extended_reference.emit('run_complete', returncode=0)
     assert 'AUTOCAL_REFERENCE_WS' not in os.environ
+    assert service.manifest['physics_returncode'] == 0
+    assert service.manifest['recording_drained']
     recording, = service.manifest['recordings']
     assert recording['backend'] == 'headless-js' and recording['status'] == 'finalized'
     assert recording['autocal_complete'] and not recording['rejected_messages']
@@ -108,6 +110,54 @@ def test_extended_headless_records_resets_clocks_and_finalizes(tmp_path, monkeyp
     for pid in service.manifest['services']:
         with pytest.raises(ProcessLookupError):
             os.kill(pid, 0)
+
+
+@pytest.mark.parametrize('keep_alive', [False, True])
+def test_extended_headless_rejects_crash_after_last_request(tmp_path, monkeypatch, keep_alive):
+    from argparse import Namespace
+    from autocal import extended_reference
+    monkeypatch.delenv('AUTOCAL_REFERENCE_WS', raising=False)
+    args = Namespace(machine_type='hangprinter_3', find_radii='off', find_buildup_factor='off',
+                     rrf_config=None, config=None, dataset=tmp_path / 'sweeps.json',
+                     keep_sim_alive=keep_alive, extended_reference=True)
+    with pytest.raises(RuntimeError, match='Headless physics exited with status -9'):
+        with HeadlessSimulation(args, []) as service:
+            extended_reference.emit('run_start', test=True)
+            service.request('advance', seconds=.05)
+            service.manifest.update(stop_reason='patience-or-threshold', applied_parameters=['M669'])
+            extended_reference.emit('run_complete', returncode=0)
+            service.physics.kill()
+            assert service.physics.wait(timeout=15) == -signal.SIGKILL
+            # No further requests: shutdown must reject the stale successful clock.
+    manifest = json.loads((service.directory / 'manifest.json').read_text())
+    assert manifest['status'] == 'failed' and not manifest['normal_completion']
+    assert manifest['physics_returncode'] == -signal.SIGKILL
+    assert not manifest['recording_drained'] and not manifest['kept_alive']
+    assert 'Headless physics exited with status -9' in manifest['recording_error']
+    recording, = manifest['recordings']
+    assert recording['status'] == 'finalized'
+    assert not any(event['kind'] == 'service_stopped' for event in recorded_events(recording['rrd'], 'headless'))
+    assert 'AUTOCAL_REFERENCE_WS' not in os.environ
+    for pid in manifest['services']:
+        with pytest.raises(ProcessLookupError):
+            os.kill(pid, 0)
+
+
+def test_extended_headless_requires_drain_even_with_zero_exit_status(tmp_path, monkeypatch):
+    from argparse import Namespace
+    from types import SimpleNamespace
+    monkeypatch.delenv('AUTOCAL_REFERENCE_WS', raising=False)
+    args = Namespace(machine_type='hangprinter_3', find_radii='off', find_buildup_factor='off',
+                     rrf_config=None, config=None, dataset=tmp_path / 'sweeps.json', keep_sim_alive=False)
+    service = HeadlessSimulation(args, [])
+    service.reference_url = 'ws://unused'
+    service.physics = SimpleNamespace(returncode=0, poll=lambda: 0)
+    service.manifest.update(stop_reason='patience-or-threshold', applied_parameters=['M669'])
+    (service.directory / 'clock.json').write_text(json.dumps(dict(wall_s=2., error=None)))
+    with pytest.raises(RuntimeError, match='did not confirm recording drain'):
+        service.__exit__(None, None, None)
+    assert service.manifest['status'] == 'failed' and not service.manifest['normal_completion']
+    assert service.manifest['physics_returncode'] == 0
 
 
 def test_extended_headless_fails_when_recorder_disconnects(tmp_path, monkeypatch):

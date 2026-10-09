@@ -14,6 +14,7 @@ const sceneText = fs.readFileSync(scene, 'utf8');
 fs.writeFileSync(`${directory}/baked-scene.usda`, bakeCableSceneUsdaSource(sceneText).source);
 let { world, remote, dt } = createHeadlessWorld(sceneText);
 let step = 0, epoch = 0, totalSteps = 0, speed = 1, collectorTime = 0, stopped = false, failure = null;
+let recordingDrained = false;
 const started = performance.now();
 const recorder = process.env.AUTOCAL_REFERENCE_WS ? new FlightRecorder({ world,
   url: process.env.AUTOCAL_REFERENCE_WS, WebSocketClass: WebSocket, source: 'headless' }) : null;
@@ -40,7 +41,7 @@ function event(type, values = {}) {
 function status() {
   return { backend: 'headless-js', step, epoch, total_steps: totalSteps, dt_s: dt,
     simulated_s: totalSteps * dt, collector_time_s: collectorTime, wall_s: (performance.now() - started) / 1000,
-    queue_length: remote.getQueueLength(), error: failure };
+    queue_length: remote.getQueueLength(), error: failure, recording_drained: recordingDrained };
 }
 async function advance(seconds = 0, drain = false) {
   if (!Number.isFinite(seconds) || seconds < 0) throw new Error('Advance seconds must be finite and nonnegative');
@@ -142,6 +143,7 @@ async function close() {
     if (recorder) {
       recorder.recordEvent('service_stopped', status());
       await recorder.drain(10000, { wallTimeoutMs: 10000 });
+      recordingDrained = true;
       recorder.disconnect();
     }
   } catch (error) { failure = error.message; }
