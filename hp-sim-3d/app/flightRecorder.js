@@ -63,6 +63,17 @@ export class FlightRecorder {
     return !this.socket || (this.socket.readyState === 1 && this.pending < MAX_PENDING_STEPS);
   }
 
+  recordEvent(kind, payload) {
+    if (!this.socket || this.socket.readyState !== 1 || !this.extendedReference) return;
+    const clock = this.world.getResource('researchClock');
+    this.socket.send(JSON.stringify({ version: 1, type: 'autocal_event', source: 'browser',
+      wall_time_ms: Date.now(), wall_time_source: 'browser.Date.now',
+      monotonic_ms: performance.now(), kind, payload, sim_time_s: clock?.time ?? null,
+      sim_time_source: clock ? 'browser.researchClock' : 'unavailable',
+      session: this.session, generation: this.world.getResource('sceneGeneration') || 0,
+      recorder_sim_time_s: this.time }));
+  }
+
   update(world, dt) {
     if (!this.socket || this.socket.readyState !== 1) return;
     const generation = world.getResource('sceneGeneration') || 0;
@@ -70,12 +81,15 @@ export class FlightRecorder {
       this.generation = generation;
       this.step = 0;
       this.time = 0;
+      this.recordEvent('scene_context', this.contextProvider?.() || {});
     }
     if (dt > 0) {
       this.step += 1;
       this.time += dt;
     }
     this.socket.send(JSON.stringify({
+      research_clock: world.getResource('researchClock') || null,
+      wall_time_ms: Date.now(), speed_scale: world.getResource('timeScale') || 1,
       version: 1, session: this.session, generation, step: this.step, time: this.time, dt,
       ...captureFlightRecorderSnapshot(world),
     }));

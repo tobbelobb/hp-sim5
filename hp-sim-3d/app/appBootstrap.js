@@ -111,6 +111,7 @@ export function createHpSimApp({
     url: urlParams?.get('rerun_ws') || 'ws://127.0.0.1:9877',
     WebSocketClass: ownerWindow?.WebSocket,
   });
+  flightRecorder.extendedReference = parseBooleanParam(urlParams, 'extended_autocal');
   world.setResource('flightRecorder', flightRecorder);
   ownerWindow?.addEventListener?.('pagehide', () => flightRecorder.disconnect());
   world.setResource('performanceMonitor', new PerformanceMonitor({
@@ -228,6 +229,15 @@ export function createHpSimApp({
 
   const research = createResearchControls({ world, runtime, machines: controllers.machines,
     commands: controllers.commands, recorder: flightRecorder, inspection: inspectionTools, scenes: [...catalog.keys()] });
+  flightRecorder.contextProvider = () => ({
+    url: ownerWindow?.location?.href,
+    machines: controllers.machines.getMachines().map(({ id, sourceKey, sourceUrl, sourceText }) =>
+      ({ id, sourceKey, sourceUrl, sourceText })),
+    settings: Object.fromEntries(['gravity', 'dt', 'timeScale', 'enableLayering', 'layeringFrictionEffectiveRadius',
+      'closedLoopMotorsEnabled', 'pauseState']
+      .map(key => [key, world.getResource(key)])),
+    inspection: inspectionTools.getState(),
+  });
   let defaultScenePromise = null;
   let bound = false;
   let started = false;

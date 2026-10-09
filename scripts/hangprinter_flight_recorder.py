@@ -7,6 +7,9 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 import signal
+import sys
+import time as wall_clock
+import subprocess
 import uuid
 from urllib.parse import urlencode
 
@@ -17,18 +20,21 @@ from websockets.asyncio.server import serve
 from websockets.exceptions import ConnectionClosed
 
 
-def blueprint():
+def blueprint(extended=False):
+    metrics = [
+        rrb.TimeSeriesView(origin="/line_lengths", name="Line lengths (m)"),
+        rrb.TimeSeriesView(origin="/line_errors", name="Length error / stretch (m)"),
+        rrb.TimeSeriesView(origin="/cable_forces", name="Cable forces (N)"),
+    ]
+    details = rrb.Vertical(*metrics)
+    if extended:
+        details = rrb.Vertical(
+            rrb.TextLogView(origin="/autocal", name="Autocal events"),
+            rrb.Tabs(rrb.TimeSeriesView(origin="/clocks", name="Simulation clocks (s)"), *metrics),
+        )
     return rrb.Blueprint(
-        rrb.Horizontal(
-            rrb.Spatial3DView(origin="/world", name="Hangprinter"),
-            rrb.Vertical(
-                rrb.TimeSeriesView(origin="/line_lengths", name="Line lengths (m)"),
-                rrb.TimeSeriesView(origin="/line_errors", name="Length error / stretch (m)"),
-                rrb.TimeSeriesView(origin="/cable_forces", name="Cable forces (N)"),
-            ),
-            column_shares=[2, 1],
-        ),
-        rrb.TimePanel(timeline="sim_time", play_state=rrb.components.PlayState.Following),
+        rrb.Horizontal(rrb.Spatial3DView(origin="/world", name="Hangprinter"), details, column_shares=[2, 1]),
+        rrb.TimePanel(timeline="wall_time" if extended else "sim_time", play_state=rrb.components.PlayState.Following),
     )
 
 
@@ -40,7 +46,10 @@ def rgb(color):
 
 
 class FlightRecording:
-    def __init__(self, output_dir, viewer_sink, sample, force_scale):
+    def __init__(self, output_dir, viewer_sink, sample, force_scale, extended=False):
+        self.extended = extended
+        self.event_count = 0
+        self.physics_samples = 0
         self.key = (sample["session"], sample["generation"])
         self.force_scale = force_scale
         self.paths = set()
@@ -57,7 +66,7 @@ class FlightRecording:
         sinks = [rr.FileSink(self.path)]
         if viewer_sink is not None:
             sinks.append(viewer_sink)
-        self.stream.set_sinks(*sinks, default_blueprint=blueprint())
+        self.stream.set_sinks(*sinks, default_blueprint=blueprint(extended))
         self.stream.log("world", rr.ViewCoordinates.RIGHT_HAND_Z_UP, static=True)
         self.stream.log(
             "recording_info",
@@ -70,10 +79,28 @@ class FlightRecording:
                 "Cable force includes force transferred through guides; arrows show force on endpoint A.\n"
                 f"Force arrows use {force_scale:g} metres per newton.\n"
                 "Torque-controlled cables have no commanded-length series.\n"
-                f"Browser session: {sample['session']}; scene generation: {sample['generation']}."
+                + ("Shared reference: browser sessions and generations are recorded with samples."
+                 if extended else f"Browser session: {sample['session']}; scene generation: {sample['generation']}.")
             ),
             static=True,
         )
+        if extended:
+            self.manifest.update(format_version=1, extended_reference=True, autocal_complete=False,
+                                 browser_session=None, scene_generation=None, browser_segments=[], rejected_messages=[])
+            root = Path(__file__).resolve().parents[1]
+            for label, command in (("revision", ["git", "rev-parse", "HEAD"]),
+                                   ("working_diff", ["git", "diff", "HEAD"]),
+                                   ("untracked_files", ["git", "ls-files", "--others", "--exclude-standard"])):
+                result = subprocess.run(command, cwd=root, capture_output=True, text=True, check=True)
+                self.stream.log(f"provenance/{label}", rr.TextDocument(result.stdout), static=True)
+                if label == "untracked_files":
+                    for name in result.stdout.splitlines():
+                        path = root / name
+                        if path.suffix in (".py", ".js", ".mjs", ".g", ".usda"):
+                            self.stream.log(f"provenance/untracked/{name}", rr.TextDocument(path.read_text()), static=True)
+            self.stream.log("provenance/runtime", rr.TextDocument(
+                json.dumps({"python": sys.version, "rerun": rr.__version__})), static=True)
+        self.write_manifest()
         print(f"Recording: {self.path}", flush=True)
 
     def write_manifest(self):
@@ -82,14 +109,66 @@ class FlightRecording:
         temporary.write_text(json.dumps(self.manifest, indent=2) + '\n')
         temporary.replace(target)
 
+    def log_event(self, event):
+        if not self.extended:
+            raise ValueError("Events require --extended-reference")
+        source = event["source"]
+        if source not in ("python", "collector", "browser"):
+            raise ValueError("Unknown event source")
+        self.stream.reset_time()
+        wall_ms = int(event["wall_time_ms"])
+        self.stream.set_time("wall_time", timestamp=np.datetime64(wall_ms, "ms"))
+        self.event_count += 1
+        if source == "python" and event.get("kind") == "run_start":
+            self.manifest["autocal_complete"] = False
+        if source == "python" and event.get("kind") == "run_complete" and event.get("payload", {}).get("returncode") == 0:
+            self.manifest["autocal_complete"] = True
+        self.stream.set_time("event_order", sequence=self.event_count)
+        payload = event.get("payload", {})
+        kind = event.get("kind", "event")
+        if kind == "text_log":
+            body = payload["text"]
+        elif kind == "artifact":
+            body = f"artifact: {payload['path']} ({len(payload['content'])} characters)"
+        else:
+            body = f"{kind}: {json.dumps(payload, ensure_ascii=False)}"
+        # Never assign a guessed physics time to an event from another clock.
+        self.stream.log(f"autocal/{source}", rr.TextLog(body),
+                        rr.AnyValues(event_json=json.dumps(event), received_wall_time_ms=wall_clock.time_ns() // 1_000_000), strict=True)
+        if event.get("sim_time_s") is not None:
+            clock_path = "clocks/browser/research_clock" if source == "browser" else f"clocks/{source}"
+            self.stream.log(clock_path, rr.Scalars(event["sim_time_s"]),
+                            rr.AnyValues(sim_time_source=event["sim_time_source"]), strict=True)
+
     def log_sample(self, sample):
+        if self.extended and self.key != (sample["session"], sample["generation"]):
+            self.key = (sample["session"], sample["generation"])
+            self.last_step = self.last_time = None
+            for path in self.paths:
+                self.stream.reset_time()
+                self.stream.set_time("wall_time", timestamp=np.datetime64(int(sample["wall_time_ms"]), "ms"))
+                self.stream.log(path, rr.Clear(recursive=True))
+            self.paths.clear()
+            self.styles.clear()
         step, time = sample["step"], sample["time"]
         if self.last_step is not None and step != self.last_step + 1:
             raise ValueError(f"Nonconsecutive timestep: expected {self.last_step + 1}, received {step}")
         if self.last_time is not None and not np.isclose(time - self.last_time, sample["dt"], rtol=1e-8, atol=1e-10):
             raise ValueError("Simulation clock did not advance by dt")
+        self.stream.reset_time()
+        self.stream.set_time("wall_time", timestamp=np.datetime64(int(sample.get("wall_time_ms", wall_clock.time_ns() // 1_000_000)), "ms"))
+        self.stream.set_time("scene_generation", sequence=sample["generation"])
         self.stream.set_time("sim_step", sequence=step)
         self.stream.set_time("sim_time", duration=time)
+        self.stream.log("clocks/browser/flight_recorder", rr.Scalars(time), rr.AnyValues(
+            sim_time_source="browser.flightRecorder", session=sample["session"],
+            speed_scale=sample.get("speed_scale", 1),
+            wall_time_source="browser.Date.now" if "wall_time_ms" in sample else "recorder.receive"))
+        research_clock = sample.get("research_clock")
+        if research_clock is not None:
+            self.stream.log("clocks/browser/research_clock", rr.Scalars(research_clock["time"]),
+                            rr.AnyValues(sim_time_source="browser.researchClock",
+                                         observation_phase="world.update before runner advances researchClock"))
         current_paths = set()
 
         def log(path, *archetypes):
@@ -156,17 +235,28 @@ class FlightRecording:
             self.styles.pop(path, None)
         self.paths = current_paths
         self.last_step, self.last_time = step, time
+        self.physics_samples += 1
+        if self.extended:
+            segments = self.manifest["browser_segments"]
+            if not segments or (segments[-1]["session"], segments[-1]["generation"]) != self.key:
+                segments.append(dict(session=sample["session"], generation=sample["generation"],
+                                     start_step=step, start_time_s=time, start_wall_time_ms=sample["wall_time_ms"]))
+            segments[-1].update(end_step=step, end_time_s=time, end_wall_time_ms=sample["wall_time_ms"])
+            self.manifest.update(browser_session=sample["session"], scene_generation=sample["generation"])
 
     def close(self):
+        self.manifest.update(status="finalized", end_step=self.last_step, end_time_s=self.last_time,
+                             physics_samples=self.physics_samples, event_count=self.event_count)
+        self.stream.log("provenance/manifest", rr.TextDocument(json.dumps(self.manifest, indent=2)), static=True)
         try:
-            self.stream.flush(timeout_sec=5)
+            self.stream.flush(timeout_sec=30)
         except RuntimeError as error:
+            self.manifest["status"] = "flush_failed"
             print(f"Recorder flush: {error}", flush=True)
         finally:
             self.stream.disconnect()
-        self.manifest.update(status="finalized", end_step=self.last_step, end_time_s=self.last_time)
         self.write_manifest()
-        print(f"Saved: {self.path} (last timestep {self.last_step})", flush=True)
+        print(f"Recording {self.manifest['status']}: {self.path} (last timestep {self.last_step})", flush=True)
 
 
 async def run(args):
@@ -189,13 +279,38 @@ async def run(args):
         )
         print(f"Rerun viewer: http://localhost:{args.web_port}/?{urlencode({'url': viewer_uri})}", flush=True)
 
+    extended_recording = None
+    if args.extended_reference:
+        extended_recording = FlightRecording(output_dir, viewer_sink,
+            {"session": "extended-reference", "generation": 0, "step": 0}, args.force_scale, extended=True)
+
+    active_browser = None
+
     async def receive(socket):
+        nonlocal active_browser
         recording = None
         try:
             async for message in socket:
                 sample = json.loads(message)
                 if sample.get("version") != 1:
                     raise ValueError("Unsupported flight recorder protocol version")
+                if sample.get("type") == "autocal_event":
+                    if extended_recording is None:
+                        raise ValueError("Events require --extended-reference")
+                    if sample.get("kind") in ("run_start", "collection_start", "gcode_send") and active_browser is None:
+                        raise ValueError("Connect the visual browser recorder before starting autocal")
+                    extended_recording.log_event(sample)
+                    await socket.send(json.dumps({"type": "event_ack"}))
+                    continue
+                if extended_recording is not None:
+                    if active_browser is not None and active_browser is not socket:
+                        raise ValueError("Extended reference already has an active browser")
+                    active_browser = socket
+                    if "wall_time_ms" not in sample:
+                        raise ValueError("Extended recording requires browser wall_time_ms")
+                    extended_recording.log_sample(sample)
+                    await socket.send(json.dumps({"type": "ack", "step": sample["step"]}))
+                    continue
                 key = (sample["session"], sample["generation"])
                 if recording is None or recording.key != key:
                     if recording is not None:
@@ -207,9 +322,14 @@ async def run(args):
         except ConnectionClosed:
             pass
         except (ValueError, KeyError, TypeError) as error:
+            if extended_recording is not None:
+                extended_recording.manifest["rejected_messages"].append(str(error))
+                extended_recording.write_manifest()
             print(f"Recorder rejected a sample: {error}", flush=True)
             await socket.close(code=1008, reason=str(error)[:100])
         finally:
+            if active_browser is socket:
+                active_browser = None
             if recording is not None:
                 recording.close()
 
@@ -218,17 +338,20 @@ async def run(args):
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, stop.set)
     try:
-        async with serve(receive, "127.0.0.1", args.port, max_size=16 * 1024 * 1024, compression=None):
+        async with serve(receive, "127.0.0.1", args.port, max_size=None if args.extended_reference else 16 * 1024 * 1024, compression=None):
             print(f"Flight recorder: ws://127.0.0.1:{args.port}", flush=True)
             print("Click Rerun in the simulator controls, then start playback. Ctrl-C stops recording.", flush=True)
             await stop.wait()
     finally:
+        if extended_recording is not None:
+            extended_recording.close()
         if viewer_server is not None:
             viewer_server.disconnect()
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--extended-reference", action="store_true", help="One wall-clock RRD for browser physics and autocal events; stop after autocal exits")
     parser.add_argument("--output", type=Path, default=Path("output/rerun"), help="Directory for per-scene RRD recordings")
     parser.add_argument("--port", type=int, default=9877, help="Browser telemetry WebSocket port")
     parser.add_argument("--web-port", type=int, default=9090, help="Rerun web viewer port")

@@ -191,18 +191,21 @@ export function createExternalCommandController({
   }
 
   function respondToEncoderRequest(requestId, axes) {
-    socketController?.send?.({
+    const payload = {
       type: 'encoder_response',
       requestId,
       axes,
       anglesDeg: resolveEncoderAngles(axes),
-    });
+    };
+    world.getResource('flightRecorder')?.recordEvent('encoder_response_sent', payload);
+    socketController?.send?.(payload);
   }
 
   function handlePayload(payload) {
     if (!payload) {
       return;
     }
+    world.getResource('flightRecorder')?.recordEvent('external_payload_received', payload);
     if (payload.type === 'encoder_request') {
       if (payload.requestId != null && Array.isArray(payload.axes)) {
         respondToEncoderRequest(payload.requestId, payload.axes);

@@ -161,3 +161,23 @@ describe('flight recorder delivery', () => {
     expect(recorder.pending).toBe(0);
   });
 });
+
+test('extended browser events preserve both clocks and do not release physics backpressure', () => {
+  const world = new World();
+  world.setResource('sceneGeneration', 2);
+  world.setResource('researchClock', { generation: 2, step: 15, time: 1.5 });
+  const recorder = new FlightRecorder({ world, WebSocketClass: FakeSocket });
+  recorder.socket = new FakeSocket();
+  recorder.socket.readyState = 1;
+  recorder.extendedReference = true;
+  recorder.time = .5;
+  recorder.pending = 32;
+  recorder.recordEvent('external_payload_received', { type: 'encoder_request', requestId: 4 });
+  expect(recorder.socket.samples[0]).toMatchObject({
+    source: 'browser', sim_time_s: 1.5, sim_time_source: 'browser.researchClock',
+    recorder_sim_time_s: .5, generation: 2,
+    payload: { requestId: 4 },
+  });
+  expect(Number.isInteger(recorder.socket.samples[0].wall_time_ms)).toBe(true);
+  expect(recorder.readyForStep()).toBe(false);
+});

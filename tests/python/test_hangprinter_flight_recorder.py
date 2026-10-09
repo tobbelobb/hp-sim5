@@ -90,3 +90,33 @@ def test_removing_cables_clears_old_geometry_and_telemetry(tmp_path):
         recording.close()
     assert rows(recording, "/world/machines/test/cables/A/segments", "Clear:is_recursive") == [(1, [True])]
     assert rows(recording, "/line_lengths/test/A", "Clear:is_recursive") == [(1, [True])]
+
+
+def test_extended_events_keep_source_wall_time_without_inheriting_physics_clock(tmp_path):
+    recording = FlightRecording(tmp_path, None, sample(), .01, extended=True)
+    stamp = 1_800_000_000_123
+    try:
+        physics = dict(sample(), wall_time_ms=stamp, speed_scale=25)
+        recording.log_sample(physics)
+        recording.log_event(dict(source='collector', wall_time_ms=stamp - 2,
+                                 kind='gcode_send', payload={'line': 'G1 A1', 'source': {'file': 'test.mjs', 'line': 42}},
+                                 sim_time_s=None, sim_time_source='unavailable'))
+        recording.log_event(dict(source='browser', wall_time_ms=stamp + 2,
+                                 kind='encoder_response_sent', sim_time_s=4.2,
+                                 sim_time_source='browser.researchClock'))
+        reset = dict(sample(), session='second-page', generation=2, wall_time_ms=stamp + 3)
+        recording.log_sample(reset)
+    finally:
+        recording.close()
+    reader = RrdReader(recording.path)
+    assert len(reader.recordings()) == 1
+    events = reader.stream().filter(content='/autocal/collector', components='TextLog:text').to_chunks()
+    assert events
+    batch = events[0].to_record_batch()
+    assert batch.column('wall_time').cast('int64').to_pylist() == [(stamp - 2) * 1_000_000]
+    assert 'sim_time' not in batch.schema.names
+    raw = reader.stream().filter(content='/autocal/collector', components='event_json').to_chunks()[0]
+    body = json.loads(raw.to_record_batch().column('event_json').to_pylist()[0][0])
+    assert body['payload']['source']['line'] == 42
+    physics_chunks = reader.stream().filter(content='/line_lengths/test/A', components='Scalars:scalars').to_chunks()
+    assert sum(chunk.num_rows for chunk in physics_chunks) == 2

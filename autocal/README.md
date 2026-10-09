@@ -135,6 +135,11 @@ Initiate simulated full-auto calibration with:
   --speedup 25
 ```
 
+For a complete recorded browser collection, follow
+[extended autocal reference data](data/references/extended-reference.md).
+`--extended-reference-ws ws://127.0.0.1:9877` sends timestamped Python and collector
+events to the extended flight recorder, alongside browser physics in one `.rrd`.
+
 `--speedup` is forwarded to the collector.
 Use `--collector-args` for other raw collector flags.
 

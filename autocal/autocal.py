@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import atexit
 import copy
+import os
 import sys
 import time
 from contextlib import nullcontext
@@ -15,6 +16,7 @@ from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.planning_pass import plan_next_ellipse_sweep
 from autocal.history_selection import evaluate_history_candidates, rank_history_candidates
 from autocal.stage_artifacts import write_stage_artifact
+from autocal import extended_reference
 from autocal.theoretical_ellipse import get_anchor_bounds
 
 
@@ -162,6 +164,10 @@ def full_auto_loop(
     text_log_path.parent.mkdir(parents=True, exist_ok=True)
     text_log_path.write_text("", encoding="utf-8")
     log_handle = text_log_path.open("a", encoding="utf-8")
+    if extended_reference.enabled():
+        log_handle = extended_reference.EventLog(log_handle, text_log_path)
+        extended_reference.emit("run_start", argv=sys.argv)
+        extended_reference.artifact(dataset_path)
 
     def _log_line(msg: str) -> None:
         log_handle.write(str(msg) + "\n")
@@ -173,6 +179,8 @@ def full_auto_loop(
         print(msg)
         _log_line(f"Wrote to console: {msg}")
 
+    if extended_reference.enabled() and stage_artifacts is None:
+        stage_artifacts = dataset_path.with_name(f"{dataset_path.stem}.stages")
     if stage_artifacts is not None:
         stage_artifacts = _unique_path(Path(stage_artifacts))
         stage_artifacts.mkdir(parents=True)
@@ -285,6 +293,8 @@ def full_auto_loop(
         klipper_config=klipper_config,
     )
 
+    extended_reference.artifact(REPO_ROOT / "RRF/run/vsd" / str(sim_config) if firmware == "rrf" else Path(sim_config))
+
     def _normalize_collector_args(argv: Sequence[str]) -> List[str]:
         normalized = list(argv)
 
@@ -384,6 +394,10 @@ def full_auto_loop(
 
     def _finalize(code: int) -> int:
         nonlocal cleanup_registered
+        extended_reference.artifact(work_path)
+        extended_reference.artifact(text_log_path)
+        extended_reference.artifact(log_path)
+        extended_reference.emit("run_complete", returncode=code)
         if cleanup_registered:
             try:
                 atexit.unregister(_cleanup)
@@ -394,6 +408,24 @@ def full_auto_loop(
         return code
 
     def _run_collection_command(cmd):
+        extended_reference.emit("collection_start", command=cmd)
+        for index, value in enumerate(cmd[:-1]):
+            if value in ("--config", "--sweep-config", "--sweep-config-file"):
+                extended_reference.artifact(cmd[index + 1])
+        if extended_reference.enabled():
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                       text=True, start_new_session=True)
+            try:
+                for line in process.stdout:
+                    _log_line(line.rstrip("\n"))
+                code = process.wait()
+                extended_reference.emit("collection_exit", returncode=code)
+                extended_reference.artifact(work_path)
+                if code:
+                    raise subprocess.CalledProcessError(code, cmd)
+            finally:
+                _stop_process(process)
+            return
         if headless_sim is None:
             subprocess.run(cmd, check=True, stdout=log_handle, stderr=log_handle)
             return
@@ -1592,9 +1624,15 @@ def full_auto_loop(
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_semi_auto_parser()
+    parser.add_argument("--extended-reference-ws", metavar="URL",
+                        help="Record timestamped logs and collector events in an --extended-reference flight recorder")
     parser.add_argument("--headless-sim", action="store_true",
                         help="Run simulated RRF and production JS physics/collector in Node without a browser; implies --sim")
     args = parser.parse_args(argv)
+    if args.extended_reference_ws:
+        os.environ['AUTOCAL_REFERENCE_WS'] = args.extended_reference_ws
+    if extended_reference.enabled() and args.headless_sim:
+        parser.error("Extended reference collection currently requires the visual browser")
     from autocal.headless_sim import HeadlessSimulation, MACHINES
     if args.headless_sim:
         if args.firmware != "rrf":

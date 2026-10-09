@@ -14,6 +14,7 @@ import subprocess
 
 import numpy as np
 
+from autocal import extended_reference
 from autocal.active_learning import SweepConfig
 from autocal.spool_model import SpoolModelParams, WinchSpoolModel
 
@@ -76,6 +77,7 @@ def write_stage_artifact(path: Path, kind: str, payload: dict) -> None:
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(envelope, allow_nan=False, separators=(",", ":")), encoding="utf-8")
     temporary.replace(path)
+    extended_reference.artifact(path)
 
 
 def read_stage_artifact(path: Path, *, expected_kind: str | None = None) -> dict:
