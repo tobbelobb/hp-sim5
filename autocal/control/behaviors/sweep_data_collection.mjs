@@ -68,6 +68,9 @@ const DEFAULT_NOISE_SAMPLE_RATE_HZ = ENCODER_NOISE_DEFAULTS.DEFAULT_NOISE_SAMPLE
 const DEFAULT_NOISE_MIN_SAMPLES = ENCODER_NOISE_DEFAULTS.DEFAULT_NOISE_MIN_SAMPLES;
 const DEFAULT_NOISE_SIGMA_FLOOR_DEG = ENCODER_NOISE_DEFAULTS.DEFAULT_NOISE_SIGMA_FLOOR_DEG;
 const DEFAULT_FIXED_TOLERANCE_MM = 0.01;
+// Active workspace traversal needs time to move before the quiet window starts.
+// This is measured on the observed simulation clock (wall time on hardware).
+const FORCE_TRAVEL_TIMEOUT_MS = 120000;
 const DATASET_VERSION = '2.0';
 
 export const SWEEP_DEFAULTS = {
@@ -913,7 +916,7 @@ async function enforceFixedAnchors(sendFn, options = {}) {
   return getCurrentLengths(sendFn, motorIds, mmPerDeg);
 }
 
-async function measureMaxTravelMm(sendFn, options = {}) {
+export async function measureMaxTravelMm(sendFn, options = {}) {
   const {
     motorIds,
     mmPerDeg,
@@ -922,6 +925,7 @@ async function measureMaxTravelMm(sendFn, options = {}) {
     pairAnchors,
     forbiddenForceAnchors = [],
     speedup,
+    settleOptions = {},
   } = options;
 
   const forbidden = new Set(forbiddenForceAnchors ?? []);
@@ -933,50 +937,57 @@ async function measureMaxTravelMm(sendFn, options = {}) {
   });
   const startLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
 
-  // Apply 75% of max force in three steps with 100 ms between
-  const pullFractions = [0.25, 0.5, 0.75];
-  for (let i = 0; i < pullFractions.length; i += 1) {
-    const fraction = pullFractions[i];
-    const modesPullPair = motorIds.map((_, idx) => {
-      if (forbidden.has(idx)) {
-        return 'position';
+  try {
+    // Apply 75% of max force in three steps with 100 ms between
+    const pullFractions = [0.25, 0.5, 0.75];
+    for (let i = 0; i < pullFractions.length; i += 1) {
+      const fraction = pullFractions[i];
+      const modesPullPair = motorIds.map((_, idx) => {
+        if (forbidden.has(idx)) {
+          return 'position';
+        }
+        if (pairSet.has(idx)) {
+          return forceMax * fraction;
+        }
+        return forceLow;
+      });
+      await applyForceModeState(sendFn, { motorIds, modes: modesPullPair });
+      if (i < pullFractions.length - 1) {
+        await (sendFn.simulationClock?.sleep ?? baseSleep)(100);
       }
-      if (pairSet.has(idx)) {
-        return forceMax * fraction;
-      }
-      return forceLow;
+    }
+    await waitForStableEncoders(sendFn, motorIds, speedup, {
+      timeoutMs: FORCE_TRAVEL_TIMEOUT_MS,
+      onProgress: message => console.log(`; size-tune travel: ${message.replace(/^; /, '')}`),
+      ...settleOptions,
     });
-    await applyForceModeState(sendFn, { motorIds, modes: modesPullPair });
-    if (i < pullFractions.length - 1) {
-      await (sendFn.simulationClock?.sleep ?? baseSleep)(100);
+    const endLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
+
+    let maxTravel = 0;
+    for (let idx = 0; idx < motorIds.length; idx += 1) {
+      if (pairSet.has(idx) || forbidden.has(idx)) {
+        continue;
+      }
+      const start = startLengths[idx] ?? 0;
+      const end = endLengths[idx] ?? 0;
+      if (!Number.isFinite(start) || !Number.isFinite(end)) {
+        continue;
+      }
+      const delta = Math.abs(end - start);
+      if (!Number.isFinite(delta)) {
+        continue;
+      }
+      maxTravel = Math.max(maxTravel, delta);
     }
+
+    return Number.isFinite(maxTravel) ? maxTravel : null;
+  } finally {
+    // Also stop the pull when a clock/encoder/transport error aborts measurement.
+    await applyForceModeState(sendFn, {
+      motorIds,
+      modes: motorIds.map(() => 'position'),
+    });
   }
-  await waitForStableEncoders(sendFn, motorIds, speedup);
-  const endLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
-
-  let maxTravel = 0;
-  for (let idx = 0; idx < motorIds.length; idx += 1) {
-    if (pairSet.has(idx) || forbidden.has(idx)) {
-      continue;
-    }
-    const start = startLengths[idx] ?? 0;
-    const end = endLengths[idx] ?? 0;
-    if (!Number.isFinite(start) || !Number.isFinite(end)) {
-      continue;
-    }
-    const delta = Math.abs(end - start);
-    if (!Number.isFinite(delta)) {
-      continue;
-    }
-    maxTravel = Math.max(maxTravel, delta);
-  }
-
-  await applyForceModeState(sendFn, {
-    motorIds,
-    modes: motorIds.map(() => 'position'),
-  });
-
-  return Number.isFinite(maxTravel) ? maxTravel : null;
 }
 
 function parseSweepConfigLine(line, lineNumber) {
@@ -1103,7 +1114,10 @@ async function performForceSweep(sendFn, sweepConfig, options) {
     return forceLow;
   });
   await applyForceModeState(sendFn, { motorIds, modes: modesPullout });
-  await waitForStableEncoders(sendFn, motorIds, speedup);
+  await waitForStableEncoders(sendFn, motorIds, speedup, {
+    timeoutMs: FORCE_TRAVEL_TIMEOUT_MS,
+    onProgress: message => console.log(`; sweep pullout: ${message.replace(/^; /, '')}`),
+  });
 
   const preloadModes = motorIds.map((_, idx) => {
     if (idx === driveAnchor) {

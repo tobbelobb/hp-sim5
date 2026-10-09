@@ -31,6 +31,7 @@ import {
   SWEEP_DEFAULTS,
 } from '../behaviors/sweep_data_collection.mjs';
 import { FORCE_TUNING_DEFAULTS } from '../behaviors/force_tuning.mjs';
+import { applyForceModeState } from '../primitives/uncalibrated_actions.mjs';
 
 const SOURCE_FILE_LABEL = 'autocal/control/cli/collect_sweep_data.mjs';
 const SIM_PROCESS_WARNING_TIMEOUT_MS = 10_000;
@@ -485,6 +486,7 @@ async function main() {
   let rrfProcess = null;
   let managedKlippyProcess = null;
   let bridgeCtx = null;
+  let send = null;
   let cleanupStarted = false;
   const reference = createReferenceLogger();
 
@@ -577,7 +579,7 @@ async function main() {
       wall_deadline_ms: 120000, node_version: process.version });
     if (args.sweepConfigFile) await reference.artifact(args.sweepConfigFile);
     if (args.config) await reference.artifact(args.config);
-    const send = async (line, options = {}) => {
+    send = async (line, options = {}) => {
       const source = getSourceLineFromStack(new Error().stack, { skipMatches: 1 });
       const trimmed = line?.trim?.();
       if (args.stepGcode && trimmed) {
@@ -653,6 +655,13 @@ async function main() {
     success = true;
   } catch (err) {
     console.error(`Failed to collect sweeps: ${err?.message || err}`);
+    if (send) {
+      try {
+        await applyForceModeState(send, { motorIds, modes: motorIds.map(() => 'position') });
+      } catch (holdError) {
+        console.error(`Failed to hold motors after collection error: ${holdError?.message || holdError}`);
+      }
+    }
   } finally {
     process.off('SIGINT', onSigInt);
     process.off('SIGTERM', onSigTerm);
