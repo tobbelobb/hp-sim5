@@ -9,15 +9,10 @@ Preserve the one-click user experience and automatic stopping when finished.
 You don't need to take line buildup into account, ie autocal.py's `--buildup-factor` can be zero, and the simulator should also run with Line Layering disabled.
 No need to search for the spool radii either.
 Use Hangprinter 3, not Hangprinter 4, since HP3 is lighter and faster to simulate.
-I created a reference run for you to beat in output/extended-autocal/no-buildup-reference-001
+I created a reference run for you to beat in output/extended-autocal/no-buildup-reference-002
 
 An obvious way to save time would be to look at the .rrd file, and profile it in a way. See where it hangs, what
 takes time to help you prioritize where to start optimizing.
-
-I noticing when recording the reference run that force tuning seems to take forever.
-Long pauses are there that were not there before. I'm seeing "; waiting for browser clock: 20.1s wall, 0.6s simulation of 32.3s requested duration" and similar lines in output/extended-autocal/no-buildup-reference-001/sweeps.full_auto.log.
-Look through recent commits and see how that might have gotten in there.
-What were we trying to fix, and can we remove those long waits without breaking something?
 
 See autocal/data/references/extended-reference.md if you want to do full simulation runs with complete recordings yourself.
 
