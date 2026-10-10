@@ -1,4 +1,5 @@
 import json
+import hashlib
 import os
 from pathlib import Path
 import subprocess
@@ -59,6 +60,34 @@ def test_failed_lifecycle_retains_clock_error_and_partial_points(tmp_path):
     assert manifest['simulated_s'] == 5. and manifest['service_wall_s'] == 2.
     assert not manifest['normal_completion']
     assert partial.read_text() == '{"point":{"l_drive":1}}\n'
+
+
+@pytest.mark.parametrize('layering', [False, True])
+def test_headless_geometry_and_control_settings_survive_reset(tmp_path, layering):
+    from argparse import Namespace
+    args = Namespace(machine_type='hangprinter_3', find_radii='off', find_buildup_factor='off',
+                     rrf_config=None, config=None, dataset=tmp_path / 'sweeps.json',
+                     buildup_factor=0, keep_sim_alive=False)
+    collector_args = ['--line-layering'] if layering else []
+    with HeadlessSimulation(args, collector_args) as service:
+        initial = service.request('status')
+        assert initial['settings']['enableLayering'] is layering
+        service.request('payload', payload={'type': 'simulation_settings', 'closedLoopMotorsEnabled': True})
+        service.request('payload', payload={'type': 'reset'})
+        reset = service.request('status')
+        assert reset['epoch'] == 1
+        assert reset['settings']['enableLayering'] is layering
+        assert reset['settings']['closedLoopMotorsEnabled'] is True
+        assert reset['baked_scene_sha256'] == initial['baked_scene_sha256']
+        service.request('payload', payload={'type': 'simulation_settings', 'lineLayeringEnabled': not layering})
+        toggled = service.request('status')
+        assert toggled['epoch'] == 2 and toggled['settings']['enableLayering'] is not layering
+        assert toggled['settings']['closedLoopMotorsEnabled'] is True
+        assert toggled['baked_scene_sha256'] != initial['baked_scene_sha256']
+    assert service.manifest['initial_baked_scene_sha256'] == initial['baked_scene_sha256']
+    assert service.manifest['baked_scene_sha256'] == hashlib.sha256(
+        (service.directory / service.manifest['baked_scene_file']).read_bytes()).hexdigest()
+    assert (service.directory / 'baked-scene.usda').exists()
 
 
 def recorded_events(path, source):

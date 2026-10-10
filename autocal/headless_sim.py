@@ -2,6 +2,7 @@
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import socket
@@ -115,7 +116,7 @@ class HeadlessSimulation:
                 os.environ['AUTOCAL_REFERENCE_WS'] = self.reference_url
             if self.reference_url:
                 self.manifest.update(extended_reference_ws=self.reference_url, owned_recorder=self.recorder is not None)
-            from autocal._autocal_common import _arg_has_flag, _arg_value, _resolve_rrf_target, _wait_for_rrf_server
+            from autocal._autocal_common import _arg_has_flag, _arg_value, _resolve_rrf_target, _wait_for_rrf_server, _send_rrf_gcode
             rrf_url, explicit, port = _resolve_rrf_target(self.collector_args)
             if not explicit:
                 port = port if _arg_value(self.collector_args, "--port") else free_port()
@@ -130,10 +131,15 @@ class HeadlessSimulation:
                 self.spawn("rrf", [str(RRF_SIM_BINARY), "--vsd", RRF_SIM_VSD_PATH, "-c", self.config,
                                    "--server", "-p", str(port)])
             _wait_for_rrf_server(rrf_url)
+            buildup = getattr(self.args, 'buildup_factor', None)
+            if buildup is None:
+                initial_q = re.search(r'\bQ([-+\d.eE]+)', _send_rrf_gcode(rrf_url, 'M666'))
+                buildup = float(initial_q[1]) if initial_q else 0
+            layering = _arg_has_flag(self.collector_args, '--line-layering') or buildup != 0
             ws_port, api_port = free_port(), free_port()
             self.url = f"http://127.0.0.1:{api_port}"
             service = self.physics = self.spawn("physics", ["node", "scripts/autocal_headless.mjs", str(self.directory / "scene.usda"),
-                                            rrf_url, str(ws_port), str(api_port), str(self.directory)])
+                                            rrf_url, str(ws_port), str(api_port), str(self.directory), str(layering).lower()])
             deadline = time.monotonic() + 30
             while True:
                 try:
@@ -145,6 +151,7 @@ class HeadlessSimulation:
                     time.sleep(.1)
             self.collector_args.extend(["--server", rrf_url, "--headless-url", self.url, "--no-spawn-rrf-simulator"])
             self.manifest["baked_scene_sha256"] = hashlib.sha256((self.directory / "baked-scene.usda").read_bytes()).hexdigest()
+            self.manifest['initial_baked_scene_sha256'] = self.manifest['baked_scene_sha256']
             self.manifest.update(status="running", service_url=self.url, rrf_url=rrf_url,
                                  services=[process.pid for process in self.processes],
                                  owned_rrf=owns_rrf,

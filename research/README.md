@@ -350,6 +350,10 @@ four finite values in [1, 200] mm. `find_radii` and `find_buildup_factor` accept
 `off`, `global`, `per-anchor`. Nonzero buildup or buildup fitting requires
 `layering=true`. Buildup is bounded to [0, 2]. Layering selects the matching
 firmware preset and enables the existing collector's simulator setting.
+Headless construction also uses the browser's matching cable-length bake:
+zero cable width when layering is off. Layering changes rebake/reset the world;
+resets retain closed-loop motor and layering settings. Each generation keeps
+its baked scene and hash in the recording and job artifacts.
 
 `optimizer` accepts `mode` (`fast`, `fast-fd`, `legacy`) and `solver` (`lbfgsb`,
 `trf`). Defaults are `fast`/`lbfgsb`, 400 `solve_iterations` (1–2000), four
@@ -471,7 +475,9 @@ A bare standalone MCP registration cannot start these services. Report a blocked
 standalone run honestly; offline replay does not validate the live workflow.
 The [supervised job verification](autocal-jobs-verification.md) records real HP3
 automatic stopping through a socket-denied MCP client, lifecycle failures and
-finalized recording checks, including the default-autotuning settling limitation.
+finalized recording checks. The [settling follow-up](autocal-settling-review.md)
+records its reproduction, endpoint recovery, corrected no-layering bake and a
+complete default-force acceptance run.
 
 Implementation prompts are [full-autocal jobs](prompts/tooling_improvement_1.txt),
 [configurable fresh worlds](prompts/tooling_improvement_2.txt) and

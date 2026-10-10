@@ -21,6 +21,7 @@ import {
   applyDataPointPreloadModes,
   applyForceModeState,
   collectDataPoint,
+  EncoderStabilityTimeoutError,
   getCurrentLengths,
   primeEncoders,
   returnMotorsToOriginOneAtATime,
@@ -1075,7 +1076,7 @@ function normalizeSweepConfig(config, machineConfig) {
   return { ...config, fixedAnchors, driveAnchor, sensorAnchor };
 }
 
-async function performForceSweep(sendFn, sweepConfig, options) {
+export async function performForceSweep(sendFn, sweepConfig, options) {
   const {
     axes,
     motorIds,
@@ -1121,11 +1122,19 @@ async function performForceSweep(sendFn, sweepConfig, options) {
     return forceLow;
   });
   await applyForceModeState(sendFn, { motorIds, modes: modesPullout });
-  await waitForStableEncoders(sendFn, motorIds, speedup, {
-    ...settleOptions,
-    timeoutMs: FORCE_TRAVEL_TIMEOUT_MS,
-    onProgress: message => console.log(`; sweep pullout: ${message.replace(/^; /, '')}`),
-  });
+  try {
+    await waitForStableEncoders(sendFn, motorIds, speedup, {
+      ...settleOptions,
+      timeoutMs: FORCE_TRAVEL_TIMEOUT_MS,
+      wallTimeoutMs: FORCE_TRAVEL_TIMEOUT_MS + 30000,
+      onProgress: message => console.log(`; sweep pullout: ${message.replace(/^; /, '')}`),
+    });
+  } catch (error) {
+    if (!(error instanceof EncoderStabilityTimeoutError)) throw error;
+    // Pullout searches for an endpoint; it is not a measurement. Hold the drive
+    // below and require ordinary settling under preload before using that endpoint.
+    console.log('; sweep pullout reached travel time limit; holding drive before settling');
+  }
 
   const preloadModes = motorIds.map((_, idx) => {
     if (idx === driveAnchor) {

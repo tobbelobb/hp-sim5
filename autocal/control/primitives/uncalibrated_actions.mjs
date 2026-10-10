@@ -72,6 +72,8 @@ function normalizeWaitForStableEncodersArgs(speedupOrOptions, options = {}) {
   };
 }
 
+export class EncoderStabilityTimeoutError extends Error {}
+
 export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions, options = {}) {
   const {
     speedup,
@@ -227,7 +229,7 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions, 
       lastProgress = wallNowFn();
     }
     if (Number.isFinite(timeoutMs) && timeoutMs > 0 && nowMs - startMs > timeoutMs) {
-      throw new Error(`Timed out waiting for encoder stability after ${Math.round(timeoutMs)}ms`);
+      throw new EncoderStabilityTimeoutError(`Timed out waiting for encoder stability after ${Math.round(timeoutMs)}ms`);
     }
 
     // eslint-disable-next-line no-await-in-loop

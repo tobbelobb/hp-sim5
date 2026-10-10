@@ -15,7 +15,7 @@ See [settings and lifecycle](README.md#jobs-shared-browser-state-and-steering).
 ## Physical acceptance check
 
 Job `2ec0b06774624962a18bdbd2818eb134` ran with known 30 mm radii, zero buildup,
-layering disabled and explicit manual forces 0.01/0.23/9.2 N. The existing CLI
+layering requested disabled and explicit manual forces 0.01/0.23/9.2 N. The existing CLI
 physically collected eight sweeps / 320 measurements and performed six
 fit/plan/select iterations. Its default patience rule accepted after three
 non-improving attempts, before the 20-iteration budget. It exited zero after
@@ -71,3 +71,18 @@ and [archive verification](../output/research/sessions/2026-10-10-supervised-ful
 provide numerical evidence. Session artifacts are ignored by Git and can be
 absent in another checkout. Calibration accuracy, default-autotuning settling,
 full HP4 calibration and hardware transfer remain separate research work.
+
+## Settling follow-up
+
+The [settling fix and commit review](autocal-settling-review.md) reproduces the
+default-force failure exactly and fixes endpoint holding without relaxing
+measurement settling. It also corrects an inherited configuration inconsistency:
+unset layering enabled layered physics while job status reported it disabled.
+The fix explicitly disables layering and rebakes initial lengths with zero width.
+The original manual-force acceptance above remains workflow evidence; it does
+not validate a physically consistent no-layering calibration.
+
+With the corrected bake, a new default-force HP3 job accepted automatically after
+seven iterations / 360 points, with 2.604 mm applied-anchor RMSE. Independent
+inspection verified the finalized 1.58 GB RRD and all measurements. This is one
+complete simulated trial; fewer points and hardware transfer are not established.

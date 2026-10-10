@@ -313,6 +313,10 @@ Collection checks the latest 1.5 seconds of encoder readings for quiet settling,
 with a range limit scaled to the longer 5-second vibration window's drift allowance.
 It retains that longer history for the existing vibration check. This reduces
 waiting after transients while keeping point counts and automatic stopping.
+Sweep pullout searches for an endpoint for up to 120 seconds. If travel has not
+settled by then, collection holds the drive and applies sensor preload. The
+endpoint and every measurement still require the ordinary settling check;
+fixed-anchor slip, stalled clocks and transport errors remain failures.
 
 On acceptance, RRF receives M669 for the selected anchors.
 Fitted M666 spool settings are printed but are not sent automatically.

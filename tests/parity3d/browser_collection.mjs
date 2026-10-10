@@ -36,7 +36,7 @@ try {
   await page.evaluate(async ({ scene, wsPort }) => {
     const { createHeadlessWorld } = await import('/hp-sim-3d/app/headlessWorld.js');
     const { createExternalCommandController } = await import('/hp-sim-3d/app/externalCommandSocket.js');
-    let { world, remote, dt } = createHeadlessWorld(scene);
+    let { world, remote, dt } = createHeadlessWorld(scene, { lineLayeringEnabled: true });
     let steps = 0, time = 0, speed = 1;
     const controller = createExternalCommandController({ world, url: `ws://127.0.0.1:${wsPort}`,
       commands: {
@@ -100,7 +100,7 @@ try {
     '--server', '-p', String(firmwarePort)], { stdio: ['ignore', headlessLog, headlessLog] });
   await waitForRrfSimulator(firmwareUrl, 30000);
   headlessService = spawn('node', ['scripts/autocal_headless.mjs', 'public/usd_scenes/hp3_rigid_body.usda',
-    firmwareUrl, String(socketPort), String(servicePort), headlessDir], { stdio: ['ignore', headlessLog, headlessLog] });
+    firmwareUrl, String(socketPort), String(servicePort), headlessDir, 'true'], { stdio: ['ignore', headlessLog, headlessLog] });
   const deadline = Date.now() + 30000;
   while (true) {
     try { if ((await fetch(`${serviceUrl}/status`)).ok) break; } catch {}

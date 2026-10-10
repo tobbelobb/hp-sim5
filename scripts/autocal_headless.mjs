@@ -3,17 +3,26 @@ import fs from 'node:fs';
 import http from 'node:http';
 import { setImmediate as yieldStep } from 'node:timers/promises';
 import WebSocket from 'ws';
+import { createHash } from 'node:crypto';
 import { createHeadlessWorld } from '../hp-sim-3d/app/headlessWorld.js';
-import { bakeCableSceneUsdaSource } from '../src/js/usd/cable_scene_baker.js';
+import { setLineLayeringFeatureFlags } from '../hp-sim-3d/app/line-layering-flags.js';
+import { setClosedLoopMotorFeatureFlags } from '../hp-sim-3d/app/closed-loop-flags.js';
 import { createExternalCommandController } from '../hp-sim-3d/app/externalCommandSocket.js';
 import { createGcodeBridge } from '../integrations/rrf/rrfSimulatorBridge.mjs';
 import { FlightRecorder } from '../hp-sim-3d/app/flightRecorder.js';
 
-const [scene, rrfUrl, wsPort, apiPort, directory] = process.argv.slice(2);
+const [scene, rrfUrl, wsPort, apiPort, directory, initialLayering] = process.argv.slice(2);
 const sceneText = fs.readFileSync(scene, 'utf8');
-fs.writeFileSync(`${directory}/baked-scene.usda`, bakeCableSceneUsdaSource(sceneText).source);
-let { world, remote, dt } = createHeadlessWorld(sceneText);
 let step = 0, epoch = 0, totalSteps = 0, speed = 1, collectorTime = 0, stopped = false, failure = null;
+let lineLayeringEnabled = initialLayering === 'true', closedLoopMotorsEnabled = false;
+let world, remote, dt, bakedScene, bakedSceneFile, bakedSceneHash;
+function buildWorld() {
+  ({ world, remote, dt, bakedScene } = createHeadlessWorld(sceneText, { lineLayeringEnabled, closedLoopMotorsEnabled }));
+  bakedSceneFile = `baked-scene${epoch ? `-${epoch}` : ''}.usda`;
+  fs.writeFileSync(`${directory}/${bakedSceneFile}`, bakedScene);
+  bakedSceneHash = createHash('sha256').update(bakedScene).digest('hex');
+}
+buildWorld();
 let recordingDrained = false;
 const started = performance.now();
 const maxPhysicsSteps = Number(process.env.HP_SIM5_AUTOCAL_MAX_PHYSICS_STEPS || Infinity);
@@ -27,6 +36,7 @@ function attachRecorder() {
   recorder.world = world;
   recorder.extendedReference = true;
   recorder.contextProvider = () => ({ backend: 'headless-js', scene, sourceText: sceneText,
+    bakedSourceText: bakedScene, baked_scene_file: bakedSceneFile, baked_scene_sha256: bakedSceneHash,
     node_version: process.version, settings: Object.fromEntries(['gravity', 'dt', 'timeScale', 'enableLayering',
       'layeringFrictionEffectiveRadius', 'closedLoopMotorsEnabled'].map(key => [key, world.getResource(key)])) });
   world.setResource('flightRecorder', recorder);
@@ -43,6 +53,7 @@ function status() {
   return { backend: 'headless-js', step, epoch, total_steps: totalSteps, dt_s: dt,
     simulated_s: totalSteps * dt, collector_time_s: collectorTime, wall_s: (performance.now() - started) / 1000,
     queue_length: remote.getQueueLength(), error: failure, recording_drained: recordingDrained,
+    baked_scene_file: bakedSceneFile, baked_scene_sha256: bakedSceneHash,
     settings: { enableLayering: world.getResource('enableLayering') === true,
       closedLoopMotorsEnabled: world.getResource('closedLoopMotorsEnabled') === true, timeScale: speed } };
 }
@@ -77,11 +88,22 @@ class ObservationSocket {
 let controller;
 function attachController() {
   controller = createExternalCommandController({ world, url: 'ws://observation', WebSocketCtor: ObservationSocket,
+    featureFlags: {
+      get lineLayeringEnabled() { return lineLayeringEnabled; },
+      setLineLayeringEnabledState(enabled) {
+        lineLayeringEnabled = enabled;
+        setLineLayeringFeatureFlags(world, enabled);
+      },
+      setClosedLoopMotorsEnabledState(enabled) {
+        closedLoopMotorsEnabled = enabled;
+        setClosedLoopMotorFeatureFlags(world, enabled);
+      },
+    },
     commands: {
       getRemoteSystem: () => remote,
       pushExternalCommands(batch) { batch.forEach(command => remote.addCommand(command)); return true; },
       handleUserReset() {
-        ({ world, remote, dt } = createHeadlessWorld(sceneText)); epoch++; step = 0;
+        epoch++; step = 0; buildWorld();
         attachRecorder();
         attachController();
       },

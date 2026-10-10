@@ -4,13 +4,23 @@ These summaries describe archived evidence, not new experiments or a statement a
 
 Four hash-named sessions contain substantive autocal work: three have final reports and one has an unfinished notebook. Missing research.md does not imply that no research happened.
 
+## Default-force HP3 settling and no-layering geometry correction
+
+Status: complete, verified 2026-10-10. Topics: autocalibration, HP3, settling, no layering, scene baking, MCP, reset settings.
+
+The reported pullout failure was reproduced exactly through 2,457 encoder readings. Bounding endpoint search, then holding the drive and requiring ordinary measurement settling, recovered collection. Review of commit 383c6d4 found that unset layering enabled layered physics while job status reported it disabled; explicit flags, matching zero-width baking and reset settings were corrected. A production default-force MCP job then accepted automatically after seven iterations / 360 points, with 2.604 mm applied-anchor RMSE. Independent inspection verified every measurement, 300,551 physical samples, the physical stop and a finalized 1.58 GB RRD. Checks and two unchanged HP3 replay regressions passed. This is one full simulated default-force trial, not evidence of fewer points or hardware transfer; candidate ranking remains unchanged.
+
+- [Settling fix, commit review and commands](autocal-settling-review.md).
+- [Updated session abstract and tested hypotheses](../output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/abstract.md).
+- [Acceptance and geometric accuracy](../output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E12-acceptance.json).
+
 ## Supervisor-owned full-autocal through restricted MCP clients
 
-Status: complete for tooling validation; calibration quality remains concerning.
+Status: archived tooling validation; that trial's calibration quality was concerning. See the correction above.
 
 Topics: autocalibration, HP3, HP4, MCP, sandbox, supervisor, cancellation, process groups, Rerun.
 
-A socket-denied SDK MCP client started an isolated HP3 production CLI job in 3 ms. With known 30 mm radii, zero buildup, layering disabled and explicit manual forces, it collected eight sweeps / 320 physical measurements and automatically accepted at iteration six through the default patience rule. The finalized RRD contains 209,908 physical samples and exact dataset/log/stage artifacts; the attached HP4 world stayed at step zero. Physical cancellation, HTTP/SIGTERM supervisor exit, owner SIGKILL and physics-budget exhaustion retained readable partial recordings. The preceding default-autotuning trial failed pullout settling and is preserved. The selected score was concerning (6018), so this establishes workflow access and evidence integrity, not calibration accuracy. Direct Codex chat attachment was unavailable; restricted SDK stdio MCP was exercised.
+A socket-denied SDK MCP client started an isolated HP3 production CLI job in 3 ms. With known 30 mm radii, zero buildup, layering requested disabled and explicit manual forces, it collected eight sweeps / 320 physical measurements and automatically accepted at iteration six through the default patience rule. The finalized RRD contains 209,908 physical samples and exact dataset/log/stage artifacts; the attached HP4 world stayed at step zero. Physical cancellation, HTTP/SIGTERM supervisor exit, owner SIGKILL and physics-budget exhaustion retained readable partial recordings. The preceding default-autotuning trial failed pullout settling and is preserved. The selected score was concerning (6018), so this establishes workflow access and evidence integrity, not calibration accuracy. The follow-up above found that physical layering was actually enabled. Direct Codex chat attachment was unavailable; restricted SDK stdio MCP was exercised.
 
 - [Verification and exact commands](autocal-jobs-verification.md).
 - [Session abstract and tested hypotheses](../output/research/sessions/2026-10-10-supervised-full-autocal/abstract.md).
