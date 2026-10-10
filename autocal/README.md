@@ -2,6 +2,33 @@
 
 ![Autocal's own logo](autocal_logo_shine.jpeg)
 
+hp-sim5 autocal finds anchor positions and other unknown configuration parameters for overconstrained 3DOF CDPRs.
+The basic idea is that a Hangprinter or other CDPR with
+
+ - motor encoders, line odometers or similar line-length-like data, and
+ - A torque mode or a force mode that lets motors pull out each others' line via the end effector,
+
+... should be able to "wiggle around a little bit" and through that learn, optimize, or calculate its own calibration parameters.
+The user experience is meant to be one-click.
+The user should be able to push a button, the machine "wiggles", and is ready to be used once the wiggling is done.
+THe "click of a button" is currently a terminal call to a python script with many flags and options, and the wiggling goes on for 1-2 hours.
+But it does work.
+Even if huge parts of the data turns out to be rubbish, it still works.
+It's able to detect and ignore bad data points.
+
+It does not retract to the anchors in order to find a stable reference point, as this is often highly impractical with huge CDPRs and heavy, expensive effectors.
+The wiggling happens inside the machine's comfortably reachable volume.
+It currently works ok for machines with no line buildup, or known buildup (as in "belts instead of lines" type of buildup).
+It can handle machines of a very wide range of sizes and such, since it begins by tuning the forces and noise levels.
+At least that's the idea. The wide range support code remains to be battle tested.
+During development it has only been tested on simulated Hangprinters with 4 and 8 anchors, with and without doubled up gearing for the 4 anchor one.
+
+It's been architected to fit well as a tool for an automated research agent who needs to run autocal experiments on something resembling a physical CDPR.
+
+The code assumes the effector doesn't rotate, so we're talking 3DOF poses, not 6DOF ones.
+
+## The Secret Sauce
+
 Autocal collects circular sweeps and fits anchor positions from their ellipse geometry.
 It chooses new sweeps by information gain. It can also fit spool radii and buildup.
 At final acceptance, it checks saved estimates against sweeps collected after their fit.
