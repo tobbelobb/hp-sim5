@@ -14,11 +14,16 @@ JAX is optional. The default `--optimizer-mode fast` uses it on the CPU.
 Autocal falls back to numerical gradients when JAX is unavailable.
 Use `--optimizer-mode legacy` to disable the JAX objective.
 
-JAX reuses compiled CPU objectives within a process. Persistent disk caching is
-opt-in: JAX 0.9.2 prints native PJRT compatibility warnings on disk-cache hits
-([upstream issue](https://github.com/jax-ml/jax/issues/36294)). To reuse objectives
-across launches, set `JAX_COMPILATION_CACHE_DIR=output/autocal-jax-cache`.
-`JAX_ENABLE_COMPILATION_CACHE=false` disables an explicitly configured cache.
+JAX saves compiled CPU objectives in `output/autocal-jax-cache` for reuse across
+launches. Set `JAX_COMPILATION_CACHE_DIR` to choose another directory, or
+`JAX_ENABLE_COMPILATION_CACHE=false` to disable disk caching. Explicit user
+settings are preserved; in-process JIT reuse also remains active.
+
+JAX 0.9.2 prints a spurious native PJRT compatibility warning on disk-cache hits
+([upstream issue](https://github.com/jax-ml/jax/issues/36294)). Autocal defaults
+`TF_CPP_MIN_LOG_LEVEL` to `2`, suppressing native C++ INFO and WARNING messages
+while retaining errors and Python warnings. Set `TF_CPP_MIN_LOG_LEVEL=1` to
+restore native warnings, or `0` for INFO too.
 
 Within each spool/filter pass, repeated exact radius/buildup models reuse up to
 16 transformed datasets and their existing residual evaluations. This bounded
