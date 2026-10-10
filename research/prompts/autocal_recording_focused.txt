@@ -9,7 +9,7 @@ Preserve the one-click user experience and automatic stopping when finished.
 You don't need to take line buildup into account, ie autocal.py's `--buildup-factor` can be zero, and the simulator should also run with Line Layering disabled.
 No need to search for the spool radii either.
 Use Hangprinter 3, not Hangprinter 4, since HP3 is lighter and faster to simulate.
-I created a reference run for you to beat in output/extended-autocal/no-buildup-reference-002
+I created a reference run for you to beat in output/extended-autocal/no-buildup-reference-003
 
 An obvious way to save time would be to look at the .rrd file, and profile it in a way. See where it hangs, what
 takes time to help you prioritize where to start optimizing.
