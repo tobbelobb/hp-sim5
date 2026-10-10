@@ -633,7 +633,8 @@ def run_autocal(
     extra_args = _flatten_cli_args(dataset_spec.extra_args)
     cmd = [
         sys.executable,
-        str(repo_root / "autocal" / "autocal.py"),
+        "-m",
+        "autocal.autocal",
         "--sim",
         "--machine-type",
         dataset_spec.machine_type,
