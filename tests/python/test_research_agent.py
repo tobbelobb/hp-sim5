@@ -122,7 +122,7 @@ async def test_stdio_mcp_discovery_execution_readback_and_error():
         assert {tool.name for tool in tools} == {'capabilities', 'run_experiment', 'read_experiment', 'compare_experiments',
                                                'runtime_status', 'send_gcode', 'capture_native_context', 'reset_session',
                                                'step_physics', 'start_browser_service', 'start_collection', 'collection_status', 'cancel_collection',
-                                               'browser_status', 'browser_action'}
+                                               'browser_status', 'browser_action', 'start_autocal', 'autocal_status', 'cancel_autocal'}
         result = await client.call_tool('capabilities', {})
         assert not result.is_error
         assert SCENE in result.structured_content['scenes']

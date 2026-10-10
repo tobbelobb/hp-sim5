@@ -16,6 +16,7 @@ let { world, remote, dt } = createHeadlessWorld(sceneText);
 let step = 0, epoch = 0, totalSteps = 0, speed = 1, collectorTime = 0, stopped = false, failure = null;
 let recordingDrained = false;
 const started = performance.now();
+const maxPhysicsSteps = Number(process.env.HP_SIM5_AUTOCAL_MAX_PHYSICS_STEPS || Infinity);
 const recorder = process.env.AUTOCAL_REFERENCE_WS ? new FlightRecorder({ world,
   url: process.env.AUTOCAL_REFERENCE_WS, WebSocketClass: WebSocket, source: 'headless' }) : null;
 function attachRecorder() {
@@ -41,19 +42,26 @@ function event(type, values = {}) {
 function status() {
   return { backend: 'headless-js', step, epoch, total_steps: totalSteps, dt_s: dt,
     simulated_s: totalSteps * dt, collector_time_s: collectorTime, wall_s: (performance.now() - started) / 1000,
-    queue_length: remote.getQueueLength(), error: failure, recording_drained: recordingDrained };
+    queue_length: remote.getQueueLength(), error: failure, recording_drained: recordingDrained,
+    settings: { enableLayering: world.getResource('enableLayering') === true,
+      closedLoopMotorsEnabled: world.getResource('closedLoopMotorsEnabled') === true, timeScale: speed } };
 }
 async function advance(seconds = 0, drain = false) {
   if (!Number.isFinite(seconds) || seconds < 0) throw new Error('Advance seconds must be finite and nonnegative');
   const count = Math.max(Math.ceil(seconds * speed / dt - 1e-9), drain ? remote.getQueueLength() : 0);
   for (let i = 0; i < count; i++) {
     if (stopped || failure) throw new Error(failure ?? 'Simulation stopped');
+    if (totalSteps >= maxPhysicsSteps) {
+      failure = 'Physics step budget exhausted';
+      throw new Error(failure);
+    }
     if (recorder) {
       if (!recorder.socket || recorder.socket.readyState !== 1) throw new Error(recorder.error || 'Flight recorder disconnected');
       if (!recorder.readyForStep()) await recorder.drain(10000, { all: false });
     }
     world.update(dt); step++; totalSteps++; collectorTime += dt / speed;
     world.setResource('researchClock', { generation: epoch, step, time: step * dt, source: 'headless.researchClock' });
+    if (totalSteps % 1000 === 0) fs.writeFileSync(`${directory}/clock.json`, JSON.stringify(status()));
     if (i % 50 === 49) await yieldStep();
   }
 }

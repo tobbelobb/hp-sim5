@@ -69,14 +69,22 @@ class HeadlessSimulation:
         self.manifest["git_revision"] = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, text=True).strip()
 
     def write_manifest(self):
-        (self.directory / "manifest.json").write_text(json.dumps(self.manifest, indent=2) + "\n")
+        temporary = self.directory / 'manifest.tmp'
+        temporary.write_text(json.dumps(self.manifest, indent=2) + "\n")
+        temporary.replace(self.directory / 'manifest.json')
 
     def spawn(self, name, command):
         with (self.directory / f"{name}.log").open("a") as log:
             process = subprocess.Popen(command, cwd=REPO_ROOT, stdin=subprocess.DEVNULL,
-                                       stdout=log, stderr=log, start_new_session=True)
+                                       stdout=log, stderr=log,
+                                       start_new_session=not bool(os.environ.get('HP_SIM5_AUTOCAL_JOB')))
         self.processes.append(process)
+        self.track_process(name, process)
         return process
+
+    def track_process(self, name, process):
+        self.manifest.setdefault('owned_services', []).append({'name': name, 'pid': process.pid})
+        self.write_manifest()
 
     def request(self, operation, **args):
         request = Request(f"{self.url}/{operation}", data=json.dumps(args).encode(),
@@ -157,7 +165,8 @@ class HeadlessSimulation:
         failed = bool(error or self.manifest.get("exit_code") or
                       (self.physics is not None and self.physics.poll() is not None))
         capture_error = None
-        self.manifest.update(status="interrupted" if error_type is KeyboardInterrupt else "failed" if error else "complete",
+        interrupted = error_type is KeyboardInterrupt or (error_type is SystemExit and error.code == 130)
+        self.manifest.update(status="interrupted" if interrupted else "failed" if error else "complete",
                              wall_s=time.monotonic() - self.started)
         if error:
             self.manifest["error"] = str(error)
@@ -213,8 +222,12 @@ class HeadlessSimulation:
         if capture_error and not error:
             raise RuntimeError(capture_error)
 
-    @staticmethod
-    def interrupt(signum, frame):
+    def interrupt(self, signum, frame):
+        if os.environ.get('HP_SIM5_AUTOCAL_JOB'):
+            # Interactive Ctrl-C accepts best-so-far. Supervisor cancellation must
+            # bypass that branch and stop movement without applying a candidate.
+            self.manifest['stop_reason'] = 'cancelled'
+            raise SystemExit(130)
         raise KeyboardInterrupt(f"Signal {signum}")
 
     def apply_parameters(self, commands):

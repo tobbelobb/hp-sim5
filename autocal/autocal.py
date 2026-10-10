@@ -414,7 +414,9 @@ def full_auto_loop(
                 extended_reference.artifact(cmd[index + 1])
         if extended_reference.enabled():
             process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                       text=True, start_new_session=True)
+                                       text=True, start_new_session=not bool(os.environ.get('HP_SIM5_AUTOCAL_JOB')))
+            if headless_sim is not None:
+                headless_sim.track_process('collector', process)
             try:
                 for line in process.stdout:
                     _log_line(line.rstrip("\n"))
@@ -430,7 +432,7 @@ def full_auto_loop(
             subprocess.run(cmd, check=True, stdout=log_handle, stderr=log_handle)
             return
         process = subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=log_handle,
-                                   stderr=log_handle, start_new_session=True)
+                                   stderr=log_handle, start_new_session=not bool(os.environ.get('HP_SIM5_AUTOCAL_JOB')))
         try:
             code = process.wait()
             if code:

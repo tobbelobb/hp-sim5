@@ -22,6 +22,7 @@ from hp_sim5_research.experiments import encode, write_json
 from hp_sim5_research.services import free_port, request, stop_process, wait_ready
 from hp_sim5_research.session import NativeSession
 from hp_sim5_research.browser import BrowserConnection
+from hp_sim5_research.autocal_jobs import AutocalJobs
 
 
 class Runtime:
@@ -38,6 +39,7 @@ class Runtime:
         self.browser_recorder_port = None
         self.jobs = {}
         self.active_job = None
+        self.autocal = AutocalJobs(ROOT, self.directory)
         self.browser_url = None
         self.python_source_hash = self.hash_sources([ROOT / 'src/python', ROOT / 'scripts'], '*.py')
 
@@ -91,7 +93,8 @@ class Runtime:
         if self.session.js_physics is not None:
             processes['physics-js'] = self.session.js_physics.process
         return {**self.session.status(), 'machine_design': self.machine, 'session_id': self.session_id, 'busy': self.busy,
-                'active_job': self.active_job, 'reset_required': bool(self.session.error), 'browser_url': self.browser_url,
+                'active_job': self.active_job, 'active_autocal_job': self.autocal.active,
+                'reset_required': bool(self.session.error), 'browser_url': self.browser_url,
                 'source_changed': {
                     'python_requires_launcher_restart': self.python_source_hash != self.hash_sources([ROOT / 'src/python', ROOT / 'scripts'], '*.py'),
                     'bridge_requires_session_reset': self.bridge_source_hash != self.hash_sources(
@@ -297,6 +300,14 @@ class Runtime:
         self.active_job = None
 
     async def dispatch(self, operation, args):
+        if operation == 'start_autocal':
+            if self.stop.is_set():
+                raise RuntimeError('Supervisor is shutting down')
+            return self.autocal.start(args)
+        if operation == 'autocal_status':
+            return self.autocal.status(args.get('job_id'))
+        if operation == 'cancel_autocal':
+            return await self.autocal.cancel(args.get('job_id'))
         if operation in ('job_status', 'cancel_job'):
             job = self.jobs.get(args.get('job_id'))
             if job is None:
@@ -360,9 +371,10 @@ class Runtime:
                 raise ValueError('seconds must be a number')
             return await self.session.advance(seconds * self.session.speed)
         if operation == 'shutdown':
+            self.stop.set()
+            await self.autocal.close()
             if self.active_job is not None:
                 await self.dispatch('cancel_job', {'job_id': self.active_job})
-            self.stop.set()
             return {'stopping': True}
         if self.busy:
             raise ValueError('Session has an active operation')
@@ -472,6 +484,7 @@ async def main():
     finally:
         if server is not None:
             server.close()
+        await runtime.autocal.close()
         if runtime.active_job is not None:
             await runtime.dispatch('cancel_job', {'job_id': runtime.active_job})
         pending = [task for job in runtime.jobs.values() for key, task in job.items() if key in ('task', 'cancel_task')] + list(runtime.handlers) + [task for task in (starting, stopping) if task is not None]

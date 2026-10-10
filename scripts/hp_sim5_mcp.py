@@ -46,6 +46,13 @@ def capabilities() -> dict[str, Any]:
                                   'clock': 'Persistent fixed-step world; collector delays advance physics; reads drain motion',
                                   'settling': 'Bounded in simulation time; default 30 seconds',
                                   'services': 'Launcher-owned runtime, firmware and bridge outside the command sandbox'},
+            'full_autocal': {'operations': ['start_autocal', 'autocal_status', 'cancel_autocal'],
+                             'machines': ['hp3', 'hp4'], 'backend': 'headless-js', 'isolated_world': True,
+                             'workflow': 'Production one-click CLI: physical collection, fitting, planning, selection, automatic stopping',
+                             'statuses': ['running', 'cancelling', 'accepted', 'budget_exhausted', 'cancelled', 'failed'],
+                             'limits': {'max_steps': 100, 'sweep_points': 100, 'wall_timeout_s': 14400,
+                                        'max_physics_steps': 10000000, 'threads': 8},
+                             'artifact_dir': 'New directory within launcher session artifacts; defaults to autocal/job_id'},
             'limitations': ['Klipper streamed motion is not supported by native collection',
                             'Final snapshots are observations, not resumable physics checkpoints',
                             'Timings include telemetry and optional recording overhead']}
@@ -93,6 +100,46 @@ def collection_status(job_id: str) -> dict[str, Any]:
 def cancel_collection(job_id: str) -> dict[str, Any]:
     """Stop at the next native step boundary, retire firmware queues, finalize partial evidence; requires reset."""
     return supervised_request('cancel_job', job_id=job_id)
+
+
+@mcp.tool(annotations=MUTATION)
+def start_autocal(machine: str = 'hp3', layering: bool = False,
+                  base_radii_mm: list[float] | None = None, buildup_factor: float = 0,
+                  find_radii: str = 'off', find_buildup_factor: str = 'off',
+                  optimizer: dict | None = None, budgets: dict | None = None,
+                  collection: dict | None = None,
+                  artifact_dir: str | None = None) -> dict[str, Any]:
+    """Return a full-autocal job ID immediately; the supervisor runs an isolated production CLI world.
+
+    base_radii_mm: one or four known/initial radii (default [30]); fitting modes: off/global/per-anchor.
+    Nonzero or fitted buildup requires layering. optimizer: mode (fast/fast-fd/legacy), solver
+    (lbfgsb/trf), solve_iterations, solve_restarts, spool_outer_iters, spool_inner_iters,
+    r0_bounds_mm and b_bounds (two-element lists). budgets: max_steps (default 20),
+    sweep_points (20), wall_timeout_s (3600), max_physics_steps (5000000), threads (1).
+    collection optionally supplies force_low_n, force_mid_n, force_max_n together (0.001–10 N,
+    low < mid <= max) to use the CLI's manual forces, and/or sensor_collection_force_n.
+    Omitted forces preserve production autotuning.
+    artifact_dir must be new and inside session artifacts. Poll autocal_status; cancel_autocal stops
+    physical activity and finalizes partial evidence. Budget exhaustion is not automatic acceptance.
+    """
+    args = dict(machine=machine, layering=layering, base_radii_mm=base_radii_mm if base_radii_mm is not None else [30],
+                buildup_factor=buildup_factor, find_radii=find_radii, find_buildup_factor=find_buildup_factor,
+                optimizer=optimizer or {}, budgets=budgets or {}, collection=collection or {})
+    if artifact_dir is not None:
+        args['artifact_dir'] = artifact_dir
+    return supervised_request('start_autocal', **args)
+
+
+@mcp.tool(annotations=READ_ONLY)
+def autocal_status(job_id: str) -> dict[str, Any]:
+    """Read full-autocal progress, terminal reason, CLI exit status, settings and complete/partial artifacts."""
+    return supervised_request('autocal_status', job_id=job_id)
+
+
+@mcp.tool(annotations=MUTATION)
+def cancel_autocal(job_id: str) -> dict[str, Any]:
+    """Stop an isolated autocal world, retire its child process group and finalize partial evidence."""
+    return supervised_request('cancel_autocal', job_id=job_id)
 
 
 @mcp.tool(annotations=MUTATION)

@@ -4,6 +4,18 @@ These summaries describe archived evidence, not new experiments or a statement a
 
 Four hash-named sessions contain substantive autocal work: three have final reports and one has an unfinished notebook. Missing research.md does not imply that no research happened.
 
+## Supervisor-owned full-autocal through restricted MCP clients
+
+Status: complete for tooling validation; calibration quality remains concerning.
+
+Topics: autocalibration, HP3, HP4, MCP, sandbox, supervisor, cancellation, process groups, Rerun.
+
+A socket-denied SDK MCP client started an isolated HP3 production CLI job in 3 ms. With known 30 mm radii, zero buildup, layering disabled and explicit manual forces, it collected eight sweeps / 320 physical measurements and automatically accepted at iteration six through the default patience rule. The finalized RRD contains 209,908 physical samples and exact dataset/log/stage artifacts; the attached HP4 world stayed at step zero. Physical cancellation, HTTP/SIGTERM supervisor exit, owner SIGKILL and physics-budget exhaustion retained readable partial recordings. The preceding default-autotuning trial failed pullout settling and is preserved. The selected score was concerning (6018), so this establishes workflow access and evidence integrity, not calibration accuracy. Direct Codex chat attachment was unavailable; restricted SDK stdio MCP was exercised.
+
+- [Verification and exact commands](autocal-jobs-verification.md).
+- [Session abstract and tested hypotheses](../output/research/sessions/2026-10-10-supervised-full-autocal/abstract.md).
+- [Detailed report and retained artifacts](../output/research/sessions/2026-10-10-supervised-full-autocal/report.md).
+
 ## Faster collection with guarded encoder settling
 
 Status: complete. Topics: autocalibration, encoder-only, HP4, settling, collection time, point thinning.

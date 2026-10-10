@@ -38,7 +38,7 @@ conversation; services remain alive between turns. Background services have
 closed input and separate process groups, so collection cancellation or session
 reset cannot restore Codex's terminal modes or consume its keys. Ctrl-C interrupts a Codex
 turn without shutting down the supervisor. It does **not** cancel an experiment
-job: call `cancel_collection` and inspect its stopped boundary. Exit Codex to
+job: call `cancel_collection` or `cancel_autocal` and inspect its stopped boundary. Exit Codex to
 stop owned services. Use `/goal` for autonomous continuation with a measurable
 outcome and explicit experiment, movement and compute limits. See the official
 [interactive CLI reference](https://learn.chatgpt.com/docs/developer-commands)
@@ -268,6 +268,9 @@ access. See [collection evidence](native-collection-verification.md).
 | `start_collection(configs, options, settling_timeout_s)` | Start a collection job and return its job ID immediately |
 | `collection_status(job_id)` | Running/cancelling/complete/cancelled/failed status and evidence |
 | `cancel_collection(job_id)` | Known physics stop boundary, retired firmware/bridge queues, partial evidence and reset requirement |
+| `start_autocal(machine, layering, base_radii_mm, buildup_factor, find_radii, find_buildup_factor, optimizer, budgets, collection, artifact_dir)` | Immediate job ID for an isolated world running the production full-auto CLI |
+| `autocal_status(job_id)` | Physical progress, iteration/decision, stop reason, CLI exit status and complete/partial artifacts |
+| `cancel_autocal(job_id)` | Stop the job-owned world, drain recording and retire all CLI children; attached world remains usable |
 | `reset_session()` | Archive state and restart world, firmware and bridge references |
 | `start_browser_service(record=False)` | Exact shared browser-js URL; optionally owns its flight recorder |
 | `browser_status()` | Connected page identity and immutable user-submitted context |
@@ -332,6 +335,60 @@ preserves measured points with their actual drive/sensor configuration; it is
 partial evidence, not a complete autocal dataset. Completed jobs retain the
 production version-2 dataset and validation path.
 
+Full-autocal jobs use the production one-click CLI once per job. They own a fresh
+headless JS scene, RRF, collector and extended recorder independently of the
+attached session. An HP4 chat can request HP3 without changing its current world.
+Only one full-autocal job runs per supervisor; collection jobs use the attached
+world independently. For known HP3 radii and no layering, call:
+
+```json
+{"machine":"hp3", "layering":false, "base_radii_mm":[30], "buildup_factor":0}
+```
+
+Those are also the defaults. `machine` accepts `hp3`/`hp4`; radii contain one or
+four finite values in [1, 200] mm. `find_radii` and `find_buildup_factor` accept
+`off`, `global`, `per-anchor`. Nonzero buildup or buildup fitting requires
+`layering=true`. Buildup is bounded to [0, 2]. Layering selects the matching
+firmware preset and enables the existing collector's simulator setting.
+
+`optimizer` accepts `mode` (`fast`, `fast-fd`, `legacy`) and `solver` (`lbfgsb`,
+`trf`). Defaults are `fast`/`lbfgsb`, 400 `solve_iterations` (1–2000), four
+`solve_restarts` (1–16), three `spool_outer_iters` (1–20), and 30
+`spool_inner_iters` (1–2000). Optional `r0_bounds_mm` and `b_bounds` are increasing
+two-element lists within the radius/buildup bounds above. `budgets` defaults to
+20 `max_steps` (1–100), 20 `sweep_points` per sub-sweep (3–100), 3600
+`wall_timeout_s` (1–14400), 5,000,000 `max_physics_steps` (1–10,000,000), and one
+BLAS/OpenMP `threads` (1–8). Wall and physics limits also bound force tuning and
+bootstrap collection. No arbitrary CLI arguments, shell commands or external
+firmware/recorder URLs are accepted.
+
+Optional `collection` settings `force_low_n`, `force_mid_n`, `force_max_n` must
+be supplied together, within [0.001, 10] N and satisfying low < mid <= max.
+They select the existing CLI's manual-force path; omitted forces preserve
+autotuning. `sensor_collection_force_n` independently overrides measurement
+preload within the same bounds. These are experiment inputs, not acceptance
+thresholds. Some force/geometry combinations fail physical settling; status
+reports that failure and preserves its partial recording.
+
+`artifact_dir` optionally names a new directory within launcher session artifacts;
+the default is `native/autocal/<job_id>/`. Existing directories and escaping
+paths/symlinks are rejected. Status lists stdout/stderr, complete or partial
+measurement journals, iteration logs, stage artifacts, original/baked scenes,
+firmware settings, source hashes, service logs and finalized recordings as they
+become available. A finalized partial RRD is evidence of the interrupted run,
+not an accepted calibration.
+
+Terminal states are `accepted`, `budget_exhausted`, `cancelled`, `failed`.
+`accepted` requires the CLI's genuine automatic patience/threshold stop,
+successful parameter application and recorder finalization. `--max-steps`
+remains a budget stop. Poll status between conversational turns; chat interruption
+does not cancel movement. Cancellation and supervisor exit signal the CLI owner,
+stop physical activity, drain physics before the recorder, and retire the job's
+process group. Unlike interactive CLI Ctrl-C, supervisor cancellation never
+accepts best-so-far. Inspect the final headless clock for the actual stopped
+step and queue boundary. A crashed owner triggers supervisor cleanup and retains
+partial evidence; recording/cleanup errors are disclosed.
+
 Open the exact URL from `start_browser_service(record=True)` in the browser.
 `browser_status` names the connected page; every MCP action requires its
 `page_id`, so a reload cannot silently substitute a different world. The page
@@ -387,9 +444,10 @@ Standalone `--headless-sim` needs localhost sockets for RRF, physics and
 recording. The launcher enables command networking by default while retaining
 the `workspace-write` filesystem sandbox, and includes that setting in desktop
 `attachment.toml`. Launcher-owned MCP services run outside the command
-sandbox, but `start_collection` runs sweeps, not the complete fitting/planning/
-automatic-acceptance loop. Native `reset_session` also retains the machine chosen
-at launch; select `--machine hp3` before starting HP3 research.
+sandbox. Use `start_autocal` for the complete physical collection, fitting,
+planning, selection and automatic-acceptance workflow when command sockets are
+denied. `start_collection` runs only sweeps in the attached world, whose machine
+is chosen at launch; `reset_session` retains that machine.
 
 Command networking remains useful for ad hoc HTTP experiments and integration
 tests after supervised job tools are available. To disable it explicitly:
@@ -407,12 +465,13 @@ Changing the launcher affects new sessions; it does not change a running chat's
 effective policy. This option has not been validated under every client or
 managed policy.
 
-A supervisor-owned full-autocal job API is the proposed mitigation for keeping
-command networking restricted. It should run the existing full-auto CLI with
-explicit machine/layering/radius settings, status and cancellation, finalized
-recordings and stage artifacts. Such a tool is not currently exposed. Until it
-exists, a blocked standalone run must be reported as blocked; a batch adapter or
-offline replay does not validate the complete live workflow.
+Full-autocal MCP jobs require a live launcher supervisor and MCP attachment.
+They do not require agent command networking or broader sandbox permissions.
+A bare standalone MCP registration cannot start these services. Report a blocked
+standalone run honestly; offline replay does not validate the live workflow.
+The [supervised job verification](autocal-jobs-verification.md) records real HP3
+automatic stopping through a socket-denied MCP client, lifecycle failures and
+finalized recording checks, including the default-autotuning settling limitation.
 
 Implementation prompts are [full-autocal jobs](prompts/tooling_improvement_1.txt),
 [configurable fresh worlds](prompts/tooling_improvement_2.txt) and

@@ -106,8 +106,8 @@ class RuntimeService:
     def close(self):
         if self.process is not None and self.process.poll() is None:
             try:
-                request(self.endpoint, 'shutdown', token=self.token, timeout=10)
-                self.process.wait(timeout=10)
+                request(self.endpoint, 'shutdown', token=self.token, timeout=160)
+                self.process.wait(timeout=15)
             except (OSError, RuntimeError, subprocess.TimeoutExpired):
                 stop_process(self.process)
 

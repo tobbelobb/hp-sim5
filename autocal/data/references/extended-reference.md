@@ -7,6 +7,15 @@ fixtures cannot acquire missing physics or original collection events retroactiv
 
 ## Headless full-auto collection
 
+Launcher sessions can run this same CLI through `start_autocal`, `autocal_status`
+and `cancel_autocal`, even when agent command sockets are denied. Each supervised
+job owns an isolated world and an extended recorder; stdout/stderr, stages,
+scene/firmware settings, source hashes, partial measurements and finalized RRDs
+remain in its artifact directory. `accepted` requires automatic stopping;
+iteration/wall/physics budget exhaustion is separate. Supervisor cancellation
+bypasses the interactive CLI's accept-best-so-far behavior. See the
+[job settings and lifecycle](../../../research/README.md#jobs-shared-browser-state-and-steering).
+
 Add `--extended-reference` to a headless autocal run:
 
 ```bash
