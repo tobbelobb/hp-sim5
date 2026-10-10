@@ -119,7 +119,8 @@ def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, dont_a
     command += ['--cd', str(ROOT), '--sandbox', 'workspace-write', '-c', 'approval_policy="never"']
     if batch:
         command += ['--json', '--output-last-message', str(session / 'final-message.md')]
-    settings = {'features.default_mode_request_user_input': not (dont_ask or batch),
+    settings = {'sandbox_workspace_write.network_access': True,
+                'features.default_mode_request_user_input': not (dont_ask or batch),
                 'mcp_servers.hp_sim5.command': sys.executable,
                 'model_provider': 'openai',
                 'mcp_servers.hp_sim5.args': [str(ROOT / 'scripts/hp_sim5_mcp.py')],
@@ -257,7 +258,8 @@ def main():
         descriptor.write_text(json.dumps({'repo': str(ROOT), 'session_id': runtime_status['session_id'],
                                           'runtime_endpoint': runtime.endpoint, 'runtime_token': runtime.token,
                                           'viewer_endpoint': endpoint}) + '\n')
-        attachment = ('[features]\n'
+        attachment = ('[sandbox_workspace_write]\nnetwork_access = true\n\n'
+                      '[features]\n'
                       f'default_mode_request_user_input = {toml_literal(not (args.dont_ask or args.batch))}\n\n'
                       f'[mcp_servers.hp_sim5]\ncommand = {json.dumps(sys.executable)}\n'
                       f'args = {json.dumps([str(ROOT / "scripts/research_attach.py"), str(descriptor)])}\n'

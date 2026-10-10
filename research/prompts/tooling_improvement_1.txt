@@ -1,0 +1,40 @@
+Implement supervisor-owned asynchronous full-autocalibration jobs in hp-sim5.
+The command sandbox can deny localhost sockets. Existing MCP start_collection
+collects sweeps but does not run fitting, planning, selection and automatic
+acceptance. Researchers need the complete production workflow through MCP.
+
+Read research/AGENTS.md, research/README.md, research/investigation.md,
+scripts/hp_sim5_mcp.py, scripts/research_runtime.py,
+src/python/hp_sim5_research/services.py, autocal/headless_sim.py, and
+autocal/data/references/extended-reference.md. Inspect existing job lifecycle,
+collector and full-auto CLI tests before designing the change.
+
+Add start/status/cancel tools that delegate to the launcher-owned supervisor
+outside the command sandbox. Run the existing autocal CLI once per job; preserve
+one-click operation, fitting/planning/selection and automatic stopping. Do not
+reimplement the algorithm or build an outer prompt loop. Prefer an isolated
+job-owned world so an attached HP4 session can request HP3 without mutating it.
+Expose structured machine, layering, known-radius/buildup and optimizer settings,
+validated artifact paths, and bounded experiment/compute settings. Reuse shared
+world configuration from tooling improvement 2 if already available.
+
+Return a job ID immediately. Status must expose progress, stop reason and
+artifacts. Distinguish accepted calibration, budget exhaustion, cancellation and
+failure; --max-steps is not automatic acceptance. Cancellation and supervisor
+shutdown must stop physical activity, retire child process groups and finalize
+partial evidence. Preserve stdout/stderr, stage artifacts, complete/partial RRD,
+actual scene/firmware settings, source hashes and exit status. Do not expose
+credentials or accept arbitrary shell commands. Update capabilities/docs.
+
+Use .venv/bin/python and keep changes small. Preserve unrelated work. Do not
+broaden permissions; launcher networking is enabled by default, but this tool
+must also work when agent command networking is disabled.
+
+Validate lifecycle failures and cancellation with focused tests, then run one
+real HP3 job with known radii, zero buildup and layering disabled. Exercise a
+genuine automatic stopping path, confirm physical collection and a readable
+finalized recording, and demonstrate access through MCP from a restricted agent
+context when available. Do not substitute offline replay, a synthetic collector
+or a budget stop for this acceptance check. Run relevant autocal regressions.
+Record blocked checks honestly. Maintain research records/catalog and report
+exact commands, evidence, limits and any remaining integration work.

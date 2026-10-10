@@ -1,0 +1,40 @@
+Make fresh research worlds configurable through hp-sim5 MCP.
+Currently the persistent machine is chosen at launcher startup; reset_session
+retains it. An agent attached to HP4 must be able to request a fresh HP3 world,
+including disabled line layering, without writing a separate simulator adapter.
+
+Read research/AGENTS.md, research/README.md, research/investigation.md,
+scripts/hp_sim5_mcp.py, scripts/research_runtime.py,
+src/python/hp_sim5_research/services.py and session.py, the production JS scene
+baker/world construction code, and existing reset/collection tests. Integrate
+with tooling improvement 1 if present; avoid duplicating configuration handling.
+
+Extend the existing coordinated world lifecycle with a structured configuration
+API. Support HP3/HP4 selection and layering; reuse existing scene/anchor-design
+mechanisms where supported. Validate repository scene paths, design parameters,
+backend support and matching RRF configuration before changing the live session.
+Reject unsupported combinations explicitly. Keep settings immutable for each
+world generation and preserve them across an ordinary reset.
+
+Apply geometry-affecting settings before baking and constructing physics.
+Turning layering flags off afterward can leave nonzero cable half-width in the
+geometry; test this directly. Restart world, firmware, collector references and
+encoder origin coherently. Archive previous evidence and create a new world ID.
+Reject configuration changes while a job is active; require explicit cancellation
+first. Failed configuration must preserve evidence and leave a clearly reported,
+recoverable state. Keep the assigned session directory stable.
+
+Report requested/effective settings, authored/baked scene hashes, firmware
+configuration, generation identity and reset requirements in status/manifests.
+Update MCP schemas, capabilities, launcher/desktop documentation and relevant
+job callers. Retain the established physics and collector; no new calibration
+algorithm is needed. Keep network-enabled launcher defaults; the API should
+also work when command networking is disabled.
+
+Use .venv/bin/python and keep changes small. Validate HP4-to-HP3 reconfiguration,
+ordinary reset retaining configuration, invalid inputs, active-job rejection
+and source reload. Run a small real HP3 collection with known radii, zero buildup
+and layering disabled; inspect baked geometry and actual encoder movement.
+Compare matched settings with the production headless/browser construction path.
+Do not call successful reset or schema checks calibration-accuracy evidence.
+Maintain research records/catalog, preserve failures and report limits.

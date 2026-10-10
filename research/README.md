@@ -72,8 +72,8 @@ enable it explicitly with a forwarded Codex option:
 Forwarded Codex options can override launcher defaults. Codex 0.160.1 labels
 this feature “under development”. Batch mode disables it because `codex exec`
 does not support interactive answers. The desktop `attachment.toml` includes
-the selected feature setting too; merge its `[features]` section as well as the
-MCP sections when attaching a desktop chat.
+the selected feature setting too; merge its networking and `[features]` sections
+as well as the MCP sections when attaching a desktop chat.
 
 Codex already supplies generic instructions for `request_user_input`: use it
 when available for optional questions whose answers materially improve the work,
@@ -153,8 +153,9 @@ membership. See the official
 
 The launcher uses the existing Codex ChatGPT login, makes no OpenAI API calls,
 selects the OpenAI provider, and removes API-key variables from its Codex child.
-ChatGPT plan limits apply. Its defaults are `workspace-write` and
-`approval_policy="never"`; normal Codex options can override them. Service
+ChatGPT plan limits apply. Its defaults are `workspace-write`,
+`approval_policy="never"` and `sandbox_workspace_write.network_access=true`;
+normal Codex options can override them. Service
 startup leaves physics at step zero and never selects experiments or runs doctor.
 Default Viewer mode is `--viewer headless`; use `--viewer window` for a desktop
 window or `--viewer none` for numerical research. Headless Rerun still requires
@@ -175,8 +176,9 @@ Start a supervisor in a dedicated worktree and keep its terminal open:
 ```
 
 The directory must be new. The launcher prints the path to `attachment.toml`.
-Copy its feature and MCP sections into that trusted worktree's `.codex/config.toml`,
-merging with existing settings, then open or restart the Codex desktop chat in that
+Copy its sandbox networking, feature and MCP sections into that trusted
+worktree's `.codex/config.toml`, merging with existing settings, then open or
+restart the Codex desktop chat in that
 worktree. This is project configuration shared by local Codex clients; see the
 [official MCP documentation](https://learn.chatgpt.com/docs/extend/mcp).
 The launcher never changes global or project configuration automatically.
@@ -378,6 +380,44 @@ For a standalone full-auto run with one extended reference RRD, use
 machine, dataset and optimizer flags. It owns the Node/RRF/recorder services and
 finalizes physics, collection events, Python logs and stage artifacts together
 without a browser. See the [headless extended reference guide](../autocal/data/references/extended-reference.md#headless-full-auto-collection).
+
+### Local networking for full-auto runs
+
+Standalone `--headless-sim` needs localhost sockets for RRF, physics and
+recording. The launcher enables command networking by default while retaining
+the `workspace-write` filesystem sandbox, and includes that setting in desktop
+`attachment.toml`. Launcher-owned MCP services run outside the command
+sandbox, but `start_collection` runs sweeps, not the complete fitting/planning/
+automatic-acceptance loop. Native `reset_session` also retains the machine chosen
+at launch; select `--machine hp3` before starting HP3 research.
+
+Command networking remains useful for ad hoc HTTP experiments and integration
+tests after supervised job tools are available. To disable it explicitly:
+
+```bash
+./hp-sim5-research-agent --machine hp3 --prompt-file research/prompts/autocal.txt -- \
+  -c sandbox_workspace_write.network_access=false
+```
+
+The enabled default grants command network access, not just localhost access.
+Managed policies and network-proxy rules may still restrict local sockets; verify socket creation,
+loopback binding and an HTTP round trip before a long experiment. See the
+[official configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference).
+Changing the launcher affects new sessions; it does not change a running chat's
+effective policy. This option has not been validated under every client or
+managed policy.
+
+A supervisor-owned full-autocal job API is the proposed mitigation for keeping
+command networking restricted. It should run the existing full-auto CLI with
+explicit machine/layering/radius settings, status and cancellation, finalized
+recordings and stage artifacts. Such a tool is not currently exposed. Until it
+exists, a blocked standalone run must be reported as blocked; a batch adapter or
+offline replay does not validate the complete live workflow.
+
+Implementation prompts are [full-autocal jobs](prompts/tooling_improvement_1.txt),
+[configurable fresh worlds](prompts/tooling_improvement_2.txt) and
+[preflight/test jobs](prompts/tooling_improvement_3.txt). Run them in that order
+in the same branch, or integrate their shared runtime changes explicitly.
 
 The [investigation](investigation.md) maps Robium skills and OmniSim's architecture
 to this integration, and separates the working features from future work.
