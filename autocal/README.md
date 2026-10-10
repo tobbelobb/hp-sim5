@@ -11,6 +11,10 @@ The basic idea is that a Hangprinter or other CDPR with
 ... should be able to "wiggle around a little bit" and through that learn, optimize, or calculate its own calibration parameters.
 The user experience is meant to be one-click.
 The user should be able to push a button, the machine "wiggles", and is ready to be used once the wiggling is done.
+During a sweep, a drive move that leaves measurement preload unchanged uses its
+completed encoder quiet check for the next point. The collector keeps fixed-motor
+drift checks and all noise samples, and settles again whenever measurement force
+changes. This removes a repeated wait without reducing the number of points.
 THe "click of a button" is currently a terminal call to a python script with many flags and options, and the wiggling goes on for 1-2 hours.
 But it does work.
 Even if huge parts of the data turns out to be rubbish, it still works.

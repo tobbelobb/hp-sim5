@@ -1185,6 +1185,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
       ? driveEndPointMm + initialStepMm
       : driveEndPointMm + initialStepMm + stepDelta * (stepIdx - 1);
     const delta = target - currentDrive;
+    let settledMeasurement = null;
     if (Number.isFinite(delta) && Math.abs(delta) > 1e-6) {
       if (!measurementPreloadActive) {
         // eslint-disable-next-line no-await-in-loop
@@ -1221,8 +1222,9 @@ async function performForceSweep(sendFn, sweepConfig, options) {
         { axes },
       );
       // eslint-disable-next-line no-await-in-loop
-      await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
-      measurementPreloadActive = false;
+      const settled = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+      // Moving the drive leaves the sensor's measurement force unchanged.
+      if (measurementPreloadActive) settledMeasurement = settled;
     }
     // eslint-disable-next-line no-await-in-loop
     const collected = await collectDataPoint(sendFn, {
@@ -1244,6 +1246,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
       stepIndex: stepIdx - 1,
       stepCount,
       projectZeroTension: !!projectZeroTension,
+      settledMeasurement,
       skipReturnModePrep: Number.isFinite(delta) && Math.abs(delta) > 1e-6,
       encoderNoiseOptions: {
         sampleCount: noiseSampleCount,

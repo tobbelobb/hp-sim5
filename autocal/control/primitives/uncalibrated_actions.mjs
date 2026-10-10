@@ -395,6 +395,7 @@ export async function collectDataPoint(sendFn, options = {}) {
     restoreToModeWhenFinished,
     projectZeroTension = false,
     skipReturnModePrep = false,
+    settledMeasurement = null,
     encoderNoiseOptions = null,
   } = options;
 
@@ -431,7 +432,10 @@ export async function collectDataPoint(sendFn, options = {}) {
     sensorCollectionForce,
   });
 
-  if (!skipReturnModePrep) {
+  // The sweep caller can supply its just-completed quiet check when no motor
+  // mode or measurement force changed after that check.
+  const reuseMeasurement = !projectZeroTension && settledMeasurement !== null;
+  if (!skipReturnModePrep && !reuseMeasurement) {
     await applyForceModeState(sendFn, { motorIds, modes: preloadModes });
     await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
   }
@@ -495,6 +499,10 @@ export async function collectDataPoint(sendFn, options = {}) {
       stableData = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
       anglesDeg = stableData.anglesDeg;
     }
+  } else if (reuseMeasurement) {
+    stableData = settledMeasurement;
+    anglesDeg = stableData.anglesDeg;
+    settleOptions.validateAngles?.(anglesDeg);
   } else {
     await applyForceModeState(sendFn, { motorIds, modes: measurementModes });
     stableData = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
