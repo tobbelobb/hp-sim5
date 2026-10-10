@@ -228,7 +228,18 @@ values rather than repeating identical transforms.
 `.rrd` is already binary Arrow data with LZ4 compression; a new binary format
 would not solve the per-step work. Sampling happens in the browser before building
 the snapshot. The recorder serializes SDK writes on a worker thread so WebSocket
-handling stays responsive. Collector events use a bounded queue, retaining their
+handling stays responsive. Browser and headless events are transported in batches
+of at most 256 events or 1 MiB (a larger individual envelope travels alone), then
+written as RRD columns. Every envelope keeps its original timestamps and payload;
+events are neither sampled nor merged into one event row. Batches flush within
+20 ms, before a physics sample, and on drain/disconnect. Counted acknowledgements
+follow successful writes. The in-flight event limit is 65,536 events or 32 MiB;
+exceeding either limit fails capture. This prevents the thousands of translated
+commands from a return move from creating thousands of individual SDK writes
+ahead of physics acknowledgements. Reload the simulator after updating the recorder
+so both sides use the batch protocol.
+
+Collector events use a bounded queue, retaining their
 source timestamps; G-code does not await each recorder acknowledgement. Successful
 completion drains all events. Queue overflow, disconnect or missing acknowledgements
 fail capture explicitly. The queue limits are 4096 events or 8 MiB, with a 10-second

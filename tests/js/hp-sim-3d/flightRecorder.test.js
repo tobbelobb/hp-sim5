@@ -187,12 +187,16 @@ describe('flight recorder delivery', () => {
       recorder.update(world, .001);
       recorder.recordEvent('test', { step });
     }
-    const samples = socket.samples.filter(sample => sample.type !== 'autocal_event');
+    recorder.flushEvents();
+    const samples = socket.samples.filter(sample => sample.type !== 'autocal_event_batch');
     expect(samples.map(sample => sample.step)).toEqual([0, 10, 20]);
     expect(samples[2].time).toBeCloseTo(.020);
     expect(samples[2].research_clock.time).toBe(.020);
     expect(samples[2].sample_stride).toBe(10);
-    expect(socket.samples.filter(sample => sample.type === 'autocal_event')).toHaveLength(21);
+    const events = socket.samples.flatMap(sample => sample.events ?? []);
+    expect(events).toHaveLength(21);
+    expect(events.map(event => event.payload.step)).toEqual(Array.from({ length: 21 }, (_, i) => i + 1));
+    recorder.disconnect();
   });
 
   test('headless drain waits for physics and event acknowledgements and fails on disconnect', async () => {
@@ -205,9 +209,9 @@ describe('flight recorder delivery', () => {
     const drained = recorder.drain(1000);
     socket.emit('message', { type: 'ack' });
     expect(recorder.pendingEvents).toBe(1);
-    socket.emit('message', { type: 'event_ack' });
+    socket.emit('message', { type: 'event_ack', count: 1 });
     await drained;
-    expect(socket.samples.at(-1)).toMatchObject({ source: 'headless', wall_time_source: 'headless.Date.now' });
+    expect(socket.samples.at(-1).events[0]).toMatchObject({ source: 'headless', wall_time_source: 'headless.Date.now' });
     recorder.update(recorder.world, .002);
     await expect(recorder.drain(0)).rejects.toThrow('did not acknowledge');
     recorder.disconnect();
@@ -226,6 +230,100 @@ describe('flight recorder delivery', () => {
     await ready;
     expect(recorder.pendingEvents).toBe(100);
     expect(recorder.readyForStep()).toBe(true);
+    recorder.disconnect();
+  });
+
+  test('batches a 16,162-command burst losslessly and drains the final partial batch', async () => {
+    const world = new World();
+    const recorder = new FlightRecorder({ world, WebSocketClass: FakeSocket });
+    recorder.connect();
+    const socket = recorder.socket;
+    socket.readyState = 1; socket.emit('open');
+    recorder.extendedReference = true;
+    const payload = { index: 0 };
+    for (let index = 0; index < 16162; index++) {
+      payload.index = index;
+      world.setResource('researchClock', { time: index / 500 });
+      recorder.recordEvent('command', payload);
+    }
+    expect(recorder.pendingEvents).toBe(16162);
+    const drained = recorder.drain();
+    const batches = socket.samples.filter(message => message.type === 'autocal_event_batch');
+    expect(batches).toHaveLength(64);
+    expect(batches.at(-1).events).toHaveLength(34);
+    const events = batches.flatMap(batch => batch.events);
+    expect(events.map(event => event.payload.index)).toEqual(Array.from({ length: 16162 }, (_, i) => i));
+    expect(events.map(event => event.sim_time_s)).toEqual(Array.from({ length: 16162 }, (_, i) => i / 500));
+    socket.emit('message', { type: 'ack' });
+    for (const batch of batches) socket.emit('message', { type: 'event_ack', count: batch.events.length });
+    await drained;
+    expect(recorder.pendingEvents).toBe(0);
+    expect(recorder.pendingEventBytes).toBe(0);
+    recorder.disconnect();
+  });
+
+  test('flushes quiet event traffic on a timer and before a scene reset or disconnect', () => {
+    jest.useFakeTimers();
+    try {
+      const world = new World();
+      world.setResource('sceneGeneration', 1);
+      const recorder = new FlightRecorder({ world, WebSocketClass: FakeSocket });
+      recorder.connect();
+      const socket = recorder.socket;
+      socket.readyState = 1; socket.emit('open');
+      recorder.extendedReference = true;
+      recorder.recordEvent('first', {});
+      jest.advanceTimersByTime(20);
+      expect(socket.samples.at(-1).events[0].kind).toBe('first');
+      recorder.recordEvent('before_reset', {});
+      world.setResource('sceneGeneration', 2);
+      recorder.update(world, .002);
+      expect(socket.samples.at(-2).events.map(event => event.generation)).toEqual([1, 2]);
+      expect(socket.samples.at(-1).generation).toBe(2);
+      recorder.recordEvent('last', {});
+      recorder.disconnect();
+      expect(socket.samples.at(-1).events[0].kind).toBe('last');
+      expect(jest.getTimerCount()).toBe(0);
+    } finally { jest.useRealTimers(); }
+  });
+
+  test('bounds batch bytes and sends a larger individual envelope alone', () => {
+    const recorder = new FlightRecorder({ world: new World(), WebSocketClass: FakeSocket });
+    recorder.connect();
+    const socket = recorder.socket;
+    socket.readyState = 1; socket.emit('open');
+    recorder.extendedReference = true;
+    for (let index = 0; index < 2; index++) recorder.recordEvent('artifact', { text: 'a'.repeat(600 * 1024), index });
+    recorder.recordEvent('scene_context', { text: 'b'.repeat(2 * 1024 * 1024) });
+    const batches = socket.samples.filter(message => message.type === 'autocal_event_batch');
+    expect(batches.map(batch => batch.events.length)).toEqual([1, 1, 1]);
+    expect(batches.flatMap(batch => batch.events).map(event => event.kind)).toEqual(['artifact', 'artifact', 'scene_context']);
+    recorder.disconnect();
+  });
+
+  test('fails incomplete capture on queue overflow, bad acknowledgements and write failure', async () => {
+    const recorder = new FlightRecorder({ world: new World(), WebSocketClass: FakeSocket });
+    recorder.connect();
+    const socket = recorder.socket;
+    socket.readyState = 1; socket.emit('open');
+    recorder.extendedReference = true;
+    // An oversized Unicode envelope must be bounded in bytes, not characters.
+    expect(() => recorder.recordEvent('artifact', { text: '界'.repeat(12 * 1024 * 1024) })).toThrow('queue exceeded');
+    expect(recorder.readyForStep()).toBe(false);
+    await expect(recorder.drain()).rejects.toThrow('capture is incomplete');
+    recorder.connect();
+    const second = recorder.socket;
+    second.readyState = 1; second.emit('open');
+    recorder.recordEvent('test', {});
+    recorder.flushEvents();
+    second.emit('message', { type: 'event_ack', count: 2 });
+    await expect(recorder.drain()).rejects.toThrow('Invalid');
+    recorder.connect();
+    recorder.socket.readyState = 1;
+    recorder.socket.send = () => { throw new Error('write failed'); };
+    recorder.recordEvent('test', {});
+    expect(() => recorder.flushEvents()).toThrow('write failed');
+    await expect(recorder.drain()).rejects.toThrow('write failed');
   });
 });
 
@@ -240,11 +338,13 @@ test('extended browser events preserve both clocks and do not release physics ba
   recorder.time = .5;
   recorder.pending = 32;
   recorder.recordEvent('external_payload_received', { type: 'encoder_request', requestId: 4 });
-  expect(recorder.socket.samples[0]).toMatchObject({
+  recorder.flushEvents();
+  const event = recorder.socket.samples[0].events[0];
+  expect(event).toMatchObject({
     source: 'browser', sim_time_s: 1.5, sim_time_source: 'browser.researchClock',
     recorder_sim_time_s: .5, generation: 2,
     payload: { requestId: 4 },
   });
-  expect(Number.isInteger(recorder.socket.samples[0].wall_time_ms)).toBe(true);
+  expect(Number.isInteger(event.wall_time_ms)).toBe(true);
   expect(recorder.readyForStep()).toBe(false);
 });

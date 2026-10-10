@@ -1,6 +1,10 @@
 import { captureFlightRecorderSnapshot } from './flightRecorderSnapshot.js';
 
 const MAX_PENDING_STEPS = 32;
+const EVENT_BATCH_SIZE = 256;
+const EVENT_BATCH_BYTES = 1024 * 1024;
+const MAX_PENDING_EVENTS = 65536;
+const MAX_PENDING_EVENT_BYTES = 32 * 1024 * 1024;
 
 export class FlightRecorder {
   constructor({ world, button, url = 'ws://127.0.0.1:9877', WebSocketClass = globalThis.WebSocket, source = 'browser' }) {
@@ -12,6 +16,12 @@ export class FlightRecorder {
     this.socket = null;
     this.pending = 0;
     this.pendingEvents = 0;
+    this.pendingEventBytes = 0;
+    this.eventBatch = [];
+    this.eventBatchBytes = 0;
+    this.eventBatches = [];
+    this.eventTimer = null;
+    this.eventEncoder = new TextEncoder();
     this.ackSequence = 0;
     this.error = null;
     this.generation = null;
@@ -38,6 +48,10 @@ export class FlightRecorder {
     this.session = globalThis.crypto.randomUUID();
     this.pending = 0;
     this.pendingEvents = 0;
+    this.pendingEventBytes = 0;
+    this.eventBatch = [];
+    this.eventBatchBytes = 0;
+    this.eventBatches = [];
     this.error = null;
     this.acknowledged = false;
     this.setStatus('Rerun: connecting');
@@ -59,13 +73,22 @@ export class FlightRecorder {
         this.pending = Math.max(0, this.pending - 1);
       }
       if (message.type === 'event_ack') {
+        const batch = this.eventBatches[0];
+        if (!batch || message.count !== batch.count) {
+          this.fail(new Error('Invalid flight recorder event acknowledgement'));
+          return;
+        }
+        this.eventBatches.shift();
         this.ackSequence += 1;
-        this.pendingEvents = Math.max(0, this.pendingEvents - 1);
+        this.pendingEvents -= batch.count;
+        this.pendingEventBytes -= batch.bytes;
       }
     });
     socket.addEventListener('close', (event) => {
       if (this.socket !== socket) return;
       this.error = event.reason ? `Flight recorder disconnected: ${event.reason}` : 'Flight recorder disconnected';
+      clearTimeout(this.eventTimer);
+      this.eventTimer = null;
       this.socket = null;
       this.pending = 0;
       this.setStatus('Rerun: disconnected', false);
@@ -79,10 +102,23 @@ export class FlightRecorder {
   }
 
   disconnect() {
+    this.flushEvents();
+    clearTimeout(this.eventTimer);
+    this.eventTimer = null;
     this.socket?.close();
     this.socket = null;
     this.pending = 0;
+    this.error = null;
     this.setStatus('Rerun', false);
+  }
+
+  fail(error) {
+    this.error = error.message;
+    clearTimeout(this.eventTimer);
+    this.eventTimer = null;
+    this.socket?.close();
+    this.socket = null;
+    this.setStatus('Rerun: failed', false);
   }
 
   async ensureConnected(url, timeoutMs = 5000) {
@@ -117,10 +153,11 @@ export class FlightRecorder {
 
   // Backpressure applies to sampled physics, never to G-code dispatch.
   readyForStep() {
-    return !this.socket || (this.socket.readyState === 1 && this.pending < MAX_PENDING_STEPS);
+    return !this.error && (!this.socket || (this.socket.readyState === 1 && this.pending < MAX_PENDING_STEPS));
   }
 
   async drain(timeoutMs = 10000, { all = true, wallTimeoutMs = 120000 } = {}) {
+    this.flushEvents();
     const socket = this.socket;
     let sequence = this.ackSequence;
     let deadline = performance.now() + timeoutMs;
@@ -138,15 +175,46 @@ export class FlightRecorder {
   }
 
   recordEvent(kind, payload) {
+    if (this.error) throw new Error(this.error);
     if (!this.socket || this.socket.readyState !== 1 || !this.extendedReference) return;
     const clock = this.world.getResource('researchClock');
-    this.socket.send(JSON.stringify({ version: 1, type: 'autocal_event', source: this.source,
+    const data = JSON.stringify({ version: 1, type: 'autocal_event', source: this.source,
       wall_time_ms: Date.now(), wall_time_source: `${this.source}.Date.now`,
       monotonic_ms: performance.now(), kind, payload, sim_time_s: clock?.time ?? null,
       sim_time_source: clock ? `${this.source}.researchClock` : 'unavailable',
       session: this.session, generation: this.world.getResource('sceneGeneration') || 0,
-      recorder_sim_time_s: this.time }));
+      recorder_sim_time_s: this.time });
+    const bytes = this.eventEncoder.encode(data).byteLength;
+    if (this.pendingEvents >= MAX_PENDING_EVENTS || this.pendingEventBytes + bytes > MAX_PENDING_EVENT_BYTES) {
+      const error = new Error('Flight recorder event queue exceeded its limit; capture is incomplete');
+      this.fail(error);
+      throw error;
+    }
+    if (this.eventBatchBytes + bytes > EVENT_BATCH_BYTES) this.flushEvents();
+    this.eventBatch.push(data);
+    this.eventBatchBytes += bytes;
     this.pendingEvents += 1;
+    this.pendingEventBytes += bytes;
+    if (this.eventBatch.length >= EVENT_BATCH_SIZE || this.eventBatchBytes >= EVENT_BATCH_BYTES) this.flushEvents();
+    else if (!this.eventTimer) {
+      this.eventTimer = setTimeout(() => this.flushEvents(), 20);
+      this.eventTimer.unref?.();
+    }
+  }
+
+  flushEvents() {
+    clearTimeout(this.eventTimer);
+    this.eventTimer = null;
+    if (!this.eventBatch.length || this.socket?.readyState !== 1) return;
+    try {
+      this.socket.send(`{"version":1,"type":"autocal_event_batch","events":[${this.eventBatch.join(',')}]}`);
+      this.eventBatches.push({ count: this.eventBatch.length, bytes: this.eventBatchBytes });
+      this.eventBatch = [];
+      this.eventBatchBytes = 0;
+    } catch (error) {
+      this.fail(error);
+      throw error;
+    }
   }
 
   update(world, dt) {
@@ -165,6 +233,8 @@ export class FlightRecorder {
     }
     if (this.lastSentStep !== null && this.step - this.lastSentStep < this.sampleStride) return;
     this.lastSentStep = this.step;
+    // Preserve event/sample order, including scene context before step zero.
+    this.flushEvents();
     this.socket.send(JSON.stringify({
       source: this.source,
       sample_stride: this.sampleStride, geometry_detail: this.geometryDetail,

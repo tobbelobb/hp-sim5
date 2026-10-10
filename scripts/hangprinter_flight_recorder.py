@@ -45,6 +45,29 @@ def rgb(color):
     return [int(value[index:index + 2], 16) for index in (0, 2, 4)]
 
 
+def event_body(event):
+    payload = event.get("payload", {})
+    kind = event.get("kind", "event")
+    if kind == "text_log":
+        return payload["text"]
+    if kind == "artifact":
+        return f"artifact: {payload['path']} ({len(payload['content'])} characters)"
+    if kind == "gcode_send":
+        return f"gcode_send: {payload.get('line', '')} ({payload.get('source')})"
+    if kind == "gcode_reply":
+        return f"gcode_reply: {(payload.get('result') or {}).get('reply', '')}"
+    if event["source"] in ("browser", "headless"):
+        return f"{kind}: {payload.get('type', '')}"
+    return kind
+
+
+def event_indexes(rows):
+    # Live columnar writes have no implicit timelines. Events remain on source
+    # wall time and receipt order; never inherit the last physics sim_time.
+    return [rr.TimeColumn("wall_time", timestamp=np.asarray([row[0] for row in rows], dtype="datetime64[ms]")),
+            rr.TimeColumn("event_order", sequence=[row[1] for row in rows])]
+
+
 class FlightRecording:
     def __init__(self, output_dir, viewer_sink, sample, force_scale, extended=False):
         self.extended = extended
@@ -113,45 +136,50 @@ class FlightRecording:
         temporary.write_text(json.dumps(self.manifest, indent=2) + '\n')
         temporary.replace(target)
 
-    def log_event(self, event):
+    def log_events(self, events):
         if not self.extended:
             raise ValueError("Events require --extended-reference")
-        source = event["source"]
-        if source not in ("python", "collector", "browser", "headless"):
-            raise ValueError("Unknown event source")
-        self.stream.reset_time()
-        wall_ms = int(event["wall_time_ms"])
-        self.stream.set_time("wall_time", timestamp=np.datetime64(wall_ms, "ms"))
-        self.event_count += 1
-        if source == "python" and event.get("kind") == "run_start":
-            self.manifest["autocal_complete"] = False
-        if source == "python" and event.get("kind") == "run_complete" and event.get("payload", {}).get("returncode") == 0:
-            self.manifest["autocal_complete"] = True
-        self.stream.set_time("event_order", sequence=self.event_count)
-        payload = event.get("payload", {})
-        kind = event.get("kind", "event")
-        if kind == "text_log":
-            body = payload["text"]
-        elif kind == "artifact":
-            body = f"artifact: {payload['path']} ({len(payload['content'])} characters)"
-        elif kind == "gcode_send":
-            body = f"gcode_send: {payload.get('line', '')} ({payload.get('source')})"
-        elif kind == "gcode_reply":
-            body = f"gcode_reply: {(payload.get('result') or {}).get('reply', '')}"
-        elif source in ("browser", "headless"):
-            body = f"{kind}: {payload.get('type', '')}"
-        else:
-            body = kind
-        # Never assign a guessed physics time to an event from another clock.
-        self.stream.log(f"autocal/{source}", rr.TextLog(body),
-                        rr.AnyValues(event_json=json.dumps(event), received_wall_time_ms=wall_clock.time_ns() // 1_000_000), strict=True)
-        if event.get("sim_time_s") is not None:
-            clock_path = f"clocks/{source}/research_clock" if source in ("browser", "headless") else f"clocks/{source}"
-            context = {"sim_time_source": event["sim_time_source"]}
-            if event.get("sim_time_observed_wall_ms") is not None:
-                context["sim_time_observed_wall_ms"] = event["sim_time_observed_wall_ms"]
-            self.stream.log(clock_path, rr.Scalars(event["sim_time_s"]),
-                            rr.AnyValues(**context), strict=True)
+        # Validate the complete batch before writing anything. Keep every logical
+        # event row, but amortize SDK serialization and thread dispatch.
+        groups, clocks = {}, {}
+        received_ms = wall_clock.time_ns() // 1_000_000
+        for offset, event in enumerate(events, 1):
+            source = event["source"]
+            if source not in ("python", "collector", "browser", "headless"):
+                raise ValueError("Unknown event source")
+            row = (int(event["wall_time_ms"]), self.event_count + offset,
+                   event, event_body(event), json.dumps(event))
+            groups.setdefault(source, []).append(row)
+            if event.get("sim_time_s") is not None:
+                if not isinstance(event.get("sim_time_source"), str):
+                    raise ValueError("Clocked events require sim_time_source")
+                clocks.setdefault(source, []).append(row)
+        for source, rows in groups.items():
+            self.stream.send_columns(f"autocal/{source}", indexes=event_indexes(rows), columns=[
+                *rr.TextLog.columns(text=[row[3] for row in rows]),
+                *rr.AnyValues.columns(event_json=[row[4] for row in rows],
+                                      received_wall_time_ms=[received_ms] * len(rows)),
+            ], strict=True)
+        for source, rows in clocks.items():
+            path = f"clocks/{source}/research_clock" if source in ("browser", "headless") else f"clocks/{source}"
+            context = {"sim_time_source": [row[2]["sim_time_source"] for row in rows]}
+            self.stream.send_columns(path, indexes=event_indexes(rows), columns=[
+                *rr.Scalars.columns(scalars=[row[2]["sim_time_s"] for row in rows]),
+                *rr.AnyValues.columns(**context),
+            ], strict=True)
+            # Keep the scalar rows in source order even at equal wall timestamps.
+            # Write optional observations separately instead of clearing missing
+            # values or regrouping the scalars by metadata presence.
+            observed = [row for row in rows if row[2].get("sim_time_observed_wall_ms") is not None]
+            if observed:
+                self.stream.send_columns(path, indexes=event_indexes(observed), columns=rr.AnyValues.columns(
+                    sim_time_observed_wall_ms=[row[2]["sim_time_observed_wall_ms"] for row in observed]), strict=True)
+        self.event_count += len(events)
+        for event in events:
+            if event["source"] == "python" and event.get("kind") == "run_start":
+                self.manifest["autocal_complete"] = False
+            if event["source"] == "python" and event.get("kind") == "run_complete" and event.get("payload", {}).get("returncode") == 0:
+                self.manifest["autocal_complete"] = True
 
     def log_sample(self, sample):
         source = sample.get("source", "browser")
@@ -335,14 +363,21 @@ async def run(args):
                 sample = json.loads(message)
                 if sample.get("version") != 1:
                     raise ValueError("Unsupported flight recorder protocol version")
-                if sample.get("type") == "autocal_event":
+                if sample.get("type") in ("autocal_event", "autocal_event_batch"):
                     if extended_recording is None:
                         raise ValueError("Events require --extended-reference")
+                    batched = sample["type"] == "autocal_event_batch"
+                    events = sample.get("events") if batched else [sample]
+                    if not isinstance(events, list) or not 1 <= len(events) <= 256:
+                        raise ValueError("Event batch must contain 1 to 256 events")
+                    if any(not isinstance(event, dict) or event.get("version") != 1
+                           or event.get("type") != "autocal_event" for event in events):
+                        raise ValueError("Invalid event envelope")
                     # Startup metadata may precede the physics recorder connection.
-                    if sample.get("kind") == "gcode_send" and active_physics is None:
+                    if active_physics is None and any(event.get("kind") == "gcode_send" for event in events):
                         raise ValueError("Connect the physics recorder before starting autocal")
-                    await write(extended_recording.log_event, sample)
-                    await socket.send(json.dumps({"type": "event_ack"}))
+                    await write(extended_recording.log_events, events)
+                    await socket.send(json.dumps({"type": "event_ack", **({"count": len(events)} if batched else {})}))
                     continue
                 if extended_recording is not None:
                     if active_physics is not None and active_physics is not socket:
@@ -372,7 +407,7 @@ async def run(args):
         except ConnectionClosed as error:
             if error.code not in (1000, 1001):
                 print(f"Recorder transport closed: {error}", flush=True)
-        except (ValueError, KeyError, TypeError) as error:
+        except (ValueError, KeyError, TypeError, RuntimeError) as error:
             if extended_recording is not None:
                 extended_recording.manifest["rejected_messages"].append(str(error))
                 extended_recording.write_manifest()
