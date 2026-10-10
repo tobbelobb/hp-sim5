@@ -80,6 +80,104 @@ def test_full_auto_stops_when_every_future_prediction_fails(tmp_path, monkeypatc
     assert "== Calibration summary ==" not in output
 
 
+def test_full_auto_prints_best_summary_when_last_run_is_underconstrained(
+    tmp_path, monkeypatch, capsys
+):
+    dataset = tmp_path / "sentinel_final.json"
+    _write_dataset(dataset, sweeps=5)
+    plans = [
+        {**_fake_plan(), "cost": 1e12, "cost_noise_normalized": 1e12},
+        {**_fake_plan(), "cost": 1.0, "cost_noise_normalized": 1.0},
+    ]
+
+    def fake_plan(*_args, **_kwargs):
+        plan = plans.pop(0)
+        plan["dataset"] = ac._load_json(dataset)
+        return plan
+
+    monkeypatch.setattr(ac, "plan_next_ellipse_sweep", fake_plan)
+    monkeypatch.setattr(ac, "_plan_score_ui", lambda plan: (float(plan["cost"]), float(plan["cost"]), "standard-noise"))
+    monkeypatch.setattr(ac, "_plan_primary_cost", lambda plan: float(plan["cost"]))
+    monkeypatch.setattr(ac, "_plan_covariance_summary", lambda _plan: (1.0, 1.0, True))
+    monkeypatch.setattr(ac, "_plan_data_quality_warnings", lambda _plan: [])
+    monkeypatch.setattr(ac, "_plan_noise_metrics", lambda _plan: {"chi2_red": 1.0, "J": 1.0})
+    monkeypatch.setattr(ac, "_plan_hits_underconstrained_penalty", lambda plan, *_a, **_k: plan["cost"] > 1e10)
+    monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(ac, "_append_jsonl", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(ac, "_m669_from_plan", lambda plan: f"M669 cost={plan['cost']}")
+    monkeypatch.setattr(ac, "_m666_from_plan", lambda _plan: "")
+
+    kwargs = dict(
+        work_dataset=dataset, machine_type="slideprinter", max_steps=2,
+        stop_cost=None, stop_std_mm=None, solve_restarts=1, solve_iterations=1,
+        solve_optimizer="L-BFGS-B", residual_threshold=1.0, spring_k_multiplier=1.0,
+        use_flex=False, pointwise_residual_mode="sampson", pointwise_filtering=False,
+        pointwise_global_mad=False, sweep_wise_filtering=False, sweep_metric="mad",
+        use_noise_mean=False, sigma_source="auto", robust_debug=False, residuals_csv=None,
+        generate_report=False, find_radii="off", find_buildup_factor="off", base_radii=None,
+        buildup_factor=None, r0_bounds=None, b_bounds=None, r0_prior_sigma_mm=None,
+        b_prior_sigma=None, spool_outer_iters=1, spool_inner_iters=1, theta0_mode="zero",
+        line_width=0.4, sigma_floor_mm=None, sigma_used_mm=None, candidate_deltas=None,
+        candidate_count=16, delta_min=None, delta_max=None, fd_eps_mm=1.0,
+        regularization=0.0, exclude_existing=True, existing_tol_mm=1.0,
+        min_fixed_delta_spacing_mm=0.0, top_k=5, write_cfg=None, collector_args=[],
+        sim=True, keep_sim_alive=False, hp_sim_reset=False, sweep_points=None,
+        output_with_explanations=False, full_auto_runs=None, full_auto_log=None,
+        patience=5, verbose=False, no_collect=True,
+    )
+    rc = ac.full_auto_loop(**kwargs)
+
+    assert rc == 0
+    output = capsys.readouterr().out
+    assert "selected run hit underconstrained sentinel" in output
+    assert "== Calibration summary ==" in output
+    assert "M669 cost=1.0" in output
+
+
+def test_full_auto_prints_best_summary_at_max_steps(tmp_path, monkeypatch, capsys):
+    dataset = tmp_path / "max_steps.json"
+    _write_dataset(dataset, sweeps=3)
+    plan = {**_fake_plan(), "cost": 1.0, "cost_noise_normalized": 1.0}
+    plan["dataset"] = ac._load_json(dataset)
+    monkeypatch.setattr(ac, "plan_next_ellipse_sweep", lambda *_a, **_k: plan)
+    monkeypatch.setattr(ac, "_plan_score_ui", lambda _plan: (1.0, 1.0, "standard-noise"))
+    monkeypatch.setattr(ac, "_plan_primary_cost", lambda _plan: 1.0)
+    monkeypatch.setattr(ac, "_plan_covariance_summary", lambda _plan: (1.0, 1.0, True))
+    monkeypatch.setattr(ac, "_plan_data_quality_warnings", lambda _plan: [])
+    monkeypatch.setattr(ac, "_plan_noise_metrics", lambda _plan: {"chi2_red": 1.0, "J": 1.0})
+    monkeypatch.setattr(ac, "_plan_hits_underconstrained_penalty", lambda *_a, **_k: False)
+    monkeypatch.setattr(ac, "_print_ellipse_plan", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(ac, "_append_jsonl", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(ac, "_m669_from_plan", lambda _plan: "M669 best")
+    monkeypatch.setattr(ac, "_m666_from_plan", lambda _plan: "")
+    monkeypatch.setattr(ac, "_send_rrf_gcode", lambda *_args: "ok")
+
+    kwargs = dict(
+        work_dataset=dataset, machine_type="slideprinter", max_steps=1,
+        stop_cost=None, stop_std_mm=None, solve_restarts=1, solve_iterations=1,
+        solve_optimizer="L-BFGS-B", residual_threshold=1.0, spring_k_multiplier=1.0,
+        use_flex=False, pointwise_residual_mode="sampson", pointwise_filtering=False,
+        pointwise_global_mad=False, sweep_wise_filtering=False, sweep_metric="mad",
+        use_noise_mean=False, sigma_source="auto", robust_debug=False, residuals_csv=None,
+        generate_report=False, find_radii="off", find_buildup_factor="off", base_radii=None,
+        buildup_factor=None, r0_bounds=None, b_bounds=None, r0_prior_sigma_mm=None,
+        b_prior_sigma=None, spool_outer_iters=1, spool_inner_iters=1, theta0_mode="zero",
+        line_width=0.4, sigma_floor_mm=None, sigma_used_mm=None, candidate_deltas=None,
+        candidate_count=16, delta_min=None, delta_max=None, fd_eps_mm=1.0,
+        regularization=0.0, exclude_existing=True, existing_tol_mm=1.0,
+        min_fixed_delta_spacing_mm=0.0, top_k=5, write_cfg=None, collector_args=[],
+        sim=True, keep_sim_alive=False, hp_sim_reset=False, sweep_points=None,
+        output_with_explanations=False, full_auto_runs=None, full_auto_log=None,
+        patience=5, verbose=False, no_collect=True,
+    )
+    rc = ac.full_auto_loop(**kwargs)
+
+    assert rc == 0
+    output = capsys.readouterr().out
+    assert "== Calibration summary ==" in output
+    assert "M669 best" in output
+
+
 def test_full_auto_breaks_anchor_prediction_tie_using_frozen_radius(tmp_path, monkeypatch, capsys):
     import copy
 

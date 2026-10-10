@@ -1268,6 +1268,8 @@ def full_auto_loop(
                 )
                 _log_line("; full-auto: no valid calibration runs (non-finite cost or covariance).")
                 _log_console("; full-auto: no valid calibration runs (non-finite cost or covariance).")
+                if best_plan is not None:
+                    return _accept_best("no-valid-runs")
                 _log_console(_solution_quality_message(best_score_ui if np.isfinite(best_score_ui) else None))
                 return _finalize(2)
 
@@ -1618,6 +1620,9 @@ def full_auto_loop(
     if headless_sim is not None:
         headless_sim.manifest["stop_reason"] = "max-steps"
     _log_console(f"; reached max steps; dataset={work_path}")
+    summary_plan, summary_meta = _select_history_summary_candidate(reason="max-steps")
+    if summary_plan is not None:
+        return _emit_summary_and_send(summary_plan, summary_meta=summary_meta)
     _log_console(_solution_quality_message(best_score_ui if np.isfinite(best_score_ui) else None))
     return _finalize(0)
 
