@@ -245,6 +245,14 @@ direction mismatches are reported as warnings. Use `--no-keep-going` to run
 sequentially and stop after the first failure, and `--fail-score-mismatch` to
 make direction mismatches fail the run. Both options can be used together.
 
+
+## Hottest Part of the Repo Right Now
+
+The hottest and coolest part of the repo right now is autocal's Extended Reference feature.
+It lets you record autocal data and flight recordings in the same .rrd file.
+See autocal/data/references/extended-reference.md to read all about it.
+
+
 ## hp-sim5 context: the Hangprinter Project
 hp-sim5 is part of an effort to automate the Hangprinter Project.
 We want to automate everything except the actual users,
