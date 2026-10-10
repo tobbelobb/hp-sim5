@@ -152,6 +152,16 @@ clock waits also have wall deadlines. Settling and active trials print progress
 every five wall seconds; a paused clock eventually fails instead of waiting forever.
 Requested speed never divides poll intervals, motion waits or force windows.
 
+Force autotuning defines the comfortable maximum from travel gained per added
+newton. All edge probes use the same 30-second simulation-time window (wall time
+on hardware). After two incremental gains below half the best observed gain,
+it chooses the force before the decline. A travel plateau, reversal or held-motor
+slip stops the ramp. This is a finite-duration excursion criterion, not an
+equilibrium reachable-volume estimate. Tuning metadata preserves the measured
+curve and knee; `d_max_deg` is observed travel, with no logistic extrapolation.
+If no knee is measured before the force cap, tuning is marked failed and uses a
+bounded default rather than promoting the cap to the collection maximum.
+
 Sweep positioning and pullout use at most 20 times the tuned start force;
 measurement preload uses at most five times that force. Travel measurement also
 uses the capped pullout force. Both defaults are bounded

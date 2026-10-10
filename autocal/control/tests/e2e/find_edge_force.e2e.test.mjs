@@ -48,7 +48,7 @@ function parseIntegerArg(argv, flag, fallback) {
 function printHelp() {
   console.log(`Usage: node autocal/control/tests/e2e/find_edge_force.e2e.test.mjs [options]
 
-Runs an end-to-end demo that finds the edge force (plateau entry) after movement starts.
+Runs an end-to-end demo that finds the comfortable edge from declining travel per newton.
 
 Options:
   --help, -h                 Show this help and exit
@@ -239,7 +239,6 @@ async function main() {
       trialFn: runTrial,
       bracketFactor: FORCE_TUNING_CONSTANTS.AUTO_TUNE_BRACKET_FACTOR,
       maxBracketSteps: FORCE_TUNING_CONSTANTS.AUTO_TUNE_MAX_BRACKET_STEPS,
-      saturationRelTol: FORCE_TUNING_CONSTANTS.AUTO_TUNE_RELATIVE_TOLERANCE,
       minUsefulTravelDeg: thresholds.thetaActThr,
     });
 

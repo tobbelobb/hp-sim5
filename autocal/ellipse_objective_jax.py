@@ -3,7 +3,6 @@ from __future__ import annotations
 """JAX-native objective for ellipse anchor optimization."""
 
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Callable, List, Optional, Tuple
 import logging
 import os
@@ -24,12 +23,8 @@ from autocal.theoretical_ellipse import (
 os.environ["JAX_PLATFORMS"] = "cpu"
 os.environ["JAX_PLATFORM_NAME"] = "cpu"
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
-# Reuse CPU executables across calibration launches; keep user cache settings.
-os.environ.setdefault(
-    "JAX_COMPILATION_CACHE_DIR",
-    str(Path(__file__).resolve().parents[1] / "output" / "autocal-jax-cache"),
-)
-os.environ.setdefault("JAX_PERSISTENT_CACHE_MIN_COMPILE_TIME_SECS", "0")
+# Keep persistent caching opt-in: JAX 0.9.2 emits native PJRT warnings on
+# every disk-cache hit (jax-ml/jax#36294). In-process JIT reuse still applies.
 logging.getLogger("jax._src.xla_bridge").setLevel(logging.CRITICAL)
 
 try:

@@ -1,6 +1,40 @@
 import { runForceTrial } from '../../behaviors/force_tuning.mjs';
 
 describe('runForceTrial', () => {
+  test('ends the probe and holds before returning when a fixed motor slips', async () => {
+    let time = 0;
+    let loaded = false;
+    const angles = [0, 0, 0];
+    const commands = [];
+    const send = async line => {
+      commands.push(line);
+      if (line.startsWith('M569.4')) {
+        loaded = line.includes(' T1:');
+      }
+      if (line.startsWith('G1 H2')) {
+        for (const match of line.matchAll(/([XYZ])(-?[\d.]+)/g)) {
+          angles[['X', 'Y', 'Z'].indexOf(match[1])] += Number(match[2]);
+        }
+      }
+      return { reply: angles.join(' ') };
+    };
+    send.simulationClock = { now: () => time, sleep: async ms => {
+      time += ms;
+      if (loaded) angles.splice(0, 3, 10, 5, 2);
+    } };
+    const result = await runForceTrial(send, {
+      motorIds: ['A', 'B', 'C'], activeAnchor: 0, fixedAnchor: 2, restAnchors: [1],
+      testForce: 1, sampleWindowMs: 30000, axes: ['X', 'Y', 'Z'], mmPerDeg: [1, 1, 1],
+    });
+    expect(result.fixedDriftDeg).toBe(2);
+    expect(time).toBeLessThan(30000);
+    const testIndex = commands.findIndex(line => line.includes(' T1:'));
+    const holdIndex = commands.findIndex((line, idx) => idx > testIndex && line.endsWith('T0.0:0.0:0.0'));
+    const returnIndex = commands.findIndex(line => line.startsWith('G1 H2'));
+    expect(holdIndex).toBeGreaterThan(testIndex);
+    expect(returnIndex).toBeGreaterThan(holdIndex);
+  });
+
   test('a continuously moving trial is held before return settling, without releasing it to idle first', async () => {
     let nowMs = 0;
     const angles = [0, 0, 0];

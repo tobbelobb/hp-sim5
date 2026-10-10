@@ -47,7 +47,7 @@ const AUTO_TUNE_MAX_BRACKET_STEPS = 120;
 const AUTO_TUNE_MAX_BISECT_STEPS = 60;
 const AUTO_TUNE_RELATIVE_TOLERANCE = 0.1;
 const AUTO_TUNE_ABSOLUTE_TOLERANCE = 0.01;
-const AUTO_TUNE_EDGE_RATIO = 0.95;
+const AUTO_TUNE_COMPLIANCE_RATIO = 0.5;
 const AUTO_TUNE_IDLE_FORCE_RATIO = 0.05;
 
 export const FORCE_TUNING_DEFAULTS = {
@@ -427,7 +427,7 @@ export async function runForceTrial(sendFn, options = {}) {
   const startMs = lastMs;
   let stallDurationMs = 0;
   let stalled = false;
-  let stallAngle = null;
+  let fixedDriftDeg = 0;
 
   const wallStart = Date.now();
   let lastProgress = wallStart;
@@ -445,6 +445,10 @@ export async function runForceTrial(sendFn, options = {}) {
     const nowMs = now();
     if (angles.length === motorIds.length && angles.every((v) => Number.isFinite(v))) {
       endAngles = angles;
+      if (Number.isFinite(fixedAnchor)) {
+        fixedDriftDeg = angles[fixedAnchor] - startAngles[fixedAnchor];
+        if (Math.abs(fixedDriftDeg) > 1.5) break;
+      }
       const dtSec = Math.max(1e-6, (nowMs - lastMs) / 1000);
       const prevAngle = lastAngles?.[activeAnchor];
       const curAngle = angles?.[activeAnchor];
@@ -457,7 +461,6 @@ export async function runForceTrial(sendFn, options = {}) {
         }
         if (!stalled && stallDurationMs >= effectiveStallWindowMs) {
           stalled = true;
-          stallAngle = curAngle;
         }
       }
       lastAngles = angles;
@@ -490,11 +493,7 @@ export async function runForceTrial(sendFn, options = {}) {
     ? (activeMoved && restMovedCount >= 1)
     : activeMoved;
 
-  const travelDeg = Math.abs(
-    stalled && Number.isFinite(stallAngle)
-      ? stallAngle - (startAngles[activeAnchor] ?? 0)
-      : activeDelta,
-  );
+  const travelDeg = Math.abs(activeDelta);
 
   const canReturnToOrigin = Array.isArray(axes) && Array.isArray(mmPerDeg);
   const shouldReturnToOrigin = canReturnToOrigin && travelDeg > 2 * thetaActThr;
@@ -572,287 +571,99 @@ export async function runForceTrial(sendFn, options = {}) {
     stalled,
     deltaEndDeg,
     deltaResidualDeg,
-  };
-}
-
-export async function findEdgeForce(sendFn, options = {}) {
-  const {
-    forceStart,
-    capForceLimit,
-    trialFn,
-
-    // Ramp / saturation detection
-    bracketFactor = 1.5,                // multiply force each step
-    maxBracketSteps = 12,               // safety
-    saturationRelTol = 0.10,            // "within 10%"
-    minUsefulTravelDeg = 0.5,           // ignore tiny near-noise numbers
-    requireMoved = false,               // optional: only accept points where moved=true
-
-    // Curve fit options
-    fitEnabled = true,
-    fitGridK = [0.5, 1, 2, 4, 8],       // slope candidates in log-space
-    fitGridX0Steps = 25,                // coarse grid for x0
-    fitRefineIters = 2,                 // refine around best
-    fitRefineFactor = 0.5,              // narrower window each refine
-
-    // Optional extra stop: plateau after N stable steps
-    plateauStepsRequired = 2,           // 1 means "2 successive within tol" (your default)
-  } = options;
-
-  if (typeof trialFn !== 'function') {
-    throw new Error('findEdgeForce requires a trialFn');
-  }
-  if (!Number.isFinite(forceStart) || forceStart <= 0) {
-    return { forceEdge: null, dMax: null, reason: 'invalid forceStart', samples: [] };
-  }
-  const cap = Number.isFinite(capForceLimit) && capForceLimit > 0 ? capForceLimit : Infinity;
-
-  const runTrial = async (force, label) => {
-    const res = await trialFn(force, label);
-    const travelDeg = Number.isFinite(res?.travelDeg) ? res.travelDeg : NaN;
-    const moved = !!res?.moved;
-    return { ...res, travelDeg, moved };
-  };
-
-  const samples = [];
-  const addSample = (force, res) => {
-    samples.push({
-      force,
-      travelDeg: res.travelDeg,
-      moved: res.moved,
-      stalled: !!res.stalled,
-    });
-  };
-
-  // --- 1) Bracket saturation safely by ramping up ---
-  let F = forceStart;
-  if (F > cap) F = cap;
-
-  let lastAccepted = null;
-  let stableCount = 0;
-  let saturationPair = null;
-
-  for (let i = 0; i < maxBracketSteps; i += 1) {
-    const res = await runTrial(F, `edge-ramp ${i + 1}/${maxBracketSteps}`);
-    addSample(F, res);
-
-    const D = res.travelDeg;
-    const ok =
-      Number.isFinite(D) &&
-      D >= minUsefulTravelDeg &&
-      (!requireMoved || res.moved);
-
-    // If travel isn't meaningful, keep ramping (but don't let it loop forever).
-    if (!ok) {
-      if (F >= cap - 1e-12) break;
-      const nextRaw = F * bracketFactor;
-      let next = nextRaw;
-      if (next > cap) next = cap;
-      if (!Number.isFinite(next) || next <= F + 1e-12) break;
-      F = next;
-      continue;
-    }
-
-    if (lastAccepted) {
-      const Dprev = lastAccepted.travelDeg;
-      const Dcur = D;
-      const denom = Math.max(Math.abs(Dcur), Math.abs(Dprev), 1e-9);
-      const relDiff = Math.abs(Dcur - Dprev) / denom;
-
-      if (relDiff <= saturationRelTol) {
-        stableCount += 1;
-      } else {
-        stableCount = 0;
-      }
-
-      if (stableCount >= plateauStepsRequired) {
-        // Saturation found: (previous, current) is our "within 10%" pair.
-        saturationPair = {
-          lowForce: lastAccepted.force,
-          highForce: F,
-          lowTravelDeg: Dprev,
-          highTravelDeg: Dcur,
-          relDiff,
-        };
-        break;
-      }
-    }
-
-    lastAccepted = { force: F, travelDeg: D };
-
-    if (F >= cap - 1e-12) {
-      break;
-    }
-
-    const nextRaw = F * bracketFactor;
-    let next = nextRaw;
-    if (next > cap) next = cap;
-    if (!Number.isFinite(next) || next <= F + 1e-12) break;
-    F = next;
-
-  }
-
-  if (!saturationPair) {
-    // Could not detect a plateau safely.
-    // Fall back: pick best observed force by "largest travel at lowest force".
-    // This is conservative: chooses lowest force among points close to max travel.
-    const valid = samples
-      .filter((s) => Number.isFinite(s.travelDeg) && s.travelDeg >= minUsefulTravelDeg)
-      .sort((a, b) => a.force - b.force);
-
-    if (valid.length === 0) {
-      return {
-        forceEdge: null,
-        dMax: null,
-        reason: 'no valid travel measurements during ramp',
-        samples,
-      };
-    }
-
-    const maxD = Math.max(...valid.map((s) => s.travelDeg));
-    const target = (1 - saturationRelTol) * maxD;
-    const best = valid.find((s) => s.travelDeg >= target) ?? valid[valid.length - 1];
-
-    const dMaxFallback = maxD;
-
-    return {
-      forceEdge: best.force,
-      dMax: dMaxFallback,
-      reason: 'no plateau detected; conservative fallback from best observed',
-      samples,
-      saturation: null,
-      fit: null,
-    };
-  }
-
-  // Required by you: choose LOWER of the two plateau forces as preferred edge.
-  const forceEdge = saturationPair.lowForce;
-
-  // --- 2) Fit S-curve to estimate dMax (optional) ---
-  let fit = null;
-  let dMax = Math.max(saturationPair.lowTravelDeg, saturationPair.highTravelDeg);
-
-  if (fitEnabled) {
-    fit = fitLogisticInLogForce(samples, {
-      minUsefulTravelDeg,
-      requireMoved,
-      fitGridK,
-      fitGridX0Steps,
-      fitRefineIters,
-      fitRefineFactor,
-    });
-    if (fit?.ok && Number.isFinite(fit.dMax) && fit.dMax > 0) {
-      dMax = fit.dMax;
-    }
-  }
-
-  return {
-    forceEdge,
-    dMax,
-    reason: 'plateau detected by successive-travel tolerance',
-    samples,
-    saturation: saturationPair,
-    fit,
+    fixedDriftDeg,
   };
 }
 
 /**
- * Fit logistic curve in log-force space:
- *   R(F) = dMax / (1 + exp(-k*(ln(F) - x0)))
- * using grid-search over (k, x0) and closed-form dMax for each (k, x0).
- *
- * Returns {ok, dMax, k, x0, rmse, nUsed}.
+ * Find the comfortable edge from incremental compliance (travel gained per N).
+ * Stop after two gains below half the best observed compliance, and use the
+ * force BEFORE that decline. This keeps collection ahead of the force/travel
+ * hockey stick instead of chasing an asymptote or fitting an unobserved dMax.
+ * These are matched-duration excursions, not equilibrium workspace estimates.
  */
-function fitLogisticInLogForce(samples, opts = {}) {
+export async function findEdgeForce(sendFn, options = {}) {
   const {
+    forceStart,
+    capForceLimit = AUTO_TUNE_MAX_FORCE_N,
+    trialFn,
+    bracketFactor = AUTO_TUNE_BRACKET_FACTOR,
+    maxBracketSteps = AUTO_TUNE_MAX_BRACKET_STEPS,
+    complianceRatio = AUTO_TUNE_COMPLIANCE_RATIO,
     minUsefulTravelDeg = 0.5,
-    requireMoved = false,
-    fitGridK = [0.5, 1, 2, 4, 8],
-    fitGridX0Steps = 25,
-    fitRefineIters = 2,
-    fitRefineFactor = 0.5,
-  } = opts;
-
-  const pts = samples
-    .filter((s) => Number.isFinite(s.force) && s.force > 0 && Number.isFinite(s.travelDeg))
-    .filter((s) => s.travelDeg >= minUsefulTravelDeg)
-    .filter((s) => (!requireMoved || s.moved));
-
-  if (pts.length < 3) {
-    return { ok: false, reason: 'not enough points for fit', nUsed: pts.length };
+  } = options;
+  if (typeof trialFn !== 'function') throw new Error('findEdgeForce requires a trialFn');
+  if (!(Number.isFinite(forceStart) && forceStart > 0)) {
+    return { forceEdge: null, dMax: null, reason: 'invalid forceStart', samples: [] };
+  }
+  if (!(Number.isFinite(capForceLimit) && capForceLimit > 0 && bracketFactor > 1
+      && complianceRatio > 0 && complianceRatio < 1)) {
+    throw new Error('Invalid edge-force search limits');
   }
 
-  // Build arrays in log-force.
-  const xs = pts.map((p) => Math.log(p.force));
-  const ys = pts.map((p) => p.travelDeg);
+  const samples = [];
+  let previous = null;
+  let peakCompliance = 0;
+  let declineStart = null;
+  let declineCount = 0;
+  let force = Math.min(forceStart, capForceLimit);
+  const finish = reason => ({
+    forceEdge: declineStart?.force ?? null,
+    // Retained metadata name: maximum OBSERVED excursion, never extrapolated.
+    dMax: samples.length ? Math.max(...samples.map(s => s.travelDeg || 0)) : null,
+    reason, samples,
+    knee: declineStart ? { force: declineStart.force, travelDeg: declineStart.travelDeg,
+      peakComplianceDegPerN: peakCompliance, complianceRatio } : null,
+  });
 
-  // Define search range for x0 based on observed log-forces.
-  let xMin = Math.min(...xs);
-  let xMax = Math.max(...xs);
-
-  let best = null;
-
-  const evalCandidate = (k, x0) => {
-    // For fixed k,x0, the model is y ≈ dMax * s_i, where s_i = logistic(...)
-    // Best dMax in least squares: dMax = (Σ s_i*y_i)/(Σ s_i^2)
-    const s = xs.map((x) => 1 / (1 + Math.exp(-k * (x - x0))));
-    let num = 0;
-    let den = 0;
-    for (let i = 0; i < s.length; i += 1) {
-      num += s[i] * ys[i];
-      den += s[i] * s[i];
+  for (let i = 0; i < maxBracketSteps; i += 1) {
+    const res = await trialFn(force, `edge-ramp ${i + 1}/${maxBracketSteps}`, {
+      // Equal windows keep early settling and recorder throughput from changing
+      // the response curve. Continue observing even after a detected stall.
+      waitForStall: false,
+      sampleWindowMs: AUTO_TUNE_SAMPLE_WINDOW_MS * 3,
+    });
+    const sample = { force, travelDeg: res?.travelDeg, moved: !!res?.moved,
+      stalled: !!res?.stalled, fixedDriftDeg: res?.fixedDriftDeg ?? 0 };
+    samples.push(sample);
+    if (!Number.isFinite(sample.travelDeg) || !Number.isFinite(sample.fixedDriftDeg)
+        || Math.abs(sample.fixedDriftDeg) > 1.5) {
+      // A slipping held motor invalidates the geometry. Do not ramp past it.
+      declineStart = previous;
+      return finish('invalid travel or fixed-anchor slip; stopped at previous valid force');
     }
-    if (den <= 1e-12) return null;
-    const dMax = num / den;
-
-    // Penalize non-physical fits.
-    if (!Number.isFinite(dMax) || dMax <= 0) return null;
-
-    let err2 = 0;
-    for (let i = 0; i < s.length; i += 1) {
-      const yHat = dMax * s[i];
-      const e = ys[i] - yHat;
-      err2 += e * e;
-    }
-    const rmse = Math.sqrt(err2 / Math.max(1, s.length));
-    return { dMax, k, x0, rmse, nUsed: s.length };
-  };
-
-  const gridSearch = (x0Lo, x0Hi) => {
-    for (const k of fitGridK) {
-      for (let j = 0; j <= fitGridX0Steps; j += 1) {
-        const t = j / fitGridX0Steps;
-        const x0 = x0Lo + t * (x0Hi - x0Lo);
-        const cand = evalCandidate(k, x0);
-        if (!cand) continue;
-        if (!best || cand.rmse < best.rmse) {
-          best = cand;
+    if (sample.moved && sample.travelDeg >= minUsefulTravelDeg) {
+      if (previous) {
+        const gain = sample.travelDeg - previous.travelDeg;
+        const compliance = gain / (force - previous.force);
+        sample.complianceDegPerN = compliance;
+        if (gain <= minUsefulTravelDeg) {
+          declineStart ??= previous;
+          return finish('travel stopped increasing; stopped before plateau or reversal');
+        }
+        peakCompliance = Math.max(peakCompliance, compliance);
+        if (compliance < complianceRatio * peakCompliance) {
+          declineStart ??= previous;
+          declineCount += 1;
+          if (declineCount >= 2) return finish('incremental compliance declined below comfortable limit');
+        } else {
+          declineStart = null;
+          declineCount = 0;
         }
       }
+      previous = sample;
+    } else {
+      // An unusable point cannot confirm a decline across a gap.
+      previous = null;
+      declineStart = null;
+      declineCount = 0;
     }
-  };
-
-  // Coarse search.
-  gridSearch(xMin, xMax);
-
-  // Refine around best x0.
-  for (let r = 0; r < fitRefineIters; r += 1) {
-    if (!best) break;
-    const span = (xMax - xMin) * Math.pow(fitRefineFactor, r + 1);
-    const lo = best.x0 - span;
-    const hi = best.x0 + span;
-    gridSearch(lo, hi);
+    if (force >= capForceLimit) break;
+    force = Math.min(force * bracketFactor, capForceLimit);
   }
-
-  if (!best) {
-    return { ok: false, reason: 'fit failed', nUsed: pts.length };
-  }
-
-  // Optional sanity: dMax should be >= max observed (usually).
-  const yMax = Math.max(...ys);
-  const dMax = Math.max(best.dMax, yMax);
-
-  return { ok: true, ...best, dMax };
+  // A cap alone does not locate an edge. Let tuneForce use a bounded default.
+  declineStart = null;
+  return finish('no comfortable knee measured before force cap or trial limit');
 }
 
 export async function tuneForce(sendFn, plan, options = {}) {
@@ -865,11 +676,17 @@ export async function tuneForce(sendFn, plan, options = {}) {
   const forbiddenForceAnchors = options.forbiddenForceAnchors ?? [];
   const fixedAnchors = plan?.config?.fixedAnchors ?? [];
 
+  const fallback = {
+    forceLow: Number.isFinite(options.forceLow) ? options.forceLow : DEFAULT_FORCE_LOW_N,
+    forceMid: Number.isFinite(options.forceMid) ? options.forceMid : DEFAULT_FORCE_MID_N,
+    forceMax: Number.isFinite(options.forceMax) ? options.forceMax : DEFAULT_FORCE_MAX_N,
+  };
+
   if (!Array.isArray(motorIds) || motorIds.length === 0) {
     console.log('; auto-tune force skipped (no motor IDs available)');
     return {
       ...fallback,
-      tuningMeta: { tuning_failed: true, method: 'force-thresholds' },
+      tuningMeta: { tuning_failed: true, method: 'incremental-compliance' },
     };
   }
 
@@ -880,7 +697,7 @@ export async function tuneForce(sendFn, plan, options = {}) {
     console.log('; auto-tune force skipped (missing active anchor)');
     return {
       ...fallback,
-      tuningMeta: { tuning_failed: true, method: 'force-thresholds' },
+      tuningMeta: { tuning_failed: true, method: 'incremental-compliance' },
     };
   }
 
@@ -889,7 +706,7 @@ export async function tuneForce(sendFn, plan, options = {}) {
     console.log('; auto-tune force skipped (active anchor is forbidden)');
     return {
       ...fallback,
-      tuningMeta: { tuning_failed: true, method: 'force-thresholds' },
+      tuningMeta: { tuning_failed: true, method: 'incremental-compliance' },
     };
   }
 
@@ -906,7 +723,7 @@ export async function tuneForce(sendFn, plan, options = {}) {
     console.log('; auto-tune force skipped (no fixed anchor available)');
     return {
       ...fallback,
-      tuningMeta: { tuning_failed: true, method: 'force-thresholds' },
+      tuningMeta: { tuning_failed: true, method: 'incremental-compliance' },
     };
   }
 
@@ -915,15 +732,10 @@ export async function tuneForce(sendFn, plan, options = {}) {
     console.log('; auto-tune force skipped (needs at least one non-fixed anchor)');
     return {
       ...fallback,
-      tuningMeta: { tuning_failed: true, method: 'force-thresholds' },
+      tuningMeta: { tuning_failed: true, method: 'incremental-compliance' },
     };
   }
 
-  const fallback = {
-    forceLow: Number.isFinite(options.forceLow) ? options.forceLow : DEFAULT_FORCE_LOW_N,
-    forceMid: Number.isFinite(options.forceMid) ? options.forceMid : DEFAULT_FORCE_MID_N,
-    forceMax: Number.isFinite(options.forceMax) ? options.forceMax : DEFAULT_FORCE_MAX_N,
-  };
   // End validate and apply options
 
   await applyForceModeState(sendFn, {
@@ -997,6 +809,7 @@ export async function tuneForce(sendFn, plan, options = {}) {
       waitForStall: options.waitForStall ?? true,
       stallTimeoutMs: options.stallTimeoutMs,
       previousTrialMoved: anyTrialMoved,
+      ...trialOptions,
     });
     if (result?.moved) {
       anyTrialMoved = true;
@@ -1023,7 +836,7 @@ export async function tuneForce(sendFn, plan, options = {}) {
       ...fallback,
       tuningMeta: {
         tuning_failed: true,
-        method: 'force-thresholds',
+        method: 'incremental-compliance',
         noise_sigma_deg: noiseStats.sigmaByMotorDeg,
       },
     };
@@ -1045,7 +858,6 @@ export async function tuneForce(sendFn, plan, options = {}) {
     trialFn: runTrial,
     bracketFactor: AUTO_TUNE_BRACKET_FACTOR,
     maxBracketSteps: AUTO_TUNE_MAX_BRACKET_STEPS,
-    saturationRelTol: AUTO_TUNE_RELATIVE_TOLERANCE,
     minUsefulTravelDeg: thresholds.thetaActThr,
   });
 
@@ -1054,17 +866,19 @@ export async function tuneForce(sendFn, plan, options = {}) {
 
   if (!Number.isFinite(forceEdge) || !Number.isFinite(dMax) || dMax <= 0) {
     const reason = edgeResult?.reason ?? 'unknown';
-    console.log(`; auto-tune force failed to measure edge force (${reason}); using capped max`);
+    const safeMax = Math.max(forceStart, Math.min(DEFAULT_FORCE_MAX_N, capForceUsed));
+    console.log(`; auto-tune force failed to measure edge force (${reason}); using bounded default ${safeMax}N`);
     return {
       forceLow: idleForce,
       forceMid: forceStart,
-      forceMax: capForceUsed,
+      forceMax: safeMax,
       tuningMeta: {
-        method: 'force-thresholds',
+        method: 'incremental-compliance',
         tuning_failed: true,
         force_start: forceStart,
         force_cap: capForceUsed,
         edge_reason: reason,
+        edge_samples: edgeResult?.samples ?? [],
         noise_sigma_deg: noiseStats.sigmaByMotorDeg,
       },
     };
@@ -1080,7 +894,7 @@ export async function tuneForce(sendFn, plan, options = {}) {
     forceMid: forceStart,
     forceMax: forceEdge,
     tuningMeta: {
-      method: 'force-thresholds',
+      method: 'incremental-compliance',
       active_anchor: driveAnchor,
       fixed_anchor: fixedAnchor,
       rest_anchors: restAnchors,
@@ -1094,8 +908,7 @@ export async function tuneForce(sendFn, plan, options = {}) {
       d_max_deg: dMax,
       edge_at_cap: Math.abs(forceEdge - capForceUsed) <= 1e-9,
       edge_reason: edgeResult?.reason,
-      edge_saturation: edgeResult?.saturation ?? null,
-      edge_fit: edgeResult?.fit ?? null,
+      edge_knee: edgeResult?.knee ?? null,
       edge_samples: edgeResult?.samples ?? [],
       noise_samples: noiseStats.samples,
       noise_duration_ms: noiseStats.durationMs,
@@ -1143,6 +956,6 @@ export const FORCE_TUNING_CONSTANTS = {
   AUTO_TUNE_MAX_BISECT_STEPS,
   AUTO_TUNE_RELATIVE_TOLERANCE,
   AUTO_TUNE_ABSOLUTE_TOLERANCE,
-  AUTO_TUNE_EDGE_RATIO,
+  AUTO_TUNE_COMPLIANCE_RATIO,
   AUTO_TUNE_IDLE_FORCE_RATIO,
 };
