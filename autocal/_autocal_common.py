@@ -3306,6 +3306,14 @@ def _print_ellipse_plan(
                     f";   {float(score):.6g} fixed={list(cfg.fixed_anchors)} targets={list(cfg.fixed_deltas_mm)} "
                     f"pair=[{cfg.drive_anchor},{cfg.sensor_anchor}]"
                 )
+    elif plan.get("collection_fallback") and plan.get("best_cfg") is not None:
+        fallback_cfg = plan["best_cfg"]
+        print(
+            f"; next_sweep score=unranked fixed={list(fallback_cfg.fixed_anchors)} "
+            f"targets={list(fallback_cfg.fixed_deltas_mm)} "
+            f"pair=[{fallback_cfg.drive_anchor},{fallback_cfg.sensor_anchor}]"
+        )
+        print("; candidate ranking failed; using a machine-valid sweep from the current data.")
     else:
         print("; No valid candidate sweeps found (check delta range and anchor estimate).")
 

@@ -107,6 +107,7 @@ def plan_ellipse_sweep(
         machine_type=machine_type,
         max_total_fixed_delta_mm=max_total_fixed_delta_mm,
     )
+    raw_candidates = list(candidates)
     candidates = _filter_candidates_by_spacing(
         candidates,
         sweeps_obs,
@@ -122,6 +123,19 @@ def plan_ellipse_sweep(
             for cfg in candidates
             if cfg.normalized_key(tol_mm=float(existing_tol_mm)) not in existing_keys
         ]
+
+    if not candidates and raw_candidates:
+        # Keep collecting when novelty spacing or existing-key filtering has
+        # exhausted the normal set. Preserve the machine's legal configurations.
+        candidates = [
+            cfg for cfg in raw_candidates
+            if cfg.normalized_key(tol_mm=float(existing_tol_mm)) not in {
+                observed.normalized_key(tol_mm=float(existing_tol_mm))
+                for observed in sweeps_obs
+            }
+        ]
+        if not candidates:
+            candidates = raw_candidates
 
     if spool_params is not None:
         candidates_model = sweep_configs_with_modeled_lengths(candidates, spool_params)
@@ -159,7 +173,27 @@ def plan_ellipse_sweep(
             top_k=int(top_k),
         )
 
+    collection_fallback = False
     best_cfg = ranked[0][1] if ranked else None
+    if best_cfg is None and candidates:
+        # The fit can be too degenerate to score any candidate. The generated
+        # candidates still satisfy machine constraints, so keep collection
+        # moving with a moderate novel candidate from the current dataset.
+        target_excursion = (
+            0.5 * max_travel_mm
+            if max_travel_mm is not None and np.isfinite(max_travel_mm) and max_travel_mm > 0.0
+            else None
+        )
+        if target_excursion is None:
+            best_cfg = candidates[0]
+        else:
+            best_cfg = min(
+                candidates,
+                key=lambda cfg: abs(
+                    sum(abs(float(delta)) for delta in cfg.fixed_deltas_mm) - target_excursion
+                ),
+            )
+        collection_fallback = True
     cfg_path = write_cfg or dataset_path.with_suffix(".active_sweep_cfg.txt")
     if best_cfg is not None:
         _write_sweep_config_file(cfg_path, best_cfg)
@@ -189,6 +223,7 @@ def plan_ellipse_sweep(
         )
 
     return {**fit, "ranked": ranked, "best_cfg": best_cfg, "cfg_path": cfg_path,
+            "collection_fallback": collection_fallback,
             "collect_command": cmd, "force_tuning": force_tuning,
             "force_args_applied": force_args_applied}
 
