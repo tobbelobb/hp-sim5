@@ -80,6 +80,10 @@ class HeadlessSimulation:
                                        stdout=log, stderr=log,
                                        start_new_session=not bool(os.environ.get('HP_SIM5_AUTOCAL_JOB')))
         self.processes.append(process)
+        if os.environ.get('HP_SIM5_TEST_PROCESS_REGISTRY'):
+            sys.path.insert(0, str(REPO_ROOT / 'src/python'))
+            from hp_sim5_research.services import register_test_process
+            register_test_process(process)
         self.track_process(name, process)
         return process
 

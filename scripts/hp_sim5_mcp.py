@@ -12,7 +12,8 @@ sys.path.insert(0, str(ROOT / 'src/python'))
 from mcp.server import MCPServer
 from mcp_types import ToolAnnotations
 from hp_sim5_research.experiments import DEFAULT_SCENE, MAX_STEPS, compare_runs, read_run, run_experiment as run
-from hp_sim5_research.services import supervised_request
+from hp_sim5_research.services import supervised_request, supervised_preflight
+from hp_sim5_research.test_jobs import MAX_TIMEOUT_S, SUITES
 
 mcp = MCPServer('hp-sim5', instructions=(
     'Run bounded native Hangprinter experiments, read numeric telemetry, and compare trials. '
@@ -61,6 +62,16 @@ def capabilities() -> dict[str, Any]:
                              'limits': {'max_steps': 100, 'sweep_points': 100, 'wall_timeout_s': 14400,
                                         'max_physics_steps': 10000000, 'threads': 8},
                              'artifact_dir': 'New directory within launcher session artifacts; defaults to autocal/job_id'},
+            'preflight': {'tool': 'research_preflight', 'timeout_s': 15, 'moves_robot': False,
+                          'recorder': 'Isolated tool-check recording; handshake, finalization and readable RRD',
+                          'command_network': 'Unknown until scripts/research_socket_probe.py runs in agent command context',
+                          'doctor': 'Separate, explicit expensive physical diagnostic'},
+            'integration_tests': {'operations': ['start_test', 'test_status', 'cancel_test'],
+                                  'suites': SUITES, 'max_timeout_s': MAX_TIMEOUT_S,
+                                  'slow_tests': 'Excluded; movement/full-auto smoke tests remain explicit',
+                                  'services': 'Supervisor-owned sockets, fixed argv, repo cwd and .venv/bin/python',
+                                  'outcomes': ['passed', 'failed', 'blocked'],
+                                  'artifacts': 'Isolated tests/job_id directory; stdout/stderr, JUnit, pytest temp and manifest'},
             'limitations': ['Klipper streamed motion is not supported by native collection',
                             'Final snapshots are observations, not resumable physics checkpoints',
                             'Timings include telemetry and optional recording overhead']}
@@ -70,6 +81,43 @@ def capabilities() -> dict[str, Any]:
 def runtime_status() -> dict[str, Any]:
     """Inspect persistent native world, clock, command queue and supervised service health."""
     return supervised_request('status')
+
+
+@mcp.tool(annotations=MUTATION)
+def research_preflight(expected_configuration: dict | None = None) -> dict[str, Any]:
+    """Run a bounded non-moving tool check before long collection, independently of expensive doctor.
+
+    Checks supervised networking, matched world settings, firmware/collector, isolated recorder
+    acknowledgment/finalization and available full-auto/configuration/test tools. Optional expected_configuration
+    is a complete configure_session request. Never resets or advances the attached world.
+    Command networking is reported unknown: separately run .venv/bin/python scripts/research_socket_probe.py
+    in the agent command context. A successful supervisor check does not prove command socket access.
+    """
+    return supervised_preflight(expected_configuration)
+
+
+@mcp.tool(annotations=MUTATION)
+def start_test(suite: Literal['headless-autocal', 'research-services'], timeout_s: int = 300) -> dict[str, Any]:
+    """Start a fixed integration suite on the supervisor; return a job ID immediately.
+
+    Uses repository .venv/bin/python, isolated artifacts, and excludes slow physical/full-auto smoke tests.
+    timeout_s is bounded to 1–900. No shell or additional argv is accepted. Poll test_status;
+    cancel_test retires the entire job process group and preserves failed/partial evidence.
+    Existing collection/autocal jobs and the attached world remain live.
+    """
+    return supervised_request('start_test', suite=suite, timeout_s=timeout_s)
+
+
+@mcp.tool(annotations=READ_ONLY)
+def test_status(job_id: str) -> dict[str, Any]:
+    """Read running/cancelling or passed/failed/blocked/cancelled test state, exit code, logs and artifacts."""
+    return supervised_request('test_status', job_id=job_id)
+
+
+@mcp.tool(annotations=MUTATION)
+def cancel_test(job_id: str) -> dict[str, Any]:
+    """Stop a supervised integration suite and descendants; preserve isolated logs and artifacts."""
+    return supervised_request('cancel_test', job_id=job_id)
 
 
 @mcp.tool(annotations=MUTATION)

@@ -16,7 +16,7 @@ import uuid
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src/python'))
 sys.path.insert(0, str(ROOT))
-from hp_sim5_research.services import RuntimeService, free_port, stop_process
+from hp_sim5_research.services import RuntimeService, free_port, stop_process, register_test_process
 from hp_sim5_research.archive import initial_abstract, session_name, write_index
 
 
@@ -158,6 +158,7 @@ def start_viewer(mode, session):
         # Only Codex may own terminal input and receive terminal interrupt signals.
         viewer = subprocess.Popen(command, cwd=ROOT, env=environment, stdin=subprocess.DEVNULL,
                                   stdout=log, stderr=log, start_new_session=True)
+    register_test_process(viewer)
     deadline = time.monotonic() + 30
     while time.monotonic() < deadline and viewer.poll() is None:
         try:
@@ -179,6 +180,7 @@ def main():
     task.add_argument('--prompt', help='Research or robot design task')
     task.add_argument('--prompt-file', type=Path, help='UTF-8 task file')
     parser.add_argument('--doctor', action='store_true', help='Explicitly run diagnostics, including real RRF/native collection and autocal loading')
+    parser.add_argument('--preflight', action='store_true', help='Run bounded non-moving supervised checks and exit; command networking remains untested')
     parser.add_argument('--dry-run', action='store_true', help='Show the Codex command and task without starting processes')
     parser.add_argument('--viewer', choices=['headless', 'window', 'none'], default='headless')
     parser.add_argument('--physics-backend', choices=['headless-js', 'native-python', 'native-warp', 'native-warp-cuda'], default='headless-js',
@@ -203,11 +205,13 @@ def main():
     returncode = 1
     try:
         if args.doctor:
+            if args.preflight:
+                parser.error('--doctor and --preflight are separate diagnostics; select one')
             result = doctor()
             print(json.dumps(result, indent=2))
             return 0 if result['ok'] else 1
         prompt = args.prompt_file.read_text() if args.prompt_file else args.prompt
-        if args.batch and (not prompt or not prompt.strip()):
+        if args.batch and not args.preflight and (not prompt or not prompt.strip()):
             parser.error('Batch mode requires --prompt or --prompt-file')
         if args.serve and (prompt or codex_args):
             parser.error('--serve accepts neither a task nor Codex arguments')
@@ -248,11 +252,16 @@ def main():
         (session / 'abstract.md').write_text(initial_abstract(topic))
         write_index(catalog_root)
         endpoint = None
-        if args.viewer != 'none':
+        if args.viewer != 'none' and not args.preflight:
             viewer, endpoint = start_viewer(args.viewer, session)
         runtime = RuntimeService(ROOT, session / 'native', endpoint,
                                  backend=args.physics_backend, record=not args.no_record, machine=args.machine).start()
         runtime_status = runtime.call('status')
+        if args.preflight:
+            result = runtime.call('preflight')
+            print(json.dumps(result, indent=2))
+            returncode = 0 if result['outcome'] == 'passed' else 1
+            return returncode
         descriptor = session / 'connection.json'
         descriptor.touch(mode=0o600)
         descriptor.write_text(json.dumps({'repo': str(ROOT), 'session_id': runtime_status['session_id'],

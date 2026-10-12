@@ -5,6 +5,7 @@ import subprocess
 import numpy as np
 
 from cable_joints_3d.quaternion import Quaternion
+from .services import register_test_process
 
 
 class JSPhysics:
@@ -16,6 +17,7 @@ class JSPhysics:
                                          str(directory / 'scene.usda'), str(layering).lower()], cwd=root,
                                         stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                         stderr=self.log, text=True, bufsize=1)
+        register_test_process(self.process)
         try:
             state = self.request()
             from cable_joints_3d.ecs import SceneEntityInfoComponent

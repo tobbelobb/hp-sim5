@@ -11,6 +11,7 @@ import uuid
 
 from .experiments import write_json
 from .configuration import number, validate_spools, firmware_path
+from .services import register_test_process
 
 
 def settings(args):
@@ -252,6 +253,8 @@ class AutocalJobs:
         # Do not inherit supervisor credentials, external recorder/config targets,
         # API keys or caller-controlled autocal overrides into a fresh job.
         env = {key: os.environ[key] for key in ('PATH', 'HOME', 'LANG', 'LD_LIBRARY_PATH') if key in os.environ}
+        if 'HP_SIM5_TEST_PROCESS_REGISTRY' in os.environ:
+            env['HP_SIM5_TEST_PROCESS_REGISTRY'] = os.environ['HP_SIM5_TEST_PROCESS_REGISTRY']
         env.update(PYTHONUNBUFFERED='1', MPLCONFIGDIR=str(directory / 'matplotlib'),
                    HP_SIM5_AUTOCAL_JOB='1', HP_SIM5_AUTOCAL_MAX_PHYSICS_STEPS=str(budget['max_physics_steps']))
         for key in ('OMP_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'MKL_NUM_THREADS', 'NUMEXPR_NUM_THREADS'):
@@ -262,6 +265,7 @@ class AutocalJobs:
                     process = job['process'] = subprocess.Popen(job['command'], cwd=self.root, env=env,
                         stdin=subprocess.DEVNULL, stdout=stdout, stderr=stderr, start_new_session=True)
                 job['pid'] = process.pid
+                register_test_process(process)
                 wait = asyncio.create_task(asyncio.to_thread(process.wait))
                 try:
                     await asyncio.wait_for(asyncio.shield(wait), budget['wall_timeout_s'])

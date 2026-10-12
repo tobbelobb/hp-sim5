@@ -20,11 +20,13 @@ sys.path.insert(0, str(ROOT / 'src/python'))
 sys.path.insert(0, str(ROOT))
 
 from hp_sim5_research.experiments import encode, write_json
-from hp_sim5_research.services import free_port, request, stop_process, wait_ready
+from hp_sim5_research.services import free_port, request, stop_process, wait_ready, register_test_process
 from hp_sim5_research.session import NativeSession
 from hp_sim5_research.browser import BrowserConnection
 from hp_sim5_research.autocal_jobs import AutocalJobs
 from hp_sim5_research.configuration import world_configuration, prepare_world
+from hp_sim5_research.preflight import preflight
+from hp_sim5_research.test_jobs import TestJobs
 
 
 class Runtime:
@@ -54,6 +56,8 @@ class Runtime:
         self.jobs = {}
         self.active_job = None
         self.autocal = AutocalJobs(ROOT, self.directory)
+        self.tests = TestJobs(ROOT, self.directory)
+        self.preflight_lock = asyncio.Lock()
         self.browser_url = None
         self.python_source_hash = self.hash_sources([ROOT / 'src/python', ROOT / 'scripts'], '*.py')
 
@@ -71,6 +75,7 @@ class Runtime:
             process = subprocess.Popen(command, cwd=ROOT, stdin=subprocess.DEVNULL,
                                        stdout=log, stderr=log, start_new_session=True)
         self.processes[name] = process
+        register_test_process(process)
         return process, log_path
 
     async def start(self, configuration=None):
@@ -158,6 +163,7 @@ class Runtime:
                 'accepted_settings': self.configuration.effective(), 'last_world_attempt': self.last_world_attempt, 'session_directory': str(self.directory),
                 'machine_design': self.machine, 'session_id': self.session_id, 'busy': self.busy,
                 'active_job': self.active_job, 'active_autocal_job': self.autocal.active,
+                'active_test_job': self.tests.active,
                 'reset_required': self.session is None or bool(self.session.error) or
                                   any(process.poll() is not None for name, process in processes.items() if name in ('rrf', 'collector', 'physics-js')), 'browser_url': self.browser_url,
                 'source_changed': {
@@ -373,6 +379,21 @@ class Runtime:
         self.active_job = None
 
     async def dispatch(self, operation, args):
+        if operation == 'preflight':
+            if set(args) - {'expected_configuration'}:
+                raise ValueError('Supply only expected_configuration')
+            if self.preflight_lock.locked() or self.changing_world or self.stop.is_set():
+                raise ValueError('Preflight/restart/shutdown is already in progress; retry after it completes')
+            async with self.preflight_lock:
+                return await preflight(self, ROOT, args.get('expected_configuration'))
+        if operation == 'start_test':
+            if self.stop.is_set():
+                raise RuntimeError('Supervisor is shutting down')
+            return self.tests.start(args)
+        if operation == 'test_status':
+            return self.tests.status(args.get('job_id'))
+        if operation == 'cancel_test':
+            return await self.tests.cancel(args.get('job_id'))
         if operation == 'start_autocal':
             if self.changing_world:
                 raise ValueError('World restart is in progress')
@@ -449,12 +470,15 @@ class Runtime:
             return await self.session.advance(seconds * self.session.speed)
         if operation == 'shutdown':
             self.stop.set()
+            await self.tests.close()
             await self.autocal.close()
             if self.active_job is not None:
                 await self.dispatch('cancel_job', {'job_id': self.active_job})
             return {'stopping': True}
         if operation in ('reset', 'configure') and (self.active_job or self.autocal.active):
             raise ValueError('A job is active; explicitly cancel_collection or cancel_autocal first')
+        if operation in ('reset', 'configure') and self.preflight_lock.locked():
+            raise ValueError('Preflight is in progress; retry after it completes')
         if self.busy:
             raise ValueError('Session has an active operation')
         worker_failed = self.session is not None and self.session.js_physics is not None and self.session.js_physics.process.poll() is not None
@@ -574,6 +598,7 @@ async def main():
         if server is not None:
             server.close()
         await runtime.autocal.close()
+        await runtime.tests.close()
         if runtime.active_job is not None:
             await runtime.dispatch('cancel_job', {'job_id': runtime.active_job})
         pending = [task for job in runtime.jobs.values() for key, task in job.items() if key in ('task', 'cancel_task')] + list(runtime.handlers) + [task for task in (starting, stopping) if task is not None]

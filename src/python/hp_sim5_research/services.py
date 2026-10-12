@@ -20,6 +20,19 @@ def free_port():
         return listener.getsockname()[1]
 
 
+def register_test_process(process):
+    """Record detached test-owned groups so cancellation can also retire services."""
+    registry = os.environ.get('HP_SIM5_TEST_PROCESS_REGISTRY')
+    if registry:
+        try:
+            birth = Path(f'/proc/{process.pid}/stat').read_text().split(') ')[1].split()[19]
+        except FileNotFoundError:
+            return
+        # One append per process; descendants inherit the same private registry.
+        with Path(registry).open('a') as stream:
+            stream.write(json.dumps({'pid': process.pid, 'group': os.getpgid(process.pid), 'birth': birth}) + '\n')
+
+
 def stop_process(process):
     if process is not None and process.poll() is None:
         # Detached services own their process group, including CLI wrapper children.
@@ -92,6 +105,7 @@ class RuntimeService:
                                     'HP_SIM5_VIEWER_URL': self.viewer_endpoint or '',
                                     'MPLCONFIGDIR': str(self.directory / 'matplotlib')},
                 stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
+        register_test_process(self.process)
         try:
             wait_ready(self.process, self.endpoint, 'status', log_path, token=self.token, timeout=45)
         except Exception:
@@ -116,3 +130,20 @@ def supervised_request(operation, **args):
     if not endpoint:
         raise RuntimeError('Start with hp-sim5-research-agent; the launcher supervises native collection services')
     return request(endpoint, operation, args, token=os.environ['HP_SIM5_RUNTIME_TOKEN'])
+
+
+def supervised_preflight(expected_configuration=None):
+    from .preflight import COMMAND_NETWORK_UNKNOWN
+    endpoint = os.environ.get('HP_SIM5_RUNTIME_URL')
+    if not endpoint:
+        error = 'No launcher supervisor is attached'
+    else:
+        try:
+            return request(endpoint, 'preflight', {'expected_configuration': expected_configuration},
+                           token=os.environ.get('HP_SIM5_RUNTIME_TOKEN', ''), timeout=20)
+        except (OSError, RuntimeError, ValueError) as failure:
+            error = str(failure)
+    return {'kind': 'tool_check', 'context': 'mcp_service_client', 'outcome': 'blocked',
+            'checks': {'supervisor': {'outcome': 'blocked', 'error': error,
+                       'next_step': 'Start hp-sim5-research-agent or reattach to its live connection.json; inspect runtime.log'}},
+            'command_network': dict(COMMAND_NETWORK_UNKNOWN)}

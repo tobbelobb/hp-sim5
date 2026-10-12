@@ -122,7 +122,8 @@ async def test_stdio_mcp_discovery_execution_readback_and_error():
         assert {tool.name for tool in tools} == {'capabilities', 'run_experiment', 'read_experiment', 'compare_experiments',
                                                'runtime_status', 'send_gcode', 'capture_native_context', 'reset_session',
                                                'step_physics', 'configure_session', 'start_browser_service', 'start_collection', 'collection_status', 'cancel_collection',
-                                               'browser_status', 'browser_action', 'start_autocal', 'autocal_status', 'cancel_autocal'}
+                                               'browser_status', 'browser_action', 'start_autocal', 'autocal_status', 'cancel_autocal',
+                                               'research_preflight', 'start_test', 'test_status', 'cancel_test'}
         config_tool = next(tool for tool in tools if tool.name == 'configure_session')
         assert config_tool.input_schema['properties']['configuration']['$ref'] == '#/$defs/WorldSettings'
         settings_schema = config_tool.input_schema['$defs']['WorldSettings']
@@ -330,7 +331,11 @@ else:
         assert services[0].closed
     assert services[0].directory.parent == session
     assert 'Status: not yet summarized' in (session / 'abstract.md').read_text()
-    assert session.name in (tmp_path / 'index.md').read_text()
+    catalog_root = ROOT / 'output/research' if session.is_relative_to(ROOT / 'output/research') else tmp_path
+    assert (catalog_root / 'index.md').is_file()
+    # The catalog deliberately skips nested test/session artifacts.
+    if catalog_root == tmp_path:
+        assert session.name in (catalog_root / 'index.md').read_text()
     assert (session / 'report.md').read_text() == 'Full research evidence.\n'
     assert (session / 'final-message.md').read_text() == 'Short final response.\n'
     assert json.loads((session / 'exit.json').read_text()) == {'returncode': 0}

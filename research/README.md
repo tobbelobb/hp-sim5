@@ -238,6 +238,7 @@ the topic guide preserves a short account of the existing findings in the repo.
 ./hp-sim5-research-agent --batch --prompt-file research/prompts/autocal.txt
 ./hp-sim5-research-agent --dry-run --prompt "Optimize the HP4 anchor layout"
 ./hp-sim5-research-agent --doctor
+./hp-sim5-research-agent --preflight
 ```
 
 Batch mode retains `codex exec`, prompt input, JSONL events and the separate
@@ -263,6 +264,10 @@ access. See [collection evidence](native-collection-verification.md).
 | `read_experiment(run_id, start_step, limit)` | A page of numeric samples, up to 100 |
 | `compare_experiments(baseline_id, candidate_id)` | Changed inputs, metric differences and final effector distances |
 | `runtime_status()` | Persistent world, clock, queues, service PIDs/logs and stale source detection |
+| `research_preflight(expected_configuration=None)` | Bounded non-moving service/settings/firmware/collector/recorder check; separate command-network result remains unknown |
+| `start_test(suite, timeout_s=300)` | Immediate job ID for a fixed integration suite on the supervisor |
+| `test_status(job_id)` | Test progress, pass/fail/blocked outcome, exit code, log tails and isolated artifacts |
+| `cancel_test(job_id)` | Retire test runner and descendants, preserving partial evidence |
 | `send_gcode(line)` | One line through real RRF planning into the continuing native world |
 | `step_physics(steps)` | Advance the continuing world by fixed steps |
 | `start_collection(configs, options, settling_timeout_s)` | Start a collection job and return its job ID immediately |
@@ -512,6 +517,67 @@ loopback binding and an HTTP round trip before a long experiment. See the
 Changing the launcher affects new sessions; it does not change a running chat's
 effective policy. This option has not been validated under every client or
 managed policy.
+
+Before long collection call `research_preflight()`, optionally supplying the
+complete `configure_session` request as `expected_configuration`. It checks the
+attached supervisor's service connectivity, accepted machine/settings and source
+freshness, firmware HTTP health, live Hangprinter kinematics/anchors, collector
+bridge and initial firmware identity, and availability of full-auto/configuration/test
+jobs. Live anchors must match the startup configuration within 0.1 mm (object-model
+rounding); cached startup identity alone cannot establish current compatibility.
+A separate recorder process
+receives one empty, step-zero sample labeled `tool-check-preflight-*`, acknowledges
+it, finalizes its isolated RRD and reads it back. The check has a 15-second budget
+(plus process cleanup), never sends movement commands, resets the world or invokes
+doctor, and preserves each trial under `native/preflight/`. Live jobs continue.
+Recorder checks also run for `--no-record` sessions so recorder availability is
+known before choosing a later recorded experiment. No Viewer is required.
+
+`--preflight` starts a supervisor, performs that check and exits without launching
+Codex or a Viewer. Service startup and shutdown are additional to the reported
+preflight duration. Normal launcher startup still runs no diagnostic. A missing
+or disconnected MCP attachment returns an actionable `blocked` result.
+
+The supervisor reports command networking as `unknown`. Measure it from the
+agent's own command context with:
+
+```bash
+.venv/bin/python scripts/research_socket_probe.py
+```
+
+This short probe tests socket creation, ephemeral loopback binding and a local
+HTTP round trip independently. It prints actual `passed`/`blocked` checks, marks
+unreached checks `unknown` and returns exit code 1 when blocked. Supervisor success
+cannot replace this measurement; managed networking policy can still deny commands
+even when the launcher's default is enabled.
+
+Use `start_test(suite="headless-autocal", timeout_s=300)` or
+`start_test(suite="research-services", timeout_s=300)` over MCP for socket-dependent
+integration tests. `capabilities()` lists the exact fixed suite files. The first
+covers headless autocal socket/recorder lifecycle and flight recording; the second
+covers research MCP, native collection, world configuration, autocal jobs and the
+preflight/test-job lifecycle. Both exclude `slow` tests. Their tests may advance
+their own isolated worlds; they do not move the attached world. No arbitrary argv,
+shell command, environment or external artifact path is accepted.
+
+Each supervisor permits one active test job, independently of collection/autocal
+jobs. Timeout is 1–900 seconds; status and cancellation stay available throughout.
+Terminal states are `passed`, `failed`, `blocked` and `cancelled`, with a separate
+`outcome` (`passed`/`failed`/`blocked`), stop reason and pytest exit code. Missing
+executables or pytest usage/no-test exits are blocked, assertions/collection errors
+and timeouts fail, cancellation is a blocked unfinished check. Logs, JUnit XML,
+pytest temporary artifacts and manifests stay under `native/tests/<job_id>/`,
+including failures. Cancellation, timeout, owner exit and supervisor shutdown retire
+the test process group, including descendants that ignore SIGTERM. Test jobs strip
+supervisor credentials and caller-controlled autocal/pytest overrides.
+Detached services are tracked by PID birth identity and private job marker.
+Cleanup also finds surviving members when their detached group leader has been
+reaped, and rechecks ownership before each signal.
+
+See [preflight and test-job verification](preflight-tests-verification.md) for
+measured results and the socket-denied MCP client check. These checks establish
+tool health, not calibration accuracy. Physical full-auto/movement smoke tests
+and the expensive `--doctor` remain separate explicit diagnostics.
 
 Full-autocal MCP jobs require a live launcher supervisor and MCP attachment.
 They do not require agent command networking or broader sandbox permissions.
