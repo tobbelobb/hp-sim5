@@ -1,5 +1,8 @@
 # Robotics agent integration investigation
 
+For implemented workflows, read the [current execution architecture map](architecture.md).
+This investigation records the integration rationale and earlier implementation gaps.
+
 Investigated 2026-10-05. Robium source inspected at
 [`de46ef6`](https://github.com/robium-ai/robium/tree/de46ef6df3286c24ea1e1c7eaec1af56bce8d248).
 OmniSim HEAD was

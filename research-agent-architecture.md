@@ -1,5 +1,9 @@
 # Interactive research agent architecture
 
+For the implemented ownership, configuration and recording contracts, read
+[the current execution architecture map](research/architecture.md). This
+document preserves the October 6 recommendation and its original findings.
+
 Investigated 6 October 2026 against `/home/torbjorn/repos/hp-sim5`, Codex CLI 0.160.0 and Rerun SDK 0.38.1. This is an architecture recommendation based on source inspection, official documentation and locally generated Codex protocol schemas. No implementation changes or new live agent experiments were performed.
 
 **Recommendation.** Make the research agent an ordinary Codex session equipped with hp-sim experiment tools and research instructions. Use the full Codex interface for conversation and steering. Retain hp-sim's existing supervisor, physics, firmware, collector, telemetry and Rerun integration. Add a small interface to the existing browser application when shared browser experimentation is needed. Build a custom chat client only if a distinct product experience becomes a requirement.

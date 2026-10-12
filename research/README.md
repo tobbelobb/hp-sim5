@@ -6,6 +6,10 @@ interrupts, resume and Goal mode belong to Codex. The launcher owns the continui
 physics world, real RRF planner, production collector bridge, optional browser
 service and requested browser recorder for the lifetime of the session.
 
+Start with the [execution architecture map](architecture.md) for ownership,
+configuration flow and recording scope across the five research workflows.
+This README contains the operating instructions and tool arguments.
+
 ## Setup and interactive use
 
 From the repository root:
