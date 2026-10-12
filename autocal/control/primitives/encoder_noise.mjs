@@ -51,18 +51,22 @@ function meanFinite(values) {
     return NaN;
   }
   let sum = 0;
+  let origin = 0;
   let count = 0;
   for (const v of values) {
     if (!Number.isFinite(v)) {
       continue;
     }
-    sum += v;
+    if (count === 0) origin = v;
+    // Sum small deviations, so a large unwrapped angle does not accumulate
+    // rounding error even when every encoder observation is identical.
+    sum += v - origin;
     count += 1;
   }
   if (count === 0) {
     return NaN;
   }
-  return sum / count;
+  return origin + sum / count;
 }
 
 export function applySigmaFloor(sigmas, sigmaFloor) {

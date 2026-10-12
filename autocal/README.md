@@ -15,6 +15,8 @@ During a sweep, a drive move that leaves measurement preload unchanged uses its
 completed encoder quiet check for the next point. The collector keeps fixed-motor
 drift checks and all noise samples, and settles again whenever measurement force
 changes. This removes a repeated wait without reducing the number of points.
+Encoder sampling averages deviations from the first reading, preserving constant
+readings exactly and avoiding accumulation error at large unwrapped angles.
 THe "click of a button" is currently a terminal call to a python script with many flags and options, and the wiggling goes on for 1-2 hours.
 But it does work.
 Even if huge parts of the data turns out to be rubbish, it still works.
