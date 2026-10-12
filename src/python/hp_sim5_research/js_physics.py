@@ -8,12 +8,12 @@ from cable_joints_3d.quaternion import Quaternion
 
 
 class JSPhysics:
-    def __init__(self, root, directory, world):
+    def __init__(self, root, directory, world, *, layering=True):
         self.world = world
         self.physics_wall_s = 0.
         self.log = (directory / 'physics-js.log').open('a')
         self.process = subprocess.Popen(['node', str(root / 'scripts/research_physics.mjs'),
-                                         str(directory / 'scene.usda')], cwd=root,
+                                         str(directory / 'scene.usda'), str(layering).lower()], cwd=root,
                                         stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                         stderr=self.log, text=True, bufsize=1)
         try:

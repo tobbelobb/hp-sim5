@@ -271,11 +271,55 @@ access. See [collection evidence](native-collection-verification.md).
 | `start_autocal(machine, layering, base_radii_mm, buildup_factor, find_radii, find_buildup_factor, optimizer, budgets, collection, artifact_dir)` | Immediate job ID for an isolated world running the production full-auto CLI |
 | `autocal_status(job_id)` | Physical progress, iteration/decision, stop reason, CLI exit status and complete/partial artifacts |
 | `cancel_autocal(job_id)` | Stop the job-owned world, drain recording and retire all CLI children; attached world remains usable |
-| `reset_session()` | Archive state and restart world, firmware and bridge references |
+| `configure_session(configuration)` | Validate settings, archive the old world and create a fresh HP3/HP4 world with matched firmware and encoder origin |
+| `reset_session()` | Archive state and restart world, firmware and bridge references with the accepted configuration |
 | `start_browser_service(record=False)` | Exact shared browser-js URL; optionally owns its flight recorder |
 | `browser_status()` | Connected page identity and immutable user-submitted context |
 | `browser_action(page_id, action, args)` | Controls and numerical observations from that exact existing page |
 | `capture_native_context(message, step, selected_entity, run_id)` | Selected native run/session and time with actual numerical observation |
+
+A desktop or launcher attachment can change its continuing world without restarting
+Codex or writing a simulator adapter. For example, from an HP4 attachment call:
+
+```json
+{"configuration": {"machine": "hp3", "layering": false,
+                   "base_radii_mm": [30], "buildup_factor": 0}}
+```
+
+Pass this object to `configure_session`. Configuration is a complete fresh-world
+request: defaults are HP4, layering enabled, stock 30 mm base radii and stock
+buildup (2/pi). It is not a patch to the current world. One radius applies to all
+four spools; four values select A/B/C/D individually (1–200 mm). Custom radii
+require layering disabled and zero buildup. Layered worlds currently support
+only stock radii/buildup. Optional `scene` must select the matching repository
+`public/usd_scenes/hp3_rigid_body.usda` or HP4 file; optional `firmware_config`
+is relative to `RRF/run/vsd` and must match machine/layering. Custom anchor
+layouts and other scene/backend combinations are rejected explicitly. The
+backend remains the launcher's selected backend.
+
+Layering affects the bake, physical cable half-width and all three runtime
+layering flags. The selected firmware is frozen in each generation and booted
+from a short private VSD (RRF limits host filename length). `runtime_status`
+and world/collection manifests report requested/effective settings, authored,
+design and baked scene hashes, firmware configuration/replies and generation
+identity. HP3 and HP4 share the collector's four-anchor Hangprinter profile.
+
+An ordinary `reset_session()` retains accepted settings and reloads scene, JS
+and firmware sources. Python edits require a launcher restart, as status reports.
+Cancel an active collection or full-autocal job explicitly before reset or
+configuration. Validation and backend-preparation failures keep the live world
+and its evidence intact; failed attempts have separate manifests. If firmware
+startup fails after retirement, status remains available and reports
+`reset_required`; reset retries the last accepted configuration. Old recordings,
+events, scenes and collection results remain in their generation directory. The
+assigned session path, desktop attachment and conversation remain stable.
+
+The API uses the attached MCP server's supervised service connection. It also
+works when command sandbox networking is disabled; launcher networking defaults
+remain enabled. Isolated `start_autocal` settings still select its own CLI world;
+its radii/buildup arguments are fitting seeds, while `configure_session` radii
+specify physical spool geometry. Shared validation checks their common bounds
+and machine/layering constraints.
 
 Runs accept 1–10,000 steps. Commands are a JSON array with at most one record per
 step. Omitted records keep the previous targets for the remaining steps. `Move`

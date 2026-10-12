@@ -121,8 +121,13 @@ async def test_stdio_mcp_discovery_execution_readback_and_error():
         tools = (await client.list_tools()).tools
         assert {tool.name for tool in tools} == {'capabilities', 'run_experiment', 'read_experiment', 'compare_experiments',
                                                'runtime_status', 'send_gcode', 'capture_native_context', 'reset_session',
-                                               'step_physics', 'start_browser_service', 'start_collection', 'collection_status', 'cancel_collection',
+                                               'step_physics', 'configure_session', 'start_browser_service', 'start_collection', 'collection_status', 'cancel_collection',
                                                'browser_status', 'browser_action', 'start_autocal', 'autocal_status', 'cancel_autocal'}
+        config_tool = next(tool for tool in tools if tool.name == 'configure_session')
+        assert config_tool.input_schema['properties']['configuration']['$ref'] == '#/$defs/WorldSettings'
+        settings_schema = config_tool.input_schema['$defs']['WorldSettings']
+        assert settings_schema['additionalProperties'] is False
+        assert settings_schema['properties']['machine']['enum'] == ['hp3', 'hp4']
         result = await client.call_tool('capabilities', {})
         assert not result.is_error
         assert SCENE in result.structured_content['scenes']

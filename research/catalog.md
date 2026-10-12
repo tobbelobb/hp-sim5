@@ -4,6 +4,21 @@ These summaries describe archived evidence, not new experiments or a statement a
 
 Four hash-named sessions contain substantive autocal work: three have final reports and one has an unfinished notebook. Missing research.md does not imply that no research happened.
 
+## Configurable continuing HP3/HP4 worlds through MCP
+
+Status: complete, verified 2026-10-12. Topics: MCP, HP3, HP4, configuration,
+layering, reset, firmware, encoder origin, source reload.
+
+Fresh MCP configuration now validates and freezes stock HP3/HP4 settings, bakes
+layering-off geometry before construction and restarts firmware/collector
+references coherently. A real six-point HP3 collection with 30 mm radii and zero
+buildup showed zero baked cable half-width and about 183° encoder travel on each
+moving axis. Lifecycle and production-construction checks passed. An initial
+zero-step failure is preserved; no calibration accuracy or hardware result was
+measured. Custom anchor layouts and arbitrary layered designs remain unsupported.
+
+[Verification, API limits and full evidence](configurable-worlds.md).
+
 ## Default-force HP3 settling and no-layering geometry correction
 
 Status: complete, verified 2026-10-10. Topics: autocalibration, HP3, settling, no layering, scene baking, MCP, reset settings.

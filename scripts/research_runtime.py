@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import time
+import tempfile
 import uuid
 from urllib.parse import urlparse
 from urllib.request import urlopen
@@ -23,6 +24,7 @@ from hp_sim5_research.services import free_port, request, stop_process, wait_rea
 from hp_sim5_research.session import NativeSession
 from hp_sim5_research.browser import BrowserConnection
 from hp_sim5_research.autocal_jobs import AutocalJobs
+from hp_sim5_research.configuration import world_configuration, prepare_world
 
 
 class Runtime:
@@ -31,8 +33,20 @@ class Runtime:
         self.token = os.environ['HP_SIM5_RUNTIME_TOKEN']
         self.processes = {}
         self.session = self.socket_task = None
+        self.configuration = world_configuration(ROOT, json.loads(os.environ.get('HP_SIM5_WORLD_CONFIGURATION',
+            json.dumps({'machine': os.environ.get('HP_SIM5_MACHINE', 'hp4')}))),
+            backend=os.environ.get('HP_SIM5_PHYSICS_BACKEND', 'headless-js'))
+        self.world_metadata = {}
+        self.runtime_error = None
+        self.last_world_attempt = None
+        self.generation = 0
+        self.session_id = None
+        self.session_dir = None
+        self.vsd_temp = None
+        self.machine = self.configuration.machine
         self.stop = asyncio.Event()
         self.busy = False
+        self.changing_world = False
         self.handlers = set()
         self.browser_lock = asyncio.Lock()
         self.browser = None
@@ -59,54 +73,111 @@ class Runtime:
         self.processes[name] = process
         return process, log_path
 
-    async def start(self):
-        self.session_id = uuid.uuid4().hex
-        self.session_dir = self.directory / self.session_id
-        self.machine = os.environ.get('HP_SIM5_MACHINE', 'hp4')
-        if self.machine not in ('hp3', 'hp4'):
-            raise ValueError('Machine must be hp3 or hp4')
-        config = f'sys/config_{self.machine}.g'
-        self.session = NativeSession(ROOT, self.session_dir,
-                                     scene=f'public/usd_scenes/{self.machine}_rigid_body.usda',
-                                     backend=os.environ.get('HP_SIM5_PHYSICS_BACKEND', 'headless-js'),
-                                     record=os.environ.get('HP_SIM5_RECORD', '1') != '0')
-        self.physics_source_hash = self.hash_sources([ROOT / 'src/js', ROOT / 'hp-sim-3d'], '*.js')
-        self.bridge_source_hash = self.hash_sources([ROOT / 'integrations/rrf', ROOT / 'integrations/shared',
-                                                    ROOT / 'autocal/control', ROOT / 'scripts'], '*.*js')
-        self.rrf_hash = hashlib.sha256((ROOT / 'RRF/build/rrf_simulator').read_bytes()).hexdigest()
-        self.config_hash = hashlib.sha256((ROOT / 'RRF/run/vsd' / config).read_bytes()).hexdigest()
-        shutil.copyfile(ROOT / 'RRF/run/vsd' / config, self.session_dir / 'firmware-config.g')
-        rrf_port, ws_port, collector_port = [free_port() for _ in range(3)]
-        self.rrf_url = f'http://127.0.0.1:{rrf_port}'
-        self.collector_url = f'http://127.0.0.1:{collector_port}'
-        self.spawn('rrf', [str(ROOT / 'RRF/build/rrf_simulator'), '--vsd', str(ROOT / 'RRF/run/vsd'),
-                           '-c', config, '--server', '-p', str(rrf_port)])
-        process, log = self.spawn('collector', ['node', 'scripts/research_collector.mjs', self.rrf_url,
-                                               str(ws_port), str(collector_port), self.endpoint])
-        await asyncio.to_thread(wait_ready, process, self.collector_url, 'status', log, token=self.token, timeout=40)
-        self.socket_task = asyncio.create_task(self.session.run_socket(f'ws://127.0.0.1:{ws_port}'))
-        await asyncio.wait_for(self.session.connected.wait(), timeout=5)
-        self.session.event('session_started', session_id=self.session_id, rrf_url=self.rrf_url)
+    async def start(self, configuration=None):
+        configuration = configuration or self.configuration
+        world_id = uuid.uuid4().hex
+        directory = self.directory / world_id
+        directory.mkdir(parents=True)
+        metadata = {'schema_version': 2, 'world_id': world_id, 'session_id': world_id,
+                    'generation': self.generation + 1, 'previous_world_id': self.session_id,
+                    'requested_settings': json.loads(configuration.requested_json),
+                    'effective_settings': configuration.effective(), 'status': 'preparing'}
+        candidate = None
+        retired = False
+        try:
+            metadata.update(prepare_world(ROOT, directory, configuration))
+            # Validate physics/backend availability before retiring a usable world.
+            rrf_hash = hashlib.sha256((ROOT / 'RRF/build/rrf_simulator').read_bytes()).hexdigest()
+            candidate = NativeSession(ROOT, directory, backend=configuration.backend,
+                record=os.environ.get('HP_SIM5_RECORD', '1') != '0',
+                frozen_scene=(directory / 'scene.usda').read_text(), layering=configuration.layering)
+            candidate_state = candidate.status()
+            metadata['geometry'] = {key: candidate_state[key] for key in ('layering_flags', 'cable_half_widths_m')}
+            async with self.browser_lock:
+                await self.close_session()
+                retired = True
+                self.session, candidate = candidate, None
+                self.session_id, self.session_dir = world_id, directory
+                self.machine = configuration.machine
+                self.world_metadata = metadata
+                self.generation += 1
+                self.physics_source_hash = self.hash_sources([ROOT / 'src/js', ROOT / 'hp-sim-3d'], '*.js')
+                self.bridge_source_hash = self.hash_sources([ROOT / 'integrations/rrf', ROOT / 'integrations/shared',
+                                                            ROOT / 'autocal/control', ROOT / 'scripts'], '*.*js')
+                metadata.update(python_source_sha256=self.python_source_hash,
+                                bridge_source_sha256=self.bridge_source_hash,
+                                js_physics_source_sha256=self.physics_source_hash if configuration.backend == 'headless-js' else None,
+                                rrf_sha256=rrf_hash)
+                self.rrf_hash = rrf_hash
+                self.config_hash = metadata['firmware_config_sha256']
+                # Freeze the selected firmware config in a private VSD, never edit repository RRF files.
+                # RRF's MaxFilenameLength is 120, including the host path.
+                self.vsd_temp = tempfile.TemporaryDirectory(prefix='hp-sim5-vsd-')
+                vsd = Path(self.vsd_temp.name)
+                shutil.copytree(ROOT / 'RRF/run/vsd/sys', vsd / 'sys')
+                shutil.copyfile(directory / 'firmware-config.g', vsd / 'sys/research.g')
+                rrf_port, ws_port, collector_port = [free_port() for _ in range(3)]
+                self.rrf_url = f'http://127.0.0.1:{rrf_port}'
+                self.collector_url = f'http://127.0.0.1:{collector_port}'
+                self.spawn('rrf', [str(ROOT / 'RRF/build/rrf_simulator'), '--vsd', str(vsd),
+                                   '-c', 'sys/research.g', '--server', '-p', str(rrf_port)])
+                process, log = self.spawn('collector', ['node', 'scripts/research_collector.mjs', self.rrf_url,
+                                                       str(ws_port), str(collector_port), self.endpoint])
+                ready = await asyncio.to_thread(wait_ready, process, self.collector_url, 'status', log, token=self.token, timeout=40)
+                metadata['firmware_initial'] = ready['firmware_initial']
+                if 'Kinematics is Hangprinter' not in metadata['firmware_initial']['M669'] or not metadata['firmware_initial']['M666'].startswith('M666 A1'):
+                    raise RuntimeError('RRF did not load the matching Hangprinter configuration')
+                self.socket_task = asyncio.create_task(self.session.run_socket(f'ws://127.0.0.1:{ws_port}'))
+                await asyncio.wait_for(self.session.connected.wait(), timeout=5)
+                self.session.event('session_started', rrf_url=self.rrf_url, **metadata)
+                self.configuration = configuration
+                self.runtime_error = None
+                metadata.update(status='ready', reset_required=False)
+        except Exception as error:
+            if candidate is not None:
+                candidate.close()
+            if retired:
+                await self.close_session()
+                self.runtime_error = str(error)
+            metadata.update(status='failed', error=str(error), reset_required=retired,
+                            recovery='reset_session retries the last accepted configuration')
+            raise RuntimeError(f'{error}; world evidence: {directory / "manifest.json"}') from None
+        finally:
+            self.last_world_attempt = dict(metadata)
+            write_json(directory / 'manifest.json', metadata)
+
+    def input_changed(self, path, expected):
+        return expected is not None and (not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected)
 
     def status(self):
         processes = dict(self.processes)
-        if self.session.js_physics is not None:
+        if self.session is not None and self.session.js_physics is not None:
             processes['physics-js'] = self.session.js_physics.process
-        return {**self.session.status(), 'machine_design': self.machine, 'session_id': self.session_id, 'busy': self.busy,
+        return {**(self.session.status() if self.session else {'connected': False, 'step': 0, 'error': self.runtime_error}),
+                'world_configuration': self.world_metadata, 'world_id': self.session_id, 'generation': self.generation,
+                'accepted_settings': self.configuration.effective(), 'last_world_attempt': self.last_world_attempt, 'session_directory': str(self.directory),
+                'machine_design': self.machine, 'session_id': self.session_id, 'busy': self.busy,
                 'active_job': self.active_job, 'active_autocal_job': self.autocal.active,
-                'reset_required': bool(self.session.error), 'browser_url': self.browser_url,
+                'reset_required': self.session is None or bool(self.session.error) or
+                                  any(process.poll() is not None for name, process in processes.items() if name in ('rrf', 'collector', 'physics-js')), 'browser_url': self.browser_url,
                 'source_changed': {
+                    'scene_requires_session_reset': self.input_changed(ROOT / self.configuration.scene, self.world_metadata.get('authored_scene_sha256')),
+                    'firmware_requires_session_reset': self.input_changed(ROOT / 'RRF/run/vsd' / self.configuration.firmware_config, self.world_metadata.get('firmware_source_sha256')),
+                    'rrf_requires_session_reset': self.input_changed(ROOT / 'RRF/build/rrf_simulator', self.world_metadata.get('rrf_sha256')),
                     'python_requires_launcher_restart': self.python_source_hash != self.hash_sources([ROOT / 'src/python', ROOT / 'scripts'], '*.py'),
                     'bridge_requires_session_reset': self.bridge_source_hash != self.hash_sources(
                         [ROOT / 'integrations/rrf', ROOT / 'integrations/shared', ROOT / 'autocal/control', ROOT / 'scripts'], '*.*js'),
-                    'js_physics_requires_session_reset': self.session.backend == 'headless-js' and self.physics_source_hash !=
+                    'js_physics_requires_session_reset': self.configuration.backend == 'headless-js' and self.physics_source_hash !=
                         self.hash_sources([ROOT / 'src/js', ROOT / 'hp-sim-3d'], '*.js')},
                 'services': {name: {'pid': process.pid, 'exit_code': process.poll(),
                                     'log': str(self.session_dir / 'physics-js.log') if name == 'physics-js'
                                     else str(self.directory / f'{name}.log')}
                              for name, process in processes.items()},
                 'artifacts': {'rrd': str(self.session.recording_path) if self.session.recording is not None else None,
-                              'events': str(self.session_dir / 'events.jsonl'), 'scene': str(self.session_dir / 'scene.usda')}}
+                              'events': str(self.session_dir / 'events.jsonl'), 'scene': str(self.session_dir / 'scene.usda'),
+                              'authored_scene': str(self.session_dir / 'authored-scene.usda'),
+                              'world_manifest': str(self.session_dir / 'manifest.json')} if self.session else
+                              {'world_manifest': str(self.session_dir / 'manifest.json')} if self.session_dir else {}}
 
     async def collect(self, args, job=None):
         configs = args.get('configs', [{'fixed': [2, 3], 'drive': 0, 'sensor': 1}])
@@ -136,9 +207,10 @@ class Runtime:
                      'firmware_config': str(self.session_dir / 'firmware-config.g')}
         if not self.session.recording_enabled:
             artifacts['rrd'] = None
-        manifest = {'schema_version': 1, 'kind': 'native_collection',
+        manifest = {'schema_version': 2, 'kind': 'native_collection',
                     'run_id': run_id, 'backend': self.session.backend, 'session_id': self.session_id, 'status': 'running',
-                    'machine_design': self.machine, 'configs': configs, 'options': {**options, 'sweepPoints': points},
+                    'world_configuration': json.loads(encode(self.world_metadata)), 'world_id': self.session_id, 'generation': self.generation,
+                    'reset_required': False, 'machine_design': self.machine, 'configs': configs, 'options': {**options, 'sweepPoints': points},
                     'start_step': self.session.step, 'dt_s': self.session.dt,
                     'events_start_byte': self.session.events.tell(),
                     'clock': self.session.status()['clock'], 'artifacts': artifacts,
@@ -165,7 +237,8 @@ class Runtime:
                                     {'configs': configs, 'options': manifest['options'],
                                      'settlingTimeoutMs': settling * 1000,
                                      'sweepConfigFile': str(directory / 'configs.txt'), 'outputFile': artifacts['dataset'],
-                                     'partialFile': str(directory / 'partial-points.jsonl'), 'backend': self.session.backend},
+                                     'partialFile': str(directory / 'partial-points.jsonl'), 'backend': self.session.backend,
+                                     'machine': self.machine, 'layering': self.configuration.layering},
                                     token=self.token, timeout=wall_timeout + 5)
             manifest['collector_options'] = collected['collectionOptions']
             from autocal.json_schema import load_json_file
@@ -301,6 +374,8 @@ class Runtime:
 
     async def dispatch(self, operation, args):
         if operation == 'start_autocal':
+            if self.changing_world:
+                raise ValueError('World restart is in progress')
             if self.stop.is_set():
                 raise RuntimeError('Supervisor is shutting down')
             return self.autocal.start(args)
@@ -323,6 +398,8 @@ class Runtime:
                 result['progress'] = {'step': self.session.step, 'sim_time_s': self.session.step * self.session.dt,
                                       'queue_length': self.session.queue_length()}
             return result
+        if operation in ('capture_context', 'clock', 'advance') and self.session is None:
+            raise RuntimeError('World unavailable; inspect status and reset_session')
         if operation == 'capture_context':
             message = args.get('message')
             if not isinstance(message, str) or not message.strip():
@@ -376,12 +453,14 @@ class Runtime:
             if self.active_job is not None:
                 await self.dispatch('cancel_job', {'job_id': self.active_job})
             return {'stopping': True}
+        if operation in ('reset', 'configure') and (self.active_job or self.autocal.active):
+            raise ValueError('A job is active; explicitly cancel_collection or cancel_autocal first')
         if self.busy:
             raise ValueError('Session has an active operation')
-        worker_failed = self.session.js_physics is not None and self.session.js_physics.process.poll() is not None
-        if operation != 'reset' and (self.session.error or worker_failed or
+        worker_failed = self.session is not None and self.session.js_physics is not None and self.session.js_physics.process.poll() is not None
+        if operation not in ('reset', 'configure') and (self.session is None or self.session.error or worker_failed or
                                     any(self.processes[name].poll() is not None for name in ('rrf', 'collector'))):
-            raise RuntimeError(f'Session failed; inspect status and reset_session: {self.session.error}')
+            raise RuntimeError(f'Session failed; inspect status and reset_session: {self.runtime_error or (self.session.error if self.session else 'world unavailable')}')
         self.busy = True
         try:
             if operation == 'start_collection':
@@ -407,10 +486,13 @@ class Runtime:
                 if self.session.recording is not None:
                     self.session.recording.flush(timeout_sec=5)
                 return result
-            if operation == 'reset':
-                async with self.browser_lock:
-                    await self.close_session()
-                    await self.start()
+            if operation in ('reset', 'configure'):
+                config = world_configuration(ROOT, args, backend=self.configuration.backend) if operation == 'configure' else self.configuration
+                self.changing_world = True
+                try:
+                    await self.start(config)
+                finally:
+                    self.changing_world = False
                 return self.status()
             raise ValueError('Unknown runtime operation')
         finally:
@@ -458,8 +540,15 @@ class Runtime:
         for process in reversed(list(self.processes.values())):
             await asyncio.to_thread(stop_process, process)
         self.processes.clear()
+        if self.vsd_temp is not None:
+            self.vsd_temp.cleanup()
+            self.vsd_temp = None
         self.browser_url = None
         if self.session is not None:
+            self.session.observe()
+            self.session.event('session_archived', session_id=self.session_id)
+            self.world_metadata.update(status='archived', end_step=self.session.step, reset_required=bool(self.session.error))
+            write_json(self.session_dir / 'manifest.json', self.world_metadata)
             self.session.close()
             self.session = None
 

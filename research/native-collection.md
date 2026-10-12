@@ -78,8 +78,11 @@ for up to five wall seconds and streams to the launcher's Viewer when enabled.
 Each recorded collection finalizes its own RRD without replacing the physics world.
 Later collections cannot change already returned evidence.
 
-`reset_session` archives the old world and restarts world, firmware and bridge
-references together. A failed or cancelled collection saves evidence and requires that reset.
+`configure_session(configuration)` validates stock HP3/HP4 machine, layering and
+spool design settings, then archives the old world and restarts world, firmware
+and encoder references together. `reset_session` performs the same coordinated
+restart with the accepted configuration. Both require explicit cancellation of
+active jobs first. See [configuration examples and supported limits](README.md). A failed or cancelled collection saves evidence and requires that reset.
 `cancel_collection` freezes execution at a reported fixed-step boundary, aborts
 collector waits before further commands, flushes completed-point evidence, retires
 firmware/bridge queues and reports the exact stopped step. The JS worker yields

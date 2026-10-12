@@ -2,7 +2,6 @@
 import asyncio
 import hashlib
 import json
-import math
 import os
 from pathlib import Path
 import signal
@@ -11,13 +10,7 @@ import time
 import uuid
 
 from .experiments import write_json
-
-
-def number(name, value, low, high, *, integer=False):
-    if (type(value) not in ((int,) if integer else (int, float)) or
-            not math.isfinite(value) or not low <= value <= high):
-        raise ValueError(f'{name} must be {"an integer" if integer else "a number"} in [{low}, {high}]')
-    return value
+from .configuration import number, validate_spools, firmware_path
 
 
 def settings(args):
@@ -28,16 +21,7 @@ def settings(args):
     result = {'machine': 'hp3', 'layering': False, 'base_radii_mm': [30.0], 'buildup_factor': 0.0,
               'find_radii': 'off', 'find_buildup_factor': 'off', **{k: v for k, v in args.items()
               if k not in ('optimizer', 'budgets', 'collection', 'artifact_dir')}}
-    if result['machine'] not in ('hp3', 'hp4'):
-        raise ValueError('machine must be hp3 or hp4')
-    if type(result['layering']) is not bool:
-        raise ValueError('layering must be boolean')
-    radii = result['base_radii_mm']
-    if not isinstance(radii, list) or len(radii) not in (1, 4):
-        raise ValueError('base_radii_mm must contain one or four radii')
-    for radius in radii:
-        number('base_radii_mm', radius, 1, 200)
-    number('buildup_factor', result['buildup_factor'], 0, 2)
+    validate_spools(result['machine'], result['layering'], result['base_radii_mm'], result['buildup_factor'])
     for key in ('find_radii', 'find_buildup_factor'):
         if result[key] not in ('off', 'global', 'per-anchor'):
             raise ValueError(f'{key} must be off, global or per-anchor')
@@ -93,7 +77,7 @@ def command(root, directory, config):
     opt, budget = config['optimizer'], config['budgets']
     argv = [str(root / '.venv/bin/python'), 'autocal/autocal.py', '--headless-sim', '--extended-reference',
             '--machine-type', f'hangprinter_{config["machine"][-1]}', '--dataset', str(directory / 'sweeps.json'),
-            '--rrf-config', f'sys/config_{config["machine"]}{"_w_line_layers" if config["layering"] else ""}.g',
+            '--rrf-config', firmware_path(config['machine'], config['layering']),
             '--base-radii', ','.join(map(str, config['base_radii_mm'])),
             '--buildup-factor', str(config['buildup_factor']), '--find-radii', config['find_radii'],
             '--find-buildup-factor', config['find_buildup_factor'], '--optimizer-mode', opt['mode'],
@@ -128,7 +112,7 @@ class AutocalJobs:
         self.jobs = {}
         self.active = None
         self.source_hashes = {str(path.relative_to(self.root)): hashlib.sha256(path.read_bytes()).hexdigest()
-            for path in (self.root / 'scripts/research_runtime.py', Path(__file__))}
+            for path in (self.root / 'scripts/research_runtime.py', Path(__file__), Path(__file__).with_name('configuration.py'))}
 
     def start(self, args):
         config = settings(args)

@@ -20,7 +20,7 @@ from .experiments import DEFAULT_SCENE, encode, repo_path, sample, validate_comm
 
 
 class NativeSession:
-    def __init__(self, root, directory, scene=DEFAULT_SCENE, *, backend='native-python', record=True):
+    def __init__(self, root, directory, scene=DEFAULT_SCENE, *, backend='native-python', record=True, frozen_scene=None, layering=True):
         if backend not in ('native-python', 'headless-js', 'native-warp', 'native-warp-cuda'):
             raise ValueError('Unknown physics backend')
         self.backend = backend
@@ -34,9 +34,17 @@ class NativeSession:
         self.observation_wall_s = 0.
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=True)
-        self.frozen_scene = open_cable_scene(repo_path(root, scene)).Flatten().ExportToString()
+        self.layering = layering
+        if frozen_scene is None:
+            stage = open_cable_scene(repo_path(root, scene), **({} if layering else
+                {'derive_all': True, 'cable_path_half_width_override': 0.}))
+            layer = stage.Flatten()
+            # Flatten appends a multiline provenance doc unsupported by the JS serializer.
+            layer.documentation = stage.GetMetadata('doc') or ''
+            frozen_scene = layer.ExportToString()
+        self.frozen_scene = frozen_scene
         (self.directory / 'scene.usda').write_text(self.frozen_scene)
-        self.world = load_machine_world(self.frozen_scene, cable_solver_device=self.cable_solver_device)
+        self.world = self.create_world()
         self.dt = self.world.get_resource('dt')
         if not math.isclose(self.dt, .002, abs_tol=1e-12):
             raise ValueError('RRF bridge requires a 0.002 s physics timestep')
@@ -56,10 +64,20 @@ class NativeSession:
         self.recording_id = uuid.uuid4().hex
         self.events = (self.directory / 'events.jsonl').open('w')
         self.recording = None
-        if backend == 'headless-js':
-            from .js_physics import JSPhysics
-            self.js_physics = JSPhysics(Path(root), self.directory, self.world)
-        self.start_recording(self.directory / 'recording.rrd')
+        try:
+            if backend == 'headless-js':
+                from .js_physics import JSPhysics
+                self.js_physics = JSPhysics(Path(root), self.directory, self.world, layering=self.layering)
+            self.start_recording(self.directory / 'recording.rrd')
+        except Exception:
+            self.close()
+            raise
+
+    def create_world(self):
+        world = load_machine_world(self.frozen_scene, cable_solver_device=self.cable_solver_device)
+        for key in ('enableLayering', 'layeringFrictionEffectiveRadius', 'layeringRenderWraps'):
+            world.set_resource(key, self.layering)
+        return world
 
     def start_recording(self, path):
         if self.recording is not None:
@@ -205,9 +223,14 @@ class NativeSession:
             return self.status()
 
     def status(self):
+        from cable_joints_3d.cable_joints_components import CablePathComponent
         return {'connected': self.connected.is_set(), 'epoch': self.epoch, 'step': self.step,
                 'sim_time_s': self.step * self.dt, 'collector_time_s': self.collector_time_s,
                 'dt_s': self.dt, 'speed_scale': self.speed, 'queue_length': self.queue_length(),
+                'layering_flags': {key: self.world.get_resource(key) for key in
+                    ('enableLayering', 'layeringFrictionEffectiveRadius', 'layeringRenderWraps')},
+                'cable_half_widths_m': sorted({self.world.get_component(entity, CablePathComponent).cable_half_width
+                                              for entity in self.world.query([CablePathComponent])}),
                 'backend': self.backend, 'physics_wall_s': self.physics_wall_s,
                 'worker_wall_s': self.worker_wall_s,
                 'observation_wall_s': self.observation_wall_s,
@@ -228,7 +251,7 @@ class NativeSession:
                     'axes': payload['axes'], 'anglesDeg': angles}
         if kind == 'reset':
             async with self.lock:
-                self.world = load_machine_world(self.frozen_scene, cable_solver_device=self.cable_solver_device)
+                self.world = self.create_world()
                 self.epoch += 1
                 self.world.set_resource('sceneGeneration', self.epoch + 1)
                 self.remote = self.world.get_system(RemoteSpoolSystem)
@@ -236,7 +259,7 @@ class NativeSession:
                 if self.js_physics:
                     self.js_physics.close()
                     from .js_physics import JSPhysics
-                    self.js_physics = JSPhysics(self.root, self.directory, self.world)
+                    self.js_physics = JSPhysics(self.root, self.directory, self.world, layering=self.layering)
                     self.js_queue_length = 0
                 self.step = 0
                 self.observe()

@@ -62,6 +62,10 @@ def test_service_shutdown_preserves_codex_terminal(tmp_path, monkeypatch, servic
             script.parent.mkdir()
             script.write_text(wrapper)
             monkeypatch.setattr(services, 'wait_ready', lambda *a, **k: None)
+            for source in ('public/usd_scenes/hp4_rigid_body.usda', 'RRF/run/vsd/sys/config_hp4_w_line_layers.g'):
+                target = tmp_path / source
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(ROOT / source, target)
             runtime = RuntimeService(tmp_path, tmp_path / 'native').start()
             process, log = runtime.process, runtime.directory / 'runtime.log'
         else:

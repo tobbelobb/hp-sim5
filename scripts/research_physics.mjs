@@ -2,28 +2,18 @@
 // Python owns collection/lifecycle and uses these detached states only for telemetry.
 import fs from 'node:fs';
 import readline from 'node:readline';
-import { World, PositionComponent, OrientationComponent, VelocityComponent, AngularVelocityComponent,
+import { PositionComponent, OrientationComponent, VelocityComponent, AngularVelocityComponent,
   EncoderComponent, RigidBodyMemberComponent, SceneEntityInfoComponent } from '../src/js/cable_joints_3d/ecs.js';
 import { CableJointComponent, CablePathComponent } from '../src/js/cable_joints_3d/cable_joints_core.js';
-import { OpenText } from '../src/js/usd/stage.js';
-import { parseStage, readMachineSceneSpec, validateMachineSceneSpec, buildEntityPlan, applyEntityPlan } from '../hp-sim-3d/app/scene/machineScenePipeline.js';
-import { registerSimulationSystems } from '../hp-sim-3d/app/simulationSystems.js';
-import { RemoteSpoolSystem } from '../hp-sim-3d/app/remoteSpoolSystem.js';
+import { createHeadlessWorld } from '../hp-sim-3d/app/headlessWorld.js';
 import { StepperMotorComponent } from '../hp-sim-3d/app/hangprinter_stepper_motor.js';
 import { ExtruderComponent } from '../hp-sim-3d/app/hangprinter_extruder.js';
 
 // Keep stdout strictly a request/reply protocol, including scene-load warnings.
 console.log = console.warn = (...args) => console.error(...args);
-const world = new World();
-const checked = validateMachineSceneSpec(readMachineSceneSpec(
-  parseStage(OpenText(fs.readFileSync(process.argv[2], 'utf8'))), '/World/HangprinterScene'));
-if (!checked.valid) throw new Error(checked.warnings.join('\n'));
-applyEntityPlan(world, buildEntityPlan(checked));
-registerSimulationSystems(world);
-const remote = world.systems.find(system => system instanceof RemoteSpoolSystem);
-remote._ensureAxisMapping(world);
-const dt = world.getResource('dt');
-if (dt !== .002) throw new Error('RRF requires 0.002 s physics steps');
+const { world, remote, dt } = createHeadlessWorld(fs.readFileSync(process.argv[2], 'utf8'), {
+  lineLayeringEnabled: process.argv[3] !== 'false',
+});
 let step = 0;
 let physicsWallS = 0;
 const xyz = v => [v.x, v.y, v.z];

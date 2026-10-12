@@ -11,6 +11,8 @@ await waitForRrfSimulator(rrfUrl, 30000);
 const bridge = createGcodeBridge({ server: rrfUrl, wsPort: Number(wsPort), quiet: true, encoderTimeoutMs: 120000 });
 const firmware = await bridge.sendGcodeLine('M115');
 if (!/RepRapFirmware/i.test(firmware.reply ?? '')) throw new Error('RRF did not identify its firmware after readiness');
+const firmwareInitial = { M115: firmware.reply };
+for (const line of ['M669', 'M666']) firmwareInitial[line] = (await bridge.sendGcodeLine(line)).reply;
 let simTimeMs = 0;
 let busy = false;
 let cancellation = new AbortController();
@@ -74,7 +76,7 @@ const server = http.createServer(async (request, response) => {
     return;
   }
   if (request.url === '/status') {
-    response.end(JSON.stringify({ connected: bridge.hasReadyWsClients(), busy }));
+    response.end(JSON.stringify({ connected: bridge.hasReadyWsClients(), busy, firmware_initial: firmwareInitial }));
     return;
   }
   if (busy) {
@@ -91,17 +93,21 @@ const server = http.createServer(async (request, response) => {
     } else if (request.url === '/collect') {
       cancellation = new AbortController();
       await fs.writeFile(args.sweepConfigFile, args.configs.map((cfg) => `[${cfg.fixed.join(',')}] ${cfg.drive} ${cfg.sensor}\n`).join(''));
+      // HP3 and HP4 both use the production four-anchor Hangprinter collector.
+      const machineType = 'hangprinter_4';
       const collectorArgs = {
-        sim: true, firmware: 'rrf', machineType: 'hangprinter_4',
+        sim: true, firmware: 'rrf', machineType,
         noAutoTuneForce: true, fixedTargets: '0,0', forceLow: .01, forceMid: .05, forceMax: .5,
         sensorCollectionForce: 1,
         ...args.options,
+        lineLayering: args.layering,
+        preserveBuildupFactor: args.layering,
         outputFile: args.outputFile, sweepConfigFile: args.sweepConfigFile,
       };
       send.simulationClock.settlingTimeoutMs = args.settlingTimeoutMs;
       const result = await collectSweepData(send, {
-        args: collectorArgs, machineType: 'hangprinter_4', machineConfig: MACHINE_CONFIGS.hangprinter_4,
-        motorIds: MOTOR_IDS_BY_MACHINE.hangprinter_4, speedup: 1,
+        args: collectorArgs, machineType, machineConfig: MACHINE_CONFIGS[machineType],
+        motorIds: MOTOR_IDS_BY_MACHINE[machineType], speedup: 1,
         delayFn: send.simulationClock.sleep,
         onPoint: async (point, config) => {
           checkCancellation();

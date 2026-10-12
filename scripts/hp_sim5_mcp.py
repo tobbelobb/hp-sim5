@@ -2,7 +2,9 @@
 from pathlib import Path
 import os
 import sys
-from typing import Any
+from typing import Annotated, Any, Literal
+
+from pydantic import BaseModel, ConfigDict, Field
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src/python'))
@@ -41,11 +43,17 @@ def capabilities() -> dict[str, Any]:
                          '{}': 'hold current targets for one fixed timestep', 'E': 'deposited length in m'},
             'telemetry': 'Every step including zero: effectors, encoders, tracking errors, missed steps, lengths and forces',
             'native_collection': {'machines': ['HP3', 'HP4'], 'firmware': 'RRF',
-                                  'operations': ['start_collection', 'collection_status', 'cancel_collection', 'runtime_status', 'send_gcode', 'step_physics', 'reset_session', 'start_browser_service'],
+                                  'operations': ['start_collection', 'collection_status', 'cancel_collection', 'runtime_status', 'send_gcode', 'step_physics', 'reset_session', 'configure_session', 'start_browser_service'],
                                   'encoders': 'Raw unwrapped degrees; A/B/C/D mapped to CAN 40/41/42/43',
                                   'clock': 'Persistent fixed-step world; collector delays advance physics; reads drain motion',
                                   'settling': 'Bounded in simulation time; default 30 seconds',
-                                  'services': 'Launcher-owned runtime, firmware and bridge outside the command sandbox'},
+                                  'services': 'Launcher-owned runtime, firmware and bridge outside the command sandbox',
+                                  'configuration': {'tool': 'configure_session', 'immutable_per_generation': True,
+                                      'scenes': 'Matching stock HP3/HP4; custom anchor designs unsupported',
+                                      'radii': 'Physical base radii: one or four values, 1–200 mm; custom radii require layering off',
+                                      'layered_buildup': 'Stock 2/pi only; unlayered buildup is zero',
+                                      'reset': 'Retains accepted settings; reloads scene, JS and firmware sources',
+                                      'active_jobs': 'Explicit cancellation required before reset or reconfiguration'}},
             'full_autocal': {'operations': ['start_autocal', 'autocal_status', 'cancel_autocal'],
                              'machines': ['hp3', 'hp4'], 'backend': 'headless-js', 'isolated_world': True,
                              'workflow': 'Production one-click CLI: physical collection, fitting, planning, selection, automatic stopping',
@@ -142,9 +150,36 @@ def cancel_autocal(job_id: str) -> dict[str, Any]:
     return supervised_request('cancel_autocal', job_id=job_id)
 
 
+class WorldSettings(BaseModel):
+    model_config = ConfigDict(extra='forbid', strict=True)
+    machine: Literal['hp3', 'hp4'] = 'hp4'
+    layering: bool = True
+    scene: str | None = None
+    firmware_config: str | None = None
+    base_radii_mm: list[Annotated[float, Field(ge=1, le=200)]] | None = None
+    buildup_factor: Annotated[float, Field(ge=0, le=2)] | None = None
+
+
+@mcp.tool(annotations=MUTATION)
+def configure_session(configuration: WorldSettings) -> dict[str, Any]:
+    """Archive the previous world and create a fresh configured world, RRF and encoder origin.
+
+    Supply machine hp3/hp4 and layering. Optional scene and firmware_config must select matching
+    stock repository files (firmware path relative to RRF/run/vsd). Unlayered worlds accept one
+    or four physical base_radii_mm (1–200), with zero buildup. Layered worlds support stock
+    30 mm base radii and buildup_factor=2/pi only. Custom anchor layouts are unsupported.
+    Settings are immutable until the next configure_session; ordinary reset retains them.
+    Explicitly cancel active collection/autocal jobs first. Invalid settings leave the live world
+    intact; startup failure preserves evidence and reports reset_required with recovery instructions.
+    """
+    return supervised_request('configure', **configuration.model_dump(exclude_none=True))
+
+
 @mcp.tool(annotations=MUTATION)
 def reset_session() -> dict[str, Any]:
-    """Archive the recording and restart the native world, RRF and bridge references together."""
+    """Archive evidence and restart world, RRF and encoder references with the accepted settings.
+
+    Reloads scene/JS/firmware sources. Active jobs require explicit cancellation first."""
     return supervised_request('reset')
 
 
