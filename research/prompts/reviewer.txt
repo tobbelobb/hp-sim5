@@ -1,0 +1,18 @@
+Take a critical look at the newest research report, and the associated code, ie the latest commit.
+
+ - Is the experiment(s) informative?
+ - Is the result reproducible?
+ - Did the algorithm actually improve something important?
+ - Did we change multiple variables simultaneously?
+ - Is a surprising result a discovery or a bug?
+ - Is the delivered code in line with the repo's overarching goals?
+ - Does the delivered features overviewable and maintainable?
+
+Grade the most recent work along a scale:
+ Grade 1: The whole recent work has obvious fundamental flaws and the commit should be discarded. The report is mostly just valuable just as a documented example on how a research process can derail into non-relevance.
+ Grade 2: Parts of it is flawed and should be discarded. The remaining core or branch can be regarded as promising and deserves further exploration.
+ Grade 3: The work is promising but incomplete and must be continued, or discarded if continuing it is deemed too expensive.
+ Grade 4: The work shows substantial promise, and even some proven value.
+ Grade 5: The work is fantastic and even innovative in how it manages to add rigour and value. An example to others to learn from.
+
+Suggest three ways to improve quality of the parts that we should keep.
