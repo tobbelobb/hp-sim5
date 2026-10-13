@@ -8,6 +8,7 @@ export default defineConfig(async () => {
   const pages = await fg('**/*.html', {
     ignore: [
       'node_modules/**',
+      'output/**',
       'attic/**',
       'dist/**',
       'dist-hangprinter-org/**',
