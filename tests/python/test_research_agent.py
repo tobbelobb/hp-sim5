@@ -213,6 +213,7 @@ def test_launcher_worktree_dry_run_plans_without_creating_anything(tmp_path):
     assert plan['worktree']['path'].startswith(str(target))
     assert plan['worktree']['branch'].startswith('research/optimize-anchor-layout-')
     assert set(plan['worktree']['links']) == {'.venv', '.env', 'node_modules', 'RRF/build'}
+    assert isinstance(plan['worktree']['includes'], list)
     assert not target.exists()
     missing = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--dry-run', '--worktree-dir', str(target),
                               '--viewer', 'none', '--prompt', 'x'], capture_output=True, text=True, timeout=15)
@@ -224,8 +225,11 @@ def test_create_worktree_links_ignored_runtime_pieces(tmp_path, monkeypatch):
     repo = tmp_path / 'repo'
     (repo / 'scripts').mkdir(parents=True)
     (repo / 'scripts/research_agent.py').write_text('')
-    (repo / '.gitignore').write_text('.venv\n.env\nnode_modules/\nRRF/build\n')
+    (repo / '.gitignore').write_text('.venv\n.env\nnode_modules/\nRRF/build\n.worktreeinclude\nlocal/\n')
     (repo / 'tracked.txt').write_text('tracked\n')
+    (repo / 'local').mkdir()
+    (repo / 'local/notes.md').write_text('prior research\n')
+    (repo / '.worktreeinclude').write_text('# local research to copy\nlocal/notes.md\n')
     subprocess.run(['git', '-C', str(repo), 'init', '-q', '-b', 'main'], check=True, capture_output=True)
     subprocess.run(['git', '-C', str(repo), 'add', '-A'], check=True, capture_output=True)
     subprocess.run(['git', '-C', str(repo), '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-qm', 'init'],
@@ -245,6 +249,10 @@ def test_create_worktree_links_ignored_runtime_pieces(tmp_path, monkeypatch):
     for entry in launcher.WORKTREE_LINKS:
         link = plan['path'] / entry
         assert link.is_symlink() and link.resolve() == (repo / entry).resolve()
+    assert plan['includes'] == ['local/notes.md']
+    copied = plan['path'] / 'local/notes.md'
+    assert copied.read_text() == 'prior research\n' and not copied.is_symlink()
+    assert (repo / 'local/notes.md').read_text() == 'prior research\n'
     assert plan['branch'] in subprocess.run(['git', '-C', str(repo), 'worktree', 'list'],
                                             capture_output=True, text=True).stdout
     assert launcher.strip_worktree_options(['--viewer', 'none', '--worktree', '--worktree-dir', '/x',

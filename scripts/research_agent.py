@@ -114,6 +114,37 @@ def worktree_plan(slug, directory=None):
     return {'path': worktree_parent(directory) / name, 'branch': f'research/{name}', 'links': list(WORKTREE_LINKS)}
 
 
+def worktree_include_sources():
+    """The existing repository paths listed in `.worktreeinclude`, as Codex's worktree includes."""
+    try:
+        lines = (ROOT / '.worktreeinclude').read_text().splitlines()
+    except OSError:
+        return []
+    sources = []
+    for line in lines:
+        pattern = line.strip()
+        if not pattern or pattern.startswith('#'):
+            continue
+        matches = ROOT.glob(pattern) if any(char in pattern for char in '*?[') else [ROOT / pattern]
+        sources += [match for match in matches if match.exists() and match.is_relative_to(ROOT)]
+    return sources
+
+
+def copy_worktree_includes(path):
+    copied = []
+    for source in worktree_include_sources():
+        target = path / source.relative_to(ROOT)
+        if target.exists():
+            continue
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if source.is_dir():
+            shutil.copytree(source, target)
+        else:
+            shutil.copy2(source, target)
+        copied.append(str(source.relative_to(ROOT)))
+    return copied
+
+
 def create_worktree(topic, directory=None):
     """Create a raw Git worktree and link the ignored runtime pieces the launcher needs."""
     if not (ROOT / '.venv/bin/python').exists():
@@ -134,6 +165,7 @@ def create_worktree(topic, directory=None):
         if source.exists() and not target.exists():
             target.parent.mkdir(parents=True, exist_ok=True)
             target.symlink_to(source, target_is_directory=source.is_dir())
+    plan['includes'] = copy_worktree_includes(plan['path'])
     return plan
 
 
@@ -159,12 +191,16 @@ def worktree_launch(args, launcher_args, codex_args, provider, model):
     if args.dry_run:
         plan = worktree_plan(worktree_slug(topic), args.worktree_dir)
         print(json.dumps({'mode': 'worktree', 'model_provider': provider, 'model': model,
-                          'worktree': {'path': str(plan['path']), 'branch': plan['branch'],
-                                       'links': plan['links']}}, indent=2))
+                          'worktree': {'path': str(plan['path']), 'branch': plan['branch'], 'links': plan['links'],
+                                       'includes': [str(source.relative_to(ROOT))
+                                                    for source in worktree_include_sources()]}}, indent=2))
         return 0
     worktree = create_worktree(topic, args.worktree_dir)
     print(f'Research worktree: {worktree["path"]} (branch {worktree["branch"]}, base {worktree["base"]})',
           file=sys.stderr, flush=True)
+    if worktree['includes']:
+        print(f'Copied {len(worktree["includes"])} .worktreeinclude path(s) into the worktree.',
+              file=sys.stderr, flush=True)
     remaining = strip_worktree_options(launcher_args)
     if codex_args:
         remaining += ['--'] + codex_args

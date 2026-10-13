@@ -110,11 +110,14 @@ the worktree instead of the original checkout:
 
 It runs `git worktree add -b research/<name>-<id> <dir>` from the current `HEAD`,
 links the Git-ignored pieces a bare checkout lacks (`.venv`, `.env`,
-`node_modules` and `RRF/build`), then re-executes the worktree's own launcher.
-The default parent directory is a sibling named `<repo>-worktrees`; override it
-with `--worktree-dir`. Each worktree keeps its own `output/research/` evidence.
-The branch name derives from `--name`, otherwise from the prompt's first line,
-otherwise `research`.
+`node_modules` and `RRF/build`), and copies the repository paths listed in
+`.worktreeinclude` (when present) into the new worktree so prior local research
+travels with it. It then re-executes the worktree's own launcher. The default
+parent directory is a sibling named `<repo>-worktrees`; override it with
+`--worktree-dir`. Each worktree keeps its own `output/research/` evidence. The
+branch name derives from `--name`, otherwise from the prompt's first line,
+otherwise `research`. `.worktreeinclude` accepts comments, plain relative paths
+and simple globs; missing entries are ignored.
 
 The worktree checks out committed `HEAD`, so commit launcher or tool changes
 before using `--worktree`; uncommitted edits in the original checkout are not
