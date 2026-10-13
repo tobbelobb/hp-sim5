@@ -30,71 +30,93 @@ export function getRigidBodyEntityForMember(world, entityId) {
   return member?.bodyEntity ?? null;
 }
 
-export function getEntityWorldPosition(world, entityId) {
+// Destinations must be caller-owned, not live ECS component values.
+// Omitting the destination continues to return a detached value.
+export function getEntityWorldPosition(world, entityId, output = new Vector3()) {
   const member = getRigidBodyMemberComponent(world, entityId);
   if (member) {
     const bodyPos = world.getComponent(member.bodyEntity, PositionComponent)?.pos;
     const bodyOrientation = world.getComponent(member.bodyEntity, OrientationComponent)?.quaternion;
     if (bodyPos && bodyOrientation && member.localPosition) {
-      return bodyPos.clone().add(bodyOrientation.transformVector(member.localPosition));
+      bodyOrientation.transformVectorInto(member.localPosition, output);
+      return output.addVectors(bodyPos, output);
     }
   }
   const pos = world.getComponent(entityId, PositionComponent)?.pos;
-  return pos ? pos.clone() : null;
+  if (!pos) {
+    return null;
+  }
+  output.set(pos);
+  return output;
 }
 
-export function getEntityWorldOrientation(world, entityId) {
+export function getEntityWorldOrientation(world, entityId, output = new Quaternion()) {
   const member = getRigidBodyMemberComponent(world, entityId);
   if (member) {
     const bodyOrientation = world.getComponent(member.bodyEntity, OrientationComponent)?.quaternion;
     if (bodyOrientation && isFiniteQuaternion(member.localOrientation)) {
-      return new Quaternion()
+      return output
         .multiplyQuaternions(bodyOrientation, member.localOrientation)
         .normalize();
     }
   }
   const orientation = world.getComponent(entityId, OrientationComponent)?.quaternion;
-  return isFiniteQuaternion(orientation) ? orientation.clone().normalize() : null;
+  return isFiniteQuaternion(orientation) ? output.set(orientation).normalize() : null;
 }
 
-export function computeWorldAttachment(world, entityId, localPoint) {
+export function createAttachmentTransformScratch() {
+  return { position: new Vector3(), orientation: new Quaternion() };
+}
+
+// Scratch is overwritten by each call and must be distinct from inputs, output,
+// and ECS components. The output may alias the input point. Retained results
+// need their own output vectors, even when sharing this scratch sequentially.
+export function computeWorldAttachment(
+  world, entityId, localPoint, output = new Vector3(), scratch = createAttachmentTransformScratch(),
+) {
   if (!localPoint) {
     return null;
   }
-  const position = getEntityWorldPosition(world, entityId);
-  const orientation = getEntityWorldOrientation(world, entityId);
+  const position = getEntityWorldPosition(world, entityId, scratch.position);
+  const orientation = getEntityWorldOrientation(world, entityId, scratch.orientation);
   if (!position) {
-    return localPoint.clone();
+    output.set(localPoint);
+    return output;
   }
   if (!orientation) {
-    return position.clone().add(localPoint);
+    output.set(localPoint);
+  } else {
+    orientation.transformVectorInto(localPoint, output);
   }
-  return position.clone().add(orientation.transformVector(localPoint));
+  return output.addVectors(position, output);
 }
 
-export function computeLocalAttachment(world, entityId, worldPoint) {
+export function computeLocalAttachment(
+  world, entityId, worldPoint, output = new Vector3(), scratch = createAttachmentTransformScratch(),
+) {
   if (!worldPoint) {
     return null;
   }
-  const position = getEntityWorldPosition(world, entityId);
+  const position = getEntityWorldPosition(world, entityId, scratch.position);
   if (!position) {
-    return worldPoint.clone();
+    output.set(worldPoint);
+    return output;
   }
-  const rel = worldPoint.clone().subtract(position);
-  const orientation = getEntityWorldOrientation(world, entityId);
+  output.subtractVectors(worldPoint, position);
+  const orientation = getEntityWorldOrientation(world, entityId, scratch.orientation);
   if (!orientation) {
-    return rel;
+    return output;
   }
-  const inverse = orientation.clone().conjugate().normalize();
-  return inverse.transformVector(rel);
+  orientation.conjugate().normalize();
+  return orientation.transformVectorInto(output, output);
 }
 
-export function resolveRigidBodySolverEndpoint(world, entityId, counterpartEntityId, worldPoint) {
+export function resolveRigidBodySolverEndpoint(world, entityId, counterpartEntityId, worldPoint, scratch) {
   const member = getRigidBodyMemberComponent(world, entityId);
   if (!member) {
     return {
       entityId,
-      localPoint: computeLocalAttachment(world, entityId, worldPoint),
+      localPoint: computeLocalAttachment(world, entityId, worldPoint, new Vector3(), scratch),
       worldPoint: worldPoint?.clone?.() ?? null,
       internalToBody: false,
     };
@@ -106,7 +128,7 @@ export function resolveRigidBodySolverEndpoint(world, entityId, counterpartEntit
 
   return {
     entityId: solverEntityId,
-    localPoint: computeLocalAttachment(world, solverEntityId, worldPoint),
+    localPoint: computeLocalAttachment(world, solverEntityId, worldPoint, new Vector3(), scratch),
     worldPoint: worldPoint?.clone?.() ?? null,
     internalToBody,
   };

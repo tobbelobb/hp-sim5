@@ -27,6 +27,7 @@ import {
 import {
   computeLocalAttachment,
   computeWorldAttachment,
+  createAttachmentTransformScratch,
   getEntityWorldOrientation,
   getEntityWorldPosition,
   getRigidBodyEntityForMember,
@@ -2819,6 +2820,10 @@ export class CableAttachmentUpdateSystem {
 
 export class PBDCableConstraintSolver {
   runInPause = false;
+  _attachmentTransformScratch = createAttachmentTransformScratch();
+  _attachmentPointA = new Vector3();
+  _attachmentPointB = new Vector3();
+  _coupledSpinPoint = new Vector3();
 
   update(world, _dt_unused) {
     const pathEntities = world.query([CablePathComponent]);
@@ -2858,7 +2863,11 @@ export class PBDCableConstraintSolver {
     };
 
     const jointLocals = new Map();
-    const computeLocal = (entityId, worldPoint) => computeLocalAttachment(world, entityId, worldPoint);
+    const transformScratch = this._attachmentTransformScratch;
+    // Joint locals survive all solver iterations and must own independent storage.
+    const computeLocal = (entityId, worldPoint) => computeLocalAttachment(
+      world, entityId, worldPoint, new Vector3(), transformScratch,
+    );
     const getPrevPosition = (entityId) => prevPositionStore?.get(entityId)?.pos ?? null;
     const getPrevOrientation = (entityId) => prevOrientationStore?.get(entityId)?.quaternion ?? null;
     const getCurrentOrientation = (entityId) => orientationStore?.get(entityId)?.quaternion ?? null;
@@ -3035,9 +3044,13 @@ export class PBDCableConstraintSolver {
       }
 
       const spinEntityId = spinOnJointSide === 'A' ? internalJoint.entityA : internalJoint.entityB;
-      const spinPointWorld = spinOnJointSide === 'A'
-        ? computeWorldAttachment(world, spinEntityId, internalLocals.localA)
-        : computeWorldAttachment(world, spinEntityId, internalLocals.localB);
+      const spinPointWorld = computeWorldAttachment(
+        world,
+        spinEntityId,
+        spinOnJointSide === 'A' ? internalLocals.localA : internalLocals.localB,
+        this._coupledSpinPoint,
+        transformScratch,
+      );
       if (!spinPointWorld || !pointWorld) {
         return null;
       }
@@ -3162,8 +3175,8 @@ export class PBDCableConstraintSolver {
       if (constraintError <= EPSILON) {
         return;
       }
-      const mappedA = resolveRigidBodySolverEndpoint(world, entityA, entityB, pointA_world);
-      const mappedB = resolveRigidBodySolverEndpoint(world, entityB, entityA, pointB_world);
+      const mappedA = resolveRigidBodySolverEndpoint(world, entityA, entityB, pointA_world, transformScratch);
+      const mappedB = resolveRigidBodySolverEndpoint(world, entityB, entityA, pointB_world, transformScratch);
 
       const solverEntityA = mappedA.entityId;
       const solverEntityB = mappedB.entityId;
@@ -3510,8 +3523,9 @@ export class PBDCableConstraintSolver {
           const entityA = joint.entityA;
           const entityB = joint.entityB;
 
-          const pA = computeWorldAttachment(world, entityA, locals.localA);
-          const pB = computeWorldAttachment(world, entityB, locals.localB);
+          // Separate endpoints stay live through applyConstraint's nested transforms.
+          const pA = computeWorldAttachment(world, entityA, locals.localA, this._attachmentPointA, transformScratch);
+          const pB = computeWorldAttachment(world, entityB, locals.localB, this._attachmentPointB, transformScratch);
 
           const currentSegmentLength = pA.distanceTo(pB);
           let dir = null;

@@ -1,5 +1,3 @@
-import Vector3 from './vector3.js';
-
 /**
  * A class representing a quaternion.
  * Quaternions are used to represent rotations in 3D space.
@@ -98,6 +96,17 @@ export default class Quaternion {
      * @returns {Vector3} The rotated vector.
      */
     transformVector(v) {
+        return this.transformVectorInto(v, v.clone());
+    }
+
+    /**
+     * Rotates a vector into caller-owned storage, without normalizing this quaternion.
+     * The destination may alias v. Neither the quaternion nor a separate v is mutated.
+     * @param {Vector3} v The vector to rotate.
+     * @param {Vector3} result The destination vector.
+     * @returns {Vector3} The destination vector.
+     */
+    transformVectorInto(v, result) {
         const x = v.x, y = v.y, z = v.z;
         const qx = this.x, qy = this.y, qz = this.z, qw = this.w;
 
@@ -112,7 +121,6 @@ export default class Quaternion {
         const ry = iy * qw + iw * -qy + iz * -qx - ix * -qz;
         const rz = iz * qw + iw * -qz + ix * -qy - iy * -qx;
 
-        const result = v.clone();
         result.x = rx;
         result.y = ry;
         result.z = rz;

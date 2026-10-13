@@ -135,6 +135,46 @@ describe('PBDCableConstraintSolver (3D)', () => {
     expect(world.getComponent(a, PositionComponent).pos.x).toBeCloseTo(2 / 7, 12);
   });
 
+  test('keeps multiple joint endpoints and forces independent across shared solver updates', () => {
+    const solver = new PBDCableConstraintSolver();
+    const solve = offset => {
+      const world = new World();
+      world.setResource('dt', 0.002);
+      const pairs = [2, 3].map((length, index) => {
+        const start = offset + index * 10;
+        const a = world.createEntity();
+        const b = world.createEntity();
+        world.addComponent(a, new PositionComponent(start, 0, 0));
+        world.addComponent(b, new PositionComponent(start + length, 0, 0));
+        world.addComponent(a, new MassComponent(1));
+        world.addComponent(b, new MassComponent(1));
+        const jointId = world.createEntity();
+        const joint = CableJointComponent.fromWorld(
+          a, b, 1, new Vector3(start, 0, 0), new Vector3(start + length, 0, 0),
+        );
+        world.addComponent(jointId, joint);
+        world.addComponent(world.createEntity(), new CablePathComponent(
+          world, [jointId], ['attachment', 'attachment'], [false, false], Infinity, null, 0, 0, 3,
+        ));
+        return { a, b, joint, start, length };
+      });
+      solver.update(world, 0.002);
+      for (const { a, b, joint, start, length } of pairs) {
+        expect(world.getComponent(a, PositionComponent).pos.x).toBe(start + (length - 1) / 2);
+        expect(world.getComponent(b, PositionComponent).pos.x).toBe(start + (length + 1) / 2);
+        expect(joint.attachmentPointA_world).toEqual(new Vector3(start, 0, 0));
+        expect(joint.attachmentPointB_world).toEqual(new Vector3(start + length, 0, 0));
+        expect(joint.constraintForceMagnitude).toBeCloseTo((length - 1) / (2 * 0.002 ** 2), 8);
+      }
+      expect(pairs[0].joint.constraintForce).not.toBe(pairs[1].joint.constraintForce);
+      return pairs.map(({ joint }) => joint);
+    };
+    const retained = solve(0);
+    const before = JSON.stringify(retained);
+    solve(100);
+    expect(JSON.stringify(retained)).toBe(before);
+  });
+
   test.each([0, 4])('zero stiffness preserves the finite damping limit (damping=%s)', damping => {
     const solve = stiffness => {
       const world = new World();

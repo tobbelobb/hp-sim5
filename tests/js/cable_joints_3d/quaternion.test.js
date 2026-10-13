@@ -52,6 +52,34 @@ describe('Quaternion', () => {
     expect(rotatedV.z).toBeCloseTo(-1);
   });
 
+  test.each([
+    new Quaternion(0.2, -0.3, 0.4, 0.5).normalize(),
+    new Quaternion(0.2, -0.3, 0.4, 0.5),
+    new Quaternion(0, 0, 0, 0),
+  ])('transformVectorInto supports separate and aliased destinations for %p', q => {
+    const input = new Vector3(1.25, -2.5, 3.75);
+    const original = input.clone();
+    const originalQuaternion = q.clone();
+    const expected = q.transformVector(input);
+    const output = new Vector3();
+
+    expect(q.transformVectorInto(input, output)).toBe(output);
+    expect(output).toEqual(expected);
+    expect(input).toEqual(original);
+    expect(q.transformVectorInto(input, input)).toBe(input);
+    expect(input).toEqual(expected);
+    expect(q).toEqual(originalQuaternion);
+    expect(expected).not.toBe(input);
+  });
+
+  test('destination transforms preserve raw quaternion scaling and zero fallback', () => {
+    const input = new Vector3(1, -2, 3);
+    expect(new Quaternion(0, 0, 0, 2).transformVectorInto(input, new Vector3()))
+      .toEqual(new Vector3(4, -8, 12));
+    expect(new Quaternion(0, 0, 0, 0).transformVectorInto(input, new Vector3()))
+      .toEqual(new Vector3(0, 0, 0));
+  });
+
   test('multiplication should compose rotations correctly', () => {
     // 90 deg around Y then 90 deg around X
     const qY = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI / 2);
