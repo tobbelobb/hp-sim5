@@ -1,3 +1,4 @@
+import * as rigidBodies from '../../../src/js/cable_joints_3d/rigid_bodies.js';
 import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
 import Quaternion from '../../../src/js/cable_joints_3d/quaternion.js';
 
@@ -36,6 +37,39 @@ function setAxisAngle(orientationComp, axis, angle) {
 }
 
 describe('_updateAttachmentPoints (3D)', () => {
+
+  test('prepares endpoint poses once per joint and rebuilds them on later updates', () => {
+    const world = new World();
+    const a = world.createEntity();
+    const b = world.createEntity();
+    world.addComponent(a, new PositionComponent(0, 0, 0));
+    world.addComponent(a, new CableLinkComponent());
+    world.addComponent(b, new PositionComponent(4, 0, 0));
+    world.addComponent(b, new CableLinkComponent(4, 0, 0));
+    const jointId = world.createEntity();
+    const joint = new CableJointComponent(a, b, 4, new Vector3(), new Vector3(4, 0, 0));
+    world.addComponent(jointId, joint);
+    const pathId = world.createEntity();
+    world.addComponent(pathId, new CablePathComponent(
+      world, [jointId], ['attachment', 'attachment'], [false, false],
+    ));
+    const spy = jest.spyOn(rigidBodies, 'getEntityWorldPosition');
+    try {
+      for (const pos of [new Vector3(4, 1, 0), new Vector3(5, 2, 3)]) {
+        world.getComponent(b, PositionComponent).pos.set(pos);
+        spy.mockClear();
+        _updateAttachmentPoints(world);
+        expect(spy).toHaveBeenCalledTimes(2);
+        expect(joint.attachmentPointA_world).toEqual(new Vector3());
+        expect(joint.attachmentPointB_world).toEqual(pos);
+        // The history owner must still write the snapshot at its original time.
+        expect(world.getComponent(b, CableLinkComponent).prevCableAttachmentTimePos)
+          .toEqual(new Vector3(4, 0, 0));
+      }
+    } finally {
+      spy.mockRestore();
+    }
+  });
   test('Attachment to Rolling - Translation', () => {
     const world = new World();
 

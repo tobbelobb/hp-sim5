@@ -1,5 +1,11 @@
 # Eliminate duplicate attachment calculations with explicit invalidation
 
+Implemented 2026-10-13: correction-local tangent reuse and joint-local endpoint
+preparation were validated separately. All eight workload/settings cases retain
+exact checkpoint hashes; final median physics times are 6.2–13.2% lower than a
+fresh baseline. No persistent cache was introduced. See the
+[implementation and validation results](../research/attachment-calculation-reuse.md).
+
 ## Reason and architectural boundary
 
 Profiling baseline: `0b5afc52`. Attachment updates consume roughly 25–33% of

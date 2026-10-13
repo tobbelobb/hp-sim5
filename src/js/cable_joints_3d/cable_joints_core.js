@@ -1358,6 +1358,22 @@ function _isSpinBackdrivableThroughPinhole(linkType) {
   return linkType === 'rolling' || _isHybrid(linkType);
 }
 
+function _prepareAttachmentEndpoint(world, entityId, counterpartEntityId) {
+  const link = world.getComponent(entityId, CableLinkComponent);
+  const pos = getEntityWorldPosition(world, entityId);
+  const prevPos = link?.prevCableAttachmentTimePos;
+  const planeNormal = _getPlaneNormal(world, entityId);
+  const currentQuat = getEntityWorldOrientation(world, entityId);
+  const prevQuat = link?.prevCableAttachmentTimeOrientation;
+  const frameQuat = _orientationFrameForEndpoint(
+    world, entityId, counterpartEntityId, currentQuat, prevQuat, link,
+  );
+  const deltaAngle = _deltaAngleForEntity(
+    world, entityId, prevQuat, currentQuat, frameQuat.previous, frameQuat.current,
+  );
+  return { pos, prevPos, planeNormal, currentQuat, prevQuat, frameQuat, deltaAngle };
+}
+
 export function calculateAttachmentPoints(world, joint, path, i, radiusA, radiusB) {
   // Over-correction calls this without radii. Rebuild the same layered tangents
   // as attachment updates instead of silently comparing endpoint centers.
@@ -1367,36 +1383,22 @@ export function calculateAttachmentPoints(world, joint, path, i, radiusA, radius
   if (radiusB === undefined) {
     radiusB = _effectiveRollingRadius(world, path, i + 1, world.getComponent(joint.entityB, RadiusComponent)?.radius).radius;
   }
+  return _calculateAttachmentPoints(
+    joint, path, i, radiusA, radiusB,
+    _prepareAttachmentEndpoint(world, joint.entityA, joint.entityB),
+    _prepareAttachmentEndpoint(world, joint.entityB, joint.entityA),
+  );
+}
+
+// Prepared poses belong to this joint calculation only. Attachment updates can
+// change winding and rotor geometry before the next joint is evaluated.
+function _calculateAttachmentPoints(joint, path, i, radiusA, radiusB, endpointA, endpointB) {
   const A = i;
   const B = i + 1;
-
-  const entityA = joint.entityA;
-  const entityB = joint.entityB;
-
-  const linkAComp = world.getComponent(entityA, CableLinkComponent);
-
-  const posA = getEntityWorldPosition(world, entityA);
+  const { pos: posA, prevPos: prevPosA, planeNormal: planeNormalA, deltaAngle: deltaAngleA } = endpointA;
+  const { pos: posB, prevPos: prevPosB, planeNormal: planeNormalB, deltaAngle: deltaAngleB } = endpointB;
   const attachmentA_previous = joint.attachmentPointA_world;
-  const prevPosA = linkAComp?.prevCableAttachmentTimePos;
-  const planeNormalA = _getPlaneNormal(world, entityA);
-  const currentQuatA = getEntityWorldOrientation(world, entityA);
-  const prevQuatA = linkAComp?.prevCableAttachmentTimeOrientation;
-  const frameQuatA = _orientationFrameForEndpoint(
-    world,
-    entityA,
-    entityB,
-    currentQuatA,
-    prevQuatA,
-    linkAComp,
-  );
-  const deltaAngleA = _deltaAngleForEntity(
-    world,
-    entityA,
-    prevQuatA,
-    currentQuatA,
-    frameQuatA.previous,
-    frameQuatA.current,
-  );
+  const attachmentB_previous = joint.attachmentPointB_world;
 
   const cwA = _effectiveCW(path, A, true);
   const rollingLinkA = _isRolling(path.linkTypes[A]);
@@ -1408,31 +1410,6 @@ export function calculateAttachmentPoints(world, joint, path, i, radiusA, radius
     const rotated = attachmentA_previous.clone().subtract(prevPosA).rotateAroundAxis(planeNormalA, deltaAngleA).add(prevPosA);
     pADiffFromRotation = rotated.clone().subtract(attachmentA_previous);
   }
-
-  const linkBComp = world.getComponent(entityB, CableLinkComponent);
-
-  const posB = getEntityWorldPosition(world, entityB);
-  const attachmentB_previous = joint.attachmentPointB_world;
-  const prevPosB = linkBComp?.prevCableAttachmentTimePos;
-  const planeNormalB = _getPlaneNormal(world, entityB);
-  const currentQuatB = getEntityWorldOrientation(world, entityB);
-  const prevQuatB = linkBComp?.prevCableAttachmentTimeOrientation;
-  const frameQuatB = _orientationFrameForEndpoint(
-    world,
-    entityB,
-    entityA,
-    currentQuatB,
-    prevQuatB,
-    linkBComp,
-  );
-  const deltaAngleB = _deltaAngleForEntity(
-    world,
-    entityB,
-    prevQuatB,
-    currentQuatB,
-    frameQuatB.previous,
-    frameQuatB.current,
-  );
 
   const cwB = _effectiveCW(path, B, false);
   const rollingLinkB = _isRolling(path.linkTypes[B]);
@@ -1520,32 +1497,16 @@ export function _updateAttachmentPoints(world) {
       const entityA = joint.entityA;
       const entityB = joint.entityB;
 
-      const linkAComp = world.getComponent(entityA, CableLinkComponent);
-      const posA = getEntityWorldPosition(world, entityA);
-      const prevPosA = linkAComp?.prevCableAttachmentTimePos;
+      const endpointA = _prepareAttachmentEndpoint(world, entityA, entityB);
+      const {
+        pos: posA, prevPos: prevPosA, planeNormal: planeNormalA,
+        currentQuat: currentQuatA, prevQuat: prevQuatA,
+        frameQuat: frameQuatA, deltaAngle: deltaAngleA,
+      } = endpointA;
       const baseRadiusA = world.getComponent(entityA, RadiusComponent)?.radius;
       const { radius: radiusA, theta: thetaA } = _effectiveRollingRadius(world, path, A, baseRadiusA);
-      const planeNormalA = _getPlaneNormal(world, entityA);
-      const currentQuatA = getEntityWorldOrientation(world, entityA);
-      const prevQuatA = linkAComp?.prevCableAttachmentTimeOrientation;
-      const frameQuatA = _orientationFrameForEndpoint(
-        world,
-        entityA,
-        entityB,
-        currentQuatA,
-        prevQuatA,
-        linkAComp,
-      );
       const angleA = _orientationAngleForEntity(world, entityA, currentQuatA, frameQuatA.current);
       const prevAngleA = _orientationAngleForEntity(world, entityA, prevQuatA, frameQuatA.previous);
-      const deltaAngleA = _deltaAngleForEntity(
-        world,
-        entityA,
-        prevQuatA,
-        currentQuatA,
-        frameQuatA.previous,
-        frameQuatA.current,
-      );
       const cwA = _effectiveCW(path, A, true);
       const rollingLinkA = _isRolling(path.linkTypes[A]);
       const isHybridA = _isHybrid(path.linkTypes[A]);
@@ -1553,44 +1514,23 @@ export function _updateAttachmentPoints(world) {
       // to the secondary CableFrictionSystem tension-transfer pass.
       const transfersRollingRotationA = rollingLinkA && !isHybridA;
 
-      const linkBComp = world.getComponent(entityB, CableLinkComponent);
-      const posB = getEntityWorldPosition(world, entityB);
-      const prevPosB = linkBComp?.prevCableAttachmentTimePos;
+      const endpointB = _prepareAttachmentEndpoint(world, entityB, entityA);
+      const {
+        pos: posB, prevPos: prevPosB, planeNormal: planeNormalB,
+        currentQuat: currentQuatB, prevQuat: prevQuatB,
+        frameQuat: frameQuatB, deltaAngle: deltaAngleB,
+      } = endpointB;
       const baseRadiusB = world.getComponent(entityB, RadiusComponent)?.radius;
       const { radius: radiusB, theta: thetaB } = _effectiveRollingRadius(world, path, B, baseRadiusB);
-      const planeNormalB = _getPlaneNormal(world, entityB);
-      const currentQuatB = getEntityWorldOrientation(world, entityB);
-      const prevQuatB = linkBComp?.prevCableAttachmentTimeOrientation;
-      const frameQuatB = _orientationFrameForEndpoint(
-        world,
-        entityB,
-        entityA,
-        currentQuatB,
-        prevQuatB,
-        linkBComp,
-      );
       const angleB = _orientationAngleForEntity(world, entityB, currentQuatB, frameQuatB.current);
       const prevAngleB = _orientationAngleForEntity(world, entityB, prevQuatB, frameQuatB.previous);
-      const deltaAngleB = _deltaAngleForEntity(
-        world,
-        entityB,
-        prevQuatB,
-        currentQuatB,
-        frameQuatB.previous,
-        frameQuatB.current,
-      );
       const cwB = _effectiveCW(path, B, false);
       const rollingLinkB = _isRolling(path.linkTypes[B]);
       const isHybridB = _isHybrid(path.linkTypes[B]);
       const transfersRollingRotationB = rollingLinkB && !isHybridB;
 
-      let { attachmentA_current, attachmentB_current } = calculateAttachmentPoints(
-        world,
-        joint,
-        path,
-        i,
-        radiusA,
-        radiusB
+      let { attachmentA_current, attachmentB_current } = _calculateAttachmentPoints(
+        joint, path, i, radiusA, radiusB, endpointA, endpointB,
       );
 
       if (isHybridA && i === 0) {

@@ -1,4 +1,5 @@
 import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
+import * as cableCore from '../../../src/js/cable_joints_3d/cable_joints_core.js';
 
 import {
   World,
@@ -6,9 +7,7 @@ import {
   MassComponent,
   MomentOfInertiaComponent,
   OrientationComponent,
-  RadiusComponent,
-  RigidBodyComponent,
-  RigidBodyMemberComponent
+  RadiusComponent
 } from '../../../src/js/cable_joints_3d/ecs.js';
 
 import {
@@ -19,9 +18,83 @@ import {
 
 import { CableAttachmentCacheSystem } from '../../../src/js/cable_joints_3d/cable_attachment_cache_system.js';
 import { PBDResolveCableOverCorrections } from '../../../src/js/cable_joints_3d/pbdResolveCableOverCorrections.js';
-import { _updateAttachmentPoints } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
 
 describe('PBDResolveCableOverCorrections (3D)', () => {
+  test('reuses each path tangent only until corrections are applied', () => {
+    const world = new World();
+    world.setResource('dt', 0.002);
+    const anchor = world.createEntity();
+    world.addComponent(anchor, new PositionComponent(4, 0, 0));
+    world.addComponent(anchor, new MassComponent(0));
+    world.addComponent(anchor, new CableLinkComponent(4, 0, 0));
+    const wheel = world.createEntity();
+    const position = new PositionComponent();
+    world.addComponent(wheel, position);
+    world.addComponent(wheel, new MassComponent(1));
+    const radius = new RadiusComponent(1);
+    world.addComponent(wheel, radius);
+    const link = new CableLinkComponent();
+    world.addComponent(wheel, link);
+    const entries = [];
+    for (let i = 0; i < 2; i++) {
+      const jointId = world.createEntity();
+      const joint = new CableJointComponent(
+        anchor, wheel, 5, new Vector3(4, 0, 0), new Vector3(-5, 0, 0)
+      );
+      world.addComponent(jointId, joint);
+      const pathId = world.createEntity();
+      const path = new CablePathComponent(
+        world, [jointId], ['attachment', 'rolling'], [false, i === 0], Infinity, [0, i], 0.01
+      );
+      world.addComponent(pathId, path);
+      entries.push({ joint, path });
+    }
+    const system = new PBDResolveCableOverCorrections();
+    const calculate = cableCore.calculateAttachmentPoints;
+    const spy = jest.spyOn(cableCore, 'calculateAttachmentPoints');
+    try {
+      for (const mutate of [
+        () => {},
+        () => position.pos.set(new Vector3(0.2, 0.3, 0)),
+        () => {
+          entries[0].path.linkTypes[1] = 'hybrid';
+          entries[0].path.stored[1] = 4;
+          radius.radius = 1.2;
+        },
+        () => { entries[0].path.cw[1] = false; entries[1].path.linkTypes[1] = 'hybrid'; },
+        () => {
+          entries[1].path.linkTypes[1] = 'hybrid-attachment';
+          link.prevCableAttachmentTimePos.set(new Vector3(-5, 0, 0));
+        },
+      ]) {
+        position.pos.set(new Vector3());
+        mutate();
+        const initialPosition = position.pos.clone();
+        const expectedDelta = new Vector3();
+        for (const { joint, path } of entries) {
+          const { attachmentA_current: pA, attachmentB_current: pB } = calculate(world, joint, path, 0);
+          const len = pA.distanceTo(pB);
+          expect(len).toBeLessThan(joint.restLength);
+          expectedDelta.add(pB.clone().subtract(pA).scale((joint.restLength - len) / len));
+        }
+        spy.mockClear();
+        system.update(world, 0.002);
+        expect(spy).toHaveBeenCalledTimes(2);
+        const expectedPosition = initialPosition.add(expectedDelta.scale(0.5));
+        for (const axis of ['x', 'y', 'z']) {
+          expect(position.pos[axis]).toBeCloseTo(expectedPosition[axis], 12);
+        }
+        for (const { joint } of entries) {
+          // Detection must continue using the original pre-solve attachment state.
+          expect(joint.attachmentPointA_world).toEqual(new Vector3(4, 0, 0));
+          expect(joint.attachmentPointB_world).toEqual(new Vector3(-5, 0, 0));
+        }
+      }
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   test.each(['rolling', 'hybrid'])('rebuilds %s tangents when detecting slack', (linkType) => {
     const world = new World();
     world.setResource('dt', 0.002);

@@ -176,7 +176,7 @@ export class PBDResolveCableOverCorrections {
         if (!pA || !pB) continue;
         const postLen = pA.distanceTo(pB);
         if (postLen < joint.restLength) {
-          overCorrected.push(jointId);
+          overCorrected.push({ joint, path, i, pA, pB, postLen });
         }
       }
     }
@@ -186,8 +186,10 @@ export class PBDResolveCableOverCorrections {
     const posCorrections = new Map();
     const angCorrections = new Map();
 
-    for (const jointId of overCorrected) {
-      this.calculateJointCorrection(world, jointId, jointToPathAndIndex, posCorrections, angCorrections);
+    // These owned attachment results are valid only while gathering corrections:
+    // all pose changes happen below, after every joint has been evaluated.
+    for (const data of overCorrected) {
+      this.calculateJointCorrection(world, data, posCorrections, angCorrections);
     }
 
     for (const [entityId, deltas] of posCorrections.entries()) {
@@ -212,17 +214,8 @@ export class PBDResolveCableOverCorrections {
     }
   }
 
-  calculateJointCorrection(world, jointId, jointToPathAndIndex, posCorrections, angCorrections) {
-    const joint = world.getComponent(jointId, CableJointComponent);
-    const data = jointToPathAndIndex.get(jointId);
-    if (!data) return;
-    const { path, i } = data;
-
-    const { attachmentA_current: pA, attachmentB_current: pB } = calculateAttachmentPoints(world, joint, path, i);
-    if (!pA || !pB) return;
-
-    const currentLen = pA.distanceTo(pB);
-    const constraintError = currentLen - joint.restLength;
+  calculateJointCorrection(world, { joint, path, i, pA, pB, postLen }, posCorrections, angCorrections) {
+    const constraintError = postLen - joint.restLength;
     if (constraintError >= -EPSILON) return;
 
     const entityA = joint.entityA;
