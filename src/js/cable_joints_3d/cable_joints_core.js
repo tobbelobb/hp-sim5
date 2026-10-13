@@ -31,7 +31,6 @@ import {
   getEntityWorldOrientation,
   getEntityWorldPosition,
   getRigidBodyEntityForMember,
-  resolveRigidBodySolverEndpoint,
   updateRigidBodyMemberLocalOrientation,
 } from './rigid_bodies.js';
 import {
@@ -2803,7 +2802,63 @@ export class PBDCableConstraintSolver {
     };
 
     const jointLocals = new Map();
+    const jointSolverContexts = new Map();
+    const solverEndpointContexts = new Map();
+    const pathSolveParameters = new Map();
     const transformScratch = this._attachmentTransformScratch;
+    const getSolverEndpointContext = (entityId) => {
+      let context = solverEndpointContexts.get(entityId);
+      if (!context) {
+        const massComp = massStore?.get(entityId);
+        const moiComp = inertiaStore?.get(entityId);
+        const orientationComp = orientationStore?.get(entityId);
+        const posComp = positionStore?.get(entityId);
+        const invMass = (massComp && massComp.mass > 0) ? 1.0 / massComp.mass : 0.0;
+        const axisOnly = hasAxisOnlyCableSpinDof(entityId);
+        context = {
+          posComp,
+          orientationComp,
+          moiComp,
+          invMass,
+          axisOnly,
+          useAngularInertia: Boolean(!axisOnly && moiComp && orientationComp?.quaternion),
+        };
+        solverEndpointContexts.set(entityId, context);
+      }
+      return context;
+    };
+    const getSolverEndpointMapping = (entityId, counterpartEntityId) => {
+      const member = memberStore?.get(entityId);
+      if (!member) return { entityId, internalToBody: false };
+      const counterpartMember = memberStore?.get(counterpartEntityId);
+      const internalToBody = Boolean(
+        counterpartMember && counterpartMember.bodyEntity === member.bodyEntity,
+      );
+      return {
+        entityId: internalToBody ? entityId : member.bodyEntity,
+        internalToBody,
+      };
+    };
+    const getPathSolveParameters = (path) => {
+      let parameters = pathSolveParameters.get(path);
+      if (!parameters) {
+        const compliance = path.compliance;
+        const complianceValue = compliance ?? 0.0;
+        const zeroStiffness = compliance === Infinity;
+        const validDt = Number.isFinite(dt) && dt > EPSILON;
+        parameters = {
+          zeroStiffness,
+          alphaTilde: (!zeroStiffness && validDt) ? complianceValue / (dt * dt) : 0.0,
+          gamma: (!zeroStiffness && validDt)
+            ? Math.max(0.0, complianceValue * (path.damping ?? 0.0) / dt)
+            : 0.0,
+          dampingStep: validDt ? Math.max(0.0, path.damping ?? 0.0) * dt : 0.0,
+          invDtSq: validDt ? 1.0 / (dt * dt) : 0.0,
+        };
+        pathSolveParameters.set(path, parameters);
+      }
+      return parameters;
+    };
     // Joint locals survive all solver iterations and must own independent storage.
     const computeLocal = (entityId, worldPoint) => computeLocalAttachment(
       world, entityId, worldPoint, new Vector3(), transformScratch,
@@ -3109,14 +3164,13 @@ export class PBDCableConstraintSolver {
       gradPosA,
       gradPosB,
       constraintError,
-      compliance,
-      solveIteration
+      solveIteration,
+      solverContext,
     ) => {
       if (constraintError <= EPSILON) {
         return;
       }
-      const mappedA = resolveRigidBodySolverEndpoint(world, entityA, entityB, pointA_world, transformScratch);
-      const mappedB = resolveRigidBodySolverEndpoint(world, entityB, entityA, pointB_world, transformScratch);
+      const { mappedA, mappedB, endpointA, endpointB, pathParameters } = solverContext;
 
       const solverEntityA = mappedA.entityId;
       const solverEntityB = mappedB.entityId;
@@ -3140,26 +3194,14 @@ export class PBDCableConstraintSolver {
         pointB_world,
         gradPosB, // gradPosB is a unit vector pointing from B to A
       );
-      const axisOnlySolverA = hasAxisOnlyCableSpinDof(solverEntityA);
-      const axisOnlySolverB = hasAxisOnlyCableSpinDof(solverEntityB);
-
-      const massAComp = massStore?.get(solverEntityA);
-      const invMassA = (massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
-      const moiAComp = inertiaStore?.get(solverEntityA);
-      const orientationAComp = orientationStore?.get(solverEntityA);
-      const useAngularInertiaA = Boolean(!axisOnlySolverA && moiAComp && orientationAComp?.quaternion);
-
-      const massBComp = massStore?.get(solverEntityB);
-      const invMassB = (massBComp && massBComp.mass > 0) ? 1.0 / massBComp.mass : 0.0;
-      const moiBComp = inertiaStore?.get(solverEntityB);
-      const orientationBComp = orientationStore?.get(solverEntityB);
-      const useAngularInertiaB = Boolean(!axisOnlySolverB && moiBComp && orientationBComp?.quaternion);
+      const { invMass: invMassA, moiComp: moiAComp, orientationComp: orientationAComp,
+        posComp: posAComp, useAngularInertia: useAngularInertiaA } = endpointA;
+      const { invMass: invMassB, moiComp: moiBComp, orientationComp: orientationBComp,
+        posComp: posBComp, useAngularInertia: useAngularInertiaB } = endpointB;
 
       const memberInvInertiaA = memberSpinA?.invInertia ?? 0.0;
       const memberInvInertiaB = memberSpinB?.invInertia ?? 0.0;
 
-      const posAComp = positionStore?.get(solverEntityA);
-      const posBComp = positionStore?.get(solverEntityB);
       if (!posAComp || !posBComp) {
         return;
       }
@@ -3247,13 +3289,7 @@ export class PBDCableConstraintSolver {
       const spinDispA = solveGradSpinA * spinAngleDispA;
       const spinDispB = solveGradSpinB * spinAngleDispB;
 
-      const zeroStiffness = compliance === Infinity;
-      const alphaTilde = (!zeroStiffness && Number.isFinite(dt) && dt > EPSILON)
-        ? (compliance ?? 0.0) / (dt * dt)
-        : 0.0;
-      const gamma = (!zeroStiffness && Number.isFinite(dt) && dt > EPSILON)
-        ? Math.max(0.0, (compliance ?? 0.0) * (path?.damping ?? 0.0) / dt)
-        : 0.0;
+      const { zeroStiffness, alphaTilde, gamma, dampingStep, invDtSq } = pathParameters;
       const jDx = translationalDispA + rotationalDispA + spinDispA + translationalDispB + rotationalDispB + spinDispB;
       const mechanicalDenom = (solveMemberInvInertiaA, solveMemberInvInertiaB) => {
         let mechDenom = 0.0;
@@ -3275,9 +3311,6 @@ export class PBDCableConstraintSolver {
         if (zeroStiffness) {
           // Divide the existing damped equation by compliance before taking
           // its infinite-compliance limit; avoid Infinity * 0 and Infinity / Infinity.
-          const dampingStep = Number.isFinite(dt) && dt > EPSILON
-            ? Math.max(0.0, path?.damping ?? 0.0) * dt
-            : 0.0;
           return dampingStep * jDx / (1.0 + dampingStep * mechDenom);
         }
         const denom = ((1.0 + gamma) * mechDenom) + alphaTilde;
@@ -3294,7 +3327,6 @@ export class PBDCableConstraintSolver {
         return;
       }
 
-      const invDtSq = (Number.isFinite(dt) && dt > EPSILON) ? 1.0 / (dt * dt) : 0.0;
       const exceedsHoldingTorque = (memberSpin, gradSpin) => {
         const torqueLimit = memberSpin?.holdingTorqueLimit;
         if (!(Number.isFinite(torqueLimit) && torqueLimit >= 0.0)) {
@@ -3430,6 +3462,15 @@ export class PBDCableConstraintSolver {
           localA: computeLocal(joint.entityA, joint.attachmentPointA_world),
           localB: computeLocal(joint.entityB, joint.attachmentPointB_world)
         });
+        const mappedA = getSolverEndpointMapping(joint.entityA, joint.entityB);
+        const mappedB = getSolverEndpointMapping(joint.entityB, joint.entityA);
+        jointSolverContexts.set(jointId, {
+          mappedA,
+          mappedB,
+          endpointA: getSolverEndpointContext(mappedA.entityId),
+          endpointB: getSolverEndpointContext(mappedB.entityId),
+          pathParameters: getPathSolveParameters(path),
+        });
       }
     }
     let maxIterations = 1;
@@ -3494,8 +3535,8 @@ export class PBDCableConstraintSolver {
             gradPosA,
             gradPosB,
             constraintError,
-            path.compliance,
-            iter
+            iter,
+            jointSolverContexts.get(jointId),
           );
         }
       }
