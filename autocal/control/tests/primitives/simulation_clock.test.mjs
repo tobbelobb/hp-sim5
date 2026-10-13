@@ -20,7 +20,7 @@ test('the collector clock advances motion, settling and noise sampling without w
   await runMoveWithWait(send, 'G1 H2 X1 F60', 1);
   expect(delays).toEqual([1100]);
   const settled = await waitForStableEncoders(send, ['40.0', '41.0'], 1);
-  expect(settled.elapsedMs).toBe(1500);
+  expect(settled.elapsedMs).toBe(1000);
   const noise = await sampleEncoderNoise(send, ['40.0', '41.0'], { sampleCount: 4 });
   expect(noise.durationMs).toBe(100);
   expect(noise.samplingHz).toBe(40);

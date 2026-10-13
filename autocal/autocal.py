@@ -14,7 +14,12 @@ if str(REPO_ROOT) not in sys.path:
 
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.planning_pass import plan_next_ellipse_sweep
-from autocal.history_selection import evaluate_history_candidates, rank_history_candidates
+from autocal.history_selection import (
+    apply_consensus_plan,
+    consensus_anchor_estimate,
+    evaluate_history_candidates,
+    rank_history_candidates,
+)
 from autocal.stage_artifacts import write_stage_artifact
 from autocal import extended_reference
 from autocal.theoretical_ellipse import get_anchor_bounds
@@ -632,20 +637,20 @@ def full_auto_loop(
                         "pointwise_residual_mode": pointwise_residual_mode, "sigma_source": sigma_source,
                     },
                 })
-            scored = rank_history_candidates(scored)
-            if not scored:
+            ranked = rank_history_candidates(scored)
+            if not ranked:
                 _log_console(
                     "; full-auto: all held-out predictions failed; "
                     "stopping without applying calibration."
                 )
                 return None, None
-            chosen = scored[0][1]
-            chosen_info = scored[0][2]
+            chosen = ranked[0][1]
+            chosen_info = ranked[0][2]
             _log_line(
                 f"; history_select: reason={reason} "
-                f"candidates={len(scored)} total_iterations={history_total_iterations}"
+                f"candidates={len(ranked)} total_iterations={history_total_iterations}"
             )
-            for _sort_key, candidate, info in scored[: min(5, len(scored))]:
+            for _sort_key, candidate, info in ranked[: min(5, len(ranked))]:
                 _log_line(
                     f"; history_select: "
                     f"iter={candidate.get('iteration')} "
@@ -658,6 +663,19 @@ def full_auto_loop(
                     f"coverage_adjust={_fmt_float(info.get('coverage_adjust'))} "
                     f"selection_score={_fmt_float(info.get('selection_score'))}"
                 )
+            # The applied geometry is the geometric consensus of the fitted
+            # candidates; the diagnostics above stay those of the best-ranked
+            # single candidate, which remains the reported fit-quality score.
+            consensus_anchors, consensus_members, consensus_spread = (
+                consensus_anchor_estimate(scored)
+            )
+            applied_plan = apply_consensus_plan(chosen.get("plan"), consensus_anchors)
+            _log_line(
+                f"; history_select: consensus reason={reason} "
+                f"members={list(consensus_members)} "
+                f"spread_mm={_fmt_float(consensus_spread)} "
+                f"applied={'consensus' if len(consensus_members) > 1 else 'best-ranked'}"
+            )
             summary_meta = dict(chosen.get("summary_meta") or {})
             summary_meta.update(
                 {
@@ -667,9 +685,11 @@ def full_auto_loop(
                     "heldout_prediction_score": chosen_info.get("prediction_score"),
                     "heldout_prediction_sweeps": chosen_info.get("prediction_sweeps"),
                     "anchor_comparison_score": chosen_info.get("anchor_comparison_score"),
+                    "history_consensus_members": list(consensus_members),
+                    "history_consensus_spread_mm": consensus_spread,
                 }
             )
-            return chosen.get("plan"), summary_meta
+            return applied_plan, summary_meta
 
         if best_plan is not None:
             return best_plan, dict(best_meta)

@@ -88,7 +88,7 @@ describe('runForceTrial', () => {
       speedup: 25, idleForce: .01, testForce: 1,
       sampleWindowMs: 1000, sampleIntervalMs: 100,
     });
-    expect(forceChanges).toEqual([0, 1500, 2500]);
+    expect(forceChanges).toEqual([0, 1000, 2000]);
   });
 
   test('returns to origin before releasing a moved pullout to idle force', async () => {

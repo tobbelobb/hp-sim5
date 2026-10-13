@@ -162,6 +162,17 @@ The final ordering is:
 Candidates can have different numbers of held-out sweeps.
 These prediction scores are residual costs, not the displayed quality score.
 
+That ordering chooses the reported candidate, and it still decides when to stop,
+but it no longer sets the applied geometry. `history_selection` merges candidate
+anchor sets closer than `HISTORY_CONSENSUS_MERGE_MM` (0.01 mm) and averages the
+closest remaining pair; `consensus_anchor_estimate` returns that mean together
+with its member iterations and spread, and `apply_consensus_plan` replaces the
+applied `anchors` while dropping any cached `calibration` block so M669 rebuilds
+from the consensus. With one usable candidate the best-ranked plan is applied
+unchanged, so the rule degrades to the previous behaviour. The members and
+spread are logged as `history_select: consensus ...` and summarized in
+`history_consensus_members` and `history_consensus_spread_mm`.
+
 ## Displayed quality and structural penalties
 
 In layered full-auto mode, displayed `fit_score_ui` comes from `history_rank_score`.

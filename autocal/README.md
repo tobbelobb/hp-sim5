@@ -248,6 +248,7 @@ The one-click loop composes independently callable stages:
 | Plan the next sweep from a frozen fit | `planning_pass.plan_ellipse_sweep` | No |
 | Evaluate frozen history models on future sweeps | `history_selection.evaluate_history_candidates` | No |
 | Rank already evaluated candidates | `history_selection.rank_history_candidates` | No |
+| Reduce candidates to the applied geometry | `history_selection.consensus_anchor_estimate` | No |
 
 Existing collection backends and inner initialization, refinement, filter-pass
 and scale-polish modules remain separate. `plan_next_ellipse_sweep` composes fit

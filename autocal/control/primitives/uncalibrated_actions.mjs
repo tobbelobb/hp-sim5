@@ -8,7 +8,10 @@ import {
 } from '../primitives/debug_trace.mjs';
 
 const DEFAULT_STABILITY_POLL_MS = 500;
-const DEFAULT_STABILITY_WINDOW_MS = 1500;
+// A 1500 ms quiet window is more than encoder polls can resolve cheaply: replay of 817
+// recorded waits (E07) shows 1000 ms ends 791 of them earlier and saves 490 s of 6756 s
+// (7.3%) while moving the recorded angle by <=0.04 deg (p99).
+const DEFAULT_STABILITY_WINDOW_MS = 1000;
 const DEFAULT_STABILITY_TOLERANCE_DEG = 1.5;
 const DEFAULT_VIBRATION_WINDOW_MS = 5000;
 const DEFAULT_LOW_FORCE_N = 0.001; // Just pull out more line

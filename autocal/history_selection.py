@@ -118,3 +118,103 @@ def rank_history_candidates(scored):
     elif any(item[2].get("prediction_score") is not None for item in scored):
         return []
     return sorted(scored, key=lambda item: item[0])
+
+
+HISTORY_CONSENSUS_MERGE_MM = 0.01
+
+
+def consensus_anchor_estimate(scored):
+    """Most mutually-consistent pair of fitted anchor sets, averaged.
+
+    The held-out ordering reduces every candidate to one noisy scalar measured
+    on a different, nested fold, so it ranks candidates only weakly: it can
+    prefer an anchor set that is ~2 mm worse than another selectable one, and
+    the newest iteration is structurally unselectable because no sweep is left
+    to predict. Candidate anchor sets do carry the signal the scalar loses,
+    because fits dragged off by model mismatch or a divergent local optimum
+    scatter while fits near the true geometry cluster.
+
+    Two restarts that converge to the same anchors are one hypothesis, not two,
+    so candidates closer than `HISTORY_CONSENSUS_MERGE_MM` are merged first.
+    The closest remaining pair is then the tightest available consensus and its
+    mean is taken; averaging a pair can move the estimate by at most half their
+    separation, so it stays bracketed by real fits.
+
+    Returns `(anchors, member_iterations, spread_mm)`. `anchors` is None only
+    when no candidate carries a usable anchor array.
+    """
+    rows = []
+    shape = None
+    for item in scored:
+        candidate = item[1]
+        plan = candidate.get("plan")
+        anchors = plan.get("anchors") if isinstance(plan, dict) else None
+        if anchors is None:
+            continue
+        array = np.asarray(anchors, dtype=float)
+        if not np.all(np.isfinite(array)):
+            continue
+        if shape is None:
+            shape = array.shape
+        elif array.shape != shape:
+            continue
+        rows.append((int(candidate.get("iteration", 0)), array))
+    if not rows:
+        return None, (), None
+    if len(rows) == 1:
+        return rows[0][1], (rows[0][0],), 0.0
+
+    matrix = np.stack([array.reshape(-1) for _iteration, array in rows])
+    pairwise = np.sqrt(
+        np.maximum(((matrix[:, None, :] - matrix[None, :, :]) ** 2).sum(-1), 0.0)
+    )
+    parent = list(range(len(rows)))
+
+    def find(index):
+        while parent[index] != index:
+            parent[index] = parent[parent[index]]
+            index = parent[index]
+        return index
+
+    for first in range(len(rows)):
+        for second in range(first + 1, len(rows)):
+            if pairwise[first, second] <= HISTORY_CONSENSUS_MERGE_MM:
+                parent[find(first)] = find(second)
+
+    groups: Dict[int, List[int]] = {}
+    for index in range(len(rows)):
+        groups.setdefault(find(index), []).append(index)
+    merged = [
+        (
+            [rows[index][0] for index in indices],
+            np.mean([rows[index][1] for index in indices], axis=0),
+        )
+        for indices in groups.values()
+    ]
+    if len(merged) == 1:
+        return merged[0][1], tuple(merged[0][0]), 0.0
+
+    flat = np.stack([anchors.reshape(-1) for _iterations, anchors in merged])
+    distances = np.sqrt(
+        np.maximum(((flat[:, None, :] - flat[None, :, :]) ** 2).sum(-1), 0.0)
+    )
+    np.fill_diagonal(distances, np.inf)
+    first, second = np.unravel_index(np.argmin(distances), distances.shape)
+    anchors = (merged[first][1] + merged[second][1]) / 2.0
+    members = tuple(merged[first][0] + merged[second][0])
+    return anchors, members, float(distances[first, second])
+
+
+def apply_consensus_plan(chosen_plan, anchors):
+    """`chosen_plan` with its applied geometry replaced by the consensus `anchors`.
+
+    `anchors` is None when no candidate carried usable anchor geometry; the
+    best-ranked plan is then returned unchanged. A cached `calibration` block is
+    dropped so M669/M666 are rebuilt from the new anchors rather than reusing the
+    best-ranked candidate's geometry.
+    """
+    plan = dict(chosen_plan or {})
+    if anchors is not None:
+        plan["anchors"] = np.asarray(anchors, dtype=float)
+        plan.pop("calibration", None)
+    return plan
