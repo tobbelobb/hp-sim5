@@ -57,3 +57,4 @@ experiments
 autocal/data/progressive_experiment/
 autocal/tests/test_progressive_fitting_experiment.py
 autocal/tools/experiment_progressive_fitting.py
+.worktreeinclude
