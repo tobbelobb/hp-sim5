@@ -171,6 +171,98 @@ def test_launcher_dry_run_works_outside_repo_and_preserves_prompt(network_overri
     assert f'mcp_servers.hp_sim5.command="{ROOT / ".venv/bin/python"}"' in launch['argv']
 
 
+def test_launcher_selects_model_provider_and_model_by_option_or_forwarding():
+    base = [str(ROOT / 'hp-sim5-research-agent'), '--dry-run', '--viewer', 'none', '--sidebar-section', 'none']
+    result = subprocess.run(base + ['--model-provider', 'opencode_go', '--model', 'deepseek-v4.1-flash',
+                                    '--prompt', 'Research check'], capture_output=True, text=True, timeout=15)
+    assert result.returncode == 0, result.stderr
+    launch = json.loads(result.stdout)
+    assert launch['model_provider'] == 'opencode_go'
+    assert launch['model'] == 'deepseek-v4.1-flash'
+    assert launch['argv'].count('model_provider="opencode_go"') == 1
+    assert launch['argv'].count('--model') == 1
+    assert launch['argv'][launch['argv'].index('--model') + 1] == 'deepseek-v4.1-flash'
+    # The same selection forwarded after -- is detected for credential lookup and not duplicated.
+    forwarded = subprocess.run(base + ['--prompt', 'Research check', '--', '-c', 'model_provider="opencode_go"',
+                                       '-m', 'deepseek-v4.1-flash'], capture_output=True, text=True, timeout=15)
+    assert forwarded.returncode == 0, forwarded.stderr
+    launch = json.loads(forwarded.stdout)
+    assert launch['model_provider'] == 'opencode_go'
+    assert launch['model'] == 'deepseek-v4.1-flash'
+    assert launch['argv'].count('model_provider="opencode_go"') == 1
+    assert launch['argv'].count('--model') == 0 and launch['argv'].count('-m') == 1
+    # A forwarded value wins over the option without producing a repeated Codex option.
+    combined = subprocess.run(base + ['--model-provider', 'opencode_go', '--model', 'gpt-6-luna',
+                                      '--prompt', 'Research check', '--', '-m', 'deepseek-v4.1-flash'],
+                              capture_output=True, text=True, timeout=15)
+    assert combined.returncode == 0, combined.stderr
+    launch = json.loads(combined.stdout)
+    assert launch['model'] == 'deepseek-v4.1-flash'
+    assert launch['argv'].count('--model') == 0 and launch['argv'].count('-m') == 1
+    assert launch['argv'][launch['argv'].index('-m') + 1] == 'deepseek-v4.1-flash'
+
+
+def test_launcher_loads_provider_key_from_env_file_without_leaking_it(tmp_path, monkeypatch):
+    import importlib.util
+    secret = 'opencode-go-test-secret'
+    observed = tmp_path / 'child-environment.json'
+    codex = tmp_path / 'codex'
+    codex.write_text(f'#!{sys.executable}\n'
+                     'import json, os\n'
+                     'values = {"provider": os.environ.get("OPENCODE_GO_API_KEY"),\n'
+                     '          "openai": os.environ.get("OPENAI_API_KEY"), "codex": os.environ.get("CODEX_API_KEY")}\n'
+                     f'open({str(observed)!r}, "w").write(json.dumps(values))\n')
+    codex.chmod(0o755)
+    codex_home = tmp_path / 'codex-home'
+    codex_home.mkdir()
+    (codex_home / 'config.toml').write_text(
+        '[model_providers.opencode_go]\nname = "OpenCode Go"\nbase_url = "https://example.invalid/v1"\n'
+        'wire_api = "responses"\nenv_key = "OPENCODE_GO_API_KEY"\n')
+    env_file = tmp_path / '.env'
+    env_file.write_text(f'# provider credentials\nOPENCODE_GO_API_KEY="{secret}"\nOTHER_KEY=unused\n')
+    monkeypatch.setenv('CODEX_HOME', str(codex_home))
+    monkeypatch.setenv('OPENAI_API_KEY', 'openai-sentinel')
+    monkeypatch.setenv('CODEX_API_KEY', 'codex-sentinel')
+
+    spec = importlib.util.spec_from_file_location('research_agent', ROOT / 'scripts/research_agent.py')
+    launcher = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(launcher)
+    monkeypatch.setattr(launcher, 'ENV_FILE', env_file)
+    monkeypatch.setattr(launcher, 'RuntimeService', _stub_runtime_service())
+    monkeypatch.setenv('PATH', str(tmp_path) + os.pathsep + os.environ['PATH'])
+    session = tmp_path / 'provider session'
+    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--viewer', 'none', '--prompt', 'provider key check',
+                                      '--model-provider', 'opencode_go', '--model', 'deepseek-v4.1-flash',
+                                      '--session-dir', str(session), '--sidebar-section', 'none'])
+    assert launcher.main() == 0
+    assert json.loads(observed.read_text()) == {'provider': secret, 'openai': None, 'codex': None}
+    artifacts = (session / 'launch.json').read_text() + (session / 'attachment.toml').read_text()
+    assert secret not in artifacts
+    metadata = json.loads((session / 'launch.json').read_text())
+    assert metadata['model_provider'] == 'opencode_go' and metadata['model'] == 'deepseek-v4.1-flash'
+    assert secret not in session.joinpath('prompt.txt').read_text()
+
+
+def _stub_runtime_service():
+    class Service:
+        endpoint = 'http://127.0.0.1:12345'
+        token = 'test-runtime-secret'
+
+        def __init__(self, root, directory, viewer_endpoint, *, backend, record, machine):
+            self.directory = directory
+
+        def start(self):
+            return self
+
+        def call(self, operation):
+            assert operation == 'status'
+            return {'connected': True, 'step': 0, 'queue_length': 0, 'session_id': 'test-session'}
+
+        def close(self):
+            pass
+    return Service
+
+
 def test_launcher_named_session_keeps_explicit_path_and_summary_instructions(tmp_path):
     session = tmp_path / 'HP3 radius validation'
     result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--dry-run', '--viewer', 'none',

@@ -11,6 +11,7 @@ import socket
 import subprocess
 import sys
 import time
+import tomllib
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,12 +21,83 @@ from hp_sim5_research.services import RuntimeService, free_port, stop_process, r
 from hp_sim5_research.archive import initial_abstract, session_name, write_index
 
 
-def codex_environment():
-    # This launcher uses the user's Codex ChatGPT sign-in, never a project API key.
-    return {key: value for key, value in os.environ.items() if key not in ('OPENAI_API_KEY', 'CODEX_API_KEY')}
+ENV_FILE = ROOT / '.env'
+CHATGPT_SIGN_IN = 'openai'
+STRIPPED_KEYS = ('OPENAI_API_KEY', 'CODEX_API_KEY')
 
 
-def doctor():
+def provider_env_key(provider):
+    # A configured provider names the environment variable holding its credential.
+    if not provider:
+        return None
+    candidates = [ROOT / '.codex/config.toml',
+                  Path(os.environ.get('CODEX_HOME', Path.home() / '.codex')) / 'config.toml']
+    for path in candidates:
+        try:
+            providers = tomllib.loads(path.read_text()).get('model_providers', {})
+        except (OSError, tomllib.TOMLDecodeError):
+            continue
+        variable = providers.get(provider, {}).get('env_key')
+        if variable:
+            return variable
+    return None
+
+
+def dotenv_values(path=None):
+    # Read plain KEY=VALUE lines without executing the file or touching the environment.
+    values = {}
+    try:
+        lines = (path or ENV_FILE).read_text().splitlines()
+    except OSError:
+        return values
+    for line in lines:
+        line = line.strip()
+        if line.startswith('export '):
+            line = line[7:].lstrip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+        key, _, value = line.partition('=')
+        key, value = key.strip(), value.strip().strip('"').strip("'")
+        if key and value:
+            values[key] = value
+    return values
+
+
+def codex_environment(provider=CHATGPT_SIGN_IN):
+    # ChatGPT sign-in needs no OpenAI key. A selected API provider gets its configured
+    # env_key from the Git-ignored .env when the caller has not already exported it.
+    environment = {key: value for key, value in os.environ.items() if key not in STRIPPED_KEYS}
+    variable = provider_env_key(provider)
+    if variable and not environment.get(variable):
+        value = dotenv_values().get(variable)
+        if value:
+            environment[variable] = value
+    return environment
+
+
+def forwarded_settings(codex_args):
+    # Effective `-c` overrides and `--model` from arguments forwarded to Codex; later wins.
+    settings = {}
+    model = None
+    arguments = iter(codex_args)
+    for argument in arguments:
+        if argument in ('-c', '--config'):
+            override = next(arguments, None)
+        elif argument.startswith('--config='):
+            override = argument.split('=', 1)[1]
+        else:
+            override = None
+        if override and '=' in override:
+            key, value = override.split('=', 1)
+            settings[key.strip()] = value.strip().strip('"')
+        elif argument in ('-m', '--model'):
+            model = next(arguments, None)
+        elif argument.startswith('--model='):
+            model = argument.split('=', 1)[1].strip().strip('"')
+    return settings, model
+
+
+def doctor(provider=CHATGPT_SIGN_IN, model=None):
     checks = {}
     for module, package in [('numpy', 'numpy'), ('pxr', 'usd-core'), ('rerun', 'rerun-sdk'), ('mcp', 'mcp')]:
         try:
@@ -35,12 +107,18 @@ def doctor():
             checks[package] = {'ok': False, 'error': str(error)}
     codex = shutil.which('codex')
     checks['codex'] = {'ok': codex is not None, 'path': codex}
-    if codex is not None:
+    if codex is not None and provider == CHATGPT_SIGN_IN:
         result = subprocess.run([codex, 'login', 'status'], capture_output=True, text=True,
-                                env=codex_environment(), timeout=15)
+                                env=codex_environment(provider), timeout=15)
         signed_in = result.returncode == 0 and 'ChatGPT' in result.stdout + result.stderr
         checks['chatgpt_login'] = {'ok': signed_in,
                                    'next_step': None if signed_in else 'codex login (choose ChatGPT)'}
+    elif provider != CHATGPT_SIGN_IN:
+        variable = provider_env_key(provider)
+        available = bool(variable and codex_environment(provider).get(variable))
+        checks['provider_credentials'] = {'ok': available or variable is None, 'variable': variable,
+                                          'next_step': None if available or variable is None
+                                          else f'export {variable} or add it to {ENV_FILE.name}'}
     rerun = ROOT / '.venv/bin/rerun'
     checks['viewer_mcp'] = {'ok': False, 'path': str(rerun)}
     if rerun.is_file():
@@ -73,7 +151,8 @@ def doctor():
         finally:
             if runtime is not None:
                 runtime.close()
-    return {'ok': all(check['ok'] for check in checks.values()), 'repo': str(ROOT), 'checks': checks}
+    return {'ok': all(check['ok'] for check in checks.values()), 'repo': str(ROOT),
+            'model_provider': provider, 'model': model, 'checks': checks}
 
 
 def toml_literal(value):
@@ -91,7 +170,7 @@ def sidebar_hooks(section_id):
     }]}]}
 
 
-def sidebar_server_enabled(codex_args):
+def sidebar_server_enabled(codex_args, provider=CHATGPT_SIGN_IN):
     # Ask Codex for effective configuration, including plugin servers and CLI overrides.
     overrides = []
     arguments = iter(codex_args)
@@ -105,7 +184,7 @@ def sidebar_server_enabled(codex_args):
             overrides.append(argument)
     try:
         result = subprocess.run(['codex', *overrides, 'mcp', 'list', '--json'],
-                                capture_output=True, text=True, env=codex_environment(), timeout=10)
+                                capture_output=True, text=True, env=codex_environment(provider), timeout=10)
         if result.returncode == 0:
             return any(server['name'] == 'codex_app' and server['enabled']
                        for server in json.loads(result.stdout))
@@ -114,7 +193,8 @@ def sidebar_server_enabled(codex_args):
     return False
 
 
-def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, dont_ask=False, codex_args=(), instructions='', sidebar_section=None):
+def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, dont_ask=False, codex_args=(), instructions='', sidebar_section=None,
+                  model_provider=CHATGPT_SIGN_IN, model=None):
     command = ['codex'] + (['exec'] if batch else [])
     command += ['--cd', str(ROOT), '--sandbox', 'workspace-write', '-c', 'approval_policy="never"']
     if batch:
@@ -122,7 +202,6 @@ def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, dont_a
     settings = {'sandbox_workspace_write.network_access': True,
                 'features.default_mode_request_user_input': not (dont_ask or batch),
                 'mcp_servers.hp_sim5.command': sys.executable,
-                'model_provider': 'openai',
                 'mcp_servers.hp_sim5.args': [str(ROOT / 'scripts/hp_sim5_mcp.py')],
                 'mcp_servers.hp_sim5.cwd': str(ROOT), 'mcp_servers.hp_sim5.required': True,
                 'mcp_servers.hp_sim5.startup_timeout_sec': 30, 'mcp_servers.hp_sim5.tool_timeout_sec': 14500,
@@ -130,6 +209,8 @@ def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, dont_a
                 'mcp_servers.rerun.enabled': viewer_endpoint is not None,
                 'mcp_servers.rerun.command': str(ROOT / '.venv/bin/rerun'),
                 'mcp_servers.rerun.args': ['viewer-mcp']}
+    if model_provider:
+        settings['model_provider'] = model_provider
     if runtime is not None:
         settings['mcp_servers.hp_sim5.args'] = [str(ROOT / 'scripts/research_attach.py'), str(session / 'connection.json')]
     if viewer_endpoint is not None:
@@ -142,6 +223,8 @@ def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, dont_a
         settings['hooks.UserPromptSubmit'] = sidebar_hooks(sidebar_section)['UserPromptSubmit']
     for key, value in settings.items():
         command += ['-c', f'{key}={toml_literal(value)}']
+    if model:
+        command += ['--model', model]
     if instructions:
         command += ['-c', f'developer_instructions={json.dumps(instructions)}']
     return command + list(codex_args) + (['-'] if batch else [])
@@ -187,6 +270,9 @@ def main():
                         help='Continuing physics: JS by default; native-warp compiles the Python cable solver (CUDA experimental)')
     parser.add_argument('--no-record', action='store_true', help='Keep numerical collection evidence without Rerun logging')
     parser.add_argument('--machine', choices=['hp3', 'hp4'], default='hp4', help='Matched scene and RRF configuration')
+    parser.add_argument('--model-provider', default=CHATGPT_SIGN_IN,
+                        help='Codex model provider; opencode_go reads OPENCODE_GO_API_KEY, falling back to the .env file')
+    parser.add_argument('--model', help='Codex model name, for example deepseek-v4.1-flash')
     parser.add_argument('--dont-ask', action='store_true', help='Disable structured clarification questions in Default mode')
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--batch', action='store_true', help='Run codex exec and save JSONL events')
@@ -199,6 +285,13 @@ def main():
     split = argv.index('--') if '--' in argv else len(argv)
     args = parser.parse_args(argv[:split])
     codex_args = argv[split + 1:]
+    # Forwarded `-c model_provider=...` and `--model` win, matching Codex's own last-wins order.
+    forwarded, forwarded_model = forwarded_settings(codex_args)
+    provider = forwarded.get('model_provider', args.model_provider)
+    model = forwarded_model or args.model
+    # Codex rejects a repeated --model, so only add options the caller did not forward.
+    injected_provider = None if 'model_provider' in forwarded else args.model_provider
+    injected_model = None if forwarded_model else args.model
     previous_sigterm = signal.signal(signal.SIGTERM, interrupted)
     viewer = agent = session = runtime = None
     session_created = False
@@ -207,7 +300,7 @@ def main():
         if args.doctor:
             if args.preflight:
                 parser.error('--doctor and --preflight are separate diagnostics; select one')
-            result = doctor()
+            result = doctor(provider, model)
             print(json.dumps(result, indent=2))
             return 0 if result['ok'] else 1
         prompt = args.prompt_file.read_text() if args.prompt_file else args.prompt
@@ -223,7 +316,7 @@ def main():
             sidebar_section = None
         if sidebar_section:
             sidebar_section = str(uuid.UUID(sidebar_section))
-            if not args.serve and not sidebar_server_enabled(codex_args):
+            if not args.serve and not sidebar_server_enabled(codex_args, provider):
                 print('Sidebar categorization skipped: codex_app MCP server is not enabled in this Codex CLI configuration.',
                       file=sys.stderr)
                 sidebar_section = None
@@ -242,7 +335,8 @@ def main():
         if args.dry_run:
             endpoint = None if args.viewer == 'none' else 'http://127.0.0.1:PORT'
             print(json.dumps({'mode': 'serve' if args.serve else 'batch' if args.batch else 'interactive',
-                              'argv': codex_command(session, endpoint, batch=args.batch, dont_ask=args.dont_ask, codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section) + ([] if args.batch or not prompt else [prompt]),
+                              'model_provider': provider, 'model': model,
+                              'argv': codex_command(session, endpoint, batch=args.batch, dont_ask=args.dont_ask, codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section, model_provider=injected_provider, model=injected_model) + ([] if args.batch or not prompt else [prompt]),
                               'prompt': full_prompt}, indent=2))
             return 0
         session.mkdir(parents=True)
@@ -280,12 +374,14 @@ def main():
         if sidebar_section:
             attachment += '\n[hooks]\n' + '\n'.join(f'{key} = {toml_literal(value)}' for key, value in sidebar_hooks(sidebar_section).items()) + '\n'
         (session / 'attachment.toml').write_text(attachment)
-        command = codex_command(session, endpoint, runtime, batch=args.batch, dont_ask=args.dont_ask, codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section)
+        command = codex_command(session, endpoint, runtime, batch=args.batch, dont_ask=args.dont_ask, codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section,
+                                model_provider=injected_provider, model=injected_model)
         if not args.batch and prompt:
             command += [prompt]
         # Keep bearer credentials out of launch artifacts.
         saved_command = [arg.replace(runtime.token, '<runtime token>') for arg in command]
         (session / 'launch.json').write_text(json.dumps({'argv': saved_command, 'runtime_status': runtime_status,
+                                                       'model_provider': provider, 'model': model,
                                                        'viewer_endpoint': endpoint, 'runtime_endpoint': runtime.endpoint}, indent=2) + '\n')
         print(f'Research session: {session}', file=sys.stderr, flush=True)
         if args.serve:
@@ -298,7 +394,7 @@ def main():
             raise RuntimeError(f'Runtime stopped; read {session / "native/runtime.log"}')
         if not args.batch:
             # Codex owns the terminal and conversation across all research turns.
-            agent = subprocess.Popen(command, cwd=ROOT, env=codex_environment())
+            agent = subprocess.Popen(command, cwd=ROOT, env=codex_environment(provider))
             # Ctrl-C belongs to Codex's turn interruption UI, not supervisor shutdown.
             previous_sigint = signal.signal(signal.SIGINT, lambda *_: None)
             try:
@@ -306,7 +402,7 @@ def main():
             finally:
                 signal.signal(signal.SIGINT, previous_sigint)
             return returncode
-        agent = subprocess.Popen(command, cwd=ROOT, env=codex_environment(),
+        agent = subprocess.Popen(command, cwd=ROOT, env=codex_environment(provider),
                                  stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
         agent.stdin.write(full_prompt)
         agent.stdin.close()

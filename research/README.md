@@ -23,6 +23,7 @@ codex login                       # choose ChatGPT
 ./hp-sim5-research-agent --name "HP3 held-out sweep ranking" --prompt-file research/prompts/autocal.txt
 ./hp-sim5-research-agent --viewer none --prompt "Investigate autocal candidate ranking on recorded datasets."
 ./hp-sim5-research-agent --machine hp3 --viewer none --no-record --prompt "Collect independent HP3 calibration sweeps."
+./hp-sim5-research-agent --model-provider opencode_go --model deepseek-v4.1-flash --prompt "Say hello"
 ```
 
 Continuing collection defaults to the production JavaScript physics pipeline in
@@ -155,11 +156,25 @@ research. This does not launch the desktop app or assign ChatGPT project
 membership. See the official
 [MCP lifecycle hooks](https://learn.chatgpt.com/docs/hooks).
 
-The launcher uses the existing Codex ChatGPT login, makes no OpenAI API calls,
-selects the OpenAI provider, and removes API-key variables from its Codex child.
-ChatGPT plan limits apply. Its defaults are `workspace-write`,
-`approval_policy="never"` and `sandbox_workspace_write.network_access=true`;
-normal Codex options can override them. Service
+The launcher defaults to the existing Codex ChatGPT login: it selects the OpenAI
+provider, makes no OpenAI API calls, and removes `OPENAI_API_KEY` and
+`CODEX_API_KEY` from its Codex child. ChatGPT plan limits apply. `--model-provider`
+and `--model` select another configured provider and model, and forwarded Codex
+`-c model_provider=... -m ...` arguments are detected too:
+
+```bash
+./hp-sim5-research-agent --model-provider opencode_go --model deepseek-v4.1-flash
+./hp-sim5-research-agent -- -c 'model_provider="opencode_go"' -m deepseek-v4.1-flash
+```
+
+When the selected provider declares an `env_key` in the Codex configuration, the
+launcher fills a missing variable from the Git-ignored repository `.env` before
+starting Codex. It reads only that provider's variable, leaves the surrounding
+environment unchanged, and never writes the value to prompts, launch metadata or
+logs. Such providers do not need the `codex login` step above. The launcher's
+defaults are `workspace-write`, `approval_policy="never"` and
+`sandbox_workspace_write.network_access=true`; normal Codex options can override
+them. Service
 startup leaves physics at step zero and never selects experiments or runs doctor.
 Default Viewer mode is `--viewer headless`; use `--viewer window` for a desktop
 window or `--viewer none` for numerical research. Headless Rerun still requires
@@ -168,8 +183,10 @@ a graphics backend. Failed Viewer startup names its log and suggests numeric mod
 The CLI warning “Running without the shared background server … requires
 embedded mode” is expected. Per-session `-c` overrides attach the experiment
 tools and instructions, so Codex runs its backend inside the CLI process instead
-of using the shared daemon. This still uses the normal Codex conversation and
-ChatGPT login. It does not refer to embedding the Rerun Viewer.
+of using the shared daemon. This still uses the normal Codex conversation and the
+configured login. It does not refer to embedding the Rerun Viewer. Provider and
+model selection apply to launcher sessions; a desktop client selects its own
+provider in its client configuration.
 
 ## Desktop attachment
 

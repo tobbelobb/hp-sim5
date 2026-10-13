@@ -10,7 +10,9 @@ Structured experiments enable us to improve Hangprinter.
 
 Run prompt-driven simulation research with [`hp-sim5-research-agent`](research/README.md).
 It connects Codex to native experiment tools and the Rerun Viewer, saves numeric
-and visual evidence, and uses your existing Codex ChatGPT login.
+and visual evidence, and uses your existing Codex ChatGPT login by default. Other
+configured providers, such as OpenCode Go with DeepSeek, are selected with
+`--model-provider` and `--model`; see the [research README](research/README.md#setup-and-interactive-use).
 The [research architecture map](research/architecture.md) explains which tools
 own each world, how configuration reaches physics and what gets recorded.
 
