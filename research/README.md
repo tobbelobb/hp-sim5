@@ -97,6 +97,30 @@ supervisor remains alive. Use a separate worktree and supervisor for each
 independent research chat; do not forward `--cd` or `--worktree` to move the
 conversation away from its attached tools.
 
+### Research in a Git worktree
+
+`--worktree` creates a fresh worktree and runs the whole session from it, so
+`ROOT`, `--cd`, the MCP `cwd`, the sandbox and the session artifacts all follow
+the worktree instead of the original checkout:
+
+```bash
+./hp-sim5-research-agent --worktree --prompt-file research/prompts/autocal.txt
+./hp-sim5-research-agent --worktree --name "deferred bake" --worktree-dir /tmp/hp-sim5-worktrees
+```
+
+It runs `git worktree add -b research/<name>-<id> <dir>` from the current `HEAD`,
+links the Git-ignored pieces a bare checkout lacks (`.venv`, `.env`,
+`node_modules` and `RRF/build`), then re-executes the worktree's own launcher.
+The default parent directory is a sibling named `<repo>-worktrees`; override it
+with `--worktree-dir`. Each worktree keeps its own `output/research/` evidence.
+The branch name derives from `--name`, otherwise from the prompt's first line,
+otherwise `research`.
+
+The worktree checks out committed `HEAD`, so commit launcher or tool changes
+before using `--worktree`; uncommitted edits in the original checkout are not
+carried over. `--worktree` is a launcher option (before `--`); forwarding
+`--worktree` to Codex after `--` is not the same thing and is still unsupported.
+
 ### Recover an interrupted conversation
 
 If `codex resume` says “This conversation is open in another app”, the transcript

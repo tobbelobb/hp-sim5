@@ -6,6 +6,7 @@ from importlib.metadata import version
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import socket
 import subprocess
@@ -24,6 +25,8 @@ from hp_sim5_research.archive import initial_abstract, session_name, write_index
 ENV_FILE = ROOT / '.env'
 CHATGPT_SIGN_IN = 'openai'
 STRIPPED_KEYS = ('OPENAI_API_KEY', 'CODEX_API_KEY')
+# Ignored, machine-specific pieces a raw worktree checkout lacks but the launcher needs.
+WORKTREE_LINKS = ('.venv', '.env', 'node_modules', 'RRF/build')
 
 
 def provider_env_key(provider):
@@ -95,6 +98,80 @@ def forwarded_settings(codex_args):
         elif argument.startswith('--model='):
             model = argument.split('=', 1)[1].strip().strip('"')
     return settings, model
+
+
+def worktree_parent(directory=None):
+    return (directory or ROOT.parent / f'{ROOT.name}-worktrees').expanduser().resolve()
+
+
+def worktree_slug(topic):
+    slug = re.sub(r'[^a-z0-9]+', '-', topic.lower()).strip('-')[:40].strip('-')
+    return slug or 'research'
+
+
+def worktree_plan(slug, directory=None):
+    name = f'{slug}-{uuid.uuid4().hex[:8]}'
+    return {'path': worktree_parent(directory) / name, 'branch': f'research/{name}', 'links': list(WORKTREE_LINKS)}
+
+
+def create_worktree(topic, directory=None):
+    """Create a raw Git worktree and link the ignored runtime pieces the launcher needs."""
+    if not (ROOT / '.venv/bin/python').exists():
+        raise RuntimeError('--worktree requires the repository .venv; create it before sharing it into a worktree')
+    head = subprocess.run(['git', '-C', str(ROOT), 'rev-parse', '--abbrev-ref', 'HEAD'],
+                          capture_output=True, text=True)
+    if head.returncode != 0:
+        raise RuntimeError(f'--worktree requires a Git checkout: {head.stderr.strip()}')
+    plan = worktree_plan(worktree_slug(topic), directory)
+    plan['base'] = head.stdout.strip()
+    plan['path'].parent.mkdir(parents=True, exist_ok=True)
+    add = subprocess.run(['git', '-C', str(ROOT), 'worktree', 'add', '-b', plan['branch'], str(plan['path'])],
+                         capture_output=True, text=True)
+    if add.returncode != 0:
+        raise RuntimeError(f'git worktree add failed: {(add.stderr or add.stdout).strip()}')
+    for entry in WORKTREE_LINKS:
+        source, target = ROOT / entry, plan['path'] / entry
+        if source.exists() and not target.exists():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.symlink_to(source, target_is_directory=source.is_dir())
+    return plan
+
+
+def strip_worktree_options(arguments):
+    # The worktree launcher must not create another worktree from the same invocation.
+    remaining = []
+    arguments = iter(arguments)
+    for argument in arguments:
+        if argument == '--worktree':
+            continue
+        if argument == '--worktree-dir':
+            next(arguments, None)
+            continue
+        if argument.startswith('--worktree-dir='):
+            continue
+        remaining.append(argument)
+    return remaining
+
+
+def worktree_launch(args, launcher_args, codex_args, provider, model):
+    prompt = args.prompt or (args.prompt_file.read_text() if args.prompt_file else None)
+    topic = args.name or (prompt.strip().splitlines()[0] if prompt and prompt.strip() else 'research')
+    if args.dry_run:
+        plan = worktree_plan(worktree_slug(topic), args.worktree_dir)
+        print(json.dumps({'mode': 'worktree', 'model_provider': provider, 'model': model,
+                          'worktree': {'path': str(plan['path']), 'branch': plan['branch'],
+                                       'links': plan['links']}}, indent=2))
+        return 0
+    worktree = create_worktree(topic, args.worktree_dir)
+    print(f'Research worktree: {worktree["path"]} (branch {worktree["branch"]}, base {worktree["base"]})',
+          file=sys.stderr, flush=True)
+    remaining = strip_worktree_options(launcher_args)
+    if codex_args:
+        remaining += ['--'] + codex_args
+    # Run the worktree's own launcher so ROOT, MCP cwd, sandbox and artifacts all follow it.
+    python = worktree['path'] / '.venv/bin/python'
+    script = worktree['path'] / 'scripts/research_agent.py'
+    os.execv(str(python), [str(python), str(script), *remaining])
 
 
 def doctor(provider=CHATGPT_SIGN_IN, model=None):
@@ -273,6 +350,10 @@ def main():
     parser.add_argument('--model-provider', default=CHATGPT_SIGN_IN,
                         help='Codex model provider; opencode_go reads OPENCODE_GO_API_KEY, falling back to the .env file')
     parser.add_argument('--model', help='Codex model name, for example deepseek-v4.1-flash')
+    parser.add_argument('--worktree', action='store_true',
+                        help='Create a fresh Git worktree and run the whole session from it')
+    parser.add_argument('--worktree-dir', type=Path,
+                        help='Parent directory for --worktree (default: a sibling of the repository)')
     parser.add_argument('--dont-ask', action='store_true', help='Disable structured clarification questions in Default mode')
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--batch', action='store_true', help='Run codex exec and save JSONL events')
@@ -292,11 +373,15 @@ def main():
     # Codex rejects a repeated --model, so only add options the caller did not forward.
     injected_provider = None if 'model_provider' in forwarded else args.model_provider
     injected_model = None if forwarded_model else args.model
+    if args.worktree_dir and not args.worktree:
+        parser.error('--worktree-dir requires --worktree')
     previous_sigterm = signal.signal(signal.SIGTERM, interrupted)
     viewer = agent = session = runtime = None
     session_created = False
     returncode = 1
     try:
+        if args.worktree:
+            return worktree_launch(args, argv[:split], codex_args, provider, model)
         if args.doctor:
             if args.preflight:
                 parser.error('--doctor and --preflight are separate diagnostics; select one')

@@ -202,6 +202,55 @@ def test_launcher_selects_model_provider_and_model_by_option_or_forwarding():
     assert launch['argv'][launch['argv'].index('-m') + 1] == 'deepseek-v4.1-flash'
 
 
+def test_launcher_worktree_dry_run_plans_without_creating_anything(tmp_path):
+    target = tmp_path / 'worktrees'
+    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--dry-run', '--worktree', '--worktree-dir',
+                             str(target), '--viewer', 'none', '--prompt', 'Optimize anchor layout'],
+                            capture_output=True, text=True, timeout=15)
+    assert result.returncode == 0, result.stderr
+    plan = json.loads(result.stdout)
+    assert plan['mode'] == 'worktree'
+    assert plan['worktree']['path'].startswith(str(target))
+    assert plan['worktree']['branch'].startswith('research/optimize-anchor-layout-')
+    assert set(plan['worktree']['links']) == {'.venv', '.env', 'node_modules', 'RRF/build'}
+    assert not target.exists()
+    missing = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--dry-run', '--worktree-dir', str(target),
+                              '--viewer', 'none', '--prompt', 'x'], capture_output=True, text=True, timeout=15)
+    assert missing.returncode != 0 and '--worktree-dir requires --worktree' in missing.stderr
+
+
+def test_create_worktree_links_ignored_runtime_pieces(tmp_path, monkeypatch):
+    import importlib.util
+    repo = tmp_path / 'repo'
+    (repo / 'scripts').mkdir(parents=True)
+    (repo / 'scripts/research_agent.py').write_text('')
+    (repo / '.gitignore').write_text('.venv\n.env\nnode_modules/\nRRF/build\n')
+    (repo / 'tracked.txt').write_text('tracked\n')
+    subprocess.run(['git', '-C', str(repo), 'init', '-q', '-b', 'main'], check=True, capture_output=True)
+    subprocess.run(['git', '-C', str(repo), 'add', '-A'], check=True, capture_output=True)
+    subprocess.run(['git', '-C', str(repo), '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-qm', 'init'],
+                   check=True, capture_output=True)
+    (repo / '.venv/bin').mkdir(parents=True)
+    (repo / '.venv/bin/python').write_text('')
+    (repo / '.env').write_text('K=v\n')
+    (repo / 'node_modules').mkdir()
+    (repo / 'RRF/build').mkdir(parents=True)
+    spec = importlib.util.spec_from_file_location('research_agent', ROOT / 'scripts/research_agent.py')
+    launcher = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(launcher)
+    monkeypatch.setattr(launcher, 'ROOT', repo)
+    plan = launcher.create_worktree('My Topic', tmp_path / 'worktrees')
+    assert plan['path'].is_dir() and plan['base'] == 'main'
+    assert (plan['path'] / 'tracked.txt').read_text() == 'tracked\n'
+    for entry in launcher.WORKTREE_LINKS:
+        link = plan['path'] / entry
+        assert link.is_symlink() and link.resolve() == (repo / entry).resolve()
+    assert plan['branch'] in subprocess.run(['git', '-C', str(repo), 'worktree', 'list'],
+                                            capture_output=True, text=True).stdout
+    assert launcher.strip_worktree_options(['--viewer', 'none', '--worktree', '--worktree-dir', '/x',
+                                            '--prompt', 'p']) == ['--viewer', 'none', '--prompt', 'p']
+
+
 def test_launcher_loads_provider_key_from_env_file_without_leaking_it(tmp_path, monkeypatch):
     import importlib.util
     secret = 'opencode-go-test-secret'
