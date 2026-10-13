@@ -9,6 +9,7 @@ export class PerformanceMonitor {
     this.slowStepMs = slowStepMs;
 
     this.stepCount = 0;
+    this.windowStepCount = 0;
     this.stepStartMs = 0;
     this.stepTimes = [];
     this.systemTotals = new Map();
@@ -26,17 +27,18 @@ export class PerformanceMonitor {
 
     const stepMs = performance.now() - this.stepStartMs;
     this.stepTimes.push(stepMs);
-    if (this.stepTimes.length > this.logEverySteps) {
+    if (this.logEverySteps > 0 && this.stepTimes.length > this.logEverySteps) {
       this.stepTimes.shift();
     }
 
     this.stepCount += 1;
+    this.windowStepCount += 1;
 
     if (stepMs >= this.slowStepMs) {
       console.warn(`[perf] slow step: ${stepMs.toFixed(3)} ms`);
     }
 
-    if (this.stepCount % this.logEverySteps === 0) {
+    if (this.logEverySteps > 0 && this.stepCount % this.logEverySteps === 0) {
       this.report();
       this.resetWindow();
     }
@@ -46,7 +48,9 @@ export class PerformanceMonitor {
     return this.measureBlock(name, fn);
   }
 
-  report() {
+  // logEverySteps=0 retains the whole measurement until resetWindow(), without
+  // periodic console output. Snapshots also work for a partial browser window.
+  snapshot() {
     const sortedSteps = [...this.stepTimes].sort((a, b) => a - b);
     const avg =
       this.stepTimes.reduce((sum, value) => sum + value, 0) /
@@ -56,29 +60,36 @@ export class PerformanceMonitor {
     const p95 = percentile(sortedSteps, 0.95);
     const max = sortedSteps[sortedSteps.length - 1] || 0;
 
-    console.log(
-      `[perf] steps=${this.stepCount} avg=${avg.toFixed(3)}ms ` +
-      `p50=${p50.toFixed(3)}ms p95=${p95.toFixed(3)}ms max=${max.toFixed(3)}ms`
-    );
-
     const rows = [...this.systemTotals.entries()]
       .map(([name, totalMs]) => {
         const count = this.systemCounts.get(name) || 0;
         return {
           system: name,
           calls: count,
-          totalMs: Number(totalMs.toFixed(3)),
-          avgPerCallMs: Number((totalMs / Math.max(1, count)).toFixed(4)),
-          avgPerStepMs: Number((totalMs / Math.max(1, this.logEverySteps)).toFixed(4)),
-          maxMs: Number((this.systemMax.get(name) || 0).toFixed(3)),
+          totalMs,
+          avgPerCallMs: totalMs / Math.max(1, count),
+          avgPerStepMs: totalMs / Math.max(1, this.windowStepCount),
+          maxMs: this.systemMax.get(name) || 0,
         };
       })
       .sort((a, b) => b.totalMs - a.totalMs);
 
-    console.table(rows);
+    return { steps: this.windowStepCount, avgMs: avg, p50Ms: p50,
+      p95Ms: p95, maxMs: max, systems: rows };
+  }
+
+  report() {
+    const stats = this.snapshot();
+    console.log(
+      `[perf] steps=${this.stepCount} avg=${stats.avgMs.toFixed(3)}ms ` +
+      `p50=${stats.p50Ms.toFixed(3)}ms p95=${stats.p95Ms.toFixed(3)}ms max=${stats.maxMs.toFixed(3)}ms`
+    );
+    console.table(stats.systems.map(row => Object.fromEntries(Object.entries(row)
+      .map(([key, value]) => [key, typeof value === 'number' && key !== 'calls' ? Number(value.toFixed(4)) : value]))));
   }
 
   resetWindow() {
+    this.windowStepCount = 0;
     this.stepTimes.length = 0;
     this.systemTotals.clear();
     this.systemMax.clear();

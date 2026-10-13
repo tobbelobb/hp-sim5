@@ -1,5 +1,9 @@
 # Native HP4 logo benchmark
 
+For production JavaScript HP3/HP4 physics, see
+[headless JS profiling](HEADLESS_JS_PROFILING.md), including per-system timing,
+V8 CPU/allocation profiles, GC measurements and frozen autocal replay.
+
 Run from the repository root with `.venv/bin/python`. The benchmark uses the
 default `public/usd_scenes/hp4_rigid_body.usda`, its 2 ms timestep, line layering,
 open-loop motors and two cable solver iterations. It consumes the same scheduled
