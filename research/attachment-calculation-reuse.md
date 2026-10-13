@@ -41,3 +41,5 @@ Three fresh-world repeats, separate 5,000-step warmup, Node 24.14.1 on Intel i7-
 ## Cumulative follow-up with the two earlier optimizations
 
 After this worktree's changes were combined with per-update component-store reuse and attachment-transform scratch reuse, all eight frozen HP3/HP4 logo and autocal cases passed exact baseline checkpoints on each of three repeats. Cumulative unprofiled median physics time fell 6.7–16.0% per workload, with a 9.0% median across the eight cases. The complete per-workload medians, repeat ranges, hashes and test results are in the [cumulative validation report](../output/research/sessions/2026-10-13-three-optimizations/report.md). This measures the three-commit state directly; isolated percentages from separate studies should not be added.
+
+The same cumulative source also matched the unoptimized `0cfe920c` checkout exactly in 200 commanded production-pipeline steps for all six other cataloged 3D machine designs: Four High Anchors, CubeCorners, and Slideprinter Original, Multi Unit, Hexagon and Single Pinholes. These short checks confirm behavior, not machine-specific speed gains; timings were not collected for them.
