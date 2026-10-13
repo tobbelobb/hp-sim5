@@ -43,6 +43,41 @@ import { CableSlackSystem } from '../../../src/js/cable_joints_3d/cable_slack_sy
 import { getMachineMotorDiagnostics } from '../../../hp-sim-3d/app/motor-diagnostics.js';
 
 describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
+  test('replaced rigid membership uses the live parent pose rather than a stale member pose', () => {
+    const world = new World();
+    world.setResource('dt', 1);
+    const bodies = [world.createEntity(), world.createEntity()];
+    for (const body of bodies) {
+      world.addComponent(body, new PositionComponent());
+      world.addComponent(body, new OrientationComponent());
+      world.addComponent(body, new MassComponent(1));
+    }
+    const member = world.createEntity();
+    world.addComponent(member, new PositionComponent(50, 0, 0));
+    world.addComponent(member, new OrientationComponent());
+    world.addComponent(member, new RigidBodyMemberComponent(bodies[0]));
+    const anchor = world.createEntity();
+    world.addComponent(anchor, new PositionComponent(3, 0, 0));
+    const jointId = world.createEntity();
+    world.addComponent(jointId, CableJointComponent.fromWorld(
+      member, anchor, 1, new Vector3(), new Vector3(3, 0, 0),
+    ));
+    const pathId = world.createEntity();
+    world.addComponent(pathId, new CablePathComponent(
+      world, [jointId], ['attachment', 'attachment'], [false, false], Infinity,
+    ));
+    const solver = new PBDCableConstraintSolver();
+    solver.update(world, 1);
+    expect(world.getComponent(bodies[0], PositionComponent).pos.x).toBe(2);
+    expect(world.getComponent(bodies[1], PositionComponent).pos.x).toBe(0);
+
+    world.addComponent(member, new RigidBodyMemberComponent(bodies[1]));
+    solver.update(world, 1);
+    expect(world.getComponent(bodies[0], PositionComponent).pos.x).toBe(2);
+    expect(world.getComponent(bodies[1], PositionComponent).pos.x).toBe(2);
+    expect(world.getComponent(member, PositionComponent).pos.x).toBe(50);
+  });
+
   function rotateBodyZ(world, bodyEntity, angle) {
     const q = world.getComponent(bodyEntity, OrientationComponent).quaternion;
     q.x = 0.0;

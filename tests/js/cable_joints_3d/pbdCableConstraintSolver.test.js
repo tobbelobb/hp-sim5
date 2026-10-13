@@ -17,6 +17,124 @@ import {
 import { GravitySystem } from '../../../src/js/cable_joints_3d/commonSystems.js';
 
 describe('PBDCableConstraintSolver (3D)', () => {
+  function addStretchedCable(world, end = 3) {
+    world.setResource('dt', 1);
+    const a = world.createEntity();
+    const b = world.createEntity();
+    world.addComponent(a, new PositionComponent(0, 0, 0));
+    world.addComponent(b, new PositionComponent(end, 0, 0));
+    world.addComponent(a, new MassComponent(1));
+    world.addComponent(b, new MassComponent(1));
+    const jointId = world.createEntity();
+    world.addComponent(jointId, CableJointComponent.fromWorld(
+      a, b, 1, new Vector3(), new Vector3(end, 0, 0),
+    ));
+    const pathId = world.createEntity();
+    world.addComponent(pathId, new CablePathComponent(
+      world, [jointId], ['attachment', 'attachment'], [false, false], Infinity,
+    ));
+    return { a, b, jointId };
+  }
+
+  test.each(['clear', 'new world'])('refreshes component stores after %s with reused entity IDs', change => {
+    let world = new World();
+    const solver = new PBDCableConstraintSolver();
+    // All stores, including the optional pose/inertia stores, are initially absent.
+    solver.update(world, 1);
+    const first = addStretchedCable(world);
+    const discardedPosition = world.getComponent(first.a, PositionComponent);
+    solver.update(world, 1);
+    expect(discardedPosition.pos.x).toBeCloseTo(1, 12);
+
+    if (change === 'clear') world.clear();
+    else world = new World();
+    const next = addStretchedCable(world, 5);
+    expect(next.a).toBe(first.a);
+    solver.update(world, 1);
+    expect(world.getComponent(next.a, PositionComponent).pos.x).toBeCloseTo(2, 12);
+    expect(world.getComponent(next.b, PositionComponent).pos.x).toBeCloseTo(3, 12);
+    expect(discardedPosition.pos.x).toBeCloseTo(1, 12);
+  });
+
+  test('observes replaced and removed endpoint components on the next update', () => {
+    const world = new World();
+    const { a, b, jointId } = addStretchedCable(world);
+    const solver = new PBDCableConstraintSolver();
+    solver.update(world, 1);
+    const discardedPosition = world.getComponent(a, PositionComponent);
+    const position = new PositionComponent(0, 0, 0);
+    world.addComponent(a, position);
+    world.addComponent(a, new MassComponent(3));
+    world.addComponent(b, new PositionComponent(3, 0, 0));
+    const joint = world.getComponent(jointId, CableJointComponent);
+    joint.attachmentPointA_world.set(new Vector3());
+    joint.attachmentPointB_world.set(new Vector3(3, 0, 0));
+    solver.update(world, 1);
+    expect(position.pos.x).toBeCloseTo(0.5, 12);
+    expect(world.getComponent(b, PositionComponent).pos.x).toBeCloseTo(1.5, 12);
+    expect(discardedPosition.pos.x).toBeCloseTo(1, 12);
+
+    world.removeComponent(a, MassComponent);
+    world.removeComponent(b, MassComponent);
+    position.pos.x = 0;
+    world.getComponent(b, PositionComponent).pos.x = 3;
+    solver.update(world, 1);
+    expect(position.pos.x).toBe(0);
+    expect(world.getComponent(b, PositionComponent).pos.x).toBe(3);
+    expect(joint.constraintForceMagnitude).toBe(0);
+
+    world.removeComponent(a, PositionComponent);
+    expect(() => solver.update(world, 1)).not.toThrow();
+  });
+
+  test('successive joints and alternating iterations observe live position writes', () => {
+    const world = new World();
+    const { a, b, jointId } = addStretchedCable(world);
+    const c = world.createEntity();
+    world.addComponent(c, new PositionComponent(6, 0, 0));
+    world.addComponent(c, new MassComponent(1));
+    const nextJointId = world.createEntity();
+    world.addComponent(nextJointId, CableJointComponent.fromWorld(
+      b, c, 1, new Vector3(3, 0, 0), new Vector3(6, 0, 0),
+    ));
+    const path = world.getComponent(world.query([CablePathComponent])[0], CablePathComponent);
+    path.jointEntities.push(nextJointId);
+    path.linkTypes.push('attachment');
+    path.cw.push(false);
+    path.solverIterations = 2;
+    new PBDCableConstraintSolver().update(world, 1);
+    expect([a, b, c].map(id => world.getComponent(id, PositionComponent).pos.x))
+      .toEqual([1.75, 2.75, 4.5]);
+    expect(world.getComponent(jointId, CableJointComponent).constraintForceMagnitude).toBe(1);
+    expect(world.getComponent(nextJointId, CableJointComponent).constraintForceMagnitude).toBe(1.5);
+  });
+
+  test('refreshes previous-pose stores and components used for damping', () => {
+    const world = new World();
+    const { a, b } = addStretchedCable(world);
+    const path = world.getComponent(world.query([CablePathComponent])[0], CablePathComponent);
+    path.compliance = 1;
+    path.damping = 2;
+    const solver = new PBDCableConstraintSolver();
+    solver.update(world, 1);
+    expect(world.getComponent(a, PositionComponent).pos.x).toBeCloseTo(2 / 7, 12);
+
+    const resetPositions = () => {
+      world.getComponent(a, PositionComponent).pos.x = 0;
+      world.getComponent(b, PositionComponent).pos.x = 3;
+    };
+    resetPositions();
+    world.addComponent(a, new PrevFinalPosComponent());
+    world.addComponent(b, new PrevFinalPosComponent(2.5, 0, 0));
+    solver.update(world, 1);
+    expect(world.getComponent(a, PositionComponent).pos.x).toBeCloseTo(3 / 7, 12);
+
+    resetPositions();
+    world.addComponent(b, new PrevFinalPosComponent(3, 0, 0));
+    solver.update(world, 1);
+    expect(world.getComponent(a, PositionComponent).pos.x).toBeCloseTo(2 / 7, 12);
+  });
+
   test.each([0, 4])('zero stiffness preserves the finite damping limit (damping=%s)', damping => {
     const solve = stiffness => {
       const world = new World();

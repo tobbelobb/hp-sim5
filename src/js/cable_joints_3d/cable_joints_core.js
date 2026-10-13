@@ -1278,12 +1278,6 @@ function _isHybrid(value) {
   return value === 'hybrid' || value === 'hybrid-attachment';
 }
 
-function _hasAxisOnlyCableSpinDof(world, entityId) {
-  const spoolState = world.getComponent(entityId, SpoolStateComponent);
-  const linkComp = world.getComponent(entityId, CableLinkComponent);
-  return Boolean(spoolState && linkComp?.cablePlaneNormalLocal);
-}
-
 function _positionStepperConstraintStiffness(world, stepper) {
   if (!stepper || stepper.torqueMode) {
     return 0.0;
@@ -1318,12 +1312,11 @@ function _positionStepperConstraintStiffness(world, stepper) {
   return holdingTorque * polePairs * scale;
 }
 
-function _effectiveMotorizedSpinInvInertia(world, entityId, invInertia, inertia, dt) {
+function _effectiveMotorizedSpinInvInertia(world, stepper, invInertia, inertia, dt) {
   if (!(invInertia > EPSILON)) {
     return 0.0;
   }
 
-  const stepper = world.getComponent(entityId, StepperMotorComponent);
   if (stepper?.torqueMode) {
     return 0.0;
   }
@@ -1358,17 +1351,6 @@ function _openLoopStepperHoldingTorqueLimit(world, stepper) {
     ),
   );
   return holdingTorque * scale;
-}
-
-function _linkAllowsCableSpin(world, path, linkIndex, entityId) {
-  if (!_hasAxisOnlyCableSpinDof(world, entityId)) {
-    return false;
-  }
-  const linkType = path?.linkTypes?.[linkIndex];
-  if (_isHybrid(linkType) || linkType === 'rolling') {
-    return true;
-  }
-  return linkType !== undefined;
 }
 
 function _isSpinBackdrivableThroughPinhole(linkType) {
@@ -2842,13 +2824,46 @@ export class PBDCableConstraintSolver {
     const pathEntities = world.query([CablePathComponent]);
     const dt = world.getResource('dt');
 
+    // Stores belong to this update: clear/replacement can reuse entity IDs.
+    // Read live components from them so later constraints see pose mutations.
+    const positionStore = world.getComponentStore(PositionComponent);
+    const orientationStore = world.getComponentStore(OrientationComponent);
+    const massStore = world.getComponentStore(MassComponent);
+    const inertiaStore = world.getComponentStore(MomentOfInertiaComponent);
+    const memberStore = world.getComponentStore(RigidBodyMemberComponent);
+    const linkStore = world.getComponentStore(CableLinkComponent);
+    const stepperStore = world.getComponentStore(StepperMotorComponent);
+    const spoolStore = world.getComponentStore(SpoolStateComponent);
+    const prevPositionStore = world.getComponentStore(PrevFinalPosComponent);
+    const prevOrientationStore = world.getComponentStore(PrevFinalOrientationComponent);
+    const radiusStore = world.getComponentStore(RadiusComponent);
+    const encoderStore = world.getComponentStore(EncoderComponent);
+    const pathStore = world.getComponentStore(CablePathComponent);
+    const jointStore = world.getComponentStore(CableJointComponent);
+
+    const hasAxisOnlyCableSpinDof = (entityId) => {
+      const spoolState = spoolStore?.get(entityId);
+      const linkComp = linkStore?.get(entityId);
+      return Boolean(spoolState && linkComp?.cablePlaneNormalLocal);
+    };
+    const linkAllowsCableSpin = (path, linkIndex, entityId) => {
+      if (!hasAxisOnlyCableSpinDof(entityId)) {
+        return false;
+      }
+      const linkType = path?.linkTypes?.[linkIndex];
+      if (_isHybrid(linkType) || linkType === 'rolling') {
+        return true;
+      }
+      return linkType !== undefined;
+    };
+
     const jointLocals = new Map();
     const computeLocal = (entityId, worldPoint) => computeLocalAttachment(world, entityId, worldPoint);
-    const getPrevPosition = (entityId) => world.getComponent(entityId, PrevFinalPosComponent)?.pos ?? null;
-    const getPrevOrientation = (entityId) => world.getComponent(entityId, PrevFinalOrientationComponent)?.quaternion ?? null;
-    const getCurrentOrientation = (entityId) => world.getComponent(entityId, OrientationComponent)?.quaternion ?? null;
+    const getPrevPosition = (entityId) => prevPositionStore?.get(entityId)?.pos ?? null;
+    const getPrevOrientation = (entityId) => prevOrientationStore?.get(entityId)?.quaternion ?? null;
+    const getCurrentOrientation = (entityId) => orientationStore?.get(entityId)?.quaternion ?? null;
     const getPrevLocalOrientation = (entityId) => {
-      const member = world.getComponent(entityId, RigidBodyMemberComponent);
+      const member = memberStore?.get(entityId);
       if (!member) {
         return getPrevOrientation(entityId);
       }
@@ -2867,7 +2882,7 @@ export class PBDCableConstraintSolver {
         .normalize();
     };
     const getCurrentLocalOrientation = (entityId) => {
-      const member = world.getComponent(entityId, RigidBodyMemberComponent);
+      const member = memberStore?.get(entityId);
       if (member?.localOrientation) {
         return member.localOrientation;
       }
@@ -2879,7 +2894,7 @@ export class PBDCableConstraintSolver {
       }
       // Hybrid spool rotation changes both the tangent point and the segment
       // rest length. The stored-length term is the r_eff part of tau = r_eff*T.
-      const baseRadius = world.getComponent(entityId, RadiusComponent)?.radius;
+      const baseRadius = radiusStore?.get(entityId)?.radius;
       const { radius } = _effectiveRollingRadius(world, path, linkIndex, baseRadius);
       const effectiveRadius = Number.isFinite(radius)
         ? radius
@@ -2891,12 +2906,12 @@ export class PBDCableConstraintSolver {
       return jointSide === 'A' ? storedGrad : -storedGrad;
     };
     const buildExternalMemberSpinSolveInfo = (entityId, pointWorld, gradPos) => {
-      const linkComp = world.getComponent(entityId, CableLinkComponent);
+      const linkComp = linkStore?.get(entityId);
       if (!linkComp?.cablePlaneNormalLocal || !pointWorld || !gradPos) {
         return null;
       }
-      const orientationComp = world.getComponent(entityId, OrientationComponent);
-      const moiComp = world.getComponent(entityId, MomentOfInertiaComponent);
+      const orientationComp = orientationStore?.get(entityId);
+      const moiComp = inertiaStore?.get(entityId);
       const centerWorld = getEntityWorldPosition(world, entityId);
       if (!orientationComp?.quaternion || !centerWorld || !hasAnyInverseInertia(moiComp)) {
         return null;
@@ -2921,12 +2936,12 @@ export class PBDCableConstraintSolver {
         orientationComp.quaternion,
         axisWorld,
       );
-      const stepper = world.getComponent(entityId, StepperMotorComponent);
+      const stepper = stepperStore?.get(entityId);
       return {
         entityId,
         centerWorld,
         freeInvInertia,
-        invInertia: _effectiveMotorizedSpinInvInertia(world, entityId, freeInvInertia, axisInertia, dt),
+        invInertia: _effectiveMotorizedSpinInvInertia(world, stepper, freeInvInertia, axisInertia, dt),
         holdingTorqueLimit: _openLoopStepperHoldingTorqueLimit(world, stepper),
         torqueMode: Boolean(stepper?.torqueMode),
         axisWorld,
@@ -2948,7 +2963,7 @@ export class PBDCableConstraintSolver {
       }
 
       const directLinkIndex = side === 'A' ? jointIndex : jointIndex + 1;
-      if (_linkAllowsCableSpin(world, path, directLinkIndex, originalEntityId)) {
+      if (linkAllowsCableSpin(path, directLinkIndex, originalEntityId)) {
         const directInfo = buildExternalMemberSpinSolveInfo(originalEntityId, pointWorld, gradPos);
         if (directInfo) {
           directInfo.storedConstraintGradSpin = hybridStoredConstraintGradSpin(
@@ -3013,7 +3028,7 @@ export class PBDCableConstraintSolver {
       }
 
       const internalJointId = path.jointEntities[internalJointIndex];
-      const internalJoint = world.getComponent(internalJointId, CableJointComponent);
+      const internalJoint = jointStore?.get(internalJointId);
       const internalLocals = jointLocals.get(internalJointId);
       if (!internalJoint || !internalLocals) {
         return null;
@@ -3057,7 +3072,7 @@ export class PBDCableConstraintSolver {
       if (!(Number.isFinite(forceMagnitude) && forceMagnitude > 0.0)) {
         return;
       }
-      const transferredJoint = world.getComponent(jointId, CableJointComponent);
+      const transferredJoint = jointStore?.get(jointId);
       if (!transferredJoint) {
         return;
       }
@@ -3082,7 +3097,7 @@ export class PBDCableConstraintSolver {
       if (!(Number.isFinite(deltaAngle) && Math.abs(deltaAngle) > EPSILON)) {
         return;
       }
-      const encoder = world.getComponent(entityId, EncoderComponent);
+      const encoder = encoderStore?.get(entityId);
       if (encoder && Number.isFinite(encoder.angle)) {
         encoder.angle += deltaAngle;
       }
@@ -3172,26 +3187,26 @@ export class PBDCableConstraintSolver {
         pointB_world,
         gradPosB, // gradPosB is a unit vector pointing from B to A
       );
-      const axisOnlySolverA = _hasAxisOnlyCableSpinDof(world, solverEntityA);
-      const axisOnlySolverB = _hasAxisOnlyCableSpinDof(world, solverEntityB);
+      const axisOnlySolverA = hasAxisOnlyCableSpinDof(solverEntityA);
+      const axisOnlySolverB = hasAxisOnlyCableSpinDof(solverEntityB);
 
-      const massAComp = world.getComponent(solverEntityA, MassComponent);
+      const massAComp = massStore?.get(solverEntityA);
       const invMassA = (massAComp && massAComp.mass > 0) ? 1.0 / massAComp.mass : 0.0;
-      const moiAComp = world.getComponent(solverEntityA, MomentOfInertiaComponent);
-      const orientationAComp = world.getComponent(solverEntityA, OrientationComponent);
+      const moiAComp = inertiaStore?.get(solverEntityA);
+      const orientationAComp = orientationStore?.get(solverEntityA);
       const useAngularInertiaA = Boolean(!axisOnlySolverA && moiAComp && orientationAComp?.quaternion);
 
-      const massBComp = world.getComponent(solverEntityB, MassComponent);
+      const massBComp = massStore?.get(solverEntityB);
       const invMassB = (massBComp && massBComp.mass > 0) ? 1.0 / massBComp.mass : 0.0;
-      const moiBComp = world.getComponent(solverEntityB, MomentOfInertiaComponent);
-      const orientationBComp = world.getComponent(solverEntityB, OrientationComponent);
+      const moiBComp = inertiaStore?.get(solverEntityB);
+      const orientationBComp = orientationStore?.get(solverEntityB);
       const useAngularInertiaB = Boolean(!axisOnlySolverB && moiBComp && orientationBComp?.quaternion);
 
       const memberInvInertiaA = memberSpinA?.invInertia ?? 0.0;
       const memberInvInertiaB = memberSpinB?.invInertia ?? 0.0;
 
-      const posAComp = world.getComponent(solverEntityA, PositionComponent);
-      const posBComp = world.getComponent(solverEntityB, PositionComponent);
+      const posAComp = positionStore?.get(solverEntityA);
+      const posBComp = positionStore?.get(solverEntityB);
       if (!posAComp || !posBComp) {
         return;
       }
@@ -3255,10 +3270,10 @@ export class PBDCableConstraintSolver {
         : solveGradSpinB;
 
       const linkCompMemberA = memberSpinA
-        ? world.getComponent(memberSpinA.entityId, CableLinkComponent)
+        ? linkStore?.get(memberSpinA.entityId)
         : null;
       const linkCompMemberB = memberSpinB
-        ? world.getComponent(memberSpinB.entityId, CableLinkComponent)
+        ? linkStore?.get(memberSpinB.entityId)
         : null;
       const spinAngleDispA = (memberSpinA && linkCompMemberA?.cablePlaneNormalLocal)
         ? _deltaAngleAroundAxis(
@@ -3403,7 +3418,7 @@ export class PBDCableConstraintSolver {
       }
       if (solveMemberInvInertiaA > 0.0 && memberSpinA?.axisWorld && Math.abs(solveGradSpinA) > EPSILON) {
         const deltaAngleMemberA = -solveMemberInvInertiaA * lambda * solveGradSpinA;
-        const memberOrientationAComp = world.getComponent(memberSpinA.entityId, OrientationComponent);
+        const memberOrientationAComp = orientationStore?.get(memberSpinA.entityId);
         if (memberOrientationAComp) {
           if (Math.abs(deltaAngleMemberA) > EPSILON) {
             const dq = new Quaternion().setFromAxisAngle(memberSpinA.axisWorld, deltaAngleMemberA);
@@ -3431,7 +3446,7 @@ export class PBDCableConstraintSolver {
       }
       if (solveMemberInvInertiaB > 0.0 && memberSpinB?.axisWorld && Math.abs(solveGradSpinB) > EPSILON) {
         const deltaAngleMemberB = -solveMemberInvInertiaB * lambda * solveGradSpinB;
-        const memberOrientationBComp = world.getComponent(memberSpinB.entityId, OrientationComponent);
+        const memberOrientationBComp = orientationStore?.get(memberSpinB.entityId);
         if (memberOrientationBComp) {
           if (Math.abs(deltaAngleMemberB) > EPSILON) {
             const dq = new Quaternion().setFromAxisAngle(memberSpinB.axisWorld, deltaAngleMemberB);
@@ -3444,10 +3459,10 @@ export class PBDCableConstraintSolver {
 	  };
 
     for (const pathId of pathEntities) {
-      const path = world.getComponent(pathId, CablePathComponent);
+      const path = pathStore?.get(pathId);
       if (path.jointEntities.length < 1) continue;
       for (const jointId of path.jointEntities) {
-        const joint = world.getComponent(jointId, CableJointComponent);
+        const joint = jointStore?.get(jointId);
         joint.constraintLambda = 0.0;
         if (!joint.constraintForce) {
           joint.constraintForce = new Vector3(0, 0, 0);
@@ -3466,7 +3481,7 @@ export class PBDCableConstraintSolver {
     }
     let maxIterations = 1;
     for (const pathId of pathEntities) {
-      const path = world.getComponent(pathId, CablePathComponent);
+      const path = pathStore?.get(pathId);
       maxIterations = Math.max(maxIterations, path?.solverIterations ?? 1);
     }
 
@@ -3479,7 +3494,7 @@ export class PBDCableConstraintSolver {
 
       for (let p = startPath; p !== endPath; p += stepPath) {
         const pathId = pathEntities[p];
-        const path = world.getComponent(pathId, CablePathComponent);
+        const path = pathStore?.get(pathId);
         if (path.jointEntities.length < 1) continue;
         if (iter >= (path.solverIterations ?? 1)) continue;
 
@@ -3489,7 +3504,7 @@ export class PBDCableConstraintSolver {
 
         for (let j = startJoint; j !== endJoint; j += stepJoint) {
           const jointId = path.jointEntities[j];
-          const joint = world.getComponent(jointId, CableJointComponent);
+          const joint = jointStore?.get(jointId);
           const locals = jointLocals.get(jointId);
 
           const entityA = joint.entityA;

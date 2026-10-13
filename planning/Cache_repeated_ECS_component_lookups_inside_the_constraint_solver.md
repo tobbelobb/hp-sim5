@@ -71,3 +71,22 @@ scene lifecycle, complementing the benchmark's 1,000-step checkpoints. Use
 `.venv/bin/python` for its focused solver/machine/lifecycle checks. Keep lookup
 changes separate from scratch-object reuse and attachment memoization so each
 change has its own numerical and timing evidence.
+
+## Implementation and validation, 2026-10-13
+
+The solver now fetches component stores once per update and reads live components
+from them, including its pose and member-spin helpers. The motor inertia helper
+reuses the stepper component already read by the solver. The shared ECS and
+rigid-body transform helpers remain unchanged; no per-entity records were added.
+
+Validation passed: 321 JavaScript tests, 179 solver/machine/lifecycle differential
+tests including slow cases, and four native profiling harness checks. New tests
+cover missing stores/components, replaced components/membership, cleared/replaced
+worlds with reused IDs, and live pose writes across joints and iterations.
+
+Eight fresh baseline/optimized cases, each with three repeats and 30,000 steps,
+matched checkpoints exactly. HP4 median physics time decreased 2.8–4.7%; HP3
+changes were smaller and mixed. Layered HP4 `getComponent` sampled self time fell
+from 7.20% to 5.89% across all systems. Autocal runs cover 60-second prefixes;
+background simulation jobs limit timing precision. See the
+[report and repeat distributions](../output/research/sessions/2026-10-13-solver-component-stores/report.md).
