@@ -123,6 +123,26 @@ rerun attribution. A numerical change needs an explicit tolerance/physics review
 and the relevant parity tests; this harness does not silently relax equality.
 No optimization is accepted solely because a profiled run became faster.
 
+## Rust/WASM comparison
+
+The optional batched cable solver and attachment geometry backend is built with
+`npm run build:wasm`; the checked-in binary can be used without a Rust toolchain.
+Select it with `--solver wasm`, and pass `--compare` a baseline produced by the
+default `--solver js`. The same workload contract and exact numerical checks
+apply. Output identifies the selected backend and WASM SHA-256, and the source
+hash includes the Rust source and build recipe. Packing/unpacking stays inside
+the production system timers.
+
+Run the complete matrix sequentially with:
+
+```bash
+node scripts/benchmark_cable_wasm.mjs --inputs FROZEN_INPUT_DIR --output NEW_DIR
+node --test tests/benchmark/wasm_cable_solver.test.mjs
+```
+
+See [the Rust crate](../../src/wasm/cable_solver/README.md) for setup, the
+headless/browser API and the measured engine compatibility scope.
+
 Harness checks:
 
 ```bash

@@ -9,7 +9,7 @@ import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
 import { PerformanceMonitor } from './performance-monitor.js';
 
 // The same scene construction and system order used by the production app.
-export function createHeadlessWorld(sceneText, { lineLayeringEnabled = true, closedLoopMotorsEnabled = false, profiling = {} } = {}) {
+export function createHeadlessWorld(sceneText, { lineLayeringEnabled = true, closedLoopMotorsEnabled = false, profiling = {}, cableSolverBackend = null } = {}) {
   const sceneName = sceneText.match(/defaultPrim\s*=\s*"([^"]+)"/)?.[1];
   if (!sceneName) throw new Error('Scene has no defaultPrim');
   // Match the browser bake: changing only runtime flags leaves layered initial
@@ -23,7 +23,7 @@ export function createHeadlessWorld(sceneText, { lineLayeringEnabled = true, clo
   applyEntityPlan(world, buildEntityPlan(checked));
   setLineLayeringFeatureFlags(world, lineLayeringEnabled);
   setClosedLoopMotorFeatureFlags(world, closedLoopMotorsEnabled);
-  registerSimulationSystems(world);
+  registerSimulationSystems(world, { cableSolverBackend });
   const remote = world.systems.find(system => system instanceof RemoteSpoolSystem);
   remote._ensureAxisMapping(world);
   const dt = world.getResource('dt');

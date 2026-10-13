@@ -14,7 +14,8 @@ import {
     PBDVelocityUpdateSystem, PBDAngularVelocityUpdateSystem, RigidBodySyncSystem,
 } from '../../src/js/cable_joints_3d/commonSystems.js';
 
-export function registerSimulationSystems(world) {
+export function registerSimulationSystems(world, { cableSolverBackend = null } = {}) {
+    if (cableSolverBackend) world.setResource('cableSolverBackend', cableSolverBackend);
     world.registerSystem(new PrevFinalPosSystem());
     world.registerSystem(new PrevFinalOrientationSystem());
     world.registerSystem(new RemoteSpoolSystem());
@@ -26,7 +27,7 @@ export function registerSimulationSystems(world) {
     world.registerSystem(new CableAttachmentUpdateSystem(false));
     world.registerSystem(new CableAttachmentCacheSystem());
     world.registerSystem(new CableFrictionSystem());
-    world.registerSystem(new PBDCableConstraintSolver());
+    world.registerSystem(new PBDCableConstraintSolver(cableSolverBackend));
     world.registerSystem(new PBDResolveCableOverCorrections());
     world.registerSystem(new PBDVelocityUpdateSystem());
     world.registerSystem(new PBDAngularVelocityUpdateSystem());

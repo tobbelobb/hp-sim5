@@ -14,6 +14,7 @@ import { captureFlightRecorderSnapshot } from '../hp-sim-3d/app/flightRecorderSn
 import { setClosedLoopMotorFeatureFlags } from '../hp-sim-3d/app/closed-loop-flags.js';
 import { EncoderComponent, VelocityComponent, AngularVelocityComponent } from '../src/js/cable_joints_3d/ecs.js';
 import { StepperMotorComponent } from '../hp-sim-3d/app/hangprinter_stepper_motor.js';
+import { compileCableSolverWasm, WasmCableSolver } from '../src/js/cable_joints_3d/wasm_cable_solver.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const sha = value => createHash('sha256').update(value).digest('hex');
@@ -115,6 +116,7 @@ export function runTrajectory(instance, workload, steps, checkpointEvery = 1000,
 
 async function main() {
   const { values: args } = parseArgs({ options: {
+    solver: { type: 'string', default: 'js' },
     machine: { type: 'string', default: 'hp4' }, scene: { type: 'string' },
     commands: { type: 'string' }, events: { type: 'string' }, output: { type: 'string' },
     layering: { type: 'string', default: 'on' }, 'closed-loop': { type: 'boolean', default: false },
@@ -140,30 +142,38 @@ async function main() {
   const checkpointEvery = numeric('checkpoint-every', 1000);
   const sceneFile = args.scene ?? path.join(root, `public/usd_scenes/${args.machine}_rigid_body.usda`);
   const scene = fs.readFileSync(sceneFile, 'utf8');
+  if (!['js', 'wasm'].includes(args.solver)) throw new Error('Expected --solver js or wasm');
+  const wasmBytes = args.solver === 'wasm' ? fs.readFileSync(path.join(root, 'public/wasm/cable_solver.wasm')) : null;
+  const wasmModule = wasmBytes ? await compileCableSolverWasm(wasmBytes) : null;
   const options = { lineLayeringEnabled: args.layering === 'on', closedLoopMotorsEnabled: args['closed-loop'],
     profiling: { enabled: args.systems, logEverySteps: 0, slowStepMs: Infinity } };
+  const createInstance = (profiling = options.profiling) => createHeadlessWorld(scene, {
+    ...options, profiling, cableSolverBackend: wasmModule ? new WasmCableSolver(wasmModule) : null,
+  });
   if (fs.existsSync(args.output)) throw new Error('Output already exists; preserve earlier measurements');
   fs.mkdirSync(path.dirname(args.output), { recursive: true });
   const baseline = args.compare ? JSON.parse(fs.readFileSync(args.compare)) : null;
   const contract = { kind: workload.kind, machine: args.machine, sceneSha256: sha(scene), inputSha256: sha(source),
     steps, layering: args.layering, closedLoop: args['closed-loop'], checkpointEvery, warmup };
   if (baseline && finiteJson(baseline.contract) !== finiteJson(contract)) throw new Error('Baseline inputs/settings differ');
-  if (warmup) runTrajectory(createHeadlessWorld(scene, { ...options, profiling: { enabled: false } }),
+  if (warmup) runTrajectory(createInstance({ enabled: false }),
     workload, Math.min(warmup, steps), checkpointEvery, false);
   const gcEntries = [];
   const observer = new PerformanceObserver(list => gcEntries.push(...list.getEntries()));
   observer.observe({ entryTypes: ['gc'] });
   const sourceFiles = new Set(execFileSync('git', ['ls-files', '-z', 'src/js', 'hp-sim-3d'], { cwd: root, encoding: 'utf8' }).split('\0').filter(Boolean));
   sourceFiles.add('scripts/profile_headless.mjs');
+  for (const file of ['src/js/cable_joints_3d/wasm_cable_solver.js', 'src/wasm/cable_solver/src/lib.rs',
+    'src/wasm/cable_solver/Cargo.toml', 'scripts/build_cable_wasm.mjs']) sourceFiles.add(file);
   const sourceHash = createHash('sha256');
   for (const file of [...sourceFiles].sort()) sourceHash.update(file).update('\0').update(fs.readFileSync(path.join(root, file)));
   const result = { contract, node: process.version, v8: process.versions.v8, platform: `${os.platform()} ${os.release()} ${os.arch()}`,
     cpu: os.cpus()[0]?.model, execArgv: process.execArgv, revision: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(),
-    sourceSha256: sourceHash.digest('hex'),
+    sourceSha256: sourceHash.digest('hex'), solver: args.solver, wasmSha256: wasmBytes ? sha(wasmBytes) : null,
     runs: [] };
   for (let repeat = 0; repeat < repeats; repeat++) {
     const loadStart = performance.now();
-    const instance = createHeadlessWorld(scene, options);
+    const instance = createInstance();
     const loadMs = performance.now() - loadStart;
     let inspector;
     if (args['heap-sampling']) {

@@ -4,6 +4,7 @@
   "type": "module",
   "main": "src/js/cable_joints/cable_joints_core.js",
   "scripts": {
+    "build:wasm": "node scripts/build_cable_wasm.mjs",
     "test": "jest"
   },
   "devDependencies": {

@@ -38,9 +38,10 @@ const systems = { ...commonSystems, CableAttachmentCacheSystem, CableFrictionSys
 const vector = (value) => value == null ? null : new Vector3(...value);
 const quaternion = (value) => value == null ? null : new Quaternion(...value);
 
-export function runFixture(fixture) {
+export function runFixture(fixture, { cableSolverBackend = null } = {}) {
   fixture = structuredClone(fixture);
   const world = new ecs.World();
+  if (cableSolverBackend) world.setResource('cableSolverBackend', cableSolverBackend);
   const ids = Object.fromEntries(fixture.entities.map(e => [e.name, world.createEntity()]));
   const names = Object.fromEntries(Object.entries(ids).map(([name, id]) => [id, name]));
   function loadScenes(definitions = []) {
@@ -149,11 +150,12 @@ export function runFixture(fixture) {
     const name = typeof definition === 'string' ? definition : definition.name;
     const args = typeof definition === 'string' ? [] : definition.args ?? [];
     if (!systems[name]) throw new Error(`Unsupported system ${name}`);
-    world.registerSystem(new systems[name](...args));
+    world.registerSystem(name === 'PBDCableConstraintSolver'
+      ? new cable.PBDCableConstraintSolver(cableSolverBackend) : new systems[name](...args));
   }
   if (fixture.pipeline) {
     if (fixture.systems.length) throw new Error('Pipeline fixtures must use production system registration');
-    registerSimulationSystems(world);
+    registerSimulationSystems(world, { cableSolverBackend });
     world.systems.find(system => system instanceof ExtruderSystem).update(world, 0);
   }
   const remote = world.systems.find(system => system instanceof RemoteSpoolSystem);

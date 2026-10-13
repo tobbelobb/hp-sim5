@@ -1386,12 +1386,14 @@ export function calculateAttachmentPoints(world, joint, path, i, radiusA, radius
     joint, path, i, radiusA, radiusB,
     _prepareAttachmentEndpoint(world, joint.entityA, joint.entityB),
     _prepareAttachmentEndpoint(world, joint.entityB, joint.entityA),
+    world.getResource('cableSolverBackend'),
   );
 }
 
 // Prepared poses belong to this joint calculation only. Attachment updates can
 // change winding and rotor geometry before the next joint is evaluated.
-function _calculateAttachmentPoints(joint, path, i, radiusA, radiusB, endpointA, endpointB) {
+function _calculateAttachmentPoints(joint, path, i, radiusA, radiusB, endpointA, endpointB, backend = null) {
+  if (backend) return backend.calculateAttachmentPoints(joint, path, i, radiusA, radiusB, endpointA, endpointB);
   const A = i;
   const B = i + 1;
   const { pos: posA, prevPos: prevPosA, planeNormal: planeNormalA, deltaAngle: deltaAngleA } = endpointA;
@@ -1530,6 +1532,7 @@ export function _updateAttachmentPoints(world) {
 
       let { attachmentA_current, attachmentB_current } = _calculateAttachmentPoints(
         joint, path, i, radiusA, radiusB, endpointA, endpointB,
+        world.getResource('cableSolverBackend'),
       );
 
       if (isHybridA && i === 0) {
@@ -2764,7 +2767,15 @@ export class PBDCableConstraintSolver {
   _attachmentPointB = new Vector3();
   _coupledSpinPoint = new Vector3();
 
+  constructor(backend = null) {
+    this.backend = backend;
+  }
+
   update(world, _dt_unused) {
+    if (this.backend) {
+      this.backend.update(world);
+      return;
+    }
     const pathEntities = world.query([CablePathComponent]);
     const dt = world.getResource('dt');
 
@@ -3543,3 +3554,12 @@ export class PBDCableConstraintSolver {
     }
   }
 }
+
+// Shared preparation policy for the batched WASM backend. Geometry and motor
+// settings are read anew each update; iterative pose arithmetic lives in Rust.
+export {
+  _effectiveRollingRadius as cableSolverEffectiveRadius,
+  _effectiveCW as cableSolverEffectiveCW,
+  _positionStepperConstraintStiffness as cableSolverMotorStiffness,
+  _openLoopStepperHoldingTorqueLimit as cableSolverHoldingTorqueLimit,
+};
