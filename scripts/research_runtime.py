@@ -68,6 +68,13 @@ class Runtime:
             source.update(str(path.relative_to(ROOT)).encode() + b'\0' + path.read_bytes())
         return source.hexdigest()
 
+    @classmethod
+    def hash_rust_physics(cls):
+        digest = hashlib.sha256(cls.hash_sources([ROOT / 'src/wasm/cable_solver/src'], '*.rs').encode())
+        for name in ('src/wasm/cable_solver/Cargo.toml', 'public/wasm/cable_solver.wasm'):
+            digest.update(name.encode() + b'\0' + (ROOT / name).read_bytes())
+        return digest.hexdigest()
+
     def spawn(self, name, command):
         log_path = self.directory / f'{name}.log'
         with log_path.open('a') as log:
@@ -107,11 +114,14 @@ class Runtime:
                 self.world_metadata = metadata
                 self.generation += 1
                 self.physics_source_hash = self.hash_sources([ROOT / 'src/js', ROOT / 'hp-sim-3d'], '*.js')
+                self.rust_physics_hash = self.hash_rust_physics()
                 self.bridge_source_hash = self.hash_sources([ROOT / 'integrations/rrf', ROOT / 'integrations/shared',
                                                             ROOT / 'autocal/control', ROOT / 'scripts'], '*.*js')
                 metadata.update(python_source_sha256=self.python_source_hash,
                                 bridge_source_sha256=self.bridge_source_hash,
                                 js_physics_source_sha256=self.physics_source_hash if configuration.backend == 'headless-js' else None,
+                                physics_engine='rust-wasm' if configuration.backend == 'headless-js' else configuration.backend,
+                                rust_physics_sha256=self.rust_physics_hash if configuration.backend == 'headless-js' else None,
                                 rrf_sha256=rrf_hash)
                 self.rrf_hash = rrf_hash
                 self.config_hash = metadata['firmware_config_sha256']
@@ -174,7 +184,8 @@ class Runtime:
                     'bridge_requires_session_reset': self.bridge_source_hash != self.hash_sources(
                         [ROOT / 'integrations/rrf', ROOT / 'integrations/shared', ROOT / 'autocal/control', ROOT / 'scripts'], '*.*js'),
                     'js_physics_requires_session_reset': self.configuration.backend == 'headless-js' and self.physics_source_hash !=
-                        self.hash_sources([ROOT / 'src/js', ROOT / 'hp-sim-3d'], '*.js')},
+                        self.hash_sources([ROOT / 'src/js', ROOT / 'hp-sim-3d'], '*.js'),
+                    'rust_physics_requires_session_reset': self.configuration.backend == 'headless-js' and self.rust_physics_hash != self.hash_rust_physics()},
                 'services': {name: {'pid': process.pid, 'exit_code': process.poll(),
                                     'log': str(self.session_dir / 'physics-js.log') if name == 'physics-js'
                                     else str(self.directory / f'{name}.log')}
@@ -224,6 +235,8 @@ class Runtime:
                     'rrf_sha256': self.rrf_hash, 'firmware_config_sha256': self.config_hash,
                     'python_source_sha256': self.python_source_hash, 'bridge_source_sha256': self.bridge_source_hash,
                     'js_physics_source_sha256': self.physics_source_hash if self.session.backend == 'headless-js' else None,
+                    'physics_engine': 'rust-wasm' if self.session.backend == 'headless-js' else self.session.backend,
+                    'rust_physics_sha256': self.rust_physics_hash if self.session.backend == 'headless-js' else None,
                     'python': sys.executable,
                     'packages': {name: version(name) for name in ('numpy', 'usd-core', 'rerun-sdk', 'websockets')},
                     'git_revision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()}

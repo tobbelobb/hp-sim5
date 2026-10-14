@@ -14,7 +14,8 @@ import { captureFlightRecorderSnapshot } from '../hp-sim-3d/app/flightRecorderSn
 import { setClosedLoopMotorFeatureFlags } from '../hp-sim-3d/app/closed-loop-flags.js';
 import { EncoderComponent, VelocityComponent, AngularVelocityComponent } from '../src/js/cable_joints_3d/ecs.js';
 import { StepperMotorComponent } from '../hp-sim-3d/app/hangprinter_stepper_motor.js';
-import { compileCableSolverWasm, WasmCableSolver } from '../src/js/cable_joints_3d/wasm_cable_solver.js';
+import { compileCableSolverWasm } from '../src/js/cable_joints_3d/wasm_cable_solver.js';
+import { WasmPhysicsEngine } from '../src/js/cable_joints_3d/wasm_physics_engine.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const sha = value => createHash('sha256').update(value).digest('hex');
@@ -22,6 +23,42 @@ const finiteJson = value => JSON.stringify(value, (key, item) => {
   if (typeof item === 'number' && !Number.isFinite(item)) throw new Error(`Non-finite observation: ${key}`);
   return item;
 });
+
+// Rust uses its own transcendental functions. Compare physical observations
+// numerically, while requiring identical metadata, topology and sample clocks.
+export function compareCheckpoints(actual, expected, { atol = 1e-6, rtol = 1e-6, allowNumericalDrift = false } = {}) {
+  const result = { atol, rtol, maxAbsoluteError: 0, maxRelativeError: 0, worstField: null, exact: true,
+    matchesTolerance: true, outsideTolerance: 0, firstDifference: null, physicalErrors: {} };
+  function compare(a, b, path = '', key = '') {
+    if (typeof a === 'number' && typeof b === 'number') {
+      if (!Number.isFinite(a) || !Number.isFinite(b)) throw new Error(`Non-finite checkpoint: ${path}`);
+      const error = Math.abs(a - b), scale = Math.max(Math.abs(a), Math.abs(b));
+      const metadata = /^(step|id|queueLength)$/.test(key);
+      const discrete = metadata || /^(missedSteps|currentMissedSteps)$/.test(key);
+      if (error > (discrete ? 0 : atol + rtol * scale)) {
+        result.matchesTolerance = false; result.outsideTolerance++;
+        result.firstDifference ??= { path, actual: a, expected: b };
+        if (metadata || !allowNumericalDrift) throw new Error(`Numerical trajectory changed at ${path}: ${a} vs ${b}`);
+      }
+      const category = path.includes('.position.') || path.includes('.points.') || /rest_length|stored/.test(path) ? 'length_m'
+        : key === 'encoder' ? 'encoder_rad' : path.includes('.angles.') ? 'encoder_deg'
+        : key === 'force_n' ? 'force_n' : path.includes('.omega.') ? 'angular_velocity_rad_s'
+        : path.includes('.vel.') ? 'velocity_m_s' : path.includes('.quaternion.') ? 'quaternion_component' : null;
+      if (category) result.physicalErrors[category] = Math.max(result.physicalErrors[category] ?? 0, error);
+      if (error) result.exact = false;
+      if (error > result.maxAbsoluteError) { result.maxAbsoluteError = error; result.worstField = path; }
+      if (scale > atol) result.maxRelativeError = Math.max(result.maxRelativeError, error / scale);
+      return;
+    }
+    if (a && b && typeof a === 'object' && typeof b === 'object') {
+      const ka = Object.keys(a), kb = Object.keys(b);
+      if (Array.isArray(a) !== Array.isArray(b) || ka.length !== kb.length || ka.some(k => !Object.hasOwn(b, k))) throw new Error(`Checkpoint shape changed: ${path}`);
+      for (const k of ka) compare(a[k], b[k], `${path}.${k}`, k);
+    } else if (a !== b) throw new Error(`Checkpoint value changed: ${path}`);
+  }
+  compare(actual, expected);
+  return result;
+}
 
 // Preserve arrival steps AND FIFO consumption: several commands can arrive at
 // one step; RemoteSpoolSystem consumes one on each subsequent physics update.
@@ -66,7 +103,7 @@ function observe(world, remote) {
       torque: motor.targetTorque, missedSteps: motor.missedSteps, currentMissedSteps: motor.currentMissedSteps };
   });
   snapshot.velocities = [VelocityComponent, AngularVelocityComponent].map(Type =>
-    world.query([Type]).map(id => [id, world.getComponent(id, Type)]));
+    world.query([Type]).map(id => [id, structuredClone(world.getComponent(id, Type))]));
   snapshot.queueLength = remote.getQueueLength();
   return snapshot;
 }
@@ -123,7 +160,9 @@ async function main() {
     steps: { type: 'string' }, repeats: { type: 'string', default: '3' },
     warmup: { type: 'string', default: '5000' }, 'checkpoint-every': { type: 'string', default: '1000' },
     systems: { type: 'boolean', default: false }, 'heap-sampling': { type: 'boolean', default: false },
-    compare: { type: 'string' },
+    compare: { type: 'string' }, 'absolute-tolerance': { type: 'string', default: '0.000001' },
+    'relative-tolerance': { type: 'string', default: '0.000001' },
+    'allow-numerical-drift': { type: 'boolean', default: false },
   } });
   if (!args.output || Boolean(args.commands) === Boolean(args.events) || !['hp3', 'hp4'].includes(args.machine)
     || !['on', 'off'].includes(args.layering)) {
@@ -148,11 +187,14 @@ async function main() {
   const options = { lineLayeringEnabled: args.layering === 'on', closedLoopMotorsEnabled: args['closed-loop'],
     profiling: { enabled: args.systems, logEverySteps: 0, slowStepMs: Infinity } };
   const createInstance = (profiling = options.profiling) => createHeadlessWorld(scene, {
-    ...options, profiling, cableSolverBackend: wasmModule ? new WasmCableSolver(wasmModule) : null,
+    ...options, profiling, cableSolverBackend: wasmModule ? new WasmPhysicsEngine(wasmModule) : null,
   });
   if (fs.existsSync(args.output)) throw new Error('Output already exists; preserve earlier measurements');
   fs.mkdirSync(path.dirname(args.output), { recursive: true });
   const baseline = args.compare ? JSON.parse(fs.readFileSync(args.compare)) : null;
+  const tolerance = { atol: Number(args['absolute-tolerance']), rtol: Number(args['relative-tolerance']) };
+  if (Object.values(tolerance).some(value => !Number.isFinite(value) || value < 0)) throw new Error('Numerical tolerances must be finite and nonnegative');
+  const baselineCheckpoints = baseline ? JSON.parse(fs.readFileSync(baseline.runs[0].checkpointFile)) : null;
   const contract = { kind: workload.kind, machine: args.machine, sceneSha256: sha(scene), inputSha256: sha(source),
     steps, layering: args.layering, closedLoop: args['closed-loop'], checkpointEvery, warmup };
   if (baseline && finiteJson(baseline.contract) !== finiteJson(contract)) throw new Error('Baseline inputs/settings differ');
@@ -163,7 +205,8 @@ async function main() {
   observer.observe({ entryTypes: ['gc'] });
   const sourceFiles = new Set(execFileSync('git', ['ls-files', '-z', 'src/js', 'hp-sim-3d'], { cwd: root, encoding: 'utf8' }).split('\0').filter(Boolean));
   sourceFiles.add('scripts/profile_headless.mjs');
-  for (const file of ['src/js/cable_joints_3d/wasm_cable_solver.js', 'src/wasm/cable_solver/src/lib.rs',
+  for (const file of ['src/js/cable_joints_3d/wasm_cable_solver.js', 'src/js/cable_joints_3d/wasm_physics_engine.js',
+    'src/wasm/cable_solver/src/lib.rs', 'src/wasm/cable_solver/src/engine.rs', 'src/wasm/cable_solver/src/abi.rs',
     'src/wasm/cable_solver/Cargo.toml', 'scripts/build_cable_wasm.mjs']) sourceFiles.add(file);
   const sourceHash = createHash('sha256');
   for (const file of [...sourceFiles].sort()) sourceHash.update(file).update('\0').update(fs.readFileSync(path.join(root, file)));
@@ -204,13 +247,15 @@ async function main() {
     const checkpointSha256 = sha(finiteJson(checkpoints));
     const checkpointFile = `${args.output}.${repeat}.checkpoints.json`;
     fs.writeFileSync(checkpointFile, finiteJson(checkpoints) + '\n');
-    for (const expected of [result.runs[0], baseline?.runs[0]]) {
+    for (const expected of [result.runs[0]]) {
       if (expected && expected.checkpointSha256 !== checkpointSha256) {
         throw new Error(`Numerical trajectory changed; inspect ${checkpointFile} before accepting speed results`);
       }
     }
+    const numericalComparison = baselineCheckpoints ? compareCheckpoints(checkpoints, baselineCheckpoints,
+      { ...tolerance, allowNumericalDrift: args['allow-numerical-drift'] }) : null;
     const run = { ...metrics, loadMs, wallMs: endMs - startMs, startMs, endMs, startUs, endUs, cpuUsageUs,
-      heapBefore, heapAfter, heapProfile, checkpointFile, checkpointSha256,
+      heapBefore, heapAfter, heapProfile, checkpointFile, checkpointSha256, numericalComparison,
       gc: { count: gc.length, durationMs: gc.reduce((sum, entry) => sum + entry.duration, 0),
         kinds: Object.fromEntries(Object.entries(kinds).map(([name, kind]) => [name, gc.filter(entry => entry.detail.kind === kind).length])) },
       systems: instance.world.getResource('performanceMonitor').snapshot(), dt: instance.dt,
@@ -223,7 +268,7 @@ async function main() {
   const sorted = result.runs.map(run => run.physicsMs).sort((a, b) => a - b);
   result.medianPhysicsMs = (sorted[Math.floor((sorted.length - 1) / 2)] + sorted[Math.floor(sorted.length / 2)]) / 2;
   result.realtimeFactor = steps * result.runs[0].dt * 1000 / result.medianPhysicsMs;
-  result.numericalMatch = true;
+  result.numericalMatch = result.runs.every(run => run.numericalComparison?.matchesTolerance !== false);
   fs.writeFileSync(args.output, finiteJson(result) + '\n');
 }
 

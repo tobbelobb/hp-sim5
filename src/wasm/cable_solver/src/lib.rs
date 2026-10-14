@@ -4,25 +4,33 @@ use std::f64::consts::PI;
 
 const EPS: f64 = 1e-9;
 const INERTIA_EPS: f64 = 1e-12;
-const E: usize = 69;
+pub const E: usize = 160;
 const J: usize = 38;
 const P: usize = 10;
 type V = [f64; 3];
 type Q = [f64; 4];
-type Entity = [f64; E];
+pub type Entity = [f64; E];
 type Joint = [f64; J];
 type Path = [f64; P];
 
-// Preserve JS transcendental rounding. Elementary arithmetic and sqrt stay in
-// WASM; Rust/LLVM's strict floating point retains the JS operation order.
-#[link(wasm_import_module = "math")]
-extern "C" {
-    fn sin(x: f64) -> f64;
-    fn cos(x: f64) -> f64;
-    fn acos(x: f64) -> f64;
-    fn asin(x: f64) -> f64;
-    fn atan2(y: f64, x: f64) -> f64;
+// Use Rust's math on both targets: no calls across the JS/WASM boundary.
+fn sin(x: f64) -> f64 {
+    x.sin()
 }
+fn cos(x: f64) -> f64 {
+    x.cos()
+}
+fn acos(x: f64) -> f64 {
+    x.acos()
+}
+fn asin(x: f64) -> f64 {
+    x.asin()
+}
+fn atan2(y: f64, x: f64) -> f64 {
+    y.atan2(x)
+}
+mod abi;
+pub mod engine;
 fn length(v: V) -> f64 {
     // Scaled, compensated three-term sum, matching V8's three-argument hypot.
     // See https://github.com/v8/v8/blob/13.6.233/src/builtins/math.tq#L406-L426.
@@ -138,8 +146,8 @@ fn rotate(a: Q, b: V) -> V {
 }
 fn axis_angle(axis: V, angle: f64) -> Q {
     let half = angle / 2.0;
-    let s = unsafe { sin(half) };
-    [axis[0] * s, axis[1] * s, axis[2] * s, unsafe { cos(half) }]
+    let s = sin(half);
+    [axis[0] * s, axis[1] * s, axis[2] * s, cos(half)]
 }
 fn matrix_vec(a: &[f64], i: usize, b: V) -> V {
     [
@@ -170,7 +178,7 @@ fn rotation_vector(e: &Entity) -> V {
         }
     }
     let w = delta[3].clamp(-1.0, 1.0);
-    let angle = 2.0 * unsafe { acos(w) };
+    let angle = 2.0 * acos(w);
     if angle <= EPS {
         return [0.0; 3];
     }
@@ -204,7 +212,7 @@ fn spin_angle(e: &Entity) -> f64 {
     }
     let twist = qnorm(twist);
     let s = twist[0] * axis[0] + twist[1] * axis[1] + twist[2] * axis[2];
-    let mut angle = 2.0 * unsafe { atan2(s, twist[3]) };
+    let mut angle = 2.0 * atan2(s, twist[3]);
     while angle > PI {
         angle -= 2.0 * PI;
     }
@@ -315,17 +323,14 @@ fn circle_point(point: [f64; 2], center: [f64; 2], r: f64, cw: bool, first: bool
         };
         return [center[0] - dir[0] * r, center[1] - dir[1] * r];
     }
-    let alpha = unsafe { atan2(d[1], d[0]) };
-    let phi = unsafe { asin(r / d_sq.sqrt()) };
+    let alpha = atan2(d[1], d[0]);
+    let phi = asin(r / d_sq.sqrt());
     let angle = if cw == first {
         alpha + phi + PI / 2.0
     } else {
         alpha - phi - PI / 2.0
     };
-    [
-        center[0] + r * unsafe { cos(angle) },
-        center[1] + r * unsafe { sin(angle) },
-    ]
+    [center[0] + r * cos(angle), center[1] + r * sin(angle)]
 }
 fn circle_circle(
     a: [f64; 2],
@@ -341,8 +346,8 @@ fn circle_circle(
         return ([a[0] + ra, a[1]], [b[0] + rb, b[1]]);
     }
     let r = if cwa == cwb { rb - ra } else { ra + rb };
-    let alpha = unsafe { atan2(delta[1], delta[0]) };
-    let phi = unsafe { asin((r / d).clamp(-1.0, 1.0)) };
+    let alpha = atan2(delta[1], delta[0]);
+    let phi = asin((r / d).clamp(-1.0, 1.0));
     let (aa, ab) = if cwa != cwb {
         if !cwa {
             (alpha - PI / 2.0 + phi, alpha + PI / 2.0 + phi)
@@ -355,14 +360,8 @@ fn circle_circle(
         (alpha + PI / 2.0 + phi, alpha + PI / 2.0 + phi)
     };
     (
-        [
-            a[0] + ra * unsafe { cos(aa) },
-            a[1] + ra * unsafe { sin(aa) },
-        ],
-        [
-            b[0] + rb * unsafe { cos(ab) },
-            b[1] + rb * unsafe { sin(ab) },
-        ],
+        [a[0] + ra * cos(aa), a[1] + ra * sin(aa)],
+        [b[0] + rb * cos(ab), b[1] + rb * sin(ab)],
     )
 }
 fn rolling_attachment(
@@ -398,8 +397,8 @@ fn rolling_attachment(
 }
 fn rotate_axis(point: V, axis: V, angle: f64) -> V {
     let n = norm(axis);
-    let c = unsafe { cos(angle) };
-    let s = unsafe { sin(angle) };
+    let c = cos(angle);
+    let s = sin(angle);
     add(
         add(scale(point, c), scale(cross(n, point), s)),
         scale(n, dot(point, n) * (1.0 - c)),
@@ -410,6 +409,9 @@ fn rotate_axis(point: V, axis: V, angle: f64) -> V {
 #[no_mangle]
 pub unsafe extern "C" fn attachment_points(ptr: *mut f64) {
     let data = std::slice::from_raw_parts_mut(ptr, 46);
+    attachment_data(data);
+}
+fn attachment_data(data: &mut [f64]) {
     let a = &data[..19];
     let b = &data[19..38];
     let flags_a = a[13] as u32;
@@ -798,7 +800,7 @@ fn solve_joint(es: &mut [Entity], js: &mut [Joint], path: &Path, idx: usize, ite
 
 #[no_mangle]
 pub extern "C" fn abi_version() -> u32 {
-    1
+    2
 }
 #[no_mangle]
 pub extern "C" fn hypot3(x: f64, y: f64, z: f64) -> f64 {

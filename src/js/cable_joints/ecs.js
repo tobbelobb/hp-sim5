@@ -7,15 +7,18 @@ export class World {
     this.nextEntityId = 0;
     this.systems = [];
     this.resources = {}; // Global data like gravity, dt
+    this.structureVersion = 0;
   }
 
   createEntity() {
+    this.structureVersion += 1;
     const id = this.nextEntityId++;
     this.entities.set(id, new Set());
     return id;
   }
 
   addComponent(entityId, component) {
+    this.structureVersion += 1;
     const componentClass = component.constructor;
     if (!this.components.has(componentClass)) {
       this.components.set(componentClass, new Map());
@@ -43,6 +46,7 @@ export class World {
   }
 
   removeComponent(entityId, componentClass) {
+    this.structureVersion += 1;
     const componentMap = this.components.get(componentClass);
     if (componentMap) {
       componentMap.delete(entityId);
@@ -107,6 +111,7 @@ export class World {
   }
 
   clear() {
+    this.structureVersion += 1;
     this.entities.clear();
     this.components.clear();
     this.nextEntityId = 0;

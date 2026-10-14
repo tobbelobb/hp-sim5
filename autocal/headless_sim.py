@@ -32,7 +32,7 @@ def free_port():
         return sock.getsockname()[1]
 
 
-def source_hash(directories=("src/js", "hp-sim-3d/app", "integrations", "autocal/control", "scripts"), suffixes=(".js", ".mjs")):
+def source_hash(directories=("src/js", "hp-sim-3d/app", "src/wasm/cable_solver/src", "public/wasm", "integrations", "autocal/control", "scripts"), suffixes=(".js", ".mjs", ".rs", ".wasm")):
     digest = hashlib.sha256()
     for directory in directories:
         for path in sorted((REPO_ROOT / directory).rglob("*")):

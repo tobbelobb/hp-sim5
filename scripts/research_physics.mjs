@@ -1,4 +1,4 @@
-// Fixed-step production JS physics, without a browser or rendering.
+// Fixed-step production Rust/WASM physics, with JS command and observation adapters.
 // Python owns collection/lifecycle and uses these detached states only for telemetry.
 import fs from 'node:fs';
 import readline from 'node:readline';
@@ -40,7 +40,7 @@ const fields = [
     ]))})],
 ];
 function state() {
-  return {step, physics_wall_s: physicsWallS, queue_length: remote.getQueueLength(),
+  return {step, physics_engine: world.getResource('physicsEngine'), physics_wall_s: physicsWallS, queue_length: remote.getQueueLength(),
     identities: world.query([SceneEntityInfoComponent]).map(id => [id, world.getComponent(id, SceneEntityInfoComponent).name]),
     components: fields.map(([type, read]) => [type.name, world.query([type]).map(id => [id, read(world.getComponent(id, type))])])};
 }

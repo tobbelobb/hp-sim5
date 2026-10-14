@@ -26,9 +26,10 @@ codex login                       # choose ChatGPT
 ./hp-sim5-research-agent --model-provider opencode_go --model deepseek-v4.1-flash --prompt "Say hello"
 ```
 
-Continuing collection defaults to the production JavaScript physics pipeline in
-headless Node, with the same fixed steps, forces, motors, encoders and cable
-solver as the browser. `--machine hp3` selects the HP3 scene and matching RRF
+Continuing collection defaults to the production Rust/Wasm physics engine in
+headless Node, with the same fixed steps, forces, motors, encoders and cables
+as the browser. JavaScript handles scene preparation, commands and observations.
+See the [full engine implementation and measurements](rust-wasm-engine.md). `--machine hp3` selects the HP3 scene and matching RRF
 configuration; HP4 remains the default. Use `--physics-backend native-python`
 for the independent Python engine, or `--viewer none --no-record` for numerical
 batches without Rerun logging. Fresh `run_experiment` trials still use Python.

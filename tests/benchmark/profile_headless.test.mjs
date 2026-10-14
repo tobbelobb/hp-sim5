@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createHeadlessWorld } from '../../hp-sim-3d/app/headlessWorld.js';
-import { loadWorkload, runTrajectory } from '../../scripts/profile_headless.mjs';
+import { loadWorkload, runTrajectory, compareCheckpoints } from '../../scripts/profile_headless.mjs';
 import { summarizeCpu, summarizeHeap } from '../../scripts/summarize_v8_profile.mjs';
 
 const events = rows => rows.map(row => JSON.stringify({ epoch: 0, ...row })).join('\n');
@@ -25,6 +25,17 @@ test('replay preserves same-step FIFO, idle settling, settings and encoder reads
   assert.deepEqual(replay.checkpoints.at(-1).snapshot, explicit.checkpoints.at(-1).snapshot);
   assert.equal(replay.encoderReads, 1);
   assert.deepEqual(instance.remote.history.map(command => command.A), [.01, .02]);
+  assert.notDeepEqual(replay.checkpoints[0].snapshot.velocities, replay.checkpoints.at(-1).snapshot.velocities);
+});
+
+test('reviewed drift records a failed tolerance check and still rejects clock changes', () => {
+  const expected = [{ step: 1, encoder: 0.1 }], actual = [{ step: 1, encoder: 0.102 }];
+  assert.throws(() => compareCheckpoints(actual, expected), /Numerical trajectory/);
+  const result = compareCheckpoints(actual, expected, { allowNumericalDrift: true });
+  assert.equal(result.matchesTolerance, false);
+  assert.equal(result.outsideTolerance, 1);
+  assert(result.physicalErrors.encoder_rad > .001);
+  assert.throws(() => compareCheckpoints([{ step: 2, encoder: .1 }], expected, { allowNumericalDrift: true }), /trajectory/);
 });
 
 test('replay rejects reset epochs and backwards clocks', () => {

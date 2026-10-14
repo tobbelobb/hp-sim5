@@ -250,11 +250,11 @@ export function createHpSimApp({
         world.setResource('cableSolverBackend', await loadDefaultCableSolverBackend(
           ownerWindow?.fetch ?? globalThis.fetch, ownerWindow ?? globalThis));
       }
+      if (solverBackend === 'js') world.setResource('cableSolverBackend', null);
       return controllers.machines.loadDefaultMachine();
     })();
     return defaultScenePromise;
   }
-
   return {
     research,
     loadDefaultScene,

@@ -216,6 +216,8 @@ async def test_reset_reloads_scene_and_js_sources_with_fixed_settings(tmp_path, 
     scene = root / runtime.configuration.scene
     scene.parent.mkdir(parents=True)
     shutil.copyfile(ROOT / runtime.configuration.scene, scene)
+    (root / 'public/wasm').mkdir()
+    shutil.copyfile(ROOT / 'public/wasm/cable_solver.wasm', root / 'public/wasm/cable_solver.wasm')
     monkeypatch.setattr(module, 'ROOT', root)
     try:
         await runtime.start()
@@ -226,6 +228,9 @@ async def test_reset_reloads_scene_and_js_sources_with_fixed_settings(tmp_path, 
         worker.write_text("console.error('source-reload-marker');\n" + worker.read_text())
         stale = runtime.status()['source_changed']
         assert stale['scene_requires_session_reset'] and stale['bridge_requires_session_reset']
+        wasm = root / 'public/wasm/cable_solver.wasm'
+        wasm.write_bytes(wasm.read_bytes() + b'\x00\x02\x01x')  # Valid custom section changes artifact identity.
+        assert runtime.status()['source_changed']['rust_physics_requires_session_reset']
         await runtime.dispatch('reset', {})
         after = runtime.status()
         assert before['world_id'] != after['world_id']
@@ -235,5 +240,7 @@ async def test_reset_reloads_scene_and_js_sources_with_fixed_settings(tmp_path, 
         assert 'source-reload-marker' in Path(after['services']['physics-js']['log']).read_text()
         assert not after['source_changed']['scene_requires_session_reset']
         assert not after['source_changed']['bridge_requires_session_reset']
+        assert not after['source_changed']['rust_physics_requires_session_reset']
+        assert after['world_configuration']['rust_physics_sha256'] != before['world_configuration']['rust_physics_sha256']
     finally:
         await runtime.close_session()

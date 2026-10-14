@@ -3,14 +3,48 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { runFixture } from '../parity3d/oracle.mjs';
 import { compileCableSolverWasm, WasmCableSolver } from '../../src/js/cable_joints_3d/wasm_cable_solver.js';
+import { WasmPhysicsEngine } from '../../src/js/cable_joints_3d/wasm_physics_engine.js';
 import { World, PositionComponent, MassComponent } from '../../src/js/cable_joints_3d/ecs.js';
 import { CableJointComponent, CablePathComponent, PBDCableConstraintSolver } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import Vector3 from '../../src/js/cable_joints_3d/vector3.js';
 import { createHeadlessWorld } from '../../hp-sim-3d/app/headlessWorld.js';
-import { runTrajectory } from '../../scripts/profile_headless.mjs';
+import { runTrajectory, compareCheckpoints } from '../../scripts/profile_headless.mjs';
 
 const module = await compileCableSolverWasm(fs.readFileSync(new URL('../../public/wasm/cable_solver.wasm', import.meta.url)));
 const directory = new URL('../fixtures/python_3d_parity/', import.meta.url);
+test('the full default engine has no JavaScript imports', () => {
+  assert.deepEqual(WebAssembly.Module.imports(module), []);
+  const world = createHeadlessWorld(fs.readFileSync(new URL('../../public/usd_scenes/hp4_rigid_body.usda', import.meta.url), 'utf8'));
+  assert(world.world.systems.some(s => s.constructor.name === 'RustPhysicsSystem'));
+  assert(!world.world.systems.some(s => s.constructor.name === 'PBDCableConstraintSolver'));
+  world.world.getResource('cableSolverBackend').update(world.world, world.dt);
+  assert.equal(world.world.getResource('cableHybridTransitionStep'), 1);
+});
+test('persistent numeric views accept edits, refresh after memory growth, and detach on clear', () => {
+  const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp3_rigid_body.usda', import.meta.url), 'utf8');
+  const instance = createHeadlessWorld(scene), second = createHeadlessWorld(scene);
+  instance.world.update(instance.dt);
+  const backend = instance.world.getResource('cableSolverBackend');
+  const entity = instance.world.query([PositionComponent])[0], position = instance.world.getComponent(entity, PositionComponent).pos;
+  backend.exports.memory.grow(4);
+  const old = position.x; position.x += .1;
+  assert.equal(position.x, old + .1);
+  assert.notEqual(second.world.getComponent(entity, PositionComponent).pos.x, position.x);
+  instance.world.clear(); instance.world.update(instance.dt);
+  assert.equal(position.x, old + .1);
+  assert.equal(backend.ids.length, 0);
+});
+test('rigid cables in torque mode retain finite load coefficients', () => {
+  const fixture = JSON.parse(fs.readFileSync(new URL('torque_motor_cables.json', directory)));
+  fixture.pipeline = true; fixture.systems = [];
+  for (const entity of fixture.entities) {
+    const path = entity.components.CablePathComponent;
+    if (path) path[3] = 'Infinity';
+  }
+  const expected = runFixture(fixture), actual = runFixture(fixture, { cableSolverBackend: new WasmPhysicsEngine(module) });
+  for (const result of [actual, expected]) for (const snapshot of result.snapshots) delete snapshot.systemOrder;
+  compareCheckpoints(JSON.parse(JSON.stringify(actual)), JSON.parse(JSON.stringify(expected)), { atol: 1e-8, rtol: 1e-7 });
+});
 test('backend survives empty updates, clear, reused IDs and absent pose/inertia stores', () => {
   const world = new World(), solver = new PBDCableConstraintSolver(new WasmCableSolver(module));
   solver.update(world);
@@ -45,9 +79,19 @@ for (const file of fs.readdirSync(directory).filter(file => file.endsWith('.json
     ['PBDCableConstraintSolver', 'CableAttachmentUpdateSystem', 'PBDResolveCableOverCorrections'].includes(system.name ?? system))) continue;
   test(`WASM matches JS every timestep: ${file}`, () => {
     const expected = runFixture(fixture);
-    const actual = runFixture(fixture, { cableSolverBackend: new WasmCableSolver(module) });
+    const actual = runFixture(fixture, { cableSolverBackend: fixture.pipeline ? new WasmPhysicsEngine(module) : new WasmCableSolver(module) });
     // Use the same JSON representation as the profiling checkpoints (-0 -> 0).
-    assert.deepEqual(JSON.parse(JSON.stringify(actual)), JSON.parse(JSON.stringify(expected)));
+    if (fixture.pipeline) {
+      assert(actual.snapshots.every(s => s.systemOrder.includes('RustPhysicsSystem')));
+      for (const result of [actual, expected]) for (const snapshot of result.snapshots) delete snapshot.systemOrder;
+    }
+    compareCheckpoints(JSON.parse(JSON.stringify(actual)), JSON.parse(JSON.stringify(expected)), { atol: 1e-8, rtol: 1e-7 });
+  });
+  if (!fixture.pipeline) test(`full Rust pipeline covers ${file}`, () => {
+    const full = { ...fixture, systems: [], pipeline: true };
+    const expected = runFixture(full), actual = runFixture(full, { cableSolverBackend: new WasmPhysicsEngine(module) });
+    for (const result of [actual, expected]) for (const snapshot of result.snapshots) delete snapshot.systemOrder;
+    compareCheckpoints(JSON.parse(JSON.stringify(actual)), JSON.parse(JSON.stringify(expected)), { atol: 1e-8, rtol: 1e-7 });
   });
 }
 
@@ -60,9 +104,9 @@ for (const name of ['hp3', 'hp4', 'four_high_anchors', 'cubecorners', 'slideprin
       const commands = Array.from({ length: 200 }, (_, n) => ({ type: 'Move',
         A: Math.sin(n / 20) * .001, B: -Math.sin(n / 20) * .001, C: n * .00001, D: -n * .00001 }));
       const workload = { boundaries: [{ step: 0, commands }] };
-      const expected = runTrajectory(createHeadlessWorld(scene, options), workload, 200, 1);
-      const actual = runTrajectory(createHeadlessWorld(scene, { ...options, cableSolverBackend: new WasmCableSolver(module) }), workload, 200, 1);
-      assert.deepEqual(actual.checkpoints, expected.checkpoints);
+      const expected = runTrajectory(createHeadlessWorld(scene, { ...options, cableSolverBackend: null }), workload, 200, 1);
+      const actual = runTrajectory(createHeadlessWorld(scene, options), workload, 200, 1);
+      compareCheckpoints(actual.checkpoints, expected.checkpoints, { atol: 1e-8, rtol: 1e-7 });
     });
   }
 }

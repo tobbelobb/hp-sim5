@@ -6,12 +6,14 @@ simulator and the production WebSocket bridge. Collection uses
 records from motor targets. RRF plans G-code and converts force to torque, physics
 executes those motor records, and the collector observes actual encoders.
 
-The default backend is `headless-js`: the production browser physics pipeline
-runs in Node without rendering. Python supervises it and mirrors detached
+The default backend is `headless-js`: the production Rust/Wasm physics engine
+runs in Node without rendering; JavaScript owns commands and observations. Python supervises it and mirrors detached
 observation fields for the existing numerical telemetry and Rerun recorder;
 Python does not advance that mirror. `--physics-backend native-python` retains
 the slower independent Python engine for differential experiments. Backend
-identity is explicit in status, context, point journals and manifests.
+identity is explicit in status, context, point journals and manifests. The
+transport backend name remains `headless-js`; `physics_engine: rust-wasm` names
+the core. Manifests and stale-source checks include Rust and the Wasm artifact.
 
 Use `--machine hp3` to select the HP3 scene and `config_hp3.g` together. HP4
 remains the default. Both designs use the collector's existing `hangprinter_4`

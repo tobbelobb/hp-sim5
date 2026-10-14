@@ -8,15 +8,26 @@ import { RemoteSpoolSystem } from './remoteSpoolSystem.js';
 import { StepperMotorSystem } from './hangprinter_stepper_motor.js';
 import { TorqueModeSystem } from './torqueModeSystem.js';
 import { MissedStepTrackingSystem } from './motor-diagnostics.js';
+import { createDefaultPhysicsBackend, RustPhysicsSystem } from '../../src/js/cable_joints_3d/wasm_physics_engine.js';
 import {
     PrevFinalPosSystem, PrevFinalOrientationSystem, EncoderUpdateSystem,
     GravitySystem, MovementSystem, AngularMovementSystem,
     PBDVelocityUpdateSystem, PBDAngularVelocityUpdateSystem, RigidBodySyncSystem,
 } from '../../src/js/cable_joints_3d/commonSystems.js';
 
-export function registerSimulationSystems(world, { cableSolverBackend = null } = {}) {
-    if (cableSolverBackend) world.setResource('cableSolverBackend', cableSolverBackend);
-    cableSolverBackend ??= world.getResource('cableSolverBackend') ?? null;
+export function registerSimulationSystems(world, { cableSolverBackend = undefined } = {}) {
+    if (cableSolverBackend === undefined) cableSolverBackend = world.getResource('cableSolverBackend');
+    if (cableSolverBackend === undefined) cableSolverBackend = createDefaultPhysicsBackend();
+    world.setResource('cableSolverBackend', cableSolverBackend);
+    world.setResource('physicsEngine', cableSolverBackend?.fullEngine ? 'rust-wasm' : cableSolverBackend ? 'wasm-cable-kernel' : 'javascript');
+    if (cableSolverBackend?.fullEngine) {
+        world.registerSystem(new RemoteSpoolSystem());
+        world.registerSystem(new RustPhysicsSystem(cableSolverBackend));
+        world.registerSystem(new ExtruderSystem());
+        const recorder = world.getResource('flightRecorder');
+        if (recorder) world.registerSystem(recorder);
+        return;
+    }
     world.registerSystem(new PrevFinalPosSystem());
     world.registerSystem(new PrevFinalOrientationSystem());
     world.registerSystem(new RemoteSpoolSystem());

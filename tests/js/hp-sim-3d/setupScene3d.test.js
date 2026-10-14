@@ -192,16 +192,12 @@ describe('slideprinter 3D setupScene', () => {
     expect(planeNormal?.z).toBeCloseTo(1.0, 6);
 
     const systemNames = world.systems.map((system) => system.constructor.name);
-    expect(systemNames).toContain('RigidBodySyncSystem');
+    expect(systemNames).toContain('RustPhysicsSystem');
     expect(systemNames).toContain('ExtruderSystem');
-    expect(systemNames).toContain('EncoderUpdateSystem');
-    expect(systemNames).toContain('StepperMotorSystem');
-    expect(systemNames).toContain('TorqueModeSystem');
-    expect(systemNames.indexOf('TorqueModeSystem')).toBeGreaterThan(
-      systemNames.indexOf('PBDAngularVelocityUpdateSystem'),
-    );
-    expect(systemNames.indexOf('TorqueModeSystem')).toBeLessThan(systemNames.indexOf('ExtruderSystem'));
-    expect(systemNames.filter((name) => name === 'RigidBodySyncSystem')).toHaveLength(1);
+    expect(world.getResource('physicsEngine')).toBe('rust-wasm');
+    expect(systemNames.indexOf('RustPhysicsSystem')).toBeGreaterThan(systemNames.indexOf('RemoteSpoolSystem'));
+    expect(systemNames.indexOf('RustPhysicsSystem')).toBeLessThan(systemNames.indexOf('ExtruderSystem'));
+    expect(systemNames.filter((name) => name === 'RustPhysicsSystem')).toHaveLength(1);
     expect(systemNames).not.toContain('SpoolAxisConstraintSystem');
   });
 

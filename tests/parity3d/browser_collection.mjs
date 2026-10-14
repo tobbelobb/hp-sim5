@@ -35,8 +35,10 @@ try {
   await page.goto(`http://127.0.0.1:${vite.httpServer.address().port}/tests/parity3d/collection.html`);
   await page.evaluate(async ({ scene, wsPort }) => {
     const { createHeadlessWorld } = await import('/hp-sim-3d/app/headlessWorld.js');
+    const { loadDefaultCableSolverBackend } = await import('/hp-sim-3d/app/cableSolverBackend.js');
     const { createExternalCommandController } = await import('/hp-sim-3d/app/externalCommandSocket.js');
-    let { world, remote, dt } = createHeadlessWorld(scene, { lineLayeringEnabled: true });
+    let { world, remote, dt } = createHeadlessWorld(scene, { lineLayeringEnabled: true,
+      cableSolverBackend: await loadDefaultCableSolverBackend() });
     let steps = 0, time = 0, speed = 1;
     const controller = createExternalCommandController({ world, url: `ws://127.0.0.1:${wsPort}`,
       commands: {

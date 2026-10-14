@@ -125,15 +125,28 @@ No optimization is accepted solely because a profiled run became faster.
 
 ## Rust/WASM comparison
 
-The batched Rust/WASM cable solver and attachment geometry backend is the
-default in the browser app and profiling CLI. The browser loads the checked-in
-binary at startup; use `?solver=js` to select JavaScript. Build the binary with
-`npm run build:wasm`; the checked-in artifact works without a Rust toolchain.
-For comparisons, pass `--solver js` to make a JS baseline and `--compare` that
-baseline to the default WASM run. The same workload contract and exact numerical
-checks apply. Output identifies the selected backend and WASM SHA-256, and the
-source hash includes the Rust source and build recipe. Packing/unpacking stays
-inside the production system timers.
+The persistent Rust/WASM physics engine is the default in the browser,
+headless worlds, continuing collection workers and profiling CLI. The browser
+loads the checked-in binary at startup; use `?solver=js` to select JavaScript.
+Build with `npm run build:wasm`. The checked-in artifact works without Rust.
+For comparisons, use `--solver js` to make a reference and `--compare` it with a
+Wasm run. Repeats of one backend must retain exact checkpoint hashes. Across
+backends, the harness requires finite values, equal observation structure,
+exact discrete metadata, and numerical agreement within the declared tolerance.
+Defaults are `--absolute-tolerance 0.000001 --relative-tolerance 0.000001`;
+both errors and the worst field are recorded. These are mixed-unit checkpoint
+tolerances, not a physical error budget. Tighten them for a specific experiment.
+After reviewing a drift case, `--allow-numerical-drift` retains timings and error
+statistics while marking `numericalMatch: false`. It still rejects mismatched
+structures, clocks, IDs, command metadata and non-finite values. It does not
+accept the trajectory as passing its tolerance check. See the
+[full engine report](../../research/rust-wasm-engine.md) for the long replay errors.
+
+The Rust core uses its own trig functions, so bit-for-bit rounding is not a
+requirement. Backend and Wasm SHA-256 are recorded, and source hashes include the
+core, ABI, bridge and build recipe. Timers include command dispatch, Rust stepping,
+view maintenance and extrusion observations. There is no per-step state packing
+or pose copy-back in the default engine.
 
 Run the complete matrix sequentially with:
 

@@ -29,7 +29,7 @@ import { StepperMotorComponent } from '../../../hp-sim-3d/app/hangprinter_steppe
 // lambda 31, force 32..34, magnitude 35, transfer 36, solved 37.
 // Path: first/count/iterations 0..2, zeroStiffness/alpha/gamma/dampingStep 3..6,
 // invDt² 7, springConstant 8, damping 9.
-const E = 69, J = 38, P = 10, EPS = 1e-9;
+const E = 160, J = 38, P = 10, EPS = 1e-9;
 const hybrid = type => type === 'hybrid' || type === 'hybrid-attachment';
 const backdrivable = type => type === 'rolling' || hybrid(type);
 const validQuat = q => q && [q.x, q.y, q.z, q.w].every(Number.isFinite);
@@ -46,11 +46,8 @@ export async function compileCableSolverWasm(bytes) {
 // world; capacity grows only when topology grows, and views refresh after growth.
 export class WasmCableSolver {
   constructor(module) {
-    this.exports = new WebAssembly.Instance(module, { math: {
-      sin: Math.sin, cos: Math.cos,
-      acos: Math.acos, asin: Math.asin, atan2: Math.atan2,
-    } }).exports;
-    if (this.exports.abi_version() !== 1) throw new Error('Unsupported cable solver WASM ABI');
+    this.exports = new WebAssembly.Instance(module, {}).exports;
+    if (this.exports.abi_version() !== 2) throw new Error('Unsupported cable solver WASM ABI');
     this.capacity = 0;
     this.pointer = 0;
     this.scratch = createAttachmentTransformScratch();

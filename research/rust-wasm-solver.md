@@ -1,5 +1,8 @@
 # Rust/WASM cable solver performance, 2026-10-13
 
+This is the historical solver-only report. The [2026-10-14 full engine](rust-wasm-engine.md)
+moves the remaining shared physics pipeline and persistent state into Rust.
+
 Rust/WASM reduces total physics time by **17.4–29.3% on HP4** (1.21–1.41×
 throughput) against today's optimized JavaScript. HP3 improves **0.2–6.2%**;
 its layered autocal replay is essentially unchanged. All 48 measured trajectories

@@ -349,6 +349,7 @@ async def test_failed_collection_finalizes_evidence_with_optional_recording(tmp_
     runtime.machine = 'hp4'
     runtime.collector_url = 'unused'
     runtime.physics_source_hash = runtime.bridge_source_hash = runtime.rrf_hash = runtime.config_hash = 'test-hash'
+    runtime.rust_physics_hash = runtime.hash_rust_physics()
     runtime.processes = {'collector': SimpleNamespace(pid=1, poll=lambda: None)}
     runtime.session = NativeSession(ROOT, tmp_path, backend='headless-js', record=record)
     def fail_request(*args, **kwargs):

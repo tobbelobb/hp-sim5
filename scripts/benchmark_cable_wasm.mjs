@@ -9,6 +9,7 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const { values: args } = parseArgs({ options: {
   inputs: { type: 'string' }, output: { type: 'string' },
   repeats: { type: 'string', default: '3' },
+  'allow-numerical-drift': { type: 'boolean', default: false },
 } });
 if (!args.inputs || !args.output) throw new Error('Usage: node scripts/benchmark_cable_wasm.mjs --inputs DIR --output NEW_DIR');
 const output = path.resolve(args.output);
@@ -23,7 +24,8 @@ for (const machine of ['hp3', 'hp4']) for (const workload of ['logo', 'autocal']
     execFileSync(process.execPath, ['scripts/profile_headless.mjs', '--machine', machine,
       workload === 'logo' ? '--commands' : '--events', input, '--layering', layering,
       '--solver', solver, '--repeats', args.repeats, '--output', path.join(output, `${name}-${solver}.json`),
-      ...(solver === 'wasm' ? ['--compare', baseline] : [])], { cwd: root, stdio: 'inherit' });
+      ...(solver === 'wasm' ? ['--compare', baseline] : []),
+      ...(args['allow-numerical-drift'] ? ['--allow-numerical-drift'] : [])], { cwd: root, stdio: 'inherit' });
   }
   const js = JSON.parse(fs.readFileSync(baseline));
   const wasm = JSON.parse(fs.readFileSync(path.join(output, `${name}-wasm.json`)));
@@ -31,7 +33,8 @@ for (const machine of ['hp3', 'hp4']) for (const workload of ['logo', 'autocal']
     wasmMs: wasm.runs.map(run => run.physicsMs), jsMedianMs: js.medianPhysicsMs,
     wasmMedianMs: wasm.medianPhysicsMs, speedup: js.medianPhysicsMs / wasm.medianPhysicsMs,
     reductionPercent: 100 * (1 - wasm.medianPhysicsMs / js.medianPhysicsMs),
-    checkpointSha256: js.runs[0].checkpointSha256, numericalMatch: wasm.numericalMatch });
+    jsCheckpointSha256: js.runs[0].checkpointSha256, wasmCheckpointSha256: wasm.runs[0].checkpointSha256,
+    numericalComparison: wasm.runs.map(run => run.numericalComparison), numericalMatch: wasm.numericalMatch });
   fs.writeFileSync(path.join(output, 'matrix.json'), JSON.stringify(matrix, null, 2) + '\n');
 }
 console.table(matrix.map(({ name, jsMedianMs, wasmMedianMs, speedup, reductionPercent }) => ({
