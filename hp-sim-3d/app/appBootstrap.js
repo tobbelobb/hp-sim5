@@ -1,4 +1,5 @@
 import { World } from '../../src/js/cable_joints_3d/ecs.js';
+import { loadDefaultCableSolverBackend } from './cableSolverBackend.js';
 import { PerformanceMonitor } from './performance-monitor.js';
 import { createAppState } from './appState.js';
 import { HP4_USDA_KEY, createUsdaCatalog } from './machineCatalog.js';
@@ -98,6 +99,7 @@ export function createHpSimApp({
   }
 
   const urlParams = ownerWindow?.location ? new URLSearchParams(ownerWindow.location.search) : null;
+  const solverBackend = urlParams?.get('solver') === 'js' ? 'js' : 'wasm';
   const state = createAppState({
     qualityEnabled: Boolean(dom.qualityToggle?.checked),
     showConstraintForces: Boolean(dom.showForcesToggle?.checked),
@@ -242,13 +244,20 @@ export function createHpSimApp({
   let defaultScenePromise = null;
   let bound = false;
   let started = false;
+  function loadDefaultScene() {
+    defaultScenePromise ||= (async () => {
+      if (solverBackend === 'wasm' && !world.getResource('cableSolverBackend')) {
+        world.setResource('cableSolverBackend', await loadDefaultCableSolverBackend(
+          ownerWindow?.fetch ?? globalThis.fetch, ownerWindow ?? globalThis));
+      }
+      return controllers.machines.loadDefaultMachine();
+    })();
+    return defaultScenePromise;
+  }
 
   return {
     research,
-    loadDefaultScene() {
-      defaultScenePromise ||= controllers.machines.loadDefaultMachine();
-      return defaultScenePromise;
-    },
+    loadDefaultScene,
     bindUi() {
       if (bound) {
         return;
@@ -267,8 +276,7 @@ export function createHpSimApp({
         return;
       }
       started = true;
-      defaultScenePromise ||= controllers.machines.loadDefaultMachine();
-      await defaultScenePromise;
+      await loadDefaultScene();
       runtime.start(() => controllers.machines.rebuildScene(), {
         onTimeScaleChange: (scale) => controllers.commands.handleRuntimeTimeScaleChange(scale),
       });

@@ -16,6 +16,7 @@ import {
 
 export function registerSimulationSystems(world, { cableSolverBackend = null } = {}) {
     if (cableSolverBackend) world.setResource('cableSolverBackend', cableSolverBackend);
+    cableSolverBackend ??= world.getResource('cableSolverBackend') ?? null;
     world.registerSystem(new PrevFinalPosSystem());
     world.registerSystem(new PrevFinalOrientationSystem());
     world.registerSystem(new RemoteSpoolSystem());

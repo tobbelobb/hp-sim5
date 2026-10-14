@@ -116,7 +116,7 @@ export function runTrajectory(instance, workload, steps, checkpointEvery = 1000,
 
 async function main() {
   const { values: args } = parseArgs({ options: {
-    solver: { type: 'string', default: 'js' },
+    solver: { type: 'string', default: 'wasm' },
     machine: { type: 'string', default: 'hp4' }, scene: { type: 'string' },
     commands: { type: 'string' }, events: { type: 'string' }, output: { type: 'string' },
     layering: { type: 'string', default: 'on' }, 'closed-loop': { type: 'boolean', default: false },

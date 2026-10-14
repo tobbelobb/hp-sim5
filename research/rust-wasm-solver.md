@@ -22,7 +22,10 @@ force transfers and torque-load coefficients. The JS bridge packs live state
 once per update and writes back changes after one batched solver call. Attachment
 tangent geometry runs in a separate reusable buffer, one call per joint. Scene
 construction, winding/topology/history, motor/force integration and the other
-systems remain in JS. The default remains JS; select WASM explicitly.
+systems remain in JS. WASM is the default in the browser app and profiling CLI.
+Use `?solver=js` in the browser or `--solver js` in the profiler to select the
+JavaScript fallback. Browser startup loads and compiles the checked-in module
+before constructing the default scene.
 
 Arithmetic remains f64, with the same operation order and host Math trig
 functions. Vector lengths execute in WASM using V8-compatible scaled sums.
@@ -106,10 +109,11 @@ node --test tests/benchmark/profile_headless.test.mjs tests/benchmark/wasm_cable
 node scripts/benchmark_cable_wasm.mjs --inputs FROZEN_INPUT_DIR --output NEW_DIR
 ```
 
-For a single run, add `--solver wasm` to the
-[profiling CLI](../tests/benchmark/HEADLESS_JS_PROFILING.md), using `--compare`
-a matching JS baseline. WASM backend/artifact hashes are recorded separately
-from the shared workload contract.
+For a JS baseline, use `--solver js` with the
+[profiling CLI](../tests/benchmark/HEADLESS_JS_PROFILING.md), then omit the
+option for a WASM run with `--compare` pointing to that baseline. WASM
+backend/artifact hashes are recorded separately from the shared workload
+contract.
 
 ## Evidence and limitations
 

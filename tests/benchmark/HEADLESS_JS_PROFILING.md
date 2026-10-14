@@ -125,13 +125,15 @@ No optimization is accepted solely because a profiled run became faster.
 
 ## Rust/WASM comparison
 
-The optional batched cable solver and attachment geometry backend is built with
-`npm run build:wasm`; the checked-in binary can be used without a Rust toolchain.
-Select it with `--solver wasm`, and pass `--compare` a baseline produced by the
-default `--solver js`. The same workload contract and exact numerical checks
-apply. Output identifies the selected backend and WASM SHA-256, and the source
-hash includes the Rust source and build recipe. Packing/unpacking stays inside
-the production system timers.
+The batched Rust/WASM cable solver and attachment geometry backend is the
+default in the browser app and profiling CLI. The browser loads the checked-in
+binary at startup; use `?solver=js` to select JavaScript. Build the binary with
+`npm run build:wasm`; the checked-in artifact works without a Rust toolchain.
+For comparisons, pass `--solver js` to make a JS baseline and `--compare` that
+baseline to the default WASM run. The same workload contract and exact numerical
+checks apply. Output identifies the selected backend and WASM SHA-256, and the
+source hash includes the Rust source and build recipe. Packing/unpacking stays
+inside the production system timers.
 
 Run the complete matrix sequentially with:
 
