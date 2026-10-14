@@ -1,11 +1,12 @@
 # Rust physics core
 
-The browser, headless collection workers and profiling CLI default to a continuing
-Rust/Wasm world. One Rust step owns body integration, position and torque motors,
+The browser uses a continuing Rust/Wasm world. Local headless worlds, collection
+workers, fresh research trials and the profiling CLI default to native Rust. One Rust step owns body integration, position and torque motors,
 spool projection and reaction torque, cable attachment geometry, winding and layer
 ramps, split/merge topology, hybrid transitions, friction, XPBD constraints,
 over-correction, velocity reconstruction, encoders and missed-step counters.
-The same dependency-free crate builds as a native Rust library (`rlib`).
+The same dependency-free crate builds as native Rust libraries (`rlib`, `staticlib`
+and `cdylib`); neither host implements separate physics.
 
 JavaScript parses and bakes scenes, prepares the world, dispatches commands and
 handles transport, interactive edits, rendering, extrusion observations and
@@ -13,13 +14,16 @@ recorders. Numeric ECS vectors and scalars view Rust memory directly. Physics
 steps pass resource settings and call Rust once; they do not repack entities or
 copy poses back. Structural ECS edits rebuild the prepared world. Numeric edits
 write the shared records, and topology changes reconcile cable entities and views.
-Each world has its own instance and state. Views refresh when Wasm memory grows.
+Each world has its own instance and state. Views refresh when Wasm memory grows;
+native path buffers detach before topology changes return to JavaScript. Native
+allocations remain alive until their views are collected, including escaped views.
 
 ```bash
+npm run build:native
 npm run build:wasm
 cargo build --manifest-path src/wasm/cable_solver/Cargo.toml --release
 cargo test --manifest-path src/wasm/cable_solver/Cargo.toml
-node --test tests/benchmark/wasm_cable_solver.test.mjs
+node --test tests/benchmark/native_physics_engine.test.mjs tests/benchmark/wasm_cable_solver.test.mjs
 ```
 
 The checked-in `public/wasm/cable_solver.wasm` runs without a Rust toolchain.
@@ -29,13 +33,42 @@ exponentials execute in Rust on both targets; the Wasm module has no JavaScript
 imports. Small rounding differences are expected. No timestep, solver iteration,
 compliance, layering or settling simplification is made.
 
-In Node, `createHeadlessWorld(sceneText)` synchronously loads the checked-in
-module once, then creates a full engine per world. In a browser, await
-`loadDefaultCableSolverBackend()` before scene registration, as appBootstrap does.
+Build native execution once with `npm run build:native` (Rust, a C compiler and
+Node development headers are required; Linux/macOS build recipe). Set
+`NODE_INCLUDE_DIR` if `node_api.h` is outside the usual include directories.
+The generated `target/native/physics.node` uses Node-API 8 and statically links
+this crate. Its adjacent JSON records the artifact hash, source hashes, compiler
+and build profile. Generated host artifacts are ignored by Git. Missing or stale
+default builds fail with a rebuild instruction; there is no automatic Wasm fallback.
+
+In Node, `createHeadlessWorld(sceneText)` loads that native addon synchronously,
+then creates a full engine per world. The common `rust_physics_engine.js` prepares
+and binds the same records for both `NativePhysicsEngine` and `WasmPhysicsEngine`.
+Native views use external Float64Array buffers; steps do not copy entity state.
+In a browser, await `loadDefaultCableSolverBackend()` before scene registration,
+as appBootstrap does. Browser rendering, edits and connections remain JavaScript.
+
 For an explicit JavaScript reference, use `createHeadlessWorld(sceneText,
 { cableSolverBackend: null })`, `?solver=js` in the app, or `--solver js` in the
-profiler. `WasmCableSolver` remains a standalone constraint/geometry adapter for
-isolated differential fixtures; production defaults use `WasmPhysicsEngine`.
+profiler. Pass `new WasmPhysicsEngine(module)` for a Wasm world in Node.
+`WasmCableSolver` remains a standalone kernel adapter for differential fixtures.
+The profiler offers `--solver native|wasm|js`, plus `--native-addon PATH` to select
+an exact native build. `HP_SIM5_NATIVE_ENGINE=PATH` selects a custom native artifact
+for local services. These explicit artifacts may come from other revisions; their
+actual artifact hashes and build metadata are recorded.
+
+For native symbol profiling, build a separate optimized artifact with DWARF:
+
+```bash
+npm run build:native -- --profile profiling --output output/native-profile/physics.node
+perf record -g --call-graph dwarf -- node scripts/profile_headless.mjs \
+  --solver native --native-addon output/native-profile/physics.node \
+  --commands INPUT.json --output output/native-profile/run.json
+```
+
+`--profile release` is the default; `--profile dev` builds without optimization.
+The profiler never builds an artifact. V8 CPU/heap profiles describe the JS host;
+use a native profiler to inspect Rust frames. Record plain timings separately.
 
 ## Native boundary and prepared records
 
@@ -44,13 +77,14 @@ paths)`, set `options`, then call `step(dt)`. The core retains state and exposes
 entity records and `path_data(index)` for observations or edits. There are no
 browser callbacks, JS transcendental imports, scene parsers, sockets or logging
 dependencies in this API. The C ABI in `abi.rs` only allocates/accesses that world.
-A production native collection adapter can supply the same prepared scene and
-motor records later. The three native tests exercise continuing integration,
-cables/forces and both motor modes.
+The Node-API adapter in `native/node_bridge.c` supplies the same prepared scene
+and motor records through this ABI, and owns only validation, views and lifetime.
+Native Rust tests and native/Wasm fixture tests exercise continuing integration,
+cables/forces, both motor modes, scene edits and topology changes.
 
 Records use f64 slots, including flags and indices. Entity references in prepared
 paths and parents are indices into the entity array; public entity IDs remain in
-slot 128. The JavaScript preparation/binding code in `wasm_physics_engine.js` is the
+slot 128. The JavaScript preparation/binding code in `rust_physics_engine.js` is the
 complete schema implementation. The solver's original 0–68 slots are documented
 in `wasm_cable_solver.js`; additional entity fields are:
 

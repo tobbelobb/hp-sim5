@@ -12,9 +12,10 @@ import { runTrajectory, compareCheckpoints } from '../../scripts/profile_headles
 
 const module = await compileCableSolverWasm(fs.readFileSync(new URL('../../public/wasm/cable_solver.wasm', import.meta.url)));
 const directory = new URL('../fixtures/python_3d_parity/', import.meta.url);
-test('the full default engine has no JavaScript imports', () => {
+test('the full browser engine has no JavaScript imports', () => {
   assert.deepEqual(WebAssembly.Module.imports(module), []);
-  const world = createHeadlessWorld(fs.readFileSync(new URL('../../public/usd_scenes/hp4_rigid_body.usda', import.meta.url), 'utf8'));
+  const world = createHeadlessWorld(fs.readFileSync(new URL('../../public/usd_scenes/hp4_rigid_body.usda', import.meta.url), 'utf8'),
+    { cableSolverBackend: new WasmPhysicsEngine(module) });
   assert(world.world.systems.some(s => s.constructor.name === 'RustPhysicsSystem'));
   assert(!world.world.systems.some(s => s.constructor.name === 'PBDCableConstraintSolver'));
   world.world.getResource('cableSolverBackend').update(world.world, world.dt);
@@ -22,7 +23,8 @@ test('the full default engine has no JavaScript imports', () => {
 });
 test('persistent numeric views accept edits, refresh after memory growth, and detach on clear', () => {
   const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp3_rigid_body.usda', import.meta.url), 'utf8');
-  const instance = createHeadlessWorld(scene), second = createHeadlessWorld(scene);
+  const instance = createHeadlessWorld(scene, { cableSolverBackend: new WasmPhysicsEngine(module) });
+  const second = createHeadlessWorld(scene, { cableSolverBackend: new WasmPhysicsEngine(module) });
   instance.world.update(instance.dt);
   const backend = instance.world.getResource('cableSolverBackend');
   const entity = instance.world.query([PositionComponent])[0], position = instance.world.getComponent(entity, PositionComponent).pos;
@@ -105,7 +107,7 @@ for (const name of ['hp3', 'hp4', 'four_high_anchors', 'cubecorners', 'slideprin
         A: Math.sin(n / 20) * .001, B: -Math.sin(n / 20) * .001, C: n * .00001, D: -n * .00001 }));
       const workload = { boundaries: [{ step: 0, commands }] };
       const expected = runTrajectory(createHeadlessWorld(scene, { ...options, cableSolverBackend: null }), workload, 200, 1);
-      const actual = runTrajectory(createHeadlessWorld(scene, options), workload, 200, 1);
+      const actual = runTrajectory(createHeadlessWorld(scene, { ...options, cableSolverBackend: new WasmPhysicsEngine(module) }), workload, 200, 1);
       compareCheckpoints(actual.checkpoints, expected.checkpoints, { atol: 1e-8, rtol: 1e-7 });
     });
   }

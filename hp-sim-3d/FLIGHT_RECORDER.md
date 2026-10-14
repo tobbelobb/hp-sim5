@@ -4,19 +4,26 @@ Run every command below from the repository root. Install the Python dependencie
 with `.venv/bin/python -m pip install -r requirements.txt`; they include OpenUSD,
 Rerun 0.38 and the browser receiver's WebSocket library. The main
 [README](../README.md#python-dependencies) describes creating `.venv`.
+Build the native Rust engine with `npm run build:native` (Rust, C compiler and
+Node development headers). Browser recording uses the Wasm build of the same core.
 
 There are two recording workflows:
 
 | Workflow | Physics runs in | Start recording with | Output |
 | --- | --- | --- | --- |
-| Browser print | JavaScript in hp-sim-3d | Receiver process, then the **Rerun** button | A new `.rrd` for each connection/scene generation |
-| Native machine | Python, without Vite | `python -m cable_joints_3d` | One `.rrd`, plus an optional final JSON snapshot |
+| Browser print | Rust/Wasm in hp-sim-3d, with JS application systems | Receiver process, then the **Rerun** button | A new `.rrd` for each connection/scene generation |
+| Native machine | Native Rust hosted in Node; Python records observations, without Vite | `.venv/bin/python -m cable_joints_3d` | One `.rrd`, plus an optional final JSON snapshot |
 
 Running `.venv/bin/rerun FILE.rrd` **opens an existing recording**. It does not
 run physics, create a recording or connect to the simulator. Recording happens
 only when you explicitly run one of the workflows below.
 
-## Native Python simulation
+## Native simulation
+
+The recording CLI defaults to native Rust. Select `--physics-backend python`
+for the independent Python reference, or `--cable-solver-device cpu` for the
+explicit Python/Warp path. The default keeps scene preparation and physics in
+the shared headless pipeline; Python does not advance the observation mirror.
 
 ### Record a settling run yourself
 
@@ -276,7 +283,7 @@ check, not convincing evidence of commanded movement.
 
 ### Available telemetry
 
-| Data | Browser receiver | Native Python |
+| Data | Browser receiver | Native recording |
 | --- | --- | --- |
 | Anchor/body/member frames, effector center/orientation | Yes | Yes; live parent/member hierarchy |
 | Cable spans and per-segment force arrows/plots | Yes | Yes |

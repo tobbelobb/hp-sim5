@@ -22,6 +22,7 @@ def experiment_root(tmp_path):
     shutil.copyfile(ROOT / SCENE, target)
     (tmp_path / 'src').mkdir()
     (tmp_path / 'src/python').symlink_to(ROOT / 'src/python', target_is_directory=True)
+    (tmp_path / 'scripts').symlink_to(ROOT / 'scripts', target_is_directory=True)
     return tmp_path
 
 
@@ -31,6 +32,8 @@ def test_real_physics_measurements_recording_and_reproducible_inputs(experiment_
     first = run_experiment(root, steps=30, commands=commands)
     second = run_experiment(root, steps=30, commands=commands, record=False)
     assert first['status'] == second['status'] == 'complete'
+    assert first['physics_engine'] == second['physics_engine'] == 'rust-native'
+    assert first['physics_artifact']['sha256']
     assert first['metrics'] == second['metrics']
     assert first['metrics']['peak_cable_force_n'] > 0
     assert max(first['metrics']['effector_displacement_m'].values()) > 0
@@ -106,9 +109,9 @@ def test_compiled_fresh_experiment_records_backend(experiment_root):
     assert trial['backend'] == 'native-warp' and trial['cable_solver_device'] == 'cpu'
     assert trial['packages']['warp-lang']
     assert read_run(experiment_root, trial['run_id']) == trial
-    baseline = run_experiment(experiment_root, steps=5, record=False)
+    baseline = run_experiment(experiment_root, steps=5, record=False, physics_backend='native-python')
     comparison = compare_runs(experiment_root, baseline['run_id'], trial['run_id'])
-    assert comparison['changed_inputs'] == ['packages', 'backend', 'cable_solver_device']
+    assert comparison['changed_inputs'] == ['packages', 'backend', 'cable_solver_device', 'physics_engine']
     with pytest.raises(ValueError, match='cable_solver_device'):
         run_experiment(experiment_root, cable_solver_device='automatic')
 
@@ -145,7 +148,8 @@ async def test_stdio_mcp_discovery_execution_readback_and_error():
         assert not captured.is_error, captured.content
         assert captured.structured_content['sim_step'] == 1
         assert captured.structured_content['run_id'] == run['run_id']
-        assert captured.structured_content['backend'] == 'native-python'
+        assert captured.structured_content['backend'] == 'headless-js'
+        assert captured.structured_content['physics_engine'] == 'rust-native'
         result = await client.call_tool('run_experiment', {'commands': [{'type': 'Move', 'A': 'bad'}]})
         assert result.is_error
 

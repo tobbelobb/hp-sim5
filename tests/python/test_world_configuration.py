@@ -216,8 +216,9 @@ async def test_reset_reloads_scene_and_js_sources_with_fixed_settings(tmp_path, 
     scene = root / runtime.configuration.scene
     scene.parent.mkdir(parents=True)
     shutil.copyfile(ROOT / runtime.configuration.scene, scene)
-    (root / 'public/wasm').mkdir()
-    shutil.copyfile(ROOT / 'public/wasm/cable_solver.wasm', root / 'public/wasm/cable_solver.wasm')
+    native = root / 'physics.node'
+    shutil.copyfile(ROOT / 'src/wasm/cable_solver/target/native/physics.node', native)
+    monkeypatch.setenv('HP_SIM5_NATIVE_ENGINE', str(native))
     monkeypatch.setattr(module, 'ROOT', root)
     try:
         await runtime.start()
@@ -228,8 +229,7 @@ async def test_reset_reloads_scene_and_js_sources_with_fixed_settings(tmp_path, 
         worker.write_text("console.error('source-reload-marker');\n" + worker.read_text())
         stale = runtime.status()['source_changed']
         assert stale['scene_requires_session_reset'] and stale['bridge_requires_session_reset']
-        wasm = root / 'public/wasm/cable_solver.wasm'
-        wasm.write_bytes(wasm.read_bytes() + b'\x00\x02\x01x')  # Valid custom section changes artifact identity.
+        native.write_bytes(native.read_bytes() + b'\x00')  # ELF/Mach-O trailing data changes artifact identity.
         assert runtime.status()['source_changed']['rust_physics_requires_session_reset']
         await runtime.dispatch('reset', {})
         after = runtime.status()

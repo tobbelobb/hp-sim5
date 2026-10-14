@@ -1,4 +1,4 @@
-// Production JS physics only. See tests/benchmark/HEADLESS_JS_PROFILING.md.
+// Explicit native/Wasm/JS profiling. See tests/benchmark/HEADLESS_JS_PROFILING.md.
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
@@ -16,6 +16,7 @@ import { EncoderComponent, VelocityComponent, AngularVelocityComponent } from '.
 import { StepperMotorComponent } from '../hp-sim-3d/app/hangprinter_stepper_motor.js';
 import { compileCableSolverWasm } from '../src/js/cable_joints_3d/wasm_cable_solver.js';
 import { WasmPhysicsEngine } from '../src/js/cable_joints_3d/wasm_physics_engine.js';
+import { NativePhysicsEngine, loadNativePhysicsAddon } from '../src/js/cable_joints_3d/native_physics_engine.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const sha = value => createHash('sha256').update(value).digest('hex');
@@ -153,7 +154,7 @@ export function runTrajectory(instance, workload, steps, checkpointEvery = 1000,
 
 async function main() {
   const { values: args } = parseArgs({ options: {
-    solver: { type: 'string', default: 'wasm' },
+    solver: { type: 'string', default: 'native' }, 'native-addon': { type: 'string' },
     machine: { type: 'string', default: 'hp4' }, scene: { type: 'string' },
     commands: { type: 'string' }, events: { type: 'string' }, output: { type: 'string' },
     layering: { type: 'string', default: 'on' }, 'closed-loop': { type: 'boolean', default: false },
@@ -166,7 +167,7 @@ async function main() {
   } });
   if (!args.output || Boolean(args.commands) === Boolean(args.events) || !['hp3', 'hp4'].includes(args.machine)
     || !['on', 'off'].includes(args.layering)) {
-    throw new Error('Usage: node [--cpu-prof] scripts/profile_headless.mjs --machine hp3|hp4 --commands ARRAY.json|--events TRACE.jsonl --layering on|off --output NEW.json [--systems] [--heap-sampling] [--compare BASELINE.json]');
+    throw new Error('Usage: node [--cpu-prof] scripts/profile_headless.mjs --solver native|wasm|js --machine hp3|hp4 --commands ARRAY.json|--events TRACE.jsonl --layering on|off --output NEW.json [--native-addon PATH] [--systems] [--heap-sampling] [--compare BASELINE.json]');
   }
   const numeric = (key, fallback, minimum = 1) => {
     const value = Number(args[key] ?? fallback);
@@ -181,13 +182,16 @@ async function main() {
   const checkpointEvery = numeric('checkpoint-every', 1000);
   const sceneFile = args.scene ?? path.join(root, `public/usd_scenes/${args.machine}_rigid_body.usda`);
   const scene = fs.readFileSync(sceneFile, 'utf8');
-  if (!['js', 'wasm'].includes(args.solver)) throw new Error('Expected --solver js or wasm');
+  if (!['js', 'wasm', 'native'].includes(args.solver)) throw new Error('Expected --solver js, wasm or native');
+  if (args['native-addon'] && args.solver !== 'native') throw new Error('--native-addon requires --solver native');
+  const nativeArtifact = args.solver === 'native' ? loadNativePhysicsAddon(args['native-addon']).artifact : null;
   const wasmBytes = args.solver === 'wasm' ? fs.readFileSync(path.join(root, 'public/wasm/cable_solver.wasm')) : null;
   const wasmModule = wasmBytes ? await compileCableSolverWasm(wasmBytes) : null;
   const options = { lineLayeringEnabled: args.layering === 'on', closedLoopMotorsEnabled: args['closed-loop'],
     profiling: { enabled: args.systems, logEverySteps: 0, slowStepMs: Infinity } };
   const createInstance = (profiling = options.profiling) => createHeadlessWorld(scene, {
-    ...options, profiling, cableSolverBackend: wasmModule ? new WasmPhysicsEngine(wasmModule) : null,
+    ...options, profiling, cableSolverBackend: nativeArtifact ? new NativePhysicsEngine({ addonPath: nativeArtifact })
+      : wasmModule ? new WasmPhysicsEngine(wasmModule) : null,
   });
   if (fs.existsSync(args.output)) throw new Error('Output already exists; preserve earlier measurements');
   fs.mkdirSync(path.dirname(args.output), { recursive: true });
@@ -198,21 +202,29 @@ async function main() {
   const contract = { kind: workload.kind, machine: args.machine, sceneSha256: sha(scene), inputSha256: sha(source),
     steps, layering: args.layering, closedLoop: args['closed-loop'], checkpointEvery, warmup };
   if (baseline && finiteJson(baseline.contract) !== finiteJson(contract)) throw new Error('Baseline inputs/settings differ');
-  if (warmup) runTrajectory(createInstance({ enabled: false }),
-    workload, Math.min(warmup, steps), checkpointEvery, false);
+  if (warmup) {
+    const instance = createInstance({ enabled: false });
+    try { runTrajectory(instance, workload, Math.min(warmup, steps), checkpointEvery, false); }
+    finally { instance.world.getResource('cableSolverBackend')?.dispose?.(); }
+  }
   const gcEntries = [];
   const observer = new PerformanceObserver(list => gcEntries.push(...list.getEntries()));
   observer.observe({ entryTypes: ['gc'] });
   const sourceFiles = new Set(execFileSync('git', ['ls-files', '-z', 'src/js', 'hp-sim-3d'], { cwd: root, encoding: 'utf8' }).split('\0').filter(Boolean));
   sourceFiles.add('scripts/profile_headless.mjs');
   for (const file of ['src/js/cable_joints_3d/wasm_cable_solver.js', 'src/js/cable_joints_3d/wasm_physics_engine.js',
+    'src/js/cable_joints_3d/rust_physics_engine.js', 'src/js/cable_joints_3d/native_physics_engine.js',
     'src/wasm/cable_solver/src/lib.rs', 'src/wasm/cable_solver/src/engine.rs', 'src/wasm/cable_solver/src/abi.rs',
     'src/wasm/cable_solver/Cargo.toml', 'scripts/build_cable_wasm.mjs']) sourceFiles.add(file);
+  for (const file of ['src/wasm/cable_solver/native/node_bridge.c', 'scripts/build_native_physics.mjs']) sourceFiles.add(file);
   const sourceHash = createHash('sha256');
   for (const file of [...sourceFiles].sort()) sourceHash.update(file).update('\0').update(fs.readFileSync(path.join(root, file)));
   const result = { contract, node: process.version, v8: process.versions.v8, platform: `${os.platform()} ${os.release()} ${os.arch()}`,
     cpu: os.cpus()[0]?.model, execArgv: process.execArgv, revision: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(),
     sourceSha256: sourceHash.digest('hex'), solver: args.solver, wasmSha256: wasmBytes ? sha(wasmBytes) : null,
+    physicsEngine: args.solver === 'native' ? 'rust-native' : args.solver === 'wasm' ? 'rust-wasm' : 'javascript',
+    nativeArtifact, nativeSha256: nativeArtifact ? sha(fs.readFileSync(nativeArtifact)) : null,
+    nativeBuild: nativeArtifact && fs.existsSync(`${nativeArtifact}.json`) ? JSON.parse(fs.readFileSync(`${nativeArtifact}.json`)) : null,
     runs: [] };
   for (let repeat = 0; repeat < repeats; repeat++) {
     const loadStart = performance.now();
@@ -261,6 +273,7 @@ async function main() {
       systems: instance.world.getResource('performanceMonitor').snapshot(), dt: instance.dt,
       bakedSceneSha256: sha(instance.bakedScene) };
     result.runs.push(run);
+    instance.world.getResource('cableSolverBackend')?.dispose?.();
     fs.writeFileSync(args.output, finiteJson(result) + '\n');
     console.log(`run ${repeat + 1}: ${(run.physicsMs / 1000).toFixed(3)} s physics, ${(steps / run.physicsMs * 1000).toFixed(0)} steps/s, GC ${run.gc.count}/${run.gc.durationMs.toFixed(1)} ms`);
   }

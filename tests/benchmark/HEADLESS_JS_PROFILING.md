@@ -1,4 +1,4 @@
-# Headless JavaScript physics profiling
+# Headless physics profiling
 
 `scripts/profile_headless.mjs` runs `createHeadlessWorld()` and the production
 system order, at the scene's 2 ms timestep. It does no rendering, firmware HTTP,
@@ -123,14 +123,37 @@ rerun attribution. A numerical change needs an explicit tolerance/physics review
 and the relevant parity tests; this harness does not silently relax equality.
 No optimization is accepted solely because a profiled run became faster.
 
-## Rust/WASM comparison
+## Native, Wasm and JavaScript selection
 
-The persistent Rust/WASM physics engine is the default in the browser,
-headless worlds, continuing collection workers and profiling CLI. The browser
-loads the checked-in binary at startup; use `?solver=js` to select JavaScript.
-Build with `npm run build:wasm`. The checked-in artifact works without Rust.
+Local headless worlds and the profiling CLI default to native Rust. Select the
+measured backend explicitly with `--solver native`, `--solver wasm` or `--solver js`.
+The CLI passes that exact backend into the shared pipeline; it never builds or
+substitutes another engine. Missing/stale native defaults require
+`npm run build:native`. `--native-addon PATH` selects a specific native binary
+and is only valid with `--solver native`. Results identify the solver, engine,
+artifact SHA-256, build profile and build source hashes.
+
+Build a separate optimized native binary with debug symbols, then use a native
+profiler to see Rust frames:
+
+```bash
+npm run build:native -- --profile profiling --output output/native-profile/physics.node
+perf record -g --call-graph dwarf -- node scripts/profile_headless.mjs \
+  --solver native --native-addon output/native-profile/physics.node \
+  --commands INPUT.json --output output/native-profile/run.json
+```
+
+V8 `--cpu-prof` and `--heap-sampling` measure the JS host and managed heap; they do
+not attribute Rust internals or Rust allocations. Use `--solver js` for a full JS
+physics profile, or `--solver wasm` for the browser build. `--systems` times the
+Rust step as one production system. Keep unprofiled timings separate. A custom
+native artifact is an explicit revision/profile choice, and its metadata is
+preserved even when its source differs from the current checkout.
+
+The browser loads the checked-in Wasm binary at startup; use `?solver=js` to
+select JavaScript. Build Wasm with `npm run build:wasm`.
 For comparisons, use `--solver js` to make a reference and `--compare` it with a
-Wasm run. Repeats of one backend must retain exact checkpoint hashes. Across
+`--solver wasm` or `--solver native` run. Repeats of one backend must retain exact checkpoint hashes. Across
 backends, the harness requires finite values, equal observation structure,
 exact discrete metadata, and numerical agreement within the declared tolerance.
 Defaults are `--absolute-tolerance 0.000001 --relative-tolerance 0.000001`;
@@ -143,7 +166,7 @@ accept the trajectory as passing its tolerance check. See the
 [full engine report](../../research/rust-wasm-engine.md) for the long replay errors.
 
 The Rust core uses its own trig functions, so bit-for-bit rounding is not a
-requirement. Backend and Wasm SHA-256 are recorded, and source hashes include the
+requirement. Backend and loaded artifact SHA-256 are recorded, and source hashes include the
 core, ABI, bridge and build recipe. Timers include command dispatch, Rust stepping,
 view maintenance and extrusion observations. There is no per-step state packing
 or pose copy-back in the default engine.

@@ -32,7 +32,7 @@ def free_port():
         return sock.getsockname()[1]
 
 
-def source_hash(directories=("src/js", "hp-sim-3d/app", "src/wasm/cable_solver/src", "public/wasm", "integrations", "autocal/control", "scripts"), suffixes=(".js", ".mjs", ".rs", ".wasm")):
+def source_hash(directories=("src/js", "hp-sim-3d/app", "src/wasm/cable_solver/src", "src/wasm/cable_solver/native", "integrations", "autocal/control", "scripts"), suffixes=(".js", ".mjs", ".rs", ".c")):
     digest = hashlib.sha256()
     for directory in directories:
         for path in sorted((REPO_ROOT / directory).rglob("*")):
@@ -147,7 +147,8 @@ class HeadlessSimulation:
             deadline = time.monotonic() + 30
             while True:
                 try:
-                    self.request("status")
+                    status = self.request("status")
+                    self.manifest.update(physics_engine=status['physics_engine'], physics_artifact=status['physics_artifact'])
                     break
                 except OSError:
                     if service.poll() is not None or time.monotonic() > deadline:

@@ -6,6 +6,7 @@ import { parseStage, readMachineSceneSpec, validateMachineSceneSpec, buildEntity
 import { registerSimulationSystems } from '../../hp-sim-3d/app/simulationSystems.js';
 import { RemoteSpoolSystem } from '../../hp-sim-3d/app/remoteSpoolSystem.js';
 import { createExternalCommandController } from '../../hp-sim-3d/app/externalCommandSocket.js';
+import { WasmPhysicsEngine } from '../../src/js/cable_joints_3d/wasm_physics_engine.js';
 
 const [scenePath, eventsPath, outputPath] = process.argv.slice(2);
 const world = new World();
@@ -13,7 +14,10 @@ const stage = OpenText(fs.readFileSync(scenePath, 'utf8'));
 const checked = validateMachineSceneSpec(readMachineSceneSpec(parseStage(stage), '/World/HangprinterScene'));
 if (!checked.valid) throw new Error(checked.warnings.join('\n'));
 applyEntityPlan(world, buildEntityPlan(checked));
-registerSimulationSystems(world);
+// This oracle intentionally targets the browser's Wasm build, independent of
+// the local native default.
+registerSimulationSystems(world, { cableSolverBackend: new WasmPhysicsEngine(new WebAssembly.Module(
+  fs.readFileSync(new URL('../../public/wasm/cable_solver.wasm', import.meta.url)))) });
 const remote = world.systems.find(system => system instanceof RemoteSpoolSystem);
 let response;
 class Socket {

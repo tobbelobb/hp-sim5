@@ -194,7 +194,7 @@ describe('slideprinter 3D setupScene', () => {
     const systemNames = world.systems.map((system) => system.constructor.name);
     expect(systemNames).toContain('RustPhysicsSystem');
     expect(systemNames).toContain('ExtruderSystem');
-    expect(world.getResource('physicsEngine')).toBe('rust-wasm');
+    expect(world.getResource('physicsEngine')).toBe('rust-native');
     expect(systemNames.indexOf('RustPhysicsSystem')).toBeGreaterThan(systemNames.indexOf('RemoteSpoolSystem'));
     expect(systemNames.indexOf('RustPhysicsSystem')).toBeLessThan(systemNames.indexOf('ExtruderSystem'));
     expect(systemNames.filter((name) => name === 'RustPhysicsSystem')).toHaveLength(1);

@@ -16,12 +16,12 @@ come from experiment telemetry and backend observations.
 ```mermaid
 flowchart TD
     chat[Codex conversation] --> tools[hp-sim5 MCP tools]
-    tools --> fresh[Fresh Python trial in MCP process]
+    tools --> fresh[Fresh trial with native Rust worker]
     tools --> supervisor[Launcher-owned supervisor]
     supervisor --> continuing[Continuing physics, RRF and collector]
     supervisor --> autocal[Job-owned full-autocal CLI and services]
     supervisor --> tests[Job-owned pytest and fixture services]
-    supervisor -. Vite, page RPC and recorder receiver .-> browser[Browser page owns its JS world]
+    supervisor -. Vite, page RPC and recorder receiver .-> browser[Browser page owns its Rust/Wasm world]
     fresh --> rrd[Saved RRDs and numerical artifacts]
     continuing --> rrd
     autocal --> rrd
@@ -35,10 +35,10 @@ Matching scenes in these branches produce separate running worlds.
 
 | Workflow and entry point | Execution owner and lifetime | Configuration source |
 | --- | --- | --- |
-| [Fresh trial](../src/python/hp_sim5_research/experiments.py): `run_experiment` | MCP process constructs a Python world for one bounded, synchronous call. No RRF or continuing supervisor world is involved. | Per-call repository USD scene, timestep and motor commands; optional Warp cable solver. |
-| [Continuing collection](../scripts/research_runtime.py): `start_collection`, `send_gcode`, `step_physics` | Supervisor owns one continuing HP3/HP4 world, RRF and collector bridge. Default physics runs in Node; Python mirrors observations. Optional Python/Warp backends execute their own physics. | Launcher machine/backend, then accepted `configure_session` settings. Collection options choose movement and measurement conditions. |
+| [Fresh trial](../src/python/hp_sim5_research/experiments.py): `run_experiment` | MCP process owns a native Rust worker for one bounded, synchronous call; Python mirrors observations. No RRF or continuing supervisor world is involved. | Per-call repository USD scene, timestep and motor commands; explicit Python/Warp reference backends. |
+| [Continuing collection](../scripts/research_runtime.py): `start_collection`, `send_gcode`, `step_physics` | Supervisor owns one continuing HP3/HP4 world, RRF and collector bridge. Default native Rust physics runs in Node; Python mirrors observations. Optional Python/Warp backends execute their own physics. | Launcher machine/backend, then accepted `configure_session` settings. Collection options choose movement and measurement conditions. |
 | [Full-autocal](../src/python/hp_sim5_research/autocal_jobs.py): `start_autocal` | Supervisor owns the job; the production CLI owns a separate headless JS world, RRF, collector and extended recorder. One full-autocal job per supervisor. | Job machine/layering selects stock scene and firmware. Radius/buildup arguments describe the calibration model; optimizer, force and budget settings are job inputs. |
-| [Browser](../hp-sim-3d/app/researchControls.js): `start_browser_service`, `browser_action` | The open page owns JS physics and application workers. Supervisor owns Vite, page RPC and the requested recorder receiver. Actions select the exact `page_id`. | Page scene controls, `load_scene`, application feature flags and command API. The continuing world's configuration does not configure the page. |
+| [Browser](../hp-sim-3d/app/researchControls.js): `start_browser_service`, `browser_action` | The open page owns Rust/Wasm physics and JS application workers. Supervisor owns Vite, page RPC and the requested recorder receiver. Actions select the exact `page_id`. | Page scene controls, `load_scene`, application feature flags and command API. The continuing world's configuration does not configure the page. |
 | [Integration tests](../src/python/hp_sim5_research/test_jobs.py): `start_test` | Supervisor owns one test job with a separate pytest process and fixture services. Tests use their own worlds and artifacts. | Named suite allowlist, fixed argv, repository cwd and `.venv/bin/python`; caller supplies a bounded timeout. Slow tests are excluded. |
 
 Fresh trials also work through standalone MCP. Continuing collection, full-autocal

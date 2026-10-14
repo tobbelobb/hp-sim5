@@ -20,7 +20,7 @@ from .experiments import DEFAULT_SCENE, encode, repo_path, sample, validate_comm
 
 
 class NativeSession:
-    def __init__(self, root, directory, scene=DEFAULT_SCENE, *, backend='native-python', record=True, frozen_scene=None, layering=True):
+    def __init__(self, root, directory, scene=DEFAULT_SCENE, *, backend='headless-js', record=True, frozen_scene=None, layering=True):
         if backend not in ('native-python', 'headless-js', 'native-warp', 'native-warp-cuda'):
             raise ValueError('Unknown physics backend')
         self.backend = backend
@@ -231,7 +231,9 @@ class NativeSession:
                     ('enableLayering', 'layeringFrictionEffectiveRadius', 'layeringRenderWraps')},
                 'cable_half_widths_m': sorted({self.world.get_component(entity, CablePathComponent).cable_half_width
                                               for entity in self.world.query([CablePathComponent])}),
-                'backend': self.backend, 'physics_wall_s': self.physics_wall_s,
+                'backend': self.backend, 'physics_engine': self.js_physics.physics_engine if self.js_physics else self.backend,
+                'physics_artifact': self.js_physics.physics_artifact if self.js_physics else None,
+                'physics_wall_s': self.physics_wall_s,
                 'worker_wall_s': self.worker_wall_s,
                 'observation_wall_s': self.observation_wall_s,
                 'clock': 'fixed-step; collector delays advance simulation time', 'error': self.error}

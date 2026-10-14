@@ -35,7 +35,7 @@ function attachRecorder() {
   if (!recorder) return;
   recorder.world = world;
   recorder.extendedReference = true;
-  recorder.contextProvider = () => ({ backend: 'headless-js', physics_engine: world.getResource('physicsEngine'), scene, sourceText: sceneText,
+  recorder.contextProvider = () => ({ backend: 'headless-js', physics_engine: world.getResource('physicsEngine'), physics_artifact: world.getResource('physicsArtifact'), scene, sourceText: sceneText,
     bakedSourceText: bakedScene, baked_scene_file: bakedSceneFile, baked_scene_sha256: bakedSceneHash,
     node_version: process.version, settings: Object.fromEntries(['gravity', 'dt', 'timeScale', 'enableLayering',
       'layeringFrictionEffectiveRadius', 'closedLoopMotorsEnabled'].map(key => [key, world.getResource(key)])) });
@@ -50,7 +50,7 @@ function event(type, values = {}) {
   fs.writeSync(events, JSON.stringify({ type, epoch, step, sim_time_s: step * dt, ...values }) + '\n');
 }
 function status() {
-  return { backend: 'headless-js', physics_engine: world.getResource('physicsEngine'), step, epoch, total_steps: totalSteps, dt_s: dt,
+  return { backend: 'headless-js', physics_engine: world.getResource('physicsEngine'), physics_artifact: world.getResource('physicsArtifact'), step, epoch, total_steps: totalSteps, dt_s: dt,
     simulated_s: totalSteps * dt, collector_time_s: collectorTime, wall_s: (performance.now() - started) / 1000,
     queue_length: remote.getQueueLength(), error: failure, recording_drained: recordingDrained,
     baked_scene_file: bakedSceneFile, baked_scene_sha256: bakedSceneHash,

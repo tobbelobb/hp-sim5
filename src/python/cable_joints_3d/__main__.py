@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import json
 import math
 from pathlib import Path
+import tempfile
 
 from .machine_simulation import load_machine_world, register_machine_systems
 from .machine_snapshot import capture_machine_snapshot
@@ -33,10 +34,17 @@ def main():
     parser.add_argument('--connect', help='Optional Rerun gRPC sink URI for live viewing')
     parser.add_argument('--cable-solver-device', choices=['cpu', 'cuda:0'],
                         help='Opt-in compiled Warp solver; CUDA is experimental')
+    parser.add_argument('--physics-backend', choices=['native', 'python'],
+                        help='Native Rust by default; python selects the independent reference')
     args = parser.parse_args()
+    backend = args.physics_backend or ('python' if args.cable_solver_device else 'native')
+    if backend == 'native' and args.cable_solver_device:
+        parser.error('--cable-solver-device requires the Python backend')
     if args.steps < 0 or (args.dt is not None and (not math.isfinite(args.dt) or args.dt <= 0)):
         parser.error('steps must be nonnegative and dt must be positive and finite')
     recording = None
+    physics = None
+    prepared = None
     try:
         commands = json.loads(args.commands.read_text()) if args.commands is not None else None
         if commands is not None and not isinstance(commands, list):
@@ -47,9 +55,20 @@ def main():
         dt = world.get_resource('dt')
         if not isinstance(dt, (int, float)) or not math.isfinite(dt) or dt <= 0:
             parser.error('authored dt must be positive and finite')
+        if backend == 'native':
+            from usd.cable_scene_loader import open_cable_scene
+            from hp_sim5_research.js_physics import JSPhysics
+            root = Path(__file__).resolve().parents[3]
+            prepared = tempfile.TemporaryDirectory(prefix='hp-sim5-native-')
+            directory = Path(prepared.name)
+            stage = open_cable_scene(args.scene)
+            layer = stage.Flatten()
+            layer.documentation = stage.GetMetadata('doc') or ''
+            (directory / 'scene.usda').write_text(layer.ExportToString())
+            physics = JSPhysics(root, directory, world, dt=dt, scene_prim=args.scene_prim)
         import rerun as rr
         stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')
-        output = args.output or Path('output/rerun') / f'hangprinter-python-{stamp}.rrd'
+        output = args.output or Path('output/rerun') / f'hangprinter-{physics.physics_engine if physics else "python"}-{stamp}.rrd'
         output.parent.mkdir(parents=True, exist_ok=True)
         recording = rr.RecordingStream('hp-sim5 native Hangprinter')
         sinks = [rr.FileSink(output)]
@@ -66,7 +85,14 @@ def main():
         if commands is not None:
             world.get_system(RemoteSpoolSystem).commands = commands
         for _ in range(args.steps):
-            world.update(dt)
+            if physics is None:
+                world.update(dt)
+            else:
+                remote = world.get_system(RemoteSpoolSystem)
+                physics.apply(physics.request(steps=1, commands=list(remote.commands)))
+                remote.clear_command_queue()
+                from .rerun_system import RerunSystem
+                world.get_system(RerunSystem).update(world, dt)
         if args.snapshot is not None:
             args.snapshot.parent.mkdir(parents=True, exist_ok=True)
             args.snapshot.write_text(json.dumps(capture_machine_snapshot(world), allow_nan=False, indent=2) + '\n')
@@ -75,6 +101,10 @@ def main():
     except (OSError, ValueError, RuntimeError) as error:
         parser.exit(1, f'Hangprinter: {error}\n')
     finally:
+        if physics is not None:
+            physics.close()
+        if prepared is not None:
+            prepared.cleanup()
         if recording is not None:
             recording.disconnect()
 

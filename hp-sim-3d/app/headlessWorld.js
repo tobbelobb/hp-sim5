@@ -9,14 +9,15 @@ import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
 import { PerformanceMonitor } from './performance-monitor.js';
 
 // The same scene construction and system order used by the production app.
-export function createHeadlessWorld(sceneText, { lineLayeringEnabled = true, closedLoopMotorsEnabled = false, profiling = {}, cableSolverBackend = undefined } = {}) {
+export function createHeadlessWorld(sceneText, { lineLayeringEnabled = true, closedLoopMotorsEnabled = false, profiling = {}, cableSolverBackend = undefined,
+  scenePrimPath, requireRrfTimestep = true } = {}) {
   const sceneName = sceneText.match(/defaultPrim\s*=\s*"([^"]+)"/)?.[1];
-  if (!sceneName) throw new Error('Scene has no defaultPrim');
+  if (!sceneName && !scenePrimPath) throw new Error('Scene has no defaultPrim');
   // Match the browser bake: changing only runtime flags leaves layered initial
   // lengths in a supposedly unlayered world.
   const bakedScene = bakeCableSceneUsdaSource(sceneText, lineLayeringEnabled
     ? {} : { cablePathHalfWidthOverride: 0, deriveAll: true }).source;
-  const checked = validateMachineSceneSpec(readMachineSceneSpec(parseStage(OpenText(bakedScene)), `/World/${sceneName}`));
+  const checked = validateMachineSceneSpec(readMachineSceneSpec(parseStage(OpenText(bakedScene)), scenePrimPath ?? `/World/${sceneName}`));
   if (!checked.valid) throw new Error(checked.warnings.join('\n'));
   const world = new World();
   world.setResource('performanceMonitor', new PerformanceMonitor(profiling));
@@ -27,6 +28,6 @@ export function createHeadlessWorld(sceneText, { lineLayeringEnabled = true, clo
   const remote = world.systems.find(system => system instanceof RemoteSpoolSystem);
   remote._ensureAxisMapping(world);
   const dt = world.getResource('dt');
-  if (dt !== .002) throw new Error('RRF requires 0.002 s physics steps');
+  if (requireRrfTimestep && dt !== .002) throw new Error('RRF requires 0.002 s physics steps');
   return { world, remote, dt, bakedScene };
 }

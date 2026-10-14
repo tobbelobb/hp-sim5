@@ -19,7 +19,8 @@ export function registerSimulationSystems(world, { cableSolverBackend = undefine
     if (cableSolverBackend === undefined) cableSolverBackend = world.getResource('cableSolverBackend');
     if (cableSolverBackend === undefined) cableSolverBackend = createDefaultPhysicsBackend();
     world.setResource('cableSolverBackend', cableSolverBackend);
-    world.setResource('physicsEngine', cableSolverBackend?.fullEngine ? 'rust-wasm' : cableSolverBackend ? 'wasm-cable-kernel' : 'javascript');
+    world.setResource('physicsEngine', cableSolverBackend?.physicsEngine ?? (cableSolverBackend ? 'wasm-cable-kernel' : 'javascript'));
+    world.setResource('physicsArtifact', cableSolverBackend?.artifactInfo ?? null);
     if (cableSolverBackend?.fullEngine) {
         world.registerSystem(new RemoteSpoolSystem());
         world.registerSystem(new RustPhysicsSystem(cableSolverBackend));

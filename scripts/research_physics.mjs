@@ -1,4 +1,4 @@
-// Fixed-step production Rust/WASM physics, with JS command and observation adapters.
+// Fixed-step native Rust physics, with JS command and observation adapters.
 // Python owns collection/lifecycle and uses these detached states only for telemetry.
 import fs from 'node:fs';
 import readline from 'node:readline';
@@ -11,8 +11,9 @@ import { ExtruderComponent } from '../hp-sim-3d/app/hangprinter_extruder.js';
 
 // Keep stdout strictly a request/reply protocol, including scene-load warnings.
 console.log = console.warn = (...args) => console.error(...args);
-const { world, remote, dt } = createHeadlessWorld(fs.readFileSync(process.argv[2], 'utf8'), {
+const { world, remote } = createHeadlessWorld(fs.readFileSync(process.argv[2], 'utf8'), {
   lineLayeringEnabled: process.argv[3] !== 'false',
+  scenePrimPath: process.argv[4] || undefined, requireRrfTimestep: false,
 });
 let step = 0;
 let physicsWallS = 0;
@@ -40,20 +41,24 @@ const fields = [
     ]))})],
 ];
 function state() {
-  return {step, physics_engine: world.getResource('physicsEngine'), physics_wall_s: physicsWallS, queue_length: remote.getQueueLength(),
+  return {step, dt_s: world.getResource('dt'), physics_engine: world.getResource('physicsEngine'), physics_artifact: world.getResource('physicsArtifact'), physics_wall_s: physicsWallS, queue_length: remote.getQueueLength(),
     identities: world.query([SceneEntityInfoComponent]).map(id => [id, world.getComponent(id, SceneEntityInfoComponent).name]),
     components: fields.map(([type, read]) => [type.name, world.query([type]).map(id => [id, read(world.getComponent(id, type))])])};
 }
 for await (const line of readline.createInterface({input: process.stdin})) {
   try {
     const request = JSON.parse(line);
+    if (request.dt_s != null) {
+      if (!Number.isFinite(request.dt_s) || request.dt_s <= 0 || step) throw new Error('Set a positive finite timestep before stepping');
+      world.setResource('dt', request.dt_s);
+    }
     if (request.steps != null && (!Number.isInteger(request.steps) || request.steps < 0 || request.steps > 50)) {
       throw new Error('Worker advances are bounded to 50 fixed steps');
     }
     if (request.clear_commands) remote.clearCommandQueue();
     for (const command of request.commands ?? []) remote.addCommand(command);
     const started = performance.now();
-    for (let i = 0; i < (request.steps ?? 0); i++) { world.update(dt); step++; }
+    for (let i = 0; i < (request.steps ?? 0); i++) { world.update(world.getResource('dt')); step++; }
     physicsWallS += (performance.now() - started) / 1000;
     process.stdout.write(JSON.stringify(state(), (key, value) => {
       if (typeof value === 'number' && !Number.isFinite(value)) throw new Error(`Non-finite physics observation: ${key}`);

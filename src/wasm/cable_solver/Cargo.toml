@@ -5,7 +5,7 @@ edition = "2021"
 publish = false
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["cdylib", "rlib", "staticlib"]
 
 [profile.release]
 opt-level = 3
@@ -13,3 +13,8 @@ lto = true
 codegen-units = 1
 panic = "abort"
 strip = true
+
+[profile.profiling]
+inherits = "release"
+debug = 2
+strip = false

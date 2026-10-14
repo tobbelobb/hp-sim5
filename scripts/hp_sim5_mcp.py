@@ -30,10 +30,10 @@ MUTATION = ToolAnnotations(read_only_hint=False, destructive_hint=False, open_wo
 @mcp.tool(annotations=READ_ONLY)
 def capabilities() -> dict[str, Any]:
     """Discover native scenes, command units, artifact contracts and limits."""
-    return {'backends': {'native-python': 'Fresh trials; optional continuing HP3/HP4/RRF backend (slow)',
+    return {'backends': {'native-python': 'Explicit independent Python reference for fresh trials and continuing collection (slow)',
                          'native-warp': 'Optional compiled double-precision cable solver on CPU; other physics systems remain Python',
                          'native-warp-cuda': 'Experimental CUDA cable solver; requires CUDA device, GPU parity not yet verified',
-                         'headless-js': 'Default continuing HP3/HP4/RRF collection; production JS physics without browser/rendering',
+                         'headless-js': 'Default native Rust physics hosted in Node; no browser/rendering',
                          'browser-js': 'The exact open 3D page via browser_status/browser_action',
                          'standalone-js': 'Production JS parity harness in tests/parity3d'},
             'session_artifacts': os.environ.get('HP_SIM5_SESSION_DIR'), 'scenes': [str(path.relative_to(ROOT)) for path in sorted((ROOT / 'public/usd_scenes').glob('*rigid_body.usda'))],
@@ -268,7 +268,8 @@ def capture_native_context(message: str, step: int | None = None, selected_entit
     import json
     import os
     import uuid
-    context = {'capture_id': uuid.uuid4().hex, 'backend': 'native-python', 'run_id': run_id,
+    context = {'capture_id': uuid.uuid4().hex, 'backend': manifest['backend'],
+               'physics_engine': manifest.get('physics_engine', manifest['backend']), 'run_id': run_id,
                'sim_step': selected_step, 'sim_time_s': selected_step * manifest['dt_s'],
                'timeline': 'sim_step', 'recording': manifest['artifacts'].get('rrd'),
                'scene_generation': manifest.get('scene_generation'), 'scene_sha256': manifest['scene_sha256'],
@@ -301,12 +302,14 @@ def browser_action(page_id: str, action: str, args: dict | None = None) -> dict[
 @mcp.tool(annotations=MUTATION)
 def run_experiment(scene: str = DEFAULT_SCENE, steps: int = 200, dt: float | None = None,
                    commands: list[dict] | None = None, commands_file: str | None = None,
-                   label: str = '', record: bool = True, cable_solver_device: str | None = None) -> dict[str, Any]:
+                   label: str = '', record: bool = True, cable_solver_device: str | None = None,
+                   physics_backend: str | None = None) -> dict[str, Any]:
     """Run fresh native physics. One command per step; return measurements and saved artifact paths.
 
     Use commands_file for large JSON arrays inside the repo. Do not supply both forms.
     {} holds targets. RRD opens in Rerun; read_run gives numeric data without a Viewer.
-    cable_solver_device='cpu' selects Warp; 'cuda:0' is experimental. Other systems remain Python.
+    Defaults to native Rust. physics_backend='native-python' selects the Python reference.
+    cable_solver_device='cpu' selects Warp; 'cuda:0' is experimental (remaining systems use Python).
     """
     if commands_file is not None:
         if commands is not None:
@@ -315,7 +318,7 @@ def run_experiment(scene: str = DEFAULT_SCENE, steps: int = 200, dt: float | Non
         import json
         commands = json.loads(repo_path(ROOT, commands_file).read_text())
     return run(ROOT, scene, steps=steps, dt=dt, commands=commands, label=label, record=record,
-               cable_solver_device=cable_solver_device)
+               cable_solver_device=cable_solver_device, physics_backend=physics_backend)
 
 
 @mcp.tool(annotations=READ_ONLY)

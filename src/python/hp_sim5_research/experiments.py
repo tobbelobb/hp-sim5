@@ -116,10 +116,18 @@ def metrics(samples):
 
 
 def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=None, label='', record=True,
-                   cable_solver_device=None):
+                   cable_solver_device=None, physics_backend=None):
     root = Path(root).resolve()
     if cable_solver_device not in (None, 'cpu', 'cuda:0'):
         raise ValueError('cable_solver_device must be cpu, cuda:0, or None')
+    backend = physics_backend if physics_backend is not None else {
+        None: 'headless-js', 'cpu': 'native-warp', 'cuda:0': 'native-warp-cuda'}[cable_solver_device]
+    if backend not in ('headless-js', 'native-python', 'native-warp', 'native-warp-cuda'):
+        raise ValueError('Unknown physics_backend')
+    device = {'native-warp': 'cpu', 'native-warp-cuda': 'cuda:0'}.get(backend)
+    if cable_solver_device is not None and cable_solver_device != device:
+        raise ValueError('cable_solver_device conflicts with physics_backend')
+    cable_solver_device = device
     if isinstance(steps, bool) or not isinstance(steps, int) or not 1 <= steps <= MAX_STEPS:
         raise ValueError(f'steps must be an integer in [1, {MAX_STEPS}]')
     if dt is not None and (isinstance(dt, bool) or not isinstance(dt, (int, float)) or not math.isfinite(dt) or dt <= 0):
@@ -128,7 +136,10 @@ def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=No
     commands = [] if commands is None else commands
     # Freeze composed USD inputs, including referenced layers and baked cable initialization.
     started = time.perf_counter()
-    frozen_scene = open_cable_scene(scene_path).Flatten().ExportToString()
+    stage = open_cable_scene(scene_path)
+    layer = stage.Flatten()
+    layer.documentation = stage.GetMetadata('doc') or ''
+    frozen_scene = layer.ExportToString()
     world = load_machine_world(frozen_scene, cable_solver_device=cable_solver_device)
     dt = world.get_resource('dt') if dt is None else dt
     if not isinstance(dt, (int, float)) or not math.isfinite(dt) or dt <= 0:
@@ -149,8 +160,8 @@ def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=No
     for path in sorted((root / 'src/python').rglob('*.py')):
         source.update(str(path.relative_to(root)).encode() + b'\0' + path.read_bytes())
     revision = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=root, capture_output=True, text=True)
-    backend = {None: 'native-python', 'cpu': 'native-warp', 'cuda:0': 'native-warp-cuda'}[cable_solver_device]
-    manifest = {'schema_version': 2, 'backend': backend, 'cable_solver_device': cable_solver_device,
+    manifest = {'schema_version': 2, 'backend': backend, 'physics_engine': 'rust-native' if backend == 'headless-js' else backend,
+                'cable_solver_device': cable_solver_device,
                 'run_id': run_id, 'label': label, 'status': 'running',
                 'scene': str(scene_path.relative_to(root)), 'scene_generation': world.get_resource('sceneGeneration'), 'steps': steps, 'dt_s': dt,
                 'commands_sha256': digest(encode(commands).encode()), 'scene_sha256': digest(frozen_scene.encode()),
@@ -164,8 +175,16 @@ def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=No
     if cable_solver_device is not None:
         manifest['packages']['warp-lang'] = version('warp-lang')
     recording = None
+    physics = None
     write_json(directory / 'manifest.json', manifest)
     try:
+        if backend == 'headless-js':
+            from .js_physics import JSPhysics
+            native_started = time.perf_counter()
+            physics = JSPhysics(root, directory, world, dt=dt)
+            manifest['construction_wall_s'] += time.perf_counter() - native_started
+            manifest.update(physics_engine=physics.physics_engine, physics_artifact=physics.physics_artifact,
+                            js_physics_source_sha256=physics.physics_host_sha256)
         if record:
             import rerun as rr
             recording = rr.RecordingStream('hp-sim5 research', recording_id=run_id)
@@ -173,14 +192,22 @@ def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=No
             recording.log('experiment', rr.TextDocument(encode(manifest)), static=True)
             register_machine_systems(world, recording)
             manifest['artifacts']['rrd'] = str(directory / 'recording.rrd')
-        world.get_system(RemoteSpoolSystem).commands = commands
+        if physics is None:
+            world.get_system(RemoteSpoolSystem).commands = commands
         samples = []
         started = time.perf_counter()
         with warnings.catch_warnings(record=True) as caught, (directory / 'telemetry.jsonl').open('w') as output:
             warnings.simplefilter('always')
             for step in range(steps + 1):
                 if step:
-                    world.update(dt)
+                    if physics is None:
+                        world.update(dt)
+                    else:
+                        physics.apply(physics.request(steps=1, commands=commands if step == 1 else ()))
+                        if record:
+                            # Record the mirror without advancing its independent physics.
+                            from cable_joints_3d.rerun_system import RerunSystem
+                            world.get_system(RerunSystem).update(world, dt)
                 row = sample(world, step, dt)
                 output.write(encode(row) + '\n')  # rejects non-finite state
                 samples.append(row)
@@ -193,6 +220,8 @@ def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=No
         manifest.update(status='failed', error=str(error))
         raise
     finally:
+        if physics is not None:
+            physics.close()
         if recording is not None:
             recording.disconnect()
         write_json(directory / 'manifest.json', manifest)
@@ -223,7 +252,8 @@ def compare_runs(root, baseline_id, candidate_id):
         raise ValueError('Compare runs with identical effector identities')
     return {'baseline_id': baseline_id, 'candidate_id': candidate_id,
             'changed_inputs': [key for key in ('scene_sha256', 'commands_sha256', 'python_source_sha256', 'packages',
-                                              'record', 'backend', 'cable_solver_device')
+                                              'record', 'backend', 'cable_solver_device', 'physics_engine', 'physics_artifact',
+                                              'js_physics_source_sha256')
                                if baseline.get(key) != candidate.get(key)],
             'metric_delta_candidate_minus_baseline': {key: candidate['metrics'][key] - value
                                                       for key, value in baseline['metrics'].items() if isinstance(value, (int, float))},

@@ -2,11 +2,47 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
+import os from 'node:os';
+import path from 'node:path';
 import { createHeadlessWorld } from '../../hp-sim-3d/app/headlessWorld.js';
 import { loadWorkload, runTrajectory, compareCheckpoints } from '../../scripts/profile_headless.mjs';
 import { summarizeCpu, summarizeHeap } from '../../scripts/summarize_v8_profile.mjs';
 
 const events = rows => rows.map(row => JSON.stringify({ epoch: 0, ...row })).join('\n');
+
+test('profiling selects the requested engine and records the loaded native artifact', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'hp-sim5-profile-'));
+  const input = path.join(directory, 'commands.json');
+  fs.writeFileSync(input, JSON.stringify(Array.from({ length: 10 }, (_, i) => ({ type: 'Move', A: i * .0001 }))));
+  const script = fileURLToPath(new URL('../../scripts/profile_headless.mjs', import.meta.url));
+  for (const solver of ['js', 'wasm', 'native']) {
+    const output = path.join(directory, `${solver}.json`);
+    execFileSync(process.execPath, [script, '--solver', solver, '--machine', 'hp3', '--commands', input,
+      '--warmup', '0', '--repeats', '1', '--checkpoint-every', '2', '--output', output], {
+      // Explicit Wasm/JS profiling must work even if native cannot be loaded.
+      env: { ...process.env, ...(solver === 'native' ? {} : { HP_SIM5_NATIVE_ENGINE: path.join(directory, 'missing.node') }) },
+    });
+    const result = JSON.parse(fs.readFileSync(output));
+    assert.equal(result.solver, solver);
+    assert.equal(result.physicsEngine, { js: 'javascript', wasm: 'rust-wasm', native: 'rust-native' }[solver]);
+    assert.equal(Boolean(result.nativeSha256), solver === 'native');
+    assert.equal(Boolean(result.wasmSha256), solver === 'wasm');
+    if (solver === 'native') assert.equal(result.nativeBuild.artifactSha256, result.nativeSha256);
+  }
+  const selected = path.join(directory, 'selected.node');
+  const native = JSON.parse(fs.readFileSync(path.join(directory, 'native.json')));
+  fs.copyFileSync(native.nativeArtifact, selected);
+  fs.copyFileSync(`${native.nativeArtifact}.json`, `${selected}.json`);
+  const output = path.join(directory, 'selected.json');
+  execFileSync(process.execPath, [script, '--solver', 'native', '--native-addon', selected,
+    '--machine', 'hp3', '--commands', input, '--warmup', '0', '--repeats', '1', '--output', output], {
+    env: { ...process.env, HP_SIM5_NATIVE_ENGINE: path.join(directory, 'missing.node') },
+  });
+  const result = JSON.parse(fs.readFileSync(output));
+  assert.equal(result.nativeArtifact, selected);
+  assert.equal(result.nativeSha256, native.nativeSha256);
+});
 
 test('replay preserves same-step FIFO, idle settling, settings and encoder reads', () => {
   const source = fs.readFileSync(fileURLToPath(new URL('../../public/usd_scenes/hp3_rigid_body.usda', import.meta.url)), 'utf8');

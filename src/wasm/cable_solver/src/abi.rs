@@ -45,6 +45,12 @@ pub unsafe extern "C" fn engine_entities(world: *mut PhysicsWorld) -> *mut Entit
     (*world).entities.as_mut_ptr()
 }
 /// # Safety
+/// `world` must be live.
+#[no_mangle]
+pub unsafe extern "C" fn engine_entity_count(world: *const PhysicsWorld) -> usize {
+    (*world).entities.len()
+}
+/// # Safety
 /// `world` must be live. The view lasts until engine_destroy.
 #[no_mangle]
 pub unsafe extern "C" fn engine_options(world: *mut PhysicsWorld) -> *mut f64 {

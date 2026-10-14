@@ -71,8 +71,11 @@ class Runtime:
     @classmethod
     def hash_rust_physics(cls):
         digest = hashlib.sha256(cls.hash_sources([ROOT / 'src/wasm/cable_solver/src'], '*.rs').encode())
-        for name in ('src/wasm/cable_solver/Cargo.toml', 'public/wasm/cable_solver.wasm'):
+        for name in ('src/wasm/cable_solver/Cargo.toml', 'src/wasm/cable_solver/Cargo.lock',
+                     'src/wasm/cable_solver/native/node_bridge.c', 'scripts/build_native_physics.mjs'):
             digest.update(name.encode() + b'\0' + (ROOT / name).read_bytes())
+        artifact = Path(os.environ.get('HP_SIM5_NATIVE_ENGINE', ROOT / 'src/wasm/cable_solver/target/native/physics.node'))
+        digest.update(str(artifact).encode() + b'\0' + (artifact.read_bytes() if artifact.exists() else b'missing'))
         return digest.hexdigest()
 
     def spawn(self, name, command):
@@ -120,7 +123,8 @@ class Runtime:
                 metadata.update(python_source_sha256=self.python_source_hash,
                                 bridge_source_sha256=self.bridge_source_hash,
                                 js_physics_source_sha256=self.physics_source_hash if configuration.backend == 'headless-js' else None,
-                                physics_engine='rust-wasm' if configuration.backend == 'headless-js' else configuration.backend,
+                                physics_engine=self.session.status()['physics_engine'],
+                                physics_artifact=self.session.status()['physics_artifact'],
                                 rust_physics_sha256=self.rust_physics_hash if configuration.backend == 'headless-js' else None,
                                 rrf_sha256=rrf_hash)
                 self.rrf_hash = rrf_hash
@@ -235,7 +239,8 @@ class Runtime:
                     'rrf_sha256': self.rrf_hash, 'firmware_config_sha256': self.config_hash,
                     'python_source_sha256': self.python_source_hash, 'bridge_source_sha256': self.bridge_source_hash,
                     'js_physics_source_sha256': self.physics_source_hash if self.session.backend == 'headless-js' else None,
-                    'physics_engine': 'rust-wasm' if self.session.backend == 'headless-js' else self.session.backend,
+                    'physics_engine': self.session.status()['physics_engine'],
+                    'physics_artifact': self.session.status()['physics_artifact'],
                     'rust_physics_sha256': self.rust_physics_hash if self.session.backend == 'headless-js' else None,
                     'python': sys.executable,
                     'packages': {name: version(name) for name in ('numpy', 'usd-core', 'rerun-sdk', 'websockets')},

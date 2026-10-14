@@ -5,6 +5,7 @@
   "main": "src/js/cable_joints/cable_joints_core.js",
   "scripts": {
     "build:wasm": "node scripts/build_cable_wasm.mjs",
+    "build:native": "node scripts/build_native_physics.mjs",
     "test": "jest"
   },
   "devDependencies": {

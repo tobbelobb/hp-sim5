@@ -16,6 +16,7 @@ From the repository root:
 
 ```bash
 .venv/bin/python -m pip install -r requirements.txt
+npm run build:native               # Rust, C compiler and Node headers
 codex login                       # choose ChatGPT
 ./hp-sim5-research-agent
 ./hp-sim5-research-agent --prompt "Compare HP4 settling with a small A-axis movement. Run both experiments, inspect their recordings and explain the measured difference."
@@ -26,13 +27,15 @@ codex login                       # choose ChatGPT
 ./hp-sim5-research-agent --model-provider opencode_go --model deepseek-v4.1-flash --prompt "Say hello"
 ```
 
-Continuing collection defaults to the production Rust/Wasm physics engine in
+Continuing collection defaults to the production native Rust physics engine in
 headless Node, with the same fixed steps, forces, motors, encoders and cables
 as the browser. JavaScript handles scene preparation, commands and observations.
-See the [full engine implementation and measurements](rust-wasm-engine.md). `--machine hp3` selects the HP3 scene and matching RRF
+See the [native host implementation](rust-native-engine.md) and the earlier
+[Wasm engine measurements](rust-wasm-engine.md). `--machine hp3` selects the HP3 scene and matching RRF
 configuration; HP4 remains the default. Use `--physics-backend native-python`
 for the independent Python engine, or `--viewer none --no-record` for numerical
-batches without Rerun logging. Fresh `run_experiment` trials still use Python.
+batches without Rerun logging. Fresh `run_experiment` trials also default to native
+Rust; `physics_backend='native-python'` selects the independent reference.
 Fresh trials can select `cable_solver_device='cpu'` for the optional compiled
 Warp cable solver. Continuing sessions use `--physics-backend native-warp`;
 `native-warp-cuda` is experimental and requires a CUDA device. Other physics
@@ -392,7 +395,8 @@ See [native recording recipes](../hp-sim-3d/FLIGHT_RECORDER.md) for motion and
 [firmware command scheduling](../tests/benchmark/README.md) for real print logs.
 
 Every run freezes the composed, baked USD scene and command array. Its manifest
-records their hashes, the native Python source hash, Git revision, interpreter,
+records their hashes, the Python source hash, loaded native artifact/build metadata,
+Git revision, interpreter,
 package versions, timestep, warnings and timing. `telemetry.jsonl` includes
 step zero and every physics update: world-space effectors, motor targets and
 encoder errors, missed-step peaks, cable lengths and segment forces. `final.json`
