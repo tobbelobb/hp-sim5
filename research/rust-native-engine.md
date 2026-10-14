@@ -1,5 +1,9 @@
 # Native Rust engine
 
+[Measured performance against the preceding defaults](native-performance.md):
+14–23% higher physics throughput; end-to-end gains depend on recording and
+transport. Fresh numerical trials improve more over their former Python default.
+
 Local headless worlds, continuing collection, full-autocal, fresh research
 trials and the Python recording CLI now default to the native build of the
 same Rust `PhysicsWorld` that runs in the browser as Wasm. No physics equations
