@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="author" content="Torbjorn Ludvigsen">
+  <meta name="description" content="A September 2026 overview of Hangprinter hardware, motion software, simulation, and active reference projects.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Hangprinter State of the Art">
+  <meta property="og:url" content="https://hangprinter.org/status/">
+  <meta property="og:description" content="The current state of Hangprinter hardware, software, and reference projects.">
+  <meta property="og:image" content="https://hangprinter.org/hangprinter4_small.jpeg">
+  <meta name="twitter:card" content="summary">
+  <link rel="apple-touch-icon" sizes="180x180" href="/hp-sim5/assets/apple-touch-icon-B8x-JXqf.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/hp-sim5/assets/favicon-32x32-W2huB1UF.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/hp-sim5/assets/favicon-16x16-tTxQVbDk.png">
+  <link rel="manifest" href="/hp-sim5/assets/site-C9A_ZfZI.webmanifest">
+  <title>Hangprinter State of the Art | Hangprinter</title>
+  <script type="module" crossorigin src="/hp-sim5/assets/modulepreload-polyfill-B5Qt9EMX.js"></script>
+  <script type="module" crossorigin src="/hp-sim5/assets/script-RKMEleFc.js"></script>
+  <link rel="stylesheet" crossorigin href="/hp-sim5/assets/index-DtiahFv8.css">
+</head>
+<body>
+  <div class="masthead">
+    <h3 class="masthead-brand">
+      <a href="../">
+        <img class="logotype" src="data:image/svg+xml,%3c?xml%20version='1.0'%20encoding='utf-8'?%3e%3c!--%20Generator:%20Adobe%20Illustrator%2027.9.0,%20SVG%20Export%20Plug-In%20.%20SVG%20Version:%206.00%20Build%200)%20--%3e%3csvg%20version='1.1'%20id='Layer_1'%20xmlns='http://www.w3.org/2000/svg'%20xmlns:xlink='http://www.w3.org/1999/xlink'%20x='0px'%20y='0px'%20viewBox='0%200%20161%2015'%20style='enable-background:new%200%200%20161%2015;'%20xml:space='preserve'%3e%3cstyle%20type='text/css'%3e%20.st0{fill:%232C2C2C;}%20%3c/style%3e%3cg%3e%3cg%3e%3cpath%20class='st0'%20d='M3.45,8.48L2.67,9.23v5.42H0V0.35h2.67v5.02l0.78,0.75h5.39l0.78-0.75V0.35h2.67v14.3H9.63V9.23L8.84,8.48%20H3.45z'/%3e%3cpath%20class='st0'%20d='M28.44,14.65h-2.88l-1.49-3.89h-6.38l-1.49,3.89h-2.83l5.84-14.3h3.43L28.44,14.65z%20M18.74,8.1l0.47,0.45%20h3.32l0.5-0.48l-1.75-4.54h-0.78L18.74,8.1z'/%3e%3cpath%20class='st0'%20d='M41.81,0.35v14.3h-3.06L32.79,4.31H32v10.33h-2.49V0.35h3.61l5.42,9.56h0.78V0.35H41.81z'/%3e%3cpath%20class='st0'%20d='M56.62,14.65h-2.54V13.8l-0.42-0.25C52.8,14.47,51.52,15,50.19,15c-1.91,0-3.48-0.7-4.71-2.13%20c-1.23-1.43-1.86-3.21-1.86-5.37s0.68-3.94,2.01-5.37C46.97,0.7,48.64,0,50.63,0c2.7,0,4.58,1.15,6.15,3.76l-2.2,1.61%20c-1.33-2.08-2.49-2.86-3.98-2.86c-2.59,0-4.16,1.96-4.16,4.99c0,3.04,1.6,5.07,4.19,5.07c1.05,0,2.07-0.53,3.45-1.93V9.11h-3.85%20V6.9h6.38V14.65z'/%3e%3cpath%20class='st0'%20d='M66.04,9.16h-3.56v5.49h-2.67V0.35h6.23c3.87,0,6.04,1.61,6.04,4.41C72.09,7.58,69.94,9.16,66.04,9.16z%20M62.48,3.46V6.8h3.51c2.2,0,3.35-0.7,3.35-2.03s-1.15-2.06-3.35-2.06h-2.72L62.48,3.46z'/%3e%3cpath%20class='st0'%20d='M79.86,9.16h-2.93v5.49h-2.67V0.35h6.23c3.87,0,6.04,1.61,6.04,4.41c0,2.08-1.15,3.49-3.32,4.06v0.58l4,5.24%20h-3.19L79.86,9.16z%20M80.43,2.71h-2.72l-0.78,0.75V6.8h3.51c2.2,0,3.35-0.7,3.35-2.03S82.63,2.71,80.43,2.71z'/%3e%3cpath%20class='st0'%20d='M96,3.46v8.08l0.79,0.75h3.3v2.36H89.3v-2.36h3.3l0.78-0.75V3.46L92.6,2.71h-3.3V0.35h10.78v2.36h-3.3%20L96,3.46z'/%3e%3cpath%20class='st0'%20d='M115.6,0.35v14.3h-3.06l-5.97-10.33h-0.78v10.33h-2.49V0.35h3.61l5.42,9.56h0.78V0.35H115.6z'/%3e%3cpath%20class='st0'%20d='M131.17,2.71h-4.81l-0.79,0.75v11.19h-2.72V3.46l-0.78-0.75h-4.82V0.35h13.92V2.71z'/%3e%3cpath%20class='st0'%20d='M135.93,8.48v3.06l0.79,0.75h8.63v2.36h-12.06V0.35h11.8v2.36h-8.37l-0.79,0.75v2.66h8.01v2.36H135.93z'/%3e%3cpath%20class='st0'%20d='M153.65,9.16h-2.93v5.49h-2.67V0.35h6.23c3.87,0,6.05,1.61,6.05,4.41c0,2.08-1.15,3.49-3.32,4.06v0.58l4,5.24%20h-3.19L153.65,9.16z%20M154.22,2.71h-2.72l-0.79,0.75V6.8h3.51c2.2,0,3.35-0.7,3.35-2.03S156.42,2.71,154.22,2.71z'/%3e%3c/g%3e%3c/g%3e%3c/svg%3e" />
+        <!-- <img src="./logo-orange.svg" style="height:50px;width:50px;" /> -->
+      </a>
+    </h3>
+    <nav>
+      <ul>
+        <li>
+          <div class="dropdown">
+            <button class="dropbtn">Documentation</button>
+            <div class="dropdown-content">
+              <div class="link-column">
+                <p>Here you can find the complete resources for the latest and previous versions of the Hangprinter.
+                </p>
+                <div class="links">
+                  <a href="../doc/v4/">Hangprinter Version 4</a>
+                  <a href="../doc/v3/">Hangprinter Version 3</a>
+                </div>
+              </div>
+              <div class="img-column">
+                <img src="/hp-sim5/assets/menu_img_1-DjU7A7cZ.png" alt="">
+                <img src="/hp-sim5/assets/menu_img_2-JOYifvE6.png" alt="">
+                <img src="/hp-sim5/assets/menu_img_3-BTyXjhcP.png" alt="">
+              </div>
+            </div>
+          </div>
+        </li>
+        <li><a href="../about/">About</a></li>
+        <li><a href="../FAQ/">FAQ</a></li>
+        <li><a href="../resources/">Resources</a></li>
+        <li><a class="active" aria-current="page" href="../status/">Status</a></li>
+        <li><a href="../newsletter/">Newsletter</a></li>
+        <li><a id="donate" href="../donate/">Donate</a></li>
+      </ul>
+    </nav>
+
+    <div class="burger">
+      <img src="data:image/svg+xml,%3c?xml%20version='1.0'%20encoding='utf-8'?%3e%3c!--%20Generator:%20Adobe%20Illustrator%2028.0.0,%20SVG%20Export%20Plug-In%20.%20SVG%20Version:%206.00%20Build%200)%20--%3e%3csvg%20version='1.1'%20id='Layer_1'%20xmlns='http://www.w3.org/2000/svg'%20xmlns:xlink='http://www.w3.org/1999/xlink'%20x='0px'%20y='0px'%20viewBox='0%200%204.3%2018.1'%20style='enable-background:new%200%200%204.3%2018.1;'%20xml:space='preserve'%3e%3cstyle%20type='text/css'%3e%20.st0{fill:%232C2C2C;}%20%3c/style%3e%3cg%3e%3ccircle%20class='st0'%20cx='2.1'%20cy='2.1'%20r='2.1'/%3e%3ccircle%20class='st0'%20cx='2.1'%20cy='9.1'%20r='2.1'/%3e%3ccircle%20class='st0'%20cx='2.1'%20cy='16'%20r='2.1'/%3e%3c/g%3e%3c/svg%3e" alt="">
+    </div>
+  </div>
+
+  <div class="blur-overlay"></div>
+  <nav id="mobile-menu">
+    <ul>
+      <li><span>Documentation</span>
+        <div class="sublinks">
+          <a href="../doc/v4/">Hangprinter V4</a>
+          <a href="../doc/v3/">Hangprinter V3</a>
+        </div>
+      </li>
+      <li><a href="../about/">About</a></li>
+      <li><a href="../FAQ/">FAQ</a></li>
+      <li><a href="../resources/">Resources</a></li>
+      <li><a class="active" aria-current="page" href="../status/">Status</a></li>
+      <li><a href="../newsletter/">Newsletter</a></li>
+      <li><a href="../donate/">Donate</a></li>
+    </ul>
+  </nav>
+
+  <main id="MainContent" class="half-width">
+    <h3 id="SiteName">Hangprinter State of the Art</h3>
+    <p>Hangprinter is a cable-driven 3D printer. The project now combines full-size machines, firmware for predicting cable behavior, a detailed simulator, and two unfinished reference-hardware projects.</p>
+    <p>Thi status snapshot was written down on September 23, 2026. Follow the linked project pages and sometimes my <a href="https://www.youtube.com/@torbjrnludvigsen-hangprint7605">youtube channel</a> for ongoing design work.</p>
+
+    <h3 id="system-heading">How the pieces fit together</h3>
+    <p>A Hangprinter moves its tool by changing the lengths of lines connected to fixed anchors. Software coordinates the motion and estimates the forces acting through those lines.</p>
+    <h4>Machine and geometry</h4>
+    <p>HP4 is the established full-size Hangprinter design. Anchor layout, line routing, motor and spool details shape the model each machine uses. <a href="../doc/v4/">HP4 documentation</a></p>
+    <h4>Firmware and motion transforms</h4>
+    <p>RepRapFirmware and tobbelobb’s Klipper fork support Hangprinter motion. A forward transform estimates tool position from line lengths; the current firmware implementations use the quadratic approach. <a href="https://github.com/tobbelobb/hp-sim5">Implementation map in hp-sim5</a></p>
+    <h4>Flex compensation</h4>
+    <p>QP and Tikhonov algorithms calculate line tensions within configured minimum and maximum bounds, then account for line stretch in the commanded lengths. Their trade-offs differ near the bounds. <a href="https://github.com/tobbelobb/klipper/blob/master/docs/Config_Reference.md#cable-winch-flex-compensation">Klipper configuration guide</a></p>
+    <h4>Simulation and calibration development</h4>
+    <p><a href="https://github.com/tobbelobb/hp-sim5">hp-sim5</a> brings together detailed cable, spool, motor, and firmware simulation with development work on transforms, flex compensation, and automatic calibration. It is the project’s main software and simulation workbench.</p>
+
+    <h3 id="status-heading">What is implemented, and what is still underway?</h3>
+    <p class="q">HP4: Established design</p>
+    <p class="a">Full-size machine with published build documentation. Start with the <a href="../doc/v4/">V4 manual</a> and <a href="../FAQ/">FAQ</a>.</p>
+    <p class="q">Flex compensation: Implemented</p>
+    <p class="a">QP and Tikhonov are available in official RepRapFirmware and tobbelobb’s Klipper fork. See the <a href="https://github.com/tobbelobb/klipper/blob/master/docs/Config_Reference.md#cable-winch-flex-compensation">Klipper config guide</a> for algorithm behavior.</p>
+    <p class="q">Forward transform: Firmware-integrated</p>
+    <p class="a">The quadratic method was selected after comparisons with other approaches; hp-sim5 documents tests on simulated Slideprinter, HP3, HP4, CubeCorners, and SkyCam setups.</p>
+    <p class="q">Autocalibration: In development</p>
+    <p class="a">Automatic calibration methods and data collection are being developed in hp-sim5, with simulation and firmware API workflows.</p>
+    <p class="q">RefWinch: In progress</p>
+    <p class="a">Experiments seek a more predictable winch, with a controlled line path and stable transmission behavior. There is not yet a finished reference design. <a href="https://refwinch.hangprinter.org/">RefWinch project</a></p>
+    <p class="q">RefRig: In progress</p>
+    <p class="a">A compact desktop machine intended to bring winches, firmware, calibration, diagnostics, and simulation together. Its build, tests, and documentation are not complete. <a href="https://refrig.hangprinter.org/">RefRig project</a></p>
+    <p>“Implemented” means the feature is present in the named firmware implementation. Simulation results and physical-machine maturity are called out separately where known.</p>
+
+    <h3 id="work-heading">The current hardware direction</h3>
+    <p>I sometimes loosely refer to this as "HP5", but it's really a collection of cable driven robotics building blocks that are developed separately and will be made to fit together later. Various "full versions" might be implemented by combining these building blocks to fit more detailed specifications, based on verified use cases.</p>
+    <p>So recent work has shifted toward building a repeatable foundation beneath future Hangprinters. RefWinch, RefRig, and hp-sim5 form a development path from one actuator to a complete machine:</p>
+    <h4><a href="https://refwinch.hangprinter.org/">RefWinch</a>: prove a winch</h4>
+    <p>Compare mechanisms and line-handling strategies against requirements for predictable line travel, a stable exit point, smooth operation, low added cost, and serviceability. Design findings and experiments are ongoing. I'm currently searching for a reliable odometer or equivalent mechanism.</p>
+    <h4><a href="https://refrig.hangprinter.org/">RefRig</a>: combine the parts</h4>
+    <p>Build a compact working printer around reference winches. The aim is a documented physical platform where motion, firmware, calibration, and diagnostics can be exercised together. It is not yet a finished build recipe.</p>
+    <h4><a href="../">Hangprinter</a>: scale the verified motion</h4>
+    <p>Carry tested mechanisms and software into the larger work volumes that motivate Hangprinter.</p>
+    <h4><a href="https://github.com/tobbelobb/hp-sim5">hp-sim5</a>: simulate all of it</h4>
+    <p>A simulation environment connecting actuator behavior, machine geometry, firmware, and physical development across these steps.</p>
+      <p>RefWinch and RefRig are active projects, not finished products. The project pages and <a href="https://torbjornludvigsen.com/blog/2026/">development blog</a> describe their current design work.</p>
+
+    <h3 id="priorities-heading">Current modeling priorities</h3>
+    <p>Flex compensation now predicts cable forces and stretch. Catenary sag computation has lower priority because Hangprinter uses light Dyneema line; it can be revisited if the remaining sag effect proves important for a particular machine or span.</p>
+    <p>The two flex algorithms and their configuration are described in the <a href="https://github.com/tobbelobb/klipper/blob/master/docs/Config_Reference.md#cable-winch-flex-compensation">Klipper fork’s config documentation</a>. The <a href="https://github.com/tobbelobb/hp-sim5">hp-sim5 README</a> maps the broader software and simulation work.</p>
+
+    <h3 id="start-heading">Where to go next</h3>
+    <ul>
+      <li>For questions and basic orientation: <a href="../FAQ/">Frequently Asked Questions</a>.</li>
+      <li>For project links, simulators, and documented builds: <a href="../resources/">Resources</a>.</li>
+      <li>For the established HP4 build path: <a href="../doc/v4/">V4 documentation</a>.</li>
+      <li>For software development and the simulator: <a href="https://github.com/tobbelobb/hp-sim5">hp-sim5 on GitHub</a> and the <a href="https://hp-sim-project.hangprinter.org/">hp-sim project page</a>.</li>
+    </ul>
+  </main>
+
+  <footer>
+    <img class="logo" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDI3LjkuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCA1MCA1NyIgc3R5bGU9ImVuYWJsZS1iYWNrZ3JvdW5kOm5ldyAwIDAgNTAgNTc7IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPHN0eWxlIHR5cGU9InRleHQvY3NzIj4KCS5zdDB7b3BhY2l0eTowLjY7fQoJLnN0MXtmaWxsOiNGMkY0RUQ7fQo8L3N0eWxlPgo8Zz4KCTxnIGNsYXNzPSJzdDAiPgoJCTxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0xNi4xNSwzOS43OWMxLjM5LTMuMDYsMC4wMy0zLjA4LTMuMDItMi43NmMtMC42NCwwLjA3LTEuMywwLjE5LTIuMDcsMC4zOGMtMy44MywwLjkyLTMuNjgsMS4zNy0zLjg4LTEuNjQKCQkJYy0wLjItMy4xNCwwLjItMi42OSwxLjcxLTIuNTFjMS40NiwwLjE3LDYuNjIsMC41OSw4LjAzLTAuNDFjMS40MS0xLjAxLDIuNTktNC44MiwzLjY4LTEwLjQ1YzAuNDUtMi4zMSwxLjk2LTEuNzEsMi43My0xLjE1CgkJCWMwLjM1LDAuMjUsMC41MSwwLjY3LDAuNSwxLjFjLTAuMDIsMC44MS0wLjI2LDIuNDItMC45MSw0LjdjMCwwLTEuNTksNC4xMi0xLjA5LDUuMTljMC40OSwxLjA3LDYuNC0wLjIxLDYuOS0wLjYKCQkJYzAuOS0wLjcsMS45LTIuMTIsMC44LTYuMTFjMCwwLTEuMTItMi41NSwxLjg1LTMuMTdjMi4zMy0wLjQ5LDIuNzktMC4zNSwzLjA5LDAuMTNjMC4yLDAuMzIsMC4zLDAuNjksMC4zMiwxLjA3CgkJCWMwLjEsMS43NS0wLjgyLDQuMzUtMS4yNiw2LjA2Yy0wLjUsMS45Mi00LjMsMTQuNjItNC4xLDE4LjcxYzAuMTQsMi45NywxLjMsMy42OCwyLjE4LDMuODFjMC4zOCwwLjA2LDEuMDUtMC4wNywxLjQyLTAuMjEKCQkJYzEuOTMtMC43Myw1LjM2LTIuMTUsOC44OC02LjU5YzMuODEtNC44LDYuOTEtMTIuMzktMC4yMS0yMkMzNC4zNSwxMy40MiwyNi4yOCw1LjIsMjYuMjgsNS4yUzE0LjE4LDE3LjI0LDkuNzYsMjMuNDQKCQkJQzUuMzMsMjkuNjMtMC4wOSwzOS4wNSw4LjcsNDcuNDVjMy44MywzLjY3LDkuMTMsMy45NywxMC4xNyw1LjUzYzAuNjQsMC45NiwwLjc3LDMuMzUtMi45OCwzLjI5Yy0zLjc1LTAuMDUtMTAuMDEtMy4xNy0xMy4xOC04LjkKCQkJYy0zLjE3LTUuNzQtMy44Mi0xMy41Ni0wLjI0LTIwLjA5YzMuNTctNi41MywxMi45Mi0xNiwxNi4zNC0xOS40NkMyMi4yMyw0LjM1LDI2LjI3LDAsMjYuMjcsMHMxMy42MiwxNC43MywxNC4wMywxNS4yNAoJCQljMC40MSwwLjUsOS40OSwxMC4xMSw5LjY1LDE4LjVjMC4xNiw4LjM5LTMuMjUsMTMuNTktMTAuNTksMTkuMThjLTcuMzQsNS41OS0xMy42NCwzLjg2LTEzLjc5LDMuNzMKCQkJYy0wLjE1LTAuMTMtMy41NiwwLjA0LTAuMzUtOS4zOWMzLjItOS40MywyLjctMTAuNjEsMS42NS0xMC44N2MtMS4wNS0wLjI2LTMuNDgtMC4yMS00Ljc2LDAuMTZjLTEuMjgsMC4zNy0xLjU2LDAuOTUtMi4yMSwzLjQKCQkJYy0xLjEyLDQuMjItMS4zOCw1Ljk0LTMuMTgsNC45N0MxNS4xNiw0NC4wOSwxNC45Nyw0Mi4zNywxNi4xNSwzOS43OUwxNi4xNSwzOS43OXoiLz4KCTwvZz4KPC9nPgo8dGV4dCB0cmFuc2Zvcm09Im1hdHJpeCgxIDAgMCAxIDk2MCA1MzkuNSkiPjx0c3BhbiB4PSIwIiB5PSIwIiBzdHlsZT0iZm9udC1mYW1pbHk6J015cmlhZFByby1SZWd1bGFyJzsgZm9udC1zaXplOjEycHg7Ij5mbG9hdCBoYWxmd2F5X2RlbHRhWzRdOzwvdHNwYW4+PHRzcGFuIHg9IjAiIHk9IjE0LjQiIHN0eWxlPSJmb250LWZhbWlseTonTXlyaWFkUHJvLVJlZ3VsYXInOyBmb250LXNpemU6MTJweDsiPmZsb2F0IGhhbGZ3YXlbM107PC90c3Bhbj48dHNwYW4geD0iMCIgeT0iMjguOCIgc3R5bGU9ImZvbnQtZmFtaWx5OidNeXJpYWRQcm8tUmVndWxhcic7IGZvbnQtc2l6ZToxMnB4OyI+Zm9yKGludDhfdCBpID0gMDsgaSAmbHQ7IDM7IGkrKyl7PC90c3Bhbj48dHNwYW4geD0iMCIgeT0iNDMuMiIgc3R5bGU9ImZvbnQtZmFtaWx5OidNeXJpYWRQcm8tUmVndWxhcic7IGZvbnQtc2l6ZToxMnB4OyI+aGFsZndheVtpXSA9IGN1cnJlbnRfcG9zaXRpb25baV0gKyAwLjUqZGlmZmVyZW5jZVtpXTs8L3RzcGFuPjx0c3BhbiB4PSIwIiB5PSI1Ny42IiBzdHlsZT0iZm9udC1mYW1pbHk6J015cmlhZFByby1SZWd1bGFyJzsgZm9udC1zaXplOjEycHg7Ij59PC90c3Bhbj48dHNwYW4geD0iMCIgeT0iNzIiIHN0eWxlPSJmb250LWZhbWlseTonTXlyaWFkUHJvLVJlZ3VsYXInOyBmb250LXNpemU6MTJweDsiPmNhbGN1bGF0ZV9kZWx0YShoYWxmd2F5LCBoYWxmd2F5X2RlbHRhKTs8L3RzcGFuPjx0c3BhbiB4PSIwIiB5PSI4Ni40IiBzdHlsZT0iZm9udC1mYW1pbHk6J015cmlhZFByby1SZWd1bGFyJzsgZm9udC1zaXplOjEycHg7Ij51cGRhdGVfYXhpc19zdGVwc19wZXJfdW5pdChkZWx0YSwgaGFsZndheV9kZWx0YSk7PC90c3Bhbj48L3RleHQ+Cjwvc3ZnPgo=" alt="">
+
+    <div class="link-container">
+      <div class="link-column">
+        <span>The Project</span>
+        <a href="../donate/">Donate</a>
+        <a href="../doc/v3/">Hangprinter v3</a>
+        <a href="../doc/v4/">Hangprinter v4</a>
+      </div>
+
+      <div class="link-column">
+        <span>Follow</span>
+        <a href="https://www.facebook.com/groups/hangprinter">Facebook</a>
+        <a href="https://twitter.com/tobbelobb">X</a>
+        <a href="https://www.youtube.com/channel/UCw1Nz0VCw4z-dfq4WjSkFzQ">Youtube</a>
+        <a href="https://torbjornludvigsen.com/blog">Dev Blog</a>
+      </div>
+
+      <div class="link-column">
+        <span>Community</span>
+        <a href="https://discord.gg/KAV7x3hgRX">Discord Channel</a>
+        <a href="../resources/">Relevant Repos</a>
+        <a href="../newsletter/">Newsletter</a>
+      </div>
+    </div>
+
+    <span class="copyright">© Torbjørn Ludvigsen 2023. All rights reserved.</span>
+  </footer>
+
+  <script data-goatcounter="https://hangprinter.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
