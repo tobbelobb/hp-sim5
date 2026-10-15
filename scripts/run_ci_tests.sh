@@ -3,6 +3,17 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+echo "== Build shared Rust physics for native and Wasm =="
+(cd "$ROOT" && npm run build:native -- --no-pgo && npm run build:wasm)
+
+echo "== Native Rust smoke tests =="
+(cd "$ROOT" && cargo test --manifest-path src/wasm/cable_solver/Cargo.toml --locked)
+
+echo "== Rust source contract, JS parity and host integration =="
+(cd "$ROOT" && node --expose-gc --test tests/benchmark/native_physics_engine.test.mjs \
+  tests/benchmark/wasm_cable_solver.test.mjs tests/benchmark/physics_engine_ui.test.mjs \
+  tests/benchmark/profile_headless.test.mjs)
+
 echo "== JS unit tests (jest) =="
 (cd "$ROOT" && npx jest)
 

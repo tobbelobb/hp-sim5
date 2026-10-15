@@ -119,7 +119,7 @@ export class RustPhysicsEngine {
       const machine = get(id, ecs.MachineTagComponent)?.id ?? null;
       if (!machines.has(machine)) machines.set(machine, machines.size);
       a[129] = machines.get(machine);
-      a[131] = c.member ? (get(c.member.bodyEntity, ecs.RigidBodyComponent)?.members.indexOf(id) ?? i) : 0;
+      a[131] = c.member ? (get(c.member.bodyEntity, ecs.RigidBodyComponent)?.members.indexOf(id) ?? -1) : 0;
       return c;
     });
     this.pathIds = world.query([CablePathComponent]);

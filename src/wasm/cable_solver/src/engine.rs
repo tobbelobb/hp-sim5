@@ -486,7 +486,9 @@ impl PhysicsWorld {
     pub fn new(entities: Vec<Entity>, paths: Vec<Vec<f64>>) -> Self {
         let mut children = vec![Vec::new(); entities.len()];
         for (id, e) in entities.iter().enumerate() {
-            if e[50] >= 0.0 {
+            // A parent link alone does not opt a member into body sync/inertia.
+            // Negative membership order preserves the JS body-inertia fallback.
+            if e[50] >= 0.0 && e[131] >= 0.0 {
                 children[e[50] as usize].push(id);
             }
         }
@@ -648,6 +650,7 @@ impl PhysicsWorld {
             if !has(&self.entities[body], BODY)
                 || self.entities[body][51] == 0.0
                 || self.entities[body][52] == 0.0
+                || self.children[body].is_empty()
             {
                 continue;
             }

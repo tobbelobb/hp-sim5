@@ -8,10 +8,14 @@ import { World, PositionComponent, MassComponent } from '../../src/js/cable_join
 import { CableJointComponent, CablePathComponent, PBDCableConstraintSolver } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import Vector3 from '../../src/js/cable_joints_3d/vector3.js';
 import { createHeadlessWorld } from '../../hp-sim-3d/app/headlessWorld.js';
+import { registerSimulationSystems } from '../../hp-sim-3d/app/simulationSystems.js';
 import { runTrajectory, compareCheckpoints } from '../../scripts/profile_headless.mjs';
 
 const module = await compileCableSolverWasm(fs.readFileSync(new URL('../../public/wasm/cable_solver.wasm', import.meta.url)));
 const directory = new URL('../fixtures/python_3d_parity/', import.meta.url);
+const referenceWorld = new World();
+registerSimulationSystems(referenceWorld, { cableSolverBackend: null });
+const productionSystems = new Set(referenceWorld.systems.map(system => system.constructor.name));
 test('the full browser engine has no JavaScript imports', () => {
   assert.deepEqual(WebAssembly.Module.imports(module), []);
   const world = createHeadlessWorld(fs.readFileSync(new URL('../../public/usd_scenes/hp4_rigid_body.usda', import.meta.url), 'utf8'),
@@ -77,9 +81,14 @@ test('WASM vector length matches V8 for extreme magnitudes and deterministic sam
 });
 for (const file of fs.readdirSync(directory).filter(file => file.endsWith('.json')).sort()) {
   const fixture = JSON.parse(fs.readFileSync(new URL(file, directory)));
-  if (!fixture.pipeline && !fixture.systems.some(system =>
-    ['PBDCableConstraintSolver', 'CableAttachmentUpdateSystem', 'PBDResolveCableOverCorrections'].includes(system.name ?? system))) continue;
-  test(`WASM matches JS every timestep: ${file}`, () => {
+  const systems = fixture.systems.map(system => system.name ?? system);
+  const usesCableKernel = systems.some(name =>
+    ['PBDCableConstraintSolver', 'CableAttachmentUpdateSystem', 'PBDResolveCableOverCorrections'].includes(name));
+  // The old kernel filter omitted friction, integration and standalone motors.
+  // Optional collisions, distance constraints and slack systems are not part of
+  // hp-sim-3d's production pipeline or Rust core; keep their separate JS tests.
+  const usesFullEngine = systems.length > 0 && systems.every(name => productionSystems.has(name));
+  if (fixture.pipeline || usesCableKernel) test(`WASM matches JS every timestep: ${file}`, () => {
     const expected = runFixture(fixture);
     const actual = runFixture(fixture, { cableSolverBackend: fixture.pipeline ? new WasmPhysicsEngine(module) : new WasmCableSolver(module) });
     // Use the same JSON representation as the profiling checkpoints (-0 -> 0).
@@ -89,9 +98,10 @@ for (const file of fs.readdirSync(directory).filter(file => file.endsWith('.json
     }
     compareCheckpoints(JSON.parse(JSON.stringify(actual)), JSON.parse(JSON.stringify(expected)), { atol: 1e-8, rtol: 1e-7 });
   });
-  if (!fixture.pipeline) test(`full Rust pipeline covers ${file}`, () => {
+  if (!fixture.pipeline && usesFullEngine) test(`full Rust pipeline covers ${file}`, () => {
     const full = { ...fixture, systems: [], pipeline: true };
     const expected = runFixture(full), actual = runFixture(full, { cableSolverBackend: new WasmPhysicsEngine(module) });
+    assert(actual.snapshots.every(snapshot => snapshot.systemOrder.includes('RustPhysicsSystem')));
     for (const result of [actual, expected]) for (const snapshot of result.snapshots) delete snapshot.systemOrder;
     compareCheckpoints(JSON.parse(JSON.stringify(actual)), JSON.parse(JSON.stringify(expected)), { atol: 1e-8, rtol: 1e-7 });
   });

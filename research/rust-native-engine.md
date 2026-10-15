@@ -50,18 +50,25 @@ command to profile an untrained artifact. See the
 [profiling recipe](../tests/benchmark/HEADLESS_JS_PROFILING.md) and
 [crate setup and record schema](../src/wasm/cable_solver/README.md).
 
-Verification covers native/Wasm fixtures with motors, torque, slack cables,
-topology, shared joints and scene replacement/append, plus commanded HP3/HP4
-trajectories with layering on/off. Native lifecycle checks cover edits, isolated
-worlds, empty worlds, malformed prepared records and disposed views. The native
-tests also verify retained views under forced garbage collection. The
-final checks passed 764 Jest tests, 142 Python tests (16 slow tests deselected),
-38 native checks, 75 Wasm checks and six profiler checks. Native Rust tests,
-Clippy with warnings denied and the production browser build passed. Service
-tests exercise collection, reset, cancellation and recording. These bounded
-checks do not establish calibration accuracy or exact long-run trajectory
-equality; native and Wasm math can round differently. Earlier long-run drift
-against the JS reference remains documented in the [Wasm report](rust-wasm-engine.md).
+CI builds native release without PGO and rebuilds Wasm before running the Rust
+tests and Node backend suites. A source contract compares Cargo's dependency
+files for the two compiled libraries and rejects conditional compilation in
+the shared Rust sources. Extensive numerical native/Wasm comparisons are not
+required: native tests cover integration, cables/forces, motors, command/encoder
+smoke runs and host lifetime, including topology-invalidated views and forced GC.
+JS/Wasm differential tests cover production-pipeline fixtures and eight authored
+machines with layering on/off. The profiler and UI integration suites also run
+in CI. `scripts/run_ci_tests.sh` runs these checks before Jest and Python tests.
+
+The differential fixture selection includes friction, integration, standalone
+motors and rigid members. Collision, optional distance-constraint and slack
+systems remain in their separate JS/Python tests because hp-sim-3d's production
+pipeline and Rust core do not register them. Motor-member fixtures also guard
+the body-inertia fallback: parent-linked members absent from the body's member
+list must not contribute to its aggregate inertia or body synchronization.
+Long-run numerical drift and equivalent full-autocal outcomes are not CI
+acceptance criteria; native and Wasm math can round differently. Earlier drift
+against JS remains documented in the [Wasm report](rust-wasm-engine.md).
 
 ```bash
 npm run build:native

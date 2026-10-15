@@ -1,5 +1,24 @@
 # Headless differential 3D checks
 
+The Rust engine checks run in CI through `scripts/run_ci_tests.sh`: fresh native
+and Wasm builds, a shared-source contract, native smoke/lifetime checks and short
+JS/Wasm differentials. To run just those checks locally:
+
+```bash
+npm run build:native -- --no-pgo
+npm run build:wasm
+cargo test --manifest-path src/wasm/cable_solver/Cargo.toml --locked
+node --expose-gc --test tests/benchmark/native_physics_engine.test.mjs tests/benchmark/wasm_cable_solver.test.mjs tests/benchmark/physics_engine_ui.test.mjs tests/benchmark/profile_headless.test.mjs
+```
+
+Full Rust pipeline checks include fixtures whose systems all belong to the
+production JS pipeline, including isolated friction, motion and motor fixtures.
+They compare both complete production pipelines, retaining the fixture's inputs
+and steps. Optional collisions, distance constraints and slack systems are not
+implemented by this Rust core and retain separate JS/Python coverage. The older
+Wasm cable-kernel checks still compare their supported systems in isolation.
+Long-run trajectories and complete autocal outcomes need not match across engines.
+
 Run with Node on PATH and the repository Python environment:
 
 ```bash
