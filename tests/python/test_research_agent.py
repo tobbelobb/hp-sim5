@@ -221,7 +221,8 @@ def test_launcher_worktree_dry_run_plans_without_creating_anything(tmp_path):
     assert plan['mode'] == 'worktree'
     assert plan['worktree']['path'].startswith(str(target))
     assert plan['worktree']['branch'].startswith('research/optimize-anchor-layout-')
-    assert set(plan['worktree']['links']) == {'.venv', '.env', 'node_modules', 'RRF/build'}
+    assert set(plan['worktree']['links']) == {'.venv', '.env', 'node_modules', 'RRF/build',
+                                               'src/wasm/cable_solver/target/native/physics.node'}
     assert isinstance(plan['worktree']['includes'], list)
     assert not target.exists()
     missing = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--dry-run', '--worktree-dir', str(target),
@@ -234,7 +235,8 @@ def test_create_worktree_links_ignored_runtime_pieces(tmp_path, monkeypatch):
     repo = tmp_path / 'repo'
     (repo / 'scripts').mkdir(parents=True)
     (repo / 'scripts/research_agent.py').write_text('')
-    (repo / '.gitignore').write_text('.venv\n.env\nnode_modules/\nRRF/build\n.worktreeinclude\nlocal/\n')
+    (repo / '.gitignore').write_text('.venv\n.env\nnode_modules/\nRRF/build\n'
+                                     'src/wasm/cable_solver/target/\n.worktreeinclude\nlocal/\n')
     (repo / 'tracked.txt').write_text('tracked\n')
     (repo / 'local').mkdir()
     (repo / 'local/notes.md').write_text('prior research\n')
@@ -248,6 +250,10 @@ def test_create_worktree_links_ignored_runtime_pieces(tmp_path, monkeypatch):
     (repo / '.env').write_text('K=v\n')
     (repo / 'node_modules').mkdir()
     (repo / 'RRF/build').mkdir(parents=True)
+    native = repo / 'src/wasm/cable_solver/target/native'
+    native.mkdir(parents=True)
+    (native / 'physics.node').write_bytes(b'native addon')
+    (native / 'physics.node.json').write_text('{"build":"metadata"}\n')
     spec = importlib.util.spec_from_file_location('research_agent', ROOT / 'scripts/research_agent.py')
     launcher = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(launcher)
@@ -258,6 +264,9 @@ def test_create_worktree_links_ignored_runtime_pieces(tmp_path, monkeypatch):
     for entry in launcher.WORKTREE_LINKS:
         link = plan['path'] / entry
         assert link.is_symlink() and link.resolve() == (repo / entry).resolve()
+    worktree_native = plan['path'] / 'src/wasm/cable_solver/target/native'
+    assert (worktree_native / 'physics.node.json').is_file()
+    assert not (worktree_native / 'physics.node.json').is_symlink()
     assert plan['includes'] == ['local/notes.md']
     copied = plan['path'] / 'local/notes.md'
     assert copied.read_text() == 'prior research\n' and not copied.is_symlink()

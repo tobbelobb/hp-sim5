@@ -26,7 +26,8 @@ ENV_FILE = ROOT / '.env'
 CHATGPT_SIGN_IN = 'openai'
 STRIPPED_KEYS = ('OPENAI_API_KEY', 'CODEX_API_KEY')
 # Ignored, machine-specific pieces a raw worktree checkout lacks but the launcher needs.
-WORKTREE_LINKS = ('.venv', '.env', 'node_modules', 'RRF/build')
+WORKTREE_LINKS = ('.venv', '.env', 'node_modules', 'RRF/build',
+                  'src/wasm/cable_solver/target/native/physics.node')
 
 
 def provider_env_key(provider):
@@ -165,6 +166,13 @@ def create_worktree(topic, directory=None):
         if source.exists() and not target.exists():
             target.parent.mkdir(parents=True, exist_ok=True)
             target.symlink_to(source, target_is_directory=source.is_dir())
+    # Share the immutable starting addon, but keep build metadata and future
+    # outputs local. The native build atomically replaces physics.node, which
+    # turns this worktree's symlink into its own file on rebuild.
+    source_metadata = ROOT / 'src/wasm/cable_solver/target/native/physics.node.json'
+    target_metadata = plan['path'] / 'src/wasm/cable_solver/target/native/physics.node.json'
+    if source_metadata.is_file() and not target_metadata.exists():
+        shutil.copyfile(source_metadata, target_metadata)
     plan['includes'] = copy_worktree_includes(plan['path'])
     return plan
 
