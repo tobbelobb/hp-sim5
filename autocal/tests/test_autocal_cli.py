@@ -188,6 +188,20 @@ def test_spool_cli_parses_solve_optimizer_choices():
         parser.parse_args(["--machine-type", "slideprinter", "--solve-optimizer", "L-BFGS-B"])
 
 
+@pytest.mark.parametrize(
+    "flags, expected",
+    [
+        ([], False),
+        (["--trf-solver-fallback"], True),
+        (["--no-trf-solver-fallback"], False),
+    ],
+)
+def test_trf_solver_fallback_requires_opt_in(flags, expected):
+    _parser, args = _parse_spool_args(*flags)
+    assert args.solve_optimizer == "lbfgsb"
+    assert args.trf_solver_fallback is expected
+
+
 def test_full_auto_run_spec_parses_optimizer_mode_override():
     tokens, overrides = _parse_full_auto_run_spec("--optimizer-mode fast-fd --solve-iterations 2")
     assert tokens == ["--optimizer-mode", "fast-fd", "--solve-iterations", "2"]

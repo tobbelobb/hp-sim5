@@ -336,8 +336,9 @@ Useful options:
 - `--dataset` chooses the working dataset.
 - `--firmware klipper` selects the Klipper API-mode backend. RRF is the default.
 - `--solve-optimizer` accepts `lbfgsb` (default), `lm`, or `trf`.
-- `--trf-solver-fallback` (default) retries an unsuccessful or invalid `lbfgsb`
-  restart with bounded `trf`; `--no-trf-solver-fallback` disables that retry.
+- `--trf-solver-fallback` optionally retries an unsuccessful or invalid `lbfgsb`
+  restart with bounded `trf`. It is off by default: changing the candidate fits
+  can worsen the final consensus. `--no-trf-solver-fallback` explicitly disables it.
 - `--find-radii` and `--find-buildup-factor` enable spool fitting.
   Each accepts `global` or `per-anchor`. Both default to `off`.
 - `--sparse-recovery` adds a sparse seed fit during underconstrained recovery.

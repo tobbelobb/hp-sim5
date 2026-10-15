@@ -3349,10 +3349,10 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--trf-solver-fallback",
         action=argparse.BooleanOptionalAction,
-        default=True,
+        default=False,
         help=(
             "Retry unsuccessful or invalid lbfgsb restarts with bounded trf "
-            "(default: enabled)."
+            "(default: disabled; can change the final consensus)."
         ),
     )
     parser.add_argument(

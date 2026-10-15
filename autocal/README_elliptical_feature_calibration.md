@@ -114,9 +114,11 @@ The final anchor solve after each pass still uses the pointwise solver.
 Acceptance inside refinement compares spool rank first, then data cost plus priors.
 
 `--solve-optimizer` accepts `lbfgsb` (default), `lm`, and `trf`.
-With the default `--trf-solver-fallback`, an unsuccessful or invalid `lbfgsb`
-restart is retried with bounded `trf`; pass `--no-trf-solver-fallback` to disable
-the retry. Choosing `--solve-optimizer trf` runs `trf` directly.
+The optional `--trf-solver-fallback` retries unsuccessful or invalid `lbfgsb`
+restarts with bounded `trf`, including restarts that reach their iteration limit.
+It is off by default because changing the candidate fits can worsen the final
+consensus. `--no-trf-solver-fallback` explicitly disables it.
+Choosing `--solve-optimizer trf` runs `trf` directly.
 `--optimizer-mode fast` uses CPU JAX derivatives when available.
 It falls back to numerical gradients when JAX is unavailable.
 `fast-fd` uses the JAX value with finite differences. `legacy` disables JAX.
