@@ -37,7 +37,7 @@ Matching scenes in these branches produce separate running worlds.
 | --- | --- | --- |
 | [Fresh trial](../src/python/hp_sim5_research/experiments.py): `run_experiment` | MCP process owns a native Rust worker for one bounded, synchronous call; Python mirrors observations. No RRF or continuing supervisor world is involved. | Per-call repository USD scene, timestep and motor commands; explicit Python/Warp reference backends. |
 | [Continuing collection](../scripts/research_runtime.py): `start_collection`, `send_gcode`, `step_physics` | Supervisor owns one continuing HP3/HP4 world, RRF and collector bridge. Default native Rust physics runs in Node; Python mirrors observations. Optional Python/Warp backends execute their own physics. | Launcher machine/backend, then accepted `configure_session` settings. Collection options choose movement and measurement conditions. |
-| [Full-autocal](../src/python/hp_sim5_research/autocal_jobs.py): `start_autocal` | Supervisor owns the job; the production CLI owns a separate headless JS world, RRF, collector and extended recorder. One full-autocal job per supervisor. | Job machine/layering selects stock scene and firmware. Radius/buildup arguments describe the calibration model; optimizer, force and budget settings are job inputs. |
+| [Full-autocal](../src/python/hp_sim5_research/autocal_jobs.py): `start_autocal` | Supervisor owns the job; the production CLI owns a separate headless JS world, RRF, collector and optional recorder. One full-autocal job per supervisor. | Job machine/layering selects stock scene and firmware. Radius/buildup arguments describe the calibration model; optimizer, force, budget and recording mode settings are job inputs. Recording defaults to events without physics snapshots. |
 | [Browser](../hp-sim-3d/app/researchControls.js): `start_browser_service`, `browser_action` | The open page owns Rust/Wasm physics and JS application workers. Supervisor owns Vite, page RPC and the requested recorder receiver. Actions select the exact `page_id`. | Page scene controls, `load_scene`, application feature flags and command API. The continuing world's configuration does not configure the page. |
 | [Integration tests](../src/python/hp_sim5_research/test_jobs.py): `start_test` | Supervisor owns one test job with a separate pytest process and fixture services. Tests use their own worlds and artifacts. | Named suite allowlist, fixed argv, repository cwd and `.venv/bin/python`; caller supplies a bounded timeout. Slow tests are excluded. |
 
@@ -95,7 +95,7 @@ repository-level directory. Always use paths returned by tools and manifests.
 | --- | --- | --- |
 | Fresh trial | `output/research/experiments/<run_id>/` | Frozen scene/commands, manifest, final snapshot and JSON telemetry at step zero and every update. Optional RRD records physics updates with the native blueprint. |
 | Continuing collection | `S/native/<world_id>/<collection_job_id>/` | Each recorded collection finalizes its own RRD while the world continues. Observations are sampled at 10 simulated Hz and at encoder reads. Dataset, point journal, events and manifests retain roles, settings and step bounds. World inputs live in the parent generation directory. |
-| Full-autocal | `S/native/autocal/<job_id>/` by default | CLI logs, datasets, stage artifacts and `sweeps.headless/` service evidence. One extended RRD combines sampled physics, collection events and Python logs/artifacts across scene resets. Default physics stride is 10, with compact cable geometry. |
+| Full-autocal | `S/native/autocal/<job_id>/` by default | CLI logs, datasets, stage artifacts and `sweeps.headless/` command/encoder traces and manifests. `recording_mode` defaults to `events` (one RRD without physics); `none` skips RRD, `sampled` adds physics at stride 100, and `full` retains stride 10. Physics uses compact geometry; events span scene resets. |
 | Browser | `S/native/browser-recordings/` | Receiver writes separate recordings for page session/scene generations. Ordinary recording defaults to every physics step; extended recording defaults to stride 10. `browser_status` lists exact files, recording IDs and finalized bounds. |
 | Test job | `S/native/tests/<job_id>/` | Job manifest, stdout/stderr, JUnit and pytest temporary artifacts. Fixtures may create RRDs; the test job has no single experiment recording or calibration result. |
 
@@ -130,7 +130,7 @@ Collection cancellation preserves partial measurements and records its stopped
 boundary, then requires coordinated reset. Full-autocal cancellation stops its
 own services and preserves partial evidence without accepting best-so-far.
 `accepted` means the production CLI reached its automatic stop and applied a
-candidate with finalized recording; accuracy needs separate measurements.
+candidate with a finalized recording when enabled; accuracy needs separate measurements.
 Test cancellation preserves an unfinished check with a blocked outcome.
 Supervisor shutdown retires owned services and jobs.
 

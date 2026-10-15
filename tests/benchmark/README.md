@@ -4,6 +4,11 @@ For production JavaScript HP3/HP4 physics, see
 [headless JS profiling](HEADLESS_JS_PROFILING.md), including per-system timing,
 V8 CPU/allocation profiles, GC measurements and frozen autocal replay.
 
+For full-autocal recording-mode time/storage comparisons, use
+[`autocal_recording_modes.py`](autocal_recording_modes.py). The
+[recording cost report](../../research/autocal-recording-performance.md) contains
+measured results, workload/trajectory equivalence gates and reproduction steps.
+
 Run from the repository root with `.venv/bin/python`. The benchmark uses the
 default `public/usd_scenes/hp4_rigid_body.usda`, its 2 ms timestep, line layering,
 open-loop motors and two cable solver iterations. It consumes the same scheduled

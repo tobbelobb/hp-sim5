@@ -132,9 +132,14 @@ async def test_stdio_mcp_discovery_execution_readback_and_error():
         settings_schema = config_tool.input_schema['$defs']['WorldSettings']
         assert settings_schema['additionalProperties'] is False
         assert settings_schema['properties']['machine']['enum'] == ['hp3', 'hp4']
+        autocal_tool = next(tool for tool in tools if tool.name == 'start_autocal')
+        recording = autocal_tool.input_schema['properties']['recording_mode']
+        assert recording['enum'] == ['none', 'events', 'sampled', 'full']
+        assert recording['default'] == 'events'
         result = await client.call_tool('capabilities', {})
         assert not result.is_error
         assert SCENE in result.structured_content['scenes']
+        assert result.structured_content['full_autocal']['default_recording_mode'] == 'events'
         result = await client.call_tool('run_experiment', {'steps': 3, 'record': False})
         assert not result.is_error, result.content
         run = result.structured_content

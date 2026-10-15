@@ -46,6 +46,20 @@ def test_owned_reference_requires_headless_collection(flags, monkeypatch):
         ac.main(['--extended-reference', *flags])
 
 
+@pytest.mark.parametrize('flags', [[], ['--headless-sim', '--no-collect'],
+    ['--headless-sim', '--extended-reference'], ['--headless-sim', '--extended-reference-ws', 'ws://external']])
+def test_recording_mode_requires_unambiguous_headless_collection(flags, monkeypatch):
+    monkeypatch.delenv('AUTOCAL_REFERENCE_WS', raising=False)
+    with pytest.raises(SystemExit):
+        ac.main(['--recording-mode', 'events', *flags])
+
+
+def test_explicit_recording_mode_rejects_inherited_recorder(monkeypatch):
+    monkeypatch.setenv('AUTOCAL_REFERENCE_WS', 'ws://external')
+    with pytest.raises(SystemExit):
+        ac.main(['--headless-sim', '--recording-mode', 'none'])
+
+
 def test_failed_lifecycle_retains_clock_error_and_partial_points(tmp_path):
     from argparse import Namespace
     args = Namespace(machine_type='hangprinter_3', find_radii='global', find_buildup_factor='off',
@@ -96,13 +110,14 @@ def recorded_events(path, source):
     return sorted(events, key=lambda event: (event['wall_time_ms'], event.get('monotonic_ms', 0)))
 
 
-def test_extended_headless_records_resets_clocks_and_finalizes(tmp_path, monkeypatch):
+@pytest.mark.parametrize('mode', [None, 'none', 'events', 'sampled', 'full'])
+def test_headless_recording_modes_preserve_events_resets_and_finalization(tmp_path, monkeypatch, mode):
     from argparse import Namespace
     from autocal import extended_reference
     monkeypatch.delenv('AUTOCAL_REFERENCE_WS', raising=False)
     args = Namespace(machine_type='hangprinter_3', find_radii='off', find_buildup_factor='off',
                      rrf_config=None, config=None, dataset=tmp_path / 'sweeps.json',
-                     keep_sim_alive=False, extended_reference=True)
+                     keep_sim_alive=False, extended_reference=mode is None, recording_mode=mode)
     with HeadlessSimulation(args, []) as service:
         extended_reference.emit('run_start', test=True)
         service.request('advance', seconds=.05)
@@ -113,13 +128,30 @@ def test_extended_headless_records_resets_clocks_and_finalizes(tmp_path, monkeyp
         assert state['step'] == 125 and state['collector_time_s'] == pytest.approx(.06)
         extended_reference.emit('run_complete', returncode=0)
     assert 'AUTOCAL_REFERENCE_WS' not in os.environ
+    assert service.manifest['recording_mode'] == (mode or 'full')
+    traces = [json.loads(line) for line in (service.directory / 'events.jsonl').read_text().splitlines()]
+    assert {'gcode_send', 'gcode_reply', 'encoder_response', 'service_stopped'} <= {row['type'] for row in traces}
+    for pid in service.manifest['services']:
+        with pytest.raises(ProcessLookupError):
+            os.kill(pid, 0)
+    if mode == 'none':
+        assert service.recorder is None
+        assert not list(service.directory.glob('*.rrd'))
+        assert not service.manifest.get('recordings')
+        return
     assert service.manifest['physics_returncode'] == 0
     assert service.manifest['recording_drained']
     recording, = service.manifest['recordings']
     assert recording['backend'] == 'headless-js' and recording['status'] == 'finalized'
     assert recording['autocal_complete'] and not recording['rejected_messages']
-    assert [segment['generation'] for segment in recording['headless_segments']] == [0, 1]
-    assert recording['sample_stride'] == 10 and recording['geometry_detail'] == 'compact'
+    if mode == 'events':
+        assert recording['physics_samples'] == 0 and recording['recording_mode'] == 'events'
+        assert not recording.get('headless_segments')
+    else:
+        assert [segment['generation'] for segment in recording['headless_segments']] == [0, 1]
+        assert recording['sample_stride'] == (100 if mode == 'sampled' else 10)
+        assert recording['geometry_detail'] == 'compact'
+        assert recording['physics_samples'] == (3 if mode == 'sampled' else 16)
     path = recording['rrd']
     assert len(RrdReader(path).recordings()) == 1
     events = recorded_events(path, 'headless')
@@ -135,10 +167,8 @@ def test_extended_headless_records_resets_clocks_and_finalizes(tmp_path, monkeyp
     assert set(artifacts) == {'scene.usda', 'baked-scene.usda', 'firmware-config.g'}
     assert all(artifacts.values())
     clocks = RrdReader(path).stream().filter(content='/clocks/headless/flight_recorder', components='Scalars:scalars').to_chunks()
-    assert clocks and all('wall_time' in chunk.timeline_names for chunk in clocks)
-    for pid in service.manifest['services']:
-        with pytest.raises(ProcessLookupError):
-            os.kill(pid, 0)
+    assert bool(clocks) is (mode != 'events')
+    assert all('wall_time' in chunk.timeline_names for chunk in clocks)
 
 
 @pytest.mark.parametrize('keep_alive', [False, True])

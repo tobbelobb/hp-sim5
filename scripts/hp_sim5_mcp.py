@@ -56,6 +56,7 @@ def capabilities() -> dict[str, Any]:
                                       'reset': 'Retains accepted settings; reloads scene, JS and firmware sources',
                                       'active_jobs': 'Explicit cancellation required before reset or reconfiguration'}},
             'full_autocal': {'operations': ['start_autocal', 'autocal_status', 'cancel_autocal'],
+                             'recording_modes': ['none', 'events', 'sampled', 'full'], 'default_recording_mode': 'events',
                              'machines': ['hp3', 'hp4'], 'backend': 'headless-js', 'isolated_world': True,
                              'workflow': 'Production one-click CLI: physical collection, fitting, planning, selection, automatic stopping',
                              'statuses': ['running', 'cancelling', 'accepted', 'budget_exhausted', 'cancelled', 'failed'],
@@ -164,7 +165,8 @@ def start_autocal(machine: str = 'hp3', layering: bool = False,
                   find_radii: str = 'off', find_buildup_factor: str = 'off',
                   optimizer: dict | None = None, budgets: dict | None = None,
                   collection: dict | None = None,
-                  artifact_dir: str | None = None) -> dict[str, Any]:
+                  artifact_dir: str | None = None,
+                  recording_mode: Literal['none', 'events', 'sampled', 'full'] = 'events') -> dict[str, Any]:
     """Return a full-autocal job ID immediately; the supervisor runs an isolated production CLI world.
 
     base_radii_mm: one or four known/initial radii (default [30]); fitting modes: off/global/per-anchor.
@@ -175,12 +177,15 @@ def start_autocal(machine: str = 'hp3', layering: bool = False,
     collection optionally supplies force_low_n, force_mid_n, force_max_n together (0.001–10 N,
     low < mid <= max) to use the CLI's manual forces, and/or sensor_collection_force_n.
     Omitted forces preserve production autotuning.
+    recording_mode: none retains numerical artifacts and command traces; events (default) records
+    G-code, replies, encoder reads and stages; sampled adds physics every 100 steps;
+    full retains the extended RRD (physics every 10 steps). Both use compact geometry.
     artifact_dir must be new and inside session artifacts. Poll autocal_status; cancel_autocal stops
     physical activity and finalizes partial evidence. Budget exhaustion is not automatic acceptance.
     """
     args = dict(machine=machine, layering=layering, base_radii_mm=base_radii_mm if base_radii_mm is not None else [30],
                 buildup_factor=buildup_factor, find_radii=find_radii, find_buildup_factor=find_buildup_factor,
-                optimizer=optimizer or {}, budgets=budgets or {}, collection=collection or {})
+                optimizer=optimizer or {}, budgets=budgets or {}, collection=collection or {}, recording_mode=recording_mode)
     if artifact_dir is not None:
         args['artifact_dir'] = artifact_dir
     return supervised_request('start_autocal', **args)

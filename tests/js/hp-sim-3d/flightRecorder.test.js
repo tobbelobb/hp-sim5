@@ -218,6 +218,32 @@ describe('flight recorder delivery', () => {
     await expect(recorder.drain()).rejects.toThrow('disconnected');
   });
 
+  test('event-only recording registers and batches events without capturing physics across resets', () => {
+    const world = new World();
+    const recorder = new FlightRecorder({ world, WebSocketClass: FakeSocket, source: 'headless', recordPhysics: false });
+    recorder.extendedReference = true;
+    recorder.connect();
+    const socket = recorder.socket;
+    socket.readyState = 1; socket.emit('open');
+    expect(socket.samples[0]).toEqual({ version: 1, type: 'event_source', source: 'headless', session: 'session' });
+    socket.emit('message', { type: 'ack' });
+    for (let step = 1; step <= 1000; step++) {
+      world.setResource('researchClock', { time: step * .001 });
+      if (step === 500) world.setResource('sceneGeneration', 1);
+      recorder.update(world, .001);
+      recorder.recordEvent('encoder_read', { step });
+    }
+    recorder.flushEvents();
+    expect(recorder.pending).toBe(0);
+    expect(socket.samples.every(message => ['event_source', 'autocal_event_batch'].includes(message.type))).toBe(true);
+    const events = socket.samples.flatMap(message => message.events ?? []);
+    expect(events.filter(event => event.kind === 'scene_context')).toHaveLength(2);
+    expect(events.filter(event => event.kind === 'encoder_read')).toHaveLength(1000);
+    expect(events.at(-1).sim_time_s).toBe(1);
+    expect(socket.samples.length).toBeLessThan(10);
+    recorder.disconnect();
+  });
+
   test('physics resumes when capacity returns without waiting for a continuing event stream to drain', async () => {
     const recorder = new FlightRecorder({ world: new World(), WebSocketClass: FakeSocket });
     recorder.connect();

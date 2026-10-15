@@ -7,12 +7,13 @@ const MAX_PENDING_EVENTS = 65536;
 const MAX_PENDING_EVENT_BYTES = 32 * 1024 * 1024;
 
 export class FlightRecorder {
-  constructor({ world, button, url = 'ws://127.0.0.1:9877', WebSocketClass = globalThis.WebSocket, source = 'browser' }) {
+  constructor({ world, button, url = 'ws://127.0.0.1:9877', WebSocketClass = globalThis.WebSocket, source = 'browser', recordPhysics = true }) {
     this.world = world;
     this.button = button;
     this.url = url;
     this.WebSocketClass = WebSocketClass;
     this.source = source;
+    this.recordPhysics = recordPhysics;
     this.socket = null;
     this.pending = 0;
     this.pendingEvents = 0;
@@ -58,6 +59,10 @@ export class FlightRecorder {
     socket.addEventListener('open', () => {
       if (this.socket !== socket) return;
       this.setStatus('Rerun: recording');
+      if (!this.recordPhysics) {
+        // Register an event source without constructing even a step-zero snapshot.
+        socket.send(JSON.stringify({ version: 1, type: 'event_source', source: this.source, session: this.session }));
+      }
       this.update(this.world, 0);
     });
     socket.addEventListener('message', (event) => {
@@ -231,7 +236,7 @@ export class FlightRecorder {
       this.step += 1;
       this.time += dt;
     }
-    if (this.lastSentStep !== null && this.step - this.lastSentStep < this.sampleStride) return;
+    if (!this.recordPhysics || (this.lastSentStep !== null && this.step - this.lastSentStep < this.sampleStride)) return;
     this.lastSentStep = this.step;
     // Preserve event/sample order, including scene context before step zero.
     this.flushEvents();

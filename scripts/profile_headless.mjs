@@ -95,7 +95,7 @@ export function loadWorkload(source, events = false) {
   return { steps, boundaries, kind: 'frozen_autocal_replay' };
 }
 
-function observe(world, remote) {
+export function observe(world, remote) {
   const snapshot = captureFlightRecorderSnapshot(world, { geometryDetail: 'compact' });
   snapshot.motors = world.query([StepperMotorComponent]).map(id => {
     const motor = world.getComponent(id, StepperMotorComponent);

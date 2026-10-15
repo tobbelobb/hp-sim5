@@ -1,6 +1,15 @@
 Use `.venv/bin/python` and keep source changes small. Read `research/README.md`
 for the tools and `research/investigation.md` for the integration rationale.
 
+Before choosing autocal recording and compute budgets, read
+`research/autocal-recording-performance.md`. Its matched HP3 replay measured
+about 4.8/5.0/5.5/15.2 seconds and 0/3.4/11/54 MB RRD for
+`none`/`events`/`sampled`/`full` over 200,000 physics steps. Prefer `none` for
+large numerical sweeps, `events` for routine trials, and sampled/full evidence
+when the hypothesis needs physics inspection. These are recording-workload
+costs, not full-autocal speedups. Later simulations/backends can differ: verify
+actual workloads and numerical evidence before making performance comparisons.
+
 Before long live collection, call `research_preflight` on the attached supervisor.
 It is a bounded tool check: it never advances/resets the world or runs doctor.
 Check the expected complete world configuration when the experiment requires one.

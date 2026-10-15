@@ -11,7 +11,7 @@ import { createExternalCommandController } from '../hp-sim-3d/app/externalComman
 import { createGcodeBridge } from '../integrations/rrf/rrfSimulatorBridge.mjs';
 import { FlightRecorder } from '../hp-sim-3d/app/flightRecorder.js';
 
-const [scene, rrfUrl, wsPort, apiPort, directory, initialLayering] = process.argv.slice(2);
+const [scene, rrfUrl, wsPort, apiPort, directory, initialLayering, recordingMode] = process.argv.slice(2);
 const sceneText = fs.readFileSync(scene, 'utf8');
 let step = 0, epoch = 0, totalSteps = 0, speed = 1, collectorTime = 0, stopped = false, failure = null;
 let lineLayeringEnabled = initialLayering === 'true', closedLoopMotorsEnabled = false;
@@ -27,7 +27,8 @@ let recordingDrained = false;
 const started = performance.now();
 const maxPhysicsSteps = Number(process.env.HP_SIM5_AUTOCAL_MAX_PHYSICS_STEPS || Infinity);
 const recorder = process.env.AUTOCAL_REFERENCE_WS ? new FlightRecorder({ world,
-  url: process.env.AUTOCAL_REFERENCE_WS, WebSocketClass: WebSocket, source: 'headless' }) : null;
+  url: process.env.AUTOCAL_REFERENCE_WS, WebSocketClass: WebSocket, source: 'headless',
+  recordPhysics: recordingMode !== 'events' }) : null;
 function attachRecorder() {
   world.setResource('sceneGeneration', epoch);
   world.setResource('researchClock', { generation: epoch, step: 0, time: 0, source: 'headless.researchClock' });
@@ -143,10 +144,12 @@ const server = http.createServer(async (request, reply) => {
     if (recorder && (!recorder.socket || recorder.socket.readyState !== 1)) throw new Error(recorder.error || 'Flight recorder disconnected');
     if (request.url === '/gcode') {
       const commandId = `${process.pid}:${totalSteps}:${Date.now()}`;
+      event('gcode_send', { command_id: commandId, line: args.line });
       recorder?.recordEvent('service_gcode_send', { commandId, line: args.line });
       // Drain outside RRF's short encoder resolver timeout before its M569.3 query.
       if (/^M569\.3\b/i.test(args.line)) await advance(0, true);
       result = await bridge.sendGcodeLine(args.line, { timeout: 120000 });
+      event('gcode_reply', { command_id: commandId, result });
       if (/^Error:/im.test(result?.reply ?? '')) throw new Error(result.reply);
       await bridge.sendEncoderRequest([], 120000); // barrier for all preceding CAN payloads
       recorder?.recordEvent('service_gcode_reply', { commandId, result });

@@ -325,7 +325,7 @@ access. See [collection evidence](native-collection-verification.md).
 | `start_collection(configs, options, settling_timeout_s)` | Start a collection job and return its job ID immediately |
 | `collection_status(job_id)` | Running/cancelling/complete/cancelled/failed status and evidence |
 | `cancel_collection(job_id)` | Known physics stop boundary, retired firmware/bridge queues, partial evidence and reset requirement |
-| `start_autocal(machine, layering, base_radii_mm, buildup_factor, find_radii, find_buildup_factor, optimizer, budgets, collection, artifact_dir)` | Immediate job ID for an isolated world running the production full-auto CLI |
+| `start_autocal(machine, layering, base_radii_mm, buildup_factor, find_radii, find_buildup_factor, optimizer, budgets, collection, artifact_dir, recording_mode)` | Immediate job ID for an isolated world running the production full-auto CLI |
 | `autocal_status(job_id)` | Physical progress, iteration/decision, stop reason, CLI exit status and complete/partial artifacts |
 | `cancel_autocal(job_id)` | Stop the job-owned world, drain recording and retire all CLI children; attached world remains usable |
 | `configure_session(configuration)` | Validate settings, archive the old world and create a fresh HP3/HP4 world with matched firmware and encoder origin |
@@ -438,7 +438,7 @@ partial evidence, not a complete autocal dataset. Completed jobs retain the
 production version-2 dataset and validation path.
 
 Full-autocal jobs use the production one-click CLI once per job. They own a fresh
-headless JS scene, RRF, collector and extended recorder independently of the
+headless JS scene, RRF, collector and optional recorder independently of the
 attached session. An HP4 chat can request HP3 without changing its current world.
 Only one full-autocal job runs per supervisor; collection jobs use the attached
 world independently. For known HP3 radii and no layering, call:
@@ -456,6 +456,29 @@ Headless construction also uses the browser's matching cable-length bake:
 zero cable width when layering is off. Layering changes rebake/reset the world;
 resets retain closed-loop motor and layering settings. Each generation keeps
 its baked scene and hash in the recording and job artifacts.
+
+`recording_mode` controls evidence cost independently of the attached session's
+recording setting. It defaults to `events`:
+
+| Mode | Recorded evidence | Use |
+| --- | --- | --- |
+| `none` | Numerical datasets, manifests and command/encoder traces; no RRD recorder | Large automated sweeps |
+| `events` | G-code, responses, encoder reads, calibration stages and logs in an RRD; no physics snapshots | Most research trials |
+| `sampled` | Events plus physics every 100 steps with compact geometry | Investigating behavior |
+| `full` | Existing detailed extended RRD: events plus physics every 10 steps with compact geometry | Debugging and validating discoveries |
+
+For example, `start_autocal(recording_mode="none")` avoids physics snapshot,
+transport and RRD costs while preserving numerical evidence. All recorded modes
+retain lossless batched events, explicit clocks and finalization on cancellation.
+Physics sampling never samples control events or changes physics integration.
+The selected mode is stored in job settings and the headless manifest.
+
+For budgeting, the [matched recording benchmark](autocal-recording-performance.md)
+measured roughly 4.8/5.0/5.5/15.2 seconds and 0/3.4/11/54 MB RRD for
+`none`/`events`/`sampled`/`full` on the same 200,000-step HP3 workload. All cases
+retained a shared 6.58 MB command/encoder journal; recorded cases retained the
+same 34,017 events. The report explains exact equivalence checks and scope:
+these are frozen recording-workload costs, not complete autocal job timings.
 
 `optimizer` accepts `mode` (`fast`, `fast-fd`, `legacy`) and `solver` (`lbfgsb`,
 `trf`). Defaults are `fast`/`lbfgsb`, 400 `solve_iterations` (1–2000), four
@@ -486,7 +509,7 @@ not an accepted calibration.
 
 Terminal states are `accepted`, `budget_exhausted`, `cancelled`, `failed`.
 `accepted` requires the CLI's genuine automatic patience/threshold stop,
-successful parameter application and recorder finalization. `--max-steps`
+successful parameter application and, when recording, recorder finalization. `--max-steps`
 remains a budget stop. Poll status between conversational turns; chat interruption
 does not cancel movement. Cancellation and supervisor exit signal the CLI owner,
 stop physical activity, drain physics before the recorder, and retire the job's

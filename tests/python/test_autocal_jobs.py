@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[2]
     {'collection': {'force_max_n': 9.2}},
     {'collection': {'force_low_n': .1, 'force_mid_n': .2, 'force_max_n': 11}},
     {'collection': {'sensor_collection_force_n': float('inf')}},
+    {'recording_mode': 'debug'}, {'recording_mode': None}, {'recording_mode': True},
 ])
 def test_autocal_rejects_unbounded_or_untyped_settings(args):
     with pytest.raises(ValueError):
@@ -37,6 +38,15 @@ def test_autocal_command_runs_one_production_cli_with_explicit_configuration(tmp
     assert '--no-collect' not in argv and '--keep-sim-alive' not in argv
     cfg = settings({'collection': {'force_low_n': .01, 'force_mid_n': .23, 'force_max_n': 9.2}})
     assert '--no-auto-tune-force' in command(ROOT, tmp_path, cfg)
+
+
+@pytest.mark.parametrize('mode', ['none', 'events', 'sampled', 'full'])
+def test_autocal_recording_mode_reaches_cli(tmp_path, mode):
+    assert settings({})['recording_mode'] == 'events'
+    cfg = settings({'recording_mode': mode})
+    argv = command(ROOT, tmp_path, cfg)
+    assert argv[argv.index('--recording-mode') + 1] == mode
+    assert '--extended-reference' not in argv
 
 
 @pytest.mark.asyncio
@@ -167,6 +177,7 @@ async def test_supervised_live_stop_finalizes_rrd_without_mutating_hp4(tmp_path,
     try:
         before = await asyncio.to_thread(service.call, 'status')
         job = await asyncio.to_thread(service.call, 'start_autocal', machine='hp3',
+                                     recording_mode='full',
                                      budgets={'max_physics_steps': 1000} if stop == 'physics-budget' else {})
         for _ in range(1200):
             state = await asyncio.to_thread(service.call, 'autocal_status', job_id=job['job_id'])

@@ -1655,9 +1655,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                         help="Record timestamped logs and collector events in an --extended-reference flight recorder")
     parser.add_argument("--extended-reference", action="store_true",
                         help="Record headless physics and all autocal events in one RRD; starts an owned recorder unless a WebSocket URL is supplied")
+    parser.add_argument("--recording-mode", choices=['none', 'events', 'sampled', 'full'],
+                        help="Headless evidence: none (numerical artifacts/traces), events, sampled (physics stride 100), full (extended RRD, stride 10); geometry stays compact")
     parser.add_argument("--headless-sim", action="store_true",
                         help="Run simulated RRF and production JS physics/collector in Node without a browser; implies --sim")
     args = parser.parse_args(argv)
+    if args.recording_mode is not None:
+        if not args.headless_sim or args.no_collect:
+            parser.error("--recording-mode requires --headless-sim collection")
+        if args.extended_reference or args.extended_reference_ws or extended_reference.enabled():
+            parser.error("--recording-mode cannot be combined with extended-reference flags or AUTOCAL_REFERENCE_WS")
     if args.extended_reference_ws:
         os.environ['AUTOCAL_REFERENCE_WS'] = args.extended_reference_ws
     if args.extended_reference and not args.headless_sim:

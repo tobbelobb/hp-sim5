@@ -53,6 +53,9 @@ class HeadlessSimulation:
         self.physics = None
         self.recorder = None
         self.reference_url = os.environ.get('AUTOCAL_REFERENCE_WS')
+        self.recording_mode = getattr(args, 'recording_mode', None)
+        if self.recording_mode is None:
+            self.recording_mode = 'full' if getattr(args, 'extended_reference', False) or self.reference_url else 'none'
         self.signal_handlers = {}
         self.started = time.monotonic()
         self.directory = Path(args.dataset).resolve().with_suffix(".headless")
@@ -63,7 +66,7 @@ class HeadlessSimulation:
             index += 1
         self.directory.mkdir(parents=True)
         self.manifest = {"backend": "headless-js", "status": "starting", "machine_type": args.machine_type,
-                         "scene": str(self.scene), "firmware_config": self.config,
+                         "scene": str(self.scene), "firmware_config": self.config, "recording_mode": self.recording_mode,
                          "clock": "fixed steps; collector waits advance simulation time",
                          "dataset": str(Path(args.dataset).resolve()), "source_sha256": source_hash()}
         self.manifest["autocal_source_sha256"] = source_hash(("autocal",), (".py",))
@@ -102,11 +105,12 @@ class HeadlessSimulation:
             for sig in (signal.SIGTERM, signal.SIGHUP):
                 self.signal_handlers[sig] = signal.getsignal(sig)
                 signal.signal(sig, self.interrupt)
-            if getattr(self.args, 'extended_reference', False) and not self.reference_url:
+            if self.recording_mode != 'none' and not self.reference_url:
                 from websockets.sync.client import connect
                 port = free_port()
                 self.recorder = self.spawn('recorder', [sys.executable, 'scripts/hangprinter_flight_recorder.py',
-                    '--extended-reference', '--no-viewer', '--port', str(port), '--output', str(self.directory)])
+                    '--extended-reference', '--no-viewer', '--port', str(port), '--output', str(self.directory),
+                    '--sample-stride', '100' if self.recording_mode == 'sampled' else '10', '--geometry-detail', 'compact'])
                 self.reference_url = f'ws://127.0.0.1:{port}'
                 deadline = time.monotonic() + 30
                 while True:
@@ -143,7 +147,8 @@ class HeadlessSimulation:
             ws_port, api_port = free_port(), free_port()
             self.url = f"http://127.0.0.1:{api_port}"
             service = self.physics = self.spawn("physics", ["node", "scripts/autocal_headless.mjs", str(self.directory / "scene.usda"),
-                                            rrf_url, str(ws_port), str(api_port), str(self.directory), str(layering).lower()])
+                                            rrf_url, str(ws_port), str(api_port), str(self.directory), str(layering).lower(),
+                                            self.recording_mode])
             deadline = time.monotonic() + 30
             while True:
                 try:

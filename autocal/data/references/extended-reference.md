@@ -9,12 +9,31 @@ fixtures cannot acquire missing physics or original collection events retroactiv
 
 Launcher sessions can run this same CLI through `start_autocal`, `autocal_status`
 and `cancel_autocal`, even when agent command sockets are denied. Each supervised
-job owns an isolated world and an extended recorder; stdout/stderr, stages,
-scene/firmware settings, source hashes, partial measurements and finalized RRDs
+job owns an isolated world and defaults to an event-only recorder; stdout/stderr, stages,
+scene/firmware settings, source hashes, partial measurements and any finalized RRDs
 remain in its artifact directory. `accepted` requires automatic stopping;
 iteration/wall/physics budget exhaustion is separate. Supervisor cancellation
 bypasses the interactive CLI's accept-best-so-far behavior. See the
 [job settings and lifecycle](../../../research/README.md#jobs-shared-browser-state-and-steering).
+
+Supervised jobs accept `recording_mode="none"|"events"|"sampled"|"full"`.
+The CLI exposes the same choices with `--headless-sim --recording-mode MODE`:
+
+| Mode | Evidence |
+| --- | --- |
+| `none` | Numerical datasets, stage files, manifests and command/encoder traces, without an RRD recorder |
+| `events` | G-code, replies, encoder reads, stages, logs and artifacts, without physics snapshots |
+| `sampled` | Events plus physics every 100 steps with compact geometry |
+| `full` | Existing extended recording: events plus physics every 10 steps with compact geometry |
+
+`events` is the research-job default; standalone CLI runs without recording flags
+retain their existing numerical-only behavior. `--extended-reference` retains
+the existing full extended recording behavior. Use either `--recording-mode` or
+extended-reference flags/environment, since external recorders choose their own
+sampling settings. All modes retain local numerical artifacts and
+`<dataset-stem>.headless/events.jsonl`; recorded modes retain event batching and
+acknowledged drain/finalization. Event-only recording creates no physics samples,
+including at startup or after scene resets.
 
 Add `--extended-reference` to a headless autocal run:
 

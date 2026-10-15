@@ -381,6 +381,15 @@ async def run(args):
                 sample = json.loads(message)
                 if sample.get("version") != 1:
                     raise ValueError("Unsupported flight recorder protocol version")
+                if sample.get("type") == "event_source":
+                    if extended_recording is None or sample.get("source") not in ("browser", "headless"):
+                        raise ValueError("Event sources require an extended browser/headless recording")
+                    if active_physics is not None and active_physics is not socket:
+                        raise ValueError("Extended reference already has an active physics source")
+                    active_physics = socket
+                    extended_recording.manifest.update(backend=f'{sample["source"]}-js', recording_mode='events')
+                    await socket.send(json.dumps({"type": "ack"}))
+                    continue
                 if sample.get("type") in ("autocal_event", "autocal_event_batch"):
                     if extended_recording is None:
                         raise ValueError("Events require --extended-reference")
