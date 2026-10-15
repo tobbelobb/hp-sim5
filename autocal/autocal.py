@@ -1182,9 +1182,9 @@ def full_auto_loop(
             collector_output = work_path.with_name(f"{work_path.stem}.new_{step:03d}.json")
             run_results: List[Dict[str, object]] = []
 
-            for run in runs:
-                if _stop_file_requested():
-                    return _accept_best(f"stop-file {stop_file}")
+            def _resolve_run_settings(
+                run: Dict[str, object]
+            ) -> Tuple[str, str, Dict[str, object], Dict[str, object]]:
                 run_id = str(run.get("id", "run"))
                 run_flags = str(run.get("flags", "")).strip()
                 overrides = run.get("overrides") or {}
@@ -1257,8 +1257,16 @@ def full_auto_loop(
                     settings["low_anchor_z"] = float(settings["low_anchor_z"])
                     if not np.isfinite(settings["low_anchor_z"]):
                         settings["low_anchor_z"] = None
-                run_results.append(
-                    _execute_plan_run(
+                return run_id, run_flags, overrides, settings
+
+            def _execute_run_variant(
+                run: Dict[str, object],
+                *,
+                warm_seeds: Optional[Dict[str, np.ndarray]] = None,
+            ) -> Dict[str, object]:
+                run_id, run_flags, overrides, settings = _resolve_run_settings(run)
+                if warm_seeds is None:
+                    return _execute_plan_run(
                         run_id=run_id,
                         run_flags=run_flags,
                         overrides=overrides,
@@ -1266,7 +1274,38 @@ def full_auto_loop(
                         collector_output=collector_output,
                         log_prefix=f"; full-auto run {run_id}",
                     )
+                warm_id = f"{run_id}.warm"
+                return _execute_plan_run(
+                    run_id=warm_id,
+                    run_flags=run_flags,
+                    overrides=overrides,
+                    settings=settings,
+                    collector_output=collector_output,
+                    log_prefix=f"; full-auto run {warm_id}",
+                    path_tag=warm_id,
+                    initial_guess=warm_seeds.get("initial_guess"),
+                    initial_radii_mm=warm_seeds.get("initial_radii_mm"),
+                    initial_buildup_factor=warm_seeds.get("initial_buildup_factor"),
                 )
+
+            for run in runs:
+                if _stop_file_requested():
+                    return _accept_best(f"stop-file {stop_file}")
+                run_results.append(_execute_run_variant(run))
+
+            # History-seeded refit: a cold multi-start occasionally lands on the
+            # cost-cap sentinel, so keep a warm-started candidate in the pool.
+            warm_source: Optional[Dict[str, object]] = None
+            if history_candidates:
+                candidate_plan = history_candidates[-1].get("plan")
+                if isinstance(candidate_plan, dict):
+                    warm_source = candidate_plan
+            if warm_source is None and isinstance(best_plan, dict):
+                warm_source = best_plan
+            if warm_source is not None and not _stop_file_requested():
+                warm_seeds = _warm_start_seeds_from_plan(warm_source)
+                if warm_seeds.get("initial_guess") is not None:
+                    run_results.append(_execute_run_variant(runs[0], warm_seeds=warm_seeds))
 
             valid_runs = [r for r in run_results if r["metrics"]["valid"]]
             if not valid_runs:

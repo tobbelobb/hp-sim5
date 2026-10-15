@@ -7,6 +7,20 @@ import autocal.autocal as ac
 from autocal.sweep_types import DataPoint, MachineConfig, MachineType, Sweep
 
 
+def _worse_warm_duplicate(cold_plans: list) -> dict:
+    """Mocked planner reply for the loop's history-seeded (warm-start) variant.
+
+    The full-auto loop refits the current data once more, seeded from the best
+    estimate so far. These tests pin the cold-run selection, so the warm variant
+    answers with a strictly worse duplicate of the last cold plan.
+    """
+    assert cold_plans, "warm-start variant must follow a cold plan"
+    worse = dict(cold_plans[-1])
+    for key in ("cost", "cost_raw", "cost_noise_normalized"):
+        worse[key] = float(worse[key]) * 10.0
+    return worse
+
+
 def _valid_sweep(idx: int) -> dict:
     return {
         "id": f"sweep_{idx:03d}",
@@ -809,9 +823,15 @@ def test_full_auto_accepts_best_historical_replay_plan_after_patience(tmp_path, 
         },
     ]
 
+    cold_plans = []
+
     def fake_plan(*_args, **_kwargs):
+        if _kwargs.get("initial_guess") is not None:
+            return _worse_warm_duplicate(cold_plans)
         assert plan_queue, "expected one replay plan per iteration"
-        return plan_queue.pop(0)
+        plan = plan_queue.pop(0)
+        cold_plans.append(plan)
+        return plan
 
     def fake_score(plan):
         score = float(plan["cost"])
@@ -976,9 +996,15 @@ def test_full_auto_history_selector_can_prefer_mid_late_replay_plan(tmp_path, mo
         },
     ]
 
+    cold_plans = []
+
     def fake_plan(*_args, **_kwargs):
+        if _kwargs.get("initial_guess") is not None:
+            return _worse_warm_duplicate(cold_plans)
         assert plan_queue, "expected one replay plan per iteration"
-        return plan_queue.pop(0)
+        plan = plan_queue.pop(0)
+        cold_plans.append(plan)
+        return plan
 
     def fake_score(plan):
         score = float(plan["cost"])
