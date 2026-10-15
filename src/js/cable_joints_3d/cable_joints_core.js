@@ -1393,7 +1393,8 @@ export function calculateAttachmentPoints(world, joint, path, i, radiusA, radius
 // Prepared poses belong to this joint calculation only. Attachment updates can
 // change winding and rotor geometry before the next joint is evaluated.
 function _calculateAttachmentPoints(joint, path, i, radiusA, radiusB, endpointA, endpointB, backend = null) {
-  if (backend) return backend.calculateAttachmentPoints(joint, path, i, radiusA, radiusB, endpointA, endpointB);
+  // Full engines own step geometry; scene and UI edits use the geometry below.
+  if (backend && !backend.fullEngine) return backend.calculateAttachmentPoints(joint, path, i, radiusA, radiusB, endpointA, endpointB);
   const A = i;
   const B = i + 1;
   const { pos: posA, prevPos: prevPosA, planeNormal: planeNormalA, deltaAngle: deltaAngleA } = endpointA;
