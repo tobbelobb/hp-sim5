@@ -15,8 +15,12 @@ if str(REPO_ROOT) not in sys.path:
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.planning_pass import plan_next_ellipse_sweep
 from autocal.history_selection import (
+    SPREAD_STOP_CONSECUTIVE,
+    SPREAD_STOP_FRAC,
+    SPREAD_STOP_MIN_CANDIDATES,
     apply_consensus_plan,
     consensus_anchor_estimate,
+    consensus_spread_hit,
     evaluate_history_candidates,
     rank_history_candidates,
 )
@@ -61,6 +65,32 @@ def _sparse_recovery_dataset(dataset: Dict[str, object], fraction: float = 0.5) 
             keep.update(selected)
         sweep["data_points"] = [point for i, point in enumerate(points) if i in keep]
     return result
+
+
+def _spread_stop_fraction() -> float:
+    """Fraction of machine size at which agreeing fits trigger the early stop.
+
+    The shipped full-auto loop already stops on patience or on an absolute
+    cost/std threshold.  The two mutually most consistent candidate fits carry
+    the geometric signal the ranking scalar loses, so when they agree to within
+    a small fraction of the machine's own extent the applied estimate has
+    converged and further sweeps only cost move and settle time.
+
+    `HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC` overrides the default
+    `SPREAD_STOP_FRAC`; `off` (or any non-positive number) disables the stop
+    entirely.  Invalid text keeps the default so a typo cannot disable a
+    user-facing safety net silently.
+    """
+    raw = os.environ.get("HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC", "").strip()
+    if not raw:
+        return float(SPREAD_STOP_FRAC)
+    if raw.lower() in {"off", "false", "no", "none", "disabled"}:
+        return 0.0
+    try:
+        value = float(raw)
+    except ValueError:
+        return float(SPREAD_STOP_FRAC)
+    return 0.0 if value <= 0.0 else float(value)
 
 
 def _recovery_geometry_valid(plan: Dict[str, object]) -> bool:
@@ -611,6 +641,16 @@ def full_auto_loop(
     history_candidates: List[Dict[str, object]] = []
     history_total_iterations = 0
     no_improve = 0
+    spread_stop_frac = _spread_stop_fraction()
+    spread_stop_streak = 0
+    if spread_stop_frac > 0.0:
+        _log_console(
+            f"; full-auto: early stop when the two closest distinct fits agree to "
+            f"{spread_stop_frac:g} of the machine size, sustained "
+            f"{SPREAD_STOP_CONSECUTIVE} iterations, from "
+            f"{SPREAD_STOP_MIN_CANDIDATES} candidates "
+            f"(disable with HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC=off)"
+        )
     min_delta = float(DEFAULT_FULL_AUTO_MIN_DELTA)
     patience_limit = max(1, int(patience))
     has_variants = bool(full_auto_runs)
@@ -1475,6 +1515,23 @@ def full_auto_loop(
                     no_improve = 0
                 else:
                     no_improve += 1
+            spread_stop_hit = False
+            spread_stop_spread = None
+            spread_stop_limit = None
+            if spread_stop_frac > 0.0 and len(history_candidates) >= SPREAD_STOP_MIN_CANDIDATES:
+                consensus_anchors, _consensus_members, consensus_spread = (
+                    consensus_anchor_estimate(history_candidates)
+                )
+                hit, spread_stop_spread, spread_stop_limit = consensus_spread_hit(
+                    consensus_anchors, consensus_spread, frac=spread_stop_frac
+                )
+                spread_stop_streak = spread_stop_streak + 1 if hit else 0
+                spread_stop_hit = bool(spread_stop_streak >= SPREAD_STOP_CONSECUTIVE)
+                _log_line(
+                    f"; history_select: spread_stop spread_mm={_fmt_float(spread_stop_spread)} "
+                    f"limit_mm={_fmt_float(spread_stop_limit)} "
+                    f"streak={spread_stop_streak}/{SPREAD_STOP_CONSECUTIVE}"
+                )
             history_total_iterations = max(history_total_iterations, int(step))
 
             stop_cost_hit = False
@@ -1530,10 +1587,16 @@ def full_auto_loop(
                 threshold_accept = True
             if selected_underconstrained:
                 decision = "collect"
-            elif threshold_accept or no_improve >= patience_limit:
+            elif threshold_accept or spread_stop_hit or no_improve >= patience_limit:
                 decision = "accept"
             else:
                 decision = "collect"
+            if decision == "accept" and spread_stop_hit:
+                _log_console(
+                    "; full-auto: stopping early; the two closest distinct fits "
+                    f"agree to {_fmt_float(spread_stop_spread, suffix='mm')} "
+                    f"(limit {_fmt_float(spread_stop_limit, suffix='mm')})."
+                )
 
             _append_jsonl(
                 log_path,
@@ -1574,15 +1637,21 @@ def full_auto_loop(
                     "min_delta": min_delta,
                     "stop_cost_hit": stop_cost_hit,
                     "stop_std_hit": stop_std_hit,
+                    "stop_spread_hit": spread_stop_hit,
+                    "consensus_spread_mm": spread_stop_spread,
+                    "consensus_spread_limit_mm": spread_stop_limit,
                     "warnings": selected_warnings,
                     "recovery": recovery_info,
                 },
             )
 
             if decision == "accept":
+                stop_reason = (
+                    SPREAD_STOP_REASON if spread_stop_hit else FULL_AUTO_STOP_REASON_PATIENCE
+                )
                 if headless_sim is not None:
-                    headless_sim.manifest["stop_reason"] = "patience-or-threshold"
-                summary_plan, summary_meta = _select_history_summary_candidate(reason="patience-or-threshold")
+                    headless_sim.manifest["stop_reason"] = stop_reason
+                summary_plan, summary_meta = _select_history_summary_candidate(reason=stop_reason)
                 if summary_plan is None:
                     _log_console("; full-auto: no best plan available; stopping.")
                     _log_console(_solution_quality_message(None))

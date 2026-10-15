@@ -40,6 +40,13 @@ DEFAULT_NOISE_SIGMA_FLOOR_DEG = 0.01
 DEFAULT_NOISE_MIN_SAMPLES = 10
 DEFAULT_LAYER_LINE_WIDTH_MM = 1.0
 DEFAULT_FULL_AUTO_MIN_DELTA = 0.0
+# Reasons the full-auto loop reports when it finished on its own.  Both are a
+# normal completion: the loop ran its automatic stopping logic and applied the
+# parameters it settled on.  Kept here so the loop and the headless manifest
+# cannot drift apart on the spelling.
+FULL_AUTO_STOP_REASON_PATIENCE = "patience-or-threshold"
+SPREAD_STOP_REASON = "spread-consensus"
+NORMAL_STOP_REASONS = (FULL_AUTO_STOP_REASON_PATIENCE, SPREAD_STOP_REASON)
 _MIN_RADIUS_SCALE = 0.2
 _MAX_RADIUS_SCALE = 5.0
 _DEFAULT_B_BOUNDS = (0.0, 1.0)

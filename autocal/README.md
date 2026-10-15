@@ -307,7 +307,12 @@ Remove `--sim` and `--speedup` to use a real machine:
   --machine-type slideprinter
 ```
 
-The loop stops after three non-improving iterations by default.
+The loop stops after three non-improving iterations by default. It also stops as
+soon as its own applied geometry has converged: once at least four candidates
+exist, the two most consistent distinct fits must lie no further apart than 0.15%
+of the machine's anchor extent for two consecutive iterations. Further sweeps
+then only cost move and settle time. Set `HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC=off`,
+or to another positive fraction, to disable or retune it.
 Ctrl-C during the loop requests best-so-far acceptance.
 Final selection favors successful held-out predictions when available.
 These scores measure fit and prediction quality. They do not prove anchor accuracy.

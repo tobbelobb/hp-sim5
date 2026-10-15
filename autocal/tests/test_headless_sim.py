@@ -171,6 +171,31 @@ def test_headless_recording_modes_preserve_events_resets_and_finalization(tmp_pa
     assert all('wall_time' in chunk.timeline_names for chunk in clocks)
 
 
+@pytest.mark.parametrize('stop_reason', ['patience-or-threshold', 'spread-consensus'])
+def test_every_automatic_stop_reason_is_a_normal_completion(tmp_path, stop_reason):
+    """The loop's early consensus stop is as normal a completion as patience."""
+    from argparse import Namespace
+    args = Namespace(machine_type='hangprinter_3', find_radii='off', find_buildup_factor='off',
+                     rrf_config=None, config=None, dataset=tmp_path / 'sweeps.json',
+                     keep_sim_alive=False)
+    service = HeadlessSimulation(args, [])
+    service.manifest.update(stop_reason=stop_reason, applied_parameters=['M669'])
+    service.__exit__(None, None, None)
+    assert service.manifest['status'] == 'complete' and service.manifest['normal_completion']
+
+
+def test_unapplied_run_is_not_a_normal_completion(tmp_path):
+    """A stop reason alone is not acceptance evidence; applied parameters are."""
+    from argparse import Namespace
+    args = Namespace(machine_type='hangprinter_3', find_radii='off', find_buildup_factor='off',
+                     rrf_config=None, config=None, dataset=tmp_path / 'sweeps.json',
+                     keep_sim_alive=False)
+    service = HeadlessSimulation(args, [])
+    service.manifest.update(stop_reason='spread-consensus')
+    service.__exit__(None, None, None)
+    assert not service.manifest['normal_completion']
+
+
 @pytest.mark.parametrize('keep_alive', [False, True])
 def test_extended_headless_rejects_crash_after_last_request(tmp_path, monkeypatch, keep_alive):
     from argparse import Namespace
@@ -301,7 +326,7 @@ def test_fresh_hp3_full_auto_global_radii_and_matched_browser_collection(tmp_pat
     assert result.returncode == 0, log.read_text()[-4000:]
     manifest = json.loads(dataset.with_suffix('.headless').joinpath('manifest.json').read_text())
     assert manifest['normal_completion'] and manifest['status'] == 'complete'
-    assert manifest['stop_reason'] == 'patience-or-threshold'
+    assert manifest['stop_reason'] in ('patience-or-threshold', 'spread-consensus')
     assert manifest['epoch'] == 1  # reset once before bootstrap, same world for later sweeps
     assert manifest['simulated_s'] > 0 and manifest['wall_s'] > 0
     assert manifest['firmware_config'] == 'sys/config_hp3_w_line_layers.g'

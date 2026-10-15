@@ -3,8 +3,10 @@ import numpy as np
 
 from autocal._autocal_common import _m669_from_plan
 from autocal.history_selection import (
+    SPREAD_STOP_FRAC,
     apply_consensus_plan,
     consensus_anchor_estimate,
+    consensus_spread_hit,
     rank_history_candidates,
 )
 
@@ -97,3 +99,57 @@ def test_apply_consensus_plan_without_anchors_keeps_the_best_ranked_plan():
     applied = apply_consensus_plan(plan, None)
     assert np.allclose(applied["anchors"], _anchors(0.0))
     assert applied is not plan
+
+
+def test_spread_hit_needs_two_distinct_fits_and_stays_scale_relative():
+    truth = _anchors(0.0)
+    # A single fit has nothing to disagree with, so this predicate alone says
+    # "hit" at spread 0.  The loop's minimum candidate count is what stops a
+    # freshly started run; see `SPREAD_STOP_MIN_CANDIDATES`.
+    anchors, _members, spread = consensus_anchor_estimate([_item(1, truth)])
+    assert consensus_spread_hit(anchors, spread)[0] is True
+    assert consensus_spread_hit(None, None) == (False, None, None)
+    assert consensus_spread_hit(truth, None) == (False, None, None)
+    # Two fits 1 mm apart on a 3.3 m machine: far below the default fraction.
+    anchors, _members, spread = consensus_anchor_estimate(
+        [_item(1, truth), _item(2, _anchors(1.0))]
+    )
+    def extent(array):
+        array = np.asarray(array, dtype=float)
+        return float(np.sqrt(((array[:, None] - array[None, :]) ** 2).sum(-1)).max())
+
+    hit, spread_mm, limit_mm = consensus_spread_hit(anchors, spread)
+    assert hit is True
+    assert np.isclose(spread_mm, 1.0)
+    assert np.isclose(limit_mm, SPREAD_STOP_FRAC * extent(anchors))
+    # The same absolute 1 mm disagreement on a ten-times smaller machine is not
+    # agreement: the tolerance is relative to the machine, not absolute.
+    small = (np.asarray(truth, dtype=float) * 0.1).tolist()
+    small_offset = (np.asarray(truth, dtype=float) * 0.1).tolist()
+    small_offset[0][1] += 1.0
+    anchors, _members, spread = consensus_anchor_estimate(
+        [_item(1, small), _item(2, small_offset)]
+    )
+    hit, _spread_mm, limit_mm = consensus_spread_hit(anchors, spread)
+    assert hit is False
+    assert np.isclose(limit_mm, SPREAD_STOP_FRAC * extent(anchors))
+
+
+def test_spread_hit_rejects_degenerate_geometry():
+    flat = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+    assert consensus_spread_hit(flat, 0.0) == (False, 0.0, None)
+    assert consensus_spread_hit([[1.0, 2.0]], 0.0)[0] is False
+    nan = _anchors(0.0)
+    nan[1][0] = float("nan")
+    assert consensus_spread_hit(nan, 0.1)[0] is False
+    assert consensus_spread_hit(_anchors(0.0), float("nan"))[0] is False
+
+
+def test_spread_hit_fraction_can_be_tightened_or_loosened():
+    truth = _anchors(0.0)
+    anchors, _members, spread = consensus_anchor_estimate(
+        [_item(1, truth), _item(2, _anchors(8.0))]
+    )
+    # 8 mm separation is loose for the default and tight for a 1% tolerance.
+    assert consensus_spread_hit(anchors, spread)[0] is False
+    assert consensus_spread_hit(anchors, spread, frac=1e-2)[0] is True

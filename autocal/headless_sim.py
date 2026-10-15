@@ -12,7 +12,13 @@ import signal
 import sys
 from urllib.request import Request, urlopen
 
-from autocal._autocal_common import REPO_ROOT, RRF_SIM_BINARY, RRF_SIM_VSD_PATH, _stop_process
+from autocal._autocal_common import (
+    NORMAL_STOP_REASONS,
+    REPO_ROOT,
+    RRF_SIM_BINARY,
+    RRF_SIM_VSD_PATH,
+    _stop_process,
+)
 
 
 MACHINES = {
@@ -218,7 +224,11 @@ class HeadlessSimulation:
                     capture_error = capture_error or 'Headless physics did not confirm recording drain; see physics.log'
         if self.manifest.get("exit_code"):
             self.manifest["status"] = "failed"
-        self.manifest["normal_completion"] = self.manifest["status"] == "complete" and self.manifest.get("stop_reason") == "patience-or-threshold" and bool(self.manifest.get("applied_parameters"))
+        self.manifest["normal_completion"] = (
+            self.manifest["status"] == "complete"
+            and self.manifest.get("stop_reason") in NORMAL_STOP_REASONS
+            and bool(self.manifest.get("applied_parameters"))
+        )
         if self.manifest.get("stop_reason") == "Ctrl-C":
             self.manifest["status"] = "interrupted"
         if self.reference_url:

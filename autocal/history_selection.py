@@ -140,13 +140,19 @@ def consensus_anchor_estimate(scored):
     mean is taken; averaging a pair can move the estimate by at most half their
     separation, so it stays bracketed by real fits.
 
+    `scored` items may be the raw candidate dicts kept by the full-auto loop or
+    the `(sort_key, candidate, info)` tuples of `evaluate_history_candidates`.
+
     Returns `(anchors, member_iterations, spread_mm)`. `anchors` is None only
     when no candidate carries a usable anchor array.
     """
     rows = []
     shape = None
     for item in scored:
-        candidate = item[1]
+        # Items are either the raw candidate dicts kept by the full-auto loop or
+        # the `(sort_key, candidate, info)` tuples built by
+        # `evaluate_history_candidates`; only the candidate payload is read.
+        candidate = item if isinstance(item, dict) else item[1]
         plan = candidate.get("plan")
         anchors = plan.get("anchors") if isinstance(plan, dict) else None
         if anchors is None:
@@ -218,3 +224,48 @@ def apply_consensus_plan(chosen_plan, anchors):
         plan["anchors"] = np.asarray(anchors, dtype=float)
         plan.pop("calibration", None)
     return plan
+
+
+SPREAD_STOP_FRAC = 1.5e-3
+SPREAD_STOP_MIN_CANDIDATES = 4
+SPREAD_STOP_CONSECUTIVE = 2
+
+
+def consensus_spread_hit(consensus_anchors, consensus_spread, *, frac=SPREAD_STOP_FRAC):
+    """Whether the closest two distinct fits agree to within `frac` of machine size.
+
+    The shipped consensus averages the two mutually most consistent candidate
+    anchor sets and reports their separation as `spread_mm`.  Once that
+    separation is a small fraction of the applied geometry's own extent, the
+    independent fits have converged: more sweeps move the applied estimate far
+    less than the machine's own scale, so collecting them only spends move and
+    settle time.  The test is fractional, so it transfers to a smaller machine.
+
+    This is deliberately *not* a stability test on the running estimate.  A
+    stable estimate is not evidence of a correct one: adding a candidate whose
+    anchors sit inside the current consensus pair leaves the estimate unmoved
+    while telling us nothing new.  `spread_mm` measures a distance *between*
+    distinct fits, so it cannot fire while the best available consensus is
+    still loose.
+
+    Returns `(hit, spread_mm, limit_mm)`.  `hit` is False whenever the inputs
+    cannot be evaluated, so this predicate alone can never stop a run; the
+    caller additionally requires a minimum candidate count and a consecutive
+    streak.
+    """
+    if consensus_anchors is None or consensus_spread is None:
+        return False, None, None
+    array = np.asarray(consensus_anchors, dtype=float)
+    if array.ndim != 2 or len(array) < 2 or array.shape[1] < 1:
+        return False, None, None
+    if not np.all(np.isfinite(array)):
+        return False, None, None
+    pairwise = np.sqrt(
+        np.maximum(((array[:, None, :] - array[None, :, :]) ** 2).sum(-1), 0.0)
+    )
+    extent = float(pairwise.max())
+    spread = float(consensus_spread)
+    if not np.isfinite(spread) or not np.isfinite(extent) or extent <= 0.0:
+        return False, (spread if np.isfinite(spread) else None), None
+    limit = float(frac) * extent
+    return bool(spread <= limit), spread, limit
