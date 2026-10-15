@@ -11,6 +11,8 @@ No need to search for the spool radii either.
 Use Hangprinter 3, not Hangprinter 4, since HP3 is lighter and faster to simulate.
 I created a reference run for you to beat in output/extended-autocal/no-buildup-reference-003
 
+Note that in a real auto calibration scenario, nobody has access to real ground truth anchor positions yet.
+
 Here are some ideas you could use as starting points:
 
  - An obvious way to save time would be to look at the .rrd file, and profile it in a way. See where it hangs, what takes time to help you prioritize where to start optimizing.
@@ -43,6 +45,7 @@ Good starting points for such learning are
  - autocal/optimization_algorithm_overview
  - autocal/objective_functions_overview
  - and maybe autocal/README_elliptical_feature_calibration.md
+
 
 Your favourite ideas might be better than those already researched or implemented.
 Record the leading hypotheses and test the promising ones on
