@@ -24,6 +24,7 @@ from autocal.theoretical_ellipse import (
 
 _BOUND_PENALTY_WEIGHT = 1e4
 _ANCHOR_LSQ_METHODS = ("trf", "lm")
+_LBFGSB_TRF_FALLBACK_METHOD = "lbfgsb+trf-fallback"
 
 
 def format_anchor_matrix_plain(anchors: np.ndarray, *, decimals: int = 2) -> str:
@@ -64,11 +65,101 @@ def _lbfgsb_jax_mode() -> str:
 
 def _normalize_anchor_optimizer_method(method: object) -> str:
     method_norm = str(method or "L-BFGS-B").strip().replace("_", "-").lower()
-    if method_norm in ("slsqp", "sqp", "l-bfgs-b", "lbfgsb"):
+    if method_norm in (
+        "slsqp", "sqp", "l-bfgs-b", "lbfgsb", _LBFGSB_TRF_FALLBACK_METHOD,
+    ):
         return "lbfgsb"
     if method_norm in _ANCHOR_LSQ_METHODS:
         return method_norm
     return method_norm
+
+
+def _method_uses_trf_fallback(method: object) -> bool:
+    return str(method or "").strip().replace("_", "-").lower() == _LBFGSB_TRF_FALLBACK_METHOD
+
+
+def _optimizer_result_is_finite(result: OptimizeResult, expected_size: int) -> bool:
+    try:
+        x = np.asarray(result.x, dtype=float).reshape(-1)
+        return bool(
+            x.size == int(expected_size)
+            and np.all(np.isfinite(x))
+            and np.isfinite(float(result.fun))
+        )
+    except Exception:
+        return False
+
+
+def _optimizer_result_is_usable(
+    result: OptimizeResult,
+    expected_size: int,
+    cost_fn: EllipseCostFunction,
+) -> bool:
+    try:
+        x = np.asarray(result.x, dtype=float).reshape(-1)
+        if not _optimizer_result_is_finite(result, expected_size):
+            return False
+        details = cost_fn.evaluate_detailed(x)
+        return bool(details.num_valid_sweeps > 0 and np.isfinite(float(details.total_cost)))
+    except Exception:
+        return False
+
+
+def _run_lbfgsb_with_fallback(
+    cost_fn: EllipseCostFunction,
+    x0: np.ndarray,
+    *,
+    lb: np.ndarray,
+    ub: np.ndarray,
+    bounds: list,
+    max_iterations: int,
+    callback: Optional[Callable[[np.ndarray], None]] = None,
+    enabled: bool = False,
+) -> OptimizeResult:
+    """Run L-BFGS-B and retry failed restarts with bounded trust-region least squares."""
+    x0_arr = np.asarray(x0, dtype=float).reshape(-1)
+    try:
+        primary = _run_lbfgsb_minimize(
+            cost_fn, x0_arr, lb=lb, ub=ub, bounds=bounds,
+            max_iterations=max_iterations, callback=callback,
+        )
+    except Exception as exc:
+        primary = OptimizeResult(
+            x=x0_arr, fun=float("inf"), success=False,
+            message=f"L-BFGS-B raised {type(exc).__name__}: {exc}",
+        )
+
+    if not enabled or (
+        bool(getattr(primary, "success", False))
+        and _optimizer_result_is_finite(primary, x0_arr.size)
+    ):
+        primary["trf_fallback_used"] = False
+        return primary
+
+    print(f"[solver] L-BFGS-B failed ({getattr(primary, 'message', 'invalid result')}); retrying with trf.")
+    try:
+        fallback = _run_anchor_least_squares(
+            cost_fn, x0_arr, lb=lb, ub=ub,
+            max_iterations=max_iterations, method="trf",
+        )
+    except Exception as exc:
+        fallback = OptimizeResult(
+            x=x0_arr, fun=float("inf"), success=False,
+            message=f"trf fallback raised {type(exc).__name__}: {exc}",
+        )
+
+    fallback_ok = _optimizer_result_is_usable(fallback, x0_arr.size, cost_fn)
+    primary_ok = _optimizer_result_is_usable(primary, x0_arr.size, cost_fn)
+    if fallback_ok and (bool(getattr(fallback, "success", False)) or not primary_ok):
+        chosen = fallback
+        chosen["trf_fallback_used"] = True
+        chosen["message"] = f"trf fallback after L-BFGS-B failure: {getattr(primary, 'message', '')}"
+        return chosen
+    if primary_ok and (not fallback_ok or float(primary.fun) <= float(fallback.fun)):
+        primary["trf_fallback_used"] = False
+        return primary
+    fallback["trf_fallback_used"] = True
+    return fallback
 
 
 def _method_for_scipy_minimize(method: object) -> str:
@@ -389,13 +480,14 @@ def _optimize_restart_worker(payload: dict) -> dict:
                 options["ftol"] = 1e-8
 
             if scipy_method == "L-BFGS-B":
-                result = _run_lbfgsb_minimize(
+                result = _run_lbfgsb_with_fallback(
                     cost_fn,
                     x0_clipped,
                     lb=lb,
                     ub=ub,
                     bounds=bounds,
                     max_iterations=max_iterations,
+                    enabled=_method_uses_trf_fallback(method_raw),
                 )
             else:
                 result = minimize(
@@ -413,6 +505,7 @@ def _optimize_restart_worker(payload: dict) -> dict:
         message=str(getattr(result, "message", "")),
         nit=int(getattr(result, "nit", 0) or 0),
         nfev=int(getattr(result, "nfev", 0) or 0),
+        trf_fallback_used=bool(getattr(result, "trf_fallback_used", False)),
     )
     return dict(best)
 
@@ -792,6 +885,7 @@ def solve_anchors(
         ]
         current_guess = initial_guess
         final_result: Optional[Dict[str, object]] = None
+        trf_fallback_used = False
         for idx, stage in enumerate(stages):
             stage_iters = int(max(1, round(max_iterations * stage["iter_factor"])))
             stage_restarts = int(stage["restarts"])
@@ -828,10 +922,12 @@ def solve_anchors(
             )
             if final_result is None:
                 break
+            trf_fallback_used = trf_fallback_used or bool(final_result.get("trf_fallback_used", False))
             anchors_out = final_result.get("anchors")
             if anchors_out is not None:
                 current_guess = np.asarray(anchors_out, dtype=float)
         if final_result is not None:
+            final_result["trf_fallback_used"] = trf_fallback_used
             return final_result
 
     cost_fn = _build_cost_fn(
@@ -1376,7 +1472,7 @@ def solve_anchors(
                             options["ftol"] = 1e-8
 
                         if scipy_method == "L-BFGS-B":
-                            result = _run_lbfgsb_minimize(
+                            result = _run_lbfgsb_with_fallback(
                                 cost_fn,
                                 x0_clipped,
                                 lb=lb,
@@ -1384,6 +1480,7 @@ def solve_anchors(
                                 bounds=bounds,
                                 max_iterations=max_iterations,
                                 callback=(lambda xk: _progress_callback(np.asarray(xk, dtype=float), None)),
+                                enabled=_method_uses_trf_fallback(method_raw),
                             )
                         else:
                             result = minimize(
@@ -1500,6 +1597,7 @@ def solve_anchors(
         "details": detailed,
         "raw_result": best_result,
         "solver": f"least_squares_{method_norm}" if method_norm in _ANCHOR_LSQ_METHODS else "ellipse_solver",
+        "trf_fallback_used": bool(getattr(best_result, "trf_fallback_used", False)),
     }
 
 

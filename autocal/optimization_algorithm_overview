@@ -281,7 +281,9 @@ The trim stage also freezes point rejection there.
 `AUTOCAL_FREEZE_FILTER_MASKS=0` disables this local mask freezing.
 This is separate from the mask shared across `dynamic` and `constant` filter passes.
 
-`--solve-optimizer` selects `lbfgsb` (default), `lm`, or `trf`.
+`--solve-optimizer` selects `lbfgsb` (default), `lm`, or `trf`. By default,
+unsuccessful or invalid `lbfgsb` restarts retry with bounded `trf`; disable this
+with `--no-trf-solver-fallback`. `--solve-optimizer trf` selects it directly.
 `--optimizer-mode fast` uses CPU JAX derivatives when available.
 `fast-fd` uses the JAX value with finite differences.
 `legacy` disables the JAX objective.

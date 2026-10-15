@@ -3340,7 +3340,21 @@ def _print_ellipse_plan(
 def _add_solver_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--solve-restarts", type=int, default=4)
     parser.add_argument("--solve-iterations", type=int, default=400)
-    parser.add_argument("--solve-optimizer", choices=_SOLVE_OPTIMIZER_CHOICES, default="lbfgsb")
+    parser.add_argument(
+        "--solve-optimizer",
+        choices=_SOLVE_OPTIMIZER_CHOICES,
+        default="lbfgsb",
+        help="Anchor solver: lbfgsb (default), trf, or lm.",
+    )
+    parser.add_argument(
+        "--trf-solver-fallback",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Retry unsuccessful or invalid lbfgsb restarts with bounded trf "
+            "(default: enabled)."
+        ),
+    )
     parser.add_argument(
         "--optimizer-mode",
         choices=_OPTIMIZER_MODE_CHOICES,

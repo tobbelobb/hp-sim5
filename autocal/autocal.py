@@ -1234,6 +1234,11 @@ def full_auto_loop(
                     overrides = {}
                 settings = dict(base_solver)
                 settings.update(overrides)
+                if (
+                    str(base_solver["solve_optimizer"]) == "lbfgsb+trf-fallback"
+                    and str(settings.get("solve_optimizer")) == "lbfgsb"
+                ):
+                    settings["solve_optimizer"] = "lbfgsb+trf-fallback"
                 settings["optimizer_mode"] = _normalize_optimizer_mode(settings.get("optimizer_mode"))
                 _apply_optimizer_mode_env(str(settings["optimizer_mode"]))
                 if isinstance(settings.get("base_radii"), str):
@@ -1822,6 +1827,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
 
 def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_args, headless):
+    solve_optimizer = str(args.solve_optimizer)
+    if solve_optimizer == "lbfgsb" and bool(args.trf_solver_fallback):
+        solve_optimizer = "lbfgsb+trf-fallback"
     return full_auto_loop(
         work_dataset=args.dataset,
         machine_type=str(machine_type),
@@ -1830,7 +1838,7 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         stop_std_mm=args.stop_std_mm,
         solve_restarts=int(args.solve_restarts),
         solve_iterations=int(args.solve_iterations),
-        solve_optimizer=str(args.solve_optimizer),
+        solve_optimizer=solve_optimizer,
         residual_threshold=float(args.threshold),
         spring_k_multiplier=float(args.spring_k_multiplier),
         use_flex=bool(args.flex),
