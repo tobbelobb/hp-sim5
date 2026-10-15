@@ -29,6 +29,7 @@ Here are some ideas you could use as starting points:
    * Can we determine max/min ranges for the various xyz coordinates of each anchor?
    * Can we reason about or search for probably xyz positions of each datapoint?
    * The global anchor length scale is a near-flat direction of the autocal objective. Can we design a sequence of measurements that would give us information about true anchor gauge? As in, can we tease out a scaling factor to improve our current anchor guess?
+   * There's currently two promising solvers: the established lbfgsb and the experimental trf solver. A promising research direction is using solver disagreement to choose an additional sweep, then checking both predictions against fresh measurements.
    * ... and so on
   A nice thing with this idea of gradually answering progressively harder questions is that experiments can be progressively more detailed and confident without causing the machine to do self-harm. The approach can also gradually be introduced into the current autocal, morphing it from "one big thing" to eventually a more and more fine grained sequence of smaller targetted experiments.
 
