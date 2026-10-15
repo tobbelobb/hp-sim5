@@ -18,6 +18,11 @@ Comparison metrics
 - Radius distance: 2*pi * sum_i |R_i - R_i_ref|
 - "Total parameter distance" = anchor_distance + radius_distance
 
+Collection comparison
+- Reports replay sweeps consumed and their data-point totals per dataset and in aggregate.
+- Positive ref-minus-generated deltas are saved collection; negative deltas are extra.
+- Point totals sum the recorded data_points in the initial sweeps consumed by each run.
+
 True values (simulation ground truth) used for "closer/further" reporting
 - Anchors: [[0,-1900],[1645.44826719,950],[-1645.44826719,950]]
 - R: 39.184 (all)
@@ -43,6 +48,7 @@ from __future__ import annotations
 import argparse
 import ast
 import concurrent.futures
+import json
 import math
 import os
 import re
@@ -247,6 +253,8 @@ class ParsedLog:
     summary: Optional[Params]
     iterations: List[Iteration]
     summary_block_lines: List[str]
+    collection_sweeps: Optional[int] = None
+    collection_points: Optional[int] = None
 
 
 @dataclass
@@ -260,6 +268,10 @@ class DatasetRunResult:
     true_iter_mean_delta: Optional[float] = None
     true_gen_iter_std: Optional[float] = None
     true_gen_iter_count: int = 0
+    ref_sweeps: Optional[int] = None
+    gen_sweeps: Optional[int] = None
+    ref_points: Optional[int] = None
+    gen_points: Optional[int] = None
 
 
 # ---------- Parsing helpers ----------
@@ -271,6 +283,9 @@ _RE_LEGACY_FIT_SCORE = re.compile(r"\bScore:\s*([0-9.+-eE]+)\b")
 _RE_SELECTED_FIT_SCORE_UI = re.compile(r"\b(?:fit_score_ui|score_ui)=([0-9.+-eE]+)\b")
 _RE_SELECTED_RANK_SCORE = re.compile(r"\brank_score=([0-9.+-eE]+)\b")
 _RE_SELECTED_HISTORY_RANK_SCORE = re.compile(r"\b(?:history_rank_score|selection_rank)=([0-9.+-eE]+)\b")
+_RE_REPLAY_START = re.compile(r"; full-auto replay: starting from (\d+) sweeps, replaying (\d+) additional sweeps")
+_RE_REPLAYED_SWEEP_TOTAL = re.compile(r"; replayed sweep \d+/\d+ -> .*? sweeps=(\d+)\s*$")
+_RE_COLLECTED_SWEEP = re.compile(r"Collected sweep nr (\d+)\b")
 _NUM_PATTERN = r"[+-]?\d+(?:\.\d+)?(?:e[+-]?\d+)?"
 _RE_M669_PARTS = re.compile(rf"([A-Z])\s*((?:{_NUM_PATTERN})(?::{_NUM_PATTERN})+)", re.IGNORECASE)
 _RE_M666_R = re.compile(rf"\bR\s*((?:{_NUM_PATTERN})(?::{_NUM_PATTERN})+)", re.IGNORECASE)
@@ -433,7 +448,57 @@ def parse_log_file(path: Path) -> ParsedLog:
     summary = parse_summary(text)
     iters = parse_iterations(text)
     summary_lines = extract_summary_block_lines(text)
-    return ParsedLog(summary=summary, iterations=iters, summary_block_lines=summary_lines)
+    collection_sweeps = parse_collection_sweep_count(text)
+    return ParsedLog(
+        summary=summary,
+        iterations=iters,
+        summary_block_lines=summary_lines,
+        collection_sweeps=collection_sweeps,
+    )
+
+
+def parse_collection_sweep_count(text: str) -> Optional[int]:
+    """Return the last sweep count consumed by a full-auto replay log."""
+    starting_sweeps = None
+    for line in text.splitlines():
+        match = _RE_REPLAY_START.search(line)
+        if match:
+            starting_sweeps = int(match.group(1))
+
+    replay_totals = [
+        int(match.group(1))
+        for line in text.splitlines()
+        if (match := _RE_REPLAYED_SWEEP_TOTAL.search(line))
+    ]
+    if starting_sweeps is not None:
+        return replay_totals[-1] if replay_totals else starting_sweeps
+
+    # Older logs may only contain the console form of the replay progress.
+    collected_totals = [
+        int(match.group(1))
+        for line in text.splitlines()
+        if (match := _RE_COLLECTED_SWEEP.search(line))
+    ]
+    return max(collected_totals) if collected_totals else None
+
+
+def count_dataset_points(dataset_path: Path, sweep_count: Optional[int]) -> Optional[int]:
+    """Count data points in the initial sweeps consumed by the replay."""
+    if sweep_count is None:
+        return None
+    try:
+        dataset = json.loads(dataset_path.read_text())
+        sweeps = dataset.get("sweeps")
+        if not isinstance(sweeps, list) or sweep_count > len(sweeps):
+            return None
+        point_counts = []
+        for sweep in sweeps[:sweep_count]:
+            if not isinstance(sweep, dict) or not isinstance(sweep.get("data_points"), list):
+                return None
+            point_counts.append(len(sweep["data_points"]))
+        return sum(point_counts)
+    except (OSError, json.JSONDecodeError, TypeError, AttributeError):
+        return None
 
 
 # ---------- Metrics ----------
@@ -730,6 +795,15 @@ def iteration_effective_rank_kind(iteration: Iteration) -> Optional[str]:
     return None
 
 
+def _saved_or_extra(reference_count: int, generated_count: int) -> str:
+    delta = reference_count - generated_count
+    if delta > 0:
+        return f"saved={delta}"
+    if delta < 0:
+        return f"extra={-delta}"
+    return "saved=0"
+
+
 def report_dataset(
     name: str,
     ref: ParsedLog,
@@ -853,6 +927,22 @@ def report_dataset(
     n_ref = len(ref.iterations)
     n_gen = len(gen.iterations)
     lines.append(f"ITERATIONS: ref={n_ref} gen={n_gen}")
+    collection_parts = []
+    if ref.collection_sweeps is not None and gen.collection_sweeps is not None:
+        collection_parts.append(
+            f"sweeps ref={ref.collection_sweeps} gen={gen.collection_sweeps} "
+            f"{_saved_or_extra(ref.collection_sweeps, gen.collection_sweeps)}"
+        )
+    else:
+        collection_parts.append("sweeps ref/gen=N/A")
+    if ref.collection_points is not None and gen.collection_points is not None:
+        collection_parts.append(
+            f"points ref={ref.collection_points} gen={gen.collection_points} "
+            f"{_saved_or_extra(ref.collection_points, gen.collection_points)}"
+        )
+    else:
+        collection_parts.append("points ref/gen=N/A")
+    lines.append("COLLECTION: " + "; ".join(collection_parts))
 
     if n_ref != n_gen:
         lines.append("ITERATIONS: COUNT MISMATCH => FAIL")
@@ -1201,6 +1291,8 @@ def run_one_dataset(
 
     ref_parsed = parse_log_file(ref_log_path)
     gen_parsed = parse_log_file(gen_log_path)
+    ref_parsed.collection_points = count_dataset_points(dataset_path, ref_parsed.collection_sweeps)
+    gen_parsed.collection_points = count_dataset_points(dataset_path, gen_parsed.collection_sweeps)
     true_iter_mean_delta, _true_iter_pair_count = compute_true_iter_mean_delta(
         ref_parsed.iterations,
         gen_parsed.iterations,
@@ -1232,6 +1324,10 @@ def run_one_dataset(
         true_iter_mean_delta=true_iter_mean_delta,
         true_gen_iter_std=true_gen_iter_std,
         true_gen_iter_count=true_gen_iter_count,
+        ref_sweeps=ref_parsed.collection_sweeps,
+        gen_sweeps=gen_parsed.collection_sweeps,
+        ref_points=ref_parsed.collection_points,
+        gen_points=gen_parsed.collection_points,
     )
 
 
@@ -1375,6 +1471,12 @@ def main() -> int:
             sum_delta = 0.0
             sum_true_mean_delta = 0.0
             sum_count = 0
+            collection_sweep_ref = 0
+            collection_sweep_gen = 0
+            collection_sweep_count = 0
+            collection_point_ref = 0
+            collection_point_gen = 0
+            collection_point_count = 0
             for r in completed_sorted:
                 d = r.true_err_total_delta
                 if d is not None and math.isfinite(d):
@@ -1399,6 +1501,14 @@ def main() -> int:
                     ])
                 if r.true_iter_mean_delta is not None and math.isfinite(r.true_iter_mean_delta):
                     sum_true_mean_delta += float(r.true_iter_mean_delta)
+                if r.ref_sweeps is not None and r.gen_sweeps is not None:
+                    collection_sweep_ref += r.ref_sweeps
+                    collection_sweep_gen += r.gen_sweeps
+                    collection_sweep_count += 1
+                if r.ref_points is not None and r.gen_points is not None:
+                    collection_point_ref += r.ref_points
+                    collection_point_gen += r.gen_points
+                    collection_point_count += 1
 
             print("\nRUN_TRACKER: true_err_total delta(gen-ref) and true_iter mean delta by dataset")
             for line in format_table(
@@ -1419,6 +1529,23 @@ def main() -> int:
                 )
             else:
                 print("RUN_TRACKER: sum_true_err_total_delta(gen-ref)=N/A (parse missing)")
+
+            if collection_sweep_count:
+                print(
+                    f"COLLECTION_TOTAL: sweeps ref={collection_sweep_ref} gen={collection_sweep_gen} "
+                    f"{_saved_or_extra(collection_sweep_ref, collection_sweep_gen)} "
+                    f"({collection_sweep_count} datasets)"
+                )
+            else:
+                print("COLLECTION_TOTAL: sweeps ref/gen=N/A (parse missing)")
+            if collection_point_count:
+                print(
+                    f"COLLECTION_TOTAL: points ref={collection_point_ref} gen={collection_point_gen} "
+                    f"{_saved_or_extra(collection_point_ref, collection_point_gen)} "
+                    f"({collection_point_count} datasets)"
+                )
+            else:
+                print("COLLECTION_TOTAL: points ref/gen=N/A (parse missing)")
 
     if overall_ok:
         print("\nALL DATASETS: PASS")
