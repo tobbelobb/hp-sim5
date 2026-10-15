@@ -26,6 +26,7 @@ Here are some ideas you could use as starting points:
    * Can we determine max/min ranges for the line lengths (L2 distances from the origin/center) of the various anchors?
    * Can we determine max/min ranges for the various xyz coordinates of each anchor?
    * Can we reason about or search for probably xyz positions of each datapoint?
+   * The global anchor length scale is a near-flat direction of the autocal objective. Can we design a sequence of measurements that would give us information about true anchor gauge? As in, can we tease out a scaling factor to improve our current anchor guess?
    * ... and so on
   A nice thing with this idea of gradually answering progressively harder questions is that experiments can be progressively more detailed and confident without causing the machine to do self-harm. The approach can also gradually be introduced into the current autocal, morphing it from "one big thing" to eventually a more and more fine grained sequence of smaller targetted experiments.
 
