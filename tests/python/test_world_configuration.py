@@ -206,7 +206,7 @@ async def test_reset_reloads_scene_and_js_sources_with_fixed_settings(tmp_path, 
     (root / 'scripts').mkdir()
     for source in (ROOT / 'scripts').iterdir():
         target = root / 'scripts' / source.name
-        if source.name == 'research_physics.mjs':
+        if source.name in ('research_physics.mjs', 'train_native_physics.mjs'):
             shutil.copyfile(source, target)
         else:
             target.symlink_to(source, target_is_directory=source.is_dir())
@@ -229,6 +229,9 @@ async def test_reset_reloads_scene_and_js_sources_with_fixed_settings(tmp_path, 
         worker.write_text("console.error('source-reload-marker');\n" + worker.read_text())
         stale = runtime.status()['source_changed']
         assert stale['scene_requires_session_reset'] and stale['bridge_requires_session_reset']
+        trainer = root / 'scripts/train_native_physics.mjs'
+        trainer.write_text('// changed training recipe\n' + trainer.read_text())
+        assert runtime.status()['source_changed']['rust_physics_requires_session_reset']
         native.write_bytes(native.read_bytes() + b'\x00')  # ELF/Mach-O trailing data changes artifact identity.
         assert runtime.status()['source_changed']['rust_physics_requires_session_reset']
         await runtime.dispatch('reset', {})

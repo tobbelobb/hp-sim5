@@ -45,6 +45,7 @@ def test_saved_native_rrd_contains_initial_and_every_step_with_real_telemetry(tm
         # disappear, while actual/geometric lengths and forces remain observable.
         world.get_system(RemoteSpoolSystem).commands = [{'type': 'SetTorqueMode', 'axis': 'A', 'torqueNm': .003}]
         world.update(.002)
+        world.get_system(RerunSystem).flush()
         stream.flush(timeout_sec=5)
     finally:
         stream.disconnect()
@@ -105,6 +106,7 @@ def test_clock_resets_and_static_shapes_clear_when_style_or_scene_changes(monkey
     world.remove_component(entity, OrientationComponent)
     system.update(world, 0)
     assert set(stream.static) == {'world'}
+    system.flush()
     transforms = [value for _, value, _ in stream.logs if value[0] == 'transform']
     assert transforms[-1][1]['rotation'][1]['xyzw'] == [0, 0, 0, 1]
     world.set_resource('pauseState', SimpleNamespace(paused=True))
@@ -191,6 +193,7 @@ def test_native_rrd_keeps_joint_series_identity_through_split_merge(tmp_path):
         split_joints(world)
         created_id = path.joint_entities[1]
         recording.update(world, .002)
+        recording.flush()
         stream.flush(timeout_sec=5)
     finally:
         stream.disconnect()
@@ -238,6 +241,7 @@ def test_saved_native_rrd_tracks_live_scene_loading_while_paused(tmp_path, appen
         world.update(.002)
         final = capture_machine_snapshot(world)
         extruder_id = world.query([ExtruderComponent])[0]
+        clock.flush()
         stream.flush(timeout_sec=5)
     finally:
         stream.disconnect()

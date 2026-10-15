@@ -1,8 +1,8 @@
 # Native Rust engine
 
-[Measured performance against the preceding defaults](native-performance.md):
-14–23% higher physics throughput; end-to-end gains depend on recording and
-transport. Fresh numerical trials improve more over their former Python default.
+[Measured performance against Wasm](native-performance.md) covers physics,
+recording and real firmware collections. Columnar logging removes much of the
+recording overhead; profile-guided compilation further improves native physics.
 
 Local headless worlds, continuing collection, full-autocal, fresh research
 trials and the Python recording CLI now default to the native build of the
@@ -10,8 +10,14 @@ same Rust `PhysicsWorld` that runs in the browser as Wasm. No physics equations
 were duplicated. JavaScript still prepares scenes, dispatches commands, exposes
 observations and owns browser rendering, interactive edits and connections.
 
-Build with `npm run build:native`. The Linux/macOS recipe needs Rust, a C compiler
-and Node development headers (`NODE_INCLUDE_DIR` overrides their location).
+Build with `npm run build:native`. The Linux/macOS recipe needs Rust, a C compiler,
+Node development headers (`NODE_INCLUDE_DIR` overrides their location) and
+`rustup component add llvm-tools-preview` for the default PGO build.
+Optimized builds train for 40,000 fixed HP3/HP4 updates with layering on/off,
+position/torque motors and closed-loop transitions, then compile with that profile.
+They target the local CPU unless `RUSTFLAGS` specifies `target-cpu`.
+`npm run build:native -- --no-pgo` retains the portable untrained build; `--profile dev`
+also defaults to untrained. Training runs only during an explicit build.
 The generated Node-API addon statically links the dependency-free Rust crate.
 Generated binaries remain under the ignored Cargo target directory. A missing
 or stale default build fails with an explicit rebuild instruction.
@@ -38,7 +44,9 @@ the Rust path. Explicit Python and Warp backends remain available.
 The profiler exposes `--solver native|wasm|js` and `--native-addon PATH`. A
 separate `--profile profiling` build contains optimized code and debug symbols
 for native profilers. It records the exact artifact, profile and source hashes;
-it never rebuilds or silently substitutes engines. See the
+it never rebuilds or silently substitutes engines. Build metadata includes the
+PGO profile hash, training settings and trainer hash. Add `--no-pgo` to the build
+command to profile an untrained artifact. See the
 [profiling recipe](../tests/benchmark/HEADLESS_JS_PROFILING.md) and
 [crate setup and record schema](../src/wasm/cable_solver/README.md).
 

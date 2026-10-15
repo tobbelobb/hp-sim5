@@ -17,6 +17,19 @@ class Recording:
     def set_time(self, timeline, **values):
         self.times.append((timeline, values))
 
+    def send_columns(self, path, *, indexes, columns, **kwargs):
+        name, fields, lengths = columns
+        start = 0
+        for length in lengths:
+            row = {key: value[start:start + length] for key, value in fields.items()}
+            if name == 'transform':
+                value = (name, {'translation': row['translation'][0],
+                                'rotation': ('quaternion', {'xyzw': row['quaternion'][0]})})
+            else:
+                value = (name, row)
+            self.log(path, value)
+            start += length
+
     def log(self, path, value, **kwargs):
         self.logs.append((path, value, kwargs))
         if kwargs.get("static"):
@@ -28,17 +41,29 @@ class Recording:
                 self.static[path] = value
 
 
+class Columns:
+    def __init__(self, name, fields):
+        self.name, self.fields = name, fields
+
+    def partition(self, lengths):
+        return self.name, self.fields, lengths
+
+
 def _fake_rerun():
+    def archetype(name, constructor):
+        constructor.columns = lambda **fields: Columns(name, fields)
+        return constructor
+
     return SimpleNamespace(
-        Transform3D=lambda **kwargs: ("transform", kwargs),
+        Transform3D=archetype("transform", lambda **kwargs: ("transform", kwargs)),
         TransformAxes3D=lambda value: ("axes", value),
         Quaternion=lambda **kwargs: ("quaternion", kwargs),
-        Points3D=lambda *args, **kwargs: ("points", args, kwargs),
+        Points3D=archetype("points", lambda *args, **kwargs: ("points", args, kwargs)),
         Clear=lambda **kwargs: ("clear", kwargs),
-        LineStrips3D=lambda *args, **kwargs: ("lines", args, kwargs),
-        Arrows3D=lambda **kwargs: ("arrows", kwargs),
+        LineStrips3D=archetype("lines", lambda *args, **kwargs: ("lines", args, kwargs)),
+        Arrows3D=archetype("arrows", lambda **kwargs: ("arrows", kwargs)),
         SeriesLines=lambda **kwargs: ("series", kwargs),
-        Scalars=lambda values: ("scalars", values),
+        Scalars=archetype("scalars", lambda values: ("scalars", values)),
         Radius=SimpleNamespace(ui_points=lambda value: value),
         ViewCoordinates=SimpleNamespace(RIGHT_HAND_Z_UP=("coordinates", "z_up")),
     )
@@ -112,6 +137,7 @@ def test_rerun_paths_include_machine_and_entity_identity(monkeypatch):
 
     system.update(world, .1)
 
+    system.flush()
     transform_paths = [path for path, value, _ in recording.logs
                        if value[0] == "transform"]
     assert transform_paths == [

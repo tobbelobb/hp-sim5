@@ -64,6 +64,7 @@ class NativeSession:
         self.recording_id = uuid.uuid4().hex
         self.events = (self.directory / 'events.jsonl').open('w')
         self.recording = None
+        self.recorder = None
         try:
             if backend == 'headless-js':
                 from .js_physics import JSPhysics
@@ -81,6 +82,7 @@ class NativeSession:
 
     def start_recording(self, path):
         if self.recording is not None:
+            self.recorder.flush()
             self.recording.flush(timeout_sec=5)
             self.recording.disconnect()  # finalize this file's footer before returning it
         self.recording_path = Path(path)
@@ -101,6 +103,8 @@ class NativeSession:
         self.recorder = RerunSystem(self.recording)
         self.last_observed = None
         self.observe()
+        if self.live_viewer:
+            self.recorder.flush()
 
     def event(self, kind, **values):
         self.events.write(encode({'type': kind, 'epoch': self.epoch, 'step': self.step,
@@ -113,14 +117,16 @@ class NativeSession:
             return
         started = time.monotonic()
         self.last_observed = (self.epoch, self.step)
+        snapshot = None
         if self.recorder is not None:
             self.recorder.step = self.step
             self.recorder.elapsed = self.step * self.dt
-            self.recorder.update(self.world, 0.)
-        self.event('observation', sample=sample(self.world, self.step, self.dt),
+            snapshot = self.recorder.update(self.world, 0.)
+        self.event('observation', sample=sample(self.world, self.step, self.dt, snapshot=snapshot),
                    recording=str(self.recording_path) if self.recording is not None else None)
         if self.recording is not None and self.live_viewer and time.monotonic() >= self.next_live_flush:
             # Explicit delivery also updates the Viewer during long collector advances.
+            self.recorder.flush()
             self.recording.flush(timeout_sec=5)
             self.next_live_flush = time.monotonic() + 5
         self.observation_wall_s += time.monotonic() - started
@@ -192,6 +198,8 @@ class NativeSession:
             await asyncio.sleep(0)
         if self.cancel_requested:
             raise RuntimeError(self.error or 'Collection cancelled; reset_session is required')
+        if self.recording is not None and self.live_viewer:
+            self.recorder.flush()
         return self.status()
 
     def queue_length(self):
@@ -220,6 +228,8 @@ class NativeSession:
                     self.observe()  # JSON encoding also rejects non-finite physical state
                 if index % 10 == 0:
                     await asyncio.sleep(0)
+            if self.recording is not None and self.live_viewer:
+                self.recorder.flush()
             return self.status()
 
     def status(self):
@@ -248,6 +258,8 @@ class NativeSession:
                 await self.advance(drain=True)
             angles = self.encoder_angles(payload['axes'])
             self.observe()
+            if self.recording is not None and self.live_viewer:
+                self.recorder.flush()
             self.event('encoder_response', request_id=payload['requestId'], axes=payload['axes'], angles_deg=angles)
             return {'type': 'encoder_response', 'requestId': payload['requestId'],
                     'axes': payload['axes'], 'anglesDeg': angles}
@@ -302,6 +314,8 @@ class NativeSession:
         if self.js_physics:
             self.js_physics.close()
         if self.recording is not None:
+            if self.recorder is not None:
+                self.recorder.flush()
             self.recording.flush(timeout_sec=5)
             self.recording.disconnect()
         self.events.close()

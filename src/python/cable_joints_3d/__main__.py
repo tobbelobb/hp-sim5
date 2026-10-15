@@ -96,6 +96,8 @@ def main():
         if args.snapshot is not None:
             args.snapshot.parent.mkdir(parents=True, exist_ok=True)
             args.snapshot.write_text(json.dumps(capture_machine_snapshot(world), allow_nan=False, indent=2) + '\n')
+        from .rerun_system import RerunSystem
+        world.get_system(RerunSystem).flush()
         recording.flush(timeout_sec=5)
         print(f'Recorded {args.steps} steps ({args.steps * dt:g} s): {output}')
     except (OSError, ValueError, RuntimeError) as error:
@@ -106,6 +108,10 @@ def main():
         if prepared is not None:
             prepared.cleanup()
         if recording is not None:
+            from .rerun_system import RerunSystem
+            recorder = world.get_system(RerunSystem)
+            if recorder is not None:
+                recorder.flush()
             recording.disconnect()
 
 

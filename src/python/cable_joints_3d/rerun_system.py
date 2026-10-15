@@ -4,6 +4,7 @@ import math
 
 import numpy as np
 
+from .columnar_recording import ColumnarRecording
 from .ecs import AngularVelocityComponent, EncoderComponent, OrientationComponent, PositionComponent, RadiusComponent, RenderableComponent, VelocityComponent
 from .extruder import ExtruderComponent
 from .machine_snapshot import capture_machine_snapshot, entity_name, frame_path, machine_id, path_part
@@ -34,7 +35,14 @@ class RerunSystem:
     _coordinates_logged: bool = field(default=False, init=False)
     run_in_pause = True
 
+    def __post_init__(self):
+        self._columns = ColumnarRecording(self.recording)
+
+    def flush(self):
+        self._columns.flush()
+
     def _clear_path(self, rr, path):
+        self.flush()
         # Temporal clears cannot shadow static archetypes in latest-at queries.
         self.recording.log(path, rr.Clear(recursive=True), static=True)
         self.recording.log(path, rr.Clear(recursive=True))
@@ -75,11 +83,17 @@ class RerunSystem:
         self.recording.set_time('scene_generation', sequence=generation)
         self.recording.set_time('sim_step', sequence=self.step)
         self.recording.set_time(self.timeline, duration=self.elapsed)
+        self._columns.begin(scene_generation=('sequence', generation), sim_step=('sequence', self.step),
+                            **{self.timeline: ('duration', self.elapsed)})
         active = set()
 
         def log(path, value, **options):
             active.add(path)
             self.recording.log(path, value, **options)
+
+        def columns(path, archetype, **fields):
+            active.add(path)
+            self._columns.append(path, archetype, **fields)
 
         def series(path, names, values):
             # Each quantity has a stable path. Omitting a torque-mode target or
@@ -89,14 +103,14 @@ class RerunSystem:
                 if metric not in self._series_names:
                     log(metric, rr.SeriesLines(names=[f'{path}: {name}']))
                     self._series_names[metric] = name
-                log(metric, rr.Scalars([value]))
+                columns(metric, rr.Scalars, scalars=[value])
 
         for frame in snapshot['frames']:
             path = frame['path'].replace('world', self.root, 1)
             entity = entity_paths.get(path)
             if entity is not None:
                 self._entity_tokens[path] = world.get_component(entity, PositionComponent)
-            log(path, rr.Transform3D(translation=frame['position'], rotation=rr.Quaternion(xyzw=frame['quaternion'])))
+            columns(path, rr.Transform3D, translation=[frame['position']], quaternion=[frame['quaternion']])
             if entity is None or world.has_component(entity, OrientationComponent):
                 active.add(path + '/axes')
                 if path not in self._axes_paths:
@@ -129,11 +143,11 @@ class RerunSystem:
             visual = f"{self.root}/machines/{cable['machine']}/cables/{cable['name']}"
             segments = cable['segments']
             if segments:
-                log(visual + '/segments', rr.LineStrips3D([segment['points'] for segment in segments],
-                    colors=_rgb(cable['color']), radii=rr.Radius.ui_points(1.5)))
-                log(visual + '/forces', rr.Arrows3D(origins=[segment['origin'] for segment in segments],
-                    vectors=np.array([segment['force_vector_n'] for segment in segments]) * self.force_scale,
-                    colors=[255, 90, 90], radii=.002))
+                columns(visual + '/segments', rr.LineStrips3D, strips=[segment['points'] for segment in segments],
+                        colors=[_rgb(cable['color'])] * len(segments), radii=[-1.5] * len(segments))
+                columns(visual + '/forces', rr.Arrows3D, origins=[segment['origin'] for segment in segments],
+                        vectors=(np.array([segment['force_vector_n'] for segment in segments]) * self.force_scale).tolist(),
+                        colors=[[255, 90, 90]] * len(segments), radii=[.002] * len(segments))
                 series('cable_forces/' + key, [segment['name'] for segment in segments],
                        [segment['force_n'] for segment in segments])
             lengths = cable['lengths']
@@ -163,16 +177,16 @@ class RerunSystem:
             machines = dict.fromkeys(machine for _, positions in maps for machine in positions)
             for machine in machines:
                 points = [(name, positions[machine]) for name, positions in maps if positions.get(machine) is not None]
-                log(f'{self.root}/machines/{path_part(machine)}/tool_points/{entity}',
-                    rr.Points3D([point for _, point in points], labels=[name for name, _ in points],
-                                colors=[255, 180, 40], radii=.003))
+                columns(f'{self.root}/machines/{path_part(machine)}/tool_points/{entity}', rr.Points3D,
+                        positions=[point.tolist() for _, point in points], labels=[name for name, _ in points],
+                        colors=[[255, 180, 40]] * len(points), radii=[.003] * len(points))
             deposits = extruder.extrusions
             machines = dict.fromkeys(record.get('machineId') or 'default' for record in deposits)
             for machine in machines:
                 records = [record for record in deposits if (record.get('machineId') or 'default') == machine]
                 path = f'{self.root}/machines/{path_part(machine)}/extrusions/{entity}'
-                log(path, rr.Points3D([record['pos'] for record in records],
-                    colors=[_rgb(record.get('color') or '#800080') for record in records], radii=.001))
+                columns(path, rr.Points3D, positions=[np.asarray(record['pos']).tolist() for record in records],
+                        colors=[_rgb(record.get('color') or '#800080') for record in records], radii=[.001] * len(records))
                 series(f'extrusion_lengths/{path_part(machine)}/{entity}', ['deposited_length'],
                        [sum(record['length'] for record in records)])
 
@@ -186,3 +200,5 @@ class RerunSystem:
                 self._axes_paths.discard(path[:-5])
             self._entity_tokens.pop(path, None)
         self._active_paths = active
+        self._columns.end()
+        return snapshot

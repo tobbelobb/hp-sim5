@@ -74,8 +74,9 @@ def validate_commands(commands, axes, steps):
             raise ValueError('Motor angle commands require type Move or Add to reference')
 
 
-def sample(world, step, dt):
-    snapshot = capture_machine_snapshot(world)
+def sample(world, step, dt, *, snapshot=None):
+    if snapshot is None:
+        snapshot = capture_machine_snapshot(world)
     motors = []
     for entity in world.query([StepperMotorComponent, SpoolStateComponent]):
         motor = world.get_component(entity, StepperMotorComponent)
@@ -199,6 +200,7 @@ def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=No
         with warnings.catch_warnings(record=True) as caught, (directory / 'telemetry.jsonl').open('w') as output:
             warnings.simplefilter('always')
             for step in range(steps + 1):
+                snapshot = None
                 if step:
                     if physics is None:
                         world.update(dt)
@@ -207,11 +209,14 @@ def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=No
                         if record:
                             # Record the mirror without advancing its independent physics.
                             from cable_joints_3d.rerun_system import RerunSystem
-                            world.get_system(RerunSystem).update(world, dt)
-                row = sample(world, step, dt)
+                            snapshot = world.get_system(RerunSystem).update(world, dt)
+                row = sample(world, step, dt, snapshot=snapshot)
                 output.write(encode(row) + '\n')  # rejects non-finite state
                 samples.append(row)
             manifest['warnings'] = sorted({str(item.message) for item in caught})
+        if recording is not None:
+            from cable_joints_3d.rerun_system import RerunSystem
+            world.get_system(RerunSystem).flush()
         manifest.update(status='complete', metrics=metrics(samples), simulation_wall_s=time.perf_counter() - started)
         write_json(directory / 'final.json', capture_machine_snapshot(world))
         if recording is not None:
@@ -223,6 +228,10 @@ def run_experiment(root, scene=DEFAULT_SCENE, *, steps=200, dt=None, commands=No
         if physics is not None:
             physics.close()
         if recording is not None:
+            from cable_joints_3d.rerun_system import RerunSystem
+            recorder = world.get_system(RerunSystem)
+            if recorder is not None:
+                recorder.flush()
             recording.disconnect()
         write_json(directory / 'manifest.json', manifest)
     return manifest

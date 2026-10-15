@@ -3,6 +3,7 @@
 
 import argparse
 import asyncio
+from contextlib import suppress
 from datetime import datetime, timezone
 import json
 from pathlib import Path
@@ -18,6 +19,9 @@ import rerun as rr
 import rerun.blueprint as rrb
 from websockets.asyncio.server import serve
 from websockets.exceptions import ConnectionClosed
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src/python'))
+from cable_joints_3d.columnar_recording import ColumnarRecording
 
 
 def blueprint(extended=False):
@@ -88,6 +92,7 @@ class FlightRecording:
                          "scene_generation": sample["generation"], "recording_id": uuid.uuid4().hex,
                          "rrd": str(self.path.resolve()), "status": "recording", "start_step": sample["step"]}
         self.stream = rr.RecordingStream("hp-sim5 Hangprinter flight recorder", recording_id=self.manifest["recording_id"])
+        self.columns = ColumnarRecording(self.stream)
         self.write_manifest()
         sinks = [rr.FileSink(self.path)]
         if viewer_sink is not None:
@@ -186,6 +191,7 @@ class FlightRecording:
         if source not in ("browser", "headless"):
             raise ValueError("Unknown physics source")
         if self.extended and self.key != (sample["session"], sample["generation"]):
+            self.columns.flush()
             self.key = (sample["session"], sample["generation"])
             self.last_step = self.last_time = None
             for path in self.paths:
@@ -205,10 +211,14 @@ class FlightRecording:
         if self.last_time is not None and not np.isclose(time - self.last_time, sample["dt"] * stride, rtol=1e-8, atol=1e-10):
             raise ValueError("Simulation clock did not advance by dt")
         self.stream.reset_time()
-        self.stream.set_time("wall_time", timestamp=np.datetime64(int(sample.get("wall_time_ms", wall_clock.time_ns() // 1_000_000)), "ms"))
+        wall_time = np.datetime64(int(sample.get("wall_time_ms", wall_clock.time_ns() // 1_000_000)), "ms")
+        self.stream.set_time("wall_time", timestamp=wall_time)
         self.stream.set_time("scene_generation", sequence=sample["generation"])
         self.stream.set_time("sim_step", sequence=step)
         self.stream.set_time("sim_time", duration=time)
+        self.columns.begin(wall_time=('timestamp', wall_time),
+                           scene_generation=('sequence', sample["generation"]), sim_step=('sequence', step),
+                           sim_time=('duration', time))
         context = (sample["session"], sample.get("speed_scale", 1),
                    f"{source}.Date.now" if "wall_time_ms" in sample else "recorder.receive",
                    stride, sample.get("geometry_detail", "full"))
@@ -218,24 +228,31 @@ class FlightRecording:
                                           speed_scale=context[1], wall_time_source=context[2],
                                           sample_stride=context[3], geometry_detail=context[4])]
             self.clock_context = context
-        self.stream.log(f"clocks/{source}/flight_recorder", rr.Scalars(time), *context_values)
+        if context_values:
+            self.stream.log(f"clocks/{source}/flight_recorder", *context_values)
+        self.columns.append(f"clocks/{source}/flight_recorder", rr.Scalars, scalars=[time])
         research_clock = sample.get("research_clock")
         if research_clock is not None:
-            self.stream.log(f"clocks/{source}/research_clock", rr.Scalars(research_clock["time"]),
-                            *([rr.AnyValues(sim_time_source=f"{source}.researchClock",
-                                            observation_phase="world.update before runner advances researchClock")]
-                              if self.last_step is None else []))
+            self.columns.append(f"clocks/{source}/research_clock", rr.Scalars, scalars=[research_clock["time"]])
+            if self.last_step is None:
+                self.stream.log(f"clocks/{source}/research_clock", rr.AnyValues(
+                    sim_time_source=f"{source}.researchClock",
+                    observation_phase="world.update before runner advances researchClock"))
         current_paths = set()
 
         def log(path, *archetypes):
             current_paths.add(path)
             self.stream.log(path, *archetypes, strict=True)
 
+        def columns(path, archetype, **fields):
+            current_paths.add(path)
+            self.columns.append(path, archetype, **fields)
+
         def series(path, names, values, colors=None):
             if self.styles.get(path) != names:
                 log(path, rr.SeriesLines(names=names, colors=colors))
                 self.styles[path] = names
-            log(path, rr.Scalars(values))
+            columns(path, rr.Scalars, scalars=values)
 
         for frame in sample["frames"]:
             path = frame["path"]
@@ -250,7 +267,7 @@ class FlightRecording:
             pose = (tuple(frame["position"]), tuple(frame["quaternion"]))
             current_paths.add(path)
             if self.poses.get(path) != pose:
-                log(path, rr.Transform3D(translation=frame["position"], rotation=rr.Quaternion(xyzw=frame["quaternion"])))
+                columns(path, rr.Transform3D, translation=[frame["position"]], quaternion=[frame["quaternion"]])
                 self.poses[path] = pose
 
         for cable in sample["cables"]:
@@ -259,20 +276,16 @@ class FlightRecording:
             segments = cable["segments"]
             color = rgb(cable["color"])
             if segments:
-                log(
-                    f"{visual}/segments",
-                    rr.LineStrips3D([segment["points"] for segment in segments], colors=color, radii=rr.Radius.ui_points(1.5)),
-                )
-                log(
-                    f"{visual}/forces",
-                    rr.Arrows3D(
+                columns(f"{visual}/segments", rr.LineStrips3D,
+                        strips=[segment["points"] for segment in segments],
+                        colors=[color] * len(segments), radii=[-1.5] * len(segments))
+                columns(f"{visual}/forces", rr.Arrows3D,
                         origins=[segment["origin"] for segment in segments],
-                        vectors=np.asarray([segment["force_vector_n"] for segment in segments]) * self.force_scale,
-                        colors=[255, 90, 90], radii=0.002,
-                    ),
-                )
+                        vectors=(np.asarray([segment["force_vector_n"] for segment in segments]) * self.force_scale).tolist(),
+                        colors=[[255, 90, 90]] * len(segments), radii=[.002] * len(segments))
             if cable["wraps"]:
-                log(f"{visual}/wraps", rr.LineStrips3D(cable["wraps"], colors=color, radii=rr.Radius.ui_points(1.5)))
+                columns(f"{visual}/wraps", rr.LineStrips3D, strips=cable["wraps"],
+                        colors=[color] * len(cable["wraps"]), radii=[-1.5] * len(cable["wraps"]))
 
             lengths = cable["lengths"]
             length_names = [name for name in ("commanded", "actual", "geometric") if lengths[name] is not None]
@@ -290,11 +303,14 @@ class FlightRecording:
                 )
 
         # Merging/splitting segments and removing machines must remove old geometry at this time.
+        if self.paths - current_paths:
+            self.columns.flush()
         for path in self.paths - current_paths:
             self.stream.log(path, rr.Clear(recursive=True))
             self.styles.pop(path, None)
             self.poses.pop(path, None)
         self.paths = current_paths
+        self.columns.end()
         self.last_step, self.last_time = step, time
         self.physics_samples += 1
         self.manifest.update(backend=f"{source}-js", sample_stride=stride, geometry_detail=sample.get("geometry_detail", "full"))
@@ -307,6 +323,7 @@ class FlightRecording:
             self.manifest.update({f"{source}_session": sample["session"], "scene_generation": sample["generation"]})
 
     def close(self):
+        self.columns.flush()
         self.manifest.update(status="finalized", end_step=self.last_step, end_time_s=self.last_time,
                              physics_samples=self.physics_samples, event_count=self.event_count)
         self.stream.log("provenance/manifest", rr.TextDocument(json.dumps(self.manifest, indent=2)), static=True)
@@ -353,6 +370,7 @@ async def run(args):
             return await asyncio.to_thread(function, *values)
 
     active_physics = None
+    live_recordings = {extended_recording} if extended_recording is not None else set()
 
     async def receive(socket):
         nonlocal active_physics
@@ -395,8 +413,10 @@ async def run(args):
                 key = (sample["session"], sample["generation"])
                 if recording is None or recording.key != key:
                     if recording is not None:
+                        live_recordings.discard(recording)
                         await write(recording.close)
                     recording = FlightRecording(output_dir, viewer_sink, sample, args.force_scale)
+                    live_recordings.add(recording)
                 if not configured:
                     await socket.send(json.dumps({"type": "recording_config", "sample_stride": args.sample_stride,
                                                   "geometry_detail": args.geometry_detail}))
@@ -417,9 +437,18 @@ async def run(args):
             if active_physics is socket:
                 active_physics = None
             if recording is not None:
+                live_recordings.discard(recording)
                 await write(recording.close)
 
     stop = asyncio.Event()
+    async def flush_live():
+        while True:
+            await asyncio.sleep(1.)
+            for recording in tuple(live_recordings):
+                await write(recording.columns.flush)
+
+    # A stopped/paused source must still deliver its last partial batch.
+    live_flush = asyncio.create_task(flush_live()) if viewer_sink is not None else None
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, stop.set)
@@ -432,6 +461,10 @@ async def run(args):
             print("Connect the simulator recorder, then start collection or playback. Ctrl-C stops recording.", flush=True)
             await stop.wait()
     finally:
+        if live_flush is not None:
+            live_flush.cancel()
+            with suppress(asyncio.CancelledError):
+                await live_flush
         if extended_recording is not None:
             extended_recording.close()
         if viewer_server is not None:

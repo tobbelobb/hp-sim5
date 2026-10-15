@@ -1,45 +1,51 @@
-# Native Rust headless performance, 2026-10-14
+# Native versus Wasm performance, 2026-10-15
 
-Native Rust commit ab833759 was benchmarked against the exact preceding Rust/Wasm headless default at 7905e64f, and against the former Python default for fresh research trials. Three sequential repetitions covered HP3/HP4, layering on/off, frozen logo and autocal schedules, continuing worlds, every-step fresh telemetry, real six-point firmware collections, and the standalone autocal service with and without recording. Native shared-pipeline throughput improved 1.145–1.235×, with an aggregate ratio of 1.181×. Recording reduced end-to-end gains; short real firmware collections showed only 1.02–1.03× without recording and approximately 0.99× with recording. Fresh numerical trials improved 3.11–7.17× over Python; recorded trials improved 1.46–2.12×. Repeats were deterministic, but five long physics comparisons exceeded the declared pointwise tolerance. These host measurements do not establish calibration accuracy or complete autocal optimization speedup.
+The default native build now uses profile-guided compilation, and both Rerun
+recorders batch raw telemetry with `send_columns()`. Matched HP3/HP4 runs use the
+fuller **Wasm runtime** as the baseline. Three sequential repetitions preserve
+commands, fixed timesteps, observation cadence and recorded values.
 
-The comparison uses exact commits `7905e64f` (previous defaults) and `ab833759`
-(native), the same host/dependencies, unchanged 2 ms steps and three sequential
-repeats per case. The full report records timings, settings, source/artifact
-hashes, preflighted collections, numerical differences and limits.
+With Rerun enabled, the final native pipeline measures:
 
-| Workflow | HP3 throughput ratio | HP4 throughput ratio |
+| Workflow | HP3 speedup | HP4 speedup |
 | --- | ---: | ---: |
-| Physics-only logo, layering on / off | 1.21× / 1.20× | 1.15× / 1.16× |
-| Physics-only autocal replay, layering on / off | 1.23× / 1.19× | 1.15× / 1.14× |
-| Continuing 1,000 steps, recording off / on | 1.27× / 1.12× | 1.16× / 1.07× |
-| Standalone autocal service, recording off / on | 1.18× / 1.06× | 1.20× / 1.02× |
-| Fresh 200-step trial, recording off / on | 3.11× / 1.46× | 7.17× / 2.12× |
-| Actual six-point RRF collection, recording off / on | 1.02× / 0.99× | 1.03× / 0.99× |
+| Continuing world, 10,000 steps | 2.34× | 2.33× |
+| Fresh trial, 200 steps | 3.01× | 2.85× |
+| Standalone autocal service, 10,000 steps | 3.83× | 2.74× |
+| Real six-point RRF collection | 1.73× | 1.93× |
 
-Fresh trials compare against their former **Python** default. Other rows compare
-against the fuller **Wasm** engine. The matched 40-second HP4 frozen collection
-replay is 1.09× faster without Rerun and 1.05× with it; its full numerical trace
-is 1.08× faster. All timers and repeat ranges are in the report.
+Timers include recording finalization. Fresh trials include startup; the other
+rows exclude service construction. Real collections use the actual RRF planner,
+bridge and six-point collector. HP4 collection falls from **19.27 to 10.00 s**;
+HP3 falls from **7.96 to 4.59 s**. These are simulated collection runs, not full
+optimizer/fitting or calibration-accuracy results.
 
-Native saves 13–19% of physics time on the eight primary workloads. That does
-not imply the same whole-job saving: recorded HP4 six-point collection physics
-fell from 3.38 to 2.94 seconds, but whole-job medians were 17.97 versus 18.12
-seconds. Recording and collector/firmware work dominate that case. Three repeats
-and desktop activity do not support treating roughly 1% differences as a useful
-gain or a proven regression. Complete fitting/automatic-acceptance autocal runs
-were not timed.
+Most of the recorded saving comes from logging, which also speeds up Wasm.
+With the same optimized logger, Wasm standalone service medians are 0.881/2.017 s
+(HP3/HP4), versus native 0.837/1.819 s. Native execution adds a smaller gain to
+that shared improvement. No-record real collections improve 1.05×/1.14×.
 
-Five long physics cases exceed the declared `atol=rtol=1e-6` tolerance; HP3
-native/Wasm encoder differences reach about 3.1°. Current Wasm matches all exact
-baseline checkpoint hashes, and every backend’s repeated trajectories are
-stable. The short controlled/fresh comparisons pass; all 24 real collections
-complete with identical selected measurements and step counts. No calibration
-accuracy or bitwise cross-target trajectory claim follows.
+Physics-only throughput improves **1.25–1.31×** across eight 30,000-step
+logo/autocal prefixes with layering on/off. Full autocal replays improve
+**1.39× HP3** (12.81 → 9.24 s, 488,271 steps) and **1.27× HP4**
+(9.23 → 7.26 s, 80,415 steps). PGO adds 7–18% throughput over the previous native
+build on these workloads. Rust physics equations and step counts are unchanged.
 
-- [Full report](../output/research/sessions/2026-10-14-native-throughput/report.md)
-- [Physics matrix](../output/research/sessions/2026-10-14-native-throughput/physics/matrix.json)
-- [Consumer matrix](../output/research/sessions/2026-10-14-native-throughput/consumer-matrix.json)
-- [Autocal service matrix](../output/research/sessions/2026-10-14-native-throughput/autocal-service-matrix.json)
-- [Source manifest](../output/research/sessions/2026-10-14-native-throughput/source-manifest.json)
-- [Numerical audit](../output/research/sessions/2026-10-14-native-throughput/consumer-numerics.json)
-- [Previous Wasm study](rust-wasm-engine.md)
+All final native checkpoint hashes match the prior native engine; 186,366
+audited RRD component rows retain the same clocks and values. All 42 real
+collections retain exact selected measurements and step counts. Existing long
+native/Wasm floating-point differences remain; these results do not claim
+bitwise equivalence between targets. Verification passes 113 Python and 121 Node
+checks, three untrained build modes and the production browser build.
+
+`npm run build:native` uses PGO for release/profiling builds and needs
+`rustup component add llvm-tools-preview`. `--no-pgo` selects an untrained build;
+explicit CPU flags are respected. The profiler still selects `--solver
+native|wasm|js` and an exact `--native-addon`; it never rebuilds or substitutes
+an engine. [Build and profiling controls](rust-native-engine.md).
+
+- [Full report](../output/research/sessions/2026-10-15-native-optimization/report.md)
+- [Paired timings and all repetitions](../output/research/sessions/2026-10-15-native-optimization/summary.json)
+- [Numerical and recording audits](../output/research/sessions/2026-10-15-native-optimization/final-recording-audit.json)
+- [Source/artifact manifest](../output/research/sessions/2026-10-15-native-optimization/source-manifest.json)
+- [Previous study](../output/research/sessions/2026-10-14-native-throughput/report.md)

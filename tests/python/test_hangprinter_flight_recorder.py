@@ -1,4 +1,5 @@
 from copy import deepcopy
+import asyncio
 import json
 import os
 import signal
@@ -13,6 +14,67 @@ from rerun.chunk import RrdReader
 
 from scripts.hangprinter_flight_recorder import FlightRecording
 from websockets.sync.client import connect
+
+
+@pytest.mark.asyncio
+async def test_live_viewer_receives_a_partial_batch_while_the_source_is_idle(tmp_path, monkeypatch):
+    import rerun as rr
+    from scripts.hangprinter_flight_recorder import run
+    from cable_joints_3d.columnar_recording import ColumnarRecording
+    from types import SimpleNamespace
+    from websockets.asyncio.client import connect as async_connect
+
+    def free_port():
+        with socket.socket() as probe:
+            probe.bind(('127.0.0.1', 0))
+            return probe.getsockname()[1]
+
+    grpc_port = free_port()
+    viewer = rr.RecordingStream('idle live flush test', send_properties=False)
+    viewer.set_sinks(rr.GrpcServerSink(bind_ip='127.0.0.1', port=grpc_port))
+    ws_port = free_port()
+    loop = asyncio.get_running_loop()
+    flushed = asyncio.Event()
+    original = ColumnarRecording.flush
+
+    def observe_flush(columns):
+        pending = bool(columns._groups)
+        original(columns)
+        if pending:
+            loop.call_soon_threadsafe(flushed.set)
+
+    monkeypatch.setattr(ColumnarRecording, 'flush', observe_flush)
+    callbacks = {}
+    monkeypatch.setattr(loop, 'add_signal_handler', lambda sig, callback: callbacks.update({sig: callback}))
+    args = SimpleNamespace(output=tmp_path, viewer_endpoint=f'http://127.0.0.1:{grpc_port}', no_viewer=True,
+                           extended_reference=False, force_scale=.01, port=ws_port,
+                           sample_stride=1, geometry_detail='full')
+    task = asyncio.create_task(run(args))
+    try:
+        for _ in range(100):
+            try:
+                connection = await async_connect(f'ws://127.0.0.1:{ws_port}')
+                break
+            except OSError:
+                await asyncio.sleep(.01)
+        else:
+            raise AssertionError('Recorder did not start')
+        async with connection:
+            await connection.send(json.dumps(sample()))
+            await connection.recv()  # sampling configuration
+            assert json.loads(await connection.recv())['type'] == 'ack'
+            # No second sample and no disconnect: the periodic owner must flush.
+            await asyncio.wait_for(flushed.wait(), timeout=3)
+    finally:
+        if signal.SIGTERM in callbacks:
+            callbacks[signal.SIGTERM]()
+        try:
+            await asyncio.wait_for(task, timeout=10)
+        finally:
+            viewer.disconnect()
+    saved = next(tmp_path.glob('*.rrd'))
+    recording = SimpleNamespace(path=saved)
+    assert rows(recording, '/line_lengths/test/A', 'Scalars:scalars') == [(0, [1, 1.1, 1.12])]
 
 
 def sample(step=0):

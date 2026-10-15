@@ -216,7 +216,7 @@ async function main() {
     'src/js/cable_joints_3d/rust_physics_engine.js', 'src/js/cable_joints_3d/native_physics_engine.js',
     'src/wasm/cable_solver/src/lib.rs', 'src/wasm/cable_solver/src/engine.rs', 'src/wasm/cable_solver/src/abi.rs',
     'src/wasm/cable_solver/Cargo.toml', 'scripts/build_cable_wasm.mjs']) sourceFiles.add(file);
-  for (const file of ['src/wasm/cable_solver/native/node_bridge.c', 'scripts/build_native_physics.mjs']) sourceFiles.add(file);
+  for (const file of ['src/wasm/cable_solver/native/node_bridge.c', 'scripts/build_native_physics.mjs', 'scripts/train_native_physics.mjs']) sourceFiles.add(file);
   const sourceHash = createHash('sha256');
   for (const file of [...sourceFiles].sort()) sourceHash.update(file).update('\0').update(fs.readFileSync(path.join(root, file)));
   const result = { contract, node: process.version, v8: process.versions.v8, platform: `${os.platform()} ${os.release()} ${os.arch()}`,

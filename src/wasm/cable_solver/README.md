@@ -36,9 +36,18 @@ compliance, layering or settling simplification is made.
 Build native execution once with `npm run build:native` (Rust, a C compiler and
 Node development headers are required; Linux/macOS build recipe). Set
 `NODE_INCLUDE_DIR` if `node_api.h` is outside the usual include directories.
+Release and profiling builds use PGO by default: install the matching LLVM tools
+with `rustup component add llvm-tools-preview`. The build trains four HP3/HP4
+worlds for 40,000 fixed updates, then recompiles using their profile. It targets
+the host CPU unless `RUSTFLAGS` already specifies `target-cpu`.
+Use `npm run build:native -- --no-pgo` for an untrained portable build, or set
+`RUSTFLAGS='-C target-cpu=x86-64'` for PGO with a portable x86-64 target.
+Dev builds default to untrained. Explicit `profile-generate`/`profile-use` flags
+require `--no-pgo`; instrumentation links Rust's profiling runtime into the addon.
 The generated `target/native/physics.node` uses Node-API 8 and statically links
 this crate. Its adjacent JSON records the artifact hash, source hashes, compiler
-and build profile. Generated host artifacts are ignored by Git. Missing or stale
+and build profile, plus the PGO profile/trainer hashes and training settings.
+Generated host artifacts are ignored by Git. Missing or stale
 default builds fail with a rebuild instruction; there is no automatic Wasm fallback.
 
 In Node, `createHeadlessWorld(sceneText)` loads that native addon synchronously,

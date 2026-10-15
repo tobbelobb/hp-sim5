@@ -133,6 +133,14 @@ substitutes another engine. Missing/stale native defaults require
 and is only valid with `--solver native`. Results identify the solver, engine,
 artifact SHA-256, build profile and build source hashes.
 
+Release and profiling builds default to PGO and host CPU tuning. Install the
+matching tools with `rustup component add llvm-tools-preview`. Training happens
+only in the build command: four worlds, 40,000 total fixed updates, no Rerun,
+firmware or browser. Metadata records the profile hash, trainer hash and scenes.
+Add `--no-pgo` to select an untrained build; `--profile dev` defaults to untrained.
+PGO respects an explicit `RUSTFLAGS` CPU target. For custom instrumentation or
+profile-use flags, pass `--no-pgo` and select the resulting artifact explicitly.
+
 Build a separate optimized native binary with debug symbols, then use a native
 profiler to see Rust frames:
 

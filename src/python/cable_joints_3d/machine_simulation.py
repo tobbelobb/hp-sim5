@@ -42,6 +42,7 @@ def register_machine_systems(world, recording=None, *, cable_solver_device=None)
         extruder.update(world, 0.)
     if recorder is not None:
         recorder.update(world, 0.)
+        recorder.flush()
 
 
 def load_machine_world(path, scene_prim_path=None, *, recording=None, cable_solver_device=None, **options):

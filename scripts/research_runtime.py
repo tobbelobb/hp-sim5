@@ -72,7 +72,8 @@ class Runtime:
     def hash_rust_physics(cls):
         digest = hashlib.sha256(cls.hash_sources([ROOT / 'src/wasm/cable_solver/src'], '*.rs').encode())
         for name in ('src/wasm/cable_solver/Cargo.toml', 'src/wasm/cable_solver/Cargo.lock',
-                     'src/wasm/cable_solver/native/node_bridge.c', 'scripts/build_native_physics.mjs'):
+                     'src/wasm/cable_solver/native/node_bridge.c', 'scripts/build_native_physics.mjs',
+                     'scripts/train_native_physics.mjs'):
             digest.update(name.encode() + b'\0' + (ROOT / name).read_bytes())
         artifact = Path(os.environ.get('HP_SIM5_NATIVE_ENGINE', ROOT / 'src/wasm/cable_solver/target/native/physics.node'))
         digest.update(str(artifact).encode() + b'\0' + (artifact.read_bytes() if artifact.exists() else b'missing'))
@@ -303,6 +304,7 @@ class Runtime:
             if manifest['status'] == 'complete':
                 self.session.start_recording(self.session_dir / f'live-{uuid.uuid4().hex}.rrd')
             elif self.session.recording is not None:
+                self.session.recorder.flush()
                 self.session.recording.flush(timeout_sec=5)
                 self.session.recording.disconnect()
                 self.session.recording = None
@@ -526,6 +528,7 @@ class Runtime:
                 result = await self.session.advance(steps * self.session.dt)
                 self.session.observe()
                 if self.session.recording is not None:
+                    self.session.recorder.flush()
                     self.session.recording.flush(timeout_sec=5)
                 return result
             if operation in ('reset', 'configure'):

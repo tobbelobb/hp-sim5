@@ -25,6 +25,7 @@ export function loadNativePhysicsAddon(addonPath = globalThis.process?.env?.HP_S
       const crate = new URL('../../wasm/cable_solver/', moduleUrl);
       if (!build || build.artifactSha256 !== artifactSha256 ||
           Object.entries(build.sources).some(([file, hash]) => sha(fs.readFileSync(new URL(file, crate))) !== hash) ||
+          (build.pgo && build.pgo.trainerSha256 !== sha(fs.readFileSync(new URL('../../../scripts/train_native_physics.mjs', moduleUrl)))) ||
           build.buildScriptSha256 !== sha(fs.readFileSync(new URL('../../../scripts/build_native_physics.mjs', moduleUrl)))) {
         throw new Error('Native Rust physics build is stale. Run npm run build:native');
       }

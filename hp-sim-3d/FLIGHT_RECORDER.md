@@ -5,7 +5,17 @@ with `.venv/bin/python -m pip install -r requirements.txt`; they include OpenUSD
 Rerun 0.38 and the browser receiver's WebSocket library. The main
 [README](../README.md#python-dependencies) describes creating `.venv`.
 Build the native Rust engine with `npm run build:native` (Rust, C compiler and
-Node development headers). Browser recording uses the Wasm build of the same core.
+Node development headers; the default PGO build also needs
+`rustup component add llvm-tools-preview`). Browser recording uses the Wasm build of the same core.
+
+Both recorders batch raw telemetry into `send_columns()` calls, keeping every
+requested sample and its explicit simulation clocks. Batches flush at 128
+observations, 65,536 component instances or one second of active logging. Live
+viewers also receive partial batches while idle. Resets, removals and finalization
+flush pending data first. Column writes carry explicit simulation/wall timelines;
+they do not add the SDK's automatic `log_time`/`log_tick` timelines.
+Direct users of Python `RerunSystem` must call its `flush()` before flushing or
+disconnecting their `RecordingStream`; the CLI and collection services do this.
 
 There are two recording workflows:
 
