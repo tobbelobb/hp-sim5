@@ -268,4 +268,7 @@ def consensus_spread_hit(consensus_anchors, consensus_spread, *, frac=SPREAD_STO
     if not np.isfinite(spread) or not np.isfinite(extent) or extent <= 0.0:
         return False, (spread if np.isfinite(spread) else None), None
     limit = float(frac) * extent
-    return bool(spread <= limit), spread, limit
+    # `consensus_anchor_estimate` reports zero spread when all candidates merge
+    # into one hypothesis. That is not agreement between distinct fits.
+    has_distinct_fits = spread > HISTORY_CONSENSUS_MERGE_MM
+    return bool(has_distinct_fits and spread <= limit), spread, limit

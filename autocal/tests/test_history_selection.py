@@ -103,11 +103,15 @@ def test_apply_consensus_plan_without_anchors_keeps_the_best_ranked_plan():
 
 def test_spread_hit_needs_two_distinct_fits_and_stays_scale_relative():
     truth = _anchors(0.0)
-    # A single fit has nothing to disagree with, so this predicate alone says
-    # "hit" at spread 0.  The loop's minimum candidate count is what stops a
-    # freshly started run; see `SPREAD_STOP_MIN_CANDIDATES`.
+    # A single fit has nothing to disagree with. The loop also requires four
+    # candidates, but identical fits must not satisfy the distinct-fit test.
     anchors, _members, spread = consensus_anchor_estimate([_item(1, truth)])
-    assert consensus_spread_hit(anchors, spread)[0] is True
+    assert consensus_spread_hit(anchors, spread)[0] is False
+    anchors, _members, spread = consensus_anchor_estimate(
+        [_item(index, truth) for index in range(1, 5)]
+    )
+    assert spread == 0.0
+    assert consensus_spread_hit(anchors, spread)[0] is False
     assert consensus_spread_hit(None, None) == (False, None, None)
     assert consensus_spread_hit(truth, None) == (False, None, None)
     # Two fits 1 mm apart on a 3.3 m machine: far below the default fraction.
