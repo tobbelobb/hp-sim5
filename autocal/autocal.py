@@ -15,6 +15,7 @@ if str(REPO_ROOT) not in sys.path:
 from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.planning_pass import plan_next_ellipse_sweep
 from autocal.history_selection import (
+    HISTORY_CONSENSUS_MAX_SPREAD_MM,
     SPREAD_STOP_CONSECUTIVE,
     SPREAD_STOP_FRAC,
     SPREAD_STOP_MIN_CANDIDATES,
@@ -714,6 +715,7 @@ def full_auto_loop(
                 f"; history_select: consensus reason={reason} "
                 f"members={list(consensus_members)} "
                 f"spread_mm={_fmt_float(consensus_spread)} "
+                f"max_spread_mm={HISTORY_CONSENSUS_MAX_SPREAD_MM:g} "
                 f"applied={'consensus' if len(consensus_members) > 1 else 'best-ranked'}"
             )
             summary_meta = dict(chosen.get("summary_meta") or {})

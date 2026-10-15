@@ -46,12 +46,23 @@ def test_consensus_merges_restarts_that_converged_to_the_same_anchors():
     assert spread == 0.0
 
 
-def test_consensus_of_a_bimodal_field_reports_the_cluster_midpoint():
-    # Two separated clusters are an ambiguous fit, not a wrong one: the applied
-    # estimate is their midpoint and `spread_mm` states how far apart they were.
+def test_consensus_keeps_a_pair_inside_the_spread_gate():
     anchors, members, spread = consensus_anchor_estimate(
-        [_item(1, _anchors(0.0)), _item(2, _anchors(0.0)), _item(8, _anchors(-6.0))]
+        [_item(1, _anchors(0.0)), _item(9, _anchors(-4.0))]
     )
+    assert members == (1, 9)
+    assert np.allclose(anchors, _anchors(-2.0))
+    assert np.isclose(spread, 4.0)
+
+
+def test_consensus_refuses_a_pair_separated_wider_than_the_spread_gate():
+    # Two clusters 6 mm apart are two hypotheses, not one tight fit, and their
+    # midpoint can land further from the truth than either member. Report the
+    # separation and apply nothing so the caller keeps the best-ranked fit.
+    scored = [_item(1, _anchors(0.0)), _item(2, _anchors(0.0)), _item(8, _anchors(-6.0))]
+    assert consensus_anchor_estimate(scored) == (None, (), 6.0)
+    # An experiment that wants the raw midpoint can still lift the gate.
+    anchors, members, spread = consensus_anchor_estimate(scored, max_spread_mm=6.0)
     assert members == (1, 2, 8)
     assert np.allclose(anchors, _anchors(-3.0))
     assert np.isclose(spread, 6.0)
@@ -152,7 +163,7 @@ def test_spread_hit_rejects_degenerate_geometry():
 def test_spread_hit_fraction_can_be_tightened_or_loosened():
     truth = _anchors(0.0)
     anchors, _members, spread = consensus_anchor_estimate(
-        [_item(1, truth), _item(2, _anchors(8.0))]
+        [_item(1, truth), _item(2, _anchors(8.0))], max_spread_mm=10.0
     )
     # 8 mm separation is loose for the default and tight for a 1% tolerance.
     assert consensus_spread_hit(anchors, spread)[0] is False

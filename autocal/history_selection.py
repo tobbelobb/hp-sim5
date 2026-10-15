@@ -121,9 +121,13 @@ def rank_history_candidates(scored):
 
 
 HISTORY_CONSENSUS_MERGE_MM = 0.01
+# Provisional guard from an 11-dataset replay: refusing the two pairs wider
+# than this lowered summed anchor error by 11.6 mm. A separate stop-chain replay
+# was mixed (+0.8 mm net), so re-derive this threshold on a larger corpus.
+HISTORY_CONSENSUS_MAX_SPREAD_MM = 5.0
 
 
-def consensus_anchor_estimate(scored):
+def consensus_anchor_estimate(scored, *, max_spread_mm=HISTORY_CONSENSUS_MAX_SPREAD_MM):
     """Most mutually-consistent pair of fitted anchor sets, averaged.
 
     The held-out ordering reduces every candidate to one noisy scalar measured
@@ -143,8 +147,13 @@ def consensus_anchor_estimate(scored):
     `scored` items may be the raw candidate dicts kept by the full-auto loop or
     the `(sort_key, candidate, info)` tuples of `evaluate_history_candidates`.
 
-    Returns `(anchors, member_iterations, spread_mm)`. `anchors` is None only
-    when no candidate carries a usable anchor array.
+    A pair separated by more than `max_spread_mm` is ambiguous rather than
+    tight, so no consensus is returned and the caller keeps the best-ranked
+    candidate.
+
+    Returns `(anchors, member_iterations, spread_mm)`. `anchors` is None when
+    no candidate carries a usable anchor array, and also when the closest pair
+    is wider than `max_spread_mm`; `spread_mm` still reports that separation.
     """
     rows = []
     shape = None
@@ -206,9 +215,12 @@ def consensus_anchor_estimate(scored):
     )
     np.fill_diagonal(distances, np.inf)
     first, second = np.unravel_index(np.argmin(distances), distances.shape)
+    spread = float(distances[first, second])
+    if spread > max_spread_mm:
+        return None, (), spread
     anchors = (merged[first][1] + merged[second][1]) / 2.0
     members = tuple(merged[first][0] + merged[second][0])
-    return anchors, members, float(distances[first, second])
+    return anchors, members, spread
 
 
 def apply_consensus_plan(chosen_plan, anchors):

@@ -71,7 +71,17 @@ const DEFAULT_NOISE_SAMPLE_COUNT = ENCODER_NOISE_DEFAULTS.DEFAULT_NOISE_SAMPLE_C
 const DEFAULT_NOISE_SAMPLE_RATE_HZ = ENCODER_NOISE_DEFAULTS.DEFAULT_NOISE_SAMPLE_RATE_HZ;
 const DEFAULT_NOISE_MIN_SAMPLES = ENCODER_NOISE_DEFAULTS.DEFAULT_NOISE_MIN_SAMPLES;
 const DEFAULT_NOISE_SIGMA_FLOOR_DEG = ENCODER_NOISE_DEFAULTS.DEFAULT_NOISE_SIGMA_FLOOR_DEG;
-const DEFAULT_FIXED_TOLERANCE_MM = 0.01;
+// A fixed anchor is position-controlled, so its encoder reads the loaded
+// equilibrium of the cable rather than the commanded position. That residual is
+// compliance, and it is stable within a sweep: in the no-buildup reference every
+// one of the 9 sweeps had a fixed anchor sitting 0.013-0.029 mm off target, and
+// the value was bit-identical across all 20 points of the sweep even though a
+// ~0.03 mm correction move was issued before each point. A tolerance below that
+// level therefore only buys no-op moves followed by a full settle. 0.05 mm is
+// about 5x the 0.02 deg encoder noise floor (0.0105 mm at 30 mm radius) and about
+// 16x below the 1.5 deg drift-recovery threshold, so genuine slipping drift is
+// still corrected.
+const DEFAULT_FIXED_TOLERANCE_MM = 0.05;
 // Active workspace traversal needs time to move before the quiet window starts.
 // This is measured on the observed simulation clock (wall time on hardware).
 const FORCE_TRAVEL_TIMEOUT_MS = 120000;
