@@ -17,11 +17,13 @@ import {
 } from '../../src/js/cable_joints_3d/commonSystems.js';
 
 export function registerSimulationSystems(world, { cableSolverBackend = undefined } = {}) {
-    // HP4's stiff cables and light effector rock at a single 2 ms solve.
-    // Integrate at 0.5 ms, keeping firmware commands and recordings at 2 ms.
-    if (world.getResource('physicsSubsteps') === undefined) world.setResource('physicsSubsteps', 4);
-    const substeps = state => state.query([RigidBodyComponent]).length && state.query([CablePathComponent]).length
-        ? state.getResource('physicsSubsteps') : 1;
+    // Extra physics steps are opt-in; retain the production 2 ms integration.
+    if (world.getResource('physicsSubsteps') === undefined) world.setResource('physicsSubsteps', 1);
+    const substeps = state => {
+        const count = state.getResource('physicsSubsteps');
+        return count > 1 && state.query([RigidBodyComponent]).length && state.query([CablePathComponent]).length
+            ? count : 1;
+    };
     const firstSystem = world.systems.length;
     if (cableSolverBackend === undefined) cableSolverBackend = world.getResource('cableSolverBackend');
     if (cableSolverBackend === undefined) cableSolverBackend = createDefaultPhysicsBackend();

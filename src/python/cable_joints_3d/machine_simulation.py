@@ -20,7 +20,7 @@ from .cable_joints_components import CablePathComponent
 def register_machine_systems(world, recording=None, *, cable_solver_device=None):
     if not world.systems:
         if world.get_resource('physicsSubsteps') is None:
-            world.set_resource('physicsSubsteps', 4)
+            world.set_resource('physicsSubsteps', 1)
         world.register_system(RemoteSpoolSystem())
         for system in [
             common.PrevFinalPosSystem(), common.PrevFinalOrientationSystem(),
@@ -36,7 +36,8 @@ def register_machine_systems(world, recording=None, *, cable_solver_device=None)
         world.register_system(ExtruderSystem())
         world.systems[1].physics_substeps = lambda state: (
             state.get_resource('physicsSubsteps')
-            if state.query([RigidBodyComponent]) and state.query([CablePathComponent]) else 1)
+            if state.get_resource('physicsSubsteps') > 1
+            and state.query([RigidBodyComponent]) and state.query([CablePathComponent]) else 1)
     recorder = None
     if recording is not None:
         from .rerun_system import RerunSystem

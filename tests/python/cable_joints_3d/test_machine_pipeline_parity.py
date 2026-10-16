@@ -60,6 +60,7 @@ def test_identical_double_authored_inputs_keep_strict_short_term_engine_bounds(n
 
 def test_native_composition_loads_the_authored_default_root_and_registers_once():
     world = load_machine_world(ROOT / 'public/usd_scenes/hp4_rigid_body.usda')
+    assert world.get_resource('physicsSubsteps') == 1
     assert len(world.systems) == len(SYSTEM_ORDER)
     systems = list(world.systems)
     register_machine_systems(world)

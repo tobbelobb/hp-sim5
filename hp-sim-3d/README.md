@@ -25,6 +25,14 @@ Expand **▼** for **Pause**, **Reset**, **Finish ASAP**, **Rerun** and view too
 **Closed Loop Motors** changes position-drive behavior. Keep these settings the
 same when comparing runs; quality checks and reference paths aid inspection.
 
+Physics uses one integration step per firmware tick by default. Extra substeps
+are an opt-in experiment: set the world's `physicsSubsteps` resource to `4`
+(`world.setResource('physicsSubsteps', 4)` in JavaScript, or
+`world.set_resource('physicsSubsteps', 4)` in Python). This integrates physics
+four times per tick and costs additional CPU; command and recorder cadence stay
+unchanged. Set it to `1` to restore normal integration. No autocal command
+enables substeps automatically.
+
 To record a browser print, run
 `.venv/bin/python scripts/hangprinter_flight_recorder.py`, open its printed viewer
 URL, then click **Rerun** in the simulator before starting the print. This records

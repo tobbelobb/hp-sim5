@@ -7,7 +7,7 @@ import { PositionComponent, AngularVelocityComponent, RigidBodyComponent } from 
 
 // A loaded HP4 rocked indefinitely with fixed motor targets. The numeric state
 // avoids replaying 584,000 steps; idle/initial-tilt tests do not expose this case.
-test('HP4 settles from a loaded recording state at the production firmware cadence', () => {
+test('opt-in HP4 substeps settle a loaded recording state at the production firmware cadence', () => {
   const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp4_rigid_body.usda', import.meta.url), 'utf8');
   const saved = JSON.parse(fs.readFileSync(new URL('../fixtures/hp4_loaded_stability.json', import.meta.url)),
     (key, value) => ['NaN', 'Infinity', '-Infinity'].includes(value) ? Number(value) : value);
@@ -18,6 +18,8 @@ test('HP4 settles from a loaded recording state at the production firmware caden
     lineLayeringEnabled: false, closedLoopMotorsEnabled: true,
   });
   assert.equal(dt, .002);
+  assert.equal(world.getResource('physicsSubsteps'), 1);
+  world.setResource('physicsSubsteps', 4);
   world.update(dt); // Prepare the native world's editable numeric regions.
   const backend = world.getResource('cableSolverBackend');
   assert.deepEqual(backend.regions.map(region => region.data.length), saved.regions.map(row => row.length));
