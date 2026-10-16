@@ -106,7 +106,7 @@ function buildWsHelpers({ wsPort, quiet = false, onClientChange }) {
   const sendEncoderRequest = (axes, timeoutMs = DEFAULT_ENCODER_TIMEOUT_MS) => {
     const encoderClient = getPreferredEncoderClient();
     if (!encoderClient) {
-      throw new Error('Message not received');
+      throw new Error('Browser simulator is disconnected; no WebSocket client available for encoder/clock request');
     }
     const requestId = encoderRequestSeq++;
     const payload = { type: 'encoder_request', requestId, axes };
@@ -117,7 +117,7 @@ function buildWsHelpers({ wsPort, quiet = false, onClientChange }) {
         if (preferredEncoderClient === encoderClient) {
           preferredEncoderClient = null;
         }
-        reject(new Error('Message not received'));
+        reject(new Error(`Browser simulator did not answer ${axes.length ? `encoder request (${axes.join(', ')})` : 'simulation-clock request'} within ${timeoutMs} ms; the browser may be busy or suspended`));
       }, Math.max(1, timeoutMs));
       pendingEncoderRequests.set(requestId, {
         resolve: (value) => {
@@ -133,13 +133,13 @@ function buildWsHelpers({ wsPort, quiet = false, onClientChange }) {
       });
       try {
         encoderClient.send(data);
-      } catch (_err) {
+      } catch (err) {
         clearTimeout(timeout);
         pendingEncoderRequests.delete(requestId);
         if (preferredEncoderClient === encoderClient) {
           preferredEncoderClient = null;
         }
-        reject(new Error('Message not received'));
+        reject(new Error(`Could not send browser encoder/clock request: ${err.message}`));
       }
     });
   };
@@ -242,7 +242,8 @@ export function createGcodeBridge({
 } = {}) {
   const helpers = buildWsHelpers({ wsPort, quiet, onClientChange });
   if (sim && !helpers.wss) throw new Error('Browser simulation collection requires a WebSocket connection');
-  const simulationClock = sim ? createBrowserClock(() => helpers.sendEncoderRequest([])) : undefined;
+  // Clock polls must tolerate slow physics frames, just like collector waits.
+  const simulationClock = sim ? createBrowserClock(() => helpers.sendEncoderRequest([], 30000)) : undefined;
   let currentGcode = null;
 
   const encoderResolver = helpers.wss

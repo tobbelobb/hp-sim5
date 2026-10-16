@@ -82,6 +82,29 @@ function createEncoderClient(url, anglesDeg) {
 }
 
 describe('createGcodeBridge encoder websocket routing', () => {
+  test('simulation-clock refresh tolerates a browser frame longer than two seconds', async () => {
+    const wsPort = await getFreePort();
+    const context = createGcodeBridge({ wsPort, sim: true, quiet: true });
+    const socket = new WebSocket(`ws://127.0.0.1:${wsPort}`);
+    socket.on('message', data => {
+      const request = JSON.parse(data.toString());
+      if (request.type !== 'encoder_request' || request.axes.length) return;
+      setTimeout(() => socket.send(JSON.stringify({
+        type: 'encoder_response', requestId: request.requestId,
+        simulationClock: { time_ms: 123, generation: 0 },
+      })), 2100);
+    });
+    try {
+      await waitForOpen(socket);
+      await context.simulationClock.refresh();
+      expect(context.simulationClock.now()).toBe(123);
+      await expect(context.sendEncoderRequest(['A'], 10)).rejects.toThrow('encoder request (A) within 10 ms');
+    } finally {
+      await closeSocket(socket);
+      context.close();
+    }
+  });
+
   test('sends encoder requests only to the most recently connected client', async () => {
     const wsPort = await getFreePort();
     const bridgeContext = createGcodeBridge({
