@@ -286,8 +286,9 @@ def _solve_joint(world, path, index, joint, points, direction, error, iteration,
         multiplier = solve_multiplier()
         if multiplier is None:
             return
-    for end in ends:
-        _record_load(path, end, multiplier, inv_dt_squared, loads)
+    if iteration == 0:
+        for end in ends:
+            _record_load(path, end, multiplier, inv_dt_squared, loads)
     if _mechanical_denominator(ends, inverses) <= EPSILON:
         return
     if iteration == 0:

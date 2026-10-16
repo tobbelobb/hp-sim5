@@ -3366,8 +3366,12 @@ export class PBDCableConstraintSolver {
           return;
         }
       }
-      recordTorqueModeCableLoad(path, memberSpinA, loadGradSpinA, lambda, invDtSq);
-      recordTorqueModeCableLoad(path, memberSpinB, loadGradSpinB, lambda, invDtSq);
+      // Solver visits refine one physical constraint; they are not extra
+      // parallel springs or additional cable loads. Match the force snapshot.
+      if (solveIteration === 0) {
+        recordTorqueModeCableLoad(path, memberSpinA, loadGradSpinA, lambda, invDtSq);
+        recordTorqueModeCableLoad(path, memberSpinB, loadGradSpinB, lambda, invDtSq);
+      }
 
       if (mechanicalDenom(solveMemberInvInertiaA, solveMemberInvInertiaB) <= EPSILON) {
         return;

@@ -116,12 +116,11 @@ def test_solver_oracle_reaches_spin_load_and_limit_cases(name):
         assert angle('free') < angle('held') < angle('closed')
         assert entities['fixed_torque_joint']['CableJointComponent']['constraintForceMagnitude'] == 0
         assert maps['torqueModeCableLoadTorques']['fixed_torque_spool'] < 0
-        # JS accumulates torque loads on every iteration, even with no mechanical
-        # DOF, while joint telemetry records only the first iteration.
+        # Iterating a fixed physical constraint must not multiply its load.
         fixed_path = next(e for e in fixture['entities'] if e['name'] == 'fixed_torque')
         fixed_path['components']['CablePathComponent'][-1] = 1
         once = run_js(fixture)['snapshots'][1]['entityMaps']['torqueModeCableLoadTorques']['fixed_torque_spool']
-        assert maps['torqueModeCableLoadTorques']['fixed_torque_spool'] == pytest.approx(3 * once)
+        assert maps['torqueModeCableLoadTorques']['fixed_torque_spool'] == pytest.approx(once)
     else:
         for prefix, internal, external in [('upstream', 0, 1), ('downstream', 1, 0),
                                            ('torque_up', 0, 1), ('torque_down', 1, 0), ('rolling', 0, 1)]:
@@ -366,3 +365,17 @@ def test_comparator_accepts_quaternion_sign_only(field):
 def test_comparator_rejects_nonfinite_values(value):
     with pytest.raises(AssertionError, match='nonfinite'):
         assert_equivalent(value, value, atol=1e-10, rtol=1e-9)
+
+@pytest.mark.parametrize('iterations', [1, 2, 5])
+def test_fixed_motor_load_is_not_multiplied_by_solver_iterations(iterations):
+    fixture = json.loads((FIXTURES / 'torque_motor_load_iterations.json').read_text())
+    path = next(e for e in fixture['entities'] if e['name'] == 'fixed_torque')
+    path['components']['CablePathComponent'][-1] = iterations
+    # Effective radius includes the authored 1 mm cable half width.
+    joint = next(e for e in fixture['entities'] if e['name'] == 'fixed_torque_joint')['components']['CableJointComponent']
+    extension = np.linalg.norm(np.subtract(joint[3], joint[4])) - joint[2]
+    for run in (run_js, run_python):
+        maps = run(fixture)['snapshots'][-1]['entityMaps']
+        assert maps['torqueModeCableLoadStiffnesses']['fixed_torque_spool'] == pytest.approx(5000 * .051**2)
+        assert maps['torqueModeCableLoadDampings']['fixed_torque_spool'] == pytest.approx(.04 * .051**2)
+        assert maps['torqueModeCableLoadTorques']['fixed_torque_spool'] == pytest.approx(-5000 * extension * .051)

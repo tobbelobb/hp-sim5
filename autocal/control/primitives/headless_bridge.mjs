@@ -25,7 +25,7 @@ export async function createHeadlessBridge(url) {
     simulationClock,
     sendGcodeLine: async line => { await pending; return (await request('gcode', { line })).result; },
     broadcast: payload => { pending = pending.then(() => request('payload', { payload })); },
-    waitForHpSimConnection: async () => { await pending; },
+    waitForHpSimConnection: async () => (await pending)?.result,
     close() {},
   };
 }

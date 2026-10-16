@@ -775,8 +775,11 @@ fn solve_joint(es: &mut [Entity], js: &mut [Joint], path: &Path, idx: usize, ite
         };
         l = new_l;
     }
-    load(es, sa, path, l);
-    load(es, sb, path, l);
+    // Match the physical force snapshot: solver visits are not parallel loads.
+    if iter == 0 {
+        load(es, sa, path, l);
+        load(es, sb, path, l);
+    }
     if mechanical(&a, &b, ga, gb, da, db, sa, sb) <= EPS {
         return;
     }

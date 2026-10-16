@@ -87,7 +87,9 @@ def test_headless_geometry_and_control_settings_survive_reset(tmp_path, layering
         initial = service.request('status')
         assert initial['settings']['physicsSubsteps'] == 1
         assert initial['settings']['enableLayering'] is layering
-        service.request('payload', payload={'type': 'simulation_settings', 'closedLoopMotorsEnabled': True, 'physicsSubsteps': 4})
+        applied = service.request('payload', payload={'type': 'simulation_settings', 'closedLoopMotorsEnabled': True, 'physicsSubsteps': 4})
+        assert applied['result']['simulationSettings']['physicsSubsteps'] == 4
+        assert applied['result']['simulationSettings']['closedLoopMotorsEnabled'] is True
         service.request('payload', payload={'type': 'reset'})
         reset = service.request('status')
         assert reset['epoch'] == 1

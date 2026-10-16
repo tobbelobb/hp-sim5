@@ -428,8 +428,9 @@ def solve(bodies: wp.array(dtype=Body), joints: wp.array(dtype=Joint), paths: wp
                     value = multiplier(a,b,path,dt,error)
                 if wp.isnan(value):
                     continue
-                record_load(bodies,loads,joint.a,a,path,value,inv_dt2)
-                record_load(bodies,loads,joint.b,b,path,value,inv_dt2)
+                if iteration == 0:
+                    record_load(bodies,loads,joint.a,a,path,value,inv_dt2)
+                    record_load(bodies,loads,joint.b,b,path,value,inv_dt2)
                 if mechanical(a,b) <= EPS:
                     continue
                 if iteration == 0:

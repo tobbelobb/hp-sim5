@@ -160,7 +160,7 @@ const server = http.createServer(async (request, reply) => {
       await advance(args.seconds);
     } else if (request.url === '/payload') {
       bridge.broadcast(args.payload);
-      await bridge.sendEncoderRequest([], 120000);
+      result = await bridge.sendEncoderRequest([], 120000);
     } else if (request.url !== '/status') throw new Error('Unknown operation');
     const state = status();
     fs.writeFileSync(`${directory}/clock.json`, JSON.stringify(state, null, 2));
