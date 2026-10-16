@@ -46,10 +46,10 @@ function movingPullout({ fixedDrift = false, measurementDrift = false, transport
 test('bounds moving endpoint search, then holds and settles before recording all samples', async () => {
   const trial = movingPullout();
   const result = await trial.run();
-  const hold = trial.commands.find(command => command.now > 120000 && command.line === 'M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0');
+  const hold = trial.commands.find(command => command.now > 600000 && command.line === 'M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0');
   expect(hold).toBeDefined();
   expect(result.dataPoints).toHaveLength(2);
-  expect(result.driveRange.start).toBeCloseTo(120.5);
+  expect(result.driveRange.start).toBeCloseTo(600.5);
   expect(trial.points[0].timestamp_ms).toBeGreaterThanOrEqual(hold.now + 1500);
   expect(result.dataPoints.every(point => point.sample_count === 16)).toBe(true);
 });

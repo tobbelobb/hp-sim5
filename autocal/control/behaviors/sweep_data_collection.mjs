@@ -87,7 +87,7 @@ const DEFAULT_NOISE_SIGMA_FLOOR_DEG = ENCODER_NOISE_DEFAULTS.DEFAULT_NOISE_SIGMA
 const DEFAULT_FIXED_TOLERANCE_MM = 0.05;
 // Active workspace traversal needs time to move before the quiet window starts.
 // This is measured on the observed simulation clock (wall time on hardware).
-const FORCE_TRAVEL_TIMEOUT_MS = 120000;
+const FORCE_TRAVEL_TIMEOUT_MS = 600000;
 // A fixed-torque HP4 pull at the production 2 ms step passed the unchanged
 // settling check after ~472 s (four substeps: ~120 s). Allow this slow approach
 // to equilibrium without relaxing drift/vibration acceptance.
@@ -1164,7 +1164,12 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     return forceMid*2.0;
   });
   await applyForceModeState(sendFn, { motorIds, modes: preloadModes });
-  const forceStable = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+  const forceStable = await waitForStableEncoders(sendFn, motorIds, speedup, {
+    ...settleOptions,
+    timeoutMs: FORCE_TRAVEL_TIMEOUT_MS,
+    wallTimeoutMs: FORCE_TRAVEL_TIMEOUT_MS + 30000,
+    onProgress: message => console.log(`; sweep pullout preload: ${message.replace(/^; /, '')}`),
+  });
   const endAngles = forceStable.anglesDeg;
   const endLengths = endAngles.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
 
