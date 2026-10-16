@@ -111,7 +111,7 @@ def _can_use_jax_objective(cost_fn: EllipseCostFunction) -> bool:
         if machine_type != "slideprinter":
             return False
     elif dims == 3:
-        if machine_type != "hangprinter_4":
+        if machine_type not in ("hangprinter_3", "hangprinter_4"):
             return False
     else:
         return False

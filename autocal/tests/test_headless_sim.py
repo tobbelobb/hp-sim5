@@ -29,7 +29,7 @@ def test_headless_implies_sim_and_keeps_fitting_options(tmp_path, monkeypatch):
     assert ac.main(['--headless-sim', '--machine-type', 'hangprinter_3', '--no-collect',
                     '--dataset', str(tmp_path / 'sweeps.json'), '--find-radii', 'global',
                     '--base-radii', '30', '--r0-bounds', '39,40']) == 0
-    assert captured == dict(sim=True, machine='hangprinter_4', radii='global', bounds=(39., 40.),
+    assert captured == dict(sim=True, machine='hangprinter_3', radii='global', bounds=(39., 40.),
                             no_collect=True, headless=None)
 
 
@@ -402,3 +402,21 @@ def test_interrupted_bootstrap_preserves_points_and_stops_owned_services(tmp_pat
             process.send_signal(signal.SIGTERM)
             process.wait(timeout=15)
         output.close()
+
+
+@pytest.mark.parametrize("machine,stem,scene", [
+    ("v3", "hp3", "hp3"), ("v4", "hp4", "hp4"),
+    ("four_high_anchors", "skycam", "four_high_anchors"),
+    ("cube_corners", "cubecorners", "cubecorners"),
+    ("slideprinter", "slideprinter", "slideprinter"),
+])
+@pytest.mark.parametrize("layered", [False, True])
+def test_headless_config_matches_scene(tmp_path, monkeypatch, machine, stem, scene, layered):
+    from argparse import Namespace
+    monkeypatch.delenv("AUTOCAL_RRF_SIM_CONFIG", raising=False)
+    args = Namespace(machine_type=machine, find_radii="global" if layered else "off",
+                     find_buildup_factor="off", rrf_config=None, config=None,
+                     dataset=tmp_path / "sweeps.json")
+    service = HeadlessSimulation(args, [])
+    assert service.config == f"sys/config_{stem}{'_w_line_layers' if layered else ''}.g"
+    assert service.scene.name == f"{scene}_rigid_body.usda"

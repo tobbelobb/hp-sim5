@@ -34,8 +34,6 @@ RRF_SIM_BINARY = REPO_ROOT / "RRF" / "build" / "rrf_simulator"
 RRF_SIM_VSD_PATH = "RRF/run/vsd"
 RRF_SIM_DEFAULT_CONFIG = "sys/config_slideprinter.g"
 RRF_SIM_LINE_LAYER_CONFIG = "sys/config_slideprinter_w_line_layers.g"
-RRF_SIM_HP3_CONFIG = "sys/config_hp3.g"
-RRF_SIM_HP3_LINE_LAYER_CONFIG = "sys/config_hp3_w_line_layers.g"
 DEFAULT_NOISE_SIGMA_FLOOR_DEG = 0.01
 DEFAULT_NOISE_MIN_SAMPLES = 10
 DEFAULT_LAYER_LINE_WIDTH_MM = 1.0
@@ -120,9 +118,12 @@ from autocal.sweep_types import MachineConfig, MachineType
 
 GeometryWeights = Tuple[float, float, float]
 _MACHINE_TYPE_ALIASES = {
-    "hp3": "hangprinter_4",
+    "hp3": "hangprinter_3",
     "hp4": "hangprinter_4",
-    "hangprinter_3": "hangprinter_4",
+    "v3": "hangprinter_3",
+    "v4": "hangprinter_4",
+    "four_high_anchors": "skycam",
+    "cube_corners": "cubecorners",
 }
 MACHINE_TYPE_CHOICES = tuple(machine.value for machine in MachineType)
 MACHINE_TYPE_INPUT_CHOICES = tuple(dict.fromkeys((*MACHINE_TYPE_CHOICES, *_MACHINE_TYPE_ALIASES.keys())))
@@ -558,47 +559,26 @@ def _resolve_sim_config(
     config: Optional[str] = None,
     rrf_config: Optional[str] = None,
     klipper_config: Optional[str] = None,
+    layering: bool = False,
 ) -> str:
+    override = (klipper_config if firmware == "klipper" else rrf_config) or config
+    env_name = "AUTOCAL_KLIPPER_SIM_CONFIG" if firmware == "klipper" else "AUTOCAL_RRF_SIM_CONFIG"
+    override = override or os.environ.get(env_name)
+    if override and override.strip():
+        return override.strip()
+    machine_type = _normalize_machine_type(machine_type)
+    machine = {
+        "hangprinter_3": "hp3", "hangprinter_4": "hp4",
+        "skycam": "skycam", "cubecorners": "cubecorners", "slideprinter": "slideprinter",
+    }.get(machine_type)
+    if machine is None:
+        raise ValueError(f"No default {firmware} simulator config for {machine_type}; specify --config")
+    layered = layering or _spool_mode_enabled(find_radii_mode) or _spool_mode_enabled(find_buildup_mode)
     if firmware == "klipper":
-        if klipper_config:
-            return klipper_config
-        if config:
-            return config
-        env_cfg = os.environ.get("AUTOCAL_KLIPPER_SIM_CONFIG")
-        if isinstance(env_cfg, str) and env_cfg.strip():
-            return env_cfg.strip()
-
-        machine_type = _normalize_machine_type(machine_type) or ""
-        search_spool = _spool_mode_enabled(find_radii_mode) or _spool_mode_enabled(find_buildup_mode)
-        if machine_type == "hangprinter_4":
-            if search_spool:
-                return "public/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg"
-            return "public/klipper/hp3/printer-hp3-linux-mcu.cfg"
-        return "public/klipper/slideprinter/printer-slideprinter-linux-mcu.cfg"
-
-    if rrf_config:
-        return rrf_config
-    if config:
-        return config
-    env_cfg = os.environ.get("AUTOCAL_RRF_SIM_CONFIG")
-    if isinstance(env_cfg, str) and env_cfg.strip():
-        return env_cfg.strip()
-
-    machine_type = _normalize_machine_type(machine_type) or ""
-    search_spool = _spool_mode_enabled(find_radii_mode) or _spool_mode_enabled(find_buildup_mode)
-    if machine_type == "hangprinter_4":
-        if search_spool:
-            candidate = REPO_ROOT / RRF_SIM_VSD_PATH / RRF_SIM_HP3_LINE_LAYER_CONFIG
-            if candidate.exists():
-                return RRF_SIM_HP3_LINE_LAYER_CONFIG
-        return RRF_SIM_HP3_CONFIG
-
-    if machine_type == "slideprinter" and search_spool:
-        candidate = REPO_ROOT / RRF_SIM_VSD_PATH / RRF_SIM_LINE_LAYER_CONFIG
-        if candidate.exists():
-            return RRF_SIM_LINE_LAYER_CONFIG
-
-    return RRF_SIM_DEFAULT_CONFIG
+        suffix = "-with-buildup" if layered else ""
+        return f"public/klipper/{machine}/printer-{machine}-linux-mcu{suffix}.cfg"
+    suffix = "_w_line_layers" if layered else ""
+    return f"sys/config_{machine}{suffix}.g"
 
 
 def _effective_hp_sim_reset(
@@ -690,7 +670,7 @@ def _format_m669_command(anchors: np.ndarray, machine_type: str) -> Optional[str
         pad[:, : anchors.shape[1]] = anchors
         anchors = pad
     machine_type = _normalize_machine_type(machine_type) or ""
-    if machine_type in ("hangprinter_4", "hangprinter_5"):
+    if machine_type in ("hangprinter_3", "hangprinter_4", "hangprinter_5"):
         labels = ["A", "B", "C", "D", "I"]
     else:
         labels = ["A", "B", "C", "D", "I", "J", "K", "L", "O"]

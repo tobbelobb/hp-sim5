@@ -328,7 +328,7 @@ def build_anchor_initial_guess(
         out = np.vstack([_rotate_about_z(base, step * idx) for idx in range(num_anchors)])
         return out
 
-    if machine == "hangprinter_4":
+    if machine in ("hangprinter_3", "hangprinter_4"):
         if dimensions not in (0, 3) or num_anchors != 4:
             return None
         low_z = low_anchor_z

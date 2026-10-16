@@ -327,6 +327,7 @@ def full_auto_loop(
         config=config,
         rrf_config=rrf_config,
         klipper_config=klipper_config,
+        layering=_arg_has_flag(collector_args, "--line-layering") or bool(buildup_factor),
     )
 
     extended_reference.artifact(REPO_ROOT / "RRF/run/vsd" / str(sim_config) if firmware == "rrf" else Path(sim_config))
@@ -1790,7 +1791,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if args.headless_sim:
         if args.firmware != "rrf":
             parser.error("--headless-sim requires --firmware rrf")
-        if args.machine_type not in MACHINES:
+        if _normalize_machine_type(args.machine_type) not in MACHINES:
             parser.error(f"No headless scene/configuration for {args.machine_type}")
         args.sim = True
         if args.dataset is None:

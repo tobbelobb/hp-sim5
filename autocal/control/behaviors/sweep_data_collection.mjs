@@ -53,8 +53,11 @@ export const MACHINE_CONFIGS = {
   skycam: { numAnchors: 4, dimensions: 3, axes: ['X', 'Y', 'Z', 'U'], mustBeInFixedSet: [] },
 };
 
+MACHINE_CONFIGS.hangprinter_3 = MACHINE_CONFIGS.hangprinter_4;
+
 export const MOTOR_IDS_BY_MACHINE = {
   slideprinter: ['40.0', '41.0', '42.0'],
+  hangprinter_3: ['40.0', '41.0', '42.0', '43.0'],
   hangprinter_4: ['40.0', '41.0', '42.0', '43.0'],
   hangprinter_5: ['40.0', '41.0', '42.0', '43.0', '44.0'],
   cubecorners: ['40.0', '41.0', '42.0', '43.0', '44.0', '45.0', '46.0', '47.0'],

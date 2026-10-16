@@ -997,27 +997,28 @@ def test_resolve_sim_config_prefers_line_layer_config_for_spool_search(monkeypat
     assert cfg == ac.RRF_SIM_LINE_LAYER_CONFIG
 
 
-@pytest.mark.parametrize("machine_type", ["hangprinter_4", "hp4", "hp3", "hangprinter_3"])
-def test_resolve_sim_config_uses_hp3_configs_for_hangprinter_aliases(monkeypatch, machine_type):
+@pytest.mark.parametrize("machine_type,name", [
+    ("hangprinter_3", "hp3"), ("hp3", "hp3"), ("v3", "hp3"),
+    ("hangprinter_4", "hp4"), ("hp4", "hp4"), ("v4", "hp4"),
+    ("four_high_anchors", "skycam"), ("skycam", "skycam"),
+    ("cube_corners", "cubecorners"), ("cubecorners", "cubecorners"),
+    ("slideprinter", "slideprinter"),
+])
+@pytest.mark.parametrize("layered", [False, True])
+@pytest.mark.parametrize("firmware", ["rrf", "klipper"])
+def test_resolve_sim_config_maps_machine_versions(monkeypatch, machine_type, name, layered, firmware):
     monkeypatch.delenv("AUTOCAL_RRF_SIM_CONFIG", raising=False)
-
-    cfg_default = ac._resolve_sim_config(
-        machine_type=machine_type,
-        find_radii_mode="off",
-        find_buildup_mode="off",
-    )
-    assert cfg_default == ac.RRF_SIM_HP3_CONFIG
-
-    candidate = ac.REPO_ROOT / ac.RRF_SIM_VSD_PATH / ac.RRF_SIM_HP3_LINE_LAYER_CONFIG
-    if not candidate.exists():
-        pytest.skip(f"missing simulator config: {candidate}")
-
-    cfg_spool = ac._resolve_sim_config(
-        machine_type=machine_type,
-        find_radii_mode="global",
-        find_buildup_mode="off",
-    )
-    assert cfg_spool == ac.RRF_SIM_HP3_LINE_LAYER_CONFIG
+    monkeypatch.delenv("AUTOCAL_KLIPPER_SIM_CONFIG", raising=False)
+    for mode in ("off", "global") if layered else ("off",):
+        result = ac._resolve_sim_config(machine_type=machine_type, find_radii_mode=mode,
+                                        find_buildup_mode="off", layering=layered and mode == "off", firmware=firmware)
+        if firmware == "rrf":
+            expected = f"sys/config_{name}{'_w_line_layers' if layered else ''}.g"
+            assert (ac.REPO_ROOT / ac.RRF_SIM_VSD_PATH / expected).is_file()
+        else:
+            expected = f"public/klipper/{name}/printer-{name}-linux-mcu{'-with-buildup' if layered else ''}.cfg"
+            assert (ac.REPO_ROOT / expected).is_file()
+        assert result == expected
 
 
 def test_resolve_sim_config_uses_env_override(monkeypatch):

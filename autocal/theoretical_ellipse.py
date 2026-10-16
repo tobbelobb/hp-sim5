@@ -385,7 +385,7 @@ def _hangprinter_4_ax0_gauge_enabled(
     dims: int,
 ) -> bool:
     mt = machine_type.value if isinstance(machine_type, MachineType) else str(machine_type)
-    return str(mt) == "hangprinter_4" and int(n_anchors) == 4 and int(dims) == 3
+    return str(mt) in ("hangprinter_3", "hangprinter_4") and int(n_anchors) == 4 and int(dims) == 3
 
 
 def anchor_opt_constraint_mode(
@@ -465,7 +465,7 @@ def get_anchor_bounds(machine_type: Union[str, MachineType]) -> Tuple[np.ndarray
     """Return lower/upper anchor bounds for a machine type."""
     mt = machine_type.value if isinstance(machine_type, MachineType) else str(machine_type)
 
-    if mt == "hangprinter_4":
+    if mt in ("hangprinter_3", "hangprinter_4"):
         return _hangprinter_4_anchor_bounds()
 
     bounds = {

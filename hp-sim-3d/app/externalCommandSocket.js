@@ -239,6 +239,7 @@ export function createExternalCommandController({
       if (payload.machineType) {
         recordingReady = Promise.resolve(recordingReady).then(async () => {
           const sourceKey = {
+            hangprinter_3: 'hp3_rigid_body.usda',
             hangprinter_4: 'hp4_rigid_body.usda',
             slideprinter: 'slideprinter_rigid_body.usda',
             skycam: 'four_high_anchors_rigid_body.usda',

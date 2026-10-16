@@ -396,7 +396,7 @@ Collect circular sweep data where N-1 anchors are fixed, one anchor drives, and 
 
 Options:
   --help, -h                 Show this help and exit
-  --machineType <name>       Machine type: slideprinter | hangprinter_4 | hangprinter_5 | cubecorners | skycam (default: slideprinter)
+  --machineType <name>       Machine type: slideprinter | hangprinter_3 | hangprinter_4 | hangprinter_5 | cubecorners | skycam (default: slideprinter)
   --sweepPoints <count>      Number of points per sweep (default: ${SWEEP_DEFAULTS.DEFAULT_SWEEP_POINTS})
   --fixed-targets <csv>      Fixed-anchor target deltas in mm (comma-separated)
   --max-travel-mm <mm>       Fixed-anchor delta applied to all fixed anchors
@@ -544,7 +544,9 @@ async function main() {
   if (shouldSpawnRrf) {
     try {
       console.log(`Starting rrf_simulator at ${targetServer}...`);
-      rrfProcess = await startRrfSimulator({ port: targetPort, debug: args.debug, machineType });
+      rrfProcess = await startRrfSimulator({ port: targetPort, debug: args.debug, machineType,
+        preferLineLayerConfig: Boolean(args.lineLayering || Number(args.forceBuildupFactor)),
+      });
       await waitForRrfSimulator(targetServer);
     } catch (err) {
       console.error(`Unable to start rrf_simulator: ${err?.message || err}`);

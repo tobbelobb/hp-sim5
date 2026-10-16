@@ -38,6 +38,7 @@ _MIN_SWEEPS_AFTER_TRIM_DEFAULT = 3
 # TODO: Try increasing the hangprinter_4 one to 4 or 5 and do some test runs
 _MIN_SWEEPS_AFTER_TRIM_BY_MACHINE = {
     "slideprinter": 3,
+    "hangprinter_3": 3,
     "hangprinter_4": 3,
     "hangprinter_5": 3,
     "cubecorners": 3,

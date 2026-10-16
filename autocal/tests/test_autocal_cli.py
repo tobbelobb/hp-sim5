@@ -290,7 +290,7 @@ def test_autocal_main_normalizes_hangprinter_alias(monkeypatch, tmp_path):
     )
 
     assert rc == 0
-    assert captured["machine_type"] == "hangprinter_4"
+    assert captured["machine_type"] == "hangprinter_3"
     assert captured["verbose"] is True
 
 

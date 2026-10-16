@@ -328,3 +328,14 @@ def test_hangprinter_4_optimizer_helpers_accept_fixed_low_anchor_z():
     assert np.allclose(reduced[:3, 2], low_anchor_z)
     assert np.allclose(reduced[:, :2], anchors[:, :2])
     assert np.allclose(reduced[3, 2], anchors[3, 2])
+
+
+def test_v3_keeps_four_anchor_geometry():
+    from autocal.sweep_types import MachineConfig, MachineType
+    v3 = MachineConfig.from_type(MachineType.HANGPRINTER_3)
+    v4 = MachineConfig.from_type(MachineType.HANGPRINTER_4)
+    assert v3.num_anchors == v4.num_anchors == 4
+    assert v3.must_be_fixed_anchors == v4.must_be_fixed_anchors
+    for v3_bound, v4_bound in zip(get_anchor_bounds(MachineType.HANGPRINTER_3),
+                                 get_anchor_bounds(MachineType.HANGPRINTER_4)):
+        np.testing.assert_array_equal(v3_bound, v4_bound)

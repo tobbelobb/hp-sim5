@@ -21,6 +21,7 @@ __all__ = [
 
 class MachineType(Enum):
     SLIDEPRINTER = "slideprinter"  # 3 anchors, 2D
+    HANGPRINTER_3 = "hangprinter_3"  # v3: 4 anchors, 3D
     HANGPRINTER_4 = "hangprinter_4"  # 4 anchors, 3D
     HANGPRINTER_5 = "hangprinter_5"  # 5 anchors, 3D
     CUBECORNERS = "cubecorners"  # 8 anchors, 3D
@@ -66,6 +67,7 @@ class MachineConfig:
             MachineType.CUBECORNERS: (8, 3, [], [], {}),
             MachineType.SKYCAM: (4, 3, [], [], {}),
         }
+        configs[MachineType.HANGPRINTER_3] = configs[MachineType.HANGPRINTER_4]
         if machine_type not in configs:
             raise ValueError(f"Unsupported machine type: {machine_type}")
         num_anchors, dimensions, carrying, must_be_fixed, fixed_bounds = configs[machine_type]

@@ -28,19 +28,18 @@ describe('collect_sweep_data CLI helpers', () => {
     expect(parseBridgeArgs(['--sim', '--open-loop-motors']).openLoopMotors).toBe(true);
   });
 
-  test('normalizeMachineType maps hangprinter aliases to hangprinter_4', () => {
-    expect(normalizeMachineType('hangprinter_4')).toBe('hangprinter_4');
-    expect(normalizeMachineType('hp4')).toBe('hangprinter_4');
-    expect(normalizeMachineType('hp3')).toBe('hangprinter_4');
-    expect(normalizeMachineType('hangprinter_3')).toBe('hangprinter_4');
-  });
-
-  test('resolveRrfSimulatorConfig uses hp3 configs for hangprinter_4 family', () => {
-    expect(resolveRrfSimulatorConfig('hangprinter_4')).toBe('sys/config_hp3.g');
-    expect(resolveRrfSimulatorConfig('hp4')).toBe('sys/config_hp3.g');
-    expect(resolveRrfSimulatorConfig('hp3')).toBe('sys/config_hp3.g');
-    expect(resolveRrfSimulatorConfig('hangprinter_3')).toBe('sys/config_hp3.g');
-    expect(resolveRrfSimulatorConfig('hangprinter_4', { preferLineLayerConfig: true })).toBe('sys/config_hp3_w_line_layers.g');
+  test.each([
+    ['hp3', 'hangprinter_3', 'hp3'], ['hangprinter_3', 'hangprinter_3', 'hp3'],
+    ['hp4', 'hangprinter_4', 'hp4'], ['hangprinter_4', 'hangprinter_4', 'hp4'],
+    ['v3', 'hangprinter_3', 'hp3'], ['v4', 'hangprinter_4', 'hp4'],
+    ['four_high_anchors', 'skycam', 'skycam'], ['skycam', 'skycam', 'skycam'],
+    ['cube_corners', 'cubecorners', 'cubecorners'], ['cubecorners', 'cubecorners', 'cubecorners'],
+    ['slideprinter', 'slideprinter', 'slideprinter'],
+  ])('%s selects its own config in both layering modes', (input, canonical, name) => {
+    expect(normalizeMachineType(input)).toBe(canonical);
+    expect(resolveRrfSimulatorConfig(input)).toBe(`sys/config_${name}.g`);
+    expect(resolveRrfSimulatorConfig(input, { preferLineLayerConfig: true })).toBe(`sys/config_${name}_w_line_layers.g`);
+    expect(MACHINE_CONFIGS[canonical]).toBeDefined();
   });
 
   test('buildRrfSimulatorArgs uses machine-aware config selection', () => {
@@ -51,11 +50,11 @@ describe('collect_sweep_data CLI helpers', () => {
       '--vsd', 'RRF/run/vsd', '-c', 'sys/config_hp3.g', '--server', '-p', '8081',
     ]);
     expect(buildRrfSimulatorArgs(8081, { machineType: 'hangprinter_4', preferLineLayerConfig: true })).toEqual([
-      '--vsd', 'RRF/run/vsd', '-c', 'sys/config_hp3_w_line_layers.g', '--server', '-p', '8081',
+      '--vsd', 'RRF/run/vsd', '-c', 'sys/config_hp4_w_line_layers.g', '--server', '-p', '8081',
     ]);
   });
 
-  test('hangprinter_4 uses the visible axes from the selected hp3 simulator config', () => {
+  test('hangprinter_4 uses the visible axes from the selected hp4 simulator config', () => {
     const configPath = path.resolve(
       process.cwd(),
       'RRF',

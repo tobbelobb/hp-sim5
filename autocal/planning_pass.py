@@ -61,7 +61,7 @@ def plan_ellipse_sweep(
             max_travel_mm = float(raw_max_travel)
     max_total_fixed_delta_mm = None
     if (
-        str(machine_type) == "hangprinter_4"
+        str(machine_type) in ("hangprinter_3", "hangprinter_4")
         and max_travel_mm is not None
         and np.isfinite(max_travel_mm)
         and max_travel_mm > 0.0

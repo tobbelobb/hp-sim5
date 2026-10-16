@@ -79,11 +79,17 @@ test('failed recorder connection releases physics backpressure', async () => {
   expect(recorder.readyForStep()).toBe(true);
 });
 
-test('machine selection replaces other scenes before acknowledging settings', async () => {
+test.each([
+  ['hangprinter_3', 'hp3_rigid_body.usda'],
+  ['hangprinter_4', 'hp4_rigid_body.usda'],
+  ['skycam', 'four_high_anchors_rigid_body.usda'],
+  ['cubecorners', 'cubecorners_rigid_body.usda'],
+  ['slideprinter', 'slideprinter_rigid_body.usda'],
+])('machine %s replaces other scenes before acknowledging settings', async (machineType, sourceKey) => {
   const world = new World();
   let finishLoading;
   const machines = {
-    getMachines: () => [{ sourceKey: 'slideprinter_rigid_body.usda' }],
+    getMachines: () => [{ sourceKey: 'old-machine.usda' }],
     removeAllMachines: jest.fn(async () => {}),
     addCatalogMachine: jest.fn(() => new Promise(resolve => { finishLoading = resolve; })),
   };
@@ -91,13 +97,13 @@ test('machine selection replaces other scenes before acknowledging settings', as
   controller.connect();
   const bridge = Socket.last;
   bridge.open();
-  controller.handlePayload({ type: 'simulation_settings', machineType: 'hangprinter_4' });
+  controller.handlePayload({ type: 'simulation_settings', machineType });
   controller.handlePayload({ type: 'encoder_request', requestId: 1, axes: [] });
   await new Promise(resolve => setTimeout(resolve, 0));
   expect(machines.removeAllMachines).toHaveBeenCalledTimes(1);
-  expect(machines.addCatalogMachine).toHaveBeenCalledWith('hp4_rigid_body.usda', { resetView: true });
+  expect(machines.addCatalogMachine).toHaveBeenCalledWith(sourceKey, { resetView: true });
   expect(bridge.samples).toHaveLength(0);
   finishLoading({});
   await new Promise(resolve => setTimeout(resolve, 0));
-  expect(bridge.samples.at(-1).simulationSettings).toMatchObject({ machineType: 'hangprinter_4', settingsError: null });
+  expect(bridge.samples.at(-1).simulationSettings).toMatchObject({ machineType, settingsError: null });
 });
