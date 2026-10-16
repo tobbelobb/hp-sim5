@@ -15,18 +15,18 @@
         }
       }
     </script>
-    <script type="module" crossorigin src="/hp-sim5/assets/hp-sim-3d/index.html-BPJtNXr4.js"></script>
+    <script type="module" crossorigin src="/hp-sim5/assets/hp-sim-3d/index.html-DSQHrYi8.js"></script>
     <link rel="modulepreload" crossorigin href="/hp-sim5/assets/modulepreload-polyfill-B5Qt9EMX.js">
-    <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_joints_core-Bee-Dlj4.js">
-    <link rel="modulepreload" crossorigin href="/hp-sim5/assets/geometry3-3m22lrH1.js">
-    <link rel="modulepreload" crossorigin href="/hp-sim5/assets/commonSystems-BFSvA4YK.js">
+    <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_joints_core-DdKBhEL-.js">
+    <link rel="modulepreload" crossorigin href="/hp-sim5/assets/geometry3-DBzGVqMm.js">
+    <link rel="modulepreload" crossorigin href="/hp-sim5/assets/commonSystems-BXRQNlld.js">
     <link rel="modulepreload" crossorigin href="/hp-sim5/assets/debugUtils-e3_2ZA9J.js">
     <link rel="modulepreload" crossorigin href="/hp-sim5/assets/OrbitControls-pdJAYT2T.js">
-    <link rel="modulepreload" crossorigin href="/hp-sim5/assets/flipper_common-C1Tz-SJ_.js">
-    <link rel="modulepreload" crossorigin href="/hp-sim5/assets/render_system_3d-CELTofAA.js">
+    <link rel="modulepreload" crossorigin href="/hp-sim5/assets/flipper_common-Dx8gMLMN.js">
+    <link rel="modulepreload" crossorigin href="/hp-sim5/assets/render_system_3d-Du8iu7FB.js">
     <link rel="modulepreload" crossorigin href="/hp-sim5/assets/moveCommander-h5119h8X.js">
     <link rel="modulepreload" crossorigin href="/hp-sim5/assets/stage-ayhLDLxh.js">
-    <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_scene_baker-BgdI4dO_.js">
+    <link rel="modulepreload" crossorigin href="/hp-sim5/assets/cable_scene_baker-3HM6QEXB.js">
     <link rel="modulepreload" crossorigin href="/hp-sim5/assets/rrfFirmwareModel-CEAMKLwp.js">
     <link rel="stylesheet" crossorigin href="/hp-sim5/assets/index-BSR30JOF.css">
   </head>
@@ -82,6 +82,16 @@
                 <label id="closedLoopMotorsToggleWrapper" class="sim-toggle" for="closedLoopMotorsToggle">
                   <input id="closedLoopMotorsToggle" type="checkbox">
                   <span>Closed Loop Motors</span>
+                </label>
+                <label class="sim-toggle" for="physicsSubsteps">
+                  <span>Physics Substeps</span>
+                  <select id="physicsSubsteps" title="More substeps improve stability but use more CPU">
+                    <option value="1" selected>1</option>
+                    <option value="2">2</option>
+                    <option value="4">4</option>
+                    <option value="8">8</option>
+                    <option value="16">16</option>
+                  </select>
                 </label>
               </div>
             </div>
