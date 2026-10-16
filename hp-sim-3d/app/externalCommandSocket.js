@@ -133,6 +133,7 @@ export function createExternalCommandController({
   runtime,
   inspectionTools,
   featureFlags,
+  machines,
   WebSocketCtor = globalThis.WebSocket,
   logger = console,
   queueLimit = 5000,
@@ -141,6 +142,7 @@ export function createExternalCommandController({
   let socketController = null;
   let recordingReady = null;
   let recordingError = null;
+  let settingsError = null;
 
   function getRemoteSystem() {
     return commands?.getRemoteSystem?.() || null;
@@ -206,6 +208,8 @@ export function createExternalCommandController({
         lineLayeringEnabled: world.getResource('enableLayering') === true,
         recording: world.getResource('flightRecorder')?.socket?.readyState === 1,
         recordingError,
+        settingsError,
+        machineType: world.getResource('autocalMachineType'),
       },
       simulationClock: {
         time_ms: (world.getResource('researchClock')?.time ?? 0) * 1000,
@@ -232,6 +236,26 @@ export function createExternalCommandController({
       return;
     }
     if (payload.type === 'simulation_settings') {
+      if (payload.machineType) {
+        recordingReady = Promise.resolve(recordingReady).then(async () => {
+          const sourceKey = {
+            hangprinter_4: 'hp4_rigid_body.usda',
+            slideprinter: 'slideprinter_rigid_body.usda',
+            skycam: 'four_high_anchors_rigid_body.usda',
+            cubecorners: 'cubecorners_rigid_body.usda',
+          }[payload.machineType];
+          if (!sourceKey || !machines) throw new Error(`Unsupported simulator machine: ${payload.machineType}`);
+          const current = machines.getMachines();
+          if (current.length !== 1 || current[0].sourceKey !== sourceKey) {
+            await machines.removeAllMachines();
+            if (!await machines.addCatalogMachine(sourceKey, { resetView: true })) {
+              throw new Error(`Could not load simulator machine: ${sourceKey}`);
+            }
+          }
+          world.setResource('autocalMachineType', payload.machineType);
+          settingsError = null;
+        }).catch(error => { settingsError = error.message; });
+      }
       if (typeof payload.closedLoopMotorsEnabled === 'boolean') {
         if (featureFlags) featureFlags.setClosedLoopMotorsEnabledState(payload.closedLoopMotorsEnabled);
         else setClosedLoopMotorFeatureFlags(world, payload.closedLoopMotorsEnabled);
@@ -246,7 +270,7 @@ export function createExternalCommandController({
       }
       if (payload.recordingUrl) {
         const recorder = world.getResource('flightRecorder');
-        recordingReady = Promise.resolve().then(() => {
+        recordingReady = Promise.resolve(recordingReady).then(() => {
           if (!recorder) throw new Error('This simulator has no browser flight recorder');
           recorder.extendedReference = true;
           return recorder.ensureConnected(payload.recordingUrl);

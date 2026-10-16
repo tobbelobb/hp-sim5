@@ -3744,6 +3744,8 @@ def get_firmware_provider(firmware: str) -> FirmwareProvider:
 
 
 def _add_collector_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--open-loop-motors", action="store_true",
+                        help="Use open-loop motors in the simulator instead of closed-loop motors.")
     parser.add_argument(
         "--collector-args",
         nargs=argparse.REMAINDER,

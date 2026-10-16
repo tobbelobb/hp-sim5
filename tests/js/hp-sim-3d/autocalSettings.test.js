@@ -38,6 +38,11 @@ test('autocal settings update physics resources and visible feature toggles', ()
   expect(commands.handleUserReset).toHaveBeenCalledTimes(1);
   controller.handlePayload({ type: 'simulation_settings', lineLayeringEnabled: true });
   expect(commands.handleUserReset).toHaveBeenCalledTimes(1);
+  controller.handlePayload({ type: 'simulation_settings', closedLoopMotorsEnabled: false, lineLayeringEnabled: false });
+  expect(toggles.closedLoopMotorsToggle.checked).toBe(false);
+  expect(toggles.lineLayeringToggle.checked).toBe(false);
+  expect(world.getResource('enableLayering')).toBe(false);
+  expect(world.getResource('closedLoopMotorsEnabled')).toBe(false);
 });
 
 test('settings barrier waits for Rerun connection and preserves an existing recording', async () => {
@@ -72,4 +77,27 @@ test('failed recorder connection releases physics backpressure', async () => {
   await expect(pending).rejects.toThrow('timed out');
   expect(recorder.socket).toBeNull();
   expect(recorder.readyForStep()).toBe(true);
+});
+
+test('machine selection replaces other scenes before acknowledging settings', async () => {
+  const world = new World();
+  let finishLoading;
+  const machines = {
+    getMachines: () => [{ sourceKey: 'slideprinter_rigid_body.usda' }],
+    removeAllMachines: jest.fn(async () => {}),
+    addCatalogMachine: jest.fn(() => new Promise(resolve => { finishLoading = resolve; })),
+  };
+  const controller = createExternalCommandController({ world, machines, url: 'ws://bridge', WebSocketCtor: Socket });
+  controller.connect();
+  const bridge = Socket.last;
+  bridge.open();
+  controller.handlePayload({ type: 'simulation_settings', machineType: 'hangprinter_4' });
+  controller.handlePayload({ type: 'encoder_request', requestId: 1, axes: [] });
+  await new Promise(resolve => setTimeout(resolve, 0));
+  expect(machines.removeAllMachines).toHaveBeenCalledTimes(1);
+  expect(machines.addCatalogMachine).toHaveBeenCalledWith('hp4_rigid_body.usda', { resetView: true });
+  expect(bridge.samples).toHaveLength(0);
+  finishLoading({});
+  await new Promise(resolve => setTimeout(resolve, 0));
+  expect(bridge.samples.at(-1).simulationSettings).toMatchObject({ machineType: 'hangprinter_4', settingsError: null });
 });

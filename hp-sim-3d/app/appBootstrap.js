@@ -223,6 +223,7 @@ export function createHpSimApp({
   });
   controllers.external = createExternalCommandController({
     world,
+    machines: controllers.machines,
     featureFlags,
     url: normalizeWsUrl(urlParams?.get('gcode_ws') || urlParams?.get('rrf_ws') || null),
     commands: controllers.commands,

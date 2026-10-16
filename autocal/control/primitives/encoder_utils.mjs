@@ -369,6 +369,10 @@ export async function sendHpSimSettings(bridgeCtx, settings) {
   if (bridgeCtx.sendEncoderRequest && !applied) {
     throw new Error('Simulator settings acknowledgement missing; reload the simulator page');
   }
+  if (applied?.settingsError) throw new Error(applied.settingsError);
+  if (settings.machineType && applied?.machineType !== settings.machineType) {
+    throw new Error(`Simulator did not select machine ${settings.machineType}`);
+  }
   for (const key of ['closedLoopMotorsEnabled', 'lineLayeringEnabled']) {
     if (applied && typeof settings[key] === 'boolean' && applied[key] !== settings[key]) {
       throw new Error(`Simulator did not apply ${key}=${settings[key]}`);

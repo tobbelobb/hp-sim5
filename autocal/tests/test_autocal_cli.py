@@ -367,3 +367,10 @@ def test_autocal_main_rejects_removed_full_auto_verbose_flag(tmp_path):
                 str(tmp_path / "dummy.json"),
             ]
         )
+
+
+def test_open_loop_motors_option():
+    _, args = _parse_spool_args("--open-loop-motors")
+    assert args.open_loop_motors is True
+    _, defaults = _parse_spool_args()
+    assert defaults.open_loop_motors is False

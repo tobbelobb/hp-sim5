@@ -205,6 +205,7 @@ export function parseBridgeArgs(argv) {
     speedup: null,
     port: null,
     machineType: null,
+    openLoopMotors: false,
     sweepRange: null,
     sweepPoints: null,
     maxSweeps: null,
@@ -305,6 +306,8 @@ export function parseBridgeArgs(argv) {
       args.noSpawnRrfSimulator = true;
     } else if (arg === '--speedup') {
       args.speedup = argv[++i] || null;
+    } else if (arg === '--open-loop-motors') {
+      args.openLoopMotors = true;
     } else if (arg === '--machineType' || arg === '--machine-type') {
       args.machineType = argv[++i] || null;
     } else if (arg === '--sweepRange') {
@@ -418,6 +421,7 @@ Options:
   --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor per line)
   --debug-sweep              Print planned sweep permutations before collecting
   --trace                    Tell hp-sim to plot a trace of its movements (default: on)
+  --open-loop-motors         Use open-loop simulator motors (default: closed-loop)
   --line-layering             Enable simulator line layering (also automatic for nonzero M666 Q)
   --no-trace                 Disable hp-sim trace plotting
   --project-zero-tension     Project encoder readings to zero tension during each data point
@@ -634,9 +638,9 @@ async function main() {
       }
       if (args.sim) {
         await sendHpSimSettings(bridgeCtx, {
-          closedLoopMotorsEnabled: true,
-          ...(args.lineLayering || (Number.isFinite(Number(args.forceBuildupFactor)) && Number(args.forceBuildupFactor) !== 0)
-            ? { lineLayeringEnabled: true } : {}),
+          closedLoopMotorsEnabled: !args.openLoopMotors,
+          lineLayeringEnabled: Boolean(args.lineLayering || (Number.isFinite(Number(args.forceBuildupFactor)) && Number(args.forceBuildupFactor) !== 0)),
+          ...(!args.headlessUrl ? { machineType } : {}),
           ...(!args.headlessUrl && process.env.AUTOCAL_REFERENCE_WS
             ? { recordingUrl: process.env.AUTOCAL_REFERENCE_WS } : {}),
         });

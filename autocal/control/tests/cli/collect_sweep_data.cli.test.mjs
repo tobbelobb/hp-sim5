@@ -23,6 +23,11 @@ import {
 import { parseBridgeArgs } from '../../cli/collect_sweep_data.mjs';
 
 describe('collect_sweep_data CLI helpers', () => {
+  test('open-loop motors are opt-in', () => {
+    expect(parseBridgeArgs([]).openLoopMotors).toBe(false);
+    expect(parseBridgeArgs(['--sim', '--open-loop-motors']).openLoopMotors).toBe(true);
+  });
+
   test('normalizeMachineType maps hangprinter aliases to hangprinter_4', () => {
     expect(normalizeMachineType('hangprinter_4')).toBe('hangprinter_4');
     expect(normalizeMachineType('hp4')).toBe('hangprinter_4');

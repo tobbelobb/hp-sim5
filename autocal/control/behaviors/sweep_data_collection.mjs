@@ -1398,9 +1398,9 @@ export async function collectSweepData(send, context) {
   }
 
   const m666ForCollection = (m666Adjusted && typeof m666Adjusted === 'object') ? m666Adjusted : m666Before;
-  if (Number(m666ForCollection?.Q) !== 0 && Number.isFinite(Number(m666ForCollection?.Q))) {
-    await context.configureSimulator?.({ lineLayeringEnabled: true });
-  }
+  await context.configureSimulator?.({
+    lineLayeringEnabled: Boolean(context.args?.lineLayering || (Number.isFinite(Number(m666ForCollection?.Q)) && Number(m666ForCollection.Q) !== 0)),
+  });
   let mmPerDeg = machineConfig.axes.map((_, idx) => computeMmPerDegree(m666ForCollection, idx));
 
   if (firmware === 'klipper' && mmPerDeg.some((value) => !Number.isFinite(value))) {
