@@ -1,0 +1,21 @@
+{
+  "tolerance": { "atol": 1e-12, "rtol": 1e-10 },
+  "entities": [
+    { "name": "a", "components": {
+      "PositionComponent": [0, 0, 0], "PrevFinalPosComponent": [0.01, 0, 0], "MassComponent": [1]
+    } },
+    { "name": "b", "components": { "PositionComponent": [2, 0, 0], "MassComponent": [-1] } },
+    { "name": "joint", "components": {
+      "CableJointComponent": ["a", "b", 1, [0, 0, 0], [2, 0, 0], "world"]
+    } },
+    { "name": "path", "components": {
+      "CablePathComponent": [["joint"], ["attachment", "attachment"], [false, false], 20000, null, 0, 5, 8]
+    } }
+  ],
+  "resources": { "dt": 0.0005 },
+  "systems": ["PBDCableConstraintSolver"],
+  "steps": [
+    { "dt": 0.0005 },
+    { "dt": 0.0005, "set": [["a", "PositionComponent", "pos", [0, 0, 0]]] }
+  ]
+}

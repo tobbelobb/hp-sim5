@@ -575,7 +575,7 @@ impl PhysicsWorld {
             self.options[15]
         };
         self.cache();
-        self.friction(dt);
+        self.friction();
         self.constraints(solver_dt);
         self.overcorrections(solver_dt);
         self.velocities(dt);
@@ -1573,9 +1573,11 @@ impl PhysicsWorld {
             self.entities[id][125] = old.max(steps);
         }
     }
-    fn friction(&mut self, dt: f64) {
-        let iterations = ((4.0 * dt / 0.002).floor() as usize).max(1);
-        for _ in 0..iterations {
+    fn friction(&mut self) {
+        // Capstan equilibration is a constraint solve, not a rate of motion.
+        // Stop at 1 nm rest-length changes, capped at 64 passes for long paths.
+        for _ in 0..64 {
+            let mut max_change: f64 = 0.0;
             for c in &mut self.cables {
                 for i in 0..c.count().saturating_sub(1) {
                     let d0 = length(sub(c.point(i, 0), c.point(i, 1)));
@@ -1617,7 +1619,7 @@ impl PhysicsWorld {
                     }
                     if !active {
                         if kind != 0 {
-                            redistribute(c, i, d0, d1, 1.0, false);
+                            max_change = max_change.max(redistribute(c, i, d0, d1, 1.0, false));
                         }
                         continue;
                     }
@@ -1627,11 +1629,14 @@ impl PhysicsWorld {
                         continue;
                     }
                     if t0 > t1 * threshold + EPS {
-                        redistribute(c, i, d0, d1, threshold, false);
+                        max_change = max_change.max(redistribute(c, i, d0, d1, threshold, false));
                     } else if t1 > t0 * threshold + EPS {
-                        redistribute(c, i, d0, d1, threshold, true);
+                        max_change = max_change.max(redistribute(c, i, d0, d1, threshold, true));
                     }
                 }
+            }
+            if max_change <= EPS {
+                break;
             }
         }
     }
@@ -1801,6 +1806,7 @@ impl PhysicsWorld {
             }
         }
         let max = self.paths.iter().map(|p| p[2] as usize).max().unwrap_or(1);
+        let mut multipliers = vec![0.0; self.joints.len()];
         for iter in 0..max {
             let forward = iter % 2 == 0;
             for k in 0..self.paths.len() {
@@ -1811,7 +1817,14 @@ impl PhysicsWorld {
                 for k in 0..path[1] as usize {
                     let index =
                         path[0] as usize + if forward { k } else { path[1] as usize - 1 - k };
-                    solve_joint(&mut self.entities, &mut self.joints, path, index, iter);
+                    solve_joint(
+                        &mut self.entities,
+                        &mut self.joints,
+                        path,
+                        index,
+                        iter,
+                        &mut multipliers[index],
+                    );
                 }
             }
         }
@@ -1855,12 +1868,12 @@ fn mapped_id(es: &[Entity], id: usize, other: usize) -> usize {
         id
     }
 }
-fn redistribute(c: &mut Cable, i: usize, d0: f64, d1: f64, ratio: f64, reverse: bool) {
+fn redistribute(c: &mut Cable, i: usize, d0: f64, d1: f64, ratio: f64, reverse: bool) -> f64 {
     let (d0, d1) = if reverse { (d1, d0) } else { (d0, d1) };
     let total = c.rest(i) + c.rest(i + 1);
     let dist = d0 + d1;
     if total <= 0.0 || dist <= EPS {
-        return;
+        return 0.0;
     }
     let rest = if total >= dist {
         total * (d0 / dist)
@@ -1872,8 +1885,10 @@ fn redistribute(c: &mut Cable, i: usize, d0: f64, d1: f64, ratio: f64, reverse: 
     } else {
         (c.jo(i), c.jo(i + 1))
     };
+    let change = (c.data[a + 3] - rest).abs();
     c.data[a + 3] = rest;
     c.data[b + 3] = total - rest;
+    change
 }
 
 fn member_angular(

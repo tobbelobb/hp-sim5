@@ -70,6 +70,7 @@ class Joint:
     output: int
     transfer_a: int
     transfer_b: int
+    multiplier: F
 
 
 @wp.struct
@@ -286,6 +287,10 @@ def end_info(bodies: wp.array(dtype=Body), joints: wp.array(dtype=Joint), ep: En
                     if ep.stored_load != 0:
                         end.load_gradient = ep.stored
                     end.displacement = end.displacement + end.solve_gradient*spin_delta(bodies, ep.spin)
+                    if ep.defer != 0:
+                        # The pinhole neighbor transfers this load once.
+                        end.inverse = F(0)
+                        end.free_inverse = F(0)
     return end
 
 
@@ -297,14 +302,15 @@ def mechanical(a: End, b: End):
 
 
 @wp.func
-def multiplier(a: End, b: End, path: Path, dt: F, error: F):
+def multiplier(a: End, b: End, path: Path, dt: F, error: F, previous: F):
     valid = wp.isfinite(dt) and dt > EPS
     value = F(0)
     if wp.isinf(path.compliance) and path.compliance > F(0):
         step = F(0)
         if valid:
             step = wp.max(F(0), path.damping)*dt
-        value = wp.min(F(0), step*(a.displacement+b.displacement)/(F(1)+step*mechanical(a,b)))
+        delta = (step*(a.displacement+b.displacement)-previous)/(F(1)+step*mechanical(a,b))
+        value = wp.min(F(0), previous+delta)-previous
     else:
         alpha = F(0)
         gamma = F(0)
@@ -314,7 +320,8 @@ def multiplier(a: End, b: End, path: Path, dt: F, error: F):
         denom = (F(1)+gamma)*mechanical(a,b)+alpha
         value = F(wp.nan)
         if denom > EPS:
-            value = wp.min(F(0), (-error+gamma*(a.displacement+b.displacement))/denom)
+            delta = (-error-alpha*previous+gamma*(a.displacement+b.displacement))/denom
+            value = wp.min(F(0), previous+delta)-previous
     return value
 
 
@@ -407,27 +414,29 @@ def solve(bodies: wp.array(dtype=Body), joints: wp.array(dtype=Joint), paths: wp
                 pb = attachment(bodies,joint.b.entity,joint.local_b)
                 length = wp.length(pb-pa)
                 error = length-joint.rest
-                if length <= EPS or error <= EPS or (bodies[joint.a.solver].flags & 1) == 0 or (bodies[joint.b.solver].flags & 1) == 0:
+                if length <= EPS or (error <= EPS and joint.multiplier == F(0)) or (bodies[joint.a.solver].flags & 1) == 0 or (bodies[joint.b.solver].flags & 1) == 0:
                     continue
                 direction = (pb-pa)/length
                 a = end_info(bodies,joints,joint.a,pa,direction,dt)
                 b = end_info(bodies,joints,joint.b,pb,-direction,dt)
-                value = multiplier(a,b,path,dt,error)
+                value = multiplier(a,b,path,dt,error,joint.multiplier)
                 if wp.isnan(value):
                     continue
                 released = bool(False)
                 if a.spin >= 0 and wp.isfinite(a.limit) and a.limit >= F(0) and inv_dt2 > F(0) and wp.abs(a.solve_gradient) > EPS:
-                    if wp.abs(value)*inv_dt2*wp.abs(a.solve_gradient) > a.limit+EPS:
+                    if wp.abs(value+joint.multiplier)*inv_dt2*wp.abs(a.solve_gradient) > a.limit+EPS:
                         a.inverse = a.free_inverse
                         released = True
                 if b.spin >= 0 and wp.isfinite(b.limit) and b.limit >= F(0) and inv_dt2 > F(0) and wp.abs(b.solve_gradient) > EPS:
-                    if wp.abs(value)*inv_dt2*wp.abs(b.solve_gradient) > b.limit+EPS:
+                    if wp.abs(value+joint.multiplier)*inv_dt2*wp.abs(b.solve_gradient) > b.limit+EPS:
                         b.inverse = b.free_inverse
                         released = True
                 if released:
-                    value = multiplier(a,b,path,dt,error)
+                    value = multiplier(a,b,path,dt,error,joint.multiplier)
                 if wp.isnan(value):
                     continue
+                joint.multiplier = joint.multiplier+value
+                joints[index] = joint
                 if iteration == 0:
                     record_load(bodies,loads,joint.a,a,path,value,inv_dt2)
                     record_load(bodies,loads,joint.b,b,path,value,inv_dt2)

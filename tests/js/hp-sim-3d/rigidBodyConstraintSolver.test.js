@@ -1248,7 +1248,7 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
     );
   });
 
-  test('fixed pinhole cable corrections can backdrive an upstream open-loop stepper', () => {
+  test.each([0, 0.001, 1])('pinhole transfers one spool correction even with inner extension %s', extension => {
     const world = new World();
     world.setResource('dt', 1.0 / 500.0);
 
@@ -1288,7 +1288,7 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
       CableJointComponent.fromWorld(
         spool,
         pinhole,
-        Math.sqrt(5.0),
+        Math.sqrt(5.0) - extension,
         new Vector3(0.0, 1.0, 0.0),
         new Vector3(2.0, 0.0, 0.0),
       ),
@@ -1331,6 +1331,13 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
       8,
     );
     expect(Math.abs(spoolAngle)).toBeGreaterThan((2.0 * Math.PI) / 50.0);
+    // The outer cable exceeds holding torque, so it uses the free rotor
+    // inertia. The inner segment must not add another correction, even when
+    // its own load also exceeds holding torque.
+    const freeInvInertia = 1e6;
+    const gradient = -2 / Math.sqrt(5);
+    const lambda = -1 / (1 + freeInvInertia * gradient ** 2 + 12.5);
+    expect(spoolAngle).toBeCloseTo(-freeInvInertia * lambda * gradient, 10);
   });
 
   test('external pinhole cable corrections can backdrive a downstream rigid-body-mounted spool member', () => {

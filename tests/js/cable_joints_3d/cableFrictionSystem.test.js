@@ -16,6 +16,33 @@ import { CableFrictionSystem } from '../../../src/js/cable_joints_3d/cable_frict
 import { SpoolStateComponent } from '../../../hp-sim-3d/app/hangprinter_spools.js';
 
 describe('CableFrictionSystem (3D)', () => {
+  test('substeps retain tension equilibration along a multi-segment path', () => {
+    function redistribute(dt) {
+      const world = new World();
+      const endpoints = Array.from({ length: 7 }, (_, i) => {
+        const id = world.createEntity();
+        world.addComponent(id, new PositionComponent(i, 0, 0));
+        return id;
+      });
+      const joints = endpoints.slice(1).map((id, i) => {
+        const joint = world.createEntity();
+        world.addComponent(joint, CableJointComponent.fromWorld(endpoints[i], id,
+          i === 0 ? .5 : 1, new Vector3(i, 0, 0), new Vector3(i + 1, 0, 0)));
+        return joint;
+      });
+      const path = world.createEntity();
+      world.addComponent(path, new CablePathComponent(world, joints,
+        ['attachment', 'pinhole', 'pinhole', 'pinhole', 'pinhole', 'pinhole', 'attachment'],
+        Array(7).fill(false), 20000));
+      new CableFrictionSystem().update(world, dt);
+      return joints.map(id => world.getComponent(id, CableJointComponent).restLength);
+    }
+    const baseline = redistribute(.002);
+    expect(baseline.reduce((sum, length) => sum + length, 0)).toBeCloseTo(5.5, 12);
+    expect(Math.max(...baseline) - Math.min(...baseline)).toBeLessThan(1e-8);
+    for (const substeps of [2, 4, 8, 16]) expect(redistribute(.002 / substeps)).toEqual(baseline);
+  });
+
   test('uses cable half-width as effective rolling radius when the base radius is zero', () => {
     const world = new World();
 
