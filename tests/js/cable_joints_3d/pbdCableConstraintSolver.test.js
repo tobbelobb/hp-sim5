@@ -17,6 +17,27 @@ import {
 import { GravitySystem } from '../../../src/js/cable_joints_3d/commonSystems.js';
 
 describe('PBDCableConstraintSolver (3D)', () => {
+  test.each([0, 5])('compliant cable response is independent of solver iterations (damping=%s)', damping => {
+    for (const iterations of [1, 2, 8]) {
+      const world = new World();
+      world.setResource('dt', .002);
+      const a = world.createEntity(), b = world.createEntity();
+      world.addComponent(a, new PositionComponent());
+      world.addComponent(a, new PrevFinalPosComponent());
+      world.addComponent(a, new MassComponent(1));
+      world.addComponent(b, new PositionComponent(2, 0, 0));
+      world.addComponent(b, new MassComponent(-1));
+      const joint = world.createEntity(), path = world.createEntity();
+      world.addComponent(joint, CableJointComponent.fromWorld(a, b, 1, new Vector3(), new Vector3(2, 0, 0)));
+      world.addComponent(path, new CablePathComponent(world, [joint], ['attachment', 'attachment'],
+        [false, false], 20000, null, 0, damping, iterations));
+      new PBDCableConstraintSolver().update(world, .002);
+      const gamma = (1 / 20000) * damping / .002;
+      const expected = 1 / (1 + gamma + (1 / 20000) / .002 ** 2);
+      expect(world.getComponent(a, PositionComponent).pos.x).toBeCloseTo(expected, 12);
+    }
+  });
+
   function addStretchedCable(world, end = 3) {
     world.setResource('dt', 1);
     const a = world.createEntity();

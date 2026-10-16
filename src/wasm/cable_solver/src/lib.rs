@@ -587,8 +587,10 @@ fn spin(es: &[Entity], joint: &Joint, side: usize, point: V, grad: V) -> Spin {
         id,
         active: true,
         axis,
-        free,
-        inv,
+        // A pinhole neighbor transfers this same load to the spool. Keep the
+        // direct endpoint's damping terms, but do not backdrive it twice.
+        free: if flags & 8 != 0 { 0.0 } else { free },
+        inv: if flags & 8 != 0 { 0.0 } else { inv },
         grad: solve_grad,
         load_grad,
         disp: solve_grad * spin_angle(e),
@@ -612,16 +614,18 @@ fn mechanical(a: &Entity, b: &Entity, ga: V, gb: V, aa: f64, ab: f64, sa: Spin, 
     }
     d
 }
-fn lambda(path: &Path, error: f64, disp: f64, denom: f64) -> Option<f64> {
+fn lambda(path: &Path, error: f64, disp: f64, denom: f64, previous: f64) -> Option<f64> {
     // Cable damping may cancel tension while shortening, but cannot push.
     if path[3] != 0.0 {
-        return Some((path[6] * disp / (1.0 + path[6] * denom)).min(0.0));
+        let delta = (path[6] * disp - previous) / (1.0 + path[6] * denom);
+        return Some((previous + delta).min(0.0) - previous);
     }
     let d = (1.0 + path[5]) * denom + path[4];
     if d <= EPS {
         None
     } else {
-        Some(((-error + path[5] * disp) / d).min(0.0))
+        let delta = (-error - path[4] * previous + path[5] * disp) / d;
+        Some((previous + delta).min(0.0) - previous)
     }
 }
 fn load(es: &mut [Entity], s: Spin, path: &Path, lambda: f64) {
@@ -689,7 +693,14 @@ fn correct(es: &mut [Entity], id: usize, grad: V, angular: V, angular_denom: f64
         }
     }
 }
-fn solve_joint(es: &mut [Entity], js: &mut [Joint], path: &Path, idx: usize, iter: usize) {
+fn solve_joint(
+    es: &mut [Entity],
+    js: &mut [Joint],
+    path: &Path,
+    idx: usize,
+    iter: usize,
+    accumulated: &mut f64,
+) {
     let j = js[idx];
     let a_id = j[2] as usize;
     let b_id = j[3] as usize;
@@ -705,7 +716,7 @@ fn solve_joint(es: &mut [Entity], js: &mut [Joint], path: &Path, idx: usize, ite
         return;
     }
     let error = distance - j[10];
-    if error <= EPS {
+    if error <= EPS && *accumulated == 0.0 {
         return;
     }
     let a = es[a_id];
@@ -745,6 +756,7 @@ fn solve_joint(es: &mut [Entity], js: &mut [Joint], path: &Path, idx: usize, ite
         error,
         disp,
         mechanical(&a, &b, ga, gb, da, db, sa, sb),
+        *accumulated,
     ) else {
         return;
     };
@@ -754,7 +766,7 @@ fn solve_joint(es: &mut [Entity], js: &mut [Joint], path: &Path, idx: usize, ite
             && s.limit >= 0.0
             && path[7] > 0.0
             && s.grad.abs() > EPS
-            && l.abs() * path[7] * s.grad.abs() > s.limit + EPS
+            && (l + *accumulated).abs() * path[7] * s.grad.abs() > s.limit + EPS
     };
     let release_a = release(sa);
     let release_b = release(sb);
@@ -770,11 +782,13 @@ fn solve_joint(es: &mut [Entity], js: &mut [Joint], path: &Path, idx: usize, ite
             error,
             disp,
             mechanical(&a, &b, ga, gb, da, db, sa, sb),
+            *accumulated,
         ) else {
             return;
         };
         l = new_l;
     }
+    *accumulated += l;
     // Match the physical force snapshot: solver visits are not parallel loads.
     if iter == 0 {
         load(es, sa, path, l);
@@ -831,6 +845,7 @@ pub unsafe extern "C" fn solve(ptr: *mut f64, entities: usize, joints: usize, pa
     let js = std::slice::from_raw_parts_mut(ptr.add(entities * E) as *mut Joint, joints);
     let ps = std::slice::from_raw_parts(ptr.add(entities * E + joints * J) as *const Path, paths);
     let max_iterations = ps.iter().map(|p| p[2] as usize).max().unwrap_or(1);
+    let mut multipliers = vec![0.0; joints];
     for iter in 0..max_iterations {
         let forward = iter % 2 == 0;
         for k in 0..paths {
@@ -842,7 +857,7 @@ pub unsafe extern "C" fn solve(ptr: *mut f64, entities: usize, joints: usize, pa
             let count = path[1] as usize;
             for k in 0..count {
                 let index = first + if forward { k } else { count - 1 - k };
-                solve_joint(es, js, path, index, iter);
+                solve_joint(es, js, path, index, iter, &mut multipliers[index]);
             }
         }
     }

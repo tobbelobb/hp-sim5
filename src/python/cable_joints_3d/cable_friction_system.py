@@ -9,26 +9,28 @@ from .spools import SpoolStateComponent
 from .vector3 import length as norm3, normalize
 
 EPSILON = 1e-9
-BASE_ITERATIONS = 4
-TARGET_DT = 1. / 500
+MAX_ITERATIONS = 64
 
 
 def _redistribute_pair(high, low, distance_high, distance_low, ratio):
     total_rest = high.rest_length + low.rest_length
     total_distance = distance_high + distance_low
+    previous_high_rest = high.rest_length
     if not total_rest > 0 or not total_distance > EPSILON:
-        return
+        return 0.
     if total_rest >= total_distance:
         high.rest_length = total_rest * distance_high / total_distance
         low.rest_length = total_rest - high.rest_length
-        return
+        return abs(high.rest_length - previous_high_rest)
     ratio = max(1., ratio)
     high_rest = (distance_high - ratio * distance_low + ratio * total_rest) / (1. + ratio)
     high.rest_length = min(total_rest, max(0., high_rest))
     low.rest_length = total_rest - high.rest_length
+    return abs(high.rest_length - previous_high_rest)
 
 
 def _redistribute_path(world, path):
+    max_change = 0.
     for index in range(len(path.joint_entities) - 1):
         first = world.get_component(path.joint_entities[index], CableJointComponent)
         second = world.get_component(path.joint_entities[index + 1], CableJointComponent)
@@ -62,7 +64,7 @@ def _redistribute_path(world, path):
                     threshold = float(np.exp(mu * wrap_angle))
         if not friction_active:
             if link_type != 'attachment':
-                _redistribute_pair(first, second, distance_first, distance_second, 1.)
+                max_change = max(max_change, _redistribute_pair(first, second, distance_first, distance_second, 1.))
             continue
         tension_first = max(0., distance_first - first.rest_length)
         tension_second = max(0., distance_second - second.rest_length)
@@ -73,12 +75,14 @@ def _redistribute_path(world, path):
         else:
             high, low, d_high, d_low, t_high, t_low = second, first, distance_second, distance_first, tension_second, tension_first
         if t_high > t_low * threshold + EPSILON:
-            _redistribute_pair(high, low, d_high, d_low, threshold)
+            max_change = max(max_change, _redistribute_pair(high, low, d_high, d_low, threshold))
+    return max_change
 
 
 class CableFrictionSystem:
-    def update(self, world, dt):
-        iterations = max(1, math.floor(BASE_ITERATIONS * dt / TARGET_DT))
-        for _ in range(iterations):
-            for entity in world.query([CablePathComponent]):
-                _redistribute_path(world, world.get_component(entity, CablePathComponent))
+    def update(self, world, _dt):
+        # Capstan equilibration is a constraint solve, not a rate of motion.
+        paths = [world.get_component(entity, CablePathComponent) for entity in world.query([CablePathComponent])]
+        for _ in range(MAX_ITERATIONS):
+            if max((_redistribute_path(world, path) for path in paths), default=0.) <= EPSILON:
+                break

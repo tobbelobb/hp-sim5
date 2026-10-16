@@ -3004,6 +3004,11 @@ export class PBDCableConstraintSolver {
                 jointIndex > 0
               )
             );
+            // The neighboring segment already backdrives this spool through
+            // the pinhole. Applying its load here as well rotates it twice.
+            if (directInfo.deferTorqueLoadToPinholeNeighbor) {
+              directInfo.invInertia = directInfo.freeInvInertia = 0.0;
+            }
           }
           return directInfo;
         }
@@ -3125,6 +3130,8 @@ export class PBDCableConstraintSolver {
     const cableLoadTorques = new Map();
     const cableLoadStiffnesses = new Map();
     const cableLoadDampings = new Map();
+    // Multipliers belong to each path constraint, including shared joints.
+    const accumulatedLambdas = new Map(pathEntities.map(id => [pathStore.get(id), new Map()]));
     world.setResource('torqueModeCableLoadTorques', cableLoadTorques);
     world.setResource('torqueModeCableLoadStiffnesses', cableLoadStiffnesses);
     world.setResource('torqueModeCableLoadDampings', cableLoadDampings);
@@ -3179,7 +3186,8 @@ export class PBDCableConstraintSolver {
       solveIteration,
       solverContext,
     ) => {
-      if (constraintError <= EPSILON) {
+      const multipliers = accumulatedLambdas.get(path);
+      if (constraintError <= EPSILON && !(multipliers.get(joint) < 0.0)) {
         return;
       }
       const { mappedA, mappedB, endpointA, endpointB, pathParameters } = solverContext;
@@ -3320,18 +3328,24 @@ export class PBDCableConstraintSolver {
 
       const solveLambda = (solveMemberInvInertiaA, solveMemberInvInertiaB) => {
         const mechDenom = mechanicalDenom(solveMemberInvInertiaA, solveMemberInvInertiaB);
+        // XPBD applies the change in the multiplier. Without the accumulated
+        // compliance term, each visit adds another spring's worth of tension.
         // A shortening cable's damping may cancel its tension, but must never
         // turn the unilateral constraint into a compressive (pushing) force.
         if (zeroStiffness) {
           // Divide the existing damped equation by compliance before taking
           // its infinite-compliance limit; avoid Infinity * 0 and Infinity / Infinity.
-          return Math.min(0, dampingStep * jDx / (1.0 + dampingStep * mechDenom));
+          const previous = multipliers.get(joint) ?? 0.0;
+          const delta = (dampingStep * jDx - previous) / (1.0 + dampingStep * mechDenom);
+          return Math.min(0, previous + delta) - previous;
         }
         const denom = ((1.0 + gamma) * mechDenom) + alphaTilde;
         if (denom <= EPSILON) {
           return null;
         }
-        return Math.min(0, (-constraintError + (gamma * jDx)) / denom);
+        const previous = multipliers.get(joint) ?? 0.0;
+        const delta = (-constraintError - alphaTilde * previous + (gamma * jDx)) / denom;
+        return Math.min(0, previous + delta) - previous;
       };
 
       let solveMemberInvInertiaA = memberInvInertiaA;
@@ -3349,7 +3363,7 @@ export class PBDCableConstraintSolver {
         if (!(invDtSq > 0.0) || Math.abs(gradSpin) <= EPSILON) {
           return false;
         }
-        const cableTorque = Math.abs(lambda) * invDtSq * Math.abs(gradSpin);
+        const cableTorque = Math.abs(lambda + (multipliers.get(joint) ?? 0.0)) * invDtSq * Math.abs(gradSpin);
         return cableTorque > torqueLimit + EPSILON;
       };
       const releaseMotorA = exceedsHoldingTorque(memberSpinA, solveGradSpinA);
@@ -3366,6 +3380,7 @@ export class PBDCableConstraintSolver {
           return;
         }
       }
+      multipliers.set(joint, (multipliers.get(joint) ?? 0.0) + lambda);
       // Solver visits refine one physical constraint; they are not extra
       // parallel springs or additional cable loads. Match the force snapshot.
       if (solveIteration === 0) {
@@ -3536,7 +3551,7 @@ export class PBDCableConstraintSolver {
           }
 
           const constraintError = currentSegmentLength - joint.restLength;
-          if (constraintError <= EPSILON) {
+          if (constraintError <= EPSILON && !(accumulatedLambdas.get(path).get(joint) < 0.0)) {
             continue;
           }
 

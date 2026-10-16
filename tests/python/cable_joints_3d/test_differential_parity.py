@@ -31,6 +31,25 @@ def test_comparator_rejects_changed_physics_and_structure():
         assert_equivalent(changed, expected, **fixture['tolerance'])
 
 
+@pytest.mark.parametrize('stiffness', [0, 20000])
+@pytest.mark.parametrize('iterations', [1, 2, 8])
+def test_compliant_cable_iterations_refine_one_physical_spring(stiffness, iterations):
+    fixture = json.loads((FIXTURES / 'cable_compliance_iterations.json').read_text())
+    path = fixture['entities'][-1]['components']['CablePathComponent']
+    path[3], path[-1] = stiffness, iterations
+    dt, damping = fixture['resources']['dt'], path[-2]
+    if stiffness:
+        alpha = 1 / (stiffness * dt * dt)
+        gamma = damping / (stiffness * dt)
+        expected = (1 + gamma * .01) / (1 + gamma + alpha)
+    else:
+        expected = damping * dt * .01 / (1 + damping * dt)
+    for run in (run_js, run_python):
+        snapshots = run(fixture)['snapshots']
+        for snapshot in snapshots[1:]:
+            assert snapshot['entities']['a']['PositionComponent']['pos'][0] == pytest.approx(expected, abs=1e-12)
+
+
 def test_shortening_cables_cannot_push_even_when_damping_exceeds_tension():
     fixture = json.loads((FIXTURES / 'cable_damping_unilateral.json').read_text())
     for run in (run_js, run_python):

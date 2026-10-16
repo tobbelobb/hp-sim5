@@ -9,15 +9,12 @@ import {
 } from './cable_joints_core.js';
 import { SpoolStateComponent } from '../../../hp-sim-3d/app/hangprinter_spools.js';
 
-// Base iteration count tuned for a 60 Hz frame time. When the simulation uses
-// smaller timesteps, we reduce the per-step iterations so that the total number
-// of friction iterations per real-time second stays roughly constant. See
-// `ai_docs/CableJoints/CableJoints.md` for the friction model and
-// `ai_docs/Smallsteps/Smallsteps.md` for why the work should scale with the
-// timestep size.
+// Rest-length redistribution solves a capstan bound, not a rate of motion.
+// Converge per solve: timestep-scaled passes leave transient tension differences
+// along multi-segment paths and overload motors. Bound work for long paths.
 
-const BASE_ITERATIONS = 4;
-const TARGET_DT = 1 / 500;
+const MAX_ITERATIONS = 64;
+const REST_TOLERANCE = 1e-9;
 
 function _hybridTransitionArcThreshold(path) {
   const halfWidth = Number.isFinite(path?.cableHalfWidth) ? Math.max(0.0, path.cableHalfWidth) : 0.0;
@@ -38,14 +35,15 @@ function _redistributePairRestLengthByTensionRatio(
   // equal absolute extension, not equal strain.
   const totalRest = jHighComp.restLength + jLowComp.restLength;
   const totalDist = dHigh + dLow;
+  const previousHighRest = jHighComp.restLength;
   if (!(totalRest > 0.0) || !(totalDist > 1e-9)) {
-    return;
+    return 0.0;
   }
 
   if (totalRest >= totalDist) {
     jHighComp.restLength = totalRest * (dHigh / totalDist);
     jLowComp.restLength = totalRest - jHighComp.restLength;
-    return;
+    return Math.abs(jHighComp.restLength - previousHighRest);
   }
 
   const ratio = Math.max(1.0, tensionRatio);
@@ -53,11 +51,13 @@ function _redistributePairRestLengthByTensionRatio(
   highRest = Math.max(0.0, Math.min(totalRest, highRest));
   jHighComp.restLength = highRest;
   jLowComp.restLength = totalRest - highRest;
+  return Math.abs(highRest - previousHighRest);
 }
 
 function _evenOutTensionFriction(world) {
   const pathEntities = world.query([CablePathComponent]);
   const epsilon = 1e-9;
+  let maxChange = 0.0;
 
   for (const pathId of pathEntities) {
     const path = world.getComponent(pathId, CablePathComponent);
@@ -118,7 +118,7 @@ function _evenOutTensionFriction(world) {
 
       if (!frictionActive) {
         if (linkType !== 'attachment') {
-          _redistributePairRestLengthByTensionRatio(j0_comp, j1_comp, d0, d1, 1.0);
+          maxChange = Math.max(maxChange, _redistributePairRestLengthByTensionRatio(j0_comp, j1_comp, d0, d1, 1.0));
         }
         continue;
       }
@@ -141,25 +141,26 @@ function _evenOutTensionFriction(world) {
 
       if (T_high > T_low * frictionThreshold + epsilon) {
         if (is_j0_high) {
-          _redistributePairRestLengthByTensionRatio(
+          maxChange = Math.max(maxChange, _redistributePairRestLengthByTensionRatio(
             j0_comp,
             j1_comp,
             D_high,
             D_low,
             frictionThreshold,
-          );
+          ));
         } else {
-          _redistributePairRestLengthByTensionRatio(
+          maxChange = Math.max(maxChange, _redistributePairRestLengthByTensionRatio(
             j1_comp,
             j0_comp,
             D_high,
             D_low,
             frictionThreshold,
-          );
+          ));
         }
       }
     }
   }
+  return maxChange;
 }
 
 function _sanityCheck(world) {
@@ -194,12 +195,9 @@ function _sanityCheck(world) {
 
 export class CableFrictionSystem {
   runInPause = false;
-  update(world, dt) {
-    // Keep the total number of friction iterations per real-time second
-    // constant as described in Smallsteps.md.
-    const iterations = Math.max(1, Math.floor(BASE_ITERATIONS * dt / TARGET_DT));
-    for (let i = 0; i < iterations; i++) {
-      _evenOutTensionFriction(world);
+  update(world, _dt) {
+    for (let i = 0; i < MAX_ITERATIONS; i++) {
+      if (_evenOutTensionFriction(world) <= REST_TOLERANCE) break;
     }
     //_sanityCheck(world);
   }

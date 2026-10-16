@@ -104,6 +104,9 @@ def _spin_info(world, path, index, first, entity, internal, point, gradient, joi
                 info.defer_to_pinhole_neighbor = (
                     (first and path.link_types[index + 1] == 'pinhole' and index + 1 < len(path.joint_entities))
                     or (not first and path.link_types[index] == 'pinhole' and index > 0))
+                if info.defer_to_pinhole_neighbor:
+                    # The neighboring segment already backdrives this spool.
+                    info.inv_inertia = info.free_inv_inertia = 0.
             return info
     if internal or len(path.joint_entities) < 2 or path.link_types[link_index] != 'pinhole':
         return None
@@ -250,7 +253,7 @@ def _apply_end_correction(world, end, inverse, multiplier):
                 encoder.angle += delta_angle
 
 
-def _solve_joint(world, path, index, joint, points, direction, error, iteration, joint_locals, dt, loads):
+def _solve_joint(world, path, index, joint, points, direction, error, iteration, joint_locals, dt, loads, multipliers):
     first = _solver_end(world, path, index, True, joint.entity_a, joint.entity_b, points[0], direction, joint_locals, dt)
     second = _solver_end(world, path, index, False, joint.entity_b, joint.entity_a, points[1], -direction, joint_locals, dt)
     if first is None or second is None:
@@ -262,14 +265,20 @@ def _solve_joint(world, path, index, joint, points, direction, error, iteration,
     alpha = path.compliance / (dt * dt) if valid_dt and not zero_stiffness else 0.
     gamma = max(0., path.compliance * path.damping / dt) if valid_dt and not zero_stiffness else 0.
     displacement = first.displacement + second.displacement
+    key = id(path), id(joint)
+    previous = multipliers.get(key, 0.)
 
     def solve_multiplier():
         mechanical = _mechanical_denominator(ends, inverses)
         if zero_stiffness:
             damping_step = max(0., path.damping) * dt if valid_dt else 0.
-            return min(0., damping_step * displacement / (1 + damping_step * mechanical))
+            delta = (damping_step * displacement - previous) / (1 + damping_step * mechanical)
+            return min(0., previous + delta) - previous
         denominator = (1 + gamma) * mechanical + alpha
-        return min(0., (-error + gamma * displacement) / denominator) if denominator > EPSILON else None
+        if denominator <= EPSILON:
+            return None
+        delta = (-error - alpha * previous + gamma * displacement) / denominator
+        return min(0., previous + delta) - previous
 
     multiplier = solve_multiplier()
     if multiplier is None:
@@ -279,13 +288,14 @@ def _solve_joint(world, path, index, joint, points, direction, error, iteration,
     for i, end in enumerate(ends):
         limit = end.spin.holding_torque_limit if end.spin else math.inf
         if finite_number(limit) and limit >= 0 and inv_dt_squared > 0 and abs(end.solve_spin_gradient) > EPSILON:
-            if abs(multiplier) * inv_dt_squared * abs(end.solve_spin_gradient) > limit + EPSILON:
+            if abs(multiplier + previous) * inv_dt_squared * abs(end.solve_spin_gradient) > limit + EPSILON:
                 inverses[i] = end.spin.free_inv_inertia
                 released = True
     if released:
         multiplier = solve_multiplier()
         if multiplier is None:
             return
+    multipliers[key] = previous + multiplier
     if iteration == 0:
         for end in ends:
             _record_load(path, end, multiplier, inv_dt_squared, loads)
@@ -323,6 +333,7 @@ class PBDCableConstraintSolver:
         for key, value in zip(('torqueModeCableLoadTorques', 'torqueModeCableLoadStiffnesses', 'torqueModeCableLoadDampings'), loads):
             world.set_resource(key, value)
         joint_locals = {}
+        multipliers = {}
         for path_id in paths:
             path = world.get_component(path_id, CablePathComponent)
             for joint_id in path.joint_entities:
@@ -346,6 +357,6 @@ class PBDCableConstraintSolver:
                               compute_world_attachment(world, joint.entity_b, joint_locals[joint_id][1]))
                     difference = points[1] - points[0]
                     length = norm3(difference)
-                    if length <= EPSILON or length - joint.rest_length <= EPSILON:
+                    if length <= EPSILON or (length - joint.rest_length <= EPSILON and multipliers.get((id(path), id(joint)), 0.) == 0.):
                         continue
-                    _solve_joint(world, path, index, joint, points, difference / length, length - joint.rest_length, iteration, joint_locals, dt, loads)
+                    _solve_joint(world, path, index, joint, points, difference / length, length - joint.rest_length, iteration, joint_locals, dt, loads, multipliers)
