@@ -2,6 +2,14 @@ import { EncoderComponent } from '../../src/js/cable_joints_3d/ecs.js';
 import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
 
+const MACHINE_SCENES = Object.freeze({
+  hangprinter_3: 'hp3_rigid_body.usda',
+  hangprinter_4: 'hp4_rigid_body.usda',
+  slideprinter: 'slideprinter_rigid_body.usda',
+  skycam: 'four_high_anchors_rigid_body.usda',
+  cubecorners: 'cubecorners_rigid_body.usda',
+});
+
 export function normalizeWsUrl(raw) {
   if (!raw || typeof raw !== 'string') {
     return null;
@@ -209,7 +217,9 @@ export function createExternalCommandController({
         recording: world.getResource('flightRecorder')?.socket?.readyState === 1,
         recordingError,
         settingsError,
-        machineType: world.getResource('autocalMachineType'),
+        machineType: machines?.getMachines?.().length === 1
+          ? Object.entries(MACHINE_SCENES).find(([, key]) => key === machines.getMachines()[0].sourceKey)?.[0]
+          : undefined,
       },
       simulationClock: {
         time_ms: (world.getResource('researchClock')?.time ?? 0) * 1000,
@@ -238,13 +248,7 @@ export function createExternalCommandController({
     if (payload.type === 'simulation_settings') {
       if (payload.machineType) {
         recordingReady = Promise.resolve(recordingReady).then(async () => {
-          const sourceKey = {
-            hangprinter_3: 'hp3_rigid_body.usda',
-            hangprinter_4: 'hp4_rigid_body.usda',
-            slideprinter: 'slideprinter_rigid_body.usda',
-            skycam: 'four_high_anchors_rigid_body.usda',
-            cubecorners: 'cubecorners_rigid_body.usda',
-          }[payload.machineType];
+          const sourceKey = MACHINE_SCENES[payload.machineType];
           if (!sourceKey || !machines) throw new Error(`Unsupported simulator machine: ${payload.machineType}`);
           const current = machines.getMachines();
           if (current.length !== 1 || current[0].sourceKey !== sourceKey) {
@@ -253,7 +257,6 @@ export function createExternalCommandController({
               throw new Error(`Could not load simulator machine: ${sourceKey}`);
             }
           }
-          world.setResource('autocalMachineType', payload.machineType);
           settingsError = null;
         }).catch(error => { settingsError = error.message; });
       }

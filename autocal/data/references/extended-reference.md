@@ -5,6 +5,31 @@ in **one `.rrd`**, written live by the flight recorder. `.rrd` is Rerun's record
 format; RRF is the firmware. No separate timeline format is needed. Historical
 fixtures cannot acquire missing physics or original collection events retroactively.
 
+## Automatic recording
+
+Add `--extended-recording` (aliases: `--recording`, `--record`) to a simulated
+collection. For a browser run, keep Vite and one simulator tab open:
+
+```bash
+.venv/bin/python autocal/autocal.py \
+  --sim --machine-type hp4 --speedup 25 \
+  --dataset output/extended-autocal/trial-001/sweeps.json \
+  --extended-recording
+```
+
+Autocal starts the flight recorder, connects the browser, and finalizes the
+recording on exit, including collection failure. Output goes in
+`sweeps.recording/` beside the dataset, with a numeric suffix if that directory
+already exists. The directory contains the `.rrd`, its manifest and `recorder.log`.
+The recorder runs without a live viewer; inspect the RRD afterwards. Reload the
+simulator after updating its code so it supports machine selection and recorder
+drain on shutdown. No extra browser query parameters or manual recorder command
+are needed beyond the usual `?gcode_ws=ws://localhost:8790` connection.
+
+With `--headless-sim`, these flags use the existing managed headless recorder and
+store output in `sweeps.headless/`. An explicit `--extended-reference-ws` or
+`AUTOCAL_REFERENCE_WS` reuses that external recorder and leaves it running.
+
 ## Headless full-auto collection
 
 Launcher sessions can run this same CLI through `start_autocal`, `autocal_status`
@@ -99,11 +124,11 @@ reapplies the requested speed and Trace. `--extended-reference-ws` also connects
 the browser recorder if needed, preserving an existing recording at that address.
 It waits for the first physics sample to be acknowledged before sending G-codes.
 You can still connect with the Rerun button yourself.
-Use one simulator tab. For example, for the HP3 scene (`hangprinter_4`):
+Use one simulator tab. For example, for the HP3 scene (`hangprinter_3`):
 
 ```bash
 .venv/bin/python autocal/autocal.py \
-  --sim --machine-type hangprinter_4 --speedup 25 \
+  --sim --machine-type hangprinter_3 --speedup 25 \
   --dataset output/extended-autocal/trial-001/sweeps.json \
   --extended-reference-ws ws://127.0.0.1:9877
 ```

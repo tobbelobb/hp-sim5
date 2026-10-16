@@ -88,8 +88,9 @@ test.each([
 ])('machine %s replaces other scenes before acknowledging settings', async (machineType, sourceKey) => {
   const world = new World();
   let finishLoading;
+  let loadedKey = 'old-machine.usda';
   const machines = {
-    getMachines: () => [{ sourceKey: 'old-machine.usda' }],
+    getMachines: () => [{ sourceKey: loadedKey }],
     removeAllMachines: jest.fn(async () => {}),
     addCatalogMachine: jest.fn(() => new Promise(resolve => { finishLoading = resolve; })),
   };
@@ -103,7 +104,33 @@ test.each([
   expect(machines.removeAllMachines).toHaveBeenCalledTimes(1);
   expect(machines.addCatalogMachine).toHaveBeenCalledWith(sourceKey, { resetView: true });
   expect(bridge.samples).toHaveLength(0);
+  loadedKey = sourceKey;
   finishLoading({});
   await new Promise(resolve => setTimeout(resolve, 0));
   expect(bridge.samples.at(-1).simulationSettings).toMatchObject({ machineType, settingsError: null });
+  world.clear(); // Scene resets discard world resources, but preserve the selected machine list.
+  controller.handlePayload({ type: 'encoder_request', requestId: 2, axes: [] });
+  await new Promise(resolve => setTimeout(resolve, 0));
+  expect(bridge.samples.at(-1).simulationSettings.machineType).toBe(machineType);
+});
+
+test('recorder shutdown drains pending events before disconnecting', async () => {
+  const world = new World();
+  const recorder = new FlightRecorder({ world, WebSocketClass: Socket });
+  recorder.extendedReference = true;
+  recorder.recordPhysics = false;
+  recorder.connect();
+  const socket = recorder.socket;
+  socket.open();
+  socket.dispatchEvent(new MessageEvent('message', { data: JSON.stringify({ type: 'ack' }) }));
+  recorder.recordEvent('last_event', {});
+  socket.dispatchEvent(new MessageEvent('message', { data: JSON.stringify({ type: 'recording_stop' }) }));
+  expect(recorder.socket).toBe(socket);
+  recorder.recordEvent('after_stop', {});
+  const batch = socket.samples.find(sample => sample.type === 'autocal_event_batch');
+  expect(batch.events.map(event => event.kind)).toEqual(['scene_context', 'last_event']);
+  socket.dispatchEvent(new MessageEvent('message', { data: JSON.stringify({ type: 'event_ack', count: batch.events.length }) }));
+  await new Promise(resolve => setTimeout(resolve, 15));
+  expect(recorder.socket).toBeNull();
+  expect(recorder.error).toBeNull();
 });

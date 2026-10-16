@@ -371,7 +371,9 @@ export async function sendHpSimSettings(bridgeCtx, settings) {
   }
   if (applied?.settingsError) throw new Error(applied.settingsError);
   if (settings.machineType && applied?.machineType !== settings.machineType) {
-    throw new Error(`Simulator did not select machine ${settings.machineType}`);
+    throw new Error(applied?.machineType == null
+      ? "Simulator did not acknowledge machine selection; reload the simulator page and use one simulator tab"
+      : `Simulator selected ${applied.machineType} instead of ${settings.machineType}`);
   }
   for (const key of ['closedLoopMotorsEnabled', 'lineLayeringEnabled']) {
     if (applied && typeof settings[key] === 'boolean' && applied[key] !== settings[key]) {

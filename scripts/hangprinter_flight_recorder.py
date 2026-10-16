@@ -469,6 +469,18 @@ async def run(args):
             print(f"Flight recorder: ws://127.0.0.1:{args.port}", flush=True)
             print("Connect the simulator recorder, then start collection or playback. Ctrl-C stops recording.", flush=True)
             await stop.wait()
+            # Let browser physics stop producing samples and drain acknowledgements
+            # while the server is still accepting its final batches.
+            physics_socket = active_physics
+            if physics_socket is not None:
+                try:
+                    await physics_socket.send(json.dumps({"type": "recording_stop"}))
+                    await asyncio.wait_for(physics_socket.wait_closed(), timeout=15)
+                except ConnectionClosed:
+                    pass
+                except asyncio.TimeoutError:
+                    if extended_recording is not None:
+                        extended_recording.manifest["rejected_messages"].append("Physics source did not drain before recorder shutdown")
     finally:
         if live_flush is not None:
             live_flush.cancel()

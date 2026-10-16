@@ -54,6 +54,7 @@ export class FlightRecorder {
     this.eventBatchBytes = 0;
     this.eventBatches = [];
     this.error = null;
+    this.stopping = false;
     this.acknowledged = false;
     this.setStatus('Rerun: connecting');
     socket.addEventListener('open', () => {
@@ -68,6 +69,11 @@ export class FlightRecorder {
     socket.addEventListener('message', (event) => {
       if (this.socket !== socket) return;
       const message = JSON.parse(event.data);
+      if (message.type === 'recording_stop') {
+        this.stopping = true;
+        this.drain().then(() => this.disconnect()).catch(error => this.fail(error));
+        return;
+      }
       if (message.type === 'recording_config') {
         this.sampleStride = message.sample_stride;
         this.geometryDetail = message.geometry_detail;
@@ -180,6 +186,7 @@ export class FlightRecorder {
   }
 
   recordEvent(kind, payload) {
+    if (this.stopping) return;
     if (this.error) throw new Error(this.error);
     if (!this.socket || this.socket.readyState !== 1 || !this.extendedReference) return;
     const clock = this.world.getResource('researchClock');
@@ -223,6 +230,7 @@ export class FlightRecorder {
   }
 
   update(world, dt) {
+    if (this.stopping) return;
     if (!this.socket || this.socket.readyState !== 1) return;
     const generation = world.getResource('sceneGeneration') || 0;
     if (generation !== this.generation) {

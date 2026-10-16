@@ -5,7 +5,7 @@ import copy
 import os
 import sys
 import time
-from contextlib import nullcontext
+from contextlib import nullcontext, ExitStack
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -1767,6 +1767,8 @@ def full_auto_loop(
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_semi_auto_parser()
+    parser.add_argument("--extended-recording", "--recording", "--record", action="store_true",
+                        help="Start and finalize an extended recorder automatically; output is derived from --dataset.")
     parser.add_argument("--extended-reference-ws", metavar="URL",
                         help="Record timestamped logs and collector events in an --extended-reference flight recorder")
     parser.add_argument("--extended-reference", action="store_true",
@@ -1776,6 +1778,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--headless-sim", action="store_true",
                         help="Run simulated RRF and production JS physics/collector in Node without a browser; implies --sim")
     args = parser.parse_args(argv)
+    if args.extended_recording:
+        if args.no_collect or not (args.sim or args.headless_sim):
+            parser.error("--extended-recording requires simulated collection (--sim or --headless-sim)")
+        if args.headless_sim:
+            args.extended_reference = True
     if args.recording_mode is not None:
         if not args.headless_sim or args.no_collect:
             parser.error("--recording-mode requires --headless-sim collection")
@@ -1820,7 +1827,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if bool(args.debug_sweep_actions) and not _arg_has_flag(collector_args, "--debug-sweep-actions"):
         collector_args.append("--debug-sweep-actions")
     context = HeadlessSimulation(args, collector_args) if args.headless_sim and not args.no_collect else nullcontext()
-    with context as headless:
+    with ExitStack() as stack:
+        if args.extended_recording and not args.headless_sim and not extended_reference.enabled():
+            from autocal.browser_recording import browser_recording
+            stack.enter_context(browser_recording(args.dataset))
+        headless = stack.enter_context(context)
         if headless is not None:
             print(f"; headless simulator manifest: {headless.directory / 'manifest.json'}")
         result = _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_args, headless)
