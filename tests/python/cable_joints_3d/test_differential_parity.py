@@ -31,6 +31,24 @@ def test_comparator_rejects_changed_physics_and_structure():
         assert_equivalent(changed, expected, **fixture['tolerance'])
 
 
+def test_shortening_cables_cannot_push_even_when_damping_exceeds_tension():
+    fixture = json.loads((FIXTURES / 'cable_damping_unilateral.json').read_text())
+    for run in (run_js, run_python):
+        entities = run(fixture)['snapshots'][1]['entities']
+        for name in ('elastic', 'damper'):
+            assert entities[name + '_a']['PositionComponent']['pos'] == [0, 0, 0]
+            assert entities[name + '_joint']['CableJointComponent']['constraintForceMagnitude'] == 0
+
+
+def test_tiny_rotation_contributes_to_cable_damping_when_quaternion_w_rounds_to_one():
+    fixture = json.loads((FIXTURES / 'cable_damping_small_rotation.json').read_text())
+    gamma = (1 / 20000) * 5 / .002
+    expected = (-.1 + gamma * 5e-9) / ((1 + gamma) * 2 + (1 / 20000) / .002**2)
+    for run in (run_js, run_python):
+        joint = run(fixture)['snapshots'][1]['entities']['joint']['CableJointComponent']
+        assert joint['constraintLambda'] == pytest.approx(expected, abs=1e-16)
+
+
 def test_pbd_oracle_recovers_small_rotations_without_changing_its_cutoff():
     fixture = json.loads((FIXTURES / 'pbd_small_rotations.json').read_text())
     snapshots = run_js(fixture)['snapshots']

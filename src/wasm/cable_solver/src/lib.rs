@@ -178,11 +178,11 @@ fn rotation_vector(e: &Entity) -> V {
         }
     }
     let w = delta[3].clamp(-1.0, 1.0);
-    let angle = 2.0 * acos(w);
+    let s = length([delta[0], delta[1], delta[2]]);
+    let angle = 2.0 * atan2(s, w);
     if angle <= EPS {
         return [0.0; 3];
     }
-    let s = (1.0 - w * w).max(0.0).sqrt();
     if s <= EPS {
         return [0.0; 3];
     }
@@ -613,14 +613,15 @@ fn mechanical(a: &Entity, b: &Entity, ga: V, gb: V, aa: f64, ab: f64, sa: Spin, 
     d
 }
 fn lambda(path: &Path, error: f64, disp: f64, denom: f64) -> Option<f64> {
+    // Cable damping may cancel tension while shortening, but cannot push.
     if path[3] != 0.0 {
-        return Some(path[6] * disp / (1.0 + path[6] * denom));
+        return Some((path[6] * disp / (1.0 + path[6] * denom)).min(0.0));
     }
     let d = (1.0 + path[5]) * denom + path[4];
     if d <= EPS {
         None
     } else {
-        Some((-error + path[5] * disp) / d)
+        Some(((-error + path[5] * disp) / d).min(0.0))
     }
 }
 fn load(es: &mut [Entity], s: Spin, path: &Path, lambda: f64) {

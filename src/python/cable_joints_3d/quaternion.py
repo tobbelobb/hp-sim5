@@ -13,8 +13,8 @@ def rotation_vector_between(previous, current):
         delta.x, delta.y, delta.z, delta.w = -delta.x, -delta.y, -delta.z, -delta.w
     w = delta.w
     w = 1. if w > 1. else (-1. if w < -1. else w)
-    angle = 2 * math.acos(w)
-    sin_half = math.sqrt(max(0., 1 - w * w))
+    sin_half = norm3(delta.as_xyzw()[:3])
+    angle = 2 * math.atan2(sin_half, w)
     if angle <= 1e-9 or sin_half <= 1e-9:
         return np.zeros(3)
     return delta.as_xyzw()[:3] / sin_half * angle

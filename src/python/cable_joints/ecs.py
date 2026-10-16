@@ -92,15 +92,31 @@ class World:
         if error_state is not None:
             has_error = getattr(error_state, 'has_error', getattr(error_state, 'hasError', False))
 
-        for system in self.systems:
-            if not hasattr(system, 'update'):
-                continue
-
-            run_in_pause = getattr(system, 'run_in_pause', getattr(system, 'runInPause', False))
-            if (not run_in_pause and is_paused) or has_error:
-                continue
-
-            system.update(self, dt)
+        index = 0
+        while index < len(self.systems):
+            start = index
+            index += 1
+            physics = getattr(self.systems[start], 'physics_substep', False)
+            while physics and index < len(self.systems) and getattr(self.systems[index], 'physics_substep', False):
+                index += 1
+            substeps = getattr(self.systems[start], 'physics_substeps', None)
+            count = (substeps(self) if substeps else (self.get_resource('physicsSubsteps') or 1)) if physics else 1
+            saved_dt = self.get_resource('dt')
+            step_dt = dt / count
+            try:
+                if physics:
+                    self.set_resource('dt', step_dt)
+                for _ in range(count):
+                    for system in self.systems[start:index]:
+                        if not hasattr(system, 'update'):
+                            continue
+                        run_in_pause = getattr(system, 'run_in_pause', getattr(system, 'runInPause', False))
+                        if (not run_in_pause and is_paused) or has_error:
+                            continue
+                        system.update(self, step_dt)
+            finally:
+                if physics:
+                    self.set_resource('dt', saved_dt)
 
 # Using dataclasses for components is a common and clean practice in Python ECS.
 # The `field` with `default_factory` is used to ensure that each component

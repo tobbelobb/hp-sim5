@@ -129,18 +129,30 @@ export class World {
     perf?.beginStep?.();
 
     try {
-      for (const system of this.systems) {
-        // Skip systems if paused (and system doesn't run in pause) OR if there's an error
-        if (system.update && ((!system.runInPause && isPaused) || hasError)) {
-          continue; // Skip systems if paused or error occurred
-        }
-        if (system.update) {
-          const name = system.constructor?.name || 'AnonymousSystem';
-          if (perf?.enabled) {
-            perf.measureSystem(name, () => system.update(this, dt));
-          } else {
-            system.update(this, dt);
+      for (let index = 0; index < this.systems.length;) {
+        const start = index++;
+        const physics = this.systems[start].physicsSubstep === true;
+        while (physics && this.systems[index]?.physicsSubstep === true) index++;
+        const count = physics
+          ? (this.systems[start].physicsSubsteps?.(this) ?? this.getResource('physicsSubsteps') ?? 1) : 1;
+        const savedDt = this.getResource('dt');
+        const stepDt = dt / count;
+        try {
+          if (physics) this.setResource('dt', stepDt);
+          for (let substep = 0; substep < count; substep++) {
+            for (let current = start; current < index; current++) {
+              const system = this.systems[current];
+              if (!system.update || (!system.runInPause && isPaused) || hasError) continue;
+              const name = system.constructor?.name || 'AnonymousSystem';
+              if (perf?.enabled) {
+                perf.measureSystem(name, () => system.update(this, stepDt));
+              } else {
+                system.update(this, stepDt);
+              }
+            }
           }
+        } finally {
+          if (physics) this.setResource('dt', savedDt);
         }
       }
     } finally {

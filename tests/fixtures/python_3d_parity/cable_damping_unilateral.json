@@ -1,0 +1,179 @@
+{
+  "tolerance": {
+    "atol": 1e-10,
+    "rtol": 1e-09
+  },
+  "entities": [
+    {
+      "name": "elastic_a",
+      "components": {
+        "PositionComponent": [
+          0,
+          0,
+          0
+        ],
+        "PrevFinalPosComponent": [
+          0,
+          0,
+          0
+        ],
+        "MassComponent": [
+          1
+        ]
+      }
+    },
+    {
+      "name": "elastic_b",
+      "components": {
+        "PositionComponent": [
+          2,
+          0,
+          0
+        ],
+        "PrevFinalPosComponent": [
+          2.2,
+          0,
+          0
+        ],
+        "MassComponent": [
+          -1
+        ]
+      }
+    },
+    {
+      "name": "elastic_joint",
+      "components": {
+        "CableJointComponent": [
+          "elastic_a",
+          "elastic_b",
+          1.99,
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            2,
+            0,
+            0
+          ],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "elastic_path",
+      "components": {
+        "CablePathComponent": [
+          [
+            "elastic_joint"
+          ],
+          [
+            "attachment",
+            "attachment"
+          ],
+          [
+            false,
+            false
+          ],
+          20000,
+          null,
+          0,
+          5,
+          2
+        ]
+      }
+    },
+    {
+      "name": "damper_a",
+      "components": {
+        "PositionComponent": [
+          0,
+          0,
+          0
+        ],
+        "PrevFinalPosComponent": [
+          0,
+          0,
+          0
+        ],
+        "MassComponent": [
+          1
+        ]
+      }
+    },
+    {
+      "name": "damper_b",
+      "components": {
+        "PositionComponent": [
+          2,
+          0,
+          0
+        ],
+        "PrevFinalPosComponent": [
+          2.2,
+          0,
+          0
+        ],
+        "MassComponent": [
+          -1
+        ]
+      }
+    },
+    {
+      "name": "damper_joint",
+      "components": {
+        "CableJointComponent": [
+          "damper_a",
+          "damper_b",
+          1.99,
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            2,
+            0,
+            0
+          ],
+          "world"
+        ]
+      }
+    },
+    {
+      "name": "damper_path",
+      "components": {
+        "CablePathComponent": [
+          [
+            "damper_joint"
+          ],
+          [
+            "attachment",
+            "attachment"
+          ],
+          [
+            false,
+            false
+          ],
+          0,
+          null,
+          0,
+          5,
+          2
+        ]
+      }
+    }
+  ],
+  "systems": [
+    "PBDCableConstraintSolver"
+  ],
+  "resources": {
+    "dt": 0.002
+  },
+  "steps": [
+    {
+      "dt": 0.002
+    }
+  ]
+}

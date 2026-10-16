@@ -162,8 +162,8 @@ def angular_delta(previous: Q, current: Q):
     if delta[3] < F(0):
         delta = -delta
     w = wp.clamp(delta[3], F(-1), F(1))
-    angle = F(2)*wp.acos(w)
-    sine = wp.sqrt(wp.max(F(0), F(1)-w*w))
+    sine = wp.length(V(delta[0], delta[1], delta[2]))
+    angle = F(2)*wp.atan2(sine, w)
     result = V(F(0))
     if angle > EPS and sine > EPS:
         result = V(delta[0], delta[1], delta[2]) * (angle/sine)
@@ -304,7 +304,7 @@ def multiplier(a: End, b: End, path: Path, dt: F, error: F):
         step = F(0)
         if valid:
             step = wp.max(F(0), path.damping)*dt
-        value = step*(a.displacement+b.displacement)/(F(1)+step*mechanical(a,b))
+        value = wp.min(F(0), step*(a.displacement+b.displacement)/(F(1)+step*mechanical(a,b)))
     else:
         alpha = F(0)
         gamma = F(0)
@@ -314,7 +314,7 @@ def multiplier(a: End, b: End, path: Path, dt: F, error: F):
         denom = (F(1)+gamma)*mechanical(a,b)+alpha
         value = F(wp.nan)
         if denom > EPS:
-            value = (-error+gamma*(a.displacement+b.displacement))/denom
+            value = wp.min(F(0), (-error+gamma*(a.displacement+b.displacement))/denom)
     return value
 
 

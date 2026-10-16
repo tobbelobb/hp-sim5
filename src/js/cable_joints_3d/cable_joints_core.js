@@ -486,12 +486,12 @@ function _rotationVectorBetween(prevQuat, currQuat) {
   }
 
   const w = Math.max(-1.0, Math.min(1.0, qDelta.w));
-  const angle = 2.0 * Math.acos(w);
+  const sinHalf = Math.hypot(qDelta.x, qDelta.y, qDelta.z);
+  const angle = 2.0 * Math.atan2(sinHalf, w);
   if (angle <= EPSILON) {
     return new Vector3(0.0, 0.0, 0.0);
   }
 
-  const sinHalf = Math.sqrt(Math.max(0.0, 1.0 - (w * w)));
   if (sinHalf <= EPSILON) {
     return new Vector3(0.0, 0.0, 0.0);
   }
@@ -3320,16 +3320,18 @@ export class PBDCableConstraintSolver {
 
       const solveLambda = (solveMemberInvInertiaA, solveMemberInvInertiaB) => {
         const mechDenom = mechanicalDenom(solveMemberInvInertiaA, solveMemberInvInertiaB);
+        // A shortening cable's damping may cancel its tension, but must never
+        // turn the unilateral constraint into a compressive (pushing) force.
         if (zeroStiffness) {
           // Divide the existing damped equation by compliance before taking
           // its infinite-compliance limit; avoid Infinity * 0 and Infinity / Infinity.
-          return dampingStep * jDx / (1.0 + dampingStep * mechDenom);
+          return Math.min(0, dampingStep * jDx / (1.0 + dampingStep * mechDenom));
         }
         const denom = ((1.0 + gamma) * mechDenom) + alphaTilde;
         if (denom <= EPSILON) {
           return null;
         }
-        return (-constraintError + (gamma * jDx)) / denom;
+        return Math.min(0, (-constraintError + (gamma * jDx)) / denom);
       };
 
       let solveMemberInvInertiaA = memberInvInertiaA;

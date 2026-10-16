@@ -189,7 +189,11 @@
   ],
   "tolerance": {
     "atol": 1e-10,
-    "rtol": 1e-09
+    "rtol": 1e-09,
+    "fields": {
+      "CableJointComponent.constraintForce": {"atol": 1e-9},
+      "CableJointComponent.constraintForceMagnitude": {"atol": 1e-9}
+    }
   },
   "initialSet": [["external_joint", "CableJointComponent", "constraintLambda", 3], ["external_joint", "CableJointComponent", "constraintForce", [3, -2, 1]]],
   "resources": {

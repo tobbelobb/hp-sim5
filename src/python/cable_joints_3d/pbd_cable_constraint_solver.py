@@ -267,9 +267,9 @@ def _solve_joint(world, path, index, joint, points, direction, error, iteration,
         mechanical = _mechanical_denominator(ends, inverses)
         if zero_stiffness:
             damping_step = max(0., path.damping) * dt if valid_dt else 0.
-            return damping_step * displacement / (1 + damping_step * mechanical)
+            return min(0., damping_step * displacement / (1 + damping_step * mechanical))
         denominator = (1 + gamma) * mechanical + alpha
-        return (-error + gamma * displacement) / denominator if denominator > EPSILON else None
+        return min(0., (-error + gamma * displacement) / denominator) if denominator > EPSILON else None
 
     multiplier = solve_multiplier()
     if multiplier is None:

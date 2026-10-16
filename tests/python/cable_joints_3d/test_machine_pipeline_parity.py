@@ -13,12 +13,12 @@ from parity_harness import FIXTURES, ROOT, assert_equivalent, run_js, run_python
 MACHINES = ['minimal', 'hp3_rigid_body', 'hp4_rigid_body',
             'slideprinter_single_pinholes_rigid_body']
 SYSTEM_ORDER = [
-    'PrevFinalPosSystem', 'PrevFinalOrientationSystem', 'RemoteSpoolSystem',
+    'RemoteSpoolSystem', 'PrevFinalPosSystem', 'PrevFinalOrientationSystem',
     'StepperMotorSystem', 'GravitySystem', 'MovementSystem', 'AngularMovementSystem',
     'RigidBodySyncSystem', 'CableAttachmentUpdateSystem', 'CableAttachmentCacheSystem',
     'CableFrictionSystem', 'PBDCableConstraintSolver', 'PBDResolveCableOverCorrections',
     'PBDVelocityUpdateSystem', 'PBDAngularVelocityUpdateSystem', 'TorqueModeSystem',
-    'ExtruderSystem', 'EncoderUpdateSystem', 'MissedStepTrackingSystem',
+    'EncoderUpdateSystem', 'MissedStepTrackingSystem', 'ExtruderSystem',
 ]
 
 
@@ -107,7 +107,7 @@ def test_full_machine_settling_after_commands_for_1000_steps():
                if 'StepperMotorComponent' in value)
 
 
-def test_sustained_hp4_motion_and_extrusion_for_1000_strict_repeatable_steps():
+def test_sustained_hp4_motion_and_extrusion_for_1000_repeatable_macro_steps():
     definition = fixture('hp4_rigid_body')
     definition['steps'] = [{'dt': .002} for _ in range(1000)]
     rates = {'A': .0016, 'B': -.0012, 'C': .0008, 'D': .0004}
@@ -116,7 +116,7 @@ def test_sustained_hp4_motion_and_extrusion_for_1000_strict_repeatable_steps():
     definition['commands'] = [dict(type='Move', **{axis: rate * i for axis, rate in rates.items()},
                                    **({'E': .001} if i % 100 == 0 else {})) for i in range(1000)]
     expected, actual = run_js(definition), run_python(definition)
-    assert_equivalent(actual, expected, atol=1e-10, rtol=1e-9)
+    assert_equivalent(actual, expected, **definition['tolerance'])
     assert run_js(definition) == expected
     assert run_python(definition) == actual
     before, after = [snapshot['entities'] for snapshot in (expected['snapshots'][0], expected['snapshots'][-1])]

@@ -363,7 +363,7 @@ describe('PBDCableConstraintSolver (3D)', () => {
     expect(joint.constraintForceMagnitude).toBeCloseTo(4.0, 8);
   });
 
-  test('damping increases force only when a taut cable is stretching', () => {
+  test.each([20000, 0])('damping never pushes a shortening cable (stiffness=%s)', stiffness => {
     const solveForce = (prevZ) => {
       const world = new World();
       const mass = world.createEntity();
@@ -396,7 +396,7 @@ describe('PBDCableConstraintSolver (3D)', () => {
           [jointId],
           ['attachment', 'attachment'],
           [true, true],
-          20000,
+          stiffness,
           null,
           0.0,
           5.0,
@@ -406,6 +406,9 @@ describe('PBDCableConstraintSolver (3D)', () => {
       const dt = 1 / 500;
       world.setResource('dt', dt);
       new PBDCableConstraintSolver().update(world, dt);
+      // Positive z is toward the anchor: a rope cannot push the mass away.
+      expect(world.getComponent(mass, PositionComponent).pos.z).toBeGreaterThanOrEqual(0);
+      expect(world.getComponent(jointId, CableJointComponent).constraintLambda).toBeLessThanOrEqual(0);
       return world.getComponent(jointId, CableJointComponent).constraintForceMagnitude;
     };
 
@@ -414,7 +417,8 @@ describe('PBDCableConstraintSolver (3D)', () => {
     const shorteningForce = solveForce(-0.01);
 
     expect(lengtheningForce).toBeGreaterThan(staticForce);
-    expect(shorteningForce).toBeLessThan(staticForce);
+    expect(shorteningForce).toBeLessThanOrEqual(staticForce);
+    expect(solveForce(-1.0)).toBe(0);
   });
 
   test('pendulum constraint keeps mass within restLength under gravity', () => {
