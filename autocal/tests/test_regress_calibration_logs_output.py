@@ -741,3 +741,20 @@ def test_main_rejects_nonpositive_jobs(monkeypatch):
     with pytest.raises(SystemExit) as exc:
         rcl.main()
     assert exc.value.code == 2
+
+
+def test_hp4_fixed_radius_reference_parses_summary_and_iterations():
+    spec = next(s for s in rcl.DATASETS if s.name == "hp4_no_buildup_Oct_16_2026_4x_substepping")
+    refs = REPO_ROOT / "autocal/data/references"
+    path = rcl.resolve_reference_log_path(spec.name, refs, refs, ())
+    assert path is not None
+    assert spec.find_radii == "off"
+    assert spec.buildup_factor == "0"
+    parsed = rcl.parse_log_file(path, [float(spec.base_radii)] * 4)
+    assert parsed.summary is not None
+    assert len(parsed.summary.anchors) == 4
+    assert parsed.summary.radii == [30.0] * 4
+    assert len(parsed.iterations) == 4
+    assert all(iteration.radii == [30.0] * 4 for iteration in parsed.iterations)
+    # Without known fixed inputs, missing radius output must stay unavailable.
+    assert rcl.parse_log_file(path).summary is None

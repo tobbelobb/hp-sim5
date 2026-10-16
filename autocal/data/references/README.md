@@ -1,6 +1,6 @@
 # Reference data provenance
 
-The eleven datasets in [`DATASETS`](../../tools/regress_calibration_logs.py)
+The eleven historical datasets in [`DATASETS`](../../tools/regress_calibration_logs.py)
 were collected from browser physics simulation with `autocal/autocal.py --sim`
 and no explicit `--dataset` (maintainer-confirmed). Earlier versions used
 `active_calibrate.py`; the historical [autocal README](../../README.md) describes
@@ -68,3 +68,18 @@ historical limitations described above.
 For new fixtures, put the collection revision and any nondefault browser
 scene/settings in the commit message. Keep measured configuration in the JSON;
 there is no need to duplicate it here.
+
+## HP4 collection, Oct_16_2026
+
+[`hp4_no_buildup_Oct_16_2026_4x_substepping.json`](hp4_no_buildup_Oct_16_2026_4x_substepping.json)
+contains six sweeps collected on **Oct_16_2026** from the simulated **HP4**
+(`hangprinter_4`, `sys/config_hp4.g`) with **4x_substepping**
+(maintainer-confirmed), 30 mm spool radii and no buildup (`M666 Q0`).
+The original source is `output/extended-autocal/no-buildup-reference-005/sweeps.json`.
+The matching `.collection.log` preserves `sweeps.full_auto_1.log` unchanged;
+`.collection.jsonl` preserves `sweeps.full_auto_log.jsonl` unchanged.
+Collection stopped on a browser simulation clock timeout after saving six sweeps;
+the original log has iteration results but no final calibration summary.
+The dated `full_auto_reference_run` log is a separate no-collection replay baseline.
+Both regression and reference generation use the shared `DATASETS` entry, with
+fixed 30 mm radii and zero buildup to match this collection.

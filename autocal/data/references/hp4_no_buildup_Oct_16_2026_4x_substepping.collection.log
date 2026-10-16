@@ -1,0 +1,464 @@
+; command: autocal/autocal.py --sim --machine-type hangprinter_4 --speedup 25 --dataset output/extended-autocal/no-buildup-reference-005/sweeps.json --extended-reference-ws ws://127.0.0.1:9877
+Wrote to console: Writing stage artifacts to: output/extended-autocal/no-buildup-reference-005/sweeps_1.stages
+Wrote to console: Writing additional info to log: output/extended-autocal/no-buildup-reference-005/sweeps.full_auto_1.log
+; starting rrf simulator at http://localhost:8081 (config: sys/config_hp4.g)
+; bootstrapping dataset (3 sweeps, auto size-tune):
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file output/extended-autocal/no-buildup-reference-005/sweeps.bootstrap_cfg.txt --output-file output/extended-autocal/no-buildup-reference-005/sweeps.json --speedup 25 --firmware rrf --sim --no-spawn-rrf-simulator --return-to-origin
+Requested hp-sim speed scale: 25x
+Requested hp-sim position trace mode: on.
+Requested hp-sim speed scale: 25x
+Requested hp-sim position trace mode: on.
+; auto-tune force start
+; force trial running: 5.0s wall, 24.2s simulation
+; auto-tune probe 1/120: test=0.0100 moved=no travel=0.000deg stalled=yes
+; force trial running: 5.0s wall, 24.1s simulation
+; auto-tune probe 2/120: test=0.0140 moved=no travel=0.020deg stalled=yes
+; force trial running: 5.0s wall, 21.6s simulation
+; auto-tune probe 3/120: test=0.0196 moved=no travel=0.030deg stalled=yes
+; force trial running: 5.1s wall, 21.8s simulation
+; auto-tune probe 4/120: test=0.0274 moved=no travel=0.050deg stalled=yes
+; force trial running: 5.1s wall, 20.3s simulation
+; auto-tune probe 5/120: test=0.0384 moved=no travel=0.080deg stalled=yes
+; force trial running: 5.2s wall, 21.0s simulation
+; auto-tune probe 6/120: test=0.0538 moved=no travel=0.130deg stalled=yes
+; force trial running: 5.0s wall, 20.5s simulation
+; auto-tune probe 7/120: test=0.0753 moved=no travel=0.150deg stalled=yes
+; force trial running: 5.1s wall, 19.7s simulation
+; auto-tune probe 8/120: test=0.1054 moved=no travel=0.210deg stalled=yes
+; force trial running: 5.0s wall, 20.3s simulation
+; auto-tune probe 9/120: test=0.1476 moved=no travel=0.310deg stalled=yes
+; force trial running: 5.1s wall, 19.8s simulation
+; auto-tune probe 10/120: test=0.2066 moved=no travel=0.460deg stalled=yes
+; force trial running: 5.2s wall, 20.5s simulation
+; auto-tune probe 11/120: test=0.2893 moved=no travel=0.670deg stalled=yes
+; force trial running: 5.0s wall, 19.5s simulation
+; auto-tune probe 12/120: test=0.4050 moved=no travel=1.030deg stalled=yes
+; force trial running: 5.1s wall, 20.2s simulation
+; auto-tune probe 13/120: test=0.5669 moved=yes travel=1.810deg stalled=yes
+; force trial running: 5.1s wall, 19.6s simulation
+; auto-tune bisect-start 1/60: test=0.4859 moved=yes travel=1.330deg stalled=yes
+; force trial running: 5.1s wall, 20.0s simulation
+; auto-tune bisect-start 2/60: test=0.4455 moved=yes travel=1.170deg stalled=yes
+; force trial running: 5.2s wall, 20.2s simulation
+; auto-tune edge-ramp 1/120: test=0.4455 moved=yes travel=1.110deg stalled=yes
+; force trial running: 5.0s wall, 19.5s simulation
+; auto-tune edge-ramp 2/120: test=0.6236 moved=yes travel=16.580deg stalled=no
+; force trial running: 5.0s wall, 19.5s simulation
+; auto-tune edge-ramp 3/120: test=0.8731 moved=yes travel=68.020deg stalled=no
+; force trial running: 5.0s wall, 19.7s simulation
+; auto-tune edge-ramp 4/120: test=1.2223 moved=yes travel=223.360deg stalled=no
+; force trial running: 5.1s wall, 19.6s simulation
+; auto-tune edge-ramp 5/120: test=1.7112 moved=yes travel=410.120deg stalled=no
+; force trial running: 5.1s wall, 19.7s simulation
+; auto-tune edge-ramp 6/120: test=2.3957 moved=yes travel=639.420deg stalled=no
+; force trial running: 5.3s wall, 20.3s simulation
+; auto-tune edge-ramp 7/120: test=3.3540 moved=yes travel=936.710deg stalled=no
+; force trial running: 5.1s wall, 19.2s simulation
+; auto-tune edge-ramp 8/120: test=4.6957 moved=yes travel=1341.560deg stalled=no
+; force trial running: 5.1s wall, 17.7s simulation
+; auto-tune edge-ramp 9/120: test=6.5739 moved=yes travel=1793.220deg stalled=no
+; force trial running: 5.1s wall, 17.8s simulation
+; waiting for browser clock: 5.0s wall, 21.5s simulation of 28.3s requested duration
+; auto-tune edge-ramp 10/120: test=9.2035 moved=yes travel=2398.260deg stalled=no
+; force trial running: 5.1s wall, 17.7s simulation
+; waiting for browser clock: 5.1s wall, 21.2s simulation of 36.4s requested duration
+; waiting for browser clock: 5.0s wall, 21.4s simulation of 28.3s requested duration
+; waiting for browser clock: 5.1s wall, 21.6s simulation of 28.3s requested duration
+; auto-tune edge-ramp 11/120: test=12.8849 moved=yes travel=3082.550deg stalled=no
+; force trial running: 5.3s wall, 18.3s simulation
+; waiting for browser clock: 5.1s wall, 20.0s simulation of 40.4s requested duration
+; waiting for browser clock: 5.1s wall, 20.7s simulation of 40.4s requested duration
+; waiting for browser clock: 5.1s wall, 21.0s simulation of 40.4s requested duration
+; auto-tune edge-ramp 12/120: test=18.0389 moved=yes travel=3492.240deg stalled=no
+; auto-tune selected: idle=0.0223 start=0.4455 edge=9.2035 d_max=3492.240deg
+; size-tune travel: waiting for encoder stability: 5.1s wall, 16.5s simulation, 9 samples
+; size-tune travel: waiting for encoder stability: 10.3s wall, 33.1s simulation, 10 samples
+; size-tune travel: waiting for encoder stability: 15.3s wall, 49.6s simulation, 7 samples
+; size-tune max travel raw=696.093mm scaled=556.875mm
+; waiting for browser clock: 5.1s wall, 17.5s simulation of 28.3s requested duration
+
+Sweep 1/3: fix [0, 3], pair 1/2
+  Sub-sweep 1/2: drive 1, sensor 2
+; waiting for browser clock: 5.1s wall, 16.3s simulation of 23.9s requested duration
+; sweep pullout: waiting for encoder stability: 5.0s wall, 17.0s simulation, 7 samples
+; sweep pullout: waiting for encoder stability: 10.3s wall, 34.3s simulation, 8 samples
+; sweep pullout: waiting for encoder stability: 15.5s wall, 52.7s simulation, 6 samples
+  Sub-sweep 2/2: drive 2, sensor 1
+; sweep pullout: waiting for encoder stability: 5.4s wall, 17.1s simulation, 8 samples
+; sweep pullout: waiting for encoder stability: 10.5s wall, 33.6s simulation, 9 samples
+; sweep pullout: waiting for encoder stability: 15.8s wall, 50.8s simulation, 9 samples
+; sweep pullout: waiting for encoder stability: 21.3s wall, 69.2s simulation, 7 samples
+  Collected 20 points from 2 sub-sweeps
+; waiting for browser clock: 5.0s wall, 15.2s simulation of 23.9s requested duration
+Returned all motors to encoder origin (between sweeps).
+
+Sweep 2/3: fix [1, 3], pair 0/2
+  Sub-sweep 1/2: drive 0, sensor 2
+; waiting for browser clock: 5.2s wall, 15.6s simulation of 23.9s requested duration
+; sweep pullout: waiting for encoder stability: 5.1s wall, 16.0s simulation, 7 samples
+; sweep pullout: waiting for encoder stability: 10.6s wall, 33.0s simulation, 5 samples
+; sweep pullout: waiting for encoder stability: 15.9s wall, 49.9s simulation, 6 samples
+; sweep pullout: waiting for encoder stability: 21.0s wall, 66.4s simulation, 8 samples
+  Sub-sweep 2/2: drive 2, sensor 0
+; sweep pullout: waiting for encoder stability: 5.1s wall, 15.2s simulation, 9 samples
+; sweep pullout: waiting for encoder stability: 10.3s wall, 30.5s simulation, 10 samples
+; sweep pullout: waiting for encoder stability: 15.4s wall, 45.7s simulation, 8 samples
+; sweep pullout: waiting for encoder stability: 20.4s wall, 60.9s simulation, 9 samples
+  Collected 20 points from 2 sub-sweeps
+; waiting for browser clock: 5.0s wall, 14.2s simulation of 23.9s requested duration
+Returned all motors to encoder origin (between sweeps).
+
+Sweep 3/3: fix [2, 3], pair 0/1
+  Sub-sweep 1/2: drive 0, sensor 1
+; waiting for browser clock: 5.1s wall, 13.7s simulation of 23.9s requested duration
+; sweep pullout: waiting for encoder stability: 5.0s wall, 14.0s simulation, 10 samples
+; sweep pullout: waiting for encoder stability: 10.3s wall, 28.6s simulation, 8 samples
+; sweep pullout: waiting for encoder stability: 15.7s wall, 43.8s simulation, 7 samples
+; sweep pullout: waiting for encoder stability: 20.9s wall, 59.1s simulation, 7 samples
+  Sub-sweep 2/2: drive 1, sensor 0
+; sweep pullout: waiting for encoder stability: 5.1s wall, 14.1s simulation, 10 samples
+; sweep pullout: waiting for encoder stability: 10.3s wall, 28.1s simulation, 8 samples
+; sweep pullout: waiting for encoder stability: 15.4s wall, 42.1s simulation, 10 samples
+; sweep pullout: waiting for encoder stability: 20.4s wall, 56.0s simulation, 8 samples
+  Collected 20 points from 2 sub-sweeps
+
+Saved 3 sweeps to output/extended-autocal/no-buildup-reference-005/sweeps.json
+; waiting for browser clock: 5.2s wall, 13.2s simulation of 23.9s requested duration
+Returned all motors to encoder origin.
+; bootstrap dataset written to output/extended-autocal/no-buildup-reference-005/sweeps.json
+; full-auto log: output/extended-autocal/no-buildup-reference-005/sweeps.full_auto_log.jsonl
+Wrote to console: ; full-auto stop: press Ctrl-C to accept best-so-far, or create output/extended-autocal/no-buildup-reference-005/sweeps.full_auto.stop to request stop (cross-platform)
+Wrote to console: ; full-auto: early stop when the two closest distinct fits agree to 0.0015 of the machine size, sustained 2 iterations, from 4 candidates (disable with HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC=off)
+
+; === full-auto iteration 1/20 dataset=output/extended-autocal/no-buildup-reference-005/sweeps.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 1/20 dataset=output/extended-autocal/no-buildup-reference-005/sweeps.json ===
+; full-auto run default: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=40 origin=0 min=0 mixed=0 total=40
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=5.46e-05 floor_mm=0.946
+[robust] pointwise sigma_floor_mm: origin=0 mult=3 scaled=0 min=0.05 model=0.946075 used=0.946075 floor=0.946075 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0 friction_cogging=0.223 flex=0.918 floor=0.05 non_layered=0.946 layer_changes=0 mode_add=0 total=0.946 model=0.946 used=0.946 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default: cost_raw=0.1266 cost_noise_normalized=100 J=472.3 chi2_red=609.4 raw_fit_score_ui=100 score_basis=standard-noise rank_coverage_adjust=0 effective_obs=40 filtered_ratio=0
+Wrote to console: ; selected run underconstrained; trying to restore sweeps/points from current data.
+; underconstrained_recovery: run=default attempt=1/2 mode=restore_sweeps
+; full-auto recovery default [restore_sweeps]: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=55 origin=0 min=0 mixed=0 total=55
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=5.46e-05 floor_mm=0.946
+[robust] pointwise sigma_floor_mm: origin=0 mult=3 scaled=0 min=0.05 model=0.946075 used=0.946075 floor=0.946075 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0 friction_cogging=0.223 flex=0.918 floor=0.05 non_layered=0.946 layer_changes=0 mode_add=0 total=0.946 model=0.946 used=0.946 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto recovery default [restore_sweeps]: cost_raw=0.1175 cost_noise_normalized=847.4 J=791.8 chi2_red=946.7 raw_fit_score_ui=847.4 score_basis=standard-noise rank_coverage_adjust=0 effective_obs=55 filtered_ratio=0
+Wrote to console: ; underconstrained recovery succeeded; continuing with the repaired constrained estimate.
+; Active ellipse calibration
+; Anchors: [[0.00, -1299.17, -107.12], [2385.88, 1578.52, -107.12], [-2327.19, 1531.59, -107.12], [-0.66, -1910.87, 2846.35]]
+M669 A0.00:-1299.17:-107.12 B2385.88:1578.52:-107.12 C-2327.19:1531.59:-107.12 D-0.66:-1910.87:2846.35
+; cost=0.1175 cost_noise_normalized=847.4 origin_norms=[1303.578, 2862.796, 2788.018, 3428.280] pairwise=[d01=3738.113, d02=3664.560, d03=3016.146, d12=4713.297, d13=5156.967, d23=5097.668]
+; noise_cost: J=791.8 chi2_red=946.7 |z|_med=17.19 |z|_p95=65.64 outlier_ratio=0.8727 N=55 mode=sigma lengths=mu J_trim=791.8 chi2_red_trim=946.7 N_trim=55
+; rank_coverage: effective_obs=55 total_obs=55 filtered_ratio=0 obs_bonus=0 filtered_penalty=0 rank_adjust=0
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.9461mm used_sigma=0.9461mm floor_deg=0.02deg source=auto
+; noise_sigma_mm: encoder=0mm friction_cogging=0.2227mm flex=0.9181mm floor=0.05mm non_layered=0.9461mm layer_changes=0mm mode_add=0mm total=0.9461mm model=0.9461mm used=0.9461mm layered=false mode=off/off mode_factor=0 line_width=1mm base_radius=30mm used_override=n/a
+; info rank: 10/12 std(p10=1e+03mm, p5=998mm, p8=998mm, p11=998mm, p2=996mm, p1=996mm)
+; covariance_scaled: chi2_red=946.7 std_scaled(p10=3.08e+04mm, p5=3.07e+04mm, p8=3.07e+04mm, p11=3.07e+04mm, p2=3.07e+04mm, p1=3.06e+04mm)
+; CI95: max_std=3.076e+04mm max_ci=6.03e+04mm workspace=1929 rel_std=15.95 rel_ci=31.26 scale=chi2_red=946.7
+; encoder_noise: points=60/60 median_sigma=0deg floor=0.02deg min_samples=8
+; encoder_noise_flags: low_samples=0 sigma_below_floor=60 sigma_nonfinite=0
+; next_sweep score=0.311076 fixed=[0, 3] targets=[529.030798735866, -27.843726249256065] pair=[1,2]
+; top_candidates:
+;   0.311076 fixed=[0, 3] targets=[529.030798735866, -27.843726249256065] pair=[1,2]
+;   0.311037 fixed=[0, 3] targets=[501.18707248660985, -27.843726249256065] pair=[1,2]
+;   0.310998 fixed=[0, 3] targets=[473.34334623735367, -27.843726249256065] pair=[1,2]
+;   0.310989 fixed=[0, 3] targets=[501.18707248660985, -55.68745249851219] pair=[1,2]
+;   0.31096 fixed=[0, 3] targets=[445.4996199880976, -27.843726249256065] pair=[1,2]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file output/extended-autocal/no-buildup-reference-005/sweeps.active_sweep_cfg.default.restore_sweeps.txt --fixed-targets 529.030798735866,-27.843726249256065 --output-file output/extended-autocal/no-buildup-reference-005/sweeps.new_001.json --speedup 25 --firmware rrf --sim --no-spawn-rrf-simulator --force-low 0.022272608433151982 --force-mid 0.4454521686630396 --force-max 9.203508096781317 --no-auto-tune-force --return-to-origin
+; reusing force tuning: low=0.02227N mid=0.4455N max=9.204N
+; selected run=default fit_score_ui=847.4 raw_fit_score_ui=847.4 score_basis=standard-noise cost=847.4 rel_std=15.95 max_std=3.076e+04mm rank_score=847.4 iteration_adjust=0 coverage_adjust=0 history_rank_score=847.4
+Wrote to console: The best try so far.
+Wrote to console: Patience reset.
+Wrote to console: Collecting new sweep to try and beat it.
+Wrote to console: Still has patience for 3 more attempts.
+; collecting next sweep (default)
+; running: node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file output/extended-autocal/no-buildup-reference-005/sweeps.active_sweep_cfg.default.restore_sweeps.txt --fixed-targets 529.030798735866,-27.843726249256065 --output-file output/extended-autocal/no-buildup-reference-005/sweeps.new_001.json --speedup 25 --firmware rrf --sim --no-spawn-rrf-simulator --force-low 0.022272608433151982 --force-mid 0.4454521686630396 --force-max 9.203508096781317 --no-auto-tune-force --return-to-origin
+Requested hp-sim speed scale: 25x
+Requested hp-sim position trace mode: on.
+Requested hp-sim speed scale: 25x
+Requested hp-sim position trace mode: on.
+
+Sweep 1/1: fix [0, 3], pair 1/2, fixed targets [529.031, -27.844]
+  Sub-sweep 1/2: drive 1, sensor 2
+; waiting for browser clock: 5.1s wall, 13.4s simulation of 22.7s requested duration
+; sweep pullout: waiting for encoder stability: 5.2s wall, 13.3s simulation, 9 samples
+; sweep pullout: waiting for encoder stability: 10.2s wall, 26.1s simulation, 10 samples
+; sweep pullout: waiting for encoder stability: 15.3s wall, 39.4s simulation, 7 samples
+; sweep pullout: waiting for encoder stability: 20.6s wall, 53.4s simulation, 6 samples
+  Sub-sweep 2/2: drive 2, sensor 1
+; sweep pullout: waiting for encoder stability: 5.2s wall, 13.4s simulation, 10 samples
+; sweep pullout: waiting for encoder stability: 10.2s wall, 26.2s simulation, 8 samples
+; sweep pullout: waiting for encoder stability: 15.4s wall, 39.5s simulation, 10 samples
+; sweep pullout: waiting for encoder stability: 20.9s wall, 53.6s simulation, 8 samples
+; sweep pullout: waiting for encoder stability: 26.0s wall, 67.1s simulation, 9 samples
+  Collected 20 points from 2 sub-sweeps
+
+Saved 1 sweeps to output/extended-autocal/no-buildup-reference-005/sweeps.new_001.json
+; waiting for browser clock: 5.0s wall, 12.6s simulation of 22.7s requested duration
+Returned all motors to encoder origin.
+; merged output/extended-autocal/no-buildup-reference-005/sweeps.new_001.json -> output/extended-autocal/no-buildup-reference-005/sweeps.json sweeps=4
+Wrote to console: Collected sweep nr 4
+
+; === full-auto iteration 2/20 dataset=output/extended-autocal/no-buildup-reference-005/sweeps.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 2/20 dataset=output/extended-autocal/no-buildup-reference-005/sweeps.json ===
+; full-auto run default: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=69 origin=0 min=0 mixed=0 total=69
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=5.46e-05 floor_mm=0.946
+[robust] pointwise sigma_floor_mm: origin=0 mult=3 scaled=0 min=0.05 model=0.946075 used=0.946075 floor=0.946075 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0 friction_cogging=0.223 flex=0.918 floor=0.05 non_layered=0.946 layer_changes=0 mode_add=0 total=0.946 model=0.946 used=0.946 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default: cost_raw=1.561e-05 cost_noise_normalized=0.4029 J=0.3983 chi2_red=0.458 raw_fit_score_ui=0.4029 score_basis=standard-noise rank_coverage_adjust=-0.04193 effective_obs=69 filtered_ratio=0
+; full-auto run default.warm: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=60 origin=0 min=0 mixed=0 total=60
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=5.46e-05 floor_mm=0.946
+[robust] pointwise sigma_floor_mm: origin=0 mult=3 scaled=0 min=0.05 model=0.946075 used=0.946075 floor=0.946075 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0 friction_cogging=0.223 flex=0.918 floor=0.05 non_layered=0.946 layer_changes=0 mode_add=0 total=0.946 model=0.946 used=0.946 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default.warm: cost_raw=0.07595 cost_noise_normalized=492.1 J=427.5 chi2_red=503 raw_fit_score_ui=492.1 score_basis=standard-noise rank_coverage_adjust=0 effective_obs=60 filtered_ratio=0
+; Active ellipse calibration
+; Anchors: [[0.00, -1903.91, -282.41], [1646.48, 950.48, -282.41], [-1647.89, 951.90, -282.41], [-0.09, -0.01, 1910.45]]
+M669 A0.00:-1903.91:-282.41 B1646.48:950.48:-282.41 C-1647.89:951.90:-282.41 D-0.09:-0.01:1910.45
+; cost=1.561e-05 cost_noise_normalized=0.4029 origin_norms=[1924.740, 1921.997, 1923.905, 1910.454] pairwise=[d01=3295.217, d02=3297.148, d03=2904.046, d12=3294.370, d13=2902.290, d23=2903.450]
+; noise_cost: J=0.3983 chi2_red=0.458 |z|_med=0.3836 |z|_p95=1.242 outlier_ratio=0 N=69 mode=sigma lengths=mu J_trim=0.3983 chi2_red_trim=0.458 N_trim=69
+; rank_coverage: effective_obs=69 total_obs=69 filtered_ratio=0 obs_bonus=0.04193 filtered_penalty=0 rank_adjust=-0.04193
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.9461mm used_sigma=0.9461mm floor_deg=0.02deg source=auto
+; noise_sigma_mm: encoder=0mm friction_cogging=0.2227mm flex=0.9181mm floor=0.05mm non_layered=0.9461mm layer_changes=0mm mode_add=0mm total=0.9461mm model=0.9461mm used=0.9461mm layered=false mode=off/off mode_factor=0 line_width=1mm base_radius=30mm used_override=n/a
+; info rank: 10/12 std(p11=999mm, p0=986mm, p2=981mm, p8=975mm, p5=975mm, p7=973mm)
+; covariance_scaled: chi2_red=0.458 std_scaled(p11=676mm, p0=667mm, p2=664mm, p8=660mm, p5=660mm, p7=658mm)
+; CI95: max_std=676mm max_ci=1325mm workspace=1929 rel_std=0.3504 rel_ci=0.6869 scale=chi2_red=0.458
+; encoder_noise: points=80/80 median_sigma=0deg floor=0.02deg min_samples=8
+; encoder_noise_flags: low_samples=0 sigma_below_floor=80 sigma_nonfinite=0
+; next_sweep score=0.174052 fixed=[1, 3] targets=[501.18707248660985, -55.68745249851219] pair=[0,2]
+; top_candidates:
+;   0.174052 fixed=[1, 3] targets=[501.18707248660985, -55.68745249851219] pair=[0,2]
+;   0.17404 fixed=[1, 3] targets=[473.34334623735367, -55.68745249851219] pair=[0,2]
+;   0.174029 fixed=[1, 3] targets=[445.4996199880976, -55.68745249851219] pair=[0,2]
+;   0.174029 fixed=[1, 3] targets=[473.34334623735367, -83.53117874776825] pair=[0,2]
+;   0.174019 fixed=[1, 3] targets=[417.65589373884154, -55.68745249851219] pair=[0,2]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file output/extended-autocal/no-buildup-reference-005/sweeps.active_sweep_cfg.default.txt --fixed-targets 501.18707248660985,-55.68745249851219 --output-file output/extended-autocal/no-buildup-reference-005/sweeps.new_002.json --speedup 25 --firmware rrf --sim --no-spawn-rrf-simulator --force-low 0.022272608433151982 --force-mid 0.4454521686630396 --force-max 9.203508096781317 --no-auto-tune-force --return-to-origin
+; reusing force tuning: low=0.02227N mid=0.4455N max=9.204N
+; selected run=default fit_score_ui=0.4029 raw_fit_score_ui=0.4029 score_basis=standard-noise cost=0.4029 rel_std=0.3504 max_std=676mm rank_score=0.4029 iteration_adjust=-0.1919 coverage_adjust=-0.04193 history_rank_score=0.2026
+Wrote to console: The best try so far.
+Wrote to console: Patience reset.
+Wrote to console: Collecting new sweep to try and beat it.
+Wrote to console: Still has patience for 3 more attempts.
+; collecting next sweep (default)
+; running: node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file output/extended-autocal/no-buildup-reference-005/sweeps.active_sweep_cfg.default.txt --fixed-targets 501.18707248660985,-55.68745249851219 --output-file output/extended-autocal/no-buildup-reference-005/sweeps.new_002.json --speedup 25 --firmware rrf --sim --no-spawn-rrf-simulator --force-low 0.022272608433151982 --force-mid 0.4454521686630396 --force-max 9.203508096781317 --no-auto-tune-force --return-to-origin
+Requested hp-sim speed scale: 25x
+Requested hp-sim position trace mode: on.
+Requested hp-sim speed scale: 25x
+Requested hp-sim position trace mode: on.
+
+Sweep 1/1: fix [1, 3], pair 0/2, fixed targets [501.187, -55.687]
+  Sub-sweep 1/2: drive 0, sensor 2
+; waiting for browser clock: 5.2s wall, 12.7s simulation of 21.6s requested duration
+; sweep pullout: waiting for encoder stability: 5.5s wall, 14.1s simulation, 6 samples
+; sweep pullout: waiting for encoder stability: 10.7s wall, 27.6s simulation, 7 samples
+; sweep pullout: waiting for encoder stability: 15.8s wall, 40.4s simulation, 6 samples
+; sweep pullout: waiting for encoder stability: 21.0s wall, 53.8s simulation, 7 samples
+  Sub-sweep 2/2: drive 2, sensor 0
+; sweep pullout: waiting for encoder stability: 5.4s wall, 13.4s simulation, 7 samples
+; sweep pullout: waiting for encoder stability: 10.7s wall, 26.2s simulation, 8 samples
+; sweep pullout: waiting for encoder stability: 15.9s wall, 39.1s simulation, 8 samples
+; sweep pullout: waiting for encoder stability: 21.0s wall, 51.9s simulation, 8 samples
+; sweep pullout: waiting for encoder stability: 26.5s wall, 65.9s simulation, 7 samples
+  Collected 20 points from 2 sub-sweeps
+
+Saved 1 sweeps to output/extended-autocal/no-buildup-reference-005/sweeps.new_002.json
+; waiting for browser clock: 5.0s wall, 12.0s simulation of 21.5s requested duration
+Returned all motors to encoder origin.
+; merged output/extended-autocal/no-buildup-reference-005/sweeps.new_002.json -> output/extended-autocal/no-buildup-reference-005/sweeps.json sweeps=5
+Wrote to console: Collected sweep nr 5
+
+; === full-auto iteration 3/20 dataset=output/extended-autocal/no-buildup-reference-005/sweeps.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 3/20 dataset=output/extended-autocal/no-buildup-reference-005/sweeps.json ===
+; full-auto run default: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=60 origin=0 min=0 mixed=0 total=60
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=5.46e-05 floor_mm=0.946
+[robust] pointwise sigma_floor_mm: origin=0 mult=3 scaled=0 min=0.05 model=0.946075 used=0.946075 floor=0.946075 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0 friction_cogging=0.223 flex=0.918 floor=0.05 non_layered=0.946 layer_changes=0 mode_add=0 total=0.946 model=0.946 used=0.946 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default: cost_raw=0.0009921 cost_noise_normalized=0.403 J=0.403 chi2_red=0.4742 raw_fit_score_ui=0.403 score_basis=standard-noise rank_coverage_adjust=0 effective_obs=60 filtered_ratio=0
+; full-auto run default.warm: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=60 origin=0 min=0 mixed=0 total=60
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=5.46e-05 floor_mm=0.946
+[robust] pointwise sigma_floor_mm: origin=0 mult=3 scaled=0 min=0.05 model=0.946075 used=0.946075 floor=0.946075 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0 friction_cogging=0.223 flex=0.918 floor=0.05 non_layered=0.946 layer_changes=0 mode_add=0 total=0.946 model=0.946 used=0.946 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default.warm: cost_raw=0.0009921 cost_noise_normalized=0.403 J=0.403 chi2_red=0.4742 raw_fit_score_ui=0.403 score_basis=standard-noise rank_coverage_adjust=0 effective_obs=60 filtered_ratio=0
+; Active ellipse calibration
+; Anchors: [[0.00, -1908.20, -281.91], [1651.07, 955.05, -281.91], [-1652.84, 950.90, -281.91], [1.11, 0.76, 1899.54]]
+M669 A0.00:-1908.20:-281.91 B1651.07:955.05:-281.91 C-1652.84:950.90:-281.91 D1.11:0.76:1899.54
+; cost=0.0009921 cost_noise_normalized=0.403 origin_norms=[1928.907, 1928.113, 1927.576, 1899.541] pairwise=[d01=3305.178, d02=3302.466, d03=2898.766, d12=3303.907, d13=2896.853, d23=2897.763]
+; noise_cost: J=0.403 chi2_red=0.4742 |z|_med=0.4027 |z|_p95=1.114 outlier_ratio=0 N=60 mode=sigma lengths=mu J_trim=0.403 chi2_red_trim=0.4742 N_trim=60
+; rank_coverage: effective_obs=60 total_obs=60 filtered_ratio=0 obs_bonus=0 filtered_penalty=0 rank_adjust=0
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.9461mm used_sigma=0.9461mm floor_deg=0.02deg source=auto
+; noise_sigma_mm: encoder=0mm friction_cogging=0.2227mm flex=0.9181mm floor=0.05mm non_layered=0.9461mm layer_changes=0mm mode_add=0mm total=0.9461mm model=0.9461mm used=0.9461mm layered=false mode=off/off mode_factor=0 line_width=1mm base_radius=30mm used_override=n/a
+; info rank: 10/12 std(p11=999mm, p0=986mm, p2=975mm, p5=974mm, p7=972mm, p4=971mm)
+; covariance_scaled: chi2_red=0.4742 std_scaled(p11=688mm, p0=679mm, p2=671mm, p5=671mm, p7=669mm, p4=668mm)
+; CI95: max_std=687.7mm max_ci=1348mm workspace=1929 rel_std=0.3565 rel_ci=0.6987 scale=chi2_red=0.4742
+; encoder_noise: points=100/100 median_sigma=0deg floor=0.02deg min_samples=8
+; encoder_noise_flags: low_samples=0 sigma_below_floor=100 sigma_nonfinite=0
+; next_sweep score=0.168816 fixed=[2, 3] targets=[473.34334623735367, -83.53117874776825] pair=[0,1]
+; top_candidates:
+;   0.168816 fixed=[2, 3] targets=[473.34334623735367, -83.53117874776825] pair=[0,1]
+;   0.168805 fixed=[2, 3] targets=[445.4996199880976, -83.53117874776825] pair=[0,1]
+;   0.168795 fixed=[2, 3] targets=[417.65589373884154, -83.53117874776825] pair=[0,1]
+;   0.168793 fixed=[2, 3] targets=[445.4996199880976, -111.37490499702437] pair=[0,1]
+;   0.168785 fixed=[2, 3] targets=[389.8121674895855, -83.53117874776825] pair=[0,1]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file output/extended-autocal/no-buildup-reference-005/sweeps.active_sweep_cfg.default.txt --fixed-targets 473.34334623735367,-83.53117874776825 --output-file output/extended-autocal/no-buildup-reference-005/sweeps.new_003.json --speedup 25 --firmware rrf --sim --no-spawn-rrf-simulator --force-low 0.022272608433151982 --force-mid 0.4454521686630396 --force-max 9.203508096781317 --no-auto-tune-force --return-to-origin
+; reusing force tuning: low=0.02227N mid=0.4455N max=9.204N
+; selected run=default fit_score_ui=0.403 raw_fit_score_ui=0.403 score_basis=standard-noise cost=0.403 rel_std=0.3565 max_std=687.7mm rank_score=0.403 iteration_adjust=-0.2544 coverage_adjust=0 history_rank_score=0.1487
+Wrote to console: The best try so far.
+Wrote to console: Patience reset.
+Wrote to console: Collecting new sweep to try and beat it.
+Wrote to console: Still has patience for 3 more attempts.
+; collecting next sweep (default)
+; running: node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file output/extended-autocal/no-buildup-reference-005/sweeps.active_sweep_cfg.default.txt --fixed-targets 473.34334623735367,-83.53117874776825 --output-file output/extended-autocal/no-buildup-reference-005/sweeps.new_003.json --speedup 25 --firmware rrf --sim --no-spawn-rrf-simulator --force-low 0.022272608433151982 --force-mid 0.4454521686630396 --force-max 9.203508096781317 --no-auto-tune-force --return-to-origin
+Requested hp-sim speed scale: 25x
+Requested hp-sim position trace mode: on.
+Requested hp-sim speed scale: 25x
+Requested hp-sim position trace mode: on.
+
+Sweep 1/1: fix [2, 3], pair 0/1, fixed targets [473.343, -83.531]
+  Sub-sweep 1/2: drive 0, sensor 1
+; waiting for browser clock: 5.2s wall, 12.3s simulation of 20.6s requested duration
+; sweep pullout: waiting for encoder stability: 5.3s wall, 12.8s simulation, 8 samples
+; sweep pullout: waiting for encoder stability: 10.4s wall, 25.0s simulation, 7 samples
+; sweep pullout: waiting for encoder stability: 15.6s wall, 37.7s simulation, 7 samples
+; sweep pullout: waiting for encoder stability: 21.0s wall, 50.5s simulation, 9 samples
+; sweep pullout: waiting for encoder stability: 26.2s wall, 63.2s simulation, 9 samples
+  Sub-sweep 2/2: drive 1, sensor 0
+; sweep pullout: waiting for encoder stability: 5.2s wall, 12.0s simulation, 7 samples
+; sweep pullout: waiting for encoder stability: 10.3s wall, 23.5s simulation, 10 samples
+; sweep pullout: waiting for encoder stability: 15.4s wall, 35.0s simulation, 8 samples
+; sweep pullout: waiting for encoder stability: 20.4s wall, 46.5s simulation, 8 samples
+; sweep pullout: waiting for encoder stability: 25.8s wall, 58.6s simulation, 8 samples
+; sweep pullout: waiting for encoder stability: 30.9s wall, 70.1s simulation, 8 samples
+  Collected 20 points from 2 sub-sweeps
+
+Saved 1 sweeps to output/extended-autocal/no-buildup-reference-005/sweeps.new_003.json
+; waiting for browser clock: 5.2s wall, 10.9s simulation of 20.3s requested duration
+Returned all motors to encoder origin.
+; merged output/extended-autocal/no-buildup-reference-005/sweeps.new_003.json -> output/extended-autocal/no-buildup-reference-005/sweeps.json sweeps=6
+Wrote to console: Collected sweep nr 6
+
+; === full-auto iteration 4/20 dataset=output/extended-autocal/no-buildup-reference-005/sweeps.json ===
+Wrote to console: 
+Wrote to console: ; === full-auto iteration 4/20 dataset=output/extended-autocal/no-buildup-reference-005/sweeps.json ===
+; full-auto run default: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=113 origin=0 min=0 mixed=0 total=113
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=5.46e-05 floor_mm=0.946
+[robust] pointwise sigma_floor_mm: origin=0 mult=3 scaled=0 min=0.05 model=0.946075 used=0.946075 floor=0.946075 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0 friction_cogging=0.223 flex=0.918 floor=0.05 non_layered=0.946 layer_changes=0 mode_add=0 total=0.946 model=0.946 used=0.946 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default: cost_raw=4.685e-05 cost_noise_normalized=0.7989 J=0.8003 chi2_red=0.8695 raw_fit_score_ui=0.7989 score_basis=standard-noise rank_coverage_adjust=-0.1899 effective_obs=113 filtered_ratio=0
+; full-auto run default.warm: flags=''
+[gnc] stage 1/3: wide-huber maxiter=400
+[gnc] stage 2/3: tight-huber maxiter=240
+[gnc] stage 3/3: trim maxiter=160
+[robust] pointwise sigma_source: mode=auto point=110 origin=0 min=0 mixed=0 total=110
+[robust] pointwise: enabled=False stage=1 (tight-huber) hard_cut=False huber_mult=3
+[robust] pointwise scale: source=global global=n/a floor=5.46e-05 floor_mm=0.946
+[robust] pointwise sigma_floor_mm: origin=0 mult=3 scaled=0 min=0.05 model=0.946075 used=0.946075 floor=0.946075 floor_deg=0.02 source=model
+[robust] pointwise sigma_components_mm: encoder=0 friction_cogging=0.223 flex=0.918 floor=0.05 non_layered=0.946 layer_changes=0 mode_add=0 total=0.946 model=0.946 used=0.946 layered=false mode=off/off mode_factor=0 line_width=1 base_radius=30 used_override=n/a
+; full-auto run default.warm: cost_raw=6.382e-05 cost_noise_normalized=0.4885 J=0.4919 chi2_red=0.5357 raw_fit_score_ui=0.4885 score_basis=standard-noise rank_coverage_adjust=-0.1818 effective_obs=110 filtered_ratio=0
+; Active ellipse calibration
+; Anchors: [[0.00, -1903.80, -279.93], [1648.69, 952.94, -279.93], [-1642.24, 947.59, -279.93], [-0.12, -0.00, 1901.20]]
+M669 A0.00:-1903.80:-279.93 B1648.69:952.94:-279.93 C-1642.24:947.59:-279.93 D-0.12:-0.00:1901.20
+; cost=6.382e-05 cost_noise_normalized=0.4885 origin_norms=[1924.273, 1924.741, 1916.570, 1901.198] pairwise=[d01=3298.355, d02=3290.502, d03=2895.129, d12=3290.932, d13=2895.510, d23=2889.950]
+; noise_cost: J=0.4919 chi2_red=0.5357 |z|_med=0.4012 |z|_p95=1.394 outlier_ratio=0 N=110 mode=sigma lengths=mu J_trim=0.4919 chi2_red_trim=0.5357 N_trim=110
+; rank_coverage: effective_obs=110 total_obs=110 filtered_ratio=0 obs_bonus=0.1818 filtered_penalty=0 rank_adjust=-0.1818
+; noise_norm_floor: min_sigma=0.05mm model_sigma=0.9461mm used_sigma=0.9461mm floor_deg=0.02deg source=auto
+; noise_sigma_mm: encoder=0mm friction_cogging=0.2227mm flex=0.9181mm floor=0.05mm non_layered=0.9461mm layer_changes=0mm mode_add=0mm total=0.9461mm model=0.9461mm used=0.9461mm layered=false mode=off/off mode_factor=0 line_width=1mm base_radius=30mm used_override=n/a
+; info rank: 10/12 std(p11=998mm, p0=985mm, p4=970mm, p5=970mm, p2=970mm, p7=969mm)
+; covariance_scaled: chi2_red=0.5357 std_scaled(p11=731mm, p0=721mm, p4=710mm, p5=710mm, p2=710mm, p7=709mm)
+; CI95: max_std=730.8mm max_ci=1432mm workspace=1929 rel_std=0.3788 rel_ci=0.7425 scale=chi2_red=0.5357
+; encoder_noise: points=120/120 median_sigma=0deg floor=0.02deg min_samples=8
+; encoder_noise_flags: low_samples=0 sigma_below_floor=120 sigma_nonfinite=0
+; next_sweep score=0.145002 fixed=[2, 3] targets=[445.4996199880976, -111.37490499702437] pair=[0,1]
+; top_candidates:
+;   0.145002 fixed=[2, 3] targets=[445.4996199880976, -111.37490499702437] pair=[0,1]
+;   0.144992 fixed=[2, 3] targets=[417.65589373884154, -111.37490499702437] pair=[0,1]
+;   0.144983 fixed=[2, 3] targets=[389.8121674895855, -111.37490499702437] pair=[0,1]
+;   0.144981 fixed=[2, 3] targets=[417.65589373884154, -139.2186312462805] pair=[0,1]
+;   0.144974 fixed=[2, 3] targets=[361.9684412403293, -111.37490499702437] pair=[0,1]
+; collect_command:
+;   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file output/extended-autocal/no-buildup-reference-005/sweeps.active_sweep_cfg.default.warm.txt --fixed-targets 445.4996199880976,-111.37490499702437 --output-file output/extended-autocal/no-buildup-reference-005/sweeps.new_004.json --speedup 25 --firmware rrf --sim --no-spawn-rrf-simulator --force-low 0.022272608433151982 --force-mid 0.4454521686630396 --force-max 9.203508096781317 --no-auto-tune-force --return-to-origin
+; reusing force tuning: low=0.02227N mid=0.4455N max=9.204N
+; history_select: spread_stop spread_mm=n/a limit_mm=n/a streak=0/2
+; selected run=default.warm fit_score_ui=0.4885 raw_fit_score_ui=0.4885 score_basis=standard-noise cost=0.4885 rel_std=0.3788 max_std=730.8mm rank_score=0.4885 iteration_adjust=-0.2638 coverage_adjust=-0.1818 history_rank_score=0.1883
+Wrote to console: The 2nd best try so far.
+Wrote to console: Collecting new sweep to try and beat it.
+Wrote to console: Still has patience for 2 more attempts.
+; collecting next sweep (default.warm)
+; running: node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file output/extended-autocal/no-buildup-reference-005/sweeps.active_sweep_cfg.default.warm.txt --fixed-targets 445.4996199880976,-111.37490499702437 --output-file output/extended-autocal/no-buildup-reference-005/sweeps.new_004.json --speedup 25 --firmware rrf --sim --no-spawn-rrf-simulator --force-low 0.022272608433151982 --force-mid 0.4454521686630396 --force-max 9.203508096781317 --no-auto-tune-force --return-to-origin
+Requested hp-sim speed scale: 25x
+Requested hp-sim position trace mode: on.
+Requested hp-sim speed scale: 25x
+Requested hp-sim position trace mode: on.
+
+Sweep 1/1: fix [2, 3], pair 0/1, fixed targets [445.500, -111.375]
+  Sub-sweep 1/2: drive 0, sensor 1
+; waiting for browser clock: 5.2s wall, 10.8s simulation of 19.7s requested duration
+; sweep pullout: waiting for encoder stability: 5.1s wall, 10.8s simulation, 8 samples
+; sweep pullout: waiting for encoder stability: 10.2s wall, 21.8s simulation, 6 samples
+; sweep pullout: waiting for encoder stability: 15.7s wall, 33.3s simulation, 6 samples
+; sweep pullout: waiting for encoder stability: 20.9s wall, 44.2s simulation, 6 samples
+; sweep pullout: waiting for encoder stability: 26.0s wall, 55.0s simulation, 8 samples
+; waiting for browser clock: 5.0s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 10.0s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 15.0s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 20.0s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 25.1s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 30.1s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 35.1s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 40.1s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 45.1s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 50.1s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 55.1s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 60.1s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 65.1s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 70.2s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 75.2s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 80.2s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 85.2s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 90.2s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 95.2s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 100.2s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 105.2s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 110.2s wall, 0.0s simulation of 0.5s requested duration
+; waiting for browser clock: 115.3s wall, 0.0s simulation of 0.5s requested duration
+Failed to collect sweeps: Browser simulation clock did not advance before the wall-clock deadline

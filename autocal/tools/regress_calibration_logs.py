@@ -225,6 +225,15 @@ DATASETS = [
         true_radii=SIM_3D_TRUE_RADII,
         extra_args=("--verbose", "--r0-bounds", "39,40"),
     ),
+    DatasetSpec(
+        name="hp4_no_buildup_Oct_16_2026_4x_substepping",
+        machine_type="hangprinter_4",
+        base_radii="30",
+        buildup_factor="0",
+        find_radii="off",
+        true_anchors=SIM_3D_TRUE_ANCHORS,
+        true_radii=[30.0, 30.0, 30.0, 30.0],
+    ),
 ]
 
 
@@ -401,7 +410,7 @@ def extract_summary_block_lines(text: str, max_lines: int = 40) -> List[str]:
     return lines
 
 
-def parse_summary(text: str) -> Optional[Params]:
+def parse_summary(text: str, fixed_radii: Optional[List[float]] = None) -> Optional[Params]:
     """
     Parses the last calibration summary for fit score, anchors, and radii.
     """
@@ -411,7 +420,7 @@ def parse_summary(text: str) -> Optional[Params]:
 
     fit_score: Optional[float] = None
     anchors: Optional[List[Coord]] = None
-    radii: Optional[List[float]] = None
+    radii: Optional[List[float]] = fixed_radii
 
     for line in lines:
         if "quality score" in line:
@@ -443,10 +452,14 @@ def parse_summary(text: str) -> Optional[Params]:
     return Params(anchors=anchors, radii=radii, fit_score_ui=fit_score)
 
 
-def parse_log_file(path: Path) -> ParsedLog:
+def parse_log_file(path: Path, fixed_radii: Optional[List[float]] = None) -> ParsedLog:
     text = path.read_text(errors="replace")
-    summary = parse_summary(text)
+    summary = parse_summary(text, fixed_radii)
     iters = parse_iterations(text)
+    if fixed_radii is not None:
+        for iteration in iters:
+            if iteration.radii is None:
+                iteration.radii = list(fixed_radii)
     summary_lines = extract_summary_block_lines(text)
     collection_sweeps = parse_collection_sweep_count(text)
     return ParsedLog(
@@ -1289,8 +1302,14 @@ def run_one_dataset(
             reference_log=ref_log_path,
         )
 
-    ref_parsed = parse_log_file(ref_log_path)
-    gen_parsed = parse_log_file(gen_log_path)
+    # Fixed-radius fits omit M666 in their logs; use the configured fit inputs.
+    fixed_radii = None
+    if dataset_spec.find_radii == "off":
+        fixed_radii = [float(value) for value in dataset_spec.base_radii.split(",")]
+        if len(fixed_radii) == 1:
+            fixed_radii *= len(dataset_spec.true_anchors)
+    ref_parsed = parse_log_file(ref_log_path, fixed_radii)
+    gen_parsed = parse_log_file(gen_log_path, fixed_radii)
     ref_parsed.collection_points = count_dataset_points(dataset_path, ref_parsed.collection_sweeps)
     gen_parsed.collection_points = count_dataset_points(dataset_path, gen_parsed.collection_sweeps)
     true_iter_mean_delta, _true_iter_pair_count = compute_true_iter_mean_delta(

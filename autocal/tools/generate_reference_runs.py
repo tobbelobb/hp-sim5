@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate a complete dated set of full-auto regression reference logs."""
+"""Generate dated full-auto reference logs for the shared regression DATASETS."""
 
 from __future__ import annotations
 
