@@ -17,7 +17,7 @@ SYSTEM_ORDER = [
     'StepperMotorSystem', 'GravitySystem', 'MovementSystem', 'AngularMovementSystem',
     'RigidBodySyncSystem', 'CableAttachmentUpdateSystem', 'CableAttachmentCacheSystem',
     'CableFrictionSystem', 'PBDCableConstraintSolver', 'PBDResolveCableOverCorrections',
-    'PBDVelocityUpdateSystem', 'PBDAngularVelocityUpdateSystem', 'TorqueModeSystem',
+    'RigidBodySyncSystem', 'PBDVelocityUpdateSystem', 'PBDAngularVelocityUpdateSystem', 'TorqueModeSystem',
     'EncoderUpdateSystem', 'MissedStepTrackingSystem', 'ExtruderSystem',
 ]
 

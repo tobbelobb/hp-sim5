@@ -1,3 +1,4 @@
+import { StepperMotorComponent } from '../../../hp-sim-3d/app/hangprinter_stepper_motor.js';
 import Vector3 from './vector3.js';
 import Quaternion from './quaternion.js';
 
@@ -340,8 +341,12 @@ export class EncoderUpdateSystem {
 export class RigidBodySyncSystem {
   runInPause = false;
 
+  constructor(mountedOnly = false) {
+    this.mountedOnly = mountedOnly;
+  }
+
   update(world, _dt) {
-    const standaloneSpools = world.query([SpoolStateComponent, OrientationComponent]);
+    const standaloneSpools = this.mountedOnly ? [] : world.query([SpoolStateComponent, OrientationComponent]);
     for (const entityId of standaloneSpools) {
       if (world.getComponent(entityId, RigidBodyMemberComponent)) {
         continue;
@@ -374,6 +379,7 @@ export class RigidBodySyncSystem {
       const bodyVelComp = world.getComponent(bodyEntityId, VelocityComponent);
       const bodyAngularVelComp = world.getComponent(bodyEntityId, AngularVelocityComponent);
       const members = Array.isArray(body?.members) ? body.members : [];
+      if (this.mountedOnly && !members.some(id => world.getComponent(id, SpoolStateComponent))) continue;
       if (!body || !bodyPosComp?.pos || !bodyOrientationComp?.quaternion || members.length < 1) {
         continue;
       }
@@ -456,10 +462,25 @@ export class AngularMovementSystem {
     const epsilon = 1e-12;
 
     for (const entityId of entities) {
-      if (
-        world.getComponent(entityId, RigidBodyMemberComponent)
-        && world.getComponent(entityId, SpoolStateComponent)
-      ) {
+      const member = world.getComponent(entityId, RigidBodyMemberComponent);
+      if (member && world.getComponent(entityId, SpoolStateComponent)) {
+        // Motor systems integrate driven twists. A passive mounted rotor still
+        // needs to carry its relative angular velocity into the next pose.
+        if (world.getComponent(entityId, StepperMotorComponent)) continue;
+        const previousBody = world.getComponent(member.bodyEntity, PrevFinalOrientationComponent)?.quaternion
+          ?? world.getComponent(member.bodyEntity, OrientationComponent)?.quaternion;
+        if (!previousBody) continue;
+        const omega = world.getComponent(entityId, AngularVelocityComponent).omega;
+        const localOmega = previousBody.clone().conjugate().normalize().transformVector(omega);
+        const speed = localOmega.length();
+        if (speed > epsilon) {
+          const old = member.localOrientation.clone();
+          member.localOrientation.multiplyQuaternions(
+            new Quaternion().setFromAxisAngle(localOmega.scale(1 / speed), speed * dt), old,
+          ).normalize();
+          const raw = world.getComponent(entityId, OrientationComponent).quaternion;
+          raw.multiply(old.conjugate().normalize()).multiply(member.localOrientation).normalize();
+        }
         continue;
       }
       const orientationComp = world.getComponent(entityId, OrientationComponent);
@@ -531,7 +552,8 @@ export class PBDAngularVelocityUpdateSystem {
 
     for (const entityId of entities) {
       if (entityId === grabbed) continue;
-      if (world.getComponent(entityId, RigidBodyMemberComponent)) continue;
+      const member = world.getComponent(entityId, RigidBodyMemberComponent);
+      if (member && !world.getComponent(entityId, SpoolStateComponent)) continue;
 
       const moiComp = world.getComponent(entityId, MomentOfInertiaComponent);
       if (moiComp && !hasAnyInverseInertia(moiComp)) continue;
@@ -540,8 +562,17 @@ export class PBDAngularVelocityUpdateSystem {
       const angularVelComp = world.getComponent(entityId, AngularVelocityComponent);
       const prevFinalOrientationComp = world.getComponent(entityId, PrevFinalOrientationComponent);
 
-      const qCurr = orientationComp.quaternion;
-      const qPrevInv = prevFinalOrientationComp.quaternion.clone().conjugate().normalize();
+      let qCurr = orientationComp.quaternion;
+      let qPrev = prevFinalOrientationComp.quaternion;
+      let bodyOrientation;
+      if (member) {
+        bodyOrientation = world.getComponent(member.bodyEntity, OrientationComponent)?.quaternion;
+        const bodyPrev = world.getComponent(member.bodyEntity, PrevFinalOrientationComponent)?.quaternion;
+        if (!bodyOrientation || !bodyPrev) continue;
+        qCurr = member.localOrientation;
+        qPrev = new Quaternion().multiplyQuaternions(bodyPrev.clone().conjugate().normalize(), qPrev).normalize();
+      }
+      const qPrevInv = qPrev.clone().conjugate().normalize();
       const qDelta = qCurr.clone().multiplyQuaternions(qCurr, qPrevInv).normalize();
 
       if (qDelta.w < 0) {
@@ -568,6 +599,7 @@ export class PBDAngularVelocityUpdateSystem {
       angularVelComp.omega.x = qDelta.x * scale;
       angularVelComp.omega.y = qDelta.y * scale;
       angularVelComp.omega.z = qDelta.z * scale;
+      if (member) angularVelComp.omega.set(bodyOrientation.transformVector(angularVelComp.omega));
     }
   }
 }

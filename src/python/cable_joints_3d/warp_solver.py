@@ -243,6 +243,7 @@ def end_info(bodies: wp.array(dtype=Body), joints: wp.array(dtype=Joint), ep: En
         end.displacement = end.displacement + wp.dot(end.angular, angular_delta(b.prev_q, b.q))
     if ep.spin >= 0:
         spin = bodies[ep.spin]
+        spin.q = world_orientation(bodies, ep.spin)
         axis = rotate(spin.q, spin.axis)
         spin_point = point
         spin_gradient = gradient
@@ -295,21 +296,174 @@ def end_info(bodies: wp.array(dtype=Body), joints: wp.array(dtype=Joint), ep: En
 
 
 @wp.func
-def mechanical(a: End, b: End):
-    return (a.inv_mass*wp.dot(a.gradient, a.gradient) + a.angular_denom
-            + b.inv_mass*wp.dot(b.gradient, b.gradient) + b.angular_denom
-            + a.inverse*a.solve_gradient*a.solve_gradient + b.inverse*b.solve_gradient*b.solve_gradient)
+def rotation(q: Q):
+    q = unit(q)
+    x, y, z, w = q[0], q[1], q[2], q[3]
+    two = F(2)
+    return M(F(1)-two*y*y-two*z*z, two*x*y-two*z*w, two*x*z+two*y*w,
+             two*x*y+two*z*w, F(1)-two*x*x-two*z*z, two*y*z-two*x*w,
+             two*x*z-two*y*w, two*y*z+two*x*w, F(1)-two*x*x-two*y*y)
+
+
+@wp.struct
+class Rotor:
+    axis: V
+    coupling: V
+    inverse: F
+    gradient: F
+    active: int
 
 
 @wp.func
-def multiplier(a: End, b: End, path: Path, dt: F, error: F, previous: F):
+def rotor_info(bodies: wp.array(dtype=Body), id: int, a: End, b: End, dt: F):
+    e = bodies[id]
+    result = Rotor()
+    if e.parent >= 0 and (e.flags & 146) == 146:
+        q = world_orientation(bodies, id)
+        axis = rotate(q,e.axis)
+        if wp.dot(axis,axis) > EPS:
+            axis = axis/wp.length(axis)
+            tensor = rotation(q)*e.tensor*wp.transpose(rotation(q))
+            coupling = tensor*axis
+            inertia = wp.dot(axis,coupling)
+            if inertia > F(1e-12):
+                result.active = 1
+                result.axis = axis
+                result.coupling = coupling
+                inverse = F(0)
+                if (e.flags & 32) == 0:
+                    effective = inertia
+                    if wp.isfinite(dt) and dt > EPS and e.stiffness > EPS:
+                        effective = effective+e.stiffness*dt*dt
+                    inverse = F(1)/effective
+                gradient = F(0)
+                if a.spin == id:
+                    inverse = a.inverse
+                    gradient = gradient+a.solve_gradient
+                if b.spin == id:
+                    inverse = b.inverse
+                    gradient = gradient+b.solve_gradient
+                result.inverse = inverse
+                result.gradient = gradient
+    return result
+
+
+@wp.func
+def carrier(bodies: wp.array(dtype=Body), end: End):
+    id = end.entity
+    if bodies[id].parent >= 0:
+        id = bodies[id].parent
+    result = int(-1)
+    for i in range(bodies.shape[0]):
+        if bodies[i].parent == id and (bodies[i].flags & 146) == 146:
+            result = id
+    return result
+
+
+@wp.func
+def symmetric_inverse(tensor: M):
+    scale = F(0)
+    for r in range(3):
+        for c in range(3):
+            scale = wp.max(scale,wp.abs(tensor[r,c]))
+    result = M(F(0))
+    if scale > F(0):
+        a = tensor/scale
+        vectors = M(F(1),F(0),F(0),F(0),F(1),F(0),F(0),F(0),F(1))
+        for sweep in range(32):
+            p, q = int(0), int(1)
+            if wp.abs(a[0,2]) > wp.abs(a[p,q]):
+                p, q = int(0), int(2)
+            if wp.abs(a[1,2]) > wp.abs(a[p,q]):
+                p, q = int(1), int(2)
+            if wp.abs(a[p,q]) <= F(2.220446049250313e-16):
+                break
+            tau = (a[q,q]-a[p,p])/(F(2)*a[p,q])
+            sign = F(1)
+            if tau < F(0):
+                sign = F(-1)
+            t = sign/(wp.abs(tau)+wp.sqrt(F(1)+tau*tau))
+            cosine = F(1)/wp.sqrt(F(1)+t*t)
+            sine = t*cosine
+            off = a[p,q]
+            a[p,p] = a[p,p]-t*off
+            a[q,q] = a[q,q]+t*off
+            a[p,q] = F(0)
+            a[q,p] = F(0)
+            for k in range(3):
+                if k != p and k != q:
+                    kp, kq = a[k,p], a[k,q]
+                    a[k,p] = cosine*kp-sine*kq
+                    a[p,k] = a[k,p]
+                    a[k,q] = sine*kp+cosine*kq
+                    a[q,k] = a[k,q]
+                vp, vq = vectors[k,p], vectors[k,q]
+                vectors[k,p] = cosine*vp-sine*vq
+                vectors[k,q] = sine*vp+cosine*vq
+        tolerance = F(6.661338147750939e-16)*wp.max(wp.abs(a[0,0]),wp.max(wp.abs(a[1,1]),wp.abs(a[2,2])))
+        for k in range(3):
+            inverse = F(0)
+            if a[k,k] > tolerance:
+                inverse = F(1)/(a[k,k]*scale)
+            for r in range(3):
+                for c in range(3):
+                    result[r,c] = result[r,c]+vectors[r,k]*inverse*vectors[c,k]
+    return result
+
+
+@wp.func
+def carrier_response(bodies: wp.array(dtype=Body), id: int, a: End, b: End, dt: F):
+    gradient = V(F(0))
+    if a.entity == id:
+        gradient = gradient+a.angular
+    if b.entity == id:
+        gradient = gradient+b.angular
+    e = bodies[id]
+    tensor = rotation(e.q)*e.tensor*wp.transpose(rotation(e.q))
+    rhs = gradient
+    for i in range(bodies.shape[0]):
+        if bodies[i].parent == id:
+            rotor = rotor_info(bodies,i,a,b,dt)
+            if rotor.active != 0:
+                tensor = tensor-rotor.inverse*wp.outer(rotor.coupling,rotor.coupling)
+                rhs = rhs-rotor.inverse*rotor.coupling*rotor.gradient
+    angular = symmetric_inverse(tensor)*rhs
+    denominator = wp.dot(gradient,angular)
+    for i in range(bodies.shape[0]):
+        if bodies[i].parent == id:
+            rotor = rotor_info(bodies,i,a,b,dt)
+            angle = rotor.inverse*(rotor.gradient-wp.dot(rotor.coupling,angular))
+            denominator = denominator+rotor.gradient*angle
+    return angular, denominator
+
+
+@wp.func
+def mechanical(bodies: wp.array(dtype=Body), a: End, b: End, dt: F):
+    result = a.inv_mass*wp.dot(a.gradient,a.gradient)+b.inv_mass*wp.dot(b.gradient,b.gradient)
+    ca, cb = carrier(bodies,a), carrier(bodies,b)
+    if ca >= 0:
+        angular, denominator = carrier_response(bodies,ca,a,b,dt)
+        result = result+denominator
+    else:
+        result = result+a.angular_denom+a.inverse*a.solve_gradient*a.solve_gradient
+    if cb >= 0:
+        if cb != ca:
+            angular, denominator = carrier_response(bodies,cb,a,b,dt)
+            result = result+denominator
+    else:
+        result = result+b.angular_denom+b.inverse*b.solve_gradient*b.solve_gradient
+    return result
+
+
+@wp.func
+def multiplier(bodies: wp.array(dtype=Body), a: End, b: End, path: Path, dt: F, error: F, previous: F):
     valid = wp.isfinite(dt) and dt > EPS
     value = F(0)
     if wp.isinf(path.compliance) and path.compliance > F(0):
         step = F(0)
         if valid:
             step = wp.max(F(0), path.damping)*dt
-        delta = (step*(a.displacement+b.displacement)-previous)/(F(1)+step*mechanical(a,b))
+        delta = (step*(a.displacement+b.displacement)-previous)/(F(1)+step*mechanical(bodies,a,b,dt))
         value = wp.min(F(0), previous+delta)-previous
     else:
         alpha = F(0)
@@ -317,7 +471,7 @@ def multiplier(a: End, b: End, path: Path, dt: F, error: F, previous: F):
         if valid:
             alpha = path.compliance/(dt*dt)
             gamma = wp.max(F(0), path.compliance*path.damping/dt)
-        denom = (F(1)+gamma)*mechanical(a,b)+alpha
+        denom = (F(1)+gamma)*mechanical(bodies,a,b,dt)+alpha
         value = F(wp.nan)
         if denom > EPS:
             delta = (-error-alpha*previous+gamma*(a.displacement+b.displacement))/denom
@@ -356,6 +510,53 @@ def apply_correction(bodies: wp.array(dtype=Body), end: End, value: F):
             if (spin.flags & 64) != 0 and wp.isfinite(spin.encoder):
                 spin.encoder = spin.encoder + delta
                 bodies[end.spin] = spin
+
+
+@wp.func
+def apply_carrier(bodies: wp.array(dtype=Body), id: int, a: End, b: End, dt: F, value: F):
+    angular, denominator = carrier_response(bodies,id,a,b,dt)
+    body_q = bodies[id].q
+    # Back substitute before mutating the frame used by the mass matrix.
+    for i in range(bodies.shape[0]):
+        if bodies[i].parent == id:
+            rotor = rotor_info(bodies,i,a,b,dt)
+            angle = -value*rotor.inverse*(rotor.gradient-wp.dot(rotor.coupling,angular))
+            if wp.abs(angle) > F(1e-12):
+                local_axis = rotate(unit(conjugate(body_q)),rotor.axis)
+                sine = wp.sin(angle/F(2))
+                dq = Q(local_axis[0]*sine,local_axis[1]*sine,local_axis[2]*sine,wp.cos(angle/F(2)))
+                e = bodies[i]
+                old = e.local_q
+                e.local_q = unit(dq*old)
+                e.q = unit(e.q*unit(conjugate(old))*e.local_q)
+                if (e.flags & 64) != 0:
+                    e.encoder = e.encoder+angle
+                bodies[i] = e
+    delta = angular*(-value)
+    angle = wp.length(delta)
+    if angle > F(1e-12):
+        axis = delta/angle
+        sine = wp.sin(angle/F(2))
+        dq = Q(axis[0]*sine,axis[1]*sine,axis[2]*sine,wp.cos(angle/F(2)))
+        e = bodies[id]
+        e.q = unit(dq*e.q)
+        bodies[id] = e
+
+
+@wp.func
+def apply_corrections(bodies: wp.array(dtype=Body), a: End, b: End, dt: F, value: F):
+    ca, cb = carrier(bodies,a), carrier(bodies,b)
+    if ca >= 0:
+        apply_carrier(bodies,ca,a,b,dt,value)
+        a.angular_denom = F(0)
+        a.inverse = F(0)
+    if cb >= 0:
+        if cb != ca:
+            apply_carrier(bodies,cb,a,b,dt,value)
+        b.angular_denom = F(0)
+        b.inverse = F(0)
+    apply_correction(bodies,a,value)
+    apply_correction(bodies,b,value)
 
 
 @wp.func
@@ -419,7 +620,7 @@ def solve(bodies: wp.array(dtype=Body), joints: wp.array(dtype=Joint), paths: wp
                 direction = (pb-pa)/length
                 a = end_info(bodies,joints,joint.a,pa,direction,dt)
                 b = end_info(bodies,joints,joint.b,pb,-direction,dt)
-                value = multiplier(a,b,path,dt,error,joint.multiplier)
+                value = multiplier(bodies,a,b,path,dt,error,joint.multiplier)
                 if wp.isnan(value):
                     continue
                 released = bool(False)
@@ -432,7 +633,7 @@ def solve(bodies: wp.array(dtype=Body), joints: wp.array(dtype=Joint), paths: wp
                         b.inverse = b.free_inverse
                         released = True
                 if released:
-                    value = multiplier(a,b,path,dt,error,joint.multiplier)
+                    value = multiplier(bodies,a,b,path,dt,error,joint.multiplier)
                 if wp.isnan(value):
                     continue
                 joint.multiplier = joint.multiplier+value
@@ -440,7 +641,7 @@ def solve(bodies: wp.array(dtype=Body), joints: wp.array(dtype=Joint), paths: wp
                 if iteration == 0:
                     record_load(bodies,loads,joint.a,a,path,value,inv_dt2)
                     record_load(bodies,loads,joint.b,b,path,value,inv_dt2)
-                if mechanical(a,b) <= EPS:
+                if mechanical(bodies,a,b,dt) <= EPS:
                     continue
                 if iteration == 0:
                     output = joint.output
@@ -465,8 +666,7 @@ def solve(bodies: wp.array(dtype=Body), joints: wp.array(dtype=Joint), paths: wp
                                 transfer = joint.b.transfer
                         if transfer >= 0 and wp.isfinite(magnitude) and magnitude > F(0):
                             telemetry[transfer,5] = wp.max(telemetry[transfer,5],magnitude)
-                apply_correction(bodies,a,value)
-                apply_correction(bodies,b,value)
+                apply_corrections(bodies,a,b,dt,value)
 
 
 class WarpCableConstraintSolver:
@@ -509,6 +709,9 @@ class WarpCableConstraintSolver:
             if member is not None and member.body_entity not in needed:
                 needed.add(member.body_entity)
                 pending.append(member.body_entity)
+        for entity in world.query([ecs.RigidBodyMemberComponent, SpoolStateComponent]):
+            if get(entity,ecs.RigidBodyMemberComponent).body_entity in needed:
+                needed.add(entity)
         entities = [entity for entity in world.entities if entity in needed]
         ids = {entity:i for i,entity in enumerate(entities)}
         outputs = {j:i for i,j in enumerate(joint_ids)}

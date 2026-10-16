@@ -1,3 +1,4 @@
+import { createCableAngularResponse } from './mounted_rotor_dynamics.js';
 import Vector3 from './vector3.js';
 import Quaternion from './quaternion.js';
 
@@ -2926,7 +2927,7 @@ export class PBDCableConstraintSolver {
       if (!linkComp?.cablePlaneNormalLocal || !pointWorld || !gradPos) {
         return null;
       }
-      const orientationComp = orientationStore?.get(entityId);
+      const orientationComp = { quaternion: getEntityWorldOrientation(world, entityId) };
       const moiComp = inertiaStore?.get(entityId);
       const centerWorld = getEntityWorldPosition(world, entityId);
       if (!orientationComp?.quaternion || !centerWorld || !hasAnyInverseInertia(moiComp)) {
@@ -2965,6 +2966,8 @@ export class PBDCableConstraintSolver {
         gradPos: gradPos.clone(),
       };
     };
+    const angularResponse = createCableAngularResponse(world, id => hasAxisOnlyCableSpinDof(id)
+      ? buildExternalMemberSpinSolveInfo(id, new Vector3(), new Vector3()) : null);
     const getExternalMemberSpinSolveInfo = (
       path,
       jointIndex,
@@ -3311,19 +3314,26 @@ export class PBDCableConstraintSolver {
 
       const { zeroStiffness, alphaTilde, gamma, dampingStep, invDtSq } = pathParameters;
       const jDx = translationalDispA + rotationalDispA + spinDispA + translationalDispB + rotationalDispB + spinDispB;
-      const mechanicalDenom = (solveMemberInvInertiaA, solveMemberInvInertiaB) => {
-        let mechDenom = 0.0;
-        mechDenom += invMassA * gradPosA.lengthSq();
-        mechDenom += angularDenomA;
-        if (solveMemberInvInertiaA > 0.0 && Math.abs(solveGradSpinA) > EPSILON) {
-          mechDenom += solveMemberInvInertiaA * solveGradSpinA * solveGradSpinA;
+      const angularEnds = (inverseA, inverseB) => [
+        { entity: solverEntityA, angular: useAngularInertiaA ? gradAngA : new Vector3(), angularDenominator: angularDenomA,
+          spin: memberSpinA, spinGradient: solveGradSpinA, inverse: inverseA },
+        { entity: solverEntityB, angular: useAngularInertiaB ? gradAngB : new Vector3(), angularDenominator: angularDenomB,
+          spin: memberSpinB, spinGradient: solveGradSpinB, inverse: inverseB },
+      ];
+      let response;
+      const mechanicalDenom = (inverseA, inverseB) => {
+        response = angularResponse(angularEnds(inverseA, inverseB));
+        if (response.standalone.length === 2) {
+          // Preserve the established arithmetic for assemblies without rotors.
+          let denominator = invMassA * gradPosA.lengthSq();
+          denominator += angularDenomA;
+          if (inverseA > 0 && Math.abs(solveGradSpinA) > EPSILON) denominator += inverseA * solveGradSpinA * solveGradSpinA;
+          denominator += invMassB * gradPosB.lengthSq();
+          denominator += angularDenomB;
+          if (inverseB > 0 && Math.abs(solveGradSpinB) > EPSILON) denominator += inverseB * solveGradSpinB * solveGradSpinB;
+          return denominator;
         }
-        mechDenom += invMassB * gradPosB.lengthSq();
-        mechDenom += angularDenomB;
-        if (solveMemberInvInertiaB > 0.0 && Math.abs(solveGradSpinB) > EPSILON) {
-          mechDenom += solveMemberInvInertiaB * solveGradSpinB * solveGradSpinB;
-        }
-        return mechDenom;
+        return invMassA * gradPosA.lengthSq() + invMassB * gradPosB.lengthSq() + response.denominator;
       };
 
       const solveLambda = (solveMemberInvInertiaA, solveMemberInvInertiaB) => {
@@ -3423,57 +3433,28 @@ export class PBDCableConstraintSolver {
         const deltaPosA = gradPosA.clone().scale(-invMassA * lambda);
         posAComp.pos.add(deltaPosA);
       }
-      if (angularDenomA > 0.0 && orientationAComp?.quaternion) {
-        const deltaAngA = applyWorldInverseInertia(moiAComp, orientationAComp.quaternion, gradAngA)
-          .scale(-lambda);
-          const angle = deltaAngA.length();
+      if (invMassB > 0.0) posBComp.pos.add(gradPosB.clone().scale(-invMassB * lambda));
+      response.apply(lambda, end => {
+        const orientation = orientationStore?.get(end.entity)?.quaternion;
+        if (end.angularDenominator > 0 && orientation) {
+          const delta = applyWorldInverseInertia(inertiaStore?.get(end.entity), orientation, end.angular).scale(-lambda);
+          const angle = delta.length();
           if (angle > EPSILON) {
-            const axis = deltaAngA.clone().scale(1.0 / angle);
-            const dq = new Quaternion().setFromAxisAngle(axis, angle);
-            orientationAComp.quaternion.multiplyQuaternions(dq, orientationAComp.quaternion).normalize();
-            updateRigidBodyMemberLocalOrientation(world, solverEntityA);
-        }
-      }
-      if (solveMemberInvInertiaA > 0.0 && memberSpinA?.axisWorld && Math.abs(solveGradSpinA) > EPSILON) {
-        const deltaAngleMemberA = -solveMemberInvInertiaA * lambda * solveGradSpinA;
-        const memberOrientationAComp = orientationStore?.get(memberSpinA.entityId);
-        if (memberOrientationAComp) {
-          if (Math.abs(deltaAngleMemberA) > EPSILON) {
-            const dq = new Quaternion().setFromAxisAngle(memberSpinA.axisWorld, deltaAngleMemberA);
-            memberOrientationAComp.quaternion.multiplyQuaternions(dq, memberOrientationAComp.quaternion).normalize();
-            updateRigidBodyMemberLocalOrientation(world, memberSpinA.entityId);
-            recordEncoderSpinDelta(memberSpinA.entityId, deltaAngleMemberA);
+            orientation.multiplyQuaternions(new Quaternion().setFromAxisAngle(delta.scale(1 / angle), angle), orientation).normalize();
+            updateRigidBodyMemberLocalOrientation(world, end.entity);
           }
         }
-      }
+        if (end.inverse > 0 && end.spin) {
+          const angle = -end.inverse * lambda * end.spinGradient;
+          const q = orientationStore?.get(end.spin.entityId)?.quaternion;
+          if (q && Math.abs(angle) > EPSILON) {
+            q.multiplyQuaternions(new Quaternion().setFromAxisAngle(end.spin.axisWorld, angle), q).normalize();
+            updateRigidBodyMemberLocalOrientation(world, end.spin.entityId);
+            recordEncoderSpinDelta(end.spin.entityId, angle);
+          }
+        }
+      }, recordEncoderSpinDelta);
 
-      if (invMassB > 0.0) {
-        const deltaPosB = gradPosB.clone().scale(-invMassB * lambda);
-        posBComp.pos.add(deltaPosB);
-      }
-      if (angularDenomB > 0.0 && orientationBComp?.quaternion) {
-        const deltaAngB = applyWorldInverseInertia(moiBComp, orientationBComp.quaternion, gradAngB)
-          .scale(-lambda);
-        const angle = deltaAngB.length();
-        if (angle > EPSILON) {
-          const axis = deltaAngB.clone().scale(1.0 / angle);
-          const dq = new Quaternion().setFromAxisAngle(axis, angle);
-          orientationBComp.quaternion.multiplyQuaternions(dq, orientationBComp.quaternion).normalize();
-          updateRigidBodyMemberLocalOrientation(world, solverEntityB);
-        }
-      }
-      if (solveMemberInvInertiaB > 0.0 && memberSpinB?.axisWorld && Math.abs(solveGradSpinB) > EPSILON) {
-        const deltaAngleMemberB = -solveMemberInvInertiaB * lambda * solveGradSpinB;
-        const memberOrientationBComp = orientationStore?.get(memberSpinB.entityId);
-        if (memberOrientationBComp) {
-          if (Math.abs(deltaAngleMemberB) > EPSILON) {
-            const dq = new Quaternion().setFromAxisAngle(memberSpinB.axisWorld, deltaAngleMemberB);
-            memberOrientationBComp.quaternion.multiplyQuaternions(dq, memberOrientationBComp.quaternion).normalize();
-            updateRigidBodyMemberLocalOrientation(world, memberSpinB.entityId);
-            recordEncoderSpinDelta(memberSpinB.entityId, deltaAngleMemberB);
-          }
-        }
-      }
 	  };
 
     for (const pathId of pathEntities) {

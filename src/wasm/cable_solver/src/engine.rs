@@ -533,7 +533,7 @@ impl PhysicsWorld {
         self.previous();
         self.motors(dt, false);
         self.integrate(dt);
-        self.sync_bodies();
+        self.sync_bodies(false);
         let layering = self.options[3] != 0.0;
         for stage in 4..=8 {
             if stage == 5 || self.options[stage] == 0.0 {
@@ -578,6 +578,7 @@ impl PhysicsWorld {
         self.friction();
         self.constraints(solver_dt);
         self.overcorrections(solver_dt);
+        self.sync_bodies(true);
         self.velocities(dt);
         self.motors(dt, true);
         self.encoders();
@@ -615,6 +616,11 @@ impl PhysicsWorld {
     fn integrate(&mut self, dt: f64) {
         let gravity = v(&self.options, 0);
         let grabbed = self.options[9];
+        let frames: Vec<Q> = self
+            .entities
+            .iter()
+            .map(|e| if e[54] != 0.0 { q(e, 10) } else { q(e, 3) })
+            .collect();
         for e in &mut self.entities {
             if e[50] < 0.0 && e[128] != grabbed {
                 if has(e, VEL | GRAVITY) && has(e, VEL) && has(e, GRAVITY) {
@@ -626,7 +632,22 @@ impl PhysicsWorld {
                     put_v(e, 0, pos);
                 }
             }
-            if e[52] == 0.0 || !has(e, OMEGA) || (e[50] >= 0.0 && has(e, SPOOL)) {
+            if e[52] == 0.0 || !has(e, OMEGA) {
+                continue;
+            }
+            if e[50] >= 0.0 && has(e, SPOOL) {
+                if !has(e, MOTOR) {
+                    let omega = rotate(qnorm(conj(frames[e[50] as usize])), v(e, 72));
+                    let speed = length(omega);
+                    if speed > 1e-12 {
+                        let old = q(e, 17);
+                        let local =
+                            qnorm(mul(axis_angle(scale(omega, 1.0 / speed), speed * dt), old));
+                        let raw = qnorm(mul(mul(q(e, 3), qnorm(conj(old))), local));
+                        put_q(e, 17, local);
+                        put_q(e, 3, raw);
+                    }
+                }
                 continue;
             }
             let omega = v(e, 72);
@@ -640,9 +661,9 @@ impl PhysicsWorld {
             }
         }
     }
-    fn sync_bodies(&mut self) {
+    fn sync_bodies(&mut self, mounted_only: bool) {
         for e in &mut self.entities {
-            if has(e, SPOOL) && e[50] < 0.0 && e[52] != 0.0 {
+            if !mounted_only && has(e, SPOOL) && e[50] < 0.0 && e[52] != 0.0 {
                 project_spool(e);
             }
         }
@@ -651,6 +672,10 @@ impl PhysicsWorld {
                 || self.entities[body][51] == 0.0
                 || self.entities[body][52] == 0.0
                 || self.children[body].is_empty()
+                || (mounted_only
+                    && !self.children[body]
+                        .iter()
+                        .any(|&id| has(&self.entities[id], SPOOL)))
             {
                 continue;
             }
@@ -719,33 +744,54 @@ impl PhysicsWorld {
         if dt <= EPS {
             return;
         }
-        for e in &mut self.entities {
-            if e[50] >= 0.0 || e[128] == self.options[9] {
+        for id in 0..self.entities.len() {
+            let mut e = self.entities[id];
+            if e[128] == self.options[9] {
                 continue;
             }
-            if e[51] != 0.0 && e[53] != 0.0 && has(e, VEL) && has(e, MASS) && e[124] > 0.0 {
-                let vel = scale(sub(v(e, 0), v(e, 7)), 1.0 / dt);
-                put_v(e, 69, vel);
+            let parent = e[50];
+            if parent >= 0.0 && !has(&e, SPOOL) {
+                continue;
+            }
+            if parent < 0.0
+                && e[51] != 0.0
+                && e[53] != 0.0
+                && has(&e, VEL)
+                && has(&e, MASS)
+                && e[124] > 0.0
+            {
+                let vel = scale(sub(v(&e, 0), v(&e, 7)), 1.0 / dt);
+                put_v(&mut e, 69, vel);
             }
             if e[52] != 0.0
                 && e[54] != 0.0
-                && has(e, OMEGA)
-                && has(e, INERTIA)
+                && has(&e, OMEGA)
+                && has(&e, INERTIA)
                 && e[34..43].iter().any(|x| x.abs() > 1e-12)
             {
-                let mut delta = qnorm(mul(q(e, 3), qnorm(conj(q(e, 10)))));
+                let (current, previous) = if parent >= 0.0 {
+                    let b = &self.entities[parent as usize];
+                    (q(&e, 17), qnorm(mul(qnorm(conj(q(b, 10))), q(&e, 10))))
+                } else {
+                    (q(&e, 3), q(&e, 10))
+                };
+                let mut delta = qnorm(mul(current, qnorm(conj(previous))));
                 if delta[3] < 0.0 {
                     delta = delta.map(|x| -x);
                 }
-                let s = length([delta[0], delta[1], delta[2]]);
-                let angle = 2.0 * atan2(s, delta[3].clamp(-1.0, 1.0));
-                let omega = if s <= 1e-12 || angle <= EPS {
+                let sine = length([delta[0], delta[1], delta[2]]);
+                let angle = 2.0 * atan2(sine, delta[3].clamp(-1.0, 1.0));
+                let mut omega = if sine <= 1e-12 || angle <= EPS {
                     [0.0; 3]
                 } else {
-                    scale([delta[0], delta[1], delta[2]], angle / (dt * s))
+                    scale([delta[0], delta[1], delta[2]], angle / (dt * sine))
                 };
-                put_v(e, 72, omega);
+                if parent >= 0.0 {
+                    omega = rotate(q(&self.entities[parent as usize], 3), omega);
+                }
+                put_v(&mut e, 72, omega);
             }
+            self.entities[id] = e;
         }
     }
 }
@@ -1266,7 +1312,7 @@ fn split(c: &mut Cable, es: &[Entity], layering: bool, next_id: &mut f64, versio
     }
 }
 
-fn inverse_tensor(m: [f64; 9]) -> [f64; 9] {
+pub(super) fn inverse_tensor(m: [f64; 9]) -> [f64; 9] {
     let max = m.iter().map(|x| x.abs()).fold(0.0, f64::max);
     if max == 0.0 {
         return [0.0; 9];
@@ -1956,6 +2002,20 @@ impl PhysicsWorld {
         }
         for (p, i) in candidates {
             let c = &self.cables[p];
+            // Mounted assemblies use XPBD's unilateral multiplier release;
+            // the legacy averaging heuristic lacks their coupled mass matrix.
+            if [c.entity(i, 0), c.entity(i, 1)].iter().any(|&id| {
+                let body = if self.entities[id][50] >= 0.0 {
+                    self.entities[id][50] as usize
+                } else {
+                    id
+                };
+                self.children[body]
+                    .iter()
+                    .any(|&child| has(&self.entities[child], SPOOL))
+            }) {
+                continue;
+            }
             if length(sub(c.point(i, 0), c.point(i, 1))) < c.rest(i) {
                 continue;
             }

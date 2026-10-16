@@ -53,6 +53,7 @@ export function registerSimulationSystems(world, { cableSolverBackend = undefine
     world.registerSystem(new CableFrictionSystem());
     world.registerSystem(new PBDCableConstraintSolver(cableSolverBackend));
     world.registerSystem(new PBDResolveCableOverCorrections());
+    world.registerSystem(new RigidBodySyncSystem(true));
     world.registerSystem(new PBDVelocityUpdateSystem());
     world.registerSystem(new PBDAngularVelocityUpdateSystem());
     world.registerSystem(new TorqueModeSystem());

@@ -94,6 +94,10 @@ export class WasmCableSolver {
       if (member) include(member.bodyEntity);
     };
     for (const joint of joints) { include(joint.entityA); include(joint.entityB); }
+    // Unloaded mounted rotors participate in the carrier inertia too.
+    for (const id of world.query([RigidBodyMemberComponent, SpoolStateComponent])) {
+      if (entityIndex.has(get(id, RigidBodyMemberComponent).bodyEntity)) include(id);
+    }
     const size = ids.length * E + joints.length * J + paths.length * P;
     if (!size) {
       for (const key of ['torqueModeCableLoadTorques', 'torqueModeCableLoadStiffnesses', 'torqueModeCableLoadDampings']) {

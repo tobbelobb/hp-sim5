@@ -28,7 +28,7 @@ def register_machine_systems(world, recording=None, *, cable_solver_device=None)
             common.MovementSystem(), common.AngularMovementSystem(), common.RigidBodySyncSystem(),
             CableAttachmentUpdateSystem(False), CableAttachmentCacheSystem(), CableFrictionSystem(),
             PBDCableConstraintSolver(device=cable_solver_device), PBDResolveCableOverCorrections(),
-            common.PBDVelocityUpdateSystem(), common.PBDAngularVelocityUpdateSystem(),
+            common.RigidBodySyncSystem(True), common.PBDVelocityUpdateSystem(), common.PBDAngularVelocityUpdateSystem(),
             TorqueModeSystem(), common.EncoderUpdateSystem(), MissedStepTrackingSystem(),
         ]:
             system.physics_substep = True

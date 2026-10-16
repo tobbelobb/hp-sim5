@@ -530,13 +530,14 @@ fn spin(es: &[Entity], joint: &Joint, side: usize, point: V, grad: V) -> Spin {
     let Some(center) = world_pos(es, id) else {
         return Spin::default();
     };
-    let axis = rotate(q(e, 3), v(e, 44));
+    let orient = world_quat(es, id).unwrap_or(q(e, 3));
+    let axis = rotate(orient, v(e, 44));
     if dot(axis, axis) <= EPS {
         return Spin::default();
     }
     let axis = norm(axis);
     // Match both normalizations in effectiveInertiaAboutWorldAxis/localAxis.
-    let local = norm(rotate(qnorm(conj(q(e, 3))), norm(axis)));
+    let local = norm(rotate(qnorm(conj(orient)), norm(axis)));
     let inertia = positive_inertia(dot(local, matrix_vec(e, 25, local)));
     let free = if inertia > INERTIA_EPS {
         1.0 / inertia
@@ -598,21 +599,177 @@ fn spin(es: &[Entity], joint: &Joint, side: usize, point: V, grad: V) -> Spin {
         limit: e[61],
     }
 }
+// Coupled carrier / relative-rotor mass matrix. Include unloaded rotors:
+// they counter-spin when a cable turns their carrier.
+#[derive(Default)]
+struct AngularResponse {
+    denominator: f64,
+    bodies: Vec<(usize, V)>,
+    rotors: Vec<(usize, V, f64, Q)>,
+    coupled: [bool; 2],
+}
+fn rotor(es: &[Entity], id: usize) -> Option<(V, V, f64)> {
+    let e = &es[id];
+    if e[50] < 0.0 || e[56] == 0.0 || e[55] != 0.0 {
+        return None;
+    }
+    let orient = world_quat(es, id)?;
+    let axis = norm(rotate(orient, v(e, 44)));
+    let local = norm(rotate(qnorm(conj(orient)), axis));
+    let inertia = positive_inertia(dot(local, matrix_vec(e, 25, local)));
+    if inertia <= INERTIA_EPS {
+        return None;
+    }
+    let coupling = rotate(orient, matrix_vec(e, 25, local));
+    let inverse = if e[57] != 0.0 {
+        0.0
+    } else {
+        1.0 / (inertia + e[48])
+    };
+    Some((axis, coupling, inverse))
+}
+fn angular_response(
+    es: &[Entity],
+    ids: [usize; 2],
+    gradients: [V; 2],
+    spins: [Spin; 2],
+) -> AngularResponse {
+    let mut result = AngularResponse::default();
+    let mut groups: Vec<(usize, V)> = Vec::new();
+    for side in 0..2 {
+        let id = ids[side];
+        let parent = es[id][50];
+        let body = if parent >= 0.0 { parent as usize } else { id };
+        if !es
+            .iter()
+            .enumerate()
+            .any(|(i, e)| e[50] == body as f64 && rotor(es, i).is_some())
+        {
+            continue;
+        }
+        result.coupled[side] = true;
+        let index = groups.iter().position(|g| g.0 == body).unwrap_or_else(|| {
+            groups.push((body, [0.0; 3]));
+            groups.len() - 1
+        });
+        if parent < 0.0 {
+            groups[index].1 = add(groups[index].1, gradients[side]);
+        }
+    }
+    for (body, gradient) in groups {
+        let orient = qnorm(q(&es[body], 3));
+        let axes = [
+            rotate(orient, [1.0, 0.0, 0.0]),
+            rotate(orient, [0.0, 1.0, 0.0]),
+            rotate(orient, [0.0, 0.0, 1.0]),
+        ];
+        let mut tensor = [0.0; 9];
+        for r in 0..3 {
+            for c in 0..3 {
+                for k in 0..3 {
+                    for j in 0..3 {
+                        tensor[r * 3 + c] += axes[k][r] * es[body][25 + k * 3 + j] * axes[j][c];
+                    }
+                }
+            }
+        }
+        let mut rhs = gradient;
+        let mut rotors = Vec::new();
+        for id in 0..es.len() {
+            if es[id][50] != body as f64 {
+                continue;
+            }
+            let Some((axis, coupling, mut inverse)) = rotor(es, id) else {
+                continue;
+            };
+            let mut grad = 0.0;
+            for spin in spins {
+                if spin.active && spin.id == id {
+                    inverse = spin.inv;
+                    grad += spin.grad;
+                }
+            }
+            for r in 0..3 {
+                for c in 0..3 {
+                    tensor[r * 3 + c] -= inverse * coupling[r] * coupling[c];
+                }
+            }
+            rhs = add(rhs, scale(coupling, -inverse * grad));
+            rotors.push((id, axis, coupling, inverse, grad));
+        }
+        let angular = matrix_vec(&engine::inverse_tensor(tensor), 0, rhs);
+        result.denominator += dot(gradient, angular);
+        result.bodies.push((body, angular));
+        for (id, axis, coupling, inverse, grad) in rotors {
+            let angle = inverse * (grad - dot(coupling, angular));
+            result.denominator += grad * angle;
+            result.rotors.push((id, axis, angle, orient));
+        }
+    }
+    result
+}
+impl AngularResponse {
+    fn apply(&self, es: &mut [Entity], l: f64) {
+        for &(body, angular) in &self.bodies {
+            let delta = scale(angular, -l);
+            let angle = length(delta);
+            if angle > 1e-12 {
+                let orient = qnorm(mul(
+                    axis_angle(scale(delta, 1.0 / angle), angle),
+                    q(&es[body], 3),
+                ));
+                put_q(&mut es[body], 3, orient);
+                es[body][64] = 1.0;
+            }
+        }
+        for &(id, axis, coefficient, body_q) in &self.rotors {
+            let angle = -l * coefficient;
+            if angle.abs() <= 1e-12 {
+                continue;
+            }
+            let old_local = q(&es[id], 17);
+            let local_axis = rotate(qnorm(conj(body_q)), axis);
+            let local = qnorm(mul(axis_angle(local_axis, angle), old_local));
+            let raw = qnorm(mul(mul(q(&es[id], 3), qnorm(conj(old_local))), local));
+            put_q(&mut es[id], 17, local);
+            put_q(&mut es[id], 3, raw);
+            es[id][64] = 1.0;
+            es[id][65] = 1.0;
+            if es[id][67] != 0.0 {
+                es[id][66] += angle;
+            }
+        }
+    }
+}
 // Explicit endpoint terms retain the JavaScript equation's summation order.
 #[allow(clippy::too_many_arguments)]
-fn mechanical(a: &Entity, b: &Entity, ga: V, gb: V, aa: f64, ab: f64, sa: Spin, sb: Spin) -> f64 {
+fn mechanical(
+    a: &Entity,
+    b: &Entity,
+    ga: V,
+    gb: V,
+    aa: f64,
+    ab: f64,
+    sa: Spin,
+    sb: Spin,
+    response: &AngularResponse,
+) -> f64 {
     let mut d = 0.0;
     d += a[43] * dot(ga, ga);
-    d += aa;
-    if sa.inv > 0.0 && sa.grad.abs() > EPS {
+    if !response.coupled[0] {
+        d += aa;
+    }
+    if !response.coupled[0] && sa.inv > 0.0 && sa.grad.abs() > EPS {
         d += sa.inv * sa.grad * sa.grad;
     }
     d += b[43] * dot(gb, gb);
-    d += ab;
-    if sb.inv > 0.0 && sb.grad.abs() > EPS {
+    if !response.coupled[1] {
+        d += ab;
+    }
+    if !response.coupled[1] && sb.inv > 0.0 && sb.grad.abs() > EPS {
         d += sb.inv * sb.grad * sb.grad;
     }
-    d
+    d + response.denominator
 }
 fn lambda(path: &Path, error: f64, disp: f64, denom: f64, previous: f64) -> Option<f64> {
     // Cable damping may cancel tension while shortening, but cannot push.
@@ -751,11 +908,16 @@ fn solve_joint(
     let ra = dot(aa, rotation_vector(&a));
     let rb = dot(ab, rotation_vector(&b));
     let disp = ta + ra + sa.disp + tb + rb + sb.disp;
+    let gradients = [
+        if a[55] != 0.0 { aa } else { [0.0; 3] },
+        if b[55] != 0.0 { ab } else { [0.0; 3] },
+    ];
+    let mut response = angular_response(es, [a_id, b_id], gradients, [sa, sb]);
     let Some(mut l) = lambda(
         path,
         error,
         disp,
-        mechanical(&a, &b, ga, gb, da, db, sa, sb),
+        mechanical(&a, &b, ga, gb, da, db, sa, sb, &response),
         *accumulated,
     ) else {
         return;
@@ -777,11 +939,12 @@ fn solve_joint(
         if release_b {
             sb.inv = sb.free;
         }
+        response = angular_response(es, [a_id, b_id], gradients, [sa, sb]);
         let Some(new_l) = lambda(
             path,
             error,
             disp,
-            mechanical(&a, &b, ga, gb, da, db, sa, sb),
+            mechanical(&a, &b, ga, gb, da, db, sa, sb, &response),
             *accumulated,
         ) else {
             return;
@@ -794,7 +957,7 @@ fn solve_joint(
         load(es, sa, path, l);
         load(es, sb, path, l);
     }
-    if mechanical(&a, &b, ga, gb, da, db, sa, sb) <= EPS {
+    if mechanical(&a, &b, ga, gb, da, db, sa, sb, &response) <= EPS {
         return;
     }
     js[idx][37] = 1.0;
@@ -812,8 +975,33 @@ fn solve_joint(
             transfer(js, j[28], force);
         }
     }
-    correct(es, a_id, ga, aa, da, sa, l);
-    correct(es, b_id, gb, ab, db, sb, l);
+    response.apply(es, l);
+    correct(
+        es,
+        a_id,
+        ga,
+        aa,
+        if response.coupled[0] { 0.0 } else { da },
+        if response.coupled[0] {
+            Spin::default()
+        } else {
+            sa
+        },
+        l,
+    );
+    correct(
+        es,
+        b_id,
+        gb,
+        ab,
+        if response.coupled[1] { 0.0 } else { db },
+        if response.coupled[1] {
+            Spin::default()
+        } else {
+            sb
+        },
+        l,
+    );
 }
 
 #[no_mangle]
