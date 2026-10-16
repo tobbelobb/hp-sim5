@@ -76,10 +76,10 @@ describe('Flipper 3D Integration', () => {
     expect(running.maxAbsZ).toBeLessThan(1e-5);
   });
 
-  test('should run autonomously and hold a deterministic score of 4', async () => {
+  test('should run autonomously and hold a deterministic score of 7', async () => {
     await resetGame(harness.page);
-    // USD float opinions now match their authored single precision. The isolated
-    // pre-correction checkout scores 18; these inputs produce different contacts.
-    await runAutonomousScoreExpectation(harness.page, { expectedScore: 4, stableScoreChunksRequired: 2 });
+    // Converged cable friction changes bumper contacts. Isolated baseline
+    // replays score 4; repeated replays with the converged solve score 7.
+    await runAutonomousScoreExpectation(harness.page, { expectedScore: 7, stableScoreChunksRequired: 2 });
   });
 });
