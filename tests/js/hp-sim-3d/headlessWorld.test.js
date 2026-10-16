@@ -7,7 +7,7 @@ import { layeringEnabled, PositionComponent, EncoderComponent } from '../../../s
 
 test.each(['hp3', 'hp4'])('%s headless construction uses the browser no-layering geometry', machine => {
   const source = fs.readFileSync(path.resolve(__dirname, `../../../public/usd_scenes/${machine}_rigid_body.usda`), 'utf8');
-  const unlayered = createHeadlessWorld(source, { lineLayeringEnabled: false, closedLoopMotorsEnabled: true });
+  const unlayered = createHeadlessWorld(source, { lineLayeringEnabled: false, closedLoopMotorsEnabled: true, physicsSubsteps: 4 });
   const layered = createHeadlessWorld(source, { lineLayeringEnabled: true });
   expect(unlayered.bakedScene).toBe(bakeCableSceneUsdaSource(source, { cablePathHalfWidthOverride: 0, deriveAll: true }).source);
   expect(unlayered.bakedScene).not.toBe(layered.bakedScene);
@@ -15,6 +15,8 @@ test.each(['hp3', 'hp4'])('%s headless construction uses the browser no-layering
     expect(unlayered.world.getResource(key)).toBe(false);
     expect(layered.world.getResource(key)).toBe(true);
   }
+  expect(unlayered.world.getResource('physicsSubsteps')).toBe(4);
+  expect(layered.world.getResource('physicsSubsteps')).toBe(1);
   expect(unlayered.world.getResource('closedLoopMotorsEnabled')).toBe(true);
   expect(layered.world.getResource('closedLoopMotorsEnabled')).toBe(false);
   expect(layeringEnabled(unlayered.world)).toBe(false);

@@ -6,6 +6,7 @@ export function createAppState({
   showConstraintForces = false,
   lineLayeringEnabled = true,
   closedLoopMotorsEnabled = false,
+  physicsSubsteps = 1,
 } = {}) {
   return {
     machines: [],
@@ -30,6 +31,7 @@ export function createAppState({
     showConstraintForces,
     lineLayeringEnabled,
     closedLoopMotorsEnabled,
+    physicsSubsteps,
     referenceOverlay: {
       segments: null,
       metadata: null,

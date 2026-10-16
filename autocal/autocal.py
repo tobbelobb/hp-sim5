@@ -1813,6 +1813,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         except FileNotFoundError as exc:
             parser.error(str(exc))
     collector_args = _clean_collector_args(args.collector_args)
+    if args.physics_substeps is not None and not _arg_has_flag(collector_args, "--physics-substeps"):
+        collector_args.extend(["--physics-substeps", str(args.physics_substeps)])
     if args.open_loop_motors and "--open-loop-motors" not in collector_args:
         collector_args.append("--open-loop-motors")
     if args.speedup is not None and not _arg_has_flag(collector_args, "--speedup"):

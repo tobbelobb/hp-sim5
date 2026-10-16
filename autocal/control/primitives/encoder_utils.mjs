@@ -375,6 +375,9 @@ export async function sendHpSimSettings(bridgeCtx, settings) {
       ? "Simulator did not acknowledge machine selection; reload the simulator page and use one simulator tab"
       : `Simulator selected ${applied.machineType} instead of ${settings.machineType}`);
   }
+  if (settings.physicsSubsteps !== undefined && applied?.physicsSubsteps !== settings.physicsSubsteps) {
+    throw new Error(`Simulator did not apply physicsSubsteps=${settings.physicsSubsteps}`);
+  }
   for (const key of ['closedLoopMotorsEnabled', 'lineLayeringEnabled']) {
     if (applied && typeof settings[key] === 'boolean' && applied[key] !== settings[key]) {
       throw new Error(`Simulator did not apply ${key}=${settings[key]}`);

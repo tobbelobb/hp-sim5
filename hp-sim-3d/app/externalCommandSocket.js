@@ -1,3 +1,4 @@
+import { setPhysicsSubsteps } from './physics-substeps.js';
 import { EncoderComponent } from '../../src/js/cable_joints_3d/ecs.js';
 import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
@@ -213,6 +214,7 @@ export function createExternalCommandController({
       anglesDeg: resolveEncoderAngles(axes),
       simulationSettings: {
         closedLoopMotorsEnabled: world.getResource('closedLoopMotorsEnabled') === true,
+        physicsSubsteps: world.getResource('physicsSubsteps') ?? 1,
         lineLayeringEnabled: world.getResource('enableLayering') === true,
         recording: world.getResource('flightRecorder')?.socket?.readyState === 1,
         recordingError,
@@ -246,6 +248,16 @@ export function createExternalCommandController({
       return;
     }
     if (payload.type === 'simulation_settings') {
+      if (payload.physicsSubsteps !== undefined) {
+        try {
+          if (featureFlags) featureFlags.setPhysicsSubstepsState(payload.physicsSubsteps);
+          else setPhysicsSubsteps(world, payload.physicsSubsteps);
+          settingsError = null;
+        } catch (error) {
+          settingsError = error.message;
+          return;
+        }
+      }
       if (payload.machineType) {
         recordingReady = Promise.resolve(recordingReady).then(async () => {
           const sourceKey = MACHINE_SCENES[payload.machineType];

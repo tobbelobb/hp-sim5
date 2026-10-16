@@ -1,3 +1,4 @@
+import { setPhysicsSubsteps } from './physics-substeps.js';
 import { _updateAttachmentPoints } from '../../src/js/cable_joints_3d/cable_joints_core.js';
 import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
 import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
@@ -51,7 +52,25 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
     }
   }
 
+  function setPhysicsSubstepsState(count) {
+    const next = setPhysicsSubsteps(world, count);
+    if (state) state.physicsSubsteps = next;
+    if (toggles.physicsSubsteps) {
+      // Remote settings also accept counts between the standard menu choices.
+      const select = toggles.physicsSubsteps;
+      if (![...select.options].some(option => Number(option.value) === next)) {
+        const option = select.ownerDocument.createElement('option');
+        option.value = option.textContent = String(next);
+        select.add(option);
+      }
+      select.value = String(next);
+    }
+  }
+
   function bindUi() {
+    toggles.physicsSubsteps?.addEventListener('change', () => {
+      setPhysicsSubstepsState(Number(toggles.physicsSubsteps.value));
+    });
     if (toggles.showForcesToggle) {
       toggles.showForcesToggle.addEventListener('change', () => {
         setShowConstraintForcesState(toggles.showForcesToggle.checked, { fromToggle: true });
@@ -78,6 +97,7 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
     }
   }
 
+  setPhysicsSubstepsState(state?.physicsSubsteps ?? world.getResource('physicsSubsteps') ?? 1);
   setShowConstraintForcesState(state?.showConstraintForces ?? false);
   setLineLayeringEnabledState(state?.lineLayeringEnabled ?? true);
   setClosedLoopMotorsEnabledState(state?.closedLoopMotorsEnabled ?? false);
@@ -92,6 +112,7 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
     get showConstraintForces() {
       return state?.showConstraintForces ?? false;
     },
+    setPhysicsSubstepsState,
     setShowConstraintForcesState,
     setLineLayeringEnabledState,
     setClosedLoopMotorsEnabledState,

@@ -88,6 +88,10 @@ const DEFAULT_FIXED_TOLERANCE_MM = 0.05;
 // Active workspace traversal needs time to move before the quiet window starts.
 // This is measured on the observed simulation clock (wall time on hardware).
 const FORCE_TRAVEL_TIMEOUT_MS = 120000;
+// A fixed-torque HP4 pull at the production 2 ms step passed the unchanged
+// settling check after ~472 s (four substeps: ~120 s). Allow this slow approach
+// to equilibrium without relaxing drift/vibration acceptance.
+const SIZE_TUNE_TRAVEL_TIMEOUT_MS = 600000;
 const DATASET_VERSION = '2.0';
 
 export const SWEEP_DEFAULTS = {
@@ -975,7 +979,8 @@ export async function measureMaxTravelMm(sendFn, options = {}) {
       }
     }
     await waitForStableEncoders(sendFn, motorIds, speedup, {
-      timeoutMs: FORCE_TRAVEL_TIMEOUT_MS,
+      timeoutMs: SIZE_TUNE_TRAVEL_TIMEOUT_MS,
+      wallTimeoutMs: SIZE_TUNE_TRAVEL_TIMEOUT_MS + 30000,
       onProgress: message => console.log(`; size-tune travel: ${message.replace(/^; /, '')}`),
       ...settleOptions,
     });

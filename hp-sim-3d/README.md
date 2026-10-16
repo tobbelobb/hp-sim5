@@ -25,13 +25,16 @@ Expand **▼** for **Pause**, **Reset**, **Finish ASAP**, **Rerun** and view too
 **Closed Loop Motors** changes position-drive behavior. Keep these settings the
 same when comparing runs; quality checks and reference paths aid inspection.
 
-Physics uses one integration step per firmware tick by default. Extra substeps
-are an opt-in experiment: set the world's `physicsSubsteps` resource to `4`
-(`world.setResource('physicsSubsteps', 4)` in JavaScript, or
-`world.set_resource('physicsSubsteps', 4)` in Python). This integrates physics
-four times per tick and costs additional CPU; command and recorder cadence stay
-unchanged. Set it to `1` to restore normal integration. No autocal command
-enables substeps automatically.
+Physics uses one integration step per firmware tick by default. **Physics
+Substeps**, beside the motor toggles, selects 1, 2, 4, 8 or 16 integrations per
+tick. More steps cost more CPU; command and recorder cadence stay unchanged.
+The setting survives scene resets. Autocal can set it explicitly with
+`--physics-substeps 4`, for both browser `--sim` and `--headless-sim` collection.
+Without that flag, collection preserves the simulator's setting (initially 1).
+Remote `simulation_settings` messages use the integer `physicsSubsteps` field
+(1–16); encoder replies acknowledge the applied count. Programmatic world
+creation accepts `{ physicsSubsteps: 4 }`; Python worlds use the
+`physicsSubsteps` resource.
 
 To record a browser print, run
 `.venv/bin/python scripts/hangprinter_flight_recorder.py`, open its printed viewer

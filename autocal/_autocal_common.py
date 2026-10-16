@@ -3724,6 +3724,8 @@ def get_firmware_provider(firmware: str) -> FirmwareProvider:
 
 
 def _add_collector_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--physics-substeps", type=int, choices=range(1, 17),
+                        help="Simulator physics steps per firmware tick (default: simulator setting, initially 1)")
     parser.add_argument("--open-loop-motors", action="store_true",
                         help="Use open-loop motors in the simulator instead of closed-loop motors.")
     parser.add_argument(

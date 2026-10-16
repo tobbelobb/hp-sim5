@@ -34,7 +34,7 @@ describe('runMoveWithWait', () => {
 });
 
 test('simulator configuration is acknowledged before collection proceeds', async () => {
-  const settings = { closedLoopMotorsEnabled: true, lineLayeringEnabled: true };
+  const settings = { closedLoopMotorsEnabled: true, lineLayeringEnabled: true, physicsSubsteps: 4 };
   const bridge = {
     broadcast: jest.fn(),
     sendEncoderRequest: jest.fn(async () => ({ simulationSettings: settings })),
@@ -45,4 +45,11 @@ test('simulator configuration is acknowledged before collection proceeds', async
   await expect(sendHpSimSettings(bridge, settings)).rejects.toThrow('reload the simulator page');
   bridge.sendEncoderRequest.mockResolvedValue({ simulationSettings: { closedLoopMotorsEnabled: false } });
   await expect(sendHpSimSettings(bridge, settings)).rejects.toThrow('did not apply');
+});
+
+ test('rejects an unacknowledged physics substep count', async () => {
+  const bridge = { broadcast: jest.fn(), sendEncoderRequest: jest.fn(async () => ({
+    simulationSettings: { physicsSubsteps: 1 },
+  })) };
+  await expect(sendHpSimSettings(bridge, { physicsSubsteps: 4 })).rejects.toThrow('physicsSubsteps=4');
 });

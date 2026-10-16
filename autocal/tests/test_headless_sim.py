@@ -85,18 +85,21 @@ def test_headless_geometry_and_control_settings_survive_reset(tmp_path, layering
     collector_args = ['--line-layering'] if layering else []
     with HeadlessSimulation(args, collector_args) as service:
         initial = service.request('status')
+        assert initial['settings']['physicsSubsteps'] == 1
         assert initial['settings']['enableLayering'] is layering
-        service.request('payload', payload={'type': 'simulation_settings', 'closedLoopMotorsEnabled': True})
+        service.request('payload', payload={'type': 'simulation_settings', 'closedLoopMotorsEnabled': True, 'physicsSubsteps': 4})
         service.request('payload', payload={'type': 'reset'})
         reset = service.request('status')
         assert reset['epoch'] == 1
         assert reset['settings']['enableLayering'] is layering
         assert reset['settings']['closedLoopMotorsEnabled'] is True
+        assert reset['settings']['physicsSubsteps'] == 4
         assert reset['baked_scene_sha256'] == initial['baked_scene_sha256']
         service.request('payload', payload={'type': 'simulation_settings', 'lineLayeringEnabled': not layering})
         toggled = service.request('status')
         assert toggled['epoch'] == 2 and toggled['settings']['enableLayering'] is not layering
         assert toggled['settings']['closedLoopMotorsEnabled'] is True
+        assert toggled['settings']['physicsSubsteps'] == 4
         assert toggled['baked_scene_sha256'] != initial['baked_scene_sha256']
     assert service.manifest['initial_baked_scene_sha256'] == initial['baked_scene_sha256']
     assert service.manifest['baked_scene_sha256'] == hashlib.sha256(

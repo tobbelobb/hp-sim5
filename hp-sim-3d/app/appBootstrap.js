@@ -68,6 +68,7 @@ function collectDomRefs(ownerDocument, canvasArg, controlsRootArg) {
     showForcesToggle: ownerDocument.getElementById('showForcesToggle'),
     lineLayeringToggle: ownerDocument.getElementById('lineLayeringToggle'),
     closedLoopMotorsToggle: ownerDocument.getElementById('closedLoopMotorsToggle'),
+    physicsSubsteps: ownerDocument.getElementById('physicsSubsteps'),
     qualityToggleLabel: qualityToggleWrapper?.querySelector('span') || null,
   };
 }
@@ -157,11 +158,7 @@ export function createHpSimApp({
   const featureFlags = createFeatureFlagsController({
     world,
     state,
-    toggles: {
-      showForcesToggle: dom.showForcesToggle,
-      lineLayeringToggle: dom.lineLayeringToggle,
-      closedLoopMotorsToggle: dom.closedLoopMotorsToggle,
-    },
+    toggles: dom,
     onLineLayeringChanged: () => controllers.commands?.handleUserReset?.(),
   });
   view = createViewController({
@@ -238,7 +235,7 @@ export function createHpSimApp({
     machines: controllers.machines.getMachines().map(({ id, sourceKey, sourceUrl, sourceText }) =>
       ({ id, sourceKey, sourceUrl, sourceText })),
     settings: Object.fromEntries(['gravity', 'dt', 'timeScale', 'enableLayering', 'layeringFrictionEffectiveRadius',
-      'closedLoopMotorsEnabled', 'pauseState']
+      'closedLoopMotorsEnabled', 'physicsSubsteps', 'pauseState']
       .map(key => [key, world.getResource(key)])),
     inspection: inspectionTools.getState(),
   });

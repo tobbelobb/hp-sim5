@@ -134,3 +134,37 @@ test('recorder shutdown drains pending events before disconnecting', async () =>
   expect(recorder.socket).toBeNull();
   expect(recorder.error).toBeNull();
 });
+
+test('browser substep menu and remote settings agree, reject invalid counts, and survive resets', () => {
+  const world = new World();
+  const listeners = {};
+  const select = {
+    options: [{ value: '1' }, { value: '4' }], value: '1',
+    ownerDocument: { createElement: () => ({}) },
+    add(option) { this.options.push(option); },
+    addEventListener(type, handler) { listeners[type] = handler; },
+  };
+  const state = {};
+  const flags = createFeatureFlagsController({ world, state, toggles: { physicsSubsteps: select } });
+  flags.bindUi();
+  expect(world.getResource('physicsSubsteps')).toBe(1);
+  select.value = '4';
+  listeners.change();
+  expect(world.getResource('physicsSubsteps')).toBe(4);
+  const controller = createExternalCommandController({ world, featureFlags: flags, url: 'ws://test', WebSocketCtor: Socket });
+  controller.connect();
+  Socket.last.open();
+  controller.handlePayload({ type: 'simulation_settings', physicsSubsteps: 3 });
+  expect(select.value).toBe('3');
+  world.clear();
+  controller.handlePayload({ type: 'encoder_request', requestId: 1, axes: [] });
+  expect(Socket.last.samples.at(-1).simulationSettings.physicsSubsteps).toBe(3);
+  for (const count of [0, -1, 1.5, 17, '4', null]) {
+    controller.handlePayload({ type: 'simulation_settings', physicsSubsteps: count });
+    controller.handlePayload({ type: 'encoder_request', requestId: 2, axes: [] });
+    expect(Socket.last.samples.at(-1).simulationSettings.settingsError).toMatch('integer');
+    expect(world.getResource('physicsSubsteps')).toBe(3);
+  }
+  controller.handlePayload({ type: 'simulation_settings', physicsSubsteps: 1 });
+  expect(select.value).toBe('1');
+});

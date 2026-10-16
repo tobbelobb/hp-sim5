@@ -206,6 +206,7 @@ export function parseBridgeArgs(argv) {
     port: null,
     machineType: null,
     openLoopMotors: false,
+    physicsSubsteps: null,
     sweepRange: null,
     sweepPoints: null,
     maxSweeps: null,
@@ -306,6 +307,11 @@ export function parseBridgeArgs(argv) {
       args.noSpawnRrfSimulator = true;
     } else if (arg === '--speedup') {
       args.speedup = argv[++i] || null;
+    } else if (arg === '--physics-substeps') {
+      args.physicsSubsteps = Number(argv[++i]);
+      if (!Number.isInteger(args.physicsSubsteps) || args.physicsSubsteps < 1 || args.physicsSubsteps > 16) {
+        throw new Error('--physics-substeps must be an integer from 1 to 16');
+      }
     } else if (arg === '--open-loop-motors') {
       args.openLoopMotors = true;
     } else if (arg === '--machineType' || arg === '--machine-type') {
@@ -421,6 +427,7 @@ Options:
   --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor per line)
   --debug-sweep              Print planned sweep permutations before collecting
   --trace                    Tell hp-sim to plot a trace of its movements (default: on)
+  --physics-substeps <count> Physics integrations per firmware tick, 1–16 (default: simulator setting, initially 1)
   --open-loop-motors         Use open-loop simulator motors (default: closed-loop)
   --line-layering             Enable simulator line layering (also automatic for nonzero M666 Q)
   --no-trace                 Disable hp-sim trace plotting
@@ -641,6 +648,7 @@ async function main() {
       if (args.sim) {
         await sendHpSimSettings(bridgeCtx, {
           closedLoopMotorsEnabled: !args.openLoopMotors,
+          ...(args.physicsSubsteps !== null ? { physicsSubsteps: args.physicsSubsteps } : {}),
           lineLayeringEnabled: Boolean(args.lineLayering || (Number.isFinite(Number(args.forceBuildupFactor)) && Number(args.forceBuildupFactor) !== 0)),
           ...(!args.headlessUrl ? { machineType } : {}),
           ...(!args.headlessUrl && process.env.AUTOCAL_REFERENCE_WS

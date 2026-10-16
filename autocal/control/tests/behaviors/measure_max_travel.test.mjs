@@ -52,8 +52,8 @@ describe('workspace-size measurement', () => {
   test('keeps the active-travel deadline finite and holds motors on timeout', async () => {
     const machine = movingMachine({ stopMs: Infinity });
     await expect(measureMaxTravelMm(machine.send, {
-      ...options, settleOptions: { ...settling(machine), wallTimeoutMs: 200000 },
-    })).rejects.toThrow('after 120000ms');
+      ...options, settleOptions: { ...settling(machine), wallTimeoutMs: 1000000 },
+    })).rejects.toThrow('after 600000ms');
     expect(machine.commands.at(-1)).toBe(hold);
   });
 
@@ -82,4 +82,14 @@ describe('workspace-size measurement', () => {
     })).rejects.toThrow(`${failure} disconnected`);
     expect(machine.commands.at(-1)).toBe(hold);
   });
+});
+
+test('size tuning waits for a slow torque response beyond the old two-minute limit', async () => {
+  const machine = movingMachine({ stopMs: 470000, actualSpeed: 8 });
+  const distance = await measureMaxTravelMm(machine.send, {
+    ...options, settleOptions: settling(machine),
+  });
+  expect(machine.now()).toBeGreaterThan(470000);
+  expect(distance).toBe(5875);
+  expect(machine.commands.at(-1)).toBe(hold);
 });
