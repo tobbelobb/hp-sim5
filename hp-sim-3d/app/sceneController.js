@@ -23,7 +23,7 @@ export function createSimulationRuntime({ world, state, runGameImpl = runGame } 
     timeScaleChangeListener?.(safeScale);
   }
 
-  function start(sceneInitializer, { onTimeScaleChange = null } = {}) {
+  function start(sceneInitializer, { onTimeScaleChange = null, onFrame = null } = {}) {
     if (state.gameControls) {
       return state.gameControls;
     }
@@ -31,6 +31,7 @@ export function createSimulationRuntime({ world, state, runGameImpl = runGame } 
     state.gameControls = runGameImpl(world, sceneInitializer, {
       initialTimeScale: state.currentTimeScale,
       onTimeScaleChange: handleTimeScaleChange,
+      ...(typeof onFrame === 'function' ? { onFrame } : {}),
     });
     return state.gameControls;
   }

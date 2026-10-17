@@ -22,6 +22,7 @@ export function runGame(world, internalSetupScene, options = {}) {
   const {
     initialTimeScale = 1.0,
     onTimeScaleChange,
+    onFrame,
   } = options;
 
   function sanitizeTimeScale(value, fallback) {
@@ -107,6 +108,7 @@ export function runGame(world, internalSetupScene, options = {}) {
   };
 
   const renderOnce = () => {
+    onFrame?.(true);
     const renderSystem = getRenderSystem();
     if (!renderSystem || renderSystem.drawingSuspended) {
       return;
@@ -161,6 +163,7 @@ export function runGame(world, internalSetupScene, options = {}) {
   };
 
   const maybeRender = () => {
+    onFrame?.(false);
     const renderSystem = getRenderSystem();
     if (!renderSystem || renderSystem.drawingSuspended) {
       return;
