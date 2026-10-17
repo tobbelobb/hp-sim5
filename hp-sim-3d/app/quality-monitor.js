@@ -329,7 +329,7 @@ export class QualityMonitor {
     if (this.hudElement) {
       this.hudElement.style.setProperty('--quality-accent', this.hudAccentColor);
     }
-    this.refreshHud(true);
+    this.refreshHud();
   }
 
   attachRemoteSystem(system) {
@@ -363,7 +363,7 @@ export class QualityMonitor {
 
   setMotorDiagnosticsProvider(provider) {
     this.motorDiagnosticsProvider = typeof provider === 'function' ? provider : null;
-    this.refreshHud(true);
+    this.refreshHud();
   }
 
   detachRemoteSystem() {
@@ -632,8 +632,16 @@ export class QualityMonitor {
       this.metrics = null;
       this.metricsDirty = false;
       if (this.hudElement) {
-        this.hudElement.textContent = 'Quality metrics available once a reference path is loaded.';
-        this.hudElement.classList.add('sim-hidden');
+        if (this.motorDiagnosticsProvider && (this.enabled || force)) {
+          const label = escapeHtml(this.machineLabel || this.machineId || 'Machine');
+          this.hudElement.innerHTML = `<div class="quality-hud__header"><span class="quality-hud__title">${label}</span></div>`
+            + this._renderMissedSteps(this._getMotorDiagnostics())
+            + '<div class="quality-hud__metric">Print quality metrics available once a reference path is loaded.</div>';
+          this.hudElement.classList.remove('sim-hidden');
+        } else {
+          this.hudElement.textContent = 'Quality metrics available once a reference path is loaded.';
+          this.hudElement.classList.add('sim-hidden');
+        }
         this._notifyHudVisibility();
       }
       return;
@@ -670,10 +678,6 @@ export class QualityMonitor {
     } = metrics;
     const motorDiagnostics = this._getMotorDiagnostics();
     const qualityArrow = this.qualityDetailsExpanded ? '▲' : '▼';
-    const missedStepsArrow = this.missedStepsExpanded ? '▲' : '▼';
-    const missedSteps = Number.isFinite(motorDiagnostics.totalMissedSteps)
-      ? Math.max(0, Math.round(motorDiagnostics.totalMissedSteps))
-      : 0;
 
     const headerLabel = escapeHtml(this.machineLabel || this.machineId || 'Machine');
     const accent = sanitizeHexColor(this.machineTintColor) || this.hudAccentColor || DEFAULT_HUD_ACCENT;
@@ -706,6 +710,20 @@ export class QualityMonitor {
         `<div class="quality-hud__metric"><span>Coverage / IoU</span><span>${formatPercent(coverage)} / ${formatPercent(iou)}</span></div>` +
       `</div>`
     );
+    lines.push(this._renderMissedSteps(motorDiagnostics));
+
+    this.hudElement.innerHTML = lines.join('');
+    this.hudElement.classList.remove('sim-hidden');
+    this._notifyHudVisibility();
+  }
+
+  _renderMissedSteps(motorDiagnostics) {
+    const missedStepsArrow = this.missedStepsExpanded ? '▲' : '▼';
+    const missedSteps = Number.isFinite(motorDiagnostics.totalMissedSteps)
+      ? Math.max(0, Math.round(motorDiagnostics.totalMissedSteps))
+      : 0;
+
+    const lines = [];
     lines.push(
       `<div class="quality-hud__summary quality-hud__summary--secondary">` +
         `<span class="quality-hud__summary-copy">Missed Steps <strong>${missedSteps}</strong></span>` +
@@ -717,10 +735,7 @@ export class QualityMonitor {
         this._renderMotorDiagnostics(motorDiagnostics.motors) +
       `</div>`
     );
-
-    this.hudElement.innerHTML = lines.join('');
-    this.hudElement.classList.remove('sim-hidden');
-    this._notifyHudVisibility();
+    return lines.join('');
   }
 
   _getMotorDiagnostics() {

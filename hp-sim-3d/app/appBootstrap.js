@@ -277,6 +277,7 @@ export function createHpSimApp({
       await loadDefaultScene();
       runtime.start(() => controllers.machines.rebuildScene(), {
         onTimeScaleChange: (scale) => controllers.commands.handleRuntimeTimeScaleChange(scale),
+        onFrame: (force) => { if (quality.enabled) quality.refreshAllQualityMonitors(force); },
       });
       runtime.reset({ autoPause: true });
       view.resetViewStateDefaults();

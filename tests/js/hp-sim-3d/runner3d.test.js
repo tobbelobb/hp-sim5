@@ -50,7 +50,7 @@ describe('slideprinter 3D runner idle loop handling', () => {
     global.performance = originalPerformance;
   });
 
-  function setupRunner({ paused = false, systems = [] } = {}) {
+  function setupRunner({ paused = false, systems = [], onFrame = null } = {}) {
     const elements = {
       pauseBtn: createEventTarget('Pause'),
       resetBtn: createEventTarget('Reset'),
@@ -91,7 +91,7 @@ describe('slideprinter 3D runner idle loop handling', () => {
       update: jest.fn(),
     };
 
-    const controls = runGame(world, () => {});
+    const controls = runGame(world, () => {}, { onFrame });
     renderSystem.clearAnimationLoop.mockClear();
     renderSystem.requestRender.mockClear();
 
@@ -247,6 +247,16 @@ describe('slideprinter 3D runner idle loop handling', () => {
     await expect(controls.advanceFixedSteps(1)).rejects.toThrow('worker');
     await expect(controls.advanceFixedSteps(10001)).rejects.toThrow('steps');
     expect(world.update).not.toHaveBeenCalled();
+  });
+
+  test('refreshes live UI while stepping without print commands', () => {
+    const onFrame = jest.fn();
+    const { getAnimationLoop, elements } = setupRunner({ onFrame });
+    onFrame.mockClear();
+    getAnimationLoop()(16);
+    expect(onFrame).toHaveBeenCalledWith(false);
+    elements.pauseBtn.click();
+    expect(onFrame).toHaveBeenLastCalledWith(true);
   });
 
 });

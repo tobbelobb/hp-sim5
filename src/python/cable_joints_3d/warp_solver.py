@@ -292,6 +292,8 @@ def end_info(bodies: wp.array(dtype=Body), joints: wp.array(dtype=Joint), ep: En
                         # The pinhole neighbor transfers this load once.
                         end.inverse = F(0)
                         end.free_inverse = F(0)
+    if (b.flags & 16) != 0 and end.spin == end.entity and (b.flags & 10) == 10:
+        end.displacement = end.displacement-wp.dot(end.angular,angular_delta(b.prev_q,b.q))
     return end
 
 

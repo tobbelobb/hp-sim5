@@ -127,7 +127,12 @@ export function createQualityController({
     forEachQualityMonitor((monitor) => monitor.reset(options));
   }
 
+  let lastHudRefresh = -Infinity;
   function refreshAllQualityMonitors(force = false) {
+    if (!force && !isEnabled()) return;
+    const now = performance.now();
+    if (!force && now - lastHudRefresh < 100) return;
+    lastHudRefresh = now;
     forEachQualityMonitor((monitor) => monitor.refreshHud(force));
   }
 

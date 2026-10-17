@@ -120,4 +120,25 @@ describe('QualityMonitor 3D extrusion scoring', () => {
     expect(hudElement.innerHTML).toContain('<span>A</span><span>4</span>');
     expect(hudElement.innerHTML).toContain('<span>B</span><span>1</span>');
   });
+  test('shows and refreshes startup motor losses without a reference or extrusion', () => {
+    const hudElement = createHudElement();
+    const monitor = new QualityMonitor({ hudElement });
+    let missedSteps = 0;
+    monitor.setMotorDiagnosticsProvider(() => ({
+      totalMissedSteps: missedSteps, motors: [{ axis: 'A', missedSteps }],
+    }));
+    expect(hudElement.classList.contains('sim-hidden')).toBe(false);
+    expect(hudElement.innerHTML).toContain('Missed Steps <strong>0</strong>');
+    missedSteps = 2;
+    monitor.refreshHud();
+    expect(hudElement.innerHTML).toContain('Missed Steps <strong>2</strong>');
+    hudElement.clickSection('missed-steps');
+    expect(hudElement.innerHTML).toContain('<span>A</span><span>2</span>');
+    monitor.setEnabled(false);
+    monitor.setMotorDiagnosticsProvider(() => ({ totalMissedSteps: 3, motors: [] }));
+    monitor.setMachineContext({ label: 'Hexagon' });
+    monitor.refreshHud();
+    expect(hudElement.classList.contains('sim-hidden')).toBe(true);
+  });
+
 });

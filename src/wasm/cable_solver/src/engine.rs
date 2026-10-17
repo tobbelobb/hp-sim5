@@ -1715,7 +1715,9 @@ impl PhysicsWorld {
             } else if closed {
                 self.options[11]
             } else {
-                e[109].max(0.0) * e[110].abs().max(1.0) * self.options[12].max(0.0)
+                // Open-loop torque is integrated in motors(); a cable-only
+                // stiffness term would violate steady torque balance.
+                0.0
             };
             self.entities[id][47] = if dt > EPS { stiffness } else { 0.0 };
             self.entities[id][48] = stiffness * dt * dt;
