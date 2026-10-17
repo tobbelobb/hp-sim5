@@ -9,6 +9,7 @@ from .ecs import (AngularVelocityComponent, OrientationComponent, PositionCompon
     DistanceConstraintComponent, EncoderComponent)
 from .inertia_tensor import (MomentOfInertiaComponent, has_any_inverse_inertia,
     apply_world_inverse_inertia, inverse_inertia_quadratic_form)
+from .stepper_motor import StepperMotorComponent
 from .quaternion import Quaternion
 from .rigid_bodies import (compute_world_attachment, get_entity_world_position,
     get_entity_world_orientation, initialize_rigid_body_sync_state,
@@ -38,8 +39,20 @@ class MovementSystem:
 class AngularMovementSystem:
     def update(self, world, dt):
         for entity in world.query([OrientationComponent, AngularVelocityComponent]):
-            if (world.get_component(entity, RigidBodyMemberComponent) is not None
-                    and world.get_component(entity, SpoolStateComponent) is not None):
+            member = world.get_component(entity, RigidBodyMemberComponent)
+            if member is not None and world.get_component(entity, SpoolStateComponent) is not None:
+                if world.get_component(entity, StepperMotorComponent) is not None:
+                    continue
+                previous = world.get_component(member.body_entity, PrevFinalOrientationComponent)
+                body = previous or world.get_component(member.body_entity, OrientationComponent)
+                omega = world.get_component(entity, AngularVelocityComponent).omega
+                local_omega = body.quaternion.copy().conjugate().normalize().transform_vector(omega)
+                speed = norm3(local_omega)
+                if speed > 1e-12:
+                    old = member.local_orientation.copy()
+                    member.local_orientation.premultiply(Quaternion().set_from_axis_angle(local_omega / speed, speed * dt)).normalize()
+                    raw = world.get_component(entity, OrientationComponent).quaternion
+                    raw.multiply(old.conjugate().normalize()).multiply(member.local_orientation).normalize()
                 continue
             omega = world.get_component(entity, AngularVelocityComponent).omega; speed = norm3(omega)
             if speed > 1e-12:
@@ -77,7 +90,8 @@ class PBDAngularVelocityUpdateSystem:
         for entity in world.query(components):
             if entity == world.get_resource("grabbedBall"):
                 continue
-            if world.get_component(entity, RigidBodyMemberComponent) is not None:
+            member = world.get_component(entity, RigidBodyMemberComponent)
+            if member is not None and world.get_component(entity, SpoolStateComponent) is None:
                 continue
             moment = world.get_component(entity, MomentOfInertiaComponent)
             if not has_any_inverse_inertia(moment):
@@ -87,6 +101,13 @@ class PBDAngularVelocityUpdateSystem:
             previous = world.get_component(
                 entity, PrevFinalOrientationComponent
             ).quaternion
+            if member is not None:
+                body = world.get_component(member.body_entity, OrientationComponent)
+                body_previous = world.get_component(member.body_entity, PrevFinalOrientationComponent)
+                if body is None or body_previous is None:
+                    continue
+                current = member.local_orientation
+                previous = body_previous.quaternion.copy().conjugate().normalize().multiply(previous).normalize()
             delta = current.copy().multiply(previous.copy().conjugate().normalize())
             delta.normalize()
             if delta.w < 0.:
@@ -105,11 +126,16 @@ class PBDAngularVelocityUpdateSystem:
                 angular_velocity[:] = np.array(
                     [delta.x, delta.y, delta.z]
                 ) * scale
+                if member is not None:
+                    angular_velocity[:] = body.quaternion.transform_vector(angular_velocity)
 
 
 class RigidBodySyncSystem:
+    def __init__(self, mounted_only=False):
+        self.mounted_only = mounted_only
+
     def update(self, world, dt):
-        for entity in world.query([SpoolStateComponent, OrientationComponent]):
+        for entity in ([] if self.mounted_only else world.query([SpoolStateComponent, OrientationComponent])):
             if world.get_component(entity, RigidBodyMemberComponent) is not None:
                 continue
             state = world.get_component(entity, SpoolStateComponent)
@@ -121,7 +147,7 @@ class RigidBodySyncSystem:
 
         for entity in world.query([RigidBodyComponent, PositionComponent, OrientationComponent]):
             body = world.get_component(entity, RigidBodyComponent)
-            if not body.members:
+            if not body.members or (self.mounted_only and not any(world.get_component(e, SpoolStateComponent) for e in body.members)):
                 continue
             position = world.get_component(entity, PositionComponent).pos
             orientation = world.get_component(entity, OrientationComponent).quaternion.copy().normalize()

@@ -5,6 +5,7 @@ import { createHeadlessWorld } from '../../hp-sim-3d/app/headlessWorld.js';
 import { getMachineMotorDiagnostics } from '../../hp-sim-3d/app/motor-diagnostics.js';
 import { StepperMotorComponent, getRigidBodyMemberSpoolFrame } from '../../hp-sim-3d/app/hangprinter_stepper_motor.js';
 import { SpoolStateComponent, getSpoolRotationAngle } from '../../hp-sim-3d/app/hangprinter_spools.js';
+import Vector3 from '../../src/js/cable_joints_3d/vector3.js';
 import { EncoderComponent, OrientationComponent, RigidBodyComponent } from '../../src/js/cable_joints_3d/ecs.js';
 import { WasmPhysicsEngine } from '../../src/js/cable_joints_3d/wasm_physics_engine.js';
 
@@ -13,8 +14,9 @@ const module = new WebAssembly.Module(fs.readFileSync(new URL('../../public/wasm
 
 // Protect the mounted rotor DOFs themselves. Backend parity alone cannot show
 // that a rotor is still free to turn relative to its moving host body.
-// These are support checks, not a conservation test of the simplified hinge:
-// cable pose corrections still skip member angular-velocity reconstruction.
+// Use zero gravity to isolate motor support. The authored scene starts with
+// coplanar anchors; its gravity-driven drop can physically overload the motors.
+// Conservation is checked separately in mounted_rotor_dynamics.test.mjs.
 for (const closedLoopMotorsEnabled of [false, true]) {
   for (const lineLayeringEnabled of [false, true]) {
     for (const physicsSubsteps of [1, 4, 16]) {
@@ -24,6 +26,7 @@ for (const closedLoopMotorsEnabled of [false, true]) {
           const { world, remote, dt } = createHeadlessWorld(scene, {
             closedLoopMotorsEnabled, lineLayeringEnabled, physicsSubsteps, cableSolverBackend: backend,
           });
+          world.setResource('gravity', new Vector3());
           const motors = world.query([StepperMotorComponent]);
           const bodies = world.query([RigidBodyComponent]);
           assert.equal(motors.length, 3);

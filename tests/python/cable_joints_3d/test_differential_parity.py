@@ -168,15 +168,17 @@ def test_over_correction_oracle_reaches_shared_reactions(name):
         assert_equivalent(run_python(fixture), run_js(fixture), **fixture['tolerance'])
     elif name == 'cable_over_correction_members':
         for prefix in ['external_first', 'external_last']:
-            assert after[prefix + '_body']['PositionComponent'] != before[prefix + '_body']['PositionComponent']
-            assert after[prefix + '_spool']['OrientationComponent'] != before[prefix + '_spool']['OrientationComponent']
+            # Mounted assemblies are left to the unilateral XPBD solve; the
+            # averaging heuristic cannot conserve their relative-rotor momentum.
+            assert after[prefix + '_body']['PositionComponent'] == before[prefix + '_body']['PositionComponent']
+            assert after[prefix + '_spool']['OrientationComponent'] == before[prefix + '_spool']['OrientationComponent']
             assert after[prefix + '_spool']['PositionComponent'] == before[prefix + '_spool']['PositionComponent']
-        assert after['internal_body']['OrientationComponent'] != before['internal_body']['OrientationComponent']
+        assert after['internal_body']['OrientationComponent'] == before['internal_body']['OrientationComponent']
         assert after['internal_spool']['OrientationComponent'] == before['internal_spool']['OrientationComponent']
         assert after['internal_full_tensor_spool']['OrientationComponent'] != before['internal_full_tensor_spool']['OrientationComponent']
     else:
         for prefix in ['upstream', 'downstream', 'attached']:
-            assert after[prefix + '_spool']['OrientationComponent'] != before[prefix + '_spool']['OrientationComponent']
+            assert after[prefix + '_spool']['OrientationComponent'] == before[prefix + '_spool']['OrientationComponent']
         assert after['rolling_spool']['OrientationComponent'] == before['rolling_spool']['OrientationComponent']
 
 

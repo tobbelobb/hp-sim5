@@ -4,6 +4,7 @@ import math
 
 import numpy as np
 from .vector3 import cross, length as norm3
+from .mounted_rotor_dynamics import cable_angular_response, apply_cable_angular_response
 from cable_joints.util import effective_cw, is_hybrid
 
 from .cable_attachment_update_system import effective_rolling_radius
@@ -20,7 +21,7 @@ from .inertia_tensor import (
 from .quaternion import rotation_vector_between
 from .rigid_bodies import (
     apply_world_angular_correction, compute_local_attachment, compute_world_attachment,
-    get_entity_world_position, resolve_rigid_body_solver_entity,
+    get_entity_world_position, get_entity_world_orientation, resolve_rigid_body_solver_entity,
 )
 from .spools import SpoolStateComponent
 from .stepper_motor import (
@@ -62,11 +63,11 @@ def _build_spin_info(world, entity, point, gradient, dt):
     center = get_entity_world_position(world, entity)
     if link is None or link.cable_plane_normal_local is None or orientation is None or center is None or not has_any_inverse_inertia(moment):
         return None
-    axis = orientation.quaternion.transform_vector(link.cable_plane_normal_local)
+    axis = get_entity_world_orientation(world, entity).transform_vector(link.cable_plane_normal_local)
     if np.dot(axis, axis) <= EPSILON:
         return None
     axis /= norm3(axis)
-    inertia = effective_inertia_about_world_axis(moment, orientation.quaternion, axis)
+    inertia = effective_inertia_about_world_axis(moment, get_entity_world_orientation(world, entity), axis)
     free_inverse = 1. / inertia if inertia > 0 else 0.
     if free_inverse <= EPSILON:
         return None
@@ -201,16 +202,6 @@ def _solver_end(world, path, index, first, entity, other, point, gradient, joint
                      angular_denominator, spin, solve_spin_gradient, load_spin_gradient, displacement)
 
 
-def _mechanical_denominator(ends, spin_inverses):
-    denominator = 0.
-    for end, inverse in zip(ends, spin_inverses):
-        denominator += end.inv_mass * np.dot(end.gradient, end.gradient)
-        denominator += end.angular_denominator
-        if inverse > 0 and abs(end.solve_spin_gradient) > EPSILON:
-            denominator += inverse * end.solve_spin_gradient * end.solve_spin_gradient
-    return denominator
-
-
 def _record_transferred_force(world, joint_id, magnitude):
     if joint_id is None or not finite_number(magnitude) or magnitude <= 0:
         return
@@ -268,13 +259,30 @@ def _solve_joint(world, path, index, joint, points, direction, error, iteration,
     key = id(path), id(joint)
     previous = multipliers.get(key, 0.)
 
+    def response():
+        return cable_angular_response(world, ends, inverses, lambda entity:
+            _build_spin_info(world, entity, np.zeros(3), np.zeros(3), dt)
+            if has_axis_only_cable_spin_dof(world, entity) else None)
+
+    def mechanical():
+        denominator, corrections, standalone = response()
+        if len(standalone) == 2:
+            denominator = 0.
+            for end, inverse in zip(ends, inverses):
+                denominator += end.inv_mass * np.dot(end.gradient, end.gradient)
+                denominator += end.angular_denominator
+                if inverse > 0 and abs(end.solve_spin_gradient) > EPSILON:
+                    denominator += inverse * end.solve_spin_gradient * end.solve_spin_gradient
+            return denominator
+        return sum(end.inv_mass * np.dot(end.gradient, end.gradient) for end in ends) + denominator
+
     def solve_multiplier():
-        mechanical = _mechanical_denominator(ends, inverses)
+        mech = mechanical()
         if zero_stiffness:
             damping_step = max(0., path.damping) * dt if valid_dt else 0.
-            delta = (damping_step * displacement - previous) / (1 + damping_step * mechanical)
+            delta = (damping_step * displacement - previous) / (1 + damping_step * mech)
             return min(0., previous + delta) - previous
-        denominator = (1 + gamma) * mechanical + alpha
+        denominator = (1 + gamma) * mech + alpha
         if denominator <= EPSILON:
             return None
         delta = (-error - alpha * previous + gamma * displacement) / denominator
@@ -299,7 +307,8 @@ def _solve_joint(world, path, index, joint, points, direction, error, iteration,
     if iteration == 0:
         for end in ends:
             _record_load(path, end, multiplier, inv_dt_squared, loads)
-    if _mechanical_denominator(ends, inverses) <= EPSILON:
+    angular_denominator, corrections, standalone = response()
+    if sum(end.inv_mass * np.dot(end.gradient, end.gradient) for end in ends) + angular_denominator <= EPSILON:
         return
     if iteration == 0:
         joint.constraint_lambda = multiplier
@@ -312,8 +321,17 @@ def _solve_joint(world, path, index, joint, points, direction, error, iteration,
             _record_transferred_force(world, path.joint_entities[index + 1], magnitude)
         for end in ends:
             _record_transferred_force(world, end.spin.transferred_joint if end.spin else None, magnitude)
-    # Corrections are sequential; B's inertia may observe A's change on a shared body.
-    for end, inverse in zip(ends, inverses):
+    for end in ends:
+        if end.inv_mass > 0:
+            end.position.pos += end.gradient * (-end.inv_mass * multiplier)
+    def record_encoder(entity, angle):
+        encoder = world.get_component(entity, EncoderComponent)
+        if encoder is not None and finite_number(encoder.angle):
+            encoder.angle += angle
+    apply_cable_angular_response(world, corrections, multiplier, record_encoder)
+    for end, inverse in standalone:
+        # Translation was applied above.
+        end.inv_mass = 0.
         _apply_end_correction(world, end, inverse, multiplier)
 
 

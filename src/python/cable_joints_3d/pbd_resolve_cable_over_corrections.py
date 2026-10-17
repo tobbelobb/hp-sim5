@@ -7,7 +7,8 @@ from cable_joints.util import is_hybrid
 
 from .cable_attachment_update_system import calculate_attachment_points
 from .cable_joints_components import CableJointComponent, CableLinkComponent, CablePathComponent
-from .ecs import MassComponent, MomentOfInertiaComponent, OrientationComponent, PositionComponent
+from .spools import SpoolStateComponent
+from .ecs import RigidBodyMemberComponent, MassComponent, MomentOfInertiaComponent, OrientationComponent, PositionComponent
 from .inertia_tensor import apply_world_inverse_inertia, has_any_inverse_inertia, inverse_inertia_quadratic_form
 from .pbd_cable_constraint_solver import has_axis_only_cable_spin_dof
 from .rigid_bodies import (
@@ -142,10 +143,20 @@ def _calculate_joint_correction(world, joint, path, index, position_corrections,
 
 class PBDResolveCableOverCorrections:
     def update(self, world, dt_unused):
+        # XPBD releases slack tension. The legacy averaging pass does not
+        # have the carrier/relative-rotor mass matrix.
+        mounted = {world.get_component(e, RigidBodyMemberComponent).body_entity
+                   for e in world.query([RigidBodyMemberComponent, SpoolStateComponent])}
+        def has_mounted(entity):
+            member = world.get_component(entity, RigidBodyMemberComponent)
+            return (member.body_entity if member else entity) in mounted
         joint_paths = {}
         for path_entity in world.query([CablePathComponent]):
             path = world.get_component(path_entity, CablePathComponent)
             for index, joint in enumerate(path.joint_entities):
+                component = world.get_component(joint, CableJointComponent)
+                if has_mounted(component.entity_a) or has_mounted(component.entity_b):
+                    continue
                 # First insertion orders the scan; last path wins metadata.
                 joint_paths[joint] = path, index
         over_corrected = []

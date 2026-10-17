@@ -10,7 +10,8 @@ import {
   PositionComponent,
   MassComponent,
   MomentOfInertiaComponent,
-  OrientationComponent
+  OrientationComponent,
+  RigidBodyMemberComponent,
 } from './ecs.js';
 import { SpoolStateComponent } from '../../../hp-sim-3d/app/hangprinter_spools.js';
 import {
@@ -150,6 +151,13 @@ export class PBDResolveCableOverCorrections {
     const pathEntities = world.query([CablePathComponent]);
     if (!pathEntities) return;
 
+    // XPBD already releases accumulated tension when a cable goes slack.
+    // The legacy averaging heuristic has no relative-rotor mass matrix and
+    // would undo the momentum-conserving mounted assembly correction.
+    const mountedBodies = new Set(world.query([RigidBodyMemberComponent, SpoolStateComponent])
+      .map(id => world.getComponent(id, RigidBodyMemberComponent).bodyEntity));
+    const hasMountedRotors = id => mountedBodies.has(
+      world.getComponent(id, RigidBodyMemberComponent)?.bodyEntity ?? id);
     const jointToPathAndIndex = new Map();
     const allJointIds = new Set();
 
@@ -159,6 +167,8 @@ export class PBDResolveCableOverCorrections {
 
       for (let i = 0; i < path.jointEntities.length; i++) {
         const jointId = path.jointEntities[i];
+        const joint = world.getComponent(jointId, CableJointComponent);
+        if (hasMountedRotors(joint.entityA) || hasMountedRotors(joint.entityB)) continue;
         allJointIds.add(jointId);
         jointToPathAndIndex.set(jointId, { path, i });
       }
