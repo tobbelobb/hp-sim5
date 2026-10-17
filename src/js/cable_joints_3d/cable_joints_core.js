@@ -189,7 +189,6 @@ const CABLE_HYBRID_TRACE_PREFIX = '[CableHybridTrace]';
 
 const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
 const DEFAULT_CLOSED_LOOP_STEPPER_CONSTRAINT_STIFFNESS = 1e8;
-const DEFAULT_OPEN_LOOP_STEPPER_CONSTRAINT_STIFFNESS_SCALE = 1.0;
 const DEFAULT_OPEN_LOOP_STEPPER_HOLDING_TORQUE_SCALE = 1.0;
 
 function _debugCable(world, message) {
@@ -1295,22 +1294,10 @@ function _positionStepperConstraintStiffness(world, stepper) {
     );
   }
 
-  const holdingTorque = Number.isFinite(stepper.holdingTorque)
-    ? Math.max(0.0, stepper.holdingTorque)
-    : 0.0;
-  const polePairs = Number.isFinite(stepper.numPolePairs)
-    ? Math.max(1.0, Math.abs(stepper.numPolePairs))
-    : 1.0;
-  const scale = Math.max(
-    0.0,
-    _readFiniteResource(
-      world,
-      'openLoopStepperConstraintStiffnessScale',
-      DEFAULT_OPEN_LOOP_STEPPER_CONSTRAINT_STIFFNESS_SCALE,
-    ),
-  );
-
-  return holdingTorque * polePairs * scale;
+  // Open-loop electromagnetic torque is integrated by StepperMotorSystem.
+  // Adding its stiffness here changes only cable response, violating torque
+  // balance by I / (I + k*dt²) and giving coarse steps artificial holding power.
+  return 0.0;
 }
 
 function _effectiveMotorizedSpinInvInertia(world, stepper, invInertia, inertia, dt) {
@@ -3253,8 +3240,12 @@ export class PBDCableConstraintSolver {
       const translationalDispB = prevPosB
         ? gradPosB.dot(posBComp.pos.clone().subtract(prevPosB))
         : 0.0;
-      const rotationalDispA = gradAngA.dot(_rotationVectorBetween(prevQuatA, currQuatA));
-      const rotationalDispB = gradAngB.dot(_rotationVectorBetween(prevQuatB, currQuatB));
+      // A standalone axis-only spool's rotation is already in spinDisp.
+      // Counting its world rotation too doubles cable damping.
+      const rotationalDispA = endpointA.axisOnly && memberSpinA?.entityId === solverEntityA
+        ? 0.0 : gradAngA.dot(_rotationVectorBetween(prevQuatA, currQuatA));
+      const rotationalDispB = endpointB.axisOnly && memberSpinB?.entityId === solverEntityB
+        ? 0.0 : gradAngB.dot(_rotationVectorBetween(prevQuatB, currQuatB));
 
       const gradAngMemberA = memberSpinA
         ? new Vector3().subtractVectors(memberSpinA.pointWorld, memberSpinA.centerWorld).cross(memberSpinA.gradPos)

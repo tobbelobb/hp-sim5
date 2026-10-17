@@ -188,7 +188,10 @@ def _solver_end(world, path, index, first, entity, other, point, gradient, joint
     angular_denominator = inverse_inertia_quadratic_form(moment, orientation.quaternion, angular_gradient) if orientation is not None and not has_axis_only_cable_spin_dof(world, solver_entity) else 0.
     previous_position = world.get_component(solver_entity, PrevFinalPosComponent)
     displacement = float(np.dot(gradient, position.pos - previous_position.pos)) if previous_position is not None else 0.
-    displacement += np.dot(angular_gradient, rotation_vector_between(_quaternion(world, solver_entity, True), _quaternion(world, solver_entity)))
+    # The relative spin term below already includes an axis-only rotor's
+    # rotation; adding its world rotation would double cable damping.
+    if not (has_axis_only_cable_spin_dof(world, solver_entity) and spin is not None and spin.entity == solver_entity):
+        displacement += np.dot(angular_gradient, rotation_vector_between(_quaternion(world, solver_entity, True), _quaternion(world, solver_entity)))
     solve_spin_gradient = load_spin_gradient = 0.
     if spin is not None:
         lever_gradient = np.dot(cross(spin.point - spin.center, spin.gradient), spin.axis)

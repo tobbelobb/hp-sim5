@@ -264,7 +264,7 @@ export class RustPhysicsEngine {
     data.set([+flag('enableLayering', true), +flag('layeringAttachmentUpdatePoints', true),
       +flag('layeringClampJointRestLength', true), +flag('layeringMergeJoints', false), +flag('layeringSplitJoints', false),
       +flag('layeringHybridLinkStates', true), world.getResource('grabbedBall') ?? -1, world.nextEntityId,
-      finite('closedLoopStepperConstraintStiffness', 1e8), finite('openLoopStepperConstraintStiffnessScale', 1),
+      finite('closedLoopStepperConstraintStiffness', 1e8), 0 /* reserved ABI slot; open-loop torque uses physical inertia */,
       finite('openLoopStepperHoldingTorqueScale', 1), +flag('closedLoopMotorsEnabled', false)], o + 3);
     putV(data, o + 16, world.getResource('defaultPlaneNormal') ?? { x: 0, y: 0, z: 1 });
     data[o + 15] = world.getResource('dt') ?? -1;

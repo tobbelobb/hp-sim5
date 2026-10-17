@@ -64,9 +64,9 @@ def position_stepper_constraint_stiffness(world, stepper):
         return 0.
     if is_stepper_closed_loop_enabled(world, stepper):
         return max(0., finite_resource(world, 'closedLoopStepperConstraintStiffness', 1e8))
-    torque = max(0., stepper.holding_torque) if finite_number(stepper.holding_torque) else 0.
-    poles = max(1., abs(stepper.num_pole_pairs)) if finite_number(stepper.num_pole_pairs) else 1.
-    return torque * poles * max(0., finite_resource(world, 'openLoopStepperConstraintStiffnessScale', 1.))
+    # Electromagnetic torque is already integrated by StepperMotorSystem.
+    # Inflating only cable inertia creates a timestep-dependent holding boost.
+    return 0.
 
 
 def effective_motorized_spin_inv_inertia(world, entity, inv_inertia, inertia, dt):

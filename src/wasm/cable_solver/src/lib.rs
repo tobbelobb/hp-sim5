@@ -905,8 +905,17 @@ fn solve_joint(
     } else {
         0.0
     };
-    let ra = dot(aa, rotation_vector(&a));
-    let rb = dot(ab, rotation_vector(&b));
+    // Axis-only endpoint rotation is already represented by spin.disp.
+    let ra = if a[55] == 0.0 && sa.active && sa.id == a_id {
+        0.0
+    } else {
+        dot(aa, rotation_vector(&a))
+    };
+    let rb = if b[55] == 0.0 && sb.active && sb.id == b_id {
+        0.0
+    } else {
+        dot(ab, rotation_vector(&b))
+    };
     let disp = ta + ra + sa.disp + tb + rb + sb.disp;
     let gradients = [
         if a[55] != 0.0 { aa } else { [0.0; 3] },
