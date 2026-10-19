@@ -575,6 +575,11 @@ machine, dataset and optimizer flags. It owns the Node/RRF/recorder services and
 finalizes physics, collection events, Python logs and stage artifacts together
 without a browser. See the [headless extended reference guide](../autocal/data/references/extended-reference.md#headless-full-auto-collection).
 
+Headless physics runs as fast as possible. `--speedup` retains the requested
+playback setting, but collector waits and deadlines always use actual simulation
+seconds, matching the browser clock. Increasing playback speed does not lengthen
+force trials or settling windows.
+
 ### Local networking for full-auto runs
 
 Standalone `--headless-sim` needs localhost sockets for RRF, physics and

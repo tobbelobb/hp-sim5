@@ -130,7 +130,9 @@ def test_headless_recording_modes_preserve_events_resets_and_finalization(tmp_pa
         service.request('payload', payload={'type': 'reset'})
         service.request('payload', payload={'type': 'set_speed_scale', 'value': 25})
         state = service.request('advance', seconds=.01)
-        assert state['step'] == 125 and state['collector_time_s'] == pytest.approx(.06)
+        assert state['step'] == 5 and state['collector_time_s'] == pytest.approx(.06)
+        assert state['simulated_s'] == pytest.approx(.06)
+        assert state['settings']['timeScale'] == 25
         extended_reference.emit('run_complete', returncode=0)
     assert 'AUTOCAL_REFERENCE_WS' not in os.environ
     assert service.manifest['recording_mode'] == (mode or 'full')
@@ -156,13 +158,13 @@ def test_headless_recording_modes_preserve_events_resets_and_finalization(tmp_pa
         assert [segment['generation'] for segment in recording['headless_segments']] == [0, 1]
         assert recording['sample_stride'] == (100 if mode == 'sampled' else 10)
         assert recording['geometry_detail'] == 'compact'
-        assert recording['physics_samples'] == (3 if mode == 'sampled' else 16)
+        assert recording['physics_samples'] == (2 if mode == 'sampled' else 4)
     path = recording['rrd']
     assert len(RrdReader(path).recordings()) == 1
     events = recorded_events(path, 'headless')
     assert sum(event['kind'] == 'scene_context' for event in events) == 2
     assert events[-1]['kind'] == 'service_stopped'
-    assert events[-1]['sim_time_s'] == pytest.approx(.25)
+    assert events[-1]['sim_time_s'] == pytest.approx(.01)
     assert all(event['sim_time_source'] == 'headless.researchClock' for event in events)
     encoder_events = [event for event in events if event['kind'] == 'encoder_response_sent']
     assert encoder_events and all(event['payload']['simulationClock']['source'] == 'headless.researchClock' for event in encoder_events)
@@ -309,7 +311,7 @@ def test_headless_uses_external_recorder_and_preserves_collector_clock(tmp_path,
     manifest, = [json.loads(path.read_text()) for path in tmp_path.glob('hangprinter-*.json')]
     assert manifest['status'] == 'finalized' and not manifest['rejected_messages']
     assert manifest['sample_stride'] == 1 and manifest['geometry_detail'] == 'full'
-    assert manifest['end_step'] == 125 and manifest['end_time_s'] == pytest.approx(.25)
+    assert manifest['end_step'] == 5 and manifest['end_time_s'] == pytest.approx(.01)
     events = recorded_events(manifest['rrd'], 'collector')
     assert [event['kind'] for event in events] == ['gcode_send', 'gcode_reply']
     assert all(event['sim_time_s'] == pytest.approx(.01) for event in events)

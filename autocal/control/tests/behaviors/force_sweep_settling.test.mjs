@@ -3,15 +3,19 @@ import { EncoderStabilityTimeoutError, FixedAnchorDriftError } from '../../primi
 
 // Endpoint travel may continue indefinitely under force. Measurements must still
 // settle after the drive is held, and every fixed-anchor reading stays guarded.
-function movingPullout({ fixedDrift = false, measurementDrift = false, transportError = null, stalled = false } = {}) {
+function movingPullout({ fixedDrift = false, measurementDrift = false, transportError = null, stalled = false, preparationDrift = false } = {}) {
   let now = 0;
-  let modes = [0, 0, 0, 0];
+  let modes = preparationDrift ? [0, 2.4, 2.4, 0] : [0, 0, 0, 0];
+  let preparing = preparationDrift;
   let angles = [0, 0, 0, 0];
   const commands = [];
   const points = [];
   const send = async line => {
     commands.push({ line, now });
-    if (line.startsWith('M569.4')) modes = line.split(' T')[1].split(':').map(Number);
+    if (line.startsWith('M569.4')) {
+      modes = line.split(' T')[1].split(':').map(Number);
+      preparing = false;
+    }
     if (line.startsWith('M569.3')) {
       if (modes[1] > 0 && transportError) throw transportError;
       return { reply: angles.join(' ') };
@@ -25,6 +29,7 @@ function movingPullout({ fixedDrift = false, measurementDrift = false, transport
     sleep: async ms => {
       if (stalled && modes[1] > 0) throw new Error('Simulation advance stalled');
       now += ms;
+      if (preparing && now >= 60000) return;
       if (modes[1] > 0) {
         angles[1] += ms / 1000;
         angles[2] -= ms / 1000;
@@ -58,6 +63,13 @@ test('continues to reject measurement drift after a bounded pullout', async () =
   const trial = movingPullout({ measurementDrift: true });
   await expect(trial.run()).rejects.toBeInstanceOf(EncoderStabilityTimeoutError);
   expect(trial.points).toHaveLength(0);
+});
+
+test('allows slow fixed-target preparation before starting the bounded pullout', async () => {
+  const trial = movingPullout({ preparationDrift: true });
+  const result = await trial.run();
+  expect(trial.commands.find(command => command.line.startsWith('M569.4')).now).toBeGreaterThan(60000);
+  expect(result.dataPoints).toHaveLength(2);
 });
 
 test('does not recover fixed-anchor slip during endpoint search', async () => {

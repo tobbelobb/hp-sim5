@@ -1,9 +1,9 @@
 // Wall deadlines for waits expressed in simulated time.
 //
 // A simulated clock advances only as fast as the physics can step, so a fixed
-// wall budget measures host load rather than a stuck trial. At --speedup 25 a
-// 25 s window covers 625 s of physics, which outlives a 120 s budget whenever
-// the engine runs below the requested playback speed. Keep the configured
+// wall budget measures host load rather than a stuck trial. Requested playback
+// speed does not establish actual throughput; a simulated window can outlive
+// its wall budget on a slow host. Keep the configured
 // budget as a floor, but extend it by the wall time actually needed for the
 // remaining simulated window. Only forward clock progress earns an extension,
 // so a clock that has stopped still reaches the floor deadline, and the hard

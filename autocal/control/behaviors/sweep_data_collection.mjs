@@ -1126,7 +1126,14 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
     validateAngles: angles => assertFixedAnchorAngles(angles, { fixedTargetByAnchor, mmPerDeg }),
   };
 
-  await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+  // Fixed-target preparation leaves the free motors pulling across the
+  // workspace. Give that transit the pullout budget before ordinary point waits.
+  await waitForStableEncoders(sendFn, motorIds, speedup, {
+    ...settleOptions,
+    timeoutMs: FORCE_TRAVEL_TIMEOUT_MS,
+    wallTimeoutMs: FORCE_TRAVEL_TIMEOUT_MS + 30000,
+    onProgress: message => console.log(`; sweep preparation: ${message.replace(/^; /, '')}`),
+  });
   const initialLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
   const driveStartPointMm = initialLengths[driveAnchor] ?? 0;
 

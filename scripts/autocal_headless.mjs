@@ -61,7 +61,10 @@ function status() {
 }
 async function advance(seconds = 0, drain = false) {
   if (!Number.isFinite(seconds) || seconds < 0) throw new Error('Advance seconds must be finite and nonnegative');
-  const count = Math.max(Math.ceil(seconds * speed / dt - 1e-9), drain ? remote.getQueueLength() : 0);
+  // Collector waits are simulation seconds, as in createBrowserClock. This
+  // headless world already steps as fast as possible; playback speed must not
+  // lengthen force trials or change their polling and settling windows.
+  const count = Math.max(Math.ceil(seconds / dt - 1e-9), drain ? remote.getQueueLength() : 0);
   for (let i = 0; i < count; i++) {
     if (stopped || failure) throw new Error(failure ?? 'Simulation stopped');
     if (totalSteps >= maxPhysicsSteps) {
@@ -72,7 +75,7 @@ async function advance(seconds = 0, drain = false) {
       if (!recorder.socket || recorder.socket.readyState !== 1) throw new Error(recorder.error || 'Flight recorder disconnected');
       if (!recorder.readyForStep()) await recorder.drain(10000, { all: false });
     }
-    world.update(dt); step++; totalSteps++; collectorTime += dt / speed;
+    world.update(dt); step++; totalSteps++; collectorTime += dt;
     world.setResource('researchClock', { generation: epoch, step, time: step * dt, source: 'headless.researchClock' });
     if (totalSteps % 1000 === 0) fs.writeFileSync(`${directory}/clock.json`, JSON.stringify(status()));
     if (i % 50 === 49) await yieldStep();
