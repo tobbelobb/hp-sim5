@@ -27,7 +27,10 @@ test('autocal settings update physics resources and visible feature toggles', ()
   const world = new World();
   const toggles = { closedLoopMotorsToggle: { checked: false }, lineLayeringToggle: { checked: false } };
   const featureFlags = createFeatureFlagsController({ world, state: {}, toggles });
-  const commands = { handleUserReset: jest.fn() };
+  const commands = { handleUserReset: jest.fn(() => {
+    world.setResource('closedLoopMotorsEnabled', false);
+    world.setResource('physicsSubsteps', 1);
+  }) };
   const controller = createExternalCommandController({ world, featureFlags, commands });
   controller.handlePayload({ type: 'simulation_settings', closedLoopMotorsEnabled: true, lineLayeringEnabled: true });
   expect(toggles.closedLoopMotorsToggle.checked).toBe(true);
@@ -98,16 +101,20 @@ test.each([
   controller.connect();
   const bridge = Socket.last;
   bridge.open();
-  controller.handlePayload({ type: 'simulation_settings', machineType });
+  controller.handlePayload({ type: 'simulation_settings', machineType,
+    closedLoopMotorsEnabled: true, lineLayeringEnabled: false, physicsSubsteps: 4 });
   controller.handlePayload({ type: 'encoder_request', requestId: 1, axes: [] });
   await new Promise(resolve => setTimeout(resolve, 0));
   expect(machines.removeAllMachines).toHaveBeenCalledTimes(1);
   expect(machines.addCatalogMachine).toHaveBeenCalledWith(sourceKey, { resetView: true });
   expect(bridge.samples).toHaveLength(0);
   loadedKey = sourceKey;
+  world.clear(); // Loading a scene restores its default physics resources.
+  world.setResource('closedLoopMotorsEnabled', false);
   finishLoading({});
   await new Promise(resolve => setTimeout(resolve, 0));
-  expect(bridge.samples.at(-1).simulationSettings).toMatchObject({ machineType, settingsError: null });
+  expect(bridge.samples.at(-1).simulationSettings).toMatchObject({ machineType, settingsError: null,
+    closedLoopMotorsEnabled: true, lineLayeringEnabled: false, physicsSubsteps: 4 });
   world.clear(); // Scene resets discard world resources, but preserve the selected machine list.
   controller.handlePayload({ type: 'encoder_request', requestId: 2, axes: [] });
   await new Promise(resolve => setTimeout(resolve, 0));
@@ -167,4 +174,37 @@ test('browser substep menu and remote settings agree, reject invalid counts, and
   }
   controller.handlePayload({ type: 'simulation_settings', physicsSubsteps: 1 });
   expect(select.value).toBe('1');
+});
+
+test('a disconnected recorder cannot prevent the next collection from enabling closed loop', async () => {
+  const world = new World();
+  const recorder = new FlightRecorder({ world, WebSocketClass: Socket });
+  recorder.extendedReference = true;
+  world.setResource('flightRecorder', recorder);
+  recorder.connect();
+  recorder.socket.close();
+  expect(recorder.error).toBe('Flight recorder disconnected');
+  const controller = createExternalCommandController({ world, url: 'ws://bridge', WebSocketCtor: Socket,
+    logger: { log: jest.fn(), warn: jest.fn() } });
+  controller.connect();
+  const bridge = Socket.last;
+  bridge.open();
+  controller.handlePayload({ type: 'simulation_settings', closedLoopMotorsEnabled: true });
+  controller.handlePayload({ type: 'encoder_request', requestId: 1, axes: [] });
+  expect(bridge.samples.at(-1).simulationSettings.closedLoopMotorsEnabled).toBe(true);
+  expect(recorder.readyForStep()).toBe(true);
+
+  // A requested new recording still waits for a real receiver acknowledgement.
+  recorder.connect();
+  recorder.socket.close();
+  controller.handlePayload({ type: 'simulation_settings', closedLoopMotorsEnabled: true,
+    recordingUrl: 'ws://new-recording' });
+  controller.handlePayload({ type: 'encoder_request', requestId: 2, axes: [] });
+  await Promise.resolve();
+  recorder.socket.open();
+  recorder.socket.dispatchEvent(new MessageEvent('message', { data: JSON.stringify({ type: 'ack' }) }));
+  await new Promise(resolve => setTimeout(resolve, 0));
+  expect(bridge.samples.at(-1)).toMatchObject({ requestId: 2,
+    simulationSettings: { closedLoopMotorsEnabled: true, recording: true, recordingError: null } });
+  recorder.disconnect();
 });

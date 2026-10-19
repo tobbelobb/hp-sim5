@@ -237,6 +237,13 @@ export function createExternalCommandController({
     if (!payload) {
       return;
     }
+    // A new collection must be able to configure/reconnect after an earlier
+    // recording failed. Otherwise recordEvent throws before settings are handled.
+    const recorder = world.getResource('flightRecorder');
+    if (payload.type === 'simulation_settings' && recorder?.error) {
+      logger.warn('hp-sim-3d: clearing failed recording before simulator configuration:', recorder.error);
+      recorder.disconnect();
+    }
     if (payload.type !== 'encoder_request' || payload.axes?.length) {
       world.getResource('flightRecorder')?.recordEvent('external_payload_received', payload);
     }
@@ -248,16 +255,33 @@ export function createExternalCommandController({
       return;
     }
     if (payload.type === 'simulation_settings') {
-      if (payload.physicsSubsteps !== undefined) {
-        try {
-          if (featureFlags) featureFlags.setPhysicsSubstepsState(payload.physicsSubsteps);
-          else setPhysicsSubsteps(world, payload.physicsSubsteps);
-          settingsError = null;
-        } catch (error) {
-          settingsError = error.message;
-          return;
+      const applySettings = () => {
+        settingsError = null;
+        // Scene loading and layering rebakes must finish before motor settings are applied.
+        if (typeof payload.lineLayeringEnabled === 'boolean') {
+          if (featureFlags) {
+            const changed = featureFlags.lineLayeringEnabled !== payload.lineLayeringEnabled;
+            featureFlags.setLineLayeringEnabledState(payload.lineLayeringEnabled);
+            // Layering changes the baked initial cable lengths, as with the UI toggle.
+            if (changed) commands?.handleUserReset?.();
+          } else setLineLayeringFeatureFlags(world, payload.lineLayeringEnabled);
         }
-      }
+        if (payload.physicsSubsteps !== undefined) {
+          try {
+            if (featureFlags) featureFlags.setPhysicsSubstepsState(payload.physicsSubsteps);
+            else setPhysicsSubsteps(world, payload.physicsSubsteps);
+            settingsError = null;
+          } catch (error) {
+            settingsError = error.message;
+            return;
+          }
+        }
+        if (typeof payload.closedLoopMotorsEnabled === 'boolean') {
+          if (featureFlags) featureFlags.setClosedLoopMotorsEnabledState(payload.closedLoopMotorsEnabled);
+          else setClosedLoopMotorFeatureFlags(world, payload.closedLoopMotorsEnabled);
+        }
+        world.getResource('flightRecorder')?.recordEvent('simulation_settings_applied', payload);
+      };
       if (payload.machineType) {
         recordingReady = Promise.resolve(recordingReady).then(async () => {
           const sourceKey = MACHINE_SCENES[payload.machineType];
@@ -269,20 +293,12 @@ export function createExternalCommandController({
               throw new Error(`Could not load simulator machine: ${sourceKey}`);
             }
           }
-          settingsError = null;
+          applySettings();
         }).catch(error => { settingsError = error.message; });
-      }
-      if (typeof payload.closedLoopMotorsEnabled === 'boolean') {
-        if (featureFlags) featureFlags.setClosedLoopMotorsEnabledState(payload.closedLoopMotorsEnabled);
-        else setClosedLoopMotorFeatureFlags(world, payload.closedLoopMotorsEnabled);
-      }
-      if (typeof payload.lineLayeringEnabled === 'boolean') {
-        if (featureFlags) {
-          const changed = featureFlags.lineLayeringEnabled !== payload.lineLayeringEnabled;
-          featureFlags.setLineLayeringEnabledState(payload.lineLayeringEnabled);
-          // Layering changes the baked initial cable lengths, as with the UI toggle.
-          if (changed) commands?.handleUserReset?.();
-        } else setLineLayeringFeatureFlags(world, payload.lineLayeringEnabled);
+      } else if (recordingReady) {
+        recordingReady = recordingReady.then(applySettings);
+      } else {
+        applySettings();
       }
       if (payload.recordingUrl) {
         const recorder = world.getResource('flightRecorder');
@@ -295,7 +311,6 @@ export function createExternalCommandController({
           logger.warn('hp-sim-3d: recording startup failed:', recordingError);
         });
       }
-      world.getResource('flightRecorder')?.recordEvent('simulation_settings_applied', payload);
       return;
     }
     if (payload.type === 'reset') {
