@@ -27,6 +27,10 @@ codex login                       # choose ChatGPT
 ./hp-sim5-research-agent --model-provider opencode_go --model deepseek-v4.1-flash --prompt "Say hello"
 ```
 
+The launcher checks the native Rust physics build before starting services and
+runs `npm run build:native` automatically when it is stale or missing, printing
+`Native Rust physics build is stale, recompiling`. A failed build stops startup.
+
 Continuing collection defaults to the production native Rust physics engine in
 headless Node, with the same fixed steps, forces, motors, encoders and cables
 as the browser. JavaScript handles scene preparation, commands and observations.

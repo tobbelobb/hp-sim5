@@ -30,6 +30,23 @@ WORKTREE_LINKS = ('.venv', '.env', 'node_modules', 'RRF/build',
                   'src/wasm/cable_solver/target/native/physics.node')
 
 
+def ensure_native_physics():
+    # Reuse the worker's freshness check, including custom artifact overrides.
+    probe = subprocess.run(
+        ['node', '--input-type=module', '-e',
+         "import { loadNativePhysicsAddon } from './src/js/cable_joints_3d/native_physics_engine.js'; "
+         'loadNativePhysicsAddon();'],
+        cwd=ROOT, capture_output=True, text=True)
+    if probe.returncode == 0:
+        return
+    if ('Native Rust physics build is stale.' not in probe.stderr and
+            'Native Rust physics is missing:' not in probe.stderr):
+        raise RuntimeError(f'Native physics check failed: {probe.stderr.strip()}')
+    print('Native Rust physics build is stale, recompiling', file=sys.stderr, flush=True)
+    if subprocess.run(['npm', 'run', 'build:native'], cwd=ROOT).returncode != 0:
+        raise RuntimeError('Native Rust physics recompilation failed (npm run build:native)')
+
+
 def provider_env_key(provider):
     # A configured provider names the environment variable holding its credential.
     if not provider:
@@ -474,6 +491,8 @@ def main():
         (session / 'research.md').write_text(f'# Research record\n\nObjective: {prompt or "Set in the Codex conversation"}\n\nCurrent hypothesis: pending.\nConstraints and budgets: set before experiments.\nExperiment IDs: none yet.\nAccepted steering: none yet.\nNext decision: establish a measurable baseline.\n')
         (session / 'abstract.md').write_text(initial_abstract(topic))
         write_index(catalog_root)
+        if args.physics_backend == 'headless-js':
+            ensure_native_physics()
         endpoint = None
         if args.viewer != 'none' and not args.preflight:
             viewer, endpoint = start_viewer(args.viewer, session)

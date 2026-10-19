@@ -15,6 +15,37 @@ ROOT = Path(__file__).resolve().parents[2]
 SCENE = 'public/usd_scenes/hp4_rigid_body.usda'
 
 
+@pytest.mark.parametrize('error,build_code', [('', 0),
+    ('Native Rust physics build is stale.', 0),
+    ('Native Rust physics is missing: physics.node', 0),
+    ('Native Rust physics build is stale.', 1),
+    ('Unexpected addon error', 0)])
+def test_launcher_native_build_recovery(monkeypatch, capsys, error, build_code):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('research_agent', ROOT / 'scripts/research_agent.py')
+    launcher = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(launcher)
+    calls = []
+
+    def run(command, **kwargs):
+        calls.append(command)
+        assert kwargs['cwd'] == ROOT
+        if command[0] == 'node':
+            return subprocess.CompletedProcess(command, bool(error), stderr=error)
+        assert command == ['npm', 'run', 'build:native']
+        return subprocess.CompletedProcess(command, build_code)
+
+    monkeypatch.setattr(launcher.subprocess, 'run', run)
+    rebuild = error.startswith('Native Rust physics')
+    if error and (not rebuild or build_code):
+        with pytest.raises(RuntimeError, match='recompilation failed' if rebuild else 'check failed'):
+            launcher.ensure_native_physics()
+    else:
+        launcher.ensure_native_physics()
+    assert len(calls) == (2 if rebuild else 1)
+    assert capsys.readouterr().err == ('Native Rust physics build is stale, recompiling\n' if rebuild else '')
+
+
 @pytest.fixture
 def experiment_root(tmp_path):
     target = tmp_path / SCENE
@@ -304,6 +335,7 @@ def test_launcher_loads_provider_key_from_env_file_without_leaking_it(tmp_path, 
     spec.loader.exec_module(launcher)
     monkeypatch.setattr(launcher, 'ENV_FILE', env_file)
     monkeypatch.setattr(launcher, 'RuntimeService', _stub_runtime_service())
+    monkeypatch.setattr(launcher, 'ensure_native_physics', lambda: None)
     monkeypatch.setenv('PATH', str(tmp_path) + os.pathsep + os.environ['PATH'])
     session = tmp_path / 'provider session'
     monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--viewer', 'none', '--prompt', 'provider key check',
@@ -479,6 +511,7 @@ else:
         monkeypatch.setattr(launcher, 'RuntimeService', start_real_service)
     else:
         monkeypatch.setattr(launcher, 'RuntimeService', Service)
+        monkeypatch.setattr(launcher, 'ensure_native_physics', lambda: None)
 
     def forbidden_doctor():
         pytest.fail('Normal research startup must not run doctor or collect sweeps')
