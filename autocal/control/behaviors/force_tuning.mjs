@@ -7,6 +7,9 @@ import {
   returnMotorsToOriginOneAtATime,
   waitForStableEncoders,
 } from '../primitives/uncalibrated_actions.mjs';
+import {
+  projectSimulationWallDeadline, simulationHardWallDeadline,
+} from '../primitives/simulation_deadline.mjs';
 
 /**
  * Force tuning input reference (shared by validation/default helpers).
@@ -431,18 +434,36 @@ export async function runForceTrial(sendFn, options = {}) {
 
   const wallStart = Date.now();
   let lastProgress = wallStart;
+  // A simulated clock only advances as fast as the physics can step, so a fixed
+  // wall budget measures host load rather than a stuck trial. See
+  // primitives/simulation_deadline.mjs.
+  const hardWallDeadlineMs = simulationHardWallDeadline({
+    wallStartMs: wallStart, wallTimeoutMs, clockBudgetMs: stopAfterMs,
+  });
+  let wallDeadlineMs = Math.min(wallStart + wallTimeoutMs, hardWallDeadlineMs);
+  let lastWallMs = wallStart;
+  const extendWallDeadline = (clockAdvancedMs) => {
+    const wallElapsedMs = Date.now() - lastWallMs;
+    lastWallMs = Date.now();
+    wallDeadlineMs = projectSimulationWallDeadline({
+      wallDeadlineMs, hardWallDeadlineMs,
+      remainingClockMs: stopAfterMs - (now() - startMs),
+      clockAdvancedMs, wallElapsedMs, nowMs: Date.now(),
+    });
+  };
   while (now() - startMs < stopAfterMs) {
-    if (Date.now() - wallStart >= wallTimeoutMs) throw new Error('Force trial exceeded its wall-clock deadline');
+    if (Date.now() >= wallDeadlineMs) throw new Error('Force trial exceeded its wall-clock deadline');
     if (Date.now() - lastProgress >= 5000) {
       console.log(`; force trial running: ${((Date.now() - wallStart) / 1000).toFixed(1)}s wall, ${((now() - startMs) / 1000).toFixed(1)}s ${sendFn.simulationClock ? 'simulation' : 'wall'}`);
       lastProgress = Date.now();
     }
     // eslint-disable-next-line no-await-in-loop
-    await (sendFn.simulationClock?.sleep ?? baseSleep)(intervalMs, { wallDeadlineMs: wallStart + wallTimeoutMs });
+    await (sendFn.simulationClock?.sleep ?? baseSleep)(intervalMs, { wallDeadlineMs });
     // eslint-disable-next-line no-await-in-loop
     const reply = await sendFn(`M569.3 P${motorIds.join(':')}`);
     const angles = parseEncoderReply(reply?.reply);
     const nowMs = now();
+    extendWallDeadline(nowMs - lastMs);
     if (angles.length === motorIds.length && angles.every((v) => Number.isFinite(v))) {
       endAngles = angles;
       if (Number.isFinite(fixedAnchor)) {

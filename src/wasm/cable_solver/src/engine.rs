@@ -1853,6 +1853,7 @@ impl PhysicsWorld {
         }
         let max = self.paths.iter().map(|p| p[2] as usize).max().unwrap_or(1);
         let mut multipliers = vec![0.0; self.joints.len()];
+        let mut damping_disp = vec![f64::NAN; self.joints.len()];
         for iter in 0..max {
             let forward = iter % 2 == 0;
             for k in 0..self.paths.len() {
@@ -1870,6 +1871,7 @@ impl PhysicsWorld {
                         index,
                         iter,
                         &mut multipliers[index],
+                        &mut damping_disp[index],
                     );
                 }
             }

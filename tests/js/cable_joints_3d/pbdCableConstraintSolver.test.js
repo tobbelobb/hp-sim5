@@ -17,8 +17,14 @@ import {
 import { GravitySystem } from '../../../src/js/cable_joints_3d/commonSystems.js';
 
 describe('PBDCableConstraintSolver (3D)', () => {
-  test.each([0, 5])('compliant cable response is independent of solver iterations (damping=%s)', damping => {
-    for (const iterations of [1, 2, 8]) {
+  // Damping is velocity dependent, so its step displacement is evaluated once per
+  // step. One Gauss-Seidel visit therefore applies the full implicit damped
+  // correction, and later visits converge to the constraint's static solution.
+  // Re-deriving the displacement on every visit instead lets the damping term
+  // amplify its own corrections: the iterate then stays pinned to the one-visit
+  // value and never reaches the static solution (see `legacyDamping`).
+  test.each([0, 5])('damping converges to the static solution without adding energy (damping=%s)', damping => {
+    const solve = iterations => {
       const world = new World();
       world.setResource('dt', .002);
       const a = world.createEntity(), b = world.createEntity();
@@ -32,10 +38,15 @@ describe('PBDCableConstraintSolver (3D)', () => {
       world.addComponent(path, new CablePathComponent(world, [joint], ['attachment', 'attachment'],
         [false, false], 20000, null, 0, damping, iterations));
       new PBDCableConstraintSolver().update(world, .002);
-      const gamma = (1 / 20000) * damping / .002;
-      const expected = 1 / (1 + gamma + (1 / 20000) / .002 ** 2);
-      expect(world.getComponent(a, PositionComponent).pos.x).toBeCloseTo(expected, 12);
-    }
+      return world.getComponent(a, PositionComponent).pos.x;
+    };
+    const alphaTilde = (1 / 20000) / .002 ** 2;
+    const gamma = (1 / 20000) * damping / .002;
+    const staticSolution = 1 / (1 + alphaTilde);
+    const responses = [1, 2, 8].map(solve);
+    expect(responses[0]).toBeCloseTo(1 / (1 + gamma + alphaTilde), 12);
+    expect(responses[2]).toBeCloseTo(staticSolution, 12);
+    responses.forEach(x => expect(x).toBeLessThanOrEqual(staticSolution + 1e-12));
   });
 
   function addStretchedCable(world, end = 3) {

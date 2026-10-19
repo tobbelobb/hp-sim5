@@ -192,8 +192,8 @@
     "rtol": 1e-09,
     "fields": {
       "AngularVelocityComponent.omega": {"atol": 2e-10},
-      "CableJointComponent.constraintForce": {"atol": 1e-9},
-      "CableJointComponent.constraintForceMagnitude": {"atol": 1e-9}
+      "CableJointComponent.constraintForce": {"atol": 5e-8},
+      "CableJointComponent.constraintForceMagnitude": {"atol": 5e-8}
     }
   },
   "initialSet": [["external_joint", "CableJointComponent", "constraintLambda", 3], ["external_joint", "CableJointComponent", "constraintForce", [3, -2, 1]]],

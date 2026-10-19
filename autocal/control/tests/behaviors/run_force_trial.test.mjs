@@ -1,4 +1,40 @@
 import { runForceTrial } from '../../behaviors/force_tuning.mjs';
+import { projectSimulationWallDeadline as projectForceTrialWallDeadline } from '../../primitives/simulation_deadline.mjs';
+
+describe('projectForceTrialWallDeadline', () => {
+  const base = { wallDeadlineMs: 120000, hardWallDeadlineMs: 600000, remainingClockMs: 25000 };
+
+  test('extends the budget by the measured wall time per simulated second', () => {
+    // The clock takes 2400 ms of wall time to advance 500 ms, so the remaining
+    // 25 s of simulated window needs 120 s more than the 5 s safety margin.
+    expect(projectForceTrialWallDeadline({
+      ...base, clockAdvancedMs: 500, wallElapsedMs: 2400, nowMs: 100000,
+    })).toBe(225000);
+  });
+
+  test('never shortens an existing deadline or exceeds the hard cap', () => {
+    expect(projectForceTrialWallDeadline({
+      ...base, clockAdvancedMs: 500, wallElapsedMs: 10, nowMs: 100000,
+    })).toBe(120000);
+    expect(projectForceTrialWallDeadline({
+      ...base, clockAdvancedMs: 1, wallElapsedMs: 100000, nowMs: 100000,
+    })).toBe(600000);
+  });
+
+  test('leaves the deadline unchanged when the clock does not advance', () => {
+    for (const clockAdvancedMs of [0, -5, Number.NaN]) {
+      expect(projectForceTrialWallDeadline({
+        ...base, clockAdvancedMs, wallElapsedMs: 2400, nowMs: 100000,
+      })).toBe(120000);
+    }
+  });
+
+  test('leaves the deadline unchanged when no simulated budget remains', () => {
+    expect(projectForceTrialWallDeadline({
+      ...base, remainingClockMs: 0, clockAdvancedMs: 500, wallElapsedMs: 2400, nowMs: 100000,
+    })).toBe(120000);
+  });
+});
 
 describe('runForceTrial', () => {
   test('ends the probe and holds before returning when a fixed motor slips', async () => {

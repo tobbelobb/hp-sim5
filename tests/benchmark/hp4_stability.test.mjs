@@ -7,10 +7,14 @@ import { PositionComponent, AngularVelocityComponent, RigidBodyComponent } from 
 
 // A loaded HP4 rocked indefinitely with fixed motor targets. The numeric state
 // avoids replaying 584,000 steps; idle/initial-tilt tests do not expose this case.
-test('opt-in HP4 substeps settle a loaded recording state at the production firmware cadence', () => {
-  const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp4_rigid_body.usda', import.meta.url), 'utf8');
-  const saved = JSON.parse(fs.readFileSync(new URL('../fixtures/hp4_loaded_stability.json', import.meta.url)),
-    (key, value) => ['NaN', 'Infinity', '-Infinity'].includes(value) ? Number(value) : value);
+// The damping displacement must be frozen once per step: re-deriving it on every
+// Gauss-Seidel visit makes the damping term feed on its own corrections and the
+// effector limit-cycles instead of settling (worst at the default 1 substep).
+const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp4_rigid_body.usda', import.meta.url), 'utf8');
+const saved = JSON.parse(fs.readFileSync(new URL('../fixtures/hp4_loaded_stability.json', import.meta.url)),
+  (key, value) => ['NaN', 'Infinity', '-Infinity'].includes(value) ? Number(value) : value);
+
+function settle(substeps) {
   assert.equal(saved.formatVersion, 1);
   assert.equal(createHash('sha256').update(scene).digest('hex'), saved.sceneSha256,
     'Regenerate the loaded checkpoint when the HP4 scene changes');
@@ -19,7 +23,7 @@ test('opt-in HP4 substeps settle a loaded recording state at the production firm
   });
   assert.equal(dt, .002);
   assert.equal(world.getResource('physicsSubsteps'), 1);
-  world.setResource('physicsSubsteps', 4);
+  world.setResource('physicsSubsteps', substeps);
   world.update(dt); // Prepare the native world's editable numeric regions.
   const backend = world.getResource('cableSolverBackend');
   assert.deepEqual(backend.regions.map(region => region.data.length), saved.regions.map(row => row.length));
@@ -37,7 +41,12 @@ test('opt-in HP4 substeps settle a loaded recording state at the production firm
   }
   assert(Number.isFinite(minZ) && Number.isFinite(maxZ));
   assert.equal(remote.getQueueLength(), 0);
-  assert(maxZ - minZ < 1e-8, `vertical motion persisted: ${maxZ - minZ} m`);
-  assert(maxOmega < 1e-6, `rocking persisted: ${maxOmega} rad/s`);
+  assert(maxZ - minZ < 1e-8, `vertical motion persisted at ${substeps} substeps: ${maxZ - minZ} m`);
+  assert(maxOmega < 1e-6, `rocking persisted at ${substeps} substeps: ${maxOmega} rad/s`);
   assert.equal(world.getResource('dt'), .002);
-});
+}
+
+for (const substeps of [1, 2, 4]) {
+  test(`opt-in HP4 loaded recording state settles at production firmware cadence: ${substeps} substeps`,
+    () => settle(substeps));
+}

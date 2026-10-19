@@ -71,6 +71,7 @@ class Joint:
     transfer_a: int
     transfer_b: int
     multiplier: F
+    damping_disp: F
 
 
 @wp.struct
@@ -456,14 +457,14 @@ def mechanical(bodies: wp.array(dtype=Body), a: End, b: End, dt: F):
 
 
 @wp.func
-def multiplier(bodies: wp.array(dtype=Body), a: End, b: End, path: Path, dt: F, error: F, previous: F):
+def multiplier(bodies: wp.array(dtype=Body), a: End, b: End, path: Path, dt: F, error: F, previous: F, disp: F):
     valid = wp.isfinite(dt) and dt > EPS
     value = F(0)
     if wp.isinf(path.compliance) and path.compliance > F(0):
         step = F(0)
         if valid:
             step = wp.max(F(0), path.damping)*dt
-        delta = (step*(a.displacement+b.displacement)-previous)/(F(1)+step*mechanical(bodies,a,b,dt))
+        delta = (step*disp-previous)/(F(1)+step*mechanical(bodies,a,b,dt))
         value = wp.min(F(0), previous+delta)-previous
     else:
         alpha = F(0)
@@ -474,7 +475,7 @@ def multiplier(bodies: wp.array(dtype=Body), a: End, b: End, path: Path, dt: F, 
         denom = (F(1)+gamma)*mechanical(bodies,a,b,dt)+alpha
         value = F(wp.nan)
         if denom > EPS:
-            delta = (-error-alpha*previous+gamma*(a.displacement+b.displacement))/denom
+            delta = (-error-alpha*previous+gamma*disp)/denom
             value = wp.min(F(0), previous+delta)-previous
     return value
 
@@ -591,6 +592,7 @@ def solve(bodies: wp.array(dtype=Body), joints: wp.array(dtype=Joint), paths: wp
         joint = joints[i]
         joint.local_a = rotate(unit(conjugate(world_orientation(bodies, joint.a.entity))), joint.point_a-world_position(bodies,joint.a.entity))
         joint.local_b = rotate(unit(conjugate(world_orientation(bodies, joint.b.entity))), joint.point_b-world_position(bodies,joint.b.entity))
+        joint.damping_disp = F(wp.nan)
         joints[i] = joint
     iterations = int(1)
     for p in range(paths.shape[0]):
@@ -620,7 +622,9 @@ def solve(bodies: wp.array(dtype=Body), joints: wp.array(dtype=Joint), paths: wp
                 direction = (pb-pa)/length
                 a = end_info(bodies,joints,joint.a,pa,direction,dt)
                 b = end_info(bodies,joints,joint.b,pb,-direction,dt)
-                value = multiplier(bodies,a,b,path,dt,error,joint.multiplier)
+                if wp.isnan(joint.damping_disp):
+                    joint.damping_disp = a.displacement+b.displacement
+                value = multiplier(bodies,a,b,path,dt,error,joint.multiplier,joint.damping_disp)
                 if wp.isnan(value):
                     continue
                 released = bool(False)
@@ -633,7 +637,7 @@ def solve(bodies: wp.array(dtype=Body), joints: wp.array(dtype=Joint), paths: wp
                         b.inverse = b.free_inverse
                         released = True
                 if released:
-                    value = multiplier(bodies,a,b,path,dt,error,joint.multiplier)
+                    value = multiplier(bodies,a,b,path,dt,error,joint.multiplier,joint.damping_disp)
                 if wp.isnan(value):
                     continue
                 joint.multiplier = joint.multiplier+value

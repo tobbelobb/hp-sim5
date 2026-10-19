@@ -244,7 +244,7 @@ def _apply_end_correction(world, end, inverse, multiplier):
                 encoder.angle += delta_angle
 
 
-def _solve_joint(world, path, index, joint, points, direction, error, iteration, joint_locals, dt, loads, multipliers):
+def _solve_joint(world, path, index, joint, points, direction, error, iteration, joint_locals, dt, loads, multipliers, damping_displacements):
     first = _solver_end(world, path, index, True, joint.entity_a, joint.entity_b, points[0], direction, joint_locals, dt)
     second = _solver_end(world, path, index, False, joint.entity_b, joint.entity_a, points[1], -direction, joint_locals, dt)
     if first is None or second is None:
@@ -255,8 +255,15 @@ def _solve_joint(world, path, index, joint, points, direction, error, iteration,
     zero_stiffness = path.compliance == math.inf
     alpha = path.compliance / (dt * dt) if valid_dt and not zero_stiffness else 0.
     gamma = max(0., path.compliance * path.damping / dt) if valid_dt and not zero_stiffness else 0.
-    displacement = first.displacement + second.displacement
     key = id(path), id(joint)
+    # Damping is velocity dependent: evaluate its step displacement once per step
+    # and reuse it for later Gauss-Seidel visits. Re-deriving it from partially
+    # solved positions makes the damping term feed on its own corrections.
+    if key in damping_displacements:
+        displacement = damping_displacements[key]
+    else:
+        displacement = first.displacement + second.displacement
+        damping_displacements[key] = displacement
     previous = multipliers.get(key, 0.)
 
     def response():
@@ -352,6 +359,7 @@ class PBDCableConstraintSolver:
             world.set_resource(key, value)
         joint_locals = {}
         multipliers = {}
+        damping_displacements = {}
         for path_id in paths:
             path = world.get_component(path_id, CablePathComponent)
             for joint_id in path.joint_entities:
@@ -377,4 +385,4 @@ class PBDCableConstraintSolver:
                     length = norm3(difference)
                     if length <= EPSILON or (length - joint.rest_length <= EPSILON and multipliers.get((id(path), id(joint)), 0.) == 0.):
                         continue
-                    _solve_joint(world, path, index, joint, points, difference / length, length - joint.rest_length, iteration, joint_locals, dt, loads, multipliers)
+                    _solve_joint(world, path, index, joint, points, difference / length, length - joint.rest_length, iteration, joint_locals, dt, loads, multipliers, damping_displacements)

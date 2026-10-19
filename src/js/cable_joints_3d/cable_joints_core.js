@@ -2780,6 +2780,8 @@ export class PBDCableConstraintSolver {
     }
     const pathEntities = world.query([CablePathComponent]);
     const dt = world.getResource('dt');
+    const solverTrace = world.getResource('solverTrace') ?? null;
+    const solverMode = world.getResource('solverMode') ?? 'baseline';
 
     // Stores belong to this update: clear/replacement can reuse entity IDs.
     // Read live components from them so later constraints see pose mutations.
@@ -2815,6 +2817,7 @@ export class PBDCableConstraintSolver {
     };
 
     const jointLocals = new Map();
+    const jdxCache = new Map();
     const jointSolverContexts = new Map();
     const solverEndpointContexts = new Map();
     const pathSolveParameters = new Map();
@@ -3313,7 +3316,23 @@ export class PBDCableConstraintSolver {
       const spinDispB = solveGradSpinB * spinAngleDispB;
 
       const { zeroStiffness, alphaTilde, gamma, dampingStep, invDtSq } = pathParameters;
-      const jDx = translationalDispA + rotationalDispA + spinDispA + translationalDispB + rotationalDispB + spinDispB;
+      // Damping is a velocity-dependent force. Re-deriving the step displacement
+      // from the partially solved positions on every Gauss-Seidel visit makes the
+      // iterate chase its own correction. On stiff, tightly coupled cable paths
+      // that turns the damping term into an energy source and the effector
+      // limit-cycles instead of settling. Evaluate the displacement once per step
+      // (the first visit of the joint), then keep it fixed for later visits.
+      // This matches the IMEX / separate-velocity-pass treatment recommended for
+      // velocity-dependent terms (XPBD sec. 5, Small Steps sec. 4.1 and 6).
+      let jDx = translationalDispA + rotationalDispA + spinDispA + translationalDispB + rotationalDispB + spinDispB;
+      if (solverMode !== 'legacyDamping') {
+        const cachedDampingDisplacement = jdxCache.get(joint);
+        if (cachedDampingDisplacement === undefined) {
+          jdxCache.set(joint, jDx);
+        } else {
+          jDx = cachedDampingDisplacement;
+        }
+      }
       const angularEnds = (inverseA, inverseB) => [
         { entity: solverEntityA, angular: useAngularInertiaA ? gradAngA : new Vector3(), angularDenominator: angularDenomA,
           spin: memberSpinA, spinGradient: solveGradSpinA, inverse: inverseA },
@@ -3354,7 +3373,15 @@ export class PBDCableConstraintSolver {
           return null;
         }
         const previous = multipliers.get(joint) ?? 0.0;
-        const delta = (-constraintError - alphaTilde * previous + (gamma * jDx)) / denom;
+        const delta = (-constraintError - alphaTilde * previous + gamma * jDx) / denom;
+        if (solverTrace) {
+          solverTrace.rows.push({ a: joint.entityA, b: joint.entityB, iter: solveIteration,
+            error: constraintError, jDx, gamma, alphaTilde, previous, delta, step: solverTrace.step,
+            tA: translationalDispA, rA: rotationalDispA, sA: spinDispA,
+            tB: translationalDispB, rB: rotationalDispB, sB: spinDispB,
+            gsA: solveGradSpinA, gsB: solveGradSpinB,
+            angA: spinAngleDispA, angB: spinAngleDispB });
+        }
         return Math.min(0, previous + delta) - previous;
       };
 

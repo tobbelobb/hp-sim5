@@ -857,6 +857,7 @@ fn solve_joint(
     idx: usize,
     iter: usize,
     accumulated: &mut f64,
+    damping_disp: &mut f64,
 ) {
     let j = js[idx];
     let a_id = j[2] as usize;
@@ -907,7 +908,14 @@ fn solve_joint(
     };
     let ra = dot(aa, rotation_vector(&a));
     let rb = dot(ab, rotation_vector(&b));
-    let disp = ta + ra + sa.disp + tb + rb + sb.disp;
+    // Evaluate the damping displacement once per step and reuse it on later
+    // Gauss-Seidel visits. Re-deriving it from partially solved positions makes
+    // the damping term feed on its own corrections and turns a stiff cable
+    // network into a limit-cycle oscillator (see the JS solver for rationale).
+    if damping_disp.is_nan() {
+        *damping_disp = ta + ra + sa.disp + tb + rb + sb.disp;
+    }
+    let disp = *damping_disp;
     let gradients = [
         if a[55] != 0.0 { aa } else { [0.0; 3] },
         if b[55] != 0.0 { ab } else { [0.0; 3] },
@@ -1034,6 +1042,7 @@ pub unsafe extern "C" fn solve(ptr: *mut f64, entities: usize, joints: usize, pa
     let ps = std::slice::from_raw_parts(ptr.add(entities * E + joints * J) as *const Path, paths);
     let max_iterations = ps.iter().map(|p| p[2] as usize).max().unwrap_or(1);
     let mut multipliers = vec![0.0; joints];
+    let mut damping_disp = vec![f64::NAN; joints];
     for iter in 0..max_iterations {
         let forward = iter % 2 == 0;
         for k in 0..paths {
@@ -1045,7 +1054,7 @@ pub unsafe extern "C" fn solve(ptr: *mut f64, entities: usize, joints: usize, pa
             let count = path[1] as usize;
             for k in 0..count {
                 let index = first + if forward { k } else { count - 1 - k };
-                solve_joint(es, js, path, index, iter, &mut multipliers[index]);
+                solve_joint(es, js, path, index, iter, &mut multipliers[index], &mut damping_disp[index]);
             }
         }
     }

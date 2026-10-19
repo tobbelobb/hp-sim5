@@ -6,6 +6,9 @@ import {
   parseCallSite,
   updateDebugAngles,
 } from '../primitives/debug_trace.mjs';
+import {
+  projectSimulationWallDeadline, simulationHardWallDeadline,
+} from './simulation_deadline.mjs';
 
 const DEFAULT_STABILITY_POLL_MS = 500;
 // A 1500 ms quiet window is more than encoder polls can resolve cheaply: replay of 817
@@ -110,6 +113,15 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions, 
   const samples = [];
   const wallStart = wallNowFn();
   let lastProgress = wallStart;
+  // The wall budget is a floor: extend it by the wall time actually needed for
+  // the remaining simulated window whenever the clock has advanced. See
+  // simulation_deadline.mjs.
+  const hardWallDeadlineMs = simulationHardWallDeadline({
+    wallStartMs: wallStart, wallTimeoutMs, clockBudgetMs: timeoutMs,
+  });
+  let wallDeadlineMs = Math.min(wallStart + wallTimeoutMs, hardWallDeadlineMs);
+  let lastWallMs = wallStart;
+  let lastClockMs = startMs;
 
   const isStable = () => {
     if (samples.length < 2) {
@@ -203,6 +215,14 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions, 
     const encoderReply = await sendFn(`M569.3 P${motorIds.join(':')}`);
     const anglesDeg = parseEncoderReply(encoderReply?.reply);
     const nowMs = nowFn();
+    const wallNowMs = wallNowFn();
+    wallDeadlineMs = projectSimulationWallDeadline({
+      wallDeadlineMs, hardWallDeadlineMs,
+      remainingClockMs: Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs - (nowMs - startMs) : 0,
+      clockAdvancedMs: nowMs - lastClockMs, wallElapsedMs: wallNowMs - lastWallMs, nowMs: wallNowMs,
+    });
+    lastClockMs = nowMs;
+    lastWallMs = wallNowMs;
 
     if (anglesDeg.length === motorIds.length && anglesDeg.every((v) => Number.isFinite(v))) {
       validateAngles?.(anglesDeg);
@@ -225,8 +245,8 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions, 
       return result;
     }
 
-    const wallElapsed = wallNowFn() - wallStart;
-    if (wallElapsed >= wallTimeoutMs) throw new Error('Timed out waiting for encoder stability (wall-clock deadline)');
+    const wallElapsed = wallNowMs - wallStart;
+    if (wallNowMs >= wallDeadlineMs) throw new Error('Timed out waiting for encoder stability (wall-clock deadline)');
     if (wallNowFn() - lastProgress >= progressIntervalMs) {
       onProgress(`; waiting for encoder stability: ${(wallElapsed / 1000).toFixed(1)}s wall, ${((nowMs - startMs) / 1000).toFixed(1)}s ${sendFn.simulationClock ? 'simulation' : 'wall'}, ${samples.length} samples`);
       lastProgress = wallNowFn();
@@ -236,7 +256,7 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions, 
     }
 
     // eslint-disable-next-line no-await-in-loop
-    await sleepFn(pollMs, { wallDeadlineMs: wallStart + wallTimeoutMs });
+    await sleepFn(pollMs, { wallDeadlineMs });
   }
 }
 

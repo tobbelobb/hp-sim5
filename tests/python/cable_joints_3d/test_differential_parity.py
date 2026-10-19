@@ -38,16 +38,29 @@ def test_compliant_cable_iterations_refine_one_physical_spring(stiffness, iterat
     path = fixture['entities'][-1]['components']['CablePathComponent']
     path[3], path[-1] = stiffness, iterations
     dt, damping = fixture['resources']['dt'], path[-2]
+    initial_excess = .01
+    # The damping displacement is evaluated once per step, so one visit applies
+    # the full implicit damped correction and later visits refine toward the
+    # constraint's single physical solution. Re-deriving the displacement each
+    # visit instead pins every iteration count to the one-visit value.
     if stiffness:
         alpha = 1 / (stiffness * dt * dt)
         gamma = damping / (stiffness * dt)
-        expected = (1 + gamma * .01) / (1 + gamma + alpha)
+        first_visit = (1 + gamma * initial_excess) / (1 + gamma + alpha)
+        converged = (1 + gamma * initial_excess) / (1 + alpha)
     else:
-        expected = damping * dt * .01 / (1 + damping * dt)
+        first_visit = damping * dt * initial_excess / (1 + damping * dt)
+        converged = damping * dt * initial_excess
     for run in (run_js, run_python):
         snapshots = run(fixture)['snapshots']
-        for snapshot in snapshots[1:]:
-            assert snapshot['entities']['a']['PositionComponent']['pos'][0] == pytest.approx(expected, abs=1e-12)
+        values = [s['entities']['a']['PositionComponent']['pos'][0] for s in snapshots[1:]]
+        if iterations == 1:
+            assert values[0] == pytest.approx(first_visit, abs=1e-12)
+        for value in values:
+            assert abs(value - converged) <= abs(first_visit - converged) + 1e-12, \
+                'iterations must not overshoot or move away from the static solution'
+        if iterations == 8:
+            assert values[-1] == pytest.approx(converged, abs=1e-12)
 
 
 def test_shortening_cables_cannot_push_even_when_damping_exceeds_tension():
