@@ -27,7 +27,7 @@ import { StepperMotorComponent } from '../../../hp-sim-3d/app/hangprinter_steppe
 // spinA(id,local,coupled) 13..17, spinB 18..22, storedGrads 23..24,
 // spinFlags 25..26, transferredJoints 27..28, pinholeNeighbors 29..30,
 // lambda 31, force 32..34, magnitude 35, transfer 36, solved 37.
-// Path: first/count/iterations 0..2, zeroStiffness/alpha/gamma/dampingStep 3..6,
+// Path: first/count/iterations 0..2, flags (zero stiffness=1, gate=2)/alpha/gamma/dampingStep 3..6,
 // invDt² 7, springConstant 8, damping 9.
 const E = 160, J = 38, P = 10, EPS = 1e-9;
 const hybrid = type => type === 'hybrid' || type === 'hybrid-attachment';
@@ -170,7 +170,7 @@ export class WasmCableSolver {
     for (let p = 0; p < paths.length; p++) {
       const path = paths[p], po = pathStart + p * P, compliance = path.compliance ?? 0;
       const zero = path.compliance === Infinity, damping = Math.max(0, path.damping ?? 0);
-      data.set([first, path.jointEntities.length, path.solverIterations ?? 1, +zero,
+      data.set([first, path.jointEntities.length, path.solverIterations ?? 1, +zero + (path.linkTypes.includes('pinhole_gate') ? 2 : 0),
         !zero && validDt ? compliance / (dt * dt) : 0,
         !zero && validDt ? Math.max(0, compliance * (path.damping ?? 0) / dt) : 0,
         validDt ? damping * dt : 0, validDt ? 1 / (dt * dt) : 0,

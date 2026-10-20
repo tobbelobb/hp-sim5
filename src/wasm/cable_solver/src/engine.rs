@@ -200,7 +200,7 @@ fn rolling(kind: u32) -> bool {
     kind == 1 || kind == 3
 }
 fn attachment_kind(kind: u32) -> bool {
-    kind == 0 || kind == 2 || kind == 4
+    kind == 0 || kind == 2 || kind == 4 || kind == 5
 }
 
 // Identical layer/ramp mechanics to the JS reference, with bounded layers.
@@ -1622,9 +1622,22 @@ impl PhysicsWorld {
     fn friction(&mut self) {
         // Capstan equilibration is a constraint solve, not a rate of motion.
         // Stop at 1 nm rest-length changes, capped at 64 passes for long paths.
-        for _ in 0..64 {
+        for pass in 0..64 {
             let mut max_change: f64 = 0.0;
             for c in &mut self.cables {
+                if (1..c.count()).any(|i| c.kind(i) == 5) {
+                    if pass != 0 { continue; }
+                    let total: f64 = (0..c.count()).map(|i| c.rest(i)).sum();
+                    let distance: f64 = (0..c.count()).map(|i| length(sub(c.point(i,0),c.point(i,1)))).sum();
+                    if distance > EPS {
+                        let mut remaining = total;
+                        for i in 0..c.count() {
+                            let rest = if i+1 == c.count() { remaining } else { total * length(sub(c.point(i,0),c.point(i,1))) / distance };
+                            let jo = c.jo(i); c.data[jo+3] = rest; remaining -= rest;
+                        }
+                    }
+                    continue;
+                }
                 for i in 0..c.count().saturating_sub(1) {
                     let d0 = length(sub(c.point(i, 0), c.point(i, 1)));
                     let d1 = length(sub(c.point(i + 1, 0), c.point(i + 1, 1)));
@@ -1734,7 +1747,7 @@ impl PhysicsWorld {
                 first as f64,
                 c.count() as f64,
                 c.data[5],
-                f64::from(zero),
+                f64::from(zero) + if (1..c.count()).any(|i| c.kind(i) == 5) { 2.0 } else { 0.0 },
                 if !zero && valid {
                     c.data[3] / (dt * dt)
                 } else {
@@ -1860,6 +1873,11 @@ impl PhysicsWorld {
             for k in 0..self.paths.len() {
                 let path = &self.paths[if forward { k } else { self.paths.len() - 1 - k }];
                 if iter >= path[2] as usize {
+                    continue;
+                }
+                if path[3] as u32 & 2 != 0 {
+                    let first = path[0] as usize;
+                    solve_gate(&mut self.entities, &mut self.joints, path, iter, &mut multipliers[first], &mut damping_disp[first]);
                     continue;
                 }
                 for k in 0..path[1] as usize {
@@ -1994,6 +2012,7 @@ impl PhysicsWorld {
         let mut candidates = Vec::new();
         let mut unique = std::collections::BTreeMap::new();
         for (p, c) in self.cables.iter().enumerate() {
+            if (1..c.count()).any(|i| c.kind(i) == 5) { continue; }
             for i in 0..c.count() {
                 let id = c.data[c.jo(i)] as u64;
                 if let Some(&index) = unique.get(&id) {

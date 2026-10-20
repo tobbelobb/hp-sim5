@@ -4,6 +4,7 @@ import {
   FOUR_HIGH_ANCHORS_USDA_KEY,
   HP3_USDA_KEY,
   HP4_USDA_KEY,
+  HP4_GATE_USDA_KEY,
 } from './machineCatalog.js';
 
 export const COMMAND_PRESET_VARIANTS = Object.freeze({
@@ -158,7 +159,7 @@ export function resolvePresetCommand(presetKey, lineLayeringEnabled, activeSourc
   }
   const sourceKeys = Array.isArray(activeSourceKeys) ? activeSourceKeys : [];
   const selectedVariants =
-    sourceKeys.map((sourceKey) => variants.machineOverrides?.[sourceKey]).find((override) => override) || variants;
+    sourceKeys.map((sourceKey) => variants.machineOverrides?.[sourceKey === HP4_GATE_USDA_KEY ? HP4_USDA_KEY : sourceKey]).find((override) => override) || variants;
   if (lineLayeringEnabled === true && selectedVariants.lineLayered?.url) {
     return selectedVariants.lineLayered;
   }

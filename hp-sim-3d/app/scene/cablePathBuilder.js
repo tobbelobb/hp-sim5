@@ -1,6 +1,7 @@
 import { getAttribute, getRelationship } from '../../../src/js/usd/stage.js';
 import { MachineTagComponent, SceneEntityInfoComponent } from '../../../src/js/cable_joints_3d/ecs.js';
-import { CablePathComponent } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
+import Vector3 from '../../../src/js/cable_joints_3d/vector3.js';
+import { CablePathComponent, PinholeGateComponent } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
 import { scopedKeyFromPath } from './sceneNaming.js';
 import { readNumericAttribute } from './usdValueReaders.js';
 
@@ -33,6 +34,16 @@ function applyCablePaths(world, context, registry) {
             readNumericAttribute(prim, "cablePath:damping") ?? 0.0,
             readNumericAttribute(prim, "cablePath:solverIterations") ?? 1,
         );
+        for (let i = 1; i < pathComp.linkTypes.length - 1; i++) {
+            if (pathComp.linkTypes[i] !== 'pinhole_gate') continue;
+            const jointPrim = context.stage.GetPrimAtPath(jointPaths[i - 1]);
+            const portPath = getRelationship(jointPrim, 'physics:body1')[0];
+            const portPrim = context.stage.GetPrimAtPath(portPath);
+            const entry = registry.nameToEntityId.get(scopedKeyFromPath(namespace, context.sceneRootPath, portPath));
+            const gate = world.getComponent(entry, PinholeGateComponent);
+            gate.visualRoute = (getAttribute(portPrim, 'pinholeGate:visualRoute') || []).map(p => new Vector3(...p));
+            gate.visible = getAttribute(portPrim, 'pinholeGate:visible') !== false;
+        }
         const cablePath = world.createEntity();
         world.addComponent(cablePath, pathComp);
         world.addComponent(cablePath, new MachineTagComponent(machineId));

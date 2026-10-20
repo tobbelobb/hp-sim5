@@ -773,7 +773,7 @@ fn mechanical(
 }
 fn lambda(path: &Path, error: f64, disp: f64, denom: f64, previous: f64) -> Option<f64> {
     // Cable damping may cancel tension while shortening, but cannot push.
-    if path[3] != 0.0 {
+    if path[3] as u32 & 1 != 0 {
         let delta = (path[6] * disp - previous) / (1.0 + path[6] * denom);
         return Some((previous + delta).min(0.0) - previous);
     }
@@ -862,6 +862,90 @@ fn correct(es: &mut [Entity], id: usize, grad: V, angular: V, angular_denom: f64
         }
     }
 }
+// Condense a frictionless two-port guide and its connected spans into one
+// unilateral length constraint. Sum carrier Jacobians BEFORE applying M^-1;
+// separate endpoint solves lose their cross terms and damp cable flow.
+fn solve_gate(es: &mut [Entity], js: &mut [Joint], path: &Path, iter: usize,
+    accumulated: &mut f64, damping_disp: &mut f64) {
+    let first = path[0] as usize;
+    let count = path[1] as usize;
+    let mut ids = [0usize; 2];
+    let mut gs = [[0.0; 3]; 2];
+    let mut angles = [[0.0; 3]; 2];
+    let mut spins = [Spin::default(); 2];
+    let mut used = 0;
+    let mut error = 0.0;
+    for index in first..first + count {
+        let mut j = js[index];
+        let points = [attachment(es, j[0] as usize, v(&j, 4)), attachment(es, j[1] as usize, v(&j, 7))];
+        let distance = length(sub(points[1], points[0]));
+        error += distance - j[10];
+        if distance <= EPS { continue; }
+        let direction = scale(sub(points[1], points[0]), 1.0 / distance);
+        for side in 0..2 {
+            let id = j[2 + side] as usize;
+            let g = scale(direction, if side == 0 {1.0} else {-1.0});
+            // The combined constraint already contains the pinhole neighbor.
+            // Include its direct rotor once, without the old deferral edge.
+            j[25 + side] = (j[25 + side] as u32 & !8) as f64;
+            let s = if j[if side == 0 {17} else {22}] == 0.0 { spin(es, &j, side, points[side], g) } else { Spin::default() };
+            let e = &es[id];
+            if e[43] == 0.0 && e[55] == 0.0 && !s.active { continue; }
+            let slot = (0..used).find(|&k| ids[k] == id).unwrap_or_else(|| {
+                assert!(used < 2, "pinhole_gate supports one carrier and one external rotor");
+                ids[used] = id; used += 1; used - 1
+            });
+            gs[slot] = add(gs[slot], g);
+            angles[slot] = add(angles[slot], cross(sub(points[side], v(e, 0)), g));
+            if s.active { spins[slot] = s; }
+        }
+    }
+    if error <= EPS && *accumulated == 0.0 { return; }
+    if used < 2 { ids[1] = ids[0]; }
+    let a = es[ids[0]]; let b = es[ids[1]];
+    let angular = [if a[55] != 0.0 {angles[0]} else {[0.0;3]}, if b[55] != 0.0 {angles[1]} else {[0.0;3]}];
+    let da = positive_inertia(dot(angular[0], world_inverse(&a, angular[0])));
+    let db = positive_inertia(dot(angular[1], world_inverse(&b, angular[1])));
+    if damping_disp.is_nan() {
+        *damping_disp = 0.0;
+        for k in 0..used {
+            let e = &es[ids[k]];
+            *damping_disp += dot(gs[k], sub(v(e,0),v(e,7))) + dot(angular[k], rotation_vector(e)) + spins[k].disp;
+        }
+    }
+    let mut response = angular_response(es, ids, angular, spins);
+    let Some(mut delta) = lambda(path, error, *damping_disp,
+        mechanical(&a,&b,gs[0],gs[1],da,db,spins[0],spins[1],&response), *accumulated) else { return; };
+    let mut released = false;
+    for s in &mut spins {
+        if s.active && s.limit.is_finite() && s.limit >= 0.0 &&
+            (delta + *accumulated).abs() * path[7] * s.grad.abs() > s.limit + EPS {
+            s.inv = s.free; released = true;
+        }
+    }
+    if released {
+        response = angular_response(es, ids, angular, spins);
+        let Some(d) = lambda(path, error, *damping_disp,
+            mechanical(&a,&b,gs[0],gs[1],da,db,spins[0],spins[1],&response), *accumulated) else { return; };
+        delta = d;
+    }
+    *accumulated += delta;
+    for s in spins { load(es, s, path, delta, iter == 0); }
+    response.apply(es, delta);
+    for k in 0..used {
+        correct(es, ids[k], gs[k], angular[k], if response.coupled[k] {0.0} else {if k==0 {da} else {db}},
+            if response.coupled[k] {Spin::default()} else {spins[k]}, delta);
+    }
+    for index in first..first+count {
+        let j = js[index];
+        let direction = norm(sub(attachment(es,j[1] as usize,v(&j,7)),attachment(es,j[0] as usize,v(&j,4))));
+        js[index][31] = *accumulated;
+        put_v(&mut js[index],32,scale(direction,*accumulated*path[7]));
+        js[index][35] = accumulated.abs()*path[7];
+        js[index][37] = 1.0;
+    }
+}
+
 fn solve_joint(
     es: &mut [Entity],
     js: &mut [Joint],
@@ -1052,6 +1136,10 @@ pub unsafe extern "C" fn solve(ptr: *mut f64, entities: usize, joints: usize, pa
             }
             let first = path[0] as usize;
             let count = path[1] as usize;
+            if path[3] as u32 & 2 != 0 {
+                solve_gate(es, js, path, iter, &mut multipliers[first], &mut damping_disp[first]);
+                continue;
+            }
             for k in 0..count {
                 let index = first + if forward { k } else { count - 1 - k };
                 solve_joint(es, js, path, index, iter, &mut multipliers[index], &mut damping_disp[index]);

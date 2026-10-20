@@ -6,7 +6,7 @@ import { StepperMotorComponent } from '../../../hp-sim-3d/app/hangprinter_steppe
 // See engine.rs. Only scene preparation crosses this boundary; live numeric
 // components are views of persistent Rust records, including interactive edits.
 const E = 160, H = 9, L = 5, J = 16;
-const kinds = ['attachment', 'rolling', 'pinhole', 'hybrid', 'hybrid-attachment'];
+const kinds = ['attachment', 'rolling', 'pinhole', 'hybrid', 'hybrid-attachment', 'pinhole_gate'];
 const putV = (a, o, v) => { if (v) a.set([v.x, v.y, v.z], o); };
 const putQ = (a, o, q) => { if (q) a.set([q.x, q.y, q.z, q.w], o); };
 export class RustPhysicsEngine {

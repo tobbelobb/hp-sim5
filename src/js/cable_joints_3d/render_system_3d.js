@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 import Vector3 from './vector3.js';
+import { computeWorldAttachment } from './rigid_bodies.js';
 import {
   PositionComponent,
   RadiusComponent,
@@ -15,7 +16,8 @@ import {
 import {
   CablePathComponent,
   CableJointComponent,
-  CableLinkComponent
+  CableLinkComponent,
+  PinholeGateComponent
 } from './cable_joints_core.js';
 import { ExtruderComponent } from '../../../hp-sim-3d/app/hangprinter_extruder.js';
 import {
@@ -2966,6 +2968,19 @@ export class RenderSystem3D {
 
       for (let i = 1; i < path.linkTypes.length - 1; i++) {
         const linkType = path.linkTypes[i];
+        if (linkType === 'pinhole_gate') {
+          const incoming = world.getComponent(path.jointEntities[i - 1], CableJointComponent);
+          const outgoing = world.getComponent(path.jointEntities[i], CableJointComponent);
+          const gate = world.getComponent(incoming.entityB, PinholeGateComponent);
+          if (!gate?.visible) continue;
+          const points = gate.visualRoute.length ? gate.visualRoute.map(p => computeWorldAttachment(world, incoming.entityB, p))
+            : [incoming.attachmentPointB_world, outgoing.attachmentPointA_world];
+          for (let k = 1; k < points.length; k++) jointSpecs.push({
+            joint: { attachmentPointA_world: points[k - 1], attachmentPointB_world: points[k], restLength: points[k - 1].distanceTo(points[k]) },
+            color: DEFAULT_CABLE_COLOR,
+          });
+          continue;
+        }
         if (linkType !== 'rolling' && linkType !== 'hybrid') continue;
         if (i - 1 < 0 || i >= path.jointEntities.length) continue;
 

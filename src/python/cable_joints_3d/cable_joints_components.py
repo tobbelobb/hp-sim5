@@ -65,6 +65,8 @@ class CablePathComponent:
     compliance: float = field(init=False)
 
     def __post_init__(self):
+        if 'pinhole_gate' in self.link_types:
+            raise NotImplementedError('pinhole_gate requires the native Rust or JavaScript/Wasm backend')
         self.compliance = 1. / self.spring_constant if self.spring_constant != 0 else math.inf
         self.cable_half_width = max(0., self.cable_half_width) if np.isfinite(self.cable_half_width) else 0.
         self.damping = max(0., self.damping) if np.isfinite(self.damping) else 0.

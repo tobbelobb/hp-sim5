@@ -54,7 +54,7 @@ function _redistributePairRestLengthByTensionRatio(
   return Math.abs(highRest - previousHighRest);
 }
 
-function _evenOutTensionFriction(world) {
+function _evenOutTensionFriction(world, partitionGates = true) {
   const pathEntities = world.query([CablePathComponent]);
   const epsilon = 1e-9;
   let maxChange = 0.0;
@@ -62,6 +62,19 @@ function _evenOutTensionFriction(world) {
   for (const pathId of pathEntities) {
     const path = world.getComponent(pathId, CablePathComponent);
     if (!path || path.jointEntities.length < 2) continue;
+    if (path.linkTypes.includes('pinhole_gate')) {
+      if (!partitionGates) continue;
+      // Flow is eliminated in the block solve. Reconstruct a positive material
+      // partition for winding/clamps without changing the block's total rest.
+      const joints = path.jointEntities.map(id => world.getComponent(id, CableJointComponent));
+      const distances = joints.map(j => j.attachmentPointA_world.distanceTo(j.attachmentPointB_world));
+      const total = joints.reduce((s,j) => s+j.restLength,0), distance = distances.reduce((a,b)=>a+b,0);
+      if (distance > epsilon) {
+        let remaining = total;
+        joints.forEach((j,i) => { j.restLength = i === joints.length-1 ? remaining : total*distances[i]/distance; remaining -= j.restLength; });
+      }
+      continue;
+    }
 
     for (let i = 0; i < path.jointEntities.length - 1; i++) {
       const j0_comp = world.getComponent(path.jointEntities[i], CableJointComponent);
@@ -199,7 +212,7 @@ export class CableFrictionSystem {
   runInPause = false;
   update(world, _dt) {
     for (let i = 0; i < MAX_ITERATIONS; i++) {
-      if (_evenOutTensionFriction(world) <= REST_TOLERANCE) break;
+      if (_evenOutTensionFriction(world, i === 0) <= REST_TOLERANCE) break;
     }
     //_sanityCheck(world);
   }

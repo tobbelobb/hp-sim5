@@ -163,6 +163,7 @@ export class PBDResolveCableOverCorrections {
 
     for (const pathId of pathEntities) {
       const path = world.getComponent(pathId, CablePathComponent);
+      if (path.linkTypes.includes('pinhole_gate')) continue;
       if (!path.jointEntities || path.jointEntities.length === 0) continue;
 
       for (let i = 0; i < path.jointEntities.length; i++) {

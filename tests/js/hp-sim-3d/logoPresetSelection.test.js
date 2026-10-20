@@ -20,6 +20,7 @@ function loadPresetResolver() {
       };
       const HP3_USDA_KEY = 'hp3_rigid_body.usda';
       const HP4_USDA_KEY = 'hp4_rigid_body.usda';
+      const HP4_GATE_USDA_KEY = 'hp4_pinhole_gate.usda';
       const FOUR_HIGH_ANCHORS_USDA_KEY = 'four_high_anchors_rigid_body.usda';
       const CUBECORNERS_USDA_KEY = 'cubecorners_rigid_body.usda';
       ${source}
@@ -91,6 +92,12 @@ describe('hp-sim-3d preset selection', () => {
     expect(plainPreset.url).toContain('draw_squares_bigger_cubecorners_no_buildup.can');
     expect(plainPreset.format).toBe('RRF_CAN_BINARY');
     expect(plainPreset.referencePresetKey).toBe('straightMovesBigger');
+  });
+
+  test('uses the HP4 presets for the experimental gate scene', () => {
+    const { resolvePresetCommand } = loadPresetResolver();
+    expect(resolvePresetCommand('hangprinterLogo', true, ['hp4_pinhole_gate.usda']).url).toContain('Hangprinter_logo6_hp4_w_line_layers.can');
+    expect(resolvePresetCommand('straightMoves', false, ['hp4_pinhole_gate.usda']).url).toContain('draw_squares_bigger_hp4_no_buildup.can');
   });
 
   test('keeps slideprinter preset defaults unchanged', () => {

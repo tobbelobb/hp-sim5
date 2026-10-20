@@ -2,11 +2,13 @@ const PUBLIC_BASE_URL = import.meta.env.BASE_URL || '/';
 
 export const HP3_USDA_KEY = 'hp3_rigid_body.usda';
 export const HP4_USDA_KEY = 'hp4_rigid_body.usda';
+export const HP4_GATE_USDA_KEY = 'hp4_pinhole_gate.usda';
 export const FOUR_HIGH_ANCHORS_USDA_KEY = 'four_high_anchors_rigid_body.usda';
 export const CUBECORNERS_USDA_KEY = 'cubecorners_rigid_body.usda';
 
 export const AVAILABLE_USDAS = Object.freeze([
   { file: HP4_USDA_KEY, label: 'Hangprinter v4 (default)' },
+  { file: HP4_GATE_USDA_KEY, label: 'Hangprinter v4 (pinhole gates, experimental)' },
   { file: HP3_USDA_KEY, label: 'Hangprinter v3' },
   { file: FOUR_HIGH_ANCHORS_USDA_KEY, label: 'Four High Anchors' },
   { file: CUBECORNERS_USDA_KEY, label: 'CubeCorners' },
@@ -20,6 +22,10 @@ export const RRF_CONFIG_VARIANTS_BY_USDA_KEY = Object.freeze({
   [HP3_USDA_KEY]: Object.freeze({
     default: 'RRF/run/vsd/sys/config_hp3.g',
     lineLayered: 'RRF/run/vsd/sys/config_hp3_w_line_layers.g',
+  }),
+  [HP4_GATE_USDA_KEY]: Object.freeze({
+    default: 'RRF/run/vsd/sys/config_hp4.g',
+    lineLayered: 'RRF/run/vsd/sys/config_hp4_w_line_layers.g',
   }),
   [HP4_USDA_KEY]: Object.freeze({
     default: 'RRF/run/vsd/sys/config_hp4.g',

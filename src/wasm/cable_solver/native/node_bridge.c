@@ -172,7 +172,7 @@ static napi_value create(napi_env env, napi_callback_info info) {
         double n = path_data[cursor];
         if (!index_valid(n, len) || len != 9 + ((size_t)n + 1) * 5 + (size_t)n * 16) goto invalid;
         for (size_t i = 0; i <= (size_t)n; i++)
-            if (!index_valid(path_data[cursor + 9 + i * 5], 5)) goto invalid;
+            if (!index_valid(path_data[cursor + 9 + i * 5], 6)) goto invalid;
         for (size_t i = 0; i < (size_t)n; i++) {
             size_t joint = cursor + 9 + ((size_t)n + 1) * 5 + i * 16;
             if (!index_valid(path_data[joint + 1], count) || !index_valid(path_data[joint + 2], count)) goto invalid;

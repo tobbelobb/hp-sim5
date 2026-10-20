@@ -10,7 +10,7 @@ echo "== Native Rust smoke tests =="
 (cd "$ROOT" && cargo test --manifest-path src/wasm/cable_solver/Cargo.toml --locked)
 
 echo "== HP4 production logo and loaded-state stability (mandatory) =="
-(cd "$ROOT" && node --test tests/benchmark/hp4_logo_stability.test.mjs \
+(cd "$ROOT" && node --test tests/benchmark/pinhole_gate.test.mjs tests/benchmark/hp4_logo_stability.test.mjs \
   tests/benchmark/hp4_stability.test.mjs)
 
 echo "== Rust source contract, JS parity and host integration =="
