@@ -63,15 +63,86 @@ export class CableLinkComponent {
   }
 }
 
-// A massless frictionless cable guide with independent, rigidly mounted ports.
-// visualRoute is body-local decoration; it never adds physical constraints.
+// A condensed cable guide with independent, rigidly mounted ports. The hidden
+// reeving is represented by one cable-flow coordinate q. visualRoute is
+// body-local decoration and never adds physical constraints.
 export class PinholeGateComponent {
   constructor(exitEntity, internalLength = 0) {
     this.exitEntity = exitEntity;
     this.internalLength = internalLength;
+    // Equivalent translational quantities, summed over the hidden bearings:
+    // M = sum(I/r^2), B = sum(b/r^2), Fc = sum(tau_c/r).
+    this.effectiveInertia = 1e-6;
+    this.damping = 0.0;
+    this.coulombForce = 0.0;
+    this.radius = 0.0065;
+    this.flow = 0.0;
+    this.flowVelocity = 0.0;
     this.visualRoute = [];
     this.visible = true;
   }
+}
+
+// Visual-only hidden bearing. It follows material transported past the carrier
+// spool without adding a rotor DOF or a cable constraint.
+export class GateWheelComponent {
+  constructor(gateEntity, pathEntity, radius = 0.0065, axisLocal = null, rotationScale = 1.0, initialStored = 0.0) {
+    this.gateEntity = gateEntity;
+    this.pathEntity = pathEntity;
+    this.radius = Number.isFinite(radius) && radius > 0.0 ? radius : 0.0065;
+    this.axisLocal = axisLocal ? axisLocal.clone().normalize() : new Vector3(0, 0, 1);
+    this.rotationScale = Number.isFinite(rotationScale) ? rotationScale : 1.0;
+    this.initialStored = Number.isFinite(initialStored) ? initialStored : 0.0;
+  }
+}
+
+// The hidden bearings follow material transported past the carrier spool, not
+// the small differential gate state q. Positive transport unwinds stored cable.
+export function gateWheelVisualAngle(wheel, path) {
+  const stored = path?.stored?.[0];
+  const initial = Number.isFinite(wheel?.initialStored) ? wheel.initialStored : stored;
+  if (!Number.isFinite(stored) || !Number.isFinite(initial) || !(wheel.radius > 0.0)) return 0.0;
+  return wheel.rotationScale * (initial - stored) / wheel.radius;
+}
+
+export function findGateLinkIndex(path) {
+  const index = path.linkTypes.indexOf('pinhole_gate');
+  if (index <= 0 || index >= path.linkTypes.length - 1) {
+    throw new Error('pinhole_gate must be an interior cable path link');
+  }
+  return index;
+}
+
+export function getGateComponent(world, path, gateLinkIndex = findGateLinkIndex(path)) {
+  const incoming = world.getComponent(path.jointEntities[gateLinkIndex - 1], CableJointComponent);
+  return world.getComponent(incoming?.entityB, PinholeGateComponent);
+}
+
+export function advanceGateFlow(gate, tensionDifference, dt) {
+  const inertia = gate.effectiveInertia;
+  if (!(Number.isFinite(inertia) && inertia > 0.0)) throw new Error('pinhole_gate effectiveInertia must be positive');
+  if (!(Number.isFinite(dt) && dt > 0.0)) return gate.flow;
+  const damping = Math.max(0.0, gate.damping);
+  const coulombForce = Math.max(0.0, gate.coulombForce);
+  const drive = Number.isFinite(tensionDifference) ? tensionDifference : 0.0;
+  const velocity = gate.flowVelocity;
+  const moving = Math.abs(velocity) > 1e-9;
+  // Static friction holds the reeving still until the port tension difference
+  // exceeds the summed dry-bearing threshold. Once slipping, resistance
+  // opposes the hidden flow, and drag is integrated implicitly.
+  if (!moving && Math.abs(drive) <= coulombForce) {
+    gate.flowVelocity = 0.0;
+    return gate.flow;
+  }
+  const resistance = moving ? Math.sign(velocity) * coulombForce : Math.sign(drive) * coulombForce;
+  let next = (velocity + dt * (drive - resistance) / inertia)
+    / (1.0 + dt * damping / inertia);
+  // Bearing friction can stop the flow within one step but cannot reverse it.
+  if (moving && Math.sign(next) !== Math.sign(velocity)) next = 0.0;
+  else if (!moving && Math.sign(next) !== Math.sign(drive)) next = 0.0;
+  gate.flow += next * dt;
+  gate.flowVelocity = next;
+  return gate.flow;
 }
 
 // Represents a single segment constraint between two entities
@@ -3389,7 +3460,8 @@ export class PBDCableConstraintSolver {
           if (inverseB > 0 && Math.abs(solveGradSpinB) > EPSILON) denominator += inverseB * solveGradSpinB * solveGradSpinB;
           return denominator;
         }
-        return invMassA * gradPosA.lengthSq() + invMassB * gradPosB.lengthSq() + response.denominator;
+        return invMassA * gradPosA.lengthSq() + invMassB * gradPosB.lengthSq()
+          + response.denominator;
       };
 
       const solveLambda = (solveMemberInvInertiaA, solveMemberInvInertiaB) => {
@@ -3496,8 +3568,52 @@ export class PBDCableConstraintSolver {
           }
         }
       }, recordEncoderSpinDelta);
-
 	  };
+
+    // A gate is one condensed unit but retains separate entry and exit
+    // unilateral constraints. The hidden flow q shifts available span between
+    // them, but is advanced after the position solve so it cannot absorb cable
+    // error that belongs to the carrier.
+    const solveGateSide = (path, indices, qGradient, gateState, iter) => {
+      const ends = new Map();
+      let error = 0.0;
+      for (const j of indices) {
+        const id = path.jointEntities[j], joint = jointStore.get(id), locals = jointLocals.get(id);
+        const a = computeWorldAttachment(world, joint.entityA, locals.localA, new Vector3(), transformScratch);
+        const b = computeWorldAttachment(world, joint.entityB, locals.localB, new Vector3(), transformScratch);
+        const distance = a.distanceTo(b);
+        error += distance - joint.restLength;
+        if (distance <= EPSILON) continue;
+        const direction = b.clone().subtract(a).scale(1 / distance);
+        for (const [entity, point, grad, side] of [[joint.entityA, a, direction, 'A'], [joint.entityB, b, direction.clone().scale(-1), 'B']]) {
+          const mapped = getSolverEndpointMapping(entity, side === 'A' ? joint.entityB : joint.entityA);
+          const context = getSolverEndpointContext(mapped.entityId);
+          let spin = hasAxisOnlyCableSpinDof(entity) ? buildExternalMemberSpinSolveInfo(entity, point, grad) : null;
+          if (spin) {
+            spin.storedConstraintGradSpin = hybridStoredConstraintGradSpin(path, j + (side === 'B' ? 1 : 0), side, entity);
+            spin.solveUsesStoredGradSpin = spin.useStoredOnlyForTorqueLoad = spin.recordTorqueLoadImplicitCoeffs = true;
+          }
+          if (!context.invMass && !context.useAngularInertia && !spin) continue;
+          if (!ends.has(mapped.entityId)) ends.set(mapped.entityId, { id: mapped.entityId, point, gradient: new Vector3(), angular: new Vector3(), spin, context });
+          const end = ends.get(mapped.entityId);
+          end.gradient.add(grad);
+          if (context.useAngularInertia) end.angular.add(point.clone().subtract(context.posComp.pos).cross(grad));
+        }
+      }
+      error += qGradient * gateState.gate.flow;
+      if (ends.size > 2) throw new Error('pinhole_gate supports one carrier and one external rotor');
+      const values = [...ends.values()];
+      if (!values.length) {
+        const first = jointStore.get(path.jointEntities[indices[0]]);
+        const id = first.entityA;
+        values.push({ id, point: positionStore.get(id).pos, gradient: new Vector3(), angular: new Vector3(), spin: null, context: getSolverEndpointContext(id) });
+      }
+      const a = values[0], b = values[1] ?? { ...a, gradient: new Vector3(), angular: new Vector3(), spin: null };
+      const representative = jointStore.get(path.jointEntities[indices[0]]);
+      applyConstraint(path, indices[0], representative, a.id, b.id, a.point, b.point, a.gradient, b.gradient, error, iter,
+        { mappedA: {entityId:a.id}, mappedB: {entityId:b.id}, endpointA:a.context, endpointB:b.context, pathParameters:getPathSolveParameters(path) },
+        {spinA:a.spin, spinB:b.spin, angularA:a.angular, angularB:b.angular});
+    };
 
     for (const pathId of pathEntities) {
       const path = pathStore?.get(pathId);
@@ -3535,6 +3651,18 @@ export class PBDCableConstraintSolver {
       maxIterations = Math.max(maxIterations, path?.solverIterations ?? 1);
     }
 
+    const gateSteps = new Map();
+    for (const pathId of pathEntities) {
+      const path = pathStore?.get(pathId);
+      if (!path?.linkTypes.includes('pinhole_gate')) continue;
+      const gateLinkIndex = findGateLinkIndex(path);
+      const gate = getGateComponent(world, path, gateLinkIndex);
+      if (!gate) throw new Error('pinhole_gate component is missing at its entry port');
+      const inertia = gate.effectiveInertia;
+      if (!(Number.isFinite(inertia) && inertia > 0.0)) throw new Error('pinhole_gate effectiveInertia must be positive');
+      gateSteps.set(path, { gate, gateLinkIndex });
+    }
+
     for (let iter = 0; iter < maxIterations; iter++) {
       const isForward = (iter % 2 === 0);
 
@@ -3549,42 +3677,9 @@ export class PBDCableConstraintSolver {
         if (iter >= (path.solverIterations ?? 1)) continue;
 
         if (path.linkTypes.includes('pinhole_gate')) {
-          const ends = new Map();
-          let error = 0;
-          for (let j = 0; j < path.jointEntities.length; j++) {
-            const id = path.jointEntities[j], joint = jointStore.get(id), locals = jointLocals.get(id);
-            const a = computeWorldAttachment(world, joint.entityA, locals.localA, new Vector3(), transformScratch);
-            const b = computeWorldAttachment(world, joint.entityB, locals.localB, new Vector3(), transformScratch);
-            const distance = a.distanceTo(b);
-            error += distance - joint.restLength;
-            if (distance <= EPSILON) continue;
-            const direction = b.clone().subtract(a).scale(1 / distance);
-            for (const [entity, point, grad, side] of [[joint.entityA, a, direction, 'A'], [joint.entityB, b, direction.clone().scale(-1), 'B']]) {
-              const mapped = getSolverEndpointMapping(entity, side === 'A' ? joint.entityB : joint.entityA);
-              const context = getSolverEndpointContext(mapped.entityId);
-              let spin = hasAxisOnlyCableSpinDof(entity) ? buildExternalMemberSpinSolveInfo(entity, point, grad) : null;
-              if (spin) {
-                spin.storedConstraintGradSpin = hybridStoredConstraintGradSpin(path, j + (side === 'B' ? 1 : 0), side, entity);
-                spin.solveUsesStoredGradSpin = spin.useStoredOnlyForTorqueLoad = spin.recordTorqueLoadImplicitCoeffs = true;
-              }
-              if (!context.invMass && !context.useAngularInertia && !spin) continue;
-              if (!ends.has(mapped.entityId)) ends.set(mapped.entityId, { id: mapped.entityId, point, gradient: new Vector3(), angular: new Vector3(), spin, context });
-              const end = ends.get(mapped.entityId);
-              end.gradient.add(grad);
-              if (context.useAngularInertia) end.angular.add(point.clone().subtract(context.posComp.pos).cross(grad));
-            }
-          }
-          if (ends.size > 2) throw new Error('pinhole_gate supports one carrier and one external rotor');
-          const values = [...ends.values()];
-          if (!values.length) {
-            const id = jointStore.get(path.jointEntities[0]).entityA;
-            values.push({id, point:positionStore.get(id).pos, gradient:new Vector3(), angular:new Vector3(), spin:null, context:getSolverEndpointContext(id)});
-          }
-          const a = values[0], b = values[1] ?? { ...a, gradient: new Vector3(), angular: new Vector3(), spin: null };
-          const first = jointStore.get(path.jointEntities[0]);
-          applyConstraint(path, 0, first, a.id, b.id, a.point, b.point, a.gradient, b.gradient, error, iter,
-            { mappedA: {entityId:a.id}, mappedB: {entityId:b.id}, endpointA:a.context, endpointB:b.context, pathParameters:getPathSolveParameters(path) },
-            {spinA:a.spin, spinB:b.spin, angularA:a.angular, angularB:b.angular});
+          const state = gateSteps.get(path), gateLink = state.gateLinkIndex;
+          solveGateSide(path, [...Array(gateLink).keys()], -1.0, state, iter);
+          solveGateSide(path, [...Array(path.jointEntities.length - gateLink).keys()].map(i => i + gateLink), 1.0, state, iter);
           continue;
         }
 
@@ -3640,13 +3735,20 @@ export class PBDCableConstraintSolver {
     for (const pathId of pathEntities) {
       const path = pathStore.get(pathId);
       if (!path.linkTypes.includes('pinhole_gate')) continue;
-      const lambda = accumulatedLambdas.get(path).get(jointStore.get(path.jointEntities[0])) ?? 0;
+      const gateLink = findGateLinkIndex(path);
+      const state = gateSteps.get(path);
+      const lambdas = accumulatedLambdas.get(path);
+      const entryLambda = lambdas.get(jointStore.get(path.jointEntities[0])) ?? 0.0;
+      const exitLambda = lambdas.get(jointStore.get(path.jointEntities[gateLink])) ?? 0.0;
+      const invDtSq = getPathSolveParameters(path).invDtSq;
+      advanceGateFlow(state.gate, (Math.abs(entryLambda) - Math.abs(exitLambda)) * invDtSq, dt);
       forceSnapshots.get(path).clear();
       for (const [index, id] of path.jointEntities.entries()) {
         const joint = jointStore.get(id), locals = jointLocals.get(id);
         const a = computeWorldAttachment(world, joint.entityA, locals.localA, new Vector3(), transformScratch);
         const b = computeWorldAttachment(world, joint.entityB, locals.localB, new Vector3(), transformScratch);
-        accumulatedLambdas.get(path).set(joint, lambda);
+        const lambda = index < gateLink ? entryLambda : exitLambda;
+        lambdas.set(joint, lambda);
         forceSnapshots.get(path).set(joint, {index, direction:b.subtract(a).normalize()});
       }
     }

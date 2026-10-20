@@ -2,7 +2,7 @@
 //! interface; the core has no browser, ECS, transport or JavaScript dependency.
 use super::*;
 
-pub const HEADER: usize = 9;
+pub const HEADER: usize = 16;
 pub const LINK: usize = 5;
 pub const SEGMENT: usize = 16;
 pub const OPTIONS: usize = 20;
@@ -1703,6 +1703,7 @@ impl PhysicsWorld {
     fn constraints(&mut self, dt: f64) {
         self.joints.clear();
         self.paths.clear();
+        let valid_dt = dt.is_finite() && dt > EPS;
         for id in 0..self.entities.len() {
             let e = self.entities[id];
             for slot in [58, 59, 60, 63, 64, 65, 68] {
@@ -1743,6 +1744,7 @@ impl PhysicsWorld {
             let first = self.joints.len();
             let zero = c.data[3] == f64::INFINITY;
             let valid = dt.is_finite() && dt > EPS;
+            let gate = (1..c.count()).find(|&i| c.kind(i) == 5);
             self.paths.push([
                 first as f64,
                 c.count() as f64,
@@ -1770,6 +1772,12 @@ impl PhysicsWorld {
                 } else {
                     0.0
                 },
+                gate.map_or(-1.0, |i| i as f64),
+                c.data[10],
+                c.data[11],
+                c.data[12],
+                c.data[13],
+                c.data[14],
             ]);
             for i in 0..c.count() {
                 let mut j = [0.0; J];
@@ -1871,13 +1879,14 @@ impl PhysicsWorld {
         for iter in 0..max {
             let forward = iter % 2 == 0;
             for k in 0..self.paths.len() {
-                let path = &self.paths[if forward { k } else { self.paths.len() - 1 - k }];
+                let path_index = if forward { k } else { self.paths.len() - 1 - k };
+                let mut path = self.paths[path_index];
                 if iter >= path[2] as usize {
                     continue;
                 }
                 if path[3] as u32 & 2 != 0 {
-                    let first = path[0] as usize;
-                    solve_gate(&mut self.entities, &mut self.joints, path, iter, &mut multipliers[first], &mut damping_disp[first]);
+                    solve_gate(&mut self.entities, &mut self.joints, &mut path, iter, &mut multipliers, &mut damping_disp);
+                    self.paths[path_index] = path;
                     continue;
                 }
                 for k in 0..path[1] as usize {
@@ -1886,7 +1895,7 @@ impl PhysicsWorld {
                     solve_joint(
                         &mut self.entities,
                         &mut self.joints,
-                        path,
+                        &path,
                         index,
                         iter,
                         &mut multipliers[index],
@@ -1896,6 +1905,25 @@ impl PhysicsWorld {
             }
         }
         finalize_force_transfers(&mut self.joints);
+        if valid_dt {
+            for (p, c) in self.cables.iter_mut().enumerate() {
+                if (1..c.count()).any(|i| c.kind(i) == 5) {
+                    let path = self.paths[p];
+                    let first = path[0] as usize;
+                    let gate = path[10] as usize;
+                    if gate > 0 && gate < path[1] as usize {
+                        let difference = (self.joints[first][31].abs()
+                            - self.joints[first + gate][31].abs()) * path[7];
+                        let mut q = c.data[10];
+                        let mut velocity = c.data[11];
+                        super::advance_gate_flow(&mut q, &mut velocity,
+                            c.data[12], c.data[13], c.data[14], difference, dt);
+                        c.data[10] = q;
+                        c.data[11] = velocity;
+                    }
+                }
+            }
+        }
         let mut first = 0;
         for c in &mut self.cables {
             for i in 0..c.count() {

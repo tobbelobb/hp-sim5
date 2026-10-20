@@ -10,7 +10,11 @@ const source = fs.readFileSync(new URL('../public/usd_scenes/hp4_rigid_body.usda
 const stage = OpenText(bakeCableSceneUsdaSource(source).source);
 const { world } = createHeadlessWorld(source, { cableSolverBackend: null });
 const entities = new Map(world.query([SceneEntityInfoComponent]).map(id => [world.getComponent(id, SceneEntityInfoComponent).name, id]));
-let scene = source.replace('A USD scene for Hangprinter v4', 'Hangprinter v4 with ideal two-port pinhole gates (experimental)');
+// Original HP4 encoder replay shows the two reeving bearings counter-rotating.
+// The bottom/top magnitude is a provisional visual approximation; the original
+// ratio varied by branch and trial, so this is not a calibrated wheel model.
+const wheelRotationScale = { top: 1.0, bottom: -0.338 };
+let scene = source.replace('A USD scene for Hangprinter v4', 'Hangprinter v4 with stateful two-port pinhole gates (experimental)');
 for (const branch of ['AL','AR','BL','BR','CL','CR']) {
   const root = '/World/HangprinterScene/';
   const path = stage.GetPrimAtPath(root + 'CablePath' + branch);
@@ -26,9 +30,26 @@ for (const branch of ['AL','AR','BL','BR','CL','CR']) {
   }
   points.push(world.getComponent(entities.get(`Pinhole${branch}_bottom`), PositionComponent).pos);
   const visual = points.map(p => computeLocalAttachment(world, entry, p)).map(p => `(${p.x}, ${p.y}, ${p.z})`).join(', ');
-  scene = scene.replace(new RegExp(`(        def Circle "Pinhole${branch}_top"[\\s\\S]*?)(\\n        })`), (_, block, end) => block + `\n            custom rel pinholeGate:exit = <${root}Pinhole${branch}_bottom>\n            custom point3d[] pinholeGate:visualRoute = [${visual}]\n            custom bool pinholeGate:visible = 1` + end);
+  const wheelPaths = ['top', 'bottom'].map(side => root + `Wheel${branch}_${side}`);
+  const wheels = wheelPaths.map(path => stage.GetPrimAtPath(path));
+  const radius = getAttribute(wheels[0], 'radius');
+  const effectiveInertia = wheels.reduce((sum, wheel) => {
+    const inertia = getAttribute(wheel, 'physics:inertiaTensor');
+    const r = getAttribute(wheel, 'radius');
+    return sum + inertia[2][2] / (r * r);
+  }, 0.0);
+  // Provisional dry-bearing losses. These are synthetic until measurements are
+  // available; they are equivalent cable-flow values, not fit HP4 results.
+  const bearingViscousTorque = 2e-5;
+  const bearingCoulombTorque = 2e-5;
+  const damping = wheels.reduce((sum, wheel) => {
+    const r = getAttribute(wheel, 'radius');
+    return sum + bearingViscousTorque / (r * r);
+  }, 0.0);
+  const coulombTorque = bearingCoulombTorque * wheels.length;
+  scene = scene.replace(new RegExp(`(        def Circle "Pinhole${branch}_top"[\\s\\S]*?)(\\n        })`), (_, block, end) => block + `\n            custom rel pinholeGate:exit = <${root}Pinhole${branch}_bottom>\n            custom rel pinholeGate:wheels = [${wheelPaths.map(path => `<${path}>`).join(', ')}]\n            custom point3d[] pinholeGate:visualRoute = [${visual}]\n            custom bool pinholeGate:visible = 1\n            custom double pinholeGate:effectiveInertia = ${effectiveInertia}\n            custom double pinholeGate:damping = ${damping}\n            custom double pinholeGate:coulombTorque = ${coulombTorque}\n            custom double pinholeGate:radius = ${radius}` + end);
   for (const side of ['top', 'bottom']) {
-    scene = scene.replace(new RegExp(`(        def Circle "Wheel${branch}_${side}"[\\s\\S]*?token\\[\\] ecs:tags = )\\["Wheel"\\]`), '$1["Pinhole", "GateVisual"]');
+    scene = scene.replace(new RegExp(`(        def Circle "Wheel${branch}_${side}"[\\s\\S]*?token\\[\\] ecs:tags = )\\["Wheel"\\]([\\s\\S]*?)(\\n        })`), `$1["Pinhole", "GateVisual"]$2\n            custom double pinholeGate:rotationScale = ${wheelRotationScale[side]}$3`);
   }
   scene = scene.replace(new RegExp(`        def Xform "CablePath${branch}"[\\s\\S]*?\\n        }`), block => block
     .replace(/custom rel cablePath:joints = .*/, `custom rel cablePath:joints = [<${root}Joint${branch}_0>, <${root}Joint${branch}_anchor_to_pinhole>, <${root}Joint${branch}_pinhole_to_anchor>]`)

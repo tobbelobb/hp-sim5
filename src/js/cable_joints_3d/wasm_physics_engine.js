@@ -14,7 +14,7 @@ export class WasmPhysicsEngine extends RustPhysicsEngine {
   physicsEngine = 'rust-wasm';
   constructor(module) {
     const exports = new WebAssembly.Instance(module, {}).exports;
-    if (exports.abi_version() !== 2) throw new Error('Unsupported Rust physics Wasm ABI');
+    if (exports.abi_version() !== 3) throw new Error('Unsupported Rust physics Wasm ABI');
     let handle = 0, buffer;
     super({
       create(bodies, paths, count) {

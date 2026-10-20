@@ -17,7 +17,9 @@ import {
   CablePathComponent,
   CableJointComponent,
   CableLinkComponent,
-  PinholeGateComponent
+  PinholeGateComponent,
+  GateWheelComponent,
+  gateWheelVisualAngle
 } from './cable_joints_core.js';
 import { ExtruderComponent } from '../../../hp-sim-3d/app/hangprinter_extruder.js';
 import {
@@ -2782,6 +2784,7 @@ export class RenderSystem3D {
         continue;
       }
       const spoolState = world.getComponent(entityId, SpoolStateComponent);
+      const gateWheel = world.getComponent(entityId, GateWheelComponent);
       const orientationComp = world.getComponent(entityId, OrientationComponent);
       const isCylinder = renderComp.shape === 'cylinder';
 
@@ -2819,7 +2822,22 @@ export class RenderSystem3D {
         : radius;
       mesh.scale.set(radius, isCylinder ? height : radius, radius);
 
-      if (orientationComp?.quaternion) {
+      if (gateWheel) {
+        const path = world.getComponent(gateWheel.pathEntity, CablePathComponent);
+        const axisLocal = gateWheel.axisLocal;
+        const axisVector = new THREE.Vector3(axisLocal.x, axisLocal.y, axisLocal.z).normalize();
+        const localAlignment = new THREE.Quaternion().setFromUnitVectors(CYLINDER_LOCAL_UP, axisVector);
+        const wheelRotation = new THREE.Quaternion().setFromAxisAngle(
+          CYLINDER_LOCAL_UP,
+          gateWheelVisualAngle(gateWheel, path),
+        );
+        mesh.quaternion.set(
+          orientationComp?.quaternion.x ?? 0.0,
+          orientationComp?.quaternion.y ?? 0.0,
+          orientationComp?.quaternion.z ?? 0.0,
+          orientationComp?.quaternion.w ?? 1.0,
+        ).multiply(localAlignment).multiply(wheelRotation);
+      } else if (orientationComp?.quaternion) {
         const q = orientationComp.quaternion;
         if (isCylinder) {
           const axisLocal = getSpoolLocalAxis(spoolState);

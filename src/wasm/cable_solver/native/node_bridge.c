@@ -5,6 +5,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define PATH_HEADER 16
+#define PATH_LINK 5
+#define PATH_JOINT 16
+
 typedef struct PhysicsWorld PhysicsWorld;
 extern PhysicsWorld *engine_create(const double *, size_t, const double *, size_t);
 extern void engine_destroy(PhysicsWorld *);
@@ -168,13 +172,13 @@ static napi_value create(napi_env env, napi_callback_info info) {
     for (size_t p = 0; p < (size_t)path_count; p++) {
         if (cursor >= path_len || !index_valid(path_data[cursor], path_len + 1)) goto invalid;
         size_t len = (size_t)path_data[cursor++];
-        if (len < 14 || len > path_len - cursor) goto invalid;
+        if (len < PATH_HEADER + PATH_LINK || len > path_len - cursor) goto invalid;
         double n = path_data[cursor];
-        if (!index_valid(n, len) || len != 9 + ((size_t)n + 1) * 5 + (size_t)n * 16) goto invalid;
+        if (!index_valid(n, len) || len != PATH_HEADER + ((size_t)n + 1) * PATH_LINK + (size_t)n * PATH_JOINT) goto invalid;
         for (size_t i = 0; i <= (size_t)n; i++)
-            if (!index_valid(path_data[cursor + 9 + i * 5], 6)) goto invalid;
+            if (!index_valid(path_data[cursor + PATH_HEADER + i * PATH_LINK], 6)) goto invalid;
         for (size_t i = 0; i < (size_t)n; i++) {
-            size_t joint = cursor + 9 + ((size_t)n + 1) * 5 + i * 16;
+            size_t joint = cursor + PATH_HEADER + ((size_t)n + 1) * PATH_LINK + i * PATH_JOINT;
             if (!index_valid(path_data[joint + 1], count) || !index_valid(path_data[joint + 2], count)) goto invalid;
         }
         cursor += len;

@@ -15,7 +15,9 @@ const saved = JSON.parse(fs.readFileSync(new URL('../fixtures/hp4_loaded_stabili
   (key, value) => ['NaN', 'Infinity', '-Infinity'].includes(value) ? Number(value) : value);
 
 function settle(substeps) {
-  assert.equal(saved.formatVersion, 1);
+  // Version 2 inserts the pinhole-gate path header fields without changing
+  // any replayed path, link or joint value from the original recording.
+  assert.equal(saved.formatVersion, 2);
   assert.equal(createHash('sha256').update(scene).digest('hex'), saved.sceneSha256,
     'Regenerate the loaded checkpoint when the HP4 scene changes');
   const { world, remote, dt } = createHeadlessWorld(scene, {

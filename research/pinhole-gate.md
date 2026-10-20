@@ -1,50 +1,71 @@
-# Two-port pinhole gates
+# Stateful two-port pinhole gates
 
 Select **Hangprinter v4 (pinhole gates, experimental)** in Machines instead of
 the original HP4. The scene is `public/usd_scenes/hp4_pinhole_gate.usda`;
 `node scripts/create_hp4_gate_scene.mjs` regenerates it from the original scene.
-Native Rust, browser Wasm and JavaScript support it. The independent Python
-backend explicitly rejects this new attachment for now.
+Native Rust, browser Wasm and JavaScript support the attachment. The independent
+Python backend explicitly rejects it.
 
 ## Mechanical model
 
-`pinhole_gate` connects two distinct ports mounted on the same rigid body.
-The entry prim declares `pinholeGate:exit`; the path's gate entry in
-`cablePath:stored` preserves the hidden internal cable length. There are no
-internal CableJoints. Connected frictionless spans are condensed into **one
-unilateral length constraint with one common tension**. Carrier translation
-and rotation Jacobians are summed before applying inverse mass, retaining
-cross terms and the separate port lever arms. The same solve includes the
-external spool, holding-torque release and signed torque feedback once.
+`pinhole_gate` replaces the ABC effector's pinhole-wheel-wheel-pinhole sequence
+with six condensed gate units. Each unit has distinct entry and exit ports and
+no internal CableJoints. This reduces the HP4 ABC topology from 51 to 33 cable
+joints while retaining unilateral cable behaviour on both sides.
 
-The first model has ideal massless flow and zero internal friction. Interior
-frictional guides and more than one carrier plus one external rotor are
-unsupported. This is not a finite-inertia bearing model.
+The hidden reeving has one material-flow coordinate `q`. Entry and exit use
+separate unilateral constraints with rest lengths biased by `q`; `q` is held
+fixed during the position solve and advanced from the final entry/exit
+constraint multipliers. The resulting hidden flow law is
 
-For gate paths, `cablePath:stiffness` and `cablePath:damping` describe the combined
-constraint. The HP4 variant uses 20000/6 N/m and 5/6 Ns/m to preserve six identical
-original Kelvin–Voigt spans in series. Tune those explicit parameters and port
-geometry when measurements become available. Material partition is reconstructed
-without changing total free cable length; it is not another tension solver.
+```text
+Tin - Tout = M qdd + B qdot + Fc sign(qdot)
+```
 
-The variant reduces HP4 cable joints from 51 to 33 and constraint projections
-from 102 to 42 per two-iteration substep. D reeving is unchanged. This reduces
-solver work structurally; no measured overall speedup or reduction in timestep
-bias is claimed from the short checks.
+where `M` is the summed bearing inertia reflected through the cable radius, `B`
+is viscous drag and `Fc` is dry friction. Static friction and a non-reversal
+condition hold `q` when the tension difference cannot overcome the breakaway
+force. This preserves small differences between entering and exiting CableJoints
+without recreating the long internal constraint chain.
+
+The HP4 values are **provisional synthetic values**, not hardware calibration:
+`M = 0.023668639053254437 kg`, `B = 0.9467455621301777 Ns/m`,
+`Fc = 4e-5 N`, and radius `0.0065 m`. `M` is computed from the two original
+bearing inertia tensors; the friction values are placeholders for later
+measurement.
+
+The JS, Native Rust and Wasm implementations use the same state law. The
+native/Wasm path ABI is version 3 and its path header includes gate link, flow,
+flow velocity, inertia, damping and Coulomb force.
 
 ## Visualization
 
-`PinholeGateComponent.visualRoute` / USD `pinholeGate:visualRoute` contains a local
-polyline drawn independently of physics. `pinholeGate:visible` hides it. Original
-ABC bearing masses remain in the carrier, but their independent physical rotor
-DOFs are removed. Their visual route introduces no constraints. Flow inertia,
-resistance and animated visual bearing rotation remain future extensions.
+`PinholeGateComponent.visualRoute` / USD `pinholeGate:visualRoute` is a local
+polyline independent of the physical constraint solve. The twelve hidden
+bearings are rendered as cylinders, not spheres. Their rotation is driven by
+actual cable transport through the gate and scaled by
+`pinholeGate:rotationScale`.
+
+Replaying the original HP4 shows the top and bottom bearings counter-rotating.
+The gate therefore uses top scale `1.0` and bottom scale `-0.338`. The bottom
+magnitude is a provisional visual compromise: the original ratio varied by
+branch and trial (about `-0.11` to `-0.39` in the 200- and 1000-step probes).
+The animation is render-only and does not add physical rotor DOFs.
 
 ## Checks
 
-`npm run test:physics` includes the gate checks automatically. Four analytic
-JS/Rust checks verify combined inverse mass, equal tension and symmetric/asymmetric
-port torque. Three fresh one-second logo checks cover native, Wasm and JS and
-compare sampled positions within 1 micrometre. Existing baseline logo and
-loaded-state tests also run. These establish a bounded implementation check,
-not hardware accuracy, long-print stability or calibrated damping.
+`npm run test:physics` rebuilds Native Rust and Wasm and runs the production HP4
+Print Logo stability checks plus loaded-state settling at one, two and four
+substeps. The gate-specific checks cover the state law, six gate units, twelve
+visual cylinders, transport-driven wheel angles and Native/Wasm/JS parity.
+
+At the final source state, all 11 physics-gate tests passed. Short HP4 prefix
+evidence found a nonzero gate tension difference (maximum `0.0781 N`, mean
+absolute `0.0090 N` over 200 steps), while the isolated summed-friction probe
+showed breakaway and a `0.0157 N` peak difference. A matched 1000-step native
+trial took `146.3 ms` versus `386.0 ms` for the original model (`2.64x`) with a
+final-Z difference of `0.000184 m`.
+
+These are short, simulated structural and performance checks. They do not
+establish reduced numerical damping, hardware-calibrated realism, long-print
+accuracy or full-print success. Browser appearance has not been inspected.

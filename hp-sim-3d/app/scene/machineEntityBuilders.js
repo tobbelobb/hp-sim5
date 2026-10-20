@@ -57,6 +57,9 @@ function buildMachineBody(context, registry, prim) {
     if (tags.includes("Wheel")) {
         return (world) => applyWheel(world, context, registry, prim, posArr);
     }
+    if (tags.includes("GateVisual")) {
+        return (world) => applyGateWheel(world, context, registry, prim, posArr);
+    }
     if (tags.includes("Anchor")) {
         return (world) => applyAnchor(world, context, registry, prim, posArr);
     }
@@ -64,6 +67,41 @@ function buildMachineBody(context, registry, prim) {
         return (world) => applyPinhole(world, context, registry, prim, posArr);
     }
     return null;
+}
+
+function applyGateWheel(world, context, registry, prim, posArr) {
+    const { color, friction, restitution } = materialProperties(context.stage, prim);
+    const palette = context.options.palette || null;
+    const machineId = context.options.namespace || 'default';
+    const namespace = context.options.namespace || null;
+    const pos = new Vector3(posArr[0], posArr[1], posArr[2] || 0);
+    const radius = getAttribute(prim, 'radius') ?? DEFAULT_PINHOLE_RADIUS;
+    const height = getAttribute(prim, 'height');
+    const mass = getAttribute(prim, 'physics:mass');
+    const inertiaTensor = getAttribute(prim, 'physics:inertiaTensor');
+    const velArr = getAttribute(prim, 'physics:velocity');
+    const angVelArr = getAttribute(prim, 'physics:angularVelocity');
+    const initialOrientation = readOrientationAttribute(prim) || new Quaternion();
+
+    const ent = world.createEntity();
+    world.addComponent(ent, new MachineTagComponent(machineId));
+    addBodyKinematics(world, ent, pos, velArr, mass);
+    world.addComponent(ent, new RadiusComponent(radius));
+    addGravityIfDynamic(world, ent, mass);
+    world.addComponent(ent, new RenderableComponent(
+        'cylinder',
+        palette?.wheel ?? color ?? '#a0a0a0',
+        { height: Number.isFinite(height) && height > 0 ? height : null },
+    ));
+    addOrientationState(world, ent, initialOrientation);
+    if (angVelArr !== null) {
+        world.addComponent(ent, vectorComponent(AngularVelocityComponent, angVelArr));
+    }
+    if (inertiaTensor !== null) {
+        world.addComponent(ent, new MomentOfInertiaComponent(inertiaTensor));
+    }
+    addMaterialComponents(world, ent, restitution, friction);
+    registerNamedEntity(world, registry, namespace, prim, ent);
 }
 
 function applySpool(world, context, registry, prim, posArr) {

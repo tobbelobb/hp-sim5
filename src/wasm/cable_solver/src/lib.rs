@@ -6,7 +6,7 @@ const EPS: f64 = 1e-9;
 const INERTIA_EPS: f64 = 1e-12;
 pub const E: usize = 160;
 const J: usize = 38;
-const P: usize = 10;
+const P: usize = 16;
 type V = [f64; 3];
 type Q = [f64; 4];
 pub type Entity = [f64; E];
@@ -862,20 +862,19 @@ fn correct(es: &mut [Entity], id: usize, grad: V, angular: V, angular_denom: f64
         }
     }
 }
-// Condense a frictionless two-port guide and its connected spans into one
-// unilateral length constraint. Sum carrier Jacobians BEFORE applying M^-1;
-// separate endpoint solves lose their cross terms and damp cable flow.
-fn solve_gate(es: &mut [Entity], js: &mut [Joint], path: &Path, iter: usize,
+// One side of a gate: all connected spans share one unilateral multiplier.
+// Hidden flow shifts the available span but is advanced after this solve.
+#[allow(clippy::too_many_arguments)]
+fn solve_gate_side(es: &mut [Entity], js: &mut [Joint], path: &Path,
+    start: usize, end: usize, q_gradient: f64, q: f64, iter: usize,
     accumulated: &mut f64, damping_disp: &mut f64) {
-    let first = path[0] as usize;
-    let count = path[1] as usize;
     let mut ids = [0usize; 2];
     let mut gs = [[0.0; 3]; 2];
     let mut angles = [[0.0; 3]; 2];
     let mut spins = [Spin::default(); 2];
     let mut used = 0;
     let mut error = 0.0;
-    for index in first..first + count {
+    for index in start..end {
         let mut j = js[index];
         let points = [attachment(es, j[0] as usize, v(&j, 4)), attachment(es, j[1] as usize, v(&j, 7))];
         let distance = length(sub(points[1], points[0]));
@@ -900,7 +899,12 @@ fn solve_gate(es: &mut [Entity], js: &mut [Joint], path: &Path, iter: usize,
             if s.active { spins[slot] = s; }
         }
     }
+    error += q_gradient * q;
     if error <= EPS && *accumulated == 0.0 { return; }
+    if used == 0 {
+        ids[0] = js[start][0] as usize;
+        used = 1;
+    }
     if used < 2 { ids[1] = ids[0]; }
     let a = es[ids[0]]; let b = es[ids[1]];
     let angular = [if a[55] != 0.0 {angles[0]} else {[0.0;3]}, if b[55] != 0.0 {angles[1]} else {[0.0;3]}];
@@ -914,8 +918,10 @@ fn solve_gate(es: &mut [Entity], js: &mut [Joint], path: &Path, iter: usize,
         }
     }
     let mut response = angular_response(es, ids, angular, spins);
+    let denominator = |r: &AngularResponse, spins: &[Spin; 2]|
+        mechanical(&a,&b,gs[0],gs[1],da,db,spins[0],spins[1],r);
     let Some(mut delta) = lambda(path, error, *damping_disp,
-        mechanical(&a,&b,gs[0],gs[1],da,db,spins[0],spins[1],&response), *accumulated) else { return; };
+        denominator(&response, &spins), *accumulated) else { return; };
     let mut released = false;
     for s in &mut spins {
         if s.active && s.limit.is_finite() && s.limit >= 0.0 &&
@@ -926,7 +932,7 @@ fn solve_gate(es: &mut [Entity], js: &mut [Joint], path: &Path, iter: usize,
     if released {
         response = angular_response(es, ids, angular, spins);
         let Some(d) = lambda(path, error, *damping_disp,
-            mechanical(&a,&b,gs[0],gs[1],da,db,spins[0],spins[1],&response), *accumulated) else { return; };
+            denominator(&response, &spins), *accumulated) else { return; };
         delta = d;
     }
     *accumulated += delta;
@@ -936,14 +942,43 @@ fn solve_gate(es: &mut [Entity], js: &mut [Joint], path: &Path, iter: usize,
         correct(es, ids[k], gs[k], angular[k], if response.coupled[k] {0.0} else {if k==0 {da} else {db}},
             if response.coupled[k] {Spin::default()} else {spins[k]}, delta);
     }
-    for index in first..first+count {
-        let j = js[index];
-        let direction = norm(sub(attachment(es,j[1] as usize,v(&j,7)),attachment(es,j[0] as usize,v(&j,4))));
-        js[index][31] = *accumulated;
-        put_v(&mut js[index],32,scale(direction,*accumulated*path[7]));
-        js[index][35] = accumulated.abs()*path[7];
-        js[index][37] = 1.0;
+    for index in start..end {
+        let j = &mut js[index];
+        let direction = norm(sub(attachment(es,j[1] as usize,v(j,7)),attachment(es,j[0] as usize,v(j,4))));
+        j[31] = *accumulated;
+        put_v(j,32,scale(direction,*accumulated*path[7]));
+        j[35] = accumulated.abs()*path[7];
+        j[37] = 1.0;
     }
+}
+fn advance_gate_flow(q: &mut f64, velocity: &mut f64, inertia: f64,
+    damping: f64, coulomb: f64, tension_difference: f64, dt: f64) {
+    if !(inertia.is_finite() && inertia > EPS) || !(dt.is_finite() && dt > EPS) { return; }
+    let drive = if tension_difference.is_finite() { tension_difference } else { 0.0 };
+    let damping = damping.max(0.0);
+    let coulomb = coulomb.max(0.0);
+    let moving = velocity.abs() > 1e-9;
+    if !moving && drive.abs() <= coulomb { *velocity = 0.0; return; }
+    let resistance = if moving { velocity.signum() * coulomb } else { drive.signum() * coulomb };
+    let mut next = (*velocity + dt * (drive - resistance) / inertia)
+        / (1.0 + dt * damping / inertia);
+    if (moving && next.signum() != velocity.signum())
+        || (!moving && next.signum() != drive.signum()) { next = 0.0; }
+    *q += next * dt;
+    *velocity = next;
+}
+// Condense the two-port guide into two unilateral rows. Positive flow moves
+// available span toward the entry side, so entry tension drives flow positive.
+fn solve_gate(es: &mut [Entity], js: &mut [Joint], path: &mut Path, iter: usize,
+    multipliers: &mut [f64], damping: &mut [f64]) {
+    let first = path[0] as usize;
+    let count = path[1] as usize;
+    let gate = path[10] as usize;
+    if gate == 0 || gate >= count { return; }
+    solve_gate_side(es, js, path, first, first + gate, -1.0, path[11], iter,
+        &mut multipliers[first], &mut damping[first]);
+    solve_gate_side(es, js, path, first + gate, first + count, 1.0, path[11], iter,
+        &mut multipliers[first + gate], &mut damping[first + gate]);
 }
 
 fn solve_joint(
@@ -1098,7 +1133,7 @@ fn solve_joint(
 
 #[no_mangle]
 pub extern "C" fn abi_version() -> u32 {
-    2
+    3
 }
 #[no_mangle]
 pub extern "C" fn hypot3(x: f64, y: f64, z: f64) -> f64 {
@@ -1123,28 +1158,43 @@ pub unsafe extern "C" fn free_buffer(ptr: *mut f64, len: usize) {
 pub unsafe extern "C" fn solve(ptr: *mut f64, entities: usize, joints: usize, paths: usize) {
     let es = std::slice::from_raw_parts_mut(ptr as *mut Entity, entities);
     let js = std::slice::from_raw_parts_mut(ptr.add(entities * E) as *mut Joint, joints);
-    let ps = std::slice::from_raw_parts(ptr.add(entities * E + joints * J) as *const Path, paths);
+    let ps = std::slice::from_raw_parts_mut(ptr.add(entities * E + joints * J) as *mut Path, paths);
     let max_iterations = ps.iter().map(|p| p[2] as usize).max().unwrap_or(1);
     let mut multipliers = vec![0.0; joints];
     let mut damping_disp = vec![f64::NAN; joints];
     for iter in 0..max_iterations {
         let forward = iter % 2 == 0;
         for k in 0..paths {
-            let path = &ps[if forward { k } else { paths - 1 - k }];
+            let path_index = if forward { k } else { paths - 1 - k };
+            let path = &mut ps[path_index];
             if iter >= path[2] as usize {
                 continue;
             }
             let first = path[0] as usize;
             let count = path[1] as usize;
             if path[3] as u32 & 2 != 0 {
-                solve_gate(es, js, path, iter, &mut multipliers[first], &mut damping_disp[first]);
+                solve_gate(es, js, path, iter, &mut multipliers, &mut damping_disp);
                 continue;
             }
+            let path = &*path;
             for k in 0..count {
                 let index = first + if forward { k } else { count - 1 - k };
                 solve_joint(es, js, path, index, iter, &mut multipliers[index], &mut damping_disp[index]);
             }
         }
+    }
+    for path in ps.iter_mut().filter(|path| path[3] as u32 & 2 != 0) {
+        let first = path[0] as usize;
+        let count = path[1] as usize;
+        let gate = path[10] as usize;
+        if gate == 0 || gate >= count || path[7] <= EPS { continue; }
+        let dt = 1.0 / path[7].sqrt();
+        let difference = (multipliers[first].abs() - multipliers[first + gate].abs()) * path[7];
+        let mut q = path[11];
+        let mut velocity = path[12];
+        advance_gate_flow(&mut q, &mut velocity, path[13], path[14], path[15], difference, dt);
+        path[11] = q;
+        path[12] = velocity;
     }
     finalize_force_transfers(js);
 }

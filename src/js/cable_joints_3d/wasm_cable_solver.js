@@ -7,6 +7,7 @@ import {
 } from './ecs.js';
 import {
   CablePathComponent, CableJointComponent, CableLinkComponent,
+  getGateComponent, findGateLinkIndex,
   cableSolverEffectiveRadius, cableSolverEffectiveCW,
   cableSolverMotorStiffness, cableSolverHoldingTorqueLimit,
 } from './cable_joints_core.js';
@@ -28,8 +29,9 @@ import { StepperMotorComponent } from '../../../hp-sim-3d/app/hangprinter_steppe
 // spinFlags 25..26, transferredJoints 27..28, pinholeNeighbors 29..30,
 // lambda 31, force 32..34, magnitude 35, transfer 36, solved 37.
 // Path: first/count/iterations 0..2, flags (zero stiffness=1, gate=2)/alpha/gamma/dampingStep 3..6,
-// invDt² 7, springConstant 8, damping 9.
-const E = 160, J = 38, P = 10, EPS = 1e-9;
+// invDt² 7, springConstant 8, damping 9, gate link/q/qdot/inertia/damping/
+// Coulomb force 10..15.
+const E = 160, J = 38, P = 16, EPS = 1e-9;
 const hybrid = type => type === 'hybrid' || type === 'hybrid-attachment';
 const backdrivable = type => type === 'rolling' || hybrid(type);
 const validQuat = q => q && [q.x, q.y, q.z, q.w].every(Number.isFinite);
@@ -47,7 +49,7 @@ export async function compileCableSolverWasm(bytes) {
 export class WasmCableSolver {
   constructor(module) {
     this.exports = new WebAssembly.Instance(module, {}).exports;
-    if (this.exports.abi_version() !== 2) throw new Error('Unsupported cable solver WASM ABI');
+    if (this.exports.abi_version() !== 3) throw new Error('Unsupported cable solver WASM ABI');
     this.capacity = 0;
     this.pointer = 0;
     this.scratch = createAttachmentTransformScratch();
@@ -113,6 +115,12 @@ export class WasmCableSolver {
     const data = new Float64Array(this.exports.memory.buffer, this.pointer, size);
     data.fill(0);
     const dt = world.getResource('dt'), validDt = Number.isFinite(dt) && dt > EPS;
+    const gates = paths.map(path => {
+      if (!path.linkTypes.includes('pinhole_gate')) return null;
+      const gate = getGateComponent(world, path);
+      if (!gate) throw new Error('pinhole_gate component is missing at its entry port');
+      return { gate };
+    });
     const members = [], encoders = [];
     for (let n = 0; n < ids.length; n++) {
       const id = ids[n], o = n * E;
@@ -170,12 +178,16 @@ export class WasmCableSolver {
     for (let p = 0; p < paths.length; p++) {
       const path = paths[p], po = pathStart + p * P, compliance = path.compliance ?? 0;
       const zero = path.compliance === Infinity, damping = Math.max(0, path.damping ?? 0);
-      data.set([first, path.jointEntities.length, path.solverIterations ?? 1, +zero + (path.linkTypes.includes('pinhole_gate') ? 2 : 0),
+      const gate = gates[p]?.gate ?? null;
+      data.set([first, path.jointEntities.length, path.solverIterations ?? 1, +zero + (gate ? 2 : 0),
         !zero && validDt ? compliance / (dt * dt) : 0,
         !zero && validDt ? Math.max(0, compliance * (path.damping ?? 0) / dt) : 0,
         validDt ? damping * dt : 0, validDt ? 1 / (dt * dt) : 0,
         Number.isFinite(path.spring_constant) ? Math.max(0, path.spring_constant) : 0,
-        Number.isFinite(path.damping) ? Math.max(0, path.damping) : 0], po);
+        Number.isFinite(path.damping) ? Math.max(0, path.damping) : 0,
+        gate ? findGateLinkIndex(path) : -1,
+        gate?.flow ?? 0, gate?.flowVelocity ?? 0, gate?.effectiveInertia ?? 0,
+        gate?.damping ?? 0, gate?.coulombForce ?? 0], po);
       for (let i = 0; i < path.jointEntities.length; i++) {
         const n = first + i, joint = joints[n], o = jointStart + n * J;
         const mapped = [mapEndpoint(joint.entityA, joint.entityB), mapEndpoint(joint.entityB, joint.entityA)];
@@ -228,6 +240,13 @@ export class WasmCableSolver {
       first += path.jointEntities.length;
     }
     this.exports.solve(this.pointer, ids.length, joints.length, paths.length);
+    for (let p = 0; p < paths.length; p++) {
+      const state = gates[p];
+      if (!state) continue;
+      const q = data[pathStart + p * P + 11];
+      state.gate.flow = q;
+      state.gate.flowVelocity = data[pathStart + p * P + 12];
+    }
     const torques = new Map(), stiffnesses = new Map(), dampings = new Map();
     for (let n = 0; n < ids.length; n++) {
       const id = ids[n], o = n * E;

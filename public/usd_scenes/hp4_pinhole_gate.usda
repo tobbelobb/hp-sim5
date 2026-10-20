@@ -1,6 +1,6 @@
 #usda 1.0
 (
-    doc = "Hangprinter v4 with ideal two-port pinhole gates (experimental)"
+    doc = "Hangprinter v4 with stateful two-port pinhole gates (experimental)"
     defaultPrim = "HangprinterScene"
     metersPerUnit = 1
     startTimeCode = 0
@@ -89,6 +89,7 @@ def Xform "World"
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/WheelMaterial>
+            custom double pinholeGate:rotationScale = 1
         }
 
         def Circle "PinholeAL_top" (
@@ -103,8 +104,13 @@ def Xform "World"
             float3 physics:angularVelocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/PinholeMaterial>
             custom rel pinholeGate:exit = </World/HangprinterScene/PinholeAL_bottom>
+            custom rel pinholeGate:wheels = [</World/HangprinterScene/WheelAL_top>, </World/HangprinterScene/WheelAL_bottom>]
             custom point3d[] pinholeGate:visualRoute = [(0, 0, 0), (0, 0, 0), (0, 0.019906036621310325, 0.0002494113691319244), (0, 0.027499999999999997, -0.0072500000000000064), (0, 0.027499999999999997, -0.052250000000000005), (0, 0.019906036621310325, -0.059749411369131936), (0, 0, -0.059500000000000004), (0, 0, -0.059500000000000004)]
             custom bool pinholeGate:visible = 1
+            custom double pinholeGate:effectiveInertia = 0.023668639053254437
+            custom double pinholeGate:damping = 0.9467455621301777
+            custom double pinholeGate:coulombTorque = 0.00004
+            custom double pinholeGate:radius = 0.0065
         }
 
         def Circle "WheelAL_bottom" (
@@ -124,6 +130,7 @@ def Xform "World"
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/WheelMaterial>
+            custom double pinholeGate:rotationScale = -0.338
         }
 
         def Circle "PinholeAL_bottom" (
@@ -170,6 +177,7 @@ def Xform "World"
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/WheelMaterial>
+            custom double pinholeGate:rotationScale = 1
         }
 
         def Circle "PinholeAR_top" (
@@ -184,8 +192,13 @@ def Xform "World"
             float3 physics:angularVelocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/PinholeMaterial>
             custom rel pinholeGate:exit = </World/HangprinterScene/PinholeAR_bottom>
+            custom rel pinholeGate:wheels = [</World/HangprinterScene/WheelAR_top>, </World/HangprinterScene/WheelAR_bottom>]
             custom point3d[] pinholeGate:visualRoute = [(0, 0, 0), (0, 0, 0), (0, 0.019906036621310325, 0.0002494113691319244), (0, 0.027499999999999997, -0.0072500000000000064), (0, 0.027499999999999997, -0.052250000000000005), (0, 0.019906036621310325, -0.059749411369131936), (0, 0, -0.059500000000000004), (0, 0, -0.059500000000000004)]
             custom bool pinholeGate:visible = 1
+            custom double pinholeGate:effectiveInertia = 0.023668639053254437
+            custom double pinholeGate:damping = 0.9467455621301777
+            custom double pinholeGate:coulombTorque = 0.00004
+            custom double pinholeGate:radius = 0.0065
         }
 
         def Circle "WheelAR_bottom" (
@@ -203,6 +216,7 @@ def Xform "World"
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/WheelMaterial>
+            custom double pinholeGate:rotationScale = -0.338
         }
 
         def Circle "PinholeAR_bottom" (
@@ -299,6 +313,7 @@ def Xform "World"
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/WheelMaterial>
+            custom double pinholeGate:rotationScale = 1
         }
 
         def Circle "PinholeBL_top" (
@@ -313,8 +328,13 @@ def Xform "World"
             float3 physics:angularVelocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/PinholeMaterial>
             custom rel pinholeGate:exit = </World/HangprinterScene/PinholeBL_bottom>
+            custom rel pinholeGate:wheels = [</World/HangprinterScene/WheelBL_top>, </World/HangprinterScene/WheelBL_bottom>]
             custom point3d[] pinholeGate:visualRoute = [(0, 0, 0), (0, 0, 0), (-0.017239133402718376, -0.009953018310655176, 0.0002494113691319244), (-0.02381569860407229, -0.013750000000000012, -0.0072500000000000064), (-0.02381569860407229, -0.013750000000000012, -0.05224999999999999), (-0.017239133402718376, -0.009953018310655176, -0.05974941136913193), (0, 0, -0.059500000000000004), (0, 0, -0.059500000000000004)]
             custom bool pinholeGate:visible = 1
+            custom double pinholeGate:effectiveInertia = 0.023668639053254437
+            custom double pinholeGate:damping = 0.9467455621301777
+            custom double pinholeGate:coulombTorque = 0.00004
+            custom double pinholeGate:radius = 0.0065
         }
 
         def Circle "WheelBL_bottom" (
@@ -332,6 +352,7 @@ def Xform "World"
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/WheelMaterial>
+            custom double pinholeGate:rotationScale = -0.338
         }
 
         def Circle "PinholeBL_bottom" (
@@ -362,6 +383,7 @@ def Xform "World"
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/WheelMaterial>
+            custom double pinholeGate:rotationScale = 1
         }
 
         def Circle "PinholeBR_top" (
@@ -376,8 +398,13 @@ def Xform "World"
             float3 physics:angularVelocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/PinholeMaterial>
             custom rel pinholeGate:exit = </World/HangprinterScene/PinholeBR_bottom>
+            custom rel pinholeGate:wheels = [</World/HangprinterScene/WheelBR_top>, </World/HangprinterScene/WheelBR_bottom>]
             custom point3d[] pinholeGate:visualRoute = [(0, 0, 0), (0, 0, 0), (-0.017239133402718324, -0.009953018310655148, 0.0002494113691319244), (-0.023815698604072285, -0.013749999999999984, -0.0072500000000000064), (-0.02381569860407229, -0.013749999999999984, -0.05224999999999999), (-0.017239133402718317, -0.009953018310655148, -0.05974941136913193), (0, 0, -0.059500000000000004), (0, 0, -0.059500000000000004)]
             custom bool pinholeGate:visible = 1
+            custom double pinholeGate:effectiveInertia = 0.023668639053254437
+            custom double pinholeGate:damping = 0.9467455621301777
+            custom double pinholeGate:coulombTorque = 0.00004
+            custom double pinholeGate:radius = 0.0065
         }
 
         def Circle "WheelBR_bottom" (
@@ -395,6 +422,7 @@ def Xform "World"
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/WheelMaterial>
+            custom double pinholeGate:rotationScale = -0.338
         }
 
         def Circle "PinholeBR_bottom" (
@@ -490,6 +518,7 @@ def Xform "World"
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/WheelMaterial>
+            custom double pinholeGate:rotationScale = 1
         }
 
         def Circle "PinholeCL_top" (
@@ -504,8 +533,13 @@ def Xform "World"
             float3 physics:angularVelocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/PinholeMaterial>
             custom rel pinholeGate:exit = </World/HangprinterScene/PinholeCL_bottom>
+            custom rel pinholeGate:wheels = [</World/HangprinterScene/WheelCL_top>, </World/HangprinterScene/WheelCL_bottom>]
             custom point3d[] pinholeGate:visualRoute = [(0, 0, 0), (0, 0, 0), (0.017239133402718328, -0.009953018310655148, 0.0002494113691319244), (0.023815698604072285, -0.01375000000000004, -0.0072500000000000064), (0.02381569860407229, -0.013749999999999984, -0.05225000000000002), (0.01723913340271832, -0.009953018310655148, -0.059749411369131936), (0, 0, -0.059500000000000004), (0, 0, -0.059500000000000004)]
             custom bool pinholeGate:visible = 1
+            custom double pinholeGate:effectiveInertia = 0.023668639053254437
+            custom double pinholeGate:damping = 0.9467455621301777
+            custom double pinholeGate:coulombTorque = 0.00004
+            custom double pinholeGate:radius = 0.0065
         }
 
         def Circle "WheelCL_bottom" (
@@ -523,6 +557,7 @@ def Xform "World"
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/WheelMaterial>
+            custom double pinholeGate:rotationScale = -0.338
         }
 
         def Circle "PinholeCL_bottom" (
@@ -553,6 +588,7 @@ def Xform "World"
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/WheelMaterial>
+            custom double pinholeGate:rotationScale = 1
         }
 
         def Circle "PinholeCR_top" (
@@ -567,8 +603,13 @@ def Xform "World"
             float3 physics:angularVelocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/PinholeMaterial>
             custom rel pinholeGate:exit = </World/HangprinterScene/PinholeCR_bottom>
+            custom rel pinholeGate:wheels = [</World/HangprinterScene/WheelCR_top>, </World/HangprinterScene/WheelCR_bottom>]
             custom point3d[] pinholeGate:visualRoute = [(0, 0, 0), (0, 0, 0), (0.017239133402718376, -0.009953018310655176, 0.0002494113691319244), (0.02381569860407229, -0.013750000000000012, -0.0072500000000000064), (0.02381569860407229, -0.01375000000000004, -0.05225000000000002), (0.01723913340271832, -0.009953018310655176, -0.059749411369131936), (0, 0, -0.059500000000000004), (0, 0, -0.059500000000000004)]
             custom bool pinholeGate:visible = 1
+            custom double pinholeGate:effectiveInertia = 0.023668639053254437
+            custom double pinholeGate:damping = 0.9467455621301777
+            custom double pinholeGate:coulombTorque = 0.00004
+            custom double pinholeGate:radius = 0.0065
         }
 
         def Circle "WheelCR_bottom" (
@@ -586,6 +627,7 @@ def Xform "World"
             vector3f physics:velocity = (0, 0, 0)
             float3 physics:angularVelocity = (0, 0, 0)
             rel material:binding = </World/PhysicsScene/WheelMaterial>
+            custom double pinholeGate:rotationScale = -0.338
         }
 
         def Circle "PinholeCR_bottom" (
