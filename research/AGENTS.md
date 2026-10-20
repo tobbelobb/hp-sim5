@@ -35,6 +35,7 @@ You know when to look for incremental improvement of an existing approach, in a 
 
 The hp-sim5 contains simulation code and other relevant research tools for CDPR researchers.
 You are encouraged to explore the repo for yourself and learn how things work in order to design rational and efficient experiments.
+Prefer many, quick and cheap experiments over a few huge long ones. Use the headless Native Rust engine and Rerun recording options provided to you. Make sure to use the speedup options when available to save time.
 Create your own workflows to be able to test your hypotheses in simulation or in other ways.
 
 # Tool Examples
