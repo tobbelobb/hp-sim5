@@ -210,17 +210,17 @@ def _record_transferred_force(world, joint_id, magnitude):
         joint.transferred_constraint_force_magnitude = max(joint.transferred_constraint_force_magnitude, magnitude)
 
 
-def _record_load(path, end, multiplier, inv_dt_squared, loads):
+def _record_load(path, end, multiplier, inv_dt_squared, loads, record_coefficients):
     spin = end.spin
     gradient = end.load_spin_gradient
     if spin is None or not spin.torque_mode or spin.defer_to_pinhole_neighbor or inv_dt_squared <= 0 or abs(gradient) <= EPSILON:
         return
     torque = multiplier * inv_dt_squared * gradient
-    if not finite_number(torque) or abs(torque) <= EPSILON:
+    if not finite_number(torque) or torque == 0:
         return
     torques, stiffnesses, dampings = loads
     torques[spin.entity] = torques.get(spin.entity, 0.) + torque
-    if spin.record_implicit_coefficients:
+    if spin.record_implicit_coefficients and record_coefficients:
         stiffness = max(0., path.spring_constant) if finite_number(path.spring_constant) else 0.
         damping = max(0., path.damping) if finite_number(path.damping) else 0.
         if stiffness > 0:
@@ -311,9 +311,9 @@ def _solve_joint(world, path, index, joint, points, direction, error, iteration,
         if multiplier is None:
             return
     multipliers[key] = previous + multiplier
-    if iteration == 0:
-        for end in ends:
-            _record_load(path, end, multiplier, inv_dt_squared, loads)
+    # Torque sums signed corrections; coefficients describe one constraint.
+    for end in ends:
+        _record_load(path, end, multiplier, inv_dt_squared, loads, iteration == 0)
     force_snapshots[key] = (direction.copy(), tuple(end.spin.transferred_joint if end.spin else None for end in ends), inv_dt_squared)
     angular_denominator, corrections, standalone = response()
     if sum(end.inv_mass * np.dot(end.gradient, end.gradient) for end in ends) + angular_denominator <= EPSILON:

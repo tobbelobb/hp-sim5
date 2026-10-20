@@ -3142,7 +3142,7 @@ export class PBDCableConstraintSolver {
     world.setResource('torqueModeCableLoadTorques', cableLoadTorques);
     world.setResource('torqueModeCableLoadStiffnesses', cableLoadStiffnesses);
     world.setResource('torqueModeCableLoadDampings', cableLoadDampings);
-    const recordTorqueModeCableLoad = (path, memberSpin, loadGradSpin, lambda, invDtSq) => {
+    const recordTorqueModeCableLoad = (path, memberSpin, loadGradSpin, lambda, invDtSq, recordCoefficients) => {
       if (
         !memberSpin
         || !memberSpin.torqueMode
@@ -3155,12 +3155,12 @@ export class PBDCableConstraintSolver {
         return;
       }
       const torque = lambda * invDtSq * loadGradSpin;
-      if (!Number.isFinite(torque) || Math.abs(torque) <= EPSILON) {
+      if (!Number.isFinite(torque) || torque === 0.0) {
         return;
       }
       const previous = cableLoadTorques.get(memberSpin.entityId) ?? 0.0;
       cableLoadTorques.set(memberSpin.entityId, previous + torque);
-      if (memberSpin.recordTorqueLoadImplicitCoeffs) {
+      if (memberSpin.recordTorqueLoadImplicitCoeffs && recordCoefficients) {
         const stiffness = Number.isFinite(path?.spring_constant)
           ? Math.max(0.0, path.spring_constant)
           : 0.0;
@@ -3419,12 +3419,10 @@ export class PBDCableConstraintSolver {
         }
       }
       multipliers.set(joint, (multipliers.get(joint) ?? 0.0) + lambda);
-      // Solver visits refine one physical constraint; they are not extra
-      // parallel springs or additional cable loads. Match the force snapshot.
-      if (solveIteration === 0) {
-        recordTorqueModeCableLoad(path, memberSpinA, loadGradSpinA, lambda, invDtSq);
-        recordTorqueModeCableLoad(path, memberSpinB, loadGradSpinB, lambda, invDtSq);
-      }
+      // Sum signed multiplier corrections into torque; later visits may
+      // release load. Stiffness/damping belong to the constraint only once.
+      recordTorqueModeCableLoad(path, memberSpinA, loadGradSpinA, lambda, invDtSq, solveIteration === 0);
+      recordTorqueModeCableLoad(path, memberSpinB, loadGradSpinB, lambda, invDtSq, solveIteration === 0);
 
       // Save the final visit's direction and transfer edges, including fixed
       // endpoints: a stretched compliant span carries force without moving.

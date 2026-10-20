@@ -1,0 +1,16 @@
+{
+  "tolerance": {"atol": 1e-10, "rtol": 1e-09},
+  "snapshotEntityMaps": ["torqueModeCableLoadTorques", "torqueModeCableLoadStiffnesses", "torqueModeCableLoadDampings"],
+  "entities": [
+    {"name": "fixed_torque_body", "components": {"PositionComponent": [15.0, 0.0, 0.0], "OrientationComponent": [0.0, 0.24740395925452294, 0.0, 0.9689124217106447], "VelocityComponent": [0, 0, 0], "AngularVelocityComponent": [0, 0, 0], "MassComponent": [0], "RigidBodyComponent": [["fixed_torque_spool"]], "MomentOfInertiaComponent": [0], "PrevFinalPosComponent": [15.0, 0.0, 0.0], "PrevFinalOrientationComponent": [0.0, 0.24740395925452294, 0.0, 0.9689124217106447]}},
+    {"name": "fixed_torque_spool", "components": {"RadiusComponent": [0.05], "PositionComponent": [15.087758256189037, -0.05000000000000001, -0.04794255386042031], "VelocityComponent": [0, 0, 0], "MassComponent": [0], "OrientationComponent": [0.0, 0.24740395925452294, 0.0, 0.9689124217106447], "AngularVelocityComponent": [0, 0, 0], "MomentOfInertiaComponent": [[[0.002, 0.0001, 0], [0.0001, 0.003, 0], [0, 0, 0.001]]], "CableLinkComponent": [15.087758256189037, -0.05000000000000001, -0.04794255386042031, [0.0, 0.24740395925452294, 0.0, 0.9689124217106447], null, [0, 0, 1]], "SpoolStateComponent": ["fixed_torque_spool", [0, 0, 1], [0.0, 0.24740395925452294, 0.0, 0.9689124217106447]], "EncoderComponent": [18.84955592153876, 0.4794255386042031, 0.0, 0.8775825618903729], "RigidBodyMemberComponent": ["fixed_torque_body", [0.1, -0.05, 0], [0, 0, 0, 1], 0.2], "StepperMotorComponent": [0, 0, 0.5, 50, 0.01, 600], "PrevFinalPosComponent": [15.087758256189037, -0.05000000000000001, -0.04794255386042031], "PrevFinalOrientationComponent": [0.0, 0.24740395925452294, 0.0, 0.9689124217106447]}},
+    {"name": "fixed_torque_anchor", "components": {"PositionComponent": [15.7, -0.3, 0.5], "OrientationComponent": [0, 0, 0, 1], "CableLinkComponent": [15.7, -0.3, 0.5, [0, 0, 0, 1], [0, 0, 1], null], "RadiusComponent": [0], "MassComponent": [1]}},
+    {"name": "fixed_torque_joint", "components": {"CableJointComponent": ["fixed_torque_spool", "fixed_torque_anchor", 0.8293097428559687, [15.122148818346075, -0.017360860121418346, -0.06673020359393747], [15.7, -0.3, 0.5], "world"]}},
+    {"name": "fixed_torque", "components": {"CablePathComponent": [["fixed_torque_joint"], ["hybrid", "attachment"], [false, false], 5000, [0.3, 0], 0.001, 0.04, 5]}}
+  ],
+  "initializeRigidBodies": ["fixed_torque_body"],
+  "initialSet": [["fixed_torque_spool", "StepperMotorComponent", "torqueMode", true]],
+  "resources": {"dt": 0.002},
+  "systems": ["PBDCableConstraintSolver"],
+  "steps": [{"dt": 0.002}]
+}

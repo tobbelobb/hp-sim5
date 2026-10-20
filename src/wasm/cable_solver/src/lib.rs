@@ -785,7 +785,7 @@ fn lambda(path: &Path, error: f64, disp: f64, denom: f64, previous: f64) -> Opti
         Some((previous + delta).min(0.0) - previous)
     }
 }
-fn load(es: &mut [Entity], s: Spin, path: &Path, lambda: f64) {
+fn load(es: &mut [Entity], s: Spin, path: &Path, lambda: f64, record_coefficients: bool) {
     if !s.active
         || es[s.id][57] == 0.0
         || s.flags & 8 != 0
@@ -795,13 +795,13 @@ fn load(es: &mut [Entity], s: Spin, path: &Path, lambda: f64) {
         return;
     }
     let torque = lambda * path[7] * s.load_grad;
-    if !torque.is_finite() || torque.abs() <= EPS {
+    if !torque.is_finite() || torque == 0.0 {
         return;
     }
     let e = &mut es[s.id];
     e[59] += torque;
     e[68] = (e[68] as u32 | 1) as f64;
-    if s.flags & 4 != 0 {
+    if s.flags & 4 != 0 && record_coefficients {
         let g = s.load_grad * s.load_grad;
         if path[8] > 0.0 {
             e[60] += path[8] * g;
@@ -972,11 +972,9 @@ fn solve_joint(
         l = new_l;
     }
     *accumulated += l;
-    // Match the physical force snapshot: solver visits are not parallel loads.
-    if iter == 0 {
-        load(es, sa, path, l);
-        load(es, sb, path, l);
-    }
+    // Sum signed corrections into torque, counting K/D only once.
+    load(es, sa, path, l, iter == 0);
+    load(es, sb, path, l, iter == 0);
     // Force uses the total multiplier, including immobile compliant spans.
     js[idx][37] = (1 | if sa.active { 2 } else { 0 } | if sb.active { 4 } else { 0 }) as f64;
     js[idx][31] = *accumulated;

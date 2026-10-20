@@ -173,7 +173,7 @@ def test_solver_oracle_reaches_spin_load_and_limit_cases(name):
         angle = lambda name: entities[name + '_spool']['EncoderComponent']['angle']
         assert angle('release') == pytest.approx(angle('free'), abs=1e-10)
         assert angle('free') < angle('held') < angle('closed')
-        assert entities['fixed_torque_joint']['CableJointComponent']['constraintForceMagnitude'] == 0
+        assert entities['fixed_torque_joint']['CableJointComponent']['constraintForceMagnitude'] == pytest.approx(40)
         assert maps['torqueModeCableLoadTorques']['fixed_torque_spool'] < 0
         # Iterating a fixed physical constraint must not multiply its load.
         fixed_path = next(e for e in fixture['entities'] if e['name'] == 'fixed_torque')
@@ -426,6 +426,24 @@ def test_comparator_accepts_quaternion_sign_only(field):
 def test_comparator_rejects_nonfinite_values(value):
     with pytest.raises(AssertionError, match='nonfinite'):
         assert_equivalent(value, value, atol=1e-10, rtol=1e-9)
+
+@pytest.mark.parametrize('iterations', [1, 2, 5])
+@pytest.mark.parametrize('name', ['torque_motor_dynamic_load', 'torque_motor_release'])
+def test_motor_feedback_matches_total_multiplier(name, iterations):
+    fixture = json.loads((FIXTURES / f'{name}.json').read_text())
+    path = next(e for e in fixture['entities'] if e['name'] == 'fixed_torque')
+    path['components']['CablePathComponent'][-1] = iterations
+    for run in (run_js, run_python):
+        snapshot = run(fixture)['snapshots'][-1]
+        joint = snapshot['entities']['fixed_torque_joint']['CableJointComponent']
+        maps = snapshot['entityMaps']
+        assert maps['torqueModeCableLoadTorques']['fixed_torque_spool'] == pytest.approx(
+            joint['constraintLambda'] / .002**2 * .051, abs=1e-12)
+        assert maps['torqueModeCableLoadStiffnesses']['fixed_torque_spool'] == pytest.approx(5000 * .051**2)
+        assert maps['torqueModeCableLoadDampings']['fixed_torque_spool'] == pytest.approx(.04 * .051**2)
+        if name == 'torque_motor_release' and iterations > 1:
+            assert joint['constraintLambda'] == 0, 'later visits must release the initial load'
+
 
 @pytest.mark.parametrize('iterations', [1, 2, 5])
 def test_fixed_motor_load_is_not_multiplied_by_solver_iterations(iterations):

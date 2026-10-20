@@ -564,13 +564,13 @@ def apply_corrections(bodies: wp.array(dtype=Body), a: End, b: End, dt: F, value
 
 @wp.func
 def record_load(bodies: wp.array(dtype=Body), loads: wp.array2d(dtype=F), ep: Endpoint,
-                end: End, path: Path, value: F, inv_dt2: F):
+                end: End, path: Path, value: F, inv_dt2: F, record_coefficients: bool):
     if end.spin >= 0 and (bodies[end.spin].flags & 32) != 0 and ep.defer == 0 and inv_dt2 > F(0) and wp.abs(end.load_gradient) > EPS:
         torque = value*inv_dt2*end.load_gradient
-        if wp.isfinite(torque) and wp.abs(torque) > EPS:
+        if wp.isfinite(torque) and torque != F(0):
             loads[end.spin,0] = loads[end.spin,0]+torque
             loads[end.spin,3] = F(1)
-            if ep.implicit != 0:
+            if ep.implicit != 0 and record_coefficients:
                 square = end.load_gradient*end.load_gradient
                 if wp.isfinite(path.spring) and path.spring > F(0):
                     loads[end.spin,1] = loads[end.spin,1]+path.spring*square
@@ -650,9 +650,8 @@ def solve(bodies: wp.array(dtype=Body), joints: wp.array(dtype=Joint), paths: wp
                 if b.spin >= 0:
                     joint.solved = joint.solved | 4
                 joints[index] = joint
-                if iteration == 0:
-                    record_load(bodies,loads,joint.a,a,path,value,inv_dt2)
-                    record_load(bodies,loads,joint.b,b,path,value,inv_dt2)
+                record_load(bodies,loads,joint.a,a,path,value,inv_dt2,iteration == 0)
+                record_load(bodies,loads,joint.b,b,path,value,inv_dt2,iteration == 0)
                 if mechanical(bodies,a,b,dt) <= EPS:
                     continue
                 apply_corrections(bodies,a,b,dt,value)
