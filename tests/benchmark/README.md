@@ -1,5 +1,11 @@
 # Native HP4 logo benchmark
 
+For the required bounded regression gate, run `npm run test:physics`. It rebuilds
+native/Wasm physics and checks the first 20 seconds of the production layered
+HP4 logo at the browser's default one substep, the JavaScript fallback for two
+seconds, and loaded-state settling at one, two and four substeps. It runs
+automatically under `npm test` and CI. The longer benchmarks below are optional.
+
 For production JavaScript HP3/HP4 physics, see
 [headless JS profiling](HEADLESS_JS_PROFILING.md), including per-system timing,
 V8 CPU/allocation profiles, GC measurements and frozen autocal replay.

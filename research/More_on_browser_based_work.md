@@ -1,10 +1,10 @@
-The hp-sim-3d js app is a usable interactive simulator, while the Python version
-is primarily a headless tool for scripted runs and analysis.
-Use the browser based simulation whenever you want to
- - see and control a run as it happens,
- - try a print without preparing a simulation script,
- - explore machines interactively. (The browser UI lets you choose presets, upload authored scenes, and add or remove machines.)
- - Inspect browser-specific behavior.
+Use the headless production native/Wasm backends for research experiments and
+stability checks. They share the browser's scene construction and physics
+pipeline; `npm run test:physics` exercises the production HP4 logo without a UI.
+Browser experiments should be rare and preferably performed by a human. Use
+them when a browser-specific issue cannot be reproduced headlessly, or when the
+user explicitly requests interactive inspection. The browser supports presets,
+scene uploads and multiple machines for those cases.
 
 For shared browser work call `start_browser_service(record=True)` when recording
 is needed, open its exact URL, inspect `browser_status`, and pass that page's

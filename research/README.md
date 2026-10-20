@@ -12,6 +12,21 @@ This README contains the operating instructions and tool arguments.
 
 ## Setup and interactive use
 
+### Required physics stability check
+
+Run `npm run test:physics` before delivering physics, motor, cable transport or
+scene dynamics changes. It rebuilds native and browser Wasm engines, replays the
+first 20 seconds of the bundled HP4 **Print Logo** at the default one substep,
+and checks loaded-state settling at one, two and four substeps. The logo checks
+every step for finite body state, bounded motion around the print plane, speed,
+rotation and missed steps. It also covers the JavaScript fallback for two seconds.
+Failures block delivery. `npm test` and CI run this gate automatically. Prefer
+these headless production backends for experiments; browser experiments should
+be rare and preferably performed by a human. This is a stability regression,
+not calibration accuracy or hardware validation.
+
+### Setup
+
 From the repository root:
 
 ```bash

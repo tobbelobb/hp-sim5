@@ -47,6 +47,6 @@ function settle(substeps) {
 }
 
 for (const substeps of [1, 2, 4]) {
-  test(`opt-in HP4 loaded recording state settles at production firmware cadence: ${substeps} substeps`,
+  test(`HP4 loaded recording state settles at production firmware cadence: ${substeps} substeps`,
     () => settle(substeps));
 }

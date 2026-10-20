@@ -31,18 +31,6 @@ def test_comparator_rejects_changed_physics_and_structure():
         assert_equivalent(changed, expected, **fixture['tolerance'])
 
 
-@pytest.mark.parametrize('mu', [0., .3])
-def test_free_rolling_friction_preserves_material_lengths(mu):
-    fixture = json.loads((FIXTURES / 'cable_friction.json').read_text())
-    guide = next(e for e in fixture['entities'] if e['name'] == 'free_guide')
-    guide['components']['CoefficientOfFrictionComponent'] = [mu]
-    for run in (run_js, run_python):
-        for snapshot in run(fixture)['snapshots']:
-            entities = snapshot['entities']
-            assert entities['free_j0']['CableJointComponent']['restLength'] == 1.2
-            assert entities['free_j1']['CableJointComponent']['restLength'] == .8
-
-
 def test_force_readback_uses_final_multipliers_and_transfers():
     fixture = json.loads((FIXTURES / 'cable_force_readback.json').read_text())
     for run in (run_js, run_python):

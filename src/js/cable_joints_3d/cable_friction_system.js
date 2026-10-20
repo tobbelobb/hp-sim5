@@ -97,12 +97,10 @@ function _evenOutTensionFriction(world) {
         const effectiveRadius = radius + (layeringEnabled(world) ? (path.cableHalfWidth ?? 0.0) : 0.0);
 
         const freeRollingLink = linkType === 'rolling' && world.getComponent(linkEntityId, SpoolStateComponent);
-        // An inertial rolling link transports cable through its rotation.
-        // Redistributing here also lets cable slip while the wheel is still,
-        // erasing its restoring torque and allowing perpetual numerical spin.
-        if (freeRollingLink) continue;
+        // Skipping redistribution alone destabilizes reeved paths. A no-slip
+        // replacement must also repair the coupled transport/rotor solve.
 
-        if (mu > epsilon) {
+        if (!freeRollingLink && mu > epsilon) {
           const storedLengthOnLink = path.stored[i + 1];
           let wrapAngle = 0;
           if (linkType === 'rolling' && effectiveRadius > epsilon && Math.abs(storedLengthOnLink) > epsilon) {

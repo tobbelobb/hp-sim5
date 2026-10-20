@@ -776,7 +776,7 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
     expect(getSpoolRotationAngle(spoolState, orientation.quaternion)).toBeCloseTo(0.0, 12);
   });
 
-  test('fixed torque-mode spool segments load the motor without reporting solver force', () => {
+  test('fixed torque-mode spool segments report tension and load the motor', () => {
     const stepper = new StepperMotorComponent();
     stepper.torqueMode = true;
 
@@ -839,7 +839,7 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
     new PBDCableConstraintSolver().update(world, 0.0);
 
     const joint = world.getComponent(jointEntity, CableJointComponent);
-    expect(joint.constraintForceMagnitude).toBeCloseTo(0.0, 12);
+    expect(joint.constraintForceMagnitude).toBeCloseTo(100.0, 12);
     expect(joint.transferredConstraintForceMagnitude).toBeCloseTo(0.0, 12);
     expect(world.getResource('torqueModeCableLoadTorques')?.get(spool)).toBeCloseTo(100.0, 9);
     expect(world.getResource('torqueModeCableLoadStiffnesses')?.get(spool)).toBeCloseTo(1000.0, 9);

@@ -9,6 +9,10 @@ echo "== Build shared Rust physics for native and Wasm =="
 echo "== Native Rust smoke tests =="
 (cd "$ROOT" && cargo test --manifest-path src/wasm/cable_solver/Cargo.toml --locked)
 
+echo "== HP4 production logo and loaded-state stability (mandatory) =="
+(cd "$ROOT" && node --test tests/benchmark/hp4_logo_stability.test.mjs \
+  tests/benchmark/hp4_stability.test.mjs)
+
 echo "== Rust source contract, JS parity and host integration =="
 (cd "$ROOT" && node --expose-gc --test tests/benchmark/native_physics_engine.test.mjs \
   tests/benchmark/wasm_cable_solver.test.mjs tests/benchmark/physics_engine_ui.test.mjs \

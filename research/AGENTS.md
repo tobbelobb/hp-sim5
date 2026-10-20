@@ -1,6 +1,14 @@
 Use `.venv/bin/python` and keep source changes small. Read `research/README.md`
 for the tools and `research/investigation.md` for the integration rationale.
 
+Before delivering physics, motor, cable transport or scene dynamics changes,
+run `npm run test:physics` and resolve every failure. This bounded headless gate
+rebuilds native/Wasm physics, runs the real HP4 Print Logo prefix at the default
+one substep and checks loaded-state settling. Do not dismiss a stability failure
+as a legacy fixture or substitute an idle run, parity checks or extra substeps.
+Preserve failing evidence. Use headless production backends for experiments;
+browser experiments should be rare and preferably performed by a human.
+
 Before choosing autocal recording and compute budgets, read
 `research/autocal-recording-performance.md`. Its matched HP3 replay measured
 about 4.8/5.0/5.5/15.2 seconds and 0/3.4/11/54 MB RRD for

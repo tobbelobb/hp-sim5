@@ -5,25 +5,10 @@ import { setImmediate } from 'node:timers/promises';
 import { runFixture } from '../parity3d/oracle.mjs';
 import { createHeadlessWorld } from '../../hp-sim-3d/app/headlessWorld.js';
 import { NativePhysicsEngine, loadNativePhysicsAddon } from '../../src/js/cable_joints_3d/native_physics_engine.js';
-import { PositionComponent, SceneEntityInfoComponent, EncoderComponent } from '../../src/js/cable_joints_3d/ecs.js';
+import { PositionComponent } from '../../src/js/cable_joints_3d/ecs.js';
 import { runTrajectory } from '../../scripts/profile_headless.mjs';
 
 const fixtures = new URL('../fixtures/python_3d_parity/', import.meta.url);
-test('held HP4 cables do not drive passive wheels continuously', () => {
-  const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp4_rigid_body.usda', import.meta.url), 'utf8');
-  const { world, dt } = createHeadlessWorld(scene, { lineLayeringEnabled: false, closedLoopMotorsEnabled: true });
-  try {
-    for (let step = 0; step < 1000; step++) world.update(dt);
-    const wheels = world.query([SceneEntityInfoComponent, EncoderComponent])
-      .filter(id => world.getComponent(id, SceneEntityInfoComponent).name.startsWith('Wheel'));
-    assert.equal(wheels.length, 24);
-    for (const id of wheels) assert(Math.abs(world.getComponent(id, EncoderComponent).angle) < .1,
-      `${world.getComponent(id, SceneEntityInfoComponent).name} rotated without cable transport`);
-  } finally {
-    world.getResource('cableSolverBackend').dispose();
-  }
-});
-
 test('local defaults are native, isolated, editable and safe to clear', () => {
   const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp3_rigid_body.usda', import.meta.url), 'utf8');
   const first = createHeadlessWorld(scene), second = createHeadlessWorld(scene);

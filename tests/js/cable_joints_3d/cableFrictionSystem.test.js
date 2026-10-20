@@ -108,7 +108,7 @@ describe('CableFrictionSystem (3D)', () => {
     expect(10.0 - expectedHigh).toBeCloseTo(threshold * (6.0 - expectedLow), 8);
   });
 
-  test('free-spinning rolling links conserve material lengths during friction', () => {
+  test('free-spinning rolling links equalize tension despite material friction', () => {
     const world = new World();
 
     const left = world.createEntity();
@@ -164,9 +164,7 @@ describe('CableFrictionSystem (3D)', () => {
     const system = new CableFrictionSystem();
     system.update(world, 1 / 2000);
 
-    // Tension differences accelerate the inertial wheel in the cable solve;
-    // this pass must not independently move material across its surface.
-    expect(world.getComponent(joint0, CableJointComponent).restLength).toBe(7.0);
-    expect(world.getComponent(joint1, CableJointComponent).restLength).toBe(7.0);
+    expect(world.getComponent(joint0, CableJointComponent).restLength).toBeCloseTo(9.0, 8);
+    expect(world.getComponent(joint1, CableJointComponent).restLength).toBeCloseTo(5.0, 8);
   });
 });

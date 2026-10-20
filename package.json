@@ -6,7 +6,8 @@
   "scripts": {
     "build:wasm": "node scripts/build_cable_wasm.mjs",
     "build:native": "node scripts/build_native_physics.mjs",
-    "test": "jest"
+    "test:physics": "npm run build:native -- --no-pgo && npm run build:wasm && node --test tests/benchmark/hp4_logo_stability.test.mjs tests/benchmark/hp4_stability.test.mjs",
+    "test": "npm run test:physics && jest"
   },
   "devDependencies": {
     "@babel/core": "^7.27.1",

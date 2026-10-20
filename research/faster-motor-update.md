@@ -2,6 +2,11 @@
 
 Status: explanatory research report. The alternative motor formula remains experimental.
 
+Integration correction: the separate rolling-slip removal was withdrawn after
+it caused explosive HP4 Print Logo motion. The faster formula was never merged.
+Historical no-slip trials below remain research evidence, not validation of a
+production solver. See the [stability correction](hp4-logo-stability.md).
+
 ## Abstract
 
 The experimental motor update compensates a spring load evaluated at a predicted rotor pose. Its local derivation removes an extra timestep-dependent resistance term. Saved HP4 simulations show both promise and substantial integration error: at 30 seconds, the alternative reaches Y=633.7 mm with one substep and 572.4 mm with sixteen, while X changes from 675.5 to 3.9 mm. The coarse trajectory is therefore unreliable. Similar fine-step endpoints do not establish matching time histories or physical accuracy. These simulated results predate the new motor-feedback fix; no hardware reference was used.
