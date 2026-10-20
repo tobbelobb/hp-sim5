@@ -1636,9 +1636,14 @@ impl PhysicsWorld {
                     let kind = c.kind(i + 1);
                     let id = c.entity(i, 1);
                     let e = &self.entities[id];
+                    // Inertial rolling links transport cable through rotation,
+                    // not an independent rest-length redistribution.
+                    if kind == 1 && has(e, SPOOL) {
+                        continue;
+                    }
                     let mut threshold = 1.0;
                     let mut active = false;
-                    if (kind == 1 || kind == 2) && !(kind == 1 && has(e, SPOOL)) && e[105] > EPS {
+                    if (kind == 1 || kind == 2) && e[105] > EPS {
                         let r = e[104]
                             + if self.options[3] != 0.0 {
                                 c.data[6]

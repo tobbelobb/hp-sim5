@@ -50,7 +50,10 @@ def _redistribute_path(world, path):
             radius = radius_component.radius if radius_component is not None else 0.
             radius += path.cable_half_width if layering_enabled(world) else 0.
             free_rolling = link_type == 'rolling' and world.get_component(entity, SpoolStateComponent) is not None
-            if not free_rolling and mu > EPSILON:
+            # Inertial rolling links transport cable through rotation, not slip.
+            if free_rolling:
+                continue
+            if mu > EPSILON:
                 wrap_angle = 0.
                 stored = path.stored[index + 1]
                 if link_type == 'rolling' and radius > EPSILON and abs(stored) > EPSILON:
