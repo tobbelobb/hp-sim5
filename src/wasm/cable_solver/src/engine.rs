@@ -1881,6 +1881,7 @@ impl PhysicsWorld {
                 }
             }
         }
+        finalize_force_transfers(&mut self.joints);
         let mut first = 0;
         for c in &mut self.cables {
             for i in 0..c.count() {

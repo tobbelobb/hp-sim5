@@ -819,6 +819,18 @@ fn transfer(js: &mut [Joint], id: f64, force: f64) {
         j[36] = j[36].max(force);
     }
 }
+// Transfer only final force estimates, never intermediate iteration peaks.
+fn finalize_force_transfers(js: &mut [Joint]) {
+    for idx in 0..js.len() {
+        let j = js[idx];
+        let flags = j[37] as u32;
+        if flags == 0 { continue; }
+        transfer(js, j[29], j[35]);
+        transfer(js, j[30], j[35]);
+        if flags & 2 != 0 { transfer(js, j[27], j[35]); }
+        if flags & 4 != 0 { transfer(js, j[28], j[35]); }
+    }
+}
 fn correct(es: &mut [Entity], id: usize, grad: V, angular: V, angular_denom: f64, s: Spin, l: f64) {
     if es[id][43] > 0.0 {
         let delta = scale(grad, -es[id][43] * l);
@@ -965,23 +977,13 @@ fn solve_joint(
         load(es, sa, path, l);
         load(es, sb, path, l);
     }
+    // Force uses the total multiplier, including immobile compliant spans.
+    js[idx][37] = (1 | if sa.active { 2 } else { 0 } | if sb.active { 4 } else { 0 }) as f64;
+    js[idx][31] = *accumulated;
+    put_v(&mut js[idx], 32, scale(ga, *accumulated * path[7]));
+    js[idx][35] = accumulated.abs() * path[7];
     if mechanical(&a, &b, ga, gb, da, db, sa, sb, &response) <= EPS {
         return;
-    }
-    js[idx][37] = 1.0;
-    if iter == 0 {
-        js[idx][31] = l;
-        put_v(&mut js[idx], 32, scale(ga, l * path[7]));
-        let force = l.abs() * path[7];
-        js[idx][35] = force;
-        transfer(js, j[29], force);
-        transfer(js, j[30], force);
-        if sa.active {
-            transfer(js, j[27], force);
-        }
-        if sb.active && (!sa.active || j[28] != j[27]) {
-            transfer(js, j[28], force);
-        }
     }
     response.apply(es, l);
     correct(
@@ -1058,4 +1060,5 @@ pub unsafe extern "C" fn solve(ptr: *mut f64, entities: usize, joints: usize, pa
             }
         }
     }
+    finalize_force_transfers(js);
 }

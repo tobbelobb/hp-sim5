@@ -1,0 +1,18 @@
+{
+  "tolerance": {"atol": 1e-10, "rtol": 1e-09},
+  "entities": [
+    {"name": "a", "components": {"PositionComponent": [0, 0, 0], "MassComponent": [0]}},
+    {"name": "b", "components": {"PositionComponent": [3, 0, 0], "MassComponent": [1]}},
+    {"name": "c", "components": {"PositionComponent": [0.5, 0, 0], "MassComponent": [0]}},
+    {"name": "fixed_a", "components": {"PositionComponent": [10, 0, 0], "MassComponent": [0]}},
+    {"name": "fixed_b", "components": {"PositionComponent": [12, 0, 0], "MassComponent": [0]}},
+    {"name": "first", "components": {"CableJointComponent": ["a", "b", 1, [0, 0, 0], [3, 0, 0], "world"]}},
+    {"name": "second", "components": {"CableJointComponent": ["b", "c", 0.1, [3, 0, 0], [0.5, 0, 0], "world"]}},
+    {"name": "fixed", "components": {"CableJointComponent": ["fixed_a", "fixed_b", 1.9, [10, 0, 0], [12, 0, 0], "world"]}},
+    {"name": "chain", "components": {"CablePathComponent": [["first", "second"], ["attachment", "pinhole", "attachment"], [false, false, false], "Infinity", null, 0, 0, 2]}},
+    {"name": "static", "components": {"CablePathComponent": [["fixed"], ["attachment", "attachment"], [false, false], 1000, null, 0, 0, 2]}}
+  ],
+  "resources": {"dt": 1},
+  "systems": ["PBDCableConstraintSolver"],
+  "steps": [{"dt": 1}]
+}

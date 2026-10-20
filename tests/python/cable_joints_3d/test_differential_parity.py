@@ -43,6 +43,21 @@ def test_free_rolling_friction_preserves_material_lengths(mu):
             assert entities['free_j1']['CableJointComponent']['restLength'] == .8
 
 
+def test_force_readback_uses_final_multipliers_and_transfers():
+    fixture = json.loads((FIXTURES / 'cable_force_readback.json').read_text())
+    for run in (run_js, run_python):
+        entities = run(fixture)['snapshots'][-1]['entities']
+        first = entities['first']['CableJointComponent']
+        second = entities['second']['CableJointComponent']
+        fixed = entities['fixed']['CableJointComponent']
+        assert first['constraintLambda'] == pytest.approx(-1.6)
+        assert first['constraintForceMagnitude'] == pytest.approx(1.6)
+        assert first['constraintForce'] == pytest.approx([-1.6, 0, 0])
+        assert second['constraintForceMagnitude'] == pytest.approx(.4)
+        assert second['transferredConstraintForceMagnitude'] == pytest.approx(1.6), 'discard the first-visit peak of 2 N'
+        assert fixed['constraintForceMagnitude'] == pytest.approx(100), 'fixed endpoints can carry tension'
+
+
 @pytest.mark.parametrize('stiffness', [0, 20000])
 @pytest.mark.parametrize('iterations', [1, 2, 8])
 def test_compliant_cable_iterations_refine_one_physical_spring(stiffness, iterations):

@@ -72,6 +72,8 @@ class Joint:
     transfer_b: int
     multiplier: F
     damping_disp: F
+    force: V
+    solved: int
 
 
 @wp.struct
@@ -641,36 +643,46 @@ def solve(bodies: wp.array(dtype=Body), joints: wp.array(dtype=Joint), paths: wp
                 if wp.isnan(value):
                     continue
                 joint.multiplier = joint.multiplier+value
+                joint.force = direction*(joint.multiplier*inv_dt2)
+                joint.solved = 1
+                if a.spin >= 0:
+                    joint.solved = joint.solved | 2
+                if b.spin >= 0:
+                    joint.solved = joint.solved | 4
                 joints[index] = joint
                 if iteration == 0:
                     record_load(bodies,loads,joint.a,a,path,value,inv_dt2)
                     record_load(bodies,loads,joint.b,b,path,value,inv_dt2)
                 if mechanical(bodies,a,b,dt) <= EPS:
                     continue
-                if iteration == 0:
-                    output = joint.output
-                    telemetry[output,0] = value
-                    force = direction*(value*inv_dt2)
-                    telemetry[output,1] = force[0]
-                    telemetry[output,2] = force[1]
-                    telemetry[output,3] = force[2]
-                    magnitude = wp.abs(value)*inv_dt2
-                    telemetry[output,4] = magnitude
-                    for side in range(4):
-                        transfer = joint.transfer_a
-                        if side == 1:
-                            transfer = joint.transfer_b
-                        elif side == 2:
-                            transfer = -1
-                            if a.spin >= 0:
-                                transfer = joint.a.transfer
-                        elif side == 3:
-                            transfer = -1
-                            if b.spin >= 0:
-                                transfer = joint.b.transfer
-                        if transfer >= 0 and wp.isfinite(magnitude) and magnitude > F(0):
-                            telemetry[transfer,5] = wp.max(telemetry[transfer,5],magnitude)
                 apply_corrections(bodies,a,b,dt,value)
+    # Final readback and transfer use converged multipliers, including spans
+    # whose endpoints cannot move. Paths retain their canonical shared order.
+    for index in range(joints.shape[0]):
+        joint = joints[index]
+        if joint.solved == 0:
+            continue
+        output = joint.output
+        telemetry[output,0] = joint.multiplier
+        for axis in range(3):
+            telemetry[output,axis+1] = joint.force[axis]
+        magnitude = wp.abs(joint.multiplier)*inv_dt2
+        telemetry[output,4] = magnitude
+        for side in range(4):
+            transfer = joint.transfer_a
+            if side == 1:
+                transfer = joint.transfer_b
+            elif side == 2:
+                transfer = -1
+                if (joint.solved & 2) != 0:
+                    transfer = joint.a.transfer
+            elif side == 3:
+                transfer = -1
+                if (joint.solved & 4) != 0:
+                    transfer = joint.b.transfer
+            if transfer >= 0 and wp.isfinite(magnitude) and magnitude > F(0):
+                telemetry[transfer,5] = wp.max(telemetry[transfer,5],magnitude)
+
 
 
 class WarpCableConstraintSolver:

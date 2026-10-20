@@ -3138,6 +3138,7 @@ export class PBDCableConstraintSolver {
     const cableLoadDampings = new Map();
     // Multipliers belong to each path constraint, including shared joints.
     const accumulatedLambdas = new Map(pathEntities.map(id => [pathStore.get(id), new Map()]));
+    const forceSnapshots = new Map(pathEntities.map(id => [pathStore.get(id), new Map()]));
     world.setResource('torqueModeCableLoadTorques', cableLoadTorques);
     world.setResource('torqueModeCableLoadStiffnesses', cableLoadStiffnesses);
     world.setResource('torqueModeCableLoadDampings', cableLoadDampings);
@@ -3425,35 +3426,15 @@ export class PBDCableConstraintSolver {
         recordTorqueModeCableLoad(path, memberSpinB, loadGradSpinB, lambda, invDtSq);
       }
 
+      // Save the final visit's direction and transfer edges, including fixed
+      // endpoints: a stretched compliant span carries force without moving.
+      forceSnapshots.get(path).set(joint, {
+        index: jointIndex, direction: gradPosA.clone(),
+        transferA: memberSpinA?.transferredJointId,
+        transferB: memberSpinB?.transferredJointId,
+      });
       if (mechanicalDenom(solveMemberInvInertiaA, solveMemberInvInertiaB) <= EPSILON) {
         return;
-      }
-
-      if (!joint.constraintForce) {
-        joint.constraintForce = new Vector3(0, 0, 0);
-      }
-      if (solveIteration === 0) {
-        joint.constraintLambda = lambda;
-        joint.constraintForce.set(gradPosA);
-        joint.constraintForce.scale(lambda * invDtSq);
-        joint.constraintForceMagnitude = Math.abs(lambda) * invDtSq;
-        const transferredForceMagnitude = Math.abs(lambda) * invDtSq;
-        recordPinholeNeighborForceTransfers(path, jointIndex, transferredForceMagnitude);
-        if (memberSpinA?.transferredJointId !== undefined) {
-          recordTransferredForceMagnitude(
-            memberSpinA.transferredJointId,
-            transferredForceMagnitude,
-          );
-        }
-        if (
-          memberSpinB?.transferredJointId !== undefined &&
-          memberSpinB.transferredJointId !== memberSpinA?.transferredJointId
-        ) {
-          recordTransferredForceMagnitude(
-            memberSpinB.transferredJointId,
-            transferredForceMagnitude,
-          );
-        }
       }
 
       if (invMassA > 0.0) {
@@ -3580,6 +3561,23 @@ export class PBDCableConstraintSolver {
             jointSolverContexts.get(jointId),
           );
         }
+      }
+    }
+    // Read back total multipliers after refinement. Transfer only final forces,
+    // so a temporary peak cannot remain in the displayed neighboring span.
+    for (const pathId of pathEntities) {
+      const path = pathStore.get(pathId);
+      for (const [joint, snapshot] of forceSnapshots.get(path)) {
+        const lambda = accumulatedLambdas.get(path).get(joint);
+        joint.constraintLambda = lambda;
+        joint.constraintForce ??= new Vector3();
+        const invDtSq = getPathSolveParameters(path).invDtSq;
+        joint.constraintForce.set(snapshot.direction);
+        joint.constraintForce.scale(lambda * invDtSq);
+        const magnitude = joint.constraintForceMagnitude = Math.abs(lambda) * invDtSq;
+        recordPinholeNeighborForceTransfers(path, snapshot.index, magnitude);
+        recordTransferredForceMagnitude(snapshot.transferA, magnitude);
+        recordTransferredForceMagnitude(snapshot.transferB, magnitude);
       }
     }
   }

@@ -137,7 +137,7 @@ describe('PBDCableConstraintSolver (3D)', () => {
     new PBDCableConstraintSolver().update(world, 1);
     expect([a, b, c].map(id => world.getComponent(id, PositionComponent).pos.x))
       .toEqual([1.75, 2.75, 4.5]);
-    expect(world.getComponent(jointId, CableJointComponent).constraintForceMagnitude).toBe(1);
+    expect(world.getComponent(jointId, CableJointComponent).constraintForceMagnitude).toBe(1.75);
     expect(world.getComponent(nextJointId, CableJointComponent).constraintForceMagnitude).toBe(1.5);
   });
 

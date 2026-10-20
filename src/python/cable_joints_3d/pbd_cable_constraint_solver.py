@@ -244,7 +244,7 @@ def _apply_end_correction(world, end, inverse, multiplier):
                 encoder.angle += delta_angle
 
 
-def _solve_joint(world, path, index, joint, points, direction, error, iteration, joint_locals, dt, loads, multipliers, damping_displacements):
+def _solve_joint(world, path, index, joint, points, direction, error, iteration, joint_locals, dt, loads, multipliers, damping_displacements, force_snapshots):
     first = _solver_end(world, path, index, True, joint.entity_a, joint.entity_b, points[0], direction, joint_locals, dt)
     second = _solver_end(world, path, index, False, joint.entity_b, joint.entity_a, points[1], -direction, joint_locals, dt)
     if first is None or second is None:
@@ -314,20 +314,10 @@ def _solve_joint(world, path, index, joint, points, direction, error, iteration,
     if iteration == 0:
         for end in ends:
             _record_load(path, end, multiplier, inv_dt_squared, loads)
+    force_snapshots[key] = (direction.copy(), tuple(end.spin.transferred_joint if end.spin else None for end in ends), inv_dt_squared)
     angular_denominator, corrections, standalone = response()
     if sum(end.inv_mass * np.dot(end.gradient, end.gradient) for end in ends) + angular_denominator <= EPSILON:
         return
-    if iteration == 0:
-        joint.constraint_lambda = multiplier
-        joint.constraint_force[:] = direction * (multiplier * inv_dt_squared)
-        joint.constraint_force_magnitude = abs(multiplier) * inv_dt_squared
-        magnitude = joint.constraint_force_magnitude
-        if path.link_types[index] == 'pinhole' and index > 0:
-            _record_transferred_force(world, path.joint_entities[index - 1], magnitude)
-        if path.link_types[index + 1] == 'pinhole' and index + 1 < len(path.joint_entities):
-            _record_transferred_force(world, path.joint_entities[index + 1], magnitude)
-        for end in ends:
-            _record_transferred_force(world, end.spin.transferred_joint if end.spin else None, magnitude)
     for end in ends:
         if end.inv_mass > 0:
             end.position.pos += end.gradient * (-end.inv_mass * multiplier)
@@ -360,6 +350,7 @@ class PBDCableConstraintSolver:
         joint_locals = {}
         multipliers = {}
         damping_displacements = {}
+        force_snapshots = {}
         for path_id in paths:
             path = world.get_component(path_id, CablePathComponent)
             for joint_id in path.joint_entities:
@@ -385,4 +376,23 @@ class PBDCableConstraintSolver:
                     length = norm3(difference)
                     if length <= EPSILON or (length - joint.rest_length <= EPSILON and multipliers.get((id(path), id(joint)), 0.) == 0.):
                         continue
-                    _solve_joint(world, path, index, joint, points, difference / length, length - joint.rest_length, iteration, joint_locals, dt, loads, multipliers, damping_displacements)
+                    _solve_joint(world, path, index, joint, points, difference / length, length - joint.rest_length, iteration, joint_locals, dt, loads, multipliers, damping_displacements, force_snapshots)
+        # Final multipliers define force even for immobile compliant spans.
+        # Transfer after refinement to avoid keeping a temporary iteration peak.
+        for path_id in paths:
+            path = world.get_component(path_id, CablePathComponent)
+            for index, joint_id in enumerate(path.joint_entities):
+                joint = world.get_component(joint_id, CableJointComponent)
+                key = id(path), id(joint)
+                if key not in force_snapshots:
+                    continue
+                direction, transfers, inv_dt_squared = force_snapshots[key]
+                joint.constraint_lambda = multipliers[key]
+                joint.constraint_force[:] = direction * (multipliers[key] * inv_dt_squared)
+                magnitude = joint.constraint_force_magnitude = abs(multipliers[key]) * inv_dt_squared
+                if path.link_types[index] == 'pinhole' and index > 0:
+                    _record_transferred_force(world, path.joint_entities[index - 1], magnitude)
+                if path.link_types[index + 1] == 'pinhole' and index + 1 < len(path.joint_entities):
+                    _record_transferred_force(world, path.joint_entities[index + 1], magnitude)
+                for target in transfers:
+                    _record_transferred_force(world, target, magnitude)
