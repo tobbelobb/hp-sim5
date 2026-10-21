@@ -295,7 +295,6 @@ const CABLE_HYBRID_TRACE_PREFIX = '[CableHybridTrace]';
 
 const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
 const DEFAULT_CLOSED_LOOP_STEPPER_CONSTRAINT_STIFFNESS = 1e8;
-const DEFAULT_OPEN_LOOP_STEPPER_CONSTRAINT_STIFFNESS_SCALE = 1.0;
 const DEFAULT_OPEN_LOOP_STEPPER_HOLDING_TORQUE_SCALE = 1.0;
 
 function _debugCable(world, message) {
@@ -1401,22 +1400,10 @@ function _positionStepperConstraintStiffness(world, stepper) {
     );
   }
 
-  const holdingTorque = Number.isFinite(stepper.holdingTorque)
-    ? Math.max(0.0, stepper.holdingTorque)
-    : 0.0;
-  const polePairs = Number.isFinite(stepper.numPolePairs)
-    ? Math.max(1.0, Math.abs(stepper.numPolePairs))
-    : 1.0;
-  const scale = Math.max(
-    0.0,
-    _readFiniteResource(
-      world,
-      'openLoopStepperConstraintStiffnessScale',
-      DEFAULT_OPEN_LOOP_STEPPER_CONSTRAINT_STIFFNESS_SCALE,
-    ),
-  );
-
-  return holdingTorque * polePairs * scale;
+  // Open-loop electromagnetic torque is integrated by StepperMotorSystem.
+  // Adding stiffness only to cable response violates static torque balance
+  // and gives coarse steps artificial holding power.
+  return 0.0;
 }
 
 function _effectiveMotorizedSpinInvInertia(world, stepper, invInertia, inertia, dt) {

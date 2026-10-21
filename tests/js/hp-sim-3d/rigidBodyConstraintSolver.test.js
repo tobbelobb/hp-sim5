@@ -691,13 +691,13 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
     };
   }
 
-  test('position-controlled steppers add holding stiffness to cable spin solve', () => {
+  test('open-loop steppers keep physical cable spin inertia', () => {
     const freeForce = solveStandaloneStepperCableSpin().force;
     const drivenForce = solveStandaloneStepperCableSpin({
       stepper: new StepperMotorComponent(0.0, 0.0, 0.5, 50, 0.0),
     }).force;
 
-    expect(drivenForce).toBeGreaterThan(freeForce * 10.0);
+    expect(drivenForce).toBeCloseTo(freeForce, 12);
   });
 
   test('open-loop steppers backdrive after exceeding holding torque', () => {

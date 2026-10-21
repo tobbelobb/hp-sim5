@@ -17,7 +17,8 @@ echo "== Rust source contract, JS parity and host integration =="
 (cd "$ROOT" && node --expose-gc --test tests/benchmark/native_physics_engine.test.mjs \
   tests/benchmark/wasm_cable_solver.test.mjs tests/benchmark/physics_engine_ui.test.mjs \
   tests/benchmark/profile_headless.test.mjs tests/benchmark/hp4_open_loop_substeps.test.mjs \
-  tests/benchmark/slideprinter_mounted_motors.test.mjs tests/benchmark/mounted_rotor_dynamics.test.mjs)
+  tests/benchmark/slideprinter_mounted_motors.test.mjs tests/benchmark/mounted_rotor_dynamics.test.mjs \
+  tests/benchmark/open_loop_torque_balance.test.mjs)
 
 echo "== JS unit tests (jest) =="
 (cd "$ROOT" && npx jest)

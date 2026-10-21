@@ -143,3 +143,14 @@ Native crashes were reproduced in objective replay outside the sandbox and in co
 
 - [Isolation decisions and budgets](../output/research/autocal-crash-fix-20261007/research.md)
 - [Tracked findings and compiler reduction results](../research/bug-reports/autocal-native-crashes-october-7-2026/autocal-crash-compiler-update.md)
+
+## HP4 Print Squares substeps and PR 77
+
+Status: partial physics correction validated, 2026-10-21. Topics: HP4, Print Squares,
+missed steps, open-loop torque balance, rotor damping, physics substeps.
+
+Removing cable-only electromagnetic stiffness corrects artificial holding power
+and passes the default-one-substep stability gate. The PR's damping correction
+fails loaded-state settling and is deferred. Matched native Squares prefixes
+still pull B out at finer steps; coarse zero-loss behavior is unreliable evidence
+of accuracy. [Review, measurements and integration decision](hp4-squares-substeps.md).

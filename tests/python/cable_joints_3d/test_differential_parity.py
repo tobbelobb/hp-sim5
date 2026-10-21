@@ -160,7 +160,8 @@ def test_solver_oracle_reaches_spin_load_and_limit_cases(name):
     elif name == 'cable_solver_spools':
         angle = lambda name: entities[name + '_spool']['EncoderComponent']['angle']
         assert angle('release') == pytest.approx(angle('free'), abs=1e-10)
-        assert angle('free') < angle('held') < angle('closed')
+        assert angle('free') == pytest.approx(angle('held'), abs=1e-10)
+        assert angle('held') < angle('closed')
         assert entities['fixed_torque_joint']['CableJointComponent']['constraintForceMagnitude'] == pytest.approx(40)
         assert maps['torqueModeCableLoadTorques']['fixed_torque_spool'] < 0
         # Iterating a fixed physical constraint must not multiply its load.
