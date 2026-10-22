@@ -1,0 +1,248 @@
+[
+  {
+    "wall_s": 0.2854329619985947,
+    "simulation_s": 0.16341496300083236,
+    "construction_s": 0.10332918700441951,
+    "manifest": {
+      "schema_version": 2,
+      "backend": "headless-js",
+      "physics_engine": "rust-native",
+      "cable_solver_device": null,
+      "run_id": "645b3623a8114705b01b03aaa7c43e17",
+      "label": "native throughput paired benchmark",
+      "status": "complete",
+      "scene": "public/usd_scenes/hp3_rigid_body.usda",
+      "scene_generation": 1,
+      "steps": 200,
+      "dt_s": 0.002,
+      "commands_sha256": "da318ceff12b28df9457c776c443accd1b3bb6bfd425af747c4e01cd533bd0d6",
+      "scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+      "python_source_sha256": "f4cd75046358df3be787d38264ece1d5c4360d0ee0591f6e1ec3a93604a71b52",
+      "git_revision": "ab833759684ead6ff7808514b9715b43687310f8",
+      "python": "3.12.3",
+      "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+      "packages": {
+        "numpy": "2.4.3",
+        "usd-core": "26.3",
+        "rerun-sdk": "0.38.1"
+      },
+      "construction_wall_s": 0.10332918700441951,
+      "record": false,
+      "artifacts": {
+        "manifest": "/home/torbjorn/repos/hp-sim5/output/research/experiments/645b3623a8114705b01b03aaa7c43e17/manifest.json",
+        "scene": "/home/torbjorn/repos/hp-sim5/output/research/experiments/645b3623a8114705b01b03aaa7c43e17/scene.usda",
+        "commands": "/home/torbjorn/repos/hp-sim5/output/research/experiments/645b3623a8114705b01b03aaa7c43e17/commands.json",
+        "telemetry": "/home/torbjorn/repos/hp-sim5/output/research/experiments/645b3623a8114705b01b03aaa7c43e17/telemetry.jsonl",
+        "snapshot": "/home/torbjorn/repos/hp-sim5/output/research/experiments/645b3623a8114705b01b03aaa7c43e17/final.json"
+      },
+      "physics_artifact": {
+        "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "073405008b78250e18242761910c4264243f37bb00b7e2544e772a11a6c37172",
+        "build": {
+          "profile": "release",
+          "platform": "linux",
+          "arch": "x64",
+          "nodeApi": 8,
+          "artifactSha256": "073405008b78250e18242761910c4264243f37bb00b7e2544e772a11a6c37172",
+          "sources": {
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "native/node_bridge.c": "c8d4ad5a269dcdd073c13fb0ce24f25fd009a38434842f1a7301264a8994ee85",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "c4a2609f63595e243c1c06efb132f692df95a7ff785333a60efd45e2b6062ca6",
+            "src/lib.rs": "088d64e1de9a45fe692d5994081050e0ab5ac9e9996d504261b2e8280649ed04"
+          },
+          "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+          "target": "x86_64-unknown-linux-gnu",
+          "rustflags": null,
+          "compiler": "cc",
+          "buildScriptSha256": "f9736883a8be484fd64b100d8a3a5717fbc6e96415dc99a8c2b4489b9303d8de"
+        }
+      },
+      "js_physics_source_sha256": "7addedac1415f264862aea867cc51e88baa23aad0032e710e75599a6fabc3846",
+      "warnings": [],
+      "metrics": {
+        "effector_displacement_m": {
+          "world/machines/default/effector": 0.003239851633721688
+        },
+        "peak_cable_force_n": 12.610862815385582,
+        "peak_abs_length_error_m": 0.0060422266675743685,
+        "peak_abs_tracking_error_rad": 0.1549288889121551,
+        "peak_total_missed_steps": 1
+      },
+      "simulation_wall_s": 0.16341496300083236
+    },
+    "archived": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-14-native-throughput/consumers/fresh-hp3-record0-steps200-native/run-0",
+    "canonical_scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-14-native-throughput/consumers/fresh-hp3-record0-steps200-native/run-0/telemetry.jsonl",
+    "steps": 200,
+    "repeat": 0,
+    "machine": "hp3",
+    "record": false,
+    "mode": "fresh"
+  },
+  {
+    "wall_s": 0.26528221599801327,
+    "simulation_s": 0.1625028939997719,
+    "construction_s": 0.08906691700394731,
+    "manifest": {
+      "schema_version": 2,
+      "backend": "headless-js",
+      "physics_engine": "rust-native",
+      "cable_solver_device": null,
+      "run_id": "f52a98aa99d449329a7d9ef12c08f8b1",
+      "label": "native throughput paired benchmark",
+      "status": "complete",
+      "scene": "public/usd_scenes/hp3_rigid_body.usda",
+      "scene_generation": 1,
+      "steps": 200,
+      "dt_s": 0.002,
+      "commands_sha256": "da318ceff12b28df9457c776c443accd1b3bb6bfd425af747c4e01cd533bd0d6",
+      "scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+      "python_source_sha256": "f4cd75046358df3be787d38264ece1d5c4360d0ee0591f6e1ec3a93604a71b52",
+      "git_revision": "ab833759684ead6ff7808514b9715b43687310f8",
+      "python": "3.12.3",
+      "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+      "packages": {
+        "numpy": "2.4.3",
+        "usd-core": "26.3",
+        "rerun-sdk": "0.38.1"
+      },
+      "construction_wall_s": 0.08906691700394731,
+      "record": false,
+      "artifacts": {
+        "manifest": "/home/torbjorn/repos/hp-sim5/output/research/experiments/f52a98aa99d449329a7d9ef12c08f8b1/manifest.json",
+        "scene": "/home/torbjorn/repos/hp-sim5/output/research/experiments/f52a98aa99d449329a7d9ef12c08f8b1/scene.usda",
+        "commands": "/home/torbjorn/repos/hp-sim5/output/research/experiments/f52a98aa99d449329a7d9ef12c08f8b1/commands.json",
+        "telemetry": "/home/torbjorn/repos/hp-sim5/output/research/experiments/f52a98aa99d449329a7d9ef12c08f8b1/telemetry.jsonl",
+        "snapshot": "/home/torbjorn/repos/hp-sim5/output/research/experiments/f52a98aa99d449329a7d9ef12c08f8b1/final.json"
+      },
+      "physics_artifact": {
+        "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "073405008b78250e18242761910c4264243f37bb00b7e2544e772a11a6c37172",
+        "build": {
+          "profile": "release",
+          "platform": "linux",
+          "arch": "x64",
+          "nodeApi": 8,
+          "artifactSha256": "073405008b78250e18242761910c4264243f37bb00b7e2544e772a11a6c37172",
+          "sources": {
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "native/node_bridge.c": "c8d4ad5a269dcdd073c13fb0ce24f25fd009a38434842f1a7301264a8994ee85",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "c4a2609f63595e243c1c06efb132f692df95a7ff785333a60efd45e2b6062ca6",
+            "src/lib.rs": "088d64e1de9a45fe692d5994081050e0ab5ac9e9996d504261b2e8280649ed04"
+          },
+          "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+          "target": "x86_64-unknown-linux-gnu",
+          "rustflags": null,
+          "compiler": "cc",
+          "buildScriptSha256": "f9736883a8be484fd64b100d8a3a5717fbc6e96415dc99a8c2b4489b9303d8de"
+        }
+      },
+      "js_physics_source_sha256": "7addedac1415f264862aea867cc51e88baa23aad0032e710e75599a6fabc3846",
+      "warnings": [],
+      "metrics": {
+        "effector_displacement_m": {
+          "world/machines/default/effector": 0.003239851633721688
+        },
+        "peak_cable_force_n": 12.610862815385582,
+        "peak_abs_length_error_m": 0.0060422266675743685,
+        "peak_abs_tracking_error_rad": 0.1549288889121551,
+        "peak_total_missed_steps": 1
+      },
+      "simulation_wall_s": 0.1625028939997719
+    },
+    "archived": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-14-native-throughput/consumers/fresh-hp3-record0-steps200-native/run-1",
+    "canonical_scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-14-native-throughput/consumers/fresh-hp3-record0-steps200-native/run-1/telemetry.jsonl",
+    "steps": 200,
+    "repeat": 1,
+    "machine": "hp3",
+    "record": false,
+    "mode": "fresh"
+  },
+  {
+    "wall_s": 0.26830628300012904,
+    "simulation_s": 0.16558593599984306,
+    "construction_s": 0.08888322399798199,
+    "manifest": {
+      "schema_version": 2,
+      "backend": "headless-js",
+      "physics_engine": "rust-native",
+      "cable_solver_device": null,
+      "run_id": "8bbe1d14dfe54ccaa66b4ffb1f6cea03",
+      "label": "native throughput paired benchmark",
+      "status": "complete",
+      "scene": "public/usd_scenes/hp3_rigid_body.usda",
+      "scene_generation": 1,
+      "steps": 200,
+      "dt_s": 0.002,
+      "commands_sha256": "da318ceff12b28df9457c776c443accd1b3bb6bfd425af747c4e01cd533bd0d6",
+      "scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+      "python_source_sha256": "f4cd75046358df3be787d38264ece1d5c4360d0ee0591f6e1ec3a93604a71b52",
+      "git_revision": "ab833759684ead6ff7808514b9715b43687310f8",
+      "python": "3.12.3",
+      "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+      "packages": {
+        "numpy": "2.4.3",
+        "usd-core": "26.3",
+        "rerun-sdk": "0.38.1"
+      },
+      "construction_wall_s": 0.08888322399798199,
+      "record": false,
+      "artifacts": {
+        "manifest": "/home/torbjorn/repos/hp-sim5/output/research/experiments/8bbe1d14dfe54ccaa66b4ffb1f6cea03/manifest.json",
+        "scene": "/home/torbjorn/repos/hp-sim5/output/research/experiments/8bbe1d14dfe54ccaa66b4ffb1f6cea03/scene.usda",
+        "commands": "/home/torbjorn/repos/hp-sim5/output/research/experiments/8bbe1d14dfe54ccaa66b4ffb1f6cea03/commands.json",
+        "telemetry": "/home/torbjorn/repos/hp-sim5/output/research/experiments/8bbe1d14dfe54ccaa66b4ffb1f6cea03/telemetry.jsonl",
+        "snapshot": "/home/torbjorn/repos/hp-sim5/output/research/experiments/8bbe1d14dfe54ccaa66b4ffb1f6cea03/final.json"
+      },
+      "physics_artifact": {
+        "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "073405008b78250e18242761910c4264243f37bb00b7e2544e772a11a6c37172",
+        "build": {
+          "profile": "release",
+          "platform": "linux",
+          "arch": "x64",
+          "nodeApi": 8,
+          "artifactSha256": "073405008b78250e18242761910c4264243f37bb00b7e2544e772a11a6c37172",
+          "sources": {
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "native/node_bridge.c": "c8d4ad5a269dcdd073c13fb0ce24f25fd009a38434842f1a7301264a8994ee85",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "c4a2609f63595e243c1c06efb132f692df95a7ff785333a60efd45e2b6062ca6",
+            "src/lib.rs": "088d64e1de9a45fe692d5994081050e0ab5ac9e9996d504261b2e8280649ed04"
+          },
+          "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+          "target": "x86_64-unknown-linux-gnu",
+          "rustflags": null,
+          "compiler": "cc",
+          "buildScriptSha256": "f9736883a8be484fd64b100d8a3a5717fbc6e96415dc99a8c2b4489b9303d8de"
+        }
+      },
+      "js_physics_source_sha256": "7addedac1415f264862aea867cc51e88baa23aad0032e710e75599a6fabc3846",
+      "warnings": [],
+      "metrics": {
+        "effector_displacement_m": {
+          "world/machines/default/effector": 0.003239851633721688
+        },
+        "peak_cable_force_n": 12.610862815385582,
+        "peak_abs_length_error_m": 0.0060422266675743685,
+        "peak_abs_tracking_error_rad": 0.1549288889121551,
+        "peak_total_missed_steps": 1
+      },
+      "simulation_wall_s": 0.16558593599984306
+    },
+    "archived": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-14-native-throughput/consumers/fresh-hp3-record0-steps200-native/run-2",
+    "canonical_scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-14-native-throughput/consumers/fresh-hp3-record0-steps200-native/run-2/telemetry.jsonl",
+    "steps": 200,
+    "repeat": 2,
+    "machine": "hp3",
+    "record": false,
+    "mode": "fresh"
+  }
+]

@@ -1,0 +1,1525 @@
+{
+  "method": "bootstrap-old",
+  "machine": "hp3",
+  "result": {
+    "sweeps": [
+      {
+        "id": "sweep_001",
+        "fixed_anchors": [
+          0,
+          3
+        ],
+        "fixed_lengths": [
+          516.9490711482003,
+          0
+        ],
+        "drive_anchor": 1,
+        "sensor_anchor": 2,
+        "drive_range": {
+          "start": -749.0708803464382,
+          "end": 574.016101700659,
+          "unit": "mm"
+        },
+        "data_points": [
+          {
+            "l_drive": -749.0708803464382,
+            "l_sensor": 576.822591137866,
+            "timestamp_ms": 1492483.9999785314,
+            "raw_angles_deg": [
+              987.3,
+              -1430.62,
+              1101.65,
+              0
+            ],
+            "drive_setpoint_mm": -749.0708803464382,
+            "step_index": 0,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              987.3040000000001,
+              null,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              -0.004000000000132786,
+              null,
+              null,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              987.3,
+              -1430.62,
+              1101.65,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.00000000059117,
+            "sample_duration_ms": 639.999999984866,
+            "fixed_error_angles_mu_deg": [
+              -0.004000000000132786,
+              null,
+              null,
+              0
+            ],
+            "l_drive_mu": -749.0708803464382,
+            "l_sensor_mu": 576.822591137866,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ]
+          },
+          {
+            "l_drive": -560.8685364453858,
+            "l_sensor": 251.66251550356634,
+            "timestamp_ms": 1505197.9999782306,
+            "raw_angles_deg": [
+              987.3,
+              -1071.18,
+              480.64,
+              0
+            ],
+            "drive_setpoint_mm": -560.8633004576297,
+            "step_index": 1,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              987.3040000000001,
+              null,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              -0.004000000000132786,
+              null,
+              null,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              987.3,
+              -1071.18,
+              480.64,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.00000000059117,
+            "sample_duration_ms": 639.999999984866,
+            "fixed_error_angles_mu_deg": [
+              -0.004000000000132786,
+              null,
+              null,
+              0
+            ],
+            "l_drive_mu": -560.8685364453858,
+            "l_sensor_mu": 251.66251550356634,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ]
+          },
+          {
+            "l_drive": -372.6714285320892,
+            "l_sensor": 19.614010133912274,
+            "timestamp_ms": 1520911.999977859,
+            "raw_angles_deg": [
+              987.3,
+              -711.75,
+              37.46,
+              0
+            ],
+            "drive_setpoint_mm": -372.6557205688212,
+            "step_index": 2,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              987.3040000000001,
+              null,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              -0.004000000000132786,
+              null,
+              null,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              987.3,
+              -711.75,
+              37.46,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.00000000059117,
+            "sample_duration_ms": 639.999999984866,
+            "fixed_error_angles_mu_deg": [
+              -0.004000000000132786,
+              null,
+              null,
+              0
+            ],
+            "l_drive_mu": -372.6714285320892,
+            "l_sensor_mu": 19.614010133912274,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ]
+          },
+          {
+            "l_drive": -184.46908463103665,
+            "l_sensor": -180.1808106588866,
+            "timestamp_ms": 1545125.9999772864,
+            "raw_angles_deg": [
+              987.3,
+              -352.31,
+              -344.12,
+              0
+            ],
+            "drive_setpoint_mm": -184.44814068001267,
+            "step_index": 3,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              987.3040000000001,
+              null,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              -0.004000000000132786,
+              null,
+              null,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              987.3,
+              -352.31,
+              -344.12,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.00000000059117,
+            "sample_duration_ms": 639.999999984866,
+            "fixed_error_angles_mu_deg": [
+              -0.004000000000132786,
+              null,
+              null,
+              0
+            ],
+            "l_drive_mu": -184.46908463103665,
+            "l_sensor_mu": -180.1808106588866,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ]
+          },
+          {
+            "l_drive": 574.016101700659,
+            "l_sensor": -748.0289187829977,
+            "timestamp_ms": 1648935.9999748317,
+            "raw_angles_deg": [
+              987.3,
+              1096.29,
+              -1428.63,
+              0
+            ],
+            "drive_setpoint_mm": -748.0289187829977,
+            "step_index": 0,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              987.3040000000001,
+              null,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              -0.004000000000132786,
+              null,
+              null,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              987.3,
+              1096.29,
+              -1428.63,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.00000000059117,
+            "sample_duration_ms": 639.999999984866,
+            "fixed_error_angles_mu_deg": [
+              -0.004000000000132786,
+              null,
+              null,
+              0
+            ],
+            "l_drive_mu": 574.016101700659,
+            "l_sensor_mu": -748.0289187829977,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ],
+            "source_drive_anchor": 2,
+            "source_sensor_anchor": 1
+          },
+          {
+            "l_drive": 248.94503785821118,
+            "l_sensor": -558.94692893894,
+            "timestamp_ms": 1662189.9999745183,
+            "raw_angles_deg": [
+              987.3,
+              475.45,
+              -1067.51,
+              0
+            ],
+            "drive_setpoint_mm": -558.9172583416562,
+            "step_index": 1,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              987.3040000000001,
+              null,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              -0.004000000000132786,
+              null,
+              null,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              987.3,
+              475.45,
+              -1067.51,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.00000000059117,
+            "sample_duration_ms": 639.999999984866,
+            "fixed_error_angles_mu_deg": [
+              -0.004000000000132786,
+              null,
+              null,
+              0
+            ],
+            "l_drive_mu": 248.94503785821118,
+            "l_sensor_mu": -558.94692893894,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ],
+            "source_drive_anchor": 2,
+            "source_sensor_anchor": 1
+          },
+          {
+            "l_drive": 16.37816970071479,
+            "l_sensor": -369.8021072418105,
+            "timestamp_ms": 1679445.9999741102,
+            "raw_angles_deg": [
+              987.3,
+              31.28,
+              -706.27,
+              0
+            ],
+            "drive_setpoint_mm": -369.8055979003146,
+            "step_index": 2,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              987.3040000000001,
+              null,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              -0.004000000000132786,
+              null,
+              null,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              987.3,
+              31.28,
+              -706.27,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.00000000059117,
+            "sample_duration_ms": 639.999999984866,
+            "fixed_error_angles_mu_deg": [
+              -0.004000000000132786,
+              null,
+              null,
+              0
+            ],
+            "l_drive_mu": 16.37816970071479,
+            "l_sensor_mu": -369.8021072418105,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ],
+            "source_drive_anchor": 2,
+            "source_sensor_anchor": 1
+          },
+          {
+            "l_drive": -183.9350138799264,
+            "l_sensor": -180.72011739775283,
+            "timestamp_ms": 1703699.9999735367,
+            "raw_angles_deg": [
+              987.3,
+              -351.29,
+              -345.15,
+              0
+            ],
+            "drive_setpoint_mm": -180.69393745897298,
+            "step_index": 3,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              987.3040000000001,
+              null,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              -0.004000000000132786,
+              null,
+              null,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              987.3,
+              -351.29,
+              -345.15,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.00000000059117,
+            "sample_duration_ms": 639.999999984866,
+            "fixed_error_angles_mu_deg": [
+              -0.004000000000132786,
+              null,
+              null,
+              0
+            ],
+            "l_drive_mu": -183.9350138799264,
+            "l_sensor_mu": -180.72011739775283,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ],
+            "source_drive_anchor": 2,
+            "source_sensor_anchor": 1
+          }
+        ],
+        "metadata": {
+          "sweep_method": "position",
+          "feed_rate": 1400,
+          "sensor_force_n": 1.1363575731199993,
+          "direction_forces": [
+            {
+              "drive_anchor": 1,
+              "sensor_anchor": 2,
+              "sensor_force_n": 1.1363575731199993,
+              "pullout_force_n": 3.354048140226428
+            },
+            {
+              "drive_anchor": 2,
+              "sensor_anchor": 1,
+              "sensor_force_n": 1.1363575731199993,
+              "pullout_force_n": 3.354048140226428
+            }
+          ],
+          "slip_recoveries": [],
+          "settle_ms": 200
+        }
+      },
+      {
+        "id": "sweep_002",
+        "fixed_anchors": [
+          1,
+          3
+        ],
+        "fixed_lengths": [
+          516.9752510869804,
+          0
+        ],
+        "drive_anchor": 0,
+        "sensor_anchor": 2,
+        "drive_range": {
+          "start": -749.0761163341942,
+          "end": 574.0370456516829,
+          "unit": "mm"
+        },
+        "data_points": [
+          {
+            "l_drive": -749.0761163341942,
+            "l_sensor": 576.8278271256219,
+            "timestamp_ms": 1871965.9999695579,
+            "raw_angles_deg": [
+              -1430.63,
+              987.35,
+              1101.66,
+              0
+            ],
+            "drive_setpoint_mm": -749.0761163341944,
+            "step_index": 0,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              null,
+              987.3040000000001,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              null,
+              0.045999999999935426,
+              null,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              -1430.63,
+              987.35,
+              1101.66,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.000000000600267,
+            "sample_duration_ms": 639.9999999846332,
+            "fixed_error_angles_mu_deg": [
+              null,
+              0.045999999999935426,
+              null,
+              0
+            ],
+            "l_drive_mu": -749.0761163341942,
+            "l_sensor_mu": 576.8278271256219,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ]
+          },
+          {
+            "l_drive": -504.7963435665639,
+            "l_sensor": 177.59946869518697,
+            "timestamp_ms": 1887583.9999691884,
+            "raw_angles_deg": [
+              -964.09,
+              987.35,
+              339.19,
+              0
+            ],
+            "drive_setpoint_mm": -504.8085608713279,
+            "step_index": 1,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              null,
+              987.3040000000001,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              null,
+              0.045999999999935426,
+              null,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              -964.09,
+              987.35,
+              339.19,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.00000000059117,
+            "sample_duration_ms": 639.999999984866,
+            "fixed_error_angles_mu_deg": [
+              null,
+              0.045999999999935426,
+              null,
+              0
+            ],
+            "l_drive_mu": -504.7963435665639,
+            "l_sensor_mu": 177.59946869518697,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ]
+          },
+          {
+            "l_drive": -260.51657079893357,
+            "l_sensor": -102.23789692332382,
+            "timestamp_ms": 1908701.999968689,
+            "raw_angles_deg": [
+              -497.55,
+              987.35,
+              -195.26,
+              0
+            ],
+            "drive_setpoint_mm": -260.5410054084615,
+            "step_index": 2,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              null,
+              987.3040000000001,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              null,
+              0.045999999999935426,
+              null,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              -497.55,
+              987.35,
+              -195.26,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.000000000582077,
+            "sample_duration_ms": 639.9999999850988,
+            "fixed_error_angles_mu_deg": [
+              null,
+              0.045999999999935426,
+              null,
+              0
+            ],
+            "l_drive_mu": -260.51657079893357,
+            "l_sensor_mu": -102.23789692332382,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ]
+          },
+          {
+            "l_drive": -16.29962988437504,
+            "l_sensor": -340.412507967478,
+            "timestamp_ms": 1937817.9999680005,
+            "raw_angles_deg": [
+              -31.13,
+              987.35,
+              -650.14,
+              0
+            ],
+            "drive_setpoint_mm": -16.273449945595075,
+            "step_index": 3,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              null,
+              987.3040000000001,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              null,
+              0.045999999999935426,
+              null,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              -31.13,
+              987.35,
+              -650.14,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.00000000059117,
+            "sample_duration_ms": 639.999999984866,
+            "fixed_error_angles_mu_deg": [
+              null,
+              0.045999999999935426,
+              null,
+              0
+            ],
+            "l_drive_mu": -16.29962988437504,
+            "l_sensor_mu": -340.412507967478,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ]
+          },
+          {
+            "l_drive": 574.0370456516829,
+            "l_sensor": -748.0498627340216,
+            "timestamp_ms": 2037129.9999656521,
+            "raw_angles_deg": [
+              1096.33,
+              987.35,
+              -1428.67,
+              0
+            ],
+            "drive_setpoint_mm": -748.0498627340216,
+            "step_index": 0,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              null,
+              987.3040000000001,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              null,
+              0.045999999999935426,
+              null,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              1096.33,
+              987.35,
+              -1428.67,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.00000000059117,
+            "sample_duration_ms": 639.999999984866,
+            "fixed_error_angles_mu_deg": [
+              null,
+              0.045999999999935426,
+              null,
+              0
+            ],
+            "l_drive_mu": 574.0370456516829,
+            "l_sensor_mu": -748.0498627340216,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ],
+            "source_drive_anchor": 2,
+            "source_sensor_anchor": 0
+          },
+          {
+            "l_drive": 323.500267515653,
+            "l_sensor": -611.275390572234,
+            "timestamp_ms": 2046139.999965439,
+            "raw_angles_deg": [
+              617.84,
+              987.35,
+              -1167.45,
+              0
+            ],
+            "drive_setpoint_mm": -611.3015705110139,
+            "step_index": 1,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              null,
+              987.3040000000001,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              null,
+              0.045999999999935426,
+              null,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              617.84,
+              987.35,
+              -1167.45,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.00000000059117,
+            "sample_duration_ms": 639.999999984866,
+            "fixed_error_angles_mu_deg": [
+              null,
+              0.045999999999935426,
+              null,
+              0
+            ],
+            "l_drive_mu": 323.500267515653,
+            "l_sensor_mu": -611.275390572234,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ],
+            "source_drive_anchor": 2,
+            "source_sensor_anchor": 0
+          },
+          {
+            "l_drive": 139.69091734187015,
+            "l_sensor": -474.55851427576215,
+            "timestamp_ms": 2056647.9999651907,
+            "raw_angles_deg": [
+              266.79,
+              987.35,
+              -906.34,
+              0
+            ],
+            "drive_setpoint_mm": -474.5532782880062,
+            "step_index": 2,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              null,
+              987.3040000000001,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              null,
+              0.045999999999935426,
+              null,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              266.79,
+              987.35,
+              -906.34,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.00000000059117,
+            "sample_duration_ms": 639.999999984866,
+            "fixed_error_angles_mu_deg": [
+              null,
+              0.045999999999935426,
+              null,
+              0
+            ],
+            "l_drive_mu": 139.69091734187015,
+            "l_sensor_mu": -474.55851427576215,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ],
+            "source_drive_anchor": 2,
+            "source_sensor_anchor": 0
+          },
+          {
+            "l_drive": -19.25796296650543,
+            "l_sensor": -337.77880612621857,
+            "timestamp_ms": 2075659.999964741,
+            "raw_angles_deg": [
+              -36.78,
+              987.35,
+              -645.11,
+              0
+            ],
+            "drive_setpoint_mm": -337.8049860649985,
+            "step_index": 3,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              null,
+              987.3040000000001,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              null,
+              0.045999999999935426,
+              null,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              -36.78,
+              987.35,
+              -645.11,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.00000000059117,
+            "sample_duration_ms": 639.999999984866,
+            "fixed_error_angles_mu_deg": [
+              null,
+              0.045999999999935426,
+              null,
+              0
+            ],
+            "l_drive_mu": -19.25796296650543,
+            "l_sensor_mu": -337.77880612621857,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ],
+            "source_drive_anchor": 2,
+            "source_sensor_anchor": 0
+          }
+        ],
+        "metadata": {
+          "sweep_method": "position",
+          "feed_rate": 1400,
+          "sensor_force_n": 1.1363575731199993,
+          "direction_forces": [
+            {
+              "drive_anchor": 0,
+              "sensor_anchor": 2,
+              "sensor_force_n": 1.1363575731199993,
+              "pullout_force_n": 3.354048140226428
+            },
+            {
+              "drive_anchor": 2,
+              "sensor_anchor": 0,
+              "sensor_force_n": 1.1363575731199993,
+              "pullout_force_n": 3.354048140226428
+            }
+          ],
+          "slip_recoveries": [],
+          "settle_ms": 200
+        }
+      },
+      {
+        "id": "sweep_003",
+        "fixed_anchors": [
+          2,
+          3
+        ],
+        "fixed_lengths": [
+          516.9281271971765,
+          0
+        ],
+        "drive_anchor": 0,
+        "sensor_anchor": 1,
+        "drive_range": {
+          "start": -749.0447004076583,
+          "end": 574.0475176271949,
+          "unit": "mm"
+        },
+        "data_points": [
+          {
+            "l_drive": -749.0447004076583,
+            "l_sensor": 576.81735515011,
+            "timestamp_ms": 2208517.9999615992,
+            "raw_angles_deg": [
+              -1430.57,
+              1101.64,
+              987.26,
+              0
+            ],
+            "drive_setpoint_mm": -749.0447004076583,
+            "step_index": 0,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              null,
+              null,
+              987.3040000000001,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              null,
+              null,
+              -0.044000000000096406,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              -1430.57,
+              1101.64,
+              987.26,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.000000000582077,
+            "sample_duration_ms": 639.9999999850988,
+            "fixed_error_angles_mu_deg": [
+              null,
+              null,
+              -0.044000000000096406,
+              0
+            ],
+            "l_drive_mu": -749.0447004076583,
+            "l_sensor_mu": 576.81735515011,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ]
+          },
+          {
+            "l_drive": -597.0701557902521,
+            "l_sensor": 302.54584451620906,
+            "timestamp_ms": 2217681.9999613827,
+            "raw_angles_deg": [
+              -1140.32,
+              577.82,
+              987.26,
+              0
+            ],
+            "drive_setpoint_mm": -597.0753917780081,
+            "step_index": 1,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              null,
+              null,
+              987.3040000000001,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              null,
+              null,
+              -0.044000000000096406,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              -1140.32,
+              577.82,
+              987.26,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.000000000600267,
+            "sample_duration_ms": 639.9999999846332,
+            "fixed_error_angles_mu_deg": [
+              null,
+              null,
+              -0.044000000000096406,
+              0
+            ],
+            "l_drive_mu": -597.0701557902521,
+            "l_sensor_mu": 302.54584451620906,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ]
+          },
+          {
+            "l_drive": -445.0956111728459,
+            "l_sensor": 103.94482893177428,
+            "timestamp_ms": 2229845.999961095,
+            "raw_angles_deg": [
+              -850.07,
+              198.52,
+              987.26,
+              0
+            ],
+            "drive_setpoint_mm": -445.10608314835787,
+            "step_index": 2,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              null,
+              null,
+              987.3040000000001,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              null,
+              null,
+              -0.044000000000096406,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              -850.07,
+              198.52,
+              987.26,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.000000000582077,
+            "sample_duration_ms": 639.9999999850988,
+            "fixed_error_angles_mu_deg": [
+              null,
+              null,
+              -0.044000000000096406,
+              0
+            ],
+            "l_drive_mu": -445.0956111728459,
+            "l_sensor_mu": 103.94482893177428,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ]
+          },
+          {
+            "l_drive": -293.12106655543965,
+            "l_sensor": -67.73797359915191,
+            "timestamp_ms": 2250009.999960618,
+            "raw_angles_deg": [
+              -559.82,
+              -129.37,
+              987.26,
+              0
+            ],
+            "drive_setpoint_mm": -293.1367745187076,
+            "step_index": 3,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              null,
+              null,
+              987.3040000000001,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              null,
+              null,
+              -0.044000000000096406,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              -559.82,
+              -129.37,
+              987.26,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.000000000582077,
+            "sample_duration_ms": 639.9999999850988,
+            "fixed_error_angles_mu_deg": [
+              null,
+              null,
+              -0.044000000000096406,
+              0
+            ],
+            "l_drive_mu": -293.12106655543965,
+            "l_sensor_mu": -67.73797359915191,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ]
+          },
+          {
+            "l_drive": 574.0475176271949,
+            "l_sensor": -748.0236827952416,
+            "timestamp_ms": 2359821.9999580216,
+            "raw_angles_deg": [
+              1096.35,
+              -1428.62,
+              987.26,
+              0
+            ],
+            "drive_setpoint_mm": -748.0236827952416,
+            "step_index": 0,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              null,
+              null,
+              987.3040000000001,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              null,
+              null,
+              -0.044000000000096406,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              1096.35,
+              -1428.62,
+              987.26,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.000000000600267,
+            "sample_duration_ms": 639.9999999846332,
+            "fixed_error_angles_mu_deg": [
+              null,
+              null,
+              -0.044000000000096406,
+              0
+            ],
+            "l_drive_mu": 574.0475176271949,
+            "l_sensor_mu": -748.0236827952416,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ],
+            "source_drive_anchor": 1,
+            "source_sensor_anchor": 0
+          },
+          {
+            "l_drive": 199.0722544824732,
+            "l_sensor": -521.4153687040539,
+            "timestamp_ms": 2374181.999957682,
+            "raw_angles_deg": [
+              380.2,
+              -995.83,
+              987.26,
+              0
+            ],
+            "drive_setpoint_mm": -521.4293313380698,
+            "step_index": 1,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              null,
+              null,
+              987.3040000000001,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              null,
+              null,
+              -0.044000000000096406,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              380.2,
+              -995.83,
+              987.26,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.000000000600267,
+            "sample_duration_ms": 639.9999999846332,
+            "fixed_error_angles_mu_deg": [
+              null,
+              null,
+              -0.044000000000096406,
+              0
+            ],
+            "l_drive_mu": 199.0722544824732,
+            "l_sensor_mu": -521.4153687040539,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ],
+            "source_drive_anchor": 1,
+            "source_sensor_anchor": 0
+          },
+          {
+            "l_drive": -65.9263218355818,
+            "l_sensor": -294.8070546128661,
+            "timestamp_ms": 2395043.9999571885,
+            "raw_angles_deg": [
+              -125.91,
+              -563.04,
+              987.26,
+              0
+            ],
+            "drive_setpoint_mm": -294.83497988089806,
+            "step_index": 2,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              null,
+              null,
+              987.3040000000001,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              null,
+              null,
+              -0.044000000000096406,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              -125.91,
+              -563.04,
+              987.26,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.000000000582077,
+            "sample_duration_ms": 639.9999999850988,
+            "fixed_error_angles_mu_deg": [
+              null,
+              null,
+              -0.044000000000096406,
+              0
+            ],
+            "l_drive_mu": -65.9263218355818,
+            "l_sensor_mu": -294.8070546128661,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ],
+            "source_drive_anchor": 1,
+            "source_sensor_anchor": 0
+          },
+          {
+            "l_drive": -292.6288837063772,
+            "l_sensor": -68.26157237475022,
+            "timestamp_ms": 2422403.9999565417,
+            "raw_angles_deg": [
+              -558.88,
+              -130.37,
+              987.26,
+              0
+            ],
+            "drive_setpoint_mm": -68.24062842372632,
+            "step_index": 3,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              null,
+              null,
+              987.3040000000001,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              null,
+              null,
+              -0.044000000000096406,
+              0
+            ],
+            "sensor_force_n": 1.1363575731199993,
+            "mu": [
+              -558.88,
+              -130.37,
+              987.26,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.000000000600267,
+            "sample_duration_ms": 639.9999999846332,
+            "fixed_error_angles_mu_deg": [
+              null,
+              null,
+              -0.044000000000096406,
+              0
+            ],
+            "l_drive_mu": -292.6288837063772,
+            "l_sensor_mu": -68.26157237475022,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ],
+            "source_drive_anchor": 1,
+            "source_sensor_anchor": 0
+          }
+        ],
+        "metadata": {
+          "sweep_method": "position",
+          "feed_rate": 1400,
+          "sensor_force_n": 1.1363575731199993,
+          "direction_forces": [
+            {
+              "drive_anchor": 0,
+              "sensor_anchor": 1,
+              "sensor_force_n": 1.1363575731199993,
+              "pullout_force_n": 3.354048140226428
+            },
+            {
+              "drive_anchor": 1,
+              "sensor_anchor": 0,
+              "sensor_force_n": 1.1363575731199993,
+              "pullout_force_n": 3.354048140226428
+            }
+          ],
+          "slip_recoveries": [],
+          "settle_ms": 200
+        }
+      }
+    ],
+    "outputFile": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-19-interactive-research-bf5d807a/E20-hp3-bootstrap-baseline/sweeps.json",
+    "collectionOptions": {
+      "machineType": "hangprinter_3",
+      "machineConfig": {
+        "numAnchors": 4,
+        "dimensions": 3,
+        "axes": [
+          "X",
+          "Y",
+          "Z",
+          "U"
+        ],
+        "mustBeInFixedSet": [
+          3
+        ],
+        "fixedTargetBoundsByAnchor": {
+          "0": {
+            "minFixed": 0
+          },
+          "1": {
+            "minFixed": 0
+          },
+          "2": {
+            "minFixed": 0
+          },
+          "3": {
+            "maxFixed": 0
+          }
+        },
+        "measuredMaxTravelScale": 0.8
+      },
+      "firmware": "rrf",
+      "klipperConfigPath": null,
+      "motorIds": [
+        "40.0",
+        "41.0",
+        "42.0",
+        "43.0"
+      ],
+      "speedup": 1,
+      "sweepPoints": 4,
+      "maxSweeps": null,
+      "feed": 1400,
+      "settleMs": 200,
+      "forceLow": 0.01,
+      "forceMid": 0.1,
+      "forceMax": 1,
+      "sensorCollectionForce": null,
+      "forceBuildupFactor": null,
+      "preserveBuildupFactor": false,
+      "forceBaseRadii": null,
+      "noiseSampleCount": 16,
+      "noiseSampleRateHz": 25,
+      "noiseSampleIntervalMs": 40,
+      "noiseMinSamples": 4,
+      "noiseSigmaFloorDeg": 0.02,
+      "forceLowProvided": false,
+      "forceMidProvided": false,
+      "forceMaxProvided": false,
+      "forceArgsProvided": false,
+      "fixedTargets": null,
+      "maxTravelMm": null,
+      "sweepConfigFile": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-19-interactive-research-bf5d807a/three-sweeps.txt",
+      "debugSweep": false,
+      "autoTuneForce": true,
+      "noAutoTuneForce": false,
+      "returnToOrigin": false,
+      "projectZeroTension": false,
+      "outputFile": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-19-interactive-research-bf5d807a/E20-hp3-bootstrap-baseline/sweeps.json",
+      "maxSweepCount": 6
+    }
+  },
+  "pulses": [],
+  "wallS": 48.733592981,
+  "simS": 2423.0439999565265
+}

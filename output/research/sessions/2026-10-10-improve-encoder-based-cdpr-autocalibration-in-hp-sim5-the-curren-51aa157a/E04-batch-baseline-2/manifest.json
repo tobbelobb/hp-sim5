@@ -1,0 +1,24 @@
+{
+  "backend": "production-headless-js/RRF-batch-H2",
+  "scene": "public/usd_scenes/hp3_rigid_body.usda",
+  "dt": 0.002,
+  "sourceHashes": {
+    "public/usd_scenes/hp3_rigid_body.usda": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+    "RRF/run/vsd/sys/config_hp3.g": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8",
+    "autocal/control/behaviors/sweep_data_collection.mjs": "83508418dd20a4f86414a84c8d8bde78de92d69534ecee7bf72e7700c21d5c15",
+    "autocal/control/primitives/uncalibrated_actions.mjs": "406e2581af0da08f990012384503b3846a070d30226ab23c301a6589a77db7f7"
+  },
+  "limitations": [
+    "RRF is initialized per relative motion, rather than persistent HTTP",
+    "No firmware encoder requests; production endpoint reports encoders directly",
+    "Torque Nm conversion uses known R30, unit gearing and mechanical advantage"
+  ],
+  "status": "complete",
+  "steps": 1192305,
+  "simulated_s": 2384.61,
+  "wall_s": 97.24712755099999,
+  "moves": 273,
+  "encoder_reads": 6126,
+  "torque_commands": 242,
+  "rrf_planning_s": 1.0102885709999623
+}

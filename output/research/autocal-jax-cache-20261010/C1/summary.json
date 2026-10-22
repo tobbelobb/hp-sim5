@@ -1,0 +1,11 @@
+{
+  "mode": "cold-on",
+  "trial": "C1",
+  "elapsed_s": 83.0711075750005,
+  "runner_returncode": 0,
+  "datasets": 11,
+  "child_failures": [],
+  "compatibility_warnings": 120,
+  "runner_sha256": "ed3495226c101c221ea6e1e2d1f1705ac54adf63111526e8bcd43a6597f990a4",
+  "revision": "0c922efd007f3491453c706e2cc801af0c49aa98"
+}

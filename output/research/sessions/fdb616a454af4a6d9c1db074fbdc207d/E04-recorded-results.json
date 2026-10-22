@@ -1,0 +1,506 @@
+[
+  {
+    "dataset": "fifth_hp3_dataset",
+    "joint": false,
+    "initial_anchor_rmse_mm": 80.58477120399357,
+    "initial_radius_error_mm": 0.1844999999999999,
+    "seconds": 0.1920911380002508,
+    "anchor_rmse_mm": 75.40836918601828,
+    "radius_error_mm": 0.1844999999999999,
+    "heldout": {
+      "objective": 586.4548226128443,
+      "coverage": 1.0,
+      "rms_mm": 22.06220508920418,
+      "robust_mm": 5.193573262528576,
+      "p95_mm": 38.722185444224834
+    },
+    "steps": [
+      {
+        "step": 0,
+        "accepted": true,
+        "nfev": 7,
+        "old": {
+          "objective": 822.3495893555448,
+          "coverage": 1.0,
+          "rms_mm": 26.25134410837834,
+          "robust_mm": 6.198022634850974,
+          "p95_mm": 43.60225947407971
+        },
+        "proposed": {
+          "objective": 791.0725773123004,
+          "coverage": 1.0,
+          "rms_mm": 25.285002688043765,
+          "robust_mm": 6.073201558130748,
+          "p95_mm": 42.059692569794564
+        },
+        "anchor_rmse_mm": 75.40836918601828,
+        "radius_error_mm": 0.1844999999999999
+      },
+      {
+        "step": 1,
+        "accepted": false,
+        "nfev": 3,
+        "old": {
+          "objective": 791.0725773123004,
+          "coverage": 1.0,
+          "rms_mm": 25.285002688043765,
+          "robust_mm": 6.073201558130748,
+          "p95_mm": 42.059692569794564
+        },
+        "proposed": {
+          "objective": 791.0725773123004,
+          "coverage": 1.0,
+          "rms_mm": 25.285002688043765,
+          "robust_mm": 6.073201558130748,
+          "p95_mm": 42.059692569794564
+        },
+        "anchor_rmse_mm": 75.40836918601828,
+        "radius_error_mm": 0.1844999999999999
+      }
+    ]
+  },
+  {
+    "dataset": "fifth_hp3_dataset",
+    "joint": true,
+    "initial_anchor_rmse_mm": 80.58477120399357,
+    "initial_radius_error_mm": 0.1844999999999999,
+    "seconds": 0.28115418200104614,
+    "anchor_rmse_mm": 80.58477120399357,
+    "radius_error_mm": 0.1844999999999999,
+    "heldout": {
+      "objective": 606.4323158616528,
+      "coverage": 1.0,
+      "rms_mm": 22.89580422999702,
+      "robust_mm": 5.28724428211766,
+      "p95_mm": 40.23776738684649
+    },
+    "steps": [
+      {
+        "step": 0,
+        "accepted": false,
+        "nfev": 8,
+        "old": {
+          "objective": 822.3495893555448,
+          "coverage": 1.0,
+          "rms_mm": 26.25134410837834,
+          "robust_mm": 6.198022634850974,
+          "p95_mm": 43.60225947407971
+        },
+        "proposed": {
+          "objective": 852.0132955598733,
+          "coverage": 1.0,
+          "rms_mm": 27.141817461975418,
+          "robust_mm": 6.3144992440656695,
+          "p95_mm": 44.93328106853356
+        },
+        "anchor_rmse_mm": 98.97806838129937,
+        "radius_error_mm": 0.6844999999999928
+      }
+    ]
+  },
+  {
+    "dataset": "seventh_hp3_dataset",
+    "joint": false,
+    "initial_anchor_rmse_mm": 2191.1664172136716,
+    "initial_radius_error_mm": 0.014499999999998181,
+    "seconds": 0.3690241699987382,
+    "anchor_rmse_mm": 2199.403344071358,
+    "radius_error_mm": 0.014499999999998181,
+    "heldout": {
+      "objective": 1129.7488007776806,
+      "coverage": 1.0,
+      "rms_mm": 30.255830065730194,
+      "robust_mm": 6.804285226510639,
+      "p95_mm": 58.9976296732458
+    },
+    "steps": [
+      {
+        "step": 0,
+        "accepted": true,
+        "nfev": 13,
+        "old": {
+          "objective": 1086.862785042715,
+          "coverage": 1.0,
+          "rms_mm": 43.894326643166835,
+          "robust_mm": 7.705588476949732,
+          "p95_mm": 98.97192648769223
+        },
+        "proposed": {
+          "objective": 1037.942473991147,
+          "coverage": 1.0,
+          "rms_mm": 41.491018545164145,
+          "robust_mm": 7.50197358487973,
+          "p95_mm": 93.72781105587033
+        },
+        "anchor_rmse_mm": 2199.403344071358,
+        "radius_error_mm": 0.014499999999998181
+      },
+      {
+        "step": 1,
+        "accepted": false,
+        "nfev": 5,
+        "old": {
+          "objective": 1037.942473991147,
+          "coverage": 1.0,
+          "rms_mm": 41.491018545164145,
+          "robust_mm": 7.50197358487973,
+          "p95_mm": 93.72781105587033
+        },
+        "proposed": {
+          "objective": 1048.0641161429644,
+          "coverage": 1.0,
+          "rms_mm": 41.979201690005056,
+          "robust_mm": 7.542961253678489,
+          "p95_mm": 94.7757651597648
+        },
+        "anchor_rmse_mm": 2227.3730699617095,
+        "radius_error_mm": 0.014499999999998181
+      }
+    ]
+  },
+  {
+    "dataset": "seventh_hp3_dataset",
+    "joint": true,
+    "initial_anchor_rmse_mm": 2191.1664172136716,
+    "initial_radius_error_mm": 0.014499999999998181,
+    "seconds": 1.4039734500001941,
+    "anchor_rmse_mm": 2219.1607894468025,
+    "radius_error_mm": 2.0144999999998205,
+    "heldout": {
+      "objective": 1043.9493635611095,
+      "coverage": 1.0,
+      "rms_mm": 27.585151532251725,
+      "robust_mm": 6.532759709669922,
+      "p95_mm": 56.677293423502114
+    },
+    "steps": [
+      {
+        "step": 0,
+        "accepted": true,
+        "nfev": 16,
+        "old": {
+          "objective": 1086.862785042715,
+          "coverage": 1.0,
+          "rms_mm": 43.894326643166835,
+          "robust_mm": 7.705588476949732,
+          "p95_mm": 98.97192648769223
+        },
+        "proposed": {
+          "objective": 1006.6891693857754,
+          "coverage": 1.0,
+          "rms_mm": 40.10646490888521,
+          "robust_mm": 7.376763818188712,
+          "p95_mm": 90.53815318781031
+        },
+        "anchor_rmse_mm": 2185.626613216454,
+        "radius_error_mm": 0.5144999999999769
+      },
+      {
+        "step": 1,
+        "accepted": true,
+        "nfev": 10,
+        "old": {
+          "objective": 1006.6891693857754,
+          "coverage": 1.0,
+          "rms_mm": 40.10646490888521,
+          "robust_mm": 7.376763818188712,
+          "p95_mm": 90.53815318781031
+        },
+        "proposed": {
+          "objective": 980.5611107382967,
+          "coverage": 1.0,
+          "rms_mm": 38.86340915085426,
+          "robust_mm": 7.264648225246906,
+          "p95_mm": 87.54316788505766
+        },
+        "anchor_rmse_mm": 2194.629008211229,
+        "radius_error_mm": 1.014499999999849
+      },
+      {
+        "step": 2,
+        "accepted": true,
+        "nfev": 9,
+        "old": {
+          "objective": 980.5611107382967,
+          "coverage": 1.0,
+          "rms_mm": 38.86340915085426,
+          "robust_mm": 7.264648225246906,
+          "p95_mm": 87.54316788505766
+        },
+        "proposed": {
+          "objective": 951.5820477790122,
+          "coverage": 1.0,
+          "rms_mm": 37.49846730505406,
+          "robust_mm": 7.139316527362764,
+          "p95_mm": 84.24791445688365
+        },
+        "anchor_rmse_mm": 2206.60823297162,
+        "radius_error_mm": 1.5144999999998419
+      },
+      {
+        "step": 3,
+        "accepted": true,
+        "nfev": 7,
+        "old": {
+          "objective": 951.5820477790122,
+          "coverage": 1.0,
+          "rms_mm": 37.49846730505406,
+          "robust_mm": 7.139316527362764,
+          "p95_mm": 84.24791445688365
+        },
+        "proposed": {
+          "objective": 923.7961039208774,
+          "coverage": 1.0,
+          "rms_mm": 36.243542669461846,
+          "robust_mm": 7.019938399721273,
+          "p95_mm": 81.1934131341855
+        },
+        "anchor_rmse_mm": 2219.1607894468025,
+        "radius_error_mm": 2.0144999999998205
+      }
+    ]
+  },
+  {
+    "dataset": "sixteenth_hp3_dataset_even_more_pressure",
+    "joint": false,
+    "initial_anchor_rmse_mm": 71.49117043383754,
+    "initial_radius_error_mm": 0.1844999999999999,
+    "seconds": 0.19705738699849462,
+    "anchor_rmse_mm": 65.84050995976729,
+    "radius_error_mm": 0.1844999999999999,
+    "heldout": {
+      "objective": 47.000108326406,
+      "coverage": 1.0,
+      "rms_mm": 1.242141569080476,
+      "robust_mm": 1.050170158035365,
+      "p95_mm": 1.9659642242955995
+    },
+    "steps": [
+      {
+        "step": 0,
+        "accepted": true,
+        "nfev": 7,
+        "old": {
+          "objective": 547.7306829263205,
+          "coverage": 1.0,
+          "rms_mm": 16.625376647079968,
+          "robust_mm": 5.092200488514518,
+          "p95_mm": 21.709181328671708
+        },
+        "proposed": {
+          "objective": 503.7683836420682,
+          "coverage": 1.0,
+          "rms_mm": 15.296883046425295,
+          "robust_mm": 4.873265299640323,
+          "p95_mm": 20.00641048178102
+        },
+        "anchor_rmse_mm": 65.84050995976729,
+        "radius_error_mm": 0.1844999999999999
+      },
+      {
+        "step": 1,
+        "accepted": false,
+        "nfev": 4,
+        "old": {
+          "objective": 503.7683836420682,
+          "coverage": 1.0,
+          "rms_mm": 15.296883046425295,
+          "robust_mm": 4.873265299640323,
+          "p95_mm": 20.00641048178102
+        },
+        "proposed": {
+          "objective": 503.7683836420682,
+          "coverage": 1.0,
+          "rms_mm": 15.296883046425295,
+          "robust_mm": 4.873265299640323,
+          "p95_mm": 20.00641048178102
+        },
+        "anchor_rmse_mm": 65.84050995976729,
+        "radius_error_mm": 0.1844999999999999
+      }
+    ]
+  },
+  {
+    "dataset": "sixteenth_hp3_dataset_even_more_pressure",
+    "joint": true,
+    "initial_anchor_rmse_mm": 71.49117043383754,
+    "initial_radius_error_mm": 0.1844999999999999,
+    "seconds": 0.2716683529979491,
+    "anchor_rmse_mm": 71.49117043383754,
+    "radius_error_mm": 0.1844999999999999,
+    "heldout": {
+      "objective": 52.90703650434628,
+      "coverage": 1.0,
+      "rms_mm": 1.386919876051482,
+      "robust_mm": 1.1477617561379374,
+      "p95_mm": 2.157228299947117
+    },
+    "steps": [
+      {
+        "step": 0,
+        "accepted": false,
+        "nfev": 8,
+        "old": {
+          "objective": 547.7306829263205,
+          "coverage": 1.0,
+          "rms_mm": 16.625376647079968,
+          "robust_mm": 5.092200488514518,
+          "p95_mm": 21.709181328671708
+        },
+        "proposed": {
+          "objective": 587.392154435436,
+          "coverage": 1.0,
+          "rms_mm": 17.803229178181233,
+          "robust_mm": 5.280174451029826,
+          "p95_mm": 23.199637136498225
+        },
+        "anchor_rmse_mm": 89.14137899766598,
+        "radius_error_mm": 0.6844999999999004
+      }
+    ]
+  },
+  {
+    "dataset": "nineteenth_hp3_dataset_even_more_pressure",
+    "joint": false,
+    "initial_anchor_rmse_mm": 5249.3026061801775,
+    "initial_radius_error_mm": 0.1844999999999999,
+    "seconds": 0.05737717999727465,
+    "anchor_rmse_mm": 5249.3026061801775,
+    "radius_error_mm": 0.1844999999999999,
+    "heldout": {
+      "objective": 35351.52074914049,
+      "coverage": 0.5,
+      "rms_mm": null,
+      "robust_mm": null
+    },
+    "steps": [
+      {
+        "step": 0,
+        "accepted": false,
+        "nfev": 1,
+        "old": {
+          "objective": 8488.632561510523,
+          "coverage": 0.6666666666666666,
+          "rms_mm": null,
+          "robust_mm": null
+        },
+        "proposed": {
+          "objective": 8488.632561510523,
+          "coverage": 0.6666666666666666,
+          "rms_mm": null,
+          "robust_mm": null
+        },
+        "anchor_rmse_mm": 5249.3026061801775,
+        "radius_error_mm": 0.1844999999999999
+      }
+    ]
+  },
+  {
+    "dataset": "nineteenth_hp3_dataset_even_more_pressure",
+    "joint": true,
+    "initial_anchor_rmse_mm": 5249.3026061801775,
+    "initial_radius_error_mm": 0.1844999999999999,
+    "seconds": 0.04062003700164496,
+    "anchor_rmse_mm": 5249.3026061801775,
+    "radius_error_mm": 0.1844999999999999,
+    "heldout": {
+      "objective": 35351.52074914049,
+      "coverage": 0.5,
+      "rms_mm": null,
+      "robust_mm": null
+    },
+    "steps": [
+      {
+        "step": 0,
+        "accepted": false,
+        "nfev": 1,
+        "old": {
+          "objective": 8488.632561510523,
+          "coverage": 0.6666666666666666,
+          "rms_mm": null,
+          "robust_mm": null
+        },
+        "proposed": {
+          "objective": 8488.632561510523,
+          "coverage": 0.6666666666666666,
+          "rms_mm": null,
+          "robust_mm": null
+        },
+        "anchor_rmse_mm": 5249.3026061801775,
+        "radius_error_mm": 0.1844999999999999
+      }
+    ]
+  },
+  {
+    "dataset": "23_april_2026",
+    "joint": false,
+    "initial_anchor_rmse_mm": 1666.6426461527376,
+    "initial_radius_error_mm": 0.1844999999999999,
+    "seconds": 0.028301934002229245,
+    "anchor_rmse_mm": 1666.6426461527376,
+    "radius_error_mm": 0.1844999999999999,
+    "heldout": {
+      "objective": 4464.020930025923,
+      "coverage": 0.25,
+      "rms_mm": null,
+      "robust_mm": null
+    },
+    "steps": [
+      {
+        "step": 0,
+        "accepted": false,
+        "nfev": 1,
+        "old": {
+          "objective": 5371.363846986111,
+          "coverage": 0.6666666666666666,
+          "rms_mm": null,
+          "robust_mm": null
+        },
+        "proposed": {
+          "objective": 5371.363846986111,
+          "coverage": 0.6666666666666666,
+          "rms_mm": null,
+          "robust_mm": null
+        },
+        "anchor_rmse_mm": 1666.6426461527376,
+        "radius_error_mm": 0.1844999999999999
+      }
+    ]
+  },
+  {
+    "dataset": "23_april_2026",
+    "joint": true,
+    "initial_anchor_rmse_mm": 1666.6426461527376,
+    "initial_radius_error_mm": 0.1844999999999999,
+    "seconds": 0.032578327001829166,
+    "anchor_rmse_mm": 1666.6426461527376,
+    "radius_error_mm": 0.1844999999999999,
+    "heldout": {
+      "objective": 4464.020930025923,
+      "coverage": 0.25,
+      "rms_mm": null,
+      "robust_mm": null
+    },
+    "steps": [
+      {
+        "step": 0,
+        "accepted": false,
+        "nfev": 1,
+        "old": {
+          "objective": 5371.363846986111,
+          "coverage": 0.6666666666666666,
+          "rms_mm": null,
+          "robust_mm": null
+        },
+        "proposed": {
+          "objective": 5371.363846986111,
+          "coverage": 0.6666666666666666,
+          "rms_mm": null,
+          "robust_mm": null
+        },
+        "anchor_rmse_mm": 1666.6426461527376,
+        "radius_error_mm": 0.1844999999999999
+      }
+    ]
+  }
+]

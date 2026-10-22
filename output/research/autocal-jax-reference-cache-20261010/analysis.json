@@ -1,0 +1,380 @@
+{
+  "timing_seconds": {
+    "off": [
+      24.24827208499846,
+      24.1296113540011
+    ],
+    "cold-empty": [
+      24.960106869999436
+    ],
+    "target-warm": [
+      16.86226770199937,
+      16.72578553099811
+    ],
+    "regression-warm": [
+      23.289694743998552,
+      23.402073689001554
+    ]
+  },
+  "mean_seconds": {
+    "off": 24.18894171949978,
+    "cold-empty": 24.960106869999436,
+    "target-warm": 16.79402661649874,
+    "regression-warm": 23.345884216500053
+  },
+  "saved_seconds": 7.39491510300104,
+  "saved_percent": 30.571470173247263,
+  "speedup": 1.4403300811573174,
+  "regression_transfer_saved_percent": 3.4853013115497378,
+  "all_timing_runs_regression_pass": true,
+  "all_timing_runs_numerically_exact": false,
+  "all_timing_runs_full_precision_metrics_exact": true,
+  "original_log_regression_pass": true,
+  "original_full_precision_metrics_exact": true,
+  "full_precision_fit_comparisons": {
+    "D8": {
+      "exact": true,
+      "compared": 7,
+      "different": []
+    },
+    "D9": {
+      "exact": true,
+      "compared": 7,
+      "different": []
+    },
+    "D11": {
+      "exact": true,
+      "compared": 7,
+      "different": []
+    },
+    "D15": {
+      "exact": true,
+      "compared": 7,
+      "different": []
+    },
+    "original": {
+      "exact": true,
+      "compared": 7,
+      "different": []
+    }
+  },
+  "diagnostics": [
+    {
+      "trial": "D8",
+      "mode": "regression-warm",
+      "elapsed_s": 25.024751018001552,
+      "returncode": 0,
+      "hits": {
+        "jit__objective_core": 1
+      },
+      "misses": {
+        "jit__objective_core": 16,
+        "jit_convert_element_type": 1
+      },
+      "compatibility_warnings": 0,
+      "regression_pass": true,
+      "exact_full_precision_metrics_equal": true
+    },
+    {
+      "trial": "D9",
+      "mode": "target-warm",
+      "elapsed_s": 25.076698668999597,
+      "returncode": 0,
+      "hits": {
+        "jit__objective_core": 1
+      },
+      "misses": {
+        "jit__objective_core": 16,
+        "jit_convert_element_type": 1
+      },
+      "compatibility_warnings": 0,
+      "regression_pass": true,
+      "exact_full_precision_metrics_equal": true
+    },
+    {
+      "trial": "D10",
+      "mode": "off",
+      "elapsed_s": 24.617535866000253,
+      "returncode": 0,
+      "hits": {},
+      "misses": {},
+      "compatibility_warnings": 0,
+      "regression_pass": true,
+      "exact_full_precision_metrics_equal": true
+    },
+    {
+      "trial": "D11",
+      "mode": "diagnostic-warm",
+      "elapsed_s": 25.168195235000894,
+      "returncode": 0,
+      "hits": {
+        "jit__objective_core": 1
+      },
+      "misses": {
+        "jit__objective_core": 16,
+        "jit_convert_element_type": 1
+      },
+      "compatibility_warnings": 0,
+      "regression_pass": true,
+      "exact_full_precision_metrics_equal": true
+    },
+    {
+      "trial": "D14",
+      "mode": "regression-warm-same-path",
+      "elapsed_s": 23.484468546001153,
+      "returncode": 0,
+      "regression_pass": true,
+      "exact_full_precision_metrics_equal": true,
+      "numerical": {
+        "summary": {
+          "anchors": [
+            [
+              0.0,
+              -2443.33,
+              -279.56
+            ],
+            [
+              708.79,
+              401.97,
+              -279.56
+            ],
+            [
+              -2294.4,
+              1381.21,
+              -279.56
+            ],
+            [
+              235.94,
+              124.93,
+              1075.91
+            ]
+          ],
+          "radii": [
+            30.0,
+            30.0,
+            30.0,
+            30.0
+          ],
+          "fit_score_ui": 8161.0
+        },
+        "iterations": [
+          {
+            "anchors": [
+              [
+                0.0,
+                -1823.08,
+                -1042.56
+              ],
+              [
+                1578.53,
+                911.1,
+                -1042.56
+              ],
+              [
+                -1577.04,
+                910.58,
+                -1042.56
+              ],
+              [
+                -0.76,
+                0.43,
+                3384.08
+              ]
+            ],
+            "radii": [
+              30.0,
+              30.0,
+              30.0,
+              30.0
+            ],
+            "fit_score_ui": 16.41,
+            "rank_score": 16.41,
+            "history_rank_score": 16.41
+          },
+          {
+            "anchors": [
+              [
+                0.0,
+                -2744.03,
+                -250.38
+              ],
+              [
+                949.54,
+                942.99,
+                -250.38
+              ],
+              [
+                -3080.45,
+                0.0,
+                -250.38
+              ],
+              [
+                2486.92,
+                2459.49,
+                2880.64
+              ]
+            ],
+            "radii": [
+              30.0,
+              30.0,
+              30.0,
+              30.0
+            ],
+            "fit_score_ui": 107.6,
+            "rank_score": 107.6,
+            "history_rank_score": 107.4
+          },
+          {
+            "anchors": [
+              [
+                0.0,
+                -966.9,
+                -301.58
+              ],
+              [
+                830.36,
+                362.13,
+                -301.58
+              ],
+              [
+                -5000.0,
+                4666.42,
+                -301.58
+              ],
+              [
+                406.44,
+                83.4,
+                0.0
+              ]
+            ],
+            "radii": [
+              30.0,
+              30.0,
+              30.0,
+              30.0
+            ],
+            "fit_score_ui": 100.0,
+            "rank_score": 100.0,
+            "history_rank_score": 99.75
+          },
+          {
+            "anchors": [
+              [
+                0.0,
+                -2443.33,
+                -279.56
+              ],
+              [
+                708.79,
+                401.97,
+                -279.56
+              ],
+              [
+                -2294.4,
+                1381.21,
+                -279.56
+              ],
+              [
+                235.94,
+                124.93,
+                1075.91
+              ]
+            ],
+            "radii": [
+              30.0,
+              30.0,
+              30.0,
+              30.0
+            ],
+            "fit_score_ui": 8161.0,
+            "rank_score": 8161.0,
+            "history_rank_score": 8161.0
+          },
+          {
+            "anchors": [
+              [
+                0.0,
+                -2505.55,
+                -440.22
+              ],
+              [
+                2519.93,
+                1927.72,
+                -440.22
+              ],
+              [
+                -1047.95,
+                846.62,
+                -440.22
+              ],
+              [
+                -191.17,
+                -116.32,
+                1188.82
+              ]
+            ],
+            "radii": [
+              30.0,
+              30.0,
+              30.0,
+              30.0
+            ],
+            "fit_score_ui": 19460.0,
+            "rank_score": 19460.0,
+            "history_rank_score": 19460.0
+          }
+        ]
+      },
+      "hits": {
+        "jit__objective_core": 4,
+        "jit_convert_element_type": 1
+      },
+      "misses": {
+        "jit__objective_core": 12
+      },
+      "new_cache_entries": [
+        "jit__objective_core-1216285a4b5b9d5a8e63b2852e92124e5bf8e562add2ee715a70c797a855c334-cache",
+        "jit__objective_core-3200de6868e781f3713ccd7e2e6dcce24600e22125c8b4d0e9d243d732272e80-cache",
+        "jit__objective_core-4d3901eb107ac27d9db7aba8eea8acce436f5783e1ebaa9cd8374cf413490d99-cache",
+        "jit__objective_core-700743a7770a3aa36d9e040f39df5b2b877088f6a5084605106f4c3538d83301-cache",
+        "jit__objective_core-99622ca4eec460d5f97fed458c108f6795e76433c5b941a7ab4daa2137b30326-cache",
+        "jit__objective_core-9b9d223f0248dc337e13527c99aef2067b37f4551eb16cc25b54312e549d76ed-cache",
+        "jit__objective_core-ae9310f6ff4282f849b7ca8e77c42ee224197c081823b86a66c66f87d37ff956-cache",
+        "jit__objective_core-c7059a21fd5f0b5c659b92126a8e4a0ae235a9b82ffbbcbc9d7071cb55f6927a-cache",
+        "jit__objective_core-d7a22948a1e56b32661091f622236bd814dd1a9e58b569770f503c4facb497be-cache",
+        "jit__objective_core-f637bdb1b1a85ed8f970d30dff311d59c674baa5b10695eb4802c94dd305a75d-cache",
+        "jit__objective_core-fe2a006a095660daf75e66cffc5f45f789b7a5e8eb1fcc7ea8e61f89b74beb86-cache",
+        "jit__objective_core-febc0525650c1ee6a57cc759730e0b01153b784d66fa3bef378986deb252790d-cache"
+      ],
+      "compatibility_warnings": 0
+    },
+    {
+      "trial": "D15",
+      "mode": "target-warm-same-path",
+      "returncode": 0,
+      "elapsed_s": 17.3242390359992,
+      "regression_pass": true,
+      "exact_full_precision_metrics_equal": true,
+      "hits": {
+        "jit__objective_core": 16,
+        "jit_convert_element_type": 1
+      },
+      "misses": {}
+    }
+  ],
+  "relocated_cache_controls": {
+    "experiment_ids": [
+      "D2",
+      "D6",
+      "D8",
+      "D9",
+      "D11"
+    ],
+    "interpretation": "Relocating the cache changes the GPU auxiliary cache path in compile options, even on CPU. These controls are excluded from transfer and warm-cache timing conclusions. D12-D14 preserve the original cache path; D15 preserves the D3 cache path."
+  },
+  "integrity": {
+    "source_unchanged": true,
+    "regression_cache_unchanged": true,
+    "original_comparison_pass": true
+  }
+}

@@ -1,0 +1,771 @@
+diff --git a/research/README.md b/research/README.md
+index 5e86dcae..89b12e0d 100644
+--- a/research/README.md
++++ b/research/README.md
+@@ -271,12 +271,56 @@ access. See [collection evidence](native-collection-verification.md).
+ | `start_autocal(machine, layering, base_radii_mm, buildup_factor, find_radii, find_buildup_factor, optimizer, budgets, collection, artifact_dir)` | Immediate job ID for an isolated world running the production full-auto CLI |
+ | `autocal_status(job_id)` | Physical progress, iteration/decision, stop reason, CLI exit status and complete/partial artifacts |
+ | `cancel_autocal(job_id)` | Stop the job-owned world, drain recording and retire all CLI children; attached world remains usable |
+-| `reset_session()` | Archive state and restart world, firmware and bridge references |
++| `configure_session(configuration)` | Validate settings, archive the old world and create a fresh HP3/HP4 world with matched firmware and encoder origin |
++| `reset_session()` | Archive state and restart world, firmware and bridge references with the accepted configuration |
+ | `start_browser_service(record=False)` | Exact shared browser-js URL; optionally owns its flight recorder |
+ | `browser_status()` | Connected page identity and immutable user-submitted context |
+ | `browser_action(page_id, action, args)` | Controls and numerical observations from that exact existing page |
+ | `capture_native_context(message, step, selected_entity, run_id)` | Selected native run/session and time with actual numerical observation |
+ 
++A desktop or launcher attachment can change its continuing world without restarting
++Codex or writing a simulator adapter. For example, from an HP4 attachment call:
++
++```json
++{"configuration": {"machine": "hp3", "layering": false,
++                   "base_radii_mm": [30], "buildup_factor": 0}}
++```
++
++Pass this object to `configure_session`. Configuration is a complete fresh-world
++request: defaults are HP4, layering enabled, stock 30 mm base radii and stock
++buildup (2/pi). It is not a patch to the current world. One radius applies to all
++four spools; four values select A/B/C/D individually (1–200 mm). Custom radii
++require layering disabled and zero buildup. Layered worlds currently support
++only stock radii/buildup. Optional `scene` must select the matching repository
++`public/usd_scenes/hp3_rigid_body.usda` or HP4 file; optional `firmware_config`
++is relative to `RRF/run/vsd` and must match machine/layering. Custom anchor
++layouts and other scene/backend combinations are rejected explicitly. The
++backend remains the launcher's selected backend.
++
++Layering affects the bake, physical cable half-width and all three runtime
++layering flags. The selected firmware is frozen in each generation and booted
++from a short private VSD (RRF limits host filename length). `runtime_status`
++and world/collection manifests report requested/effective settings, authored,
++design and baked scene hashes, firmware configuration/replies and generation
++identity. HP3 and HP4 share the collector's four-anchor Hangprinter profile.
++
++An ordinary `reset_session()` retains accepted settings and reloads scene, JS
++and firmware sources. Python edits require a launcher restart, as status reports.
++Cancel an active collection or full-autocal job explicitly before reset or
++configuration. Validation and backend-preparation failures keep the live world
++and its evidence intact; failed attempts have separate manifests. If firmware
++startup fails after retirement, status remains available and reports
++`reset_required`; reset retries the last accepted configuration. Old recordings,
++events, scenes and collection results remain in their generation directory. The
++assigned session path, desktop attachment and conversation remain stable.
++
++The API uses the attached MCP server's supervised service connection. It also
++works when command sandbox networking is disabled; launcher networking defaults
++remain enabled. Isolated `start_autocal` settings still select its own CLI world;
++its radii/buildup arguments are fitting seeds, while `configure_session` radii
++specify physical spool geometry. Shared validation checks their common bounds
++and machine/layering constraints.
++
+ Runs accept 1–10,000 steps. Commands are a JSON array with at most one record per
+ step. Omitted records keep the previous targets for the remaining steps. `Move`
+ sets absolute motor angles in radians; `{}` consumes a timestep while holding
+diff --git a/research/native-collection.md b/research/native-collection.md
+index ec90f56c..bd1ff2d2 100644
+--- a/research/native-collection.md
++++ b/research/native-collection.md
+@@ -78,8 +78,11 @@ for up to five wall seconds and streams to the launcher's Viewer when enabled.
+ Each recorded collection finalizes its own RRD without replacing the physics world.
+ Later collections cannot change already returned evidence.
+ 
+-`reset_session` archives the old world and restarts world, firmware and bridge
+-references together. A failed or cancelled collection saves evidence and requires that reset.
++`configure_session(configuration)` validates stock HP3/HP4 machine, layering and
++spool design settings, then archives the old world and restarts world, firmware
++and encoder references together. `reset_session` performs the same coordinated
++restart with the accepted configuration. Both require explicit cancellation of
++active jobs first. See [configuration examples and supported limits](README.md). A failed or cancelled collection saves evidence and requires that reset.
+ `cancel_collection` freezes execution at a reported fixed-step boundary, aborts
+ collector waits before further commands, flushes completed-point evidence, retires
+ firmware/bridge queues and reports the exact stopped step. The JS worker yields
+diff --git a/scripts/hp_sim5_mcp.py b/scripts/hp_sim5_mcp.py
+index 8279e3c7..7b30cb49 100644
+--- a/scripts/hp_sim5_mcp.py
++++ b/scripts/hp_sim5_mcp.py
+@@ -2,7 +2,9 @@
+ from pathlib import Path
+ import os
+ import sys
+-from typing import Any
++from typing import Annotated, Any, Literal
++
++from pydantic import BaseModel, ConfigDict, Field
+ 
+ ROOT = Path(__file__).resolve().parents[1]
+ sys.path.insert(0, str(ROOT / 'src/python'))
+@@ -41,11 +43,17 @@ def capabilities() -> dict[str, Any]:
+                          '{}': 'hold current targets for one fixed timestep', 'E': 'deposited length in m'},
+             'telemetry': 'Every step including zero: effectors, encoders, tracking errors, missed steps, lengths and forces',
+             'native_collection': {'machines': ['HP3', 'HP4'], 'firmware': 'RRF',
+-                                  'operations': ['start_collection', 'collection_status', 'cancel_collection', 'runtime_status', 'send_gcode', 'step_physics', 'reset_session', 'start_browser_service'],
++                                  'operations': ['start_collection', 'collection_status', 'cancel_collection', 'runtime_status', 'send_gcode', 'step_physics', 'reset_session', 'configure_session', 'start_browser_service'],
+                                   'encoders': 'Raw unwrapped degrees; A/B/C/D mapped to CAN 40/41/42/43',
+                                   'clock': 'Persistent fixed-step world; collector delays advance physics; reads drain motion',
+                                   'settling': 'Bounded in simulation time; default 30 seconds',
+-                                  'services': 'Launcher-owned runtime, firmware and bridge outside the command sandbox'},
++                                  'services': 'Launcher-owned runtime, firmware and bridge outside the command sandbox',
++                                  'configuration': {'tool': 'configure_session', 'immutable_per_generation': True,
++                                      'scenes': 'Matching stock HP3/HP4; custom anchor designs unsupported',
++                                      'radii': 'Physical base radii: one or four values, 1–200 mm; custom radii require layering off',
++                                      'layered_buildup': 'Stock 2/pi only; unlayered buildup is zero',
++                                      'reset': 'Retains accepted settings; reloads scene, JS and firmware sources',
++                                      'active_jobs': 'Explicit cancellation required before reset or reconfiguration'}},
+             'full_autocal': {'operations': ['start_autocal', 'autocal_status', 'cancel_autocal'],
+                              'machines': ['hp3', 'hp4'], 'backend': 'headless-js', 'isolated_world': True,
+                              'workflow': 'Production one-click CLI: physical collection, fitting, planning, selection, automatic stopping',
+@@ -142,9 +150,36 @@ def cancel_autocal(job_id: str) -> dict[str, Any]:
+     return supervised_request('cancel_autocal', job_id=job_id)
+ 
+ 
++class WorldSettings(BaseModel):
++    model_config = ConfigDict(extra='forbid', strict=True)
++    machine: Literal['hp3', 'hp4'] = 'hp4'
++    layering: bool = True
++    scene: str | None = None
++    firmware_config: str | None = None
++    base_radii_mm: list[Annotated[float, Field(ge=1, le=200)]] | None = None
++    buildup_factor: Annotated[float, Field(ge=0, le=2)] | None = None
++
++
++@mcp.tool(annotations=MUTATION)
++def configure_session(configuration: WorldSettings) -> dict[str, Any]:
++    """Archive the previous world and create a fresh configured world, RRF and encoder origin.
++
++    Supply machine hp3/hp4 and layering. Optional scene and firmware_config must select matching
++    stock repository files (firmware path relative to RRF/run/vsd). Unlayered worlds accept one
++    or four physical base_radii_mm (1–200), with zero buildup. Layered worlds support stock
++    30 mm base radii and buildup_factor=2/pi only. Custom anchor layouts are unsupported.
++    Settings are immutable until the next configure_session; ordinary reset retains them.
++    Explicitly cancel active collection/autocal jobs first. Invalid settings leave the live world
++    intact; startup failure preserves evidence and reports reset_required with recovery instructions.
++    """
++    return supervised_request('configure', **configuration.model_dump(exclude_none=True))
++
++
+ @mcp.tool(annotations=MUTATION)
+ def reset_session() -> dict[str, Any]:
+-    """Archive the recording and restart the native world, RRF and bridge references together."""
++    """Archive evidence and restart world, RRF and encoder references with the accepted settings.
++
++    Reloads scene/JS/firmware sources. Active jobs require explicit cancellation first."""
+     return supervised_request('reset')
+ 
+ 
+diff --git a/scripts/research_collector.mjs b/scripts/research_collector.mjs
+index a90eeee8..e2c69a5d 100644
+--- a/scripts/research_collector.mjs
++++ b/scripts/research_collector.mjs
+@@ -11,6 +11,8 @@ await waitForRrfSimulator(rrfUrl, 30000);
+ const bridge = createGcodeBridge({ server: rrfUrl, wsPort: Number(wsPort), quiet: true, encoderTimeoutMs: 120000 });
+ const firmware = await bridge.sendGcodeLine('M115');
+ if (!/RepRapFirmware/i.test(firmware.reply ?? '')) throw new Error('RRF did not identify its firmware after readiness');
++const firmwareInitial = { M115: firmware.reply };
++for (const line of ['M669', 'M666']) firmwareInitial[line] = (await bridge.sendGcodeLine(line)).reply;
+ let simTimeMs = 0;
+ let busy = false;
+ let cancellation = new AbortController();
+@@ -74,7 +76,7 @@ const server = http.createServer(async (request, response) => {
+     return;
+   }
+   if (request.url === '/status') {
+-    response.end(JSON.stringify({ connected: bridge.hasReadyWsClients(), busy }));
++    response.end(JSON.stringify({ connected: bridge.hasReadyWsClients(), busy, firmware_initial: firmwareInitial }));
+     return;
+   }
+   if (busy) {
+@@ -91,17 +93,21 @@ const server = http.createServer(async (request, response) => {
+     } else if (request.url === '/collect') {
+       cancellation = new AbortController();
+       await fs.writeFile(args.sweepConfigFile, args.configs.map((cfg) => `[${cfg.fixed.join(',')}] ${cfg.drive} ${cfg.sensor}\n`).join(''));
++      // HP3 and HP4 both use the production four-anchor Hangprinter collector.
++      const machineType = 'hangprinter_4';
+       const collectorArgs = {
+-        sim: true, firmware: 'rrf', machineType: 'hangprinter_4',
++        sim: true, firmware: 'rrf', machineType,
+         noAutoTuneForce: true, fixedTargets: '0,0', forceLow: .01, forceMid: .05, forceMax: .5,
+         sensorCollectionForce: 1,
+         ...args.options,
++        lineLayering: args.layering,
++        preserveBuildupFactor: args.layering,
+         outputFile: args.outputFile, sweepConfigFile: args.sweepConfigFile,
+       };
+       send.simulationClock.settlingTimeoutMs = args.settlingTimeoutMs;
+       const result = await collectSweepData(send, {
+-        args: collectorArgs, machineType: 'hangprinter_4', machineConfig: MACHINE_CONFIGS.hangprinter_4,
+-        motorIds: MOTOR_IDS_BY_MACHINE.hangprinter_4, speedup: 1,
++        args: collectorArgs, machineType, machineConfig: MACHINE_CONFIGS[machineType],
++        motorIds: MOTOR_IDS_BY_MACHINE[machineType], speedup: 1,
+         delayFn: send.simulationClock.sleep,
+         onPoint: async (point, config) => {
+           checkCancellation();
+diff --git a/scripts/research_physics.mjs b/scripts/research_physics.mjs
+index c56e1043..f10f46fa 100644
+--- a/scripts/research_physics.mjs
++++ b/scripts/research_physics.mjs
+@@ -2,28 +2,18 @@
+ // Python owns collection/lifecycle and uses these detached states only for telemetry.
+ import fs from 'node:fs';
+ import readline from 'node:readline';
+-import { World, PositionComponent, OrientationComponent, VelocityComponent, AngularVelocityComponent,
++import { PositionComponent, OrientationComponent, VelocityComponent, AngularVelocityComponent,
+   EncoderComponent, RigidBodyMemberComponent, SceneEntityInfoComponent } from '../src/js/cable_joints_3d/ecs.js';
+ import { CableJointComponent, CablePathComponent } from '../src/js/cable_joints_3d/cable_joints_core.js';
+-import { OpenText } from '../src/js/usd/stage.js';
+-import { parseStage, readMachineSceneSpec, validateMachineSceneSpec, buildEntityPlan, applyEntityPlan } from '../hp-sim-3d/app/scene/machineScenePipeline.js';
+-import { registerSimulationSystems } from '../hp-sim-3d/app/simulationSystems.js';
+-import { RemoteSpoolSystem } from '../hp-sim-3d/app/remoteSpoolSystem.js';
++import { createHeadlessWorld } from '../hp-sim-3d/app/headlessWorld.js';
+ import { StepperMotorComponent } from '../hp-sim-3d/app/hangprinter_stepper_motor.js';
+ import { ExtruderComponent } from '../hp-sim-3d/app/hangprinter_extruder.js';
+ 
+ // Keep stdout strictly a request/reply protocol, including scene-load warnings.
+ console.log = console.warn = (...args) => console.error(...args);
+-const world = new World();
+-const checked = validateMachineSceneSpec(readMachineSceneSpec(
+-  parseStage(OpenText(fs.readFileSync(process.argv[2], 'utf8'))), '/World/HangprinterScene'));
+-if (!checked.valid) throw new Error(checked.warnings.join('\n'));
+-applyEntityPlan(world, buildEntityPlan(checked));
+-registerSimulationSystems(world);
+-const remote = world.systems.find(system => system instanceof RemoteSpoolSystem);
+-remote._ensureAxisMapping(world);
+-const dt = world.getResource('dt');
+-if (dt !== .002) throw new Error('RRF requires 0.002 s physics steps');
++const { world, remote, dt } = createHeadlessWorld(fs.readFileSync(process.argv[2], 'utf8'), {
++  lineLayeringEnabled: process.argv[3] !== 'false',
++});
+ let step = 0;
+ let physicsWallS = 0;
+ const xyz = v => [v.x, v.y, v.z];
+diff --git a/scripts/research_runtime.py b/scripts/research_runtime.py
+index 6ceda9b3..b3ccf61f 100644
+--- a/scripts/research_runtime.py
++++ b/scripts/research_runtime.py
+@@ -10,6 +10,7 @@ import shutil
+ import subprocess
+ import sys
+ import time
++import tempfile
+ import uuid
+ from urllib.parse import urlparse
+ from urllib.request import urlopen
+@@ -23,6 +24,7 @@ from hp_sim5_research.services import free_port, request, stop_process, wait_rea
+ from hp_sim5_research.session import NativeSession
+ from hp_sim5_research.browser import BrowserConnection
+ from hp_sim5_research.autocal_jobs import AutocalJobs
++from hp_sim5_research.configuration import world_configuration, prepare_world
+ 
+ 
+ class Runtime:
+@@ -31,8 +33,20 @@ class Runtime:
+         self.token = os.environ['HP_SIM5_RUNTIME_TOKEN']
+         self.processes = {}
+         self.session = self.socket_task = None
++        self.configuration = world_configuration(ROOT, json.loads(os.environ.get('HP_SIM5_WORLD_CONFIGURATION',
++            json.dumps({'machine': os.environ.get('HP_SIM5_MACHINE', 'hp4')}))),
++            backend=os.environ.get('HP_SIM5_PHYSICS_BACKEND', 'headless-js'))
++        self.world_metadata = {}
++        self.runtime_error = None
++        self.last_world_attempt = None
++        self.generation = 0
++        self.session_id = None
++        self.session_dir = None
++        self.vsd_temp = None
++        self.machine = self.configuration.machine
+         self.stop = asyncio.Event()
+         self.busy = False
++        self.changing_world = False
+         self.handlers = set()
+         self.browser_lock = asyncio.Lock()
+         self.browser = None
+@@ -59,54 +73,111 @@ class Runtime:
+         self.processes[name] = process
+         return process, log_path
+ 
+-    async def start(self):
+-        self.session_id = uuid.uuid4().hex
+-        self.session_dir = self.directory / self.session_id
+-        self.machine = os.environ.get('HP_SIM5_MACHINE', 'hp4')
+-        if self.machine not in ('hp3', 'hp4'):
+-            raise ValueError('Machine must be hp3 or hp4')
+-        config = f'sys/config_{self.machine}.g'
+-        self.session = NativeSession(ROOT, self.session_dir,
+-                                     scene=f'public/usd_scenes/{self.machine}_rigid_body.usda',
+-                                     backend=os.environ.get('HP_SIM5_PHYSICS_BACKEND', 'headless-js'),
+-                                     record=os.environ.get('HP_SIM5_RECORD', '1') != '0')
+-        self.physics_source_hash = self.hash_sources([ROOT / 'src/js', ROOT / 'hp-sim-3d'], '*.js')
+-        self.bridge_source_hash = self.hash_sources([ROOT / 'integrations/rrf', ROOT / 'integrations/shared',
+-                                                    ROOT / 'autocal/control', ROOT / 'scripts'], '*.*js')
+-        self.rrf_hash = hashlib.sha256((ROOT / 'RRF/build/rrf_simulator').read_bytes()).hexdigest()
+-        self.config_hash = hashlib.sha256((ROOT / 'RRF/run/vsd' / config).read_bytes()).hexdigest()
+-        shutil.copyfile(ROOT / 'RRF/run/vsd' / config, self.session_dir / 'firmware-config.g')
+-        rrf_port, ws_port, collector_port = [free_port() for _ in range(3)]
+-        self.rrf_url = f'http://127.0.0.1:{rrf_port}'
+-        self.collector_url = f'http://127.0.0.1:{collector_port}'
+-        self.spawn('rrf', [str(ROOT / 'RRF/build/rrf_simulator'), '--vsd', str(ROOT / 'RRF/run/vsd'),
+-                           '-c', config, '--server', '-p', str(rrf_port)])
+-        process, log = self.spawn('collector', ['node', 'scripts/research_collector.mjs', self.rrf_url,
+-                                               str(ws_port), str(collector_port), self.endpoint])
+-        await asyncio.to_thread(wait_ready, process, self.collector_url, 'status', log, token=self.token, timeout=40)
+-        self.socket_task = asyncio.create_task(self.session.run_socket(f'ws://127.0.0.1:{ws_port}'))
+-        await asyncio.wait_for(self.session.connected.wait(), timeout=5)
+-        self.session.event('session_started', session_id=self.session_id, rrf_url=self.rrf_url)
++    async def start(self, configuration=None):
++        configuration = configuration or self.configuration
++        world_id = uuid.uuid4().hex
++        directory = self.directory / world_id
++        directory.mkdir(parents=True)
++        metadata = {'schema_version': 2, 'world_id': world_id, 'session_id': world_id,
++                    'generation': self.generation + 1, 'previous_world_id': self.session_id,
++                    'requested_settings': json.loads(configuration.requested_json),
++                    'effective_settings': configuration.effective(), 'status': 'preparing'}
++        candidate = None
++        retired = False
++        try:
++            metadata.update(prepare_world(ROOT, directory, configuration))
++            # Validate physics/backend availability before retiring a usable world.
++            rrf_hash = hashlib.sha256((ROOT / 'RRF/build/rrf_simulator').read_bytes()).hexdigest()
++            candidate = NativeSession(ROOT, directory, backend=configuration.backend,
++                record=os.environ.get('HP_SIM5_RECORD', '1') != '0',
++                frozen_scene=(directory / 'scene.usda').read_text(), layering=configuration.layering)
++            candidate_state = candidate.status()
++            metadata['geometry'] = {key: candidate_state[key] for key in ('layering_flags', 'cable_half_widths_m')}
++            async with self.browser_lock:
++                await self.close_session()
++                retired = True
++                self.session, candidate = candidate, None
++                self.session_id, self.session_dir = world_id, directory
++                self.machine = configuration.machine
++                self.world_metadata = metadata
++                self.generation += 1
++                self.physics_source_hash = self.hash_sources([ROOT / 'src/js', ROOT / 'hp-sim-3d'], '*.js')
++                self.bridge_source_hash = self.hash_sources([ROOT / 'integrations/rrf', ROOT / 'integrations/shared',
++                                                            ROOT / 'autocal/control', ROOT / 'scripts'], '*.*js')
++                metadata.update(python_source_sha256=self.python_source_hash,
++                                bridge_source_sha256=self.bridge_source_hash,
++                                js_physics_source_sha256=self.physics_source_hash if configuration.backend == 'headless-js' else None,
++                                rrf_sha256=rrf_hash)
++                self.rrf_hash = rrf_hash
++                self.config_hash = metadata['firmware_config_sha256']
++                # Freeze the selected firmware config in a private VSD, never edit repository RRF files.
++                # RRF's MaxFilenameLength is 120, including the host path.
++                self.vsd_temp = tempfile.TemporaryDirectory(prefix='hp-sim5-vsd-')
++                vsd = Path(self.vsd_temp.name)
++                shutil.copytree(ROOT / 'RRF/run/vsd/sys', vsd / 'sys')
++                shutil.copyfile(directory / 'firmware-config.g', vsd / 'sys/research.g')
++                rrf_port, ws_port, collector_port = [free_port() for _ in range(3)]
++                self.rrf_url = f'http://127.0.0.1:{rrf_port}'
++                self.collector_url = f'http://127.0.0.1:{collector_port}'
++                self.spawn('rrf', [str(ROOT / 'RRF/build/rrf_simulator'), '--vsd', str(vsd),
++                                   '-c', 'sys/research.g', '--server', '-p', str(rrf_port)])
++                process, log = self.spawn('collector', ['node', 'scripts/research_collector.mjs', self.rrf_url,
++                                                       str(ws_port), str(collector_port), self.endpoint])
++                ready = await asyncio.to_thread(wait_ready, process, self.collector_url, 'status', log, token=self.token, timeout=40)
++                metadata['firmware_initial'] = ready['firmware_initial']
++                if 'Kinematics is Hangprinter' not in metadata['firmware_initial']['M669'] or not metadata['firmware_initial']['M666'].startswith('M666 A1'):
++                    raise RuntimeError('RRF did not load the matching Hangprinter configuration')
++                self.socket_task = asyncio.create_task(self.session.run_socket(f'ws://127.0.0.1:{ws_port}'))
++                await asyncio.wait_for(self.session.connected.wait(), timeout=5)
++                self.session.event('session_started', rrf_url=self.rrf_url, **metadata)
++                self.configuration = configuration
++                self.runtime_error = None
++                metadata.update(status='ready', reset_required=False)
++        except Exception as error:
++            if candidate is not None:
++                candidate.close()
++            if retired:
++                await self.close_session()
++                self.runtime_error = str(error)
++            metadata.update(status='failed', error=str(error), reset_required=retired,
++                            recovery='reset_session retries the last accepted configuration')
++            raise RuntimeError(f'{error}; world evidence: {directory / "manifest.json"}') from None
++        finally:
++            self.last_world_attempt = dict(metadata)
++            write_json(directory / 'manifest.json', metadata)
++
++    def input_changed(self, path, expected):
++        return expected is not None and (not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected)
+ 
+     def status(self):
+         processes = dict(self.processes)
+-        if self.session.js_physics is not None:
++        if self.session is not None and self.session.js_physics is not None:
+             processes['physics-js'] = self.session.js_physics.process
+-        return {**self.session.status(), 'machine_design': self.machine, 'session_id': self.session_id, 'busy': self.busy,
++        return {**(self.session.status() if self.session else {'connected': False, 'step': 0, 'error': self.runtime_error}),
++                'world_configuration': self.world_metadata, 'world_id': self.session_id, 'generation': self.generation,
++                'accepted_settings': self.configuration.effective(), 'last_world_attempt': self.last_world_attempt, 'session_directory': str(self.directory),
++                'machine_design': self.machine, 'session_id': self.session_id, 'busy': self.busy,
+                 'active_job': self.active_job, 'active_autocal_job': self.autocal.active,
+-                'reset_required': bool(self.session.error), 'browser_url': self.browser_url,
++                'reset_required': self.session is None or bool(self.session.error) or
++                                  any(process.poll() is not None for name, process in processes.items() if name in ('rrf', 'collector', 'physics-js')), 'browser_url': self.browser_url,
+                 'source_changed': {
++                    'scene_requires_session_reset': self.input_changed(ROOT / self.configuration.scene, self.world_metadata.get('authored_scene_sha256')),
++                    'firmware_requires_session_reset': self.input_changed(ROOT / 'RRF/run/vsd' / self.configuration.firmware_config, self.world_metadata.get('firmware_source_sha256')),
++                    'rrf_requires_session_reset': self.input_changed(ROOT / 'RRF/build/rrf_simulator', self.world_metadata.get('rrf_sha256')),
+                     'python_requires_launcher_restart': self.python_source_hash != self.hash_sources([ROOT / 'src/python', ROOT / 'scripts'], '*.py'),
+                     'bridge_requires_session_reset': self.bridge_source_hash != self.hash_sources(
+                         [ROOT / 'integrations/rrf', ROOT / 'integrations/shared', ROOT / 'autocal/control', ROOT / 'scripts'], '*.*js'),
+-                    'js_physics_requires_session_reset': self.session.backend == 'headless-js' and self.physics_source_hash !=
++                    'js_physics_requires_session_reset': self.configuration.backend == 'headless-js' and self.physics_source_hash !=
+                         self.hash_sources([ROOT / 'src/js', ROOT / 'hp-sim-3d'], '*.js')},
+                 'services': {name: {'pid': process.pid, 'exit_code': process.poll(),
+                                     'log': str(self.session_dir / 'physics-js.log') if name == 'physics-js'
+                                     else str(self.directory / f'{name}.log')}
+                              for name, process in processes.items()},
+                 'artifacts': {'rrd': str(self.session.recording_path) if self.session.recording is not None else None,
+-                              'events': str(self.session_dir / 'events.jsonl'), 'scene': str(self.session_dir / 'scene.usda')}}
++                              'events': str(self.session_dir / 'events.jsonl'), 'scene': str(self.session_dir / 'scene.usda'),
++                              'authored_scene': str(self.session_dir / 'authored-scene.usda'),
++                              'world_manifest': str(self.session_dir / 'manifest.json')} if self.session else
++                              {'world_manifest': str(self.session_dir / 'manifest.json')} if self.session_dir else {}}
+ 
+     async def collect(self, args, job=None):
+         configs = args.get('configs', [{'fixed': [2, 3], 'drive': 0, 'sensor': 1}])
+@@ -136,9 +207,10 @@ class Runtime:
+                      'firmware_config': str(self.session_dir / 'firmware-config.g')}
+         if not self.session.recording_enabled:
+             artifacts['rrd'] = None
+-        manifest = {'schema_version': 1, 'kind': 'native_collection',
++        manifest = {'schema_version': 2, 'kind': 'native_collection',
+                     'run_id': run_id, 'backend': self.session.backend, 'session_id': self.session_id, 'status': 'running',
+-                    'machine_design': self.machine, 'configs': configs, 'options': {**options, 'sweepPoints': points},
++                    'world_configuration': json.loads(encode(self.world_metadata)), 'world_id': self.session_id, 'generation': self.generation,
++                    'reset_required': False, 'machine_design': self.machine, 'configs': configs, 'options': {**options, 'sweepPoints': points},
+                     'start_step': self.session.step, 'dt_s': self.session.dt,
+                     'events_start_byte': self.session.events.tell(),
+                     'clock': self.session.status()['clock'], 'artifacts': artifacts,
+@@ -165,7 +237,8 @@ class Runtime:
+                                     {'configs': configs, 'options': manifest['options'],
+                                      'settlingTimeoutMs': settling * 1000,
+                                      'sweepConfigFile': str(directory / 'configs.txt'), 'outputFile': artifacts['dataset'],
+-                                     'partialFile': str(directory / 'partial-points.jsonl'), 'backend': self.session.backend},
++                                     'partialFile': str(directory / 'partial-points.jsonl'), 'backend': self.session.backend,
++                                     'machine': self.machine, 'layering': self.configuration.layering},
+                                     token=self.token, timeout=wall_timeout + 5)
+             manifest['collector_options'] = collected['collectionOptions']
+             from autocal.json_schema import load_json_file
+@@ -301,6 +374,8 @@ class Runtime:
+ 
+     async def dispatch(self, operation, args):
+         if operation == 'start_autocal':
++            if self.changing_world:
++                raise ValueError('World restart is in progress')
+             if self.stop.is_set():
+                 raise RuntimeError('Supervisor is shutting down')
+             return self.autocal.start(args)
+@@ -323,6 +398,8 @@ class Runtime:
+                 result['progress'] = {'step': self.session.step, 'sim_time_s': self.session.step * self.session.dt,
+                                       'queue_length': self.session.queue_length()}
+             return result
++        if operation in ('capture_context', 'clock', 'advance') and self.session is None:
++            raise RuntimeError('World unavailable; inspect status and reset_session')
+         if operation == 'capture_context':
+             message = args.get('message')
+             if not isinstance(message, str) or not message.strip():
+@@ -376,12 +453,14 @@ class Runtime:
+             if self.active_job is not None:
+                 await self.dispatch('cancel_job', {'job_id': self.active_job})
+             return {'stopping': True}
++        if operation in ('reset', 'configure') and (self.active_job or self.autocal.active):
++            raise ValueError('A job is active; explicitly cancel_collection or cancel_autocal first')
+         if self.busy:
+             raise ValueError('Session has an active operation')
+-        worker_failed = self.session.js_physics is not None and self.session.js_physics.process.poll() is not None
+-        if operation != 'reset' and (self.session.error or worker_failed or
++        worker_failed = self.session is not None and self.session.js_physics is not None and self.session.js_physics.process.poll() is not None
++        if operation not in ('reset', 'configure') and (self.session is None or self.session.error or worker_failed or
+                                     any(self.processes[name].poll() is not None for name in ('rrf', 'collector'))):
+-            raise RuntimeError(f'Session failed; inspect status and reset_session: {self.session.error}')
++            raise RuntimeError(f'Session failed; inspect status and reset_session: {self.runtime_error or (self.session.error if self.session else 'world unavailable')}')
+         self.busy = True
+         try:
+             if operation == 'start_collection':
+@@ -407,10 +486,13 @@ class Runtime:
+                 if self.session.recording is not None:
+                     self.session.recording.flush(timeout_sec=5)
+                 return result
+-            if operation == 'reset':
+-                async with self.browser_lock:
+-                    await self.close_session()
+-                    await self.start()
++            if operation in ('reset', 'configure'):
++                config = world_configuration(ROOT, args, backend=self.configuration.backend) if operation == 'configure' else self.configuration
++                self.changing_world = True
++                try:
++                    await self.start(config)
++                finally:
++                    self.changing_world = False
+                 return self.status()
+             raise ValueError('Unknown runtime operation')
+         finally:
+@@ -458,8 +540,15 @@ class Runtime:
+         for process in reversed(list(self.processes.values())):
+             await asyncio.to_thread(stop_process, process)
+         self.processes.clear()
++        if self.vsd_temp is not None:
++            self.vsd_temp.cleanup()
++            self.vsd_temp = None
+         self.browser_url = None
+         if self.session is not None:
++            self.session.observe()
++            self.session.event('session_archived', session_id=self.session_id)
++            self.world_metadata.update(status='archived', end_step=self.session.step, reset_required=bool(self.session.error))
++            write_json(self.session_dir / 'manifest.json', self.world_metadata)
+             self.session.close()
+             self.session = None
+ 
+diff --git a/src/python/hp_sim5_research/autocal_jobs.py b/src/python/hp_sim5_research/autocal_jobs.py
+index 65cd60eb..b2b721fa 100644
+--- a/src/python/hp_sim5_research/autocal_jobs.py
++++ b/src/python/hp_sim5_research/autocal_jobs.py
+@@ -2,7 +2,6 @@
+ import asyncio
+ import hashlib
+ import json
+-import math
+ import os
+ from pathlib import Path
+ import signal
+@@ -11,13 +10,7 @@ import time
+ import uuid
+ 
+ from .experiments import write_json
+-
+-
+-def number(name, value, low, high, *, integer=False):
+-    if (type(value) not in ((int,) if integer else (int, float)) or
+-            not math.isfinite(value) or not low <= value <= high):
+-        raise ValueError(f'{name} must be {"an integer" if integer else "a number"} in [{low}, {high}]')
+-    return value
++from .configuration import number, validate_spools, firmware_path
+ 
+ 
+ def settings(args):
+@@ -28,16 +21,7 @@ def settings(args):
+     result = {'machine': 'hp3', 'layering': False, 'base_radii_mm': [30.0], 'buildup_factor': 0.0,
+               'find_radii': 'off', 'find_buildup_factor': 'off', **{k: v for k, v in args.items()
+               if k not in ('optimizer', 'budgets', 'collection', 'artifact_dir')}}
+-    if result['machine'] not in ('hp3', 'hp4'):
+-        raise ValueError('machine must be hp3 or hp4')
+-    if type(result['layering']) is not bool:
+-        raise ValueError('layering must be boolean')
+-    radii = result['base_radii_mm']
+-    if not isinstance(radii, list) or len(radii) not in (1, 4):
+-        raise ValueError('base_radii_mm must contain one or four radii')
+-    for radius in radii:
+-        number('base_radii_mm', radius, 1, 200)
+-    number('buildup_factor', result['buildup_factor'], 0, 2)
++    validate_spools(result['machine'], result['layering'], result['base_radii_mm'], result['buildup_factor'])
+     for key in ('find_radii', 'find_buildup_factor'):
+         if result[key] not in ('off', 'global', 'per-anchor'):
+             raise ValueError(f'{key} must be off, global or per-anchor')
+@@ -93,7 +77,7 @@ def command(root, directory, config):
+     opt, budget = config['optimizer'], config['budgets']
+     argv = [str(root / '.venv/bin/python'), 'autocal/autocal.py', '--headless-sim', '--extended-reference',
+             '--machine-type', f'hangprinter_{config["machine"][-1]}', '--dataset', str(directory / 'sweeps.json'),
+-            '--rrf-config', f'sys/config_{config["machine"]}{"_w_line_layers" if config["layering"] else ""}.g',
++            '--rrf-config', firmware_path(config['machine'], config['layering']),
+             '--base-radii', ','.join(map(str, config['base_radii_mm'])),
+             '--buildup-factor', str(config['buildup_factor']), '--find-radii', config['find_radii'],
+             '--find-buildup-factor', config['find_buildup_factor'], '--optimizer-mode', opt['mode'],
+@@ -128,7 +112,7 @@ class AutocalJobs:
+         self.jobs = {}
+         self.active = None
+         self.source_hashes = {str(path.relative_to(self.root)): hashlib.sha256(path.read_bytes()).hexdigest()
+-            for path in (self.root / 'scripts/research_runtime.py', Path(__file__))}
++            for path in (self.root / 'scripts/research_runtime.py', Path(__file__), Path(__file__).with_name('configuration.py'))}
+ 
+     def start(self, args):
+         config = settings(args)
+diff --git a/src/python/hp_sim5_research/js_physics.py b/src/python/hp_sim5_research/js_physics.py
+index 9cc9d0f9..d4e4f8e2 100644
+--- a/src/python/hp_sim5_research/js_physics.py
++++ b/src/python/hp_sim5_research/js_physics.py
+@@ -8,12 +8,12 @@ from cable_joints_3d.quaternion import Quaternion
+ 
+ 
+ class JSPhysics:
+-    def __init__(self, root, directory, world):
++    def __init__(self, root, directory, world, *, layering=True):
+         self.world = world
+         self.physics_wall_s = 0.
+         self.log = (directory / 'physics-js.log').open('a')
+         self.process = subprocess.Popen(['node', str(root / 'scripts/research_physics.mjs'),
+-                                         str(directory / 'scene.usda')], cwd=root,
++                                         str(directory / 'scene.usda'), str(layering).lower()], cwd=root,
+                                         stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                         stderr=self.log, text=True, bufsize=1)
+         try:
+diff --git a/src/python/hp_sim5_research/services.py b/src/python/hp_sim5_research/services.py
+index 0b3e9dab..d1afd108 100644
+--- a/src/python/hp_sim5_research/services.py
++++ b/src/python/hp_sim5_research/services.py
+@@ -8,6 +8,8 @@ import socket
+ import subprocess
+ import sys
+ import time
++
++from .configuration import world_configuration
+ from urllib.error import HTTPError
+ from urllib.request import Request, urlopen
+ 
+@@ -65,7 +67,7 @@ def wait_ready(process, endpoint, operation, log, *, token='', timeout=30):
+ 
+ 
+ class RuntimeService:
+-    def __init__(self, root, directory, viewer_endpoint=None, *, backend='headless-js', record=True, machine='hp4'):
++    def __init__(self, root, directory, viewer_endpoint=None, *, backend='headless-js', record=True, machine='hp4', configuration=None):
+         self.root = Path(root)
+         self.directory = Path(directory).resolve()
+         self.directory.mkdir(parents=True, exist_ok=True)
+@@ -73,13 +75,10 @@ class RuntimeService:
+         self.endpoint = f'http://127.0.0.1:{free_port()}'
+         self.process = None
+         self.viewer_endpoint = viewer_endpoint
+-        if backend not in ('native-python', 'headless-js', 'native-warp', 'native-warp-cuda'):
+-            raise ValueError('Unknown physics backend')
+         self.backend = backend
+         self.record = record
+-        if machine not in ('hp3', 'hp4'):
+-            raise ValueError('Machine must be hp3 or hp4')
+-        self.machine = machine
++        self.configuration = world_configuration(self.root, configuration if configuration is not None else {'machine': machine}, backend=backend)
++        self.machine = self.configuration.machine
+ 
+     def start(self):
+         log_path = self.directory / 'runtime.log'
+@@ -89,7 +88,7 @@ class RuntimeService:
+                 cwd=self.root, env={**os.environ, 'HP_SIM5_RUNTIME_TOKEN': self.token,
+                                     'HP_SIM5_PHYSICS_BACKEND': self.backend,
+                                     'HP_SIM5_RECORD': '1' if self.record else '0',
+-                                    'HP_SIM5_MACHINE': self.machine,
++                                    'HP_SIM5_WORLD_CONFIGURATION': self.configuration.requested_json,
+                                     'HP_SIM5_VIEWER_URL': self.viewer_endpoint or '',
+                                     'MPLCONFIGDIR': str(self.directory / 'matplotlib')},
+                 stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)
+diff --git a/src/python/hp_sim5_research/session.py b/src/python/hp_sim5_research/session.py
+index f11b3270..a77ab900 100644
+--- a/src/python/hp_sim5_research/session.py
++++ b/src/python/hp_sim5_research/session.py
+@@ -20,7 +20,7 @@ from .experiments import DEFAULT_SCENE, encode, repo_path, sample, validate_comm
+ 
+ 
+ class NativeSession:
+-    def __init__(self, root, directory, scene=DEFAULT_SCENE, *, backend='native-python', record=True):
++    def __init__(self, root, directory, scene=DEFAULT_SCENE, *, backend='native-python', record=True, frozen_scene=None, layering=True):
+         if backend not in ('native-python', 'headless-js', 'native-warp', 'native-warp-cuda'):
+             raise ValueError('Unknown physics backend')
+         self.backend = backend
+@@ -34,9 +34,17 @@ class NativeSession:
+         self.observation_wall_s = 0.
+         self.directory = Path(directory)
+         self.directory.mkdir(parents=True, exist_ok=True)
+-        self.frozen_scene = open_cable_scene(repo_path(root, scene)).Flatten().ExportToString()
++        self.layering = layering
++        if frozen_scene is None:
++            stage = open_cable_scene(repo_path(root, scene), **({} if layering else
++                {'derive_all': True, 'cable_path_half_width_override': 0.}))
++            layer = stage.Flatten()
++            # Flatten appends a multiline provenance doc unsupported by the JS serializer.
++            layer.documentation = stage.GetMetadata('doc') or ''
++            frozen_scene = layer.ExportToString()
++        self.frozen_scene = frozen_scene
+         (self.directory / 'scene.usda').write_text(self.frozen_scene)
+-        self.world = load_machine_world(self.frozen_scene, cable_solver_device=self.cable_solver_device)
++        self.world = self.create_world()
+         self.dt = self.world.get_resource('dt')
+         if not math.isclose(self.dt, .002, abs_tol=1e-12):
+             raise ValueError('RRF bridge requires a 0.002 s physics timestep')
+@@ -56,10 +64,20 @@ class NativeSession:
+         self.recording_id = uuid.uuid4().hex
+         self.events = (self.directory / 'events.jsonl').open('w')
+         self.recording = None
+-        if backend == 'headless-js':
+-            from .js_physics import JSPhysics
+-            self.js_physics = JSPhysics(Path(root), self.directory, self.world)
+-        self.start_recording(self.directory / 'recording.rrd')
++        try:
++            if backend == 'headless-js':
++                from .js_physics import JSPhysics
++                self.js_physics = JSPhysics(Path(root), self.directory, self.world, layering=self.layering)
++            self.start_recording(self.directory / 'recording.rrd')
++        except Exception:
++            self.close()
++            raise
++
++    def create_world(self):
++        world = load_machine_world(self.frozen_scene, cable_solver_device=self.cable_solver_device)
++        for key in ('enableLayering', 'layeringFrictionEffectiveRadius', 'layeringRenderWraps'):
++            world.set_resource(key, self.layering)
++        return world
+ 
+     def start_recording(self, path):
+         if self.recording is not None:
+@@ -205,9 +223,14 @@ class NativeSession:
+             return self.status()
+ 
+     def status(self):
++        from cable_joints_3d.cable_joints_components import CablePathComponent
+         return {'connected': self.connected.is_set(), 'epoch': self.epoch, 'step': self.step,
+                 'sim_time_s': self.step * self.dt, 'collector_time_s': self.collector_time_s,
+                 'dt_s': self.dt, 'speed_scale': self.speed, 'queue_length': self.queue_length(),
++                'layering_flags': {key: self.world.get_resource(key) for key in
++                    ('enableLayering', 'layeringFrictionEffectiveRadius', 'layeringRenderWraps')},
++                'cable_half_widths_m': sorted({self.world.get_component(entity, CablePathComponent).cable_half_width
++                                              for entity in self.world.query([CablePathComponent])}),
+                 'backend': self.backend, 'physics_wall_s': self.physics_wall_s,
+                 'worker_wall_s': self.worker_wall_s,
+                 'observation_wall_s': self.observation_wall_s,
+@@ -228,7 +251,7 @@ class NativeSession:
+                     'axes': payload['axes'], 'anglesDeg': angles}
+         if kind == 'reset':
+             async with self.lock:
+-                self.world = load_machine_world(self.frozen_scene, cable_solver_device=self.cable_solver_device)
++                self.world = self.create_world()
+                 self.epoch += 1
+                 self.world.set_resource('sceneGeneration', self.epoch + 1)
+                 self.remote = self.world.get_system(RemoteSpoolSystem)
+@@ -236,7 +259,7 @@ class NativeSession:
+                 if self.js_physics:
+                     self.js_physics.close()
+                     from .js_physics import JSPhysics
+-                    self.js_physics = JSPhysics(self.root, self.directory, self.world)
++                    self.js_physics = JSPhysics(self.root, self.directory, self.world, layering=self.layering)
+                     self.js_queue_length = 0
+                 self.step = 0
+                 self.observe()
+diff --git a/tests/python/test_research_agent.py b/tests/python/test_research_agent.py
+index 983dd98c..d823fa8e 100644
+--- a/tests/python/test_research_agent.py
++++ b/tests/python/test_research_agent.py
+@@ -121,8 +121,13 @@ async def test_stdio_mcp_discovery_execution_readback_and_error():
+         tools = (await client.list_tools()).tools
+         assert {tool.name for tool in tools} == {'capabilities', 'run_experiment', 'read_experiment', 'compare_experiments',
+                                                'runtime_status', 'send_gcode', 'capture_native_context', 'reset_session',
+-                                               'step_physics', 'start_browser_service', 'start_collection', 'collection_status', 'cancel_collection',
++                                               'step_physics', 'configure_session', 'start_browser_service', 'start_collection', 'collection_status', 'cancel_collection',
+                                                'browser_status', 'browser_action', 'start_autocal', 'autocal_status', 'cancel_autocal'}
++        config_tool = next(tool for tool in tools if tool.name == 'configure_session')
++        assert config_tool.input_schema['properties']['configuration']['$ref'] == '#/$defs/WorldSettings'
++        settings_schema = config_tool.input_schema['$defs']['WorldSettings']
++        assert settings_schema['additionalProperties'] is False
++        assert settings_schema['properties']['machine']['enum'] == ['hp3', 'hp4']
+         result = await client.call_tool('capabilities', {})
+         assert not result.is_error
+         assert SCENE in result.structured_content['scenes']
+diff --git a/tests/python/test_research_terminal.py b/tests/python/test_research_terminal.py
+index 155079c4..6be2d339 100644
+--- a/tests/python/test_research_terminal.py
++++ b/tests/python/test_research_terminal.py
+@@ -62,6 +62,10 @@ def test_service_shutdown_preserves_codex_terminal(tmp_path, monkeypatch, servic
+             script.parent.mkdir()
+             script.write_text(wrapper)
+             monkeypatch.setattr(services, 'wait_ready', lambda *a, **k: None)
++            for source in ('public/usd_scenes/hp4_rigid_body.usda', 'RRF/run/vsd/sys/config_hp4_w_line_layers.g'):
++                target = tmp_path / source
++                target.parent.mkdir(parents=True, exist_ok=True)
++                shutil.copyfile(ROOT / source, target)
+             runtime = RuntimeService(tmp_path, tmp_path / 'native').start()
+             process, log = runtime.process, runtime.directory / 'runtime.log'
+         else:

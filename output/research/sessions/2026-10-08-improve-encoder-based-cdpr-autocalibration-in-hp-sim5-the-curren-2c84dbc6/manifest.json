@@ -1,0 +1,347 @@
+{
+  "baseline_revision": "be1111d7ecbf5dfa6722b25e887d52006b4f6ef8",
+  "python": "3.12.3",
+  "platform": "Linux-6.8.0-142-generic-x86_64-with-glibc2.39",
+  "datasets": [
+    {
+      "name": "five_points_bigger_deltas",
+      "path": "autocal/data/references/five_points_bigger_deltas.json",
+      "sha256": "c3885bb2a9e7d27207605cccc27fa2b7d4be7b0c7543c41e3ed20bd7402e1812",
+      "truth_anchors": [
+        [
+          0.0,
+          -1900.0,
+          0.0
+        ],
+        [
+          1645.44826719,
+          950.0,
+          0.0
+        ],
+        [
+          -1645.44826719,
+          950.0,
+          0.0
+        ]
+      ],
+      "truth_radii": [
+        39.184,
+        39.184,
+        39.184
+      ]
+    },
+    {
+      "name": "flexible_lines_2000",
+      "path": "autocal/data/references/flexible_lines_2000.json",
+      "sha256": "c083d0a764aa8b08a1633e9d12a660403a935ef073de7688ef2e52ffbff0a789",
+      "truth_anchors": [
+        [
+          0.0,
+          -1900.0,
+          0.0
+        ],
+        [
+          1645.44826719,
+          950.0,
+          0.0
+        ],
+        [
+          -1645.44826719,
+          950.0,
+          0.0
+        ]
+      ],
+      "truth_radii": [
+        39.184,
+        39.184,
+        39.184
+      ]
+    },
+    {
+      "name": "layered_manual_some_bad_points",
+      "path": "autocal/data/references/layered_manual_some_bad_points.json",
+      "sha256": "dec1d5633b3dd9ee6c8b82cbb4abbc0809e4feb48f2eb2d667214f36bd0f2ab2",
+      "truth_anchors": [
+        [
+          0.0,
+          -1900.0,
+          0.0
+        ],
+        [
+          1645.44826719,
+          950.0,
+          0.0
+        ],
+        [
+          -1645.44826719,
+          950.0,
+          0.0
+        ]
+      ],
+      "truth_radii": [
+        39.184,
+        39.184,
+        39.184
+      ]
+    },
+    {
+      "name": "ten_points_bigger_deltas",
+      "path": "autocal/data/references/ten_points_bigger_deltas.json",
+      "sha256": "15318b548501745f5df758408d4835d0d056cc3bee58f485c56e0b09934b5db5",
+      "truth_anchors": [
+        [
+          0.0,
+          -1900.0,
+          0.0
+        ],
+        [
+          1645.44826719,
+          950.0,
+          0.0
+        ],
+        [
+          -1645.44826719,
+          950.0,
+          0.0
+        ]
+      ],
+      "truth_radii": [
+        39.184,
+        39.184,
+        39.184
+      ]
+    },
+    {
+      "name": "ten_points_w_buildup",
+      "path": "autocal/data/references/ten_points_w_buildup.json",
+      "sha256": "3abbb09d76d5ca1b604a773bb33ac733b6cbb4ed6ea956c3036b019d2f9574dd",
+      "truth_anchors": [
+        [
+          0.0,
+          -1900.0,
+          0.0
+        ],
+        [
+          1645.44826719,
+          950.0,
+          0.0
+        ],
+        [
+          -1645.44826719,
+          950.0,
+          0.0
+        ]
+      ],
+      "truth_radii": [
+        39.184,
+        39.184,
+        39.184
+      ]
+    },
+    {
+      "name": "ten_points_w_buildup2",
+      "path": "autocal/data/references/ten_points_w_buildup2.json",
+      "sha256": "71a226b31c1a0ace743e861aae885430861d97a3e201608ba949a8798a8497f1",
+      "truth_anchors": [
+        [
+          0.0,
+          -1900.0,
+          0.0
+        ],
+        [
+          1645.44826719,
+          950.0,
+          0.0
+        ],
+        [
+          -1645.44826719,
+          950.0,
+          0.0
+        ]
+      ],
+      "truth_radii": [
+        39.184,
+        39.184,
+        39.184
+      ]
+    },
+    {
+      "name": "fifth_hp3_dataset",
+      "path": "autocal/data/references/fifth_hp3_dataset.json",
+      "sha256": "6d35e856277c96fef419db4933d950db1f9ae4ac75043c381c765b58cc8b0887",
+      "truth_anchors": [
+        [
+          0.0,
+          -1900.0,
+          -280.0
+        ],
+        [
+          1645.45,
+          950.0,
+          -280.0
+        ],
+        [
+          -1645.45,
+          950.0,
+          -280.0
+        ],
+        [
+          0.0,
+          0.0,
+          1900.0
+        ]
+      ],
+      "truth_radii": [
+        39.1845,
+        39.1845,
+        39.1845,
+        39.1845
+      ]
+    },
+    {
+      "name": "seventh_hp3_dataset",
+      "path": "autocal/data/references/seventh_hp3_dataset.json",
+      "sha256": "49844ddf21eb5429a2e8527f269a88ca68b82951ce072ca9cd21a4b6bc01ae0d",
+      "truth_anchors": [
+        [
+          0.0,
+          -1900.0,
+          -280.0
+        ],
+        [
+          1645.45,
+          950.0,
+          -280.0
+        ],
+        [
+          -1645.45,
+          950.0,
+          -280.0
+        ],
+        [
+          0.0,
+          0.0,
+          1900.0
+        ]
+      ],
+      "truth_radii": [
+        39.1845,
+        39.1845,
+        39.1845,
+        39.1845
+      ]
+    },
+    {
+      "name": "sixteenth_hp3_dataset_even_more_pressure",
+      "path": "autocal/data/references/sixteenth_hp3_dataset_even_more_pressure.json",
+      "sha256": "3ba7c0e662c19d12be15dc4c08df131d220897e0b5b638c2805c3e071b8f7a8a",
+      "truth_anchors": [
+        [
+          0.0,
+          -1900.0,
+          -280.0
+        ],
+        [
+          1645.45,
+          950.0,
+          -280.0
+        ],
+        [
+          -1645.45,
+          950.0,
+          -280.0
+        ],
+        [
+          0.0,
+          0.0,
+          1900.0
+        ]
+      ],
+      "truth_radii": [
+        39.1845,
+        39.1845,
+        39.1845,
+        39.1845
+      ]
+    },
+    {
+      "name": "nineteenth_hp3_dataset_even_more_pressure",
+      "path": "autocal/data/references/nineteenth_hp3_dataset_even_more_pressure.json",
+      "sha256": "726e4dd98e6354c6837b1aa1b951245d13cee8ab0061971a3875154a6542a2b5",
+      "truth_anchors": [
+        [
+          0.0,
+          -1900.0,
+          -280.0
+        ],
+        [
+          1645.45,
+          950.0,
+          -280.0
+        ],
+        [
+          -1645.45,
+          950.0,
+          -280.0
+        ],
+        [
+          0.0,
+          0.0,
+          1900.0
+        ]
+      ],
+      "truth_radii": [
+        39.1845,
+        39.1845,
+        39.1845,
+        39.1845
+      ]
+    },
+    {
+      "name": "23_april_2026",
+      "path": "autocal/data/references/23_april_2026.json",
+      "sha256": "0eeba9c452fe08a7ff32851ec5759cf598c3f78a3b20d32e62a8635b0bf01fa1",
+      "truth_anchors": [
+        [
+          0.0,
+          -1900.0,
+          -280.0
+        ],
+        [
+          1645.45,
+          950.0,
+          -280.0
+        ],
+        [
+          -1645.45,
+          950.0,
+          -280.0
+        ],
+        [
+          0.0,
+          0.0,
+          1900.0
+        ]
+      ],
+      "truth_radii": [
+        39.1845,
+        39.1845,
+        39.1845,
+        39.1845
+      ]
+    }
+  ],
+  "source": [
+    {
+      "path": "autocal/ellipse_objective_jax.py",
+      "sha256": "b493923698103ef4c7b978dbed89465dd451bf3bf7d990051e0ea30d681ac4ed"
+    },
+    {
+      "path": "autocal/README.md",
+      "sha256": "949cec38ed907dfadae9a376e54f2055c807a0f1f1066b41bfe00e0d03e10a92"
+    }
+  ],
+  "evidence_contract": "Recorded simulation fixture truth and analytical synthetic circles; no hardware measurements, no new native physics collection or motion.",
+  "jax": "0.9.2",
+  "jaxlib": "0.9.2"
+}

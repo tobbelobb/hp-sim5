@@ -1,0 +1,211 @@
+diff --git a/public/wasm/cable_solver.wasm b/public/wasm/cable_solver.wasm
+index 6a54f893f3934460863c9b2143165dc764c5a4e7..97f6ee258c1d6b072ee2af63e803bb8dbbdab522 100755
+GIT binary patch
+delta 2315
+zcmaKsU2GIp6vyYz-Cg!$md<|L-L#y!*e|x*(nXM^LOW7Sj2~DcMk5A9Vn`vO5E4a^
+zsRj@OXkkh(T^`sS9wgC(YD1Q2RATf+e5m@MMjuFwiNFK(L2Uwv=kB(<*L`63;hx|B
+zoOACz=giFa)7qJ7ZSoi;7p9KW!ED2Hvxivve$|TXcUkIzshi7hP%G`gLI{IVWMQYs
+zVmW$V1s_UL(2A_nfgq$&kLGAW=s^fO&;Xq%rE~OjB{T#bA{+HMEGe=$Izu^nxe^~2
+z`$wR?$Reo6bM%tX8z3UK4m%VNu{W*i>qvtyO{b}Y2cz*5bqWv@)>X7vctDx^L6|@F
+zJ4xD`d;KJAUt6`TxpO`-UQG;D6C?cUHPRxYTOtFY>zOwv`0mx)Qbr_D-O<R@%r5)g
+z-Zbg5Kk4nXGE#^JzKn8-7~N{W+7JF}!q%Vy-6q++4p(2hI!Pe;NRR};XHL^0p!)d8
+z$cO^>D$UTOW3b?iGO8LBkFolp<`L)6+Brv5NJ;0YbLZTv6Gkk6H}|Hg!lDp;5%=?o
+zCe0G;at69UD+nx*0{+Cbm8rcC9VTR{eQWg?@!F$nHjp0sw>1-ytf?3(ZZ%i7Ap2C`
+zV517IG+oJ9wKv<aDP`~7zD|!SPN(*R{bMazG%J5l@fz76(I|FI96v(D19*f$)}HC#
+zo>Ax8dXR!@y7!u1{a4XXu@yG^7-jPTqZnWxG6(UxKblXJue(l#9((7*7niB}>GBX1
+zAUKxGWC&akf_c>qdQLRKZBmnzYf9lYpI&<kx4OReF|Rje1V!JbRu3HiO#S$s(zk@1
+zIEnT1=f=o0i6|x>SuliMH5$?U!&5eO{@oY>Esn}4Eh~}IoiSn%HF}O0FOoQ4F;4X6
+zNVQcjGY@t`GeQtB!Wt0;M)<aI(qaGddEDNyF+gJc!Z?XpNk}?kh|jVVr0@+va|;82
+zin*OJVEDGQRyP)No}b7}AGDr5$6}5V#hF9iF%r0@aBadhiEB)ZA?g?@@I%5e02d^N
+zB2p_-BPO>YHaSK+E=WmKkv4K8N}_z26Soz0AX$WsMF?P8k(IC9hJd<;N}(XW1^5g)
+z&<YHtCLslIvm#5NAI&BQQs{^Y2NYQV0%#SOCY6OR+8kk78kXgAuzUFFa9l<h5`31E
+z#eDH;^0*bbO_>MW>w^@(PD;Cao`A<3@$baBOj5^)2Y^<*6`yO!oS{R2-zj|KMEr+@
+zVX|v372UJyQ1v39;4Es?ST(l_&oH7{`EG69!`vyj?>05{-Rq#a7Pp6aQmpntfrgZP
+zvUh#Z&2LVS6>c5y&x<BW@_{_b2Ib3n_@O*$Q~d${>I7Lyu^#?)p1=Z8nK^TYU$#i|
+z+p~F6n$4^K?!r0!<EO8Lf?h@G#M^Cg=}HjSaLEeLqcrq`M^Tz3{b%0WK>K?BLOCJH
+zf7kKC1&Z>3<ZtCi8|WfyAIeK4`3>Y15+A7ZTgYk2KZ2Z<_$}ncb=+OYy)}+22Qgt$
+zO;C;_xA4t6O<C`uDVH=_#}mj)rBuN!5*Ly0m)NP}7m(%JcOiGw;={^tUBFBHhE8|!
+z*FsbeeS`f?)`FEQ{PhsMVBN(OkYs{Wl*>DT+$#BxBDYDr1lf@I05V8?xGul<|M?q~
+zCsF8<5;h?}D)A0vxk<ywImy2ddAY>C(ycK4f`q=r!Wt$0D}E(P&yqh&J7V-EAs_JP
+i6STYMBUh!oJ8oU^W3*uLip_H#xk=*pOP?kv*Z%|L44gm!
+
+delta 2286
+zcmaKsZERCj7{|}KXYKlO%kJ&#MyWjKGPaKHg#jZLl<neXd_i&35rSVJ5`{)FBqo?x
+zX)#Mg84BKwvyOzdmoJ!@K(grgVjM)H#)Qn5L_he!L?gyG<~Ke#^ttWU9-8Qu^m%^&
+z=cVU)&PmTNs9!CpSH>CrdG<6L-lYGTXrwtUtK`C2mQ#+?-0UBHzp-4zhE)&*UNVAq
+z$w;NyB?Y`Fg+VPDVH*MvK|PXYMMn=n(1s=mqtuyZQ<YR5I!cD_=uy~E=@U(}`D*?u
+z2tl%<ccs}?M{jca1VFc0$>_HBZR_vo1aFEhFdHI{^BuE`kaD~q&@=Qwvit|S#c#Ay
+z-MYDLb4T||O;@!h`kysT`k?-6*NK8SdjG*V5BbIAtu#V=tnuwB{JgroGpGB(Yc8-1
+zFzsAEpC^@8T&*<c&5m7QoG)i7l`LfdJSj$uFoX{T2zZ>V+Z6uqY@kCAbOLvVZ7vV0
+z+Qs7R*Y{0Q>ah;*n4pSvXU7QLXbtxlT6#^w8Gehmi(I9~CX*f=3J^!LmimV&vvv=}
+z@bkHWPL=s9X=fCp&ngT|tnWpk@(&Ep)*GOhgX_m5=Bab3Cn@w=Bj%wlhCRWXRK^%E
+z)Af?+(Y|+9P;Qu1#+k8_a0U~so8~YcG`;h&@<E3b*l69@`Tl06O_ldXfZ~qkX$Bf_
+z)D_hQTH4u+%VZ`6XO1}ZSsy$wiLG`GKI&28Jb>p{W@iRZf2e%%=3KWz&%Pr*nV=&^
+z2&+yuW^m8E1>Hq=*<Fq9FBLZ|x+f{9F;vd5axgl#Z<2EQVCZ7)@r0`G!FZYxAW7vt
+z%3aQiAX<$*Yq)V4D%Zi!gDQ1)5Ea+X(T+W}dY-7J^GMCrFc+I%qTn&}zUMOrK8+`g
+zIK*w|k?b`90Ph>!{e}TX#XV#_vd}uJ**pXq7}GXSparxMv~jeWb7di$1Nb0ea{~=h
+z8;VHnNLZUhir9P<4N@FMq&=dzjz*sJf{FzYFTtJ?__3%|IZ+Y;brqFj5k^b6WyE%9
+zLn-1&e(Y5;5*SApe<%P0niDVtpQ6oc;>&|C_JcZe(eT>1vJjvNLPCsA(RE_!8|o1+
+zPtjdN(Z8AD2G{O@0<q;4xyvg`u`A5xF+Z?Mw6ea2jJe1%5W`!lZPzDy3UrOaUE=Wq
+zjkyC2;0iFY<~r^0*G{rpJmpq+lU*$Xg6kG%Tkz%C+^04ObDG}UkK$hLbH26w2n^5e
+z09`&8e)nx91HM{^rt)i%QWY^)pj$=Tb-Gq$FHoQOu|Shec=;<iI4BX#)3m*%(O(|T
+zTs%LYC)&)3e4Y?T@rdj+1uOe|==E#Ubne=;a_2=F6!SiIO!s>T=_G{gZ_r2ptv2_N
+zpPgd8U%CmoN7BDVj!C>&$A5{RR<Zt^+DOP2DXkT`PhuPWki^F@zCq$wkhe;lt&6{k
+zoRZ?lkvG*iNAf7Fs|jW9spIVuzlQm1B|e3`UgB|NdG6D7{MKEZBSfIEQEK3@+;9fD
+zRf-qu_-SN$BQGF#Ncl(V;s=nc1BiKzJ;Oi6yIC!jd{)Pwi$R@T&MjdjNNNAbolt)p
+zpGKP$e*?K);v_PcIExGtkJZ(u@2(#qyHMzs3icsCEb(Dvd38sS(^C8xvi!Ij=ROXy
+zkElM6gS1F_*TqDb&CpwOTO#ZhrSFQ?80+c1)KD33$)yn=W;<-6UE#CH35hSvjm4PI
+F{sppskv0GT
+
+diff --git a/src/js/cable_joints_3d/cable_joints_core.js b/src/js/cable_joints_3d/cable_joints_core.js
+index ad245293..e2959f1a 100644
+--- a/src/js/cable_joints_3d/cable_joints_core.js
++++ b/src/js/cable_joints_3d/cable_joints_core.js
+@@ -295,7 +295,6 @@ const CABLE_HYBRID_TRACE_PREFIX = '[CableHybridTrace]';
+ 
+ const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
+ const DEFAULT_CLOSED_LOOP_STEPPER_CONSTRAINT_STIFFNESS = 1e8;
+-const DEFAULT_OPEN_LOOP_STEPPER_CONSTRAINT_STIFFNESS_SCALE = 1.0;
+ const DEFAULT_OPEN_LOOP_STEPPER_HOLDING_TORQUE_SCALE = 1.0;
+ 
+ function _debugCable(world, message) {
+@@ -1401,22 +1400,10 @@ function _positionStepperConstraintStiffness(world, stepper) {
+     );
+   }
+ 
+-  const holdingTorque = Number.isFinite(stepper.holdingTorque)
+-    ? Math.max(0.0, stepper.holdingTorque)
+-    : 0.0;
+-  const polePairs = Number.isFinite(stepper.numPolePairs)
+-    ? Math.max(1.0, Math.abs(stepper.numPolePairs))
+-    : 1.0;
+-  const scale = Math.max(
+-    0.0,
+-    _readFiniteResource(
+-      world,
+-      'openLoopStepperConstraintStiffnessScale',
+-      DEFAULT_OPEN_LOOP_STEPPER_CONSTRAINT_STIFFNESS_SCALE,
+-    ),
+-  );
+-
+-  return holdingTorque * polePairs * scale;
++  // Open-loop electromagnetic torque is integrated by StepperMotorSystem.
++  // Adding its stiffness here changes only cable response, violating torque
++  // balance by I / (I + k*dt²) and giving coarse steps artificial holding power.
++  return 0.0;
+ }
+ 
+ function _effectiveMotorizedSpinInvInertia(world, stepper, invInertia, inertia, dt) {
+@@ -3364,8 +3351,12 @@ export class PBDCableConstraintSolver {
+       const translationalDispB = prevPosB
+         ? gradPosB.dot(posBComp.pos.clone().subtract(prevPosB))
+         : 0.0;
+-      const rotationalDispA = gradAngA.dot(_rotationVectorBetween(prevQuatA, currQuatA));
+-      const rotationalDispB = gradAngB.dot(_rotationVectorBetween(prevQuatB, currQuatB));
++      // A standalone axis-only spool's rotation is already in spinDisp.
++      // Counting its world rotation too doubles cable damping.
++      const rotationalDispA = endpointA.axisOnly && memberSpinA?.entityId === solverEntityA
++        ? 0.0 : gradAngA.dot(_rotationVectorBetween(prevQuatA, currQuatA));
++      const rotationalDispB = endpointB.axisOnly && memberSpinB?.entityId === solverEntityB
++        ? 0.0 : gradAngB.dot(_rotationVectorBetween(prevQuatB, currQuatB));
+ 
+       const gradAngMemberA = memberSpinA
+         ? new Vector3().subtractVectors(memberSpinA.pointWorld, memberSpinA.centerWorld).cross(memberSpinA.gradPos)
+diff --git a/src/js/cable_joints_3d/rust_physics_engine.js b/src/js/cable_joints_3d/rust_physics_engine.js
+index 5a770903..eb447457 100644
+--- a/src/js/cable_joints_3d/rust_physics_engine.js
++++ b/src/js/cable_joints_3d/rust_physics_engine.js
+@@ -277,7 +277,7 @@ export class RustPhysicsEngine {
+     data.set([+flag('enableLayering', true), +flag('layeringAttachmentUpdatePoints', true),
+       +flag('layeringClampJointRestLength', true), +flag('layeringMergeJoints', false), +flag('layeringSplitJoints', false),
+       +flag('layeringHybridLinkStates', true), world.getResource('grabbedBall') ?? -1, world.nextEntityId,
+-      finite('closedLoopStepperConstraintStiffness', 1e8), finite('openLoopStepperConstraintStiffnessScale', 1),
++      finite('closedLoopStepperConstraintStiffness', 1e8), 0 /* reserved ABI slot; open-loop torque uses physical inertia */,
+       finite('openLoopStepperHoldingTorqueScale', 1), +flag('closedLoopMotorsEnabled', false)], o + 3);
+     putV(data, o + 16, world.getResource('defaultPlaneNormal') ?? { x: 0, y: 0, z: 1 });
+     data[o + 15] = world.getResource('dt') ?? -1;
+diff --git a/src/python/cable_joints_3d/pbd_cable_constraint_solver.py b/src/python/cable_joints_3d/pbd_cable_constraint_solver.py
+index 78c3f37d..aa2e1ba6 100644
+--- a/src/python/cable_joints_3d/pbd_cable_constraint_solver.py
++++ b/src/python/cable_joints_3d/pbd_cable_constraint_solver.py
+@@ -188,7 +188,10 @@ def _solver_end(world, path, index, first, entity, other, point, gradient, joint
+     angular_denominator = inverse_inertia_quadratic_form(moment, orientation.quaternion, angular_gradient) if orientation is not None and not has_axis_only_cable_spin_dof(world, solver_entity) else 0.
+     previous_position = world.get_component(solver_entity, PrevFinalPosComponent)
+     displacement = float(np.dot(gradient, position.pos - previous_position.pos)) if previous_position is not None else 0.
+-    displacement += np.dot(angular_gradient, rotation_vector_between(_quaternion(world, solver_entity, True), _quaternion(world, solver_entity)))
++    # The relative spin term below already includes an axis-only rotor's
++    # rotation; adding its world rotation would double cable damping.
++    if not (has_axis_only_cable_spin_dof(world, solver_entity) and spin is not None and spin.entity == solver_entity):
++        displacement += np.dot(angular_gradient, rotation_vector_between(_quaternion(world, solver_entity, True), _quaternion(world, solver_entity)))
+     solve_spin_gradient = load_spin_gradient = 0.
+     if spin is not None:
+         lever_gradient = np.dot(cross(spin.point - spin.center, spin.gradient), spin.axis)
+diff --git a/src/python/cable_joints_3d/stepper_motor.py b/src/python/cable_joints_3d/stepper_motor.py
+index ab8e1f17..e34e44c3 100644
+--- a/src/python/cable_joints_3d/stepper_motor.py
++++ b/src/python/cable_joints_3d/stepper_motor.py
+@@ -64,9 +64,9 @@ def position_stepper_constraint_stiffness(world, stepper):
+         return 0.
+     if is_stepper_closed_loop_enabled(world, stepper):
+         return max(0., finite_resource(world, 'closedLoopStepperConstraintStiffness', 1e8))
+-    torque = max(0., stepper.holding_torque) if finite_number(stepper.holding_torque) else 0.
+-    poles = max(1., abs(stepper.num_pole_pairs)) if finite_number(stepper.num_pole_pairs) else 1.
+-    return torque * poles * max(0., finite_resource(world, 'openLoopStepperConstraintStiffnessScale', 1.))
++    # Electromagnetic torque is already integrated by StepperMotorSystem.
++    # Inflating only cable inertia creates a timestep-dependent holding boost.
++    return 0.
+ 
+ 
+ def effective_motorized_spin_inv_inertia(world, entity, inv_inertia, inertia, dt):
+diff --git a/src/python/cable_joints_3d/warp_solver.py b/src/python/cable_joints_3d/warp_solver.py
+index 07e256a4..a8e5fe72 100644
+--- a/src/python/cable_joints_3d/warp_solver.py
++++ b/src/python/cable_joints_3d/warp_solver.py
+@@ -295,6 +295,8 @@ def end_info(bodies: wp.array(dtype=Body), joints: wp.array(dtype=Joint), ep: En
+                         # The pinhole neighbor transfers this load once.
+                         end.inverse = F(0)
+                         end.free_inverse = F(0)
++    if (b.flags & 16) != 0 and end.spin == end.entity and (b.flags & 10) == 10:
++        end.displacement = end.displacement-wp.dot(end.angular,angular_delta(b.prev_q,b.q))
+     return end
+ 
+ 
+diff --git a/src/wasm/cable_solver/src/engine.rs b/src/wasm/cable_solver/src/engine.rs
+index 254fdd8b..d024eae4 100644
+--- a/src/wasm/cable_solver/src/engine.rs
++++ b/src/wasm/cable_solver/src/engine.rs
+@@ -1730,7 +1730,9 @@ impl PhysicsWorld {
+             } else if closed {
+                 self.options[11]
+             } else {
+-                e[109].max(0.0) * e[110].abs().max(1.0) * self.options[12].max(0.0)
++                // Open-loop torque is integrated in motors(); a cable-only
++                // stiffness term would violate steady torque balance.
++                0.0
+             };
+             self.entities[id][47] = if dt > EPS { stiffness } else { 0.0 };
+             self.entities[id][48] = stiffness * dt * dt;
+diff --git a/src/wasm/cable_solver/src/lib.rs b/src/wasm/cable_solver/src/lib.rs
+index d5d9f480..16e17071 100644
+--- a/src/wasm/cable_solver/src/lib.rs
++++ b/src/wasm/cable_solver/src/lib.rs
+@@ -1037,8 +1037,17 @@ fn solve_joint(
+     } else {
+         0.0
+     };
+-    let ra = dot(aa, rotation_vector(&a));
+-    let rb = dot(ab, rotation_vector(&b));
++    // Axis-only endpoint rotation is already represented by spin.disp.
++    let ra = if a[55] == 0.0 && sa.active && sa.id == a_id {
++        0.0
++    } else {
++        dot(aa, rotation_vector(&a))
++    };
++    let rb = if b[55] == 0.0 && sb.active && sb.id == b_id {
++        0.0
++    } else {
++        dot(ab, rotation_vector(&b))
++    };
+     // Evaluate the damping displacement once per step and reuse it on later
+     // Gauss-Seidel visits. Re-deriving it from partially solved positions makes
+     // the damping term feed on its own corrections and turns a stiff cable

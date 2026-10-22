@@ -1,0 +1,255 @@
+diff --git a/autocal/control/behaviors/sweep_data_collection.mjs b/autocal/control/behaviors/sweep_data_collection.mjs
+index 302482de..d1231be9 100644
+--- a/autocal/control/behaviors/sweep_data_collection.mjs
++++ b/autocal/control/behaviors/sweep_data_collection.mjs
+@@ -16,12 +16,14 @@ import { DEFAULT_KLIPPY_CONFIG_PATH } from '../../../integrations/klipper/klippy
+ import { ENCODER_NOISE_DEFAULTS } from '../primitives/encoder_noise.mjs';
+ import {
+   angleToLength,
++  assertFixedAnchorAngles,
+   applyDataPointPreloadModes,
+   applyForceModeState,
+   collectDataPoint,
+   getCurrentLengths,
+   primeEncoders,
+   returnMotorsToOriginOneAtATime,
++  resolveCollectionForce,
+   waitForStableEncoders,
+ } from '../primitives/uncalibrated_actions.mjs';
+ import { attachDebugState } from '../primitives/debug_trace.mjs';
+@@ -251,7 +253,8 @@ export function buildSymmetricPulloutModes({
+     ? movingAnchors
+     : new Set((movingAnchors ?? []).filter((idx) => Number.isFinite(idx)));
+   const forbidden = new Set((forbiddenForceAnchors ?? []).filter((idx) => Number.isFinite(idx)));
+-  const pullForce = Number.isFinite(forceMax) ? forceMax : forceMid;
++  // Pullout needs more preload than measurement to traverse the workspace.
++  const pullForce = resolveCollectionForce({ forceMid, forceMax, preloadMultiplier: 20 });
+   return motorIds.map((_, idx) => (
+     (movingSet.has(idx) || fixedSet.has(idx) || forbidden.has(idx)) ? 'position' : pullForce
+   ));
+@@ -1099,14 +1102,17 @@ async function performForceSweep(sendFn, sweepConfig, options) {
+   const forbidden = new Set(forbiddenForceAnchors ?? []);
+   const fixedSet = new Set(fixedAnchors ?? []);
+   const fixedTargetByAnchor = buildFixedTargetByAnchor(fixedAnchors, fixedTargets, motorIds.length);
++  const settleOptions = {
++    validateAngles: angles => assertFixedAnchorAngles(angles, { fixedTargetByAnchor, mmPerDeg }),
++  };
+ 
+-  await waitForStableEncoders(sendFn, motorIds, speedup);
++  await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+   const initialLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
+   const driveStartPointMm = initialLengths[driveAnchor] ?? 0;
+ 
+   const modesPullout = motorIds.map((_, idx) => {
+     if (idx === driveAnchor) {
+-      return forceMax;
++      return resolveCollectionForce({ forceMid, forceMax, preloadMultiplier: 20 });
+     }
+     if (fixedSet.has(idx) || forbidden.has(idx)) {
+       return 'position';
+@@ -1115,6 +1121,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
+   });
+   await applyForceModeState(sendFn, { motorIds, modes: modesPullout });
+   await waitForStableEncoders(sendFn, motorIds, speedup, {
++    ...settleOptions,
+     timeoutMs: FORCE_TRAVEL_TIMEOUT_MS,
+     onProgress: message => console.log(`; sweep pullout: ${message.replace(/^; /, '')}`),
+   });
+@@ -1129,7 +1136,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
+     return forceMid*2.0;
+   });
+   await applyForceModeState(sendFn, { motorIds, modes: preloadModes });
+-  const forceStable = await waitForStableEncoders(sendFn, motorIds, speedup);
++  const forceStable = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+   const endAngles = forceStable.anglesDeg;
+   const endLengths = endAngles.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+ 
+@@ -1137,6 +1144,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
+ 
+   const dataPoints = [];
+   const recordPoint = (angles, driveSetpointMm, stepIndex, stepCount, extraFields = null) => {
++    settleOptions.validateAngles(angles);
+     const lengths = angles.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+     const point = {
+       l_drive: lengths[driveAnchor],
+@@ -1182,6 +1190,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
+           forceMid,
+           sensorCollectionForce,
+           speedup,
++          settleOptions,
+         });
+       }
+       if (fixedTargetByAnchor) {
+@@ -1203,7 +1212,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
+         { axes },
+       );
+       // eslint-disable-next-line no-await-in-loop
+-      await waitForStableEncoders(sendFn, motorIds, speedup);
++      await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+       measurementPreloadActive = false;
+     }
+     // eslint-disable-next-line no-await-in-loop
+@@ -1220,6 +1229,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
+       forceMid,
+       sensorCollectionForce,
+       speedup,
++      settleOptions,
+       recordPoint,
+       driveSetpointMm: target,
+       stepIndex: stepIdx - 1,
+@@ -1586,7 +1596,7 @@ export async function collectSweepData(send, context) {
+       metadata: {
+         sweep_method: 'position',
+         feed_rate: feed,
+-        sensor_force_n: forceMid,
++        sensor_force_n: resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce }),
+         settle_ms: settleMs,
+       },
+     });
+@@ -1616,6 +1626,7 @@ export async function collectSweepData(send, context) {
+     force_low_n: forceLow,
+     force_mid_n: forceMid,
+     force_max_n: forceMax,
++    pullout_force_n: resolveCollectionForce({ forceMid, forceMax, preloadMultiplier: 20 }),
+     ...(forceTuningMeta ?? {}),
+   };
+   const noiseOriginDeg = Array.isArray(forceTuning?.noise_sigma_deg)
+diff --git a/autocal/control/primitives/uncalibrated_actions.mjs b/autocal/control/primitives/uncalibrated_actions.mjs
+index d5508a7f..b45e57c2 100644
+--- a/autocal/control/primitives/uncalibrated_actions.mjs
++++ b/autocal/control/primitives/uncalibrated_actions.mjs
+@@ -92,6 +92,7 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions,
+     wallNowFn = () => Date.now(),
+     progressIntervalMs = 5000,
+     onProgress = message => console.log(message),
++    validateAngles = null,
+     sleepFn = sendFn.simulationClock?.sleep ?? baseSleep,
+     nowFn = sendFn.simulationClock?.now ?? (() => Date.now()),
+   } = normalizedOptions;
+@@ -199,6 +200,7 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions,
+     const nowMs = nowFn();
+ 
+     if (anglesDeg.length === motorIds.length && anglesDeg.every((v) => Number.isFinite(v))) {
++      validateAngles?.(anglesDeg);
+       samples.push({ timestampMs: nowMs, anglesDeg });
+       const cutoff = nowMs - Math.max(windowMs, vibrationMs) - pollMs;
+       while (samples.length > 1 && samples[1].timestampMs <= cutoff) {
+@@ -279,6 +281,28 @@ export async function applyForceModeState(sendFn, {
+   await sendFn(`M569.4 P${motorIds.join(':')} T${forces.join(':')}`);
+ }
+ 
++// An edge force measured in one geometry can overload held motors elsewhere.
++// Use the existing five-times-start preload, bounded by the measured force cap.
++export function resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce, preloadMultiplier = 5 } = {}) {
++  if (Number.isFinite(sensorCollectionForce)) return sensorCollectionForce;
++  const preload = Number.isFinite(forceMid) ? forceMid * preloadMultiplier : forceMax;
++  return Number.isFinite(forceMax) ? Math.min(forceMax, preload) : (preload ?? 0);
++}
++
++export function assertFixedAnchorAngles(anglesDeg, {
++  fixedTargetByAnchor, mmPerDeg, toleranceDeg = DEFAULT_STABILITY_TOLERANCE_DEG,
++} = {}) {
++  for (let idx = 0; idx < (fixedTargetByAnchor?.length ?? 0); idx += 1) {
++    const targetMm = fixedTargetByAnchor[idx];
++    if (!Number.isFinite(targetMm)) continue;
++    const targetDeg = targetMm / mmPerDeg[idx];
++    const driftDeg = anglesDeg[idx] - targetDeg;
++    if (!Number.isFinite(driftDeg) || Math.abs(driftDeg) > toleranceDeg) {
++      throw new Error(`Fixed anchor ${idx} drifted ${driftDeg.toFixed(3)}deg from its target (limit ${toleranceDeg}deg); reduce sweep force before collecting data`);
++    }
++  }
++}
++
+ function buildDataPointModes({
+   motorIds,
+   driveAnchor,
+@@ -318,18 +342,7 @@ function buildDataPointModes({
+       ? forceMid * 2.0
+       : (Number.isFinite(forceMax) ? forceMax : fallbackForce),
+   );
+-  const defaultSensorCollectionForce = Number.isFinite(forceMax)
+-    ? Math.min(
+-      forceMax,
+-      Math.max(
+-        Number.isFinite(forceMid) ? forceMid * 5.0 : fallbackForce,
+-        forceMax * 0.5,
+-      ),
+-    )
+-    : (Number.isFinite(forceMid) ? forceMid * 5.0 : fallbackForce);
+-  const measurementSensorForce = Number.isFinite(sensorCollectionForce)
+-    ? sensorCollectionForce
+-    : defaultSensorCollectionForce;
++  const measurementSensorForce = resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce });
+   // Pull slack out of the sensor line before sampling encoder angles.
+   const measurementModes = buildModes(measurementSensorForce);
+ 
+diff --git a/autocal/control/tests/cli/collect_sweep_data.cli.test.mjs b/autocal/control/tests/cli/collect_sweep_data.cli.test.mjs
+index 00f7af44..b8ec96e2 100644
+--- a/autocal/control/tests/cli/collect_sweep_data.cli.test.mjs
++++ b/autocal/control/tests/cli/collect_sweep_data.cli.test.mjs
+@@ -118,7 +118,7 @@ describe('collect_sweep_data CLI helpers', () => {
+     )).toEqual([0.3182, 0.3182, 0.3182, 'position']);
+   });
+ 
+-  test('buildSymmetricPulloutModes uses max force on free anchors', () => {
++  test('buildSymmetricPulloutModes limits free-anchor preload from the start force', () => {
+     expect(buildSymmetricPulloutModes({
+       motorIds: ['40.0', '41.0', '42.0', '43.0'],
+       movingAnchors: new Set([0]),
+@@ -126,7 +126,7 @@ describe('collect_sweep_data CLI helpers', () => {
+       forbiddenForceAnchors: MACHINE_CONFIGS.hangprinter_4.mustBeInFixedSet,
+       forceMid: 0.3182,
+       forceMax: 9.2035,
+-    })).toEqual(['position', 9.2035, 9.2035, 'position']);
++    })).toEqual(['position', 6.364, 6.364, 'position']);
+   });
+ 
+   test('angleToLength', () => {
+diff --git a/autocal/control/tests/primitives/uncalibrated_actions.test.mjs b/autocal/control/tests/primitives/uncalibrated_actions.test.mjs
+index faae9a53..7e9afaee 100644
+--- a/autocal/control/tests/primitives/uncalibrated_actions.test.mjs
++++ b/autocal/control/tests/primitives/uncalibrated_actions.test.mjs
+@@ -98,7 +98,7 @@ describe('uncalibrated_actions', () => {
+     ]);
+   });
+ 
+-  test('collectDataPoint defaults sensor collection force from force max', async () => {
++  test('collectDataPoint bounds sensor force by the start-force preload', async () => {
+     const { commands, send } = createCollectDataSend('5 6 7');
+ 
+     await collectDataPoint(send, {
+@@ -115,7 +115,7 @@ describe('uncalibrated_actions', () => {
+     });
+ 
+     expect(commands.filter((command) => command.startsWith('M569.4 '))).toEqual([
+-      'M569.4 P40.0:41.0:42.0 T0.0:5:0.2',
++      'M569.4 P40.0:41.0:42.0 T0.0:1:0.2',
+     ]);
+   });
+ 
+diff --git a/autocal/data/references/extended-reference.md b/autocal/data/references/extended-reference.md
+index 97feb1f1..f10094b1 100644
+--- a/autocal/data/references/extended-reference.md
++++ b/autocal/data/references/extended-reference.md
+@@ -101,6 +101,21 @@ clock waits also have wall deadlines. Settling and active trials print progress
+ every five wall seconds; a paused clock eventually fails instead of waiting forever.
+ Requested speed never divides poll intervals, motion waits or force windows.
+ 
++Sweep positioning and pullout use at most 20 times the tuned start force;
++measurement preload uses at most five times that force. Both defaults are bounded
++by the tuned maximum. The edge force measured during tuning can overload a held
++motor in another geometry, so it is not used directly for these operations.
++`--sensor-collection-force` overrides the measurement preload. Dataset metadata
++records the actual measurement and pullout commands separately from the tuning
++maximum.
++
++During sweep settling and before accepting a point, fixed motor encoders must
++remain within 1.5 degrees of their requested targets. This check uses `M569.3`
++encoder readings and requires no force sensors. An encoder that becomes quiet
++after slipping is rejected; collection errors request position hold for all
++motors before disconnecting. Active pullout has a 120-second selected-clock
++deadline as well as the independent wall deadline.
++
+ ## What is preserved
+ 
+ Collector events capture each G-code request, response or error with a shared

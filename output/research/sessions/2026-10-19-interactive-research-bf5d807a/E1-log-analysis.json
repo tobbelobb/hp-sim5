@@ -1,0 +1,95 @@
+{
+  "kind": "offline analysis of supplied simulation log; no fresh physics",
+  "source": "output/extended-autocal/no-buildup-reference-008/sweeps.full_auto.log",
+  "samples": [
+    {
+      "force": 0.4455,
+      "travel_deg": 16.3,
+      "stalled": false
+    },
+    {
+      "force": 0.6236,
+      "travel_deg": 34.98,
+      "stalled": false,
+      "compliance_deg_per_N": 104.884896125772,
+      "fraction_of_peak": 1.0
+    },
+    {
+      "force": 0.8731,
+      "travel_deg": 88.05,
+      "stalled": false,
+      "compliance_deg_per_N": 212.70541082164334,
+      "fraction_of_peak": 1.0
+    },
+    {
+      "force": 1.2223,
+      "travel_deg": 162.67,
+      "stalled": false,
+      "compliance_deg_per_N": 213.68843069873998,
+      "fraction_of_peak": 1.0
+    },
+    {
+      "force": 1.7112,
+      "travel_deg": 296.81,
+      "stalled": false,
+      "compliance_deg_per_N": 274.37103702188585,
+      "fraction_of_peak": 1.0
+    },
+    {
+      "force": 2.3957,
+      "travel_deg": 450.87,
+      "stalled": false,
+      "compliance_deg_per_N": 225.06939371804233,
+      "fraction_of_peak": 0.820310321967727
+    },
+    {
+      "force": 3.354,
+      "travel_deg": 672.75,
+      "stalled": false,
+      "compliance_deg_per_N": 231.5350099133883,
+      "fraction_of_peak": 0.843875550519275
+    },
+    {
+      "force": 4.6957,
+      "travel_deg": 953.68,
+      "stalled": false,
+      "compliance_deg_per_N": 209.38361779831547,
+      "fraction_of_peak": 0.7631403812553782
+    },
+    {
+      "force": 6.5739,
+      "travel_deg": 1356.41,
+      "stalled": false,
+      "compliance_deg_per_N": 214.4233840911512,
+      "fraction_of_peak": 0.7815088152837619
+    },
+    {
+      "force": 9.2035,
+      "travel_deg": 1912.27,
+      "stalled": false,
+      "compliance_deg_per_N": 211.38576209309397,
+      "fraction_of_peak": 0.7704375957008621
+    },
+    {
+      "force": 12.8849,
+      "travel_deg": 2435.72,
+      "stalled": false,
+      "compliance_deg_per_N": 142.18775465855376,
+      "fraction_of_peak": 0.51823164792431
+    },
+    {
+      "force": 18.0389,
+      "travel_deg": 2680.51,
+      "stalled": false,
+      "compliance_deg_per_N": 47.495149398525484,
+      "fraction_of_peak": 0.17310555047665954
+    },
+    {
+      "force": 20.0,
+      "travel_deg": 3137.12,
+      "stalled": false,
+      "compliance_deg_per_N": 232.83361378818014,
+      "fraction_of_peak": 0.8486085715002332
+    }
+  ]
+}

@@ -1,0 +1,170 @@
+[
+  {
+    "wall_s": 0.8609239360011998,
+    "simulation_s": 0.8257029419983155,
+    "construction_s": 0.026766926999698626,
+    "manifest": {
+      "schema_version": 2,
+      "backend": "native-python",
+      "cable_solver_device": null,
+      "run_id": "27a9bd34b91341ccbf730bc9214d617a",
+      "label": "native throughput paired benchmark",
+      "status": "complete",
+      "scene": "public/usd_scenes/hp3_rigid_body.usda",
+      "scene_generation": 1,
+      "steps": 200,
+      "dt_s": 0.002,
+      "commands_sha256": "da318ceff12b28df9457c776c443accd1b3bb6bfd425af747c4e01cd533bd0d6",
+      "scene_sha256": "be53d1be56e7198cceec88df46d2cd544c0fb2db749ca2378d45556b22e5e1b2",
+      "python_source_sha256": "e94e00b75e0c7d3f997dfc559493730d76513c200afb0aa92c9c6057900ea1ca",
+      "git_revision": "7905e64fa5137d3d0485a5db5ba39f56563e9954",
+      "python": "3.12.3",
+      "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+      "packages": {
+        "numpy": "2.4.3",
+        "usd-core": "26.3",
+        "rerun-sdk": "0.38.1"
+      },
+      "construction_wall_s": 0.026766926999698626,
+      "record": false,
+      "artifacts": {
+        "manifest": "/tmp/hp-sim5-before-native-7905e/output/research/experiments/27a9bd34b91341ccbf730bc9214d617a/manifest.json",
+        "scene": "/tmp/hp-sim5-before-native-7905e/output/research/experiments/27a9bd34b91341ccbf730bc9214d617a/scene.usda",
+        "commands": "/tmp/hp-sim5-before-native-7905e/output/research/experiments/27a9bd34b91341ccbf730bc9214d617a/commands.json",
+        "telemetry": "/tmp/hp-sim5-before-native-7905e/output/research/experiments/27a9bd34b91341ccbf730bc9214d617a/telemetry.jsonl",
+        "snapshot": "/tmp/hp-sim5-before-native-7905e/output/research/experiments/27a9bd34b91341ccbf730bc9214d617a/final.json"
+      },
+      "warnings": [],
+      "metrics": {
+        "effector_displacement_m": {
+          "world/machines/default/effector": 0.0032398516337255275
+        },
+        "peak_cable_force_n": 12.61086281537831,
+        "peak_abs_length_error_m": 0.00604222666761034,
+        "peak_abs_tracking_error_rad": 0.15492888891308232,
+        "peak_total_missed_steps": 1
+      },
+      "simulation_wall_s": 0.8257029419983155
+    },
+    "archived": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-14-native-throughput/consumers/fresh-hp3-record0-steps200-before/run-0",
+    "canonical_scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-14-native-throughput/consumers/fresh-hp3-record0-steps200-before/run-0/telemetry.jsonl",
+    "steps": 200,
+    "repeat": 0,
+    "machine": "hp3",
+    "record": false,
+    "mode": "fresh"
+  },
+  {
+    "wall_s": 0.8337621470018348,
+    "simulation_s": 0.8113648540020222,
+    "construction_s": 0.016354734998458298,
+    "manifest": {
+      "schema_version": 2,
+      "backend": "native-python",
+      "cable_solver_device": null,
+      "run_id": "6218a79b48b5499786abeec59a30764f",
+      "label": "native throughput paired benchmark",
+      "status": "complete",
+      "scene": "public/usd_scenes/hp3_rigid_body.usda",
+      "scene_generation": 1,
+      "steps": 200,
+      "dt_s": 0.002,
+      "commands_sha256": "da318ceff12b28df9457c776c443accd1b3bb6bfd425af747c4e01cd533bd0d6",
+      "scene_sha256": "be53d1be56e7198cceec88df46d2cd544c0fb2db749ca2378d45556b22e5e1b2",
+      "python_source_sha256": "e94e00b75e0c7d3f997dfc559493730d76513c200afb0aa92c9c6057900ea1ca",
+      "git_revision": "7905e64fa5137d3d0485a5db5ba39f56563e9954",
+      "python": "3.12.3",
+      "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+      "packages": {
+        "numpy": "2.4.3",
+        "usd-core": "26.3",
+        "rerun-sdk": "0.38.1"
+      },
+      "construction_wall_s": 0.016354734998458298,
+      "record": false,
+      "artifacts": {
+        "manifest": "/tmp/hp-sim5-before-native-7905e/output/research/experiments/6218a79b48b5499786abeec59a30764f/manifest.json",
+        "scene": "/tmp/hp-sim5-before-native-7905e/output/research/experiments/6218a79b48b5499786abeec59a30764f/scene.usda",
+        "commands": "/tmp/hp-sim5-before-native-7905e/output/research/experiments/6218a79b48b5499786abeec59a30764f/commands.json",
+        "telemetry": "/tmp/hp-sim5-before-native-7905e/output/research/experiments/6218a79b48b5499786abeec59a30764f/telemetry.jsonl",
+        "snapshot": "/tmp/hp-sim5-before-native-7905e/output/research/experiments/6218a79b48b5499786abeec59a30764f/final.json"
+      },
+      "warnings": [],
+      "metrics": {
+        "effector_displacement_m": {
+          "world/machines/default/effector": 0.0032398516337255275
+        },
+        "peak_cable_force_n": 12.61086281537831,
+        "peak_abs_length_error_m": 0.00604222666761034,
+        "peak_abs_tracking_error_rad": 0.15492888891308232,
+        "peak_total_missed_steps": 1
+      },
+      "simulation_wall_s": 0.8113648540020222
+    },
+    "archived": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-14-native-throughput/consumers/fresh-hp3-record0-steps200-before/run-1",
+    "canonical_scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-14-native-throughput/consumers/fresh-hp3-record0-steps200-before/run-1/telemetry.jsonl",
+    "steps": 200,
+    "repeat": 1,
+    "machine": "hp3",
+    "record": false,
+    "mode": "fresh"
+  },
+  {
+    "wall_s": 0.8305477729991253,
+    "simulation_s": 0.807768897000642,
+    "construction_s": 0.01676079200115055,
+    "manifest": {
+      "schema_version": 2,
+      "backend": "native-python",
+      "cable_solver_device": null,
+      "run_id": "79a5a104d9a144728150ac92cecb7c09",
+      "label": "native throughput paired benchmark",
+      "status": "complete",
+      "scene": "public/usd_scenes/hp3_rigid_body.usda",
+      "scene_generation": 1,
+      "steps": 200,
+      "dt_s": 0.002,
+      "commands_sha256": "da318ceff12b28df9457c776c443accd1b3bb6bfd425af747c4e01cd533bd0d6",
+      "scene_sha256": "be53d1be56e7198cceec88df46d2cd544c0fb2db749ca2378d45556b22e5e1b2",
+      "python_source_sha256": "e94e00b75e0c7d3f997dfc559493730d76513c200afb0aa92c9c6057900ea1ca",
+      "git_revision": "7905e64fa5137d3d0485a5db5ba39f56563e9954",
+      "python": "3.12.3",
+      "platform": "Linux-6.8.0-146-generic-x86_64-with-glibc2.39",
+      "packages": {
+        "numpy": "2.4.3",
+        "usd-core": "26.3",
+        "rerun-sdk": "0.38.1"
+      },
+      "construction_wall_s": 0.01676079200115055,
+      "record": false,
+      "artifacts": {
+        "manifest": "/tmp/hp-sim5-before-native-7905e/output/research/experiments/79a5a104d9a144728150ac92cecb7c09/manifest.json",
+        "scene": "/tmp/hp-sim5-before-native-7905e/output/research/experiments/79a5a104d9a144728150ac92cecb7c09/scene.usda",
+        "commands": "/tmp/hp-sim5-before-native-7905e/output/research/experiments/79a5a104d9a144728150ac92cecb7c09/commands.json",
+        "telemetry": "/tmp/hp-sim5-before-native-7905e/output/research/experiments/79a5a104d9a144728150ac92cecb7c09/telemetry.jsonl",
+        "snapshot": "/tmp/hp-sim5-before-native-7905e/output/research/experiments/79a5a104d9a144728150ac92cecb7c09/final.json"
+      },
+      "warnings": [],
+      "metrics": {
+        "effector_displacement_m": {
+          "world/machines/default/effector": 0.0032398516337255275
+        },
+        "peak_cable_force_n": 12.61086281537831,
+        "peak_abs_length_error_m": 0.00604222666761034,
+        "peak_abs_tracking_error_rad": 0.15492888891308232,
+        "peak_total_missed_steps": 1
+      },
+      "simulation_wall_s": 0.807768897000642
+    },
+    "archived": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-14-native-throughput/consumers/fresh-hp3-record0-steps200-before/run-2",
+    "canonical_scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-14-native-throughput/consumers/fresh-hp3-record0-steps200-before/run-2/telemetry.jsonl",
+    "steps": 200,
+    "repeat": 2,
+    "machine": "hp3",
+    "record": false,
+    "mode": "fresh"
+  }
+]

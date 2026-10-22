@@ -1,0 +1,110 @@
+[
+  {
+    "machine": "cubecorners",
+    "config": {
+      "name": "eight-axis",
+      "drives": [
+        4
+      ],
+      "fixed": [
+        0,
+        1,
+        2,
+        3,
+        5,
+        6
+      ]
+    },
+    "requestedSpeedup": 25,
+    "dt": 0.002,
+    "steps": 11500,
+    "simS": 23,
+    "wallS": 0.92006816,
+    "backend": "rust-native",
+    "bakedSceneSha256": "7e3dd3c4838b9e7dc05c0fbbac308b2b5150cfda9561fbd89f7dc04711bc56a5",
+    "stages": [
+      {
+        "force": 0.5,
+        "travelMm": 0.14245416143842332,
+        "settledS": 1.75,
+        "holdSettledS": 1.75,
+        "bodySettledS": 1.75,
+        "lastPullSpeedDegPerS": 0.0007022382422478546,
+        "peakLineN": 0.9136190488507281,
+        "peakExtension": 0.0000507762634261341
+      },
+      {
+        "force": 2,
+        "travelMm": 0.4920988511692289,
+        "settledS": 2,
+        "holdSettledS": 1.75,
+        "bodySettledS": 1.75,
+        "lastPullSpeedDegPerS": 0.001929980909863821,
+        "peakLineN": 1.8963801037971482,
+        "peakExtension": 0.00013901441433425502
+      },
+      {
+        "force": 8,
+        "travelMm": 1.8986833164642034,
+        "settledS": 2.25,
+        "holdSettledS": 1.75,
+        "bodySettledS": 1.75,
+        "lastPullSpeedDegPerS": 0.032408338522749505,
+        "peakLineN": 8.1124253121098,
+        "peakExtension": 0.0005965105311794964
+      }
+    ]
+  },
+  {
+    "machine": "cubecorners",
+    "config": {
+      "name": "released",
+      "drives": [
+        4
+      ],
+      "fixed": [
+        0,
+        1
+      ]
+    },
+    "requestedSpeedup": 25,
+    "dt": 0.002,
+    "steps": 11500,
+    "simS": 23,
+    "wallS": 0.9196583720000001,
+    "backend": "rust-native",
+    "bakedSceneSha256": "7e3dd3c4838b9e7dc05c0fbbac308b2b5150cfda9561fbd89f7dc04711bc56a5",
+    "stages": [
+      {
+        "force": 0.5,
+        "travelMm": 33.111759695737206,
+        "settledS": null,
+        "holdSettledS": 1.75,
+        "bodySettledS": 1.75,
+        "lastPullSpeedDegPerS": 19.028711416337224,
+        "peakLineN": 1.2133435599246263,
+        "peakExtension": 0.00006908050672579232
+      },
+      {
+        "force": 2,
+        "travelMm": 97.20359087865981,
+        "settledS": null,
+        "holdSettledS": 1.75,
+        "bodySettledS": 2,
+        "lastPullSpeedDegPerS": 33.635871743107685,
+        "peakLineN": 1.932897630803318,
+        "peakExtension": 0.00009939992056176272
+      },
+      {
+        "force": 8,
+        "travelMm": 387.2068839257013,
+        "settledS": null,
+        "holdSettledS": 1.75,
+        "bodySettledS": null,
+        "lastPullSpeedDegPerS": 140.0633817745146,
+        "peakLineN": 5.228501068971267,
+        "peakExtension": 0.00042130987745921453
+      }
+    ]
+  }
+]

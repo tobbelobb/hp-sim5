@@ -1,0 +1,61 @@
+{
+  "backend": "headless-js",
+  "status": "complete",
+  "machine_type": "hp4",
+  "scene": "/tmp/hp-sim5-performance-before-3a5e35e7/public/usd_scenes/hp4_rigid_body.usda",
+  "firmware_config": "sys/config_hp4.g",
+  "clock": "fixed steps; collector waits advance simulation time",
+  "dataset": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/service-hp4-record0-wasm-before/run-2/dataset.json",
+  "source_sha256": "6b4daa2bac5bac7fb3527e2c7c9c16e4fbca5f6ebdf900291f2379d3ca73f56a",
+  "autocal_source_sha256": "b260d55a9ef3556c09617c828affec7a8712924dcc3c80dc6b6d8673fd9f60dc",
+  "git_revision": "3a5e35e7b4d6c48e903531812044b2c5a7d36e8e",
+  "scene_sha256": "c0944e6a6e446cc557fa009ca6926a98546568130be6784e7aa44bda5c507b85",
+  "firmware_config_sha256": "148c3d4b067b1c843d45c384de2341a0c6e06296c6790588b19f02b06ac7774a",
+  "rrf_sha256": "9b2ac828a9ad0636640c92f7a1cbf042f9a04327505c8d699c54b1abb582f3fe",
+  "owned_services": [
+    {
+      "name": "rrf",
+      "pid": 23825
+    },
+    {
+      "name": "physics",
+      "pid": 23829
+    }
+  ],
+  "physics_engine": "rust-wasm",
+  "physics_artifact": null,
+  "baked_scene_sha256": "5d5de72ea49d36fa1616521b02f23719473665bd10b6b5ba8acb841e2dac6961",
+  "initial_baked_scene_sha256": "5d5de72ea49d36fa1616521b02f23719473665bd10b6b5ba8acb841e2dac6961",
+  "service_url": "http://127.0.0.1:45969",
+  "rrf_url": "http://127.0.0.1:52307",
+  "services": [
+    23825,
+    23829
+  ],
+  "owned_rrf": true,
+  "firmware_initial": {
+    "M115": "FIRMWARE_NAME: RepRapFirmware for x86_64 (host) FIRMWARE_VERSION: 3.7.0-alpha.5 ELECTRONICS: RRF_Host FIRMWARE_DATE: 2026-05-21 17:47:47",
+    "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1900.00, -280.00\nB:1645.45, 950.00, -280.00\nC:-1645.45, 950.00, -280.00\nD:0.00, 0.00, 1900.00\nP:Print radius: 1500.0",
+    "M666": "M666 A1 Q0.0000\nR30.00:30.00:30.00:30.00\nU2:2:2:4\nO1:1:1:1\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI10.0:10.0:10.0:10.0\nX40.0:40.0:40.0:40.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0"
+  },
+  "stop_reason": "bounded-throughput-benchmark",
+  "wall_s": 1.7769374350000362,
+  "kept_alive": false,
+  "service_wall_s": 1.363545195,
+  "step": 10000,
+  "epoch": 0,
+  "total_steps": 10000,
+  "dt_s": 0.002,
+  "simulated_s": 20,
+  "collector_time_s": 19.999999999999794,
+  "queue_length": 0,
+  "recording_drained": false,
+  "baked_scene_file": "baked-scene.usda",
+  "settings": {
+    "enableLayering": false,
+    "closedLoopMotorsEnabled": false,
+    "timeScale": 1
+  },
+  "physics_returncode": 0,
+  "normal_completion": false
+}

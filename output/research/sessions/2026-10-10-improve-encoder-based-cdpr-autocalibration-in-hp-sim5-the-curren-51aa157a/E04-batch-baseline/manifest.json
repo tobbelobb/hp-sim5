@@ -1,0 +1,25 @@
+{
+  "backend": "production-headless-js/RRF-batch-H2",
+  "scene": "public/usd_scenes/hp3_rigid_body.usda",
+  "dt": 0.002,
+  "sourceHashes": {
+    "public/usd_scenes/hp3_rigid_body.usda": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+    "RRF/run/vsd/sys/config_hp3.g": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8",
+    "autocal/control/behaviors/sweep_data_collection.mjs": "83508418dd20a4f86414a84c8d8bde78de92d69534ecee7bf72e7700c21d5c15",
+    "autocal/control/primitives/uncalibrated_actions.mjs": "406e2581af0da08f990012384503b3846a070d30226ab23c301a6589a77db7f7"
+  },
+  "limitations": [
+    "RRF is initialized per relative motion, rather than persistent HTTP",
+    "No firmware encoder requests; production endpoint reports encoders directly",
+    "Torque Nm conversion uses known R30, unit gearing and mechanical advantage"
+  ],
+  "error": "Error: Unknown machine type: undefined\n    at validateSweepCollectionInput (file:///home/torbjorn/repos/hp-sim5/autocal/control/behaviors/sweep_data_collection.mjs:505:11)\n    at collectSweepData (file:///home/torbjorn/repos/hp-sim5/autocal/control/behaviors/sweep_data_collection.mjs:1298:17)\n    at file:///home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/collect_hp3_batch.mjs:105:25\n    at ModuleJob.run (node:internal/modules/esm/module_job:430:25)\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:661:26)\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)",
+  "status": "failed",
+  "steps": 0,
+  "simulated_s": 0,
+  "wall_s": 0.0017145319999999913,
+  "moves": 0,
+  "encoder_reads": 0,
+  "torque_commands": 0,
+  "rrf_planning_s": 0
+}

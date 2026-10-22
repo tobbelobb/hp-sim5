@@ -1,0 +1,9 @@
+{
+  "outcome": "passed",
+  "handshake": true,
+  "finalized": true,
+  "readable": true,
+  "recording_manifest": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-12-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-2f03cb59/native/preflight/c9825f9a65834d3da0b460d25ce79346/hangprinter-20261012T122009.603854Z-8bf38cb7.json",
+  "rrd": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-12-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-2f03cb59/native/preflight/c9825f9a65834d3da0b460d25ce79346/hangprinter-20261012T122009.603854Z-8bf38cb7.rrd",
+  "kind": "tool_check"
+}

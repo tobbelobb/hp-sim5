@@ -1,0 +1,11 @@
+{
+  "mode": "off",
+  "trial": "C4",
+  "elapsed_s": 96.47808187699775,
+  "runner_returncode": 0,
+  "datasets": 11,
+  "child_failures": [],
+  "compatibility_warnings": 0,
+  "runner_sha256": "ed3495226c101c221ea6e1e2d1f1705ac54adf63111526e8bcd43a6597f990a4",
+  "revision": "0c922efd007f3491453c706e2cc801af0c49aa98"
+}

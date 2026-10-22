@@ -1,0 +1,8 @@
+{
+  "method": "bootstrap",
+  "machine": "hp3",
+  "error": "Physics step budget exhausted",
+  "pulses": [],
+  "wallS": 24.067100814999996,
+  "simS": 999.904
+}

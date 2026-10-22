@@ -1,0 +1,256 @@
+{
+  "datasets": 11,
+  "seconds_min": 31.388981326001158,
+  "seconds_max": 60.687446858999465,
+  "seconds_median": 44.78094811799929,
+  "total_iterations": 64,
+  "adjacent_disagreements": 20,
+  "fixtures_with_disagreements": 9,
+  "recoveries_attempted": 9,
+  "recoveries_failed": 6,
+  "datasets_results": [
+    {
+      "dataset": "five_points_bigger_deltas",
+      "seconds": 41.50373905299966,
+      "iterations": 6,
+      "adjacent_disagreements": 4,
+      "selected": {
+        "anchor_rmse_mm": 2.8479788899885405,
+        "radius_rmse_mm": 0.013999999999995794
+      },
+      "anchor_regret_mm": 0.44870425935116565,
+      "recoveries": [
+        {
+          "attempts_total": 2,
+          "attempt_labels": [
+            "restore_sweeps",
+            "restore_points"
+          ],
+          "sparse_enabled": false,
+          "success": true,
+          "attempt": "restore_sweeps",
+          "attempt_index": 1
+        },
+        {
+          "attempts_total": 2,
+          "attempt_labels": [
+            "restore_sweeps",
+            "restore_points"
+          ],
+          "sparse_enabled": false,
+          "success": true,
+          "attempt": "restore_points",
+          "attempt_index": 2
+        }
+      ]
+    },
+    {
+      "dataset": "flexible_lines_2000",
+      "seconds": 31.388981326001158,
+      "iterations": 4,
+      "adjacent_disagreements": 0,
+      "selected": {
+        "anchor_rmse_mm": 9.659619941882783,
+        "radius_rmse_mm": 0.04399999999999693
+      },
+      "anchor_regret_mm": 2.1673289707431413,
+      "recoveries": [
+        {
+          "attempts_total": 2,
+          "attempt_labels": [
+            "restore_sweeps",
+            "restore_points"
+          ],
+          "sparse_enabled": false,
+          "success": true,
+          "attempt": "restore_sweeps",
+          "attempt_index": 1
+        }
+      ]
+    },
+    {
+      "dataset": "layered_manual_some_bad_points",
+      "seconds": 59.08962026000154,
+      "iterations": 7,
+      "adjacent_disagreements": 1,
+      "selected": {
+        "anchor_rmse_mm": 6.228602044853496,
+        "radius_rmse_mm": 0.07600000000000051
+      },
+      "anchor_regret_mm": 5.062971372604739,
+      "recoveries": []
+    },
+    {
+      "dataset": "ten_points_bigger_deltas",
+      "seconds": 44.88790891100143,
+      "iterations": 6,
+      "adjacent_disagreements": 4,
+      "selected": {
+        "anchor_rmse_mm": 5.930380708820706,
+        "radius_rmse_mm": 0.036000000000001364
+      },
+      "anchor_regret_mm": 5.378413353849718,
+      "recoveries": []
+    },
+    {
+      "dataset": "ten_points_w_buildup",
+      "seconds": 38.38337928799956,
+      "iterations": 5,
+      "adjacent_disagreements": 0,
+      "selected": {
+        "anchor_rmse_mm": 2.301292956409615,
+        "radius_rmse_mm": 0.09399999999999409
+      },
+      "anchor_regret_mm": 1.2640834747938454,
+      "recoveries": []
+    },
+    {
+      "dataset": "ten_points_w_buildup2",
+      "seconds": 56.630305011998644,
+      "iterations": 7,
+      "adjacent_disagreements": 1,
+      "selected": {
+        "anchor_rmse_mm": 2.0877405398229825,
+        "radius_rmse_mm": 0.02400000000000091
+      },
+      "anchor_regret_mm": 1.0650274160421382,
+      "recoveries": []
+    },
+    {
+      "dataset": "fifth_hp3_dataset",
+      "seconds": 60.687446858999465,
+      "iterations": 7,
+      "adjacent_disagreements": 1,
+      "selected": {
+        "anchor_rmse_mm": 18.4706943561957,
+        "radius_rmse_mm": 0.1844999999999999
+      },
+      "anchor_regret_mm": 0.0883896856708013,
+      "recoveries": [
+        {
+          "attempts_total": 2,
+          "attempt_labels": [
+            "restore_sweeps",
+            "restore_points"
+          ],
+          "sparse_enabled": false,
+          "success": false,
+          "attempt": "restore_points",
+          "attempt_index": 2,
+          "elapsed_seconds": 2.7534703589990386
+        },
+        {
+          "attempts_total": 2,
+          "attempt_labels": [
+            "restore_sweeps",
+            "restore_points"
+          ],
+          "sparse_enabled": false,
+          "success": false,
+          "attempt": "restore_points",
+          "attempt_index": 2,
+          "elapsed_seconds": 3.235234161000335
+        },
+        {
+          "attempts_total": 2,
+          "attempt_labels": [
+            "restore_sweeps",
+            "restore_points"
+          ],
+          "sparse_enabled": false,
+          "success": false,
+          "attempt": "restore_points",
+          "attempt_index": 2,
+          "elapsed_seconds": 3.4741304149993084
+        }
+      ]
+    },
+    {
+      "dataset": "seventh_hp3_dataset",
+      "seconds": 42.670406266999635,
+      "iterations": 5,
+      "adjacent_disagreements": 2,
+      "selected": {
+        "anchor_rmse_mm": 55.812485162372035,
+        "radius_rmse_mm": 0.17450000000000188
+      },
+      "anchor_regret_mm": 15.232169429248422,
+      "recoveries": [
+        {
+          "attempts_total": 2,
+          "attempt_labels": [
+            "restore_sweeps",
+            "restore_points"
+          ],
+          "sparse_enabled": false,
+          "success": false,
+          "attempt": "restore_points",
+          "attempt_index": 2,
+          "elapsed_seconds": 4.7435121540002
+        }
+      ]
+    },
+    {
+      "dataset": "sixteenth_hp3_dataset_even_more_pressure",
+      "seconds": 44.78094811799929,
+      "iterations": 6,
+      "adjacent_disagreements": 2,
+      "selected": {
+        "anchor_rmse_mm": 14.33889901631229,
+        "radius_rmse_mm": 0.1844999999999999
+      },
+      "anchor_regret_mm": 2.6529876269511394,
+      "recoveries": []
+    },
+    {
+      "dataset": "nineteenth_hp3_dataset_even_more_pressure",
+      "seconds": 40.30812054299895,
+      "iterations": 5,
+      "adjacent_disagreements": 1,
+      "selected": {
+        "anchor_rmse_mm": 42.13021362395401,
+        "radius_rmse_mm": 0.1844999999999999
+      },
+      "anchor_regret_mm": 0.0,
+      "recoveries": [
+        {
+          "attempts_total": 2,
+          "attempt_labels": [
+            "restore_sweeps",
+            "restore_points"
+          ],
+          "sparse_enabled": false,
+          "success": false,
+          "attempt": "restore_points",
+          "attempt_index": 2,
+          "elapsed_seconds": 4.6999786209999
+        }
+      ]
+    },
+    {
+      "dataset": "23_april_2026",
+      "seconds": 48.19321205199958,
+      "iterations": 6,
+      "adjacent_disagreements": 4,
+      "selected": {
+        "anchor_rmse_mm": 64.41623824782073,
+        "radius_rmse_mm": 0.1844999999999999
+      },
+      "anchor_regret_mm": 37.6409450654856,
+      "recoveries": [
+        {
+          "attempts_total": 2,
+          "attempt_labels": [
+            "restore_sweeps",
+            "restore_points"
+          ],
+          "sparse_enabled": false,
+          "success": false,
+          "attempt": "restore_points",
+          "attempt_index": 2,
+          "elapsed_seconds": 3.6703901139990194
+        }
+      ]
+    }
+  ]
+}

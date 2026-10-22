@@ -1,0 +1,55 @@
+import fs from 'node:fs';
+import { createHash } from 'node:crypto';
+import { Readable } from 'node:stream';
+import { createHeadlessWorld } from '../../../../hp-sim-3d/app/headlessWorld.js';
+import { getMachineMotorDiagnostics } from '../../../../hp-sim-3d/app/motor-diagnostics.js';
+import { StepperMotorComponent } from '../../../../hp-sim-3d/app/hangprinter_stepper_motor.js';
+import { SpoolStateComponent } from '../../../../hp-sim-3d/app/hangprinter_spools.js';
+import { EncoderComponent, PositionComponent, VelocityComponent, AngularVelocityComponent, RigidBodyComponent } from '../../../../src/js/cable_joints_3d/ecs.js';
+import { WasmPhysicsEngine } from '../../../../src/js/cable_joints_3d/wasm_physics_engine.js';
+import { parseRrfMotorAxisMapFromConfigText } from '../../../../integrations/rrf/rrfFirmwareModel.js';
+import { FileFormat } from '../../../../integrations/shared/fileFormatUtils.js';
+const root = new URL('../../../../', import.meta.url);
+const [label, secondsText='2', engine='native', substepsText='1,2,4,8,16'] = process.argv.slice(2);
+const steps = Math.round(Number(secondsText)/.002);
+const source = 'public/RRF_CAN_commands/draw_squares_bigger_hp4_w_line_layers.can';
+const config = 'RRF/run/vsd/sys/config_hp4_w_line_layers.g';
+globalThis.self = { addEventListener() {} };
+globalThis.postMessage = message => { if(message.type==='error') throw new Error(message.message); };
+const { RrfCanPlayer } = await import('../../../../integrations/rrf/rrfCanPlayer.js');
+const player = new RrfCanPlayer();
+player.setDt(.002); player.setAsapMode(true);
+player.setDriverToAxis(parseRrfMotorAxisMapFromConfigText(fs.readFileSync(new URL(config,root),'utf8')));
+const commands = [];
+player.sendCommand = async command => { if(commands.length<steps) commands.push(command); };
+await player.run(Readable.toWeb(fs.createReadStream(new URL(source,root))),FileFormat.RRF_CAN_BINARY);
+if(commands.length!==steps) throw new Error('Insufficient commands');
+const hashes = {};
+for(const path of [source,config,'public/usd_scenes/hp4_rigid_body.usda','src/js/cable_joints_3d/cable_joints_core.js','src/wasm/cable_solver/src/engine.rs','src/wasm/cable_solver/src/lib.rs']) hashes[path]=createHash('sha256').update(fs.readFileSync(new URL(path,root))).digest('hex');
+hashes.commands=createHash('sha256').update(JSON.stringify(commands)).digest('hex');
+const trials=[];
+for(const physicsSubsteps of substepsText.split(',').map(Number)) {
+  const backend=engine==='wasm'?new WasmPhysicsEngine(new WebAssembly.Module(fs.readFileSync(new URL('public/wasm/cable_solver.wasm',root)))):undefined;
+  const {world,remote,dt}=createHeadlessWorld(fs.readFileSync(new URL('public/usd_scenes/hp4_rigid_body.usda',root),'utf8'),{physicsSubsteps,cableSolverBackend:backend});
+  const motor=world.query([StepperMotorComponent]).find(id=>world.getComponent(id,SpoolStateComponent).axis==='B');
+  const body=world.query([RigidBodyComponent])[0];
+  const samples=[];
+  let maxSpeed=0,maxOmega=0,maxPhase=0,minZ=Infinity,maxZ=-Infinity;
+  remote.commands=commands.slice();
+  const started=performance.now();
+  for(let step=1;step<=steps;step++) {
+    world.update(dt);
+    const p=world.getComponent(body,PositionComponent).pos;
+    const speed=world.getComponent(body,VelocityComponent).vel.length();
+    const omega=world.getComponent(body,AngularVelocityComponent).omega.length();
+    const phase=world.getComponent(motor,EncoderComponent).angle-world.getComponent(motor,StepperMotorComponent).commandedAngle;
+    maxSpeed=Math.max(maxSpeed,speed); maxOmega=Math.max(maxOmega,omega);maxPhase=Math.max(maxPhase,Math.abs(phase));minZ=Math.min(minZ,p.z);maxZ=Math.max(maxZ,p.z);
+    if(step<=50 || step%50===0 || step===steps) samples.push({step,t:step*dt,phase,position:[p.x,p.y,p.z],speed,omega,diagnostics:getMachineMotorDiagnostics(world)});
+    if(![p.x,p.y,p.z,speed,omega,phase].every(Number.isFinite)||world.getResource('errorState')?.hasError) throw new Error(`Failed at ${step}`);
+  }
+  const trial={physicsSubsteps,engine,wall_s:(performance.now()-started)/1000,remaining:remote.getQueueLength(),maxSpeed,maxOmega,maxPhase,minZ,maxZ,samples,artifact:world.getResource('cableSolverBackend')?.artifactInfo};
+  trials.push(trial);
+  console.log(JSON.stringify({label,physicsSubsteps,engine,wall_s:trial.wall_s,maxSpeed,maxOmega,maxPhase,at100ms:samples.find(s=>s.step===50),final:samples.at(-1)}));
+  world.getResource('cableSolverBackend')?.dispose();
+}
+fs.writeFileSync(new URL(label+'.json',import.meta.url),JSON.stringify({label,steps,dt:.002,engine,hashes,trials},null,2));

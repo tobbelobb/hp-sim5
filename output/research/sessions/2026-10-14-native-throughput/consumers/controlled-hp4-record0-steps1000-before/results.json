@@ -1,0 +1,125 @@
+[
+  {
+    "wall_s": 0.20188878900080454,
+    "construction_s": 0.1388462659997458,
+    "status": {
+      "connected": false,
+      "epoch": 0,
+      "step": 1000,
+      "sim_time_s": 2.0,
+      "collector_time_s": 2.0000000000000004,
+      "dt_s": 0.002,
+      "speed_scale": 1.0,
+      "queue_length": 0,
+      "layering_flags": {
+        "enableLayering": true,
+        "layeringFrictionEffectiveRadius": true,
+        "layeringRenderWraps": true
+      },
+      "cable_half_widths_m": [
+        0.001
+      ],
+      "backend": "headless-js",
+      "physics_wall_s": 0.14977502300000006,
+      "worker_wall_s": 0.17451351601266651,
+      "observation_wall_s": 0.014779482000449207,
+      "clock": "fixed-step; collector delays advance simulation time",
+      "error": null
+    },
+    "steps": 1000,
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-14-native-throughput/consumers/controlled-hp4-record0-steps1000-before/run-0/observations.json",
+    "angles_deg": [
+      -57.050500094789285,
+      24.510478818453976,
+      28.93518544922386,
+      0.01524370273116693
+    ],
+    "scene_sha256": "72f6eef0387fd703e560fa476a9d800f9b29c3f875ed7083a41bd7b572a8c5f0",
+    "repeat": 0,
+    "machine": "hp4",
+    "record": false,
+    "mode": "controlled"
+  },
+  {
+    "wall_s": 0.2003738710009202,
+    "construction_s": 0.12587642699872958,
+    "status": {
+      "connected": false,
+      "epoch": 0,
+      "step": 1000,
+      "sim_time_s": 2.0,
+      "collector_time_s": 2.0000000000000004,
+      "dt_s": 0.002,
+      "speed_scale": 1.0,
+      "queue_length": 0,
+      "layering_flags": {
+        "enableLayering": true,
+        "layeringFrictionEffectiveRadius": true,
+        "layeringRenderWraps": true
+      },
+      "cable_half_widths_m": [
+        0.001
+      ],
+      "backend": "headless-js",
+      "physics_wall_s": 0.149261745,
+      "worker_wall_s": 0.17339099999662722,
+      "observation_wall_s": 0.014143004002107773,
+      "clock": "fixed-step; collector delays advance simulation time",
+      "error": null
+    },
+    "steps": 1000,
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-14-native-throughput/consumers/controlled-hp4-record0-steps1000-before/run-1/observations.json",
+    "angles_deg": [
+      -57.050500094789285,
+      24.510478818453976,
+      28.93518544922386,
+      0.01524370273116693
+    ],
+    "scene_sha256": "72f6eef0387fd703e560fa476a9d800f9b29c3f875ed7083a41bd7b572a8c5f0",
+    "repeat": 1,
+    "machine": "hp4",
+    "record": false,
+    "mode": "controlled"
+  },
+  {
+    "wall_s": 0.20291281499885372,
+    "construction_s": 0.12000981600067462,
+    "status": {
+      "connected": false,
+      "epoch": 0,
+      "step": 1000,
+      "sim_time_s": 2.0,
+      "collector_time_s": 2.0000000000000004,
+      "dt_s": 0.002,
+      "speed_scale": 1.0,
+      "queue_length": 0,
+      "layering_flags": {
+        "enableLayering": true,
+        "layeringFrictionEffectiveRadius": true,
+        "layeringRenderWraps": true
+      },
+      "cable_half_widths_m": [
+        0.001
+      ],
+      "backend": "headless-js",
+      "physics_wall_s": 0.15151220199999993,
+      "worker_wall_s": 0.17570167398662306,
+      "observation_wall_s": 0.014466990000073565,
+      "clock": "fixed-step; collector delays advance simulation time",
+      "error": null
+    },
+    "steps": 1000,
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-14-native-throughput/consumers/controlled-hp4-record0-steps1000-before/run-2/observations.json",
+    "angles_deg": [
+      -57.050500094789285,
+      24.510478818453976,
+      28.93518544922386,
+      0.01524370273116693
+    ],
+    "scene_sha256": "72f6eef0387fd703e560fa476a9d800f9b29c3f875ed7083a41bd7b572a8c5f0",
+    "repeat": 2,
+    "machine": "hp4",
+    "record": false,
+    "mode": "controlled"
+  }
+]

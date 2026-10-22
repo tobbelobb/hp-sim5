@@ -1,0 +1,87 @@
+{
+ "experiment": "E11",
+ "question": "Does the 0.01->0.05 mm fixed-anchor tolerance hurry the same 3-sweep collection, and does the collected data still fit to the same anchors?",
+ "arms": {
+  "A_tol0.01": {
+   "run_id": "ae244f29b09d41b09091fb7baa635951",
+   "world_id": "cdbdad2de773412c903f757569519fdb",
+   "generation": 10,
+   "tolerance_mm": 0.01,
+   "bridge_source_sha256": "9a9db935159435fa",
+   "sweeps": 3,
+   "points": 60,
+   "steps_executed": 161992,
+   "simulated_s": 323.984,
+   "wall_s": 105.98716115999923,
+   "drive_span_mm": [
+    95.50965265688569,
+    85.73406351646545,
+    48.59520236327812
+   ],
+   "firmware_anchor_residual_rms_mm": 0.18452840825555186,
+   "dataset_sha256": "25cda3e3d24238044d958b3002a26afdf8bcfa6d5c585750b7b3a04097219cb5"
+  },
+  "B_tol0.05": {
+   "run_id": "350465428b5b4cc8aeac8a898cf0e0ef",
+   "world_id": "00c3827cb0a5491c928c06eb87665970",
+   "generation": 11,
+   "tolerance_mm": 0.05,
+   "bridge_source_sha256": "fb83c87b12554d7a",
+   "sweeps": 3,
+   "points": 60,
+   "steps_executed": 122716,
+   "simulated_s": 245.43200000000002,
+   "wall_s": 67.81680691099973,
+   "drive_span_mm": [
+    95.53583259566561,
+    85.70788357768552,
+    95.52012463239765
+   ],
+   "firmware_anchor_residual_rms_mm": 0.19779797911889174,
+   "dataset_sha256": "a0585477b61df27bab757cc3de4f9b9011116a7bef79f0852c96f1770d104029"
+  }
+ },
+ "time": {
+  "delta_simulated_s": 78.55199999999996,
+  "delta_fraction_of_A": 0.24245641760086908,
+  "delta_steps": 39276,
+  "s_per_point": 1.3091999999999995,
+  "note": "arm A's third sweep covers 43.443 mm more drive travel than arm B's, worth ~1.86 s at feed 1400 mm/min"
+ },
+ "matched": {
+  "sweep0": {
+   "setpoint_max_diff_mm": 0.006,
+   "l_drive_max_diff_mm": 0.0628,
+   "l_sensor_max_diff_mm": 0.0942
+  },
+  "sweep1": {
+   "setpoint_max_diff_mm": 0.0,
+   "l_drive_max_diff_mm": 0.0628,
+   "l_sensor_max_diff_mm": 0.0942
+  },
+  "sweep2": {
+   "setpoint_max_diff_mm": 90.478,
+   "l_drive_max_diff_mm": 90.4674,
+   "l_sensor_max_diff_mm": 90.7397,
+   "note": "NOT matched: arm A traversed +43.4..-0.1 then -47.1..-0.1, arm B traversed -47.1..-0.1 twice"
+  }
+ },
+ "fits": {
+  "A_tol0.01": {
+   "fit_quality": 5.727,
+   "anchors_m669": "A0.00:-3402.70:-0.00 B2364.20:1366.22:-0.00 C-1320.23:764.28:-0.00 D2075.67:-831.85:4963.76"
+  },
+  "B_tol0.05": {
+   "fit_quality": 7.163,
+   "anchors_m669": "A0.00:-3367.41:-0.00 B4237.58:2449.80:-0.00 C-1331.84:768.22:-0.00 D1176.17:-714.76:2395.75"
+  },
+  "note": "both fits are far from the true HP3 anchors; k=3 is not identifiable (E10)"
+ },
+ "conclusion": "First two sweeps are matched to the same tolerance as E07 (setpoints <=0.006 mm, lengths <=0.094 mm) and the ~24% time saving reproduces. The third sweep is not matched (90.5 mm), so the anchor-quality comparison is not usable, and at k=3 neither arm is identifiable. E11 therefore supports the time saving only, and weakly.",
+ "provenance": {
+  "command": "MPLCONFIGDIR=/tmp/mpl PYTHONHASHSEED=0 .venv/bin/python -m autocal.autocal --sim --machine-type hangprinter_3 --dataset <arm>_3sweeps.json --find-radii off --find-buildup-factor off --no-collect --full-auto-log <arm>_fitlog.jsonl",
+  "scripts": [
+   "artifacts/scripts/e11_compare.py"
+  ]
+ }
+}

@@ -1,0 +1,3 @@
+Check passed. Reused experiment `22f857e8987149ab93220cfc18f568a6` and inspected its saved RRD at `sim_step 200` (0.4 s). All six blueprint views rendered; no Viewer warnings or errors were reported. No physics reruns or source edits.
+
+[Saved screenshot](/home/torbjorn/repos/hp-sim5/output/research/sessions/338606b11fde452bb3886bb861a7e96c/sim_step_200.png) · [Report](/home/torbjorn/repos/hp-sim5/output/research/sessions/338606b11fde452bb3886bb861a7e96c/report.md)

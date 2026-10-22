@@ -1,0 +1,11 @@
+{
+  "settings": {
+    "closedLoopMotorsEnabled": true,
+    "lineLayeringEnabled": true,
+    "recording": true,
+    "recordingError": null
+  },
+  "session": "a215b7ed-9f1b-4d38-a090-87c7651d4ba7",
+  "sample_stride": 10,
+  "pending": 0
+}

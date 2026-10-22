@@ -1,0 +1,200 @@
+[
+  {
+    "wall_s": 2.139757531999976,
+    "construction_s": 0.18473699399987709,
+    "status": {
+      "connected": false,
+      "epoch": 0,
+      "step": 10000,
+      "sim_time_s": 20.0,
+      "collector_time_s": 20.000000000000014,
+      "dt_s": 0.002,
+      "speed_scale": 1.0,
+      "queue_length": 0,
+      "layering_flags": {
+        "enableLayering": true,
+        "layeringFrictionEffectiveRadius": true,
+        "layeringRenderWraps": true
+      },
+      "cable_half_widths_m": [
+        0.001
+      ],
+      "backend": "headless-js",
+      "physics_engine": "rust-native",
+      "physics_artifact": {
+        "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "073405008b78250e18242761910c4264243f37bb00b7e2544e772a11a6c37172",
+        "build": {
+          "profile": "release",
+          "platform": "linux",
+          "arch": "x64",
+          "nodeApi": 8,
+          "artifactSha256": "073405008b78250e18242761910c4264243f37bb00b7e2544e772a11a6c37172",
+          "sources": {
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "native/node_bridge.c": "c8d4ad5a269dcdd073c13fb0ce24f25fd009a38434842f1a7301264a8994ee85",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "c4a2609f63595e243c1c06efb132f692df95a7ff785333a60efd45e2b6062ca6",
+            "src/lib.rs": "088d64e1de9a45fe692d5994081050e0ab5ac9e9996d504261b2e8280649ed04"
+          },
+          "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+          "target": "x86_64-unknown-linux-gnu",
+          "rustflags": null,
+          "compiler": "cc",
+          "buildScriptSha256": "f9736883a8be484fd64b100d8a3a5717fbc6e96415dc99a8c2b4489b9303d8de"
+        }
+      },
+      "physics_wall_s": 1.0917082059999994,
+      "worker_wall_s": 1.3692258200007927,
+      "observation_wall_s": 0.5982727310010887,
+      "clock": "fixed-step; collector delays advance simulation time",
+      "error": null
+    },
+    "steps": 10000,
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/controlled-hp4-record1-native-columns/run-0/observations.json",
+    "angles_deg": [
+      -90.44299750699591,
+      34.845598524653724,
+      57.60000000458897,
+      0.006912974594964867
+    ],
+    "scene_sha256": "72f6eef0387fd703e560fa476a9d800f9b29c3f875ed7083a41bd7b572a8c5f0",
+    "repeat": 0,
+    "machine": "hp4",
+    "record": true,
+    "mode": "controlled"
+  },
+  {
+    "wall_s": 2.146338802999935,
+    "construction_s": 0.16474417599988556,
+    "status": {
+      "connected": false,
+      "epoch": 0,
+      "step": 10000,
+      "sim_time_s": 20.0,
+      "collector_time_s": 20.000000000000014,
+      "dt_s": 0.002,
+      "speed_scale": 1.0,
+      "queue_length": 0,
+      "layering_flags": {
+        "enableLayering": true,
+        "layeringFrictionEffectiveRadius": true,
+        "layeringRenderWraps": true
+      },
+      "cable_half_widths_m": [
+        0.001
+      ],
+      "backend": "headless-js",
+      "physics_engine": "rust-native",
+      "physics_artifact": {
+        "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "073405008b78250e18242761910c4264243f37bb00b7e2544e772a11a6c37172",
+        "build": {
+          "profile": "release",
+          "platform": "linux",
+          "arch": "x64",
+          "nodeApi": 8,
+          "artifactSha256": "073405008b78250e18242761910c4264243f37bb00b7e2544e772a11a6c37172",
+          "sources": {
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "native/node_bridge.c": "c8d4ad5a269dcdd073c13fb0ce24f25fd009a38434842f1a7301264a8994ee85",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "c4a2609f63595e243c1c06efb132f692df95a7ff785333a60efd45e2b6062ca6",
+            "src/lib.rs": "088d64e1de9a45fe692d5994081050e0ab5ac9e9996d504261b2e8280649ed04"
+          },
+          "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+          "target": "x86_64-unknown-linux-gnu",
+          "rustflags": null,
+          "compiler": "cc",
+          "buildScriptSha256": "f9736883a8be484fd64b100d8a3a5717fbc6e96415dc99a8c2b4489b9303d8de"
+        }
+      },
+      "physics_wall_s": 1.0916460109999995,
+      "worker_wall_s": 1.344497122000348,
+      "observation_wall_s": 0.6266867609976998,
+      "clock": "fixed-step; collector delays advance simulation time",
+      "error": null
+    },
+    "steps": 10000,
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/controlled-hp4-record1-native-columns/run-1/observations.json",
+    "angles_deg": [
+      -90.44299750699591,
+      34.845598524653724,
+      57.60000000458897,
+      0.006912974594964867
+    ],
+    "scene_sha256": "72f6eef0387fd703e560fa476a9d800f9b29c3f875ed7083a41bd7b572a8c5f0",
+    "repeat": 1,
+    "machine": "hp4",
+    "record": true,
+    "mode": "controlled"
+  },
+  {
+    "wall_s": 2.2340982230000463,
+    "construction_s": 0.1646982960000969,
+    "status": {
+      "connected": false,
+      "epoch": 0,
+      "step": 10000,
+      "sim_time_s": 20.0,
+      "collector_time_s": 20.000000000000014,
+      "dt_s": 0.002,
+      "speed_scale": 1.0,
+      "queue_length": 0,
+      "layering_flags": {
+        "enableLayering": true,
+        "layeringFrictionEffectiveRadius": true,
+        "layeringRenderWraps": true
+      },
+      "cable_half_widths_m": [
+        0.001
+      ],
+      "backend": "headless-js",
+      "physics_engine": "rust-native",
+      "physics_artifact": {
+        "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "073405008b78250e18242761910c4264243f37bb00b7e2544e772a11a6c37172",
+        "build": {
+          "profile": "release",
+          "platform": "linux",
+          "arch": "x64",
+          "nodeApi": 8,
+          "artifactSha256": "073405008b78250e18242761910c4264243f37bb00b7e2544e772a11a6c37172",
+          "sources": {
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "native/node_bridge.c": "c8d4ad5a269dcdd073c13fb0ce24f25fd009a38434842f1a7301264a8994ee85",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "c4a2609f63595e243c1c06efb132f692df95a7ff785333a60efd45e2b6062ca6",
+            "src/lib.rs": "088d64e1de9a45fe692d5994081050e0ab5ac9e9996d504261b2e8280649ed04"
+          },
+          "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+          "target": "x86_64-unknown-linux-gnu",
+          "rustflags": null,
+          "compiler": "cc",
+          "buildScriptSha256": "f9736883a8be484fd64b100d8a3a5717fbc6e96415dc99a8c2b4489b9303d8de"
+        }
+      },
+      "physics_wall_s": 1.136740290000003,
+      "worker_wall_s": 1.4073906460021135,
+      "observation_wall_s": 0.6413169469988134,
+      "clock": "fixed-step; collector delays advance simulation time",
+      "error": null
+    },
+    "steps": 10000,
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/controlled-hp4-record1-native-columns/run-2/observations.json",
+    "angles_deg": [
+      -90.44299750699591,
+      34.845598524653724,
+      57.60000000458897,
+      0.006912974594964867
+    ],
+    "scene_sha256": "72f6eef0387fd703e560fa476a9d800f9b29c3f875ed7083a41bd7b572a8c5f0",
+    "repeat": 2,
+    "machine": "hp4",
+    "record": true,
+    "mode": "controlled"
+  }
+]

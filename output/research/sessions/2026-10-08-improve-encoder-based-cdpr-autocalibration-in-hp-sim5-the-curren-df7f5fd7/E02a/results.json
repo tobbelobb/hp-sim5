@@ -1,0 +1,182 @@
+{
+  "seconds": 202.1439623519982,
+  "rows": [
+    {
+      "name": "five_points_bigger_deltas",
+      "ok": true,
+      "seconds": 33.093159095999,
+      "log": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E02a/five_points_bigger_deltas_612c5718/five_points_bigger_deltas.full_auto.log",
+      "reference": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E01/five_points_bigger_deltas.log",
+      "error": [
+        6.808517530045355,
+        6.544623747143892,
+        0.2638937829014633
+      ],
+      "iterations": 6,
+      "audit": "HISTORY_AUDIT: adjacent_rank_true_mismatches=4 score_selected_iter=4 physical_best_iter=3 selected_anchor_error_sum_mm=11.127 selected_radius_error_sum_mm=0.108 selection_regret_mm=5.565 (diagnostic)",
+      "final_delta": 0.0,
+      "trajectory_delta": 0.0
+    },
+    {
+      "name": "flexible_lines_2000",
+      "ok": true,
+      "seconds": 24.637268035003217,
+      "log": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E02a/flexible_lines_2000_4f1753b6/flexible_lines_2000.full_auto.log",
+      "reference": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E01/flexible_lines_2000.log",
+      "error": [
+        27.671328947602156,
+        26.84194848705451,
+        0.8293804605476475
+      ],
+      "iterations": 4,
+      "audit": "HISTORY_AUDIT: adjacent_rank_true_mismatches=0 score_selected_iter=3 physical_best_iter=3 selected_anchor_error_sum_mm=21.244 selected_radius_error_sum_mm=0.342 selection_regret_mm=0.000 (diagnostic)",
+      "final_delta": 0.0,
+      "trajectory_delta": 0.0
+    },
+    {
+      "name": "layered_manual_some_bad_points",
+      "ok": true,
+      "seconds": 48.844047208996926,
+      "log": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E02a/layered_manual_some_bad_points_ebb2292f/layered_manual_some_bad_points.full_auto.log",
+      "reference": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E01/layered_manual_some_bad_points.log",
+      "error": [
+        19.974235783551542,
+        18.541669533514586,
+        1.4325662500369554
+      ],
+      "iterations": 7,
+      "audit": "HISTORY_AUDIT: adjacent_rank_true_mismatches=1 score_selected_iter=4 physical_best_iter=3 selected_anchor_error_sum_mm=5.299 selected_radius_error_sum_mm=0.132 selection_regret_mm=1.209 (diagnostic)",
+      "final_delta": 0.0,
+      "trajectory_delta": 0.0
+    },
+    {
+      "name": "ten_points_bigger_deltas",
+      "ok": true,
+      "seconds": 35.15785520400095,
+      "log": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E02a/ten_points_bigger_deltas_f0f72aa0/ten_points_bigger_deltas.full_auto.log",
+      "reference": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E01/ten_points_bigger_deltas.log",
+      "error": [
+        18.20714612022719,
+        17.52856210705177,
+        0.678584013175421
+      ],
+      "iterations": 6,
+      "audit": "HISTORY_AUDIT: adjacent_rank_true_mismatches=4 score_selected_iter=3 physical_best_iter=1 selected_anchor_error_sum_mm=17.529 selected_radius_error_sum_mm=0.108 selection_regret_mm=14.901 (diagnostic)",
+      "final_delta": 0.0,
+      "trajectory_delta": 0.0
+    },
+    {
+      "name": "ten_points_w_buildup",
+      "ok": true,
+      "seconds": 30.821696521001286,
+      "log": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E02a/ten_points_w_buildup_b217c61c/ten_points_w_buildup.full_auto.log",
+      "reference": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E01/ten_points_w_buildup.log",
+      "error": [
+        8.276546335020184,
+        6.504688078395652,
+        1.7718582566245318
+      ],
+      "iterations": 5,
+      "audit": "HISTORY_AUDIT: adjacent_rank_true_mismatches=0 score_selected_iter=3 physical_best_iter=3 selected_anchor_error_sum_mm=3.062 selected_radius_error_sum_mm=0.252 selection_regret_mm=0.000 (diagnostic)",
+      "final_delta": 0.0,
+      "trajectory_delta": 0.0
+    },
+    {
+      "name": "ten_points_w_buildup2",
+      "ok": true,
+      "seconds": 44.27251482900101,
+      "log": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E02a/ten_points_w_buildup2_7cf866ad/ten_points_w_buildup2.full_auto.log",
+      "reference": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E01/ten_points_w_buildup2.log",
+      "error": [
+        5.79478755745092,
+        5.342398215333972,
+        0.45238934211694737
+      ],
+      "iterations": 7,
+      "audit": "HISTORY_AUDIT: adjacent_rank_true_mismatches=1 score_selected_iter=6 physical_best_iter=3 selected_anchor_error_sum_mm=4.204 selected_radius_error_sum_mm=0.192 selection_regret_mm=1.281 (diagnostic)",
+      "final_delta": 0.0,
+      "trajectory_delta": 0.0
+    },
+    {
+      "name": "fifth_hp3_dataset",
+      "ok": true,
+      "seconds": 38.66506129699701,
+      "log": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E02a/fifth_hp3_dataset_bafd1e65/fifth_hp3_dataset.full_auto.log",
+      "reference": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E01/fifth_hp3_dataset.log",
+      "error": [
+        70.78667397053543,
+        66.1496832138369,
+        4.636990756698532
+      ],
+      "iterations": 7,
+      "audit": "HISTORY_AUDIT: adjacent_rank_true_mismatches=1 score_selected_iter=3 physical_best_iter=3 selected_anchor_error_sum_mm=65.677 selected_radius_error_sum_mm=0.738 selection_regret_mm=0.000 (diagnostic)",
+      "final_delta": 0.0,
+      "trajectory_delta": 0.0
+    },
+    {
+      "name": "seventh_hp3_dataset",
+      "ok": true,
+      "seconds": 31.09782064799947,
+      "log": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E02a/seventh_hp3_dataset_ba62ae0f/seventh_hp3_dataset.full_auto.log",
+      "reference": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E01/seventh_hp3_dataset.log",
+      "error": [
+        202.97415494411263,
+        198.58849159970123,
+        4.385663344411398
+      ],
+      "iterations": 5,
+      "audit": "HISTORY_AUDIT: adjacent_rank_true_mismatches=2 score_selected_iter=2 physical_best_iter=3 selected_anchor_error_sum_mm=257.599 selected_radius_error_sum_mm=0.738 selection_regret_mm=100.737 (diagnostic)",
+      "final_delta": 0.0,
+      "trajectory_delta": 0.0
+    },
+    {
+      "name": "sixteenth_hp3_dataset_even_more_pressure",
+      "ok": true,
+      "seconds": 31.470377523000934,
+      "log": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E02a/sixteenth_hp3_dataset_even_more_pressure_54d1f2da/sixteenth_hp3_dataset_even_more_pressure.full_auto.log",
+      "reference": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E01/sixteenth_hp3_dataset_even_more_pressure.log",
+      "error": [
+        52.00753865147011,
+        47.370547894771576,
+        4.636990756698532
+      ],
+      "iterations": 6,
+      "audit": "HISTORY_AUDIT: adjacent_rank_true_mismatches=2 score_selected_iter=3 physical_best_iter=5 selected_anchor_error_sum_mm=47.371 selected_radius_error_sum_mm=0.738 selection_regret_mm=10.142 (diagnostic)",
+      "final_delta": 0.0,
+      "trajectory_delta": 0.0
+    },
+    {
+      "name": "nineteenth_hp3_dataset_even_more_pressure",
+      "ok": true,
+      "seconds": 27.826030730997445,
+      "log": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E02a/nineteenth_hp3_dataset_even_more_pressure_5b0f95d3/nineteenth_hp3_dataset_even_more_pressure.full_auto.log",
+      "reference": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E01/nineteenth_hp3_dataset_even_more_pressure.log",
+      "error": [
+        169.6419396971746,
+        165.00494894047605,
+        4.636990756698532
+      ],
+      "iterations": 5,
+      "audit": "HISTORY_AUDIT: adjacent_rank_true_mismatches=1 score_selected_iter=2 physical_best_iter=2 selected_anchor_error_sum_mm=165.005 selected_radius_error_sum_mm=0.738 selection_regret_mm=0.000 (diagnostic)",
+      "final_delta": 0.0,
+      "trajectory_delta": 0.0
+    },
+    {
+      "name": "23_april_2026",
+      "ok": true,
+      "seconds": 32.93103029900158,
+      "log": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E02a/23_april_2026_84023bae/23_april_2026.full_auto.log",
+      "reference": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/E01/23_april_2026.log",
+      "error": [
+        234.79302101562035,
+        230.15603025892182,
+        4.636990756698532
+      ],
+      "iterations": 6,
+      "audit": "HISTORY_AUDIT: adjacent_rank_true_mismatches=4 score_selected_iter=3 physical_best_iter=6 selected_anchor_error_sum_mm=256.983 selected_radius_error_sum_mm=0.698 selection_regret_mm=163.828 (diagnostic)",
+      "final_delta": 0.0,
+      "trajectory_delta": 0.0
+    }
+  ],
+  "revision": "8811814c1c80ac52ebb5dabf380713f14e8d68a4"
+}

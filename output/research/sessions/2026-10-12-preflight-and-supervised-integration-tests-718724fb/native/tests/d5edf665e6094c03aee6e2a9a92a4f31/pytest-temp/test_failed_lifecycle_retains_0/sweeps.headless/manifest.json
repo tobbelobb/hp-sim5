@@ -1,0 +1,18 @@
+{
+  "backend": "headless-js",
+  "status": "failed",
+  "machine_type": "hangprinter_3",
+  "scene": "/home/torbjorn/repos/hp-sim5/public/usd_scenes/hp3_rigid_body.usda",
+  "firmware_config": "sys/config_hp3_w_line_layers.g",
+  "clock": "fixed steps; collector waits advance simulation time",
+  "dataset": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-12-preflight-and-supervised-integration-tests-718724fb/native/tests/d5edf665e6094c03aee6e2a9a92a4f31/pytest-temp/test_failed_lifecycle_retains_0/sweeps.json",
+  "source_sha256": "99e794ce681a66437cc9d0886e3ef1336e2d4bf704d21673da259851d49df6cd",
+  "autocal_source_sha256": "ec7a809a01c3e34552148247ee85156da0984a1d7677b10c82a0c236ccc55324",
+  "git_revision": "06f190dde4626998f21e75c7634797641fa48fc2",
+  "wall_s": 0.19503176400030497,
+  "error": "deliberate failure",
+  "kept_alive": false,
+  "service_wall_s": 2.0,
+  "simulated_s": 5.0,
+  "normal_completion": false
+}

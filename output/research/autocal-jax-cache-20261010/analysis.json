@@ -1,0 +1,151 @@
+{
+  "batteries": [
+    {
+      "mode": "cold-on",
+      "trial": "C1",
+      "elapsed_s": 83.0711075750005,
+      "runner_returncode": 0,
+      "datasets": 11,
+      "child_failures": [],
+      "compatibility_warnings": 120,
+      "runner_sha256": "ed3495226c101c221ea6e1e2d1f1705ac54adf63111526e8bcd43a6597f990a4",
+      "revision": "0c922efd007f3491453c706e2cc801af0c49aa98"
+    },
+    {
+      "mode": "off",
+      "trial": "C2",
+      "elapsed_s": 97.82319728500079,
+      "runner_returncode": 0,
+      "datasets": 11,
+      "child_failures": [],
+      "compatibility_warnings": 0,
+      "runner_sha256": "ed3495226c101c221ea6e1e2d1f1705ac54adf63111526e8bcd43a6597f990a4",
+      "revision": "0c922efd007f3491453c706e2cc801af0c49aa98"
+    },
+    {
+      "mode": "warm-on",
+      "trial": "C3",
+      "elapsed_s": 53.67625971600137,
+      "runner_returncode": 0,
+      "datasets": 11,
+      "child_failures": [],
+      "compatibility_warnings": 292,
+      "runner_sha256": "ed3495226c101c221ea6e1e2d1f1705ac54adf63111526e8bcd43a6597f990a4",
+      "revision": "0c922efd007f3491453c706e2cc801af0c49aa98"
+    },
+    {
+      "mode": "off",
+      "trial": "C4",
+      "elapsed_s": 96.47808187699775,
+      "runner_returncode": 0,
+      "datasets": 11,
+      "child_failures": [],
+      "compatibility_warnings": 0,
+      "runner_sha256": "ed3495226c101c221ea6e1e2d1f1705ac54adf63111526e8bcd43a6597f990a4",
+      "revision": "0c922efd007f3491453c706e2cc801af0c49aa98"
+    },
+    {
+      "mode": "warm-on",
+      "trial": "C5",
+      "elapsed_s": 55.829236977999244,
+      "runner_returncode": 0,
+      "datasets": 11,
+      "child_failures": [],
+      "compatibility_warnings": 0,
+      "runner_sha256": "ed3495226c101c221ea6e1e2d1f1705ac54adf63111526e8bcd43a6597f990a4",
+      "revision": "0c922efd007f3491453c706e2cc801af0c49aa98"
+    }
+  ],
+  "numerical_comparisons": {
+    "C1": {
+      "compared": 11,
+      "identical": [
+        "flexible_lines_2000",
+        "ten_points_w_buildup",
+        "nineteenth_hp3_dataset_even_more_pressure",
+        "ten_points_bigger_deltas",
+        "five_points_bigger_deltas",
+        "seventh_hp3_dataset",
+        "23_april_2026",
+        "sixteenth_hp3_dataset_even_more_pressure",
+        "ten_points_w_buildup2",
+        "fifth_hp3_dataset",
+        "layered_manual_some_bad_points"
+      ],
+      "different": []
+    },
+    "C2": {
+      "compared": 11,
+      "identical": [
+        "flexible_lines_2000",
+        "ten_points_w_buildup",
+        "nineteenth_hp3_dataset_even_more_pressure",
+        "five_points_bigger_deltas",
+        "ten_points_bigger_deltas",
+        "seventh_hp3_dataset",
+        "sixteenth_hp3_dataset_even_more_pressure",
+        "23_april_2026",
+        "ten_points_w_buildup2",
+        "fifth_hp3_dataset",
+        "layered_manual_some_bad_points"
+      ],
+      "different": []
+    },
+    "C3": {
+      "compared": 11,
+      "identical": [
+        "flexible_lines_2000",
+        "ten_points_w_buildup",
+        "nineteenth_hp3_dataset_even_more_pressure",
+        "sixteenth_hp3_dataset_even_more_pressure",
+        "ten_points_bigger_deltas",
+        "five_points_bigger_deltas",
+        "seventh_hp3_dataset",
+        "23_april_2026",
+        "fifth_hp3_dataset",
+        "ten_points_w_buildup2",
+        "layered_manual_some_bad_points"
+      ],
+      "different": []
+    },
+    "C4": {
+      "compared": 11,
+      "identical": [
+        "flexible_lines_2000",
+        "ten_points_w_buildup",
+        "nineteenth_hp3_dataset_even_more_pressure",
+        "ten_points_bigger_deltas",
+        "five_points_bigger_deltas",
+        "seventh_hp3_dataset",
+        "sixteenth_hp3_dataset_even_more_pressure",
+        "23_april_2026",
+        "ten_points_w_buildup2",
+        "fifth_hp3_dataset",
+        "layered_manual_some_bad_points"
+      ],
+      "different": []
+    },
+    "C5": {
+      "compared": 11,
+      "identical": [
+        "flexible_lines_2000",
+        "ten_points_w_buildup",
+        "nineteenth_hp3_dataset_even_more_pressure",
+        "ten_points_bigger_deltas",
+        "seventh_hp3_dataset",
+        "sixteenth_hp3_dataset_even_more_pressure",
+        "five_points_bigger_deltas",
+        "23_april_2026",
+        "ten_points_w_buildup2",
+        "fifth_hp3_dataset",
+        "layered_manual_some_bad_points"
+      ],
+      "different": []
+    }
+  },
+  "off_mean_s": 97.15063958099927,
+  "warm_on_mean_s": 54.752748347000306,
+  "speedup": 1.7743518364648774,
+  "saved_s": 42.39789123399896,
+  "saved_percent": 43.64139177761126
+}

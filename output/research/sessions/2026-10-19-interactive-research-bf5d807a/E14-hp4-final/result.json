@@ -1,0 +1,8 @@
+{
+  "method": "collect-new",
+  "machine": "hp4",
+  "error": "Timed out waiting for encoder stability after 30000ms",
+  "pulses": [],
+  "wallS": 134.948665419,
+  "simS": 790.3379999951347
+}

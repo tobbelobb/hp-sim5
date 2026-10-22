@@ -1,0 +1,13 @@
+{
+  "trial": "D15",
+  "mode": "target-warm-same-path",
+  "returncode": 0,
+  "elapsed_s": 17.3242390359992,
+  "regression_pass": true,
+  "exact_full_precision_metrics_equal": true,
+  "hits": {
+    "jit__objective_core": 16,
+    "jit_convert_element_type": 1
+  },
+  "misses": {}
+}

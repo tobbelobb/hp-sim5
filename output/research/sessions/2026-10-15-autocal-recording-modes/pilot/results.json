@@ -1,0 +1,287 @@
+{
+  "contract": {
+    "kind": "frozen_production_autocal_prefix",
+    "source": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-10-supervised-full-autocal/native/autocal/2ec0b06774624962a18bdbd2818eb134/sweeps.headless",
+    "source_trace_sha256": "f503c515ab0dd6f5372653a0cf246af80bca8a203c80a311025dc143b9136a74",
+    "trace_sha256": "f74b781da44788e15d98040c76f5983b45d56c5c5136a51e28ae4eb365d23d4d",
+    "scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+    "steps": 20000,
+    "warmup_steps": 5000,
+    "checkpoint_every": 1000,
+    "trace_rows": {
+      "bridge_payload": 323,
+      "encoder_response": 188
+    },
+    "machine": "hp3",
+    "layering": false,
+    "backend": "native Rust",
+    "scope": "Frozen physics/command/encoder replay; no new planning, collection decisions or fitting. Headless events only; Python/collector logs and stage artifacts are excluded."
+  },
+  "git_revision": "aba370774108cd856e88b524e4b65658021b4d7c",
+  "source_sha256": "f94233d6ae6185c145053533b24a56dfb65dd127fcf29e1a3449e85f7b8438f4",
+  "autocal_sha256": "28bf763da5824ffd3dc9b6605d61b2b79776858bfdfcde7fbc219e58284a59ca",
+  "harness_sha256": {
+    "tests/benchmark/autocal_recording_modes.py": "754670f92115e52710f1286d86939bf0aba55b0617b84451fd16403cc98a0718",
+    "tests/benchmark/autocal_recording_modes.mjs": "4a2fee1495d82cf197c814489ca2a0a2664609e052691fe60833ac654521371c"
+  },
+  "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+  "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+  "cpu": "12th Gen Intel(R) Core(TM) i7-12700K",
+  "node": "v24.14.1",
+  "trials": [
+    {
+      "mode": "none",
+      "steps": 20000,
+      "dt": 0.002,
+      "commands": 32,
+      "encoderReads": 85,
+      "maxOriginalEncoderErrorDeg": 352.64388222085404,
+      "executionMs": 496.07552400000003,
+      "replayAndDrainMs": 496.081473,
+      "checkpointSha256": "97c528f1c91966b8ee7fd814a7e14f1e1ef0f1d7744e6c036c412260d522ce73",
+      "scheduleSha256": "3387804e485e3afd02fb3f883e0fabdaf03a8a6dce3504b2e85037b7ae7a14f4",
+      "bakedSceneSha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+      "physicsEngine": "rust-native",
+      "physicsArtifact": {
+        "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "ff44a93e57d9594024b2905dd84a88332fa9cd4d7db7c6c3471bf80ac869ba61",
+        "build": {
+          "profile": "release",
+          "platform": "linux",
+          "arch": "x64",
+          "nodeApi": 8,
+          "artifactSha256": "ff44a93e57d9594024b2905dd84a88332fa9cd4d7db7c6c3471bf80ac869ba61",
+          "sources": {
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "native/node_bridge.c": "c8d4ad5a269dcdd073c13fb0ce24f25fd009a38434842f1a7301264a8994ee85",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "ee870b53e9feed2108f9deb951afe99fc9e714d40ea4d3c5e02181c0c8de012c",
+            "src/lib.rs": "088d64e1de9a45fe692d5994081050e0ab5ac9e9996d504261b2e8280649ed04"
+          },
+          "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+          "target": "x86_64-unknown-linux-gnu",
+          "rustflags": null,
+          "compiler": "cc",
+          "buildScriptSha256": "c810abe7feb293029384535690395e24f4f9d9f9ca6a854029bf24c59d1d866a"
+        }
+      },
+      "pendingPhysics": 0,
+      "pendingEvents": 0,
+      "finalize_s": 8.799997885944322e-07,
+      "total_s": 0.765881644001638,
+      "directory": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-autocal-recording-modes/pilot/R1-none",
+      "workload_s": 0.4960823529997886,
+      "rrd_bytes": 0,
+      "journal_bytes": 81068,
+      "physics_samples": 0,
+      "event_count": 0
+    },
+    {
+      "mode": "events",
+      "steps": 20000,
+      "dt": 0.002,
+      "commands": 32,
+      "encoderReads": 85,
+      "maxOriginalEncoderErrorDeg": 352.64388222085404,
+      "executionMs": 514.339829,
+      "replayAndDrainMs": 519.394941,
+      "checkpointSha256": "97c528f1c91966b8ee7fd814a7e14f1e1ef0f1d7744e6c036c412260d522ce73",
+      "scheduleSha256": "3387804e485e3afd02fb3f883e0fabdaf03a8a6dce3504b2e85037b7ae7a14f4",
+      "bakedSceneSha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+      "physicsEngine": "rust-native",
+      "physicsArtifact": {
+        "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "ff44a93e57d9594024b2905dd84a88332fa9cd4d7db7c6c3471bf80ac869ba61",
+        "build": {
+          "profile": "release",
+          "platform": "linux",
+          "arch": "x64",
+          "nodeApi": 8,
+          "artifactSha256": "ff44a93e57d9594024b2905dd84a88332fa9cd4d7db7c6c3471bf80ac869ba61",
+          "sources": {
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "native/node_bridge.c": "c8d4ad5a269dcdd073c13fb0ce24f25fd009a38434842f1a7301264a8994ee85",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "ee870b53e9feed2108f9deb951afe99fc9e714d40ea4d3c5e02181c0c8de012c",
+            "src/lib.rs": "088d64e1de9a45fe692d5994081050e0ab5ac9e9996d504261b2e8280649ed04"
+          },
+          "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+          "target": "x86_64-unknown-linux-gnu",
+          "rustflags": null,
+          "compiler": "cc",
+          "buildScriptSha256": "c810abe7feb293029384535690395e24f4f9d9f9ca6a854029bf24c59d1d866a"
+        }
+      },
+      "pendingPhysics": 0,
+      "pendingEvents": 0,
+      "finalize_s": 0.06364845300049637,
+      "total_s": 1.2436973240000953,
+      "directory": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-autocal-recording-modes/pilot/R1-events",
+      "workload_s": 0.5830433940004964,
+      "rrd_bytes": 226330,
+      "journal_bytes": 81068,
+      "physics_samples": 0,
+      "event_count": 308,
+      "event_count_readback": 308,
+      "event_kinds": {
+        "scene_context": 1,
+        "external_payload_received": 220,
+        "simulation_settings_applied": 1,
+        "encoder_response_sent": 85,
+        "service_stopped": 1
+      },
+      "event_sha256": "e181bd4373a91b06833c8fd9851b60b0f7414d89d53b5abba25e5c6c119921d3"
+    },
+    {
+      "mode": "sampled",
+      "steps": 20000,
+      "dt": 0.002,
+      "commands": 32,
+      "encoderReads": 85,
+      "maxOriginalEncoderErrorDeg": 352.64388222085404,
+      "executionMs": 566.6550540000001,
+      "replayAndDrainMs": 572.661755,
+      "checkpointSha256": "97c528f1c91966b8ee7fd814a7e14f1e1ef0f1d7744e6c036c412260d522ce73",
+      "scheduleSha256": "3387804e485e3afd02fb3f883e0fabdaf03a8a6dce3504b2e85037b7ae7a14f4",
+      "bakedSceneSha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+      "physicsEngine": "rust-native",
+      "physicsArtifact": {
+        "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "ff44a93e57d9594024b2905dd84a88332fa9cd4d7db7c6c3471bf80ac869ba61",
+        "build": {
+          "profile": "release",
+          "platform": "linux",
+          "arch": "x64",
+          "nodeApi": 8,
+          "artifactSha256": "ff44a93e57d9594024b2905dd84a88332fa9cd4d7db7c6c3471bf80ac869ba61",
+          "sources": {
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "native/node_bridge.c": "c8d4ad5a269dcdd073c13fb0ce24f25fd009a38434842f1a7301264a8994ee85",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "ee870b53e9feed2108f9deb951afe99fc9e714d40ea4d3c5e02181c0c8de012c",
+            "src/lib.rs": "088d64e1de9a45fe692d5994081050e0ab5ac9e9996d504261b2e8280649ed04"
+          },
+          "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+          "target": "x86_64-unknown-linux-gnu",
+          "rustflags": null,
+          "compiler": "cc",
+          "buildScriptSha256": "c810abe7feb293029384535690395e24f4f9d9f9ca6a854029bf24c59d1d866a"
+        }
+      },
+      "pendingPhysics": 0,
+      "pendingEvents": 0,
+      "finalize_s": 0.11399541799983126,
+      "total_s": 1.390259543000866,
+      "directory": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-autocal-recording-modes/pilot/R1-sampled",
+      "workload_s": 0.6866571729998312,
+      "rrd_bytes": 1325160,
+      "journal_bytes": 81068,
+      "physics_samples": 201,
+      "event_count": 308,
+      "event_count_readback": 308,
+      "event_kinds": {
+        "scene_context": 1,
+        "external_payload_received": 220,
+        "simulation_settings_applied": 1,
+        "encoder_response_sent": 85,
+        "service_stopped": 1
+      },
+      "event_sha256": "e181bd4373a91b06833c8fd9851b60b0f7414d89d53b5abba25e5c6c119921d3"
+    },
+    {
+      "mode": "full",
+      "steps": 20000,
+      "dt": 0.002,
+      "commands": 32,
+      "encoderReads": 85,
+      "maxOriginalEncoderErrorDeg": 352.64388222085404,
+      "executionMs": 1233.482705,
+      "replayAndDrainMs": 1243.783639,
+      "checkpointSha256": "97c528f1c91966b8ee7fd814a7e14f1e1ef0f1d7744e6c036c412260d522ce73",
+      "scheduleSha256": "3387804e485e3afd02fb3f883e0fabdaf03a8a6dce3504b2e85037b7ae7a14f4",
+      "bakedSceneSha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+      "physicsEngine": "rust-native",
+      "physicsArtifact": {
+        "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "ff44a93e57d9594024b2905dd84a88332fa9cd4d7db7c6c3471bf80ac869ba61",
+        "build": {
+          "profile": "release",
+          "platform": "linux",
+          "arch": "x64",
+          "nodeApi": 8,
+          "artifactSha256": "ff44a93e57d9594024b2905dd84a88332fa9cd4d7db7c6c3471bf80ac869ba61",
+          "sources": {
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "native/node_bridge.c": "c8d4ad5a269dcdd073c13fb0ce24f25fd009a38434842f1a7301264a8994ee85",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "ee870b53e9feed2108f9deb951afe99fc9e714d40ea4d3c5e02181c0c8de012c",
+            "src/lib.rs": "088d64e1de9a45fe692d5994081050e0ab5ac9e9996d504261b2e8280649ed04"
+          },
+          "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+          "target": "x86_64-unknown-linux-gnu",
+          "rustflags": null,
+          "compiler": "cc",
+          "buildScriptSha256": "c810abe7feb293029384535690395e24f4f9d9f9ca6a854029bf24c59d1d866a"
+        }
+      },
+      "pendingPhysics": 0,
+      "pendingEvents": 0,
+      "finalize_s": 0.1138646740000695,
+      "total_s": 1.9905338669996127,
+      "directory": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-autocal-recording-modes/pilot/R1-full",
+      "workload_s": 1.3576483130000694,
+      "rrd_bytes": 5833939,
+      "journal_bytes": 81068,
+      "physics_samples": 2001,
+      "event_count": 308,
+      "event_count_readback": 308,
+      "event_kinds": {
+        "scene_context": 1,
+        "external_payload_received": 220,
+        "simulation_settings_applied": 1,
+        "encoder_response_sent": 85,
+        "service_stopped": 1
+      },
+      "event_sha256": "e181bd4373a91b06833c8fd9851b60b0f7414d89d53b5abba25e5c6c119921d3"
+    }
+  ],
+  "equivalent": true,
+  "summary": {
+    "none": {
+      "workload_s": 0.4960823529997886,
+      "total_s": 0.765881644001638,
+      "rrd_bytes": 0,
+      "journal_bytes": 81068,
+      "physics_samples": 0,
+      "event_count": 0
+    },
+    "events": {
+      "workload_s": 0.5830433940004964,
+      "total_s": 1.2436973240000953,
+      "rrd_bytes": 226330,
+      "journal_bytes": 81068,
+      "physics_samples": 0,
+      "event_count": 308
+    },
+    "sampled": {
+      "workload_s": 0.6866571729998312,
+      "total_s": 1.390259543000866,
+      "rrd_bytes": 1325160,
+      "journal_bytes": 81068,
+      "physics_samples": 201,
+      "event_count": 308
+    },
+    "full": {
+      "workload_s": 1.3576483130000694,
+      "total_s": 1.9905338669996127,
+      "rrd_bytes": 5833939,
+      "journal_bytes": 81068,
+      "physics_samples": 2001,
+      "event_count": 308
+    }
+  }
+}

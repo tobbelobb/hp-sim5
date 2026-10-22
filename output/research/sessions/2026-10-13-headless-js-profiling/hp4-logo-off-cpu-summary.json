@@ -1,0 +1,607 @@
+{
+  "sampledMs": 12571.29,
+  "bySelf": [
+    {
+      "function": "getComponent file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints/ecs.js:31",
+      "selfUs": 1064652,
+      "inclusiveUs": 1064652,
+      "selfPercent": 8.468916077824948
+    },
+    {
+      "function": "length file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/vector3.js:11",
+      "selfUs": 948130,
+      "inclusiveUs": 948130,
+      "selfPercent": 7.542026315517342
+    },
+    {
+      "function": "applyConstraint file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:3133",
+      "selfUs": 833504,
+      "inclusiveUs": 3415672,
+      "selfPercent": 6.6302185376361535
+    },
+    {
+      "function": "getEntityWorldOrientation file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/rigid_bodies.js:46",
+      "selfUs": 721017,
+      "inclusiveUs": 932465,
+      "selfPercent": 5.735425720033505
+    },
+    {
+      "function": "getEntityWorldPosition file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/rigid_bodies.js:33",
+      "selfUs": 697495,
+      "inclusiveUs": 950573,
+      "selfPercent": 5.548316839401525
+    },
+    {
+      "function": "_updateAttachmentPoints file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:1516",
+      "selfUs": 586615,
+      "inclusiveUs": 3610174,
+      "selfPercent": 4.666307117248906
+    },
+    {
+      "function": "_localTwistAngle file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:410",
+      "selfUs": 502286,
+      "inclusiveUs": 592581,
+      "selfPercent": 3.9955008594981103
+    },
+    {
+      "function": "calculateAttachmentPoints file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:1378",
+      "selfUs": 483374,
+      "inclusiveUs": 2029638,
+      "selfPercent": 3.84506283762446
+    },
+    {
+      "function": "update file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints/ecs.js:116",
+      "selfUs": 342886,
+      "inclusiveUs": 12180819,
+      "selfPercent": 2.7275323375723572
+    },
+    {
+      "function": "(garbage collector) :0",
+      "selfUs": 331808,
+      "inclusiveUs": 331808,
+      "selfPercent": 2.6394109116884583
+    },
+    {
+      "function": "_evenOutTensionFriction file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_friction_system.js:58",
+      "selfUs": 299720,
+      "inclusiveUs": 478741,
+      "selfPercent": 2.384162643610958
+    },
+    {
+      "function": "distanceTo file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/vector3.js:9",
+      "selfUs": 279648,
+      "inclusiveUs": 279648,
+      "selfPercent": 2.2244972472992033
+    },
+    {
+      "function": "computeLocalAttachment file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/rigid_bodies.js:75",
+      "selfUs": 238193,
+      "inclusiveUs": 625304,
+      "selfPercent": 1.8947379306340082
+    },
+    {
+      "function": "_getPlaneNormal file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:389",
+      "selfUs": 230757,
+      "inclusiveUs": 597616,
+      "selfPercent": 1.8355872786325031
+    },
+    {
+      "function": "update file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:2841",
+      "selfUs": 225397,
+      "inclusiveUs": 4650197,
+      "selfPercent": 1.792950445021951
+    },
+    {
+      "function": "normalize file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/quaternion.js:71",
+      "selfUs": 212612,
+      "inclusiveUs": 212612,
+      "selfPercent": 1.6912504603743928
+    },
+    {
+      "function": "effectiveInertiaAboutWorldAxis file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/inertia_tensor.js:298",
+      "selfUs": 192504,
+      "inclusiveUs": 547788,
+      "selfPercent": 1.5312986972697313
+    },
+    {
+      "function": "getExternalMemberSpinSolveInfo file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:2937",
+      "selfUs": 190342,
+      "inclusiveUs": 1165169,
+      "selfPercent": 1.514100780429057
+    },
+    {
+      "function": "multiplyMatrix3Vector file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/inertia_tensor.js:177",
+      "selfUs": 185282,
+      "inclusiveUs": 185282,
+      "selfPercent": 1.4738503367593938
+    },
+    {
+      "function": "_deltaAngleForEntity file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:713",
+      "selfUs": 181405,
+      "inclusiveUs": 508973,
+      "selfPercent": 1.44301022408997
+    },
+    {
+      "function": "computeWorldAttachment file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/rigid_bodies.js:60",
+      "selfUs": 175507,
+      "inclusiveUs": 605239,
+      "selfPercent": 1.39609379785209
+    },
+    {
+      "function": "update file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/commonSystems.js:343",
+      "selfUs": 152678,
+      "inclusiveUs": 619392,
+      "selfPercent": 1.2144974779835642
+    },
+    {
+      "function": "buildPlaneBasis file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/geometry3.js:12",
+      "selfUs": 147717,
+      "inclusiveUs": 345430,
+      "selfPercent": 1.1750345429943945
+    },
+    {
+      "function": "buildExternalMemberSpinSolveInfo file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:2893",
+      "selfUs": 141390,
+      "inclusiveUs": 894028,
+      "selfPercent": 1.1247055791410427
+    },
+    {
+      "function": "update file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/pbdResolveCableOverCorrections.js:149",
+      "selfUs": 137288,
+      "inclusiveUs": 896005,
+      "selfPercent": 1.0920756740159523
+    },
+    {
+      "function": "query file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints/ecs.js:64",
+      "selfUs": 125238,
+      "inclusiveUs": 128443,
+      "selfPercent": 0.9962223447235725
+    },
+    {
+      "function": "signedArcLengthOnWheel file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints/geometry.js:122",
+      "selfUs": 123435,
+      "inclusiveUs": 123435,
+      "selfPercent": 0.9818801411788289
+    },
+    {
+      "function": "updateRigidBodyMemberLocalOrientation file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/rigid_bodies.js:115",
+      "selfUs": 104231,
+      "inclusiveUs": 142554,
+      "selfPercent": 0.82911936642938
+    },
+    {
+      "function": "_rotationVectorBetween file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:469",
+      "selfUs": 92704,
+      "inclusiveUs": 92704,
+      "selfPercent": 0.7374263102672837
+    },
+    {
+      "function": "toLocalVector file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/inertia_tensor.js:273",
+      "selfUs": 89372,
+      "inclusiveUs": 89372,
+      "selfPercent": 0.7109214726571418
+    },
+    {
+      "function": "transformVector file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/quaternion.js:100",
+      "selfUs": 88486,
+      "inclusiveUs": 88486,
+      "selfPercent": 0.7038736676983826
+    },
+    {
+      "function": "_orientationAngleForEntity file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:705",
+      "selfUs": 87316,
+      "inclusiveUs": 472529,
+      "selfPercent": 0.694566746928915
+    },
+    {
+      "function": "_orientationFrameForEndpoint file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:621",
+      "selfUs": 78745,
+      "inclusiveUs": 129770,
+      "selfPercent": 0.6263875863177129
+    },
+    {
+      "function": "update file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/commonSystems.js:297",
+      "selfUs": 76568,
+      "inclusiveUs": 304171,
+      "selfPercent": 0.6090703499799941
+    },
+    {
+      "function": "decomposeSpoolOrientation file:///home/torbjorn/repos/hp-sim5/hp-sim-3d/app/hangprinter_spools.js:57",
+      "selfUs": 74485,
+      "inclusiveUs": 250935,
+      "selfPercent": 0.5925008491570873
+    },
+    {
+      "function": "_updateHybridLinkStates file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:2384",
+      "selfUs": 69144,
+      "inclusiveUs": 383027,
+      "selfPercent": 0.5500151535761246
+    },
+    {
+      "function": "normalizeSpoolAxisLocal file:///home/torbjorn/repos/hp-sim5/hp-sim-3d/app/hangprinter_spools.js:27",
+      "selfUs": 67006,
+      "inclusiveUs": 156325,
+      "selfPercent": 0.5330081479307215
+    },
+    {
+      "function": "multiplyQuaternions file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/quaternion.js:55",
+      "selfUs": 65903,
+      "inclusiveUs": 65903,
+      "selfPercent": 0.5242341875813858
+    },
+    {
+      "function": "getPrevLocalOrientation file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:2850",
+      "selfUs": 60695,
+      "inclusiveUs": 89386,
+      "selfPercent": 0.4828064582075507
+    },
+    {
+      "function": "setFromAxisAngle file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/quaternion.js:32",
+      "selfUs": 58443,
+      "inclusiveUs": 58443,
+      "selfPercent": 0.4648926243846097
+    },
+    {
+      "function": "update file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/commonSystems.js:520",
+      "selfUs": 57611,
+      "inclusiveUs": 94770,
+      "selfPercent": 0.4582743696152105
+    },
+    {
+      "function": "_tangentPointCircle file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints/geometry.js:15",
+      "selfUs": 54548,
+      "inclusiveUs": 54548,
+      "selfPercent": 0.4339093283187326
+    },
+    {
+      "function": "resolveRigidBodySolverEndpoint file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/rigid_bodies.js:92",
+      "selfUs": 47833,
+      "inclusiveUs": 343645,
+      "selfPercent": 0.3804939668084978
+    },
+    {
+      "function": "update file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/commonSystems.js:454",
+      "selfUs": 46795,
+      "inclusiveUs": 88168,
+      "selfPercent": 0.3722370576130214
+    },
+    {
+      "function": "update file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/commonSystems.js:495",
+      "selfUs": 45793,
+      "inclusiveUs": 72358,
+      "selfPercent": 0.3642665152104517
+    },
+    {
+      "function": "applyWorldInverseInertia file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/inertia_tensor.js:313",
+      "selfUs": 44642,
+      "inclusiveUs": 144705,
+      "selfPercent": 0.35511073247057384
+    },
+    {
+      "function": "_deltaAngleAroundAxis file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:436",
+      "selfUs": 44633,
+      "inclusiveUs": 442266,
+      "selfPercent": 0.35503914077234716
+    },
+    {
+      "function": "signedArcLengthOnWheel file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/geometry3.js:127",
+      "selfUs": 44633,
+      "inclusiveUs": 385039,
+      "selfPercent": 0.35503914077234716
+    },
+    {
+      "function": "update file:///home/torbjorn/repos/hp-sim5/hp-sim-3d/app/hangprinter_extruder.js:152",
+      "selfUs": 42659,
+      "inclusiveUs": 132349,
+      "selfPercent": 0.33933669496129676
+    },
+    {
+      "function": "rotateAroundAxis file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/vector3.js:32",
+      "selfUs": 42482,
+      "inclusiveUs": 96828,
+      "selfPercent": 0.33792872489617215
+    }
+  ],
+  "byInclusive": [
+    {
+      "function": "(root) :0",
+      "selfUs": 0,
+      "inclusiveUs": 12571290,
+      "selfPercent": 0
+    },
+    {
+      "function": "main file:///home/torbjorn/repos/hp-sim5/scripts/profile_headless.mjs:116",
+      "selfUs": 5358,
+      "inclusiveUs": 12230994,
+      "selfPercent": 0.042620924344279706
+    },
+    {
+      "function": "(anonymous) file:///home/torbjorn/repos/hp-sim5/scripts/profile_headless.mjs:1",
+      "selfUs": 0,
+      "inclusiveUs": 12230994,
+      "selfPercent": 0
+    },
+    {
+      "function": "evaluate :0",
+      "selfUs": 0,
+      "inclusiveUs": 12230994,
+      "selfPercent": 0
+    },
+    {
+      "function": "run node:internal/modules/esm/module_job:419",
+      "selfUs": 0,
+      "inclusiveUs": 12230994,
+      "selfPercent": 0
+    },
+    {
+      "function": "runTrajectory file:///home/torbjorn/repos/hp-sim5/scripts/profile_headless.mjs:73",
+      "selfUs": 33440,
+      "inclusiveUs": 12225636,
+      "selfPercent": 0.26600293207777403
+    },
+    {
+      "function": "update file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints/ecs.js:116",
+      "selfUs": 342886,
+      "inclusiveUs": 12180819,
+      "selfPercent": 2.7275323375723572
+    },
+    {
+      "function": "update file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:2841",
+      "selfUs": 225397,
+      "inclusiveUs": 4650197,
+      "selfPercent": 1.792950445021951
+    },
+    {
+      "function": "update file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:2809",
+      "selfUs": 29841,
+      "inclusiveUs": 4033711,
+      "selfPercent": 0.23737420742024087
+    },
+    {
+      "function": "_updateAttachmentPoints file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:1516",
+      "selfUs": 586615,
+      "inclusiveUs": 3610174,
+      "selfPercent": 4.666307117248906
+    },
+    {
+      "function": "applyConstraint file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:3133",
+      "selfUs": 833504,
+      "inclusiveUs": 3415672,
+      "selfPercent": 6.6302185376361535
+    },
+    {
+      "function": "calculateAttachmentPoints file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:1378",
+      "selfUs": 483374,
+      "inclusiveUs": 2029638,
+      "selfPercent": 3.84506283762446
+    },
+    {
+      "function": "getExternalMemberSpinSolveInfo file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:2937",
+      "selfUs": 190342,
+      "inclusiveUs": 1165169,
+      "selfPercent": 1.514100780429057
+    },
+    {
+      "function": "getComponent file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints/ecs.js:31",
+      "selfUs": 1064652,
+      "inclusiveUs": 1064652,
+      "selfPercent": 8.468916077824948
+    },
+    {
+      "function": "getEntityWorldPosition file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/rigid_bodies.js:33",
+      "selfUs": 697495,
+      "inclusiveUs": 950573,
+      "selfPercent": 5.548316839401525
+    },
+    {
+      "function": "length file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/vector3.js:11",
+      "selfUs": 948130,
+      "inclusiveUs": 948130,
+      "selfPercent": 7.542026315517342
+    },
+    {
+      "function": "getEntityWorldOrientation file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/rigid_bodies.js:46",
+      "selfUs": 721017,
+      "inclusiveUs": 932465,
+      "selfPercent": 5.735425720033505
+    },
+    {
+      "function": "normalize file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/vector3.js:46",
+      "selfUs": 5306,
+      "inclusiveUs": 919484,
+      "selfPercent": 0.04220728342119225
+    },
+    {
+      "function": "update file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/pbdResolveCableOverCorrections.js:149",
+      "selfUs": 137288,
+      "inclusiveUs": 896005,
+      "selfPercent": 1.0920756740159523
+    },
+    {
+      "function": "buildExternalMemberSpinSolveInfo file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:2893",
+      "selfUs": 141390,
+      "inclusiveUs": 894028,
+      "selfPercent": 1.1247055791410427
+    },
+    {
+      "function": "computeLocalAttachment file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/rigid_bodies.js:75",
+      "selfUs": 238193,
+      "inclusiveUs": 625304,
+      "selfPercent": 1.8947379306340082
+    },
+    {
+      "function": "update file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/commonSystems.js:343",
+      "selfUs": 152678,
+      "inclusiveUs": 619392,
+      "selfPercent": 1.2144974779835642
+    },
+    {
+      "function": "computeWorldAttachment file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/rigid_bodies.js:60",
+      "selfUs": 175507,
+      "inclusiveUs": 605239,
+      "selfPercent": 1.39609379785209
+    },
+    {
+      "function": "_getPlaneNormal file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:389",
+      "selfUs": 230757,
+      "inclusiveUs": 597616,
+      "selfPercent": 1.8355872786325031
+    },
+    {
+      "function": "_localTwistAngle file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:410",
+      "selfUs": 502286,
+      "inclusiveUs": 592581,
+      "selfPercent": 3.9955008594981103
+    },
+    {
+      "function": "effectiveInertiaAboutWorldAxis file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/inertia_tensor.js:298",
+      "selfUs": 192504,
+      "inclusiveUs": 547788,
+      "selfPercent": 1.5312986972697313
+    },
+    {
+      "function": "update file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_friction_system.js:197",
+      "selfUs": 33971,
+      "inclusiveUs": 512712,
+      "selfPercent": 0.2702268422731478
+    },
+    {
+      "function": "_deltaAngleForEntity file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:713",
+      "selfUs": 181405,
+      "inclusiveUs": 508973,
+      "selfPercent": 1.44301022408997
+    },
+    {
+      "function": "_evenOutTensionFriction file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_friction_system.js:58",
+      "selfUs": 299720,
+      "inclusiveUs": 478741,
+      "selfPercent": 2.384162643610958
+    },
+    {
+      "function": "_orientationAngleForEntity file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:705",
+      "selfUs": 87316,
+      "inclusiveUs": 472529,
+      "selfPercent": 0.694566746928915
+    },
+    {
+      "function": "_deltaAngleAroundAxis file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:436",
+      "selfUs": 44633,
+      "inclusiveUs": 442266,
+      "selfPercent": 0.35503914077234716
+    },
+    {
+      "function": "signedArcLengthOnWheel file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/geometry3.js:127",
+      "selfUs": 44633,
+      "inclusiveUs": 385039,
+      "selfPercent": 0.35503914077234716
+    },
+    {
+      "function": "_updateHybridLinkStates file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:2384",
+      "selfUs": 69144,
+      "inclusiveUs": 383027,
+      "selfPercent": 0.5500151535761246
+    },
+    {
+      "function": "buildPlaneBasis file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/geometry3.js:12",
+      "selfUs": 147717,
+      "inclusiveUs": 345430,
+      "selfPercent": 1.1750345429943945
+    },
+    {
+      "function": "resolveRigidBodySolverEndpoint file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/rigid_bodies.js:92",
+      "selfUs": 47833,
+      "inclusiveUs": 343645,
+      "selfPercent": 0.3804939668084978
+    },
+    {
+      "function": "computeLocal file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:2846",
+      "selfUs": 0,
+      "inclusiveUs": 339028,
+      "selfPercent": 0
+    },
+    {
+      "function": "(garbage collector) :0",
+      "selfUs": 331808,
+      "inclusiveUs": 331808,
+      "selfPercent": 2.6394109116884583
+    },
+    {
+      "function": "update file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/commonSystems.js:297",
+      "selfUs": 76568,
+      "inclusiveUs": 304171,
+      "selfPercent": 0.6090703499799941
+    },
+    {
+      "function": "constrainedInvInertiaAboutWorldAxis file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/inertia_tensor.js:308",
+      "selfUs": 21199,
+      "inclusiveUs": 287204,
+      "selfPercent": 0.1686302678563616
+    },
+    {
+      "function": "distanceTo file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/vector3.js:9",
+      "selfUs": 279648,
+      "inclusiveUs": 279648,
+      "selfPercent": 2.2244972472992033
+    },
+    {
+      "function": "decomposeSpoolOrientation file:///home/torbjorn/repos/hp-sim5/hp-sim-3d/app/hangprinter_spools.js:57",
+      "selfUs": 74485,
+      "inclusiveUs": 250935,
+      "selfPercent": 0.5925008491570873
+    },
+    {
+      "function": "effectiveInertiaAboutLocalAxis file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/inertia_tensor.js:287",
+      "selfUs": 17001,
+      "inclusiveUs": 229822,
+      "selfPercent": 0.1352367179501865
+    },
+    {
+      "function": "constrainSpoolOrientation file:///home/torbjorn/repos/hp-sim5/hp-sim-3d/app/hangprinter_spools.js:107",
+      "selfUs": 2120,
+      "inclusiveUs": 214896,
+      "selfPercent": 0.01686382224894979
+    },
+    {
+      "function": "_deriveRollingSideAttachment file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/cable_joints_core.js:527",
+      "selfUs": 22316,
+      "inclusiveUs": 213713,
+      "selfPercent": 0.17751559306960543
+    },
+    {
+      "function": "normalize file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/quaternion.js:71",
+      "selfUs": 212612,
+      "inclusiveUs": 212612,
+      "selfPercent": 1.6912504603743928
+    },
+    {
+      "function": "multiplyMatrix3Vector file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/inertia_tensor.js:177",
+      "selfUs": 185282,
+      "inclusiveUs": 185282,
+      "selfPercent": 1.4738503367593938
+    },
+    {
+      "function": "normalizedAxis file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/inertia_tensor.js:265",
+      "selfUs": 0,
+      "inclusiveUs": 165809,
+      "selfPercent": 0
+    },
+    {
+      "function": "getRigidBodyMemberComponent file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/rigid_bodies.js:24",
+      "selfUs": 0,
+      "inclusiveUs": 164686,
+      "selfPercent": 0
+    },
+    {
+      "function": "_tangentPointSphere file:///home/torbjorn/repos/hp-sim5/src/js/cable_joints_3d/geometry3.js:81",
+      "selfUs": 17934,
+      "inclusiveUs": 161607,
+      "selfPercent": 0.14265839066635166
+    },
+    {
+      "function": "normalizeSpoolAxisLocal file:///home/torbjorn/repos/hp-sim5/hp-sim-3d/app/hangprinter_spools.js:27",
+      "selfUs": 67006,
+      "inclusiveUs": 156325,
+      "selfPercent": 0.5330081479307215
+    }
+  ]
+}

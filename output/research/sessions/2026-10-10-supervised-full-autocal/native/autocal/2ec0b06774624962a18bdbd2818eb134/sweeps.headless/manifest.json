@@ -1,0 +1,128 @@
+{
+  "backend": "headless-js",
+  "status": "complete",
+  "machine_type": "hangprinter_3",
+  "scene": "/home/torbjorn/repos/hp-sim5/public/usd_scenes/hp3_rigid_body.usda",
+  "firmware_config": "sys/config_hp3.g",
+  "clock": "fixed steps; collector waits advance simulation time",
+  "dataset": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-10-supervised-full-autocal/native/autocal/2ec0b06774624962a18bdbd2818eb134/sweeps.json",
+  "source_sha256": "0c9b14cc604d53c8f2d8025b533d87958a3eb64e84abfb8f9614623c60235131",
+  "autocal_source_sha256": "197697b463693c45518bc2db698657dabb74777351316865ae366120a4879bde",
+  "git_revision": "8cdfdac43cecdb45f65fec190feb6a13c1d0716a",
+  "owned_services": [
+    {
+      "name": "recorder",
+      "pid": 48556
+    },
+    {
+      "name": "rrf",
+      "pid": 48625
+    },
+    {
+      "name": "physics",
+      "pid": 48630
+    },
+    {
+      "name": "collector",
+      "pid": 48641
+    },
+    {
+      "name": "collector",
+      "pid": 51053
+    },
+    {
+      "name": "collector",
+      "pid": 51214
+    },
+    {
+      "name": "collector",
+      "pid": 51469
+    },
+    {
+      "name": "collector",
+      "pid": 51588
+    },
+    {
+      "name": "collector",
+      "pid": 51901
+    }
+  ],
+  "extended_reference_ws": "ws://127.0.0.1:51041",
+  "owned_recorder": true,
+  "scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+  "firmware_config_sha256": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8",
+  "rrf_sha256": "9b2ac828a9ad0636640c92f7a1cbf042f9a04327505c8d699c54b1abb582f3fe",
+  "baked_scene_sha256": "9e5ef288d617fdba1691e7486b399b7fc116756e936055e009c3662fa9ce1916",
+  "service_url": "http://127.0.0.1:36811",
+  "rrf_url": "http://127.0.0.1:59821",
+  "services": [
+    48556,
+    48625,
+    48630
+  ],
+  "owned_rrf": true,
+  "firmware_initial": {
+    "M115": "FIRMWARE_NAME: RepRapFirmware for x86_64 (host) FIRMWARE_VERSION: 3.7.0-alpha.5 ELECTRONICS: RRF_Host FIRMWARE_DATE: 2026-05-21 17:47:47",
+    "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1900.00, -280.00\nB:1645.45, 950.00, -280.00\nC:-1645.45, 950.00, -280.00\nD:0.00, 0.00, 1900.00\nP:Print radius: 1500.0",
+    "M666": "M666 A1 Q0.0000\nR30.00:30.00:30.00:30.00\nU1:1:1:1\nO1:1:1:1\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI3.0:3.0:3.0:3.0\nX170.0:170.0:170.0:170.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0"
+  },
+  "stop_reason": "patience-or-threshold",
+  "applied_parameters": [
+    "M669 A0.00:-1255.47:-193.15 B1086.66:621.45:-193.15 C-1059.02:612.08:-193.15 D-11.55:13.73:1691.99"
+  ],
+  "firmware_final": {
+    "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1255.47, -193.15\nB:1086.66, 621.45, -193.15\nC:-1059.02, 612.08, -193.15\nD:-11.55, 13.73, 1691.99\nP:Print radius: 1500.0",
+    "M666": "M666 A1 Q0.0000\nR30.00:30.00:30.00:30.00\nU1:1:1:1\nO1:1:1:1\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI3.0:3.0:3.0:3.0\nX170.0:170.0:170.0:170.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0"
+  },
+  "wall_s": 776.1195543879994,
+  "kept_alive": false,
+  "service_wall_s": 775.3973615059999,
+  "step": 2099074,
+  "epoch": 0,
+  "total_steps": 2099074,
+  "dt_s": 0.002,
+  "simulated_s": 4198.148,
+  "collector_time_s": 4198.147999937776,
+  "queue_length": 0,
+  "recording_drained": true,
+  "settings": {
+    "enableLayering": false,
+    "closedLoopMotorsEnabled": true,
+    "timeScale": 1
+  },
+  "physics_returncode": 0,
+  "normal_completion": true,
+  "recordings": [
+    {
+      "backend": "headless-js",
+      "scene_generation": 0,
+      "recording_id": "252a9736133c46b889fbb2d5af00d7b5",
+      "rrd": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-10-supervised-full-autocal/native/autocal/2ec0b06774624962a18bdbd2818eb134/sweeps.headless/hangprinter-20261010T202027.593662Z-0f8cff1f.rrd",
+      "status": "finalized",
+      "start_step": 0,
+      "format_version": 1,
+      "extended_reference": true,
+      "autocal_complete": true,
+      "rejected_messages": [],
+      "sample_stride": 10,
+      "geometry_detail": "compact",
+      "headless_segments": [
+        {
+          "session": "153429f8-fbf0-452f-9df7-4c851b77c359",
+          "generation": 0,
+          "start_step": 0,
+          "start_time_s": 0,
+          "start_wall_time_ms": 1791663627908,
+          "end_step": 2099070,
+          "end_time_s": 4198.1399999377745,
+          "end_wall_time_ms": 1791664395492
+        }
+      ],
+      "headless_session": "153429f8-fbf0-452f-9df7-4c851b77c359",
+      "end_step": 2099070,
+      "end_time_s": 4198.1399999377745,
+      "physics_samples": 209908,
+      "event_count": 383582
+    }
+  ]
+}

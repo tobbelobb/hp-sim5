@@ -1,0 +1,317 @@
+[
+  {
+    "wall_s": 1.3961208810001153,
+    "construction_s": 0.1494909779999034,
+    "status": {
+      "connected": false,
+      "epoch": 0,
+      "step": 10000,
+      "sim_time_s": 20.0,
+      "collector_time_s": 20.000000000000014,
+      "dt_s": 0.002,
+      "speed_scale": 1.0,
+      "queue_length": 0,
+      "layering_flags": {
+        "enableLayering": true,
+        "layeringFrictionEffectiveRadius": true,
+        "layeringRenderWraps": true
+      },
+      "cable_half_widths_m": [
+        0.001
+      ],
+      "backend": "headless-js",
+      "physics_engine": "rust-native",
+      "physics_artifact": {
+        "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "bcf14930c221bead652a708a9c29ec235d4659ba540426359cf3ce1c20b1e548",
+        "build": {
+          "profile": "release",
+          "platform": "linux",
+          "arch": "x64",
+          "nodeApi": 8,
+          "artifactSha256": "bcf14930c221bead652a708a9c29ec235d4659ba540426359cf3ce1c20b1e548",
+          "sources": {
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "native/node_bridge.c": "c8d4ad5a269dcdd073c13fb0ce24f25fd009a38434842f1a7301264a8994ee85",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "c4a2609f63595e243c1c06efb132f692df95a7ff785333a60efd45e2b6062ca6",
+            "src/lib.rs": "088d64e1de9a45fe692d5994081050e0ab5ac9e9996d504261b2e8280649ed04"
+          },
+          "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+          "target": "x86_64-unknown-linux-gnu",
+          "rustflags": "-C\u001ftarget-cpu=native\u001f-C\u001fprofile-use=/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/pgo-IUgVJd/merged.profdata",
+          "compiler": "cc",
+          "buildScriptSha256": "c810abe7feb293029384535690395e24f4f9d9f9ca6a854029bf24c59d1d866a",
+          "pgo": {
+            "profile": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/pgo-IUgVJd/merged.profdata",
+            "sha256": "619248229a51769ab19841c44edc68b5665b2ebc595449dce6bf73d03a1efd13",
+            "training": {
+              "worlds": [
+                {
+                  "machine": "hp3",
+                  "layering": true,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "9e5ef288d617fdba1691e7486b399b7fc116756e936055e009c3662fa9ce1916"
+                },
+                {
+                  "machine": "hp3",
+                  "layering": false,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e"
+                },
+                {
+                  "machine": "hp4",
+                  "layering": true,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "7ec5a656a3cd8f9b2c18932caece7f86a3e01a2132bd0149ed8fa4445d85e361"
+                },
+                {
+                  "machine": "hp4",
+                  "layering": false,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "5d5de72ea49d36fa1616521b02f23719473665bd10b6b5ba8acb841e2dac6961"
+                }
+              ],
+              "steps": 40000,
+              "trainer": "/home/torbjorn/repos/hp-sim5/scripts/train_native_physics.mjs"
+            },
+            "trainerSha256": "1f35ad484bbe502cb7a1e422871707db04fa14e530547405775c8717e64bbd18"
+          }
+        }
+      },
+      "physics_wall_s": 0.9520380300000004,
+      "worker_wall_s": 1.186715072997231,
+      "observation_wall_s": 0.14423783900519993,
+      "clock": "fixed-step; collector delays advance simulation time",
+      "error": null
+    },
+    "steps": 10000,
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/final-controlled-hp4-record0/run-0/observations.json",
+    "angles_deg": [
+      -90.44299750699591,
+      34.845598524653724,
+      57.60000000458897,
+      0.006912974594964867
+    ],
+    "scene_sha256": "72f6eef0387fd703e560fa476a9d800f9b29c3f875ed7083a41bd7b572a8c5f0",
+    "repeat": 0,
+    "machine": "hp4",
+    "record": false,
+    "mode": "controlled"
+  },
+  {
+    "wall_s": 1.4053032259998872,
+    "construction_s": 0.13964834600028553,
+    "status": {
+      "connected": false,
+      "epoch": 0,
+      "step": 10000,
+      "sim_time_s": 20.0,
+      "collector_time_s": 20.000000000000014,
+      "dt_s": 0.002,
+      "speed_scale": 1.0,
+      "queue_length": 0,
+      "layering_flags": {
+        "enableLayering": true,
+        "layeringFrictionEffectiveRadius": true,
+        "layeringRenderWraps": true
+      },
+      "cable_half_widths_m": [
+        0.001
+      ],
+      "backend": "headless-js",
+      "physics_engine": "rust-native",
+      "physics_artifact": {
+        "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "bcf14930c221bead652a708a9c29ec235d4659ba540426359cf3ce1c20b1e548",
+        "build": {
+          "profile": "release",
+          "platform": "linux",
+          "arch": "x64",
+          "nodeApi": 8,
+          "artifactSha256": "bcf14930c221bead652a708a9c29ec235d4659ba540426359cf3ce1c20b1e548",
+          "sources": {
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "native/node_bridge.c": "c8d4ad5a269dcdd073c13fb0ce24f25fd009a38434842f1a7301264a8994ee85",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "c4a2609f63595e243c1c06efb132f692df95a7ff785333a60efd45e2b6062ca6",
+            "src/lib.rs": "088d64e1de9a45fe692d5994081050e0ab5ac9e9996d504261b2e8280649ed04"
+          },
+          "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+          "target": "x86_64-unknown-linux-gnu",
+          "rustflags": "-C\u001ftarget-cpu=native\u001f-C\u001fprofile-use=/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/pgo-IUgVJd/merged.profdata",
+          "compiler": "cc",
+          "buildScriptSha256": "c810abe7feb293029384535690395e24f4f9d9f9ca6a854029bf24c59d1d866a",
+          "pgo": {
+            "profile": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/pgo-IUgVJd/merged.profdata",
+            "sha256": "619248229a51769ab19841c44edc68b5665b2ebc595449dce6bf73d03a1efd13",
+            "training": {
+              "worlds": [
+                {
+                  "machine": "hp3",
+                  "layering": true,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "9e5ef288d617fdba1691e7486b399b7fc116756e936055e009c3662fa9ce1916"
+                },
+                {
+                  "machine": "hp3",
+                  "layering": false,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e"
+                },
+                {
+                  "machine": "hp4",
+                  "layering": true,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "7ec5a656a3cd8f9b2c18932caece7f86a3e01a2132bd0149ed8fa4445d85e361"
+                },
+                {
+                  "machine": "hp4",
+                  "layering": false,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "5d5de72ea49d36fa1616521b02f23719473665bd10b6b5ba8acb841e2dac6961"
+                }
+              ],
+              "steps": 40000,
+              "trainer": "/home/torbjorn/repos/hp-sim5/scripts/train_native_physics.mjs"
+            },
+            "trainerSha256": "1f35ad484bbe502cb7a1e422871707db04fa14e530547405775c8717e64bbd18"
+          }
+        }
+      },
+      "physics_wall_s": 0.9599845499999995,
+      "worker_wall_s": 1.1990882510008305,
+      "observation_wall_s": 0.14290353000296818,
+      "clock": "fixed-step; collector delays advance simulation time",
+      "error": null
+    },
+    "steps": 10000,
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/final-controlled-hp4-record0/run-1/observations.json",
+    "angles_deg": [
+      -90.44299750699591,
+      34.845598524653724,
+      57.60000000458897,
+      0.006912974594964867
+    ],
+    "scene_sha256": "72f6eef0387fd703e560fa476a9d800f9b29c3f875ed7083a41bd7b572a8c5f0",
+    "repeat": 1,
+    "machine": "hp4",
+    "record": false,
+    "mode": "controlled"
+  },
+  {
+    "wall_s": 1.3810089969997534,
+    "construction_s": 0.14067908300012277,
+    "status": {
+      "connected": false,
+      "epoch": 0,
+      "step": 10000,
+      "sim_time_s": 20.0,
+      "collector_time_s": 20.000000000000014,
+      "dt_s": 0.002,
+      "speed_scale": 1.0,
+      "queue_length": 0,
+      "layering_flags": {
+        "enableLayering": true,
+        "layeringFrictionEffectiveRadius": true,
+        "layeringRenderWraps": true
+      },
+      "cable_half_widths_m": [
+        0.001
+      ],
+      "backend": "headless-js",
+      "physics_engine": "rust-native",
+      "physics_artifact": {
+        "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "bcf14930c221bead652a708a9c29ec235d4659ba540426359cf3ce1c20b1e548",
+        "build": {
+          "profile": "release",
+          "platform": "linux",
+          "arch": "x64",
+          "nodeApi": 8,
+          "artifactSha256": "bcf14930c221bead652a708a9c29ec235d4659ba540426359cf3ce1c20b1e548",
+          "sources": {
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "native/node_bridge.c": "c8d4ad5a269dcdd073c13fb0ce24f25fd009a38434842f1a7301264a8994ee85",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "c4a2609f63595e243c1c06efb132f692df95a7ff785333a60efd45e2b6062ca6",
+            "src/lib.rs": "088d64e1de9a45fe692d5994081050e0ab5ac9e9996d504261b2e8280649ed04"
+          },
+          "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+          "target": "x86_64-unknown-linux-gnu",
+          "rustflags": "-C\u001ftarget-cpu=native\u001f-C\u001fprofile-use=/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/pgo-IUgVJd/merged.profdata",
+          "compiler": "cc",
+          "buildScriptSha256": "c810abe7feb293029384535690395e24f4f9d9f9ca6a854029bf24c59d1d866a",
+          "pgo": {
+            "profile": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/pgo-IUgVJd/merged.profdata",
+            "sha256": "619248229a51769ab19841c44edc68b5665b2ebc595449dce6bf73d03a1efd13",
+            "training": {
+              "worlds": [
+                {
+                  "machine": "hp3",
+                  "layering": true,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "9e5ef288d617fdba1691e7486b399b7fc116756e936055e009c3662fa9ce1916"
+                },
+                {
+                  "machine": "hp3",
+                  "layering": false,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e"
+                },
+                {
+                  "machine": "hp4",
+                  "layering": true,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "7ec5a656a3cd8f9b2c18932caece7f86a3e01a2132bd0149ed8fa4445d85e361"
+                },
+                {
+                  "machine": "hp4",
+                  "layering": false,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "5d5de72ea49d36fa1616521b02f23719473665bd10b6b5ba8acb841e2dac6961"
+                }
+              ],
+              "steps": 40000,
+              "trainer": "/home/torbjorn/repos/hp-sim5/scripts/train_native_physics.mjs"
+            },
+            "trainerSha256": "1f35ad484bbe502cb7a1e422871707db04fa14e530547405775c8717e64bbd18"
+          }
+        }
+      },
+      "physics_wall_s": 0.940112743999999,
+      "worker_wall_s": 1.17882810699939,
+      "observation_wall_s": 0.13921702200195796,
+      "clock": "fixed-step; collector delays advance simulation time",
+      "error": null
+    },
+    "steps": 10000,
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/final-controlled-hp4-record0/run-2/observations.json",
+    "angles_deg": [
+      -90.44299750699591,
+      34.845598524653724,
+      57.60000000458897,
+      0.006912974594964867
+    ],
+    "scene_sha256": "72f6eef0387fd703e560fa476a9d800f9b29c3f875ed7083a41bd7b572a8c5f0",
+    "repeat": 2,
+    "machine": "hp4",
+    "record": false,
+    "mode": "controlled"
+  }
+]

@@ -1,0 +1,90 @@
+{
+  "baseline_revision": "359a55fcd1220d8165af2d84ad11b7e32bd33a46",
+  "original_reference_revision": "1e026534483e2175f4c101b645b1f54f65f9faba",
+  "files": {
+    "output/extended-autocal/no-buildup-reference-003/sweeps.json": "cd938d1f2c6b86c33d49da94dff61151deaf758c16bdf01ec2d68ab6cd805a99",
+    "output/extended-autocal/no-buildup-reference-003/sweeps.full_auto_log.jsonl": "0c965183be48876bba415b051feedafd741133fe3b8a9a9e6195c7f501191342",
+    "output/extended-autocal/no-buildup-reference-003/hangprinter-20261010T182010.757112Z-814ac4d9.rrd": "ae139e9152a5307356d2cce19bcf665eb4f0464f3677e91250b41f630a1bdb05",
+    "public/usd_scenes/hp3_rigid_body.usda": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+    "RRF/run/vsd/sys/config_hp3.g": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8",
+    "RRF/build/rrf_simulator": "9b2ac828a9ad0636640c92f7a1cbf042f9a04327505c8d699c54b1abb582f3fe"
+  },
+  "frozen_baseline_modules": {
+    "baseline-sweep_data_collection.mjs": "e1c3369a462a302da70b7aecf3211ed9fce672dda62f85ce119ee357bba115f2",
+    "baseline-uncalibrated_actions.mjs": "2ec5d65a8ac384a3a28db9678baa4fee40d9f8899b222b5952c1ce7cb71a1863"
+  },
+  "candidate_status": "Implementation committed after the calibration turn; tooling documentation is a working-tree change.",
+  "experiment_status": {
+    "E01": "reference timing and geometry audit complete",
+    "E02": "16 thinning fits complete; sparse default rejected",
+    "E03": "trace diagnostics complete; pullout cap not tested",
+    "E04": "HTTP collection blocked; first batch context failure and invalid geometry baseline preserved",
+    "E05": "synthetic checks complete; invalid geometry candidate preserved",
+    "E06": "73 collector tests and 11 exact regressions pass; Python 350 pass, 2 deselected, 5 socket-blocked",
+    "E07": "valid matched baseline complete",
+    "E08": "valid matched candidate complete; 5.922112209% faster simulation collection, geometry preserved",
+    "E09": "sandbox diagnosis complete; socket creation denied, supervised services healthy; mitigation documented, proposed APIs not implemented",
+    "E10": "three implementation prompts written; CLI/desktop networking defaults enabled; explicit override supported; 12 launcher tests pass"
+  },
+  "candidate_source_hashes": {
+    "autocal/README.md": "fcb7e35020a2e7e65167d3707a7c3ea6d63d3eb6e008ae7d4077eb79d583239b",
+    "autocal/control/behaviors/sweep_data_collection.mjs": "3bc97b4cd67a7d4813cef6e070176c95777c52939bdb80d46f9145eb2e75a85f",
+    "autocal/control/primitives/uncalibrated_actions.mjs": "f54ab5e1dce0a41d1f0afe1a0925051acdb834ca45760b8d6ff35dbb774e0675",
+    "autocal/control/tests/primitives/uncalibrated_actions.test.mjs": "810691b0fdf21fa8a81f3f315198d196fa98dbcaaac25600a008775f03df1539"
+  },
+  "final_artifact_hashes": {
+    "final-source.diff": "dd54f2394006f41aebdedafc2fa9769780e4bd19f7f05c527a43279cb5e4be7c",
+    "research.md": "512eb5980073fb984e190a0e9a19ee65c30353db78edd678cb19be9b3837f1c4",
+    "abstract.md": "6831105684e7632867cd4e728a9c497e30bf35d69342212812943dbe34bde21b",
+    "report.md": "b55c36264993ae4c8f8ef62fa7f60406bba4b13a51d54d7201aa95919b90964e",
+    "profile_reference.py": "ec84bf9a24390ad9ddd1e639d331bacf5f95eed81c9b465a6dc672f8c57afaa2",
+    "audit_reference.py": "145aca3a7835e9666605047a1d731b88c701704440665758e70ca1637a25fe0c",
+    "thin_reference.py": "520a36138854bd6d0af0f0821a523bdbdad6796135511bc8e7b6534038cc50aa",
+    "collect_hp3_batch.mjs": "db650df9401c6afb294f6e9843840337a9862267db8743966b5814a4766b03b0",
+    "fit_batch.py": "ac62409d380803c324d53aed8135276e7b9039ba8caec0224be43163d724463f",
+    "summarize_pair.py": "420c3e91f54dade3dbb99714acb726033f0d4d052de16e7f4cd79f586b5b4728",
+    "plot_results.py": "d57245ba9bc6d2f39b1aea9f4a8cde89709b3f41a309eb8227633d73200d7e82",
+    "E01-profile-and-geometry.json": "ef6fd29989ac1199480cfdb2967b1605bf924a9ecf0e227dc5f45edddf421f1c",
+    "E02-thinning.json": "363b2fad7709e7072b667c3cb73d91a0ec64e5311e3b0a0b31cacd42ce9943c6",
+    "E03-duplicate-checks.json": "e4b9e4d4eab324480110960d9c97d665fe8e791bed80505a6c8a6ab80acf4c65",
+    "E03-long-pullouts.json": "088ad833ef66b3facba75ef1dec9c19d1178ed09394aa9ab366b5c7342b4adda",
+    "E03-reference-saving-estimate.json": "5b1ed29694b35d3d20e3ef79645ffd7fee3c66c709ff8f4d3222eff243ac8188",
+    "E08-paired-comparison.json": "671072e72396d5cb82e326d79362b54ba78f6d0652f88b780ed5b678671b244d",
+    "E05-synthetic-controller-tests.txt": "bd014f986d16196245f0f9ab5eb0d92881fc1fcef869461f55dd2ad2ed619676",
+    "E06-collector-tests.txt": "57e9bad62a92913c4f9b91cca3144d6b6c11e5741bb3dab8f27491afd29e507c",
+    "E06-python-tests.txt": "883dd1d865e8aaad7341e1cf3e52e6f6de019ce1b93e8bf75c455f6bb6376d2c",
+    "E06-regressions.txt": "569615ba561f0a109093ed522b9b88724350765e925a3d5a5fab5d15e1956d9d",
+    "results.png": "5707ff31dd2befb0896afb1a468d128988e6c458232419a725ecdbf607e5ef67",
+    "results.svg": "dcc1f39f259097b653af6f512dff7986cc6ae4046a38b2d15221cb53529dc26c",
+    "E07-no-layering-baseline/manifest.json": "90335973d9cc4af5f1e316a863f46819199acffc580e1e74c640d37c1e2b39e8",
+    "E07-no-layering-baseline/sweeps-0.json": "648852f4e155450150550187666a5d9cba265301927170278d13dbb45695e209",
+    "E07-no-layering-baseline/sweeps-1.json": "18c98020bca9ea0dbdc5fef5101d6c7f022940406c53e7cb8f063bcd494c4a9c",
+    "E07-no-layering-baseline/merged.json": "08d3077565787e3512522520746b74d7749100a0c2b73400149738c180f0a8d5",
+    "E07-no-layering-baseline/fit-summary.json": "1540abd2234bd542a07fa469d03c87ef5424574b6f75c2ad4934178a70842636",
+    "E07-no-layering-baseline/scene-no-layering.usda": "feb28ea51676770bf43db61847f2cef52625c052e8b6d70482e919f378014ded",
+    "E07-no-layering-baseline/replay.full_auto_log.jsonl": "735846ec2f8d21645c7499fe67623bd54527c309e2789187ed8fbb13160c93c5",
+    "E08-no-layering-reuse/manifest.json": "c6d6661796250d99dd28586c6e1650e1565d0687ad30e29994c53af1dcb96051",
+    "E08-no-layering-reuse/sweeps-0.json": "428d7b4ec1c696b99846665cd5eeb800827fc96cffd6571ef856b21eba225f68",
+    "E08-no-layering-reuse/sweeps-1.json": "403bb510baa2fa013d2e215c05846d8b5511cdeb50d1e349cc863c6f78d67bc8",
+    "E08-no-layering-reuse/merged.json": "a169b7aed14f70bd088582928523bbb2c9d5e16b6289041258e10145e1470910",
+    "E08-no-layering-reuse/fit-summary.json": "ab48360d51cf2bc9846505f5a8741f3de7ae0a8ac897e8a15c9a76785e32f351",
+    "E08-no-layering-reuse/scene-no-layering.usda": "feb28ea51676770bf43db61847f2cef52625c052e8b6d70482e919f378014ded",
+    "E08-no-layering-reuse/replay.full_auto_log.jsonl": "c73a77c966a5894d9238c6a8cb6b09c821545ed7cdbcf8a729013f7fdc2e51f1",
+    "E09-sandbox-and-tools.json": "12dc7351053a37b6aaf2c73279b82f07d2a53e0066830ddac7827b9819d3568b",
+    "E09-tooling-docs.diff": "58c5ebe06a1f21d43cfcd5468fc3bd8c273f17269b92748c47e652f711456627",
+    "E10-launcher-tests.txt": "bfc80bfe9592d0506eabbaf0df9206145a4a27aceff33806a69a261a5d120a94",
+    "E10-tooling-source.diff": "bf9585aebc2373da43806c1336c0c604bb1886a6d73eb9cdf2b544da393498dc"
+  },
+  "tooling_documentation_source_hashes": {
+    "research/README.md": "c17b293a9b2a5b0f7a1c746644277b7d8e9d72ed0a657d8284403755daa41b39"
+  },
+  "candidate_revision": "536a2e3660fa25cd241fb0a14ae8e5c2dcdcc88e",
+  "E10_source_hashes": {
+    "scripts/research_agent.py": "d92d02c7fec731525dc1aaa70664f3a8da2381c5ff8d7c642907d62dd17daed6",
+    "tests/python/test_research_agent.py": "d9d37f7b813818e0178ba49b557708b3c21930003b7614f7b3fbbc6e6452ff2f",
+    "research/README.md": "c17b293a9b2a5b0f7a1c746644277b7d8e9d72ed0a657d8284403755daa41b39",
+    "research/prompts/tooling_improvement_1.txt": "4c952fe2d39ccdbfec8ffce2ac61711e4399a12dfbd7c0b517287d210007a6d4",
+    "research/prompts/tooling_improvement_2.txt": "ed8fbf510a1a5d5baab26451474468ceef632ec26793b6894f450b78512025ff",
+    "research/prompts/tooling_improvement_3.txt": "cccadfce465bb9a4fd39d71c8fc4fab3cbe173a5ec451e60a491200e9c568bec"
+  }
+}

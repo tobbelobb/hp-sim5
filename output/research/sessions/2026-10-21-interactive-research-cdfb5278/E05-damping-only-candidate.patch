@@ -1,0 +1,102 @@
+diff --git a/public/wasm/cable_solver.wasm b/public/wasm/cable_solver.wasm
+index 6a54f893f3934460863c9b2143165dc764c5a4e7..0641fe303738059a502e87df4a0f754e51f150af 100755
+GIT binary patch
+delta 915
+zcmaJ<O-vI(6yBNFk`}ghyW7@CBYC??4Y=K6ON<sQbftJPL@^#sjD~|DUPw3+TjL)G
+zq9g+rJhgk#BL)pbFC0BqJ?Oy$iQxbq^k`y?zA0_#iJ8N^_sx6nd+(e1R9D}8RM!^)
+zK9tpsXK*DOuJ?7Zk~Ysv#=Nh@?``}%`vXe0hsRJyvu5dD&5GsV6~`b!QB-SI%EJ)a
+zghz8wm3Rns55t%u$j-s)L1+XAWH#Y(JYBQmbQ#IP_Cb7H);F-fW*LOXbFd}xFdDM7
+z?g5dA8^dD*HU@2|gGa<<d<CzHF=_3PW$8twxlpfM-DSPv=14cw#oq8xU#gWDZzo3D
+ziAH5-k0oVv(kMpuo%?H*+5B|EG<w<<P3O=|i>D(tON)0SsglzXqGHfdwwO7{3%r2c
+z?S$JQ1qWR=J3(i#pRY6Qy%b_S7<B6}gP=Vxm&*zsHJYh*(9pn+vcydwno<D|ZzK;K
+z@+@#nbnx&d&rwR4u^#F?V1r^sF?x&Y1*Ay78L8}G8r7<FtE@^(zP7S4ci}N(XT+cU
+zG7E^M(Q7OtzK^aMSywSRm1>SHJ+U%2b%LYMhVz!y)@GVSY25xBOLcL{4&q#4IhiH%
+zU?ZnCvLU7dDJJR5On$%xhFS5eaL3_ISswy&*FWb5v~N;RS&GD71gjOWL;>QFJ4Nk&
+zaVHz?PH@bKyBFUMac#Bn2nsTKmTfkJK8#=s^`n-PBKTc!S!1RIwRwGfg-Y#@Uk(Hk
+xW=QJxAYXivFS5;ikxzcky!I)|Df*Cq{hHEEr}W(p{{{IcJN%cM?~g-8`wvBoz|#N#
+
+delta 769
+zcmaJ;L2DC16yBNFU}AQgopci;A@FulNlel<Efu!aCR?{BEhRmA69l!lg2&=U6!Z|V
+zGOcMYCfQSO3Q?P5e?f`%;=zL_3yPk-RGrB-r5BxnnfE@v_s#d-y#1hl?5l6;0AK$^
+zyU$^Hiv7%-A)dZYJ!2g_`jB|tA2Z*<OZYg7aWp$t-0xU<8+Is01Z1Gvu?!zIOb9$-
+zLtEk+#(j*TA)tZ{+X0nfu46HYC-HKileA&)gg=U7m<{lv4Lym+q>hHnhmJMQZ_So-
+z1&rjO4?ZSj@Cp1j=4JFnL>6<E<Ascy`xgk~hqKeU@nKEzq$c^#nizB0x8kE_W9{0V
+zv^f@SyuLybWP;b{^5X2x6+9Njh|`Bv1pQ^LR#O5gQw_w;l)U?3n#U{}uxJItc~C3^
+zjoX@nVafVM@PFQr;RF`Yl+C6FjjDdT-95OvMM#+6pWh^u|DInVle}7Po-a9y3F4JV
+zQRxwD${}lunj$fNRIU=>%awEDyjv-#5DjP>)SBVV%I3wA0D_Gmyp=Q}IAZ+5VvWd8
+zeMYdvSDbrA5Skdt(kFo6gdR9y{j(gwKrl<|U=0Zyg1`@*sxWFVEDek<Qk>-b3-6{u
+z-yY0OK_X_fM^<q}v^qpXsM~TfAqO0SvX3;*@b}lZgw##<Mwq5eP57seTkg}AOLki>
+kT{<Z3j3~+_@%cv~T{$amnLDTQ7b4G`%3tkfQqa)<0tWW5$p8QV
+
+diff --git a/src/js/cable_joints_3d/cable_joints_core.js b/src/js/cable_joints_3d/cable_joints_core.js
+index ad245293..7f603419 100644
+--- a/src/js/cable_joints_3d/cable_joints_core.js
++++ b/src/js/cable_joints_3d/cable_joints_core.js
+@@ -3364,8 +3364,12 @@ export class PBDCableConstraintSolver {
+       const translationalDispB = prevPosB
+         ? gradPosB.dot(posBComp.pos.clone().subtract(prevPosB))
+         : 0.0;
+-      const rotationalDispA = gradAngA.dot(_rotationVectorBetween(prevQuatA, currQuatA));
+-      const rotationalDispB = gradAngB.dot(_rotationVectorBetween(prevQuatB, currQuatB));
++      // A standalone axis-only spool's rotation is already in spinDisp.
++      // Counting its world rotation too doubles cable damping.
++      const rotationalDispA = endpointA.axisOnly && memberSpinA?.entityId === solverEntityA
++        ? 0.0 : gradAngA.dot(_rotationVectorBetween(prevQuatA, currQuatA));
++      const rotationalDispB = endpointB.axisOnly && memberSpinB?.entityId === solverEntityB
++        ? 0.0 : gradAngB.dot(_rotationVectorBetween(prevQuatB, currQuatB));
+ 
+       const gradAngMemberA = memberSpinA
+         ? new Vector3().subtractVectors(memberSpinA.pointWorld, memberSpinA.centerWorld).cross(memberSpinA.gradPos)
+diff --git a/src/python/cable_joints_3d/pbd_cable_constraint_solver.py b/src/python/cable_joints_3d/pbd_cable_constraint_solver.py
+index 78c3f37d..aa2e1ba6 100644
+--- a/src/python/cable_joints_3d/pbd_cable_constraint_solver.py
++++ b/src/python/cable_joints_3d/pbd_cable_constraint_solver.py
+@@ -188,7 +188,10 @@ def _solver_end(world, path, index, first, entity, other, point, gradient, joint
+     angular_denominator = inverse_inertia_quadratic_form(moment, orientation.quaternion, angular_gradient) if orientation is not None and not has_axis_only_cable_spin_dof(world, solver_entity) else 0.
+     previous_position = world.get_component(solver_entity, PrevFinalPosComponent)
+     displacement = float(np.dot(gradient, position.pos - previous_position.pos)) if previous_position is not None else 0.
+-    displacement += np.dot(angular_gradient, rotation_vector_between(_quaternion(world, solver_entity, True), _quaternion(world, solver_entity)))
++    # The relative spin term below already includes an axis-only rotor's
++    # rotation; adding its world rotation would double cable damping.
++    if not (has_axis_only_cable_spin_dof(world, solver_entity) and spin is not None and spin.entity == solver_entity):
++        displacement += np.dot(angular_gradient, rotation_vector_between(_quaternion(world, solver_entity, True), _quaternion(world, solver_entity)))
+     solve_spin_gradient = load_spin_gradient = 0.
+     if spin is not None:
+         lever_gradient = np.dot(cross(spin.point - spin.center, spin.gradient), spin.axis)
+diff --git a/src/python/cable_joints_3d/warp_solver.py b/src/python/cable_joints_3d/warp_solver.py
+index 07e256a4..a8e5fe72 100644
+--- a/src/python/cable_joints_3d/warp_solver.py
++++ b/src/python/cable_joints_3d/warp_solver.py
+@@ -295,6 +295,8 @@ def end_info(bodies: wp.array(dtype=Body), joints: wp.array(dtype=Joint), ep: En
+                         # The pinhole neighbor transfers this load once.
+                         end.inverse = F(0)
+                         end.free_inverse = F(0)
++    if (b.flags & 16) != 0 and end.spin == end.entity and (b.flags & 10) == 10:
++        end.displacement = end.displacement-wp.dot(end.angular,angular_delta(b.prev_q,b.q))
+     return end
+ 
+ 
+diff --git a/src/wasm/cable_solver/src/lib.rs b/src/wasm/cable_solver/src/lib.rs
+index d5d9f480..16e17071 100644
+--- a/src/wasm/cable_solver/src/lib.rs
++++ b/src/wasm/cable_solver/src/lib.rs
+@@ -1037,8 +1037,17 @@ fn solve_joint(
+     } else {
+         0.0
+     };
+-    let ra = dot(aa, rotation_vector(&a));
+-    let rb = dot(ab, rotation_vector(&b));
++    // Axis-only endpoint rotation is already represented by spin.disp.
++    let ra = if a[55] == 0.0 && sa.active && sa.id == a_id {
++        0.0
++    } else {
++        dot(aa, rotation_vector(&a))
++    };
++    let rb = if b[55] == 0.0 && sb.active && sb.id == b_id {
++        0.0
++    } else {
++        dot(ab, rotation_vector(&b))
++    };
+     // Evaluate the damping displacement once per step and reuse it on later
+     // Gauss-Seidel visits. Re-deriving it from partially solved positions makes
+     // the damping term feed on its own corrections and turns a stiff cable

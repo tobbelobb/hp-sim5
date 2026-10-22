@@ -1,0 +1,188 @@
+[
+  {
+    "name": "hp3-logo-on",
+    "exact_hash_match": true,
+    "comparison": {
+      "atol": 1e-06,
+      "rtol": 1e-06,
+      "maxAbsoluteError": 0,
+      "maxRelativeError": 0,
+      "worstField": null,
+      "exact": true,
+      "matchesTolerance": true,
+      "outsideTolerance": 0,
+      "firstDifference": null,
+      "physicalErrors": {
+        "length_m": 0,
+        "quaternion_component": 0,
+        "force_n": 0,
+        "encoder_rad": 0,
+        "velocity_m_s": 0,
+        "angular_velocity_rad_s": 0
+      }
+    }
+  },
+  {
+    "name": "hp3-logo-off",
+    "exact_hash_match": true,
+    "comparison": {
+      "atol": 1e-06,
+      "rtol": 1e-06,
+      "maxAbsoluteError": 0,
+      "maxRelativeError": 0,
+      "worstField": null,
+      "exact": true,
+      "matchesTolerance": true,
+      "outsideTolerance": 0,
+      "firstDifference": null,
+      "physicalErrors": {
+        "length_m": 0,
+        "quaternion_component": 0,
+        "force_n": 0,
+        "encoder_rad": 0,
+        "velocity_m_s": 0,
+        "angular_velocity_rad_s": 0
+      }
+    }
+  },
+  {
+    "name": "hp3-autocal-on",
+    "exact_hash_match": true,
+    "comparison": {
+      "atol": 1e-06,
+      "rtol": 1e-06,
+      "maxAbsoluteError": 0,
+      "maxRelativeError": 0,
+      "worstField": null,
+      "exact": true,
+      "matchesTolerance": true,
+      "outsideTolerance": 0,
+      "firstDifference": null,
+      "physicalErrors": {
+        "length_m": 0,
+        "quaternion_component": 0,
+        "force_n": 0,
+        "encoder_rad": 0,
+        "velocity_m_s": 0,
+        "angular_velocity_rad_s": 0,
+        "encoder_deg": 0
+      }
+    }
+  },
+  {
+    "name": "hp3-autocal-off",
+    "exact_hash_match": true,
+    "comparison": {
+      "atol": 1e-06,
+      "rtol": 1e-06,
+      "maxAbsoluteError": 0,
+      "maxRelativeError": 0,
+      "worstField": null,
+      "exact": true,
+      "matchesTolerance": true,
+      "outsideTolerance": 0,
+      "firstDifference": null,
+      "physicalErrors": {
+        "length_m": 0,
+        "quaternion_component": 0,
+        "force_n": 0,
+        "encoder_rad": 0,
+        "velocity_m_s": 0,
+        "angular_velocity_rad_s": 0,
+        "encoder_deg": 0
+      }
+    }
+  },
+  {
+    "name": "hp4-logo-on",
+    "exact_hash_match": true,
+    "comparison": {
+      "atol": 1e-06,
+      "rtol": 1e-06,
+      "maxAbsoluteError": 0,
+      "maxRelativeError": 0,
+      "worstField": null,
+      "exact": true,
+      "matchesTolerance": true,
+      "outsideTolerance": 0,
+      "firstDifference": null,
+      "physicalErrors": {
+        "length_m": 0,
+        "quaternion_component": 0,
+        "force_n": 0,
+        "encoder_rad": 0,
+        "velocity_m_s": 0,
+        "angular_velocity_rad_s": 0
+      }
+    }
+  },
+  {
+    "name": "hp4-logo-off",
+    "exact_hash_match": true,
+    "comparison": {
+      "atol": 1e-06,
+      "rtol": 1e-06,
+      "maxAbsoluteError": 0,
+      "maxRelativeError": 0,
+      "worstField": null,
+      "exact": true,
+      "matchesTolerance": true,
+      "outsideTolerance": 0,
+      "firstDifference": null,
+      "physicalErrors": {
+        "length_m": 0,
+        "quaternion_component": 0,
+        "force_n": 0,
+        "encoder_rad": 0,
+        "velocity_m_s": 0,
+        "angular_velocity_rad_s": 0
+      }
+    }
+  },
+  {
+    "name": "hp4-autocal-on",
+    "exact_hash_match": true,
+    "comparison": {
+      "atol": 1e-06,
+      "rtol": 1e-06,
+      "maxAbsoluteError": 0,
+      "maxRelativeError": 0,
+      "worstField": null,
+      "exact": true,
+      "matchesTolerance": true,
+      "outsideTolerance": 0,
+      "firstDifference": null,
+      "physicalErrors": {
+        "length_m": 0,
+        "quaternion_component": 0,
+        "force_n": 0,
+        "encoder_rad": 0,
+        "velocity_m_s": 0,
+        "angular_velocity_rad_s": 0
+      }
+    }
+  },
+  {
+    "name": "hp4-autocal-off",
+    "exact_hash_match": true,
+    "comparison": {
+      "atol": 1e-06,
+      "rtol": 1e-06,
+      "maxAbsoluteError": 0,
+      "maxRelativeError": 0,
+      "worstField": null,
+      "exact": true,
+      "matchesTolerance": true,
+      "outsideTolerance": 0,
+      "firstDifference": null,
+      "physicalErrors": {
+        "length_m": 0,
+        "quaternion_component": 0,
+        "force_n": 0,
+        "encoder_rad": 0,
+        "velocity_m_s": 0,
+        "angular_velocity_rad_s": 0
+      }
+    }
+  }
+]

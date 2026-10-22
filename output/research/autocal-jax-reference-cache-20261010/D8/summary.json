@@ -1,0 +1,16 @@
+{
+  "trial": "D8",
+  "mode": "regression-warm",
+  "elapsed_s": 25.024751018001552,
+  "returncode": 0,
+  "hits": {
+    "jit__objective_core": 1
+  },
+  "misses": {
+    "jit__objective_core": 16,
+    "jit_convert_element_type": 1
+  },
+  "compatibility_warnings": 0,
+  "regression_pass": true,
+  "exact_full_precision_metrics_equal": true
+}

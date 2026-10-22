@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "autocal/calibration_result.schema.json",
+  "title": "Autocal Calibration Result",
+  "type": "object",
+  "required": [
+    "machine_type",
+    "anchors",
+    "cost",
+    "success",
+    "gcode"
+  ],
+  "properties": {
+    "machine_type": {
+      "type": "string"
+    },
+    "anchors": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "number"
+        }
+      }
+    },
+    "cost": {
+      "type": "number"
+    },
+    "success": {
+      "type": "boolean"
+    },
+    "gcode": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

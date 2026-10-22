@@ -1,0 +1,82 @@
+diff --git a/autocal/README.md b/autocal/README.md
+index 6f707ded..9a3f7b3e 100644
+--- a/autocal/README.md
++++ b/autocal/README.md
+@@ -15,6 +15,8 @@ During a sweep, a drive move that leaves measurement preload unchanged uses its
+ completed encoder quiet check for the next point. The collector keeps fixed-motor
+ drift checks and all noise samples, and settles again whenever measurement force
+ changes. This removes a repeated wait without reducing the number of points.
++Encoder sampling averages deviations from the first reading, preserving constant
++readings exactly and avoiding accumulation error at large unwrapped angles.
+ THe "click of a button" is currently a terminal call to a python script with many flags and options, and the wiggling goes on for 1-2 hours.
+ But it does work.
+ Even if huge parts of the data turns out to be rubbish, it still works.
+diff --git a/autocal/control/primitives/encoder_noise.mjs b/autocal/control/primitives/encoder_noise.mjs
+index 6f0d1e2a..31252d04 100644
+--- a/autocal/control/primitives/encoder_noise.mjs
++++ b/autocal/control/primitives/encoder_noise.mjs
+@@ -51,18 +51,22 @@ function meanFinite(values) {
+     return NaN;
+   }
+   let sum = 0;
++  let origin = 0;
+   let count = 0;
+   for (const v of values) {
+     if (!Number.isFinite(v)) {
+       continue;
+     }
+-    sum += v;
++    if (count === 0) origin = v;
++    // Sum small deviations, so a large unwrapped angle does not accumulate
++    // rounding error even when every encoder observation is identical.
++    sum += v - origin;
+     count += 1;
+   }
+   if (count === 0) {
+     return NaN;
+   }
+-  return sum / count;
++  return origin + sum / count;
+ }
+ 
+ export function applySigmaFloor(sigmas, sigmaFloor) {
+diff --git a/autocal/control/tests/primitives/encoder_noise.test.mjs b/autocal/control/tests/primitives/encoder_noise.test.mjs
+index d1ecfdbc..e5ad6714 100644
+--- a/autocal/control/tests/primitives/encoder_noise.test.mjs
++++ b/autocal/control/tests/primitives/encoder_noise.test.mjs
+@@ -1,4 +1,4 @@
+-import { applySigmaFloor, robustStdMad } from '../../primitives/encoder_noise.mjs';
++import { applySigmaFloor, robustStdMad, sampleEncoderNoise } from '../../primitives/encoder_noise.mjs';
+ 
+ describe('encoder_noise helpers', () => {
+   test('robustStdMad uses MAD scaling', () => {
+@@ -13,3 +13,29 @@ describe('encoder_noise helpers', () => {
+     expect(nonFinite).toEqual([false, false, true]);
+   });
+ });
++
++describe('sampleEncoderNoise mean precision', () => {
++  async function sample(values) {
++    let index = 0;
++    let now = 0;
++    const send = async () => ({ reply: String(values[index++]) });
++    return sampleEncoderNoise(send, ['40.0'], {
++      sampleCount: values.length, sampleIntervalMs: 1,
++      sleepFn: async ms => { now += ms; }, nowFn: () => now,
++    });
++  }
++
++  test('constant observations retain their reported angle exactly', async () => {
++    const stats = await sample(Array(16).fill(987.3));
++    expect(stats.muByMotorDeg).toEqual([987.3]);
++    expect(stats.sigmaByMotorDeg).toEqual([0]);
++    expect(stats.sampleCount).toBe(16);
++  });
++
++  test('small deviations are averaged at a large unwrapped angle', async () => {
++    const values = [...Array(8).fill(1000000), ...Array(8).fill(1000000.125)];
++    const stats = await sample(values);
++    expect(stats.muByMotorDeg).toEqual([1000000.0625]);
++    expect((await sample(values.reverse())).muByMotorDeg).toEqual(stats.muByMotorDeg);
++  });
++});

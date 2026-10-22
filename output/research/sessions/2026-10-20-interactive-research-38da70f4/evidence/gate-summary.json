@@ -1,0 +1,180 @@
+{
+  "isolatedSummedProbe": {
+    "fileJs": "gate-isolated-js-summed.json",
+    "fileWasm": "gate-isolated-wasm-summed.json",
+    "backendSamplesIdentical": true,
+    "firstBreakStep": 100,
+    "maxTensionDifferenceN": 0.015716878135225265,
+    "meanAbsTensionDifferenceN": 0.0038404741904627137,
+    "steadySlidingDifferenceAtStep499N": 0.006630393628974218,
+    "finalStaticOffsetN": -0.003097137492408031,
+    "maxAbsFlowVelocityMps": 0.0009594802352436274,
+    "finalFlowM": 0.00020023227370399675,
+    "config": {
+      "backend": "js",
+      "dt": 0.001,
+      "steps": 1500,
+      "rampStart": 100,
+      "rampSteps": 400,
+      "takeupPerStep": 1e-06,
+      "springConstant": 6667,
+      "effectiveInertia": 0.023668639053254437,
+      "damping": 0.9467455621301777,
+      "coulombTorque": 4e-05,
+      "radius": 0.0065,
+      "pretension": 5
+    }
+  },
+  "hp4200Step": {
+    "finalZNativeM": 0.08993607821435999,
+    "finalZWasmM": 0.08993607821436062,
+    "finalZJsM": 0.0899360782143613,
+    "maxTensionDifferenceN": 0.07811398975169515,
+    "meanAbsTensionDifferenceN": 0.008975925565883825,
+    "maxAbsFlowM": 4.8278709505191714e-05,
+    "gateTransport": [
+      {
+        "path": "CablePathAL",
+        "storedDeltaM": -0.019288266512814012,
+        "transportM": 0.019288266512814012,
+        "maxAbsFlowM": 3.935746545864753e-06
+      },
+      {
+        "path": "CablePathAR",
+        "storedDeltaM": -0.019288266512814012,
+        "transportM": 0.019288266512814012,
+        "maxAbsFlowM": 4.6359317236485705e-06
+      },
+      {
+        "path": "CablePathBL",
+        "storedDeltaM": -0.008664057104186496,
+        "transportM": 0.008664057104186496,
+        "maxAbsFlowM": 5.7855378418866905e-06
+      },
+      {
+        "path": "CablePathBR",
+        "storedDeltaM": -0.008664057104186496,
+        "transportM": 0.008664057104186496,
+        "maxAbsFlowM": 5.10348008221554e-06
+      },
+      {
+        "path": "CablePathCL",
+        "storedDeltaM": 0.03128770371729539,
+        "transportM": -0.03128770371729539,
+        "maxAbsFlowM": 4.432393954814353e-05
+      },
+      {
+        "path": "CablePathCR",
+        "storedDeltaM": 0.03128770371729539,
+        "transportM": -0.03128770371729539,
+        "maxAbsFlowM": 2.2955119704096532e-05
+      }
+    ]
+  },
+  "matchedNative1000Step": {
+    "originalMedianMs": 386.01994899999977,
+    "gateMedianMs": 146.28494599999976,
+    "speedup": 2.638822104087186,
+    "originalFinalZ": 0.09006906936479507,
+    "gateFinalZ": 0.08988547770310612,
+    "absFinalZDifferenceM": 0.00018359166168895047,
+    "originalJoints": 51,
+    "gateJoints": 33
+  },
+  "originalWheelDirection": {
+    "steps200": [
+      {
+        "branch": "AL",
+        "topEncoderDelta": 14.743354042024887,
+        "bottomEncoderDelta": -4.806401629065843,
+        "ratio": -0.3260046265839873,
+        "sameSign": false
+      },
+      {
+        "branch": "AR",
+        "topEncoderDelta": 15.033154858951958,
+        "bottomEncoderDelta": -4.900530082953578,
+        "ratio": -0.32598148086230916,
+        "sameSign": false
+      },
+      {
+        "branch": "BL",
+        "topEncoderDelta": 14.494831220572753,
+        "bottomEncoderDelta": -4.247085143952548,
+        "ratio": -0.2930068711613965,
+        "sameSign": false
+      },
+      {
+        "branch": "BR",
+        "topEncoderDelta": 14.579749110094914,
+        "bottomEncoderDelta": -4.283663228333112,
+        "ratio": -0.2938091181121309,
+        "sameSign": false
+      },
+      {
+        "branch": "CL",
+        "topEncoderDelta": 15.575533683392884,
+        "bottomEncoderDelta": -2.4120077504859276,
+        "ratio": -0.15485875473131847,
+        "sameSign": false
+      },
+      {
+        "branch": "CR",
+        "topEncoderDelta": 16.035455442067224,
+        "bottomEncoderDelta": -2.5741068012334294,
+        "ratio": -0.16052595515812715,
+        "sameSign": false
+      }
+    ],
+    "steps1000": [
+      {
+        "branch": "AL",
+        "topEncoderDelta": 51.04646181538944,
+        "bottomEncoderDelta": -19.81227641099452,
+        "ratio": -0.3881224223266642,
+        "sameSign": false
+      },
+      {
+        "branch": "AR",
+        "topEncoderDelta": 49.55246070468022,
+        "bottomEncoderDelta": -19.49363317870117,
+        "ratio": -0.3933938476815138,
+        "sameSign": false
+      },
+      {
+        "branch": "BL",
+        "topEncoderDelta": 54.71465714392874,
+        "bottomEncoderDelta": -17.738134940185905,
+        "ratio": -0.3241934769603901,
+        "sameSign": false
+      },
+      {
+        "branch": "BR",
+        "topEncoderDelta": 51.89548251378222,
+        "bottomEncoderDelta": -17.032792651578973,
+        "ratio": -0.32821339790135806,
+        "sameSign": false
+      },
+      {
+        "branch": "CL",
+        "topEncoderDelta": 65.47502619653987,
+        "bottomEncoderDelta": -7.061729559387847,
+        "ratio": -0.10785378746073773,
+        "sameSign": false
+      },
+      {
+        "branch": "CR",
+        "topEncoderDelta": 72.31037117510567,
+        "bottomEncoderDelta": -9.120950603646328,
+        "ratio": -0.12613613310819793,
+        "sameSign": false
+      }
+    ]
+  },
+  "mandatoryGate": {
+    "log": "stability-gate.log",
+    "tests": 11,
+    "passed": 11,
+    "failed": 0
+  }
+}

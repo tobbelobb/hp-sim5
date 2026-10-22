@@ -1,0 +1,146 @@
+{
+  "backend": "headless-js",
+  "status": "complete",
+  "machine_type": "hangprinter_3",
+  "scene": "/home/torbjorn/repos/hp-sim5-worktrees/improve-encoder-based-cdpr-autocalibrati-77e680f9/public/usd_scenes/hp3_rigid_body.usda",
+  "firmware_config": "sys/config_hp3.g",
+  "recording_mode": "events",
+  "clock": "fixed steps; collector waits advance simulation time",
+  "dataset": "/home/torbjorn/repos/hp-sim5-worktrees/improve-encoder-based-cdpr-autocalibrati-77e680f9/output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-98170696/native/native/autocal-live-warm-sp10/sweeps.json",
+  "source_sha256": "f94233d6ae6185c145053533b24a56dfb65dd127fcf29e1a3449e85f7b8438f4",
+  "autocal_source_sha256": "31bf2e5eb75ac210bb2141779b934f0a1f8d472d90ee96f811625fd6becc6ac2",
+  "git_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+  "owned_services": [
+    {
+      "name": "recorder",
+      "pid": 156864
+    },
+    {
+      "name": "rrf",
+      "pid": 156902
+    },
+    {
+      "name": "physics",
+      "pid": 156906
+    },
+    {
+      "name": "collector",
+      "pid": 156925
+    },
+    {
+      "name": "collector",
+      "pid": 158633
+    },
+    {
+      "name": "collector",
+      "pid": 158837
+    },
+    {
+      "name": "collector",
+      "pid": 159236
+    },
+    {
+      "name": "collector",
+      "pid": 160022
+    },
+    {
+      "name": "collector",
+      "pid": 160433
+    },
+    {
+      "name": "collector",
+      "pid": 160847
+    }
+  ],
+  "extended_reference_ws": "ws://127.0.0.1:48907",
+  "owned_recorder": true,
+  "scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+  "firmware_config_sha256": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8",
+  "rrf_sha256": "9b2ac828a9ad0636640c92f7a1cbf042f9a04327505c8d699c54b1abb582f3fe",
+  "physics_engine": "rust-native",
+  "physics_artifact": {
+    "path": "/home/torbjorn/repos/hp-sim5-worktrees/improve-encoder-based-cdpr-autocalibrati-77e680f9/src/wasm/cable_solver/target/native/physics.node",
+    "sha256": "ff44a93e57d9594024b2905dd84a88332fa9cd4d7db7c6c3471bf80ac869ba61",
+    "build": {
+      "profile": "release",
+      "platform": "linux",
+      "arch": "x64",
+      "nodeApi": 8,
+      "artifactSha256": "ff44a93e57d9594024b2905dd84a88332fa9cd4d7db7c6c3471bf80ac869ba61",
+      "sources": {
+        "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+        "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+        "native/node_bridge.c": "c8d4ad5a269dcdd073c13fb0ce24f25fd009a38434842f1a7301264a8994ee85",
+        "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+        "src/engine.rs": "ee870b53e9feed2108f9deb951afe99fc9e714d40ea4d3c5e02181c0c8de012c",
+        "src/lib.rs": "088d64e1de9a45fe692d5994081050e0ab5ac9e9996d504261b2e8280649ed04"
+      },
+      "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+      "target": "x86_64-unknown-linux-gnu",
+      "rustflags": null,
+      "compiler": "cc",
+      "buildScriptSha256": "c810abe7feb293029384535690395e24f4f9d9f9ca6a854029bf24c59d1d866a"
+    }
+  },
+  "baked_scene_sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+  "initial_baked_scene_sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+  "service_url": "http://127.0.0.1:59039",
+  "rrf_url": "http://127.0.0.1:52105",
+  "services": [
+    156864,
+    156902,
+    156906
+  ],
+  "owned_rrf": true,
+  "firmware_initial": {
+    "M115": "FIRMWARE_NAME: RepRapFirmware for x86_64 (host) FIRMWARE_VERSION: 3.7.0-alpha.5 ELECTRONICS: RRF_Host FIRMWARE_DATE: 2026-05-21 17:47:47",
+    "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1900.00, -280.00\nB:1645.45, 950.00, -280.00\nC:-1645.45, 950.00, -280.00\nD:0.00, 0.00, 1900.00\nP:Print radius: 1500.0",
+    "M666": "M666 A1 Q0.0000\nR30.00:30.00:30.00:30.00\nU1:1:1:1\nO1:1:1:1\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI3.0:3.0:3.0:3.0\nX170.0:170.0:170.0:170.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0"
+  },
+  "stop_reason": "patience-or-threshold",
+  "applied_parameters": [
+    "M669 A0.00:-1902.65:-279.31 B1647.47:951.17:-279.31 C-1647.25:951.01:-279.31 D-0.04:0.14:1902.29"
+  ],
+  "firmware_final": {
+    "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1902.65, -279.31\nB:1647.47, 951.17, -279.31\nC:-1647.25, 951.01, -279.31\nD:-0.04, 0.14, 1902.29\nP:Print radius: 1500.0",
+    "M666": "M666 A1 Q0.0000\nR30.00:30.00:30.00:30.00\nU1:1:1:1\nO1:1:1:1\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI3.0:3.0:3.0:3.0\nX170.0:170.0:170.0:170.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0"
+  },
+  "wall_s": 346.86223713800064,
+  "kept_alive": false,
+  "service_wall_s": 345.90654764,
+  "step": 2590397,
+  "epoch": 0,
+  "total_steps": 2590397,
+  "dt_s": 0.002,
+  "simulated_s": 5180.794,
+  "collector_time_s": 5180.7940001379675,
+  "queue_length": 0,
+  "recording_drained": true,
+  "baked_scene_file": "baked-scene.usda",
+  "settings": {
+    "enableLayering": false,
+    "closedLoopMotorsEnabled": true,
+    "timeScale": 1
+  },
+  "physics_returncode": 0,
+  "normal_completion": true,
+  "recordings": [
+    {
+      "backend": "headless-js",
+      "scene_generation": null,
+      "recording_id": "6ed008d8025d483aa5003fd75f8f01c7",
+      "rrd": "/home/torbjorn/repos/hp-sim5-worktrees/improve-encoder-based-cdpr-autocalibrati-77e680f9/output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-98170696/native/native/autocal-live-warm-sp10/sweeps.headless/hangprinter-20261015T113737.406530Z-afdbc5f3.rrd",
+      "status": "finalized",
+      "start_step": 0,
+      "format_version": 1,
+      "extended_reference": true,
+      "autocal_complete": true,
+      "rejected_messages": [],
+      "recording_mode": "events",
+      "end_step": null,
+      "end_time_s": null,
+      "physics_samples": 0,
+      "event_count": 689474
+    }
+  ]
+}

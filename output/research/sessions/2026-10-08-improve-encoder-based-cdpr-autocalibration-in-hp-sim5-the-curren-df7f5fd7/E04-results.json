@@ -1,0 +1,14 @@
+{
+  "command": [
+    "/home/torbjorn/repos/hp-sim5/.venv/bin/python",
+    "autocal/tools/regress_calibration_logs.py",
+    "--jobs",
+    "2",
+    "--keep-going",
+    "--no-fail-score-mismatch",
+    "--color",
+    "never"
+  ],
+  "seconds": 206.3132089890023,
+  "returncode": 0
+}

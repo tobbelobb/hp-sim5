@@ -1,0 +1,131 @@
+[
+  {
+    "wall_s": 0.5060664389998237,
+    "construction_s": 0.1137967069998922,
+    "status": {
+      "connected": false,
+      "epoch": 0,
+      "step": 10000,
+      "sim_time_s": 20.0,
+      "collector_time_s": 20.000000000000014,
+      "dt_s": 0.002,
+      "speed_scale": 1.0,
+      "queue_length": 0,
+      "layering_flags": {
+        "enableLayering": true,
+        "layeringFrictionEffectiveRadius": true,
+        "layeringRenderWraps": true
+      },
+      "cable_half_widths_m": [
+        0.001
+      ],
+      "backend": "headless-js",
+      "physics_engine": "rust-wasm",
+      "physics_artifact": null,
+      "physics_wall_s": 0.3129979420000003,
+      "worker_wall_s": 0.3993584549991738,
+      "observation_wall_s": 0.07850388199767622,
+      "clock": "fixed-step; collector delays advance simulation time",
+      "error": null
+    },
+    "steps": 10000,
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/controlled-hp3-record0-wasm/run-0/observations.json",
+    "angles_deg": [
+      -4.038977613476521,
+      3.9573562027668583,
+      0.0028088686918414743,
+      0.057091809815158295
+    ],
+    "scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+    "repeat": 0,
+    "machine": "hp3",
+    "record": false,
+    "mode": "controlled"
+  },
+  {
+    "wall_s": 0.5185506529999202,
+    "construction_s": 0.08205273599992324,
+    "status": {
+      "connected": false,
+      "epoch": 0,
+      "step": 10000,
+      "sim_time_s": 20.0,
+      "collector_time_s": 20.000000000000014,
+      "dt_s": 0.002,
+      "speed_scale": 1.0,
+      "queue_length": 0,
+      "layering_flags": {
+        "enableLayering": true,
+        "layeringFrictionEffectiveRadius": true,
+        "layeringRenderWraps": true
+      },
+      "cable_half_widths_m": [
+        0.001
+      ],
+      "backend": "headless-js",
+      "physics_engine": "rust-wasm",
+      "physics_artifact": null,
+      "physics_wall_s": 0.3203103819999995,
+      "worker_wall_s": 0.41001689299810096,
+      "observation_wall_s": 0.07986324599914951,
+      "clock": "fixed-step; collector delays advance simulation time",
+      "error": null
+    },
+    "steps": 10000,
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/controlled-hp3-record0-wasm/run-1/observations.json",
+    "angles_deg": [
+      -4.038977613476521,
+      3.9573562027668583,
+      0.0028088686918414743,
+      0.057091809815158295
+    ],
+    "scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+    "repeat": 1,
+    "machine": "hp3",
+    "record": false,
+    "mode": "controlled"
+  },
+  {
+    "wall_s": 0.565537458000108,
+    "construction_s": 0.08309348500006308,
+    "status": {
+      "connected": false,
+      "epoch": 0,
+      "step": 10000,
+      "sim_time_s": 20.0,
+      "collector_time_s": 20.000000000000014,
+      "dt_s": 0.002,
+      "speed_scale": 1.0,
+      "queue_length": 0,
+      "layering_flags": {
+        "enableLayering": true,
+        "layeringFrictionEffectiveRadius": true,
+        "layeringRenderWraps": true
+      },
+      "cable_half_widths_m": [
+        0.001
+      ],
+      "backend": "headless-js",
+      "physics_engine": "rust-wasm",
+      "physics_artifact": null,
+      "physics_wall_s": 0.34490454000000026,
+      "worker_wall_s": 0.4464999530023306,
+      "observation_wall_s": 0.08824803000175052,
+      "clock": "fixed-step; collector delays advance simulation time",
+      "error": null
+    },
+    "steps": 10000,
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/controlled-hp3-record0-wasm/run-2/observations.json",
+    "angles_deg": [
+      -4.038977613476521,
+      3.9573562027668583,
+      0.0028088686918414743,
+      0.057091809815158295
+    ],
+    "scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+    "repeat": 2,
+    "machine": "hp3",
+    "record": false,
+    "mode": "controlled"
+  }
+]

@@ -1,0 +1,127 @@
+diff --git a/autocal/README.md b/autocal/README.md
+index 5d38d440..17e808c5 100644
+--- a/autocal/README.md
++++ b/autocal/README.md
+@@ -20,6 +20,10 @@ The first run still compiles; caching does not change calibration or stopping.
+ Set `JAX_COMPILATION_CACHE_DIR` to choose another directory, or
+ `JAX_ENABLE_COMPILATION_CACHE=false` to disable it. Cache files can be deleted.
+ 
++Within each spool/filter pass, repeated exact radius/buildup models reuse up to
++16 transformed datasets and their existing residual evaluations. This bounded
++cache is discarded after the pass and needs no setting.
++
+ From the root of the hp-sim5 repo, run:
+ 
+ ```bash
+diff --git a/autocal/filter_pass.py b/autocal/filter_pass.py
+index 38142a0c..3eadf59c 100644
+--- a/autocal/filter_pass.py
++++ b/autocal/filter_pass.py
+@@ -972,10 +972,23 @@ def estimate_effective_radii_with_spool_model(
+     outer_iters = max(1, int(spool_outer_iters))
+     inner_iters = max(1, int(spool_inner_iters))
+ 
++    dataset_params_cache: Dict[
++        Tuple[Tuple[float, ...], Tuple[float, ...]], Tuple[SpoolModelParams, dict]
++    ] = {}
++
+     def _build_dataset_and_params(
+         radii_mm: np.ndarray,
+         buildup_factor: np.ndarray,
+     ) -> Tuple[SpoolModelParams, dict]:
++        # Fixed pass inputs make exact spool parameters sufficient; reuse also
++        # enables the identity-keyed residual caches below. Never round keys.
++        key = (
++            tuple(np.asarray(radii_mm, dtype=float).reshape(-1)),
++            tuple(np.asarray(buildup_factor, dtype=float).reshape(-1)),
++        )
++        cached = dataset_params_cache.get(key)
++        if cached is not None:
++            return cached
+         spool_params = build_spool_model_params(
+             dataset,
+             base_radii_mm=base,
+@@ -993,7 +1006,11 @@ def estimate_effective_radii_with_spool_model(
+             spool_params,
+             prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
+         )
+-        return spool_params, transformed
++        result = (spool_params, transformed)
++        dataset_params_cache[key] = result
++        if len(dataset_params_cache) > 16:
++            del dataset_params_cache[next(iter(dataset_params_cache))]
++        return result
+ 
+     def _prior_cost(radii_mm: np.ndarray, buildup_factor: np.ndarray) -> float:
+         prior = 0.0
+diff --git a/autocal/tests/test_filter_pass_spool_fit.py b/autocal/tests/test_filter_pass_spool_fit.py
+index 6b4e78e9..bcb62a73 100644
+--- a/autocal/tests/test_filter_pass_spool_fit.py
++++ b/autocal/tests/test_filter_pass_spool_fit.py
+@@ -3593,7 +3593,8 @@ def test_filter_schedule_warmup_clears_mask_and_later_dynamic_rebuilds_it(monkey
+     assert bool(filter_schedule_history[4].get("constant_mask_applied", False)) is True
+ 
+ 
+-def test_spool_fit_reuses_single_eval_bundle_per_dataset_anchor(monkeypatch):
++@pytest.mark.parametrize("filter_schedule", [["warmup"], ["warmup", "warmup"]])
++def test_spool_fit_reuses_single_eval_bundle_per_dataset_anchor(monkeypatch, filter_schedule):
+     base = np.array([30.0, 30.0, 30.0], dtype=float)
+     detailed_calls = {}
+     row_calls = {}
+@@ -3686,6 +3687,33 @@ def test_spool_fit_reuses_single_eval_bundle_per_dataset_anchor(monkeypatch):
+                 }
+             ]
+ 
++    initialize = ac.run_initialize_pass
++    pass_datasets = []
++
++    def check_dataset_cache(**kwargs):
++        build = kwargs["build_dataset_and_params"]
++        radii = kwargs["base"].copy()
++        buildup = kwargs["modeled_b"].copy()
++        first = build(radii, buildup)
++        assert build(radii.copy(), buildup.copy()) is first
++        # Distinct values must stay distinct even below the optimizer's rounded
++        # search-cache precision. Anchor evaluations depend on these deltas.
++        nearby_radii = build(radii + 1e-10, buildup)
++        nearby_buildup = build(radii, buildup + 1e-10)
++        assert nearby_radii is not first
++        assert nearby_buildup is not first
++        assert nearby_radii is not nearby_buildup
++        assert build(radii + 1e-10, buildup) is nearby_radii
++        assert all(first[1] is not previous for previous in pass_datasets)
++        pass_datasets.append(first[1])
++        # Revisiting an evicted value rebuilds it, bounding retained datasets.
++        for i in range(20):
++            build(radii + i + 1.0, buildup)
++        assert build(radii, buildup) is not first
++        return initialize(**kwargs)
++
++    monkeypatch.setattr(ac, "run_initialize_pass", check_dataset_cache)
++
+     def fake_calibrate_elliptical(dataset_or_path, **kwargs):
+         _ = dataset_or_path
+         initial = np.asarray(kwargs.get("initial_guess"), dtype=float)
+@@ -3727,7 +3755,7 @@ def test_spool_fit_reuses_single_eval_bundle_per_dataset_anchor(monkeypatch):
+         "sweeps": [],
+     }
+     seed_anchors = np.ones((3, 2), dtype=float)
+-    _eff_r, _fit_anchors, _spool_params, _transformed, _fit_info = ac._estimate_effective_radii_with_spool_model(
++    _eff_r, _fit_anchors, _spool_params, _transformed, _fit_info = ac.estimate_effective_radii_with_spool_model(
+         dataset,
+         seed_anchors,
+         find_radii_mode="global",
+@@ -3759,10 +3787,13 @@ def test_spool_fit_reuses_single_eval_bundle_per_dataset_anchor(monkeypatch):
+         sigma_source="auto",
+         robust_debug=False,
+         scale_fix_levels=(),
++        filter_schedule=filter_schedule,
+         enable_prefit=False,
+         enable_bootstrap_anchor_refresh=False,
+     )
+ 
++    assert len(pass_datasets) == len(filter_schedule)
++    assert dataset["sweeps"] == []
+     assert detailed_calls
+     assert max(int(v) for v in detailed_calls.values()) == 1
+     if row_calls:

@@ -1,0 +1,7 @@
+[
+  {
+    "repeat": 0,
+    "status": "failed",
+    "error": "Physics worker exited: Error: ENOENT: no such file or directory, open 'output/research/sessions/2026-10-15-native-optimization/profile-recording/run-0/scene.usda'; see output/research/sessions/2026-10-15-native-optimization/profile-recording/run-0/physics-js.log"
+  }
+]

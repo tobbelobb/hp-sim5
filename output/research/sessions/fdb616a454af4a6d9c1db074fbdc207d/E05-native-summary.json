@@ -1,0 +1,146 @@
+{
+  "artifacts": {
+    "dataset": "/home/torbjorn/repos/hp-sim5/output/research/sessions/fdb616a454af4a6d9c1db074fbdc207d/native/491996aca88c4370b7f348d11777f532/2f047235396741f085988cd05f7c124a/sweeps.json",
+    "events": "/home/torbjorn/repos/hp-sim5/output/research/sessions/fdb616a454af4a6d9c1db074fbdc207d/native/491996aca88c4370b7f348d11777f532/2f047235396741f085988cd05f7c124a/events.jsonl",
+    "firmware_config": "/home/torbjorn/repos/hp-sim5/output/research/sessions/fdb616a454af4a6d9c1db074fbdc207d/native/491996aca88c4370b7f348d11777f532/firmware-config.g",
+    "manifest": "/home/torbjorn/repos/hp-sim5/output/research/sessions/fdb616a454af4a6d9c1db074fbdc207d/native/491996aca88c4370b7f348d11777f532/2f047235396741f085988cd05f7c124a/manifest.json",
+    "partial_points": "/home/torbjorn/repos/hp-sim5/output/research/sessions/fdb616a454af4a6d9c1db074fbdc207d/native/491996aca88c4370b7f348d11777f532/2f047235396741f085988cd05f7c124a/partial-points.jsonl",
+    "rrd": "/home/torbjorn/repos/hp-sim5/output/research/sessions/fdb616a454af4a6d9c1db074fbdc207d/native/491996aca88c4370b7f348d11777f532/2f047235396741f085988cd05f7c124a/recording.rrd",
+    "scene": "/home/torbjorn/repos/hp-sim5/output/research/sessions/fdb616a454af4a6d9c1db074fbdc207d/native/491996aca88c4370b7f348d11777f532/scene.usda"
+  },
+  "backend": "native-python",
+  "bridge_source_sha256": "1e29790142232ac0252ee380a06920f4ed69d8cba4e7ac51357aa6f8ff959080",
+  "clock": "fixed-step; collector delays advance simulation time",
+  "collector_options": {
+    "autoTuneForce": false,
+    "debugSweep": false,
+    "feed": 1400,
+    "firmware": "rrf",
+    "fixedTargets": [
+      0,
+      0
+    ],
+    "forceArgsProvided": true,
+    "forceBaseRadii": null,
+    "forceBuildupFactor": null,
+    "forceLow": 0.01,
+    "forceLowProvided": true,
+    "forceMax": 0.5,
+    "forceMaxProvided": true,
+    "forceMid": 0.05,
+    "forceMidProvided": true,
+    "klipperConfigPath": null,
+    "machineConfig": {
+      "axes": [
+        "X",
+        "Y",
+        "Z",
+        "U"
+      ],
+      "dimensions": 3,
+      "fixedTargetBoundsByAnchor": {
+        "0": {
+          "minFixed": 0
+        },
+        "1": {
+          "minFixed": 0
+        },
+        "2": {
+          "minFixed": 0
+        },
+        "3": {
+          "maxFixed": 0
+        }
+      },
+      "measuredMaxTravelScale": 0.8,
+      "mustBeInFixedSet": [
+        3
+      ],
+      "numAnchors": 4
+    },
+    "machineType": "hangprinter_4",
+    "maxSweepCount": 6,
+    "maxSweeps": null,
+    "maxTravelMm": null,
+    "motorIds": [
+      "40.0",
+      "41.0",
+      "42.0",
+      "43.0"
+    ],
+    "noAutoTuneForce": true,
+    "noiseMinSamples": 8,
+    "noiseSampleCount": 16,
+    "noiseSampleIntervalMs": 25,
+    "noiseSampleRateHz": 40,
+    "noiseSigmaFloorDeg": 0.02,
+    "outputFile": "/home/torbjorn/repos/hp-sim5/output/research/sessions/fdb616a454af4a6d9c1db074fbdc207d/native/491996aca88c4370b7f348d11777f532/2f047235396741f085988cd05f7c124a/sweeps.json",
+    "preserveBuildupFactor": false,
+    "projectZeroTension": false,
+    "returnToOrigin": true,
+    "sensorCollectionForce": 1,
+    "settleMs": 200,
+    "speedup": 1,
+    "sweepConfigFile": "/home/torbjorn/repos/hp-sim5/output/research/sessions/fdb616a454af4a6d9c1db074fbdc207d/native/491996aca88c4370b7f348d11777f532/2f047235396741f085988cd05f7c124a/configs.txt",
+    "sweepPoints": 6
+  },
+  "configs": [
+    {
+      "drive": 0,
+      "fixed": [
+        2,
+        3
+      ],
+      "sensor": 1
+    }
+  ],
+  "dataset_sha256": "c35f507b3549402fd556b71f5cc0b5809110402a625e0a7c4b126a8461f6ade2",
+  "dt_s": 0.002,
+  "end_step": 80415,
+  "events_end_byte": 12099030,
+  "events_sha256": "8b014838b5459d647140f72728ef7aa87e5193979f0b589f95f9154912c2b39d",
+  "events_start_byte": 3911,
+  "firmware_config_sha256": "148c3d4b067b1c843d45c384de2341a0c6e06296c6790588b19f02b06ac7774a",
+  "git_revision": "054362b79f13d429399aff75e3bebba08efa9d8f",
+  "kind": "native_collection",
+  "options": {
+    "noiseSamples": 16,
+    "returnToOrigin": true,
+    "sweepPoints": 6
+  },
+  "packages": {
+    "numpy": "2.4.3",
+    "rerun-sdk": "0.38.1",
+    "usd-core": "26.3",
+    "websockets": "16.0"
+  },
+  "partial_point_count": 12,
+  "point_count": 12,
+  "python": "/home/torbjorn/repos/hp-sim5/.venv/bin/python",
+  "python_source_sha256": "743cabcb72ec0fcd83cb7e8eeac325ab67d42f4e01120e1f4d6f80f01a5561e5",
+  "rrf_sha256": "9b2ac828a9ad0636640c92f7a1cbf042f9a04327505c8d699c54b1abb582f3fe",
+  "run_id": "2f047235396741f085988cd05f7c124a",
+  "scene_sha256": "7e2b8ffcb129ea6f8f56e2f85fbc9d716875478c0240203005ab715130706717",
+  "schema_version": 1,
+  "session_id": "491996aca88c4370b7f348d11777f532",
+  "start_step": 0,
+  "status": "complete",
+  "steps_executed": 80415,
+  "sweep_count": 1,
+  "validation": {
+    "autocal_residual_count": 12,
+    "calibration_accuracy": "Short preflight proves measurement ingestion; anchor fitting requires multiple held-out sweeps",
+    "drive_span_mm": [
+      77.15489757828732
+    ],
+    "firmware_anchor_residual_rms_mm": 0.2458569048503946,
+    "physical_sensor_span_mm": [
+      39.64951728218118,
+      39.6730792270831
+    ],
+    "point_count": 12,
+    "schema": "2.0"
+  },
+  "wall_s": 1693.1152779229997,
+  "wall_timeout_s": 1800.0
+}

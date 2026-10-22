@@ -1,0 +1,136 @@
+diff --git a/autocal/README.md b/autocal/README.md
+index e5626dc6..3fceb1bd 100644
+--- a/autocal/README.md
++++ b/autocal/README.md
+@@ -132,6 +132,11 @@ Ctrl-C during the loop requests best-so-far acceptance.
+ Final selection favors successful held-out predictions when available.
+ These scores measure fit and prediction quality. They do not prove anchor accuracy.
+ 
++Collection checks the latest 1.5 seconds of encoder readings for quiet settling,
++with a range limit scaled to the longer 5-second vibration window's drift allowance.
++It retains that longer history for the existing vibration check. This reduces
++waiting after transients while keeping point counts and automatic stopping.
++
+ On acceptance, RRF receives M669 for the selected anchors.
+ Fitted M666 spool settings are printed but are not sent automatically.
+ Klipper skips the M669 send.
+diff --git a/autocal/control/primitives/uncalibrated_actions.mjs b/autocal/control/primitives/uncalibrated_actions.mjs
+index bb3e13a5..49d81b37 100644
+--- a/autocal/control/primitives/uncalibrated_actions.mjs
++++ b/autocal/control/primitives/uncalibrated_actions.mjs
+@@ -99,20 +99,29 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions,
+   const startMs = nowFn();
+   const samples = [];
+ 
+-  // This function is only sent samples collected within the current window,
+-  // so looking at all samples is ok.
+   const isStable = () => {
+     if (samples.length < 2) {
+       return false;
+     }
+-    const windowSpan = samples[samples.length - 1].timestampMs - samples[0].timestampMs;
++    const nowMs = samples[samples.length - 1].timestampMs;
++    const cutoff = nowMs - windowMs;
++    let first = 0;
++    // Cover the full quiet window, including its boundary when polls have jitter.
++    // Older samples remain available for the longer vibration check.
++    while (first + 1 < samples.length && samples[first + 1].timestampMs <= cutoff) {
++      first += 1;
++    }
++    const windowSpan = nowMs - samples[first].timestampMs;
+     if (windowSpan < windowMs) {
+       return false;
+     }
++    // Preserve the drift rate allowed by the longer history while returning
++    // sooner after a transient. Larger stationary noise can use the vibration check.
++    const quietTolerance = tol * windowMs / vibrationMs;
+     for (let motorIdx = 0; motorIdx < motorIds.length; motorIdx += 1) {
+       let minVal = Number.POSITIVE_INFINITY;
+       let maxVal = Number.NEGATIVE_INFINITY;
+-      for (let i = 0; i < samples.length; i += 1) {
++      for (let i = first; i < samples.length; i += 1) {
+         const v = samples[i].anglesDeg[motorIdx];
+         if (!Number.isFinite(v)) {
+           return false;
+@@ -120,7 +129,7 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions,
+         minVal = Math.min(minVal, v);
+         maxVal = Math.max(maxVal, v);
+       }
+-      if (maxVal - minVal > tol + 1e-9) {
++      if (maxVal - minVal > quietTolerance + 1e-9) {
+         return false;
+       }
+     }
+diff --git a/autocal/control/tests/primitives/wait_for_stable_encoders.test.mjs b/autocal/control/tests/primitives/wait_for_stable_encoders.test.mjs
+index dc0ce95e..1ec1418b 100644
+--- a/autocal/control/tests/primitives/wait_for_stable_encoders.test.mjs
++++ b/autocal/control/tests/primitives/wait_for_stable_encoders.test.mjs
+@@ -1,6 +1,49 @@
+ import { waitForStableEncoders } from '../../primitives/uncalibrated_actions.mjs';
+ 
+ describe('waitForStableEncoders', () => {
++  async function replay(readingAt, { pollIntervalMs = 500, ...options } = {}) {
++    let nowMs = 0;
++    const send = async () => ({ reply: readingAt(nowMs) });
++    return waitForStableEncoders(send, ['40.0', '41.0'], 1, {
++      pollIntervalMs,
++      stableWindowMs: 1500,
++      toleranceDeg: 0.1,
++      timeoutMs: 15000,
++      sleepFn: async (ms) => { nowMs += ms; },
++      nowFn: () => nowMs,
++      ...options,
++    });
++  }
++
++  test('uses the recent quiet window while retaining older vibration history', async () => {
++    const result = await replay((ms) => `${ms < 1000 ? 10 : 0} 0`);
++    expect(result.elapsedMs).toBe(2500);
++    expect(result.anglesDeg).toEqual([0, 0]);
++  });
++
++  test('requires a full quiet window on every motor', async () => {
++    const result = await replay((ms) => `0 ${ms < 3000 ? 30 - ms / 100 : 0}`);
++    expect(result.elapsedMs).toBe(4500);
++  });
++
++  test('covers the quiet-window boundary when polls have jitter', async () => {
++    const result = await replay((ms) => `${ms < 1100 ? 10 : 0} 0`, {
++      pollIntervalMs: 510,
++    });
++    expect(result.elapsedMs).toBe(3060);
++  });
++
++  test('restarts the quiet window after a malformed encoder reply', async () => {
++    const result = await replay((ms) => (ms === 2000 ? 'invalid' : `${ms < 1000 ? 10 : 0} 0`));
++    expect(result.elapsedMs).toBe(4000);
++  });
++
++  test('rejects drift that fits the short-window range but exceeds the long-window rate', async () => {
++    await expect(replay((ms) => `${ms * 0.0008} 0`, {
++      toleranceDeg: 1.5,
++    })).rejects.toThrow('Timed out waiting for encoder stability');
++  });
++
+   test('resolves once encoder values stabilize', async () => {
+     const send = async () => ({ reply: '0 0' });
+ 
+diff --git a/research/catalog.md b/research/catalog.md
+index e31387a1..97b64741 100644
+--- a/research/catalog.md
++++ b/research/catalog.md
+@@ -4,6 +4,14 @@ These summaries describe archived evidence, not new experiments or a statement a
+ 
+ Four hash-named sessions contain substantive autocal work: three have final reports and one has an unfinished notebook. Missing research.md does not imply that no research happened.
+ 
++## Faster collection with guarded encoder settling
++
++Status: complete. Topics: autocalibration, encoder-only, HP4, settling, collection time, point thinning.
++
++Fresh replays reproduce 20 ranking/physical-error disagreements. Halving points worsens anchors on three of four fixtures. A small collector change checks the recent quiet window with a tighter range limit, retaining the longer vibration fallback. Matched 36-point production-JS/RRF collection takes 320.364 versus 429.668 simulation seconds (25.4% less); all eleven recorded calibration regressions and stopping decisions remain unchanged. New-data anchor accuracy and hardware transfer remain unverified.
++
++[Report, measurements and limitations](../output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-c812e7b9/report.md).
++
+ ## Autocal history ranking with held-out sweeps
+ 
+ Status: complete.

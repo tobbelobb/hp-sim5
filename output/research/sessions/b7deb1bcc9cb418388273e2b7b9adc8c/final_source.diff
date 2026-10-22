@@ -1,0 +1,122 @@
+diff --git a/autocal/README_elliptical_feature_calibration.md b/autocal/README_elliptical_feature_calibration.md
+index dd5bf670..59060a1a 100644
+--- a/autocal/README_elliptical_feature_calibration.md
++++ b/autocal/README_elliptical_feature_calibration.md
+@@ -66,6 +66,10 @@ Together these steps let the loop calibrate from scratch with minimal operator i
+ 5. **Collect and merge**
+    - Calls the node collector with the chosen sweep and merges it back into the dataset.
+ 
++Fit scores measure fit quality, not anchor accuracy.
++The calibration-log regression tool reports within-run score/ground-truth
++disagreements and selection regret separately from its reference-log comparison.
++
+ ## Pointwise cost mode (default)
+ 
+ The pointwise mode compares each measured point against the predicted ellipse (in the squared-length plane). It uses a robust loss with a GNC schedule:
+diff --git a/autocal/tests/test_regress_calibration_logs_output.py b/autocal/tests/test_regress_calibration_logs_output.py
+index c99be60c..de46dd5e 100644
+--- a/autocal/tests/test_regress_calibration_logs_output.py
++++ b/autocal/tests/test_regress_calibration_logs_output.py
+@@ -39,6 +39,36 @@ def _make_dataset_spec(name="demo", machine_type="slideprinter"):
+ DEMO_DATASET_SPEC = _make_dataset_spec()
+ 
+ 
++def test_history_ranking_audit_detects_worse_geometry_inside_unchanged_run():
++    spec = _make_dataset_spec()
++    worse = [(x + 10.0, y, z) for x, y, z in spec.true_anchors]
++    iterations = [
++        rcl.Iteration(anchors=spec.true_anchors, radii=spec.true_radii, history_rank_score=2.0),
++        rcl.Iteration(anchors=worse, radii=spec.true_radii, history_rank_score=1.0),
++    ]
++    audit = rcl.history_ranking_audit(iterations, spec)
++    assert "adjacent_rank_true_mismatches=1" in audit
++    assert "score_selected_iter=2 physical_best_iter=1" in audit
++    assert "selected_anchor_error_sum_mm=30.000" in audit
++    assert "selected_radius_error_sum_mm=0.000" in audit
++    assert "selection_regret_mm=30.000" in audit
++
++
++def test_history_ranking_audit_does_not_invent_missing_measurements():
++    assert "unavailable" in rcl.history_ranking_audit(
++        [rcl.Iteration(anchors=None, radii=None, rank_score=1.0)], _make_dataset_spec()
++    )
++
++
++def test_history_ranking_audit_does_not_compare_different_rank_scales():
++    spec = _make_dataset_spec()
++    iterations = [
++        rcl.Iteration(anchors=spec.true_anchors, radii=spec.true_radii, history_rank_score=2.0),
++        rcl.Iteration(anchors=spec.true_anchors, radii=spec.true_radii, rank_score=1.0),
++    ]
++    assert "mixed history/raw rank scales" in rcl.history_ranking_audit(iterations, spec)
++
++
+ def _parsed(*, fit_score_ui_ref=10.0, fit_score_ui_gen=11.0, rank_ref=2.0, rank_gen=3.0):
+     ref_summary = rcl.Params(
+         anchors=DEMO_DATASET_SPEC.true_anchors,
+diff --git a/autocal/tools/regress_calibration_logs.py b/autocal/tools/regress_calibration_logs.py
+index 6696ca0b..a4092f00 100755
+--- a/autocal/tools/regress_calibration_logs.py
++++ b/autocal/tools/regress_calibration_logs.py
+@@ -28,6 +28,9 @@ Exit code
+     no score/fit direction mismatches
+ - 1 otherwise
+ 
++Within-run ranking/ground-truth disagreements and selection regret are also
++reported as diagnostics, even when generated and reference logs are identical.
++
+ Tip: put this file somewhere like tools/regress_autocal.py and run from repo root.
+ """
+ 
+@@ -687,6 +690,33 @@ def iteration_effective_rank_score(iteration: Iteration) -> Optional[float]:
+     return None
+ 
+ 
++def history_ranking_audit(iterations: List[Iteration], spec: DatasetSpec) -> str:
++    """Audit within one run; equal regressions can still select worse geometry."""
++    rows = []
++    for index, iteration in enumerate(iterations, start=1):
++        error = error_to_true(iteration.anchors, iteration.radii, spec.true_anchors, spec.true_radii)
++        rank = iteration_effective_rank_score(iteration)
++        if error is not None and rank is not None and math.isfinite(error[0]) and math.isfinite(rank):
++            rows.append((index, rank, error, iteration_effective_rank_kind(iteration)))
++    if not rows:
++        return "HISTORY_AUDIT: unavailable (missing rank or ground-truth parameters)"
++    if len({row[3] for row in rows}) > 1:
++        return "HISTORY_AUDIT: unavailable (mixed history/raw rank scales)"
++    mismatches = sum(
++        right[0] == left[0] + 1 and (right[1] - left[1]) * (right[2][0] - left[2][0]) < 0
++        for left, right in zip(rows, rows[1:])
++    )
++    selected = min(rows, key=lambda row: row[1])
++    best = min(rows, key=lambda row: row[2][0])
++    return (
++        f"HISTORY_AUDIT: adjacent_rank_true_mismatches={mismatches} "
++        f"score_selected_iter={selected[0]} physical_best_iter={best[0]} "
++        f"selected_anchor_error_sum_mm={fmt(selected[2][1])} "
++        f"selected_radius_error_sum_mm={fmt(selected[2][2] / (2 * math.pi))} "
++        f"selection_regret_mm={fmt(selected[2][0] - best[2][0])} (diagnostic)"
++    )
++
++
+ def iteration_effective_rank_kind(iteration: Iteration) -> Optional[str]:
+     if iteration.history_rank_score is not None:
+         return "history_rank"
+@@ -725,6 +755,7 @@ def report_dataset(
+ 
+     # ---- Summary ----
+     lines.append(f"\n========= {name} =========")
++    lines.append(history_ranking_audit(gen.iterations, dataset_spec))
+     if ref.summary is None:
+         lines.append("REF: ERROR: could not parse calibration summary")
+         ok = False
+@@ -1348,7 +1379,8 @@ def main() -> int:
+                 print(
+                     f"RUN_TRACKER: final_score={fmt(final_score)} "
+                     f"(sum_true_err_total_delta + sum_true_mean_delta, "
+-                    f"sum_true_mean_delta={fmt(sum_true_mean_delta)})"
++                    f"sum_true_mean_delta={fmt(sum_true_mean_delta)}) "
++                    f"[diagnostic only; does not establish selected calibration improvement]"
+                 )
+             else:
+                 print("RUN_TRACKER: sum_true_err_total_delta(gen-ref)=N/A (parse missing)")

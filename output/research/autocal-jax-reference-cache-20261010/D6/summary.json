@@ -1,0 +1,233 @@
+{
+  "trial": "D6",
+  "mode": "regression-warm",
+  "elapsed_s": 24.629371556999104,
+  "returncode": 0,
+  "regression_pass": true,
+  "compatibility_warnings": 0,
+  "hits": null,
+  "misses": null,
+  "cache_entries_before": 165,
+  "numerical": {
+    "summary": {
+      "anchors": [
+        [
+          0.0,
+          -2443.33,
+          -279.56
+        ],
+        [
+          708.79,
+          401.97,
+          -279.56
+        ],
+        [
+          -2294.4,
+          1381.21,
+          -279.56
+        ],
+        [
+          235.94,
+          124.93,
+          1075.91
+        ]
+      ],
+      "radii": [
+        30.0,
+        30.0,
+        30.0,
+        30.0
+      ],
+      "fit_score_ui": 8161.0
+    },
+    "iterations": [
+      {
+        "anchors": [
+          [
+            0.0,
+            -1823.08,
+            -1042.56
+          ],
+          [
+            1578.53,
+            911.1,
+            -1042.56
+          ],
+          [
+            -1577.04,
+            910.58,
+            -1042.56
+          ],
+          [
+            -0.76,
+            0.43,
+            3384.08
+          ]
+        ],
+        "radii": [
+          30.0,
+          30.0,
+          30.0,
+          30.0
+        ],
+        "fit_score_ui": 16.41,
+        "rank_score": 16.41,
+        "history_rank_score": 16.41
+      },
+      {
+        "anchors": [
+          [
+            0.0,
+            -2744.03,
+            -250.38
+          ],
+          [
+            949.54,
+            942.99,
+            -250.38
+          ],
+          [
+            -3080.45,
+            0.0,
+            -250.38
+          ],
+          [
+            2486.92,
+            2459.49,
+            2880.64
+          ]
+        ],
+        "radii": [
+          30.0,
+          30.0,
+          30.0,
+          30.0
+        ],
+        "fit_score_ui": 107.6,
+        "rank_score": 107.6,
+        "history_rank_score": 107.4
+      },
+      {
+        "anchors": [
+          [
+            0.0,
+            -966.9,
+            -301.58
+          ],
+          [
+            830.36,
+            362.13,
+            -301.58
+          ],
+          [
+            -5000.0,
+            4666.42,
+            -301.58
+          ],
+          [
+            406.44,
+            83.4,
+            0.0
+          ]
+        ],
+        "radii": [
+          30.0,
+          30.0,
+          30.0,
+          30.0
+        ],
+        "fit_score_ui": 100.0,
+        "rank_score": 100.0,
+        "history_rank_score": 99.75
+      },
+      {
+        "anchors": [
+          [
+            0.0,
+            -2443.33,
+            -279.56
+          ],
+          [
+            708.79,
+            401.97,
+            -279.56
+          ],
+          [
+            -2294.4,
+            1381.21,
+            -279.56
+          ],
+          [
+            235.94,
+            124.93,
+            1075.91
+          ]
+        ],
+        "radii": [
+          30.0,
+          30.0,
+          30.0,
+          30.0
+        ],
+        "fit_score_ui": 8161.0,
+        "rank_score": 8161.0,
+        "history_rank_score": 8161.0
+      },
+      {
+        "anchors": [
+          [
+            0.0,
+            -2505.55,
+            -440.22
+          ],
+          [
+            2519.93,
+            1927.72,
+            -440.22
+          ],
+          [
+            -1047.95,
+            846.62,
+            -440.22
+          ],
+          [
+            -191.17,
+            -116.32,
+            1188.82
+          ]
+        ],
+        "radii": [
+          30.0,
+          30.0,
+          30.0,
+          30.0
+        ],
+        "fit_score_ui": 19460.0,
+        "rank_score": 19460.0,
+        "history_rank_score": 19460.0
+      }
+    ]
+  },
+  "new_cache_entries": [
+    "jit__objective_core-00c143ca275baea0cb81375afb4a048450248f4756e82194cab1b77e53a919b1-cache",
+    "jit__objective_core-08f18a2ef6e1b78914a77c6716f8580e180445b24b6a99ff0daf5cdd60123567-cache",
+    "jit__objective_core-190373ff12ec4939ad90b23cdd6813c29a189b85026c328c854d99171491dc28-cache",
+    "jit__objective_core-19960b6d0925fd7c949e50adb04817c022931b424b912a50eb57e25d37a02e3e-cache",
+    "jit__objective_core-440109becc745fa24c09a0cd8ad94dfe8979d86fb8e8b3f5a27ff664d650e2c4-cache",
+    "jit__objective_core-491a991a30c57262985f75ecc3936ad44b583c105c4ebf9a1df115d1e4a256d0-cache",
+    "jit__objective_core-5ad78883ff92b623485cc22631bac37789d417828404b7bf20275e5c67e1f0a1-cache",
+    "jit__objective_core-5cc9c2ed366ae4ab0b804cb77629079e270e8d05ecdd14a823236f34ae1505f3-cache",
+    "jit__objective_core-60cb1a4ebc7bce46d7807bae8dce0958af1a21c3f1720a373ccf92a129cae5de-cache",
+    "jit__objective_core-64c2d1e49c88bb8373bc1c195cc6763a73d3a4c8e0c9146a0fcc118cd57efafb-cache",
+    "jit__objective_core-64ca2015cc5fbd5115dab503ce42e2cd5015233d6d507267b3b072e4c21f24b7-cache",
+    "jit__objective_core-7c3d0232b0cb4962d45f3481800b420fce1eb9b7eeb7a3125a4058067d1c26fc-cache",
+    "jit__objective_core-9d438b14f620f317eb036a1eaeb0ee2a6cf630cb536bd889b86103f1222bd208-cache",
+    "jit__objective_core-e975ceb73d234f400aa7ddf96f2d74015121c937a88315d01d66b20a0e63adfe-cache",
+    "jit__objective_core-f54a725835d1d5cf855f39122d8744fdef8c9f0f61d2d80d037967db04d12b60-cache",
+    "jit__objective_core-f91e3ebefd219dd6a746b846d5a33f9e2f3c7dae683fc1ef02e963ce1f3f1611-cache",
+    "jit_convert_element_type-960658fe785af98933b403e6367f78793ac83965a3d87066a3e6ae80586f89c3-cache"
+  ],
+  "exact_numerical_equal": true,
+  "exact_full_precision_metrics_equal": true,
+  "compiler_logs_collected": false
+}

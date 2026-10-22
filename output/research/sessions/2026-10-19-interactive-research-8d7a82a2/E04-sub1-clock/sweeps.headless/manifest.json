@@ -1,0 +1,169 @@
+{
+  "backend": "headless-js",
+  "status": "failed",
+  "machine_type": "hangprinter_4",
+  "scene": "/home/torbjorn/repos/hp-sim5/public/usd_scenes/hp4_rigid_body.usda",
+  "firmware_config": "sys/config_hp4.g",
+  "recording_mode": "sampled",
+  "clock": "fixed steps; collector waits advance simulation time",
+  "dataset": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-19-interactive-research-8d7a82a2/E04-sub1-clock/sweeps.json",
+  "source_sha256": "25d1c048a6cbb4402334c6ad5967a5df61105555eda507bfa62a8c9241d2570b",
+  "autocal_source_sha256": "713fe8ccc9930334d7d70be5caeba6edb6e54e82ecca93ecd9732a23dcd953f7",
+  "git_revision": "3b3a7feca285a8b0d9e7d20a2652a66b0542e605",
+  "owned_services": [
+    {
+      "name": "recorder",
+      "pid": 15
+    },
+    {
+      "name": "rrf",
+      "pid": 81
+    },
+    {
+      "name": "physics",
+      "pid": 85
+    },
+    {
+      "name": "collector",
+      "pid": 96
+    }
+  ],
+  "extended_reference_ws": "ws://127.0.0.1:35841",
+  "owned_recorder": true,
+  "scene_sha256": "c0944e6a6e446cc557fa009ca6926a98546568130be6784e7aa44bda5c507b85",
+  "firmware_config_sha256": "148c3d4b067b1c843d45c384de2341a0c6e06296c6790588b19f02b06ac7774a",
+  "rrf_sha256": "9b2ac828a9ad0636640c92f7a1cbf042f9a04327505c8d699c54b1abb582f3fe",
+  "physics_engine": "rust-native",
+  "physics_artifact": {
+    "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+    "sha256": "f1f57eb2682af10d7926e24e3cb5aef2067ac104ee0a5ea71200fff62873432f",
+    "build": {
+      "profile": "release",
+      "platform": "linux",
+      "arch": "x64",
+      "nodeApi": 8,
+      "artifactSha256": "f1f57eb2682af10d7926e24e3cb5aef2067ac104ee0a5ea71200fff62873432f",
+      "sources": {
+        "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+        "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+        "native/node_bridge.c": "c8d4ad5a269dcdd073c13fb0ce24f25fd009a38434842f1a7301264a8994ee85",
+        "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+        "src/engine.rs": "b28b7c37307516f3600cc7ab592ca9ccf1c334de41afa6ba05fb593324c615cb",
+        "src/lib.rs": "1e47467ce2f7c419c6d92289f2648fe37d7bdc9dca4f9f57e73a93c1d40d687f"
+      },
+      "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+      "target": "x86_64-unknown-linux-gnu",
+      "rustflags": "-C\u001ftarget-cpu=native\u001f-C\u001fprofile-use=/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/pgo-X74M4y/merged.profdata",
+      "compiler": "cc",
+      "buildScriptSha256": "c810abe7feb293029384535690395e24f4f9d9f9ca6a854029bf24c59d1d866a",
+      "pgo": {
+        "profile": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/pgo-X74M4y/merged.profdata",
+        "sha256": "7d99524e28060a05b0bc674529d1c298544511f51f83babbd96cb01334d1d8b7",
+        "training": {
+          "worlds": [
+            {
+              "machine": "hp3",
+              "layering": true,
+              "dt": 0.002,
+              "steps": 10000,
+              "bakedSceneSha256": "9e5ef288d617fdba1691e7486b399b7fc116756e936055e009c3662fa9ce1916"
+            },
+            {
+              "machine": "hp3",
+              "layering": false,
+              "dt": 0.002,
+              "steps": 10000,
+              "bakedSceneSha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e"
+            },
+            {
+              "machine": "hp4",
+              "layering": true,
+              "dt": 0.002,
+              "steps": 10000,
+              "bakedSceneSha256": "7ec5a656a3cd8f9b2c18932caece7f86a3e01a2132bd0149ed8fa4445d85e361"
+            },
+            {
+              "machine": "hp4",
+              "layering": false,
+              "dt": 0.002,
+              "steps": 10000,
+              "bakedSceneSha256": "5d5de72ea49d36fa1616521b02f23719473665bd10b6b5ba8acb841e2dac6961"
+            }
+          ],
+          "steps": 40000,
+          "trainer": "/home/torbjorn/repos/hp-sim5/scripts/train_native_physics.mjs"
+        },
+        "trainerSha256": "1f35ad484bbe502cb7a1e422871707db04fa14e530547405775c8717e64bbd18"
+      }
+    }
+  },
+  "baked_scene_sha256": "5d5de72ea49d36fa1616521b02f23719473665bd10b6b5ba8acb841e2dac6961",
+  "initial_baked_scene_sha256": "5d5de72ea49d36fa1616521b02f23719473665bd10b6b5ba8acb841e2dac6961",
+  "service_url": "http://127.0.0.1:37201",
+  "rrf_url": "http://127.0.0.1:50117",
+  "services": [
+    15,
+    81,
+    85
+  ],
+  "owned_rrf": true,
+  "firmware_initial": {
+    "M115": "FIRMWARE_NAME: RepRapFirmware for x86_64 (host) FIRMWARE_VERSION: 3.7.0-alpha.5 ELECTRONICS: RRF_Host FIRMWARE_DATE: 2026-05-21 17:47:47",
+    "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1900.00, -280.00\nB:1645.45, 950.00, -280.00\nC:-1645.45, 950.00, -280.00\nD:0.00, 0.00, 1900.00\nP:Print radius: 1500.0",
+    "M666": "M666 A1 Q0.0000\nR30.00:30.00:30.00:30.00\nU2:2:2:4\nO1:1:1:1\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI10.0:10.0:10.0:10.0\nX40.0:40.0:40.0:40.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0"
+  },
+  "wall_s": 114.8949652260053,
+  "error": "Command '['node', 'autocal/control/cli/collect_sweep_data.mjs', '--machineType', 'hangprinter_4', '--sweep-config-file', 'output/research/sessions/2026-10-19-interactive-research-8d7a82a2/E04-sub1-clock/sweeps.bootstrap_cfg.txt', '--output-file', 'output/research/sessions/2026-10-19-interactive-research-8d7a82a2/E04-sub1-clock/sweeps.json', '--no-auto-tune-force', '--force-low', '0.0223', '--force-mid', '0.4455', '--force-max', '6.5739', '--physics-substeps', '1', '--speedup', '10', '--debug-sweep-actions', '--server', 'http://127.0.0.1:50117', '--headless-url', 'http://127.0.0.1:37201', '--no-spawn-rrf-simulator', '--firmware', 'rrf', '--sim', '--return-to-origin']' returned non-zero exit status 1.",
+  "kept_alive": false,
+  "service_wall_s": 114.213215078,
+  "step": 257710,
+  "epoch": 0,
+  "total_steps": 257710,
+  "dt_s": 0.002,
+  "simulated_s": 515.42,
+  "collector_time_s": 515.4200000016357,
+  "queue_length": 4,
+  "recording_drained": true,
+  "baked_scene_file": "baked-scene.usda",
+  "settings": {
+    "enableLayering": false,
+    "closedLoopMotorsEnabled": true,
+    "physicsSubsteps": 1,
+    "timeScale": 10
+  },
+  "physics_returncode": 0,
+  "normal_completion": false,
+  "recordings": [
+    {
+      "backend": "headless-js",
+      "scene_generation": 0,
+      "recording_id": "4ca30ada467a4b4fa9df5f99caeed64b",
+      "rrd": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-19-interactive-research-8d7a82a2/E04-sub1-clock/sweeps.headless/hangprinter-20261019T211620.075071Z-7cfac741.rrd",
+      "status": "finalized",
+      "start_step": 0,
+      "format_version": 1,
+      "extended_reference": true,
+      "autocal_complete": false,
+      "rejected_messages": [],
+      "sample_stride": 100,
+      "geometry_detail": "compact",
+      "headless_segments": [
+        {
+          "session": "31637528-d633-4177-8ad1-6f3c51c17f43",
+          "generation": 0,
+          "start_step": 0,
+          "start_time_s": 0,
+          "start_wall_time_ms": 1792444580291,
+          "end_step": 257700,
+          "end_time_s": 515.4000000016362,
+          "end_wall_time_ms": 1792444694461
+        }
+      ],
+      "headless_session": "31637528-d633-4177-8ad1-6f3c51c17f43",
+      "end_step": 257700,
+      "end_time_s": 515.4000000016362,
+      "physics_samples": 2578,
+      "event_count": 57247
+    }
+  ]
+}

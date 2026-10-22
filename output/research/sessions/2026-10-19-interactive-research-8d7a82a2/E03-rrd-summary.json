@@ -1,0 +1,186 @@
+[
+  {
+    "reference": "004",
+    "rrd": "output/extended-autocal/no-buildup-reference-004/hangprinter-20261016T092144.564660Z-35df9491.rrd",
+    "bytes": 404251714,
+    "body_path": "/world/machines/machine-0/bodies/Effector_58",
+    "samples": 72645,
+    "first": [
+      0.0,
+      3.728395370217186e-11,
+      -5.185184746847593e-12,
+      0.0903037041425705
+    ],
+    "last": [
+      1452.861999979,
+      0.07337190955877304,
+      0.27298253774642944,
+      0.11129539459943771
+    ],
+    "late_30s_range_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "contexts": [
+      {
+        "url": "http://localhost:5173/hp-sim5/hp-sim-3d/?gcode_ws=ws://localhost:8790&rerun_ws=ws://127.0.0.1:9877&extended_autocal=1",
+        "settings": {
+          "gravity": {
+            "x": 0,
+            "y": 0,
+            "z": -9.819999694824219
+          },
+          "dt": 0.002,
+          "timeScale": 1,
+          "enableLayering": true,
+          "layeringFrictionEffectiveRadius": true,
+          "closedLoopMotorsEnabled": false,
+          "pauseState": {
+            "paused": true
+          }
+        },
+        "inspection": {
+          "segments": null,
+          "metadata": null,
+          "color": "#1e90ff",
+          "visible": false,
+          "dirty": false,
+          "key": null
+        }
+      },
+      {
+        "url": "http://localhost:5173/hp-sim5/hp-sim-3d/?gcode_ws=ws://localhost:8790&rerun_ws=ws://127.0.0.1:9877&extended_autocal=1",
+        "settings": {
+          "gravity": {
+            "x": 0,
+            "y": 0,
+            "z": -9.819999694824219
+          },
+          "dt": 0.002,
+          "timeScale": 25,
+          "enableLayering": false,
+          "layeringFrictionEffectiveRadius": false,
+          "closedLoopMotorsEnabled": true,
+          "pauseState": {
+            "paused": false
+          }
+        },
+        "inspection": {
+          "segments": null,
+          "metadata": null,
+          "color": "#1e90ff",
+          "visible": false,
+          "dirty": false,
+          "key": null
+        }
+      }
+    ],
+    "event_kinds": {
+      "scene_context": 2,
+      "run_start": 1,
+      "text_log": 39,
+      "artifact": 3,
+      "collection_start": 2,
+      "external_payload_received": 34381,
+      "simulation_settings_applied": 2,
+      "gcode_send": 1679,
+      "gcode_reply": 1679,
+      "encoder_response_sent": 1436,
+      "collection_exit": 1
+    }
+  },
+  {
+    "reference": "005",
+    "rrd": "output/extended-autocal/no-buildup-reference-005/hangprinter-20261016T102449.240032Z-0ae78de7.rrd",
+    "bytes": 1898551640,
+    "body_path": "/world/machines/machine-0/bodies/Effector_58",
+    "samples": 301791,
+    "first": [
+      0.0,
+      3.728395370217186e-11,
+      -5.185184746847593e-12,
+      0.0903037041425705
+    ],
+    "last": [
+      6035.782000312,
+      -0.018266508355736732,
+      -0.6921534538269043,
+      0.3381201922893524
+    ],
+    "late_30s_range_m": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "contexts": [
+      {
+        "url": "http://localhost:5173/hp-sim5/hp-sim-3d/?gcode_ws=ws://localhost:8790&rerun_ws=ws://127.0.0.1:9877&extended_autocal=1",
+        "settings": {
+          "gravity": {
+            "x": 0,
+            "y": 0,
+            "z": -9.819999694824219
+          },
+          "dt": 0.002,
+          "timeScale": 1,
+          "enableLayering": true,
+          "layeringFrictionEffectiveRadius": true,
+          "closedLoopMotorsEnabled": false,
+          "pauseState": {
+            "paused": true
+          }
+        },
+        "inspection": {
+          "segments": null,
+          "metadata": null,
+          "color": "#1e90ff",
+          "visible": false,
+          "dirty": false,
+          "key": null
+        }
+      },
+      {
+        "url": "http://localhost:5173/hp-sim5/hp-sim-3d/?gcode_ws=ws://localhost:8790&rerun_ws=ws://127.0.0.1:9877&extended_autocal=1",
+        "settings": {
+          "gravity": {
+            "x": 0,
+            "y": 0,
+            "z": -9.819999694824219
+          },
+          "dt": 0.002,
+          "timeScale": 25,
+          "enableLayering": false,
+          "layeringFrictionEffectiveRadius": false,
+          "closedLoopMotorsEnabled": true,
+          "pauseState": {
+            "paused": false
+          }
+        },
+        "inspection": {
+          "segments": null,
+          "metadata": null,
+          "color": "#1e90ff",
+          "visible": false,
+          "dirty": false,
+          "key": null
+        }
+      }
+    ],
+    "event_kinds": {
+      "run_start": 2,
+      "text_log": 631,
+      "artifact": 31,
+      "collection_start": 12,
+      "collection_exit": 6,
+      "scene_context": 2,
+      "external_payload_received": 549001,
+      "simulation_settings_applied": 10,
+      "gcode_send": 6456,
+      "gcode_reply": 6456,
+      "encoder_response_sent": 5837,
+      "measurement": 120,
+      "collection_complete": 4
+    }
+  }
+]

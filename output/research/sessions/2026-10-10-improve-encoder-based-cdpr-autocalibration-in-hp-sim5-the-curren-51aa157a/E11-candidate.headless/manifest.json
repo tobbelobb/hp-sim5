@@ -1,0 +1,16 @@
+{
+  "backend": "headless-js",
+  "status": "failed",
+  "machine_type": "hangprinter_3",
+  "scene": "/home/torbjorn/repos/hp-sim5/public/usd_scenes/hp3_rigid_body.usda",
+  "firmware_config": "sys/config_hp3.g",
+  "clock": "fixed steps; collector waits advance simulation time",
+  "dataset": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E11-candidate.json",
+  "source_sha256": "df264cb5832773ea62235c00e878b382690b27eb94e89fef332146ccad744270",
+  "autocal_source_sha256": "197697b463693c45518bc2db698657dabb74777351316865ae366120a4879bde",
+  "git_revision": "383c6d453a2027fb99ebc7936862053878661e57",
+  "wall_s": 0.17867764800030272,
+  "error": "[Errno 1] Operation not permitted",
+  "kept_alive": false,
+  "normal_completion": false
+}

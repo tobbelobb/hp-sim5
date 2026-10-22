@@ -1,0 +1,7 @@
+{
+  "event_count": 16162,
+  "batches": 64,
+  "physics_ack_after_burst_seconds": 0.1753011239998159,
+  "rrd": "output/research/2026-10-10-autocal-recorder-waits/batch-benchmark/websocket/hangprinter-20261010T142905.945697Z-b5a52133.rrd",
+  "all_envelopes_preserved": true
+}

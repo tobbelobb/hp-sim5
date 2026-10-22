@@ -1,0 +1,32 @@
+{
+  "pair-native": {
+    "body_z_range_mm": 0.5802483957809551,
+    "corner_AL_z_range_mm": 0.7829648957681096,
+    "angular_speed_max_rad_s": 0.35383429837260266
+  },
+  "pair-no-over-js": {
+    "body_z_range_mm": 0.6009321028491998,
+    "corner_AL_z_range_mm": 0.7848143509078531,
+    "angular_speed_max_rad_s": 0.3717540609415258
+  },
+  "pair-clamp-js": {
+    "body_z_range_mm": 7.054079542712088e-11,
+    "corner_AL_z_range_mm": 3.2460145682478014e-11,
+    "angular_speed_max_rad_s": 0.0
+  },
+  "pair-clamp-native": {
+    "body_z_range_mm": 3.1280533718813786e-11,
+    "corner_AL_z_range_mm": 3.319566843629218e-11,
+    "angular_speed_max_rad_s": 0.0
+  },
+  "pair-halfdt-correct-native": {
+    "body_z_range_mm": 1.4183099139586375e-11,
+    "corner_AL_z_range_mm": 3.223810107755298e-11,
+    "angular_speed_max_rad_s": 0.0
+  },
+  "pair-clamp-wasm": {
+    "body_z_range_mm": 4.246603069191224e-11,
+    "corner_AL_z_range_mm": 1.4156731342751527e-10,
+    "angular_speed_max_rad_s": 0.0
+  }
+}

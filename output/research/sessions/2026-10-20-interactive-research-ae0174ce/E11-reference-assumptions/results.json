@@ -1,0 +1,36 @@
+{
+  "reference_sweep": "sweep_005",
+  "point_index": 9,
+  "reference_point_residuals": [
+    {
+      "scale": 0.95,
+      "original_reference_point_residual": 104.92005960635295,
+      "rebased_reference_point_residual": -5.661698973256272e-12
+    },
+    {
+      "scale": 1.0,
+      "original_reference_point_residual": 0.1772965615212253,
+      "rebased_reference_point_residual": -1.4562597471586785e-11
+    },
+    {
+      "scale": 1.05,
+      "original_reference_point_residual": -93.54059134118772,
+      "rebased_reference_point_residual": 0.0
+    }
+  ],
+  "fitted_old_reference_closure_rms_mm": 0.08350165798120172,
+  "fitted_old_reference_closure_mm": [
+    0.09351675144785077,
+    0.09351911592989381,
+    0.09351373881145264,
+    0.04067038665016298
+  ],
+  "reference_point_all_rebased_lengths_zero": {
+    "fixed": [
+      0.0,
+      0.0
+    ],
+    "drive": 0.0,
+    "sensor": 0.0
+  }
+}

@@ -1,0 +1,650 @@
+[
+  {
+    "case": "noise",
+    "seed": 7,
+    "selection": "fixed",
+    "elapsed_seconds": 0.4054662870039465,
+    "movements": 144,
+    "anchor_error_sum_mm": 29.999437866431826,
+    "radius_error_sum_mm": 0.756090981067338,
+    "trace": [
+      {
+        "iteration": 0,
+        "informative_sweep": "sweep_1_0",
+        "informative_encoder_residual_mm": 2.014121987372223,
+        "validation_sweep": "sweep_1_1",
+        "prediction_before_mm": 1.8448724327752966,
+        "prediction_after_mm": 0.2975345175909036,
+        "accepted": true,
+        "nfev": 20
+      },
+      {
+        "iteration": 1,
+        "informative_sweep": "sweep_1_2",
+        "informative_encoder_residual_mm": 0.3424656775929258,
+        "validation_sweep": "sweep_2_0",
+        "prediction_before_mm": 0.37948189454118186,
+        "prediction_after_mm": 0.38236013417211817,
+        "accepted": false,
+        "nfev": 8
+      },
+      {
+        "iteration": 2,
+        "informative_sweep": "sweep_2_1",
+        "informative_encoder_residual_mm": 0.349041134456676,
+        "validation_sweep": "sweep_2_2",
+        "prediction_before_mm": 0.4383810448507698,
+        "prediction_after_mm": 0.2941135116413409,
+        "accepted": true,
+        "nfev": 7
+      }
+    ],
+    "conic_rmse_mm": 0.39900294497287936,
+    "conic_median_mm": 0.28637033344925145,
+    "conic_coverage": 1.0,
+    "sensor_rmse_base_mm": 0.46164262579005144,
+    "sensor_median_base_mm": 0.34062149396671715,
+    "sensor_failure_rate": 0.0,
+    "ambiguous_fraction": 1.0,
+    "sweep_sensor_rmse_base_mm": [
+      0.5307461356730833,
+      0.46866844385496065,
+      0.37148374263439726
+    ],
+    "points": 48
+  },
+  {
+    "case": "noise",
+    "seed": 7,
+    "selection": "d_optimal",
+    "elapsed_seconds": 0.35735702099918853,
+    "movements": 144,
+    "anchor_error_sum_mm": 16.377242226226358,
+    "radius_error_sum_mm": 0.02568735759123797,
+    "trace": [
+      {
+        "iteration": 0,
+        "informative_sweep": "sweep_2_1",
+        "informative_encoder_residual_mm": 1.5779869659672676,
+        "validation_sweep": "sweep_2_2",
+        "prediction_before_mm": 1.6813458269347148,
+        "prediction_after_mm": 0.34642182137031935,
+        "accepted": true,
+        "nfev": 13
+      },
+      {
+        "iteration": 1,
+        "informative_sweep": "sweep_2_0",
+        "informative_encoder_residual_mm": 0.40461502084727585,
+        "validation_sweep": "sweep_1_0",
+        "prediction_before_mm": 0.3329370760259387,
+        "prediction_after_mm": 0.23072206720791955,
+        "accepted": true,
+        "nfev": 7
+      },
+      {
+        "iteration": 2,
+        "informative_sweep": "sweep_1_2",
+        "informative_encoder_residual_mm": 0.32636080885222263,
+        "validation_sweep": "sweep_1_1",
+        "prediction_before_mm": 0.32402228966083857,
+        "prediction_after_mm": 0.3447902912306193,
+        "accepted": false,
+        "nfev": 7
+      }
+    ],
+    "conic_rmse_mm": 0.39184446050347227,
+    "conic_median_mm": 0.26873729042673017,
+    "conic_coverage": 1.0,
+    "sensor_rmse_base_mm": 0.4573033151904404,
+    "sensor_median_base_mm": 0.3500425329194207,
+    "sensor_failure_rate": 0.0,
+    "ambiguous_fraction": 1.0,
+    "sweep_sensor_rmse_base_mm": [
+      0.5455884913903849,
+      0.4575955247494238,
+      0.34686957209326535
+    ],
+    "points": 48
+  },
+  {
+    "case": "noise",
+    "seed": 19,
+    "selection": "fixed",
+    "elapsed_seconds": 0.3325561609963188,
+    "movements": 144,
+    "anchor_error_sum_mm": 20.844601065586033,
+    "radius_error_sum_mm": 0.10467407765434444,
+    "trace": [
+      {
+        "iteration": 0,
+        "informative_sweep": "sweep_1_0",
+        "informative_encoder_residual_mm": 1.897914402252794,
+        "validation_sweep": "sweep_1_1",
+        "prediction_before_mm": 1.9841592634404128,
+        "prediction_after_mm": 0.2809944264181674,
+        "accepted": true,
+        "nfev": 13
+      },
+      {
+        "iteration": 1,
+        "informative_sweep": "sweep_1_2",
+        "informative_encoder_residual_mm": 0.3325416291959414,
+        "validation_sweep": "sweep_2_0",
+        "prediction_before_mm": 0.5232053986161818,
+        "prediction_after_mm": 0.35001057388027274,
+        "accepted": true,
+        "nfev": 7
+      },
+      {
+        "iteration": 2,
+        "informative_sweep": "sweep_2_1",
+        "informative_encoder_residual_mm": 0.4058089777257734,
+        "validation_sweep": "sweep_2_2",
+        "prediction_before_mm": 0.25264367432404344,
+        "prediction_after_mm": 0.16785303817902583,
+        "accepted": true,
+        "nfev": 5
+      }
+    ],
+    "conic_rmse_mm": 0.5265937798381217,
+    "conic_median_mm": 0.3442241651387911,
+    "conic_coverage": 1.0,
+    "sensor_rmse_base_mm": 0.6609975411917712,
+    "sensor_median_base_mm": 0.3451457439872416,
+    "sensor_failure_rate": 0.0,
+    "ambiguous_fraction": 1.0,
+    "sweep_sensor_rmse_base_mm": [
+      0.46613935344789875,
+      0.6620423626345272,
+      0.80942403079546
+    ],
+    "points": 48
+  },
+  {
+    "case": "noise",
+    "seed": 19,
+    "selection": "d_optimal",
+    "elapsed_seconds": 0.33880735500133596,
+    "movements": 144,
+    "anchor_error_sum_mm": 21.50631279022562,
+    "radius_error_sum_mm": 0.16520719664529082,
+    "trace": [
+      {
+        "iteration": 0,
+        "informative_sweep": "sweep_2_1",
+        "informative_encoder_residual_mm": 1.5407628967347797,
+        "validation_sweep": "sweep_2_2",
+        "prediction_before_mm": 1.6501957478222489,
+        "prediction_after_mm": 0.24147830376748303,
+        "accepted": true,
+        "nfev": 13
+      },
+      {
+        "iteration": 1,
+        "informative_sweep": "sweep_2_0",
+        "informative_encoder_residual_mm": 0.3918011830239185,
+        "validation_sweep": "sweep_1_0",
+        "prediction_before_mm": 0.38772676002079187,
+        "prediction_after_mm": 0.3089599306240308,
+        "accepted": true,
+        "nfev": 5
+      },
+      {
+        "iteration": 2,
+        "informative_sweep": "sweep_1_2",
+        "informative_encoder_residual_mm": 0.31068278428505763,
+        "validation_sweep": "sweep_1_1",
+        "prediction_before_mm": 0.30375489197629485,
+        "prediction_after_mm": 0.25384557667366714,
+        "accepted": true,
+        "nfev": 5
+      }
+    ],
+    "conic_rmse_mm": 0.531209710988265,
+    "conic_median_mm": 0.32870521728644553,
+    "conic_coverage": 1.0,
+    "sensor_rmse_base_mm": 0.6740052292283055,
+    "sensor_median_base_mm": 0.3608056603901633,
+    "sensor_failure_rate": 0.0,
+    "ambiguous_fraction": 1.0,
+    "sweep_sensor_rmse_base_mm": [
+      0.4742938450971131,
+      0.6867309110283772,
+      0.816269043528194
+    ],
+    "points": 48
+  },
+  {
+    "case": "outliers",
+    "seed": 7,
+    "selection": "fixed",
+    "elapsed_seconds": 0.5206436729931738,
+    "movements": 144,
+    "anchor_error_sum_mm": 341.9999999999553,
+    "radius_error_sum_mm": 3.5519999999999925,
+    "trace": [
+      {
+        "iteration": 0,
+        "informative_sweep": "sweep_1_0",
+        "informative_encoder_residual_mm": 3.468567152510995,
+        "validation_sweep": "sweep_1_1",
+        "prediction_before_mm": 3.469692492206461,
+        "prediction_after_mm": 3.5322937817558815,
+        "accepted": false,
+        "nfev": 14
+      },
+      {
+        "iteration": 1,
+        "informative_sweep": "sweep_1_2",
+        "informative_encoder_residual_mm": 3.457383276212947,
+        "validation_sweep": "sweep_2_0",
+        "prediction_before_mm": 3.466321275867908,
+        "prediction_after_mm": 3.6161692962078567,
+        "accepted": false,
+        "nfev": 9
+      },
+      {
+        "iteration": 2,
+        "informative_sweep": "sweep_2_1",
+        "informative_encoder_residual_mm": 3.466593960030116,
+        "validation_sweep": "sweep_2_2",
+        "prediction_before_mm": 3.461602791764995,
+        "prediction_after_mm": 3.6357272172476236,
+        "accepted": false,
+        "nfev": 15
+      }
+    ],
+    "conic_rmse_mm": 4.398455069193796,
+    "conic_median_mm": 1.3862372338509494,
+    "conic_coverage": 1.0,
+    "sensor_rmse_base_mm": 5.437831233702123,
+    "sensor_median_base_mm": 1.5587750849591318,
+    "sensor_failure_rate": 0.0,
+    "ambiguous_fraction": 1.0,
+    "sweep_sensor_rmse_base_mm": [
+      5.439318454056259,
+      5.440684611023513,
+      5.433487949504811
+    ],
+    "points": 48
+  },
+  {
+    "case": "outliers",
+    "seed": 7,
+    "selection": "d_optimal",
+    "elapsed_seconds": 0.4897348179947585,
+    "movements": 144,
+    "anchor_error_sum_mm": 341.9999999999553,
+    "radius_error_sum_mm": 3.5519999999999925,
+    "trace": [
+      {
+        "iteration": 0,
+        "informative_sweep": "sweep_2_1",
+        "informative_encoder_residual_mm": 3.466593960030116,
+        "validation_sweep": "sweep_2_2",
+        "prediction_before_mm": 3.461602791764995,
+        "prediction_after_mm": 3.6348376845988355,
+        "accepted": false,
+        "nfev": 12
+      },
+      {
+        "iteration": 1,
+        "informative_sweep": "sweep_2_0",
+        "informative_encoder_residual_mm": 3.466321275867908,
+        "validation_sweep": "sweep_1_0",
+        "prediction_before_mm": 3.468567152510995,
+        "prediction_after_mm": 3.531055366658433,
+        "accepted": false,
+        "nfev": 9
+      },
+      {
+        "iteration": 2,
+        "informative_sweep": "sweep_1_2",
+        "informative_encoder_residual_mm": 3.457383276212947,
+        "validation_sweep": "sweep_1_1",
+        "prediction_before_mm": 3.469692492206461,
+        "prediction_after_mm": 3.544248588102426,
+        "accepted": false,
+        "nfev": 13
+      }
+    ],
+    "conic_rmse_mm": 4.398455069193796,
+    "conic_median_mm": 1.3862372338509494,
+    "conic_coverage": 1.0,
+    "sensor_rmse_base_mm": 5.437831233702123,
+    "sensor_median_base_mm": 1.5587750849591318,
+    "sensor_failure_rate": 0.0,
+    "ambiguous_fraction": 1.0,
+    "sweep_sensor_rmse_base_mm": [
+      5.439318454056259,
+      5.440684611023513,
+      5.433487949504811
+    ],
+    "points": 48
+  },
+  {
+    "case": "outliers",
+    "seed": 19,
+    "selection": "fixed",
+    "elapsed_seconds": 0.49299034700379707,
+    "movements": 144,
+    "anchor_error_sum_mm": 341.9999999999553,
+    "radius_error_sum_mm": 3.5519999999999925,
+    "trace": [
+      {
+        "iteration": 0,
+        "informative_sweep": "sweep_1_0",
+        "informative_encoder_residual_mm": 3.467271402967802,
+        "validation_sweep": "sweep_1_1",
+        "prediction_before_mm": 3.466754160844785,
+        "prediction_after_mm": 3.5222758954176996,
+        "accepted": false,
+        "nfev": 13
+      },
+      {
+        "iteration": 1,
+        "informative_sweep": "sweep_1_2",
+        "informative_encoder_residual_mm": 3.4698726132705793,
+        "validation_sweep": "sweep_2_0",
+        "prediction_before_mm": 3.4701630967201615,
+        "prediction_after_mm": 3.6161567533468224,
+        "accepted": false,
+        "nfev": 9
+      },
+      {
+        "iteration": 2,
+        "informative_sweep": "sweep_2_1",
+        "informative_encoder_residual_mm": 3.4640587537485112,
+        "validation_sweep": "sweep_2_2",
+        "prediction_before_mm": 3.4679351817867246,
+        "prediction_after_mm": 3.6406011987907747,
+        "accepted": false,
+        "nfev": 15
+      }
+    ],
+    "conic_rmse_mm": 4.406082714281542,
+    "conic_median_mm": 1.4021172838459313,
+    "conic_coverage": 1.0,
+    "sensor_rmse_base_mm": 5.445735249317155,
+    "sensor_median_base_mm": 1.589901572591834,
+    "sensor_failure_rate": 0.0,
+    "ambiguous_fraction": 1.0,
+    "sweep_sensor_rmse_base_mm": [
+      5.438376810347408,
+      5.451823543680586,
+      5.446996872976131
+    ],
+    "points": 48
+  },
+  {
+    "case": "outliers",
+    "seed": 19,
+    "selection": "d_optimal",
+    "elapsed_seconds": 0.48864954798773397,
+    "movements": 144,
+    "anchor_error_sum_mm": 341.9999999999553,
+    "radius_error_sum_mm": 3.5519999999999925,
+    "trace": [
+      {
+        "iteration": 0,
+        "informative_sweep": "sweep_2_1",
+        "informative_encoder_residual_mm": 3.4640587537485112,
+        "validation_sweep": "sweep_2_2",
+        "prediction_before_mm": 3.4679351817867246,
+        "prediction_after_mm": 3.6388791552611877,
+        "accepted": false,
+        "nfev": 12
+      },
+      {
+        "iteration": 1,
+        "informative_sweep": "sweep_2_0",
+        "informative_encoder_residual_mm": 3.4701630967201615,
+        "validation_sweep": "sweep_1_0",
+        "prediction_before_mm": 3.467271402967802,
+        "prediction_after_mm": 3.530608759035854,
+        "accepted": false,
+        "nfev": 9
+      },
+      {
+        "iteration": 2,
+        "informative_sweep": "sweep_1_2",
+        "informative_encoder_residual_mm": 3.4698726132705793,
+        "validation_sweep": "sweep_1_1",
+        "prediction_before_mm": 3.466754160844785,
+        "prediction_after_mm": 3.5379441295110827,
+        "accepted": false,
+        "nfev": 13
+      }
+    ],
+    "conic_rmse_mm": 4.406082714281542,
+    "conic_median_mm": 1.4021172838459313,
+    "conic_coverage": 1.0,
+    "sensor_rmse_base_mm": 5.445735249317155,
+    "sensor_median_base_mm": 1.589901572591834,
+    "sensor_failure_rate": 0.0,
+    "ambiguous_fraction": 1.0,
+    "sweep_sensor_rmse_base_mm": [
+      5.438376810347408,
+      5.451823543680586,
+      5.446996872976131
+    ],
+    "points": 48
+  },
+  {
+    "case": "poor_initial",
+    "seed": 7,
+    "selection": "fixed",
+    "elapsed_seconds": 0.638389117011684,
+    "movements": 144,
+    "anchor_error_sum_mm": 671.0865270027273,
+    "radius_error_sum_mm": 20.53657842859817,
+    "trace": [
+      {
+        "iteration": 0,
+        "informative_sweep": "sweep_1_0",
+        "informative_encoder_residual_mm": 12.010114315763564,
+        "validation_sweep": "sweep_1_1",
+        "prediction_before_mm": 12.000633965727559,
+        "prediction_after_mm": 4.720670081502487,
+        "accepted": true,
+        "nfev": 15
+      },
+      {
+        "iteration": 1,
+        "informative_sweep": "sweep_1_2",
+        "informative_encoder_residual_mm": 4.724484346706527,
+        "validation_sweep": "sweep_2_0",
+        "prediction_before_mm": 8.314202999623408,
+        "prediction_after_mm": 3.7025621935164312,
+        "accepted": true,
+        "nfev": 14
+      },
+      {
+        "iteration": 2,
+        "informative_sweep": "sweep_2_1",
+        "informative_encoder_residual_mm": 3.460837542221399,
+        "validation_sweep": "sweep_2_2",
+        "prediction_before_mm": 3.4686442074629076,
+        "prediction_after_mm": 2.1552449099959357,
+        "accepted": true,
+        "nfev": 14
+      }
+    ],
+    "conic_rmse_mm": 0.6606508763114491,
+    "conic_median_mm": 0.22877279725227023,
+    "conic_coverage": 1.0,
+    "sensor_rmse_base_mm": 1.1611295442086635,
+    "sensor_median_base_mm": 0.30366334970951947,
+    "sensor_failure_rate": 0.0,
+    "ambiguous_fraction": 1.0,
+    "sweep_sensor_rmse_base_mm": [
+      1.1629986918224466,
+      1.175848523938504,
+      1.1443250180231026
+    ],
+    "points": 48
+  },
+  {
+    "case": "poor_initial",
+    "seed": 7,
+    "selection": "d_optimal",
+    "elapsed_seconds": 0.43191672999819275,
+    "movements": 144,
+    "anchor_error_sum_mm": 704.5223230965101,
+    "radius_error_sum_mm": 22.701835020786042,
+    "trace": [
+      {
+        "iteration": 0,
+        "informative_sweep": "sweep_2_1",
+        "informative_encoder_residual_mm": 10.752995963051129,
+        "validation_sweep": "sweep_2_2",
+        "prediction_before_mm": 10.757902737567232,
+        "prediction_after_mm": 7.572544248535939,
+        "accepted": true,
+        "nfev": 10
+      },
+      {
+        "iteration": 1,
+        "informative_sweep": "sweep_2_0",
+        "informative_encoder_residual_mm": 6.882318610309988,
+        "validation_sweep": "sweep_1_0",
+        "prediction_before_mm": 3.127767091155839,
+        "prediction_after_mm": 1.3597292147918836,
+        "accepted": true,
+        "nfev": 10
+      },
+      {
+        "iteration": 2,
+        "informative_sweep": "sweep_1_2",
+        "informative_encoder_residual_mm": 1.5162894873335107,
+        "validation_sweep": "sweep_1_1",
+        "prediction_before_mm": 1.526557068046992,
+        "prediction_after_mm": 1.2102435255143802,
+        "accepted": true,
+        "nfev": 8
+      }
+    ],
+    "conic_rmse_mm": 0.9306236034133133,
+    "conic_median_mm": 0.2825246290874681,
+    "conic_coverage": 1.0,
+    "sensor_rmse_base_mm": 1.665094966417774,
+    "sensor_median_base_mm": 0.3696026720241332,
+    "sensor_failure_rate": 0.0,
+    "ambiguous_fraction": 1.0,
+    "sweep_sensor_rmse_base_mm": [
+      1.6705278091717566,
+      1.774504155179721,
+      1.5421075136329305
+    ],
+    "points": 48
+  },
+  {
+    "case": "poor_initial",
+    "seed": 19,
+    "selection": "fixed",
+    "elapsed_seconds": 0.6535963399946922,
+    "movements": 144,
+    "anchor_error_sum_mm": 671.3824089595071,
+    "radius_error_sum_mm": 20.51660053571893,
+    "trace": [
+      {
+        "iteration": 0,
+        "informative_sweep": "sweep_1_0",
+        "informative_encoder_residual_mm": 12.003541718882596,
+        "validation_sweep": "sweep_1_1",
+        "prediction_before_mm": 12.008019786385331,
+        "prediction_after_mm": 4.727150155890253,
+        "accepted": true,
+        "nfev": 16
+      },
+      {
+        "iteration": 1,
+        "informative_sweep": "sweep_1_2",
+        "informative_encoder_residual_mm": 4.716271336099842,
+        "validation_sweep": "sweep_2_0",
+        "prediction_before_mm": 8.310573692702796,
+        "prediction_after_mm": 3.697302896855298,
+        "accepted": true,
+        "nfev": 14
+      },
+      {
+        "iteration": 2,
+        "informative_sweep": "sweep_2_1",
+        "informative_encoder_residual_mm": 3.4646534080475386,
+        "validation_sweep": "sweep_2_2",
+        "prediction_before_mm": 3.4681349791164906,
+        "prediction_after_mm": 2.1571611770652717,
+        "accepted": true,
+        "nfev": 15
+      }
+    ],
+    "conic_rmse_mm": 0.6541313712375542,
+    "conic_median_mm": 0.22821053153738613,
+    "conic_coverage": 1.0,
+    "sensor_rmse_base_mm": 1.1494853402408527,
+    "sensor_median_base_mm": 0.3278182826532045,
+    "sensor_failure_rate": 0.0,
+    "ambiguous_fraction": 1.0,
+    "sweep_sensor_rmse_base_mm": [
+      1.167454573165076,
+      1.155153134990369,
+      1.1254424448205957
+    ],
+    "points": 48
+  },
+  {
+    "case": "poor_initial",
+    "seed": 19,
+    "selection": "d_optimal",
+    "elapsed_seconds": 0.44813133899879176,
+    "movements": 144,
+    "anchor_error_sum_mm": 704.9721142432963,
+    "radius_error_sum_mm": 22.67349404805796,
+    "trace": [
+      {
+        "iteration": 0,
+        "informative_sweep": "sweep_2_1",
+        "informative_encoder_residual_mm": 10.750292307954801,
+        "validation_sweep": "sweep_2_2",
+        "prediction_before_mm": 10.757017630308338,
+        "prediction_after_mm": 7.569730297226575,
+        "accepted": true,
+        "nfev": 10
+      },
+      {
+        "iteration": 1,
+        "informative_sweep": "sweep_2_0",
+        "informative_encoder_residual_mm": 6.87771791611354,
+        "validation_sweep": "sweep_1_0",
+        "prediction_before_mm": 3.1147851380509373,
+        "prediction_after_mm": 1.3471888447327565,
+        "accepted": true,
+        "nfev": 11
+      },
+      {
+        "iteration": 2,
+        "informative_sweep": "sweep_1_2",
+        "informative_encoder_residual_mm": 1.5109731106487707,
+        "validation_sweep": "sweep_1_1",
+        "prediction_before_mm": 1.511515961178775,
+        "prediction_after_mm": 1.1907610184896256,
+        "accepted": true,
+        "nfev": 8
+      }
+    ],
+    "conic_rmse_mm": 0.9219120516279649,
+    "conic_median_mm": 0.29504700453355626,
+    "conic_coverage": 1.0,
+    "sensor_rmse_base_mm": 1.6502318528120117,
+    "sensor_median_base_mm": 0.38381972556823524,
+    "sensor_failure_rate": 0.0,
+    "ambiguous_fraction": 1.0,
+    "sweep_sensor_rmse_base_mm": [
+      1.6721029129598153,
+      1.7528917136961322,
+      1.5169831879862192
+    ],
+    "points": 48
+  }
+]

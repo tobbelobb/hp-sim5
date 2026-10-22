@@ -1,0 +1,19 @@
+{
+  "previous_revision": "8e0f788de0be888c0e6e607df439b3308716ba98",
+  "final_files": {
+    "src/js/cable_joints_3d/wasm_physics_engine.js": "6cfcd19dcdd44a97970ff199fde118f10ccdd8b59329034545f622d90b16278f",
+    "src/js/cable_joints_3d/wasm_cable_solver.js": "7f389595ba57182d19ffa18ea42772f306b049e93161437f681c5237b3945d9b",
+    "src/wasm/cable_solver/src/lib.rs": "088d64e1de9a45fe692d5994081050e0ab5ac9e9996d504261b2e8280649ed04",
+    "src/wasm/cable_solver/src/engine.rs": "c4a2609f63595e243c1c06efb132f692df95a7ff785333a60efd45e2b6062ca6",
+    "src/wasm/cable_solver/src/abi.rs": "2a9a503050a51bdc7fa901a2ca1953094392c596fc2a10c6e1139d8fbaaed6b2",
+    "src/wasm/cable_solver/Cargo.toml": "6bedc7a91322bd4e58758b238b3c9f937b9fea8020917679a13e08a812ee13dc",
+    "scripts/profile_headless.mjs": "cdde5f31015a399e9690601afee3b9e1944607439608cdc4f6e2b194454366f2",
+    "hp-sim-3d/app/simulationSystems.js": "33d88c360fbbae08bfe7d9c66044a5c7f36274b8f91753912f968563c9853fac",
+    "public/wasm/cable_solver.wasm": "75aa277ed2ac92698b558f9f4a9126479d3707f8353637515378d681570518d3"
+  },
+  "measured_source": "source/",
+  "final_source": "final-source/",
+  "matrix": "matrix-precision/matrix.json",
+  "previous_timings": "matrix-final/",
+  "full_trajectory_hashes_match_prior_matrix": true
+}

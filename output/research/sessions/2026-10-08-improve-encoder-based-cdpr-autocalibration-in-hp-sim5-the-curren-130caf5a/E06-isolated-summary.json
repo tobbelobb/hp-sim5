@@ -1,0 +1,34 @@
+[
+  {
+    "dataset": "layered_manual_some_bad_points",
+    "baseline_seconds": [
+      48.865942727999936,
+      47.77375398000004,
+      48.97405870700095
+    ],
+    "cache_seconds": [
+      47.62623519999761,
+      47.2143916290006,
+      48.727902876998996
+    ],
+    "baseline_median": 48.865942727999936,
+    "cache_median": 47.62623519999761,
+    "median_saving_percent": 2.5369561268936303
+  },
+  {
+    "dataset": "seventh_hp3_dataset",
+    "baseline_seconds": [
+      32.76963537800111,
+      32.632633534998604,
+      33.04001167599927
+    ],
+    "cache_seconds": [
+      29.13421847399877,
+      29.584136939996824,
+      29.375957077001658
+    ],
+    "baseline_median": 32.76963537800111,
+    "cache_median": 29.375957077001658,
+    "median_saving_percent": 10.35616741490415
+  }
+]

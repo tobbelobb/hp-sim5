@@ -1,0 +1,108 @@
+{
+  "current_revision": "4daac40c77276c14d62c86db51abfc2a40292998",
+  "march_revision": "df699275934954d8a086388e7e3921fece789d56",
+  "interpreter": "/home/torbjorn/repos/hp-sim5/.venv/bin/python",
+  "dependencies": {
+    "numpy": "2.4.3",
+    "scipy": "1.17.1",
+    "jax": "0.9.2",
+    "jaxlib": "0.9.2"
+  },
+  "dataset_sha256": "6d35e856277c96fef419db4933d950db1f9ae4ac75043c381c765b58cc8b0887",
+  "results": {
+    "reference": {
+      "log": "autocal/data/references/fifth_hp3_dataset.full_auto_reference_run_march_23_2026.log",
+      "summary_error": [
+        70.31397556409081,
+        65.67698480739227,
+        4.636990756698532
+      ],
+      "summary_fit_score": 6.01,
+      "iteration_errors": [
+        158.56381920033624,
+        70.78667397053543,
+        70.31397556409081,
+        10504.745580909828,
+        381.81033891644466,
+        5906.690238097836,
+        368.70421738628244
+      ],
+      "mean": 2494.5164062921936,
+      "median": 368.70421738628244,
+      "std": 3817.201738888452,
+      "mean_delta_vs_reference": 0.0,
+      "iteration_rank_scores": [
+        4.806,
+        4.683,
+        4.683,
+        50.0,
+        5.509,
+        50.0,
+        5.799
+      ]
+    },
+    "march_replay": {
+      "log": "output/research/fifth-hp3-reference-audit/march/run/fifth_hp3_dataset.full_auto.log",
+      "summary_error": [
+        70.31397556409081,
+        65.67698480739227,
+        4.636990756698532
+      ],
+      "summary_fit_score": 6.01,
+      "iteration_errors": [
+        275.5081167276727,
+        70.78667397053543,
+        70.31397556409081,
+        10504.745580909828,
+        3790.717020819502,
+        371.9795478089093,
+        5113.083043503382
+      ],
+      "mean": 2885.3048513291315,
+      "median": 371.9795478089093,
+      "std": 3641.2747606996,
+      "mean_delta_vs_reference": 390.78844503693796,
+      "iteration_rank_scores": [
+        4.561,
+        4.683,
+        4.683,
+        50.0,
+        50.0,
+        6.023,
+        50.0
+      ]
+    },
+    "current_replay": {
+      "log": "output/research/fifth-hp3-reference-audit/current/run/fifth_hp3_dataset.full_auto.log",
+      "summary_error": [
+        70.78667397053543,
+        66.1496832138369,
+        4.636990756698532
+      ],
+      "summary_fit_score": 6.952,
+      "iteration_errors": [
+        275.5081167276727,
+        70.78667397053543,
+        70.31397556409081,
+        10504.745580909828,
+        3790.717020819502,
+        371.9795478089093,
+        5113.083043503382
+      ],
+      "mean": 2885.3048513291315,
+      "median": 371.9795478089093,
+      "std": 3641.2747606996,
+      "mean_delta_vs_reference": 390.78844503693796,
+      "iteration_rank_scores": [
+        4.561,
+        4.683,
+        4.683,
+        50.0,
+        50.0,
+        6.023,
+        50.0
+      ]
+    }
+  },
+  "python_version": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]"
+}

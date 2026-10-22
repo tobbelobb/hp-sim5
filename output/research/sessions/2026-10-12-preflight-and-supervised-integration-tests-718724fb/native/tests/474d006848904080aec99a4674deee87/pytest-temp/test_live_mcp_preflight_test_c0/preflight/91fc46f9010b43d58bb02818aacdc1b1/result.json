@@ -1,0 +1,9 @@
+{
+  "outcome": "passed",
+  "handshake": true,
+  "finalized": true,
+  "readable": true,
+  "recording_manifest": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-12-preflight-and-supervised-integration-tests-718724fb/native/tests/474d006848904080aec99a4674deee87/pytest-temp/test_live_mcp_preflight_test_c0/preflight/91fc46f9010b43d58bb02818aacdc1b1/hangprinter-20261012T075937.313814Z-cb45f4ad.json",
+  "rrd": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-12-preflight-and-supervised-integration-tests-718724fb/native/tests/474d006848904080aec99a4674deee87/pytest-temp/test_live_mcp_preflight_test_c0/preflight/91fc46f9010b43d58bb02818aacdc1b1/hangprinter-20261012T075937.313814Z-cb45f4ad.rrd",
+  "kind": "tool_check"
+}

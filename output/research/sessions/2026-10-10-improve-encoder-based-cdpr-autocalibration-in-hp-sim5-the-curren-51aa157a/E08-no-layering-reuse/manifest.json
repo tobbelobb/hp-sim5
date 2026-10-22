@@ -1,0 +1,31 @@
+{
+  "backend": "production-headless-js/RRF-batch-H2",
+  "scene": "public/usd_scenes/hp3_rigid_body.usda",
+  "dt": 0.002,
+  "sourceHashes": {
+    "public/usd_scenes/hp3_rigid_body.usda": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+    "RRF/run/vsd/sys/config_hp3.g": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8",
+    "autocal/control/behaviors/sweep_data_collection.mjs": "3bc97b4cd67a7d4813cef6e070176c95777c52939bdb80d46f9145eb2e75a85f",
+    "autocal/control/primitives/uncalibrated_actions.mjs": "f54ab5e1dce0a41d1f0afe1a0925051acdb834ca45760b8d6ff35dbb774e0675"
+  },
+  "collectorModule": "file:///home/torbjorn/repos/hp-sim5/autocal/control/behaviors/sweep_data_collection.mjs",
+  "baked_scene_sha256": "feb28ea51676770bf43db61847f2cef52625c052e8b6d70482e919f378014ded",
+  "settings": {
+    "closedLoopMotorsEnabled": true,
+    "enableLayering": false,
+    "cablePathHalfWidthOverride": 0
+  },
+  "limitations": [
+    "RRF is initialized per relative motion, rather than persistent HTTP",
+    "No firmware encoder requests; production endpoint reports encoders directly",
+    "Torque Nm conversion uses known R30, unit gearing and mechanical advantage"
+  ],
+  "status": "complete",
+  "steps": 1285675,
+  "simulated_s": 2571.35,
+  "wall_s": 114.346515976,
+  "moves": 273,
+  "encoder_reads": 6519,
+  "torque_commands": 134,
+  "rrf_planning_s": 1.018970067999999
+}

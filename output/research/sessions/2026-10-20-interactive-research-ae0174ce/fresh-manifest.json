@@ -1,0 +1,111 @@
+{
+  "revision": "2c0b86ff189d27859b83543ed3fa837cfa658a3b",
+  "scope": "E10-E17 causal controls and fresh HP3 collection; initial manifest.json and source/ retained unchanged",
+  "source_sha256": {
+    "output/research/sessions/2026-10-20-interactive-research-ae0174ce/tools/causal_audit.py": "7104a0260e497142c1faece5e0b069091ea9503285f59e8a4b0741b310dc8913",
+    "output/research/sessions/2026-10-20-interactive-research-ae0174ce/tools/cli_replays.py": "a20a58fb3da55fa93a2be51928189d688f2db8f5cb228813fe1439e60983f069",
+    "output/research/sessions/2026-10-20-interactive-research-ae0174ce/tools/experiments.py": "12cb86eda8e7ce3576a318cf6baa4620d67734cad4a43a0e7f038914b75bb446",
+    "output/research/sessions/2026-10-20-interactive-research-ae0174ce/tools/fresh_fit_audit.py": "e027c24265d0da9a6011db16cdf6f86ec233f68aad0abf23f5e2d0830b101ac9",
+    "output/research/sessions/2026-10-20-interactive-research-ae0174ce/tools/fresh_pair.py": "3b06c90cd872e3decfa11827118c8584b832f9cf67fe423f73d43d81e810cf6b",
+    "output/research/sessions/2026-10-20-interactive-research-ae0174ce/tools/fresh_reference.py": "2b8e053bea86d00c8795e4dc0bc5b91c93e6b97afa3548e40d06ecafe01e25dd",
+    "output/research/sessions/2026-10-20-interactive-research-ae0174ce/tools/polish.py": "74f6fa5779049dd3715d50291e911dc47410111ee2aa1a2566e2b2a3f051521e",
+    "output/research/sessions/2026-10-20-interactive-research-ae0174ce/tools/recorded_rotation.py": "fc8edced946f834a5c03a23981d66f2bf57d0e82f69c87f676ee3d4dc94d0e12",
+    "output/research/sessions/2026-10-20-interactive-research-ae0174ce/tools/reference_assumptions.py": "fcff960852773286a40a40682d32044667c942a4c2fb1159e719543b2f8825ee",
+    "output/research/sessions/2026-10-20-interactive-research-ae0174ce/tools/reliability.py": "5417b529440cff569e9c5444e5c77fff2e4febe410f6919e95de16fd114560fc",
+    "output/research/sessions/2026-10-20-interactive-research-ae0174ce/tools/sensitivity.py": "4e317563e7f633257d4da1e81f7e3c4acf68f2d0f463fdb86f53364ef2cd9868",
+    "output/research/sessions/2026-10-20-interactive-research-ae0174ce/tools/summarize.py": "06fedded0190d24dc01f0cb939f94bb0b89fb2ace3aa7811ddb26cb83b6fa4df",
+    "output/research/sessions/2026-10-20-interactive-research-ae0174ce/tools/summarize_fresh.py": "1becedc049fe25f8ca9018fb8cf1f91799da63fd8a6b846cfe4863538e60b24c",
+    "output/research/sessions/2026-10-20-interactive-research-ae0174ce/tools/warm_chain_audit.py": "2a1d0a29e7888147d648f4e197789feb0131337627343fdc068311a175498db4",
+    "autocal/tools/rebase_dataset.py": "b33c501dcc7b4d995bc15b91ab2579e949ce6b04d8b9b5bca1b0377d936cc593",
+    "autocal/README.md": "cb5d3e48e005bc705eb1299a0886e479f8a19c2d2d4a06b9e66a778da3da1aa1",
+    "autocal/tests/test_rebase_dataset.py": "a247e48dc45917bc874e20daaa9d35d6f9f90a2efcd76e8a6f4a2d1f21cc1c6e"
+  },
+  "packages": {
+    "numpy": "2.4.3",
+    "scipy": "1.17.1",
+    "jax": "0.9.2",
+    "rerun-sdk": "0.38.1"
+  },
+  "inputs": [
+    {
+      "trial": "E13-baseline",
+      "contract": "E13-baseline/contract.json",
+      "scene_sha256": "3269e5fea37c6be86ee6d0044343fb0e8e4124450999354bb466aa6b553db82b",
+      "config_sha256": "859e3ec18a0fb4924de99ed27a3a30bb1228d35fb3d3a9d9a41a1d7285bc09bc",
+      "reference_position_mm": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "trial": "E13-center",
+      "contract": "E13-center/contract.json",
+      "scene_sha256": "94ef7f8839b99a7bd3e466d4219f0bad37bb6d8d7db59ea01faeb51421404962",
+      "config_sha256": "984d0a60dbfe29c9a7f9abfd525af4d4dac0029e55dfeb833fbe298677e2136f",
+      "reference_position_mm": [
+        0.0,
+        0.0,
+        265.0
+      ]
+    },
+    {
+      "trial": "E14-baseline",
+      "contract": "E14-baseline/contract.json",
+      "scene_sha256": "3269e5fea37c6be86ee6d0044343fb0e8e4124450999354bb466aa6b553db82b",
+      "config_sha256": "859e3ec18a0fb4924de99ed27a3a30bb1228d35fb3d3a9d9a41a1d7285bc09bc",
+      "reference_position_mm": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "trial": "E14-center",
+      "contract": "E14-center/contract.json",
+      "scene_sha256": "94ef7f8839b99a7bd3e466d4219f0bad37bb6d8d7db59ea01faeb51421404962",
+      "config_sha256": "984d0a60dbfe29c9a7f9abfd525af4d4dac0029e55dfeb833fbe298677e2136f",
+      "reference_position_mm": [
+        0.0,
+        0.0,
+        265.0
+      ]
+    },
+    {
+      "trial": "E16-offset",
+      "contract": "E16-offset/contract.json",
+      "scene_sha256": "e4f23ba0b921990c36b3b33bd8cfac888c19c8a47039a27b0e6dac4037c13a32",
+      "config_sha256": "c785538848b315d50e6d6900cba98516d70baecadef6392807ed560ce20567fe",
+      "reference_position_mm": [
+        500.0,
+        200.0,
+        265.0
+      ]
+    },
+    {
+      "trial": "E17-offset-small",
+      "contract": "E17-offset-small/contract.json",
+      "scene_sha256": "e955194b9b48a9497ccd1839ac7e34867b65b02436eaa480f249ee4932cc23a0",
+      "config_sha256": "51a0912d67dbca838d65a43335016ddb799f7060cb88224169d0a47a8b7f8e11",
+      "reference_position_mm": [
+        250.0,
+        100.0,
+        265.0
+      ]
+    }
+  ],
+  "stock_scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+  "stock_firmware_sha256": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8",
+  "physics_gate": "physics-gate.log: 11 passed, 0 failed",
+  "native_artifact_sha256": "259091f1d385722151a60e050e66f73010ab04de2af9bea235ac0d9fe8b39b50",
+  "expected_hp3_preflight": "native/preflight/0d5421c013514957b2ea1321720ab9b9/preflight.json",
+  "command_probe": "command-network-probe.json",
+  "recording_evidence": "sampled-rotation.json",
+  "ground_truth_policy": "plant/configuration and post-fit metrics; not fitted-anchor seed or fixed-Z prerequisite",
+  "documentation_used": [
+    ".agents/skills/rerun-docs/SKILL.md",
+    "rerun.chunk.RrdReader installed source",
+    "scripts/hangprinter_flight_recorder.py",
+    "hp-sim-3d/app/flightRecorderSnapshot.js"
+  ]
+}

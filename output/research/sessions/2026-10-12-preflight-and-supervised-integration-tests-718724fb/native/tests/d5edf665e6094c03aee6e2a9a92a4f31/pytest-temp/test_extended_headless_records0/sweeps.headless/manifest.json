@@ -1,0 +1,108 @@
+{
+  "backend": "headless-js",
+  "status": "complete",
+  "machine_type": "hangprinter_3",
+  "scene": "/home/torbjorn/repos/hp-sim5/public/usd_scenes/hp3_rigid_body.usda",
+  "firmware_config": "sys/config_hp3.g",
+  "clock": "fixed steps; collector waits advance simulation time",
+  "dataset": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-12-preflight-and-supervised-integration-tests-718724fb/native/tests/d5edf665e6094c03aee6e2a9a92a4f31/pytest-temp/test_extended_headless_records0/sweeps.json",
+  "source_sha256": "99e794ce681a66437cc9d0886e3ef1336e2d4bf704d21673da259851d49df6cd",
+  "autocal_source_sha256": "ec7a809a01c3e34552148247ee85156da0984a1d7677b10c82a0c236ccc55324",
+  "git_revision": "06f190dde4626998f21e75c7634797641fa48fc2",
+  "owned_services": [
+    {
+      "name": "recorder",
+      "pid": 32775
+    },
+    {
+      "name": "rrf",
+      "pid": 32841
+    },
+    {
+      "name": "physics",
+      "pid": 32845
+    }
+  ],
+  "extended_reference_ws": "ws://127.0.0.1:56907",
+  "owned_recorder": true,
+  "scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+  "firmware_config_sha256": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8",
+  "rrf_sha256": "9b2ac828a9ad0636640c92f7a1cbf042f9a04327505c8d699c54b1abb582f3fe",
+  "baked_scene_sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+  "initial_baked_scene_sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+  "service_url": "http://127.0.0.1:35551",
+  "rrf_url": "http://127.0.0.1:49405",
+  "services": [
+    32775,
+    32841,
+    32845
+  ],
+  "owned_rrf": true,
+  "firmware_initial": {
+    "M115": "FIRMWARE_NAME: RepRapFirmware for x86_64 (host) FIRMWARE_VERSION: 3.7.0-alpha.5 ELECTRONICS: RRF_Host FIRMWARE_DATE: 2026-05-21 17:47:47",
+    "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1900.00, -280.00\nB:1645.45, 950.00, -280.00\nC:-1645.45, 950.00, -280.00\nD:0.00, 0.00, 1900.00\nP:Print radius: 1500.0",
+    "M666": "M666 A1 Q0.0000\nR30.00:30.00:30.00:30.00\nU1:1:1:1\nO1:1:1:1\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI3.0:3.0:3.0:3.0\nX170.0:170.0:170.0:170.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0"
+  },
+  "wall_s": 1.2124227380004413,
+  "kept_alive": false,
+  "service_wall_s": 0.223243361,
+  "step": 125,
+  "epoch": 1,
+  "total_steps": 150,
+  "dt_s": 0.002,
+  "simulated_s": 0.3,
+  "collector_time_s": 0.05999999999999962,
+  "queue_length": 0,
+  "recording_drained": true,
+  "baked_scene_file": "baked-scene-1.usda",
+  "settings": {
+    "enableLayering": false,
+    "closedLoopMotorsEnabled": false,
+    "timeScale": 25
+  },
+  "physics_returncode": 0,
+  "normal_completion": false,
+  "recordings": [
+    {
+      "backend": "headless-js",
+      "scene_generation": 1,
+      "recording_id": "0d6a4446445540cd80ed3a98fd21eba4",
+      "rrd": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-12-preflight-and-supervised-integration-tests-718724fb/native/tests/d5edf665e6094c03aee6e2a9a92a4f31/pytest-temp/test_extended_headless_records0/sweeps.headless/hangprinter-20261012T075155.705387Z-4ee1471e.rrd",
+      "status": "finalized",
+      "start_step": 0,
+      "format_version": 1,
+      "extended_reference": true,
+      "autocal_complete": true,
+      "rejected_messages": [],
+      "sample_stride": 10,
+      "geometry_detail": "compact",
+      "headless_segments": [
+        {
+          "session": "599c2bd5-35f0-4500-a1d2-cdb963d75dfc",
+          "generation": 0,
+          "start_step": 0,
+          "start_time_s": 0,
+          "start_wall_time_ms": 1791791516283,
+          "end_step": 20,
+          "end_time_s": 0.04000000000000002,
+          "end_wall_time_ms": 1791791516435
+        },
+        {
+          "session": "599c2bd5-35f0-4500-a1d2-cdb963d75dfc",
+          "generation": 1,
+          "start_step": 0,
+          "start_time_s": 0,
+          "start_wall_time_ms": 1791791516452,
+          "end_step": 120,
+          "end_time_s": 0.24000000000000019,
+          "end_wall_time_ms": 1791791516479
+        }
+      ],
+      "headless_session": "599c2bd5-35f0-4500-a1d2-cdb963d75dfc",
+      "end_step": 120,
+      "end_time_s": 0.24000000000000019,
+      "physics_samples": 16,
+      "event_count": 25
+    }
+  ]
+}

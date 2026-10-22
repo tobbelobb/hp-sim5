@@ -1,0 +1,9 @@
+{
+  "outcome": "passed",
+  "handshake": true,
+  "finalized": true,
+  "readable": true,
+  "recording_manifest": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-12-network-enabled-preflight-revalidation-31a423c7/cli-preflight-e48269fa/native/preflight/18e77239896f47879cc8f675d05d334d/hangprinter-20261012T082435.337950Z-454d575b.json",
+  "rrd": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-12-network-enabled-preflight-revalidation-31a423c7/cli-preflight-e48269fa/native/preflight/18e77239896f47879cc8f675d05d334d/hangprinter-20261012T082435.337950Z-454d575b.rrd",
+  "kind": "tool_check"
+}

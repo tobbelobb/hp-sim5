@@ -1,0 +1,26 @@
+[
+  {
+    "substeps": 1,
+    "timeoutMs": 120000,
+    "outcome": "Timed out waiting for encoder stability after 120000ms",
+    "elapsed_s": 121
+  },
+  {
+    "substeps": 1,
+    "timeoutMs": 1200000,
+    "outcome": "settled",
+    "elapsed_s": 472
+  },
+  {
+    "substeps": 4,
+    "timeoutMs": 120000,
+    "outcome": "settled",
+    "elapsed_s": 120
+  },
+  {
+    "substeps": 4,
+    "timeoutMs": 1200000,
+    "outcome": "settled",
+    "elapsed_s": 120
+  }
+]

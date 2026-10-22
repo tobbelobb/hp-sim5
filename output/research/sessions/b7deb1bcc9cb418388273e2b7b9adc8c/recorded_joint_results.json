@@ -1,0 +1,3318 @@
+[
+  {
+    "dataset": "five_points_bigger_deltas",
+    "input": "/home/torbjorn/repos/hp-sim5/autocal/data/references/five_points_bigger_deltas.json",
+    "holdout_ids": [
+      "sweep_007",
+      "sweep_008"
+    ],
+    "candidates": [
+      {
+        "training_sweeps": 3,
+        "anchor_error_sum_mm": 20.257324721807887,
+        "radius_error_sum_mm": 0.37398907602707254,
+        "total_error_mm": 22.60716738934686,
+        "elapsed_seconds": 0.47097374899021816,
+        "nfev": 41,
+        "train_rmse_base_mm": 0.24182826804919083,
+        "anchors": [
+          [
+            0.0,
+            -1908.3957571623928
+          ],
+          [
+            1652.9348638471272,
+            956.5381274830685
+          ],
+          [
+            -1647.2592279267164,
+            950.6436349700035
+          ]
+        ],
+        "radii": [
+          39.308663025342355,
+          39.308663025342355,
+          39.308663025342355
+        ],
+        "conic_rmse_mm": 1.0227880937793123,
+        "conic_median_mm": 0.8771545953277043,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 1.4205275929990933,
+        "sensor_median_base_mm": 0.9930361137665575,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          1.4165782995153493,
+          1.4244659372149955
+        ],
+        "points": 20
+      },
+      {
+        "training_sweeps": 4,
+        "anchor_error_sum_mm": 21.12871490153045,
+        "radius_error_sum_mm": 0.3918231811986601,
+        "total_error_mm": 23.590612556650235,
+        "elapsed_seconds": 0.04957697499776259,
+        "nfev": 4,
+        "train_rmse_base_mm": 0.3115534745476589,
+        "anchors": [
+          [
+            0.0,
+            -1906.349784895316
+          ],
+          [
+            1652.234052071521,
+            954.4991146325426
+          ],
+          [
+            -1651.0706650443594,
+            953.5270576554553
+          ]
+        ],
+        "radii": [
+          39.31460772706622,
+          39.31460772706622,
+          39.31460772706622
+        ],
+        "conic_rmse_mm": 0.9803042492628721,
+        "conic_median_mm": 0.8417028711159673,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 1.3127397940751209,
+        "sensor_median_base_mm": 0.9953862014126402,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          1.2531374745732884,
+          1.3697510736323089
+        ],
+        "points": 20
+      },
+      {
+        "training_sweeps": 5,
+        "anchor_error_sum_mm": 23.574532027483396,
+        "radius_error_sum_mm": 0.43404567816296696,
+        "total_error_mm": 26.30172145516175,
+        "elapsed_seconds": 0.057166756989317946,
+        "nfev": 4,
+        "train_rmse_base_mm": 0.3452935280576199,
+        "anchors": [
+          [
+            0.0,
+            -1907.1744936058712
+          ],
+          [
+            1654.3270160075858,
+            956.3896851860965
+          ],
+          [
+            -1650.4052254574715,
+            952.2917757481495
+          ]
+        ],
+        "radii": [
+          39.32868189272099,
+          39.32868189272099,
+          39.32868189272099
+        ],
+        "conic_rmse_mm": 0.9594937178723296,
+        "conic_median_mm": 0.8211268696112934,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 1.2771453397764811,
+        "sensor_median_base_mm": 0.958923414393489,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          1.25867320070969,
+          1.2953540873602054
+        ],
+        "points": 20
+      },
+      {
+        "training_sweeps": 6,
+        "anchor_error_sum_mm": 23.521320736401602,
+        "radius_error_sum_mm": 0.4272492230631996,
+        "total_error_mm": 26.205806777256193,
+        "elapsed_seconds": 0.0636786690010922,
+        "nfev": 4,
+        "train_rmse_base_mm": 0.3570108238830674,
+        "anchors": [
+          [
+            0.0,
+            -1907.1170179330643
+          ],
+          [
+            1654.0336975462178,
+            956.1771933672061
+          ],
+          [
+            -1650.6610821800346,
+            952.605206595053
+          ]
+        ],
+        "radii": [
+          39.32641640768773,
+          39.32641640768773,
+          39.32641640768773
+        ],
+        "conic_rmse_mm": 0.9631291510130471,
+        "conic_median_mm": 0.8343072145755976,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 1.28561951834303,
+        "sensor_median_base_mm": 0.9727905541113,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          1.2612640443220693,
+          1.3095220893094799
+        ],
+        "points": 20
+      }
+    ],
+    "validation_selected": {
+      "training_sweeps": 5,
+      "anchor_error_sum_mm": 23.574532027483396,
+      "radius_error_sum_mm": 0.43404567816296696,
+      "total_error_mm": 26.30172145516175,
+      "elapsed_seconds": 0.057166756989317946,
+      "nfev": 4,
+      "train_rmse_base_mm": 0.3452935280576199,
+      "anchors": [
+        [
+          0.0,
+          -1907.1744936058712
+        ],
+        [
+          1654.3270160075858,
+          956.3896851860965
+        ],
+        [
+          -1650.4052254574715,
+          952.2917757481495
+        ]
+      ],
+      "radii": [
+        39.32868189272099,
+        39.32868189272099,
+        39.32868189272099
+      ],
+      "conic_rmse_mm": 0.9594937178723296,
+      "conic_median_mm": 0.8211268696112934,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 1.2771453397764811,
+      "sensor_median_base_mm": 0.958923414393489,
+      "sensor_failure_rate": 0.0,
+      "ambiguous_fraction": 1.0,
+      "sweep_sensor_rmse_base_mm": [
+        1.25867320070969,
+        1.2953540873602054
+      ],
+      "points": 20
+    },
+    "last": {
+      "training_sweeps": 6,
+      "anchor_error_sum_mm": 23.521320736401602,
+      "radius_error_sum_mm": 0.4272492230631996,
+      "total_error_mm": 26.205806777256193,
+      "elapsed_seconds": 0.0636786690010922,
+      "nfev": 4,
+      "train_rmse_base_mm": 0.3570108238830674,
+      "anchors": [
+        [
+          0.0,
+          -1907.1170179330643
+        ],
+        [
+          1654.0336975462178,
+          956.1771933672061
+        ],
+        [
+          -1650.6610821800346,
+          952.605206595053
+        ]
+      ],
+      "radii": [
+        39.32641640768773,
+        39.32641640768773,
+        39.32641640768773
+      ],
+      "conic_rmse_mm": 0.9631291510130471,
+      "conic_median_mm": 0.8343072145755976,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 1.28561951834303,
+      "sensor_median_base_mm": 0.9727905541113,
+      "sensor_failure_rate": 0.0,
+      "ambiguous_fraction": 1.0,
+      "sweep_sensor_rmse_base_mm": [
+        1.2612640443220693,
+        1.3095220893094799
+      ],
+      "points": 20
+    },
+    "elapsed_seconds": 0.6522571279929252
+  },
+  {
+    "dataset": "flexible_lines_2000",
+    "input": "/home/torbjorn/repos/hp-sim5/autocal/data/references/flexible_lines_2000.json",
+    "holdout_ids": [
+      "sweep_005",
+      "sweep_006"
+    ],
+    "candidates": [
+      {
+        "training_sweeps": 3,
+        "anchor_error_sum_mm": 53.23526124921713,
+        "radius_error_sum_mm": 0.6469586093147655,
+        "total_error_mm": 57.30022207761701,
+        "elapsed_seconds": 0.31231917600962333,
+        "nfev": 28,
+        "train_rmse_base_mm": 0.328816980576015,
+        "anchors": [
+          [
+            0.0,
+            -1921.5549142713016
+          ],
+          [
+            1659.3279666973235,
+            958.5120738378108
+          ],
+          [
+            -1658.6983351462713,
+            957.8451731231816
+          ]
+        ],
+        "radii": [
+          39.399652869771586,
+          39.399652869771586,
+          39.399652869771586
+        ],
+        "conic_rmse_mm": 0.46433631492710553,
+        "conic_median_mm": 0.4344248885546322,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 0.5622776629779483,
+        "sensor_median_base_mm": 0.4791525032060806,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          0.5139609929889339,
+          0.6067589622360064
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 4,
+        "anchor_error_sum_mm": 55.26654344564538,
+        "radius_error_sum_mm": 0.6926564990502513,
+        "total_error_mm": 59.61863258340037,
+        "elapsed_seconds": 0.08985314299934544,
+        "nfev": 4,
+        "train_rmse_base_mm": 0.32560839979445194,
+        "anchors": [
+          [
+            0.0,
+            -1922.4469212802771
+          ],
+          [
+            1659.7378058636768,
+            958.8263237495385
+          ],
+          [
+            -1659.1945725841585,
+            958.2344260626631
+          ]
+        ],
+        "radii": [
+          39.414885499683415,
+          39.414885499683415,
+          39.414885499683415
+        ],
+        "conic_rmse_mm": 0.46348199684755487,
+        "conic_median_mm": 0.422919991995838,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 0.5611123997669102,
+        "sensor_median_base_mm": 0.4796876124013226,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          0.5125535325327248,
+          0.6057913226785167
+        ],
+        "points": 40
+      }
+    ],
+    "validation_selected": {
+      "training_sweeps": 4,
+      "anchor_error_sum_mm": 55.26654344564538,
+      "radius_error_sum_mm": 0.6926564990502513,
+      "total_error_mm": 59.61863258340037,
+      "elapsed_seconds": 0.08985314299934544,
+      "nfev": 4,
+      "train_rmse_base_mm": 0.32560839979445194,
+      "anchors": [
+        [
+          0.0,
+          -1922.4469212802771
+        ],
+        [
+          1659.7378058636768,
+          958.8263237495385
+        ],
+        [
+          -1659.1945725841585,
+          958.2344260626631
+        ]
+      ],
+      "radii": [
+        39.414885499683415,
+        39.414885499683415,
+        39.414885499683415
+      ],
+      "conic_rmse_mm": 0.46348199684755487,
+      "conic_median_mm": 0.422919991995838,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 0.5611123997669102,
+      "sensor_median_base_mm": 0.4796876124013226,
+      "sensor_failure_rate": 0.0,
+      "ambiguous_fraction": 1.0,
+      "sweep_sensor_rmse_base_mm": [
+        0.5125535325327248,
+        0.6057913226785167
+      ],
+      "points": 40
+    },
+    "last": {
+      "training_sweeps": 4,
+      "anchor_error_sum_mm": 55.26654344564538,
+      "radius_error_sum_mm": 0.6926564990502513,
+      "total_error_mm": 59.61863258340037,
+      "elapsed_seconds": 0.08985314299934544,
+      "nfev": 4,
+      "train_rmse_base_mm": 0.32560839979445194,
+      "anchors": [
+        [
+          0.0,
+          -1922.4469212802771
+        ],
+        [
+          1659.7378058636768,
+          958.8263237495385
+        ],
+        [
+          -1659.1945725841585,
+          958.2344260626631
+        ]
+      ],
+      "radii": [
+        39.414885499683415,
+        39.414885499683415,
+        39.414885499683415
+      ],
+      "conic_rmse_mm": 0.46348199684755487,
+      "conic_median_mm": 0.422919991995838,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 0.5611123997669102,
+      "sensor_median_base_mm": 0.4796876124013226,
+      "sensor_failure_rate": 0.0,
+      "ambiguous_fraction": 1.0,
+      "sweep_sensor_rmse_base_mm": [
+        0.5125535325327248,
+        0.6057913226785167
+      ],
+      "points": 40
+    },
+    "elapsed_seconds": 0.4085276650002925
+  },
+  {
+    "dataset": "layered_manual_some_bad_points",
+    "input": "/home/torbjorn/repos/hp-sim5/autocal/data/references/layered_manual_some_bad_points.json",
+    "holdout_ids": [
+      "sweep_008",
+      "sweep_009"
+    ],
+    "candidates": [
+      {
+        "training_sweeps": 3,
+        "anchor_error_sum_mm": 13.762354773000677,
+        "radius_error_sum_mm": 0.13213877984237143,
+        "total_error_mm": 14.592607213014903,
+        "elapsed_seconds": 0.4310655580047751,
+        "nfev": 33,
+        "train_rmse_base_mm": 1.304965170810824,
+        "anchors": [
+          [
+            0.0,
+            -1908.423003152638
+          ],
+          [
+            1648.174955657637,
+            953.2718448243761
+          ],
+          [
+            -1644.4503687718245,
+            949.5862653478615
+          ]
+        ],
+        "radii": [
+          39.228046259947455,
+          39.228046259947455,
+          39.228046259947455
+        ],
+        "conic_rmse_mm": 2.525522620139466,
+        "conic_median_mm": 0.44443915143471735,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 2.790948778021703,
+        "sensor_median_base_mm": 0.5604662258817297,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          1.2597618566199358,
+          3.7405601489198332
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 4,
+        "anchor_error_sum_mm": 16.475703721848937,
+        "radius_error_sum_mm": 0.24259889237492158,
+        "total_error_mm": 17.999997517957087,
+        "elapsed_seconds": 0.09008481200726237,
+        "nfev": 4,
+        "train_rmse_base_mm": 1.2900902932128673,
+        "anchors": [
+          [
+            0.0,
+            -1907.1414453088646
+          ],
+          [
+            1651.600002612818,
+            955.0844182929709
+          ],
+          [
+            -1646.7844045434656,
+            950.2150564507624
+          ]
+        ],
+        "radii": [
+          39.264866297458305,
+          39.264866297458305,
+          39.264866297458305
+        ],
+        "conic_rmse_mm": 2.52351037086996,
+        "conic_median_mm": 0.40414297113473996,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 2.7688630814627055,
+        "sensor_median_base_mm": 0.5053346655874795,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          1.146799758815421,
+          3.744069422560857
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 5,
+        "anchor_error_sum_mm": 19.309501360416558,
+        "radius_error_sum_mm": 0.2934811164826385,
+        "total_error_mm": 21.15349759943493,
+        "elapsed_seconds": 0.11789754500205163,
+        "nfev": 4,
+        "train_rmse_base_mm": 1.174377772519754,
+        "anchors": [
+          [
+            0.0,
+            -1908.0961821260692
+          ],
+          [
+            1651.9455368540605,
+            954.6655340654622
+          ],
+          [
+            -1648.2901092339641,
+            951.5022310340458
+          ]
+        ],
+        "radii": [
+          39.281827038827544,
+          39.281827038827544,
+          39.281827038827544
+        ],
+        "conic_rmse_mm": 2.52029815855185,
+        "conic_median_mm": 0.4212899752099201,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 2.7540469310248787,
+        "sensor_median_base_mm": 0.5124112401673862,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          1.1238716046182797,
+          3.729136845559282
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 6,
+        "anchor_error_sum_mm": 17.819096204879834,
+        "radius_error_sum_mm": 0.2690812018272126,
+        "total_error_mm": 19.5097832586388,
+        "elapsed_seconds": 0.20196849199419376,
+        "nfev": 4,
+        "train_rmse_base_mm": 1.117572223566142,
+        "anchors": [
+          [
+            0.0,
+            -1907.3945987150387
+          ],
+          [
+            1650.6117359172108,
+            953.3839377319833
+          ],
+          [
+            -1649.0698889981177,
+            952.2258930573871
+          ]
+        ],
+        "radii": [
+          39.2736937339424,
+          39.2736937339424,
+          39.2736937339424
+        ],
+        "conic_rmse_mm": 2.5082451207777385,
+        "conic_median_mm": 0.3858766199080853,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 2.7385499980309826,
+        "sensor_median_base_mm": 0.48623773421379257,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          1.1308756269955387,
+          3.7041102170019777
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 7,
+        "anchor_error_sum_mm": 18.605258445828465,
+        "radius_error_sum_mm": 0.2831309618260178,
+        "total_error_mm": 20.384222745181326,
+        "elapsed_seconds": 0.15654115100915078,
+        "nfev": 4,
+        "train_rmse_base_mm": 1.1317807425928446,
+        "anchors": [
+          [
+            0.0,
+            -1908.2247001645221
+          ],
+          [
+            1650.0030265139178,
+            952.8226399772913
+          ],
+          [
+            -1649.5845746031646,
+            952.8482273403758
+          ]
+        ],
+        "radii": [
+          39.27837698727534,
+          39.27837698727534,
+          39.27837698727534
+        ],
+        "conic_rmse_mm": 2.507496638636989,
+        "conic_median_mm": 0.3979602149431285,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 2.7347680238922534,
+        "sensor_median_base_mm": 0.5282536356516364,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          1.1358421281754767,
+          3.6969953947589502
+        ],
+        "points": 40
+      }
+    ],
+    "validation_selected": {
+      "training_sweeps": 7,
+      "anchor_error_sum_mm": 18.605258445828465,
+      "radius_error_sum_mm": 0.2831309618260178,
+      "total_error_mm": 20.384222745181326,
+      "elapsed_seconds": 0.15654115100915078,
+      "nfev": 4,
+      "train_rmse_base_mm": 1.1317807425928446,
+      "anchors": [
+        [
+          0.0,
+          -1908.2247001645221
+        ],
+        [
+          1650.0030265139178,
+          952.8226399772913
+        ],
+        [
+          -1649.5845746031646,
+          952.8482273403758
+        ]
+      ],
+      "radii": [
+        39.27837698727534,
+        39.27837698727534,
+        39.27837698727534
+      ],
+      "conic_rmse_mm": 2.507496638636989,
+      "conic_median_mm": 0.3979602149431285,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 2.7347680238922534,
+      "sensor_median_base_mm": 0.5282536356516364,
+      "sensor_failure_rate": 0.0,
+      "ambiguous_fraction": 1.0,
+      "sweep_sensor_rmse_base_mm": [
+        1.1358421281754767,
+        3.6969953947589502
+      ],
+      "points": 40
+    },
+    "last": {
+      "training_sweeps": 7,
+      "anchor_error_sum_mm": 18.605258445828465,
+      "radius_error_sum_mm": 0.2831309618260178,
+      "total_error_mm": 20.384222745181326,
+      "elapsed_seconds": 0.15654115100915078,
+      "nfev": 4,
+      "train_rmse_base_mm": 1.1317807425928446,
+      "anchors": [
+        [
+          0.0,
+          -1908.2247001645221
+        ],
+        [
+          1650.0030265139178,
+          952.8226399772913
+        ],
+        [
+          -1649.5845746031646,
+          952.8482273403758
+        ]
+      ],
+      "radii": [
+        39.27837698727534,
+        39.27837698727534,
+        39.27837698727534
+      ],
+      "conic_rmse_mm": 2.507496638636989,
+      "conic_median_mm": 0.3979602149431285,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 2.7347680238922534,
+      "sensor_median_base_mm": 0.5282536356516364,
+      "sensor_failure_rate": 0.0,
+      "ambiguous_fraction": 1.0,
+      "sweep_sensor_rmse_base_mm": [
+        1.1358421281754767,
+        3.6969953947589502
+      ],
+      "points": 40
+    },
+    "elapsed_seconds": 1.0243370340031106
+  },
+  {
+    "dataset": "ten_points_bigger_deltas",
+    "input": "/home/torbjorn/repos/hp-sim5/autocal/data/references/ten_points_bigger_deltas.json",
+    "holdout_ids": [
+      "sweep_009",
+      "sweep_010"
+    ],
+    "candidates": [
+      {
+        "training_sweeps": 3,
+        "anchor_error_sum_mm": 26.436402809717727,
+        "radius_error_sum_mm": 0.4492949724999562,
+        "total_error_mm": 29.259406379519106,
+        "elapsed_seconds": 0.5205474649992539,
+        "nfev": 33,
+        "train_rmse_base_mm": 0.36991670523301357,
+        "anchors": [
+          [
+            0.0,
+            -1910.2038390625037
+          ],
+          [
+            1653.6509169151464,
+            955.5567677953367
+          ],
+          [
+            -1651.0199638532101,
+            952.9934902832309
+          ]
+        ],
+        "radii": [
+          39.333764990833316,
+          39.333764990833316,
+          39.333764990833316
+        ],
+        "conic_rmse_mm": 0.8383153084419956,
+        "conic_median_mm": 0.6398147440193778,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 1.0656510731049749,
+        "sensor_median_base_mm": 0.773598074833925,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          1.159501300022968,
+          0.9626947358662642
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 4,
+        "anchor_error_sum_mm": 30.898550422046533,
+        "radius_error_sum_mm": 0.5356739457782282,
+        "total_error_mm": 34.26428908759921,
+        "elapsed_seconds": 0.07181257000775076,
+        "nfev": 4,
+        "train_rmse_base_mm": 0.3855931037009845,
+        "anchors": [
+          [
+            0.0,
+            -1908.5208057097025
+          ],
+          [
+            1653.4314302954099,
+            953.2584128379184
+          ],
+          [
+            -1657.017634755919,
+            957.4401255655614
+          ]
+        ],
+        "radii": [
+          39.362557981926074,
+          39.362557981926074,
+          39.362557981926074
+        ],
+        "conic_rmse_mm": 0.8655572653736308,
+        "conic_median_mm": 0.6387284090235317,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 1.0468443934691136,
+        "sensor_median_base_mm": 0.787498727427824,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          1.1464050733263345,
+          0.9367613229244014
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 5,
+        "anchor_error_sum_mm": 37.115465623648525,
+        "radius_error_sum_mm": 0.647326447464806,
+        "total_error_mm": 41.18273764730815,
+        "elapsed_seconds": 0.08715347999532241,
+        "nfev": 4,
+        "train_rmse_base_mm": 0.39403375606482427,
+        "anchors": [
+          [
+            0.0,
+            -1913.9340204785947
+          ],
+          [
+            1655.176735484792,
+            955.5212925341901
+          ],
+          [
+            -1655.40702968337,
+            956.6867405000716
+          ]
+        ],
+        "radii": [
+          39.399775482488266,
+          39.399775482488266,
+          39.399775482488266
+        ],
+        "conic_rmse_mm": 0.8021298151055707,
+        "conic_median_mm": 0.60292475582599,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 0.9968581870895039,
+        "sensor_median_base_mm": 0.7149858773381782,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          1.0240997912353207,
+          0.9688509214149083
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 6,
+        "anchor_error_sum_mm": 42.67082570112037,
+        "radius_error_sum_mm": 0.7470783650870558,
+        "total_error_mm": 47.36485750794711,
+        "elapsed_seconds": 0.1007294599985471,
+        "nfev": 4,
+        "train_rmse_base_mm": 0.40506156715568276,
+        "anchors": [
+          [
+            0.0,
+            -1914.5741814197543
+          ],
+          [
+            1658.3349092823285,
+            957.8703634012039
+          ],
+          [
+            -1656.7865113317691,
+            956.3528389089901
+          ]
+        ],
+        "radii": [
+          39.43302612169568,
+          39.43302612169568,
+          39.43302612169568
+        ],
+        "conic_rmse_mm": 0.8065413974323344,
+        "conic_median_mm": 0.5911320070437796,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 0.9996983461874333,
+        "sensor_median_base_mm": 0.6956288714819292,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          1.0738140775740828,
+          0.9196286715536333
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 7,
+        "anchor_error_sum_mm": 48.11108424944226,
+        "radius_error_sum_mm": 0.8642850854376576,
+        "total_error_mm": 53.5415475994786,
+        "elapsed_seconds": 0.1609679499961203,
+        "nfev": 4,
+        "train_rmse_base_mm": 0.45168009398134357,
+        "anchors": [
+          [
+            0.0,
+            -1914.179420191124
+          ],
+          [
+            1658.3911972230153,
+            956.4669882825084
+          ],
+          [
+            -1662.06952587023,
+            960.1263661592689
+          ]
+        ],
+        "radii": [
+          39.47209502847922,
+          39.47209502847922,
+          39.47209502847922
+        ],
+        "conic_rmse_mm": 0.8162904462720317,
+        "conic_median_mm": 0.5777304868479711,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 0.9784319463795417,
+        "sensor_median_base_mm": 0.6616866377340394,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          1.0517179779125618,
+          0.8991926614066804
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 8,
+        "anchor_error_sum_mm": 53.916474012891186,
+        "radius_error_sum_mm": 0.9875518193036186,
+        "total_error_mm": 60.12144509401815,
+        "elapsed_seconds": 0.2133778879942838,
+        "nfev": 4,
+        "train_rmse_base_mm": 0.48051854924786747,
+        "anchors": [
+          [
+            0.0,
+            -1914.722813689343
+          ],
+          [
+            1663.2607567820307,
+            960.0851788775379
+          ],
+          [
+            -1661.967176653501,
+            958.8161335911868
+          ]
+        ],
+        "radii": [
+          39.51318393976787,
+          39.51318393976787,
+          39.51318393976787
+        ],
+        "conic_rmse_mm": 0.821974435715652,
+        "conic_median_mm": 0.5992933714497495,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 0.9971373723787611,
+        "sensor_median_base_mm": 0.7330526142160034,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          1.1021234085990164,
+          0.8797101062321189
+        ],
+        "points": 40
+      }
+    ],
+    "validation_selected": {
+      "training_sweeps": 7,
+      "anchor_error_sum_mm": 48.11108424944226,
+      "radius_error_sum_mm": 0.8642850854376576,
+      "total_error_mm": 53.5415475994786,
+      "elapsed_seconds": 0.1609679499961203,
+      "nfev": 4,
+      "train_rmse_base_mm": 0.45168009398134357,
+      "anchors": [
+        [
+          0.0,
+          -1914.179420191124
+        ],
+        [
+          1658.3911972230153,
+          956.4669882825084
+        ],
+        [
+          -1662.06952587023,
+          960.1263661592689
+        ]
+      ],
+      "radii": [
+        39.47209502847922,
+        39.47209502847922,
+        39.47209502847922
+      ],
+      "conic_rmse_mm": 0.8162904462720317,
+      "conic_median_mm": 0.5777304868479711,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 0.9784319463795417,
+      "sensor_median_base_mm": 0.6616866377340394,
+      "sensor_failure_rate": 0.0,
+      "ambiguous_fraction": 1.0,
+      "sweep_sensor_rmse_base_mm": [
+        1.0517179779125618,
+        0.8991926614066804
+      ],
+      "points": 40
+    },
+    "last": {
+      "training_sweeps": 8,
+      "anchor_error_sum_mm": 53.916474012891186,
+      "radius_error_sum_mm": 0.9875518193036186,
+      "total_error_mm": 60.12144509401815,
+      "elapsed_seconds": 0.2133778879942838,
+      "nfev": 4,
+      "train_rmse_base_mm": 0.48051854924786747,
+      "anchors": [
+        [
+          0.0,
+          -1914.722813689343
+        ],
+        [
+          1663.2607567820307,
+          960.0851788775379
+        ],
+        [
+          -1661.967176653501,
+          958.8161335911868
+        ]
+      ],
+      "radii": [
+        39.51318393976787,
+        39.51318393976787,
+        39.51318393976787
+      ],
+      "conic_rmse_mm": 0.821974435715652,
+      "conic_median_mm": 0.5992933714497495,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 0.9971373723787611,
+      "sensor_median_base_mm": 0.7330526142160034,
+      "sensor_failure_rate": 0.0,
+      "ambiguous_fraction": 1.0,
+      "sweep_sensor_rmse_base_mm": [
+        1.1021234085990164,
+        0.8797101062321189
+      ],
+      "points": 40
+    },
+    "elapsed_seconds": 1.1844455100072082
+  },
+  {
+    "dataset": "ten_points_w_buildup",
+    "input": "/home/torbjorn/repos/hp-sim5/autocal/data/references/ten_points_w_buildup.json",
+    "holdout_ids": [
+      "sweep_006",
+      "sweep_007"
+    ],
+    "candidates": [
+      {
+        "training_sweeps": 3,
+        "anchor_error_sum_mm": 20.965674266825715,
+        "radius_error_sum_mm": 0.3003838471641487,
+        "total_error_mm": 22.85304164184157,
+        "elapsed_seconds": 0.5434960430138744,
+        "nfev": 35,
+        "train_rmse_base_mm": 0.3487445885424446,
+        "anchors": [
+          [
+            0.0,
+            -1908.121981929578
+          ],
+          [
+            1652.113584242288,
+            954.7666088363359
+          ],
+          [
+            -1649.6045575000094,
+            952.0837081593294
+          ]
+        ],
+        "radii": [
+          39.284127949054714,
+          39.284127949054714,
+          39.284127949054714
+        ],
+        "conic_rmse_mm": 0.5150357168888485,
+        "conic_median_mm": 0.35106767685629736,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 0.7016388255219581,
+        "sensor_median_base_mm": 0.4471283816286415,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          0.6367082091362012,
+          0.7610497614336642
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 4,
+        "anchor_error_sum_mm": 21.7888389865619,
+        "radius_error_sum_mm": 0.3139768770383853,
+        "total_error_mm": 23.761613887163612,
+        "elapsed_seconds": 0.10498279800231103,
+        "nfev": 4,
+        "train_rmse_base_mm": 0.354969725944154,
+        "anchors": [
+          [
+            0.0,
+            -1908.0695508406413
+          ],
+          [
+            1652.6227473171452,
+            955.1130184500977
+          ],
+          [
+            -1649.900816199712,
+            952.0678260878868
+          ]
+        ],
+        "radii": [
+          39.28865895901279,
+          39.28865895901279,
+          39.28865895901279
+        ],
+        "conic_rmse_mm": 0.5148425133119684,
+        "conic_median_mm": 0.3466953128209683,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 0.69659878568724,
+        "sensor_median_base_mm": 0.45251721072714657,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          0.6387201556268907,
+          0.7500241991014924
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 5,
+        "anchor_error_sum_mm": 22.712414665233936,
+        "radius_error_sum_mm": 0.3284456823225739,
+        "total_error_mm": 24.776099750609706,
+        "elapsed_seconds": 0.11645158700412139,
+        "nfev": 4,
+        "train_rmse_base_mm": 0.35873805222835925,
+        "anchors": [
+          [
+            0.0,
+            -1908.6116105752405
+          ],
+          [
+            1652.547412147552,
+            954.8412890908913
+          ],
+          [
+            -1650.3400117634255,
+            952.5316237582771
+          ]
+        ],
+        "radii": [
+          39.29348189410752,
+          39.29348189410752,
+          39.29348189410752
+        ],
+        "conic_rmse_mm": 0.5060745417001676,
+        "conic_median_mm": 0.36312841496314674,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 0.6802192258539131,
+        "sensor_median_base_mm": 0.464223645917503,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          0.6290824167468217,
+          0.7277717385159799
+        ],
+        "points": 40
+      }
+    ],
+    "validation_selected": {
+      "training_sweeps": 5,
+      "anchor_error_sum_mm": 22.712414665233936,
+      "radius_error_sum_mm": 0.3284456823225739,
+      "total_error_mm": 24.776099750609706,
+      "elapsed_seconds": 0.11645158700412139,
+      "nfev": 4,
+      "train_rmse_base_mm": 0.35873805222835925,
+      "anchors": [
+        [
+          0.0,
+          -1908.6116105752405
+        ],
+        [
+          1652.547412147552,
+          954.8412890908913
+        ],
+        [
+          -1650.3400117634255,
+          952.5316237582771
+        ]
+      ],
+      "radii": [
+        39.29348189410752,
+        39.29348189410752,
+        39.29348189410752
+      ],
+      "conic_rmse_mm": 0.5060745417001676,
+      "conic_median_mm": 0.36312841496314674,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 0.6802192258539131,
+      "sensor_median_base_mm": 0.464223645917503,
+      "sensor_failure_rate": 0.0,
+      "ambiguous_fraction": 1.0,
+      "sweep_sensor_rmse_base_mm": [
+        0.6290824167468217,
+        0.7277717385159799
+      ],
+      "points": 40
+    },
+    "last": {
+      "training_sweeps": 5,
+      "anchor_error_sum_mm": 22.712414665233936,
+      "radius_error_sum_mm": 0.3284456823225739,
+      "total_error_mm": 24.776099750609706,
+      "elapsed_seconds": 0.11645158700412139,
+      "nfev": 4,
+      "train_rmse_base_mm": 0.35873805222835925,
+      "anchors": [
+        [
+          0.0,
+          -1908.6116105752405
+        ],
+        [
+          1652.547412147552,
+          954.8412890908913
+        ],
+        [
+          -1650.3400117634255,
+          952.5316237582771
+        ]
+      ],
+      "radii": [
+        39.29348189410752,
+        39.29348189410752,
+        39.29348189410752
+      ],
+      "conic_rmse_mm": 0.5060745417001676,
+      "conic_median_mm": 0.36312841496314674,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 0.6802192258539131,
+      "sensor_median_base_mm": 0.464223645917503,
+      "sensor_failure_rate": 0.0,
+      "ambiguous_fraction": 1.0,
+      "sweep_sensor_rmse_base_mm": [
+        0.6290824167468217,
+        0.7277717385159799
+      ],
+      "points": 40
+    },
+    "elapsed_seconds": 0.7819620450027287
+  },
+  {
+    "dataset": "ten_points_w_buildup2",
+    "input": "/home/torbjorn/repos/hp-sim5/autocal/data/references/ten_points_w_buildup2.json",
+    "holdout_ids": [
+      "sweep_008",
+      "sweep_009"
+    ],
+    "candidates": [
+      {
+        "training_sweeps": 3,
+        "anchor_error_sum_mm": 21.03050720125232,
+        "radius_error_sum_mm": 0.33538213017933316,
+        "total_error_mm": 23.137775273885698,
+        "elapsed_seconds": 0.6000516649946803,
+        "nfev": 35,
+        "train_rmse_base_mm": 0.3396349567863446,
+        "anchors": [
+          [
+            0.0,
+            -1908.849656699356
+          ],
+          [
+            1651.194997717385,
+            954.0380338981091
+          ],
+          [
+            -1650.0001706696419,
+            952.4243860842654
+          ]
+        ],
+        "radii": [
+          39.29579404339311,
+          39.29579404339311,
+          39.29579404339311
+        ],
+        "conic_rmse_mm": 0.5293661741453632,
+        "conic_median_mm": 0.35513444801448424,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 0.7544688997498962,
+        "sensor_median_base_mm": 0.39873484059211095,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          0.767925880698261,
+          0.7407674960022465
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 4,
+        "anchor_error_sum_mm": 21.529049370811506,
+        "radius_error_sum_mm": 0.34647389021743186,
+        "total_error_mm": 23.706009027147026,
+        "elapsed_seconds": 0.0983869050105568,
+        "nfev": 3,
+        "train_rmse_base_mm": 0.346606209496546,
+        "anchors": [
+          [
+            0.0,
+            -1908.529380200495
+          ],
+          [
+            1651.6243251566386,
+            954.2383706259524
+          ],
+          [
+            -1650.3420812506895,
+            952.5301406603654
+          ]
+        ],
+        "radii": [
+          39.29949129673914,
+          39.29949129673914,
+          39.29949129673914
+        ],
+        "conic_rmse_mm": 0.5279468408178224,
+        "conic_median_mm": 0.358654491601605,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 0.7475934942559965,
+        "sensor_median_base_mm": 0.40208633750585776,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          0.7516314633407457,
+          0.7435335961636371
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 5,
+        "anchor_error_sum_mm": 22.631099977557668,
+        "radius_error_sum_mm": 0.36698654356381155,
+        "total_error_mm": 24.936944436010428,
+        "elapsed_seconds": 0.08669029899465386,
+        "nfev": 4,
+        "train_rmse_base_mm": 0.35264814854512755,
+        "anchors": [
+          [
+            0.0,
+            -1908.7991616118818
+          ],
+          [
+            1651.7899484368859,
+            954.1130300891994
+          ],
+          [
+            -1650.9508501227156,
+            953.0124918946601
+          ]
+        ],
+        "radii": [
+          39.3063288478546,
+          39.3063288478546,
+          39.3063288478546
+        ],
+        "conic_rmse_mm": 0.5278499373748182,
+        "conic_median_mm": 0.3547645454188961,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 0.7361225298561519,
+        "sensor_median_base_mm": 0.402855637485095,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          0.740809170227834,
+          0.7314058594446659
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 6,
+        "anchor_error_sum_mm": 23.2426427303599,
+        "radius_error_sum_mm": 0.3664924960351428,
+        "total_error_mm": 25.545382996639482,
+        "elapsed_seconds": 0.10174256301252171,
+        "nfev": 4,
+        "train_rmse_base_mm": 0.35979624156323087,
+        "anchors": [
+          [
+            0.0,
+            -1908.894064913956
+          ],
+          [
+            1652.0076342625403,
+            954.3556487333226
+          ],
+          [
+            -1651.0882064064283,
+            953.180193586546
+          ]
+        ],
+        "radii": [
+          39.306164165345045,
+          39.306164165345045,
+          39.306164165345045
+        ],
+        "conic_rmse_mm": 0.5170834602144705,
+        "conic_median_mm": 0.35277889106536975,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 0.724631585275635,
+        "sensor_median_base_mm": 0.4261538745388803,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          0.743892679427147,
+          0.7048443446980756
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 7,
+        "anchor_error_sum_mm": 24.799399581723794,
+        "radius_error_sum_mm": 0.3931924151309758,
+        "total_error_mm": 27.269900387369198,
+        "elapsed_seconds": 0.15119492000667378,
+        "nfev": 4,
+        "train_rmse_base_mm": 0.3652580543707535,
+        "anchors": [
+          [
+            0.0,
+            -1909.144618186012
+          ],
+          [
+            1652.2200308064362,
+            954.0842204456791
+          ],
+          [
+            -1652.0932509906343,
+            953.9819167651291
+          ]
+        ],
+        "radii": [
+          39.31506413837699,
+          39.31506413837699,
+          39.31506413837699
+        ],
+        "conic_rmse_mm": 0.5175492226201841,
+        "conic_median_mm": 0.3623157327341162,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 0.7091083754392091,
+        "sensor_median_base_mm": 0.430773499377056,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          0.7282837329499203,
+          0.6893998698553676
+        ],
+        "points": 40
+      }
+    ],
+    "validation_selected": {
+      "training_sweeps": 7,
+      "anchor_error_sum_mm": 24.799399581723794,
+      "radius_error_sum_mm": 0.3931924151309758,
+      "total_error_mm": 27.269900387369198,
+      "elapsed_seconds": 0.15119492000667378,
+      "nfev": 4,
+      "train_rmse_base_mm": 0.3652580543707535,
+      "anchors": [
+        [
+          0.0,
+          -1909.144618186012
+        ],
+        [
+          1652.2200308064362,
+          954.0842204456791
+        ],
+        [
+          -1652.0932509906343,
+          953.9819167651291
+        ]
+      ],
+      "radii": [
+        39.31506413837699,
+        39.31506413837699,
+        39.31506413837699
+      ],
+      "conic_rmse_mm": 0.5175492226201841,
+      "conic_median_mm": 0.3623157327341162,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 0.7091083754392091,
+      "sensor_median_base_mm": 0.430773499377056,
+      "sensor_failure_rate": 0.0,
+      "ambiguous_fraction": 1.0,
+      "sweep_sensor_rmse_base_mm": [
+        0.7282837329499203,
+        0.6893998698553676
+      ],
+      "points": 40
+    },
+    "last": {
+      "training_sweeps": 7,
+      "anchor_error_sum_mm": 24.799399581723794,
+      "radius_error_sum_mm": 0.3931924151309758,
+      "total_error_mm": 27.269900387369198,
+      "elapsed_seconds": 0.15119492000667378,
+      "nfev": 4,
+      "train_rmse_base_mm": 0.3652580543707535,
+      "anchors": [
+        [
+          0.0,
+          -1909.144618186012
+        ],
+        [
+          1652.2200308064362,
+          954.0842204456791
+        ],
+        [
+          -1652.0932509906343,
+          953.9819167651291
+        ]
+      ],
+      "radii": [
+        39.31506413837699,
+        39.31506413837699,
+        39.31506413837699
+      ],
+      "conic_rmse_mm": 0.5175492226201841,
+      "conic_median_mm": 0.3623157327341162,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 0.7091083754392091,
+      "sensor_median_base_mm": 0.430773499377056,
+      "sensor_failure_rate": 0.0,
+      "ambiguous_fraction": 1.0,
+      "sweep_sensor_rmse_base_mm": [
+        0.7282837329499203,
+        0.6893998698553676
+      ],
+      "points": 40
+    },
+    "elapsed_seconds": 1.0634909880027408
+  },
+  {
+    "dataset": "fifth_hp3_dataset",
+    "input": "/home/torbjorn/repos/hp-sim5/autocal/data/references/fifth_hp3_dataset.json",
+    "holdout_ids": [
+      "sweep_008",
+      "sweep_009"
+    ],
+    "candidates": [
+      {
+        "training_sweeps": 3,
+        "anchor_error_sum_mm": 6694.670842931004,
+        "radius_error_sum_mm": 3.2619998565047577,
+        "total_error_mm": 6715.166592501417,
+        "elapsed_seconds": 1.4988393160019768,
+        "nfev": 63,
+        "train_rmse_base_mm": 0.9684542152106598,
+        "anchors": [
+          [
+            0.0,
+            -1442.9508438225341,
+            -176.17081214806967
+          ],
+          [
+            2132.427081999967,
+            1501.5323461870967,
+            -176.17081214806967
+          ],
+          [
+            -2196.9654846044955,
+            1555.796669061752,
+            -176.17081214806967
+          ],
+          [
+            -4.070002062228734,
+            -3475.4707017041396,
+            4999.999999001782
+          ]
+        ],
+        "radii": [
+          39.99999996412619,
+          39.99999996412619,
+          39.99999996412619,
+          39.99999996412619
+        ],
+        "conic_rmse_mm": 33.94057756146502,
+        "conic_median_mm": 4.250699679422756,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 26.178048076375052,
+        "sensor_median_base_mm": 7.7846447636318015,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          6.560109533972904,
+          36.43549594942115
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 4,
+        "anchor_error_sum_mm": 5582.6308047624725,
+        "radius_error_sum_mm": 3.261999999999972,
+        "total_error_mm": 5603.126555234492,
+        "elapsed_seconds": 2.0923218629905023,
+        "nfev": 67,
+        "train_rmse_base_mm": 2.5064401813068056,
+        "anchors": [
+          [
+            0.0,
+            -1319.6061853037288,
+            -283.10998133440404
+          ],
+          [
+            1346.4692608094767,
+            583.3998767308647,
+            -283.10998133440404
+          ],
+          [
+            -4999.999999999999,
+            3185.3371161920477,
+            -283.10998133440404
+          ],
+          [
+            56.20212091768789,
+            -82.76991161025599,
+            2387.9096025442354
+          ]
+        ],
+        "radii": [
+          39.99999999999999,
+          39.99999999999999,
+          39.99999999999999,
+          39.99999999999999
+        ],
+        "conic_rmse_mm": 35.42458681389394,
+        "conic_median_mm": 27.582426227956105,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 43.16619797702079,
+        "sensor_median_base_mm": 39.49626973359719,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          14.582124128199913,
+          59.27902623603459
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 5,
+        "anchor_error_sum_mm": 5446.41866351198,
+        "radius_error_sum_mm": 3.261999999999972,
+        "total_error_mm": 5466.914413984,
+        "elapsed_seconds": 0.6075099340087036,
+        "nfev": 15,
+        "train_rmse_base_mm": 2.7058445735468313,
+        "anchors": [
+          [
+            0.0,
+            -1285.2508101719106,
+            -283.9683659633412
+          ],
+          [
+            1397.5152533114017,
+            620.3854137263996,
+            -283.9683659633412
+          ],
+          [
+            -4999.999999998097,
+            3124.7016410264664,
+            -283.9683659633412
+          ],
+          [
+            44.50118774956945,
+            -109.32792398195319,
+            2304.521932465833
+          ]
+        ],
+        "radii": [
+          39.99999999999999,
+          39.99999999999999,
+          39.99999999999999,
+          39.99999999999999
+        ],
+        "conic_rmse_mm": 35.63790786606423,
+        "conic_median_mm": 27.413048763826858,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 43.72338964800083,
+        "sensor_median_base_mm": 39.47682826295335,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          14.818973366313307,
+          60.03222162297768
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 6,
+        "anchor_error_sum_mm": 6649.5189091663015,
+        "radius_error_sum_mm": 0.737999999994912,
+        "total_error_mm": 6654.155899922968,
+        "elapsed_seconds": 1.1913060149963712,
+        "nfev": 25,
+        "train_rmse_base_mm": 5.569135442734278,
+        "anchors": [
+          [
+            0.0,
+            -1175.083858508831,
+            -355.15507136043607
+          ],
+          [
+            1344.0973501840901,
+            603.3011132132376,
+            -355.15507136043607
+          ],
+          [
+            -4999.999999999998,
+            3151.1913089403724,
+            -355.15507136043607
+          ],
+          [
+            115.10817970042545,
+            -238.3822162401089,
+            3317.780207684598
+          ]
+        ],
+        "radii": [
+          39.00000000000127,
+          39.00000000000127,
+          39.00000000000127,
+          39.00000000000127
+        ],
+        "conic_rmse_mm": 5.757853941496496,
+        "conic_median_mm": 4.2899536152742215,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 9.983546174762475,
+        "sensor_median_base_mm": 9.025590437396596,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          10.580874724561365,
+          9.348127005468386
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 7,
+        "anchor_error_sum_mm": 7417.549328503856,
+        "radius_error_sum_mm": 0.7379999999999143,
+        "total_error_mm": 7422.186319260553,
+        "elapsed_seconds": 0.9368215989961755,
+        "nfev": 21,
+        "train_rmse_base_mm": 5.591516962017017,
+        "anchors": [
+          [
+            0.0,
+            -1160.9954038452347,
+            -360.7410600242342
+          ],
+          [
+            1354.2339661452813,
+            570.1864648471477,
+            -360.7410600242342
+          ],
+          [
+            -4999.99998422084,
+            3245.68030443314,
+            -360.7410600242342
+          ],
+          [
+            -4.97538945599971,
+            -217.64010389817182,
+            4011.91637270352
+          ]
+        ],
+        "radii": [
+          39.00000000000002,
+          39.00000000000002,
+          39.00000000000002,
+          39.00000000000002
+        ],
+        "conic_rmse_mm": 5.686374650954876,
+        "conic_median_mm": 3.5907883693659106,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 9.415864157117722,
+        "sensor_median_base_mm": 8.420003807519137,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          9.21396475366991,
+          9.613524284502384
+        ],
+        "points": 40
+      }
+    ],
+    "validation_selected": {
+      "training_sweeps": 7,
+      "anchor_error_sum_mm": 7417.549328503856,
+      "radius_error_sum_mm": 0.7379999999999143,
+      "total_error_mm": 7422.186319260553,
+      "elapsed_seconds": 0.9368215989961755,
+      "nfev": 21,
+      "train_rmse_base_mm": 5.591516962017017,
+      "anchors": [
+        [
+          0.0,
+          -1160.9954038452347,
+          -360.7410600242342
+        ],
+        [
+          1354.2339661452813,
+          570.1864648471477,
+          -360.7410600242342
+        ],
+        [
+          -4999.99998422084,
+          3245.68030443314,
+          -360.7410600242342
+        ],
+        [
+          -4.97538945599971,
+          -217.64010389817182,
+          4011.91637270352
+        ]
+      ],
+      "radii": [
+        39.00000000000002,
+        39.00000000000002,
+        39.00000000000002,
+        39.00000000000002
+      ],
+      "conic_rmse_mm": 5.686374650954876,
+      "conic_median_mm": 3.5907883693659106,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 9.415864157117722,
+      "sensor_median_base_mm": 8.420003807519137,
+      "sensor_failure_rate": 0.0,
+      "ambiguous_fraction": 1.0,
+      "sweep_sensor_rmse_base_mm": [
+        9.21396475366991,
+        9.613524284502384
+      ],
+      "points": 40
+    },
+    "last": {
+      "training_sweeps": 7,
+      "anchor_error_sum_mm": 7417.549328503856,
+      "radius_error_sum_mm": 0.7379999999999143,
+      "total_error_mm": 7422.186319260553,
+      "elapsed_seconds": 0.9368215989961755,
+      "nfev": 21,
+      "train_rmse_base_mm": 5.591516962017017,
+      "anchors": [
+        [
+          0.0,
+          -1160.9954038452347,
+          -360.7410600242342
+        ],
+        [
+          1354.2339661452813,
+          570.1864648471477,
+          -360.7410600242342
+        ],
+        [
+          -4999.99998422084,
+          3245.68030443314,
+          -360.7410600242342
+        ],
+        [
+          -4.97538945599971,
+          -217.64010389817182,
+          4011.91637270352
+        ]
+      ],
+      "radii": [
+        39.00000000000002,
+        39.00000000000002,
+        39.00000000000002,
+        39.00000000000002
+      ],
+      "conic_rmse_mm": 5.686374650954876,
+      "conic_median_mm": 3.5907883693659106,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 9.415864157117722,
+      "sensor_median_base_mm": 8.420003807519137,
+      "sensor_failure_rate": 0.0,
+      "ambiguous_fraction": 1.0,
+      "sweep_sensor_rmse_base_mm": [
+        9.21396475366991,
+        9.613524284502384
+      ],
+      "points": 40
+    },
+    "elapsed_seconds": 6.355696514001465
+  },
+  {
+    "dataset": "seventh_hp3_dataset",
+    "input": "/home/torbjorn/repos/hp-sim5/autocal/data/references/seventh_hp3_dataset.json",
+    "holdout_ids": [
+      "sweep_009",
+      "sweep_010"
+    ],
+    "candidates": [
+      {
+        "training_sweeps": 3,
+        "anchor_error_sum_mm": 6769.00862710375,
+        "radius_error_sum_mm": 3.261999999984596,
+        "total_error_mm": 6789.504377575673,
+        "elapsed_seconds": 1.849879246990895,
+        "nfev": 79,
+        "train_rmse_base_mm": 0.985981921672301,
+        "anchors": [
+          [
+            0.0,
+            -1442.987491925545,
+            -180.93386227903338
+          ],
+          [
+            2134.2855162069063,
+            1537.7230018266055,
+            -180.93386227903338
+          ],
+          [
+            -2178.881914504911,
+            1551.9478212833067,
+            -180.93386227903338
+          ],
+          [
+            -4.030340182262699,
+            -3559.4926796467103,
+            4999.999999717627
+          ]
+        ],
+        "radii": [
+          39.99999999999615,
+          39.99999999999615,
+          39.99999999999615,
+          39.99999999999615
+        ],
+        "conic_rmse_mm": 23.25100412181321,
+        "conic_median_mm": 20.268700526293912,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 41.531988847522776,
+        "sensor_median_base_mm": 22.68567318055207,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          55.43911286523389,
+          19.398890689350516
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 4,
+        "anchor_error_sum_mm": 6611.677555303282,
+        "radius_error_sum_mm": 0.737999999999971,
+        "total_error_mm": 6616.314546059981,
+        "elapsed_seconds": 2.3894802139984677,
+        "nfev": 79,
+        "train_rmse_base_mm": 1.6699512436631154,
+        "anchors": [
+          [
+            0.0,
+            -982.8950114490933,
+            -37.73477053896747
+          ],
+          [
+            2090.0948526696634,
+            1101.6282027776638,
+            -37.73477053896747
+          ],
+          [
+            -4999.999998327257,
+            3008.149541978533,
+            -37.73477053896747
+          ],
+          [
+            -95.02482842544637,
+            -1169.4939307873797,
+            2107.0893223988955
+          ]
+        ],
+        "radii": [
+          39.00000000000001,
+          39.00000000000001,
+          39.00000000000001,
+          39.00000000000001
+        ],
+        "conic_rmse_mm": 12.315676038962383,
+        "conic_median_mm": 13.59520690983343,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 54.173718865980035,
+        "sensor_median_base_mm": 17.087728149763468,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          76.24769854614637,
+          7.474764073632742
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 5,
+        "anchor_error_sum_mm": 7147.771478946592,
+        "radius_error_sum_mm": 0.7379999975031808,
+        "total_error_mm": 7152.4084696876025,
+        "elapsed_seconds": 1.527641868990031,
+        "nfev": 43,
+        "train_rmse_base_mm": 2.2998137239639562,
+        "anchors": [
+          [
+            0.0,
+            -1299.550167296239,
+            -371.6601525907141
+          ],
+          [
+            1236.3114742207265,
+            517.6448445751013,
+            -371.6601525907141
+          ],
+          [
+            -4999.9999999984875,
+            3324.834219525033,
+            -371.6601525907141
+          ],
+          [
+            52.00480489319957,
+            -60.75813887196012,
+            3725.2340929498605
+          ]
+        ],
+        "radii": [
+          39.000000000624205,
+          39.000000000624205,
+          39.000000000624205,
+          39.000000000624205
+        ],
+        "conic_rmse_mm": 4.564113564903855,
+        "conic_median_mm": 1.904123355163419,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 12.741273336369265,
+        "sensor_median_base_mm": 4.016579983317065,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          10.784428723656738,
+          14.435241236935259
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 6,
+        "anchor_error_sum_mm": 7119.406629442108,
+        "radius_error_sum_mm": 0.7379999999498636,
+        "total_error_mm": 7124.043620198492,
+        "elapsed_seconds": 0.573209884998505,
+        "nfev": 12,
+        "train_rmse_base_mm": 3.0610372934610477,
+        "anchors": [
+          [
+            0.0,
+            -1291.212169228545,
+            -366.1134732778181
+          ],
+          [
+            1239.6966437003546,
+            518.1908273687235,
+            -366.1134732778181
+          ],
+          [
+            -4999.999999966534,
+            3321.8603563001852,
+            -366.1134732778181
+          ],
+          [
+            45.26956910053639,
+            -63.448588047766606,
+            3694.8343218291843
+          ]
+        ],
+        "radii": [
+          39.000000000012534,
+          39.000000000012534,
+          39.000000000012534,
+          39.000000000012534
+        ],
+        "conic_rmse_mm": 4.5517869559015045,
+        "conic_median_mm": 1.7684838145115083,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 12.083375480590465,
+        "sensor_median_base_mm": 3.798874646709592,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          10.442440528322635,
+          13.52669071954832
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 7,
+        "anchor_error_sum_mm": 311.1100749440116,
+        "radius_error_sum_mm": 3.2619999999962492,
+        "total_error_mm": 331.60582541600786,
+        "elapsed_seconds": 1.8525288000091678,
+        "nfev": 38,
+        "train_rmse_base_mm": 0.3815706218424347,
+        "anchors": [
+          [
+            0.0,
+            -1984.3444619747766,
+            -311.1542724460114
+          ],
+          [
+            1755.0408669274398,
+            1043.250550207887,
+            -311.1542724460114
+          ],
+          [
+            -1625.4468372433478,
+            919.7417631237522,
+            -311.1542724460114
+          ],
+          [
+            -9.395272669378386,
+            4.437662584452291,
+            1923.9988673250089
+          ]
+        ],
+        "radii": [
+          39.99999999999906,
+          39.99999999999906,
+          39.99999999999906,
+          39.99999999999906
+        ],
+        "conic_rmse_mm": 1.1330891965351133,
+        "conic_median_mm": 0.9949773261006695,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 1.5570825233523653,
+        "sensor_median_base_mm": 1.1189059112576136,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          2.0140878964137574,
+          0.8902032995773178
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 8,
+        "anchor_error_sum_mm": 291.8854388652405,
+        "radius_error_sum_mm": 3.261999999999119,
+        "total_error_mm": 312.38118933725474,
+        "elapsed_seconds": 0.5566203850030433,
+        "nfev": 11,
+        "train_rmse_base_mm": 0.4816294151845839,
+        "anchors": [
+          [
+            0.0,
+            -1987.5432117116027,
+            -311.746262993451
+          ],
+          [
+            1745.2030971559352,
+            1032.741376125017,
+            -311.746262993451
+          ],
+          [
+            -1629.95577573005,
+            927.3415761894017,
+            -311.746262993451
+          ],
+          [
+            -9.63987792294557,
+            6.214882730766479,
+            1920.3525760722396
+          ]
+        ],
+        "radii": [
+          39.99999999999978,
+          39.99999999999978,
+          39.99999999999978,
+          39.99999999999978
+        ],
+        "conic_rmse_mm": 0.8006721107256257,
+        "conic_median_mm": 0.6432769191230295,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 1.061979783135682,
+        "sensor_median_base_mm": 0.6754273058599383,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          1.2897600955362993,
+          0.7694939996777207
+        ],
+        "points": 40
+      }
+    ],
+    "validation_selected": {
+      "training_sweeps": 8,
+      "anchor_error_sum_mm": 291.8854388652405,
+      "radius_error_sum_mm": 3.261999999999119,
+      "total_error_mm": 312.38118933725474,
+      "elapsed_seconds": 0.5566203850030433,
+      "nfev": 11,
+      "train_rmse_base_mm": 0.4816294151845839,
+      "anchors": [
+        [
+          0.0,
+          -1987.5432117116027,
+          -311.746262993451
+        ],
+        [
+          1745.2030971559352,
+          1032.741376125017,
+          -311.746262993451
+        ],
+        [
+          -1629.95577573005,
+          927.3415761894017,
+          -311.746262993451
+        ],
+        [
+          -9.63987792294557,
+          6.214882730766479,
+          1920.3525760722396
+        ]
+      ],
+      "radii": [
+        39.99999999999978,
+        39.99999999999978,
+        39.99999999999978,
+        39.99999999999978
+      ],
+      "conic_rmse_mm": 0.8006721107256257,
+      "conic_median_mm": 0.6432769191230295,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 1.061979783135682,
+      "sensor_median_base_mm": 0.6754273058599383,
+      "sensor_failure_rate": 0.0,
+      "ambiguous_fraction": 1.0,
+      "sweep_sensor_rmse_base_mm": [
+        1.2897600955362993,
+        0.7694939996777207
+      ],
+      "points": 40
+    },
+    "last": {
+      "training_sweeps": 8,
+      "anchor_error_sum_mm": 291.8854388652405,
+      "radius_error_sum_mm": 3.261999999999119,
+      "total_error_mm": 312.38118933725474,
+      "elapsed_seconds": 0.5566203850030433,
+      "nfev": 11,
+      "train_rmse_base_mm": 0.4816294151845839,
+      "anchors": [
+        [
+          0.0,
+          -1987.5432117116027,
+          -311.746262993451
+        ],
+        [
+          1745.2030971559352,
+          1032.741376125017,
+          -311.746262993451
+        ],
+        [
+          -1629.95577573005,
+          927.3415761894017,
+          -311.746262993451
+        ],
+        [
+          -9.63987792294557,
+          6.214882730766479,
+          1920.3525760722396
+        ]
+      ],
+      "radii": [
+        39.99999999999978,
+        39.99999999999978,
+        39.99999999999978,
+        39.99999999999978
+      ],
+      "conic_rmse_mm": 0.8006721107256257,
+      "conic_median_mm": 0.6432769191230295,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 1.061979783135682,
+      "sensor_median_base_mm": 0.6754273058599383,
+      "sensor_failure_rate": 0.0,
+      "ambiguous_fraction": 1.0,
+      "sweep_sensor_rmse_base_mm": [
+        1.2897600955362993,
+        0.7694939996777207
+      ],
+      "points": 40
+    },
+    "elapsed_seconds": 8.782671622000635
+  },
+  {
+    "dataset": "sixteenth_hp3_dataset_even_more_pressure",
+    "input": "/home/torbjorn/repos/hp-sim5/autocal/data/references/sixteenth_hp3_dataset_even_more_pressure.json",
+    "holdout_ids": [
+      "sweep_007",
+      "sweep_008"
+    ],
+    "candidates": [
+      {
+        "training_sweeps": 3,
+        "anchor_error_sum_mm": 6696.8907838771165,
+        "radius_error_sum_mm": 3.261999983104914,
+        "total_error_mm": 6717.386534242982,
+        "elapsed_seconds": 1.701752110995585,
+        "nfev": 83,
+        "train_rmse_base_mm": 0.9584506103975143,
+        "anchors": [
+          [
+            0.0,
+            -1449.162662231382,
+            -177.15516998314058
+          ],
+          [
+            2128.907134025678,
+            1498.9598026068081,
+            -177.15516998314058
+          ],
+          [
+            -2203.079880454069,
+            1563.5942501568172,
+            -177.15516998314058
+          ],
+          [
+            -5.729094640375528,
+            -3479.7087088919952,
+            4999.9999727961895
+          ]
+        ],
+        "radii": [
+          39.99999999577623,
+          39.99999999577623,
+          39.99999999577623,
+          39.99999999577623
+        ],
+        "conic_rmse_mm": 22.339644105002716,
+        "conic_median_mm": 20.482104976581034,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 46.06942297846547,
+        "sensor_median_base_mm": 24.93242779984171,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          38.17598383339691,
+          52.79562221898462
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 4,
+        "anchor_error_sum_mm": 9893.318566081989,
+        "radius_error_sum_mm": 3.261999999999972,
+        "total_error_mm": 9913.81431655401,
+        "elapsed_seconds": 1.1185576410061913,
+        "nfev": 39,
+        "train_rmse_base_mm": 3.61772389905052,
+        "anchors": [
+          [
+            0.0,
+            -807.258091333114,
+            -255.9795348501088
+          ],
+          [
+            4999.999999999999,
+            2834.524899261018,
+            -255.9795348501088
+          ],
+          [
+            -2783.319938786561,
+            1392.5918332840815,
+            -255.9795348501088
+          ],
+          [
+            148.59068508263334,
+            -2071.5945320501983,
+            4999.999999999982
+          ]
+        ],
+        "radii": [
+          39.99999999999999,
+          39.99999999999999,
+          39.99999999999999,
+          39.99999999999999
+        ],
+        "conic_rmse_mm": 9.24795512343719,
+        "conic_median_mm": 6.7084556522938,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 49.43193154778552,
+        "sensor_median_base_mm": 21.050741901690458,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          45.4427313678913,
+          53.12240467934009
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 5,
+        "anchor_error_sum_mm": 9589.993354635055,
+        "radius_error_sum_mm": 0.737999999999971,
+        "total_error_mm": 9594.630345391754,
+        "elapsed_seconds": 0.7177740939951036,
+        "nfev": 19,
+        "train_rmse_base_mm": 3.4534589048174817,
+        "anchors": [
+          [
+            0.0,
+            -799.0514560356689,
+            -234.69841518802053
+          ],
+          [
+            4999.999999999999,
+            2910.4378939847647,
+            -234.69841518802053
+          ],
+          [
+            -2494.2313462572743,
+            1236.1502451533102,
+            -234.69841518802053
+          ],
+          [
+            182.3719689218817,
+            -2021.9089829794984,
+            4999.999999999999
+          ]
+        ],
+        "radii": [
+          39.00000000000001,
+          39.00000000000001,
+          39.00000000000001,
+          39.00000000000001
+        ],
+        "conic_rmse_mm": 9.567212711139812,
+        "conic_median_mm": 6.326592697937867,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 49.43234289511307,
+        "sensor_median_base_mm": 17.11447748794848,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          43.856219972448436,
+          54.440288554785276
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 6,
+        "anchor_error_sum_mm": 8687.897644880004,
+        "radius_error_sum_mm": 3.261999999999972,
+        "total_error_mm": 8708.393395352025,
+        "elapsed_seconds": 1.3764803009980824,
+        "nfev": 34,
+        "train_rmse_base_mm": 3.2408314995399587,
+        "anchors": [
+          [
+            0.0,
+            -801.6545262848978,
+            -290.6272780238233
+          ],
+          [
+            4004.00366459382,
+            2162.5290572287668,
+            -290.6272780238233
+          ],
+          [
+            -3473.4975381236104,
+            1814.8360844279225,
+            -290.6272780238233
+          ],
+          [
+            22.31135492853496,
+            -1647.5804741200523,
+            4304.828159705636
+          ]
+        ],
+        "radii": [
+          39.99999999999999,
+          39.99999999999999,
+          39.99999999999999,
+          39.99999999999999
+        ],
+        "conic_rmse_mm": 7.211997909816489,
+        "conic_median_mm": 6.9547006410020416,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 1581.6543520994617,
+        "sensor_median_base_mm": 16.384649430427963,
+        "sensor_failure_rate": 0.025,
+        "ambiguous_fraction": 0.975,
+        "sweep_sensor_rmse_base_mm": [
+          2236.3586505178678,
+          44.28278767464899
+        ],
+        "points": 40
+      }
+    ],
+    "validation_selected": {
+      "training_sweeps": 3,
+      "anchor_error_sum_mm": 6696.8907838771165,
+      "radius_error_sum_mm": 3.261999983104914,
+      "total_error_mm": 6717.386534242982,
+      "elapsed_seconds": 1.701752110995585,
+      "nfev": 83,
+      "train_rmse_base_mm": 0.9584506103975143,
+      "anchors": [
+        [
+          0.0,
+          -1449.162662231382,
+          -177.15516998314058
+        ],
+        [
+          2128.907134025678,
+          1498.9598026068081,
+          -177.15516998314058
+        ],
+        [
+          -2203.079880454069,
+          1563.5942501568172,
+          -177.15516998314058
+        ],
+        [
+          -5.729094640375528,
+          -3479.7087088919952,
+          4999.9999727961895
+        ]
+      ],
+      "radii": [
+        39.99999999577623,
+        39.99999999577623,
+        39.99999999577623,
+        39.99999999577623
+      ],
+      "conic_rmse_mm": 22.339644105002716,
+      "conic_median_mm": 20.482104976581034,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 46.06942297846547,
+      "sensor_median_base_mm": 24.93242779984171,
+      "sensor_failure_rate": 0.0,
+      "ambiguous_fraction": 1.0,
+      "sweep_sensor_rmse_base_mm": [
+        38.17598383339691,
+        52.79562221898462
+      ],
+      "points": 40
+    },
+    "last": {
+      "training_sweeps": 6,
+      "anchor_error_sum_mm": 8687.897644880004,
+      "radius_error_sum_mm": 3.261999999999972,
+      "total_error_mm": 8708.393395352025,
+      "elapsed_seconds": 1.3764803009980824,
+      "nfev": 34,
+      "train_rmse_base_mm": 3.2408314995399587,
+      "anchors": [
+        [
+          0.0,
+          -801.6545262848978,
+          -290.6272780238233
+        ],
+        [
+          4004.00366459382,
+          2162.5290572287668,
+          -290.6272780238233
+        ],
+        [
+          -3473.4975381236104,
+          1814.8360844279225,
+          -290.6272780238233
+        ],
+        [
+          22.31135492853496,
+          -1647.5804741200523,
+          4304.828159705636
+        ]
+      ],
+      "radii": [
+        39.99999999999999,
+        39.99999999999999,
+        39.99999999999999,
+        39.99999999999999
+      ],
+      "conic_rmse_mm": 7.211997909816489,
+      "conic_median_mm": 6.9547006410020416,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 1581.6543520994617,
+      "sensor_median_base_mm": 16.384649430427963,
+      "sensor_failure_rate": 0.025,
+      "ambiguous_fraction": 0.975,
+      "sweep_sensor_rmse_base_mm": [
+        2236.3586505178678,
+        44.28278767464899
+      ],
+      "points": 40
+    },
+    "elapsed_seconds": 4.932259093999164
+  },
+  {
+    "dataset": "nineteenth_hp3_dataset_even_more_pressure",
+    "input": "/home/torbjorn/repos/hp-sim5/autocal/data/references/nineteenth_hp3_dataset_even_more_pressure.json",
+    "holdout_ids": [
+      "sweep_007",
+      "sweep_008"
+    ],
+    "candidates": [
+      {
+        "training_sweeps": 3,
+        "anchor_error_sum_mm": 6767.927123932777,
+        "radius_error_sum_mm": 3.2619999999867844,
+        "total_error_mm": 6788.422874404714,
+        "elapsed_seconds": 1.6731311970070237,
+        "nfev": 82,
+        "train_rmse_base_mm": 0.9536184299838072,
+        "anchors": [
+          [
+            0.0,
+            -1444.1444511166915,
+            -179.94427330578162
+          ],
+          [
+            2137.8794933382787,
+            1537.5371879209254,
+            -179.94427330578162
+          ],
+          [
+            -2184.4307779376763,
+            1552.9354928775801,
+            -179.94427330578162
+          ],
+          [
+            -5.147927949221927,
+            -3550.273553206053,
+            4999.999999980446
+          ]
+        ],
+        "radii": [
+          39.999999999996696,
+          39.999999999996696,
+          39.999999999996696,
+          39.999999999996696
+        ],
+        "conic_rmse_mm": 84.44015617082214,
+        "conic_median_mm": 72.04954161871672,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 94.69717309997347,
+        "sensor_median_base_mm": 112.60316504579835,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          127.1718819284133,
+          41.98120571206104
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 4,
+        "anchor_error_sum_mm": 9743.842774142644,
+        "radius_error_sum_mm": 0.737999999999971,
+        "total_error_mm": 9748.479764899343,
+        "elapsed_seconds": 0.5970666840003105,
+        "nfev": 20,
+        "train_rmse_base_mm": 4.854116466842161,
+        "anchors": [
+          [
+            0.0,
+            -1190.5852745253264,
+            -146.6385429955131
+          ],
+          [
+            1493.4762444300306,
+            858.5349428623708,
+            -146.6385429955131
+          ],
+          [
+            -4999.999999999999,
+            3708.718969810584,
+            -146.6385429955131
+          ],
+          [
+            -194.242924207998,
+            -3193.382999679382,
+            4999.999999963013
+          ]
+        ],
+        "radii": [
+          39.00000000000001,
+          39.00000000000001,
+          39.00000000000001,
+          39.00000000000001
+        ],
+        "conic_rmse_mm": 58.65529803048032,
+        "conic_median_mm": 49.359961884791666,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 114.33145274790195,
+        "sensor_median_base_mm": 135.1208664361411,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          154.4985127491762,
+          47.681985415711374
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 5,
+        "anchor_error_sum_mm": 7546.529633591678,
+        "radius_error_sum_mm": 0.737999999999971,
+        "total_error_mm": 7551.166624348377,
+        "elapsed_seconds": 1.4841360799910035,
+        "nfev": 45,
+        "train_rmse_base_mm": 2.266710199263713,
+        "anchors": [
+          [
+            0.0,
+            -1245.3177866061321,
+            -366.5237783688878
+          ],
+          [
+            1277.6412267463968,
+            519.5627807329042,
+            -366.5237783688878
+          ],
+          [
+            -4999.999999999999,
+            3292.2899379148243,
+            -366.5237783688878
+          ],
+          [
+            -23.719016887971875,
+            -68.97730684531358,
+            4119.916552564589
+          ]
+        ],
+        "radii": [
+          39.00000000000001,
+          39.00000000000001,
+          39.00000000000001,
+          39.00000000000001
+        ],
+        "conic_rmse_mm": 39.30135978567765,
+        "conic_median_mm": 25.59133121009666,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 5701.243403743621,
+        "sensor_median_base_mm": 56.61143784812513,
+        "sensor_failure_rate": 0.325,
+        "ambiguous_fraction": 0.675,
+        "sweep_sensor_rmse_base_mm": [
+          8062.773892740972,
+          5.463697914067361
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 6,
+        "anchor_error_sum_mm": 8079.209778766359,
+        "radius_error_sum_mm": 0.737999999999971,
+        "total_error_mm": 8083.846769523057,
+        "elapsed_seconds": 0.43945523900038097,
+        "nfev": 17,
+        "train_rmse_base_mm": 2.8543543742944517,
+        "anchors": [
+          [
+            0.0,
+            -1266.8608859139408,
+            -364.4268308377556
+          ],
+          [
+            1238.1434660190776,
+            489.51868750468367,
+            -364.4268308377556
+          ],
+          [
+            -4999.999995714197,
+            3374.465509383884,
+            -364.4268308377556
+          ],
+          [
+            -64.46451849961164,
+            -7.575101513028168,
+            4579.313761089336
+          ]
+        ],
+        "radii": [
+          39.00000000000001,
+          39.00000000000001,
+          39.00000000000001,
+          39.00000000000001
+        ],
+        "conic_rmse_mm": 38.812901073478436,
+        "conic_median_mm": 24.613100603339227,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 5701.280697483984,
+        "sensor_median_base_mm": 53.792140536589486,
+        "sensor_failure_rate": 0.325,
+        "ambiguous_fraction": 0.675,
+        "sweep_sensor_rmse_base_mm": [
+          8062.8271618869085,
+          4.619582839429094
+        ],
+        "points": 40
+      }
+    ],
+    "validation_selected": {
+      "training_sweeps": 3,
+      "anchor_error_sum_mm": 6767.927123932777,
+      "radius_error_sum_mm": 3.2619999999867844,
+      "total_error_mm": 6788.422874404714,
+      "elapsed_seconds": 1.6731311970070237,
+      "nfev": 82,
+      "train_rmse_base_mm": 0.9536184299838072,
+      "anchors": [
+        [
+          0.0,
+          -1444.1444511166915,
+          -179.94427330578162
+        ],
+        [
+          2137.8794933382787,
+          1537.5371879209254,
+          -179.94427330578162
+        ],
+        [
+          -2184.4307779376763,
+          1552.9354928775801,
+          -179.94427330578162
+        ],
+        [
+          -5.147927949221927,
+          -3550.273553206053,
+          4999.999999980446
+        ]
+      ],
+      "radii": [
+        39.999999999996696,
+        39.999999999996696,
+        39.999999999996696,
+        39.999999999996696
+      ],
+      "conic_rmse_mm": 84.44015617082214,
+      "conic_median_mm": 72.04954161871672,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 94.69717309997347,
+      "sensor_median_base_mm": 112.60316504579835,
+      "sensor_failure_rate": 0.0,
+      "ambiguous_fraction": 1.0,
+      "sweep_sensor_rmse_base_mm": [
+        127.1718819284133,
+        41.98120571206104
+      ],
+      "points": 40
+    },
+    "last": {
+      "training_sweeps": 6,
+      "anchor_error_sum_mm": 8079.209778766359,
+      "radius_error_sum_mm": 0.737999999999971,
+      "total_error_mm": 8083.846769523057,
+      "elapsed_seconds": 0.43945523900038097,
+      "nfev": 17,
+      "train_rmse_base_mm": 2.8543543742944517,
+      "anchors": [
+        [
+          0.0,
+          -1266.8608859139408,
+          -364.4268308377556
+        ],
+        [
+          1238.1434660190776,
+          489.51868750468367,
+          -364.4268308377556
+        ],
+        [
+          -4999.999995714197,
+          3374.465509383884,
+          -364.4268308377556
+        ],
+        [
+          -64.46451849961164,
+          -7.575101513028168,
+          4579.313761089336
+        ]
+      ],
+      "radii": [
+        39.00000000000001,
+        39.00000000000001,
+        39.00000000000001,
+        39.00000000000001
+      ],
+      "conic_rmse_mm": 38.812901073478436,
+      "conic_median_mm": 24.613100603339227,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 5701.280697483984,
+      "sensor_median_base_mm": 53.792140536589486,
+      "sensor_failure_rate": 0.325,
+      "ambiguous_fraction": 0.675,
+      "sweep_sensor_rmse_base_mm": [
+        8062.8271618869085,
+        4.619582839429094
+      ],
+      "points": 40
+    },
+    "elapsed_seconds": 4.211454706004588
+  },
+  {
+    "dataset": "23_april_2026",
+    "input": "/home/torbjorn/repos/hp-sim5/autocal/data/references/23_april_2026.json",
+    "holdout_ids": [
+      "sweep_009",
+      "sweep_010"
+    ],
+    "candidates": [
+      {
+        "training_sweeps": 3,
+        "anchor_error_sum_mm": 5157.8487045462625,
+        "radius_error_sum_mm": 0.2952031195790994,
+        "total_error_mm": 5159.703520449835,
+        "elapsed_seconds": 2.1025523680000333,
+        "nfev": 100,
+        "train_rmse_base_mm": 1.0768744181266312,
+        "anchors": [
+          [
+            0.0,
+            -1053.332197682325,
+            -58.16740685602139
+          ],
+          [
+            3145.4569365943885,
+            1870.915085851246,
+            -58.16740685602139
+          ],
+          [
+            -2540.0848533340827,
+            1450.5475651148586,
+            -58.16740685602139
+          ],
+          [
+            33.53092150957329,
+            -1384.4143451385735,
+            2361.4037920399164
+          ]
+        ],
+        "radii": [
+          39.110699220105225,
+          39.110699220105225,
+          39.110699220105225,
+          39.110699220105225
+        ],
+        "conic_rmse_mm": 98.57561093831238,
+        "conic_median_mm": 99.00269051915464,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 102.8550804639842,
+        "sensor_median_base_mm": 91.84253349319337,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          104.55368297557882,
+          101.1279512832505
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 4,
+        "anchor_error_sum_mm": 6636.378194884799,
+        "radius_error_sum_mm": 3.2619999996177,
+        "total_error_mm": 6656.873945354417,
+        "elapsed_seconds": 1.1519849589967635,
+        "nfev": 40,
+        "train_rmse_base_mm": 0.9145440133916448,
+        "anchors": [
+          [
+            0.0,
+            -1443.9121053568656,
+            -169.79344360120928
+          ],
+          [
+            2419.997122081444,
+            1738.708122193355,
+            -169.79344360120928
+          ],
+          [
+            -1929.9236260619937,
+            1310.1775124733847,
+            -169.79344360120928
+          ],
+          [
+            47.82834161222621,
+            -3376.8217071377235,
+            4999.999999954453
+          ]
+        ],
+        "radii": [
+          39.999999999904425,
+          39.999999999904425,
+          39.999999999904425,
+          39.999999999904425
+        ],
+        "conic_rmse_mm": 37.39508747832794,
+        "conic_median_mm": 34.00688513184073,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 29.271425262755983,
+        "sensor_median_base_mm": 26.911001127733808,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          29.70236486845369,
+          28.834045762734483
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 5,
+        "anchor_error_sum_mm": 6674.480726346597,
+        "radius_error_sum_mm": 3.2619999909880164,
+        "total_error_mm": 6694.976476761994,
+        "elapsed_seconds": 0.6015573600016069,
+        "nfev": 16,
+        "train_rmse_base_mm": 1.0641056510183466,
+        "anchors": [
+          [
+            0.0,
+            -1421.3644620621378,
+            -164.54683352989377
+          ],
+          [
+            2499.5025073944953,
+            1789.435682401601,
+            -164.54683352989377
+          ],
+          [
+            -1899.947741780813,
+            1269.3940971508287,
+            -164.54683352989377
+          ],
+          [
+            71.73375036882337,
+            -3336.117073538605,
+            4999.999999999989
+          ]
+        ],
+        "radii": [
+          39.999999997747004,
+          39.999999997747004,
+          39.999999997747004,
+          39.999999997747004
+        ],
+        "conic_rmse_mm": 33.98895621380605,
+        "conic_median_mm": 29.82779076764833,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 27.343886033931067,
+        "sensor_median_base_mm": 23.73001568803149,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          27.33826684141603,
+          27.349504071934344
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 6,
+        "anchor_error_sum_mm": 7328.010786439547,
+        "radius_error_sum_mm": 2.879290747795892,
+        "total_error_mm": 7346.101903761196,
+        "elapsed_seconds": 3.236982180009363,
+        "nfev": 77,
+        "train_rmse_base_mm": 1.738998800000939,
+        "anchors": [
+          [
+            0.0,
+            -1067.165558522471,
+            -74.99882998168349
+          ],
+          [
+            4999.999999999999,
+            3272.812227340762,
+            -74.99882998168349
+          ],
+          [
+            -1860.596656798322,
+            974.0312870434087,
+            -74.99882998168349
+          ],
+          [
+            195.86875215819498,
+            -1731.8010372505448,
+            3047.656826886279
+          ]
+        ],
+        "radii": [
+          39.90432268694897,
+          39.90432268694897,
+          39.90432268694897,
+          39.90432268694897
+        ],
+        "conic_rmse_mm": 50.63171117497718,
+        "conic_median_mm": 49.61128001631018,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 75.59381577779482,
+        "sensor_median_base_mm": 64.7508635393042,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          73.10004620414068,
+          78.00790480872344
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 7,
+        "anchor_error_sum_mm": 7162.68219254955,
+        "radius_error_sum_mm": 3.2619999999542983,
+        "total_error_mm": 7183.177943021282,
+        "elapsed_seconds": 1.846880176992272,
+        "nfev": 38,
+        "train_rmse_base_mm": 3.3372483077134545,
+        "anchors": [
+          [
+            0.0,
+            -989.4834897915509,
+            -43.795229396043744
+          ],
+          [
+            2559.6585675520273,
+            1367.4523088387812,
+            -43.795229396043744
+          ],
+          [
+            -4999.99999996731,
+            2931.8541339876824,
+            -43.795229396043744
+          ],
+          [
+            -79.92121381835885,
+            -1258.1345038944166,
+            2155.149739292189
+          ]
+        ],
+        "radii": [
+          39.999999999988574,
+          39.999999999988574,
+          39.999999999988574,
+          39.999999999988574
+        ],
+        "conic_rmse_mm": 143.50981405392983,
+        "conic_median_mm": 145.34705983726144,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 135.6342593061041,
+        "sensor_median_base_mm": 126.57504444567084,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          141.864607776322,
+          129.10359272886748
+        ],
+        "points": 40
+      },
+      {
+        "training_sweeps": 8,
+        "anchor_error_sum_mm": 10100.391405590664,
+        "radius_error_sum_mm": 3.261999999999972,
+        "total_error_mm": 10120.887156062685,
+        "elapsed_seconds": 1.37871699599782,
+        "nfev": 29,
+        "train_rmse_base_mm": 3.5898595574148557,
+        "anchors": [
+          [
+            0.0,
+            -1197.5767218252677,
+            -167.62036843732844
+          ],
+          [
+            1921.4536069039277,
+            1174.740755024086,
+            -167.62036843732844
+          ],
+          [
+            -4999.999999999999,
+            3561.4783222515216,
+            -167.62036843732844
+          ],
+          [
+            -159.15044637549536,
+            -3612.707485691212,
+            4999.9999999213105
+          ]
+        ],
+        "radii": [
+          39.99999999999999,
+          39.99999999999999,
+          39.99999999999999,
+          39.99999999999999
+        ],
+        "conic_rmse_mm": 54.54271015837675,
+        "conic_median_mm": 43.785283740212506,
+        "conic_coverage": 1.0,
+        "sensor_rmse_base_mm": 49.17997101471595,
+        "sensor_median_base_mm": 35.80831036301289,
+        "sensor_failure_rate": 0.0,
+        "ambiguous_fraction": 1.0,
+        "sweep_sensor_rmse_base_mm": [
+          52.58216956935252,
+          45.52421928376653
+        ],
+        "points": 40
+      }
+    ],
+    "validation_selected": {
+      "training_sweeps": 5,
+      "anchor_error_sum_mm": 6674.480726346597,
+      "radius_error_sum_mm": 3.2619999909880164,
+      "total_error_mm": 6694.976476761994,
+      "elapsed_seconds": 0.6015573600016069,
+      "nfev": 16,
+      "train_rmse_base_mm": 1.0641056510183466,
+      "anchors": [
+        [
+          0.0,
+          -1421.3644620621378,
+          -164.54683352989377
+        ],
+        [
+          2499.5025073944953,
+          1789.435682401601,
+          -164.54683352989377
+        ],
+        [
+          -1899.947741780813,
+          1269.3940971508287,
+          -164.54683352989377
+        ],
+        [
+          71.73375036882337,
+          -3336.117073538605,
+          4999.999999999989
+        ]
+      ],
+      "radii": [
+        39.999999997747004,
+        39.999999997747004,
+        39.999999997747004,
+        39.999999997747004
+      ],
+      "conic_rmse_mm": 33.98895621380605,
+      "conic_median_mm": 29.82779076764833,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 27.343886033931067,
+      "sensor_median_base_mm": 23.73001568803149,
+      "sensor_failure_rate": 0.0,
+      "ambiguous_fraction": 1.0,
+      "sweep_sensor_rmse_base_mm": [
+        27.33826684141603,
+        27.349504071934344
+      ],
+      "points": 40
+    },
+    "last": {
+      "training_sweeps": 8,
+      "anchor_error_sum_mm": 10100.391405590664,
+      "radius_error_sum_mm": 3.261999999999972,
+      "total_error_mm": 10120.887156062685,
+      "elapsed_seconds": 1.37871699599782,
+      "nfev": 29,
+      "train_rmse_base_mm": 3.5898595574148557,
+      "anchors": [
+        [
+          0.0,
+          -1197.5767218252677,
+          -167.62036843732844
+        ],
+        [
+          1921.4536069039277,
+          1174.740755024086,
+          -167.62036843732844
+        ],
+        [
+          -4999.999999999999,
+          3561.4783222515216,
+          -167.62036843732844
+        ],
+        [
+          -159.15044637549536,
+          -3612.707485691212,
+          4999.9999999213105
+        ]
+      ],
+      "radii": [
+        39.99999999999999,
+        39.99999999999999,
+        39.99999999999999,
+        39.99999999999999
+      ],
+      "conic_rmse_mm": 54.54271015837675,
+      "conic_median_mm": 43.785283740212506,
+      "conic_coverage": 1.0,
+      "sensor_rmse_base_mm": 49.17997101471595,
+      "sensor_median_base_mm": 35.80831036301289,
+      "sensor_failure_rate": 0.0,
+      "ambiguous_fraction": 1.0,
+      "sweep_sensor_rmse_base_mm": [
+        52.58216956935252,
+        45.52421928376653
+      ],
+      "points": 40
+    },
+    "elapsed_seconds": 10.350803370994981
+  }
+]

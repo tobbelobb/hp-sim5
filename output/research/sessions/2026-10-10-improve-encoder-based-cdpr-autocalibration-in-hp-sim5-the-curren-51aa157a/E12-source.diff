@@ -1,0 +1,629 @@
+diff --git a/autocal/README.md b/autocal/README.md
+index 9d4a5536..6f707ded 100644
+--- a/autocal/README.md
++++ b/autocal/README.md
+@@ -313,6 +313,10 @@ Collection checks the latest 1.5 seconds of encoder readings for quiet settling,
+ with a range limit scaled to the longer 5-second vibration window's drift allowance.
+ It retains that longer history for the existing vibration check. This reduces
+ waiting after transients while keeping point counts and automatic stopping.
++Sweep pullout searches for an endpoint for up to 120 seconds. If travel has not
++settled by then, collection holds the drive and applies sensor preload. The
++endpoint and every measurement still require the ordinary settling check;
++fixed-anchor slip, stalled clocks and transport errors remain failures.
+ 
+ On acceptance, RRF receives M669 for the selected anchors.
+ Fitted M666 spool settings are printed but are not sent automatically.
+diff --git a/autocal/control/behaviors/sweep_data_collection.mjs b/autocal/control/behaviors/sweep_data_collection.mjs
+index c9b79f93..e1f6d264 100644
+--- a/autocal/control/behaviors/sweep_data_collection.mjs
++++ b/autocal/control/behaviors/sweep_data_collection.mjs
+@@ -21,6 +21,7 @@ import {
+   applyDataPointPreloadModes,
+   applyForceModeState,
+   collectDataPoint,
++  EncoderStabilityTimeoutError,
+   getCurrentLengths,
+   primeEncoders,
+   returnMotorsToOriginOneAtATime,
+@@ -1075,7 +1076,7 @@ function normalizeSweepConfig(config, machineConfig) {
+   return { ...config, fixedAnchors, driveAnchor, sensorAnchor };
+ }
+ 
+-async function performForceSweep(sendFn, sweepConfig, options) {
++export async function performForceSweep(sendFn, sweepConfig, options) {
+   const {
+     axes,
+     motorIds,
+@@ -1121,11 +1122,19 @@ async function performForceSweep(sendFn, sweepConfig, options) {
+     return forceLow;
+   });
+   await applyForceModeState(sendFn, { motorIds, modes: modesPullout });
+-  await waitForStableEncoders(sendFn, motorIds, speedup, {
+-    ...settleOptions,
+-    timeoutMs: FORCE_TRAVEL_TIMEOUT_MS,
+-    onProgress: message => console.log(`; sweep pullout: ${message.replace(/^; /, '')}`),
+-  });
++  try {
++    await waitForStableEncoders(sendFn, motorIds, speedup, {
++      ...settleOptions,
++      timeoutMs: FORCE_TRAVEL_TIMEOUT_MS,
++      wallTimeoutMs: FORCE_TRAVEL_TIMEOUT_MS + 30000,
++      onProgress: message => console.log(`; sweep pullout: ${message.replace(/^; /, '')}`),
++    });
++  } catch (error) {
++    if (!(error instanceof EncoderStabilityTimeoutError)) throw error;
++    // Pullout searches for an endpoint; it is not a measurement. Hold the drive
++    // below and require ordinary settling under preload before using that endpoint.
++    console.log('; sweep pullout reached travel time limit; holding drive before settling');
++  }
+ 
+   const preloadModes = motorIds.map((_, idx) => {
+     if (idx === driveAnchor) {
+diff --git a/autocal/control/primitives/uncalibrated_actions.mjs b/autocal/control/primitives/uncalibrated_actions.mjs
+index 5d4cb8cd..53ddfd30 100644
+--- a/autocal/control/primitives/uncalibrated_actions.mjs
++++ b/autocal/control/primitives/uncalibrated_actions.mjs
+@@ -72,6 +72,8 @@ function normalizeWaitForStableEncodersArgs(speedupOrOptions, options = {}) {
+   };
+ }
+ 
++export class EncoderStabilityTimeoutError extends Error {}
++
+ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions, options = {}) {
+   const {
+     speedup,
+@@ -227,7 +229,7 @@ export async function waitForStableEncoders(sendFn, motorIds, speedupOrOptions,
+       lastProgress = wallNowFn();
+     }
+     if (Number.isFinite(timeoutMs) && timeoutMs > 0 && nowMs - startMs > timeoutMs) {
+-      throw new Error(`Timed out waiting for encoder stability after ${Math.round(timeoutMs)}ms`);
++      throw new EncoderStabilityTimeoutError(`Timed out waiting for encoder stability after ${Math.round(timeoutMs)}ms`);
+     }
+ 
+     // eslint-disable-next-line no-await-in-loop
+diff --git a/autocal/headless_sim.py b/autocal/headless_sim.py
+index 61a156d3..153b98d5 100644
+--- a/autocal/headless_sim.py
++++ b/autocal/headless_sim.py
+@@ -2,6 +2,7 @@
+ import hashlib
+ import json
+ import os
++import re
+ from pathlib import Path
+ import shutil
+ import socket
+@@ -115,7 +116,7 @@ class HeadlessSimulation:
+                 os.environ['AUTOCAL_REFERENCE_WS'] = self.reference_url
+             if self.reference_url:
+                 self.manifest.update(extended_reference_ws=self.reference_url, owned_recorder=self.recorder is not None)
+-            from autocal._autocal_common import _arg_has_flag, _arg_value, _resolve_rrf_target, _wait_for_rrf_server
++            from autocal._autocal_common import _arg_has_flag, _arg_value, _resolve_rrf_target, _wait_for_rrf_server, _send_rrf_gcode
+             rrf_url, explicit, port = _resolve_rrf_target(self.collector_args)
+             if not explicit:
+                 port = port if _arg_value(self.collector_args, "--port") else free_port()
+@@ -130,10 +131,15 @@ class HeadlessSimulation:
+                 self.spawn("rrf", [str(RRF_SIM_BINARY), "--vsd", RRF_SIM_VSD_PATH, "-c", self.config,
+                                    "--server", "-p", str(port)])
+             _wait_for_rrf_server(rrf_url)
++            buildup = getattr(self.args, 'buildup_factor', None)
++            if buildup is None:
++                initial_q = re.search(r'\bQ([-+\d.eE]+)', _send_rrf_gcode(rrf_url, 'M666'))
++                buildup = float(initial_q[1]) if initial_q else 0
++            layering = _arg_has_flag(self.collector_args, '--line-layering') or buildup != 0
+             ws_port, api_port = free_port(), free_port()
+             self.url = f"http://127.0.0.1:{api_port}"
+             service = self.physics = self.spawn("physics", ["node", "scripts/autocal_headless.mjs", str(self.directory / "scene.usda"),
+-                                            rrf_url, str(ws_port), str(api_port), str(self.directory)])
++                                            rrf_url, str(ws_port), str(api_port), str(self.directory), str(layering).lower()])
+             deadline = time.monotonic() + 30
+             while True:
+                 try:
+@@ -145,6 +151,7 @@ class HeadlessSimulation:
+                     time.sleep(.1)
+             self.collector_args.extend(["--server", rrf_url, "--headless-url", self.url, "--no-spawn-rrf-simulator"])
+             self.manifest["baked_scene_sha256"] = hashlib.sha256((self.directory / "baked-scene.usda").read_bytes()).hexdigest()
++            self.manifest['initial_baked_scene_sha256'] = self.manifest['baked_scene_sha256']
+             self.manifest.update(status="running", service_url=self.url, rrf_url=rrf_url,
+                                  services=[process.pid for process in self.processes],
+                                  owned_rrf=owns_rrf,
+diff --git a/autocal/tests/test_headless_sim.py b/autocal/tests/test_headless_sim.py
+index 51571d3b..02d3087d 100644
+--- a/autocal/tests/test_headless_sim.py
++++ b/autocal/tests/test_headless_sim.py
+@@ -1,4 +1,5 @@
+ import json
++import hashlib
+ import os
+ from pathlib import Path
+ import subprocess
+@@ -61,6 +62,34 @@ def test_failed_lifecycle_retains_clock_error_and_partial_points(tmp_path):
+     assert partial.read_text() == '{"point":{"l_drive":1}}\n'
+ 
+ 
++@pytest.mark.parametrize('layering', [False, True])
++def test_headless_geometry_and_control_settings_survive_reset(tmp_path, layering):
++    from argparse import Namespace
++    args = Namespace(machine_type='hangprinter_3', find_radii='off', find_buildup_factor='off',
++                     rrf_config=None, config=None, dataset=tmp_path / 'sweeps.json',
++                     buildup_factor=0, keep_sim_alive=False)
++    collector_args = ['--line-layering'] if layering else []
++    with HeadlessSimulation(args, collector_args) as service:
++        initial = service.request('status')
++        assert initial['settings']['enableLayering'] is layering
++        service.request('payload', payload={'type': 'simulation_settings', 'closedLoopMotorsEnabled': True})
++        service.request('payload', payload={'type': 'reset'})
++        reset = service.request('status')
++        assert reset['epoch'] == 1
++        assert reset['settings']['enableLayering'] is layering
++        assert reset['settings']['closedLoopMotorsEnabled'] is True
++        assert reset['baked_scene_sha256'] == initial['baked_scene_sha256']
++        service.request('payload', payload={'type': 'simulation_settings', 'lineLayeringEnabled': not layering})
++        toggled = service.request('status')
++        assert toggled['epoch'] == 2 and toggled['settings']['enableLayering'] is not layering
++        assert toggled['settings']['closedLoopMotorsEnabled'] is True
++        assert toggled['baked_scene_sha256'] != initial['baked_scene_sha256']
++    assert service.manifest['initial_baked_scene_sha256'] == initial['baked_scene_sha256']
++    assert service.manifest['baked_scene_sha256'] == hashlib.sha256(
++        (service.directory / service.manifest['baked_scene_file']).read_bytes()).hexdigest()
++    assert (service.directory / 'baked-scene.usda').exists()
++
++
+ def recorded_events(path, source):
+     chunks = RrdReader(path).stream().filter(content=f'/autocal/{source}', components='event_json').to_chunks()
+     events = [json.loads(value[0]) for chunk in chunks for value in chunk.to_record_batch().column('event_json').to_pylist()]
+diff --git a/hp-sim-3d/app/headlessWorld.js b/hp-sim-3d/app/headlessWorld.js
+index 4df5f1b0..fb1279e6 100644
+--- a/hp-sim-3d/app/headlessWorld.js
++++ b/hp-sim-3d/app/headlessWorld.js
+@@ -4,19 +4,27 @@ import { bakeCableSceneUsdaSource } from '../../src/js/usd/cable_scene_baker.js'
+ import { parseStage, readMachineSceneSpec, validateMachineSceneSpec, buildEntityPlan, applyEntityPlan } from './scene/machineScenePipeline.js';
+ import { registerSimulationSystems } from './simulationSystems.js';
+ import { RemoteSpoolSystem } from './remoteSpoolSystem.js';
++import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
++import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
+ 
+ // The same scene construction and system order used by the production app.
+-export function createHeadlessWorld(sceneText) {
++export function createHeadlessWorld(sceneText, { lineLayeringEnabled = true, closedLoopMotorsEnabled = false } = {}) {
+   const sceneName = sceneText.match(/defaultPrim\s*=\s*"([^"]+)"/)?.[1];
+   if (!sceneName) throw new Error('Scene has no defaultPrim');
+-  const checked = validateMachineSceneSpec(readMachineSceneSpec(parseStage(OpenText(bakeCableSceneUsdaSource(sceneText).source)), `/World/${sceneName}`));
++  // Match the browser bake: changing only runtime flags leaves layered initial
++  // lengths in a supposedly unlayered world.
++  const bakedScene = bakeCableSceneUsdaSource(sceneText, lineLayeringEnabled
++    ? {} : { cablePathHalfWidthOverride: 0, deriveAll: true }).source;
++  const checked = validateMachineSceneSpec(readMachineSceneSpec(parseStage(OpenText(bakedScene)), `/World/${sceneName}`));
+   if (!checked.valid) throw new Error(checked.warnings.join('\n'));
+   const world = new World();
+   applyEntityPlan(world, buildEntityPlan(checked));
++  setLineLayeringFeatureFlags(world, lineLayeringEnabled);
++  setClosedLoopMotorFeatureFlags(world, closedLoopMotorsEnabled);
+   registerSimulationSystems(world);
+   const remote = world.systems.find(system => system instanceof RemoteSpoolSystem);
+   remote._ensureAxisMapping(world);
+   const dt = world.getResource('dt');
+   if (dt !== .002) throw new Error('RRF requires 0.002 s physics steps');
+-  return { world, remote, dt };
++  return { world, remote, dt, bakedScene };
+ }
+diff --git a/research/README.md b/research/README.md
+index b4e44cf9..5e86dcae 100644
+--- a/research/README.md
++++ b/research/README.md
+@@ -350,6 +350,10 @@ four finite values in [1, 200] mm. `find_radii` and `find_buildup_factor` accept
+ `off`, `global`, `per-anchor`. Nonzero buildup or buildup fitting requires
+ `layering=true`. Buildup is bounded to [0, 2]. Layering selects the matching
+ firmware preset and enables the existing collector's simulator setting.
++Headless construction also uses the browser's matching cable-length bake:
++zero cable width when layering is off. Layering changes rebake/reset the world;
++resets retain closed-loop motor and layering settings. Each generation keeps
++its baked scene and hash in the recording and job artifacts.
+ 
+ `optimizer` accepts `mode` (`fast`, `fast-fd`, `legacy`) and `solver` (`lbfgsb`,
+ `trf`). Defaults are `fast`/`lbfgsb`, 400 `solve_iterations` (1–2000), four
+@@ -471,7 +475,9 @@ A bare standalone MCP registration cannot start these services. Report a blocked
+ standalone run honestly; offline replay does not validate the live workflow.
+ The [supervised job verification](autocal-jobs-verification.md) records real HP3
+ automatic stopping through a socket-denied MCP client, lifecycle failures and
+-finalized recording checks, including the default-autotuning settling limitation.
++finalized recording checks. The [settling follow-up](autocal-settling-review.md)
++records its reproduction, endpoint recovery, corrected no-layering bake and a
++complete default-force acceptance run.
+ 
+ Implementation prompts are [full-autocal jobs](prompts/tooling_improvement_1.txt),
+ [configurable fresh worlds](prompts/tooling_improvement_2.txt) and
+diff --git a/research/autocal-jobs-verification.md b/research/autocal-jobs-verification.md
+index b97be2f4..dc555331 100644
+--- a/research/autocal-jobs-verification.md
++++ b/research/autocal-jobs-verification.md
+@@ -15,7 +15,7 @@ See [settings and lifecycle](README.md#jobs-shared-browser-state-and-steering).
+ ## Physical acceptance check
+ 
+ Job `2ec0b06774624962a18bdbd2818eb134` ran with known 30 mm radii, zero buildup,
+-layering disabled and explicit manual forces 0.01/0.23/9.2 N. The existing CLI
++layering requested disabled and explicit manual forces 0.01/0.23/9.2 N. The existing CLI
+ physically collected eight sweeps / 320 measurements and performed six
+ fit/plan/select iterations. Its default patience rule accepted after three
+ non-improving attempts, before the 20-iteration budget. It exited zero after
+@@ -71,3 +71,18 @@ and [archive verification](../output/research/sessions/2026-10-10-supervised-ful
+ provide numerical evidence. Session artifacts are ignored by Git and can be
+ absent in another checkout. Calibration accuracy, default-autotuning settling,
+ full HP4 calibration and hardware transfer remain separate research work.
++
++## Settling follow-up
++
++The [settling fix and commit review](autocal-settling-review.md) reproduces the
++default-force failure exactly and fixes endpoint holding without relaxing
++measurement settling. It also corrects an inherited configuration inconsistency:
++unset layering enabled layered physics while job status reported it disabled.
++The fix explicitly disables layering and rebakes initial lengths with zero width.
++The original manual-force acceptance above remains workflow evidence; it does
++not validate a physically consistent no-layering calibration.
++
++With the corrected bake, a new default-force HP3 job accepted automatically after
++seven iterations / 360 points, with 2.604 mm applied-anchor RMSE. Independent
++inspection verified the finalized 1.58 GB RRD and all measurements. This is one
++complete simulated trial; fewer points and hardware transfer are not established.
+diff --git a/research/catalog.md b/research/catalog.md
+index f36fb8a5..e242615c 100644
+--- a/research/catalog.md
++++ b/research/catalog.md
+@@ -4,13 +4,23 @@ These summaries describe archived evidence, not new experiments or a statement a
+ 
+ Four hash-named sessions contain substantive autocal work: three have final reports and one has an unfinished notebook. Missing research.md does not imply that no research happened.
+ 
++## Default-force HP3 settling and no-layering geometry correction
++
++Status: complete, verified 2026-10-10. Topics: autocalibration, HP3, settling, no layering, scene baking, MCP, reset settings.
++
++The reported pullout failure was reproduced exactly through 2,457 encoder readings. Bounding endpoint search, then holding the drive and requiring ordinary measurement settling, recovered collection. Review of commit 383c6d4 found that unset layering enabled layered physics while job status reported it disabled; explicit flags, matching zero-width baking and reset settings were corrected. A production default-force MCP job then accepted automatically after seven iterations / 360 points, with 2.604 mm applied-anchor RMSE. Independent inspection verified every measurement, 300,551 physical samples, the physical stop and a finalized 1.58 GB RRD. Checks and two unchanged HP3 replay regressions passed. This is one full simulated default-force trial, not evidence of fewer points or hardware transfer; candidate ranking remains unchanged.
++
++- [Settling fix, commit review and commands](autocal-settling-review.md).
++- [Updated session abstract and tested hypotheses](../output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/abstract.md).
++- [Acceptance and geometric accuracy](../output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E12-acceptance.json).
++
+ ## Supervisor-owned full-autocal through restricted MCP clients
+ 
+-Status: complete for tooling validation; calibration quality remains concerning.
++Status: archived tooling validation; that trial's calibration quality was concerning. See the correction above.
+ 
+ Topics: autocalibration, HP3, HP4, MCP, sandbox, supervisor, cancellation, process groups, Rerun.
+ 
+-A socket-denied SDK MCP client started an isolated HP3 production CLI job in 3 ms. With known 30 mm radii, zero buildup, layering disabled and explicit manual forces, it collected eight sweeps / 320 physical measurements and automatically accepted at iteration six through the default patience rule. The finalized RRD contains 209,908 physical samples and exact dataset/log/stage artifacts; the attached HP4 world stayed at step zero. Physical cancellation, HTTP/SIGTERM supervisor exit, owner SIGKILL and physics-budget exhaustion retained readable partial recordings. The preceding default-autotuning trial failed pullout settling and is preserved. The selected score was concerning (6018), so this establishes workflow access and evidence integrity, not calibration accuracy. Direct Codex chat attachment was unavailable; restricted SDK stdio MCP was exercised.
++A socket-denied SDK MCP client started an isolated HP3 production CLI job in 3 ms. With known 30 mm radii, zero buildup, layering requested disabled and explicit manual forces, it collected eight sweeps / 320 physical measurements and automatically accepted at iteration six through the default patience rule. The finalized RRD contains 209,908 physical samples and exact dataset/log/stage artifacts; the attached HP4 world stayed at step zero. Physical cancellation, HTTP/SIGTERM supervisor exit, owner SIGKILL and physics-budget exhaustion retained readable partial recordings. The preceding default-autotuning trial failed pullout settling and is preserved. The selected score was concerning (6018), so this establishes workflow access and evidence integrity, not calibration accuracy. The follow-up above found that physical layering was actually enabled. Direct Codex chat attachment was unavailable; restricted SDK stdio MCP was exercised.
+ 
+ - [Verification and exact commands](autocal-jobs-verification.md).
+ - [Session abstract and tested hypotheses](../output/research/sessions/2026-10-10-supervised-full-autocal/abstract.md).
+diff --git a/scripts/autocal_headless.mjs b/scripts/autocal_headless.mjs
+index 5c57a500..0a63a102 100644
+--- a/scripts/autocal_headless.mjs
++++ b/scripts/autocal_headless.mjs
+@@ -3,17 +3,26 @@ import fs from 'node:fs';
+ import http from 'node:http';
+ import { setImmediate as yieldStep } from 'node:timers/promises';
+ import WebSocket from 'ws';
++import { createHash } from 'node:crypto';
+ import { createHeadlessWorld } from '../hp-sim-3d/app/headlessWorld.js';
+-import { bakeCableSceneUsdaSource } from '../src/js/usd/cable_scene_baker.js';
++import { setLineLayeringFeatureFlags } from '../hp-sim-3d/app/line-layering-flags.js';
++import { setClosedLoopMotorFeatureFlags } from '../hp-sim-3d/app/closed-loop-flags.js';
+ import { createExternalCommandController } from '../hp-sim-3d/app/externalCommandSocket.js';
+ import { createGcodeBridge } from '../integrations/rrf/rrfSimulatorBridge.mjs';
+ import { FlightRecorder } from '../hp-sim-3d/app/flightRecorder.js';
+ 
+-const [scene, rrfUrl, wsPort, apiPort, directory] = process.argv.slice(2);
++const [scene, rrfUrl, wsPort, apiPort, directory, initialLayering] = process.argv.slice(2);
+ const sceneText = fs.readFileSync(scene, 'utf8');
+-fs.writeFileSync(`${directory}/baked-scene.usda`, bakeCableSceneUsdaSource(sceneText).source);
+-let { world, remote, dt } = createHeadlessWorld(sceneText);
+ let step = 0, epoch = 0, totalSteps = 0, speed = 1, collectorTime = 0, stopped = false, failure = null;
++let lineLayeringEnabled = initialLayering === 'true', closedLoopMotorsEnabled = false;
++let world, remote, dt, bakedScene, bakedSceneFile, bakedSceneHash;
++function buildWorld() {
++  ({ world, remote, dt, bakedScene } = createHeadlessWorld(sceneText, { lineLayeringEnabled, closedLoopMotorsEnabled }));
++  bakedSceneFile = `baked-scene${epoch ? `-${epoch}` : ''}.usda`;
++  fs.writeFileSync(`${directory}/${bakedSceneFile}`, bakedScene);
++  bakedSceneHash = createHash('sha256').update(bakedScene).digest('hex');
++}
++buildWorld();
+ let recordingDrained = false;
+ const started = performance.now();
+ const maxPhysicsSteps = Number(process.env.HP_SIM5_AUTOCAL_MAX_PHYSICS_STEPS || Infinity);
+@@ -27,6 +36,7 @@ function attachRecorder() {
+   recorder.world = world;
+   recorder.extendedReference = true;
+   recorder.contextProvider = () => ({ backend: 'headless-js', scene, sourceText: sceneText,
++    bakedSourceText: bakedScene, baked_scene_file: bakedSceneFile, baked_scene_sha256: bakedSceneHash,
+     node_version: process.version, settings: Object.fromEntries(['gravity', 'dt', 'timeScale', 'enableLayering',
+       'layeringFrictionEffectiveRadius', 'closedLoopMotorsEnabled'].map(key => [key, world.getResource(key)])) });
+   world.setResource('flightRecorder', recorder);
+@@ -43,6 +53,7 @@ function status() {
+   return { backend: 'headless-js', step, epoch, total_steps: totalSteps, dt_s: dt,
+     simulated_s: totalSteps * dt, collector_time_s: collectorTime, wall_s: (performance.now() - started) / 1000,
+     queue_length: remote.getQueueLength(), error: failure, recording_drained: recordingDrained,
++    baked_scene_file: bakedSceneFile, baked_scene_sha256: bakedSceneHash,
+     settings: { enableLayering: world.getResource('enableLayering') === true,
+       closedLoopMotorsEnabled: world.getResource('closedLoopMotorsEnabled') === true, timeScale: speed } };
+ }
+@@ -77,11 +88,22 @@ class ObservationSocket {
+ let controller;
+ function attachController() {
+   controller = createExternalCommandController({ world, url: 'ws://observation', WebSocketCtor: ObservationSocket,
++    featureFlags: {
++      get lineLayeringEnabled() { return lineLayeringEnabled; },
++      setLineLayeringEnabledState(enabled) {
++        lineLayeringEnabled = enabled;
++        setLineLayeringFeatureFlags(world, enabled);
++      },
++      setClosedLoopMotorsEnabledState(enabled) {
++        closedLoopMotorsEnabled = enabled;
++        setClosedLoopMotorFeatureFlags(world, enabled);
++      },
++    },
+     commands: {
+       getRemoteSystem: () => remote,
+       pushExternalCommands(batch) { batch.forEach(command => remote.addCommand(command)); return true; },
+       handleUserReset() {
+-        ({ world, remote, dt } = createHeadlessWorld(sceneText)); epoch++; step = 0;
++        epoch++; step = 0; buildWorld();
+         attachRecorder();
+         attachController();
+       },
+diff --git a/tests/parity3d/browser_collection.mjs b/tests/parity3d/browser_collection.mjs
+index 37ecbdda..b0ce29ba 100644
+--- a/tests/parity3d/browser_collection.mjs
++++ b/tests/parity3d/browser_collection.mjs
+@@ -36,7 +36,7 @@ try {
+   await page.evaluate(async ({ scene, wsPort }) => {
+     const { createHeadlessWorld } = await import('/hp-sim-3d/app/headlessWorld.js');
+     const { createExternalCommandController } = await import('/hp-sim-3d/app/externalCommandSocket.js');
+-    let { world, remote, dt } = createHeadlessWorld(scene);
++    let { world, remote, dt } = createHeadlessWorld(scene, { lineLayeringEnabled: true });
+     let steps = 0, time = 0, speed = 1;
+     const controller = createExternalCommandController({ world, url: `ws://127.0.0.1:${wsPort}`,
+       commands: {
+@@ -100,7 +100,7 @@ try {
+     '--server', '-p', String(firmwarePort)], { stdio: ['ignore', headlessLog, headlessLog] });
+   await waitForRrfSimulator(firmwareUrl, 30000);
+   headlessService = spawn('node', ['scripts/autocal_headless.mjs', 'public/usd_scenes/hp3_rigid_body.usda',
+-    firmwareUrl, String(socketPort), String(servicePort), headlessDir], { stdio: ['ignore', headlessLog, headlessLog] });
++    firmwareUrl, String(socketPort), String(servicePort), headlessDir, 'true'], { stdio: ['ignore', headlessLog, headlessLog] });
+   const deadline = Date.now() + 30000;
+   while (true) {
+     try { if ((await fetch(`${serviceUrl}/status`)).ok) break; } catch {}
+--- /dev/null
++++ b/autocal/control/tests/behaviors/force_sweep_settling.test.mjs
+@@ -0,0 +1,82 @@
++import { performForceSweep } from '../../behaviors/sweep_data_collection.mjs';
++import { EncoderStabilityTimeoutError, FixedAnchorDriftError } from '../../primitives/uncalibrated_actions.mjs';
++
++// Endpoint travel may continue indefinitely under force. Measurements must still
++// settle after the drive is held, and every fixed-anchor reading stays guarded.
++function movingPullout({ fixedDrift = false, measurementDrift = false, transportError = null, stalled = false } = {}) {
++  let now = 0;
++  let modes = [0, 0, 0, 0];
++  let angles = [0, 0, 0, 0];
++  const commands = [];
++  const points = [];
++  const send = async line => {
++    commands.push({ line, now });
++    if (line.startsWith('M569.4')) modes = line.split(' T')[1].split(':').map(Number);
++    if (line.startsWith('M569.3')) {
++      if (modes[1] > 0 && transportError) throw transportError;
++      return { reply: angles.join(' ') };
++    }
++    const move = line.match(/^G1 H2 Y([-\d.]+)/);
++    if (move) angles[1] += Number(move[1]);
++    return { reply: '' };
++  };
++  send.simulationClock = {
++    now: () => now,
++    sleep: async ms => {
++      if (stalled && modes[1] > 0) throw new Error('Simulation advance stalled');
++      now += ms;
++      if (modes[1] > 0) {
++        angles[1] += ms / 1000;
++        angles[2] -= ms / 1000;
++        if (fixedDrift) angles[0] = 2;
++      } else if (measurementDrift && modes[2] > 0) angles[2] += ms / 1000;
++    },
++  };
++  const run = () => performForceSweep(send, { driveAnchor: 1, sensorAnchor: 2 }, {
++    axes: ['X', 'Y', 'Z', 'U'], motorIds: ['40.0', '41.0', '42.0', '43.0'],
++    sweepPoints: 2, feed: 1400, speedup: 1, mmPerDeg: [1, 1, 1, 1], datasetStartMs: 0,
++    forceLow: .01, forceMid: .23, forceMax: 2.4, fixedAnchors: [0, 3], fixedTargets: [0, 0],
++    forbiddenForceAnchors: [3], baseRadiusMm: 30, projectZeroTension: false,
++    noiseSampleCount: 16, noiseSampleIntervalMs: 40, noiseMinSamples: 4, noiseSigmaFloorDeg: .01,
++    onPoint: point => points.push(point),
++  });
++  return { run, commands, points };
++}
++
++test('bounds moving endpoint search, then holds and settles before recording all samples', async () => {
++  const trial = movingPullout();
++  const result = await trial.run();
++  const hold = trial.commands.find(command => command.now > 120000 && command.line === 'M569.4 P40.0:41.0:42.0:43.0 T0.0:0.0:0.46:0.0');
++  expect(hold).toBeDefined();
++  expect(result.dataPoints).toHaveLength(2);
++  expect(result.driveRange.start).toBeCloseTo(120.5);
++  expect(trial.points[0].timestamp_ms).toBeGreaterThanOrEqual(hold.now + 1500);
++  expect(result.dataPoints.every(point => point.sample_count === 16)).toBe(true);
++});
++
++test('continues to reject measurement drift after a bounded pullout', async () => {
++  const trial = movingPullout({ measurementDrift: true });
++  await expect(trial.run()).rejects.toBeInstanceOf(EncoderStabilityTimeoutError);
++  expect(trial.points).toHaveLength(0);
++});
++
++test('does not recover fixed-anchor slip during endpoint search', async () => {
++  const trial = movingPullout({ fixedDrift: true });
++  await expect(trial.run()).rejects.toBeInstanceOf(FixedAnchorDriftError);
++  expect(trial.points).toHaveLength(0);
++});
++
++test.each(['Transport disconnected', 'Timed out waiting for encoder stability (wall-clock deadline)'])(
++  'does not recover an unrelated failure: %s', async message => {
++    const error = new Error(message);
++    const trial = movingPullout({ transportError: error });
++    await expect(trial.run()).rejects.toBe(error);
++    expect(trial.points).toHaveLength(0);
++  },
++);
++
++test('does not recover stalled simulation advances', async () => {
++  const trial = movingPullout({ stalled: true });
++  await expect(trial.run()).rejects.toThrow('Simulation advance stalled');
++  expect(trial.points).toHaveLength(0);
++});
+--- /dev/null
++++ b/tests/js/hp-sim-3d/headlessWorld.test.js
+@@ -0,0 +1,26 @@
++import fs from 'node:fs';
++import path from 'node:path';
++import { createHeadlessWorld } from '../../../hp-sim-3d/app/headlessWorld.js';
++import { bakeCableSceneUsdaSource } from '../../../src/js/usd/cable_scene_baker.js';
++import { CablePathComponent } from '../../../src/js/cable_joints_3d/cable_joints_core.js';
++import { layeringEnabled } from '../../../src/js/cable_joints_3d/ecs.js';
++
++test.each(['hp3', 'hp4'])('%s headless construction uses the browser no-layering geometry', machine => {
++  const source = fs.readFileSync(path.resolve(__dirname, `../../../public/usd_scenes/${machine}_rigid_body.usda`), 'utf8');
++  const unlayered = createHeadlessWorld(source, { lineLayeringEnabled: false, closedLoopMotorsEnabled: true });
++  const layered = createHeadlessWorld(source, { lineLayeringEnabled: true });
++  expect(unlayered.bakedScene).toBe(bakeCableSceneUsdaSource(source, { cablePathHalfWidthOverride: 0, deriveAll: true }).source);
++  expect(unlayered.bakedScene).not.toBe(layered.bakedScene);
++  for (const key of ['enableLayering', 'layeringFrictionEffectiveRadius', 'layeringRenderWraps']) {
++    expect(unlayered.world.getResource(key)).toBe(false);
++    expect(layered.world.getResource(key)).toBe(true);
++  }
++  expect(unlayered.world.getResource('closedLoopMotorsEnabled')).toBe(true);
++  expect(layered.world.getResource('closedLoopMotorsEnabled')).toBe(false);
++  expect(layeringEnabled(unlayered.world)).toBe(false);
++  expect(layeringEnabled(layered.world)).toBe(true);
++  const lengths = ({ world }) => world.query([CablePathComponent]).map(entity => world.getComponent(entity, CablePathComponent).totalRestLength);
++  // The changed bake must reach the physical cable constraints, not just metadata.
++  expect(lengths(unlayered)).not.toEqual(lengths(layered));
++  expect(unlayered.dt).toBe(.002);
++});
+--- /dev/null
++++ b/research/autocal-settling-review.md
+@@ -0,0 +1,118 @@
++# Default HP3 settling recovery and supervised-job review
++
++Status: complete; verified 2026-10-10.
++
++Reviewed commit `383c6d453a2027fb99ebc7936862053878661e57` after fixing the
++settling failure retained by [the implementer](autocal-jobs-verification.md).
++Experiments E11–E12 continue the
++[encoder-autocalibration session](../output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/report.md).
++
++## Settling failure and fix
++
++The failed default-force job `a792904dd547473ca0f6583f5ba547b9` timed out during
++sweep endpoint pullout, before recording a measurement. Its last 1.5-second
++encoder ranges were `[0, 0.186, 0.804, 0]` degrees. Fixed anchors held, but the
++sensor was still moving; the ordinary quiet threshold was 0.45 degrees.
++Raising the allowed drift would have admitted moving measurements.
++
++Pullout now ends at its existing 120-second travel limit, then holds the drive
++and applies sensor preload. The existing settling check must pass before the
++endpoint is used and before any measurement is recorded. Only a typed settling
++time-limit error triggers this transition. Fixed-anchor slip, transport errors,
++stalled advances and wall-clock deadlines still propagate as failures. On
++hardware, the wall watchdog allows the selected 120-second travel clock to
++expire first. Point counts, noise sampling, planner, solver, ranking and
++automatic patience/threshold stopping are unchanged.
++
++E11 reproduced all 2,457 encoder readings and clocks exactly through the old
++1332.834-second failure boundary. The patched run then collected 120 bootstrap
++points and another 40 planned points, all with 16 noise samples, no recollection
++and at most 0.042 degrees mean fixed-anchor error. It exited at the deliberately
++chosen one-iteration experiment budget. This verifies settling recovery;
++it is not an automatic-acceptance result.
++
++## Review finding and correction
++
++**P1, fixed: the new `layering=false` default was not applied to the physical
++headless world.** The worker left layering unset and baked authored cable width.
++`layeringEnabled` in `src/js/cable_joints_3d/ecs.js` defaults an unset resource to
++true, while job status used `resource === true` and reported false. The firmware's
++Q0 length conversion and layered physics therefore disagreed. Disabling runtime
++flags alone would also require rebaking initial lengths. The original manual-force acceptance verifies
++job lifecycle, not a valid no-layering calibration comparison. E11 deliberately
++retained that geometry to isolate settling; its first fit had 558.69 mm anchor
++RMSE despite completing collection.
++
++Headless construction now follows the browser: zero cable width and `deriveAll`
++when layering is off, with matching runtime flags. Startup uses the explicit
++collector layering setting or the requested/firmware buildup. Layering changes
++rebake and reset the world. Each generation preserves its baked scene and hash;
++the final manifest identifies the current bake and retains the initial hash.
++
++An adjacent existing reset bug also discarded closed-loop and layering settings.
++The worker now preserves them. HP3/HP4 construction checks and live reset/toggle
++checks cover the correction. The layered browser-parity fixture now specifies
++its startup layering explicitly; its expensive layered collection was not run
++in this no-buildup investigation.
++
++The supervisor's structured settings, isolated job ownership, cancellation,
++shutdown, crash cleanup and terminal classification were reviewed. No additional
++blocking issue was found. Forty-two headless/job checks, five live lifecycle
++checks, 85 collector behavior/primitive checks and 19 collector CLI checks pass.
++Two HP3 replay regressions remain exactly equal. HTTP binding and MCP discovery
++failed/timed out inside the command sandbox; required network-enabled retries
++passed. These environment failures and the original physical failure are retained.
++
++## Full default-force verification
++
++E12 job `b32931beeb2c40d98ed1159aceb2a3c5` completed with the actual tool defaults:
++HP3, known 30 mm radii, Q0, layering off, automatic forces and automatic stopping.
++No acceptance threshold was changed. The SDK client denies its own socket and
++connect syscalls after starting the external MCP server. The job returned in
++0.003267 seconds. Its frozen no-layering bake hash is
++`54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e`.
++The CLI accepted automatically after seven iterations, six collect decisions and
++the final accept decision. It collected nine sweeps / 360 points with 16 noise
++samples each, no direction recollection and at most 0.0608 degrees mean
++fixed-anchor error. Applied anchors have 2.604 mm RMSE against nominal simulated
++truth, measured from M669 rounded to 0.01 mm. History selection chose iteration
++5; the first recovered fit was slightly better geometrically (2.384 mm), so
++score-versus-geometry disagreement remains.
++
++The job took 6,011.018 simulated seconds and 1,100.446 wall seconds, including
++recording and computation. The attached HP4 world retained its identity and
++step zero, and every registered child PID was absent at completion.
++Independent RRD inspection verified all 360 measurements, seven complete
++collections, 300,551 physical samples, the stop boundary at step 3,005,509,
++twelve embedded stage artifacts, frozen scene/firmware hashes, recorded bake
++hashes and exact final dataset/log content. The finalized RRD is 1,582,674,623
++bytes. See [acceptance](../output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E12-acceptance.json)
++and [recording audit](../output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E12-rrd-verification.json).
++
++This is a complete workflow/geometry check, not a paired speed benchmark.
++It used 360 points versus the supplied reference's 180. Reliable point-count
++reduction is not established. Numerical underconstraint occurred at iterations
++1 and 4; existing recovery and continuation handled it without restarting data
++collection. No settling failure occurred with the corrected scene.
++
++Reproduction commands (run in a network-enabled launcher or approved command
++context for socket-dependent checks):
++
++```bash
++npm test -- --runInBand autocal/control/tests/behaviors autocal/control/tests/primitives autocal/control/tests/cli
++npm test -- --runInBand tests/js/hp-sim-3d/headlessWorld.test.js tests/js/hp-sim-3d/noLineLayeringBakeTightness.test.js
++.venv/bin/python -m pytest -q autocal/tests/test_headless_sim.py tests/python/test_autocal_jobs.py -m 'not slow'
++.venv/bin/python -m pytest -q tests/python/test_autocal_jobs.py -m slow
++.venv/bin/python -m pytest -q tests/python/test_research_agent.py -k stdio
++.venv/bin/python autocal/tools/regress_calibration_logs.py --dataset-name fifth_hp3_dataset --dataset-name seventh_hp3_dataset --jobs 1 --color never
++.venv/bin/python output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E12-supervised-verification.py
++.venv/bin/python output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E12-inspect-recording.py
++```
++
++This chat has no attached research connector; verification uses the real SDK
++stdio MCP path. Evidence is simulated, with no hardware trial or full HP4
++calibration. A new launcher session is still needed to check direct Codex or
++desktop attachment. Existing score-versus-geometry selection limitations remain.
++
++Commands, complete/failed traces, settings, source diff and results are retained
++in the [session notebook](../output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/research.md).

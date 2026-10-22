@@ -1,0 +1,372 @@
+[
+  {
+    "experiment": "E10-hp3-baseline-collection",
+    "machine": "hp3",
+    "method": "collect-old",
+    "wall_s": 28.289140960999998,
+    "sim_s": 1476.2339999789156,
+    "error": null,
+    "points": 8,
+    "ranges_mm": [
+      861.0110625815986
+    ],
+    "directions": [
+      {
+        "drive": 1,
+        "endpoint_mm": null,
+        "selected_force_n": null,
+        "pullout_force_n": 3.354048140226428
+      },
+      {
+        "drive": 2,
+        "endpoint_mm": null,
+        "selected_force_n": null,
+        "pullout_force_n": 3.354048140226428
+      }
+    ]
+  },
+  {
+    "experiment": "E11-hp3-new-collection",
+    "machine": "hp3",
+    "method": "collect-new",
+    "wall_s": 29.722890483,
+    "sim_s": 1140.4139999868567,
+    "error": null,
+    "points": 8,
+    "ranges_mm": [
+      420.9419996544964
+    ],
+    "directions": [
+      {
+        "drive": 1,
+        "endpoint_mm": 241.48899129369138,
+        "selected_force_n": 0.9309041238999035,
+        "pullout_force_n": 0.9309041238999035
+      },
+      {
+        "drive": 2,
+        "endpoint_mm": 241.4837553059354,
+        "selected_force_n": 0.9309041238999035,
+        "pullout_force_n": 0.9309041238999035
+      }
+    ]
+  },
+  {
+    "experiment": "E12-hp3-final",
+    "machine": "hp3",
+    "method": "collect-new",
+    "wall_s": 28.895333181,
+    "sim_s": 1127.16199998717,
+    "error": null,
+    "points": 8,
+    "ranges_mm": [
+      643.2201518714862
+    ],
+    "directions": [
+      {
+        "drive": 1,
+        "endpoint_mm": 328.7414912593919,
+        "selected_force_n": 1.4894465982398457,
+        "pullout_force_n": 1.4894465982398457
+      },
+      {
+        "drive": 2,
+        "endpoint_mm": 328.7310192838799,
+        "selected_force_n": 1.4894465982398457,
+        "pullout_force_n": 1.4894465982398457
+      }
+    ]
+  },
+  {
+    "experiment": "E13-hp4-baseline",
+    "machine": "hp4",
+    "method": "collect-old",
+    "wall_s": 240.290360407,
+    "sim_s": 1398.1379999807623,
+    "error": "Timed out waiting for encoder stability after 30000ms",
+    "points": 0,
+    "ranges_mm": [],
+    "directions": []
+  },
+  {
+    "experiment": "E14-hp4-final",
+    "machine": "hp4",
+    "method": "collect-new",
+    "wall_s": 134.948665419,
+    "sim_s": 790.3379999951347,
+    "error": "Timed out waiting for encoder stability after 30000ms",
+    "points": 0,
+    "ranges_mm": [],
+    "directions": []
+  },
+  {
+    "experiment": "E15-hp3-baseline-repeat",
+    "machine": "hp3",
+    "method": "collect-old",
+    "wall_s": 28.159501891,
+    "sim_s": 1476.2339999789156,
+    "error": null,
+    "points": 8,
+    "ranges_mm": [
+      861.0110625815986
+    ],
+    "directions": [
+      {
+        "drive": 1,
+        "endpoint_mm": null,
+        "selected_force_n": null,
+        "pullout_force_n": 3.354048140226428
+      },
+      {
+        "drive": 2,
+        "endpoint_mm": null,
+        "selected_force_n": null,
+        "pullout_force_n": 3.354048140226428
+      }
+    ]
+  },
+  {
+    "experiment": "E16-hp3-final-repeat",
+    "machine": "hp3",
+    "method": "collect-new",
+    "wall_s": 26.353191371999998,
+    "sim_s": 1125.5419999872083,
+    "error": null,
+    "points": 8,
+    "ranges_mm": [
+      627.3498729831017
+    ],
+    "directions": [
+      {
+        "drive": 1,
+        "endpoint_mm": 331.8621399619577,
+        "selected_force_n": 1.4894465982398457,
+        "pullout_force_n": 1.4894465982398457
+      },
+      {
+        "drive": 2,
+        "endpoint_mm": 317.7773328983635,
+        "selected_force_n": 1.4894465982398457,
+        "pullout_force_n": 1.4894465982398457
+      }
+    ]
+  },
+  {
+    "experiment": "E17-hp4-positioning-fixed",
+    "machine": "hp4",
+    "method": "collect-new",
+    "wall_s": 258.270009636,
+    "sim_s": 1320.8579999825897,
+    "error": null,
+    "points": 8,
+    "ranges_mm": [
+      767.4125454556466
+    ],
+    "directions": [
+      {
+        "drive": 1,
+        "endpoint_mm": 376.1795403285978,
+        "selected_force_n": 4.670904532080156,
+        "pullout_force_n": 4.670904532080156
+      },
+      {
+        "drive": 2,
+        "endpoint_mm": 373.1374314423717,
+        "selected_force_n": 7.47344725132825,
+        "pullout_force_n": 7.47344725132825
+      }
+    ]
+  },
+  {
+    "experiment": "E18-hp3-bootstrap",
+    "machine": "hp3",
+    "method": "bootstrap",
+    "wall_s": 66.772726084,
+    "sim_s": 2922.927999944706,
+    "error": null,
+    "points": 24,
+    "ranges_mm": [
+      1086.3208517093026,
+      1083.1635510924448,
+      1083.1268991781528
+    ],
+    "directions": [
+      {
+        "drive": 1,
+        "endpoint_mm": 530.6987749954117,
+        "selected_force_n": 1.4894465982398457,
+        "pullout_force_n": 1.4894465982398457
+      },
+      {
+        "drive": 2,
+        "endpoint_mm": 530.7249549341916,
+        "selected_force_n": 1.4894465982398457,
+        "pullout_force_n": 1.4894465982398457
+      },
+      {
+        "drive": 0,
+        "endpoint_mm": 784.7541369034623,
+        "selected_force_n": 1.4894465982398457,
+        "pullout_force_n": 1.4894465982398457
+      },
+      {
+        "drive": 2,
+        "endpoint_mm": 293.72844113513366,
+        "selected_force_n": 1.4894465982398457,
+        "pullout_force_n": 1.4894465982398457
+      },
+      {
+        "drive": 0,
+        "endpoint_mm": 406.61633715412694,
+        "selected_force_n": 1.4894465982398457,
+        "pullout_force_n": 1.4894465982398457
+      },
+      {
+        "drive": 1,
+        "endpoint_mm": 656.2944132981758,
+        "selected_force_n": 1.4894465982398457,
+        "pullout_force_n": 1.4894465982398457
+      }
+    ]
+  },
+  {
+    "experiment": "E19-hp4-bootstrap",
+    "machine": "hp4",
+    "method": "bootstrap",
+    "wall_s": 193.847386388,
+    "sim_s": 1030.6459999894523,
+    "error": "Controlled pullout travel reversed",
+    "points": 0,
+    "ranges_mm": [],
+    "directions": []
+  },
+  {
+    "experiment": "E20-hp3-bootstrap-baseline",
+    "machine": "hp3",
+    "method": "bootstrap-old",
+    "wall_s": 48.733592981,
+    "sim_s": 2423.0439999565265,
+    "error": null,
+    "points": 24,
+    "ranges_mm": [
+      1323.086982047097,
+      1323.113161985877,
+      1323.0922180348532
+    ],
+    "directions": [
+      {
+        "drive": 1,
+        "endpoint_mm": null,
+        "selected_force_n": null,
+        "pullout_force_n": 3.354048140226428
+      },
+      {
+        "drive": 2,
+        "endpoint_mm": null,
+        "selected_force_n": null,
+        "pullout_force_n": 3.354048140226428
+      },
+      {
+        "drive": 0,
+        "endpoint_mm": null,
+        "selected_force_n": null,
+        "pullout_force_n": 3.354048140226428
+      },
+      {
+        "drive": 2,
+        "endpoint_mm": null,
+        "selected_force_n": null,
+        "pullout_force_n": 3.354048140226428
+      },
+      {
+        "drive": 0,
+        "endpoint_mm": null,
+        "selected_force_n": null,
+        "pullout_force_n": 3.354048140226428
+      },
+      {
+        "drive": 1,
+        "endpoint_mm": null,
+        "selected_force_n": null,
+        "pullout_force_n": 3.354048140226428
+      }
+    ]
+  },
+  {
+    "experiment": "E3-hp4-prototype",
+    "machine": "hp4",
+    "method": "new",
+    "wall_s": 4.92872825,
+    "sim_s": 28.907999999994857,
+    "error": "Controlled pullout reached force limit without a confirmed edge",
+    "points": 0,
+    "ranges_mm": [],
+    "directions": []
+  },
+  {
+    "experiment": "E4-hp4-original",
+    "machine": "hp4",
+    "method": "old",
+    "wall_s": 158.351402739,
+    "sim_s": 961.7459999910815,
+    "error": null,
+    "points": 0,
+    "ranges_mm": [],
+    "directions": []
+  },
+  {
+    "experiment": "E5-hp4-hold-fixed",
+    "machine": "hp4",
+    "method": "new",
+    "wall_s": 40.750580524,
+    "sim_s": 184.30800000015194,
+    "error": null,
+    "points": 0,
+    "ranges_mm": [],
+    "directions": []
+  },
+  {
+    "experiment": "E6-hp4-rate-staircase",
+    "machine": "hp4",
+    "method": "new",
+    "wall_s": 120.02450742399999,
+    "sim_s": 530.1080000012884,
+    "error": "Controlled pullout budget exhausted without a confirmed edge",
+    "points": 0,
+    "ranges_mm": [],
+    "directions": []
+  },
+  {
+    "experiment": "E7-hp4-fixed-geometry",
+    "machine": "hp4",
+    "method": "new",
+    "wall_s": 43.57778347399999,
+    "sim_s": 213.20800000028993,
+    "error": null,
+    "points": 0,
+    "ranges_mm": [],
+    "directions": []
+  },
+  {
+    "experiment": "E8-hp3-fixed-geometry",
+    "machine": "hp3",
+    "method": "new",
+    "wall_s": 5.975397052,
+    "sim_s": 187.20800000016578,
+    "error": null,
+    "points": 0,
+    "ranges_mm": [],
+    "directions": []
+  },
+  {
+    "experiment": "E9-hp4-endpoint-return",
+    "machine": "hp4",
+    "method": "new",
+    "wall_s": 44.523084364999995,
+    "sim_s": 217.2860000003094,
+    "error": null,
+    "points": 0,
+    "ranges_mm": [],
+    "directions": []
+  }
+]

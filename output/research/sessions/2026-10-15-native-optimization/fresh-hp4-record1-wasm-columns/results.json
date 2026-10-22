@@ -1,0 +1,182 @@
+[
+  {
+    "wall_s": 1.2659001930001068,
+    "simulation_s": 0.9323768180001935,
+    "construction_s": 0.15584795699942333,
+    "manifest": {
+      "schema_version": 2,
+      "backend": "headless-js",
+      "physics_engine": "rust-wasm",
+      "cable_solver_device": null,
+      "run_id": "e1155f1d69a14ed3a3e8db8f12ac0671",
+      "label": "native throughput paired benchmark",
+      "status": "complete",
+      "scene": "public/usd_scenes/hp4_rigid_body.usda",
+      "scene_generation": 1,
+      "steps": 200,
+      "dt_s": 0.002,
+      "commands_sha256": "da318ceff12b28df9457c776c443accd1b3bb6bfd425af747c4e01cd533bd0d6",
+      "scene_sha256": "72f6eef0387fd703e560fa476a9d800f9b29c3f875ed7083a41bd7b572a8c5f0",
+      "python_source_sha256": "71a7d64a13dcf739d54596625a414a271a168f4e574245050d69c4e970c19b94",
+      "git_revision": "3a5e35e7b4d6c48e903531812044b2c5a7d36e8e",
+      "python": "3.12.3",
+      "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+      "packages": {
+        "numpy": "2.4.3",
+        "usd-core": "26.3",
+        "rerun-sdk": "0.38.1"
+      },
+      "construction_wall_s": 0.15584795699942333,
+      "record": true,
+      "artifacts": {
+        "manifest": "/tmp/hp-sim5-performance-wasm-columns/output/research/experiments/e1155f1d69a14ed3a3e8db8f12ac0671/manifest.json",
+        "scene": "/tmp/hp-sim5-performance-wasm-columns/output/research/experiments/e1155f1d69a14ed3a3e8db8f12ac0671/scene.usda",
+        "commands": "/tmp/hp-sim5-performance-wasm-columns/output/research/experiments/e1155f1d69a14ed3a3e8db8f12ac0671/commands.json",
+        "telemetry": "/tmp/hp-sim5-performance-wasm-columns/output/research/experiments/e1155f1d69a14ed3a3e8db8f12ac0671/telemetry.jsonl",
+        "snapshot": "/tmp/hp-sim5-performance-wasm-columns/output/research/experiments/e1155f1d69a14ed3a3e8db8f12ac0671/final.json",
+        "rrd": "/tmp/hp-sim5-performance-wasm-columns/output/research/experiments/e1155f1d69a14ed3a3e8db8f12ac0671/recording.rrd"
+      },
+      "physics_artifact": null,
+      "js_physics_source_sha256": "d6d9556817a0130385c38780797eed7f1d83c560c74c6223ce526bae2a36c6cd",
+      "warnings": [],
+      "metrics": {
+        "effector_displacement_m": {
+          "world/machines/default/effector": 0.0038570809283619534
+        },
+        "peak_cable_force_n": 5.747248524888145,
+        "peak_abs_length_error_m": 0.0003041123816016622,
+        "peak_abs_tracking_error_rad": 0.0064704762042904745,
+        "peak_total_missed_steps": 0
+      },
+      "simulation_wall_s": 0.9323768180001935
+    },
+    "archived": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/fresh-hp4-record1-wasm-columns/run-0",
+    "canonical_scene_sha256": "72f6eef0387fd703e560fa476a9d800f9b29c3f875ed7083a41bd7b572a8c5f0",
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/fresh-hp4-record1-wasm-columns/run-0/telemetry.jsonl",
+    "steps": 200,
+    "repeat": 0,
+    "machine": "hp4",
+    "record": true,
+    "mode": "fresh"
+  },
+  {
+    "wall_s": 1.2807229720001487,
+    "simulation_s": 0.9706066469998405,
+    "construction_s": 0.1335059339999134,
+    "manifest": {
+      "schema_version": 2,
+      "backend": "headless-js",
+      "physics_engine": "rust-wasm",
+      "cable_solver_device": null,
+      "run_id": "66a1bbb54b6348e7aea461310290a469",
+      "label": "native throughput paired benchmark",
+      "status": "complete",
+      "scene": "public/usd_scenes/hp4_rigid_body.usda",
+      "scene_generation": 1,
+      "steps": 200,
+      "dt_s": 0.002,
+      "commands_sha256": "da318ceff12b28df9457c776c443accd1b3bb6bfd425af747c4e01cd533bd0d6",
+      "scene_sha256": "72f6eef0387fd703e560fa476a9d800f9b29c3f875ed7083a41bd7b572a8c5f0",
+      "python_source_sha256": "71a7d64a13dcf739d54596625a414a271a168f4e574245050d69c4e970c19b94",
+      "git_revision": "3a5e35e7b4d6c48e903531812044b2c5a7d36e8e",
+      "python": "3.12.3",
+      "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+      "packages": {
+        "numpy": "2.4.3",
+        "usd-core": "26.3",
+        "rerun-sdk": "0.38.1"
+      },
+      "construction_wall_s": 0.1335059339999134,
+      "record": true,
+      "artifacts": {
+        "manifest": "/tmp/hp-sim5-performance-wasm-columns/output/research/experiments/66a1bbb54b6348e7aea461310290a469/manifest.json",
+        "scene": "/tmp/hp-sim5-performance-wasm-columns/output/research/experiments/66a1bbb54b6348e7aea461310290a469/scene.usda",
+        "commands": "/tmp/hp-sim5-performance-wasm-columns/output/research/experiments/66a1bbb54b6348e7aea461310290a469/commands.json",
+        "telemetry": "/tmp/hp-sim5-performance-wasm-columns/output/research/experiments/66a1bbb54b6348e7aea461310290a469/telemetry.jsonl",
+        "snapshot": "/tmp/hp-sim5-performance-wasm-columns/output/research/experiments/66a1bbb54b6348e7aea461310290a469/final.json",
+        "rrd": "/tmp/hp-sim5-performance-wasm-columns/output/research/experiments/66a1bbb54b6348e7aea461310290a469/recording.rrd"
+      },
+      "physics_artifact": null,
+      "js_physics_source_sha256": "d6d9556817a0130385c38780797eed7f1d83c560c74c6223ce526bae2a36c6cd",
+      "warnings": [],
+      "metrics": {
+        "effector_displacement_m": {
+          "world/machines/default/effector": 0.0038570809283619534
+        },
+        "peak_cable_force_n": 5.747248524888145,
+        "peak_abs_length_error_m": 0.0003041123816016622,
+        "peak_abs_tracking_error_rad": 0.0064704762042904745,
+        "peak_total_missed_steps": 0
+      },
+      "simulation_wall_s": 0.9706066469998405
+    },
+    "archived": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/fresh-hp4-record1-wasm-columns/run-1",
+    "canonical_scene_sha256": "72f6eef0387fd703e560fa476a9d800f9b29c3f875ed7083a41bd7b572a8c5f0",
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/fresh-hp4-record1-wasm-columns/run-1/telemetry.jsonl",
+    "steps": 200,
+    "repeat": 1,
+    "machine": "hp4",
+    "record": true,
+    "mode": "fresh"
+  },
+  {
+    "wall_s": 1.342946177000158,
+    "simulation_s": 1.0366970430000038,
+    "construction_s": 0.1344055829995341,
+    "manifest": {
+      "schema_version": 2,
+      "backend": "headless-js",
+      "physics_engine": "rust-wasm",
+      "cable_solver_device": null,
+      "run_id": "a508e78bb3cf41c8b40ee9530c679286",
+      "label": "native throughput paired benchmark",
+      "status": "complete",
+      "scene": "public/usd_scenes/hp4_rigid_body.usda",
+      "scene_generation": 1,
+      "steps": 200,
+      "dt_s": 0.002,
+      "commands_sha256": "da318ceff12b28df9457c776c443accd1b3bb6bfd425af747c4e01cd533bd0d6",
+      "scene_sha256": "72f6eef0387fd703e560fa476a9d800f9b29c3f875ed7083a41bd7b572a8c5f0",
+      "python_source_sha256": "71a7d64a13dcf739d54596625a414a271a168f4e574245050d69c4e970c19b94",
+      "git_revision": "3a5e35e7b4d6c48e903531812044b2c5a7d36e8e",
+      "python": "3.12.3",
+      "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+      "packages": {
+        "numpy": "2.4.3",
+        "usd-core": "26.3",
+        "rerun-sdk": "0.38.1"
+      },
+      "construction_wall_s": 0.1344055829995341,
+      "record": true,
+      "artifacts": {
+        "manifest": "/tmp/hp-sim5-performance-wasm-columns/output/research/experiments/a508e78bb3cf41c8b40ee9530c679286/manifest.json",
+        "scene": "/tmp/hp-sim5-performance-wasm-columns/output/research/experiments/a508e78bb3cf41c8b40ee9530c679286/scene.usda",
+        "commands": "/tmp/hp-sim5-performance-wasm-columns/output/research/experiments/a508e78bb3cf41c8b40ee9530c679286/commands.json",
+        "telemetry": "/tmp/hp-sim5-performance-wasm-columns/output/research/experiments/a508e78bb3cf41c8b40ee9530c679286/telemetry.jsonl",
+        "snapshot": "/tmp/hp-sim5-performance-wasm-columns/output/research/experiments/a508e78bb3cf41c8b40ee9530c679286/final.json",
+        "rrd": "/tmp/hp-sim5-performance-wasm-columns/output/research/experiments/a508e78bb3cf41c8b40ee9530c679286/recording.rrd"
+      },
+      "physics_artifact": null,
+      "js_physics_source_sha256": "d6d9556817a0130385c38780797eed7f1d83c560c74c6223ce526bae2a36c6cd",
+      "warnings": [],
+      "metrics": {
+        "effector_displacement_m": {
+          "world/machines/default/effector": 0.0038570809283619534
+        },
+        "peak_cable_force_n": 5.747248524888145,
+        "peak_abs_length_error_m": 0.0003041123816016622,
+        "peak_abs_tracking_error_rad": 0.0064704762042904745,
+        "peak_total_missed_steps": 0
+      },
+      "simulation_wall_s": 1.0366970430000038
+    },
+    "archived": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/fresh-hp4-record1-wasm-columns/run-2",
+    "canonical_scene_sha256": "72f6eef0387fd703e560fa476a9d800f9b29c3f875ed7083a41bd7b572a8c5f0",
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/fresh-hp4-record1-wasm-columns/run-2/telemetry.jsonl",
+    "steps": 200,
+    "repeat": 2,
+    "machine": "hp4",
+    "record": true,
+    "mode": "fresh"
+  }
+]

@@ -1,0 +1,74 @@
+[
+ {
+  "substeps": 1,
+  "mode": "baseline",
+  "iterations": null,
+  "damping": null,
+  "zRange": 0.0017756642316233973,
+  "maxOmega": 1.6457782328851494,
+  "meanOmega": 0.6992733640425218
+ },
+ {
+  "substeps": 1,
+  "mode": "noDamping",
+  "iterations": null,
+  "damping": null,
+  "zRange": 0.00036528218510380184,
+  "maxOmega": 0.08983385989154986,
+  "meanOmega": 0.0038424862711530713
+ },
+ {
+  "substeps": 1,
+  "mode": "dampOnceFirst",
+  "iterations": null,
+  "damping": null,
+  "zRange": 0.0017651736540390955,
+  "maxOmega": 0.5354024060944587,
+  "meanOmega": 0.1621584018469518
+ },
+ {
+  "substeps": 1,
+  "mode": "dampLastOnly",
+  "iterations": null,
+  "damping": null,
+  "zRange": 0.0007860214971234097,
+  "maxOmega": 0.9330767982354298,
+  "meanOmega": 0.3401308616581811
+ },
+ {
+  "substeps": 1,
+  "mode": "relaxHalf",
+  "iterations": null,
+  "damping": null,
+  "zRange": 1.2644052471699752e-13,
+  "maxOmega": 0,
+  "meanOmega": 0
+ },
+ {
+  "substeps": 1,
+  "mode": "baseline",
+  "iterations": 1,
+  "damping": null,
+  "zRange": 3.8066771956835055e-14,
+  "maxOmega": 0,
+  "meanOmega": 0
+ },
+ {
+  "substeps": 1,
+  "mode": "baseline",
+  "iterations": 8,
+  "damping": null,
+  "zRange": 0.00043283162040409773,
+  "maxOmega": 0.42366652697393503,
+  "meanOmega": 0.13410234106362484
+ },
+ {
+  "substeps": 2,
+  "mode": "baseline",
+  "iterations": null,
+  "damping": null,
+  "zRange": 4.081457394278232e-14,
+  "maxOmega": 0,
+  "meanOmega": 0
+ }
+]

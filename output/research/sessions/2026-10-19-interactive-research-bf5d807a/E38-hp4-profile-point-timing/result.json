@@ -1,0 +1,1409 @@
+{
+  "method": "collect-new",
+  "machine": "hp4",
+  "result": {
+    "sweeps": [
+      {
+        "id": "sweep_001",
+        "fixed_anchors": [
+          0,
+          3
+        ],
+        "fixed_lengths": [
+          -0.007853981633974482,
+          0
+        ],
+        "drive_anchor": 1,
+        "sensor_anchor": 2,
+        "drive_range": {
+          "start": -954.5624558177466,
+          "end": -0.8927359123950995,
+          "unit": "mm"
+        },
+        "data_points": [
+          {
+            "l_drive": -954.5624558177466,
+            "l_sensor": 402.88045989023306,
+            "timestamp_ms": 84188,
+            "raw_angles_deg": [
+              -0.03,
+              -3646.16,
+              1538.89,
+              0
+            ],
+            "drive_setpoint_mm": -954.5624558177466,
+            "step_index": 0,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              0,
+              null,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              -0.03,
+              null,
+              null,
+              0
+            ],
+            "sensor_force_n": 3.435973836800002,
+            "mu": [
+              -0.03,
+              -3646.16,
+              1538.85,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0.02965199999997303,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25,
+            "sample_duration_ms": 640,
+            "fixed_error_angles_mu_deg": [
+              -0.03,
+              null,
+              null,
+              0
+            ],
+            "l_drive_mu": -954.5624558177466,
+            "l_sensor_mu": 402.86998791472104,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ]
+          },
+          {
+            "l_drive": -636.6830211581414,
+            "l_sensor": -20.868029201470197,
+            "timestamp_ms": 95656,
+            "raw_angles_deg": [
+              -0.03,
+              -2431.95,
+              -79.71,
+              0
+            ],
+            "drive_setpoint_mm": -636.6725491826294,
+            "step_index": 1,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              0,
+              null,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              -0.03,
+              null,
+              null,
+              0
+            ],
+            "sensor_force_n": 3.435973836800002,
+            "mu": [
+              -0.03,
+              -2431.95,
+              -79.71,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25,
+            "sample_duration_ms": 640,
+            "fixed_error_angles_mu_deg": [
+              -0.03,
+              null,
+              null,
+              0
+            ],
+            "l_drive_mu": -636.6830211581414,
+            "l_sensor_mu": -20.868029201470197,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ]
+          },
+          {
+            "l_drive": -318.7721705720003,
+            "l_sensor": -307.28179544149566,
+            "timestamp_ms": 108124,
+            "raw_angles_deg": [
+              -0.03,
+              -1217.62,
+              -1173.73,
+              0
+            ],
+            "drive_setpoint_mm": -318.7826425475123,
+            "step_index": 2,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              0,
+              null,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              -0.03,
+              null,
+              null,
+              0
+            ],
+            "sensor_force_n": 3.435973836800002,
+            "mu": [
+              -0.03,
+              -1217.62,
+              -1173.73,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25,
+            "sample_duration_ms": 640,
+            "fixed_error_angles_mu_deg": [
+              -0.03,
+              null,
+              null,
+              0
+            ],
+            "l_drive_mu": -318.7721705720003,
+            "l_sensor_mu": -307.28179544149566,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ]
+          },
+          {
+            "l_drive": -0.8927359123950995,
+            "l_sensor": -494.4945376566674,
+            "timestamp_ms": 122592,
+            "raw_angles_deg": [
+              -0.03,
+              -3.41,
+              -1888.83,
+              0
+            ],
+            "drive_setpoint_mm": -0.8927359123950964,
+            "step_index": 3,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              0,
+              null,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              -0.03,
+              null,
+              null,
+              0
+            ],
+            "sensor_force_n": 3.435973836800002,
+            "mu": [
+              -0.03,
+              -3.41,
+              -1888.95375,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0.09636899999991234,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25,
+            "sample_duration_ms": 640,
+            "fixed_error_angles_mu_deg": [
+              -0.03,
+              null,
+              null,
+              0
+            ],
+            "l_drive_mu": -0.8927359123950995,
+            "l_sensor_mu": -494.5269353309075,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ]
+          },
+          {
+            "l_drive": -85.24711665515903,
+            "l_sensor": -1231.3734205132992,
+            "timestamp_ms": 181460,
+            "raw_angles_deg": [
+              -0.03,
+              -325.62,
+              -4703.5,
+              0
+            ],
+            "drive_setpoint_mm": -1231.3734205132994,
+            "step_index": 0,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              0,
+              null,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              -0.03,
+              null,
+              null,
+              0
+            ],
+            "sensor_force_n": 3.435973836800002,
+            "mu": [
+              -0.03,
+              -325.679375,
+              -4703.5,
+              0
+            ],
+            "sigma": [
+              0,
+              0.04447800000000168,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25,
+            "sample_duration_ms": 640,
+            "fixed_error_angles_mu_deg": [
+              -0.03,
+              null,
+              null,
+              0
+            ],
+            "l_drive_mu": -85.2626609938096,
+            "l_sensor_mu": -1231.3734205132992,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ],
+            "source_drive_anchor": 2,
+            "source_sensor_anchor": 1
+          },
+          {
+            "l_drive": -430.2515858846341,
+            "l_sensor": -985.7689428434053,
+            "timestamp_ms": 192380,
+            "raw_angles_deg": [
+              -0.03,
+              -1643.44,
+              -3765.36,
+              0
+            ],
+            "drive_setpoint_mm": -985.7794148189173,
+            "step_index": 1,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              0,
+              null,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              -0.03,
+              null,
+              null,
+              0
+            ],
+            "sensor_force_n": 3.435973836800002,
+            "mu": [
+              -0.03,
+              -1643.495,
+              -3765.36,
+              0
+            ],
+            "sigma": [
+              0,
+              0.04447799999995954,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25,
+            "sample_duration_ms": 640,
+            "fixed_error_angles_mu_deg": [
+              -0.03,
+              null,
+              null,
+              0
+            ],
+            "l_drive_mu": -430.26598485096304,
+            "l_sensor_mu": -985.7689428434053,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ],
+            "source_drive_anchor": 2,
+            "source_sensor_anchor": 1
+          },
+          {
+            "l_drive": -689.9696685507802,
+            "l_sensor": -740.1958811000471,
+            "timestamp_ms": 206298,
+            "raw_angles_deg": [
+              -0.03,
+              -2635.49,
+              -2827.34,
+              0
+            ],
+            "drive_setpoint_mm": -740.1854091245352,
+            "step_index": 2,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              0,
+              null,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              -0.03,
+              null,
+              null,
+              0
+            ],
+            "sensor_force_n": 3.435973836800002,
+            "mu": [
+              -0.03,
+              -2635.49,
+              -2827.34,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 24.999999999998863,
+            "sample_duration_ms": 640.0000000000291,
+            "fixed_error_angles_mu_deg": [
+              -0.03,
+              null,
+              null,
+              0
+            ],
+            "l_drive_mu": -689.9696685507802,
+            "l_sensor_mu": -740.1958811000471,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ],
+            "source_drive_anchor": 2,
+            "source_sensor_anchor": 1
+          },
+          {
+            "l_drive": -899.2992230472242,
+            "l_sensor": -494.5914034301531,
+            "timestamp_ms": 217718.00000000003,
+            "raw_angles_deg": [
+              -0.03,
+              -3435.07,
+              -1889.2,
+              0
+            ],
+            "drive_setpoint_mm": -494.59140343015315,
+            "step_index": 3,
+            "step_count": 4,
+            "collection_attempt": 0,
+            "fixed_target_angles_deg": [
+              0,
+              null,
+              null,
+              0
+            ],
+            "fixed_error_angles_deg": [
+              -0.03,
+              null,
+              null,
+              0
+            ],
+            "sensor_force_n": 3.435973836800002,
+            "mu": [
+              -0.03,
+              -3435.07,
+              -1889.2,
+              0
+            ],
+            "sigma": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "sample_count": 16,
+            "sampling_hz": 25.000000000001137,
+            "sample_duration_ms": 639.9999999999709,
+            "fixed_error_angles_mu_deg": [
+              -0.03,
+              null,
+              null,
+              0
+            ],
+            "l_drive_mu": -899.2992230472242,
+            "l_sensor_mu": -494.5914034301531,
+            "noise_warnings": [
+              "sigma_below_floor"
+            ],
+            "source_drive_anchor": 2,
+            "source_sensor_anchor": 1
+          }
+        ],
+        "metadata": {
+          "sweep_method": "position",
+          "feed_rate": 1400,
+          "sensor_force_n": 3.435973836800002,
+          "direction_forces": [
+            {
+              "pullout_profile": "reeved",
+              "measurement_feed_mm_per_min": 2800,
+              "endpoint_tuning": {
+                "endpoint": {
+                  "travelMm": 1000.8091867727724,
+                  "anglesDeg": [
+                    -0.03,
+                    -3826.16,
+                    2443.92,
+                    0
+                  ]
+                },
+                "reachedAnglesDeg": [
+                  -0.03,
+                  -3826.16,
+                  2443.92,
+                  0
+                ],
+                "samples": [
+                  {
+                    "travelMm": 25.00445952869676,
+                    "stepMm": 25,
+                    "movedMm": 25.00445952869676,
+                    "otherTravelMm": 13.885839528866887,
+                    "responseRatio": 0.5553345199455555,
+                    "elapsedMs": 704
+                  },
+                  {
+                    "travelMm": 50.01153705127151,
+                    "stepMm": 25,
+                    "movedMm": 25.00707752257475,
+                    "otherTravelMm": 20.78163540349648,
+                    "responseRatio": 0.8310301507537688,
+                    "elapsedMs": 1392
+                  },
+                  {
+                    "travelMm": 75.01599657996826,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696756,
+                    "otherTravelMm": 26.093544981941218,
+                    "responseRatio": 1.0435556486231807,
+                    "elapsedMs": 2080.0000000000073
+                  },
+                  {
+                    "travelMm": 98.96016858807847,
+                    "stepMm": 23.956556636901777,
+                    "movedMm": 23.944172008110215,
+                    "otherTravelMm": 26.14590485950105,
+                    "responseRatio": 1.0919527662366058,
+                    "elapsedMs": 2750
+                  },
+                  {
+                    "travelMm": 121.84405307560212,
+                    "stepMm": 22.894763192149803,
+                    "movedMm": 22.88388448752364,
+                    "otherTravelMm": 26.075219024795288,
+                    "responseRatio": 1.1394577279487481,
+                    "elapsedMs": 3402
+                  },
+                  {
+                    "travelMm": 143.78807776092683,
+                    "stepMm": 21.94026104417669,
+                    "movedMm": 21.944024685324703,
+                    "otherTravelMm": 26.169466804402983,
+                    "responseRatio": 1.1925554760200434,
+                    "elapsedMs": 4038
+                  },
+                  {
+                    "travelMm": 164.7582087236387,
+                    "stepMm": 20.96338535414165,
+                    "movedMm": 20.970130962711874,
+                    "otherTravelMm": 25.203427063424108,
+                    "responseRatio": 1.2018726591760294,
+                    "elapsedMs": 4658
+                  },
+                  {
+                    "travelMm": 185.55031610264714,
+                    "stepMm": 20.800872545964484,
+                    "movedMm": 20.792107379008435,
+                    "otherTravelMm": 25.117033265450377,
+                    "responseRatio": 1.2080080584235706,
+                    "elapsedMs": 5276
+                  },
+                  {
+                    "travelMm": 206.25602968368187,
+                    "stepMm": 20.695226183031064,
+                    "movedMm": 20.705713581034736,
+                    "otherTravelMm": 25.4233385491754,
+                    "responseRatio": 1.2278416993298769,
+                    "elapsedMs": 5892,
+                    "netResponseRatio": 1.1090087097193533,
+                    "responseWindowMm": 181.25157015498513
+                  },
+                  {
+                    "travelMm": 226.60831409118776,
+                    "stepMm": 20.360930903099586,
+                    "movedMm": 20.352284407505877,
+                    "otherTravelMm": 25.004459528696756,
+                    "responseRatio": 1.2285824543349624,
+                    "elapsedMs": 6502,
+                    "netResponseRatio": 1.1621525461418722,
+                    "responseWindowMm": 176.59677703991622
+                  },
+                  {
+                    "travelMm": 246.95798050481565,
+                    "stepMm": 20.348654591142292,
+                    "movedMm": 20.349666413627887,
+                    "otherTravelMm": 25.4233385491754,
+                    "responseRatio": 1.249324585102277,
+                    "elapsedMs": 7112,
+                    "netResponseRatio": 1.1897163390532453,
+                    "responseWindowMm": 171.94198392484736
+                  },
+                  {
+                    "travelMm": 266.9568357387927,
+                    "stepMm": 20.010812480692,
+                    "movedMm": 19.998855233977018,
+                    "otherTravelMm": 26.313456467692504,
+                    "responseRatio": 1.3157481345725883,
+                    "elapsedMs": 7716,
+                    "netResponseRatio": 1.2186535764375876,
+                    "responseWindowMm": 167.9966671507142
+                  },
+                  {
+                    "travelMm": 285.95299931749895,
+                    "stepMm": 19.00059695552681,
+                    "movedMm": 18.996163578706298,
+                    "otherTravelMm": 25.190337094034163,
+                    "responseRatio": 1.3260749724366034,
+                    "elapsedMs": 8304,
+                    "netResponseRatio": 1.2421312913775222,
+                    "responseWindowMm": 164.10894624189683
+                  },
+                  {
+                    "travelMm": 304.8025552390377,
+                    "stepMm": 18.85262939097902,
+                    "movedMm": 18.84955592153876,
+                    "otherTravelMm": 24.47824275922047,
+                    "responseRatio": 1.2986111111111112,
+                    "elapsedMs": 8890,
+                    "netResponseRatio": 1.2554997317204037,
+                    "responseWindowMm": 161.01447747811088
+                  },
+                  {
+                    "travelMm": 324.0657541932991,
+                    "stepMm": 19.25133689839572,
+                    "movedMm": 19.263198954261394,
+                    "otherTravelMm": 26.06998303703928,
+                    "responseRatio": 1.3533568904593642,
+                    "elapsedMs": 9482,
+                    "netResponseRatio": 1.2743915465645592,
+                    "responseWindowMm": 159.3075454696604
+                  },
+                  {
+                    "travelMm": 342.5330830086511,
+                    "stepMm": 18.472584856396864,
+                    "movedMm": 18.46732881535199,
+                    "otherTravelMm": 23.080234028373035,
+                    "responseRatio": 1.249787354692375,
+                    "elapsedMs": 10060,
+                    "netResponseRatio": 1.2802895118656508,
+                    "responseWindowMm": 156.98276690600395
+                  },
+                  {
+                    "travelMm": 362.52932024875014,
+                    "stepMm": 20.00340290381122,
+                    "movedMm": 19.99623724009906,
+                    "otherTravelMm": 22.01471052003045,
+                    "responseRatio": 1.1009426551453234,
+                    "elapsedMs": 10664,
+                    "netResponseRatio": 1.2642900221135158,
+                    "responseWindowMm": 156.2732905650683
+                  },
+                  {
+                    "travelMm": 385.23779914644837,
+                    "stepMm": 22.70781305743851,
+                    "movedMm": 22.70847889769822,
+                    "otherTravelMm": 26.111870939087165,
+                    "responseRatio": 1.1498731842287295,
+                    "elapsedMs": 11314,
+                    "netResponseRatio": 1.2524920781621334,
+                    "responseWindowMm": 158.62948505526063
+                  },
+                  {
+                    "travelMm": 406.97500231541176,
+                    "stepMm": 21.741527972729095,
+                    "movedMm": 21.73720316896337,
+                    "otherTravelMm": 23.632630736629213,
+                    "responseRatio": 1.0871973985306518,
+                    "elapsedMs": 11948,
+                    "netResponseRatio": 1.230440757828605,
+                    "responseWindowMm": 160.0170218105961
+                  },
+                  {
+                    "travelMm": 429.9766965274449,
+                    "stepMm": 22.994904176359807,
+                    "movedMm": 23.00169421203324,
+                    "otherTravelMm": 23.253021624320493,
+                    "responseRatio": 1.01092647393581,
+                    "elapsedMs": 12602,
+                    "netResponseRatio": 1.1890025534375053,
+                    "responseWindowMm": 163.01986078865232
+                  },
+                  {
+                    "travelMm": 454.7167386744646,
+                    "stepMm": 24.7297905877054,
+                    "movedMm": 24.74004214701962,
+                    "otherTravelMm": 25.22437101444802,
+                    "responseRatio": 1.0195767195767187,
+                    "elapsedMs": 13286,
+                    "netResponseRatio": 1.1487364844949817,
+                    "responseWindowMm": 168.76373935696566
+                  },
+                  {
+                    "travelMm": 479.2499593051229,
+                    "stepMm": 24.519979242345638,
+                    "movedMm": 24.5332206306583,
+                    "otherTravelMm": 25.42857453693141,
+                    "responseRatio": 1.0364955714438169,
+                    "elapsedMs": 13966,
+                    "netResponseRatio": 1.1167572110334065,
+                    "responseWindowMm": 174.4474040660852
+                  },
+                  {
+                    "travelMm": 503.37215489693654,
+                    "stepMm": 24.119736435704706,
+                    "movedMm": 24.122195591813654,
+                    "otherTravelMm": 22.643029050748375,
+                    "responseRatio": 0.9386802691556293,
+                    "elapsedMs": 14640,
+                    "netResponseRatio": 1.0673820995765804,
+                    "responseWindowMm": 179.30640070363745
+                  },
+                  {
+                    "travelMm": 528.3766144256333,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696756,
+                    "otherTravelMm": 21.116738619879474,
+                    "responseRatio": 0.8445188985446584,
+                    "elapsedMs": 15328,
+                    "netResponseRatio": 1.0192711341513236,
+                    "responseWindowMm": 185.84353141698222
+                  },
+                  {
+                    "travelMm": 553.3810739543301,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696756,
+                    "otherTravelMm": 21.47278578728623,
+                    "responseRatio": 0.8587582452099256,
+                    "elapsedMs": 16016,
+                    "netResponseRatio": 0.9896844993141294,
+                    "responseWindowMm": 190.8517537055799
+                  },
+                  {
+                    "travelMm": 578.3881514769048,
+                    "stepMm": 25,
+                    "movedMm": 25.007077522574747,
+                    "otherTravelMm": 18.943803701146365,
+                    "responseRatio": 0.7575376884422077,
+                    "elapsedMs": 16704,
+                    "netResponseRatio": 0.9407953590501231,
+                    "responseWindowMm": 193.15035233045646
+                  },
+                  {
+                    "travelMm": 603.3926110056016,
+                    "stepMm": 25,
+                    "movedMm": 25.0044595286967,
+                    "otherTravelMm": 17.571974909079,
+                    "responseRatio": 0.7027536383624805,
+                    "elapsedMs": 17392,
+                    "netResponseRatio": 0.8942899794737831,
+                    "responseWindowMm": 196.41760869018978
+                  },
+                  {
+                    "travelMm": 628.3970705342983,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 17.25257965596385,
+                    "responseRatio": 0.6899801067950946,
+                    "elapsedMs": 18080.000000000007,
+                    "netResponseRatio": 0.8550223641329442,
+                    "responseWindowMm": 198.42037400685334
+                  },
+                  {
+                    "travelMm": 653.401530062995,
+                    "stepMm": 25,
+                    "movedMm": 25.0044595286967,
+                    "otherTravelMm": 17.964673990777722,
+                    "responseRatio": 0.7184588001256467,
+                    "elapsedMs": 18768,
+                    "netResponseRatio": 0.8173457017867499,
+                    "responseWindowMm": 198.68479138853044
+                  },
+                  {
+                    "travelMm": 678.4086075855698,
+                    "stepMm": 25,
+                    "movedMm": 25.007077522574747,
+                    "otherTravelMm": 14.079571075838189,
+                    "responseRatio": 0.5630234505862621,
+                    "elapsedMs": 19456,
+                    "netResponseRatio": 0.7584162580679085,
+                    "responseWindowMm": 199.15864828044687
+                  },
+                  {
+                    "travelMm": 703.4130671142666,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 13.542882330850004,
+                    "responseRatio": 0.5416186786723893,
+                    "elapsedMs": 20144.000000000007,
+                    "netResponseRatio": 0.7095798979191208,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 728.4175266429634,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 13.08735139607954,
+                    "responseRatio": 0.5234006910271188,
+                    "elapsedMs": 20832,
+                    "netResponseRatio": 0.6694411726213845,
+                    "responseWindowMm": 200.0409122173301
+                  },
+                  {
+                    "travelMm": 753.4219861716601,
+                    "stepMm": 25,
+                    "movedMm": 25.0044595286967,
+                    "otherTravelMm": 12.076805759174672,
+                    "responseRatio": 0.4829860747565675,
+                    "elapsedMs": 21520,
+                    "netResponseRatio": 0.6224708807747674,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 778.4290636942349,
+                    "stepMm": 25,
+                    "movedMm": 25.007077522574747,
+                    "otherTravelMm": 11.223339754949626,
+                    "responseRatio": 0.44880653266332027,
+                    "elapsedMs": 22208.000000000007,
+                    "netResponseRatio": 0.5838764559612621,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 803.4335232229316,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 9.79653309144407,
+                    "responseRatio": 0.39179143545178025,
+                    "elapsedMs": 22896,
+                    "netResponseRatio": 0.5450071980107308,
+                    "responseWindowMm": 200.04091221733015
+                  },
+                  {
+                    "travelMm": 828.4379827516284,
+                    "stepMm": 25,
+                    "movedMm": 25.0044595286967,
+                    "otherTravelMm": 8.217882783015385,
+                    "responseRatio": 0.3286566851638614,
+                    "elapsedMs": 23584,
+                    "netResponseRatio": 0.49984295249312966,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 853.4424422803252,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 7.14188729916073,
+                    "responseRatio": 0.2856245419327786,
+                    "elapsedMs": 24272.000000000007,
+                    "netResponseRatio": 0.4457400863761282,
+                    "responseWindowMm": 200.04091221733015
+                  },
+                  {
+                    "travelMm": 878.4495198029,
+                    "stepMm": 25,
+                    "movedMm": 25.007077522574747,
+                    "otherTravelMm": 6.374815092909264,
+                    "responseRatio": 0.2549204355108869,
+                    "elapsedMs": 24960,
+                    "netResponseRatio": 0.40722418531605775,
+                    "responseWindowMm": 200.04091221733015
+                  },
+                  {
+                    "travelMm": 903.4539793315967,
+                    "stepMm": 25,
+                    "movedMm": 25.0044595286967,
+                    "otherTravelMm": 5.322381553956808,
+                    "responseRatio": 0.21285729243011656,
+                    "elapsedMs": 25648,
+                    "netResponseRatio": 0.3661300876848584,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 928.4584388602934,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 2.285508655486579,
+                    "responseRatio": 0.09140404146162703,
+                    "elapsedMs": 26336.000000000007,
+                    "netResponseRatio": 0.31213191990577155,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 953.4628983889902,
+                    "stepMm": 25,
+                    "movedMm": 25.0044595286967,
+                    "otherTravelMm": 1.1728612573401942,
+                    "responseRatio": 0.046906083132656574,
+                    "elapsedMs": 27024,
+                    "netResponseRatio": 0.2576233477293553,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 978.4699759115649,
+                    "stepMm": 25,
+                    "movedMm": 25.007077522574747,
+                    "otherTravelMm": 1.5995942594527173,
+                    "responseRatio": 0.06396566164153762,
+                    "elapsedMs": 27712,
+                    "netResponseRatio": 0.209514461457924,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 1003.4744354402617,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 2.390228410606263,
+                    "responseRatio": 0.0955920845984723,
+                    "elapsedMs": 28400.000000000007,
+                    "netResponseRatio": 0.17249051171312682,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 1028.4788949689585,
+                    "stepMm": 25,
+                    "movedMm": 25.0044595286967,
+                    "otherTravelMm": 0.38746309394274586,
+                    "responseRatio": 0.015495759606324173,
+                    "elapsedMs": 29088.000000000007,
+                    "netResponseRatio": 0.1294725821227586,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 1053.4833544976552,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 3.790855135331688,
+                    "responseRatio": 0.15160716155376386,
+                    "elapsedMs": 29775.999999999993,
+                    "netResponseRatio": 0.11272084805653727,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 1078.49043202023,
+                    "stepMm": 25,
+                    "movedMm": 25.007077522574626,
+                    "otherTravelMm": 1.7488199104982751,
+                    "responseRatio": 0.06993299832495675,
+                    "elapsedMs": 30464,
+                    "netResponseRatio": 0.08959560266980773,
+                    "responseWindowMm": 200.04091221732992
+                  }
+                ],
+                "reason": "no-free-response",
+                "edgeMeasured": false,
+                "elapsedMs": 31806,
+                "settings": {
+                  "stepMm": 25,
+                  "minStepMm": 5,
+                  "maxTravelMm": 2500,
+                  "maxSteps": 300,
+                  "feed": 3600,
+                  "responseRatioLimit": 10,
+                  "backoffRatio": 0.95,
+                  "maxDurationMs": 480000,
+                  "wallTimeoutMs": 90000,
+                  "responseWindowMoves": 8,
+                  "minResponseWindowMm": 20,
+                  "netResponseRatioLimit": 0.1
+                }
+              },
+              "drive_anchor": 1,
+              "sensor_anchor": 2,
+              "sensor_force_n": 3.435973836800002,
+              "pullout_force_n": null
+            },
+            {
+              "pullout_profile": "reeved",
+              "measurement_feed_mm_per_min": 2800,
+              "endpoint_tuning": {
+                "endpoint": {
+                  "travelMm": 783.9097029781161,
+                  "anglesDeg": [
+                    -0.03,
+                    535.59,
+                    -4883.5,
+                    0
+                  ]
+                },
+                "reachedAnglesDeg": [
+                  -0.03,
+                  535.59,
+                  -4883.5,
+                  0
+                ],
+                "samples": [
+                  {
+                    "travelMm": 25.004459528696756,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696756,
+                    "otherTravelMm": 5.5527650152199595,
+                    "responseRatio": 0.22207098733116956,
+                    "elapsedMs": 703.9999999999854
+                  },
+                  {
+                    "travelMm": 50.008919057393456,
+                    "stepMm": 25,
+                    "movedMm": 25.0044595286967,
+                    "otherTravelMm": 11.257373675363425,
+                    "responseRatio": 0.4502146372107644,
+                    "elapsedMs": 1391.9999999999854
+                  },
+                  {
+                    "travelMm": 75.0159965799682,
+                    "stepMm": 25,
+                    "movedMm": 25.007077522574747,
+                    "otherTravelMm": 12.60040453477306,
+                    "responseRatio": 0.5038735343383586,
+                    "elapsedMs": 2079.9999999999854
+                  },
+                  {
+                    "travelMm": 100.02045610866502,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 9.39859802198946,
+                    "responseRatio": 0.3758768715317758,
+                    "elapsedMs": 2768
+                  },
+                  {
+                    "travelMm": 125.02491563736183,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 10.712830948741198,
+                    "responseRatio": 0.42843681289917207,
+                    "elapsedMs": 3455.9999999999854
+                  },
+                  {
+                    "travelMm": 150.02937516605854,
+                    "stepMm": 25,
+                    "movedMm": 25.0044595286967,
+                    "otherTravelMm": 10.63690912627944,
+                    "responseRatio": 0.42540048162496175,
+                    "elapsedMs": 4143.999999999985
+                  },
+                  {
+                    "travelMm": 175.0364526886333,
+                    "stepMm": 25,
+                    "movedMm": 25.007077522574747,
+                    "otherTravelMm": 11.636982787672196,
+                    "responseRatio": 0.46534757118928,
+                    "elapsedMs": 4832
+                  },
+                  {
+                    "travelMm": 200.04091221733012,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 9.634217471008686,
+                    "responseRatio": 0.3852999685896751,
+                    "elapsedMs": 5519.999999999985
+                  },
+                  {
+                    "travelMm": 225.04537174602677,
+                    "stepMm": 25,
+                    "movedMm": 25.0044595286967,
+                    "otherTravelMm": 12.909327812376057,
+                    "responseRatio": 0.5162810176944835,
+                    "elapsedMs": 6207.999999999985,
+                    "netResponseRatio": 0.44384242900143966,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 250.04983127472363,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 14.909475135161571,
+                    "responseRatio": 0.5962726416082077,
+                    "elapsedMs": 6895.999999999985,
+                    "netResponseRatio": 0.46209920167517327,
+                    "responseWindowMm": 200.04091221733015
+                  },
+                  {
+                    "travelMm": 275.0569087972983,
+                    "stepMm": 25,
+                    "movedMm": 25.007077522574747,
+                    "otherTravelMm": 8.765043503515512,
+                    "responseRatio": 0.35050251256281373,
+                    "elapsedMs": 7583.999999999985,
+                    "netResponseRatio": 0.44292631854469294,
+                    "responseWindowMm": 200.04091221733015
+                  },
+                  {
+                    "travelMm": 300.0613683259951,
+                    "stepMm": 25,
+                    "movedMm": 25.0044595286967,
+                    "otherTravelMm": 8.068657131969783,
+                    "responseRatio": 0.32268872369385476,
+                    "elapsedMs": 8271.999999999985,
+                    "netResponseRatio": 0.43627797408716146,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 325.06582785469186,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 8.343546489158893,
+                    "responseRatio": 0.33368233692806964,
+                    "elapsedMs": 8959.999999999985,
+                    "netResponseRatio": 0.424433974610653,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 350.0702873833886,
+                    "stepMm": 25,
+                    "movedMm": 25.0044595286967,
+                    "otherTravelMm": 8.319984544256975,
+                    "responseRatio": 0.33274002722228146,
+                    "elapsedMs": 9647.999999999985,
+                    "netResponseRatio": 0.4128517209789295,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 375.07736490596335,
+                    "stepMm": 25,
+                    "movedMm": 25.007077522574747,
+                    "otherTravelMm": 11.438015252944822,
+                    "responseRatio": 0.45739112227805645,
+                    "elapsedMs": 10335.999999999985,
+                    "netResponseRatio": 0.41185708676874755,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 400.0818244346601,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 9.029460885192666,
+                    "responseRatio": 0.36111401947439986,
+                    "elapsedMs": 11023.999999999985,
+                    "netResponseRatio": 0.4088339222614842,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 425.08628396335683,
+                    "stepMm": 25,
+                    "movedMm": 25.0044595286967,
+                    "otherTravelMm": 5.330235535590686,
+                    "responseRatio": 0.21317139566537602,
+                    "elapsedMs": 11711.999999999985,
+                    "netResponseRatio": 0.3709462112288968,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 450.09074349205366,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 4.691445029360777,
+                    "responseRatio": 0.1876243325306254,
+                    "elapsedMs": 12399.999999999985,
+                    "netResponseRatio": 0.3198665096191599,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 475.0978210146284,
+                    "stepMm": 25,
+                    "movedMm": 25.007077522574747,
+                    "otherTravelMm": 5.859070298944962,
+                    "responseRatio": 0.23429648241206028,
+                    "elapsedMs": 13088.000000000015,
+                    "netResponseRatio": 0.3053396152336083,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 500.1022805433251,
+                    "stepMm": 25,
+                    "movedMm": 25.0044595286967,
+                    "otherTravelMm": 6.997897635871238,
+                    "responseRatio": 0.27986598261962065,
+                    "elapsedMs": 13775.999999999985,
+                    "netResponseRatio": 0.2999869127077608,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 525.1067400720219,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 6.421938982713158,
+                    "responseRatio": 0.2568317453669776,
+                    "elapsedMs": 14463.999999999985,
+                    "netResponseRatio": 0.2903808402041619,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 550.1111996007186,
+                    "stepMm": 25,
+                    "movedMm": 25.0044595286967,
+                    "otherTravelMm": 5.948082090796652,
+                    "responseRatio": 0.23788085017275645,
+                    "elapsedMs": 15151.999999999985,
+                    "netResponseRatio": 0.2785237534354142,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 575.1182771232933,
+                    "stepMm": 25,
+                    "movedMm": 25.007077522574747,
+                    "otherTravelMm": 8.123635003407628,
+                    "responseRatio": 0.32485343383584686,
+                    "elapsedMs": 15839.999999999985,
+                    "netResponseRatio": 0.26195524146054194,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 600.1227366519902,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 8.835729338221293,
+                    "responseRatio": 0.35336613967123787,
+                    "elapsedMs": 16527.999999999985,
+                    "netResponseRatio": 0.26098678183483853,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 625.127196180687,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 7.343472827766129,
+                    "responseRatio": 0.29368652497120606,
+                    "elapsedMs": 17215.999999999985,
+                    "netResponseRatio": 0.2710509095668105,
+                    "responseWindowMm": 200.04091221733015
+                  },
+                  {
+                    "travelMm": 650.1316557093838,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 6.796312107265928,
+                    "responseRatio": 0.27180399958119544,
+                    "elapsedMs": 17903.999999999985,
+                    "netResponseRatio": 0.281573092527156,
+                    "responseWindowMm": 200.04091221733015
+                  },
+                  {
+                    "travelMm": 675.1387332319584,
+                    "stepMm": 25,
+                    "movedMm": 25.007077522574626,
+                    "otherTravelMm": 6.605198554172544,
+                    "responseRatio": 0.26413316582914725,
+                    "elapsedMs": 18591.999999999985,
+                    "netResponseRatio": 0.28530297081533834,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 700.1431927606552,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 7.346090821644118,
+                    "responseRatio": 0.2937912260496271,
+                    "elapsedMs": 19279.999999999985,
+                    "netResponseRatio": 0.2870435806831566,
+                    "responseWindowMm": 200.04091221733015
+                  },
+                  {
+                    "travelMm": 725.1476522893521,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 5.830272366287052,
+                    "responseRatio": 0.2331693016438062,
+                    "elapsedMs": 19967.999999999985,
+                    "netResponseRatio": 0.2840858526370892,
+                    "responseWindowMm": 200.04091221733015
+                  },
+                  {
+                    "travelMm": 750.1521118180486,
+                    "stepMm": 25,
+                    "movedMm": 25.00445952869658,
+                    "otherTravelMm": 4.639085151800935,
+                    "responseRatio": 0.18553031096220457,
+                    "elapsedMs": 20655.999999999985,
+                    "netResponseRatio": 0.27754220651747163,
+                    "responseWindowMm": 200.04091221733003
+                  },
+                  {
+                    "travelMm": 775.1591893406236,
+                    "stepMm": 25,
+                    "movedMm": 25.007077522574864,
+                    "otherTravelMm": 2.1284290228070835,
+                    "responseRatio": 0.08511306532663274,
+                    "elapsedMs": 21344.000000000015,
+                    "netResponseRatio": 0.24757230728962162,
+                    "responseWindowMm": 200.04091221733015
+                  },
+                  {
+                    "travelMm": 800.1636488693204,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 1.9294614880797323,
+                    "responseRatio": 0.07716469479635628,
+                    "elapsedMs": 22031.999999999985,
+                    "netResponseRatio": 0.21304803036251785,
+                    "responseWindowMm": 200.04091221733015
+                  },
+                  {
+                    "travelMm": 825.1681083980169,
+                    "stepMm": 25,
+                    "movedMm": 25.00445952869658,
+                    "otherTravelMm": 1.7959438003021686,
+                    "responseRatio": 0.07182493979688058,
+                    "elapsedMs": 22719.999999999985,
+                    "netResponseRatio": 0.1853160581075777,
+                    "responseWindowMm": 200.04091221732992
+                  },
+                  {
+                    "travelMm": 850.1725679267138,
+                    "stepMm": 25,
+                    "movedMm": 25.004459528696817,
+                    "otherTravelMm": 0.018325957145953555,
+                    "responseRatio": 0.0007329075489482762,
+                    "elapsedMs": 23407.999999999985,
+                    "netResponseRatio": 0.15124983640884704,
+                    "responseWindowMm": 200.04091221732992
+                  }
+                ],
+                "reason": "no-free-response",
+                "edgeMeasured": false,
+                "elapsedMs": 24558.000000000015,
+                "settings": {
+                  "stepMm": 25,
+                  "minStepMm": 5,
+                  "maxTravelMm": 2500,
+                  "maxSteps": 300,
+                  "feed": 3600,
+                  "responseRatioLimit": 10,
+                  "backoffRatio": 0.95,
+                  "maxDurationMs": 480000,
+                  "wallTimeoutMs": 90000,
+                  "responseWindowMoves": 8,
+                  "minResponseWindowMm": 20,
+                  "netResponseRatioLimit": 0.1
+                }
+              },
+              "drive_anchor": 2,
+              "sensor_anchor": 1,
+              "sensor_force_n": 3.435973836800002,
+              "pullout_force_n": null
+            }
+          ],
+          "slip_recoveries": [],
+          "settle_ms": 200
+        }
+      }
+    ],
+    "outputFile": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-19-interactive-research-bf5d807a/E38-hp4-profile-point-timing/sweeps.json",
+    "collectionOptions": {
+      "machineType": "hangprinter_4",
+      "machineConfig": {
+        "numAnchors": 4,
+        "dimensions": 3,
+        "axes": [
+          "X",
+          "Y",
+          "Z",
+          "U"
+        ],
+        "mustBeInFixedSet": [
+          3
+        ],
+        "fixedTargetBoundsByAnchor": {
+          "0": {
+            "minFixed": 0
+          },
+          "1": {
+            "minFixed": 0
+          },
+          "2": {
+            "minFixed": 0
+          },
+          "3": {
+            "maxFixed": 0
+          }
+        }
+      },
+      "firmware": "rrf",
+      "klipperConfigPath": null,
+      "motorIds": [
+        "40.0",
+        "41.0",
+        "42.0",
+        "43.0"
+      ],
+      "speedup": 25,
+      "sweepPoints": 4,
+      "maxSweeps": null,
+      "feed": 1400,
+      "settleMs": 200,
+      "forceLow": 0.01,
+      "forceMid": 0.1,
+      "forceMax": 1,
+      "sensorCollectionForce": null,
+      "forceBuildupFactor": null,
+      "preserveBuildupFactor": false,
+      "forceBaseRadii": null,
+      "noiseSampleCount": 16,
+      "noiseSampleRateHz": 25,
+      "noiseSampleIntervalMs": 40,
+      "noiseMinSamples": 4,
+      "noiseSigmaFloorDeg": 0.02,
+      "forceLowProvided": false,
+      "forceMidProvided": false,
+      "forceMaxProvided": false,
+      "forceArgsProvided": false,
+      "fixedTargets": [
+        0,
+        0
+      ],
+      "maxTravelMm": null,
+      "sweepConfigFile": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-19-interactive-research-bf5d807a/one-sweep.txt",
+      "debugSweep": false,
+      "autoTuneForce": true,
+      "noAutoTuneForce": false,
+      "returnToOrigin": false,
+      "projectZeroTension": false,
+      "outputFile": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-19-interactive-research-bf5d807a/E38-hp4-profile-point-timing/sweeps.json",
+      "maxSweepCount": 6
+    }
+  },
+  "pulses": [],
+  "wallS": 42.065990925,
+  "simS": 218.358
+}

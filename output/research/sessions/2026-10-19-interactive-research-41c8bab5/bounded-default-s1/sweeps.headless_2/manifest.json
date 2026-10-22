@@ -1,0 +1,19 @@
+{
+  "backend": "headless-js",
+  "status": "starting",
+  "machine_type": "hangprinter_4",
+  "scene": "/home/torbjorn/repos/hp-sim5-worktrees/research-8a582c8d/public/usd_scenes/hp4_rigid_body.usda",
+  "firmware_config": "sys/config_hp4.g",
+  "recording_mode": "events",
+  "clock": "fixed steps; collector waits advance simulation time",
+  "dataset": "/home/torbjorn/repos/hp-sim5-worktrees/research-8a582c8d/output/research/sessions/2026-10-19-interactive-research-41c8bab5/bounded-default-s1/sweeps.json",
+  "source_sha256": "c2921f8b809efb6cb569790bf078eb2d4427a425ea0994928f2c14154c70bc7f",
+  "autocal_source_sha256": "05949c201ba792dc4ddc50d8c0036f62111201789e75785e50757b7d79c38c64",
+  "git_revision": "3c30e6b9f8d5dc4de15b188448b0b8e5b68ea79d",
+  "owned_services": [
+    {
+      "name": "recorder",
+      "pid": 47
+    }
+  ]
+}

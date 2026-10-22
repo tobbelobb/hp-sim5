@@ -1,0 +1,800 @@
+[
+  {
+    "name": "REF",
+    "source": "/home/torbjorn/repos/hp-sim5/output/extended-autocal/no-buildup-reference-003/sweeps.json",
+    "sha256": "cd938d1f2c6b86c33d49da94dff61151deaf758c16bdf01ec2d68ab6cd805a99",
+    "command": [
+      "/home/torbjorn/repos/hp-sim5/.venv/bin/python",
+      "-m",
+      "autocal.autocal",
+      "--sim",
+      "--no-collect",
+      "--machine-type",
+      "hangprinter_3",
+      "--dataset",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/REF/sweeps.json",
+      "--base-radii",
+      "30",
+      "--buildup-factor",
+      "0",
+      "--find-radii",
+      "off",
+      "--find-buildup-factor",
+      "off",
+      "--stage-artifacts",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/REF/stages",
+      "--full-auto-log",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/REF/run.log"
+    ],
+    "rc": 0,
+    "seconds": 22.11023097100042,
+    "iterations": [
+      {
+        "artifact": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/REF/stages/fit-001-default.json",
+        "sweeps": 3,
+        "cost": 0.18349222363054646,
+        "anchors": [
+          [
+            0.0,
+            -1903.6461216624318,
+            -282.0588314696805
+          ],
+          [
+            1648.3989056180392,
+            951.669515932922,
+            -282.0588314696805
+          ],
+          [
+            -1648.4588390497972,
+            951.7630089248722,
+            -282.0588314696805
+          ],
+          [
+            -0.04948359056519237,
+            0.09046616266523488,
+            1914.366835087944
+          ]
+        ],
+        "rmse_mm": 8.001121610851593,
+        "pairwise_rmse_mm": 11.246559755650395
+      },
+      {
+        "artifact": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/REF/stages/fit-002-default.json",
+        "sweeps": 4,
+        "cost": 100.0,
+        "anchors": [
+          [
+            0.0,
+            -2094.9293241251,
+            -141.74375455814067
+          ],
+          [
+            313.6900771786675,
+            1e-06,
+            -141.74375455814067
+          ],
+          [
+            -2741.268392908987,
+            1782.3429255423896,
+            -141.74375455814067
+          ],
+          [
+            442.88470837256926,
+            172.7660299718955,
+            1e-06
+          ]
+        ],
+        "rmse_mm": 1457.8266321744668,
+        "pairwise_rmse_mm": 1371.7274183361446
+      },
+      {
+        "artifact": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/REF/stages/fit-003-default.json",
+        "sweeps": 5,
+        "cost": 0.2246916346380397,
+        "anchors": [
+          [
+            0.0,
+            -1902.953610256873,
+            -279.836846339123
+          ],
+          [
+            1647.525465823057,
+            951.2101781615276,
+            -279.836846339123
+          ],
+          [
+            -1647.519388139105,
+            951.1716163380428,
+            -279.836846339123
+          ],
+          [
+            -0.04084209400461326,
+            0.13769173658278738,
+            1904.6841782862714
+          ]
+        ],
+        "rmse_mm": 3.247805639519278,
+        "pairwise_rmse_mm": 4.800039633414366
+      },
+      {
+        "artifact": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/REF/stages/fit-004-default.json",
+        "sweeps": 6,
+        "cost": 0.1928198963050239,
+        "anchors": [
+          [
+            0.0,
+            -1903.0551142167055,
+            -279.28622805911107
+          ],
+          [
+            1648.9786712637558,
+            952.6575311623963,
+            -279.28622805911107
+          ],
+          [
+            -1646.0666842719536,
+            949.891149472911,
+            -279.28622805911107
+          ],
+          [
+            0.17012404349507293,
+            -0.07022662860367251,
+            1901.0637378399533
+          ]
+        ],
+        "rmse_mm": 2.82549495154793,
+        "pairwise_rmse_mm": 3.7705551231172976
+      },
+      {
+        "artifact": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/REF/stages/fit-005-default.json",
+        "sweeps": 7,
+        "cost": 0.3628670830968966,
+        "anchors": [
+          [
+            0.0,
+            -1905.9957551677758,
+            -279.1997105202948
+          ],
+          [
+            1643.4337389751709,
+            948.5275392502098,
+            -279.1997105202948
+          ],
+          [
+            -1648.145318834792,
+            952.5690210781465,
+            -279.1997105202948
+          ],
+          [
+            -0.15100310625110275,
+            0.07837305357946667,
+            1901.4986131273292
+          ]
+        ],
+        "rmse_mm": 3.880828438168282,
+        "pairwise_rmse_mm": 4.379900383452235
+      }
+    ],
+    "adjacent_score_geometry_disagreements": 2,
+    "applied": {
+      "anchors": [
+        [
+          0.0,
+          -1903.02,
+          -279.3
+        ],
+        [
+          1648.64,
+          952.3,
+          -279.3
+        ],
+        [
+          -1646.18,
+          950.07,
+          -279.3
+        ],
+        [
+          0.07,
+          0.02,
+          1901.53
+        ]
+      ],
+      "rmse_mm": 2.6898187671291134,
+      "pairwise_rmse_mm": 3.676622647643263
+    },
+    "selected_history": [
+      {
+        "iteration": 1,
+        "cost": 0.18349222363054646,
+        "history_rank_score": 0.18349222363054646,
+        "rmse_mm": 8.001121610851593,
+        "pairwise_rmse_mm": 11.246559755650395
+      },
+      {
+        "iteration": 2,
+        "cost": 0.22469163462684513,
+        "history_rank_score": 0.015514479027762904,
+        "rmse_mm": 3.2477945328444395,
+        "pairwise_rmse_mm": 4.800022705559898
+      },
+      {
+        "iteration": 3,
+        "cost": 0.2246916346380397,
+        "history_rank_score": -0.04694481960971658,
+        "rmse_mm": 3.247805639519278,
+        "pairwise_rmse_mm": 4.800039633414366
+      },
+      {
+        "iteration": 4,
+        "cost": 0.1928198963050239,
+        "history_rank_score": -0.09600346285661181,
+        "rmse_mm": 2.82549495154793,
+        "pairwise_rmse_mm": 3.7705551231172976
+      },
+      {
+        "iteration": 5,
+        "cost": 0.22888277217110986,
+        "history_rank_score": -0.06267173004609153,
+        "rmse_mm": 2.5993579291172306,
+        "pairwise_rmse_mm": 3.6092350007383702
+      }
+    ],
+    "applied_regret_mm": 0.09046083801188276
+  },
+  {
+    "name": "W00",
+    "source": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9d784051/environment-matrix-20261015-retry1/W00-nominal/sweeps.json",
+    "sha256": "e164d93c064b650ec3e1069224b413fbf96bcd47c6eca307dcec04dee01e3c8b",
+    "command": [
+      "/home/torbjorn/repos/hp-sim5/.venv/bin/python",
+      "-m",
+      "autocal.autocal",
+      "--sim",
+      "--no-collect",
+      "--machine-type",
+      "hangprinter_3",
+      "--dataset",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/W00/sweeps.json",
+      "--base-radii",
+      "30",
+      "--buildup-factor",
+      "0",
+      "--find-radii",
+      "off",
+      "--find-buildup-factor",
+      "off",
+      "--stage-artifacts",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/W00/stages",
+      "--full-auto-log",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/W00/run.log"
+    ],
+    "rc": 0,
+    "seconds": 26.86590847199841,
+    "iterations": [
+      {
+        "artifact": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/W00/stages/fit-001-default.json",
+        "sweeps": 3,
+        "cost": 0.19209169920876357,
+        "anchors": [
+          [
+            0.0,
+            -1903.5943504003476,
+            -281.8058322344496
+          ],
+          [
+            1648.3871793848923,
+            951.6834723942686,
+            -281.8058322344496
+          ],
+          [
+            -1648.291280262257,
+            951.6479632283045,
+            -281.8058322344496
+          ],
+          [
+            -0.05171162871527865,
+            0.09368148836272451,
+            1913.1453671655797
+          ]
+        ],
+        "rmse_mm": 7.3784200812395175,
+        "pairwise_rmse_mm": 10.444140557633876
+      },
+      {
+        "artifact": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/W00/stages/fit-002-default.json",
+        "sweeps": 4,
+        "cost": 0.2242614474168788,
+        "anchors": [
+          [
+            0.0,
+            -1902.8859848494074,
+            -279.7643272224352
+          ],
+          [
+            1647.646787411469,
+            951.2948266720095,
+            -279.7643272224352
+          ],
+          [
+            -1647.4411649781687,
+            951.0981930390446,
+            -279.7643272224352
+          ],
+          [
+            -0.04360084815837497,
+            0.13993184346076512,
+            1904.236485776745
+          ]
+        ],
+        "rmse_mm": 3.0878003570352486,
+        "pairwise_rmse_mm": 4.585058270584701
+      },
+      {
+        "artifact": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/W00/stages/fit-003-default.json",
+        "sweeps": 5,
+        "cost": 100.0,
+        "anchors": [
+          [
+            0.0,
+            -1950.8264671775607,
+            -188.3935819044285
+          ],
+          [
+            2073.4880127095043,
+            1278.7194435028343,
+            -188.3935819044285
+          ],
+          [
+            -1680.833597111531,
+            954.9604780178664,
+            -188.3935819044285
+          ],
+          [
+            51.00429972854419,
+            -96.29076134256813,
+            1e-06
+          ]
+        ],
+        "rmse_mm": 992.7463801159407,
+        "pairwise_rmse_mm": 647.2291828438017
+      },
+      {
+        "artifact": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/W00/stages/fit-004-default.json",
+        "sweeps": 6,
+        "cost": 100.0,
+        "anchors": [
+          [
+            0.0,
+            -3742.3763320426438,
+            -685.0295714743867
+          ],
+          [
+            4577.741978444572,
+            1642.5570907020124,
+            -685.0295714743867
+          ],
+          [
+            -2327.5188586755144,
+            1421.479190996144,
+            -685.0295714743867
+          ],
+          [
+            -86.21796748144175,
+            250.2034074820217,
+            207.8881128281978
+          ]
+        ],
+        "rmse_mm": 2036.2500741661595,
+        "pairwise_rmse_mm": 2539.7361616237968
+      },
+      {
+        "artifact": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/W00/stages/fit-005-default.json",
+        "sweeps": 7,
+        "cost": 0.30342655038265437,
+        "anchors": [
+          [
+            0.0,
+            -1910.5935426796864,
+            -280.2954762134649
+          ],
+          [
+            1651.0545963897964,
+            955.0447649618677,
+            -280.2954762134649
+          ],
+          [
+            -1653.174429884424,
+            956.8790101296687,
+            -280.2954762134649
+          ],
+          [
+            -0.09401522441534267,
+            -1.7510546210767435,
+            1893.6514941348946
+          ]
+        ],
+        "rmse_mm": 8.94025131873642,
+        "pairwise_rmse_mm": 11.655735393486971
+      },
+      {
+        "artifact": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/W00/stages/fit-006-default.json",
+        "sweeps": 8,
+        "cost": 100.0,
+        "anchors": [
+          [
+            0.0,
+            -4211.841101043704,
+            -313.659322089791
+          ],
+          [
+            4279.782458251396,
+            1721.8755395424525,
+            -313.659322089791
+          ],
+          [
+            -3062.5614314103836,
+            1523.3223349254029,
+            -313.659322089791
+          ],
+          [
+            -39.21343451352827,
+            120.96093457527844,
+            1e-06
+          ]
+        ],
+        "rmse_mm": 2170.6323975747464,
+        "pairwise_rmse_mm": 2835.5041927801385
+      },
+      {
+        "artifact": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/W00/stages/fit-007-default.json",
+        "sweeps": 9,
+        "cost": 0.3314059550233677,
+        "anchors": [
+          [
+            0.0,
+            -1906.4706350707074,
+            -279.3712437764441
+          ],
+          [
+            1644.8483888258472,
+            949.7438996927964,
+            -279.3712437764441
+          ],
+          [
+            -1646.895425808831,
+            951.5106955043008,
+            -279.3712437764441
+          ],
+          [
+            -0.08055346306005902,
+            0.07501879485418575,
+            1901.8025455242537
+          ]
+        ],
+        "rmse_mm": 3.5747513367720365,
+        "pairwise_rmse_mm": 4.407575998709391
+      }
+    ],
+    "adjacent_score_geometry_disagreements": 5,
+    "applied": {
+      "anchors": [
+        [
+          0.0,
+          -1902.67,
+          -279.37
+        ],
+        [
+          1647.72,
+          951.36,
+          -279.37
+        ],
+        [
+          -1647.2,
+          950.95,
+          -279.37
+        ],
+        [
+          -0.04,
+          0.12,
+          1902.42
+        ]
+      ],
+      "rmse_mm": 2.5079623202911545,
+      "pairwise_rmse_mm": 3.6498666753470457
+    },
+    "selected_history": [
+      {
+        "iteration": 1,
+        "cost": 0.19209169920876357,
+        "history_rank_score": 0.19209169920876357,
+        "rmse_mm": 7.3784200812395175,
+        "pairwise_rmse_mm": 10.444140557633876
+      },
+      {
+        "iteration": 2,
+        "cost": 0.2242614474168788,
+        "history_rank_score": 0.015084291817796584,
+        "rmse_mm": 3.0878003570352486,
+        "pairwise_rmse_mm": 4.585058270584701
+      },
+      {
+        "iteration": 3,
+        "cost": 0.2242614473684862,
+        "history_rank_score": -0.0473750068792701,
+        "rmse_mm": 3.0878142778481763,
+        "pairwise_rmse_mm": 4.585082887388342
+      },
+      {
+        "iteration": 4,
+        "cost": 0.22426144754304927,
+        "history_rank_score": -0.05683193930800834,
+        "rmse_mm": 3.08779446545663,
+        "pairwise_rmse_mm": 4.5850552825312505
+      },
+      {
+        "iteration": 5,
+        "cost": 0.22426144749069088,
+        "history_rank_score": -0.03724653745176115,
+        "rmse_mm": 3.0878171861976957,
+        "pairwise_rmse_mm": 4.585100940986586
+      },
+      {
+        "iteration": 6,
+        "cost": 0.20347441087484622,
+        "history_rank_score": -0.055760701089687024,
+        "rmse_mm": 2.574549931463168,
+        "pairwise_rmse_mm": 3.79528407642092
+      },
+      {
+        "iteration": 7,
+        "cost": 0.2679985008894834,
+        "history_rank_score": 0.061501062191360145,
+        "rmse_mm": 2.4448540799616554,
+        "pairwise_rmse_mm": 3.5108623507306027
+      }
+    ],
+    "applied_regret_mm": 0.06310824032949913
+  },
+  {
+    "name": "W08",
+    "source": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9d784051/environment-matrix-20261015-retry1/W08-heavy-high-g/sweeps.json",
+    "sha256": "7f6c7fa7b7811cf8e4cc22038fc43bbc4b38a58b14b919321cf10e45bd02227a",
+    "command": [
+      "/home/torbjorn/repos/hp-sim5/.venv/bin/python",
+      "-m",
+      "autocal.autocal",
+      "--sim",
+      "--no-collect",
+      "--machine-type",
+      "hangprinter_3",
+      "--dataset",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/W08/sweeps.json",
+      "--base-radii",
+      "30",
+      "--buildup-factor",
+      "0",
+      "--find-radii",
+      "off",
+      "--find-buildup-factor",
+      "off",
+      "--stage-artifacts",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/W08/stages",
+      "--full-auto-log",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/W08/run.log"
+    ],
+    "rc": 0,
+    "seconds": 21.061161363999418,
+    "iterations": [
+      {
+        "artifact": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/W08/stages/fit-001-default.json",
+        "sweeps": 3,
+        "cost": 0.0969791996707268,
+        "anchors": [
+          [
+            0.0,
+            -1905.7761927293495,
+            -283.3946765272011
+          ],
+          [
+            1649.317258755313,
+            952.3748559608172,
+            -283.3946765272011
+          ],
+          [
+            -1648.3884240637033,
+            951.686203267301,
+            -283.3946765272011
+          ],
+          [
+            -0.07930222118946165,
+            0.19190910966475852,
+            1919.7266710365197
+          ]
+        ],
+        "rmse_mm": 11.05886302138795,
+        "pairwise_rmse_mm": 15.529008688741268
+      },
+      {
+        "artifact": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/W08/stages/fit-002-default.json",
+        "sweeps": 4,
+        "cost": 0.2192417384723179,
+        "anchors": [
+          [
+            0.0,
+            -1904.000499445035,
+            -279.98174192062453
+          ],
+          [
+            1647.9124307680354,
+            951.4656266638838,
+            -279.98174192062453
+          ],
+          [
+            -1646.9314743112527,
+            950.8842036306486,
+            -279.98174192062453
+          ],
+          [
+            -0.11132058322146626,
+            0.21524380955634626,
+            1905.464313938876
+          ]
+        ],
+        "rmse_mm": 3.778579557026624,
+        "pairwise_rmse_mm": 5.552293878038345
+      },
+      {
+        "artifact": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/W08/stages/fit-003-default.json",
+        "sweeps": 5,
+        "cost": 0.21924173663337315,
+        "anchors": [
+          [
+            0.0,
+            -1904.000471834967,
+            -279.9819731683703
+          ],
+          [
+            1647.9124438027588,
+            951.4655657404998,
+            -279.9819731683703
+          ],
+          [
+            -1646.9318149638082,
+            950.8844367960897,
+            -279.9819731683703
+          ],
+          [
+            -0.11132585991952934,
+            0.21524334237704681,
+            1905.4653087617774
+          ]
+        ],
+        "rmse_mm": 3.7789743734953727,
+        "pairwise_rmse_mm": 5.552909209556139
+      },
+      {
+        "artifact": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/W08/stages/fit-004-default.json",
+        "sweeps": 6,
+        "cost": 172.0891188258302,
+        "anchors": [
+          [
+            0.0,
+            -1808.68260201739,
+            -287.45583578247334
+          ],
+          [
+            1795.1717949028343,
+            1046.8279672695735,
+            -287.45583578247334
+          ],
+          [
+            -1614.485576834713,
+            900.3632422077451,
+            -287.45583578247334
+          ],
+          [
+            0.6178484234711837,
+            4.900450816927079,
+            1957.875018879508
+          ]
+        ],
+        "rmse_mm": 108.50624860084882,
+        "pairwise_rmse_mm": 106.54800143938544
+      },
+      {
+        "artifact": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E01/W08/stages/fit-005-default.json",
+        "sweeps": 7,
+        "cost": 0.2025246014290634,
+        "anchors": [
+          [
+            0.0,
+            -1904.352799940361,
+            -279.27875823791686
+          ],
+          [
+            1647.659129155094,
+            951.4272903694722,
+            -279.27875823791686
+          ],
+          [
+            -1647.0818443699884,
+            950.9621383552716,
+            -279.27875823791686
+          ],
+          [
+            -0.037480444883481824,
+            0.16664150212886936,
+            1900.7118822892353
+          ]
+        ],
+        "rmse_mm": 2.808443635354514,
+        "pairwise_rmse_mm": 3.9672955000373284
+      }
+    ],
+    "adjacent_score_geometry_disagreements": 4,
+    "applied": {
+      "anchors": [
+        [
+          0.0,
+          -1904.66,
+          -279.85
+        ],
+        [
+          1648.49,
+          952.12,
+          -279.85
+        ],
+        [
+          -1645.9,
+          950.1,
+          -279.85
+        ],
+        [
+          -0.02,
+          0.19,
+          1904.32
+        ]
+      ],
+      "rmse_mm": 3.688851447266481,
+      "pairwise_rmse_mm": 5.284335208706788
+    },
+    "selected_history": [
+      {
+        "iteration": 1,
+        "cost": 0.0969791996707268,
+        "history_rank_score": 0.0969791996707268,
+        "rmse_mm": 11.05886302138795,
+        "pairwise_rmse_mm": 15.529008688741268
+      },
+      {
+        "iteration": 2,
+        "cost": 0.2192417384723179,
+        "history_rank_score": 0.01006458287323567,
+        "rmse_mm": 3.778579557026624,
+        "pairwise_rmse_mm": 5.552293878038345
+      },
+      {
+        "iteration": 3,
+        "cost": 0.21924173663337315,
+        "history_rank_score": -0.052394717614383135,
+        "rmse_mm": 3.7789743734953727,
+        "pairwise_rmse_mm": 5.552909209556139
+      },
+      {
+        "iteration": 4,
+        "cost": 0.17953282492207584,
+        "history_rank_score": -0.0976882506607275,
+        "rmse_mm": 3.882188505920915,
+        "pairwise_rmse_mm": 5.2062489074318545
+      },
+      {
+        "iteration": 5,
+        "cost": 0.2025246014290634,
+        "history_rank_score": -0.08230286290089563,
+        "rmse_mm": 2.808443635354514,
+        "pairwise_rmse_mm": 3.9672955000373284
+      }
+    ],
+    "applied_regret_mm": 0.8804078119119669
+  }
+]

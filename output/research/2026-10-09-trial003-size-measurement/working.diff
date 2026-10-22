@@ -1,0 +1,200 @@
+diff --git a/autocal/control/behaviors/sweep_data_collection.mjs b/autocal/control/behaviors/sweep_data_collection.mjs
+index 9e674195..302482de 100644
+--- a/autocal/control/behaviors/sweep_data_collection.mjs
++++ b/autocal/control/behaviors/sweep_data_collection.mjs
+@@ -68,6 +68,9 @@ const DEFAULT_NOISE_SAMPLE_RATE_HZ = ENCODER_NOISE_DEFAULTS.DEFAULT_NOISE_SAMPLE
+ const DEFAULT_NOISE_MIN_SAMPLES = ENCODER_NOISE_DEFAULTS.DEFAULT_NOISE_MIN_SAMPLES;
+ const DEFAULT_NOISE_SIGMA_FLOOR_DEG = ENCODER_NOISE_DEFAULTS.DEFAULT_NOISE_SIGMA_FLOOR_DEG;
+ const DEFAULT_FIXED_TOLERANCE_MM = 0.01;
++// Active workspace traversal needs time to move before the quiet window starts.
++// This is measured on the observed simulation clock (wall time on hardware).
++const FORCE_TRAVEL_TIMEOUT_MS = 120000;
+ const DATASET_VERSION = '2.0';
+ 
+ export const SWEEP_DEFAULTS = {
+@@ -913,7 +916,7 @@ async function enforceFixedAnchors(sendFn, options = {}) {
+   return getCurrentLengths(sendFn, motorIds, mmPerDeg);
+ }
+ 
+-async function measureMaxTravelMm(sendFn, options = {}) {
++export async function measureMaxTravelMm(sendFn, options = {}) {
+   const {
+     motorIds,
+     mmPerDeg,
+@@ -922,6 +925,7 @@ async function measureMaxTravelMm(sendFn, options = {}) {
+     pairAnchors,
+     forbiddenForceAnchors = [],
+     speedup,
++    settleOptions = {},
+   } = options;
+ 
+   const forbidden = new Set(forbiddenForceAnchors ?? []);
+@@ -933,50 +937,57 @@ async function measureMaxTravelMm(sendFn, options = {}) {
+   });
+   const startLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
+ 
+-  // Apply 75% of max force in three steps with 100 ms between
+-  const pullFractions = [0.25, 0.5, 0.75];
+-  for (let i = 0; i < pullFractions.length; i += 1) {
+-    const fraction = pullFractions[i];
+-    const modesPullPair = motorIds.map((_, idx) => {
+-      if (forbidden.has(idx)) {
+-        return 'position';
+-      }
+-      if (pairSet.has(idx)) {
+-        return forceMax * fraction;
++  try {
++    // Apply 75% of max force in three steps with 100 ms between
++    const pullFractions = [0.25, 0.5, 0.75];
++    for (let i = 0; i < pullFractions.length; i += 1) {
++      const fraction = pullFractions[i];
++      const modesPullPair = motorIds.map((_, idx) => {
++        if (forbidden.has(idx)) {
++          return 'position';
++        }
++        if (pairSet.has(idx)) {
++          return forceMax * fraction;
++        }
++        return forceLow;
++      });
++      await applyForceModeState(sendFn, { motorIds, modes: modesPullPair });
++      if (i < pullFractions.length - 1) {
++        await (sendFn.simulationClock?.sleep ?? baseSleep)(100);
+       }
+-      return forceLow;
+-    });
+-    await applyForceModeState(sendFn, { motorIds, modes: modesPullPair });
+-    if (i < pullFractions.length - 1) {
+-      await (sendFn.simulationClock?.sleep ?? baseSleep)(100);
+     }
+-  }
+-  await waitForStableEncoders(sendFn, motorIds, speedup);
+-  const endLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
++    await waitForStableEncoders(sendFn, motorIds, speedup, {
++      timeoutMs: FORCE_TRAVEL_TIMEOUT_MS,
++      onProgress: message => console.log(`; size-tune travel: ${message.replace(/^; /, '')}`),
++      ...settleOptions,
++    });
++    const endLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
+ 
+-  let maxTravel = 0;
+-  for (let idx = 0; idx < motorIds.length; idx += 1) {
+-    if (pairSet.has(idx) || forbidden.has(idx)) {
+-      continue;
+-    }
+-    const start = startLengths[idx] ?? 0;
+-    const end = endLengths[idx] ?? 0;
+-    if (!Number.isFinite(start) || !Number.isFinite(end)) {
+-      continue;
+-    }
+-    const delta = Math.abs(end - start);
+-    if (!Number.isFinite(delta)) {
+-      continue;
++    let maxTravel = 0;
++    for (let idx = 0; idx < motorIds.length; idx += 1) {
++      if (pairSet.has(idx) || forbidden.has(idx)) {
++        continue;
++      }
++      const start = startLengths[idx] ?? 0;
++      const end = endLengths[idx] ?? 0;
++      if (!Number.isFinite(start) || !Number.isFinite(end)) {
++        continue;
++      }
++      const delta = Math.abs(end - start);
++      if (!Number.isFinite(delta)) {
++        continue;
++      }
++      maxTravel = Math.max(maxTravel, delta);
+     }
+-    maxTravel = Math.max(maxTravel, delta);
+-  }
+ 
+-  await applyForceModeState(sendFn, {
+-    motorIds,
+-    modes: motorIds.map(() => 'position'),
+-  });
+-
+-  return Number.isFinite(maxTravel) ? maxTravel : null;
++    return Number.isFinite(maxTravel) ? maxTravel : null;
++  } finally {
++    // Also stop the pull when a clock/encoder/transport error aborts measurement.
++    await applyForceModeState(sendFn, {
++      motorIds,
++      modes: motorIds.map(() => 'position'),
++    });
++  }
+ }
+ 
+ function parseSweepConfigLine(line, lineNumber) {
+@@ -1103,7 +1114,10 @@ async function performForceSweep(sendFn, sweepConfig, options) {
+     return forceLow;
+   });
+   await applyForceModeState(sendFn, { motorIds, modes: modesPullout });
+-  await waitForStableEncoders(sendFn, motorIds, speedup);
++  await waitForStableEncoders(sendFn, motorIds, speedup, {
++    timeoutMs: FORCE_TRAVEL_TIMEOUT_MS,
++    onProgress: message => console.log(`; sweep pullout: ${message.replace(/^; /, '')}`),
++  });
+ 
+   const preloadModes = motorIds.map((_, idx) => {
+     if (idx === driveAnchor) {
+diff --git a/autocal/control/cli/collect_sweep_data.mjs b/autocal/control/cli/collect_sweep_data.mjs
+index 8b742d73..08b1c5b6 100644
+--- a/autocal/control/cli/collect_sweep_data.mjs
++++ b/autocal/control/cli/collect_sweep_data.mjs
+@@ -31,6 +31,7 @@ import {
+   SWEEP_DEFAULTS,
+ } from '../behaviors/sweep_data_collection.mjs';
+ import { FORCE_TUNING_DEFAULTS } from '../behaviors/force_tuning.mjs';
++import { applyForceModeState } from '../primitives/uncalibrated_actions.mjs';
+ 
+ const SOURCE_FILE_LABEL = 'autocal/control/cli/collect_sweep_data.mjs';
+ const SIM_PROCESS_WARNING_TIMEOUT_MS = 10_000;
+@@ -485,6 +486,7 @@ async function main() {
+   let rrfProcess = null;
+   let managedKlippyProcess = null;
+   let bridgeCtx = null;
++  let send = null;
+   let cleanupStarted = false;
+   const reference = createReferenceLogger();
+ 
+@@ -577,7 +579,7 @@ async function main() {
+       wall_deadline_ms: 120000, node_version: process.version });
+     if (args.sweepConfigFile) await reference.artifact(args.sweepConfigFile);
+     if (args.config) await reference.artifact(args.config);
+-    const send = async (line, options = {}) => {
++    send = async (line, options = {}) => {
+       const source = getSourceLineFromStack(new Error().stack, { skipMatches: 1 });
+       const trimmed = line?.trim?.();
+       if (args.stepGcode && trimmed) {
+@@ -653,6 +655,13 @@ async function main() {
+     success = true;
+   } catch (err) {
+     console.error(`Failed to collect sweeps: ${err?.message || err}`);
++    if (send) {
++      try {
++        await applyForceModeState(send, { motorIds, modes: motorIds.map(() => 'position') });
++      } catch (holdError) {
++        console.error(`Failed to hold motors after collection error: ${holdError?.message || holdError}`);
++      }
++    }
+   } finally {
+     process.off('SIGINT', onSigInt);
+     process.off('SIGTERM', onSigTerm);
+diff --git a/autocal/data/references/extended-reference.md b/autocal/data/references/extended-reference.md
+index 97feb1f1..f0d38bd1 100644
+--- a/autocal/data/references/extended-reference.md
++++ b/autocal/data/references/extended-reference.md
+@@ -100,6 +100,12 @@ the selected clock, with a separate 120-second wall deadline. Force trials and
+ clock waits also have wall deadlines. Settling and active trials print progress
+ every five wall seconds; a paused clock eventually fails instead of waiting forever.
+ Requested speed never divides poll intervals, motion waits or force windows.
++Workspace-size measurement and sweep pullout allow 120 seconds on the selected
++clock for active travel and settling, with the same separate 120-second wall
++deadline. They use the normal encoder tolerances. Progress identifies the phase
++as `size-tune travel` or `sweep pullout`. Size measurement holds all motors on
++exit, including errors; the collector also attempts to hold all motors before
++disconnecting after any collection error.
+ 
+ ## What is preserved
+ 

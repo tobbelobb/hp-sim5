@@ -1,0 +1,22 @@
+{
+  "checkpoint-clamp-js": {
+    "body_z_range_mm": 8.732988891630683,
+    "corner_AL_z_range_mm": 16.300204864901204,
+    "angular_speed_max_rad_s": 9.345661837131201
+  },
+  "checkpoint-substeps-js": {
+    "body_z_range_mm": 7.355227538141662e-13,
+    "corner_AL_z_range_mm": 1.4849232954361469e-12,
+    "angular_speed_max_rad_s": 0.0
+  },
+  "checkpoint-substeps-native": {
+    "body_z_range_mm": 8.326672684688674e-13,
+    "corner_AL_z_range_mm": 1.2906342661267445e-12,
+    "angular_speed_max_rad_s": 0.0
+  },
+  "checkpoint-substeps-wasm": {
+    "body_z_range_mm": 1.4849232954361469e-12,
+    "corner_AL_z_range_mm": 4.996003610813204e-13,
+    "angular_speed_max_rad_s": 0.0
+  }
+}

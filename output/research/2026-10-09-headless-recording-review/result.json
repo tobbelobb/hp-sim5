@@ -1,0 +1,11 @@
+{
+  "physics_returncode": -9,
+  "context_exit": "success",
+  "status": "complete",
+  "normal_completion": true,
+  "recording_error": null,
+  "recorder_status": "finalized",
+  "autocal_complete": true,
+  "service_stopped_events": 0,
+  "manifest": "/home/torbjorn/repos/hp-sim5/output/research/2026-10-09-headless-recording-review/sweeps.headless_1/manifest.json"
+}

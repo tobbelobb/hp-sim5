@@ -1,0 +1,369 @@
+{
+  "method": "new",
+  "machine": "hp4",
+  "error": "Controlled pullout reached force limit without a confirmed edge",
+  "pulses": [
+    {
+      "force": 0.4455,
+      "pulse": 0,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.04,
+        0,
+        -0.03,
+        0
+      ],
+      "elapsedMs": 1508.0000000000011
+    },
+    {
+      "force": 0.4455,
+      "pulse": 1,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.04,
+        0,
+        -0.03,
+        0
+      ],
+      "elapsedMs": 3007.9999999998904
+    },
+    {
+      "force": 0.4455,
+      "pulse": 2,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.03,
+        0,
+        -0.04,
+        0
+      ],
+      "elapsedMs": 4507.999999999725
+    },
+    {
+      "force": 0.7128000000000001,
+      "pulse": 0,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.04,
+        0,
+        -0.05,
+        0
+      ],
+      "elapsedMs": 6007.999999999561
+    },
+    {
+      "force": 0.7128000000000001,
+      "pulse": 1,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.03,
+        0,
+        -0.03,
+        0
+      ],
+      "elapsedMs": 7507.999999999395
+    },
+    {
+      "force": 0.7128000000000001,
+      "pulse": 2,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.04,
+        0,
+        -0.04,
+        0
+      ],
+      "elapsedMs": 9007.999999999678
+    },
+    {
+      "force": 1.1404800000000002,
+      "pulse": 0,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.03,
+        0,
+        -0.04,
+        0
+      ],
+      "elapsedMs": 10508.000000000178
+    },
+    {
+      "force": 1.1404800000000002,
+      "pulse": 1,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.03,
+        0,
+        -0.04,
+        0
+      ],
+      "elapsedMs": 12008.00000000068
+    },
+    {
+      "force": 1.1404800000000002,
+      "pulse": 2,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.03,
+        0,
+        -0.04,
+        0
+      ],
+      "elapsedMs": 13508.00000000118
+    },
+    {
+      "force": 1.8247680000000004,
+      "pulse": 0,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.04,
+        0,
+        7.17,
+        0
+      ],
+      "elapsedMs": 15008.00000000168
+    },
+    {
+      "force": 1.8247680000000004,
+      "pulse": 1,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.04,
+        0,
+        14.36,
+        0
+      ],
+      "elapsedMs": 16408.000000001786
+    },
+    {
+      "force": 1.8247680000000004,
+      "pulse": 2,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.03,
+        0,
+        14.36,
+        0
+      ],
+      "elapsedMs": 17308.000000001284
+    },
+    {
+      "force": 2.919628800000001,
+      "pulse": 0,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.04,
+        0,
+        14.38,
+        0
+      ],
+      "elapsedMs": 18108.000000000844
+    },
+    {
+      "force": 2.919628800000001,
+      "pulse": 1,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.02,
+        0,
+        14.37,
+        0
+      ],
+      "elapsedMs": 18908.0000000004
+    },
+    {
+      "force": 2.919628800000001,
+      "pulse": 2,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.03,
+        0,
+        14.37,
+        0
+      ],
+      "elapsedMs": 19707.999999999956
+    },
+    {
+      "force": 4.6714060800000015,
+      "pulse": 0,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.03,
+        0,
+        14.37,
+        0
+      ],
+      "elapsedMs": 20407.999999999567
+    },
+    {
+      "force": 4.6714060800000015,
+      "pulse": 1,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.04,
+        0,
+        14.37,
+        0
+      ],
+      "elapsedMs": 21007.999999999236
+    },
+    {
+      "force": 4.6714060800000015,
+      "pulse": 2,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.03,
+        0,
+        14.37,
+        0
+      ],
+      "elapsedMs": 21707.999999998847
+    },
+    {
+      "force": 7.474249728000003,
+      "pulse": 0,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.05,
+        0,
+        14.36,
+        0
+      ],
+      "elapsedMs": 22307.999999998516
+    },
+    {
+      "force": 7.474249728000003,
+      "pulse": 1,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.04,
+        0,
+        14.36,
+        0
+      ],
+      "elapsedMs": 22907.99999999818
+    },
+    {
+      "force": 7.474249728000003,
+      "pulse": 2,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.05,
+        0,
+        14.36,
+        0
+      ],
+      "elapsedMs": 23507.99999999785
+    },
+    {
+      "force": 11.958799564800005,
+      "pulse": 0,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.04,
+        0,
+        14.37,
+        0
+      ],
+      "elapsedMs": 24107.99999999752
+    },
+    {
+      "force": 11.958799564800005,
+      "pulse": 1,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.04,
+        0,
+        14.36,
+        0
+      ],
+      "elapsedMs": 24707.999999997184
+    },
+    {
+      "force": 11.958799564800005,
+      "pulse": 2,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.04,
+        0,
+        14.37,
+        0
+      ],
+      "elapsedMs": 25307.999999996853
+    },
+    {
+      "force": 19.134079303680007,
+      "pulse": 0,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.03,
+        0,
+        14.37,
+        0
+      ],
+      "elapsedMs": 25907.99999999652
+    },
+    {
+      "force": 19.134079303680007,
+      "pulse": 1,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.04,
+        0,
+        14.36,
+        0
+      ],
+      "elapsedMs": 26507.999999996187
+    },
+    {
+      "force": 19.134079303680007,
+      "pulse": 2,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.04,
+        0,
+        14.36,
+        0
+      ],
+      "elapsedMs": 27107.999999995853
+    },
+    {
+      "force": 20,
+      "pulse": 0,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.03,
+        0,
+        14.37,
+        0
+      ],
+      "elapsedMs": 27707.99999999552
+    },
+    {
+      "force": 20,
+      "pulse": 1,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.03,
+        0,
+        14.36,
+        0
+      ],
+      "elapsedMs": 28307.99999999519
+    },
+    {
+      "force": 20,
+      "pulse": 2,
+      "progressMm": 0,
+      "anglesDeg": [
+        -0.03,
+        0,
+        14.37,
+        0
+      ],
+      "elapsedMs": 28907.999999994856
+    }
+  ],
+  "wallS": 4.92872825,
+  "simS": 28.907999999994857
+}

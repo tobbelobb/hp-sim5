@@ -1,0 +1,57 @@
+{
+  "revision": "45862559e95af66a5ed749540763d41d859f5b7e",
+  "changes": "final-source.diff",
+  "files": {
+    "autocal/control/primitives/uncalibrated_actions.mjs": "7b5e9de6eecdce038c4d65af3c341b598709093eeedaa8ad5b56ced61eb875db",
+    "autocal/control/tests/primitives/return_to_origin_one_at_a_time.test.mjs": "3d06d4cb674d4c8ce62388067af9cdb2de105bd4b8a2da09569082e9da922cfc",
+    "autocal/README.md": "07d9e97647adf9d7051745afe02cc6a39a18a0293e78c627752a1b7aac8cc898",
+    "public/usd_scenes/hp3_rigid_body.usda": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+    "RRF/run/vsd/sys/config_hp3.g": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8",
+    "output/extended-autocal/no-buildup-reference-003/sweeps.json": "cd938d1f2c6b86c33d49da94dff61151deaf758c16bdf01ec2d68ab6cd805a99"
+  },
+  "experiments": {
+    "E00": "supervisor preflight and command socket check; tool connectivity only",
+    "E01": "supplied RRD profiling and frozen ranking reevaluation",
+    "E02": "fresh baseline full-auto accepted",
+    "E03": "48 recorded closure pilot fits",
+    "E04": "8 recorded closure-seed fits",
+    "E05": "36 analytical synthetic fits",
+    "E06": "12 analytical controller trials",
+    "E07": "recorder setup failure before physics",
+    "E07b": "return-only completed; rejected, slower and worse geometry",
+    "E08": "20 existing controller checks",
+    "E09": "6 fresh physical return trials",
+    "E10": "106 controller/CLI checks",
+    "E11": "11 exact recorded calibration regressions, passed",
+    "E14/E28": "all four full-auto RRDs independently verified",
+    "E15": "six numerical controls isolate the fifth-fit failure",
+    "E16": "captured noise samples and exact-decimal mean audit",
+    "E17": "centered/compensated means make paired fifth fits identical",
+    "E18": "mean arithmetic precision checks",
+    "E19": "combined full-auto accepted, extra collection versus baseline",
+    "E20": "other stable-mean prefixes have mixed geometry",
+    "E21": "108 provisional controller/CLI checks",
+    "E22": "matched complete stored-data replays",
+    "E24": "averaging-only full-auto accepted; final patch selected",
+    "E26": "final mean-only comparison, positive accuracy/time tradeoff",
+    "E27": "106 final controller/CLI checks",
+    "E29": "independent command socket probe, tool connectivity only"
+  },
+  "retained_files": {
+    "autocal/control/primitives/encoder_noise.mjs": "f24d42b4bd8d7be209bfd7b0b37efdea3c72183b88f5d9f2740552dc37615d0f",
+    "autocal/control/tests/primitives/encoder_noise.test.mjs": "1e39a558928675500a4874616d51f29c0bc2fae5930204744eb9e50bd983330d",
+    "autocal/README.md": "e381842fd338de3e507186a634cb48a15328f114e69899fb30002015cdd209ab"
+  },
+  "final_diff_sha256": "2d57138ddd58c56a9b262575d07a47a7f40b11372a2c578904416ff5d7da592b",
+  "retained_experiment": "E24",
+  "runtime_matches_tested_checkout": {
+    "autocal/control/primitives/encoder_noise.mjs": true,
+    "autocal/control/primitives/uncalibrated_actions.mjs": true
+  },
+  "limitations": [
+    "One stock HP3 geometry; no hardware",
+    "More points/time than fresh baseline, despite improved geometry",
+    "Recorded-input precision failure corrected, universal solver robustness unproven",
+    "Full-auto wall durations overlap workloads; simulation clocks are primary"
+  ]
+}

@@ -1,0 +1,113 @@
+[
+  {
+    "wall_s": 15.262225916001626,
+    "construction_s": 0.1452569629982463,
+    "steps": 80415,
+    "status": {
+      "connected": false,
+      "epoch": 0,
+      "step": 80415,
+      "sim_time_s": 160.83,
+      "collector_time_s": 160.82999999999706,
+      "dt_s": 0.002,
+      "speed_scale": 1.0,
+      "queue_length": 0,
+      "layering_flags": {
+        "enableLayering": true,
+        "layeringFrictionEffectiveRadius": true,
+        "layeringRenderWraps": true
+      },
+      "cable_half_widths_m": [
+        0.001
+      ],
+      "backend": "headless-js",
+      "physics_wall_s": 9.763966563999986,
+      "worker_wall_s": 12.1406297440044,
+      "observation_wall_s": 1.075558922973869,
+      "clock": "fixed-step; collector delays advance simulation time",
+      "error": null
+    },
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-14-native-throughput/consumers/frozen-hp4-record0-steps80415-before/run-0/observations.json",
+    "scene_sha256": "72f6eef0387fd703e560fa476a9d800f9b29c3f875ed7083a41bd7b572a8c5f0",
+    "events_sha256": "5dc39f3ad9200532529f27cc518776930fa64d7fcd998126641e052bbeb05810",
+    "sample_count": 2138,
+    "repeat": 0,
+    "machine": "hp4",
+    "record": false,
+    "mode": "frozen"
+  },
+  {
+    "wall_s": 14.99484905799909,
+    "construction_s": 0.12059142699945369,
+    "steps": 80415,
+    "status": {
+      "connected": false,
+      "epoch": 0,
+      "step": 80415,
+      "sim_time_s": 160.83,
+      "collector_time_s": 160.82999999999706,
+      "dt_s": 0.002,
+      "speed_scale": 1.0,
+      "queue_length": 0,
+      "layering_flags": {
+        "enableLayering": true,
+        "layeringFrictionEffectiveRadius": true,
+        "layeringRenderWraps": true
+      },
+      "cable_half_widths_m": [
+        0.001
+      ],
+      "backend": "headless-js",
+      "physics_wall_s": 9.617521233000007,
+      "worker_wall_s": 11.933033565077494,
+      "observation_wall_s": 1.0606347599714354,
+      "clock": "fixed-step; collector delays advance simulation time",
+      "error": null
+    },
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-14-native-throughput/consumers/frozen-hp4-record0-steps80415-before/run-1/observations.json",
+    "scene_sha256": "72f6eef0387fd703e560fa476a9d800f9b29c3f875ed7083a41bd7b572a8c5f0",
+    "events_sha256": "5dc39f3ad9200532529f27cc518776930fa64d7fcd998126641e052bbeb05810",
+    "sample_count": 2138,
+    "repeat": 1,
+    "machine": "hp4",
+    "record": false,
+    "mode": "frozen"
+  },
+  {
+    "wall_s": 15.13134601800266,
+    "construction_s": 0.12223822299711173,
+    "steps": 80415,
+    "status": {
+      "connected": false,
+      "epoch": 0,
+      "step": 80415,
+      "sim_time_s": 160.83,
+      "collector_time_s": 160.82999999999706,
+      "dt_s": 0.002,
+      "speed_scale": 1.0,
+      "queue_length": 0,
+      "layering_flags": {
+        "enableLayering": true,
+        "layeringFrictionEffectiveRadius": true,
+        "layeringRenderWraps": true
+      },
+      "cable_half_widths_m": [
+        0.001
+      ],
+      "backend": "headless-js",
+      "physics_wall_s": 9.66811456799997,
+      "worker_wall_s": 12.061772576984367,
+      "observation_wall_s": 1.0593221710478247,
+      "clock": "fixed-step; collector delays advance simulation time",
+      "error": null
+    },
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-14-native-throughput/consumers/frozen-hp4-record0-steps80415-before/run-2/observations.json",
+    "scene_sha256": "72f6eef0387fd703e560fa476a9d800f9b29c3f875ed7083a41bd7b572a8c5f0",
+    "events_sha256": "5dc39f3ad9200532529f27cc518776930fa64d7fcd998126641e052bbeb05810",
+    "sample_count": 2138,
+    "repeat": 2,
+    "machine": "hp4",
+    "record": false,
+    "mode": "frozen"
+  }
+]

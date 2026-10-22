@@ -1,0 +1,863 @@
+diff --git a/autocal/control/behaviors/sweep_data_collection.mjs b/autocal/control/behaviors/sweep_data_collection.mjs
+index d1231be9..7bc3737b 100644
+--- a/autocal/control/behaviors/sweep_data_collection.mjs
++++ b/autocal/control/behaviors/sweep_data_collection.mjs
+@@ -14,6 +14,7 @@ import {
+ } from '../../../integrations/klipper/klipperMotorAddressConfig.js';
+ import { DEFAULT_KLIPPY_CONFIG_PATH } from '../../../integrations/klipper/klippy_api_cli_config.mjs';
+ import { ENCODER_NOISE_DEFAULTS } from '../primitives/encoder_noise.mjs';
++import { collectWithSlipRecovery } from './slip_recovery.mjs';
+ import {
+   angleToLength,
+   assertFixedAnchorAngles,
+@@ -1154,6 +1155,14 @@ async function performForceSweep(sendFn, sweepConfig, options) {
+       drive_setpoint_mm: driveSetpointMm,
+       step_index: stepIndex,
+       step_count: stepCount,
++      collection_attempt: options.collectionAttempt ?? 0,
++      fixed_target_angles_deg: fixedTargetByAnchor.map((target, idx) => (
++        Number.isFinite(target) ? target / mmPerDeg[idx] : null
++      )),
++      fixed_error_angles_deg: fixedTargetByAnchor.map((target, idx) => (
++        Number.isFinite(target) ? angles[idx] - target / mmPerDeg[idx] : null
++      )),
++      sensor_force_n: resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce }),
+     };
+     if (extraFields && typeof extraFields === 'object') {
+       Object.assign(point, extraFields);
+@@ -1254,6 +1263,10 @@ async function performForceSweep(sendFn, sweepConfig, options) {
+         point.sample_duration_ms = noiseStats.durationMs;
+       }
+       if (Array.isArray(noiseStats.muByMotorDeg)) {
++        settleOptions.validateAngles(noiseStats.muByMotorDeg);
++        point.fixed_error_angles_mu_deg = point.fixed_target_angles_deg.map((target, idx) => (
++          Number.isFinite(target) ? noiseStats.muByMotorDeg[idx] - target : null
++        ));
+         const muLengths = noiseStats.muByMotorDeg.map((angle, idx) => angleToLength(angle, idx, mmPerDeg));
+         if (Number.isFinite(muLengths[driveAnchor])) {
+           point.l_drive_mu = muLengths[driveAnchor];
+@@ -1310,9 +1323,8 @@ export async function collectSweepData(send, context) {
+     forceBuildupFactor,
+     preserveBuildupFactor,
+     forceBaseRadii,
+-    sensorCollectionForce,
+   } = options;
+-  let { forceLow, forceMid, forceMax } = options;
++  let { forceLow, forceMid, forceMax, sensorCollectionForce } = options;
+ 
+   const sweepConfigs = await resolveSweepConfigs({
+     sweepConfigFile: options.sweepConfigFile,
+@@ -1364,6 +1376,9 @@ export async function collectSweepData(send, context) {
+   }
+ 
+   const m666ForCollection = (m666Adjusted && typeof m666Adjusted === 'object') ? m666Adjusted : m666Before;
++  if (Number(m666ForCollection?.Q) !== 0 && Number.isFinite(Number(m666ForCollection?.Q))) {
++    await context.configureSimulator?.({ lineLayeringEnabled: true });
++  }
+   let mmPerDeg = machineConfig.axes.map((_, idx) => computeMmPerDegree(m666ForCollection, idx));
+ 
+   if (firmware === 'klipper' && mmPerDeg.some((value) => !Number.isFinite(value))) {
+@@ -1449,7 +1464,7 @@ export async function collectSweepData(send, context) {
+         motorIds,
+         mmPerDeg,
+         forceLow,
+-        forceMax,
++        forceMax: resolveCollectionForce({ forceMid, forceMax, preloadMultiplier: 20 }),
+         pairAnchors: sizeTunePair,
+         forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
+         speedup,
+@@ -1511,6 +1526,8 @@ export async function collectSweepData(send, context) {
+     }
+ 
+     const aggregatedPoints = [];
++    const recoveryEvents = [];
++    const directionForces = [];
+     for (let i = 0; i < subSweeps.length; i += 1) {
+       const subCfg = subSweeps[i];
+       console.log(
+@@ -1520,44 +1537,58 @@ export async function collectSweepData(send, context) {
+       // Re-apply positioning for each sub-sweep to cover the full circle arc in both directions.
+       // This ensures fixed anchors are retightened before changing drive/sensor roles.
+       // eslint-disable-next-line no-await-in-loop
+-      await prepareSweepPositioning(send, subCfg, {
+-        motorIds,
+-        axes: machineConfig.axes,
+-        mmPerDeg,
+-        forceMid,
+-        forceMax,
+-        forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
+-        fixedTargets,
+-        feed,
+-        speedup,
+-      });
++      const sweepResult = await collectWithSlipRecovery(send, async (forces, attempt) => {
++        if (attempt > 0) {
++          await returnMotorsToOriginOneAtATime(send, {
++            motorIds, axes: machineConfig.axes, mmPerDeg, feed, speedup,
++            midForce: forces.forceLow,
++            forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
++          });
++        }
++        await prepareSweepPositioning(send, subCfg, {
++          motorIds,
++          axes: machineConfig.axes,
++          mmPerDeg,
++          ...forces,
++          forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
++          fixedTargets,
++          feed,
++          speedup,
++        });
+ 
+-      // eslint-disable-next-line no-await-in-loop
+-      const sweepResult = await performForceSweep(send, subCfg, {
+-        axes: machineConfig.axes,
+-        motorIds,
+-        sweepPoints,
+-        feed,
+-        speedup,
+-        mmPerDeg,
+-        datasetStartMs,
+-        forceLow,
+-        forceMid,
+-        forceMax,
+-        sensorCollectionForce,
+-        noiseSampleCount,
+-        noiseSampleIntervalMs,
+-        noiseMinSamples,
+-        noiseSigmaFloorDeg,
+-        fixedAnchors: sweepConfig.fixedAnchors,
+-        fixedTargets,
+-        projectZeroTension: options.projectZeroTension,
+-        forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
+-        onPoint: context.onPoint,
+-        baseRadiusMm: Array.isArray(m666ForCollection?.R)
+-          ? m666ForCollection.R[subCfg.driveAnchor]
+-          : m666ForCollection?.R,
++        return performForceSweep(send, subCfg, {
++          axes: machineConfig.axes,
++          motorIds,
++          sweepPoints,
++          feed,
++          speedup,
++          mmPerDeg,
++          datasetStartMs,
++          ...forces,
++          collectionAttempt: attempt,
++          noiseSampleCount,
++          noiseSampleIntervalMs,
++          noiseMinSamples,
++          noiseSigmaFloorDeg,
++          fixedAnchors: sweepConfig.fixedAnchors,
++          fixedTargets,
++          projectZeroTension: options.projectZeroTension,
++          forbiddenForceAnchors: getForceForbiddenAnchors(machineConfig),
++          onPoint: context.onPoint,
++          baseRadiusMm: Array.isArray(m666ForCollection?.R)
++            ? m666ForCollection.R[subCfg.driveAnchor]
++            : m666ForCollection?.R,
++        });
++      }, {
++        motorIds, forceLow, forceMid, forceMax, sensorCollectionForce,
++        onRecovery: recovery => context.onRecovery?.({ ...recovery, sweep: subCfg, direction: i }),
+       });
++      ({ forceMid, forceMax } = sweepResult.forces);
++      sensorCollectionForce = sweepResult.forces.sensorCollectionForce;
++      recoveryEvents.push(...sweepResult.recoveries.map(event => ({ ...event, direction: i })));
++      directionForces.push({ drive_anchor: subCfg.driveAnchor, sensor_anchor: subCfg.sensorAnchor,
++        sensor_force_n: resolveCollectionForce(sweepResult.forces),
++        pullout_force_n: resolveCollectionForce({ forceMid, forceMax, preloadMultiplier: 20 }) });
+       const remapped = remapDataPointsToCanonical(
+         sweepResult.dataPoints,
+         sweepConfig,
+@@ -1597,6 +1628,8 @@ export async function collectSweepData(send, context) {
+         sweep_method: 'position',
+         feed_rate: feed,
+         sensor_force_n: resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce }),
++        direction_forces: directionForces,
++        slip_recoveries: recoveryEvents,
+         settle_ms: settleMs,
+       },
+     });
+diff --git a/autocal/control/cli/collect_sweep_data.mjs b/autocal/control/cli/collect_sweep_data.mjs
+index 08b1c5b6..7546ed4e 100644
+--- a/autocal/control/cli/collect_sweep_data.mjs
++++ b/autocal/control/cli/collect_sweep_data.mjs
+@@ -11,6 +11,7 @@ import {
+   sendHpSimPositionTraceMode,
+   sendHpSimReset,
+   sendHpSimSpeedScale,
++  sendHpSimSettings,
+   sleep as baseSleep,
+   startRrfSimulator,
+   stopProcess,
+@@ -364,6 +365,8 @@ export function parseBridgeArgs(argv) {
+       args.debugSweepActions = true;
+     } else if (arg === '--trace' || arg === '--trace-positions') {
+       args.trace = true;
++    } else if (arg === '--line-layering') {
++      args.lineLayering = true;
+     } else if (arg === '--sweep-config-file' || arg === '--sweep-config' || arg === '--sweepFile') {
+       args.sweepConfigFile = argv[++i] || null;
+     } else if (arg === '--continuous') {
+@@ -415,6 +418,7 @@ Options:
+   --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor per line)
+   --debug-sweep              Print planned sweep permutations before collecting
+   --trace                    Tell hp-sim to plot a trace of its movements (default: on)
++  --line-layering             Enable simulator line layering (also automatic for nonzero M666 Q)
+   --no-trace                 Disable hp-sim trace plotting
+   --project-zero-tension     Project encoder readings to zero tension during each data point
+   --output-file <path>       Output JSON path (default: sweep_data_<machine>_<timestamp>.json)
+@@ -628,6 +632,15 @@ async function main() {
+       if (args.hpSimReset) {
+         await sendHpSimReset(bridgeCtx, { quiet: args.quiet });
+       }
++      if (args.sim) {
++        await sendHpSimSettings(bridgeCtx, {
++          closedLoopMotorsEnabled: true,
++          ...(args.lineLayering || (Number.isFinite(Number(args.forceBuildupFactor)) && Number(args.forceBuildupFactor) !== 0)
++            ? { lineLayeringEnabled: true } : {}),
++          ...(!args.headlessUrl && process.env.AUTOCAL_REFERENCE_WS
++            ? { recordingUrl: process.env.AUTOCAL_REFERENCE_WS } : {}),
++        });
++      }
+       if (speedup !== 1) {
+         await sendHpSimSpeedScale(bridgeCtx, speedup, { quiet: args.quiet });
+       }
+@@ -644,6 +657,14 @@ async function main() {
+       motorIds,
+       speedup,
+       delayFn: send.simulationClock?.sleep ?? sleep,
++      configureSimulator: args.sim && !args.noWs
++        ? async settings => {
++          await sendHpSimSettings(bridgeCtx, settings);
++          // Enabling layering rebakes/reset the browser scene, including its speed.
++          if (speedup !== 1) await sendHpSimSpeedScale(bridgeCtx, speedup, { quiet: args.quiet });
++          if (args.trace) await sendHpSimPositionTraceMode(bridgeCtx, true, { quiet: args.quiet });
++        } : null,
++      onRecovery: recovery => reference.emit('sweep_recovery', recovery, bridgeCtx.simulationClock),
+       onPoint: async (point, config) => {
+         reference.emit('measurement', { point, config }, bridgeCtx.simulationClock);
+         if (args.headlessUrl) await fs.appendFile(`${args.outputFile}.partial-points.jsonl`, `${JSON.stringify({ backend: send.simulationClock.backend, service_url: args.headlessUrl, config, point })}\n`);
+diff --git a/autocal/control/primitives/encoder_utils.mjs b/autocal/control/primitives/encoder_utils.mjs
+index 9f6df441..d155d3c8 100644
+--- a/autocal/control/primitives/encoder_utils.mjs
++++ b/autocal/control/primitives/encoder_utils.mjs
+@@ -359,3 +359,23 @@ export async function sendHpSimPositionTraceMode(bridgeCtx, enabled, { quiet = f
+   }
+   await sleep(25);
+ }
++
++export async function sendHpSimSettings(bridgeCtx, settings) {
++  bridgeCtx.broadcast({ type: 'simulation_settings', ...settings });
++  const response = bridgeCtx.sendEncoderRequest
++    ? await bridgeCtx.sendEncoderRequest([], 10000)
++    : await bridgeCtx.waitForHpSimConnection();
++  const applied = response?.simulationSettings;
++  if (bridgeCtx.sendEncoderRequest && !applied) {
++    throw new Error('Simulator settings acknowledgement missing; reload the simulator page');
++  }
++  for (const key of ['closedLoopMotorsEnabled', 'lineLayeringEnabled']) {
++    if (applied && typeof settings[key] === 'boolean' && applied[key] !== settings[key]) {
++      throw new Error(`Simulator did not apply ${key}=${settings[key]}`);
++    }
++  }
++  if (settings.recordingUrl && applied && (applied.recordingError || !applied.recording)) {
++    throw new Error(`Rerun recording could not start: ${applied.recordingError ?? 'not connected'}`);
++  }
++  return applied;
++}
+diff --git a/autocal/control/primitives/uncalibrated_actions.mjs b/autocal/control/primitives/uncalibrated_actions.mjs
+index b45e57c2..5b879e55 100644
+--- a/autocal/control/primitives/uncalibrated_actions.mjs
++++ b/autocal/control/primitives/uncalibrated_actions.mjs
+@@ -289,6 +289,14 @@ export function resolveCollectionForce({ forceMid, forceMax, sensorCollectionFor
+   return Number.isFinite(forceMax) ? Math.min(forceMax, preload) : (preload ?? 0);
+ }
+ 
++export class FixedAnchorDriftError extends Error {
++  constructor(anchor, driftDeg, toleranceDeg) {
++    super(`Fixed anchor ${anchor} drifted ${driftDeg.toFixed(3)}deg from its target (limit ${toleranceDeg}deg)`);
++    this.anchor = anchor;
++    this.driftDeg = driftDeg;
++  }
++}
++
+ export function assertFixedAnchorAngles(anglesDeg, {
+   fixedTargetByAnchor, mmPerDeg, toleranceDeg = DEFAULT_STABILITY_TOLERANCE_DEG,
+ } = {}) {
+@@ -297,9 +305,8 @@ export function assertFixedAnchorAngles(anglesDeg, {
+     if (!Number.isFinite(targetMm)) continue;
+     const targetDeg = targetMm / mmPerDeg[idx];
+     const driftDeg = anglesDeg[idx] - targetDeg;
+-    if (!Number.isFinite(driftDeg) || Math.abs(driftDeg) > toleranceDeg) {
+-      throw new Error(`Fixed anchor ${idx} drifted ${driftDeg.toFixed(3)}deg from its target (limit ${toleranceDeg}deg); reduce sweep force before collecting data`);
+-    }
++    if (!Number.isFinite(driftDeg)) throw new Error(`Fixed anchor ${idx} has an invalid encoder/target conversion`);
++    if (Math.abs(driftDeg) > toleranceDeg) throw new FixedAnchorDriftError(idx, driftDeg, toleranceDeg);
+   }
+ }
+ 
+diff --git a/autocal/control/tests/primitives/encoder_utils.test.mjs b/autocal/control/tests/primitives/encoder_utils.test.mjs
+index 30d4f8a1..469b6d93 100644
+--- a/autocal/control/tests/primitives/encoder_utils.test.mjs
++++ b/autocal/control/tests/primitives/encoder_utils.test.mjs
+@@ -1,4 +1,4 @@
+-import { runMoveWithWait } from '../../primitives/encoder_utils.mjs';
++import { runMoveWithWait, sendHpSimSettings } from '../../primitives/encoder_utils.mjs';
+ 
+ describe('runMoveWithWait', () => {
+   test('skips fallback delay for klipper motion commands that already waited in the bridge', async () => {
+@@ -32,3 +32,17 @@ describe('runMoveWithWait', () => {
+     expect(delays[0]).toBeCloseTo(1100, 6);
+   });
+ });
++
++test('simulator configuration is acknowledged before collection proceeds', async () => {
++  const settings = { closedLoopMotorsEnabled: true, lineLayeringEnabled: true };
++  const bridge = {
++    broadcast: jest.fn(),
++    sendEncoderRequest: jest.fn(async () => ({ simulationSettings: settings })),
++  };
++  await expect(sendHpSimSettings(bridge, settings)).resolves.toEqual(settings);
++  expect(bridge.broadcast).toHaveBeenCalledWith({ type: 'simulation_settings', ...settings });
++  bridge.sendEncoderRequest.mockResolvedValue({});
++  await expect(sendHpSimSettings(bridge, settings)).rejects.toThrow('reload the simulator page');
++  bridge.sendEncoderRequest.mockResolvedValue({ simulationSettings: { closedLoopMotorsEnabled: false } });
++  await expect(sendHpSimSettings(bridge, settings)).rejects.toThrow('did not apply');
++});
+diff --git a/autocal/data/references/extended-reference.md b/autocal/data/references/extended-reference.md
+index f10094b1..adfa2df5 100644
+--- a/autocal/data/references/extended-reference.md
++++ b/autocal/data/references/extended-reference.md
+@@ -19,9 +19,13 @@ Open the **visual 3D simulator**, with these query parameters:
+ 
+ <http://localhost:5173/hp-sim5/hp-sim-3d/?gcode_ws=ws://localhost:8790&rerun_ws=ws://127.0.0.1:9877&extended_autocal=1>
+ 
+-Select the intended machine and scene options, leave physics paused initially,
+-and check that the Rerun button says **recording**. The first snapshot must reach
+-the recorder before autocal starts; it rejects collection if no browser is connected.
++Select the intended machine and scene options and leave physics paused initially.
++Autocal enables **Closed Loop Motors** and, for nonzero buildup, **Line Layering**.
++Changing layering rebakes/resets the scene before movement; the collector then
++reapplies the requested speed and Trace. `--extended-reference-ws` also connects
++the browser recorder if needed, preserving an existing recording at that address.
++It waits for the first physics sample to be acknowledged before sending G-codes.
++You can still connect with the Rerun button yourself.
+ Use one simulator tab. For example, for the HP3 scene (`hangprinter_4`):
+ 
+ ```bash
+@@ -102,7 +106,8 @@ every five wall seconds; a paused clock eventually fails instead of waiting fore
+ Requested speed never divides poll intervals, motion waits or force windows.
+ 
+ Sweep positioning and pullout use at most 20 times the tuned start force;
+-measurement preload uses at most five times that force. Both defaults are bounded
++measurement preload uses at most five times that force. Travel measurement also
++uses the capped pullout force. Both defaults are bounded
+ by the tuned maximum. The edge force measured during tuning can overload a held
+ motor in another geometry, so it is not used directly for these operations.
+ `--sensor-collection-force` overrides the measurement preload. Dataset metadata
+@@ -112,10 +117,21 @@ maximum.
+ During sweep settling and before accepting a point, fixed motor encoders must
+ remain within 1.5 degrees of their requested targets. This check uses `M569.3`
+ encoder readings and requires no force sensors. An encoder that becomes quiet
+-after slipping is rejected; collection errors request position hold for all
+-motors before disconnecting. Active pullout has a 120-second selected-clock
++after slipping triggers recovery: hold all motors, halve the free-motor force
++commands (keeping idle preload), return to encoder origin, restore the fixed
++targets, and recollect the affected direction. Points from failed attempts are
++excluded from the final dataset. Up to three retries are allowed; reduced forces
++carry into subsequent directions and sweeps. Other collection errors or exhausted
++recovery request position hold before disconnecting. Active pullout has a 120-second selected-clock
+ deadline as well as the independent wall deadline.
+ 
++Points retain requested fixed angles, raw/mean fixed encoder errors and the actual
++sensor force command. Sweep metadata records each direction's force commands and
++slip recoveries; timestamped `sweep_recovery` events identify discarded attempts
++in the extended recording. These fields describe measurements and commands, not
++measured cable tensions. The current optimizer does not yet consume pointwise
++fixed errors; see `objective_functions_overview` for the proposed model change.
++
+ ## What is preserved
+ 
+ Collector events capture each G-code request, response or error with a shared
+diff --git a/autocal/objective_functions_overview b/autocal/objective_functions_overview
+index 77ee135e..768338a0 100644
+--- a/autocal/objective_functions_overview
++++ b/autocal/objective_functions_overview
+@@ -76,6 +76,30 @@ Priors apply to spool parameters. They do not directly regularize anchors.
+ - The radius-pair prior keeps per-anchor radii near their mean.
+   It applies even when no radius prior sigma is supplied.
+ 
++## Fixed encoder errors and uncertainty
++
++Current residuals use drive/sensor lengths, means and encoder noise. The noise
++model also has aggregate friction/cogging and flex terms. Fixed encoder angles
++contribute only through the spool transform's sweep median; their per-point
++deviations and uncertainty are not used by the NumPy or JAX pointwise residual.
++New collector target/error fields do not change this behavior yet.
++
++A measured difference from a commanded fixed angle is primarily an observed
++change in geometry, not an unknown measurement error. The proposed pointwise
++extension should evaluate each observation with its actual modeled fixed lengths,
++rather than pretending that every point shares a constant fixed length. That
++belongs in `_pointwise_sweep_residuals` and the equivalent JAX geometry/residual
++path, after candidate-dependent spool conversion.
++
++Separately, propagate fixed encoder uncertainty through the geometry sensitivity
++into residual variance, alongside drive/sensor uncertainty. A quiet sample's zero
++standard deviation does not bound systematic bias; retain a defensible floor or
++bounded prior. Anchor estimates can supply these sensitivities during fitting.
++Do not freely adjust each observation to fit the current anchors: that would
++remove the evidence the optimizer is meant to explain. This model change is
++proposed and needs synthetic perturbation, derivative-parity and held-out tests
++before affecting scores, filtering or final history selection.
++
+ ## Plan scores and patience
+ 
+ `_plan_score_ui(...)` returns `raw_fit_score_ui`, `rank_score`, and `score_basis`.
+diff --git a/autocal/optimization_algorithm_overview b/autocal/optimization_algorithm_overview
+index f63e4946..e30812da 100644
+--- a/autocal/optimization_algorithm_overview
++++ b/autocal/optimization_algorithm_overview
+@@ -131,6 +131,31 @@ With spool fitting, information is evaluated in modeled lengths.
+ The suggested collection command still uses the collector's base-length coordinates.
+ Force settings from the dataset are reused. The command requests return to origin.
+ 
++## Fixed encoder deviations: proposed refinement boundary
++
++Collection now records fixed encoder targets/errors and recollects a direction
++at reduced forces if a fixed encoder exceeds 1.5 degrees of drift. Small measured
++deviations remain useful data; a stationary encoder is not proof of an exact target.
++
++The current spool transformation converts all raw fixed angles but reduces them
++to one median fixed length per sweep. Pointwise fitting then uses that same fixed
++length for every observation. Drive/sensor means and noise are used, but the
++association between a fixed encoder angle and its corresponding point is lost.
++
++The first refinement should retain per-point fixed lengths in
++`dataset_with_modeled_lengths`, then use them in the pointwise objective and its
++JAX implementation. Recompute them for each candidate spool model, using the same
++encoder reference and winding transform as drive/sensor lengths. Keep ellipse
++prefit as an approximate initializer. Final fits and frozen held-out predictions
++must use the same corrected pointwise model.
++
++This is a proposed extension, not an implemented optimization stage. Preserve raw
++data instead of projecting it onto the fitted ellipse. Validate with known small
++fixed-angle perturbations, compare finite-difference/JAX residuals and gradients,
++and test held-out physical predictions. Unknown zero offsets or cogging bias can
++later be bounded nuisance parameters with priors; free per-point corrections
++would let the solver absorb wrong anchors and overstate fit quality.
++
+ ## Filter and objective schedules
+ 
+ The default schedules are:
+diff --git a/autocal/planning_pass.py b/autocal/planning_pass.py
+index 21d834a5..5695ce46 100644
+--- a/autocal/planning_pass.py
++++ b/autocal/planning_pass.py
+@@ -172,6 +172,9 @@ def plan_ellipse_sweep(
+         base_radii=base_radii,
+         buildup_factor=buildup_factor,
+     )
++    modeled_buildup = np.asarray((fit.get("length_model") or {}).get("modeled_buildup_factor", []), dtype=float)
++    if np.any(np.isfinite(modeled_buildup) & (modeled_buildup != 0)) and "--line-layering" not in collector_args_eff:
++        collector_args_eff.append("--line-layering")
+     if "--return-to-origin" not in collector_args_eff and "--returnToOrigin" not in collector_args_eff:
+         collector_args_eff.append("--return-to-origin")
+ 
+diff --git a/autocal/tests/test_stage_replay.py b/autocal/tests/test_stage_replay.py
+index eaaaee3e..5a7c0250 100644
+--- a/autocal/tests/test_stage_replay.py
++++ b/autocal/tests/test_stage_replay.py
+@@ -101,6 +101,15 @@ def test_planning_recomputes_information_when_difference_step_changes(tmp_path,
+     assert calls == [2.0]
+ 
+ 
++@pytest.mark.parametrize("buildup,enabled", [([0.0]*3, False), ([0.0, 0.6, 0.0], True)])
++def test_planning_enables_layering_from_fitted_buildup(tmp_path, buildup, enabled):
++    fit = _frozen_fit(False)
++    fit["collection_settings"]["buildup_factor"] = None
++    fit["length_model"] = {"modeled_buildup_factor": buildup}
++    plan = plan_ellipse_sweep(fit, tmp_path / "sweeps.json", candidate_deltas=[100.0], collector_args=["--sim"])
++    assert ("--line-layering" in plan["collect_command"]) is enabled
++
++
+ def test_history_ranking_preserves_veto_and_unvalidated_fallback(tmp_path):
+     def item(iteration, prediction, key):
+         return ((key,), {"iteration": iteration}, {"prediction_score": prediction})
+diff --git a/hp-sim-3d/app/appBootstrap.js b/hp-sim-3d/app/appBootstrap.js
+index fa4c8df6..a5317fc2 100644
+--- a/hp-sim-3d/app/appBootstrap.js
++++ b/hp-sim-3d/app/appBootstrap.js
+@@ -221,6 +221,7 @@ export function createHpSimApp({
+   });
+   controllers.external = createExternalCommandController({
+     world,
++    featureFlags,
+     url: normalizeWsUrl(urlParams?.get('gcode_ws') || urlParams?.get('rrf_ws') || null),
+     commands: controllers.commands,
+     runtime,
+diff --git a/hp-sim-3d/app/externalCommandSocket.js b/hp-sim-3d/app/externalCommandSocket.js
+index 47d568c5..9b1ce4fb 100644
+--- a/hp-sim-3d/app/externalCommandSocket.js
++++ b/hp-sim-3d/app/externalCommandSocket.js
+@@ -1,4 +1,6 @@
+ import { EncoderComponent } from '../../src/js/cable_joints_3d/ecs.js';
++import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
++import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
+ 
+ export function normalizeWsUrl(raw) {
+   if (!raw || typeof raw !== 'string') {
+@@ -130,12 +132,15 @@ export function createExternalCommandController({
+   commands,
+   runtime,
+   inspectionTools,
++  featureFlags,
+   WebSocketCtor = globalThis.WebSocket,
+   logger = console,
+   queueLimit = 5000,
+ } = {}) {
+   const externalCommandQueue = [];
+   let socketController = null;
++  let recordingReady = null;
++  let recordingError = null;
+ 
+   function getRemoteSystem() {
+     return commands?.getRemoteSystem?.() || null;
+@@ -196,6 +201,12 @@ export function createExternalCommandController({
+       requestId,
+       axes,
+       anglesDeg: resolveEncoderAngles(axes),
++      simulationSettings: {
++        closedLoopMotorsEnabled: world.getResource('closedLoopMotorsEnabled') === true,
++        lineLayeringEnabled: world.getResource('enableLayering') === true,
++        recording: world.getResource('flightRecorder')?.socket?.readyState === 1,
++        recordingError,
++      },
+       simulationClock: {
+         time_ms: (world.getResource('researchClock')?.time ?? 0) * 1000,
+         generation: world.getResource('sceneGeneration') || 0,
+@@ -215,8 +226,36 @@ export function createExternalCommandController({
+     }
+     if (payload.type === 'encoder_request') {
+       if (payload.requestId != null && Array.isArray(payload.axes)) {
+-        respondToEncoderRequest(payload.requestId, payload.axes);
++        if (recordingReady) recordingReady.then(() => respondToEncoderRequest(payload.requestId, payload.axes));
++        else respondToEncoderRequest(payload.requestId, payload.axes);
++      }
++      return;
++    }
++    if (payload.type === 'simulation_settings') {
++      if (typeof payload.closedLoopMotorsEnabled === 'boolean') {
++        if (featureFlags) featureFlags.setClosedLoopMotorsEnabledState(payload.closedLoopMotorsEnabled);
++        else setClosedLoopMotorFeatureFlags(world, payload.closedLoopMotorsEnabled);
++      }
++      if (typeof payload.lineLayeringEnabled === 'boolean') {
++        if (featureFlags) {
++          const changed = featureFlags.lineLayeringEnabled !== payload.lineLayeringEnabled;
++          featureFlags.setLineLayeringEnabledState(payload.lineLayeringEnabled);
++          // Layering changes the baked initial cable lengths, as with the UI toggle.
++          if (changed) commands?.handleUserReset?.();
++        } else setLineLayeringFeatureFlags(world, payload.lineLayeringEnabled);
++      }
++      if (payload.recordingUrl) {
++        const recorder = world.getResource('flightRecorder');
++        recordingReady = Promise.resolve().then(() => {
++          if (!recorder) throw new Error('This simulator has no browser flight recorder');
++          recorder.extendedReference = true;
++          return recorder.ensureConnected(payload.recordingUrl);
++        }).then(() => { recordingError = null; }).catch(error => {
++          recordingError = error.message;
++          logger.warn('hp-sim-3d: recording startup failed:', recordingError);
++        });
+       }
++      world.getResource('flightRecorder')?.recordEvent('simulation_settings_applied', payload);
+       return;
+     }
+     if (payload.type === 'reset') {
+diff --git a/hp-sim-3d/app/flightRecorder.js b/hp-sim-3d/app/flightRecorder.js
+index 09af5976..2cdb1d7c 100644
+--- a/hp-sim-3d/app/flightRecorder.js
++++ b/hp-sim-3d/app/flightRecorder.js
+@@ -16,6 +16,7 @@ export class FlightRecorder {
+     this.sampleStride = 1;
+     this.geometryDetail = 'full';
+     this.lastSentStep = null;
++    this.acknowledged = false;
+     button?.addEventListener('click', () => this.socket ? this.disconnect() : this.connect());
+   }
+ 
+@@ -32,6 +33,7 @@ export class FlightRecorder {
+     this.generation = null;
+     this.session = globalThis.crypto.randomUUID();
+     this.pending = 0;
++    this.acknowledged = false;
+     this.setStatus('Rerun: connecting');
+     socket.addEventListener('open', () => {
+       if (this.socket !== socket) return;
+@@ -45,7 +47,10 @@ export class FlightRecorder {
+         this.sampleStride = message.sample_stride;
+         this.geometryDetail = message.geometry_detail;
+       }
+-      if (message.type === 'ack') this.pending = Math.max(0, this.pending - 1);
++      if (message.type === 'ack') {
++        this.acknowledged = true;
++        this.pending = Math.max(0, this.pending - 1);
++      }
+     });
+     socket.addEventListener('close', () => {
+       if (this.socket !== socket) return;
+@@ -65,6 +70,36 @@ export class FlightRecorder {
+     this.setStatus('Rerun', false);
+   }
+ 
++  async ensureConnected(url, timeoutMs = 5000) {
++    if (this.socket && this.url !== url) throw new Error(`Already recording to ${this.url}`);
++    this.url = url;
++    this.connect();
++    const socket = this.socket;
++    if (socket.readyState === 1 && this.acknowledged) return;
++    try {
++      await new Promise((resolve, reject) => {
++        const timer = setTimeout(() => finish(new Error('Rerun connection timed out')), timeoutMs);
++        const acknowledged = event => {
++          if (JSON.parse(event.data).type === 'ack') finish();
++        };
++        const failed = () => finish(new Error('Rerun connection failed'));
++        function finish(error) {
++          clearTimeout(timer);
++          socket.removeEventListener('message', acknowledged);
++          socket.removeEventListener('error', failed);
++          socket.removeEventListener('close', failed);
++          if (error) reject(error); else resolve();
++        }
++        socket.addEventListener('message', acknowledged);
++        socket.addEventListener('error', failed);
++        socket.addEventListener('close', failed);
++      });
++    } catch (error) {
++      if (this.socket === socket) this.disconnect();
++      throw error;
++    }
++  }
++
+   // Backpressure applies to sampled physics, never to G-code dispatch.
+   readyForStep() {
+     return !this.socket || (this.socket.readyState === 1 && this.pending < MAX_PENDING_STEPS);
+diff --git a/scripts/hangprinter_flight_recorder.py b/scripts/hangprinter_flight_recorder.py
+index 29abfe38..3ee155a7 100644
+--- a/scripts/hangprinter_flight_recorder.py
++++ b/scripts/hangprinter_flight_recorder.py
+@@ -333,7 +333,8 @@ async def run(args):
+                 if sample.get("type") == "autocal_event":
+                     if extended_recording is None:
+                         raise ValueError("Events require --extended-reference")
+-                    if sample.get("kind") in ("run_start", "collection_start", "gcode_send") and active_browser is None:
++                    # Startup metadata precedes the collector's browser recorder request.
++                    if sample.get("kind") == "gcode_send" and active_browser is None:
+                         raise ValueError("Connect the visual browser recorder before starting autocal")
+                     await write(extended_recording.log_event, sample)
+                     await socket.send(json.dumps({"type": "event_ack"}))
+diff --git a/tests/python/test_hangprinter_flight_recorder.py b/tests/python/test_hangprinter_flight_recorder.py
+index a6945834..ad3ca938 100644
+--- a/tests/python/test_hangprinter_flight_recorder.py
++++ b/tests/python/test_hangprinter_flight_recorder.py
+@@ -183,6 +183,11 @@ def test_live_recorder_negotiates_sampling_and_drains_collector_events(tmp_path)
+                     raise AssertionError('Recorder startup timed out')
+                 time.sleep(.05)
+         with browser:
++            # Autocal metadata is emitted before its collector starts the browser recorder.
++            browser.send(json.dumps(dict(version=1, type='autocal_event', source='python',
++                                         kind='run_start', wall_time_ms=1_800_000_000_100,
++                                         sim_time_s=None, sim_time_source='unavailable')))
++            assert json.loads(browser.recv())['type'] == 'event_ack'
+             browser.send(json.dumps(dict(sample(), wall_time_ms=1_800_000_000_123)))
+             assert json.loads(browser.recv()) == {'type': 'recording_config', 'sample_stride': 10, 'geometry_detail': 'compact'}
+             assert json.loads(browser.recv())['type'] == 'ack'
+@@ -204,6 +209,8 @@ def test_live_recorder_negotiates_sampling_and_drains_collector_events(tmp_path)
+     assert len(reader.recordings()) == 1
+     events = reader.stream().filter(content='/autocal/collector', components='event_json').to_chunks()
+     assert sum(chunk.num_rows for chunk in events) == 151
++    startup = reader.stream().filter(content='/autocal/python', components='event_json').to_chunks()
++    assert sum(chunk.num_rows for chunk in startup) == 1
+     assert all('wall_time' in chunk.timeline_names for chunk in events)
+     physics = reader.stream().filter(content='/line_lengths/test/A', components='Scalars:scalars').to_chunks()
+     steps = sorted(step for chunk in physics for step in chunk.to_record_batch().column('sim_step').to_pylist())
+diff --git a/autocal/control/behaviors/slip_recovery.mjs b/autocal/control/behaviors/slip_recovery.mjs
+new file mode 100644
+index 00000000..a7bb19a8
+--- /dev/null
++++ b/autocal/control/behaviors/slip_recovery.mjs
+@@ -0,0 +1,38 @@
++import { applyForceModeState, FixedAnchorDriftError } from '../primitives/uncalibrated_actions.mjs';
++
++// Retry the whole direction: never mix points from before/after a slip.
++export async function collectWithSlipRecovery(send, collect, {
++  motorIds, forceLow, forceMid, forceMax, sensorCollectionForce,
++  onRecovery, maxRetries = 3,
++}) {
++  let forces = { forceLow, forceMid, forceMax, sensorCollectionForce };
++  const recoveries = [];
++  for (let attempt = 0; ; attempt += 1) {
++    try {
++      const result = await collect(forces, attempt);
++      return { ...result, forces, recoveries };
++    } catch (error) {
++      if (!(error instanceof FixedAnchorDriftError)) throw error;
++      await applyForceModeState(send, { motorIds, modes: motorIds.map(() => 'position') });
++      if (attempt >= maxRetries) throw new Error(`Slip recovery exhausted after ${maxRetries} retries: ${error.message}`);
++      const lower = force => Math.min(force, Math.max(forceLow, force * .5));
++      const reduced = {
++        forceLow,
++        forceMid: lower(forces.forceMid),
++        forceMax: lower(forces.forceMax),
++        sensorCollectionForce: Number.isFinite(forces.sensorCollectionForce)
++          ? lower(forces.sensorCollectionForce) : forces.sensorCollectionForce,
++      };
++      if (reduced.forceMid === forces.forceMid && reduced.forceMax === forces.forceMax
++        && reduced.sensorCollectionForce === forces.sensorCollectionForce) {
++        throw new Error(`Cannot reduce sweep forces below idle preload: ${error.message}`);
++      }
++      const recovery = { discarded_attempt: attempt, anchor: error.anchor, drift_deg: error.driftDeg,
++        previous_forces: forces, reduced_forces: reduced };
++      recoveries.push(recovery);
++      console.log(`; slip recovery ${attempt + 1}/${maxRetries}: ${error.message}; lowering forces and restarting direction`);
++      await onRecovery?.(recovery);
++      forces = reduced;
++    }
++  }
++}
+diff --git a/autocal/control/tests/behaviors/slip_recovery.test.mjs b/autocal/control/tests/behaviors/slip_recovery.test.mjs
+new file mode 100644
+index 00000000..88c1c72a
+--- /dev/null
++++ b/autocal/control/tests/behaviors/slip_recovery.test.mjs
+@@ -0,0 +1,46 @@
++import { collectWithSlipRecovery } from '../../behaviors/slip_recovery.mjs';
++import { FixedAnchorDriftError } from '../../primitives/uncalibrated_actions.mjs';
++
++const options = { motorIds: ['A', 'B'], forceLow: .01, forceMid: .2, forceMax: 10, sensorCollectionForce: 6 };
++
++test('holds every motor, lowers force, discards failed result and recollects direction', async () => {
++  const sequence = [];
++  const send = jest.fn(async command => { sequence.push(command); });
++  const collect = jest.fn(async (forces, attempt) => {
++    sequence.push(`attempt ${attempt}`);
++    if (!attempt) throw new FixedAnchorDriftError(1, 7.2, 1.5);
++    expect(forces).toEqual({ forceLow: .01, forceMid: .1, forceMax: 5, sensorCollectionForce: 3 });
++    return { dataPoints: ['new valid point'] };
++  });
++  const onRecovery = jest.fn();
++  const result = await collectWithSlipRecovery(send, collect, { ...options, onRecovery });
++  expect(sequence).toEqual(['attempt 0', 'M569.4 PA:B T0.0:0.0', 'attempt 1']);
++  expect(result.dataPoints).toEqual(['new valid point']);
++  expect(result.recoveries).toHaveLength(1);
++  expect(onRecovery).toHaveBeenCalledWith(expect.objectContaining({ anchor: 1, discarded_attempt: 0 }));
++});
++
++test('repeated slips stop after a bounded number of retries with motors held', async () => {
++  const send = jest.fn(async () => {});
++  const collect = jest.fn(async () => { throw new FixedAnchorDriftError(0, 2, 1.5); });
++  await expect(collectWithSlipRecovery(send, collect, options)).rejects.toThrow('exhausted after 3 retries');
++  expect(collect).toHaveBeenCalledTimes(4);
++  expect(send.mock.calls.at(-1)[0]).toContain('T0.0:0.0');
++});
++
++test('transport and invalid measurement failures are not treated as slips', async () => {
++  const send = jest.fn();
++  const collect = jest.fn(async () => { throw new Error('encoder disconnected'); });
++  await expect(collectWithSlipRecovery(send, collect, options)).rejects.toThrow('encoder disconnected');
++  expect(collect).toHaveBeenCalledTimes(1);
++  expect(send).not.toHaveBeenCalled();
++});
++
++test('recovery never raises an explicit force that is already below idle preload', async () => {
++  const collect = jest.fn(async (forces, attempt) => {
++    if (!attempt) throw new FixedAnchorDriftError(1, 2, 1.5);
++    expect(forces.sensorCollectionForce).toBe(.005);
++    return { dataPoints: [] };
++  });
++  await collectWithSlipRecovery(async () => {}, collect, { ...options, sensorCollectionForce: .005 });
++});
+diff --git a/tests/js/hp-sim-3d/autocalSettings.test.js b/tests/js/hp-sim-3d/autocalSettings.test.js
+new file mode 100644
+index 00000000..e2e8d686
+--- /dev/null
++++ b/tests/js/hp-sim-3d/autocalSettings.test.js
+@@ -0,0 +1,75 @@
++import { World } from '../../../src/js/cable_joints_3d/ecs.js';
++import { createExternalCommandController } from '../../../hp-sim-3d/app/externalCommandSocket.js';
++import { createFeatureFlagsController } from '../../../hp-sim-3d/app/featureFlagsController.js';
++import { FlightRecorder } from '../../../hp-sim-3d/app/flightRecorder.js';
++
++jest.mock('three/addons/controls/OrbitControls.js', () => ({ OrbitControls: class {} }));
++const cryptoDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
++beforeAll(() => Object.defineProperty(globalThis, 'crypto', {
++  configurable: true, value: { randomUUID: () => 'test-session' },
++}));
++afterAll(() => {
++  if (cryptoDescriptor) Object.defineProperty(globalThis, 'crypto', cryptoDescriptor);
++  else delete globalThis.crypto;
++});
++
++class Socket extends EventTarget {
++  static OPEN = 1;
++  readyState = 0;
++  samples = [];
++  constructor(url) { super(); this.url = url; Socket.last = this; }
++  send(value) { this.samples.push(JSON.parse(value)); }
++  close() { this.readyState = 3; this.dispatchEvent(new Event('close')); }
++  open() { this.readyState = 1; this.dispatchEvent(new Event('open')); }
++}
++
++test('autocal settings update physics resources and visible feature toggles', () => {
++  const world = new World();
++  const toggles = { closedLoopMotorsToggle: { checked: false }, lineLayeringToggle: { checked: false } };
++  const featureFlags = createFeatureFlagsController({ world, state: {}, toggles });
++  const commands = { handleUserReset: jest.fn() };
++  const controller = createExternalCommandController({ world, featureFlags, commands });
++  controller.handlePayload({ type: 'simulation_settings', closedLoopMotorsEnabled: true, lineLayeringEnabled: true });
++  expect(toggles.closedLoopMotorsToggle.checked).toBe(true);
++  expect(toggles.lineLayeringToggle.checked).toBe(true);
++  for (const key of ['closedLoopMotorsEnabled', 'enableLayering', 'layeringFrictionEffectiveRadius', 'layeringRenderWraps']) {
++    expect(world.getResource(key)).toBe(true);
++  }
++  expect(commands.handleUserReset).toHaveBeenCalledTimes(1);
++  controller.handlePayload({ type: 'simulation_settings', lineLayeringEnabled: true });
++  expect(commands.handleUserReset).toHaveBeenCalledTimes(1);
++});
++
++test('settings barrier waits for Rerun connection and preserves an existing recording', async () => {
++  const world = new World();
++  const recorder = new FlightRecorder({ world, WebSocketClass: Socket });
++  world.setResource('flightRecorder', recorder);
++  const controller = createExternalCommandController({ world, url: 'ws://bridge', WebSocketCtor: Socket });
++  controller.connect();
++  const bridge = Socket.last;
++  bridge.open();
++  controller.handlePayload({ type: 'simulation_settings', recordingUrl: 'ws://recording' });
++  controller.handlePayload({ type: 'encoder_request', requestId: 1, axes: [] });
++  await Promise.resolve();
++  const recording = recorder.socket;
++  expect(bridge.samples).toHaveLength(0);
++  recording.open();
++  expect(bridge.samples).toHaveLength(0);
++  recording.dispatchEvent(new MessageEvent('message', { data: JSON.stringify({ type: 'ack' }) }));
++  await new Promise(resolve => setTimeout(resolve, 0));
++  expect(bridge.samples.at(-1)).toMatchObject({ requestId: 1, simulationSettings: { recording: true } });
++  expect(recorder.extendedReference).toBe(true);
++  const session = recorder.session;
++  await recorder.ensureConnected('ws://recording');
++  expect(recorder.socket).toBe(recording);
++  expect(recorder.session).toBe(session);
++  recorder.disconnect();
++});
++
++test('failed recorder connection releases physics backpressure', async () => {
++  const recorder = new FlightRecorder({ world: new World(), WebSocketClass: Socket });
++  const pending = recorder.ensureConnected('ws://unavailable', 10);
++  await expect(pending).rejects.toThrow('timed out');
++  expect(recorder.socket).toBeNull();
++  expect(recorder.readyForStep()).toBe(true);
++});

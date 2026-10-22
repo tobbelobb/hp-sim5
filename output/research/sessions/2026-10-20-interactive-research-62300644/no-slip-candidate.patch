@@ -1,0 +1,156 @@
+diff --git a/public/wasm/cable_solver.wasm b/public/wasm/cable_solver.wasm
+index 33bb58c407668545752671a0cc4b53a1ce9dd9f0..8a428cc4fe98755c6e96593c05654fce2744ccb4 100755
+GIT binary patch
+delta 1543
+zcmaizUuaWT9LLY^o}_JZa%;NgHaCeezjJZ1U0rRZ!Y<<0IKgGIC<?1%2vz$q($=l6
+z&epm%!eB6DFhV)72b<n9a4^KphuasK3`b#ZurU~pJ;=t|SrptJ_Ta3rU((VZ`(iHS
+z`~Cd>-IE_DA3PKn9*V2yI6SyE&gbsJf7iP2_f9tFjUJ;1S*!5{ICUn=F<DTT2Ec~A
+z@&}-cWN85QlXMNjLMXpdNi~@v=z*l_8-j85>kxbewz_x<BqaPRr{FsS;%aOd27BXJ
+zpPMLR;Go%vJokRhnHbEKpxDmYGIux@4w{=VPuWs<uqZih!p5Rw=H6K?2<BkF8AaaC
+zZwHonu3^}WN1FV?Y4{j6Q*-XNx=~`$OBYHd#smf%c^xni$kn}fAp=~A5!k-DHiRLf
+zRdK9+Q@>>IijJli`%Nkgsv{$C%S>R{lL@q|V*Bl9;5n$XvBkrLdh<Ofr;|v}iIfw<
+z5QeJ{`Eb?ur({xzvvBh%CHK$5&Zm^@9)*6|X=N0)LP32y3P`dz3a6pqzcEI^B<+gr
+zW2+yDtM>1gq@&b1*t5+>+pDhXsFT2iSE<@QhYr4C-*Qrz@+wZY{K>zz%udfbmM2@#
+z!sMr(jFTov)1)@3CCYa`vmmQp9f#!Z+F()LM+oCIErJ$($1v^9)Lun4?oqT>koGDS
+z6jU)&eYct(haHFQwX>q27Yk21m_QPw#ge3GFiBQmAa?_b=(wDbog<4Y_A1%bioHxW
+ztMEL;XfwOc!^;MQ)Yt@UDc|}=q(mej)|NzL1MM80u!oshM_rkM%uXpN>deYW1O#3F
+zL;6nFJ7p-s=`_?V!)hiDv7i(JGwLxwTfHYkh%%;nCm~b5_>t(0(UqH%&DH<MkKpW`
+zlPzmMc>OHF6s?&iw#u~nauVVZYdvSFwi0w%T7(LtPVKI#9X8#I?h+j7v0VNN1~BaM
+z9+H^LUmyv&ypu$@yp<&4awLhn+$Kr8JWA5+@&=NY59dqZ&zFq0<FKgy`Q6Ag-Kl46
+zJ6);1K$MxJfBNzd<B`!dU&q)ME&e@mT;oT?-5NKm*A|S-WFL)tRtp~|*4s{O;FBA8
+zkhoLpud+UGgm|l#Kl3C%!(OLAn^y3-dc0t~4Z~_^k&gEhWl_uiOq|j9WCLSajgJv;
+z(|DQcrN)OSj~XA{&~HB3f0!W!I<$rk;=IOti1pvQm)O<v2Z(oR{F{I5FXL-ynxcax
+aw762wFB#Kt)Bj<~cmOcrU%zL}NB;*;l^2fy
+
+delta 1588
+zcmZ9LUu;uV9LMkPo_4go?bg}e{&nl`oXomW9L!9!`!HM$0gK5%O=R&84uVm;4F*9r
+zsM0Pm`bLZsPhtedoew-1(u9Y*@UlUcV9*$NA;e$|n&}pe8Xr`2Mt^r*%Gr98`~7`>
+zf6nim-#wkUXS{RIsGeZ(`=t__S%iNtb^pAl9O>8l^gh(u_0K>wgtWZI3-as`B%oh9
+zL(oOCGz2?Hx`tuF-(Sn5oXiOHK|&6WKuLZx0#!)LQwM=V%BdcN>pH|_=`akx5yK7n
+zlSTCG3N<3jzrA9GR$6-V6)5JIw#<YV3%f!ZHeq8?gz}@SUe?GG01*QzoWCvSDq8sL
+zM5Ur>2KFOW2ZoE>ON+wxP*X7MY&`;}!1U(WZO<~x`woYIDs$}f2GKfs<=tq5rg0O!
+z(svX#JxE16s3D>`CCqK7Z)F#a&gQKL+!7{tAB8VMDGb;=g-KVEPWzj%5gL*hvoR$H
+zj=`iif%M3mV-Tky_{Ly<t!HTr9$o9{8HWRudS)EjM8QD7to!Uw^9<6^AJ^|dO>Y2w
+zj)MGt9F9Q2dHy)GLCT%ZHf{CC6RYNLPw=Gt@C5X}lERdYEXM{!8q@ZaYYqxJUCn%5
+z2o&~|$kvzGM`suHRWN&QT9`JEp^5mh&EuqL(iYMbsVOIxA<|3pOVif;?hvAA+UGHd
+zE%Y`pZl7Q2MkdAl#8VVA=^b@5-1f3kf+V8@%TG$Mxs3Ol8`RvO8KXdw1Pz5GMXQjc
+z4fN#apomF}X=KijnW&jnGE+740-0&ojJOA{GMh(&I(<mGHGh3Hr`(#_T7HW;JKutw
+z4u(8-5?ZrneJ<P|^cZ!b<9KomMZm_)w3yud9}kmDO!IIM44TC5kT!YcstKlqGDL&n
+zdLj2qUWU#l8YeesD|s*N{laNEItyltl4j5*XL!*4OWgqR<P48WSfmT@P4kG`x}C@5
+z#WKX@tKIavQ-*9?yxzo32#WyHvp+3b?)zKh%`$Y!Jr#JQFK)4?(1QVs^^q7B>me~M
+zwuOY|&`uJz7?MORmLQ2)EKCx#n2#j--h2g|`HJ4L5AMoe?&_K5uQzDgCc24(p0E}o
+z{nlyyPX9;mx=R1AR>gmfIIi#?#N7%v%AE^(ru-r;_mJX#iC8Urc^&Uv$FC7@QR-b*
+z*E>Yqro>0r@&np4<mgZmK9zqj=!alf7Js1aeMwPNqF)hb6yEF8w5-Ad#1AX{C*^a6
+zpQbn}{M@>F-`e_TwKO?8m4Xi9g2Fw->Un#KEhWC4_%VfVIWPRE&qDM2w6Ub(|3GeB
+V($B%HbA3tw72vpY`6vBa_<uD8Ba#3B
+
+diff --git a/src/js/cable_joints_3d/cable_friction_system.js b/src/js/cable_joints_3d/cable_friction_system.js
+index 8eb52b27..548b82d9 100644
+--- a/src/js/cable_joints_3d/cable_friction_system.js
++++ b/src/js/cable_joints_3d/cable_friction_system.js
+@@ -97,8 +97,12 @@ function _evenOutTensionFriction(world) {
+         const effectiveRadius = radius + (layeringEnabled(world) ? (path.cableHalfWidth ?? 0.0) : 0.0);
+ 
+         const freeRollingLink = linkType === 'rolling' && world.getComponent(linkEntityId, SpoolStateComponent);
++        // An inertial rolling link transports cable through its rotation.
++        // Redistributing here also lets cable slip while the wheel is still,
++        // erasing its restoring torque and allowing perpetual numerical spin.
++        if (freeRollingLink) continue;
+ 
+-        if (!freeRollingLink && mu > epsilon) {
++        if (mu > epsilon) {
+           const storedLengthOnLink = path.stored[i + 1];
+           let wrapAngle = 0;
+           if (linkType === 'rolling' && effectiveRadius > epsilon && Math.abs(storedLengthOnLink) > epsilon) {
+diff --git a/src/python/cable_joints_3d/cable_friction_system.py b/src/python/cable_joints_3d/cable_friction_system.py
+index c8ae3ef2..a09cf904 100644
+--- a/src/python/cable_joints_3d/cable_friction_system.py
++++ b/src/python/cable_joints_3d/cable_friction_system.py
+@@ -50,7 +50,10 @@ def _redistribute_path(world, path):
+             radius = radius_component.radius if radius_component is not None else 0.
+             radius += path.cable_half_width if layering_enabled(world) else 0.
+             free_rolling = link_type == 'rolling' and world.get_component(entity, SpoolStateComponent) is not None
+-            if not free_rolling and mu > EPSILON:
++            # Inertial rolling links transport cable through rotation, not slip.
++            if free_rolling:
++                continue
++            if mu > EPSILON:
+                 wrap_angle = 0.
+                 stored = path.stored[index + 1]
+                 if link_type == 'rolling' and radius > EPSILON and abs(stored) > EPSILON:
+diff --git a/src/wasm/cable_solver/src/engine.rs b/src/wasm/cable_solver/src/engine.rs
+index 7a913262..fd54e071 100644
+--- a/src/wasm/cable_solver/src/engine.rs
++++ b/src/wasm/cable_solver/src/engine.rs
+@@ -1636,9 +1636,14 @@ impl PhysicsWorld {
+                     let kind = c.kind(i + 1);
+                     let id = c.entity(i, 1);
+                     let e = &self.entities[id];
++                    // Inertial rolling links transport cable through rotation,
++                    // not an independent rest-length redistribution.
++                    if kind == 1 && has(e, SPOOL) {
++                        continue;
++                    }
+                     let mut threshold = 1.0;
+                     let mut active = false;
+-                    if (kind == 1 || kind == 2) && !(kind == 1 && has(e, SPOOL)) && e[105] > EPS {
++                    if (kind == 1 || kind == 2) && e[105] > EPS {
+                         let r = e[104]
+                             + if self.options[3] != 0.0 {
+                                 c.data[6]
+diff --git a/tests/benchmark/native_physics_engine.test.mjs b/tests/benchmark/native_physics_engine.test.mjs
+index 0c744ead..17034879 100644
+--- a/tests/benchmark/native_physics_engine.test.mjs
++++ b/tests/benchmark/native_physics_engine.test.mjs
+@@ -5,10 +5,25 @@ import { setImmediate } from 'node:timers/promises';
+ import { runFixture } from '../parity3d/oracle.mjs';
+ import { createHeadlessWorld } from '../../hp-sim-3d/app/headlessWorld.js';
+ import { NativePhysicsEngine, loadNativePhysicsAddon } from '../../src/js/cable_joints_3d/native_physics_engine.js';
+-import { PositionComponent } from '../../src/js/cable_joints_3d/ecs.js';
++import { PositionComponent, SceneEntityInfoComponent, EncoderComponent } from '../../src/js/cable_joints_3d/ecs.js';
+ import { runTrajectory } from '../../scripts/profile_headless.mjs';
+ 
+ const fixtures = new URL('../fixtures/python_3d_parity/', import.meta.url);
++test('held HP4 cables do not drive passive wheels continuously', () => {
++  const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp4_rigid_body.usda', import.meta.url), 'utf8');
++  const { world, dt } = createHeadlessWorld(scene, { lineLayeringEnabled: false, closedLoopMotorsEnabled: true });
++  try {
++    for (let step = 0; step < 1000; step++) world.update(dt);
++    const wheels = world.query([SceneEntityInfoComponent, EncoderComponent])
++      .filter(id => world.getComponent(id, SceneEntityInfoComponent).name.startsWith('Wheel'));
++    assert.equal(wheels.length, 24);
++    for (const id of wheels) assert(Math.abs(world.getComponent(id, EncoderComponent).angle) < .1,
++      `${world.getComponent(id, SceneEntityInfoComponent).name} rotated without cable transport`);
++  } finally {
++    world.getResource('cableSolverBackend').dispose();
++  }
++});
++
+ test('local defaults are native, isolated, editable and safe to clear', () => {
+   const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp3_rigid_body.usda', import.meta.url), 'utf8');
+   const first = createHeadlessWorld(scene), second = createHeadlessWorld(scene);
+diff --git a/tests/js/cable_joints_3d/cableFrictionSystem.test.js b/tests/js/cable_joints_3d/cableFrictionSystem.test.js
+index 106b9939..621cbfd2 100644
+--- a/tests/js/cable_joints_3d/cableFrictionSystem.test.js
++++ b/tests/js/cable_joints_3d/cableFrictionSystem.test.js
+@@ -108,7 +108,7 @@ describe('CableFrictionSystem (3D)', () => {
+     expect(10.0 - expectedHigh).toBeCloseTo(threshold * (6.0 - expectedLow), 8);
+   });
+ 
+-  test('free-spinning rolling links equalize tension despite material friction', () => {
++  test('free-spinning rolling links conserve material lengths during friction', () => {
+     const world = new World();
+ 
+     const left = world.createEntity();
+@@ -164,7 +164,9 @@ describe('CableFrictionSystem (3D)', () => {
+     const system = new CableFrictionSystem();
+     system.update(world, 1 / 2000);
+ 
+-    expect(world.getComponent(joint0, CableJointComponent).restLength).toBeCloseTo(9.0, 8);
+-    expect(world.getComponent(joint1, CableJointComponent).restLength).toBeCloseTo(5.0, 8);
++    // Tension differences accelerate the inertial wheel in the cable solve;
++    // this pass must not independently move material across its surface.
++    expect(world.getComponent(joint0, CableJointComponent).restLength).toBe(7.0);
++    expect(world.getComponent(joint1, CableJointComponent).restLength).toBe(7.0);
+   });
+ });

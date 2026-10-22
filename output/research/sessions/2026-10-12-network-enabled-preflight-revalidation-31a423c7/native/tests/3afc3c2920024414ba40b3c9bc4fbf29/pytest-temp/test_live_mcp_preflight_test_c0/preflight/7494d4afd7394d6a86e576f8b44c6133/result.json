@@ -1,0 +1,9 @@
+{
+  "outcome": "passed",
+  "handshake": true,
+  "finalized": true,
+  "readable": true,
+  "recording_manifest": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-12-network-enabled-preflight-revalidation-31a423c7/native/tests/3afc3c2920024414ba40b3c9bc4fbf29/pytest-temp/test_live_mcp_preflight_test_c0/preflight/7494d4afd7394d6a86e576f8b44c6133/hangprinter-20261012T082436.910233Z-47fdaf2a.json",
+  "rrd": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-12-network-enabled-preflight-revalidation-31a423c7/native/tests/3afc3c2920024414ba40b3c9bc4fbf29/pytest-temp/test_live_mcp_preflight_test_c0/preflight/7494d4afd7394d6a86e576f8b44c6133/hangprinter-20261012T082436.910233Z-47fdaf2a.rrd",
+  "kind": "tool_check"
+}

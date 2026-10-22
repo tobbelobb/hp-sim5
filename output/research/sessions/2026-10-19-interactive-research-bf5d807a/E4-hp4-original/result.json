@@ -1,0 +1,137 @@
+{
+  "method": "old",
+  "machine": "hp4",
+  "result": {
+    "forceLow": 0.022272608433151982,
+    "forceMid": 0.4454521686630396,
+    "forceMax": 4.695667396316998,
+    "tuningMeta": {
+      "method": "incremental-compliance",
+      "active_anchor": 1,
+      "fixed_anchor": 3,
+      "rest_anchors": [
+        0,
+        2
+      ],
+      "idle_force_initial": 0.01,
+      "idle_force_final": 0.022272608433151982,
+      "force_start": 0.4454521686630396,
+      "force_edge": 4.695667396316998,
+      "force_cap": 20,
+      "force_start_bracket_no": 0.40495651696639967,
+      "force_start_bracket_yes": 0.5669391237529595,
+      "d_max_deg": 1969.26,
+      "edge_at_cap": false,
+      "edge_reason": "incremental compliance declined below comfortable limit",
+      "edge_knee": {
+        "force": 4.695667396316998,
+        "travelDeg": 1193.45,
+        "peakComplianceDegPerN": 397.71343291153454,
+        "complianceRatio": 0.5
+      },
+      "edge_samples": [
+        {
+          "force": 0.4454521686630396,
+          "travelDeg": 16.150000000000002,
+          "moved": true,
+          "stalled": false,
+          "fixedDriftDeg": 0
+        },
+        {
+          "force": 0.6236330361282554,
+          "travelDeg": 33.010000000000005,
+          "moved": true,
+          "stalled": false,
+          "fixedDriftDeg": 0,
+          "complianceDegPerN": 94.62295385497205
+        },
+        {
+          "force": 0.8730862505795575,
+          "travelDeg": 87.25,
+          "moved": true,
+          "stalled": false,
+          "fixedDriftDeg": 0,
+          "complianceDegPerN": 217.43556249337752
+        },
+        {
+          "force": 1.2223207508113805,
+          "travelDeg": 160.6,
+          "moved": true,
+          "stalled": false,
+          "fixedDriftDeg": 0,
+          "complianceDegPerN": 210.03079578710015
+        },
+        {
+          "force": 1.7112490511359326,
+          "travelDeg": 283.32,
+          "moved": true,
+          "stalled": false,
+          "fixedDriftDeg": 0,
+          "complianceDegPerN": 250.99794779426364
+        },
+        {
+          "force": 2.3957486715903054,
+          "travelDeg": 440.24,
+          "moved": true,
+          "stalled": false,
+          "fixedDriftDeg": 0,
+          "complianceDegPerN": 229.24775311903912
+        },
+        {
+          "force": 3.3540481402264275,
+          "travelDeg": 659.87,
+          "moved": true,
+          "stalled": false,
+          "fixedDriftDeg": 0,
+          "complianceDegPerN": 229.18722924117174
+        },
+        {
+          "force": 4.695667396316998,
+          "travelDeg": 1193.45,
+          "moved": true,
+          "stalled": false,
+          "fixedDriftDeg": 0,
+          "complianceDegPerN": 397.71343291153454
+        },
+        {
+          "force": 6.573934354843797,
+          "travelDeg": 1535.1100000000001,
+          "moved": true,
+          "stalled": false,
+          "fixedDriftDeg": 0,
+          "complianceDegPerN": 181.90172512430172
+        },
+        {
+          "force": 9.203508096781317,
+          "travelDeg": 1969.26,
+          "moved": true,
+          "stalled": false,
+          "fixedDriftDeg": 0,
+          "complianceDegPerN": 165.10280471545553
+        }
+      ],
+      "noise_samples": 20,
+      "noise_duration_ms": 4000,
+      "noise_sigma_deg": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "move_thresholds_deg": {
+        "active": 0.5,
+        "residual_active": 0.3,
+        "residual_sum": 0.8,
+        "other_by_anchor": {
+          "0": 0.5,
+          "2": 0.5
+        }
+      },
+      "stall_speed_deg_per_sec": 0.05,
+      "stall_window_ms": 25000
+    }
+  },
+  "pulses": [],
+  "wallS": 158.351402739,
+  "simS": 961.7459999910815
+}

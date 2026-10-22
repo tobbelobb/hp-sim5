@@ -1,0 +1,100 @@
+{
+  "backend": "headless-js",
+  "status": "failed",
+  "machine_type": "hangprinter_3",
+  "scene": "/home/torbjorn/repos/hp-sim5/public/usd_scenes/hp3_rigid_body.usda",
+  "firmware_config": "sys/config_hp3.g",
+  "clock": "fixed steps; collector waits advance simulation time",
+  "dataset": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-13-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-b65aa69c/native/tests/0e4e0f8b707444c09d551656ca1de3d9/pytest-temp/test_extended_headless_fails_w0/sweeps.json",
+  "source_sha256": "ba5795661c6a547fe65a6dc57f994a13ba09dae9d3146d8e45bb61a3672525d4",
+  "autocal_source_sha256": "79b344a6dccc9edff5b26b95cf3dcf86e9e81a954f70a467ba34a00634ee25b5",
+  "git_revision": "ded5842ee357e34a4e712d1a1c4ef8aea1eeff9d",
+  "owned_services": [
+    {
+      "name": "recorder",
+      "pid": 149434
+    },
+    {
+      "name": "rrf",
+      "pid": 149500
+    },
+    {
+      "name": "physics",
+      "pid": 149505
+    }
+  ],
+  "extended_reference_ws": "ws://127.0.0.1:53939",
+  "owned_recorder": true,
+  "scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+  "firmware_config_sha256": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8",
+  "rrf_sha256": "9b2ac828a9ad0636640c92f7a1cbf042f9a04327505c8d699c54b1abb582f3fe",
+  "baked_scene_sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+  "initial_baked_scene_sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+  "service_url": "http://127.0.0.1:34029",
+  "rrf_url": "http://127.0.0.1:55467",
+  "services": [
+    149434,
+    149500,
+    149505
+  ],
+  "owned_rrf": true,
+  "firmware_initial": {
+    "M115": "FIRMWARE_NAME: RepRapFirmware for x86_64 (host) FIRMWARE_VERSION: 3.7.0-alpha.5 ELECTRONICS: RRF_Host FIRMWARE_DATE: 2026-05-21 17:47:47",
+    "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1900.00, -280.00\nB:1645.45, 950.00, -280.00\nC:-1645.45, 950.00, -280.00\nD:0.00, 0.00, 1900.00\nP:Print radius: 1500.0",
+    "M666": "M666 A1 Q0.0000\nR30.00:30.00:30.00:30.00\nU1:1:1:1\nO1:1:1:1\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI3.0:3.0:3.0:3.0\nX170.0:170.0:170.0:170.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0"
+  },
+  "wall_s": 1.0549494590013637,
+  "error": "Flight recorder disconnected",
+  "kept_alive": false,
+  "service_wall_s": 0.19848175000000004,
+  "step": 0,
+  "epoch": 0,
+  "total_steps": 0,
+  "dt_s": 0.002,
+  "simulated_s": 0,
+  "collector_time_s": 0,
+  "queue_length": 0,
+  "recording_drained": false,
+  "baked_scene_file": "baked-scene.usda",
+  "settings": {
+    "enableLayering": false,
+    "closedLoopMotorsEnabled": false,
+    "timeScale": 1
+  },
+  "physics_returncode": 1,
+  "normal_completion": false,
+  "recordings": [
+    {
+      "backend": "headless-js",
+      "scene_generation": 0,
+      "recording_id": "2c389b5ea5a74550b3ec1191a3b2f1ca",
+      "rrd": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-13-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-b65aa69c/native/tests/0e4e0f8b707444c09d551656ca1de3d9/pytest-temp/test_extended_headless_fails_w0/sweeps.headless/hangprinter-20261013T142422.135570Z-458485eb.rrd",
+      "status": "finalized",
+      "start_step": 0,
+      "format_version": 1,
+      "extended_reference": true,
+      "autocal_complete": false,
+      "rejected_messages": [],
+      "sample_stride": 1,
+      "geometry_detail": "full",
+      "headless_segments": [
+        {
+          "session": "684ab3f1-f41b-4990-a8ec-b55a2b816398",
+          "generation": 0,
+          "start_step": 0,
+          "start_time_s": 0,
+          "start_wall_time_ms": 1791901462573,
+          "end_step": 0,
+          "end_time_s": 0,
+          "end_wall_time_ms": 1791901462573
+        }
+      ],
+      "headless_session": "684ab3f1-f41b-4990-a8ec-b55a2b816398",
+      "end_step": 0,
+      "end_time_s": 0,
+      "physics_samples": 1,
+      "event_count": 11
+    }
+  ],
+  "recording_error": "Flight recorder disconnected"
+}

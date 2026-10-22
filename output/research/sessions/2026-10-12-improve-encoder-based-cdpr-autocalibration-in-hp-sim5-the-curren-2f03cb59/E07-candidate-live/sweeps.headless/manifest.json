@@ -1,0 +1,34 @@
+{
+  "backend": "headless-js",
+  "status": "failed",
+  "machine_type": "hangprinter_3",
+  "scene": "/tmp/hp-autocal-return-candidate/public/usd_scenes/hp3_rigid_body.usda",
+  "firmware_config": "sys/config_hp3.g",
+  "clock": "fixed steps; collector waits advance simulation time",
+  "dataset": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-12-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-2f03cb59/E07-candidate-live/sweeps.json",
+  "source_sha256": "c50eac3372b2dc89fb7813214189d37a87a20eb714c21b1182ec8b6b3e4363cd",
+  "autocal_source_sha256": "6cd4a38996ca4c5b2d6a68265a6f85315d68d66f67f77bcdd6162f411d0171aa",
+  "git_revision": "45862559e95af66a5ed749540763d41d859f5b7e",
+  "owned_services": [
+    {
+      "name": "recorder",
+      "pid": 15
+    }
+  ],
+  "wall_s": 3.4288312640001095,
+  "error": "Reference recorder did not start; see /home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-12-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-2f03cb59/E07-candidate-live/sweeps.headless/recorder.log",
+  "kept_alive": false,
+  "normal_completion": false,
+  "recordings": [
+    {
+      "backend": "browser-js",
+      "browser_session": "extended-reference",
+      "scene_generation": 0,
+      "recording_id": "b6def3d3ea5f4f0c8f0f9a23c7570eeb",
+      "rrd": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-12-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-2f03cb59/E07-candidate-live/sweeps.headless/hangprinter-20261012T095629.203982Z-203f9c26.rrd",
+      "status": "recording",
+      "start_step": 0
+    }
+  ],
+  "recording_error": "Reference recorder did not finalize; see recorder.log"
+}

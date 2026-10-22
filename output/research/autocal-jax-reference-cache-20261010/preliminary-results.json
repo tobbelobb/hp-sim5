@@ -1,0 +1,1155 @@
+[
+  {
+    "trial": "D1",
+    "mode": "off",
+    "elapsed_s": 24.24827208499846,
+    "returncode": 0,
+    "regression_pass": false,
+    "compatibility_warnings": 0,
+    "hits": {},
+    "misses": {},
+    "cache_entries_before": 0,
+    "numerical": {
+      "summary": null,
+      "iterations": [
+        {
+          "anchors": [
+            [
+              0.0,
+              -1823.08,
+              -1042.56
+            ],
+            [
+              1578.53,
+              911.1,
+              -1042.56
+            ],
+            [
+              -1577.04,
+              910.58,
+              -1042.56
+            ],
+            [
+              -0.76,
+              0.43,
+              3384.08
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 16.41,
+          "rank_score": 16.41,
+          "history_rank_score": 16.41
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -2744.03,
+              -250.38
+            ],
+            [
+              949.54,
+              942.99,
+              -250.38
+            ],
+            [
+              -3080.45,
+              0.0,
+              -250.38
+            ],
+            [
+              2486.92,
+              2459.49,
+              2880.64
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 107.6,
+          "rank_score": 107.6,
+          "history_rank_score": 107.4
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -966.9,
+              -301.58
+            ],
+            [
+              830.36,
+              362.13,
+              -301.58
+            ],
+            [
+              -5000.0,
+              4666.42,
+              -301.58
+            ],
+            [
+              406.44,
+              83.4,
+              0.0
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 100.0,
+          "rank_score": 100.0,
+          "history_rank_score": 99.75
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -2443.33,
+              -279.56
+            ],
+            [
+              708.79,
+              401.97,
+              -279.56
+            ],
+            [
+              -2294.4,
+              1381.21,
+              -279.56
+            ],
+            [
+              235.94,
+              124.93,
+              1075.91
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 8161.0,
+          "rank_score": 8161.0,
+          "history_rank_score": 8161.0
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -2505.55,
+              -440.22
+            ],
+            [
+              2519.93,
+              1927.72,
+              -440.22
+            ],
+            [
+              -1047.95,
+              846.62,
+              -440.22
+            ],
+            [
+              -191.17,
+              -116.32,
+              1188.82
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 19460.0,
+          "rank_score": 19460.0,
+          "history_rank_score": 19460.0
+        }
+      ]
+    },
+    "new_cache_entries": []
+  },
+  {
+    "trial": "D2",
+    "mode": "regression-warm",
+    "elapsed_s": 24.844511672999943,
+    "returncode": 0,
+    "regression_pass": false,
+    "compatibility_warnings": 0,
+    "hits": {},
+    "misses": {},
+    "cache_entries_before": 165,
+    "numerical": {
+      "summary": null,
+      "iterations": [
+        {
+          "anchors": [
+            [
+              0.0,
+              -1823.08,
+              -1042.56
+            ],
+            [
+              1578.53,
+              911.1,
+              -1042.56
+            ],
+            [
+              -1577.04,
+              910.58,
+              -1042.56
+            ],
+            [
+              -0.76,
+              0.43,
+              3384.08
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 16.41,
+          "rank_score": 16.41,
+          "history_rank_score": 16.41
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -2744.03,
+              -250.38
+            ],
+            [
+              949.54,
+              942.99,
+              -250.38
+            ],
+            [
+              -3080.45,
+              0.0,
+              -250.38
+            ],
+            [
+              2486.92,
+              2459.49,
+              2880.64
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 107.6,
+          "rank_score": 107.6,
+          "history_rank_score": 107.4
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -966.9,
+              -301.58
+            ],
+            [
+              830.36,
+              362.13,
+              -301.58
+            ],
+            [
+              -5000.0,
+              4666.42,
+              -301.58
+            ],
+            [
+              406.44,
+              83.4,
+              0.0
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 100.0,
+          "rank_score": 100.0,
+          "history_rank_score": 99.75
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -2443.33,
+              -279.56
+            ],
+            [
+              708.79,
+              401.97,
+              -279.56
+            ],
+            [
+              -2294.4,
+              1381.21,
+              -279.56
+            ],
+            [
+              235.94,
+              124.93,
+              1075.91
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 8161.0,
+          "rank_score": 8161.0,
+          "history_rank_score": 8161.0
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -2505.55,
+              -440.22
+            ],
+            [
+              2519.93,
+              1927.72,
+              -440.22
+            ],
+            [
+              -1047.95,
+              846.62,
+              -440.22
+            ],
+            [
+              -191.17,
+              -116.32,
+              1188.82
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 19460.0,
+          "rank_score": 19460.0,
+          "history_rank_score": 19460.0
+        }
+      ]
+    },
+    "new_cache_entries": [
+      "jit__objective_core-0a9613e5cfbdae9bb73b8df442b8365629f182ec48ea36d851c2d6186fa78e18-cache",
+      "jit__objective_core-15e95a247fd47839a929f901598a8c8958fd48439b8c3b2761d668b3a199f453-cache",
+      "jit__objective_core-1e87f7e51d434e74f7dcd0c5ac763778bdad5f1d59f2731f7c5c338325ad397f-cache",
+      "jit__objective_core-24d197bfd0ea27f40a6c89b2e6d0e2a871fdff03c33d0c11e4196e68f2a4f10b-cache",
+      "jit__objective_core-32fbf1b348d12a77a9a3dd8df006267d2ff0bf6a7068c885ae5976fc4c3e6d6e-cache",
+      "jit__objective_core-37942960be1a537b80954f851ccc74c2440c7df9270b740a6666876411dc4823-cache",
+      "jit__objective_core-3e1395d9a2bcbeb4d861d2bdc412085d057fe544292cb9c20e26223e3bd35fa4-cache",
+      "jit__objective_core-4f2e253edf7f33e34bd1424a83fbddd3dabd4c72a4070d7daf03277e95960671-cache",
+      "jit__objective_core-511919357cc18c8a4bf611d1d3e1ccddb3259fb23928b33af3edb9a991494cfb-cache",
+      "jit__objective_core-6663809b8bfa0ce7375028939b7e32544661672777f805a86464ece6aff760b9-cache",
+      "jit__objective_core-79e62b6cb4c5764eedca6e524d3d0220351c452c8bc8d99ba3202073a69a891a-cache",
+      "jit__objective_core-7c1aa0620de6d955b330f434a72fc1321ee5dd17e9b2ff24878633d369728d3f-cache",
+      "jit__objective_core-bdc114c59843f34c1d56560cd0e59918a4f31a9a6d50329f1c1418cece0e9f90-cache",
+      "jit__objective_core-ca809d95576e4ca0d2869ac9d26f6b66233ca9fe9aeb444978cc1a896a5d0574-cache",
+      "jit__objective_core-cd09d182f6b62792845d1a18314b0433eb6e58abfae6b432742a00efa4f1955f-cache",
+      "jit__objective_core-e757c7460b41eb090ac2bb17cdc604c60d27314b15e69926c90f37c534dd31f1-cache",
+      "jit_convert_element_type-76c2156ef7d795f01c6cab0278b97234444a820774c7f7ed968f543251a7960d-cache"
+    ]
+  },
+  {
+    "trial": "D3",
+    "mode": "cold-empty",
+    "elapsed_s": 24.960106869999436,
+    "returncode": 0,
+    "regression_pass": false,
+    "compatibility_warnings": 0,
+    "hits": {},
+    "misses": {},
+    "cache_entries_before": 0,
+    "numerical": {
+      "summary": null,
+      "iterations": [
+        {
+          "anchors": [
+            [
+              0.0,
+              -1823.08,
+              -1042.56
+            ],
+            [
+              1578.53,
+              911.1,
+              -1042.56
+            ],
+            [
+              -1577.04,
+              910.58,
+              -1042.56
+            ],
+            [
+              -0.76,
+              0.43,
+              3384.08
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 16.41,
+          "rank_score": 16.41,
+          "history_rank_score": 16.41
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -2744.03,
+              -250.38
+            ],
+            [
+              949.54,
+              942.99,
+              -250.38
+            ],
+            [
+              -3080.45,
+              0.0,
+              -250.38
+            ],
+            [
+              2486.92,
+              2459.49,
+              2880.64
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 107.6,
+          "rank_score": 107.6,
+          "history_rank_score": 107.4
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -966.9,
+              -301.58
+            ],
+            [
+              830.36,
+              362.13,
+              -301.58
+            ],
+            [
+              -5000.0,
+              4666.42,
+              -301.58
+            ],
+            [
+              406.44,
+              83.4,
+              0.0
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 100.0,
+          "rank_score": 100.0,
+          "history_rank_score": 99.75
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -2443.33,
+              -279.56
+            ],
+            [
+              708.79,
+              401.97,
+              -279.56
+            ],
+            [
+              -2294.4,
+              1381.21,
+              -279.56
+            ],
+            [
+              235.94,
+              124.93,
+              1075.91
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 8161.0,
+          "rank_score": 8161.0,
+          "history_rank_score": 8161.0
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -2505.55,
+              -440.22
+            ],
+            [
+              2519.93,
+              1927.72,
+              -440.22
+            ],
+            [
+              -1047.95,
+              846.62,
+              -440.22
+            ],
+            [
+              -191.17,
+              -116.32,
+              1188.82
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 19460.0,
+          "rank_score": 19460.0,
+          "history_rank_score": 19460.0
+        }
+      ]
+    },
+    "new_cache_entries": [
+      "jit__objective_core-02043c306c4713f1b275905f62bde6679d282d5de5fdb8c3109fc6f134f14a01-cache",
+      "jit__objective_core-03ad246f6870c577130e113bb985bb3ec7d40de5a85884f34957e73bd36729ca-cache",
+      "jit__objective_core-2773c819384ba576c2a8c352d20b5489453d7771f747189f20192f82fc2006f3-cache",
+      "jit__objective_core-3c123e5f693d529092c0a48080f4fe0659d9e30b7d1ca2a60128b4cab5aa7533-cache",
+      "jit__objective_core-3e2a25d25f0f15ffa8b86781cdf21fa2a205676066a822ff2056ae7854684816-cache",
+      "jit__objective_core-445add2673a33462c5c7e95722a12df9a01a912d73dedb05ec2b83f0f4349435-cache",
+      "jit__objective_core-520bf01ef7438b0ed7e3e004cc584fe8d2cf0c23d71b53fe4b0159255761b695-cache",
+      "jit__objective_core-62aa614f0624edfb7410b7afe3e958b2d73470e4ffc6ef75dd1fde9eb3d0caa0-cache",
+      "jit__objective_core-66a15d1606081ef2298cb9ed1a1e922885ad71ca7ea97b93180333561fb2ac56-cache",
+      "jit__objective_core-818f4c4650b9c9379572f1e9c76b88f6d9eaaba915f92630d45f780a052e84b5-cache",
+      "jit__objective_core-8a6e549af87437cfa8384239dfe4d639fef7d946ae3055f9540dabda2fdb4ff4-cache",
+      "jit__objective_core-92f32604454a3ad6433b93540be0f245a3819e0cdcc48142f5cc8315b53aeba4-cache",
+      "jit__objective_core-bb119b3c0e0610f77d24b6ccfaa2c84372cd101ec1a5518c0fdffb881753977e-cache",
+      "jit__objective_core-c21ac17b3a16e5048da61e4d0bec303bcdab8f95c47909aef87beef2b524202a-cache",
+      "jit__objective_core-d8fcd3d712ef35c6fd76af41f67ecb4987fed812e0793980388ee7381b7fdb31-cache",
+      "jit__objective_core-e24567ceace65b66a21dc93c83651c2d9d205930050a0834ae1a9c23fcf66452-cache",
+      "jit_convert_element_type-5f5323e009771d4be75da569a0a0b446875c3bad28ec9ea26fe72de8995203be-cache"
+    ]
+  },
+  {
+    "trial": "D4",
+    "mode": "target-warm",
+    "elapsed_s": 16.86226770199937,
+    "returncode": 0,
+    "regression_pass": false,
+    "compatibility_warnings": 0,
+    "hits": {},
+    "misses": {},
+    "cache_entries_before": 17,
+    "numerical": {
+      "summary": null,
+      "iterations": [
+        {
+          "anchors": [
+            [
+              0.0,
+              -1823.08,
+              -1042.56
+            ],
+            [
+              1578.53,
+              911.1,
+              -1042.56
+            ],
+            [
+              -1577.04,
+              910.58,
+              -1042.56
+            ],
+            [
+              -0.76,
+              0.43,
+              3384.08
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 16.41,
+          "rank_score": 16.41,
+          "history_rank_score": 16.41
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -2744.03,
+              -250.38
+            ],
+            [
+              949.54,
+              942.99,
+              -250.38
+            ],
+            [
+              -3080.45,
+              0.0,
+              -250.38
+            ],
+            [
+              2486.92,
+              2459.49,
+              2880.64
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 107.6,
+          "rank_score": 107.6,
+          "history_rank_score": 107.4
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -966.9,
+              -301.58
+            ],
+            [
+              830.36,
+              362.13,
+              -301.58
+            ],
+            [
+              -5000.0,
+              4666.42,
+              -301.58
+            ],
+            [
+              406.44,
+              83.4,
+              0.0
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 100.0,
+          "rank_score": 100.0,
+          "history_rank_score": 99.75
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -2443.33,
+              -279.56
+            ],
+            [
+              708.79,
+              401.97,
+              -279.56
+            ],
+            [
+              -2294.4,
+              1381.21,
+              -279.56
+            ],
+            [
+              235.94,
+              124.93,
+              1075.91
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 8161.0,
+          "rank_score": 8161.0,
+          "history_rank_score": 8161.0
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -2505.55,
+              -440.22
+            ],
+            [
+              2519.93,
+              1927.72,
+              -440.22
+            ],
+            [
+              -1047.95,
+              846.62,
+              -440.22
+            ],
+            [
+              -191.17,
+              -116.32,
+              1188.82
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 19460.0,
+          "rank_score": 19460.0,
+          "history_rank_score": 19460.0
+        }
+      ]
+    },
+    "new_cache_entries": []
+  },
+  {
+    "trial": "D5",
+    "mode": "off",
+    "elapsed_s": 24.1296113540011,
+    "returncode": 0,
+    "regression_pass": false,
+    "compatibility_warnings": 0,
+    "hits": {},
+    "misses": {},
+    "cache_entries_before": 0,
+    "numerical": {
+      "summary": null,
+      "iterations": [
+        {
+          "anchors": [
+            [
+              0.0,
+              -1823.08,
+              -1042.56
+            ],
+            [
+              1578.53,
+              911.1,
+              -1042.56
+            ],
+            [
+              -1577.04,
+              910.58,
+              -1042.56
+            ],
+            [
+              -0.76,
+              0.43,
+              3384.08
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 16.41,
+          "rank_score": 16.41,
+          "history_rank_score": 16.41
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -2744.03,
+              -250.38
+            ],
+            [
+              949.54,
+              942.99,
+              -250.38
+            ],
+            [
+              -3080.45,
+              0.0,
+              -250.38
+            ],
+            [
+              2486.92,
+              2459.49,
+              2880.64
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 107.6,
+          "rank_score": 107.6,
+          "history_rank_score": 107.4
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -966.9,
+              -301.58
+            ],
+            [
+              830.36,
+              362.13,
+              -301.58
+            ],
+            [
+              -5000.0,
+              4666.42,
+              -301.58
+            ],
+            [
+              406.44,
+              83.4,
+              0.0
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 100.0,
+          "rank_score": 100.0,
+          "history_rank_score": 99.75
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -2443.33,
+              -279.56
+            ],
+            [
+              708.79,
+              401.97,
+              -279.56
+            ],
+            [
+              -2294.4,
+              1381.21,
+              -279.56
+            ],
+            [
+              235.94,
+              124.93,
+              1075.91
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 8161.0,
+          "rank_score": 8161.0,
+          "history_rank_score": 8161.0
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -2505.55,
+              -440.22
+            ],
+            [
+              2519.93,
+              1927.72,
+              -440.22
+            ],
+            [
+              -1047.95,
+              846.62,
+              -440.22
+            ],
+            [
+              -191.17,
+              -116.32,
+              1188.82
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 19460.0,
+          "rank_score": 19460.0,
+          "history_rank_score": 19460.0
+        }
+      ]
+    },
+    "new_cache_entries": []
+  },
+  {
+    "trial": "D6",
+    "mode": "regression-warm",
+    "elapsed_s": 24.629371556999104,
+    "returncode": 0,
+    "regression_pass": false,
+    "compatibility_warnings": 0,
+    "hits": {},
+    "misses": {},
+    "cache_entries_before": 165,
+    "numerical": {
+      "summary": null,
+      "iterations": [
+        {
+          "anchors": [
+            [
+              0.0,
+              -1823.08,
+              -1042.56
+            ],
+            [
+              1578.53,
+              911.1,
+              -1042.56
+            ],
+            [
+              -1577.04,
+              910.58,
+              -1042.56
+            ],
+            [
+              -0.76,
+              0.43,
+              3384.08
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 16.41,
+          "rank_score": 16.41,
+          "history_rank_score": 16.41
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -2744.03,
+              -250.38
+            ],
+            [
+              949.54,
+              942.99,
+              -250.38
+            ],
+            [
+              -3080.45,
+              0.0,
+              -250.38
+            ],
+            [
+              2486.92,
+              2459.49,
+              2880.64
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 107.6,
+          "rank_score": 107.6,
+          "history_rank_score": 107.4
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -966.9,
+              -301.58
+            ],
+            [
+              830.36,
+              362.13,
+              -301.58
+            ],
+            [
+              -5000.0,
+              4666.42,
+              -301.58
+            ],
+            [
+              406.44,
+              83.4,
+              0.0
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 100.0,
+          "rank_score": 100.0,
+          "history_rank_score": 99.75
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -2443.33,
+              -279.56
+            ],
+            [
+              708.79,
+              401.97,
+              -279.56
+            ],
+            [
+              -2294.4,
+              1381.21,
+              -279.56
+            ],
+            [
+              235.94,
+              124.93,
+              1075.91
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 8161.0,
+          "rank_score": 8161.0,
+          "history_rank_score": 8161.0
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -2505.55,
+              -440.22
+            ],
+            [
+              2519.93,
+              1927.72,
+              -440.22
+            ],
+            [
+              -1047.95,
+              846.62,
+              -440.22
+            ],
+            [
+              -191.17,
+              -116.32,
+              1188.82
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 19460.0,
+          "rank_score": 19460.0,
+          "history_rank_score": 19460.0
+        }
+      ]
+    },
+    "new_cache_entries": [
+      "jit__objective_core-00c143ca275baea0cb81375afb4a048450248f4756e82194cab1b77e53a919b1-cache",
+      "jit__objective_core-08f18a2ef6e1b78914a77c6716f8580e180445b24b6a99ff0daf5cdd60123567-cache",
+      "jit__objective_core-190373ff12ec4939ad90b23cdd6813c29a189b85026c328c854d99171491dc28-cache",
+      "jit__objective_core-19960b6d0925fd7c949e50adb04817c022931b424b912a50eb57e25d37a02e3e-cache",
+      "jit__objective_core-440109becc745fa24c09a0cd8ad94dfe8979d86fb8e8b3f5a27ff664d650e2c4-cache",
+      "jit__objective_core-491a991a30c57262985f75ecc3936ad44b583c105c4ebf9a1df115d1e4a256d0-cache",
+      "jit__objective_core-5ad78883ff92b623485cc22631bac37789d417828404b7bf20275e5c67e1f0a1-cache",
+      "jit__objective_core-5cc9c2ed366ae4ab0b804cb77629079e270e8d05ecdd14a823236f34ae1505f3-cache",
+      "jit__objective_core-60cb1a4ebc7bce46d7807bae8dce0958af1a21c3f1720a373ccf92a129cae5de-cache",
+      "jit__objective_core-64c2d1e49c88bb8373bc1c195cc6763a73d3a4c8e0c9146a0fcc118cd57efafb-cache",
+      "jit__objective_core-64ca2015cc5fbd5115dab503ce42e2cd5015233d6d507267b3b072e4c21f24b7-cache",
+      "jit__objective_core-7c3d0232b0cb4962d45f3481800b420fce1eb9b7eeb7a3125a4058067d1c26fc-cache",
+      "jit__objective_core-9d438b14f620f317eb036a1eaeb0ee2a6cf630cb536bd889b86103f1222bd208-cache",
+      "jit__objective_core-e975ceb73d234f400aa7ddf96f2d74015121c937a88315d01d66b20a0e63adfe-cache",
+      "jit__objective_core-f54a725835d1d5cf855f39122d8744fdef8c9f0f61d2d80d037967db04d12b60-cache",
+      "jit__objective_core-f91e3ebefd219dd6a746b846d5a33f9e2f3c7dae683fc1ef02e963ce1f3f1611-cache",
+      "jit_convert_element_type-960658fe785af98933b403e6367f78793ac83965a3d87066a3e6ae80586f89c3-cache"
+    ]
+  },
+  {
+    "trial": "D7",
+    "mode": "target-warm",
+    "elapsed_s": 16.72578553099811,
+    "returncode": 0,
+    "regression_pass": false,
+    "compatibility_warnings": 0,
+    "hits": {},
+    "misses": {},
+    "cache_entries_before": 17,
+    "numerical": {
+      "summary": null,
+      "iterations": [
+        {
+          "anchors": [
+            [
+              0.0,
+              -1823.08,
+              -1042.56
+            ],
+            [
+              1578.53,
+              911.1,
+              -1042.56
+            ],
+            [
+              -1577.04,
+              910.58,
+              -1042.56
+            ],
+            [
+              -0.76,
+              0.43,
+              3384.08
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 16.41,
+          "rank_score": 16.41,
+          "history_rank_score": 16.41
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -2744.03,
+              -250.38
+            ],
+            [
+              949.54,
+              942.99,
+              -250.38
+            ],
+            [
+              -3080.45,
+              0.0,
+              -250.38
+            ],
+            [
+              2486.92,
+              2459.49,
+              2880.64
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 107.6,
+          "rank_score": 107.6,
+          "history_rank_score": 107.4
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -966.9,
+              -301.58
+            ],
+            [
+              830.36,
+              362.13,
+              -301.58
+            ],
+            [
+              -5000.0,
+              4666.42,
+              -301.58
+            ],
+            [
+              406.44,
+              83.4,
+              0.0
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 100.0,
+          "rank_score": 100.0,
+          "history_rank_score": 99.75
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -2443.33,
+              -279.56
+            ],
+            [
+              708.79,
+              401.97,
+              -279.56
+            ],
+            [
+              -2294.4,
+              1381.21,
+              -279.56
+            ],
+            [
+              235.94,
+              124.93,
+              1075.91
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 8161.0,
+          "rank_score": 8161.0,
+          "history_rank_score": 8161.0
+        },
+        {
+          "anchors": [
+            [
+              0.0,
+              -2505.55,
+              -440.22
+            ],
+            [
+              2519.93,
+              1927.72,
+              -440.22
+            ],
+            [
+              -1047.95,
+              846.62,
+              -440.22
+            ],
+            [
+              -191.17,
+              -116.32,
+              1188.82
+            ]
+          ],
+          "radii": null,
+          "fit_score_ui": 19460.0,
+          "rank_score": 19460.0,
+          "history_rank_score": 19460.0
+        }
+      ]
+    },
+    "new_cache_entries": []
+  }
+]

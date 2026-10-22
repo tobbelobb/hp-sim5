@@ -1,0 +1,32 @@
+{
+  "returncode": 0,
+  "command": [
+    "node",
+    "autocal/control/cli/collect_sweep_data.mjs",
+    "--headless-url",
+    "http://127.0.0.1:45453",
+    "--sim",
+    "--no-spawn-rrf-simulator",
+    "--no-trace",
+    "--machineType",
+    "hangprinter_4",
+    "--sweep-config-file",
+    "/home/torbjorn/repos/hp-sim5/output/research/2026-10-09-trial004-upper-sweeps/upper.cfg",
+    "--fixed-targets",
+    "0,-489.0747667304494",
+    "--force-base-radii",
+    "30",
+    "--force-buildup-factor",
+    "0.636619",
+    "--force-low",
+    "0.011363575731199994",
+    "--force-mid",
+    "0.22727151462399986",
+    "--force-max",
+    "12.884911335493843",
+    "--no-auto-tune-force",
+    "--output-file",
+    "/home/torbjorn/repos/hp-sim5/output/research/2026-10-09-trial004-upper-sweeps/patched/sweeps.json",
+    "--return-to-origin"
+  ]
+}

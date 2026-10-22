@@ -1,0 +1,401 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index 1b8c449a..1d51c556 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -2,6 +2,13 @@ Prefer small code changes and shallow stack traces.
+ Delete outdated code paths. Update tests to use the newest conventions.
+ Use local Python interpreter: .venv/bin/python
+ 
++Before delivering changes to physics, motors, cable transport or scene dynamics,
++run `npm run test:physics`. It rebuilds native/Wasm engines and checks the real
++HP4 Print Logo motion at browser defaults plus loaded-state settling. A failed
++stability check blocks delivery; startup, unit/parity checks and higher-substep
++success do not replace it. Use headless production backends for experiments;
++browser experiments should be rare and preferably performed by a human.
++
+ For simulation experiments, robot design and autocal research, follow
+ `research/AGENTS.md`. The `hp-sim5-research-agent` launcher connects native physics
+ tools and Rerun inspection to Codex; see `research/README.md`.
+diff --git a/package.json b/package.json
+index b526de0b..c92ea58a 100644
+--- a/package.json
++++ b/package.json
+@@ -6,7 +6,8 @@
+   "scripts": {
+     "build:wasm": "node scripts/build_cable_wasm.mjs",
+     "build:native": "node scripts/build_native_physics.mjs",
+-    "test": "jest"
++    "test:physics": "npm run build:native -- --no-pgo && npm run build:wasm && node --test tests/benchmark/hp4_logo_stability.test.mjs tests/benchmark/hp4_stability.test.mjs",
++    "test": "npm run test:physics && jest"
+   },
+   "devDependencies": {
+     "@babel/core": "^7.27.1",
+diff --git a/public/wasm/cable_solver.wasm b/public/wasm/cable_solver.wasm
+index 4a6cf8749f1dc8d3eb8f8df6ff673a607589e952..816356a19130db88db21971e1562b226ffbf0ba3 100755
+GIT binary patch
+delta 1522
+zcmZ9LU1%It6vyYx-A%GPyUC`zvmdi2d+sG&Q@6xMDs>9lU8$z~&;$wrDYV^{O6}&O
+zCR7uRNwy#e78H$gQII4PDuOKp`Y-_>8fmFTMe2*>!3V80R&DX)#Rdy{CL5Bw*@5|=
+z-}#(#cV=nL_<YS+oMiCH<tcXk4t#j|nY;bd(Ox~T=TYm_FM?<YYXyxL<)r~gLa)3&
+z0No__2cU-}KM1!2y|qlr=^BDOB;}bQn2>jeU=dRC<6+=nxmSkaD;?tUtq~YJ9mmGP
+zR0Vx~;bvro$#pBdKGI*PLM6wv2Tb^}*caBY1)D1(TzF~2%bHmdAZj3m3oCNDszqkc
+zRjZn2U@ua2aInJt)D)f#w}c|@;Zb-SOn;88_#UuA(?}SoGRJN-i1wNC8?gpW<0krL
+z;w<cbh>Ch>Afh=Z%!40%pS@#rwLW#yD`E1)S@=3^VbI|graVcx`(B1epdp2E2Q7K(
+z6`1iSkuLe;7$oQr5@T?!-gAEp9;^5CjKfJvy*LgXP?X<|1Csnb4x><XUwD<AmUjjR
+zwT&N7ZkT@_;3>KA8a!FD&~lLF*mEL{X=lzeOM-T&nJ)@~!kH7<%@$?aP;7R=?CgRt
+z9Uey$@gs*PNYkWkq!y`Z%q)Ln?oZRp5b*Ylq3O(H2;1mxV8WSSA4Mj`0>pC^GwB}l
+zGQ8RHoe4;>EN10r6Y%IM+?s6AWP^?o1(GB&>xo5ONYV!S3d>Nzl+83Um&i=k%tbP-
+zn)xZ2Y0r#$TQ4$)M?*UOS6Fllufs7N3^_Xm?OAhkc^(M)j7_4)_T?Cgpo5tOF_Zs~
+z2gxNCcqBxnm!=?Xm?2h6;z3zH52i0*U`96Uu&a>{2ay|cavCyn;5-;R44S>fL*B=5
+z6U5U?JSGdP5KE<b)Em^v<6EQG2g~8TRC}}v*^WeAC?bML*Yj!7w&ib=eN{M~PuT1b
+z`Y>p-Jc(hmCrC`2?I8)+tdk^SGbD-HEJ+f#S%f5HvnG<*oA;{V-mB{S%J8$?c}vf<
+z{?MptyXg%p`661F^e4Cfmj18aeU-kBcEx{#IHB-A#CsKPk>_sfndxKHZl~ftPOO%l
+z*v6%8e42QVQtz?aZ-lr*iI3Lv4($jzb}0!LWcR9m28QJPDm~t}6h$R^lQ^SrsY%na
+z3LhnYSm8Cw=L#RDI4az~tv*;^e?)5|N0(BNBQ7eupIF`Z0I{va4-r4E@QVBHFZvZ|
+feUBb2rTE{M<zMw#_`-$X^gjS5+`oR;zl{73><bnF
+
+delta 1623
+zcmZ9LO>7%g5Xax_v)$P1O>FFq*EViumtq15PK%0QktjB8Rg55o1Eq)$#leTl`6#LS
+z5h%?r0*RgwQq(*Ihu9l|K;k264~~S8a)1^A2ZSor0|%&78lVz6fYd6jVAf8Xm)O$&
+z=QlHN-n_3buc-^y)cF$}=FUv<vr8~@X7`n6oJ3hEDn(?y%BNt3G*)8fp!jSA3@D4U
+zBe0F+>Im#1DUQOWaJijHIfXGOLPi`MgX3ap3{Ha~J{SiR(#@~N;X4IV;^YL3KAXZ#
+zrKuVQ_G+ETOD9^EhQX2xwLZ?SbBp8PUabqu6m=t`HIri(cGfJd^vY^NumpRw81g=T
+zA#k0SIwrJKG~Rsi5WEBa;L-)L=(5=C8?MWkios4E0tTv||82<HJY9J!8Dh-Tk&Db>
+z=)b*Hjv=C6xAa}7e$Fqch4_xDMni&P_%M90r7_}}X*7H>nhza;dmv<Bw})v_I||dm
+z4ANh``x~Ta{h4F%^?J|BF}QEN=kZCXQtB6zumuLi`AI;Me<$G(3^otEO3n;z0o%n^
+ze<rS)%a53r_~<owc*sD*^H;RrN@Loq`{s~EU9`;uRu;2f-OAr8QPCJ?Z&ktk?3|^0
+zW;g1XdEYZrq-oL|sX?l%)5{;~`|@-T!u~pwsCx~JVvfElro4vLnqT!}Vd6T)bowU!
+zj8;cvrabbt5^`R>PUEPC-=g^ZI1D((S~Ds&qk5)=X(U0~Op+`WCdsQ9C@n$_Et@kk
+z7s$l6IZtM`ZGKE<-ZvBeM$B{1Ohgqrak>mwXBMT)(5@A>dGm$WVYkv1zS)ISv4R>C
+zaR;(lH5yP?{fto?fj*8_#KWFBOH7>tGe$mZ&WuJur44$DhW*z7T@6P$HA}f>L^Q5|
+z4yt(4fkH5hXeNd0K+kmlN%giQ^|fFo{AcqcSdT84-D2AkBnrVS9Rm&THFIl|x2MJk
+zMuxL=Id5JF)Wr>lo}w-WTzXeK4f=GrkQZ;daBoq!`C}Nsh|P;6Nt-`NLTlbiqT0Nd
+zBx-XcN!i>W$=N(clCXIPN%z~!E;N^2<$(%Z7QGjhp7^hu80)9WhXOICkzQ)<zo@Jz
+z&N+HWn<f7b#3_kah__3epgQ+U?2(<2xI*zeB_1Z0>%F|5hgo&KgN+eyl?wPQ7d%3|
+zMT#HY!25{rmg1j??Y}Droe5gUU6Q*IWb6)!f1+V1@p<ANiK`uq<t2WJSgv=2@=YoJ
+zG{td^9roOY0-YNQn8by(0c?P{Eb$Ivc^`HX+fw`qV)<ZxS#4;X4*Yr6Y+P1OLwtsu
+cX=%`VqWXt23*R&Ye=2_iIL&|lQqINx2N;GZUH||9
+
+diff --git a/research/AGENTS.md b/research/AGENTS.md
+index 99ca4624..5478d56b 100644
+--- a/research/AGENTS.md
++++ b/research/AGENTS.md
+@@ -1,6 +1,14 @@
+ Use `.venv/bin/python` and keep source changes small. Read `research/README.md`
+ for the tools and `research/investigation.md` for the integration rationale.
+ 
++Before delivering physics, motor, cable transport or scene dynamics changes,
++run `npm run test:physics` and resolve every failure. This bounded headless gate
++rebuilds native/Wasm physics, runs the real HP4 Print Logo prefix at the default
++one substep and checks loaded-state settling. Do not dismiss a stability failure
++as a legacy fixture or substitute an idle run, parity checks or extra substeps.
++Preserve failing evidence. Use headless production backends for experiments;
++browser experiments should be rare and preferably performed by a human.
++
+ Before choosing autocal recording and compute budgets, read
+ `research/autocal-recording-performance.md`. Its matched HP3 replay measured
+ about 4.8/5.0/5.5/15.2 seconds and 0/3.4/11/54 MB RRD for
+diff --git a/research/More_on_browser_based_work.md b/research/More_on_browser_based_work.md
+index 3eee128c..812781f5 100644
+--- a/research/More_on_browser_based_work.md
++++ b/research/More_on_browser_based_work.md
+@@ -1,10 +1,10 @@
+-The hp-sim-3d js app is a usable interactive simulator, while the Python version
+-is primarily a headless tool for scripted runs and analysis.
+-Use the browser based simulation whenever you want to
+- - see and control a run as it happens,
+- - try a print without preparing a simulation script,
+- - explore machines interactively. (The browser UI lets you choose presets, upload authored scenes, and add or remove machines.)
+- - Inspect browser-specific behavior.
++Use the headless production native/Wasm backends for research experiments and
++stability checks. They share the browser's scene construction and physics
++pipeline; `npm run test:physics` exercises the production HP4 logo without a UI.
++Browser experiments should be rare and preferably performed by a human. Use
++them when a browser-specific issue cannot be reproduced headlessly, or when the
++user explicitly requests interactive inspection. The browser supports presets,
++scene uploads and multiple machines for those cases.
+ 
+ For shared browser work call `start_browser_service(record=True)` when recording
+ is needed, open its exact URL, inspect `browser_status`, and pass that page's
+diff --git a/research/README.md b/research/README.md
+index 71aeaee0..db252588 100644
+--- a/research/README.md
++++ b/research/README.md
+@@ -12,6 +12,21 @@ This README contains the operating instructions and tool arguments.
+ 
+ ## Setup and interactive use
+ 
++### Required physics stability check
++
++Run `npm run test:physics` before delivering physics, motor, cable transport or
++scene dynamics changes. It rebuilds native and browser Wasm engines, replays the
++first 20 seconds of the bundled HP4 **Print Logo** at the default one substep,
++and checks loaded-state settling at one, two and four substeps. The logo checks
++every step for finite body state, bounded motion around the print plane, speed,
++rotation and missed steps. It also covers the JavaScript fallback for two seconds.
++Failures block delivery. `npm test` and CI run this gate automatically. Prefer
++these headless production backends for experiments; browser experiments should
++be rare and preferably performed by a human. This is a stability regression,
++not calibration accuracy or hardware validation.
++
++### Setup
++
+ From the repository root:
+ 
+ ```bash
+diff --git a/research/faster-motor-update.md b/research/faster-motor-update.md
+index 26a25430..01d19d2d 100644
+--- a/research/faster-motor-update.md
++++ b/research/faster-motor-update.md
+@@ -2,6 +2,11 @@
+ 
+ Status: explanatory research report. The alternative motor formula remains experimental.
+ 
++Integration correction: the separate rolling-slip removal was withdrawn after
++it caused explosive HP4 Print Logo motion. The faster formula was never merged.
++Historical no-slip trials below remain research evidence, not validation of a
++production solver. See the [stability correction](hp4-logo-stability.md).
++
+ ## Abstract
+ 
+ The experimental motor update compensates a spring load evaluated at a predicted rotor pose. Its local derivation removes an extra timestep-dependent resistance term. Saved HP4 simulations show both promise and substantial integration error: at 30 seconds, the alternative reaches Y=633.7 mm with one substep and 572.4 mm with sixteen, while X changes from 675.5 to 3.9 mm. The coarse trajectory is therefore unreliable. Similar fine-step endpoints do not establish matching time histories or physical accuracy. These simulated results predate the new motor-feedback fix; no hardware reference was used.
+diff --git a/scripts/run_ci_tests.sh b/scripts/run_ci_tests.sh
+index 07fccd1f..bac274b5 100755
+--- a/scripts/run_ci_tests.sh
++++ b/scripts/run_ci_tests.sh
+@@ -9,6 +9,10 @@ echo "== Build shared Rust physics for native and Wasm =="
+ echo "== Native Rust smoke tests =="
+ (cd "$ROOT" && cargo test --manifest-path src/wasm/cable_solver/Cargo.toml --locked)
+ 
++echo "== HP4 production logo and loaded-state stability (mandatory) =="
++(cd "$ROOT" && node --test tests/benchmark/hp4_logo_stability.test.mjs \
++  tests/benchmark/hp4_stability.test.mjs)
++
+ echo "== Rust source contract, JS parity and host integration =="
+ (cd "$ROOT" && node --expose-gc --test tests/benchmark/native_physics_engine.test.mjs \
+   tests/benchmark/wasm_cable_solver.test.mjs tests/benchmark/physics_engine_ui.test.mjs \
+diff --git a/src/js/cable_joints_3d/cable_friction_system.js b/src/js/cable_joints_3d/cable_friction_system.js
+index 548b82d9..7e91d09c 100644
+--- a/src/js/cable_joints_3d/cable_friction_system.js
++++ b/src/js/cable_joints_3d/cable_friction_system.js
+@@ -97,12 +97,10 @@ function _evenOutTensionFriction(world) {
+         const effectiveRadius = radius + (layeringEnabled(world) ? (path.cableHalfWidth ?? 0.0) : 0.0);
+ 
+         const freeRollingLink = linkType === 'rolling' && world.getComponent(linkEntityId, SpoolStateComponent);
+-        // An inertial rolling link transports cable through its rotation.
+-        // Redistributing here also lets cable slip while the wheel is still,
+-        // erasing its restoring torque and allowing perpetual numerical spin.
+-        if (freeRollingLink) continue;
++        // Skipping redistribution alone destabilizes reeved paths. A no-slip
++        // replacement must also repair the coupled transport/rotor solve.
+ 
+-        if (mu > epsilon) {
++        if (!freeRollingLink && mu > epsilon) {
+           const storedLengthOnLink = path.stored[i + 1];
+           let wrapAngle = 0;
+           if (linkType === 'rolling' && effectiveRadius > epsilon && Math.abs(storedLengthOnLink) > epsilon) {
+diff --git a/src/python/cable_joints_3d/cable_friction_system.py b/src/python/cable_joints_3d/cable_friction_system.py
+index a09cf904..49ba1c22 100644
+--- a/src/python/cable_joints_3d/cable_friction_system.py
++++ b/src/python/cable_joints_3d/cable_friction_system.py
+@@ -50,10 +50,8 @@ def _redistribute_path(world, path):
+             radius = radius_component.radius if radius_component is not None else 0.
+             radius += path.cable_half_width if layering_enabled(world) else 0.
+             free_rolling = link_type == 'rolling' and world.get_component(entity, SpoolStateComponent) is not None
+-            # Inertial rolling links transport cable through rotation, not slip.
+-            if free_rolling:
+-                continue
+-            if mu > EPSILON:
++            # No-slip needs a coupled transport/rotor repair; skipping this pass alone is unstable.
++            if not free_rolling and mu > EPSILON:
+                 wrap_angle = 0.
+                 stored = path.stored[index + 1]
+                 if link_type == 'rolling' and radius > EPSILON and abs(stored) > EPSILON:
+diff --git a/src/wasm/cable_solver/src/engine.rs b/src/wasm/cable_solver/src/engine.rs
+index 8742e014..42f5c926 100644
+--- a/src/wasm/cable_solver/src/engine.rs
++++ b/src/wasm/cable_solver/src/engine.rs
+@@ -1636,14 +1636,10 @@ impl PhysicsWorld {
+                     let kind = c.kind(i + 1);
+                     let id = c.entity(i, 1);
+                     let e = &self.entities[id];
+-                    // Inertial rolling links transport cable through rotation,
+-                    // not an independent rest-length redistribution.
+-                    if kind == 1 && has(e, SPOOL) {
+-                        continue;
+-                    }
+                     let mut threshold = 1.0;
+                     let mut active = false;
+-                    if (kind == 1 || kind == 2) && e[105] > EPS {
++                    // No-slip needs a coupled transport/rotor repair; skipping this pass alone is unstable.
++                    if (kind == 1 || kind == 2) && !(kind == 1 && has(e, SPOOL)) && e[105] > EPS {
+                         let r = e[104]
+                             + if self.options[3] != 0.0 {
+                                 c.data[6]
+diff --git a/tests/benchmark/README.md b/tests/benchmark/README.md
+index 7306b7d4..6f5cf7ec 100644
+--- a/tests/benchmark/README.md
++++ b/tests/benchmark/README.md
+@@ -1,5 +1,11 @@
+ # Native HP4 logo benchmark
+ 
++For the required bounded regression gate, run `npm run test:physics`. It rebuilds
++native/Wasm physics and checks the first 20 seconds of the production layered
++HP4 logo at the browser's default one substep, the JavaScript fallback for two
++seconds, and loaded-state settling at one, two and four substeps. It runs
++automatically under `npm test` and CI. The longer benchmarks below are optional.
++
+ For production JavaScript HP3/HP4 physics, see
+ [headless JS profiling](HEADLESS_JS_PROFILING.md), including per-system timing,
+ V8 CPU/allocation profiles, GC measurements and frozen autocal replay.
+diff --git a/tests/benchmark/hp4_open_loop_substeps.test.mjs b/tests/benchmark/hp4_open_loop_substeps.test.mjs
+index e45076f8..a53aad8a 100644
+--- a/tests/benchmark/hp4_open_loop_substeps.test.mjs
++++ b/tests/benchmark/hp4_open_loop_substeps.test.mjs
+@@ -1,31 +1,13 @@
+ import test from 'node:test';
+ import assert from 'node:assert/strict';
+ import fs from 'node:fs';
+-import { Readable } from 'node:stream';
+ import { createHeadlessWorld } from '../../hp-sim-3d/app/headlessWorld.js';
+ import { getMachineMotorDiagnostics } from '../../hp-sim-3d/app/motor-diagnostics.js';
+ import { StepperMotorComponent } from '../../hp-sim-3d/app/hangprinter_stepper_motor.js';
+ import { WasmPhysicsEngine } from '../../src/js/cable_joints_3d/wasm_physics_engine.js';
+-import { parseRrfMotorAxisMapFromConfigText } from '../../integrations/rrf/rrfFirmwareModel.js';
+-import { FileFormat } from '../../integrations/shared/fileFormatUtils.js';
+ 
+-// Schedule the real bundled logo at the firmware's 2 ms cadence. Keep only
+-// the prefix needed to expose both the immediate and the later missed steps.
+-globalThis.self = { addEventListener() {} };
+-globalThis.postMessage = message => {
+-  if (message.type === 'error') throw new Error(message.message);
+-};
+-const { RrfCanPlayer } = await import('../../integrations/rrf/rrfCanPlayer.js');
+-const player = new RrfCanPlayer();
+-player.setDt(.002);
+-player.setAsapMode(true);
+-player.setDriverToAxis(parseRrfMotorAxisMapFromConfigText(fs.readFileSync(
+-  new URL('../../RRF/run/vsd/sys/config_hp4_w_line_layers.g', import.meta.url), 'utf8')));
+-const commands = [];
+-player.sendCommand = async command => { if (commands.length < 10000) commands.push(command); };
+-await player.run(Readable.toWeb(fs.createReadStream(
+-  new URL('../../public/RRF_CAN_commands/Hangprinter_logo6_hp4_w_line_layers.can', import.meta.url))), FileFormat.RRF_CAN_BINARY);
+-assert.equal(commands.length, 10000);
++import { commands } from './hp4_logo_commands.mjs';
++
+ const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp4_rigid_body.usda', import.meta.url), 'utf8');
+ const module = new WebAssembly.Module(fs.readFileSync(new URL('../../public/wasm/cable_solver.wasm', import.meta.url)));
+ 
+diff --git a/tests/benchmark/hp4_stability.test.mjs b/tests/benchmark/hp4_stability.test.mjs
+index 93e558b2..7d16d774 100644
+--- a/tests/benchmark/hp4_stability.test.mjs
++++ b/tests/benchmark/hp4_stability.test.mjs
+@@ -47,6 +47,6 @@ function settle(substeps) {
+ }
+ 
+ for (const substeps of [1, 2, 4]) {
+-  test(`opt-in HP4 loaded recording state settles at production firmware cadence: ${substeps} substeps`,
++  test(`HP4 loaded recording state settles at production firmware cadence: ${substeps} substeps`,
+     () => settle(substeps));
+ }
+diff --git a/tests/benchmark/native_physics_engine.test.mjs b/tests/benchmark/native_physics_engine.test.mjs
+index 17034879..0c744ead 100644
+--- a/tests/benchmark/native_physics_engine.test.mjs
++++ b/tests/benchmark/native_physics_engine.test.mjs
+@@ -5,25 +5,10 @@ import { setImmediate } from 'node:timers/promises';
+ import { runFixture } from '../parity3d/oracle.mjs';
+ import { createHeadlessWorld } from '../../hp-sim-3d/app/headlessWorld.js';
+ import { NativePhysicsEngine, loadNativePhysicsAddon } from '../../src/js/cable_joints_3d/native_physics_engine.js';
+-import { PositionComponent, SceneEntityInfoComponent, EncoderComponent } from '../../src/js/cable_joints_3d/ecs.js';
++import { PositionComponent } from '../../src/js/cable_joints_3d/ecs.js';
+ import { runTrajectory } from '../../scripts/profile_headless.mjs';
+ 
+ const fixtures = new URL('../fixtures/python_3d_parity/', import.meta.url);
+-test('held HP4 cables do not drive passive wheels continuously', () => {
+-  const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp4_rigid_body.usda', import.meta.url), 'utf8');
+-  const { world, dt } = createHeadlessWorld(scene, { lineLayeringEnabled: false, closedLoopMotorsEnabled: true });
+-  try {
+-    for (let step = 0; step < 1000; step++) world.update(dt);
+-    const wheels = world.query([SceneEntityInfoComponent, EncoderComponent])
+-      .filter(id => world.getComponent(id, SceneEntityInfoComponent).name.startsWith('Wheel'));
+-    assert.equal(wheels.length, 24);
+-    for (const id of wheels) assert(Math.abs(world.getComponent(id, EncoderComponent).angle) < .1,
+-      `${world.getComponent(id, SceneEntityInfoComponent).name} rotated without cable transport`);
+-  } finally {
+-    world.getResource('cableSolverBackend').dispose();
+-  }
+-});
+-
+ test('local defaults are native, isolated, editable and safe to clear', () => {
+   const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp3_rigid_body.usda', import.meta.url), 'utf8');
+   const first = createHeadlessWorld(scene), second = createHeadlessWorld(scene);
+diff --git a/tests/js/cable_joints_3d/cableFrictionSystem.test.js b/tests/js/cable_joints_3d/cableFrictionSystem.test.js
+index 621cbfd2..106b9939 100644
+--- a/tests/js/cable_joints_3d/cableFrictionSystem.test.js
++++ b/tests/js/cable_joints_3d/cableFrictionSystem.test.js
+@@ -108,7 +108,7 @@ describe('CableFrictionSystem (3D)', () => {
+     expect(10.0 - expectedHigh).toBeCloseTo(threshold * (6.0 - expectedLow), 8);
+   });
+ 
+-  test('free-spinning rolling links conserve material lengths during friction', () => {
++  test('free-spinning rolling links equalize tension despite material friction', () => {
+     const world = new World();
+ 
+     const left = world.createEntity();
+@@ -164,9 +164,7 @@ describe('CableFrictionSystem (3D)', () => {
+     const system = new CableFrictionSystem();
+     system.update(world, 1 / 2000);
+ 
+-    // Tension differences accelerate the inertial wheel in the cable solve;
+-    // this pass must not independently move material across its surface.
+-    expect(world.getComponent(joint0, CableJointComponent).restLength).toBe(7.0);
+-    expect(world.getComponent(joint1, CableJointComponent).restLength).toBe(7.0);
++    expect(world.getComponent(joint0, CableJointComponent).restLength).toBeCloseTo(9.0, 8);
++    expect(world.getComponent(joint1, CableJointComponent).restLength).toBeCloseTo(5.0, 8);
+   });
+ });
+diff --git a/tests/js/hp-sim-3d/rigidBodyConstraintSolver.test.js b/tests/js/hp-sim-3d/rigidBodyConstraintSolver.test.js
+index 74694c50..269d2533 100644
+--- a/tests/js/hp-sim-3d/rigidBodyConstraintSolver.test.js
++++ b/tests/js/hp-sim-3d/rigidBodyConstraintSolver.test.js
+@@ -776,7 +776,7 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
+     expect(getSpoolRotationAngle(spoolState, orientation.quaternion)).toBeCloseTo(0.0, 12);
+   });
+ 
+-  test('fixed torque-mode spool segments load the motor without reporting solver force', () => {
++  test('fixed torque-mode spool segments report tension and load the motor', () => {
+     const stepper = new StepperMotorComponent();
+     stepper.torqueMode = true;
+ 
+@@ -839,7 +839,7 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
+     new PBDCableConstraintSolver().update(world, 0.0);
+ 
+     const joint = world.getComponent(jointEntity, CableJointComponent);
+-    expect(joint.constraintForceMagnitude).toBeCloseTo(0.0, 12);
++    expect(joint.constraintForceMagnitude).toBeCloseTo(100.0, 12);
+     expect(joint.transferredConstraintForceMagnitude).toBeCloseTo(0.0, 12);
+     expect(world.getResource('torqueModeCableLoadTorques')?.get(spool)).toBeCloseTo(100.0, 9);
+     expect(world.getResource('torqueModeCableLoadStiffnesses')?.get(spool)).toBeCloseTo(1000.0, 9);
+diff --git a/tests/python/cable_joints_3d/test_differential_parity.py b/tests/python/cable_joints_3d/test_differential_parity.py
+index dfb925fc..5e935a31 100644
+--- a/tests/python/cable_joints_3d/test_differential_parity.py
++++ b/tests/python/cable_joints_3d/test_differential_parity.py
+@@ -31,18 +31,6 @@ def test_comparator_rejects_changed_physics_and_structure():
+         assert_equivalent(changed, expected, **fixture['tolerance'])
+ 
+ 
+-@pytest.mark.parametrize('mu', [0., .3])
+-def test_free_rolling_friction_preserves_material_lengths(mu):
+-    fixture = json.loads((FIXTURES / 'cable_friction.json').read_text())
+-    guide = next(e for e in fixture['entities'] if e['name'] == 'free_guide')
+-    guide['components']['CoefficientOfFrictionComponent'] = [mu]
+-    for run in (run_js, run_python):
+-        for snapshot in run(fixture)['snapshots']:
+-            entities = snapshot['entities']
+-            assert entities['free_j0']['CableJointComponent']['restLength'] == 1.2
+-            assert entities['free_j1']['CableJointComponent']['restLength'] == .8
+-
+-
+ def test_force_readback_uses_final_multipliers_and_transfers():
+     fixture = json.loads((FIXTURES / 'cable_force_readback.json').read_text())
+     for run in (run_js, run_python):

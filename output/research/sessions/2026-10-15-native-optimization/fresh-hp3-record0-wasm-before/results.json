@@ -1,0 +1,179 @@
+[
+  {
+    "wall_s": 0.32040267599995786,
+    "simulation_s": 0.1952434230001927,
+    "construction_s": 0.10732212300035826,
+    "manifest": {
+      "schema_version": 2,
+      "backend": "headless-js",
+      "physics_engine": "rust-wasm",
+      "cable_solver_device": null,
+      "run_id": "40a76507c4b545bc862aa9069ac727a5",
+      "label": "native throughput paired benchmark",
+      "status": "complete",
+      "scene": "public/usd_scenes/hp3_rigid_body.usda",
+      "scene_generation": 1,
+      "steps": 200,
+      "dt_s": 0.002,
+      "commands_sha256": "da318ceff12b28df9457c776c443accd1b3bb6bfd425af747c4e01cd533bd0d6",
+      "scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+      "python_source_sha256": "f4cd75046358df3be787d38264ece1d5c4360d0ee0591f6e1ec3a93604a71b52",
+      "git_revision": "3a5e35e7b4d6c48e903531812044b2c5a7d36e8e",
+      "python": "3.12.3",
+      "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+      "packages": {
+        "numpy": "2.4.3",
+        "usd-core": "26.3",
+        "rerun-sdk": "0.38.1"
+      },
+      "construction_wall_s": 0.10732212300035826,
+      "record": false,
+      "artifacts": {
+        "manifest": "/tmp/hp-sim5-performance-before-3a5e35e7/output/research/experiments/40a76507c4b545bc862aa9069ac727a5/manifest.json",
+        "scene": "/tmp/hp-sim5-performance-before-3a5e35e7/output/research/experiments/40a76507c4b545bc862aa9069ac727a5/scene.usda",
+        "commands": "/tmp/hp-sim5-performance-before-3a5e35e7/output/research/experiments/40a76507c4b545bc862aa9069ac727a5/commands.json",
+        "telemetry": "/tmp/hp-sim5-performance-before-3a5e35e7/output/research/experiments/40a76507c4b545bc862aa9069ac727a5/telemetry.jsonl",
+        "snapshot": "/tmp/hp-sim5-performance-before-3a5e35e7/output/research/experiments/40a76507c4b545bc862aa9069ac727a5/final.json"
+      },
+      "physics_artifact": null,
+      "js_physics_source_sha256": "d6d9556817a0130385c38780797eed7f1d83c560c74c6223ce526bae2a36c6cd",
+      "warnings": [],
+      "metrics": {
+        "effector_displacement_m": {
+          "world/machines/default/effector": 0.003239851633729248
+        },
+        "peak_cable_force_n": 12.610862815384534,
+        "peak_abs_length_error_m": 0.006042226667559714,
+        "peak_abs_tracking_error_rad": 0.15492888891178128,
+        "peak_total_missed_steps": 1
+      },
+      "simulation_wall_s": 0.1952434230001927
+    },
+    "archived": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/fresh-hp3-record0-wasm-before/run-0",
+    "canonical_scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/fresh-hp3-record0-wasm-before/run-0/telemetry.jsonl",
+    "steps": 200,
+    "repeat": 0,
+    "machine": "hp3",
+    "record": false,
+    "mode": "fresh"
+  },
+  {
+    "wall_s": 0.2840493610001431,
+    "simulation_s": 0.18889499199985949,
+    "construction_s": 0.08068415499974435,
+    "manifest": {
+      "schema_version": 2,
+      "backend": "headless-js",
+      "physics_engine": "rust-wasm",
+      "cable_solver_device": null,
+      "run_id": "0d9a4669fa8a4c9aa2fd521ea3263fa0",
+      "label": "native throughput paired benchmark",
+      "status": "complete",
+      "scene": "public/usd_scenes/hp3_rigid_body.usda",
+      "scene_generation": 1,
+      "steps": 200,
+      "dt_s": 0.002,
+      "commands_sha256": "da318ceff12b28df9457c776c443accd1b3bb6bfd425af747c4e01cd533bd0d6",
+      "scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+      "python_source_sha256": "f4cd75046358df3be787d38264ece1d5c4360d0ee0591f6e1ec3a93604a71b52",
+      "git_revision": "3a5e35e7b4d6c48e903531812044b2c5a7d36e8e",
+      "python": "3.12.3",
+      "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+      "packages": {
+        "numpy": "2.4.3",
+        "usd-core": "26.3",
+        "rerun-sdk": "0.38.1"
+      },
+      "construction_wall_s": 0.08068415499974435,
+      "record": false,
+      "artifacts": {
+        "manifest": "/tmp/hp-sim5-performance-before-3a5e35e7/output/research/experiments/0d9a4669fa8a4c9aa2fd521ea3263fa0/manifest.json",
+        "scene": "/tmp/hp-sim5-performance-before-3a5e35e7/output/research/experiments/0d9a4669fa8a4c9aa2fd521ea3263fa0/scene.usda",
+        "commands": "/tmp/hp-sim5-performance-before-3a5e35e7/output/research/experiments/0d9a4669fa8a4c9aa2fd521ea3263fa0/commands.json",
+        "telemetry": "/tmp/hp-sim5-performance-before-3a5e35e7/output/research/experiments/0d9a4669fa8a4c9aa2fd521ea3263fa0/telemetry.jsonl",
+        "snapshot": "/tmp/hp-sim5-performance-before-3a5e35e7/output/research/experiments/0d9a4669fa8a4c9aa2fd521ea3263fa0/final.json"
+      },
+      "physics_artifact": null,
+      "js_physics_source_sha256": "d6d9556817a0130385c38780797eed7f1d83c560c74c6223ce526bae2a36c6cd",
+      "warnings": [],
+      "metrics": {
+        "effector_displacement_m": {
+          "world/machines/default/effector": 0.003239851633729248
+        },
+        "peak_cable_force_n": 12.610862815384534,
+        "peak_abs_length_error_m": 0.006042226667559714,
+        "peak_abs_tracking_error_rad": 0.15492888891178128,
+        "peak_total_missed_steps": 1
+      },
+      "simulation_wall_s": 0.18889499199985949
+    },
+    "archived": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/fresh-hp3-record0-wasm-before/run-1",
+    "canonical_scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/fresh-hp3-record0-wasm-before/run-1/telemetry.jsonl",
+    "steps": 200,
+    "repeat": 1,
+    "machine": "hp3",
+    "record": false,
+    "mode": "fresh"
+  },
+  {
+    "wall_s": 0.3093714369997542,
+    "simulation_s": 0.20256331200016575,
+    "construction_s": 0.09188790700000027,
+    "manifest": {
+      "schema_version": 2,
+      "backend": "headless-js",
+      "physics_engine": "rust-wasm",
+      "cable_solver_device": null,
+      "run_id": "ac14324c39724f418fb4486e3a3867bd",
+      "label": "native throughput paired benchmark",
+      "status": "complete",
+      "scene": "public/usd_scenes/hp3_rigid_body.usda",
+      "scene_generation": 1,
+      "steps": 200,
+      "dt_s": 0.002,
+      "commands_sha256": "da318ceff12b28df9457c776c443accd1b3bb6bfd425af747c4e01cd533bd0d6",
+      "scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+      "python_source_sha256": "f4cd75046358df3be787d38264ece1d5c4360d0ee0591f6e1ec3a93604a71b52",
+      "git_revision": "3a5e35e7b4d6c48e903531812044b2c5a7d36e8e",
+      "python": "3.12.3",
+      "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+      "packages": {
+        "numpy": "2.4.3",
+        "usd-core": "26.3",
+        "rerun-sdk": "0.38.1"
+      },
+      "construction_wall_s": 0.09188790700000027,
+      "record": false,
+      "artifacts": {
+        "manifest": "/tmp/hp-sim5-performance-before-3a5e35e7/output/research/experiments/ac14324c39724f418fb4486e3a3867bd/manifest.json",
+        "scene": "/tmp/hp-sim5-performance-before-3a5e35e7/output/research/experiments/ac14324c39724f418fb4486e3a3867bd/scene.usda",
+        "commands": "/tmp/hp-sim5-performance-before-3a5e35e7/output/research/experiments/ac14324c39724f418fb4486e3a3867bd/commands.json",
+        "telemetry": "/tmp/hp-sim5-performance-before-3a5e35e7/output/research/experiments/ac14324c39724f418fb4486e3a3867bd/telemetry.jsonl",
+        "snapshot": "/tmp/hp-sim5-performance-before-3a5e35e7/output/research/experiments/ac14324c39724f418fb4486e3a3867bd/final.json"
+      },
+      "physics_artifact": null,
+      "js_physics_source_sha256": "d6d9556817a0130385c38780797eed7f1d83c560c74c6223ce526bae2a36c6cd",
+      "warnings": [],
+      "metrics": {
+        "effector_displacement_m": {
+          "world/machines/default/effector": 0.003239851633729248
+        },
+        "peak_cable_force_n": 12.610862815384534,
+        "peak_abs_length_error_m": 0.006042226667559714,
+        "peak_abs_tracking_error_rad": 0.15492888891178128,
+        "peak_total_missed_steps": 1
+      },
+      "simulation_wall_s": 0.20256331200016575
+    },
+    "archived": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/fresh-hp3-record0-wasm-before/run-2",
+    "canonical_scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/fresh-hp3-record0-wasm-before/run-2/telemetry.jsonl",
+    "steps": 200,
+    "repeat": 2,
+    "machine": "hp3",
+    "record": false,
+    "mode": "fresh"
+  }
+]

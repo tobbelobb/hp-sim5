@@ -1,0 +1,365 @@
+[
+  {
+    "wall_s": 0.2820453600002111,
+    "simulation_s": 0.16388103899998896,
+    "construction_s": 0.10336783200000355,
+    "manifest": {
+      "schema_version": 2,
+      "backend": "headless-js",
+      "physics_engine": "rust-native",
+      "cable_solver_device": null,
+      "run_id": "8913224f1a8241b8ad103df992b7c569",
+      "label": "native throughput paired benchmark",
+      "status": "complete",
+      "scene": "public/usd_scenes/hp3_rigid_body.usda",
+      "scene_generation": 1,
+      "steps": 200,
+      "dt_s": 0.002,
+      "commands_sha256": "da318ceff12b28df9457c776c443accd1b3bb6bfd425af747c4e01cd533bd0d6",
+      "scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+      "python_source_sha256": "e12a6b90e0a3065e6214573709cd713eaf6c3a657eab2e81575c596f5dab4e74",
+      "git_revision": "3a5e35e7b4d6c48e903531812044b2c5a7d36e8e",
+      "python": "3.12.3",
+      "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+      "packages": {
+        "numpy": "2.4.3",
+        "usd-core": "26.3",
+        "rerun-sdk": "0.38.1"
+      },
+      "construction_wall_s": 0.10336783200000355,
+      "record": false,
+      "artifacts": {
+        "manifest": "/home/torbjorn/repos/hp-sim5/output/research/experiments/8913224f1a8241b8ad103df992b7c569/manifest.json",
+        "scene": "/home/torbjorn/repos/hp-sim5/output/research/experiments/8913224f1a8241b8ad103df992b7c569/scene.usda",
+        "commands": "/home/torbjorn/repos/hp-sim5/output/research/experiments/8913224f1a8241b8ad103df992b7c569/commands.json",
+        "telemetry": "/home/torbjorn/repos/hp-sim5/output/research/experiments/8913224f1a8241b8ad103df992b7c569/telemetry.jsonl",
+        "snapshot": "/home/torbjorn/repos/hp-sim5/output/research/experiments/8913224f1a8241b8ad103df992b7c569/final.json"
+      },
+      "physics_artifact": {
+        "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "bcf14930c221bead652a708a9c29ec235d4659ba540426359cf3ce1c20b1e548",
+        "build": {
+          "profile": "release",
+          "platform": "linux",
+          "arch": "x64",
+          "nodeApi": 8,
+          "artifactSha256": "bcf14930c221bead652a708a9c29ec235d4659ba540426359cf3ce1c20b1e548",
+          "sources": {
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "native/node_bridge.c": "c8d4ad5a269dcdd073c13fb0ce24f25fd009a38434842f1a7301264a8994ee85",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "c4a2609f63595e243c1c06efb132f692df95a7ff785333a60efd45e2b6062ca6",
+            "src/lib.rs": "088d64e1de9a45fe692d5994081050e0ab5ac9e9996d504261b2e8280649ed04"
+          },
+          "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+          "target": "x86_64-unknown-linux-gnu",
+          "rustflags": "-C\u001ftarget-cpu=native\u001f-C\u001fprofile-use=/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/pgo-IUgVJd/merged.profdata",
+          "compiler": "cc",
+          "buildScriptSha256": "c810abe7feb293029384535690395e24f4f9d9f9ca6a854029bf24c59d1d866a",
+          "pgo": {
+            "profile": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/pgo-IUgVJd/merged.profdata",
+            "sha256": "619248229a51769ab19841c44edc68b5665b2ebc595449dce6bf73d03a1efd13",
+            "training": {
+              "worlds": [
+                {
+                  "machine": "hp3",
+                  "layering": true,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "9e5ef288d617fdba1691e7486b399b7fc116756e936055e009c3662fa9ce1916"
+                },
+                {
+                  "machine": "hp3",
+                  "layering": false,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e"
+                },
+                {
+                  "machine": "hp4",
+                  "layering": true,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "7ec5a656a3cd8f9b2c18932caece7f86a3e01a2132bd0149ed8fa4445d85e361"
+                },
+                {
+                  "machine": "hp4",
+                  "layering": false,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "5d5de72ea49d36fa1616521b02f23719473665bd10b6b5ba8acb841e2dac6961"
+                }
+              ],
+              "steps": 40000,
+              "trainer": "/home/torbjorn/repos/hp-sim5/scripts/train_native_physics.mjs"
+            },
+            "trainerSha256": "1f35ad484bbe502cb7a1e422871707db04fa14e530547405775c8717e64bbd18"
+          }
+        }
+      },
+      "js_physics_source_sha256": "b0376906d1fe615f1f4633051ef49a9193f04b8e46258492e0ba9ed3a9a949be",
+      "warnings": [],
+      "metrics": {
+        "effector_displacement_m": {
+          "world/machines/default/effector": 0.003239851633721688
+        },
+        "peak_cable_force_n": 12.610862815385582,
+        "peak_abs_length_error_m": 0.0060422266675743685,
+        "peak_abs_tracking_error_rad": 0.1549288889121551,
+        "peak_total_missed_steps": 1
+      },
+      "simulation_wall_s": 0.16388103899998896
+    },
+    "archived": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/final-fresh-hp3-record0-timer/run-0",
+    "canonical_scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/final-fresh-hp3-record0-timer/run-0/telemetry.jsonl",
+    "steps": 200,
+    "repeat": 0,
+    "machine": "hp3",
+    "record": false,
+    "mode": "fresh"
+  },
+  {
+    "wall_s": 0.2763107979999404,
+    "simulation_s": 0.16807111600019198,
+    "construction_s": 0.0939589010004056,
+    "manifest": {
+      "schema_version": 2,
+      "backend": "headless-js",
+      "physics_engine": "rust-native",
+      "cable_solver_device": null,
+      "run_id": "10bea803f1dc409a9454036791a9a606",
+      "label": "native throughput paired benchmark",
+      "status": "complete",
+      "scene": "public/usd_scenes/hp3_rigid_body.usda",
+      "scene_generation": 1,
+      "steps": 200,
+      "dt_s": 0.002,
+      "commands_sha256": "da318ceff12b28df9457c776c443accd1b3bb6bfd425af747c4e01cd533bd0d6",
+      "scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+      "python_source_sha256": "e12a6b90e0a3065e6214573709cd713eaf6c3a657eab2e81575c596f5dab4e74",
+      "git_revision": "3a5e35e7b4d6c48e903531812044b2c5a7d36e8e",
+      "python": "3.12.3",
+      "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+      "packages": {
+        "numpy": "2.4.3",
+        "usd-core": "26.3",
+        "rerun-sdk": "0.38.1"
+      },
+      "construction_wall_s": 0.0939589010004056,
+      "record": false,
+      "artifacts": {
+        "manifest": "/home/torbjorn/repos/hp-sim5/output/research/experiments/10bea803f1dc409a9454036791a9a606/manifest.json",
+        "scene": "/home/torbjorn/repos/hp-sim5/output/research/experiments/10bea803f1dc409a9454036791a9a606/scene.usda",
+        "commands": "/home/torbjorn/repos/hp-sim5/output/research/experiments/10bea803f1dc409a9454036791a9a606/commands.json",
+        "telemetry": "/home/torbjorn/repos/hp-sim5/output/research/experiments/10bea803f1dc409a9454036791a9a606/telemetry.jsonl",
+        "snapshot": "/home/torbjorn/repos/hp-sim5/output/research/experiments/10bea803f1dc409a9454036791a9a606/final.json"
+      },
+      "physics_artifact": {
+        "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "bcf14930c221bead652a708a9c29ec235d4659ba540426359cf3ce1c20b1e548",
+        "build": {
+          "profile": "release",
+          "platform": "linux",
+          "arch": "x64",
+          "nodeApi": 8,
+          "artifactSha256": "bcf14930c221bead652a708a9c29ec235d4659ba540426359cf3ce1c20b1e548",
+          "sources": {
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "native/node_bridge.c": "c8d4ad5a269dcdd073c13fb0ce24f25fd009a38434842f1a7301264a8994ee85",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "c4a2609f63595e243c1c06efb132f692df95a7ff785333a60efd45e2b6062ca6",
+            "src/lib.rs": "088d64e1de9a45fe692d5994081050e0ab5ac9e9996d504261b2e8280649ed04"
+          },
+          "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+          "target": "x86_64-unknown-linux-gnu",
+          "rustflags": "-C\u001ftarget-cpu=native\u001f-C\u001fprofile-use=/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/pgo-IUgVJd/merged.profdata",
+          "compiler": "cc",
+          "buildScriptSha256": "c810abe7feb293029384535690395e24f4f9d9f9ca6a854029bf24c59d1d866a",
+          "pgo": {
+            "profile": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/pgo-IUgVJd/merged.profdata",
+            "sha256": "619248229a51769ab19841c44edc68b5665b2ebc595449dce6bf73d03a1efd13",
+            "training": {
+              "worlds": [
+                {
+                  "machine": "hp3",
+                  "layering": true,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "9e5ef288d617fdba1691e7486b399b7fc116756e936055e009c3662fa9ce1916"
+                },
+                {
+                  "machine": "hp3",
+                  "layering": false,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e"
+                },
+                {
+                  "machine": "hp4",
+                  "layering": true,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "7ec5a656a3cd8f9b2c18932caece7f86a3e01a2132bd0149ed8fa4445d85e361"
+                },
+                {
+                  "machine": "hp4",
+                  "layering": false,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "5d5de72ea49d36fa1616521b02f23719473665bd10b6b5ba8acb841e2dac6961"
+                }
+              ],
+              "steps": 40000,
+              "trainer": "/home/torbjorn/repos/hp-sim5/scripts/train_native_physics.mjs"
+            },
+            "trainerSha256": "1f35ad484bbe502cb7a1e422871707db04fa14e530547405775c8717e64bbd18"
+          }
+        }
+      },
+      "js_physics_source_sha256": "b0376906d1fe615f1f4633051ef49a9193f04b8e46258492e0ba9ed3a9a949be",
+      "warnings": [],
+      "metrics": {
+        "effector_displacement_m": {
+          "world/machines/default/effector": 0.003239851633721688
+        },
+        "peak_cable_force_n": 12.610862815385582,
+        "peak_abs_length_error_m": 0.0060422266675743685,
+        "peak_abs_tracking_error_rad": 0.1549288889121551,
+        "peak_total_missed_steps": 1
+      },
+      "simulation_wall_s": 0.16807111600019198
+    },
+    "archived": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/final-fresh-hp3-record0-timer/run-1",
+    "canonical_scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/final-fresh-hp3-record0-timer/run-1/telemetry.jsonl",
+    "steps": 200,
+    "repeat": 1,
+    "machine": "hp3",
+    "record": false,
+    "mode": "fresh"
+  },
+  {
+    "wall_s": 0.26468407700031094,
+    "simulation_s": 0.168976787000247,
+    "construction_s": 0.08595058600030825,
+    "manifest": {
+      "schema_version": 2,
+      "backend": "headless-js",
+      "physics_engine": "rust-native",
+      "cable_solver_device": null,
+      "run_id": "3191d69fd8db4084b3242a1eef59a6a9",
+      "label": "native throughput paired benchmark",
+      "status": "complete",
+      "scene": "public/usd_scenes/hp3_rigid_body.usda",
+      "scene_generation": 1,
+      "steps": 200,
+      "dt_s": 0.002,
+      "commands_sha256": "da318ceff12b28df9457c776c443accd1b3bb6bfd425af747c4e01cd533bd0d6",
+      "scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+      "python_source_sha256": "e12a6b90e0a3065e6214573709cd713eaf6c3a657eab2e81575c596f5dab4e74",
+      "git_revision": "3a5e35e7b4d6c48e903531812044b2c5a7d36e8e",
+      "python": "3.12.3",
+      "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+      "packages": {
+        "numpy": "2.4.3",
+        "usd-core": "26.3",
+        "rerun-sdk": "0.38.1"
+      },
+      "construction_wall_s": 0.08595058600030825,
+      "record": false,
+      "artifacts": {
+        "manifest": "/home/torbjorn/repos/hp-sim5/output/research/experiments/3191d69fd8db4084b3242a1eef59a6a9/manifest.json",
+        "scene": "/home/torbjorn/repos/hp-sim5/output/research/experiments/3191d69fd8db4084b3242a1eef59a6a9/scene.usda",
+        "commands": "/home/torbjorn/repos/hp-sim5/output/research/experiments/3191d69fd8db4084b3242a1eef59a6a9/commands.json",
+        "telemetry": "/home/torbjorn/repos/hp-sim5/output/research/experiments/3191d69fd8db4084b3242a1eef59a6a9/telemetry.jsonl",
+        "snapshot": "/home/torbjorn/repos/hp-sim5/output/research/experiments/3191d69fd8db4084b3242a1eef59a6a9/final.json"
+      },
+      "physics_artifact": {
+        "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "bcf14930c221bead652a708a9c29ec235d4659ba540426359cf3ce1c20b1e548",
+        "build": {
+          "profile": "release",
+          "platform": "linux",
+          "arch": "x64",
+          "nodeApi": 8,
+          "artifactSha256": "bcf14930c221bead652a708a9c29ec235d4659ba540426359cf3ce1c20b1e548",
+          "sources": {
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "native/node_bridge.c": "c8d4ad5a269dcdd073c13fb0ce24f25fd009a38434842f1a7301264a8994ee85",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "c4a2609f63595e243c1c06efb132f692df95a7ff785333a60efd45e2b6062ca6",
+            "src/lib.rs": "088d64e1de9a45fe692d5994081050e0ab5ac9e9996d504261b2e8280649ed04"
+          },
+          "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+          "target": "x86_64-unknown-linux-gnu",
+          "rustflags": "-C\u001ftarget-cpu=native\u001f-C\u001fprofile-use=/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/pgo-IUgVJd/merged.profdata",
+          "compiler": "cc",
+          "buildScriptSha256": "c810abe7feb293029384535690395e24f4f9d9f9ca6a854029bf24c59d1d866a",
+          "pgo": {
+            "profile": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/pgo-IUgVJd/merged.profdata",
+            "sha256": "619248229a51769ab19841c44edc68b5665b2ebc595449dce6bf73d03a1efd13",
+            "training": {
+              "worlds": [
+                {
+                  "machine": "hp3",
+                  "layering": true,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "9e5ef288d617fdba1691e7486b399b7fc116756e936055e009c3662fa9ce1916"
+                },
+                {
+                  "machine": "hp3",
+                  "layering": false,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e"
+                },
+                {
+                  "machine": "hp4",
+                  "layering": true,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "7ec5a656a3cd8f9b2c18932caece7f86a3e01a2132bd0149ed8fa4445d85e361"
+                },
+                {
+                  "machine": "hp4",
+                  "layering": false,
+                  "dt": 0.002,
+                  "steps": 10000,
+                  "bakedSceneSha256": "5d5de72ea49d36fa1616521b02f23719473665bd10b6b5ba8acb841e2dac6961"
+                }
+              ],
+              "steps": 40000,
+              "trainer": "/home/torbjorn/repos/hp-sim5/scripts/train_native_physics.mjs"
+            },
+            "trainerSha256": "1f35ad484bbe502cb7a1e422871707db04fa14e530547405775c8717e64bbd18"
+          }
+        }
+      },
+      "js_physics_source_sha256": "b0376906d1fe615f1f4633051ef49a9193f04b8e46258492e0ba9ed3a9a949be",
+      "warnings": [],
+      "metrics": {
+        "effector_displacement_m": {
+          "world/machines/default/effector": 0.003239851633721688
+        },
+        "peak_cable_force_n": 12.610862815385582,
+        "peak_abs_length_error_m": 0.0060422266675743685,
+        "peak_abs_tracking_error_rad": 0.1549288889121551,
+        "peak_total_missed_steps": 1
+      },
+      "simulation_wall_s": 0.168976787000247
+    },
+    "archived": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/final-fresh-hp3-record0-timer/run-2",
+    "canonical_scene_sha256": "933554a0ef6c56ef90421f452ac311a9581da3d396269c169192a1f7ea207aad",
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/final-fresh-hp3-record0-timer/run-2/telemetry.jsonl",
+    "steps": 200,
+    "repeat": 2,
+    "machine": "hp3",
+    "record": false,
+    "mode": "fresh"
+  }
+]

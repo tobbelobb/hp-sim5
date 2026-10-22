@@ -1,0 +1,385 @@
+{
+  "outcome": "complete",
+  "machine": "hp3",
+  "rpcPhysicsS": 1,
+  "phases": [
+    {
+      "phase": "size-probe",
+      "message": "start",
+      "physicsMs": 26188
+    },
+    {
+      "phase": "size-probe",
+      "message": "3.883s wall, 202.270s simulation",
+      "physicsMs": 228458
+    },
+    {
+      "phase": "size-probe-return",
+      "message": "start",
+      "physicsMs": 228458
+    },
+    {
+      "phase": "size-probe-return",
+      "message": "1.913s wall, 101.658s simulation",
+      "physicsMs": 330116
+    },
+    {
+      "phase": "sweep-endpoint-probe",
+      "message": "start",
+      "physicsMs": 355166
+    },
+    {
+      "phase": "sweep-endpoint-probe",
+      "message": "3.762s wall, 205.522s simulation",
+      "physicsMs": 560688
+    },
+    {
+      "phase": "sweep-preload-settle",
+      "message": "start",
+      "physicsMs": 560688
+    },
+    {
+      "phase": "sweep-preload-settle",
+      "message": "0.024s wall, 1.016s simulation",
+      "physicsMs": 561704.0000000001
+    },
+    {
+      "phase": "point-settle",
+      "message": "start",
+      "physicsMs": 565240
+    },
+    {
+      "phase": "point-settle",
+      "message": "0.033s wall, 1.502s simulation",
+      "physicsMs": 566742
+    },
+    {
+      "phase": "point-settle",
+      "message": "start",
+      "physicsMs": 580660
+    },
+    {
+      "phase": "point-settle",
+      "message": "0.281s wall, 13.500s simulation",
+      "physicsMs": 594160
+    },
+    {
+      "phase": "sweep-endpoint-probe",
+      "message": "start",
+      "physicsMs": 595598
+    },
+    {
+      "phase": "sweep-endpoint-probe",
+      "message": "3.630s wall, 205.500s simulation",
+      "physicsMs": 801098.0000000001
+    },
+    {
+      "phase": "sweep-preload-settle",
+      "message": "start",
+      "physicsMs": 801098.0000000001
+    },
+    {
+      "phase": "sweep-preload-settle",
+      "message": "0.027s wall, 1.016s simulation",
+      "physicsMs": 802114
+    },
+    {
+      "phase": "point-settle",
+      "message": "start",
+      "physicsMs": 805650
+    },
+    {
+      "phase": "point-settle",
+      "message": "0.040s wall, 1.502s simulation",
+      "physicsMs": 807152
+    },
+    {
+      "phase": "point-settle",
+      "message": "start",
+      "physicsMs": 821068
+    },
+    {
+      "phase": "point-settle",
+      "message": "0.043s wall, 2.000s simulation",
+      "physicsMs": 823068
+    },
+    {
+      "phase": "final-held-observation",
+      "physicsMs": 823388
+    }
+  ],
+  "point": {
+    "l_drive": -159.71857050850508,
+    "l_sensor": -159.6452666799213,
+    "timestamp_ms": 823068,
+    "raw_angles_deg": [
+      794.39,
+      -304.9,
+      -305.04,
+      0
+    ],
+    "drive_setpoint_mm": -159.71857050850508,
+    "step_index": 1,
+    "step_count": 2,
+    "collection_attempt": 0,
+    "fixed_target_angles_deg": [
+      794.38,
+      null,
+      null,
+      0
+    ],
+    "fixed_error_angles_deg": [
+      0.009999999999990905,
+      null,
+      null,
+      0
+    ],
+    "sensor_force_n": 1.3421772800000007,
+    "mu": [
+      794.39,
+      -304.9,
+      -305.04,
+      0
+    ],
+    "sigma": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "sample_count": 8,
+    "sampling_hz": 25,
+    "sample_duration_ms": 320,
+    "fixed_error_angles_mu_deg": [
+      0.009999999999990905,
+      null,
+      null,
+      0
+    ],
+    "l_drive_mu": -159.71857050850508,
+    "l_sensor_mu": -159.6452666799213,
+    "noise_warnings": [
+      "sigma_below_floor"
+    ]
+  },
+  "points": [
+    {
+      "l_drive": -476.73668518225105,
+      "l_sensor": 200.72682661336384,
+      "timestamp_ms": 566742,
+      "raw_angles_deg": [
+        794.39,
+        -910.5,
+        383.36,
+        0
+      ],
+      "drive_setpoint_mm": -476.73668518225105,
+      "step_index": 0,
+      "step_count": 2,
+      "collection_attempt": 0,
+      "fixed_target_angles_deg": [
+        794.38,
+        null,
+        null,
+        0
+      ],
+      "fixed_error_angles_deg": [
+        0.009999999999990905,
+        null,
+        null,
+        0
+      ],
+      "sensor_force_n": 1.3421772800000007,
+      "mu": [
+        794.39,
+        -910.5,
+        383.36,
+        0
+      ],
+      "sigma": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sample_count": 8,
+      "sampling_hz": 25,
+      "sample_duration_ms": 320,
+      "fixed_error_angles_mu_deg": [
+        0.009999999999990905,
+        null,
+        null,
+        0
+      ],
+      "l_drive_mu": -476.73668518225105,
+      "l_sensor_mu": 200.72682661336384,
+      "noise_warnings": [
+        "sigma_below_floor"
+      ]
+    },
+    {
+      "l_drive": -159.6505026676773,
+      "l_sensor": -159.71333452074907,
+      "timestamp_ms": 594160,
+      "raw_angles_deg": [
+        794.39,
+        -304.91,
+        -305.03,
+        0
+      ],
+      "drive_setpoint_mm": -159.6505026676773,
+      "step_index": 1,
+      "step_count": 2,
+      "collection_attempt": 0,
+      "fixed_target_angles_deg": [
+        794.38,
+        null,
+        null,
+        0
+      ],
+      "fixed_error_angles_deg": [
+        0.009999999999990905,
+        null,
+        null,
+        0
+      ],
+      "sensor_force_n": 1.3421772800000007,
+      "mu": [
+        794.39,
+        -304.91,
+        -305.03,
+        0
+      ],
+      "sigma": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sample_count": 8,
+      "sampling_hz": 25,
+      "sample_duration_ms": 320,
+      "fixed_error_angles_mu_deg": [
+        0.009999999999990905,
+        null,
+        null,
+        0
+      ],
+      "l_drive_mu": -159.6505026676773,
+      "l_sensor_mu": -159.71333452074907,
+      "noise_warnings": [
+        "sigma_below_floor"
+      ]
+    },
+    {
+      "l_drive": -476.74192117000706,
+      "l_sensor": 200.72159062560786,
+      "timestamp_ms": 807152,
+      "raw_angles_deg": [
+        794.39,
+        383.35,
+        -910.51,
+        0
+      ],
+      "drive_setpoint_mm": -476.74192117000706,
+      "step_index": 0,
+      "step_count": 2,
+      "collection_attempt": 0,
+      "fixed_target_angles_deg": [
+        794.38,
+        null,
+        null,
+        0
+      ],
+      "fixed_error_angles_deg": [
+        0.009999999999990905,
+        null,
+        null,
+        0
+      ],
+      "sensor_force_n": 1.3421772800000007,
+      "mu": [
+        794.39,
+        383.35,
+        -910.51,
+        0
+      ],
+      "sigma": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sample_count": 8,
+      "sampling_hz": 25,
+      "sample_duration_ms": 320,
+      "fixed_error_angles_mu_deg": [
+        0.009999999999990905,
+        null,
+        null,
+        0
+      ],
+      "l_drive_mu": -476.74192117000706,
+      "l_sensor_mu": 200.72159062560786,
+      "noise_warnings": [
+        "sigma_below_floor"
+      ]
+    },
+    {
+      "l_drive": -159.71857050850508,
+      "l_sensor": -159.6452666799213,
+      "timestamp_ms": 823068,
+      "raw_angles_deg": [
+        794.39,
+        -304.9,
+        -305.04,
+        0
+      ],
+      "drive_setpoint_mm": -159.71857050850508,
+      "step_index": 1,
+      "step_count": 2,
+      "collection_attempt": 0,
+      "fixed_target_angles_deg": [
+        794.38,
+        null,
+        null,
+        0
+      ],
+      "fixed_error_angles_deg": [
+        0.009999999999990905,
+        null,
+        null,
+        0
+      ],
+      "sensor_force_n": 1.3421772800000007,
+      "mu": [
+        794.39,
+        -304.9,
+        -305.04,
+        0
+      ],
+      "sigma": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sample_count": 8,
+      "sampling_hz": 25,
+      "sample_duration_ms": 320,
+      "fixed_error_angles_mu_deg": [
+        0.009999999999990905,
+        null,
+        null,
+        0
+      ],
+      "l_drive_mu": -159.71857050850508,
+      "l_sensor_mu": -159.6452666799213,
+      "noise_warnings": [
+        "sigma_below_floor"
+      ]
+    }
+  ],
+  "wallS": 15.99355371,
+  "physicsMs": 838388
+}

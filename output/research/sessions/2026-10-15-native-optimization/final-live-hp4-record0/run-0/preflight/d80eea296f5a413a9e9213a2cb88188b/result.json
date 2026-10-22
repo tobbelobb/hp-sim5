@@ -1,0 +1,9 @@
+{
+  "outcome": "passed",
+  "handshake": true,
+  "finalized": true,
+  "readable": true,
+  "recording_manifest": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/final-live-hp4-record0/run-0/preflight/d80eea296f5a413a9e9213a2cb88188b/hangprinter-20261015T075237.489180Z-b816a2ca.json",
+  "rrd": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/final-live-hp4-record0/run-0/preflight/d80eea296f5a413a9e9213a2cb88188b/hangprinter-20261015T075237.489180Z-b816a2ca.rrd",
+  "kind": "tool_check"
+}

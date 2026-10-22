@@ -1,0 +1,225 @@
+{
+  "trial": "D12",
+  "mode": "regression-warm-same-path",
+  "elapsed_s": 23.289694743998552,
+  "returncode": 0,
+  "regression_pass": true,
+  "exact_full_precision_metrics_equal": true,
+  "numerical": {
+    "summary": {
+      "anchors": [
+        [
+          0.0,
+          -2443.33,
+          -279.56
+        ],
+        [
+          708.79,
+          401.97,
+          -279.56
+        ],
+        [
+          -2294.4,
+          1381.21,
+          -279.56
+        ],
+        [
+          235.94,
+          124.93,
+          1075.91
+        ]
+      ],
+      "radii": [
+        30.0,
+        30.0,
+        30.0,
+        30.0
+      ],
+      "fit_score_ui": 8161.0
+    },
+    "iterations": [
+      {
+        "anchors": [
+          [
+            0.0,
+            -1823.08,
+            -1042.56
+          ],
+          [
+            1578.53,
+            911.1,
+            -1042.56
+          ],
+          [
+            -1577.04,
+            910.58,
+            -1042.56
+          ],
+          [
+            -0.76,
+            0.43,
+            3384.08
+          ]
+        ],
+        "radii": [
+          30.0,
+          30.0,
+          30.0,
+          30.0
+        ],
+        "fit_score_ui": 16.41,
+        "rank_score": 16.41,
+        "history_rank_score": 16.41
+      },
+      {
+        "anchors": [
+          [
+            0.0,
+            -2744.03,
+            -250.38
+          ],
+          [
+            949.54,
+            942.99,
+            -250.38
+          ],
+          [
+            -3080.45,
+            0.0,
+            -250.38
+          ],
+          [
+            2486.92,
+            2459.49,
+            2880.64
+          ]
+        ],
+        "radii": [
+          30.0,
+          30.0,
+          30.0,
+          30.0
+        ],
+        "fit_score_ui": 107.6,
+        "rank_score": 107.6,
+        "history_rank_score": 107.4
+      },
+      {
+        "anchors": [
+          [
+            0.0,
+            -966.9,
+            -301.58
+          ],
+          [
+            830.36,
+            362.13,
+            -301.58
+          ],
+          [
+            -5000.0,
+            4666.42,
+            -301.58
+          ],
+          [
+            406.44,
+            83.4,
+            0.0
+          ]
+        ],
+        "radii": [
+          30.0,
+          30.0,
+          30.0,
+          30.0
+        ],
+        "fit_score_ui": 100.0,
+        "rank_score": 100.0,
+        "history_rank_score": 99.75
+      },
+      {
+        "anchors": [
+          [
+            0.0,
+            -2443.33,
+            -279.56
+          ],
+          [
+            708.79,
+            401.97,
+            -279.56
+          ],
+          [
+            -2294.4,
+            1381.21,
+            -279.56
+          ],
+          [
+            235.94,
+            124.93,
+            1075.91
+          ]
+        ],
+        "radii": [
+          30.0,
+          30.0,
+          30.0,
+          30.0
+        ],
+        "fit_score_ui": 8161.0,
+        "rank_score": 8161.0,
+        "history_rank_score": 8161.0
+      },
+      {
+        "anchors": [
+          [
+            0.0,
+            -2505.55,
+            -440.22
+          ],
+          [
+            2519.93,
+            1927.72,
+            -440.22
+          ],
+          [
+            -1047.95,
+            846.62,
+            -440.22
+          ],
+          [
+            -191.17,
+            -116.32,
+            1188.82
+          ]
+        ],
+        "radii": [
+          30.0,
+          30.0,
+          30.0,
+          30.0
+        ],
+        "fit_score_ui": 19460.0,
+        "rank_score": 19460.0,
+        "history_rank_score": 19460.0
+      }
+    ]
+  },
+  "hits": null,
+  "misses": null,
+  "new_cache_entries": [
+    "jit__objective_core-1216285a4b5b9d5a8e63b2852e92124e5bf8e562add2ee715a70c797a855c334-cache",
+    "jit__objective_core-3200de6868e781f3713ccd7e2e6dcce24600e22125c8b4d0e9d243d732272e80-cache",
+    "jit__objective_core-4d3901eb107ac27d9db7aba8eea8acce436f5783e1ebaa9cd8374cf413490d99-cache",
+    "jit__objective_core-700743a7770a3aa36d9e040f39df5b2b877088f6a5084605106f4c3538d83301-cache",
+    "jit__objective_core-99622ca4eec460d5f97fed458c108f6795e76433c5b941a7ab4daa2137b30326-cache",
+    "jit__objective_core-9b9d223f0248dc337e13527c99aef2067b37f4551eb16cc25b54312e549d76ed-cache",
+    "jit__objective_core-ae9310f6ff4282f849b7ca8e77c42ee224197c081823b86a66c66f87d37ff956-cache",
+    "jit__objective_core-c7059a21fd5f0b5c659b92126a8e4a0ae235a9b82ffbbcbc9d7071cb55f6927a-cache",
+    "jit__objective_core-d7a22948a1e56b32661091f622236bd814dd1a9e58b569770f503c4facb497be-cache",
+    "jit__objective_core-f637bdb1b1a85ed8f970d30dff311d59c674baa5b10695eb4802c94dd305a75d-cache",
+    "jit__objective_core-fe2a006a095660daf75e66cffc5f45f789b7a5e8eb1fcc7ea8e61f89b74beb86-cache",
+    "jit__objective_core-febc0525650c1ee6a57cc759730e0b01153b784d66fa3bef378986deb252790d-cache"
+  ],
+  "compatibility_warnings": 0
+}

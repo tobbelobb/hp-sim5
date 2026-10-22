@@ -1,0 +1,200 @@
+[
+  {
+    "machine": "hp3",
+    "config": {
+      "name": "force-0.5",
+      "force": 0.5,
+      "drives": [
+        1
+      ],
+      "fixed": [
+        3
+      ]
+    },
+    "requestedSpeedup": 25,
+    "dt": 0.002,
+    "steps": 92500,
+    "simS": 185,
+    "wallS": 7.399938642,
+    "backend": "rust-native",
+    "bakedSceneSha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+    "stages": [
+      {
+        "force": 0.5,
+        "travelMm": 196.98086853245823,
+        "pullDurationS": 180,
+        "settledS": null,
+        "holdSettledS": 1.75,
+        "bodySettledS": 1.75,
+        "lastPullSpeedDegPerS": 0.6149466763340001,
+        "peakLineN": 0.3286254500208064,
+        "peakExtension": 0.000048254430430907756
+      }
+    ]
+  },
+  {
+    "machine": "hp3",
+    "config": {
+      "name": "force-1",
+      "force": 1,
+      "drives": [
+        1
+      ],
+      "fixed": [
+        3
+      ]
+    },
+    "requestedSpeedup": 25,
+    "dt": 0.002,
+    "steps": 92500,
+    "simS": 185,
+    "wallS": 7.400046553,
+    "backend": "rust-native",
+    "bakedSceneSha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+    "stages": [
+      {
+        "force": 1,
+        "travelMm": 593.206654732543,
+        "pullDurationS": 180,
+        "settledS": null,
+        "holdSettledS": 1.75,
+        "bodySettledS": 1.75,
+        "lastPullSpeedDegPerS": 0.9506101472073851,
+        "peakLineN": 0.4845753234656466,
+        "peakExtension": 0.00006917468446024454
+      }
+    ]
+  },
+  {
+    "machine": "hp3",
+    "config": {
+      "name": "force-2",
+      "force": 2,
+      "drives": [
+        1
+      ],
+      "fixed": [
+        3
+      ]
+    },
+    "requestedSpeedup": 25,
+    "dt": 0.002,
+    "steps": 92500,
+    "simS": 185,
+    "wallS": 7.399906004,
+    "backend": "rust-native",
+    "bakedSceneSha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+    "stages": [
+      {
+        "force": 2,
+        "travelMm": 876.4161087672675,
+        "pullDurationS": 180,
+        "settledS": null,
+        "holdSettledS": 1.75,
+        "bodySettledS": 1.75,
+        "lastPullSpeedDegPerS": 0.8640542001394351,
+        "peakLineN": 1.052593506527007,
+        "peakExtension": 0.00022476603045458305
+      }
+    ]
+  },
+  {
+    "machine": "hp3",
+    "config": {
+      "name": "force-4",
+      "force": 4,
+      "drives": [
+        1
+      ],
+      "fixed": [
+        3
+      ]
+    },
+    "requestedSpeedup": 25,
+    "dt": 0.002,
+    "steps": 57500,
+    "simS": 115,
+    "wallS": 4.599804081999999,
+    "backend": "rust-native",
+    "bakedSceneSha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+    "stages": [
+      {
+        "force": 4,
+        "travelMm": 917.5205545191267,
+        "pullDurationS": 110,
+        "settledS": 110,
+        "holdSettledS": 1.75,
+        "bodySettledS": 1.75,
+        "lastPullSpeedDegPerS": 0.0012955474537648115,
+        "peakLineN": 2.0859380138057833,
+        "peakExtension": 0.0004816703016783964
+      }
+    ]
+  },
+  {
+    "machine": "hp3",
+    "config": {
+      "name": "force-8",
+      "force": 8,
+      "drives": [
+        1
+      ],
+      "fixed": [
+        3
+      ]
+    },
+    "requestedSpeedup": 25,
+    "dt": 0.002,
+    "steps": 31625,
+    "simS": 63.25,
+    "wallS": 2.5300921439999984,
+    "backend": "rust-native",
+    "bakedSceneSha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+    "stages": [
+      {
+        "force": 8,
+        "travelMm": 927.4455619471171,
+        "pullDurationS": 58.25,
+        "settledS": 58.25,
+        "holdSettledS": 1.75,
+        "bodySettledS": 1.75,
+        "lastPullSpeedDegPerS": 0.019196057988665416,
+        "peakLineN": 4.174090156563749,
+        "peakExtension": 0.0009942110783514688
+      }
+    ]
+  },
+  {
+    "machine": "hp3",
+    "config": {
+      "name": "force-16",
+      "force": 16,
+      "drives": [
+        1
+      ],
+      "fixed": [
+        3
+      ]
+    },
+    "requestedSpeedup": 25,
+    "dt": 0.002,
+    "steps": 19125,
+    "simS": 38.25,
+    "wallS": 1.5285507400000025,
+    "backend": "rust-native",
+    "bakedSceneSha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+    "stages": [
+      {
+        "force": 16,
+        "travelMm": 931.5682115228868,
+        "pullDurationS": 33.25,
+        "settledS": 33.25,
+        "holdSettledS": 1.75,
+        "bodySettledS": 1.75,
+        "lastPullSpeedDegPerS": 2.1201458366704173e-8,
+        "peakLineN": 8.224474690306437,
+        "peakExtension": 0.0019945511944210854
+      }
+    ]
+  }
+]

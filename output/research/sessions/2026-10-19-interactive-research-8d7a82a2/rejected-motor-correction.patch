@@ -1,0 +1,90 @@
+diff --git a/hp-sim-3d/app/torqueModeSystem.js b/hp-sim-3d/app/torqueModeSystem.js
+index 1a4c8717..0cf7cd8f 100644
+--- a/hp-sim-3d/app/torqueModeSystem.js
++++ b/hp-sim-3d/app/torqueModeSystem.js
+@@ -125,7 +125,9 @@ export class TorqueModeSystem {
+           + ((dt * dt * cableLoadStiffness) / axisInertia);
+         const nextOmegaAlongAxis = (
+           omegaAlongAxis
+-          + ((dt / axisInertia) * (driveTorque + springLoadTorque))
++          // The load already uses the predicted rotor pose. Correct that
++          // prediction so stiffness stabilizes acceleration, not steady motion.
++          + ((dt / axisInertia) * (driveTorque + springLoadTorque + dt * cableLoadStiffness * omegaAlongAxis))
+         ) / implicitDenom;
+         deltaOmegaAlongAxis = nextOmegaAlongAxis - omegaAlongAxis;
+       } else {
+diff --git a/public/wasm/cable_solver.wasm b/public/wasm/cable_solver.wasm
+index 33bb58c407668545752671a0cc4b53a1ce9dd9f0..32ea2e187308f86909fcdc70a7aa23f7a2ac70f0 100755
+GIT binary patch
+delta 534
+zcmZqq$=&;tdqWj7<L}MY%r0{n&u>03Kb%EeRDn@JdeI^U2?cQlQ3Ymg<{QjPGK&^8
+zt1f9*UBb9sbqUjHTgFGzKR#rV7rf2Rz@Wpxz>vTqz`zTnA8c2A#PplV@Gu(#gB+6h
+z2_Rn_iT@qQH$md_PxpPwB+nWHG){GT<5MPW)p#HiSw{wtZ-Ar&#8;hu@hOwEVj+;J
+zf+Q6L<ZB}Fmrnotl*wOF5NM|bl5jeZuZ_gdou2!QNxuFpP`3h-@OdC#9*G~%!N8z~
+z#E%5>)sgr=fa(>I_&z{+1tfk5nto1H{Xq;eKmk1@4O&3HClcQh$X7+;+X4BONPKr7
+u-xP^|eS7S4ru~e96M+tsL=vAoUH2u^e8vOY&%R`O&&XJ{eeY|g;{pINMO3)}
+
+delta 525
+zcmeDE$=&jkdqWj7<EPEl%r0{nk8M6MKb(b6LP1<XRDoHW`3AF+%%Wz!CGC1k7`N*!
+zVLENg_;C8KhfMN<x7ZmNbQl;I5?BNnc!Bi&?OKnRelr;!Vq;*CLlQp@<clNmzXACs
+zNPNEOVNaRlMWcbnsUiu-0Qut6tDZ7xtEK~)21rsMKC;q$AYWzrsi#cRf`LG$CX&)6
+z)7hRe`6~(l?X*A=P6P6_k@z{&%bqdG*Pj9ERzMOy2jt5m@#8oc7}SvX5kS5=68}3;
+zy&@9d8z`@U#1BT(&w;8xh(Q`CpogSE6Ug^O;#&au$Ue6P@-30%-GF>kB>uJSY0sJV
+lGYU=sI!qEteA0BYmrU~+_iw-UlIcAoW99Z^ubGYu005jfQDOi9
+
+diff --git a/src/python/cable_joints_3d/torque_mode_system.py b/src/python/cable_joints_3d/torque_mode_system.py
+index 297c28ee..3e21c15e 100644
+--- a/src/python/cable_joints_3d/torque_mode_system.py
++++ b/src/python/cable_joints_3d/torque_mode_system.py
+@@ -62,7 +62,8 @@ class TorqueModeSystem:
+             if stiffness > 0 and finite_number(dt) and dt > 0:
+                 spring_torque = load + damping * omega
+                 denominator = 1 + dt * damping / inertia + dt * dt * stiffness / inertia
+-                next_omega = (omega + dt / inertia * (drive + spring_torque)) / denominator
++                # The cable load already uses the predicted rotor pose.
++                next_omega = (omega + dt / inertia * (drive + spring_torque + dt * stiffness * omega)) / denominator
+                 delta_omega = next_omega - omega
+             else:
+                 delta_omega = (drive + load) / inertia * dt
+diff --git a/src/wasm/cable_solver/src/engine.rs b/src/wasm/cable_solver/src/engine.rs
+index 7a913262..e7ae552b 100644
+--- a/src/wasm/cable_solver/src/engine.rs
++++ b/src/wasm/cable_solver/src/engine.rs
+@@ -1537,7 +1537,8 @@ impl PhysicsWorld {
+             };
+             let delta = if torque_mode && e[60] > 0.0 && dt.is_finite() && dt > 0.0 {
+                 let spring = e[59] + e[58] * omega;
+-                (omega + (dt / inertia) * (drive + spring))
++                // Cable load is evaluated at the already-predicted rotor pose.
++                (omega + (dt / inertia) * (drive + spring + dt * e[60] * omega))
+                     / (1.0 + dt * e[58] / inertia + dt * dt * e[60] / inertia)
+                     - omega
+             } else {
+diff --git a/tests/js/hp-sim-3d/torqueModeSystem.test.js b/tests/js/hp-sim-3d/torqueModeSystem.test.js
+index db1c6b53..a84819ae 100644
+--- a/tests/js/hp-sim-3d/torqueModeSystem.test.js
++++ b/tests/js/hp-sim-3d/torqueModeSystem.test.js
+@@ -87,6 +87,23 @@ describe('3D torque mode system', () => {
+     expect(angularVelocity.omega.z).toBeCloseTo(1.0 / 60.0, 12);
+   });
+ 
++  test.each([-2, 2])('stiffness does not brake balanced torque at %s rad/s', omega => {
++    const world = new World();
++    const entity = addTorqueModeStepper(world, 0);
++    const stepper = world.getComponent(entity, StepperMotorComponent);
++    stepper.holdingTorque = 0;
++    stepper.windageCoeff = 0;
++    const velocity = world.getComponent(entity, AngularVelocityComponent);
++    velocity.omega.z = omega;
++    world.setResource('torqueModeCableLoadTorques', new Map([[entity, 0]]));
++    world.setResource('torqueModeCableLoadStiffnesses', new Map([[entity, 100]]));
++    world.setResource('torqueModeCableLoadDampings', new Map([[entity, 10]]));
++
++    new TorqueModeSystem().update(world, 0.1);
++
++    expect(velocity.omega.z).toBeCloseTo(omega, 12);
++  });
++
+   test('applies reaction torque and integrates rigid-body member spool twist', () => {
+     const world = new World();
+     const bodyEntity = world.createEntity();

@@ -1,0 +1,28 @@
+{
+ "legacy": {
+  "pairs": 709,
+  "grow_fraction": 0.3455571227080395,
+  "rel_change_median": 0.6512302655038249,
+  "rel_change_p90": 3.2527235081490438,
+  "rel_change_max": 419.16271898808714,
+  "step595_joint_1_6": {
+   "jDx_iter0": 0.0107194766539669,
+   "jDx_iter1": 0.01176682020282391,
+   "gamma": 0.125,
+   "alpha_tilde": 12.500000000000002
+  }
+ },
+ "fixed": {
+  "pairs": 712,
+  "grow_fraction": 0.0,
+  "rel_change_median": 0.0,
+  "rel_change_p90": 0.0,
+  "rel_change_max": 0.0,
+  "step595_joint_1_6": {
+   "jDx_iter0": 0.014311879244113025,
+   "jDx_iter1": 0.014311879244113025,
+   "gamma": 0.125,
+   "alpha_tilde": 12.500000000000002
+  }
+ }
+}

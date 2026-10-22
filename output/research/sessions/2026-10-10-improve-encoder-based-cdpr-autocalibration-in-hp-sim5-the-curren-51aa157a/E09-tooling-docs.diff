@@ -1,0 +1,41 @@
+diff --git a/research/README.md b/research/README.md
+index 944171c2..13bb90c9 100644
+--- a/research/README.md
++++ b/research/README.md
+@@ -379,6 +379,36 @@ machine, dataset and optimizer flags. It owns the Node/RRF/recorder services and
+ finalizes physics, collection events, Python logs and stage artifacts together
+ without a browser. See the [headless extended reference guide](../autocal/data/references/extended-reference.md#headless-full-auto-collection).
+ 
++### Local networking for full-auto runs
++
++The launcher's default `workspace-write` command sandbox can deny even creating
++a localhost IPv4 socket. Standalone `--headless-sim` needs these sockets for RRF,
++physics and recording. Launcher-owned MCP services run outside that command
++sandbox, but `start_collection` runs sweeps, not the complete fitting/planning/
++automatic-acceptance loop. Native `reset_session` also retains the machine chosen
++at launch; select `--machine hp3` before starting HP3 research.
++
++For a local CLI launch whose policy permits networking, explicitly enable the
++documented workspace networking option:
++
++```bash
++./hp-sim5-research-agent --machine hp3 --prompt-file research/prompts/autocal.txt -- \
++  -c sandbox_workspace_write.network_access=true
++```
++
++This grants command network access, not just localhost access. Managed policies
++and network-proxy rules may still restrict local sockets; verify socket creation,
++loopback binding and an HTTP round trip before a long experiment. See the
++[official configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference).
++This option has not been validated under every client or managed policy.
++
++A supervisor-owned full-autocal job API is the proposed mitigation for keeping
++command networking restricted. It should run the existing full-auto CLI with
++explicit machine/layering/radius settings, status and cancellation, finalized
++recordings and stage artifacts. Such a tool is not currently exposed. Until it
++exists, a blocked standalone run must be reported as blocked; a batch adapter or
++offline replay does not validate the complete live workflow.
++
+ The [investigation](investigation.md) maps Robium skills and OmniSim's architecture
+ to this integration, and separates the working features from future work.
+ 

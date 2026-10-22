@@ -1,0 +1,46 @@
+diff --git a/autocal/tests/test_ellipse_objective_jax.py b/autocal/tests/test_ellipse_objective_jax.py
+index ee61a9bc..a74dbb6d 100644
+--- a/autocal/tests/test_ellipse_objective_jax.py
++++ b/autocal/tests/test_ellipse_objective_jax.py
+@@ -238,6 +238,41 @@ def test_jax_objective_matches_numpy_cost():
+     assert np.isclose(value_jax, value_np, rtol=1e-6, atol=1e-8)
+ 
+ 
++@pytest.mark.skipif(not _JAX_AVAILABLE, reason="JAX is not installed")
++@pytest.mark.parametrize("machine_type", ["slideprinter", "hangprinter_4"])
++@pytest.mark.parametrize("stage", [0, 2])
++def test_jax_padded_points_use_numerical_gradient_fallback(machine_type, stage):
++    import autocal.ellipse_objective_jax as objective_module
++    from autocal.ellipse_solver import _build_lbfgsb_objective_with_jac
++
++    factory = (
++        _synthetic_slideprinter_dataset
++        if machine_type == "slideprinter" else _synthetic_hangprinter_4_dataset
++    )
++    dataset, anchors = factory()
++    for sweep, count in zip(dataset["sweeps"], (17, 19, 24)):
++        sweep["data_points"] = sweep["data_points"][:count]
++    cost_fn = EllipseCostFunction(dataset, use_flex=False, pointwise_filter_stage=stage)
++    lb, ub = map(np.asarray, get_anchor_bounds(machine_type))
++    compiled = objective_module._COMPILED_VALUE_AND_GRAD
++    cache_size = compiled._cache_size()
++    assert build_compiled_value_and_grad(cost_fn, lb, ub) is None
++    assert compiled._cache_size() == cache_size
++
++    x = anchors.reshape(-1).copy()
++    x[1] += 10.0
++    value, gradient = _build_lbfgsb_objective_with_jac(cost_fn, lb, ub)(x)
++    expected_value = cost_fn.evaluate(x)
++    expected_gradient = cost_fn.gradient_numerical(x, f0=expected_value)
++    assert value == expected_value
++    assert np.all(np.isfinite(gradient))
++    np.testing.assert_array_equal(gradient, expected_gradient)
++    # Padding invalidates the reverse-mode gradient, not the scalar objective.
++    value_only = objective_module.build_compiled_objective(cost_fn, lb, ub)
++    assert value_only is not None
++    assert np.isfinite(value_only(x))
++
++
+ @pytest.mark.skipif(not _JAX_AVAILABLE, reason="JAX is not installed")
+ def test_jax_objective_uses_constructor_packed_sweeps():
+     dataset, anchors = _synthetic_slideprinter_dataset()

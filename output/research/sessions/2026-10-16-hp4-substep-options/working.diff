@@ -1,0 +1,512 @@
+diff --git a/autocal/_autocal_common.py b/autocal/_autocal_common.py
+index fbfcc282..c8d6c8c6 100644
+--- a/autocal/_autocal_common.py
++++ b/autocal/_autocal_common.py
+@@ -3724,6 +3724,8 @@ def get_firmware_provider(firmware: str) -> FirmwareProvider:
+ 
+ 
+ def _add_collector_args(parser: argparse.ArgumentParser) -> None:
++    parser.add_argument("--physics-substeps", type=int, choices=range(1, 17),
++                        help="Simulator physics steps per firmware tick (default: simulator setting, initially 1)")
+     parser.add_argument("--open-loop-motors", action="store_true",
+                         help="Use open-loop motors in the simulator instead of closed-loop motors.")
+     parser.add_argument(
+diff --git a/autocal/autocal.py b/autocal/autocal.py
+index d211496f..f942b0a6 100644
+--- a/autocal/autocal.py
++++ b/autocal/autocal.py
+@@ -1813,6 +1813,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
+         except FileNotFoundError as exc:
+             parser.error(str(exc))
+     collector_args = _clean_collector_args(args.collector_args)
++    if args.physics_substeps is not None and not _arg_has_flag(collector_args, "--physics-substeps"):
++        collector_args.extend(["--physics-substeps", str(args.physics_substeps)])
+     if args.open_loop_motors and "--open-loop-motors" not in collector_args:
+         collector_args.append("--open-loop-motors")
+     if args.speedup is not None and not _arg_has_flag(collector_args, "--speedup"):
+diff --git a/autocal/control/behaviors/sweep_data_collection.mjs b/autocal/control/behaviors/sweep_data_collection.mjs
+index 311f41aa..681b3869 100644
+--- a/autocal/control/behaviors/sweep_data_collection.mjs
++++ b/autocal/control/behaviors/sweep_data_collection.mjs
+@@ -88,6 +88,10 @@ const DEFAULT_FIXED_TOLERANCE_MM = 0.05;
+ // Active workspace traversal needs time to move before the quiet window starts.
+ // This is measured on the observed simulation clock (wall time on hardware).
+ const FORCE_TRAVEL_TIMEOUT_MS = 120000;
++// A fixed-torque HP4 pull at the production 2 ms step passed the unchanged
++// settling check after ~472 s (four substeps: ~120 s). Allow this slow approach
++// to equilibrium without relaxing drift/vibration acceptance.
++const SIZE_TUNE_TRAVEL_TIMEOUT_MS = 600000;
+ const DATASET_VERSION = '2.0';
+ 
+ export const SWEEP_DEFAULTS = {
+@@ -975,7 +979,8 @@ export async function measureMaxTravelMm(sendFn, options = {}) {
+       }
+     }
+     await waitForStableEncoders(sendFn, motorIds, speedup, {
+-      timeoutMs: FORCE_TRAVEL_TIMEOUT_MS,
++      timeoutMs: SIZE_TUNE_TRAVEL_TIMEOUT_MS,
++      wallTimeoutMs: SIZE_TUNE_TRAVEL_TIMEOUT_MS + 30000,
+       onProgress: message => console.log(`; size-tune travel: ${message.replace(/^; /, '')}`),
+       ...settleOptions,
+     });
+diff --git a/autocal/control/cli/collect_sweep_data.mjs b/autocal/control/cli/collect_sweep_data.mjs
+index 6e7df817..90605f74 100644
+--- a/autocal/control/cli/collect_sweep_data.mjs
++++ b/autocal/control/cli/collect_sweep_data.mjs
+@@ -206,6 +206,7 @@ export function parseBridgeArgs(argv) {
+     port: null,
+     machineType: null,
+     openLoopMotors: false,
++    physicsSubsteps: null,
+     sweepRange: null,
+     sweepPoints: null,
+     maxSweeps: null,
+@@ -306,6 +307,11 @@ export function parseBridgeArgs(argv) {
+       args.noSpawnRrfSimulator = true;
+     } else if (arg === '--speedup') {
+       args.speedup = argv[++i] || null;
++    } else if (arg === '--physics-substeps') {
++      args.physicsSubsteps = Number(argv[++i]);
++      if (!Number.isInteger(args.physicsSubsteps) || args.physicsSubsteps < 1 || args.physicsSubsteps > 16) {
++        throw new Error('--physics-substeps must be an integer from 1 to 16');
++      }
+     } else if (arg === '--open-loop-motors') {
+       args.openLoopMotors = true;
+     } else if (arg === '--machineType' || arg === '--machine-type') {
+@@ -421,6 +427,7 @@ Options:
+   --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor per line)
+   --debug-sweep              Print planned sweep permutations before collecting
+   --trace                    Tell hp-sim to plot a trace of its movements (default: on)
++  --physics-substeps <count> Physics integrations per firmware tick, 1–16 (default: simulator setting, initially 1)
+   --open-loop-motors         Use open-loop simulator motors (default: closed-loop)
+   --line-layering             Enable simulator line layering (also automatic for nonzero M666 Q)
+   --no-trace                 Disable hp-sim trace plotting
+@@ -641,6 +648,7 @@ async function main() {
+       if (args.sim) {
+         await sendHpSimSettings(bridgeCtx, {
+           closedLoopMotorsEnabled: !args.openLoopMotors,
++          ...(args.physicsSubsteps !== null ? { physicsSubsteps: args.physicsSubsteps } : {}),
+           lineLayeringEnabled: Boolean(args.lineLayering || (Number.isFinite(Number(args.forceBuildupFactor)) && Number(args.forceBuildupFactor) !== 0)),
+           ...(!args.headlessUrl ? { machineType } : {}),
+           ...(!args.headlessUrl && process.env.AUTOCAL_REFERENCE_WS
+diff --git a/autocal/control/primitives/encoder_utils.mjs b/autocal/control/primitives/encoder_utils.mjs
+index ff7452da..9d9f219b 100644
+--- a/autocal/control/primitives/encoder_utils.mjs
++++ b/autocal/control/primitives/encoder_utils.mjs
+@@ -375,6 +375,9 @@ export async function sendHpSimSettings(bridgeCtx, settings) {
+       ? "Simulator did not acknowledge machine selection; reload the simulator page and use one simulator tab"
+       : `Simulator selected ${applied.machineType} instead of ${settings.machineType}`);
+   }
++  if (settings.physicsSubsteps !== undefined && applied?.physicsSubsteps !== settings.physicsSubsteps) {
++    throw new Error(`Simulator did not apply physicsSubsteps=${settings.physicsSubsteps}`);
++  }
+   for (const key of ['closedLoopMotorsEnabled', 'lineLayeringEnabled']) {
+     if (applied && typeof settings[key] === 'boolean' && applied[key] !== settings[key]) {
+       throw new Error(`Simulator did not apply ${key}=${settings[key]}`);
+diff --git a/autocal/control/tests/behaviors/measure_max_travel.test.mjs b/autocal/control/tests/behaviors/measure_max_travel.test.mjs
+index abbf71c2..eaece009 100644
+--- a/autocal/control/tests/behaviors/measure_max_travel.test.mjs
++++ b/autocal/control/tests/behaviors/measure_max_travel.test.mjs
+@@ -52,8 +52,8 @@ describe('workspace-size measurement', () => {
+   test('keeps the active-travel deadline finite and holds motors on timeout', async () => {
+     const machine = movingMachine({ stopMs: Infinity });
+     await expect(measureMaxTravelMm(machine.send, {
+-      ...options, settleOptions: { ...settling(machine), wallTimeoutMs: 200000 },
+-    })).rejects.toThrow('after 120000ms');
++      ...options, settleOptions: { ...settling(machine), wallTimeoutMs: 1000000 },
++    })).rejects.toThrow('after 600000ms');
+     expect(machine.commands.at(-1)).toBe(hold);
+   });
+ 
+@@ -83,3 +83,13 @@ describe('workspace-size measurement', () => {
+     expect(machine.commands.at(-1)).toBe(hold);
+   });
+ });
++
++test('size tuning waits for a slow torque response beyond the old two-minute limit', async () => {
++  const machine = movingMachine({ stopMs: 470000, actualSpeed: 8 });
++  const distance = await measureMaxTravelMm(machine.send, {
++    ...options, settleOptions: settling(machine),
++  });
++  expect(machine.now()).toBeGreaterThan(470000);
++  expect(distance).toBe(5875);
++  expect(machine.commands.at(-1)).toBe(hold);
++});
+diff --git a/autocal/control/tests/primitives/encoder_utils.test.mjs b/autocal/control/tests/primitives/encoder_utils.test.mjs
+index 469b6d93..2ac23b68 100644
+--- a/autocal/control/tests/primitives/encoder_utils.test.mjs
++++ b/autocal/control/tests/primitives/encoder_utils.test.mjs
+@@ -34,7 +34,7 @@ describe('runMoveWithWait', () => {
+ });
+ 
+ test('simulator configuration is acknowledged before collection proceeds', async () => {
+-  const settings = { closedLoopMotorsEnabled: true, lineLayeringEnabled: true };
++  const settings = { closedLoopMotorsEnabled: true, lineLayeringEnabled: true, physicsSubsteps: 4 };
+   const bridge = {
+     broadcast: jest.fn(),
+     sendEncoderRequest: jest.fn(async () => ({ simulationSettings: settings })),
+@@ -46,3 +46,10 @@ test('simulator configuration is acknowledged before collection proceeds', async
+   bridge.sendEncoderRequest.mockResolvedValue({ simulationSettings: { closedLoopMotorsEnabled: false } });
+   await expect(sendHpSimSettings(bridge, settings)).rejects.toThrow('did not apply');
+ });
++
++ test('rejects an unacknowledged physics substep count', async () => {
++  const bridge = { broadcast: jest.fn(), sendEncoderRequest: jest.fn(async () => ({
++    simulationSettings: { physicsSubsteps: 1 },
++  })) };
++  await expect(sendHpSimSettings(bridge, { physicsSubsteps: 4 })).rejects.toThrow('physicsSubsteps=4');
++});
+diff --git a/autocal/tests/test_headless_sim.py b/autocal/tests/test_headless_sim.py
+index 1d20f5cc..b7b75af2 100644
+--- a/autocal/tests/test_headless_sim.py
++++ b/autocal/tests/test_headless_sim.py
+@@ -85,18 +85,21 @@ def test_headless_geometry_and_control_settings_survive_reset(tmp_path, layering
+     collector_args = ['--line-layering'] if layering else []
+     with HeadlessSimulation(args, collector_args) as service:
+         initial = service.request('status')
++        assert initial['settings']['physicsSubsteps'] == 1
+         assert initial['settings']['enableLayering'] is layering
+-        service.request('payload', payload={'type': 'simulation_settings', 'closedLoopMotorsEnabled': True})
++        service.request('payload', payload={'type': 'simulation_settings', 'closedLoopMotorsEnabled': True, 'physicsSubsteps': 4})
+         service.request('payload', payload={'type': 'reset'})
+         reset = service.request('status')
+         assert reset['epoch'] == 1
+         assert reset['settings']['enableLayering'] is layering
+         assert reset['settings']['closedLoopMotorsEnabled'] is True
++        assert reset['settings']['physicsSubsteps'] == 4
+         assert reset['baked_scene_sha256'] == initial['baked_scene_sha256']
+         service.request('payload', payload={'type': 'simulation_settings', 'lineLayeringEnabled': not layering})
+         toggled = service.request('status')
+         assert toggled['epoch'] == 2 and toggled['settings']['enableLayering'] is not layering
+         assert toggled['settings']['closedLoopMotorsEnabled'] is True
++        assert toggled['settings']['physicsSubsteps'] == 4
+         assert toggled['baked_scene_sha256'] != initial['baked_scene_sha256']
+     assert service.manifest['initial_baked_scene_sha256'] == initial['baked_scene_sha256']
+     assert service.manifest['baked_scene_sha256'] == hashlib.sha256(
+diff --git a/hp-sim-3d/README.md b/hp-sim-3d/README.md
+index 0c85aead..0bb91895 100644
+--- a/hp-sim-3d/README.md
++++ b/hp-sim-3d/README.md
+@@ -25,13 +25,16 @@ Expand **▼** for **Pause**, **Reset**, **Finish ASAP**, **Rerun** and view too
+ **Closed Loop Motors** changes position-drive behavior. Keep these settings the
+ same when comparing runs; quality checks and reference paths aid inspection.
+ 
+-Physics uses one integration step per firmware tick by default. Extra substeps
+-are an opt-in experiment: set the world's `physicsSubsteps` resource to `4`
+-(`world.setResource('physicsSubsteps', 4)` in JavaScript, or
+-`world.set_resource('physicsSubsteps', 4)` in Python). This integrates physics
+-four times per tick and costs additional CPU; command and recorder cadence stay
+-unchanged. Set it to `1` to restore normal integration. No autocal command
+-enables substeps automatically.
++Physics uses one integration step per firmware tick by default. **Physics
++Substeps**, beside the motor toggles, selects 1, 2, 4, 8 or 16 integrations per
++tick. More steps cost more CPU; command and recorder cadence stay unchanged.
++The setting survives scene resets. Autocal can set it explicitly with
++`--physics-substeps 4`, for both browser `--sim` and `--headless-sim` collection.
++Without that flag, collection preserves the simulator's setting (initially 1).
++Remote `simulation_settings` messages use the integer `physicsSubsteps` field
++(1–16); encoder replies acknowledge the applied count. Programmatic world
++creation accepts `{ physicsSubsteps: 4 }`; Python worlds use the
++`physicsSubsteps` resource.
+ 
+ To record a browser print, run
+ `.venv/bin/python scripts/hangprinter_flight_recorder.py`, open its printed viewer
+diff --git a/hp-sim-3d/app/appBootstrap.js b/hp-sim-3d/app/appBootstrap.js
+index b68428ac..dcf90e6f 100644
+--- a/hp-sim-3d/app/appBootstrap.js
++++ b/hp-sim-3d/app/appBootstrap.js
+@@ -68,6 +68,7 @@ function collectDomRefs(ownerDocument, canvasArg, controlsRootArg) {
+     showForcesToggle: ownerDocument.getElementById('showForcesToggle'),
+     lineLayeringToggle: ownerDocument.getElementById('lineLayeringToggle'),
+     closedLoopMotorsToggle: ownerDocument.getElementById('closedLoopMotorsToggle'),
++    physicsSubsteps: ownerDocument.getElementById('physicsSubsteps'),
+     qualityToggleLabel: qualityToggleWrapper?.querySelector('span') || null,
+   };
+ }
+@@ -157,11 +158,7 @@ export function createHpSimApp({
+   const featureFlags = createFeatureFlagsController({
+     world,
+     state,
+-    toggles: {
+-      showForcesToggle: dom.showForcesToggle,
+-      lineLayeringToggle: dom.lineLayeringToggle,
+-      closedLoopMotorsToggle: dom.closedLoopMotorsToggle,
+-    },
++    toggles: dom,
+     onLineLayeringChanged: () => controllers.commands?.handleUserReset?.(),
+   });
+   view = createViewController({
+@@ -238,7 +235,7 @@ export function createHpSimApp({
+     machines: controllers.machines.getMachines().map(({ id, sourceKey, sourceUrl, sourceText }) =>
+       ({ id, sourceKey, sourceUrl, sourceText })),
+     settings: Object.fromEntries(['gravity', 'dt', 'timeScale', 'enableLayering', 'layeringFrictionEffectiveRadius',
+-      'closedLoopMotorsEnabled', 'pauseState']
++      'closedLoopMotorsEnabled', 'physicsSubsteps', 'pauseState']
+       .map(key => [key, world.getResource(key)])),
+     inspection: inspectionTools.getState(),
+   });
+diff --git a/hp-sim-3d/app/appState.js b/hp-sim-3d/app/appState.js
+index 7486b51c..680c08af 100644
+--- a/hp-sim-3d/app/appState.js
++++ b/hp-sim-3d/app/appState.js
+@@ -6,6 +6,7 @@ export function createAppState({
+   showConstraintForces = false,
+   lineLayeringEnabled = true,
+   closedLoopMotorsEnabled = false,
++  physicsSubsteps = 1,
+ } = {}) {
+   return {
+     machines: [],
+@@ -30,6 +31,7 @@ export function createAppState({
+     showConstraintForces,
+     lineLayeringEnabled,
+     closedLoopMotorsEnabled,
++    physicsSubsteps,
+     referenceOverlay: {
+       segments: null,
+       metadata: null,
+diff --git a/hp-sim-3d/app/externalCommandSocket.js b/hp-sim-3d/app/externalCommandSocket.js
+index ebbe0501..a629a5e4 100644
+--- a/hp-sim-3d/app/externalCommandSocket.js
++++ b/hp-sim-3d/app/externalCommandSocket.js
+@@ -1,3 +1,4 @@
++import { setPhysicsSubsteps } from './physics-substeps.js';
+ import { EncoderComponent } from '../../src/js/cable_joints_3d/ecs.js';
+ import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
+ import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
+@@ -213,6 +214,7 @@ export function createExternalCommandController({
+       anglesDeg: resolveEncoderAngles(axes),
+       simulationSettings: {
+         closedLoopMotorsEnabled: world.getResource('closedLoopMotorsEnabled') === true,
++        physicsSubsteps: world.getResource('physicsSubsteps') ?? 1,
+         lineLayeringEnabled: world.getResource('enableLayering') === true,
+         recording: world.getResource('flightRecorder')?.socket?.readyState === 1,
+         recordingError,
+@@ -246,6 +248,16 @@ export function createExternalCommandController({
+       return;
+     }
+     if (payload.type === 'simulation_settings') {
++      if (payload.physicsSubsteps !== undefined) {
++        try {
++          if (featureFlags) featureFlags.setPhysicsSubstepsState(payload.physicsSubsteps);
++          else setPhysicsSubsteps(world, payload.physicsSubsteps);
++          settingsError = null;
++        } catch (error) {
++          settingsError = error.message;
++          return;
++        }
++      }
+       if (payload.machineType) {
+         recordingReady = Promise.resolve(recordingReady).then(async () => {
+           const sourceKey = MACHINE_SCENES[payload.machineType];
+diff --git a/hp-sim-3d/app/featureFlagsController.js b/hp-sim-3d/app/featureFlagsController.js
+index 1f58b5f4..c9612c18 100644
+--- a/hp-sim-3d/app/featureFlagsController.js
++++ b/hp-sim-3d/app/featureFlagsController.js
+@@ -1,3 +1,4 @@
++import { setPhysicsSubsteps } from './physics-substeps.js';
+ import { _updateAttachmentPoints } from '../../src/js/cable_joints_3d/cable_joints_core.js';
+ import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
+ import { setLineLayeringFeatureFlags } from './line-layering-flags.js';
+@@ -51,7 +52,25 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
+     }
+   }
+ 
++  function setPhysicsSubstepsState(count) {
++    const next = setPhysicsSubsteps(world, count);
++    if (state) state.physicsSubsteps = next;
++    if (toggles.physicsSubsteps) {
++      // Remote settings also accept counts between the standard menu choices.
++      const select = toggles.physicsSubsteps;
++      if (![...select.options].some(option => Number(option.value) === next)) {
++        const option = select.ownerDocument.createElement('option');
++        option.value = option.textContent = String(next);
++        select.add(option);
++      }
++      select.value = String(next);
++    }
++  }
++
+   function bindUi() {
++    toggles.physicsSubsteps?.addEventListener('change', () => {
++      setPhysicsSubstepsState(Number(toggles.physicsSubsteps.value));
++    });
+     if (toggles.showForcesToggle) {
+       toggles.showForcesToggle.addEventListener('change', () => {
+         setShowConstraintForcesState(toggles.showForcesToggle.checked, { fromToggle: true });
+@@ -78,6 +97,7 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
+     }
+   }
+ 
++  setPhysicsSubstepsState(state?.physicsSubsteps ?? world.getResource('physicsSubsteps') ?? 1);
+   setShowConstraintForcesState(state?.showConstraintForces ?? false);
+   setLineLayeringEnabledState(state?.lineLayeringEnabled ?? true);
+   setClosedLoopMotorsEnabledState(state?.closedLoopMotorsEnabled ?? false);
+@@ -92,6 +112,7 @@ export function createFeatureFlagsController({ world, state, toggles = {}, onLin
+     get showConstraintForces() {
+       return state?.showConstraintForces ?? false;
+     },
++    setPhysicsSubstepsState,
+     setShowConstraintForcesState,
+     setLineLayeringEnabledState,
+     setClosedLoopMotorsEnabledState,
+diff --git a/hp-sim-3d/app/headlessWorld.js b/hp-sim-3d/app/headlessWorld.js
+index bbb208e7..c7286154 100644
+--- a/hp-sim-3d/app/headlessWorld.js
++++ b/hp-sim-3d/app/headlessWorld.js
+@@ -1,3 +1,4 @@
++import { setPhysicsSubsteps } from './physics-substeps.js';
+ import { World } from '../../src/js/cable_joints_3d/ecs.js';
+ import { OpenText } from '../../src/js/usd/stage.js';
+ import { bakeCableSceneUsdaSource } from '../../src/js/usd/cable_scene_baker.js';
+@@ -9,7 +10,7 @@ import { setClosedLoopMotorFeatureFlags } from './closed-loop-flags.js';
+ import { PerformanceMonitor } from './performance-monitor.js';
+ 
+ // The same scene construction and system order used by the production app.
+-export function createHeadlessWorld(sceneText, { lineLayeringEnabled = true, closedLoopMotorsEnabled = false, profiling = {}, cableSolverBackend = undefined,
++export function createHeadlessWorld(sceneText, { lineLayeringEnabled = true, closedLoopMotorsEnabled = false, physicsSubsteps = 1, profiling = {}, cableSolverBackend = undefined,
+   scenePrimPath, requireRrfTimestep = true } = {}) {
+   const sceneName = sceneText.match(/defaultPrim\s*=\s*"([^"]+)"/)?.[1];
+   if (!sceneName && !scenePrimPath) throw new Error('Scene has no defaultPrim');
+@@ -24,6 +25,7 @@ export function createHeadlessWorld(sceneText, { lineLayeringEnabled = true, clo
+   applyEntityPlan(world, buildEntityPlan(checked));
+   setLineLayeringFeatureFlags(world, lineLayeringEnabled);
+   setClosedLoopMotorFeatureFlags(world, closedLoopMotorsEnabled);
++  setPhysicsSubsteps(world, physicsSubsteps);
+   registerSimulationSystems(world, { cableSolverBackend });
+   const remote = world.systems.find(system => system instanceof RemoteSpoolSystem);
+   remote._ensureAxisMapping(world);
+diff --git a/hp-sim-3d/index.html b/hp-sim-3d/index.html
+index f6af4c7d..a1422cb8 100644
+--- a/hp-sim-3d/index.html
++++ b/hp-sim-3d/index.html
+@@ -69,6 +69,16 @@
+                   <input id="closedLoopMotorsToggle" type="checkbox">
+                   <span>Closed Loop Motors</span>
+                 </label>
++                <label class="sim-toggle" for="physicsSubsteps">
++                  <span>Physics Substeps</span>
++                  <select id="physicsSubsteps" title="More substeps improve stability but use more CPU">
++                    <option value="1" selected>1</option>
++                    <option value="2">2</option>
++                    <option value="4">4</option>
++                    <option value="8">8</option>
++                    <option value="16">16</option>
++                  </select>
++                </label>
+               </div>
+             </div>
+             <input
+diff --git a/scripts/autocal_headless.mjs b/scripts/autocal_headless.mjs
+index 152d5492..e3f3b806 100644
+--- a/scripts/autocal_headless.mjs
++++ b/scripts/autocal_headless.mjs
+@@ -1,4 +1,5 @@
+ // Persistent production Rust/WASM world and JS RRF bridge owned by autocal.py.
++import { setPhysicsSubsteps } from '../hp-sim-3d/app/physics-substeps.js';
+ import fs from 'node:fs';
+ import http from 'node:http';
+ import { setImmediate as yieldStep } from 'node:timers/promises';
+@@ -14,10 +15,10 @@ import { FlightRecorder } from '../hp-sim-3d/app/flightRecorder.js';
+ const [scene, rrfUrl, wsPort, apiPort, directory, initialLayering, recordingMode] = process.argv.slice(2);
+ const sceneText = fs.readFileSync(scene, 'utf8');
+ let step = 0, epoch = 0, totalSteps = 0, speed = 1, collectorTime = 0, stopped = false, failure = null;
+-let lineLayeringEnabled = initialLayering === 'true', closedLoopMotorsEnabled = false;
++let lineLayeringEnabled = initialLayering === 'true', closedLoopMotorsEnabled = false, physicsSubsteps = 1;
+ let world, remote, dt, bakedScene, bakedSceneFile, bakedSceneHash;
+ function buildWorld() {
+-  ({ world, remote, dt, bakedScene } = createHeadlessWorld(sceneText, { lineLayeringEnabled, closedLoopMotorsEnabled }));
++  ({ world, remote, dt, bakedScene } = createHeadlessWorld(sceneText, { lineLayeringEnabled, closedLoopMotorsEnabled, physicsSubsteps }));
+   bakedSceneFile = `baked-scene${epoch ? `-${epoch}` : ''}.usda`;
+   fs.writeFileSync(`${directory}/${bakedSceneFile}`, bakedScene);
+   bakedSceneHash = createHash('sha256').update(bakedScene).digest('hex');
+@@ -39,7 +40,7 @@ function attachRecorder() {
+   recorder.contextProvider = () => ({ backend: 'headless-js', physics_engine: world.getResource('physicsEngine'), physics_artifact: world.getResource('physicsArtifact'), scene, sourceText: sceneText,
+     bakedSourceText: bakedScene, baked_scene_file: bakedSceneFile, baked_scene_sha256: bakedSceneHash,
+     node_version: process.version, settings: Object.fromEntries(['gravity', 'dt', 'timeScale', 'enableLayering',
+-      'layeringFrictionEffectiveRadius', 'closedLoopMotorsEnabled'].map(key => [key, world.getResource(key)])) });
++      'layeringFrictionEffectiveRadius', 'closedLoopMotorsEnabled', 'physicsSubsteps'].map(key => [key, world.getResource(key)])) });
+   world.setResource('flightRecorder', recorder);
+   world.registerSystem(recorder);
+   if (recorder.socket?.readyState === 1) recorder.update(world, 0);
+@@ -56,7 +57,7 @@ function status() {
+     queue_length: remote.getQueueLength(), error: failure, recording_drained: recordingDrained,
+     baked_scene_file: bakedSceneFile, baked_scene_sha256: bakedSceneHash,
+     settings: { enableLayering: world.getResource('enableLayering') === true,
+-      closedLoopMotorsEnabled: world.getResource('closedLoopMotorsEnabled') === true, timeScale: speed } };
++      closedLoopMotorsEnabled: world.getResource('closedLoopMotorsEnabled') === true, physicsSubsteps, timeScale: speed } };
+ }
+ async function advance(seconds = 0, drain = false) {
+   if (!Number.isFinite(seconds) || seconds < 0) throw new Error('Advance seconds must be finite and nonnegative');
+@@ -90,6 +91,7 @@ let controller;
+ function attachController() {
+   controller = createExternalCommandController({ world, url: 'ws://observation', WebSocketCtor: ObservationSocket,
+     featureFlags: {
++      setPhysicsSubstepsState(count) { physicsSubsteps = setPhysicsSubsteps(world, count); },
+       get lineLayeringEnabled() { return lineLayeringEnabled; },
+       setLineLayeringEnabledState(enabled) {
+         lineLayeringEnabled = enabled;
+diff --git a/tests/js/hp-sim-3d/autocalSettings.test.js b/tests/js/hp-sim-3d/autocalSettings.test.js
+index 86424de4..fb362be7 100644
+--- a/tests/js/hp-sim-3d/autocalSettings.test.js
++++ b/tests/js/hp-sim-3d/autocalSettings.test.js
+@@ -134,3 +134,37 @@ test('recorder shutdown drains pending events before disconnecting', async () =>
+   expect(recorder.socket).toBeNull();
+   expect(recorder.error).toBeNull();
+ });
++
++test('browser substep menu and remote settings agree, reject invalid counts, and survive resets', () => {
++  const world = new World();
++  const listeners = {};
++  const select = {
++    options: [{ value: '1' }, { value: '4' }], value: '1',
++    ownerDocument: { createElement: () => ({}) },
++    add(option) { this.options.push(option); },
++    addEventListener(type, handler) { listeners[type] = handler; },
++  };
++  const state = {};
++  const flags = createFeatureFlagsController({ world, state, toggles: { physicsSubsteps: select } });
++  flags.bindUi();
++  expect(world.getResource('physicsSubsteps')).toBe(1);
++  select.value = '4';
++  listeners.change();
++  expect(world.getResource('physicsSubsteps')).toBe(4);
++  const controller = createExternalCommandController({ world, featureFlags: flags, url: 'ws://test', WebSocketCtor: Socket });
++  controller.connect();
++  Socket.last.open();
++  controller.handlePayload({ type: 'simulation_settings', physicsSubsteps: 3 });
++  expect(select.value).toBe('3');
++  world.clear();
++  controller.handlePayload({ type: 'encoder_request', requestId: 1, axes: [] });
++  expect(Socket.last.samples.at(-1).simulationSettings.physicsSubsteps).toBe(3);
++  for (const count of [0, -1, 1.5, 17, '4', null]) {
++    controller.handlePayload({ type: 'simulation_settings', physicsSubsteps: count });
++    controller.handlePayload({ type: 'encoder_request', requestId: 2, axes: [] });
++    expect(Socket.last.samples.at(-1).simulationSettings.settingsError).toMatch('integer');
++    expect(world.getResource('physicsSubsteps')).toBe(3);
++  }
++  controller.handlePayload({ type: 'simulation_settings', physicsSubsteps: 1 });
++  expect(select.value).toBe('1');
++});
+diff --git a/tests/js/hp-sim-3d/headlessWorld.test.js b/tests/js/hp-sim-3d/headlessWorld.test.js
+index 686db599..4bc9f899 100644
+--- a/tests/js/hp-sim-3d/headlessWorld.test.js
++++ b/tests/js/hp-sim-3d/headlessWorld.test.js
+@@ -7,7 +7,7 @@ import { layeringEnabled, PositionComponent, EncoderComponent } from '../../../s
+ 
+ test.each(['hp3', 'hp4'])('%s headless construction uses the browser no-layering geometry', machine => {
+   const source = fs.readFileSync(path.resolve(__dirname, `../../../public/usd_scenes/${machine}_rigid_body.usda`), 'utf8');
+-  const unlayered = createHeadlessWorld(source, { lineLayeringEnabled: false, closedLoopMotorsEnabled: true });
++  const unlayered = createHeadlessWorld(source, { lineLayeringEnabled: false, closedLoopMotorsEnabled: true, physicsSubsteps: 4 });
+   const layered = createHeadlessWorld(source, { lineLayeringEnabled: true });
+   expect(unlayered.bakedScene).toBe(bakeCableSceneUsdaSource(source, { cablePathHalfWidthOverride: 0, deriveAll: true }).source);
+   expect(unlayered.bakedScene).not.toBe(layered.bakedScene);
+@@ -15,6 +15,8 @@ test.each(['hp3', 'hp4'])('%s headless construction uses the browser no-layering
+     expect(unlayered.world.getResource(key)).toBe(false);
+     expect(layered.world.getResource(key)).toBe(true);
+   }
++  expect(unlayered.world.getResource('physicsSubsteps')).toBe(4);
++  expect(layered.world.getResource('physicsSubsteps')).toBe(1);
+   expect(unlayered.world.getResource('closedLoopMotorsEnabled')).toBe(true);
+   expect(layered.world.getResource('closedLoopMotorsEnabled')).toBe(false);
+   expect(layeringEnabled(unlayered.world)).toBe(false);

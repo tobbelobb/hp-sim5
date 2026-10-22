@@ -1,0 +1,125 @@
+{
+  "backend": "headless-js",
+  "status": "complete",
+  "machine_type": "hangprinter_4",
+  "scene": "/home/torbjorn/repos/hp-sim5/public/usd_scenes/hp4_rigid_body.usda",
+  "firmware_config": "sys/config_hp4.g",
+  "recording_mode": "events",
+  "clock": "fixed steps; collector waits advance simulation time",
+  "dataset": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-19-interactive-research-8d7a82a2/E09-candidate-auto/sweeps.json",
+  "source_sha256": "25d1c048a6cbb4402334c6ad5967a5df61105555eda507bfa62a8c9241d2570b",
+  "autocal_source_sha256": "59bb8170099ce988c60e571043a59991ffe07918522c25cd760164c404996d76",
+  "git_revision": "3b3a7feca285a8b0d9e7d20a2652a66b0542e605",
+  "owned_services": [
+    {
+      "name": "recorder",
+      "pid": 12
+    },
+    {
+      "name": "rrf",
+      "pid": 78
+    },
+    {
+      "name": "physics",
+      "pid": 82
+    },
+    {
+      "name": "collector",
+      "pid": 93
+    },
+    {
+      "name": "collector",
+      "pid": 203
+    },
+    {
+      "name": "collector",
+      "pid": 219
+    },
+    {
+      "name": "collector",
+      "pid": 255
+    },
+    {
+      "name": "collector",
+      "pid": 272
+    },
+    {
+      "name": "collector",
+      "pid": 288
+    }
+  ],
+  "extended_reference_ws": "ws://127.0.0.1:48315",
+  "owned_recorder": true,
+  "scene_sha256": "c0944e6a6e446cc557fa009ca6926a98546568130be6784e7aa44bda5c507b85",
+  "firmware_config_sha256": "148c3d4b067b1c843d45c384de2341a0c6e06296c6790588b19f02b06ac7774a",
+  "rrf_sha256": "9b2ac828a9ad0636640c92f7a1cbf042f9a04327505c8d699c54b1abb582f3fe",
+  "physics_engine": "rust-native",
+  "physics_artifact": {
+    "path": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-19-interactive-research-8d7a82a2/E08-candidate-native/physics.node",
+    "sha256": "6e9a74dfb67f66ced1a99376427477dd1e609a9d3fcaa5399129feb9fb63fc50",
+    "build": {
+      "kind": "isolated counterfactual; not installed",
+      "artifactSha256": "6e9a74dfb67f66ced1a99376427477dd1e609a9d3fcaa5399129feb9fb63fc50",
+      "sources": {
+        "src/lib.rs": "1e47467ce2f7c419c6d92289f2648fe37d7bdc9dca4f9f57e73a93c1d40d687f",
+        "src/engine.rs": "b94863f680c84593849e0a5df0867f7848e7d92bb78b4688bc7ad5d006eece7d",
+        "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8"
+      }
+    }
+  },
+  "baked_scene_sha256": "5d5de72ea49d36fa1616521b02f23719473665bd10b6b5ba8acb841e2dac6961",
+  "initial_baked_scene_sha256": "5d5de72ea49d36fa1616521b02f23719473665bd10b6b5ba8acb841e2dac6961",
+  "service_url": "http://127.0.0.1:50855",
+  "rrf_url": "http://127.0.0.1:55387",
+  "services": [
+    12,
+    78,
+    82
+  ],
+  "owned_rrf": true,
+  "firmware_initial": {
+    "M115": "FIRMWARE_NAME: RepRapFirmware for x86_64 (host) FIRMWARE_VERSION: 3.7.0-alpha.5 ELECTRONICS: RRF_Host FIRMWARE_DATE: 2026-05-21 17:47:47",
+    "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1900.00, -280.00\nB:1645.45, 950.00, -280.00\nC:-1645.45, 950.00, -280.00\nD:0.00, 0.00, 1900.00\nP:Print radius: 1500.0",
+    "M666": "M666 A1 Q0.0000\nR30.00:30.00:30.00:30.00\nU2:2:2:4\nO1:1:1:1\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI10.0:10.0:10.0:10.0\nX40.0:40.0:40.0:40.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0"
+  },
+  "stop_reason": "max-steps",
+  "wall_s": 595.2132890189969,
+  "kept_alive": false,
+  "service_wall_s": 594.56377602,
+  "step": 1309830,
+  "epoch": 0,
+  "total_steps": 1309830,
+  "dt_s": 0.002,
+  "simulated_s": 2619.66,
+  "collector_time_s": 2619.659999951877,
+  "queue_length": 0,
+  "recording_drained": true,
+  "baked_scene_file": "baked-scene.usda",
+  "settings": {
+    "enableLayering": false,
+    "closedLoopMotorsEnabled": true,
+    "physicsSubsteps": 1,
+    "timeScale": 10
+  },
+  "physics_returncode": 0,
+  "normal_completion": false,
+  "recordings": [
+    {
+      "backend": "headless-js",
+      "scene_generation": null,
+      "recording_id": "5e7bd93cf5f8458ab683acb89cfd7e72",
+      "rrd": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-19-interactive-research-8d7a82a2/E09-candidate-auto/sweeps.headless/hangprinter-20261019T212108.348120Z-a7179dc0.rrd",
+      "status": "finalized",
+      "start_step": 0,
+      "format_version": 1,
+      "extended_reference": true,
+      "autocal_complete": true,
+      "rejected_messages": [],
+      "recording_mode": "events",
+      "end_step": null,
+      "end_time_s": null,
+      "physics_samples": 0,
+      "event_count": 536194
+    }
+  ]
+}

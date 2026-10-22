@@ -1,0 +1,114 @@
+diff --git a/autocal/_autocal_common.py b/autocal/_autocal_common.py
+index 19041c35..98619668 100644
+--- a/autocal/_autocal_common.py
++++ b/autocal/_autocal_common.py
+@@ -80,8 +80,6 @@ _SCORE_UI_RANK_OBS_BONUS_WEIGHT = 0.30
+ _SCORE_UI_RANK_FILTERED_RATIO_WEIGHT = 0.50
+ _SCORE_UI_HARD_FAIL = 50.0
+ _SPOOL_ANCHOR_STEP_IMPROVE_REL = 1e-4
+-_FULL_AUTO_HISTORY_LOG_BONUS_WEIGHT = 0.45
+-_FULL_AUTO_HISTORY_LINEAR_PENALTY = 0.12
+ _FULL_AUTO_HISTORY_COVERAGE_WEIGHT = 0.20
+ _FULL_AUTO_HISTORY_UI_RANK_POINTS = np.asarray([4.00, 4.10, 4.20, 4.35, 4.55, 4.85, 5.50, 50.0], dtype=float)
+ _FULL_AUTO_HISTORY_UI_SCORE_POINTS = np.asarray([0.6, 1.0, 1.8, 4.5, 9.0, 15.0, 25.0, 50.0], dtype=float)
+@@ -4323,16 +4321,6 @@ def _rank_coverage_adjustment_from_noise_metrics(
+     return float(adjustment), info
+ 
+ 
+-def _full_auto_history_iteration_adjustment(iteration_index: int) -> float:
+-    idx = max(1, int(iteration_index))
+-    if idx <= 1:
+-        return 0.0
+-    return float(
+-        -_FULL_AUTO_HISTORY_LOG_BONUS_WEIGHT * np.log(float(idx))
+-        + _FULL_AUTO_HISTORY_LINEAR_PENALTY * float(idx - 1)
+-    )
+-
+-
+ def _full_auto_history_selection_score(
+     rank_score: Optional[float],
+     *,
+@@ -4349,15 +4337,14 @@ def _full_auto_history_selection_score(
+     if rank is None or not np.isfinite(rank):
+         return float("inf"), info
+ 
+-    idx = max(1, int(iteration_index))
+-    iteration_adjust = _full_auto_history_iteration_adjustment(idx)
+-
+     coverage = _float_or_none(coverage_adjust)
+     if coverage is None or not np.isfinite(coverage):
+         coverage = 0.0
+ 
+-    selection_score = float(rank + iteration_adjust + float(coverage_weight) * coverage)
+-    info["iteration_adjust"] = float(iteration_adjust)
++    # Collecting another sweep is not evidence that the calibration improved.
++    # Keep patience and best-so-far selection independent of candidate age.
++    selection_score = float(rank + float(coverage_weight) * coverage)
++    info["iteration_adjust"] = 0.0
+     info["coverage_adjust"] = float(coverage)
+     info["selection_score"] = float(selection_score)
+     return float(selection_score), info
+diff --git a/autocal/tests/test_autocal_no_collect.py b/autocal/tests/test_autocal_no_collect.py
+index 936106c4..d325e4e8 100644
+--- a/autocal/tests/test_autocal_no_collect.py
++++ b/autocal/tests/test_autocal_no_collect.py
+@@ -740,7 +740,7 @@ def test_full_auto_accepts_best_historical_replay_plan_after_patience(tmp_path,
+     assert "Patience reset." in out
+ 
+ 
+-def test_full_auto_history_selector_can_prefer_mid_late_replay_plan(tmp_path, monkeypatch, capsys):
++def test_full_auto_history_selector_preserves_better_early_plan_and_stops(tmp_path, monkeypatch, capsys):
+     dataset = tmp_path / "full_dataset.json"
+     _write_dataset(dataset, sweeps=7)
+ 
+@@ -897,7 +897,8 @@ def test_full_auto_history_selector_can_prefer_mid_late_replay_plan(tmp_path, mo
+     assert rc == 0
+     assert sent == []
+     out = capsys.readouterr().out
+-    assert "M669 iter_3" in out
++    assert "M669 iter_1" in out
++    assert len(plan_queue) == 1  # Three worse fits exhaust patience, even as data grows.
+ 
+ 
+ def test_full_auto_underconstrained_recovery_reuses_warm_start_and_keeps_collect_decision(
+diff --git a/autocal/tests/test_autocal_score_ui.py b/autocal/tests/test_autocal_score_ui.py
+index 3eac9ab2..d2b045f4 100644
+--- a/autocal/tests/test_autocal_score_ui.py
++++ b/autocal/tests/test_autocal_score_ui.py
+@@ -302,18 +302,15 @@ def test_rank_coverage_adjustment_penalizes_filtered_ratio():
+     assert np.isclose(adjust, expected_penalty, atol=1e-12)
+ 
+ 
+-def test_full_auto_history_iteration_adjustment_prefers_mid_late_iterations():
+-    iter_1 = ac._full_auto_history_iteration_adjustment(1)
+-    iter_2 = ac._full_auto_history_iteration_adjustment(2)
+-    iter_3 = ac._full_auto_history_iteration_adjustment(3)
+-    iter_6 = ac._full_auto_history_iteration_adjustment(6)
++def test_full_auto_history_score_is_independent_of_iteration_age():
++    scores = [
++        ac._full_auto_history_selection_score(1.0, iteration_index=i, coverage_adjust=0.0)[0]
++        for i in (1, 2, 3, 6, 20)
++    ]
++    assert scores == [1.0] * 5
+ 
+-    assert np.isclose(iter_1, 0.0, atol=1e-12)
+-    assert iter_3 < iter_2 < iter_1
+-    assert iter_6 > iter_3
+ 
+-
+-def test_full_auto_history_selection_score_applies_iteration_and_coverage():
++def test_full_auto_history_selection_score_keeps_worse_later_fit_worse():
+     sel_early, info_early = ac._full_auto_history_selection_score(
+         1.0,
+         iteration_index=1,
+@@ -330,8 +327,8 @@ def test_full_auto_history_selection_score_applies_iteration_and_coverage():
+         coverage_adjust=0.2,
+     )
+ 
+-    assert info_mid["iteration_adjust"] < info_early["iteration_adjust"]
+-    assert sel_mid < sel_early
++    assert info_mid["iteration_adjust"] == info_early["iteration_adjust"] == 0.0
++    assert sel_mid > sel_early
+     expected_coverage_delta = ac._FULL_AUTO_HISTORY_COVERAGE_WEIGHT * 0.2
+     assert np.isclose(sel_mid_filtered - sel_mid, expected_coverage_delta, atol=1e-12)
+ 

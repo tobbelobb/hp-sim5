@@ -1,0 +1,42 @@
+{
+  "backend": "headless-js",
+  "status": "complete",
+  "machine_type": "hangprinter_3",
+  "scene": "/home/torbjorn/repos/hp-sim5/public/usd_scenes/hp3_rigid_body.usda",
+  "firmware_config": "sys/config_hp3.g",
+  "clock": "fixed steps; collector waits advance simulation time",
+  "dataset": "/home/torbjorn/repos/hp-sim5/output/research/autocal-comfortable-force-20261010/isolated.json",
+  "source_sha256": "d59889e8c16282a83799bd61ab8dfb5907bfc1af075eade55c820b7815077c57",
+  "autocal_source_sha256": "e9e5e26cbc6be406a8c546be77e3dc99fe703e9c4e3bcf2df0bb76a5c4a50f04",
+  "git_revision": "bdc2ac1fa4b92c77df68d374e5947c21e8a5d532",
+  "scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+  "firmware_config_sha256": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8",
+  "rrf_sha256": "9b2ac828a9ad0636640c92f7a1cbf042f9a04327505c8d699c54b1abb582f3fe",
+  "baked_scene_sha256": "9e5ef288d617fdba1691e7486b399b7fc116756e936055e009c3662fa9ce1916",
+  "service_url": "http://127.0.0.1:50043",
+  "rrf_url": "http://127.0.0.1:50045",
+  "services": [
+    49393,
+    49397
+  ],
+  "owned_rrf": true,
+  "firmware_initial": {
+    "M115": "FIRMWARE_NAME: RepRapFirmware for x86_64 (host) FIRMWARE_VERSION: 3.7.0-alpha.5 ELECTRONICS: RRF_Host FIRMWARE_DATE: 2026-05-21 17:47:47",
+    "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1900.00, -280.00\nB:1645.45, 950.00, -280.00\nC:-1645.45, 950.00, -280.00\nD:0.00, 0.00, 1900.00\nP:Print radius: 1500.0",
+    "M666": "M666 A1 Q0.0000\nR30.00:30.00:30.00:30.00\nU1:1:1:1\nO1:1:1:1\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI3.0:3.0:3.0:3.0\nX170.0:170.0:170.0:170.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0"
+  },
+  "exit_code": 0,
+  "wall_s": 54.058126334002736,
+  "kept_alive": false,
+  "service_wall_s": 53.76208022,
+  "step": 488271,
+  "epoch": 0,
+  "total_steps": 488271,
+  "dt_s": 0.002,
+  "simulated_s": 976.542,
+  "collector_time_s": 976.5419999907316,
+  "queue_length": 0,
+  "recording_drained": false,
+  "physics_returncode": 0,
+  "normal_completion": false
+}

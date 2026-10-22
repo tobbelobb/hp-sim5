@@ -1,0 +1,52 @@
+[
+  {
+    "id": "E24-hp3-continuous-10x",
+    "points": 24,
+    "physicsS": 1023.39,
+    "wallS": 23.552949256,
+    "rangesMm": [
+      380.58824201913546,
+      523.865810973854,
+      364.11582453881294
+    ]
+  },
+  {
+    "id": "E34-hp3-net-response-bootstrap",
+    "points": 24,
+    "physicsS": 686.644,
+    "wallS": 18.89650014,
+    "rangesMm": [
+      1005.9641476182317,
+      1020.0751346206057,
+      995.8115673593807
+    ]
+  },
+  {
+    "id": "E23-hp4-continuous-25x",
+    "points": 24,
+    "physicsS": 936.3960000000001,
+    "wallS": 216.39354618899998,
+    "rangesMm": [
+      540.0869010418892,
+      554.5199012912564,
+      491.536204574537
+    ]
+  },
+  {
+    "id": "E28-hp4-local-origin",
+    "points": 8,
+    "physicsS": 269.946,
+    "wallS": 54.011299222,
+    "rangesMm": [
+      708.7092687294435
+    ]
+  },
+  {
+    "id": "E35-hp4-local-final-bootstrap",
+    "points": 21,
+    "plannedPoints": 24,
+    "physicsS": 1364.242,
+    "wallBudgetS": 360,
+    "finalDataset": false
+  }
+]

@@ -1,0 +1,40 @@
+{
+  "current_revision": "ab833759684ead6ff7808514b9715b43687310f8",
+  "baseline_revision": "7905e64fa5137d3d0485a5db5ba39f56563e9954",
+  "hashes": {
+    "src/wasm/cable_solver/src/engine.rs": "c4a2609f63595e243c1c06efb132f692df95a7ff785333a60efd45e2b6062ca6",
+    "src/wasm/cable_solver/src/lib.rs": "088d64e1de9a45fe692d5994081050e0ab5ac9e9996d504261b2e8280649ed04",
+    "src/wasm/cable_solver/src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+    "src/wasm/cable_solver/Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+    "src/wasm/cable_solver/native/node_bridge.c": "c8d4ad5a269dcdd073c13fb0ce24f25fd009a38434842f1a7301264a8994ee85",
+    "public/wasm/cable_solver.wasm": "6bc83a1934f1c6496cb7504f99fc0bb8f394a1ff59d9219402313e15eb4fbfac",
+    "src/wasm/cable_solver/target/native/physics.node": "073405008b78250e18242761910c4264243f37bb00b7e2544e772a11a6c37172",
+    "scripts/profile_headless.mjs": "d406d8a18a5f996a4b730b4c870225d72f172bf312fb5f436f92dbfee88b8b02",
+    "scripts/research_physics.mjs": "1b721cc9f6e7eb05fb94bd73c738f78b4387cda41db586409bb22dd9bfe208d1",
+    "src/js/cable_joints_3d/rust_physics_engine.js": "fb39c2e30883e5bb39357ed64acacda5d9d4219e26f4af9f0b186712aea901cb",
+    "src/js/cable_joints_3d/wasm_physics_engine.js": "549788cc0013461656fd9c94da99be5d3fd2be8c5bf613ba406781356d6f6441",
+    "src/js/cable_joints_3d/native_physics_engine.js": "99c7be08341f2d2ad503568bb6945529093c74c1ff1f8d6d3246de6f1f9c73ed"
+  },
+  "native_build": {
+    "profile": "release",
+    "platform": "linux",
+    "arch": "x64",
+    "nodeApi": 8,
+    "artifactSha256": "073405008b78250e18242761910c4264243f37bb00b7e2544e772a11a6c37172",
+    "sources": {
+      "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+      "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+      "native/node_bridge.c": "c8d4ad5a269dcdd073c13fb0ce24f25fd009a38434842f1a7301264a8994ee85",
+      "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+      "src/engine.rs": "c4a2609f63595e243c1c06efb132f692df95a7ff785333a60efd45e2b6062ca6",
+      "src/lib.rs": "088d64e1de9a45fe692d5994081050e0ab5ac9e9996d504261b2e8280649ed04"
+    },
+    "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+    "target": "x86_64-unknown-linux-gnu",
+    "rustflags": null,
+    "compiler": "cc",
+    "buildScriptSha256": "f9736883a8be484fd64b100d8a3a5717fbc6e96415dc99a8c2b4489b9303d8de"
+  },
+  "node": "v24.14.1",
+  "python": "Python 3.12.3"
+}

@@ -1,0 +1,9 @@
+{
+  "outcome": "passed",
+  "handshake": true,
+  "finalized": true,
+  "readable": true,
+  "recording_manifest": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-19-interactive-research-bf5d807a/native/preflight/0b6443a98342414f8279b6cc46827b8d/hangprinter-20261019T123644.686349Z-3ee9e805.json",
+  "rrd": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-19-interactive-research-bf5d807a/native/preflight/0b6443a98342414f8279b6cc46827b8d/hangprinter-20261019T123644.686349Z-3ee9e805.rrd",
+  "kind": "tool_check"
+}

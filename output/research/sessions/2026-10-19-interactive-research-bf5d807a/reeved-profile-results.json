@@ -1,0 +1,53 @@
+[
+  {
+    "id": "E34-hp3-net-response-bootstrap",
+    "points": 24,
+    "physicsS": 686.644,
+    "wallS": 18.89650014,
+    "rangesMm": [
+      1005.9641476182317,
+      1020.0751346206057,
+      995.8115673593807
+    ]
+  },
+  {
+    "id": "E37-hp3-unscaled-direct",
+    "points": 24,
+    "physicsS": 746.694,
+    "wallS": 21.099226608000002,
+    "rangesMm": [
+      1071.3145108006554,
+      1087.6560285870783,
+      1057.7899544269512
+    ]
+  },
+  {
+    "id": "E28-hp4-local-origin",
+    "points": 8,
+    "physicsS": 269.946,
+    "wallS": 54.011299222,
+    "rangesMm": [
+      708.7092687294435
+    ]
+  },
+  {
+    "id": "E38-hp4-profile-point-timing",
+    "points": 8,
+    "physicsS": 218.358,
+    "wallS": 42.065990925,
+    "rangesMm": [
+      953.6697199053515
+    ]
+  },
+  {
+    "id": "E36-hp4-reeved-profile",
+    "points": 24,
+    "physicsS": 1221.672,
+    "wallS": 281.65827805199996,
+    "rangesMm": [
+      1215.3512979799916,
+      1366.6870520911677,
+      1338.4493701231513
+    ]
+  }
+]

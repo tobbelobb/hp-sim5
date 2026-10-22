@@ -1,0 +1,100 @@
+{
+  "git_revision": "b56d08e43ddb473c2b4d390c638c5eaec25da153",
+  "design": "10 HP3 worlds; USD mover mass and gravity varied; one collection per world; paired isolated replays",
+  "solver_order": [
+    "lbfgsb",
+    "trf"
+  ],
+  "worlds": [
+    {
+      "world_id": "W00-nominal",
+      "mover_mass_scale": 1.0,
+      "gravity_m_s2": 9.82,
+      "dataset_sha256": null,
+      "sweep_count": null,
+      "solvers": {},
+      "collection_error": "collection failed (rc=1); see collection.log"
+    },
+    {
+      "world_id": "W01-light",
+      "mover_mass_scale": 0.8,
+      "gravity_m_s2": 9.82,
+      "dataset_sha256": null,
+      "sweep_count": null,
+      "solvers": {},
+      "collection_error": "collection failed (rc=1); see collection.log"
+    },
+    {
+      "world_id": "W02-heavy",
+      "mover_mass_scale": 1.2,
+      "gravity_m_s2": 9.82,
+      "dataset_sha256": null,
+      "sweep_count": null,
+      "solvers": {},
+      "collection_error": "collection failed (rc=1); see collection.log"
+    },
+    {
+      "world_id": "W03-low-gravity",
+      "mover_mass_scale": 1.0,
+      "gravity_m_s2": 8.5,
+      "dataset_sha256": null,
+      "sweep_count": null,
+      "solvers": {},
+      "collection_error": "collection failed (rc=1); see collection.log"
+    },
+    {
+      "world_id": "W04-high-gravity",
+      "mover_mass_scale": 1.0,
+      "gravity_m_s2": 11.0,
+      "dataset_sha256": null,
+      "sweep_count": null,
+      "solvers": {},
+      "collection_error": "collection failed (rc=1); see collection.log"
+    },
+    {
+      "world_id": "W05-light-low-g",
+      "mover_mass_scale": 0.85,
+      "gravity_m_s2": 8.8,
+      "dataset_sha256": null,
+      "sweep_count": null,
+      "solvers": {},
+      "collection_error": "collection failed (rc=1); see collection.log"
+    },
+    {
+      "world_id": "W06-light-high-g",
+      "mover_mass_scale": 0.85,
+      "gravity_m_s2": 10.8,
+      "dataset_sha256": null,
+      "sweep_count": null,
+      "solvers": {},
+      "collection_error": "collection failed (rc=1); see collection.log"
+    },
+    {
+      "world_id": "W07-heavy-low-g",
+      "mover_mass_scale": 1.15,
+      "gravity_m_s2": 8.8,
+      "dataset_sha256": null,
+      "sweep_count": null,
+      "solvers": {},
+      "collection_error": "collection failed (rc=1); see collection.log"
+    },
+    {
+      "world_id": "W08-heavy-high-g",
+      "mover_mass_scale": 1.15,
+      "gravity_m_s2": 10.8,
+      "dataset_sha256": null,
+      "sweep_count": null,
+      "solvers": {},
+      "collection_error": "collection failed (rc=1); see collection.log"
+    },
+    {
+      "world_id": "W09-heavy-high-load",
+      "mover_mass_scale": 1.25,
+      "gravity_m_s2": 10.5,
+      "dataset_sha256": null,
+      "sweep_count": null,
+      "solvers": {},
+      "collection_error": "collection failed (rc=1); see collection.log"
+    }
+  ]
+}

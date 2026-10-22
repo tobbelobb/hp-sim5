@@ -1,0 +1,29 @@
+[
+ {
+  "substeps": 1,
+  "mode": "gammaOverIters",
+  "iterations": null,
+  "damping": null,
+  "zRange": 0.0015032346499456867,
+  "maxOmega": 1.1844220835289008,
+  "meanOmega": 0.49282293263264515
+ },
+ {
+  "substeps": 1,
+  "mode": "noDamping",
+  "iterations": null,
+  "damping": null,
+  "zRange": 0.0003526355252250618,
+  "maxOmega": 0.050675547324800514,
+  "meanOmega": 0.0014838051164210414
+ },
+ {
+  "substeps": 1,
+  "mode": "dampOnceFirst",
+  "iterations": null,
+  "damping": null,
+  "zRange": 0.0010315836279491397,
+  "maxOmega": 0.35932610465952697,
+  "meanOmega": 0.10153264299914971
+ }
+]

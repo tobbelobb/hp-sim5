@@ -1,0 +1,60 @@
+{
+  "source_rrd": "/home/torbjorn/repos/hp-sim5-worktrees/research-88cc2cfb/output/extended-autocal/no-buildup-reference-010/sweeps.recording/hangprinter-20261019T175622.368427Z-9bb1f39b.rrd",
+  "last_recorded_sim_time_s": 1785.7599999715962,
+  "window_start_s": 1755.9399999723014,
+  "window_end_s": 1785.139999971611,
+  "window_s": 29.19999999930951,
+  "samples": 32,
+  "axes": {
+    "A": {
+      "first_deg": 2310.8624999974213,
+      "last_deg": 2310.8624999974213,
+      "min_deg": 2310.8624999974213,
+      "max_deg": 2310.8624999974213,
+      "span_deg": 0.0,
+      "net_change_deg": 0.0,
+      "max_step_deg": 0.0,
+      "reversals": 0
+    },
+    "B": {
+      "first_deg": -1554.602377251526,
+      "last_deg": -2246.8418685097604,
+      "min_deg": -2246.8418685097604,
+      "max_deg": -1554.602377251526,
+      "span_deg": 692.2394912582345,
+      "net_change_deg": -692.2394912582345,
+      "max_step_deg": 38.417070892020774,
+      "reversals": 0
+    },
+    "C": {
+      "first_deg": 81.78574566239207,
+      "last_deg": 920.7016631802575,
+      "min_deg": 81.78574566239207,
+      "max_deg": 920.7016631802575,
+      "span_deg": 838.9159175178654,
+      "net_change_deg": 838.9159175178654,
+      "max_step_deg": 44.19681210182462,
+      "reversals": 0
+    },
+    "D": {
+      "first_deg": 0.0,
+      "last_deg": 0.0,
+      "min_deg": 0.0,
+      "max_deg": 0.0,
+      "span_deg": 0.0,
+      "net_change_deg": 0.0,
+      "max_step_deg": 0.0,
+      "reversals": 0
+    }
+  },
+  "interpretation": {
+    "constant_axis": [
+      "A",
+      "D"
+    ],
+    "monotonic_axes": [
+      "B",
+      "C"
+    ]
+  }
+}

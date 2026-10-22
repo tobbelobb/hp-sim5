@@ -1,0 +1,74 @@
+{
+ "pts10": {
+  "rc": 0,
+  "niters": 0,
+  "final": null,
+  "rmse": null,
+  "iters": [],
+  "summary": null,
+  "work": "/tmp/replay_pts10_bl2rmolv"
+ },
+ "pts8": {
+  "rc": 0,
+  "niters": 0,
+  "final": null,
+  "rmse": null,
+  "iters": [],
+  "summary": null,
+  "work": "/tmp/replay_pts8_8rgs__r1"
+ },
+ "pts6": {
+  "rc": 0,
+  "niters": 0,
+  "final": null,
+  "rmse": null,
+  "iters": [],
+  "summary": null,
+  "work": "/tmp/replay_pts6_lyx7dw62"
+ },
+ "pts5": {
+  "rc": 0,
+  "niters": 0,
+  "final": null,
+  "rmse": null,
+  "iters": [],
+  "summary": null,
+  "work": "/tmp/replay_pts5_rkd74pbu"
+ },
+ "pts4": {
+  "rc": 0,
+  "niters": 0,
+  "final": null,
+  "rmse": null,
+  "iters": [],
+  "summary": null,
+  "work": "/tmp/replay_pts4_d60zjw_0"
+ },
+ "full20": {
+  "rc": 0,
+  "niters": 0,
+  "final": null,
+  "rmse": null,
+  "iters": [],
+  "summary": null,
+  "work": "/tmp/replay_full20_937z4bku"
+ },
+ "patience1": {
+  "rc": 0,
+  "niters": 0,
+  "final": null,
+  "rmse": null,
+  "iters": [],
+  "summary": null,
+  "work": "/tmp/replay_patience1_hhf0_piz"
+ },
+ "patience2": {
+  "rc": 0,
+  "niters": 0,
+  "final": null,
+  "rmse": null,
+  "iters": [],
+  "summary": null,
+  "work": "/tmp/replay_patience2_gmm2neqi"
+ }
+}

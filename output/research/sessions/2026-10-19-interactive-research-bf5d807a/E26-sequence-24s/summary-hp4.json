@@ -1,0 +1,83 @@
+[
+  {
+    "machine": "hp4",
+    "config": {
+      "name": "one-fixed",
+      "drives": [
+        1
+      ],
+      "fixed": [
+        3
+      ]
+    },
+    "requestedSpeedup": 25,
+    "dt": 0.002,
+    "steps": 82000,
+    "simS": 164,
+    "wallS": 27.687540774000002,
+    "backend": "rust-native",
+    "bakedSceneSha256": "5d5de72ea49d36fa1616521b02f23719473665bd10b6b5ba8acb841e2dac6961",
+    "stages": [
+      {
+        "force": 0.1,
+        "travelMm": 0.12789842279823185,
+        "settledS": 2,
+        "holdSettledS": 1.75,
+        "bodySettledS": 1.75,
+        "lastPullSpeedDegPerS": 0.004657462558689762,
+        "peakLineN": 0.07003169347780669,
+        "peakExtension": 0.00009119901912383906
+      },
+      {
+        "force": 0.5,
+        "travelMm": 4.5240713124705865,
+        "settledS": null,
+        "holdSettledS": 1.75,
+        "bodySettledS": 1.75,
+        "lastPullSpeedDegPerS": 0.3613792529940554,
+        "peakLineN": 0.6757303768784128,
+        "peakExtension": 0.00015338492403442716
+      },
+      {
+        "force": 1,
+        "travelMm": 28.45427557524086,
+        "settledS": null,
+        "holdSettledS": 1.75,
+        "bodySettledS": 1.75,
+        "lastPullSpeedDegPerS": 4.826031080190901,
+        "peakLineN": 0.9148898251093412,
+        "peakExtension": 0.00021308671008217578
+      },
+      {
+        "force": 2,
+        "travelMm": 96.85400181074858,
+        "settledS": null,
+        "holdSettledS": 1.75,
+        "bodySettledS": 1.75,
+        "lastPullSpeedDegPerS": 9.848838707906168,
+        "peakLineN": 1.5311418805715402,
+        "peakExtension": 0.00036664323938898774
+      },
+      {
+        "force": 5,
+        "travelMm": 288.03594784353015,
+        "settledS": null,
+        "holdSettledS": 1.75,
+        "bodySettledS": 1.75,
+        "lastPullSpeedDegPerS": 27.462726705693058,
+        "peakLineN": 3.948857274714941,
+        "peakExtension": 0.0010310097125442409
+      },
+      {
+        "force": 12,
+        "travelMm": 640.7321647970913,
+        "settledS": null,
+        "holdSettledS": 1.75,
+        "bodySettledS": null,
+        "lastPullSpeedDegPerS": 53.764178394445935,
+        "peakLineN": 20.4104664656381,
+        "peakExtension": 0.005369423033092223
+      }
+    ]
+  }
+]

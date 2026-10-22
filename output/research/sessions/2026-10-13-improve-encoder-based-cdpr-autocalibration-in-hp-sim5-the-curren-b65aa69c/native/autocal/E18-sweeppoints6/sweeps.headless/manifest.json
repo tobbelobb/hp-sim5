@@ -1,0 +1,138 @@
+{
+  "backend": "headless-js",
+  "status": "complete",
+  "machine_type": "hangprinter_3",
+  "scene": "/home/torbjorn/repos/hp-sim5/public/usd_scenes/hp3_rigid_body.usda",
+  "firmware_config": "sys/config_hp3.g",
+  "clock": "fixed steps; collector waits advance simulation time",
+  "dataset": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-13-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-b65aa69c/native/autocal/E18-sweeppoints6/sweeps.json",
+  "source_sha256": "ba5795661c6a547fe65a6dc57f994a13ba09dae9d3146d8e45bb61a3672525d4",
+  "autocal_source_sha256": "9f3e51ef3326d327a153c11779fa73f58e7748f7a416a9fbb06162a2115dd619",
+  "git_revision": "ded5842ee357e34a4e712d1a1c4ef8aea1eeff9d",
+  "owned_services": [
+    {
+      "name": "recorder",
+      "pid": 142200
+    },
+    {
+      "name": "rrf",
+      "pid": 142267
+    },
+    {
+      "name": "physics",
+      "pid": 142271
+    },
+    {
+      "name": "collector",
+      "pid": 142282
+    },
+    {
+      "name": "collector",
+      "pid": 145232
+    },
+    {
+      "name": "collector",
+      "pid": 145543
+    },
+    {
+      "name": "collector",
+      "pid": 145902
+    },
+    {
+      "name": "collector",
+      "pid": 146331
+    },
+    {
+      "name": "collector",
+      "pid": 146450
+    },
+    {
+      "name": "collector",
+      "pid": 146827
+    },
+    {
+      "name": "collector",
+      "pid": 147006
+    }
+  ],
+  "extended_reference_ws": "ws://127.0.0.1:43349",
+  "owned_recorder": true,
+  "scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+  "firmware_config_sha256": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8",
+  "rrf_sha256": "9b2ac828a9ad0636640c92f7a1cbf042f9a04327505c8d699c54b1abb582f3fe",
+  "baked_scene_sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+  "initial_baked_scene_sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+  "service_url": "http://127.0.0.1:44453",
+  "rrf_url": "http://127.0.0.1:42559",
+  "services": [
+    142200,
+    142267,
+    142271
+  ],
+  "owned_rrf": true,
+  "firmware_initial": {
+    "M115": "FIRMWARE_NAME: RepRapFirmware for x86_64 (host) FIRMWARE_VERSION: 3.7.0-alpha.5 ELECTRONICS: RRF_Host FIRMWARE_DATE: 2026-05-21 17:47:47",
+    "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1900.00, -280.00\nB:1645.45, 950.00, -280.00\nC:-1645.45, 950.00, -280.00\nD:0.00, 0.00, 1900.00\nP:Print radius: 1500.0",
+    "M666": "M666 A1 Q0.0000\nR30.00:30.00:30.00:30.00\nU1:1:1:1\nO1:1:1:1\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI3.0:3.0:3.0:3.0\nX170.0:170.0:170.0:170.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0"
+  },
+  "stop_reason": "patience-or-threshold",
+  "applied_parameters": [
+    "M669 A0.00:-1902.25:-279.08 B1647.13:950.96:-279.08 C-1647.02:950.92:-279.08 D-0.06:0.11:1902.13"
+  ],
+  "firmware_final": {
+    "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1902.25, -279.08\nB:1647.13, 950.96, -279.08\nC:-1647.02, 950.92, -279.08\nD:-0.06, 0.11, 1902.13\nP:Print radius: 1500.0",
+    "M666": "M666 A1 Q0.0000\nR30.00:30.00:30.00:30.00\nU1:1:1:1\nO1:1:1:1\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI3.0:3.0:3.0:3.0\nX170.0:170.0:170.0:170.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0"
+  },
+  "wall_s": 929.2875858169973,
+  "kept_alive": false,
+  "service_wall_s": 928.561408031,
+  "step": 2516151,
+  "epoch": 0,
+  "total_steps": 2516151,
+  "dt_s": 0.002,
+  "simulated_s": 5032.302,
+  "collector_time_s": 5032.302000107716,
+  "queue_length": 0,
+  "recording_drained": true,
+  "baked_scene_file": "baked-scene.usda",
+  "settings": {
+    "enableLayering": false,
+    "closedLoopMotorsEnabled": true,
+    "timeScale": 1
+  },
+  "physics_returncode": 0,
+  "normal_completion": true,
+  "recordings": [
+    {
+      "backend": "headless-js",
+      "scene_generation": 0,
+      "recording_id": "85acc964a3454c9bab24a573f688c630",
+      "rrd": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-13-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-b65aa69c/native/autocal/E18-sweeppoints6/sweeps.headless/hangprinter-20261013T140320.251699Z-1b252f4a.rrd",
+      "status": "finalized",
+      "start_step": 0,
+      "format_version": 1,
+      "extended_reference": true,
+      "autocal_complete": true,
+      "rejected_messages": [],
+      "sample_stride": 10,
+      "geometry_detail": "compact",
+      "headless_segments": [
+        {
+          "session": "4980572a-b49a-4470-b575-1f159265b5a5",
+          "generation": 0,
+          "start_step": 0,
+          "start_time_s": 0,
+          "start_wall_time_ms": 1791900200565,
+          "end_step": 2516150,
+          "end_time_s": 5032.300000107715,
+          "end_wall_time_ms": 1791901125395
+        }
+      ],
+      "headless_session": "4980572a-b49a-4470-b575-1f159265b5a5",
+      "end_step": 2516150,
+      "end_time_s": 5032.300000107715,
+      "physics_samples": 251616,
+      "event_count": 707123
+    }
+  ]
+}

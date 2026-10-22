@@ -1,0 +1,153 @@
+{
+  "backend": "headless-js",
+  "status": "complete",
+  "machine_type": "hangprinter_3",
+  "scene": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E14-center/authored-scene.usda",
+  "firmware_config": "sys/research_ae0174ce_E14-center.g",
+  "recording_mode": "events",
+  "clock": "fixed steps; collector waits advance simulation time",
+  "dataset": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E14-center/sweeps.json",
+  "source_sha256": "fec8f12440d0ba24a40a47625668dc077dcb8ae13ee5d691ace12634fd24ee48",
+  "autocal_source_sha256": "660d3fdfaf81f3d9c280f1cff4f8ba51ad8682de1306af24f99c2c4d04aaa8c6",
+  "git_revision": "2c0b86ff189d27859b83543ed3fa837cfa658a3b",
+  "research_contract": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E14-center/contract.json",
+  "reference_position_mm": [
+    0.0,
+    0.0,
+    265.0
+  ],
+  "owned_services": [
+    {
+      "name": "recorder",
+      "pid": 239
+    },
+    {
+      "name": "rrf",
+      "pid": 306
+    },
+    {
+      "name": "physics",
+      "pid": 310
+    },
+    {
+      "name": "collector",
+      "pid": 321
+    },
+    {
+      "name": "collector",
+      "pid": 407
+    },
+    {
+      "name": "collector",
+      "pid": 421
+    },
+    {
+      "name": "collector",
+      "pid": 436
+    },
+    {
+      "name": "collector",
+      "pid": 450
+    },
+    {
+      "name": "collector",
+      "pid": 465
+    },
+    {
+      "name": "collector",
+      "pid": 522
+    }
+  ],
+  "extended_reference_ws": "ws://127.0.0.1:45575",
+  "owned_recorder": true,
+  "scene_sha256": "94ef7f8839b99a7bd3e466d4219f0bad37bb6d8d7db59ea01faeb51421404962",
+  "firmware_config_sha256": "984d0a60dbfe29c9a7f9abfd525af4d4dac0029e55dfeb833fbe298677e2136f",
+  "rrf_sha256": "9b2ac828a9ad0636640c92f7a1cbf042f9a04327505c8d699c54b1abb582f3fe",
+  "physics_engine": "rust-native",
+  "physics_artifact": {
+    "path": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+    "sha256": "259091f1d385722151a60e050e66f73010ab04de2af9bea235ac0d9fe8b39b50",
+    "build": {
+      "profile": "release",
+      "platform": "linux",
+      "arch": "x64",
+      "nodeApi": 8,
+      "artifactSha256": "259091f1d385722151a60e050e66f73010ab04de2af9bea235ac0d9fe8b39b50",
+      "sources": {
+        "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+        "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+        "native/node_bridge.c": "3616cb499eb950b83f17364eb8049a12c537acee6d7178eeaf9c3ecaa0dc5dc2",
+        "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+        "src/engine.rs": "1056d36668d33bf87b2710cd142cffc17e90fa50367aad294933a9d14706aca6",
+        "src/lib.rs": "71e042bf89c89a5826460d7b7bc44c63078ad99ca4e7f0c28976123e851b1a70"
+      },
+      "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+      "target": "x86_64-unknown-linux-gnu",
+      "rustflags": null,
+      "compiler": "cc",
+      "buildScriptSha256": "c810abe7feb293029384535690395e24f4f9d9f9ca6a854029bf24c59d1d866a"
+    }
+  },
+  "baked_scene_sha256": "900ae2f6b76238d5b4abdaf7b686a81c883874b2f82606655977dd052218c5ca",
+  "initial_baked_scene_sha256": "900ae2f6b76238d5b4abdaf7b686a81c883874b2f82606655977dd052218c5ca",
+  "service_url": "http://127.0.0.1:38565",
+  "rrf_url": "http://127.0.0.1:39021",
+  "services": [
+    239,
+    306,
+    310
+  ],
+  "owned_rrf": true,
+  "firmware_initial": {
+    "M115": "FIRMWARE_NAME: RepRapFirmware for x86_64 (host) FIRMWARE_VERSION: 3.7.0-alpha.5 ELECTRONICS: RRF_Host FIRMWARE_DATE: 2026-05-21 17:47:47",
+    "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1900.00, -545.00\nB:1645.45, 950.00, -545.00\nC:-1645.45, 950.00, -545.00\nD:0.00, 0.00, 1635.00\nP:Print radius: 1500.0",
+    "M666": "M666 A1 Q0.0000\nR30.00:30.00:30.00:30.00\nU1:1:1:1\nO1:1:1:1\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI3.0:3.0:3.0:3.0\nX170.0:170.0:170.0:170.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0"
+  },
+  "stop_reason": "spread-consensus",
+  "applied_parameters": [
+    "M669 A0.00:-1904.33:-542.83 B1649.47:952.36:-542.83 C-1649.13:952.10:-542.83 D-0.05:-0.00:1635.77"
+  ],
+  "firmware_final": {
+    "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1904.33, -542.83\nB:1649.47, 952.36, -542.83\nC:-1649.13, 952.10, -542.83\nD:-0.05, -0.00, 1635.77\nP:Print radius: 1500.0",
+    "M666": "M666 A1 Q0.0000\nR30.00:30.00:30.00:30.00\nU1:1:1:1\nO1:1:1:1\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI3.0:3.0:3.0:3.0\nX170.0:170.0:170.0:170.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0"
+  },
+  "wall_s": 91.70815833699817,
+  "kept_alive": false,
+  "service_wall_s": 90.971992845,
+  "step": 1131349,
+  "epoch": 0,
+  "total_steps": 1131349,
+  "dt_s": 0.002,
+  "simulated_s": 2262.698,
+  "collector_time_s": 2262.697999960318,
+  "queue_length": 0,
+  "recording_drained": true,
+  "baked_scene_file": "baked-scene.usda",
+  "settings": {
+    "enableLayering": false,
+    "closedLoopMotorsEnabled": true,
+    "physicsSubsteps": 1,
+    "timeScale": 25
+  },
+  "physics_returncode": 0,
+  "normal_completion": true,
+  "recordings": [
+    {
+      "backend": "headless-js",
+      "scene_generation": null,
+      "recording_id": "2f8b25aede644162a33caa816010f0f0",
+      "rrd": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E14-center/sweeps.headless/hangprinter-20261020T124036.261725Z-ea88449d.rrd",
+      "status": "finalized",
+      "start_step": 0,
+      "format_version": 1,
+      "extended_reference": true,
+      "autocal_complete": true,
+      "rejected_messages": [],
+      "recording_mode": "events",
+      "end_step": null,
+      "end_time_s": null,
+      "physics_samples": 0,
+      "event_count": 372304
+    }
+  ]
+}

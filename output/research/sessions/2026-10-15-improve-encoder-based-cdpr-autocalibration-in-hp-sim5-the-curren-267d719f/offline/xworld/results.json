@@ -1,0 +1,484 @@
+[
+  {
+    "variant": "base",
+    "dataset": "fifth_hp3_dataset",
+    "returncode": 0,
+    "iterations": 5,
+    "sweeps": 4,
+    "applied": [
+      [
+        0.0,
+        -1533.45,
+        -277.1
+      ],
+      [
+        1861.45,
+        1989.04,
+        -277.1
+      ],
+      [
+        -1865.0,
+        1990.93,
+        -277.1
+      ],
+      [
+        1.84,
+        -4997.86,
+        4018.66
+      ]
+    ],
+    "rmse_mm": 2822.2203755091837,
+    "selected_runs": [
+      "default",
+      "default",
+      "default",
+      "default",
+      "default"
+    ],
+    "warm_runs": 0,
+    "stop": []
+  },
+  {
+    "variant": "base",
+    "dataset": "seventh_hp3_dataset",
+    "returncode": 0,
+    "iterations": 6,
+    "sweeps": 5,
+    "applied": [
+      [
+        0.0,
+        -1629.84,
+        -363.34
+      ],
+      [
+        1452.24,
+        845.57,
+        -363.34
+      ],
+      [
+        -1532.85,
+        882.28,
+        -363.34
+      ],
+      [
+        5.09,
+        -8.54,
+        1042.47
+      ]
+    ],
+    "rmse_mm": 472.9638095522619,
+    "selected_runs": [
+      "default",
+      "default",
+      "default",
+      "default",
+      "default",
+      "default"
+    ],
+    "warm_runs": 0,
+    "stop": []
+  },
+  {
+    "variant": "base",
+    "dataset": "sixteenth_hp3_dataset_even_more_pressure",
+    "returncode": 0,
+    "iterations": 6,
+    "sweeps": 5,
+    "applied": [
+      [
+        0.0,
+        -1815.86,
+        -594.14
+      ],
+      [
+        1573.96,
+        909.4,
+        -594.14
+      ],
+      [
+        -1551.72,
+        898.11,
+        -594.14
+      ],
+      [
+        -3.51,
+        2.3,
+        1475.91
+      ]
+    ],
+    "rmse_mm": 353.9907446234537,
+    "selected_runs": [
+      "default",
+      "default",
+      "default",
+      "default",
+      "default",
+      "default"
+    ],
+    "warm_runs": 0,
+    "stop": []
+  },
+  {
+    "variant": "base",
+    "dataset": "nineteenth_hp3_dataset_even_more_pressure",
+    "returncode": 0,
+    "iterations": 6,
+    "sweeps": 5,
+    "applied": [
+      [
+        0.0,
+        -1756.57,
+        -541.64
+      ],
+      [
+        1529.27,
+        889.78,
+        -541.64
+      ],
+      [
+        -1515.1,
+        870.76,
+        -541.64
+      ],
+      [
+        -5.12,
+        1.22,
+        1378.41
+      ]
+    ],
+    "rmse_mm": 366.88416125757817,
+    "selected_runs": [
+      "default",
+      "default",
+      "default",
+      "default",
+      "default",
+      "default"
+    ],
+    "warm_runs": 0,
+    "stop": []
+  },
+  {
+    "variant": "base",
+    "dataset": "23_april_2026",
+    "returncode": 0,
+    "iterations": 6,
+    "sweeps": 5,
+    "applied": [
+      [
+        0.0,
+        -1520.38,
+        -352.72
+      ],
+      [
+        1577.16,
+        895.07,
+        -352.72
+      ],
+      [
+        -1560.44,
+        897.86,
+        -352.72
+      ],
+      [
+        0.18,
+        -27.63,
+        1026.63
+      ]
+    ],
+    "rmse_mm": 485.06188348149425,
+    "selected_runs": [
+      "default",
+      "default",
+      "default",
+      "default",
+      "default",
+      "default"
+    ],
+    "warm_runs": 0,
+    "stop": []
+  },
+  {
+    "variant": "base",
+    "dataset": "ref003",
+    "returncode": 0,
+    "iterations": 7,
+    "sweeps": 6,
+    "applied": [
+      [
+        0.0,
+        -1902.83,
+        -279.31
+      ],
+      [
+        1648.51,
+        952.16,
+        -279.31
+      ],
+      [
+        -1646.42,
+        950.24,
+        -279.31
+      ],
+      [
+        0.07,
+        0.02,
+        1901.74
+      ]
+    ],
+    "rmse_mm": 2.6225832900911064,
+    "selected_runs": [
+      "default",
+      "default",
+      "default",
+      "default",
+      "default",
+      "default",
+      "default"
+    ],
+    "warm_runs": 0,
+    "stop": []
+  },
+  {
+    "variant": "warm",
+    "dataset": "fifth_hp3_dataset",
+    "returncode": 0,
+    "iterations": 6,
+    "sweeps": 5,
+    "applied": [
+      [
+        0.0,
+        -1871.22,
+        -774.51
+      ],
+      [
+        1630.08,
+        942.59,
+        -774.51
+      ],
+      [
+        -1629.78,
+        941.88,
+        -774.51
+      ],
+      [
+        -0.48,
+        -3.06,
+        1820.37
+      ]
+    ],
+    "rmse_mm": 430.5234489354675,
+    "selected_runs": [
+      "default",
+      "default.warm",
+      "default",
+      "default",
+      "default",
+      "default"
+    ],
+    "warm_runs": 0,
+    "stop": []
+  },
+  {
+    "variant": "warm",
+    "dataset": "seventh_hp3_dataset",
+    "returncode": 0,
+    "iterations": 6,
+    "sweeps": 5,
+    "applied": [
+      [
+        0.0,
+        -1629.84,
+        -363.34
+      ],
+      [
+        1452.24,
+        845.57,
+        -363.34
+      ],
+      [
+        -1532.85,
+        882.28,
+        -363.34
+      ],
+      [
+        5.09,
+        -8.54,
+        1042.47
+      ]
+    ],
+    "rmse_mm": 472.9638095522619,
+    "selected_runs": [
+      "default",
+      "default",
+      "default",
+      "default",
+      "default",
+      "default"
+    ],
+    "warm_runs": 0,
+    "stop": []
+  },
+  {
+    "variant": "warm",
+    "dataset": "sixteenth_hp3_dataset_even_more_pressure",
+    "returncode": 0,
+    "iterations": 6,
+    "sweeps": 5,
+    "applied": [
+      [
+        0.0,
+        -1815.86,
+        -594.14
+      ],
+      [
+        1573.96,
+        909.4,
+        -594.14
+      ],
+      [
+        -1551.72,
+        898.11,
+        -594.14
+      ],
+      [
+        -3.51,
+        2.3,
+        1475.91
+      ]
+    ],
+    "rmse_mm": 353.9907446234537,
+    "selected_runs": [
+      "default",
+      "default",
+      "default",
+      "default.warm",
+      "default",
+      "default"
+    ],
+    "warm_runs": 0,
+    "stop": []
+  },
+  {
+    "variant": "warm",
+    "dataset": "nineteenth_hp3_dataset_even_more_pressure",
+    "returncode": 0,
+    "iterations": 6,
+    "sweeps": 5,
+    "applied": [
+      [
+        0.0,
+        -1756.57,
+        -541.64
+      ],
+      [
+        1529.27,
+        889.78,
+        -541.64
+      ],
+      [
+        -1515.1,
+        870.76,
+        -541.64
+      ],
+      [
+        -5.12,
+        1.22,
+        1378.41
+      ]
+    ],
+    "rmse_mm": 366.88416125757817,
+    "selected_runs": [
+      "default",
+      "default.warm",
+      "default",
+      "default",
+      "default",
+      "default"
+    ],
+    "warm_runs": 0,
+    "stop": []
+  },
+  {
+    "variant": "warm",
+    "dataset": "23_april_2026",
+    "returncode": 0,
+    "iterations": 7,
+    "sweeps": 6,
+    "applied": [
+      [
+        0.0,
+        -1520.38,
+        -352.72
+      ],
+      [
+        1577.16,
+        895.07,
+        -352.72
+      ],
+      [
+        -1560.44,
+        897.86,
+        -352.72
+      ],
+      [
+        0.18,
+        -27.63,
+        1026.63
+      ]
+    ],
+    "rmse_mm": 485.06188348149425,
+    "selected_runs": [
+      "default",
+      "default",
+      "default",
+      "default.warm",
+      "default",
+      "default",
+      "default.warm"
+    ],
+    "warm_runs": 0,
+    "stop": []
+  },
+  {
+    "variant": "warm",
+    "dataset": "ref003",
+    "returncode": 0,
+    "iterations": 7,
+    "sweeps": 6,
+    "applied": [
+      [
+        0.0,
+        -1902.79,
+        -279.32
+      ],
+      [
+        1648.17,
+        951.8,
+        -279.32
+      ],
+      [
+        -1646.53,
+        950.42,
+        -279.32
+      ],
+      [
+        -0.03,
+        0.1,
+        1902.21
+      ]
+    ],
+    "rmse_mm": 2.552482877575329,
+    "selected_runs": [
+      "default",
+      "default.warm",
+      "default",
+      "default",
+      "default.warm",
+      "default",
+      "default"
+    ],
+    "warm_runs": 0,
+    "stop": []
+  }
+]

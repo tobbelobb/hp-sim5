@@ -1,0 +1,11 @@
+{
+  "mode": "warm-on",
+  "trial": "C3",
+  "elapsed_s": 53.67625971600137,
+  "runner_returncode": 0,
+  "datasets": 11,
+  "child_failures": [],
+  "compatibility_warnings": 292,
+  "runner_sha256": "ed3495226c101c221ea6e1e2d1f1705ac54adf63111526e8bcd43a6597f990a4",
+  "revision": "0c922efd007f3491453c706e2cc801af0c49aa98"
+}

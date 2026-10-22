@@ -1,0 +1,16 @@
+{
+  "backend": "headless-js",
+  "status": "failed",
+  "machine_type": "hangprinter_3",
+  "scene": "/home/torbjorn/repos/hp-sim5/public/usd_scenes/hp3_rigid_body.usda",
+  "firmware_config": "sys/config_hp3.g",
+  "clock": "fixed steps; collector waits advance simulation time",
+  "dataset": "/home/torbjorn/repos/hp-sim5/output/research/2026-10-09-headless-recording-review/sweeps.json",
+  "source_sha256": "f1c33d49c9879b4e8fbee4dad757192ece65d8bda69e2fc62825140325562e8a",
+  "autocal_source_sha256": "8d2c13ad22be71f587b22d41182babe3b40c5e1ea11925985728e396db7f41b3",
+  "git_revision": "8ded742059bbb0061ce6cafb7895bb120ab65bb7",
+  "wall_s": 0.1722436460040626,
+  "error": "[Errno 1] Operation not permitted",
+  "kept_alive": false,
+  "normal_completion": false
+}

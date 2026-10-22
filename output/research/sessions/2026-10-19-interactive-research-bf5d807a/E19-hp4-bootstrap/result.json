@@ -1,0 +1,8 @@
+{
+  "method": "bootstrap",
+  "machine": "hp4",
+  "error": "Controlled pullout travel reversed",
+  "pulses": [],
+  "wallS": 193.847386388,
+  "simS": 1030.6459999894523
+}

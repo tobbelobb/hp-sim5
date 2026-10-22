@@ -1,0 +1,16 @@
+{
+  "backend": "headless-js",
+  "status": "failed",
+  "machine_type": "hangprinter_3",
+  "scene": "/home/torbjorn/repos/hp-sim5/public/usd_scenes/hp3_rigid_body.usda",
+  "firmware_config": "sys/config_hp3.g",
+  "clock": "fixed steps; collector waits advance simulation time",
+  "dataset": "/home/torbjorn/repos/hp-sim5/output/research/autocal-comfortable-force-20261010/isolated.json",
+  "source_sha256": "2b8795c637b00496922a46cd69d15fab8d617e9a48d0829f552793f0f473bf41",
+  "autocal_source_sha256": "e9e5e26cbc6be406a8c546be77e3dc99fe703e9c4e3bcf2df0bb76a5c4a50f04",
+  "git_revision": "bdc2ac1fa4b92c77df68d374e5947c21e8a5d532",
+  "wall_s": 0.16803848999916227,
+  "error": "[Errno 1] Operation not permitted",
+  "kept_alive": false,
+  "normal_completion": false
+}

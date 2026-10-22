@@ -1,0 +1,102 @@
+{
+  "revision": "3a5e35e7b4d6c48e903531812044b2c5a7d36e8e",
+  "files": {
+    "hp-sim-3d/FLIGHT_RECORDER.md": "c931747bec1eabd903d35cdfbd512e4bca1240e8077343f6c2aeac22cb152961",
+    "research/native-performance.md": "df83fdf66e4eabab8a6990730c2bb5cbbade56c7ff06f9b80d5f9eb41e131736",
+    "research/rust-native-engine.md": "32753296dcfe4f88073cd10bda7bef82c6b896d547fe0b698f3d7d3c464c2d07",
+    "scripts/build_native_physics.mjs": "c810abe7feb293029384535690395e24f4f9d9f9ca6a854029bf24c59d1d866a",
+    "scripts/hangprinter_flight_recorder.py": "3bce06da6479f08d1f0be31890fe76de516037fe8cf566e8ddc0ed368b47e023",
+    "scripts/profile_headless.mjs": "93f76ea76353215fbfc0392dd340ac2fb98cae50c1ccd777c3db35711c136114",
+    "scripts/research_runtime.py": "2cf1101ee53370a7b9b9eaff0c5c9df8693a18cef7383a9265e0d0301c21a475",
+    "src/js/cable_joints_3d/native_physics_engine.js": "6777e77ebd1fd6c619c54ff384482e333416c9c70c9b67abb6b87ca1b85aebe7",
+    "src/python/cable_joints_3d/__main__.py": "69c87fd2dd55815397fade9b8d0678adc57f49083011b7965e1d852264001ffc",
+    "src/python/cable_joints_3d/machine_simulation.py": "fcec027a428ff289c086cf108a32587f3776d1db47d3f7b5e8864dd7a7751999",
+    "src/python/cable_joints_3d/rerun_system.py": "8248355d86035c0b649051d9ea3dde15552426e8407d1715e0928c6637c0d647",
+    "src/python/hp_sim5_research/experiments.py": "9afe9c2b7394a3f18cc10854c95cd78e71ae57d38a38154fb4b262133fe65ef3",
+    "src/python/hp_sim5_research/session.py": "e24e17b283fedb2f271d1ad3b398284c78a4a38f5e3a2a753226b1276a64b2d0",
+    "src/wasm/cable_solver/README.md": "f6f99b7a7fe0db950820a3a8dc771b33409d97e9e2324a4af3eae4e5cea3da95",
+    "tests/benchmark/HEADLESS_JS_PROFILING.md": "301f99f9ee367eb94e74cb9ec5a58d9e44880d0945dcc5e930b5ce1b67c7a500",
+    "tests/python/cable_joints_3d/test_machine_recording.py": "61eb96df965cbaf6a8d0bb9ff9eebe441e4ab12216e7d226acd037310e206236",
+    "tests/python/cable_joints_3d/test_rerun_system.py": "bd55bd6bcb7927ed33de8c3353411e77d8d05e7e925855563da6540fc6e17476",
+    "tests/python/test_hangprinter_flight_recorder.py": "fdde0c384a9dc14a16e8a6c21955847e157529b32eb3b21630c74f7019f21057",
+    "tests/python/test_world_configuration.py": "a536daa25cdadd53b6a450efb53d54c4e09565a0cebc3711b1165a7736f5b6fd",
+    "scripts/train_native_physics.mjs": "1f35ad484bbe502cb7a1e422871707db04fa14e530547405775c8717e64bbd18",
+    "src/python/cable_joints_3d/columnar_recording.py": "3ea7fa5b4c46cf1b36fab900a7edab8b7b4f547f6f2730501b447a55d1a00e4c",
+    "tests/python/cable_joints_3d/test_columnar_recording.py": "4ec4d9b6bceb5231ccfcb5dd44e78b2247211e5dccde11a34792d9679ec89cdf"
+  },
+  "artifact": {
+    "profile": "release",
+    "platform": "linux",
+    "arch": "x64",
+    "nodeApi": 8,
+    "artifactSha256": "bcf14930c221bead652a708a9c29ec235d4659ba540426359cf3ce1c20b1e548",
+    "sources": {
+      "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+      "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+      "native/node_bridge.c": "c8d4ad5a269dcdd073c13fb0ce24f25fd009a38434842f1a7301264a8994ee85",
+      "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+      "src/engine.rs": "c4a2609f63595e243c1c06efb132f692df95a7ff785333a60efd45e2b6062ca6",
+      "src/lib.rs": "088d64e1de9a45fe692d5994081050e0ab5ac9e9996d504261b2e8280649ed04"
+    },
+    "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.1\nLLVM version: 22.1.8",
+    "target": "x86_64-unknown-linux-gnu",
+    "rustflags": "-C\u001ftarget-cpu=native\u001f-C\u001fprofile-use=/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/pgo-IUgVJd/merged.profdata",
+    "compiler": "cc",
+    "buildScriptSha256": "c810abe7feb293029384535690395e24f4f9d9f9ca6a854029bf24c59d1d866a",
+    "pgo": {
+      "profile": "/home/torbjorn/repos/hp-sim5/src/wasm/cable_solver/target/native/pgo-IUgVJd/merged.profdata",
+      "sha256": "619248229a51769ab19841c44edc68b5665b2ebc595449dce6bf73d03a1efd13",
+      "training": {
+        "worlds": [
+          {
+            "machine": "hp3",
+            "layering": true,
+            "dt": 0.002,
+            "steps": 10000,
+            "bakedSceneSha256": "9e5ef288d617fdba1691e7486b399b7fc116756e936055e009c3662fa9ce1916"
+          },
+          {
+            "machine": "hp3",
+            "layering": false,
+            "dt": 0.002,
+            "steps": 10000,
+            "bakedSceneSha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e"
+          },
+          {
+            "machine": "hp4",
+            "layering": true,
+            "dt": 0.002,
+            "steps": 10000,
+            "bakedSceneSha256": "7ec5a656a3cd8f9b2c18932caece7f86a3e01a2132bd0149ed8fa4445d85e361"
+          },
+          {
+            "machine": "hp4",
+            "layering": false,
+            "dt": 0.002,
+            "steps": 10000,
+            "bakedSceneSha256": "5d5de72ea49d36fa1616521b02f23719473665bd10b6b5ba8acb841e2dac6961"
+          }
+        ],
+        "steps": 40000,
+        "trainer": "/home/torbjorn/repos/hp-sim5/scripts/train_native_physics.mjs"
+      },
+      "trainerSha256": "1f35ad484bbe502cb7a1e422871707db04fa14e530547405775c8717e64bbd18"
+    }
+  },
+  "wasm_sha256": "6bc83a1934f1c6496cb7504f99fc0bb8f394a1ff59d9219402313e15eb4fbfac",
+  "benchmarks": {
+    "output/research/sessions/2026-10-14-native-throughput/consumer_worker.py": "180fdccbc9d72d85e168d5944af58313c5c76b3ca231cf1f6f74a2ec79622d10",
+    "output/research/sessions/2026-10-14-native-throughput/autocal_service_worker.py": "11ceec07de126df6559e9a9b69344a1b3b1a499af3c0430ed0d4416665725b15"
+  },
+  "verification": {
+    "python_passed": 113,
+    "python_slow_deselected": 11,
+    "node_passed": 121,
+    "vite_build": true,
+    "untrained_build_modes": [
+      "release",
+      "profiling",
+      "dev"
+    ]
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "backend": "headless-js",
+  "status": "complete",
+  "machine_type": "hangprinter_3",
+  "scene": "/home/torbjorn/repos/hp-sim5/public/usd_scenes/hp3_rigid_body.usda",
+  "firmware_config": "sys/config_hp3.g",
+  "clock": "fixed steps; collector waits advance simulation time",
+  "dataset": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E11-candidate.json",
+  "source_sha256": "df264cb5832773ea62235c00e878b382690b27eb94e89fef332146ccad744270",
+  "autocal_source_sha256": "197697b463693c45518bc2db698657dabb74777351316865ae366120a4879bde",
+  "git_revision": "383c6d453a2027fb99ebc7936862053878661e57",
+  "scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+  "firmware_config_sha256": "1e4f408dceacdc9f41f7685b94d964164bc0c1a81c91831665b58334cb695cd8",
+  "rrf_sha256": "9b2ac828a9ad0636640c92f7a1cbf042f9a04327505c8d699c54b1abb582f3fe",
+  "owned_services": [
+    {
+      "name": "rrf",
+      "pid": 58504
+    },
+    {
+      "name": "physics",
+      "pid": 58508
+    }
+  ],
+  "baked_scene_sha256": "9e5ef288d617fdba1691e7486b399b7fc116756e936055e009c3662fa9ce1916",
+  "service_url": "http://127.0.0.1:45283",
+  "rrf_url": "http://127.0.0.1:59605",
+  "services": [
+    58504,
+    58508
+  ],
+  "owned_rrf": true,
+  "firmware_initial": {
+    "M115": "FIRMWARE_NAME: RepRapFirmware for x86_64 (host) FIRMWARE_VERSION: 3.7.0-alpha.5 ELECTRONICS: RRF_Host FIRMWARE_DATE: 2026-05-21 17:47:47",
+    "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1900.00, -280.00\nB:1645.45, 950.00, -280.00\nC:-1645.45, 950.00, -280.00\nD:0.00, 0.00, 1900.00\nP:Print radius: 1500.0",
+    "M666": "M666 A1 Q0.0000\nR30.00:30.00:30.00:30.00\nU1:1:1:1\nO1:1:1:1\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI3.0:3.0:3.0:3.0\nX170.0:170.0:170.0:170.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0"
+  },
+  "stop_reason": "max-steps",
+  "applied_parameters": [
+    "M669 A0.00:-1868.29:-888.71 B1619.09:934.51:-888.71 C-1620.32:935.34:-888.71 D0.06:-0.15:2266.28"
+  ],
+  "firmware_final": {
+    "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1868.29, -888.71\nB:1619.09, 934.51, -888.71\nC:-1620.32, 935.34, -888.71\nD:0.06, -0.15, 2266.28\nP:Print radius: 1500.0",
+    "M666": "M666 A1 Q0.0000\nR30.00:30.00:30.00:30.00\nU1:1:1:1\nO1:1:1:1\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI3.0:3.0:3.0:3.0\nX170.0:170.0:170.0:170.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0"
+  },
+  "wall_s": 201.24724707799942,
+  "kept_alive": false,
+  "service_wall_s": 200.951158453,
+  "step": 1683743,
+  "epoch": 0,
+  "total_steps": 1683743,
+  "dt_s": 0.002,
+  "simulated_s": 3367.486,
+  "collector_time_s": 3367.4859999341934,
+  "queue_length": 0,
+  "recording_drained": false,
+  "settings": {
+    "enableLayering": false,
+    "closedLoopMotorsEnabled": true,
+    "timeScale": 1
+  },
+  "physics_returncode": 0,
+  "normal_completion": false
+}

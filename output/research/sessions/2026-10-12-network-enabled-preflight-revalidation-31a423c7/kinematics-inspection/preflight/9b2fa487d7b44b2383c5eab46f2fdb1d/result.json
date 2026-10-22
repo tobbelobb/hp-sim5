@@ -1,0 +1,9 @@
+{
+  "outcome": "passed",
+  "handshake": true,
+  "finalized": true,
+  "readable": true,
+  "recording_manifest": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-12-network-enabled-preflight-revalidation-31a423c7/kinematics-inspection/preflight/9b2fa487d7b44b2383c5eab46f2fdb1d/hangprinter-20261012T081921.512292Z-37aff520.json",
+  "rrd": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-12-network-enabled-preflight-revalidation-31a423c7/kinematics-inspection/preflight/9b2fa487d7b44b2383c5eab46f2fdb1d/hangprinter-20261012T081921.512292Z-37aff520.rrd",
+  "kind": "tool_check"
+}

@@ -1,0 +1,434 @@
+{
+  "capabilities": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\n  \"scenes\": [\n    \"public/usd_scenes/cubecorners_rigid_body.usda\",\n    \"public/usd_scenes/four_high_anchors_rigid_body.usda\",\n    \"public/usd_scenes/hp3_rigid_body.usda\",\n    \"public/usd_scenes/hp4_rigid_body.usda\",\n    \"public/usd_scenes/slideprinter_hexagon_rigid_body.usda\",\n    \"public/usd_scenes/slideprinter_multi_unit_rigid_body.usda\",\n    \"public/usd_scenes/slideprinter_rigid_body.usda\",\n    \"public/usd_scenes/slideprinter_single_pinholes_rigid_body.usda\"\n  ],\n  \"default_scene\": \"public/usd_scenes/hp4_rigid_body.usda\",\n  \"max_steps\": 10000,\n  \"commands\": {\n    \"Move\": \"absolute motor angles in rad; axes object or top-level axis keys\",\n    \"Add to reference\": \"reference angle increments in rad\",\n    \"SetTorqueMode\": \"axis and torqueNm\",\n    \"SetPositionMode\": \"axis\",\n    \"{}\": \"hold current targets for one fixed timestep\",\n    \"E\": \"deposited length in m\"\n  },\n  \"telemetry\": \"Every step including zero: effectors, encoders, tracking errors, missed steps, lengths and forces\",\n  \"limitations\": [\n    \"Native commands are timestep-scheduled motor records, not G-code\",\n    \"Full-auto autocal collection still requires the browser/firmware bridge\",\n    \"Final snapshots are observations, not resumable physics checkpoints\",\n    \"Timings include telemetry and optional recording overhead\"\n  ]\n}"
+      }
+    ],
+    "structuredContent": {
+      "scenes": [
+        "public/usd_scenes/cubecorners_rigid_body.usda",
+        "public/usd_scenes/four_high_anchors_rigid_body.usda",
+        "public/usd_scenes/hp3_rigid_body.usda",
+        "public/usd_scenes/hp4_rigid_body.usda",
+        "public/usd_scenes/slideprinter_hexagon_rigid_body.usda",
+        "public/usd_scenes/slideprinter_multi_unit_rigid_body.usda",
+        "public/usd_scenes/slideprinter_rigid_body.usda",
+        "public/usd_scenes/slideprinter_single_pinholes_rigid_body.usda"
+      ],
+      "default_scene": "public/usd_scenes/hp4_rigid_body.usda",
+      "max_steps": 10000,
+      "commands": {
+        "Move": "absolute motor angles in rad; axes object or top-level axis keys",
+        "Add to reference": "reference angle increments in rad",
+        "SetTorqueMode": "axis and torqueNm",
+        "SetPositionMode": "axis",
+        "{}": "hold current targets for one fixed timestep",
+        "E": "deposited length in m"
+      },
+      "telemetry": "Every step including zero: effectors, encoders, tracking errors, missed steps, lengths and forces",
+      "limitations": [
+        "Native commands are timestep-scheduled motor records, not G-code",
+        "Full-auto autocal collection still requires the browser/firmware bridge",
+        "Final snapshots are observations, not resumable physics checkpoints",
+        "Timings include telemetry and optional recording overhead"
+      ]
+    },
+    "isError": false
+  },
+  "run_experiment": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\n  \"schema_version\": 1,\n  \"run_id\": \"edefc73db9e542a0ac4d4654ac7b1b20\",\n  \"label\": \"bounded-final-integration-check\",\n  \"status\": \"complete\",\n  \"scene\": \"public/usd_scenes/hp4_rigid_body.usda\",\n  \"steps\": 3,\n  \"dt_s\": 0.002,\n  \"commands_sha256\": \"4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945\",\n  \"scene_sha256\": \"7e2b8ffcb129ea6f8f56e2f85fbc9d716875478c0240203005ab715130706717\",\n  \"python_source_sha256\": \"831913e84bdf0811c6dd1569a94a15fc03dbbcccb5da1a1350e0cc7b988b8351\",\n  \"git_revision\": \"7efc52c9b2fe5b36c87dfca008575ee32cf61adb\",\n  \"python\": \"3.12.3\",\n  \"platform\": \"Linux-6.8.0-142-generic-x86_64-with-glibc2.39\",\n  \"packages\": {\n    \"numpy\": \"2.4.3\",\n    \"usd-core\": \"26.3\",\n    \"rerun-sdk\": \"0.38.1\"\n  },\n  \"construction_wall_s\": 0.08926218499254901,\n  \"record\": false,\n  \"artifacts\": {\n    \"manifest\": \"/home/torbjorn/repos/hp-sim5/output/research/experiments/edefc73db9e542a0ac4d4654ac7b1b20/manifest.json\",\n    \"scene\": \"/home/torbjorn/repos/hp-sim5/output/research/experiments/edefc73db9e542a0ac4d4654ac7b1b20/scene.usda\",\n    \"commands\": \"/home/torbjorn/repos/hp-sim5/output/research/experiments/edefc73db9e542a0ac4d4654ac7b1b20/commands.json\",\n    \"telemetry\": \"/home/torbjorn/repos/hp-sim5/output/research/experiments/edefc73db9e542a0ac4d4654ac7b1b20/telemetry.jsonl\",\n    \"snapshot\": \"/home/torbjorn/repos/hp-sim5/output/research/experiments/edefc73db9e542a0ac4d4654ac7b1b20/final.json\"\n  },\n  \"warnings\": [],\n  \"metrics\": {\n    \"effector_displacement_m\": {\n      \"world/machines/default/effector\": 0.00014267113392338278\n    },\n    \"peak_cable_force_n\": 0.055044361494350956,\n    \"peak_abs_length_error_m\": 8.650787593822429e-6,\n    \"peak_abs_tracking_error_rad\": 0.0001840593105188068,\n    \"peak_total_missed_steps\": 0\n  },\n  \"simulation_wall_s\": 0.0523786419944372\n}"
+      }
+    ],
+    "structuredContent": {
+      "schema_version": 1,
+      "run_id": "edefc73db9e542a0ac4d4654ac7b1b20",
+      "label": "bounded-final-integration-check",
+      "status": "complete",
+      "scene": "public/usd_scenes/hp4_rigid_body.usda",
+      "steps": 3,
+      "dt_s": 0.002,
+      "commands_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "scene_sha256": "7e2b8ffcb129ea6f8f56e2f85fbc9d716875478c0240203005ab715130706717",
+      "python_source_sha256": "831913e84bdf0811c6dd1569a94a15fc03dbbcccb5da1a1350e0cc7b988b8351",
+      "git_revision": "7efc52c9b2fe5b36c87dfca008575ee32cf61adb",
+      "python": "3.12.3",
+      "platform": "Linux-6.8.0-142-generic-x86_64-with-glibc2.39",
+      "packages": {
+        "numpy": "2.4.3",
+        "usd-core": "26.3",
+        "rerun-sdk": "0.38.1"
+      },
+      "construction_wall_s": 0.08926218499254901,
+      "record": false,
+      "artifacts": {
+        "manifest": "/home/torbjorn/repos/hp-sim5/output/research/experiments/edefc73db9e542a0ac4d4654ac7b1b20/manifest.json",
+        "scene": "/home/torbjorn/repos/hp-sim5/output/research/experiments/edefc73db9e542a0ac4d4654ac7b1b20/scene.usda",
+        "commands": "/home/torbjorn/repos/hp-sim5/output/research/experiments/edefc73db9e542a0ac4d4654ac7b1b20/commands.json",
+        "telemetry": "/home/torbjorn/repos/hp-sim5/output/research/experiments/edefc73db9e542a0ac4d4654ac7b1b20/telemetry.jsonl",
+        "snapshot": "/home/torbjorn/repos/hp-sim5/output/research/experiments/edefc73db9e542a0ac4d4654ac7b1b20/final.json"
+      },
+      "warnings": [],
+      "metrics": {
+        "effector_displacement_m": {
+          "world/machines/default/effector": 0.00014267113392338278
+        },
+        "peak_cable_force_n": 0.055044361494350956,
+        "peak_abs_length_error_m": 0.000008650787593822429,
+        "peak_abs_tracking_error_rad": 0.0001840593105188068,
+        "peak_total_missed_steps": 0
+      },
+      "simulation_wall_s": 0.0523786419944372
+    },
+    "isError": false
+  },
+  "final_sample": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\n  \"run_id\": \"edefc73db9e542a0ac4d4654ac7b1b20\",\n  \"samples\": [\n    {\n      \"cables\": [\n        {\n          \"lengths_m\": {\n            \"actual\": 4.47666542034586,\n            \"commanded\": 4.47666542034586,\n            \"error\": 0.0,\n            \"geometric\": 4.476614405830318,\n            \"stretch\": -0.000051014515541680794\n          },\n          \"name\": \"default/CablePathAL_110\",\n          \"segment_forces_n\": [\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0\n          ]\n        },\n        {\n          \"lengths_m\": {\n            \"actual\": 4.47666542034586,\n            \"commanded\": 4.47666542034586,\n            \"error\": 0.0,\n            \"geometric\": 4.476614617826064,\n            \"stretch\": -0.000050802519796278034\n          },\n          \"name\": \"default/CablePathAR_111\",\n          \"segment_forces_n\": [\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0\n          ]\n        },\n        {\n          \"lengths_m\": {\n            \"actual\": 4.476663933130564,\n            \"commanded\": 4.476663933130564,\n            \"error\": 0.0,\n            \"geometric\": 4.476612900981851,\n            \"stretch\": -0.000051032148713048286\n          },\n          \"name\": \"default/CablePathBL_112\",\n          \"segment_forces_n\": [\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0\n          ]\n        },\n        {\n          \"lengths_m\": {\n            \"actual\": 4.476660958648523,\n            \"commanded\": 4.476660958648523,\n            \"error\": 0.0,\n            \"geometric\": 4.4766101443132165,\n            \"stretch\": -0.000050814335306625935\n          },\n          \"name\": \"default/CablePathBR_113\",\n          \"segment_forces_n\": [\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0\n          ]\n        },\n        {\n          \"lengths_m\": {\n            \"actual\": 4.476661480137084,\n            \"commanded\": 4.476661480137084,\n            \"error\": 0.0,\n            \"geometric\": 4.476610415104902,\n            \"stretch\": -0.000051065032181440984\n          },\n          \"name\": \"default/CablePathCL_114\",\n          \"segment_forces_n\": [\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0\n          ]\n        },\n        {\n          \"lengths_m\": {\n            \"actual\": 4.476664701964685,\n            \"commanded\": 4.476664701964685,\n            \"error\": 0.0,\n            \"geometric\": 4.476613937045621,\n            \"stretch\": -0.000050764919063972513\n          },\n          \"name\": \"default/CablePathCR_115\",\n          \"segment_forces_n\": [\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0,\n            0.0\n          ]\n        },\n        {\n          \"lengths_m\": {\n            \"actual\": 8.079716111501044,\n            \"commanded\": 8.079724762288638,\n            \"error\": -8.650787593822429e-6,\n            \"geometric\": 8.080419035482233,\n            \"stretch\": 0.0007029239811888743\n          },\n          \"name\": \"default/CablePathD0_116\",\n          \"segment_forces_n\": [\n            0.022721927085148506,\n            0.028943592422300334,\n            0.028538729764501565,\n            0.02957355013475719,\n            0.055044361494350956\n          ]\n        },\n        {\n          \"lengths_m\": {\n            \"actual\": 8.07971611272079,\n            \"commanded\": 8.079724763508384,\n            \"error\": -8.650787593822429e-6,\n            \"geometric\": 8.080419466493979,\n            \"stretch\": 0.0007033537731881978\n          },\n          \"name\": \"default/CablePathD1_117\",\n          \"segment_forces_n\": [\n            0.022287083399447637,\n            0.028765495496982166,\n            0.028431841113540458,\n            0.029526390637981872,\n            0.05499803862460293\n          ]\n        },\n        {\n          \"lengths_m\": {\n            \"actual\": 8.07971611272476,\n            \"commanded\": 8.079724763512354,\n            \"error\": -8.650787593822429e-6,\n            \"geometric\": 8.080419816474468,\n            \"stretch\": 0.0007037037497070742\n          },\n          \"name\": \"default/CablePathD2_118\",\n          \"segment_forces_n\": [\n            0.02185462599766025,\n            0.028611274165436976,\n            0.02835891887473798,\n            0.029477837060314097,\n            0.05491410671541822\n          ]\n        }\n      ],\n      \"effectors\": [\n        {\n          \"kind\": \"effector\",\n          \"name\": \"Effector\",\n          \"path\": \"world/machines/default/effector\",\n          \"position\": [\n            2.0337492395395957e-9,\n            2.897052375772091e-9,\n            0.09985732886612055\n          ],\n          \"quaternion\": [\n            -1.5116321543936274e-7,\n            1.027312831090149e-7,\n            1.3512974980648493e-7,\n            0.9999999999999741\n          ]\n        }\n      ],\n      \"motors\": [\n        {\n          \"axis\": \"A\",\n          \"encoder_angle_rad\": 0.0,\n          \"mode\": \"position\",\n          \"name\": \"SpoolA_0\",\n          \"peak_missed_steps\": 0,\n          \"target_angle_rad\": 0.0,\n          \"tracking_error_rad\": 0.0\n        },\n        {\n          \"axis\": \"B\",\n          \"encoder_angle_rad\": 0.0,\n          \"mode\": \"position\",\n          \"name\": \"SpoolB_15\",\n          \"peak_missed_steps\": 0,\n          \"target_angle_rad\": 0.0,\n          \"tracking_error_rad\": 0.0\n        },\n        {\n          \"axis\": \"C\",\n          \"encoder_angle_rad\": 0.0,\n          \"mode\": \"position\",\n          \"name\": \"SpoolC_29\",\n          \"peak_missed_steps\": 0,\n          \"target_angle_rad\": 0.0,\n          \"tracking_error_rad\": 0.0\n        },\n        {\n          \"axis\": \"D\",\n          \"encoder_angle_rad\": 0.0001840593105188068,\n          \"mode\": \"position\",\n          \"name\": \"SpoolD_42\",\n          \"peak_missed_steps\": 0,\n          \"target_angle_rad\": 0.0,\n          \"tracking_error_rad\": 0.0001840593105188068\n        }\n      ],\n      \"sim_time_s\": 0.006,\n      \"step\": 3\n    }\n  ]\n}"
+      }
+    ],
+    "structuredContent": {
+      "run_id": "edefc73db9e542a0ac4d4654ac7b1b20",
+      "samples": [
+        {
+          "cables": [
+            {
+              "lengths_m": {
+                "actual": 4.47666542034586,
+                "commanded": 4.47666542034586,
+                "error": 0,
+                "geometric": 4.476614405830318,
+                "stretch": -0.000051014515541680794
+              },
+              "name": "default/CablePathAL_110",
+              "segment_forces_n": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "lengths_m": {
+                "actual": 4.47666542034586,
+                "commanded": 4.47666542034586,
+                "error": 0,
+                "geometric": 4.476614617826064,
+                "stretch": -0.000050802519796278034
+              },
+              "name": "default/CablePathAR_111",
+              "segment_forces_n": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "lengths_m": {
+                "actual": 4.476663933130564,
+                "commanded": 4.476663933130564,
+                "error": 0,
+                "geometric": 4.476612900981851,
+                "stretch": -0.000051032148713048286
+              },
+              "name": "default/CablePathBL_112",
+              "segment_forces_n": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "lengths_m": {
+                "actual": 4.476660958648523,
+                "commanded": 4.476660958648523,
+                "error": 0,
+                "geometric": 4.4766101443132165,
+                "stretch": -0.000050814335306625935
+              },
+              "name": "default/CablePathBR_113",
+              "segment_forces_n": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "lengths_m": {
+                "actual": 4.476661480137084,
+                "commanded": 4.476661480137084,
+                "error": 0,
+                "geometric": 4.476610415104902,
+                "stretch": -0.000051065032181440984
+              },
+              "name": "default/CablePathCL_114",
+              "segment_forces_n": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "lengths_m": {
+                "actual": 4.476664701964685,
+                "commanded": 4.476664701964685,
+                "error": 0,
+                "geometric": 4.476613937045621,
+                "stretch": -0.000050764919063972513
+              },
+              "name": "default/CablePathCR_115",
+              "segment_forces_n": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "lengths_m": {
+                "actual": 8.079716111501044,
+                "commanded": 8.079724762288638,
+                "error": -0.000008650787593822429,
+                "geometric": 8.080419035482233,
+                "stretch": 0.0007029239811888743
+              },
+              "name": "default/CablePathD0_116",
+              "segment_forces_n": [
+                0.022721927085148506,
+                0.028943592422300334,
+                0.028538729764501565,
+                0.02957355013475719,
+                0.055044361494350956
+              ]
+            },
+            {
+              "lengths_m": {
+                "actual": 8.07971611272079,
+                "commanded": 8.079724763508384,
+                "error": -0.000008650787593822429,
+                "geometric": 8.080419466493979,
+                "stretch": 0.0007033537731881978
+              },
+              "name": "default/CablePathD1_117",
+              "segment_forces_n": [
+                0.022287083399447637,
+                0.028765495496982166,
+                0.028431841113540458,
+                0.029526390637981872,
+                0.05499803862460293
+              ]
+            },
+            {
+              "lengths_m": {
+                "actual": 8.07971611272476,
+                "commanded": 8.079724763512354,
+                "error": -0.000008650787593822429,
+                "geometric": 8.080419816474468,
+                "stretch": 0.0007037037497070742
+              },
+              "name": "default/CablePathD2_118",
+              "segment_forces_n": [
+                0.02185462599766025,
+                0.028611274165436976,
+                0.02835891887473798,
+                0.029477837060314097,
+                0.05491410671541822
+              ]
+            }
+          ],
+          "effectors": [
+            {
+              "kind": "effector",
+              "name": "Effector",
+              "path": "world/machines/default/effector",
+              "position": [
+                2.0337492395395957e-9,
+                2.897052375772091e-9,
+                0.09985732886612055
+              ],
+              "quaternion": [
+                -1.5116321543936274e-7,
+                1.027312831090149e-7,
+                1.3512974980648493e-7,
+                0.9999999999999741
+              ]
+            }
+          ],
+          "motors": [
+            {
+              "axis": "A",
+              "encoder_angle_rad": 0,
+              "mode": "position",
+              "name": "SpoolA_0",
+              "peak_missed_steps": 0,
+              "target_angle_rad": 0,
+              "tracking_error_rad": 0
+            },
+            {
+              "axis": "B",
+              "encoder_angle_rad": 0,
+              "mode": "position",
+              "name": "SpoolB_15",
+              "peak_missed_steps": 0,
+              "target_angle_rad": 0,
+              "tracking_error_rad": 0
+            },
+            {
+              "axis": "C",
+              "encoder_angle_rad": 0,
+              "mode": "position",
+              "name": "SpoolC_29",
+              "peak_missed_steps": 0,
+              "target_angle_rad": 0,
+              "tracking_error_rad": 0
+            },
+            {
+              "axis": "D",
+              "encoder_angle_rad": 0.0001840593105188068,
+              "mode": "position",
+              "name": "SpoolD_42",
+              "peak_missed_steps": 0,
+              "target_angle_rad": 0,
+              "tracking_error_rad": 0.0001840593105188068
+            }
+          ],
+          "sim_time_s": 0.006,
+          "step": 3
+        }
+      ]
+    },
+    "isError": false
+  },
+  "candidate_manifest": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\n  \"artifacts\": {\n    \"commands\": \"/home/torbjorn/repos/hp-sim5/output/research/experiments/22f857e8987149ab93220cfc18f568a6/commands.json\",\n    \"manifest\": \"/home/torbjorn/repos/hp-sim5/output/research/experiments/22f857e8987149ab93220cfc18f568a6/manifest.json\",\n    \"rrd\": \"/home/torbjorn/repos/hp-sim5/output/research/experiments/22f857e8987149ab93220cfc18f568a6/recording.rrd\",\n    \"scene\": \"/home/torbjorn/repos/hp-sim5/output/research/experiments/22f857e8987149ab93220cfc18f568a6/scene.usda\",\n    \"snapshot\": \"/home/torbjorn/repos/hp-sim5/output/research/experiments/22f857e8987149ab93220cfc18f568a6/final.json\",\n    \"telemetry\": \"/home/torbjorn/repos/hp-sim5/output/research/experiments/22f857e8987149ab93220cfc18f568a6/telemetry.jsonl\"\n  },\n  \"commands_sha256\": \"9e113a0c2ae142d2bb118c8383555de4439ae7292f3fdfe4f1cc51f122259a18\",\n  \"construction_wall_s\": 0.05406614100502338,\n  \"dt_s\": 0.002,\n  \"git_revision\": \"7efc52c9b2fe5b36c87dfca008575ee32cf61adb\",\n  \"label\": \"integration-check-A-0.01rad-200\",\n  \"metrics\": {\n    \"effector_displacement_m\": {\n      \"world/machines/default/effector\": 0.00024487657889275377\n    },\n    \"peak_abs_length_error_m\": 0.00043132001257628616,\n    \"peak_abs_tracking_error_rad\": 0.009177021544168116,\n    \"peak_cable_force_n\": 0.09796315441762657,\n    \"peak_total_missed_steps\": 0\n  },\n  \"packages\": {\n    \"numpy\": \"2.4.3\",\n    \"rerun-sdk\": \"0.38.1\",\n    \"usd-core\": \"26.3\"\n  },\n  \"platform\": \"Linux-6.8.0-142-generic-x86_64-with-glibc2.39\",\n  \"python\": \"3.12.3\",\n  \"python_source_sha256\": \"831913e84bdf0811c6dd1569a94a15fc03dbbcccb5da1a1350e0cc7b988b8351\",\n  \"record\": true,\n  \"run_id\": \"22f857e8987149ab93220cfc18f568a6\",\n  \"scene\": \"public/usd_scenes/hp4_rigid_body.usda\",\n  \"scene_sha256\": \"7e2b8ffcb129ea6f8f56e2f85fbc9d716875478c0240203005ab715130706717\",\n  \"schema_version\": 1,\n  \"simulation_wall_s\": 5.846921102987835,\n  \"status\": \"complete\",\n  \"steps\": 200,\n  \"warnings\": []\n}"
+      }
+    ],
+    "structuredContent": {
+      "artifacts": {
+        "commands": "/home/torbjorn/repos/hp-sim5/output/research/experiments/22f857e8987149ab93220cfc18f568a6/commands.json",
+        "manifest": "/home/torbjorn/repos/hp-sim5/output/research/experiments/22f857e8987149ab93220cfc18f568a6/manifest.json",
+        "rrd": "/home/torbjorn/repos/hp-sim5/output/research/experiments/22f857e8987149ab93220cfc18f568a6/recording.rrd",
+        "scene": "/home/torbjorn/repos/hp-sim5/output/research/experiments/22f857e8987149ab93220cfc18f568a6/scene.usda",
+        "snapshot": "/home/torbjorn/repos/hp-sim5/output/research/experiments/22f857e8987149ab93220cfc18f568a6/final.json",
+        "telemetry": "/home/torbjorn/repos/hp-sim5/output/research/experiments/22f857e8987149ab93220cfc18f568a6/telemetry.jsonl"
+      },
+      "commands_sha256": "9e113a0c2ae142d2bb118c8383555de4439ae7292f3fdfe4f1cc51f122259a18",
+      "construction_wall_s": 0.05406614100502338,
+      "dt_s": 0.002,
+      "git_revision": "7efc52c9b2fe5b36c87dfca008575ee32cf61adb",
+      "label": "integration-check-A-0.01rad-200",
+      "metrics": {
+        "effector_displacement_m": {
+          "world/machines/default/effector": 0.00024487657889275377
+        },
+        "peak_abs_length_error_m": 0.00043132001257628616,
+        "peak_abs_tracking_error_rad": 0.009177021544168116,
+        "peak_cable_force_n": 0.09796315441762657,
+        "peak_total_missed_steps": 0
+      },
+      "packages": {
+        "numpy": "2.4.3",
+        "rerun-sdk": "0.38.1",
+        "usd-core": "26.3"
+      },
+      "platform": "Linux-6.8.0-142-generic-x86_64-with-glibc2.39",
+      "python": "3.12.3",
+      "python_source_sha256": "831913e84bdf0811c6dd1569a94a15fc03dbbcccb5da1a1350e0cc7b988b8351",
+      "record": true,
+      "run_id": "22f857e8987149ab93220cfc18f568a6",
+      "scene": "public/usd_scenes/hp4_rigid_body.usda",
+      "scene_sha256": "7e2b8ffcb129ea6f8f56e2f85fbc9d716875478c0240203005ab715130706717",
+      "schema_version": 1,
+      "simulation_wall_s": 5.846921102987835,
+      "status": "complete",
+      "steps": 200,
+      "warnings": []
+    },
+    "isError": false
+  },
+  "viewer_initial": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"url\":\"rerun://_examples.rerun.io:443/catalog\",\"catalog_url\":\"rerun+http://127.0.0.1:42003\"}"
+      }
+    ],
+    "isError": false
+  },
+  "viewer_open": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{}"
+      }
+    ],
+    "isError": false
+  },
+  "viewer_loaded": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"url\":\"rerun+http://127.0.0.1:42003/dataset/18DBA3DECD4F49725d70c82dedeaad22?segment_id=22f857e8987149ab93220cfc18f568a6\",\"active_store_id\":\"Recording:18DBA3DECD4F49725d70c82dedeaad22:22f857e8987149ab93220cfc18f568a6\",\"recordings\":[{\"store_id\":\"Recording:18DBA3DECD4F49725d70c82dedeaad22:22f857e8987149ab93220cfc18f568a6\",\"timelines\":[{\"timeline\":{\"name\":\"log_time\"},\"time_type\":\"TIME_TYPE_TIMESTAMP_NS\",\"time_range\":{\"start\":1791203494227689330,\"end\":1791203500098183776}},{\"timeline\":{\"name\":\"scene_generation\"},\"time_type\":\"TIME_TYPE_SEQUENCE\",\"time_range\":{\"start\":1,\"end\":1}},{\"timeline\":{\"name\":\"sim_step\"},\"time_type\":\"TIME_TYPE_SEQUENCE\",\"time_range\":{\"end\":200}},{\"timeline\":{\"name\":\"sim_time\"},\"time_type\":\"TIME_TYPE_DURATION_NS\",\"time_range\":{\"end\":400000000}}],\"current_time\":{\"timeline\":{\"name\":\"sim_time\"},\"time_type\":\"TIME_TYPE_DURATION_NS\",\"time\":{\"time\":400000000}}}],\"catalog_url\":\"rerun+http://127.0.0.1:42003\",\"views\":[{\"view_id\":\"41a0f602-7874-465b-aeac-5da0b99cc922\",\"class\":\"TimeSeries\",\"name\":\"Motor state\",\"origin\":\"/motors\",\"visible\":true},{\"view_id\":\"519944c4-efc2-4b66-9db2-3e9fd346d7ea\",\"class\":\"3D\",\"name\":\"Hangprinter\",\"origin\":\"/world\",\"visible\":true},{\"view_id\":\"8fe11db2-1bca-4a74-a43f-6a7216284491\",\"class\":\"TimeSeries\",\"name\":\"Cable forces (N)\",\"origin\":\"/cable_forces\",\"visible\":true},{\"view_id\":\"baf9db4a-c5da-4e77-be0f-8a29efb12482\",\"class\":\"TimeSeries\",\"name\":\"Line lengths (m)\",\"origin\":\"/line_lengths\",\"visible\":true},{\"view_id\":\"bbf29429-a894-488a-b8be-337f22c3fdbd\",\"class\":\"TimeSeries\",\"name\":\"Length error / stretch (m)\",\"origin\":\"/line_errors\",\"visible\":true},{\"view_id\":\"f1729584-6934-4217-9128-d1314b3e25f8\",\"class\":\"TimeSeries\",\"name\":\"Encoder state\",\"origin\":\"/encoders\",\"visible\":true}]}"
+      }
+    ],
+    "isError": false
+  },
+  "viewer_set_time": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"store_id\":\"Recording:18DBA3DECD4F49725d70c82dedeaad22:22f857e8987149ab93220cfc18f568a6\",\"timeline\":{\"name\":\"sim_step\"},\"time_type\":\"TIME_TYPE_SEQUENCE\",\"time\":{\"time\":200}}"
+      }
+    ],
+    "isError": false
+  },
+  "viewer_final": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"url\":\"rerun+http://127.0.0.1:42003/dataset/18DBA3DECD4F49725d70c82dedeaad22?segment_id=22f857e8987149ab93220cfc18f568a6\",\"active_store_id\":\"Recording:18DBA3DECD4F49725d70c82dedeaad22:22f857e8987149ab93220cfc18f568a6\",\"recordings\":[{\"store_id\":\"Recording:18DBA3DECD4F49725d70c82dedeaad22:22f857e8987149ab93220cfc18f568a6\",\"timelines\":[{\"timeline\":{\"name\":\"log_time\"},\"time_type\":\"TIME_TYPE_TIMESTAMP_NS\",\"time_range\":{\"start\":1791203494227689330,\"end\":1791203500098183776}},{\"timeline\":{\"name\":\"scene_generation\"},\"time_type\":\"TIME_TYPE_SEQUENCE\",\"time_range\":{\"start\":1,\"end\":1}},{\"timeline\":{\"name\":\"sim_step\"},\"time_type\":\"TIME_TYPE_SEQUENCE\",\"time_range\":{\"end\":200}},{\"timeline\":{\"name\":\"sim_time\"},\"time_type\":\"TIME_TYPE_DURATION_NS\",\"time_range\":{\"end\":400000000}}],\"current_time\":{\"timeline\":{\"name\":\"sim_step\"},\"time_type\":\"TIME_TYPE_SEQUENCE\",\"time\":{\"time\":200}}}],\"catalog_url\":\"rerun+http://127.0.0.1:42003\",\"views\":[{\"view_id\":\"41a0f602-7874-465b-aeac-5da0b99cc922\",\"class\":\"TimeSeries\",\"name\":\"Motor state\",\"origin\":\"/motors\",\"visible\":true},{\"view_id\":\"519944c4-efc2-4b66-9db2-3e9fd346d7ea\",\"class\":\"3D\",\"name\":\"Hangprinter\",\"origin\":\"/world\",\"visible\":true},{\"view_id\":\"8fe11db2-1bca-4a74-a43f-6a7216284491\",\"class\":\"TimeSeries\",\"name\":\"Cable forces (N)\",\"origin\":\"/cable_forces\",\"visible\":true},{\"view_id\":\"baf9db4a-c5da-4e77-be0f-8a29efb12482\",\"class\":\"TimeSeries\",\"name\":\"Line lengths (m)\",\"origin\":\"/line_lengths\",\"visible\":true},{\"view_id\":\"bbf29429-a894-488a-b8be-337f22c3fdbd\",\"class\":\"TimeSeries\",\"name\":\"Length error / stretch (m)\",\"origin\":\"/line_errors\",\"visible\":true},{\"view_id\":\"f1729584-6934-4217-9128-d1314b3e25f8\",\"class\":\"TimeSeries\",\"name\":\"Encoder state\",\"origin\":\"/encoders\",\"visible\":true}]}"
+      }
+    ],
+    "isError": false
+  },
+  "viewer_logs": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"entries\":[{\"sequence\":1,\"level\":\"INFO\",\"target\":\"re_grpc_server\",\"message\":\"Listening for gRPC connections on 127.0.0.1:42003. Connect by running `rerun --connect rerun+http://127.0.0.1:42003/proxy`\"},{\"sequence\":2,\"level\":\"INFO\",\"target\":\"re_viewer::headless\",\"message\":\"Headless viewer running at 1920x1080.\"},{\"sequence\":3,\"level\":\"INFO\",\"target\":\"re_server::rerun_cloud::register_with_dataset\",\"message\":\"Loading \\\"/home/torbjorn/repos/hp-sim5/output/research/experiments/22f857e8987149ab93220cfc18f568a6/recording.rrd\\\"…\"},{\"sequence\":4,\"level\":\"INFO\",\"target\":\"re_server::rerun_cloud::register_with_dataset\",\"message\":\"Loading \\\"/home/torbjorn/repos/hp-sim5/output/research/experiments/22f857e8987149ab93220cfc18f568a6/recording.rrd\\\"…\"}]}"
+      }
+    ],
+    "isError": false
+  },
+  "screenshot": [
+    {
+      "type": "text",
+      "text": "{\"width\":1920,\"height\":1080,\"saved_to\":\"/home/torbjorn/repos/hp-sim5/output/research/sessions/3725e1e99f2b4fa7a989ddd70b91aaa7/candidate-sim-step-200.png\"}"
+    }
+  ]
+}

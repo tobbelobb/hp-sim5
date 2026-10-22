@@ -1,0 +1,554 @@
+From 838133d4ed03662a55581322367a9c309ac47e38 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Torbj=C3=B8rn=20Ludvigsen?= <tobben@fastmail.fm>
+Date: Wed, 21 Oct 2026 12:26:32 +0200
+Subject: [PATCH] Correct open-loop cable torque balance without destabilizing
+ damping changes
+
+Adapt the physical-inertia correction from PR #77. Electromagnetic torque
+already accelerates the rotor; adding holding stiffness only to cable response
+artificially boosts coarse-step holding strength. Mirror the correction in
+JS, Rust/native/Wasm and Python/Warp preparation, preserving closed-loop
+constraint stiffness and reserving the retired ABI option slot.
+
+Add independent spring-loaded-spool equilibrium tests across timesteps and
+backends, update old stiffness expectations, and wire the regression into CI.
+Document matched Squares replays and why the separate damping correction is
+deferred: both the full PR physics patch and damping-only variant fail the
+unchanged one-substep loaded-state gate.
+
+Validation: npm run test:physics (11 passed); analytic JS/Rust (20 passed);
+Python/Warp (117 passed, 5 skipped); native/Wasm/mounted/substeps (141 passed,
+1 skipped); full Jest (801 passed, 1 skipped). Squares remains timestep
+sensitive; no hardware or complete-print accuracy claim.
+---
+ public/wasm/cable_solver.wasm                 | Bin 206930 -> 206777 bytes
+ research/catalog.md                           |  11 ++
+ research/hp4-squares-substeps.md              | 137 ++++++++++++++++++
+ scripts/run_ci_tests.sh                       |   3 +-
+ src/js/cable_joints_3d/cable_joints_core.js   |  21 +--
+ src/js/cable_joints_3d/rust_physics_engine.js |   2 +-
+ src/python/cable_joints_3d/stepper_motor.py   |   6 +-
+ src/wasm/cable_solver/src/engine.rs           |   4 +-
+ .../open_loop_torque_balance.test.mjs         |  47 ++++++
+ .../open_loop_static_load.json                |  78 ++++++++++
+ .../rigidBodyConstraintSolver.test.js         |   4 +-
+ .../test_differential_parity.py               |   3 +-
+ .../test_open_loop_torque_balance.py          |  32 ++++
+ 13 files changed, 322 insertions(+), 26 deletions(-)
+ create mode 100644 research/hp4-squares-substeps.md
+ create mode 100644 tests/benchmark/open_loop_torque_balance.test.mjs
+ create mode 100644 tests/fixtures/python_3d_parity/open_loop_static_load.json
+ create mode 100644 tests/python/cable_joints_3d/test_open_loop_torque_balance.py
+
+diff --git a/public/wasm/cable_solver.wasm b/public/wasm/cable_solver.wasm
+index 6a54f893f3934460863c9b2143165dc764c5a4e7..2427d0730dc5f1db5ae453306172fec615f07cb7 100755
+GIT binary patch
+delta 1428
+zcmZ9J+iMd+6vk(EnzYR(c9U)ro2B*aRMTq38(NeK8qfzp6oiVR;uVorX!XS#x*}ew
+zcT2~{2ea#opr9xcd{Gg7@q)J}@gER;us)~-wfdzk&6wojoZt7&H#=wM{oClnH_^Li
+zh4Fgi{&}%@#JG2+_=@vOmknd7THnvtrfmx4PFHue3FbDS{Tv=`E%mOSQ#1wTq8L@`
+zi+}pL%MJU6@*nV&Y9HWMQ~feF{@W?TF-B20PNtiPa?@B!^=iiepMK@jqtun|PLn6q
+zodKToGL#9ZrcJDq4mm-g)NYYPG}i8tl4MYj*@=y}Vp};*LrW-o{f0~iu1!gzeBh>0
+z9n?nD3~JJ(TCxMzp$Me|mry_wA}9-LK)40i7`Uw{pbS({r*ds>t6s%Jo*huer%s<t
+z#C$n=<Q4$*D3n5hT77AkFiR3rV@WcxnJ?4u(KZI;z(|%1@})^8x`K>qV{yuq$BJUC
+z+5op_Q*BV?CMd0j6>nC}SNTe>{<n}}3ayR_N)c-{ZgL9ejz)IlUG9p&O_?Od+%d1J
+zD>o#%D78p17|?EWiE!0;6!x&uHE|GPc#ASMOtjldPA@Pw_Qc!v%8)~oe~X;8XE`;M
+z*X@;IM@A-?>Ky&cHLGJG^>vW9hb+Qh`8l3Z%kq3)Og~&$oyhYRBVwxkgM6XDJnDI#
+zQ*~*w+|V`k#N$n;hV#5QoHs^#@J>G?VqZK~!`MumZcCNLVyKCtXNo=%{}5)ZNz*^7
+zjykbq?sv#(P5x2Ald2h;ulZTkS0|=;2O!VT<ip^0jgM6L9=J{OkAmlEd<@)N!Luv4
+zqs%FG9Dylift>?SQ=2W}co)#>BVDZELGT<cTH<LM`{1b>2Nk>ttk2#9o?c#`V7(O!
+zwyQ6e=urpb!ivAZ{btIG*-LdOF79}L5g|?Hctw4@OW>^L_kmk9o&k0>J_06<PgdkR
+z{?D&rt02tM0vo|AH0}oLm(&Yhr1=NH3pB1R{z{0)JpL4eHE8-X_0ksC`L|+sQheq7
+LR&hgG{Ivc769(ta
+
+delta 1572
+zcmZ9KO=whC6vyv<H#3>Mc~f69GZ{0_m~*c&nHbSltTb3i25LbFD$<Bph#Ez7P*FEo
+z_>oZrZMF8p(CehoWS$#^LIt5i-58~yqLS*yrPxKt&M7W*;n#m=;>>m4=A7UEf6n3F
+z^X}g>&f|ZbYv+YE`|kP$@#S0V{`Z9kod5ib-ZjoQt0)E1XB#uUg2^_d#b7y2BAu(G
+zG5uhilaqk*lPH_5g;(QT@~@+pzhd(rMXTv<uTL;yDeDg|1J-~wK&@48j|xT@IkK6;
+zvc=)ylBu`<%6oY9;?AM?K)hNhU3eIBg;OY<wfARKs8?)K9(g_?+p37jpDLw0lp<A0
+z_g<Wv=^S!>86}t0gfH6>2{Df7A-Z8|qNp#4Y-;zVLI8C^1a*VZn*zmsIfMZ6AcD4N
+z8RM~UWD_~)ATLi_@)Sl_zH+1#0J;NZYKn&PSSzrbx*)|%QW(SXsvSPkxR292P+%y1
+zQ}cz3y!o3K`^lNSteSl6C`t$|)UID>z9d*$r8S^qm-vQtt*?a&Qeb1mqQv}`g5@ps
+zifh7`i7<(ZTiIYkCS4R6O5n%T7HsQ>m-wO%8K8x)McO^QjuuzVkt6s~4HSq7ed8AI
+zSz9|?GN){;#2)dKT~ll6ZqKhyA%?%BpG|WL_|kS7^wS*wq95W`X_rn|ej_ThF~aBX
+zfOEdGGW1~@W3-_Bn2b_Os~lgW|GC9Gbn<s@>ytU2T7b9mp$1D~`mY@CZfgve*N`s$
+zHl1be<jHK7v62$f$q7zp1}Au7aKdUn#9Q>REk>KeA;y+7#&$HgEQ073W^Hj!eD)~F
+z*kVI}0!|oQtmFUnsZT`znA6DEYNM<Z{JFtC@~FY1@Ru2U6uidZV|D&<aIfK?0I#a?
+z7|TLfQWMI&vX0jpd<yj)2A=~jHTXQ(y!Q`veBmP=V@yN%)EH1=bKoSn)9|P2_*<~K
+zkpti!qyAu>zY|=&fF5?mE_nz4CTX<Xt>b(8KUe%Y_6D6~l)W=2LH`j?qs#EW19uyo
+z0!xFBfyv<0b^U!G_itu{5LOrs+raA$-Ul{UcM#lX_@iL+aWxi3TEtD>JdKOA8Fjby
+Ws+gGM&kK)Z;yLG63%6UvOZPn^Q1n9p
+
+diff --git a/research/catalog.md b/research/catalog.md
+index b7feac38..8ad87c30 100644
+--- a/research/catalog.md
++++ b/research/catalog.md
+@@ -143,3 +143,14 @@ Native crashes were reproduced in objective replay outside the sandbox and in co
+ 
+ - [Isolation decisions and budgets](../output/research/autocal-crash-fix-20261007/research.md)
+ - [Tracked findings and compiler reduction results](../research/bug-reports/autocal-native-crashes-october-7-2026/autocal-crash-compiler-update.md)
++
++## HP4 Print Squares substeps and PR 77
++
++Status: partial physics correction validated, 2026-10-21. Topics: HP4, Print Squares,
++missed steps, open-loop torque balance, rotor damping, physics substeps.
++
++Removing cable-only electromagnetic stiffness corrects artificial holding power
++and passes the default-one-substep stability gate. The PR's damping correction
++fails loaded-state settling and is deferred. Matched native Squares prefixes
++still pull B out at finer steps; coarse zero-loss behavior is unreliable evidence
++of accuracy. [Review, measurements and integration decision](hp4-squares-substeps.md).
+diff --git a/research/hp4-squares-substeps.md b/research/hp4-squares-substeps.md
+new file mode 100644
+index 00000000..1886501b
+--- /dev/null
++++ b/research/hp4-squares-substeps.md
+@@ -0,0 +1,137 @@
++# HP4 Squares: substep bias and review of PR 77
++
++Status: open-loop torque-balance correction validated on 2026-10-21; rotor damping correction deferred.
++
++## Abstract
++
++PR [#77](https://github.com/tobbelobb/hp-sim5/pull/77) contains a useful diagnosis:
++coarse physics steps give open-loop motors artificial holding strength. A passive
++spring-loaded spool on current main settles at 0.002386 rad instead of the
++analytic 0.005946 rad at 2 ms. Removing cable-only electromagnetic stiffness
++recovers the analytic equilibrium across five timesteps and four JS/Rust
++execution paths, with independent Python/Warp checks. However, the PR's separate
++rotor damping correction causes persistent 5.008 mm vertical motion in the
++required loaded-state test at one substep, both alone and combined with the
++inertia correction. Only the inertia correction is retained. All 11 mandatory
++physics checks pass. Squares still pulls B out at finer steps; the change removes
++a numerical bias rather than making that motion loss-free. All evidence is
++simulated; hardware behavior and full-print accuracy are unmeasured.
++
++## Review and integration decision
++
++The PR was reviewed at `fcdaf7fed43a4cb1a9efdd289a58980ea2840984` against
++main `2c0b86ff`. Its physics commit is `63b847c8`.
++
++1. **Keep the open-loop physical inertia correction.** Electromagnetic torque
++   already accelerates the rotor in the motor system. The cable solver alone
++   adds `K*h²` to inertia, where `K=holdingTorque*polePairs`. At rest, balancing
++   the explicit motor prediction and cable correction therefore requires
++   `motorTorque = cableTorque*I/(I+K*h²)`. With `I=5e-5`, `K=25`, this ratio is
++   1/3 at 2 ms and 8/9 at four substeps. The simulated equilibrium violates the
++   physical law. Removing this term in JS, Rust native/Wasm and Python also
++   corrects the Warp preparation path; closed-loop constraint stiffness remains.
++2. **Defer the standalone rotor damping correction.** The PR's pure-damper
++   analytic check confirms double counting. Nevertheless, transplanting the
++   correction makes the unmodified one-substep loaded HP4 gate fail. The failure
++   also occurs with only that correction, isolating it from open-loop inertia.
++   Its 5.008 mm last-five-second vertical range exceeds the required 10 nm bound.
++   A correct local damper equation is insufficient evidence for stable integrated
++   cable/rotor dynamics. Do not merge this part without resolving that failure.
++3. **The QC refresh is useful independent work.** Source inspection confirms
++   that current HUD refresh depends on extrusion, and hides diagnostics without
++   a reference path. The PR's frame callback/throttle addresses this. It is not
++   included in this focused physics commit and was not browser-validated here.
++4. **Expand validation beyond the PR's higher-substep logo runs.** Those runs
++   cannot substitute for the default-one-substep loaded-state gate. The PR's
++   squares test checks B, so it does not establish zero losses on other axes.
++
++## Matched Squares replays
++
++The production `RrfCanPlayer` decodes the bundled layered HP4 Squares CAN file
++with its matching firmware axis map. Each command executes at the normal 2 ms
++cadence in a fresh native headless production world. Scene, layering, motor
++parameters, commands and solver iterations are unchanged across cases.
++
++Peak diagnostic counts after two simulated seconds:
++
++| Physics substeps | Baseline total | Both PR physics fixes | Retained inertia correction | Retained B / C |
++| --- | ---: | ---: | ---: | --- |
++| 1 | 0 | 0 | 0 | 0 / 0 |
++| 2 | 0 | 0 | 2 | 2 / 0 |
++| 4 | 2 | 2 | 2 | 2 / 0 |
++| 8 | 3 | 3 | 3 | 2 / 1 |
++| 16 | 3 | 3 | 3 | 2 / 1 |
++
++B's final encoder-minus-command lag with the retained change is 0.25532,
++0.25454, 0.25407 and 0.25388 rad at 2, 4, 8 and 16 substeps. Two magnetic
++periods are 0.25133 rad. At one substep the final lag is 0.01100 rad. A separate
++20 s replay retains zero losses at one substep and two B periods at four;
++peak body speeds are 0.2143 and 0.3865 m/s respectively. These are bounded
++prefixes, not complete Squares jobs or hardware pull-out thresholds.
++
++The diagnostic is a peak magnetic-period offset, summed over motors, rather
++than a cumulative count of physical full steps or slip/recovery events. The
++unloaded default rotor's small-signal natural period is about 8.89 ms; 2 ms
++integration provides only about 4.44 samples per period. That and the proven
++artificial holding term make coarse-step reassurance unreliable. The tested
++1–16 substeps do not establish continuum or hardware accuracy.
++
++## Validation and limits
++
++- `npm run test:physics`: **11 passed**, including native/Wasm 20 s default-logo
++  motion, JS fallback and loaded settling at one, two and four substeps.
++- Independent equilibrium: **20 passed** across JS, Wasm cable kernel, full
++  Wasm and native; Python/Warp suite **117 passed, 5 GPU skips**.
++- Native/Wasm, mounted-rotor and existing substep suites: **141 passed, 1 GC skip**.
++- Full Jest: **801 passed, 1 skipped**. Existing Python differential tests pass
++  in the first combined run; its failures came from the initial exploratory
++  multi-projection equilibrium assertions and a read-only Warp cache. The latter
++  was resolved with `WARP_CACHE_PATH=/tmp/hp-sim5-pr77-warp-cache` and rerun.
++
++The analytic regression uses one projection per step to isolate torque balance.
++An exploratory native audit at two/four projections finds a small remaining
++finite-projection error: up to 7.34e-8 rad equilibrium-angle error or 3.76e-8 Nm
++reported torque residual. Doubling duration from one to two seconds does not
++remove it. Those strict exploratory failures are retained; exact iteration
++invariance is not claimed. The delivered fix does not repair the remaining
++rotor damping, cable transport or full-print tracking limitations.
++
++## Evidence and reproduction
++
++- [Session report](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/report.md)
++  and [notebook](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/research.md):
++  H1–H6 decisions, budgets, inputs, measured outcomes and failed trials.
++- E01/E03 [baseline analytic failures](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/E01-baseline-analytic.log)
++  and [combined candidate passes](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/E03-candidate-analytic.log):
++  independent torque/damping evidence.
++- E02/E03/E06 [baseline](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/E02-baseline.json),
++  [combined corrections](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/E03-candidate.json)
++  and [retained correction](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/E06-inertia-only.json):
++  matched commands, hashes, numerical samples and motor diagnostics.
++- E04/E05 [combined failure](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/E04-candidate-physics-gate.log)
++  and [damping-only failure](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/E05-damping-only-physics-gate.log):
++  reason for deferring the damping correction.
++- E06 [passing mandatory gate](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/E06-inertia-only-physics-gate.log),
++  E07 [projection audit](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/E07-equilibrium-audit.json)
++  and E08 [20 s Squares prefixes](../output/research/sessions/2026-10-21-interactive-research-cdfb5278/E08-inertia-only-20s.json):
++  accepted stability, remaining numerical error and motion scope.
++- [Equilibrium regression](../tests/benchmark/open_loop_torque_balance.test.mjs)
++  and [Python/Warp check](../tests/python/cable_joints_3d/test_open_loop_torque_balance.py):
++  executable physical acceptance laws, wired into CI.
++- [Previous HP4 stability investigation](hp4-logo-stability.md) and
++  [motor integration investigation](faster-motor-update.md): preceding evidence
++  motivating the unmodified default-step gate and continued timestep caution.
++
++Reproduce the principal checks with:
++
++```bash
++npm run test:physics
++node --test tests/benchmark/open_loop_torque_balance.test.mjs
++WARP_CACHE_PATH=/tmp/hp-sim5-pr77-warp-cache .venv/bin/python -m pytest \
++  tests/python/cable_joints_3d/test_open_loop_torque_balance.py \
++  tests/python/cable_joints_3d/test_warp_solver.py -q
++```
++
++The archived session's `squares-replay.mjs` reproduces numerical motion without
++sockets or a viewer; for example, `node <session>/squares-replay.mjs new-label 2`.
++The session harness writes a new `<label>.json` containing inputs/hashes and samples.
+diff --git a/scripts/run_ci_tests.sh b/scripts/run_ci_tests.sh
+index b89b1f84..511fc552 100755
+--- a/scripts/run_ci_tests.sh
++++ b/scripts/run_ci_tests.sh
+@@ -17,7 +17,8 @@ echo "== Rust source contract, JS parity and host integration =="
+ (cd "$ROOT" && node --expose-gc --test tests/benchmark/native_physics_engine.test.mjs \
+   tests/benchmark/wasm_cable_solver.test.mjs tests/benchmark/physics_engine_ui.test.mjs \
+   tests/benchmark/profile_headless.test.mjs tests/benchmark/hp4_open_loop_substeps.test.mjs \
+-  tests/benchmark/slideprinter_mounted_motors.test.mjs tests/benchmark/mounted_rotor_dynamics.test.mjs)
++  tests/benchmark/slideprinter_mounted_motors.test.mjs tests/benchmark/mounted_rotor_dynamics.test.mjs \
++  tests/benchmark/open_loop_torque_balance.test.mjs)
+ 
+ echo "== JS unit tests (jest) =="
+ (cd "$ROOT" && npx jest)
+diff --git a/src/js/cable_joints_3d/cable_joints_core.js b/src/js/cable_joints_3d/cable_joints_core.js
+index ad245293..5d05b9bd 100644
+--- a/src/js/cable_joints_3d/cable_joints_core.js
++++ b/src/js/cable_joints_3d/cable_joints_core.js
+@@ -295,7 +295,6 @@ const CABLE_HYBRID_TRACE_PREFIX = '[CableHybridTrace]';
+ 
+ const DEFAULT_PLANE_NORMAL = new Vector3(0, 0, 1);
+ const DEFAULT_CLOSED_LOOP_STEPPER_CONSTRAINT_STIFFNESS = 1e8;
+-const DEFAULT_OPEN_LOOP_STEPPER_CONSTRAINT_STIFFNESS_SCALE = 1.0;
+ const DEFAULT_OPEN_LOOP_STEPPER_HOLDING_TORQUE_SCALE = 1.0;
+ 
+ function _debugCable(world, message) {
+@@ -1401,22 +1400,10 @@ function _positionStepperConstraintStiffness(world, stepper) {
+     );
+   }
+ 
+-  const holdingTorque = Number.isFinite(stepper.holdingTorque)
+-    ? Math.max(0.0, stepper.holdingTorque)
+-    : 0.0;
+-  const polePairs = Number.isFinite(stepper.numPolePairs)
+-    ? Math.max(1.0, Math.abs(stepper.numPolePairs))
+-    : 1.0;
+-  const scale = Math.max(
+-    0.0,
+-    _readFiniteResource(
+-      world,
+-      'openLoopStepperConstraintStiffnessScale',
+-      DEFAULT_OPEN_LOOP_STEPPER_CONSTRAINT_STIFFNESS_SCALE,
+-    ),
+-  );
+-
+-  return holdingTorque * polePairs * scale;
++  // Open-loop electromagnetic torque is integrated by StepperMotorSystem.
++  // Adding stiffness only to cable response violates static torque balance
++  // and gives coarse steps artificial holding power.
++  return 0.0;
+ }
+ 
+ function _effectiveMotorizedSpinInvInertia(world, stepper, invInertia, inertia, dt) {
+diff --git a/src/js/cable_joints_3d/rust_physics_engine.js b/src/js/cable_joints_3d/rust_physics_engine.js
+index 5a770903..eb447457 100644
+--- a/src/js/cable_joints_3d/rust_physics_engine.js
++++ b/src/js/cable_joints_3d/rust_physics_engine.js
+@@ -277,7 +277,7 @@ export class RustPhysicsEngine {
+     data.set([+flag('enableLayering', true), +flag('layeringAttachmentUpdatePoints', true),
+       +flag('layeringClampJointRestLength', true), +flag('layeringMergeJoints', false), +flag('layeringSplitJoints', false),
+       +flag('layeringHybridLinkStates', true), world.getResource('grabbedBall') ?? -1, world.nextEntityId,
+-      finite('closedLoopStepperConstraintStiffness', 1e8), finite('openLoopStepperConstraintStiffnessScale', 1),
++      finite('closedLoopStepperConstraintStiffness', 1e8), 0 /* reserved ABI slot; open-loop torque uses physical inertia */,
+       finite('openLoopStepperHoldingTorqueScale', 1), +flag('closedLoopMotorsEnabled', false)], o + 3);
+     putV(data, o + 16, world.getResource('defaultPlaneNormal') ?? { x: 0, y: 0, z: 1 });
+     data[o + 15] = world.getResource('dt') ?? -1;
+diff --git a/src/python/cable_joints_3d/stepper_motor.py b/src/python/cable_joints_3d/stepper_motor.py
+index ab8e1f17..e34e44c3 100644
+--- a/src/python/cable_joints_3d/stepper_motor.py
++++ b/src/python/cable_joints_3d/stepper_motor.py
+@@ -64,9 +64,9 @@ def position_stepper_constraint_stiffness(world, stepper):
+         return 0.
+     if is_stepper_closed_loop_enabled(world, stepper):
+         return max(0., finite_resource(world, 'closedLoopStepperConstraintStiffness', 1e8))
+-    torque = max(0., stepper.holding_torque) if finite_number(stepper.holding_torque) else 0.
+-    poles = max(1., abs(stepper.num_pole_pairs)) if finite_number(stepper.num_pole_pairs) else 1.
+-    return torque * poles * max(0., finite_resource(world, 'openLoopStepperConstraintStiffnessScale', 1.))
++    # Electromagnetic torque is already integrated by StepperMotorSystem.
++    # Inflating only cable inertia creates a timestep-dependent holding boost.
++    return 0.
+ 
+ 
+ def effective_motorized_spin_inv_inertia(world, entity, inv_inertia, inertia, dt):
+diff --git a/src/wasm/cable_solver/src/engine.rs b/src/wasm/cable_solver/src/engine.rs
+index 254fdd8b..d024eae4 100644
+--- a/src/wasm/cable_solver/src/engine.rs
++++ b/src/wasm/cable_solver/src/engine.rs
+@@ -1730,7 +1730,9 @@ impl PhysicsWorld {
+             } else if closed {
+                 self.options[11]
+             } else {
+-                e[109].max(0.0) * e[110].abs().max(1.0) * self.options[12].max(0.0)
++                // Open-loop torque is integrated in motors(); a cable-only
++                // stiffness term would violate steady torque balance.
++                0.0
+             };
+             self.entities[id][47] = if dt > EPS { stiffness } else { 0.0 };
+             self.entities[id][48] = stiffness * dt * dt;
+diff --git a/tests/benchmark/open_loop_torque_balance.test.mjs b/tests/benchmark/open_loop_torque_balance.test.mjs
+new file mode 100644
+index 00000000..9da5b2fd
+--- /dev/null
++++ b/tests/benchmark/open_loop_torque_balance.test.mjs
+@@ -0,0 +1,47 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import { runFixture } from '../parity3d/oracle.mjs';
++import { WasmCableSolver } from '../../src/js/cable_joints_3d/wasm_cable_solver.js';
++import { WasmPhysicsEngine } from '../../src/js/cable_joints_3d/wasm_physics_engine.js';
++import { NativePhysicsEngine } from '../../src/js/cable_joints_3d/native_physics_engine.js';
++
++const fixture = JSON.parse(fs.readFileSync(new URL('../fixtures/python_3d_parity/open_loop_static_load.json', import.meta.url)));
++const module = new WebAssembly.Module(fs.readFileSync(new URL('../../public/wasm/cable_solver.wasm', import.meta.url)));
++
++// A 30 mm spool, 10 kN/m cable and 0.2 Nm initial load must balance
++// H*sin(p*theta) = r*k*(extension-r*theta) = 0.2-9*theta.
++// Use one projection per step to isolate motor/cable torque balance from
++// nonlinear repeated-projection error. The physical law has no timestep factor.
++let low = 0, high = .02;
++for (let i = 0; i < 60; i++) {
++  const middle = (low + high) / 2;
++  if (.5 * Math.sin(50 * middle) < .2 - 9 * middle) low = middle;
++  else high = middle;
++}
++const expectedAngle = (low + high) / 2;
++
++for (const [engine, createBackend] of [
++  ['JavaScript', () => null],
++  ['Wasm kernel', () => new WasmCableSolver(module)],
++  ['Wasm physics', () => new WasmPhysicsEngine(module)],
++  ['native physics', () => new NativePhysicsEngine()],
++]) for (const substeps of [1, 2, 4, 8, 16]) {
++  test(`${engine}: physical open-loop torque balance, ${substeps} substeps`, () => {
++    const input = structuredClone(fixture);
++    const dt = .002 / substeps;
++    input.resources.dt = dt;
++    input.steps = Array.from({ length: 500 * substeps }, () => ({ dt }));
++    const backend = createBackend();
++    try {
++      const state = runFixture(input, { cableSolverBackend: backend }).snapshots.at(-1).entities;
++      const angle = state.spool.EncoderComponent.angle;
++      const motorTorque = .5 * Math.sin(50 * angle);
++      const cableTorque = .03 * state.joint.CableJointComponent.constraintForceMagnitude;
++      assert(Math.abs(angle - expectedAngle) < 1e-10, `${angle} != ${expectedAngle}`);
++      assert(Math.abs(motorTorque - cableTorque) < 1e-9, `${motorTorque} != ${cableTorque} Nm`);
++    } finally {
++      backend?.dispose?.();
++    }
++  });
++}
+diff --git a/tests/fixtures/python_3d_parity/open_loop_static_load.json b/tests/fixtures/python_3d_parity/open_loop_static_load.json
+new file mode 100644
+index 00000000..e16e5788
+--- /dev/null
++++ b/tests/fixtures/python_3d_parity/open_loop_static_load.json
+@@ -0,0 +1,78 @@
++{
++  "entities": [
++    {
++      "name": "anchor",
++      "components": {
++        "PositionComponent": [-1, 0, 0],
++        "MassComponent": [-1]
++      }
++    },
++    {
++      "name": "spool",
++      "components": {
++        "PositionComponent": [0, 0, 0],
++        "OrientationComponent": [0, 0, 0, 1],
++        "PrevFinalOrientationComponent": [0, 0, 0, 1],
++        "PrevFinalPosComponent": [0, 0, 0],
++        "AngularVelocityComponent": [0, 0, 0],
++        "EncoderComponent": [0, 0, 0, 1],
++        "MassComponent": [0],
++        "MomentOfInertiaComponent": [5e-05],
++        "RadiusComponent": [0.03],
++        "SpoolStateComponent": [
++          "A",
++          [0, 0, 1],
++          [0, 0, 0, 1]
++        ],
++        "StepperMotorComponent": [0, 0, 0.5, 50, 0.011],
++        "CableLinkComponent": [
++          0,
++          0,
++          0,
++          null,
++          null,
++          [0, 0, 1]
++        ]
++      }
++    },
++    {
++      "name": "joint",
++      "components": {
++        "CableJointComponent": [
++          "anchor",
++          "spool",
++          0.9988832320377451,
++          [-1, 0, 0],
++          [-0.0009, 0.029986496961132356, 0],
++          "world"
++        ]
++      }
++    },
++    {
++      "name": "path",
++      "components": {
++        "CablePathComponent": [
++          ["joint"],
++          ["attachment", "rolling"],
++          [true, true],
++          10000,
++          [0, 0],
++          0,
++          0,
++          1
++        ]
++      }
++    }
++  ],
++  "systems": [],
++  "pipeline": true,
++  "resources": {
++    "dt": 0.002,
++    "gravity": [0, 0, 0]
++  },
++  "steps": [{"dt": 0.002}],
++  "tolerance": {
++    "atol": 1e-10,
++    "rtol": 1e-09
++  }
++}
+diff --git a/tests/js/hp-sim-3d/rigidBodyConstraintSolver.test.js b/tests/js/hp-sim-3d/rigidBodyConstraintSolver.test.js
+index 269d2533..dcb28c04 100644
+--- a/tests/js/hp-sim-3d/rigidBodyConstraintSolver.test.js
++++ b/tests/js/hp-sim-3d/rigidBodyConstraintSolver.test.js
+@@ -691,13 +691,13 @@ describe('PBDCableConstraintSolver rigid-body endpoint mapping', () => {
+     };
+   }
+ 
+-  test('position-controlled steppers add holding stiffness to cable spin solve', () => {
++  test('open-loop steppers keep physical cable spin inertia', () => {
+     const freeForce = solveStandaloneStepperCableSpin().force;
+     const drivenForce = solveStandaloneStepperCableSpin({
+       stepper: new StepperMotorComponent(0.0, 0.0, 0.5, 50, 0.0),
+     }).force;
+ 
+-    expect(drivenForce).toBeGreaterThan(freeForce * 10.0);
++    expect(drivenForce).toBeCloseTo(freeForce, 12);
+   });
+ 
+   test('open-loop steppers backdrive after exceeding holding torque', () => {
+diff --git a/tests/python/cable_joints_3d/test_differential_parity.py b/tests/python/cable_joints_3d/test_differential_parity.py
+index 5e935a31..61dacc93 100644
+--- a/tests/python/cable_joints_3d/test_differential_parity.py
++++ b/tests/python/cable_joints_3d/test_differential_parity.py
+@@ -160,7 +160,8 @@ def test_solver_oracle_reaches_spin_load_and_limit_cases(name):
+     elif name == 'cable_solver_spools':
+         angle = lambda name: entities[name + '_spool']['EncoderComponent']['angle']
+         assert angle('release') == pytest.approx(angle('free'), abs=1e-10)
+-        assert angle('free') < angle('held') < angle('closed')
++        assert angle('free') == pytest.approx(angle('held'), abs=1e-10)
++        assert angle('held') < angle('closed')
+         assert entities['fixed_torque_joint']['CableJointComponent']['constraintForceMagnitude'] == pytest.approx(40)
+         assert maps['torqueModeCableLoadTorques']['fixed_torque_spool'] < 0
+         # Iterating a fixed physical constraint must not multiply its load.
+diff --git a/tests/python/cable_joints_3d/test_open_loop_torque_balance.py b/tests/python/cable_joints_3d/test_open_loop_torque_balance.py
+new file mode 100644
+index 00000000..1aa60cff
+--- /dev/null
++++ b/tests/python/cable_joints_3d/test_open_loop_torque_balance.py
+@@ -0,0 +1,32 @@
++"""Physical equilibrium, independently of JS/Python/Warp parity."""
++import json
++import math
++from contextlib import nullcontext
++from unittest.mock import patch
++
++import pytest
++
++from parity_harness import FIXTURES, run_python
++from cable_joints_3d.pbd_cable_constraint_solver import PBDCableConstraintSolver
++
++
++@pytest.mark.parametrize('substeps', [1, 4, 16])
++@pytest.mark.parametrize('compiled', [False, True])
++def test_open_loop_static_torque_balance(substeps, compiled):
++    fixture = json.loads((FIXTURES / 'open_loop_static_load.json').read_text())
++    fixture['resources']['dt'] = dt = .002 / substeps
++    fixture['steps'] = [{'dt': dt} for _ in range(500 * substeps)]
++    context = nullcontext()
++    if compiled:
++        pytest.importorskip('warp')
++        from cable_joints_3d.warp_solver import WarpCableConstraintSolver
++        solver = WarpCableConstraintSolver('cpu')
++        context = patch.object(PBDCableConstraintSolver, 'update', lambda self, world, dt: solver.update(world, dt))
++    with context:
++        state = run_python(fixture)['snapshots'][-1]['entities']
++    angle = state['spool']['EncoderComponent']['angle']
++    motor_torque = .5 * math.sin(50 * angle)
++    # Independent analytic cable extension and actual constraint force agree.
++    assert motor_torque == pytest.approx(.2 - 9 * angle, abs=1e-9)
++    cable_torque = .03 * state['joint']['CableJointComponent']['constraintForceMagnitude']
++    assert motor_torque == pytest.approx(cable_torque, abs=1e-9)
+-- 
+2.43.0
+

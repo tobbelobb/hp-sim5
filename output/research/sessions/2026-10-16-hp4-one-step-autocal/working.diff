@@ -1,0 +1,99 @@
+diff --git a/hp-sim-3d/README.md b/hp-sim-3d/README.md
+index d6e431b4..0c85aead 100644
+--- a/hp-sim-3d/README.md
++++ b/hp-sim-3d/README.md
+@@ -25,6 +25,14 @@ Expand **▼** for **Pause**, **Reset**, **Finish ASAP**, **Rerun** and view too
+ **Closed Loop Motors** changes position-drive behavior. Keep these settings the
+ same when comparing runs; quality checks and reference paths aid inspection.
+ 
++Physics uses one integration step per firmware tick by default. Extra substeps
++are an opt-in experiment: set the world's `physicsSubsteps` resource to `4`
++(`world.setResource('physicsSubsteps', 4)` in JavaScript, or
++`world.set_resource('physicsSubsteps', 4)` in Python). This integrates physics
++four times per tick and costs additional CPU; command and recorder cadence stay
++unchanged. Set it to `1` to restore normal integration. No autocal command
++enables substeps automatically.
++
+ To record a browser print, run
+ `.venv/bin/python scripts/hangprinter_flight_recorder.py`, open its printed viewer
+ URL, then click **Rerun** in the simulator before starting the print. This records
+diff --git a/hp-sim-3d/app/simulationSystems.js b/hp-sim-3d/app/simulationSystems.js
+index 966a4364..98d4c820 100644
+--- a/hp-sim-3d/app/simulationSystems.js
++++ b/hp-sim-3d/app/simulationSystems.js
+@@ -17,11 +17,13 @@ import {
+ } from '../../src/js/cable_joints_3d/commonSystems.js';
+ 
+ export function registerSimulationSystems(world, { cableSolverBackend = undefined } = {}) {
+-    // HP4's stiff cables and light effector rock at a single 2 ms solve.
+-    // Integrate at 0.5 ms, keeping firmware commands and recordings at 2 ms.
+-    if (world.getResource('physicsSubsteps') === undefined) world.setResource('physicsSubsteps', 4);
+-    const substeps = state => state.query([RigidBodyComponent]).length && state.query([CablePathComponent]).length
+-        ? state.getResource('physicsSubsteps') : 1;
++    // Extra physics steps are opt-in; retain the production 2 ms integration.
++    if (world.getResource('physicsSubsteps') === undefined) world.setResource('physicsSubsteps', 1);
++    const substeps = state => {
++        const count = state.getResource('physicsSubsteps');
++        return count > 1 && state.query([RigidBodyComponent]).length && state.query([CablePathComponent]).length
++            ? count : 1;
++    };
+     const firstSystem = world.systems.length;
+     if (cableSolverBackend === undefined) cableSolverBackend = world.getResource('cableSolverBackend');
+     if (cableSolverBackend === undefined) cableSolverBackend = createDefaultPhysicsBackend();
+diff --git a/src/python/cable_joints_3d/machine_simulation.py b/src/python/cable_joints_3d/machine_simulation.py
+index 56e66bc9..f91082dc 100644
+--- a/src/python/cable_joints_3d/machine_simulation.py
++++ b/src/python/cable_joints_3d/machine_simulation.py
+@@ -20,7 +20,7 @@ from .cable_joints_components import CablePathComponent
+ def register_machine_systems(world, recording=None, *, cable_solver_device=None):
+     if not world.systems:
+         if world.get_resource('physicsSubsteps') is None:
+-            world.set_resource('physicsSubsteps', 4)
++            world.set_resource('physicsSubsteps', 1)
+         world.register_system(RemoteSpoolSystem())
+         for system in [
+             common.PrevFinalPosSystem(), common.PrevFinalOrientationSystem(),
+@@ -36,7 +36,8 @@ def register_machine_systems(world, recording=None, *, cable_solver_device=None)
+         world.register_system(ExtruderSystem())
+         world.systems[1].physics_substeps = lambda state: (
+             state.get_resource('physicsSubsteps')
+-            if state.query([RigidBodyComponent]) and state.query([CablePathComponent]) else 1)
++            if state.get_resource('physicsSubsteps') > 1
++            and state.query([RigidBodyComponent]) and state.query([CablePathComponent]) else 1)
+     recorder = None
+     if recording is not None:
+         from .rerun_system import RerunSystem
+diff --git a/tests/benchmark/hp4_stability.test.mjs b/tests/benchmark/hp4_stability.test.mjs
+index 60ba1f9f..bed32806 100644
+--- a/tests/benchmark/hp4_stability.test.mjs
++++ b/tests/benchmark/hp4_stability.test.mjs
+@@ -7,7 +7,7 @@ import { PositionComponent, AngularVelocityComponent, RigidBodyComponent } from
+ 
+ // A loaded HP4 rocked indefinitely with fixed motor targets. The numeric state
+ // avoids replaying 584,000 steps; idle/initial-tilt tests do not expose this case.
+-test('HP4 settles from a loaded recording state at the production firmware cadence', () => {
++test('opt-in HP4 substeps settle a loaded recording state at the production firmware cadence', () => {
+   const scene = fs.readFileSync(new URL('../../public/usd_scenes/hp4_rigid_body.usda', import.meta.url), 'utf8');
+   const saved = JSON.parse(fs.readFileSync(new URL('../fixtures/hp4_loaded_stability.json', import.meta.url)),
+     (key, value) => ['NaN', 'Infinity', '-Infinity'].includes(value) ? Number(value) : value);
+@@ -18,6 +18,8 @@ test('HP4 settles from a loaded recording state at the production firmware caden
+     lineLayeringEnabled: false, closedLoopMotorsEnabled: true,
+   });
+   assert.equal(dt, .002);
++  assert.equal(world.getResource('physicsSubsteps'), 1);
++  world.setResource('physicsSubsteps', 4);
+   world.update(dt); // Prepare the native world's editable numeric regions.
+   const backend = world.getResource('cableSolverBackend');
+   assert.deepEqual(backend.regions.map(region => region.data.length), saved.regions.map(row => row.length));
+diff --git a/tests/python/cable_joints_3d/test_machine_pipeline_parity.py b/tests/python/cable_joints_3d/test_machine_pipeline_parity.py
+index bc0230c0..018f3930 100644
+--- a/tests/python/cable_joints_3d/test_machine_pipeline_parity.py
++++ b/tests/python/cable_joints_3d/test_machine_pipeline_parity.py
+@@ -60,6 +60,7 @@ def test_identical_double_authored_inputs_keep_strict_short_term_engine_bounds(n
+ 
+ def test_native_composition_loads_the_authored_default_root_and_registers_once():
+     world = load_machine_world(ROOT / 'public/usd_scenes/hp4_rigid_body.usda')
++    assert world.get_resource('physicsSubsteps') == 1
+     assert len(world.systems) == len(SYSTEM_ORDER)
+     systems = list(world.systems)
+     register_machine_systems(world)

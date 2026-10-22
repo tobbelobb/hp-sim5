@@ -1,0 +1,543 @@
+diff --git a/autocal/autocal.py b/autocal/autocal.py
+index 07c2ef50..25c7e6b2 100644
+--- a/autocal/autocal.py
++++ b/autocal/autocal.py
+@@ -1655,9 +1655,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
+                         help="Record timestamped logs and collector events in an --extended-reference flight recorder")
+     parser.add_argument("--extended-reference", action="store_true",
+                         help="Record headless physics and all autocal events in one RRD; starts an owned recorder unless a WebSocket URL is supplied")
++    parser.add_argument("--recording-mode", choices=['none', 'events', 'sampled', 'full'],
++                        help="Headless evidence: none (numerical artifacts/traces), events, sampled (physics stride 100), full (extended RRD, stride 10); geometry stays compact")
+     parser.add_argument("--headless-sim", action="store_true",
+                         help="Run simulated RRF and production JS physics/collector in Node without a browser; implies --sim")
+     args = parser.parse_args(argv)
++    if args.recording_mode is not None:
++        if not args.headless_sim or args.no_collect:
++            parser.error("--recording-mode requires --headless-sim collection")
++        if args.extended_reference or args.extended_reference_ws or extended_reference.enabled():
++            parser.error("--recording-mode cannot be combined with extended-reference flags or AUTOCAL_REFERENCE_WS")
+     if args.extended_reference_ws:
+         os.environ['AUTOCAL_REFERENCE_WS'] = args.extended_reference_ws
+     if args.extended_reference and not args.headless_sim:
+diff --git a/autocal/data/references/extended-reference.md b/autocal/data/references/extended-reference.md
+index 7096ce77..753f6148 100644
+--- a/autocal/data/references/extended-reference.md
++++ b/autocal/data/references/extended-reference.md
+@@ -9,13 +9,32 @@ fixtures cannot acquire missing physics or original collection events retroactiv
+ 
+ Launcher sessions can run this same CLI through `start_autocal`, `autocal_status`
+ and `cancel_autocal`, even when agent command sockets are denied. Each supervised
+-job owns an isolated world and an extended recorder; stdout/stderr, stages,
+-scene/firmware settings, source hashes, partial measurements and finalized RRDs
++job owns an isolated world and defaults to an event-only recorder; stdout/stderr, stages,
++scene/firmware settings, source hashes, partial measurements and any finalized RRDs
+ remain in its artifact directory. `accepted` requires automatic stopping;
+ iteration/wall/physics budget exhaustion is separate. Supervisor cancellation
+ bypasses the interactive CLI's accept-best-so-far behavior. See the
+ [job settings and lifecycle](../../../research/README.md#jobs-shared-browser-state-and-steering).
+ 
++Supervised jobs accept `recording_mode="none"|"events"|"sampled"|"full"`.
++The CLI exposes the same choices with `--headless-sim --recording-mode MODE`:
++
++| Mode | Evidence |
++| --- | --- |
++| `none` | Numerical datasets, stage files, manifests and command/encoder traces, without an RRD recorder |
++| `events` | G-code, replies, encoder reads, stages, logs and artifacts, without physics snapshots |
++| `sampled` | Events plus physics every 100 steps with compact geometry |
++| `full` | Existing extended recording: events plus physics every 10 steps with compact geometry |
++
++`events` is the research-job default; standalone CLI runs without recording flags
++retain their existing numerical-only behavior. `--extended-reference` retains
++the existing full extended recording behavior. Use either `--recording-mode` or
++extended-reference flags/environment, since external recorders choose their own
++sampling settings. All modes retain local numerical artifacts and
++`<dataset-stem>.headless/events.jsonl`; recorded modes retain event batching and
++acknowledged drain/finalization. Event-only recording creates no physics samples,
++including at startup or after scene resets.
++
+ Add `--extended-reference` to a headless autocal run:
+ 
+ ```bash
+diff --git a/autocal/headless_sim.py b/autocal/headless_sim.py
+index 31a6f250..0d859115 100644
+--- a/autocal/headless_sim.py
++++ b/autocal/headless_sim.py
+@@ -53,6 +53,9 @@ class HeadlessSimulation:
+         self.physics = None
+         self.recorder = None
+         self.reference_url = os.environ.get('AUTOCAL_REFERENCE_WS')
++        self.recording_mode = getattr(args, 'recording_mode', None)
++        if self.recording_mode is None:
++            self.recording_mode = 'full' if getattr(args, 'extended_reference', False) or self.reference_url else 'none'
+         self.signal_handlers = {}
+         self.started = time.monotonic()
+         self.directory = Path(args.dataset).resolve().with_suffix(".headless")
+@@ -63,7 +66,7 @@ class HeadlessSimulation:
+             index += 1
+         self.directory.mkdir(parents=True)
+         self.manifest = {"backend": "headless-js", "status": "starting", "machine_type": args.machine_type,
+-                         "scene": str(self.scene), "firmware_config": self.config,
++                         "scene": str(self.scene), "firmware_config": self.config, "recording_mode": self.recording_mode,
+                          "clock": "fixed steps; collector waits advance simulation time",
+                          "dataset": str(Path(args.dataset).resolve()), "source_sha256": source_hash()}
+         self.manifest["autocal_source_sha256"] = source_hash(("autocal",), (".py",))
+@@ -102,11 +105,12 @@ class HeadlessSimulation:
+             for sig in (signal.SIGTERM, signal.SIGHUP):
+                 self.signal_handlers[sig] = signal.getsignal(sig)
+                 signal.signal(sig, self.interrupt)
+-            if getattr(self.args, 'extended_reference', False) and not self.reference_url:
++            if self.recording_mode != 'none' and not self.reference_url:
+                 from websockets.sync.client import connect
+                 port = free_port()
+                 self.recorder = self.spawn('recorder', [sys.executable, 'scripts/hangprinter_flight_recorder.py',
+-                    '--extended-reference', '--no-viewer', '--port', str(port), '--output', str(self.directory)])
++                    '--extended-reference', '--no-viewer', '--port', str(port), '--output', str(self.directory),
++                    '--sample-stride', '100' if self.recording_mode == 'sampled' else '10', '--geometry-detail', 'compact'])
+                 self.reference_url = f'ws://127.0.0.1:{port}'
+                 deadline = time.monotonic() + 30
+                 while True:
+@@ -143,7 +147,8 @@ class HeadlessSimulation:
+             ws_port, api_port = free_port(), free_port()
+             self.url = f"http://127.0.0.1:{api_port}"
+             service = self.physics = self.spawn("physics", ["node", "scripts/autocal_headless.mjs", str(self.directory / "scene.usda"),
+-                                            rrf_url, str(ws_port), str(api_port), str(self.directory), str(layering).lower()])
++                                            rrf_url, str(ws_port), str(api_port), str(self.directory), str(layering).lower(),
++                                            self.recording_mode])
+             deadline = time.monotonic() + 30
+             while True:
+                 try:
+diff --git a/autocal/tests/test_headless_sim.py b/autocal/tests/test_headless_sim.py
+index 02d3087d..0df577dd 100644
+--- a/autocal/tests/test_headless_sim.py
++++ b/autocal/tests/test_headless_sim.py
+@@ -46,6 +46,20 @@ def test_owned_reference_requires_headless_collection(flags, monkeypatch):
+         ac.main(['--extended-reference', *flags])
+ 
+ 
++@pytest.mark.parametrize('flags', [[], ['--headless-sim', '--no-collect'],
++    ['--headless-sim', '--extended-reference'], ['--headless-sim', '--extended-reference-ws', 'ws://external']])
++def test_recording_mode_requires_unambiguous_headless_collection(flags, monkeypatch):
++    monkeypatch.delenv('AUTOCAL_REFERENCE_WS', raising=False)
++    with pytest.raises(SystemExit):
++        ac.main(['--recording-mode', 'events', *flags])
++
++
++def test_explicit_recording_mode_rejects_inherited_recorder(monkeypatch):
++    monkeypatch.setenv('AUTOCAL_REFERENCE_WS', 'ws://external')
++    with pytest.raises(SystemExit):
++        ac.main(['--headless-sim', '--recording-mode', 'none'])
++
++
+ def test_failed_lifecycle_retains_clock_error_and_partial_points(tmp_path):
+     from argparse import Namespace
+     args = Namespace(machine_type='hangprinter_3', find_radii='global', find_buildup_factor='off',
+@@ -96,13 +110,14 @@ def recorded_events(path, source):
+     return sorted(events, key=lambda event: (event['wall_time_ms'], event.get('monotonic_ms', 0)))
+ 
+ 
+-def test_extended_headless_records_resets_clocks_and_finalizes(tmp_path, monkeypatch):
++@pytest.mark.parametrize('mode', [None, 'none', 'events', 'sampled', 'full'])
++def test_headless_recording_modes_preserve_events_resets_and_finalization(tmp_path, monkeypatch, mode):
+     from argparse import Namespace
+     from autocal import extended_reference
+     monkeypatch.delenv('AUTOCAL_REFERENCE_WS', raising=False)
+     args = Namespace(machine_type='hangprinter_3', find_radii='off', find_buildup_factor='off',
+                      rrf_config=None, config=None, dataset=tmp_path / 'sweeps.json',
+-                     keep_sim_alive=False, extended_reference=True)
++                     keep_sim_alive=False, extended_reference=mode is None, recording_mode=mode)
+     with HeadlessSimulation(args, []) as service:
+         extended_reference.emit('run_start', test=True)
+         service.request('advance', seconds=.05)
+@@ -113,13 +128,30 @@ def test_extended_headless_records_resets_clocks_and_finalizes(tmp_path, monkeyp
+         assert state['step'] == 125 and state['collector_time_s'] == pytest.approx(.06)
+         extended_reference.emit('run_complete', returncode=0)
+     assert 'AUTOCAL_REFERENCE_WS' not in os.environ
++    assert service.manifest['recording_mode'] == (mode or 'full')
++    traces = [json.loads(line) for line in (service.directory / 'events.jsonl').read_text().splitlines()]
++    assert {'gcode_send', 'gcode_reply', 'encoder_response', 'service_stopped'} <= {row['type'] for row in traces}
++    for pid in service.manifest['services']:
++        with pytest.raises(ProcessLookupError):
++            os.kill(pid, 0)
++    if mode == 'none':
++        assert service.recorder is None
++        assert not list(service.directory.glob('*.rrd'))
++        assert not service.manifest.get('recordings')
++        return
+     assert service.manifest['physics_returncode'] == 0
+     assert service.manifest['recording_drained']
+     recording, = service.manifest['recordings']
+     assert recording['backend'] == 'headless-js' and recording['status'] == 'finalized'
+     assert recording['autocal_complete'] and not recording['rejected_messages']
+-    assert [segment['generation'] for segment in recording['headless_segments']] == [0, 1]
+-    assert recording['sample_stride'] == 10 and recording['geometry_detail'] == 'compact'
++    if mode == 'events':
++        assert recording['physics_samples'] == 0 and recording['recording_mode'] == 'events'
++        assert not recording.get('headless_segments')
++    else:
++        assert [segment['generation'] for segment in recording['headless_segments']] == [0, 1]
++        assert recording['sample_stride'] == (100 if mode == 'sampled' else 10)
++        assert recording['geometry_detail'] == 'compact'
++        assert recording['physics_samples'] == (3 if mode == 'sampled' else 16)
+     path = recording['rrd']
+     assert len(RrdReader(path).recordings()) == 1
+     events = recorded_events(path, 'headless')
+@@ -135,10 +167,8 @@ def test_extended_headless_records_resets_clocks_and_finalizes(tmp_path, monkeyp
+     assert set(artifacts) == {'scene.usda', 'baked-scene.usda', 'firmware-config.g'}
+     assert all(artifacts.values())
+     clocks = RrdReader(path).stream().filter(content='/clocks/headless/flight_recorder', components='Scalars:scalars').to_chunks()
+-    assert clocks and all('wall_time' in chunk.timeline_names for chunk in clocks)
+-    for pid in service.manifest['services']:
+-        with pytest.raises(ProcessLookupError):
+-            os.kill(pid, 0)
++    assert bool(clocks) is (mode != 'events')
++    assert all('wall_time' in chunk.timeline_names for chunk in clocks)
+ 
+ 
+ @pytest.mark.parametrize('keep_alive', [False, True])
+diff --git a/hp-sim-3d/app/flightRecorder.js b/hp-sim-3d/app/flightRecorder.js
+index e2d7b2cb..feee24cd 100644
+--- a/hp-sim-3d/app/flightRecorder.js
++++ b/hp-sim-3d/app/flightRecorder.js
+@@ -7,12 +7,13 @@ const MAX_PENDING_EVENTS = 65536;
+ const MAX_PENDING_EVENT_BYTES = 32 * 1024 * 1024;
+ 
+ export class FlightRecorder {
+-  constructor({ world, button, url = 'ws://127.0.0.1:9877', WebSocketClass = globalThis.WebSocket, source = 'browser' }) {
++  constructor({ world, button, url = 'ws://127.0.0.1:9877', WebSocketClass = globalThis.WebSocket, source = 'browser', recordPhysics = true }) {
+     this.world = world;
+     this.button = button;
+     this.url = url;
+     this.WebSocketClass = WebSocketClass;
+     this.source = source;
++    this.recordPhysics = recordPhysics;
+     this.socket = null;
+     this.pending = 0;
+     this.pendingEvents = 0;
+@@ -58,6 +59,10 @@ export class FlightRecorder {
+     socket.addEventListener('open', () => {
+       if (this.socket !== socket) return;
+       this.setStatus('Rerun: recording');
++      if (!this.recordPhysics) {
++        // Register an event source without constructing even a step-zero snapshot.
++        socket.send(JSON.stringify({ version: 1, type: 'event_source', source: this.source, session: this.session }));
++      }
+       this.update(this.world, 0);
+     });
+     socket.addEventListener('message', (event) => {
+@@ -231,7 +236,7 @@ export class FlightRecorder {
+       this.step += 1;
+       this.time += dt;
+     }
+-    if (this.lastSentStep !== null && this.step - this.lastSentStep < this.sampleStride) return;
++    if (!this.recordPhysics || (this.lastSentStep !== null && this.step - this.lastSentStep < this.sampleStride)) return;
+     this.lastSentStep = this.step;
+     // Preserve event/sample order, including scene context before step zero.
+     this.flushEvents();
+diff --git a/research/README.md b/research/README.md
+index 6ec12244..678a483b 100644
+--- a/research/README.md
++++ b/research/README.md
+@@ -438,7 +438,7 @@ partial evidence, not a complete autocal dataset. Completed jobs retain the
+ production version-2 dataset and validation path.
+ 
+ Full-autocal jobs use the production one-click CLI once per job. They own a fresh
+-headless JS scene, RRF, collector and extended recorder independently of the
++headless JS scene, RRF, collector and optional recorder independently of the
+ attached session. An HP4 chat can request HP3 without changing its current world.
+ Only one full-autocal job runs per supervisor; collection jobs use the attached
+ world independently. For known HP3 radii and no layering, call:
+@@ -457,6 +457,22 @@ zero cable width when layering is off. Layering changes rebake/reset the world;
+ resets retain closed-loop motor and layering settings. Each generation keeps
+ its baked scene and hash in the recording and job artifacts.
+ 
++`recording_mode` controls evidence cost independently of the attached session's
++recording setting. It defaults to `events`:
++
++| Mode | Recorded evidence | Use |
++| --- | --- | --- |
++| `none` | Numerical datasets, manifests and command/encoder traces; no RRD recorder | Large automated sweeps |
++| `events` | G-code, responses, encoder reads, calibration stages and logs in an RRD; no physics snapshots | Most research trials |
++| `sampled` | Events plus physics every 100 steps with compact geometry | Investigating behavior |
++| `full` | Existing detailed extended RRD: events plus physics every 10 steps with compact geometry | Debugging and validating discoveries |
++
++For example, `start_autocal(recording_mode="none")` avoids physics snapshot,
++transport and RRD costs while preserving numerical evidence. All recorded modes
++retain lossless batched events, explicit clocks and finalization on cancellation.
++Physics sampling never samples control events or changes physics integration.
++The selected mode is stored in job settings and the headless manifest.
++
+ `optimizer` accepts `mode` (`fast`, `fast-fd`, `legacy`) and `solver` (`lbfgsb`,
+ `trf`). Defaults are `fast`/`lbfgsb`, 400 `solve_iterations` (1–2000), four
+ `solve_restarts` (1–16), three `spool_outer_iters` (1–20), and 30
+@@ -486,7 +502,7 @@ not an accepted calibration.
+ 
+ Terminal states are `accepted`, `budget_exhausted`, `cancelled`, `failed`.
+ `accepted` requires the CLI's genuine automatic patience/threshold stop,
+-successful parameter application and recorder finalization. `--max-steps`
++successful parameter application and, when recording, recorder finalization. `--max-steps`
+ remains a budget stop. Poll status between conversational turns; chat interruption
+ does not cancel movement. Cancellation and supervisor exit signal the CLI owner,
+ stop physical activity, drain physics before the recorder, and retire the job's
+diff --git a/research/architecture.md b/research/architecture.md
+index af3ac021..e6475671 100644
+--- a/research/architecture.md
++++ b/research/architecture.md
+@@ -37,7 +37,7 @@ Matching scenes in these branches produce separate running worlds.
+ | --- | --- | --- |
+ | [Fresh trial](../src/python/hp_sim5_research/experiments.py): `run_experiment` | MCP process owns a native Rust worker for one bounded, synchronous call; Python mirrors observations. No RRF or continuing supervisor world is involved. | Per-call repository USD scene, timestep and motor commands; explicit Python/Warp reference backends. |
+ | [Continuing collection](../scripts/research_runtime.py): `start_collection`, `send_gcode`, `step_physics` | Supervisor owns one continuing HP3/HP4 world, RRF and collector bridge. Default native Rust physics runs in Node; Python mirrors observations. Optional Python/Warp backends execute their own physics. | Launcher machine/backend, then accepted `configure_session` settings. Collection options choose movement and measurement conditions. |
+-| [Full-autocal](../src/python/hp_sim5_research/autocal_jobs.py): `start_autocal` | Supervisor owns the job; the production CLI owns a separate headless JS world, RRF, collector and extended recorder. One full-autocal job per supervisor. | Job machine/layering selects stock scene and firmware. Radius/buildup arguments describe the calibration model; optimizer, force and budget settings are job inputs. |
++| [Full-autocal](../src/python/hp_sim5_research/autocal_jobs.py): `start_autocal` | Supervisor owns the job; the production CLI owns a separate headless JS world, RRF, collector and optional recorder. One full-autocal job per supervisor. | Job machine/layering selects stock scene and firmware. Radius/buildup arguments describe the calibration model; optimizer, force, budget and recording mode settings are job inputs. Recording defaults to events without physics snapshots. |
+ | [Browser](../hp-sim-3d/app/researchControls.js): `start_browser_service`, `browser_action` | The open page owns Rust/Wasm physics and JS application workers. Supervisor owns Vite, page RPC and the requested recorder receiver. Actions select the exact `page_id`. | Page scene controls, `load_scene`, application feature flags and command API. The continuing world's configuration does not configure the page. |
+ | [Integration tests](../src/python/hp_sim5_research/test_jobs.py): `start_test` | Supervisor owns one test job with a separate pytest process and fixture services. Tests use their own worlds and artifacts. | Named suite allowlist, fixed argv, repository cwd and `.venv/bin/python`; caller supplies a bounded timeout. Slow tests are excluded. |
+ 
+@@ -95,7 +95,7 @@ repository-level directory. Always use paths returned by tools and manifests.
+ | --- | --- | --- |
+ | Fresh trial | `output/research/experiments/<run_id>/` | Frozen scene/commands, manifest, final snapshot and JSON telemetry at step zero and every update. Optional RRD records physics updates with the native blueprint. |
+ | Continuing collection | `S/native/<world_id>/<collection_job_id>/` | Each recorded collection finalizes its own RRD while the world continues. Observations are sampled at 10 simulated Hz and at encoder reads. Dataset, point journal, events and manifests retain roles, settings and step bounds. World inputs live in the parent generation directory. |
+-| Full-autocal | `S/native/autocal/<job_id>/` by default | CLI logs, datasets, stage artifacts and `sweeps.headless/` service evidence. One extended RRD combines sampled physics, collection events and Python logs/artifacts across scene resets. Default physics stride is 10, with compact cable geometry. |
++| Full-autocal | `S/native/autocal/<job_id>/` by default | CLI logs, datasets, stage artifacts and `sweeps.headless/` command/encoder traces and manifests. `recording_mode` defaults to `events` (one RRD without physics); `none` skips RRD, `sampled` adds physics at stride 100, and `full` retains stride 10. Physics uses compact geometry; events span scene resets. |
+ | Browser | `S/native/browser-recordings/` | Receiver writes separate recordings for page session/scene generations. Ordinary recording defaults to every physics step; extended recording defaults to stride 10. `browser_status` lists exact files, recording IDs and finalized bounds. |
+ | Test job | `S/native/tests/<job_id>/` | Job manifest, stdout/stderr, JUnit and pytest temporary artifacts. Fixtures may create RRDs; the test job has no single experiment recording or calibration result. |
+ 
+@@ -130,7 +130,7 @@ Collection cancellation preserves partial measurements and records its stopped
+ boundary, then requires coordinated reset. Full-autocal cancellation stops its
+ own services and preserves partial evidence without accepting best-so-far.
+ `accepted` means the production CLI reached its automatic stop and applied a
+-candidate with finalized recording; accuracy needs separate measurements.
++candidate with a finalized recording when enabled; accuracy needs separate measurements.
+ Test cancellation preserves an unfinished check with a blocked outcome.
+ Supervisor shutdown retires owned services and jobs.
+ 
+diff --git a/scripts/autocal_headless.mjs b/scripts/autocal_headless.mjs
+index 856b1a0c..152d5492 100644
+--- a/scripts/autocal_headless.mjs
++++ b/scripts/autocal_headless.mjs
+@@ -11,7 +11,7 @@ import { createExternalCommandController } from '../hp-sim-3d/app/externalComman
+ import { createGcodeBridge } from '../integrations/rrf/rrfSimulatorBridge.mjs';
+ import { FlightRecorder } from '../hp-sim-3d/app/flightRecorder.js';
+ 
+-const [scene, rrfUrl, wsPort, apiPort, directory, initialLayering] = process.argv.slice(2);
++const [scene, rrfUrl, wsPort, apiPort, directory, initialLayering, recordingMode] = process.argv.slice(2);
+ const sceneText = fs.readFileSync(scene, 'utf8');
+ let step = 0, epoch = 0, totalSteps = 0, speed = 1, collectorTime = 0, stopped = false, failure = null;
+ let lineLayeringEnabled = initialLayering === 'true', closedLoopMotorsEnabled = false;
+@@ -27,7 +27,8 @@ let recordingDrained = false;
+ const started = performance.now();
+ const maxPhysicsSteps = Number(process.env.HP_SIM5_AUTOCAL_MAX_PHYSICS_STEPS || Infinity);
+ const recorder = process.env.AUTOCAL_REFERENCE_WS ? new FlightRecorder({ world,
+-  url: process.env.AUTOCAL_REFERENCE_WS, WebSocketClass: WebSocket, source: 'headless' }) : null;
++  url: process.env.AUTOCAL_REFERENCE_WS, WebSocketClass: WebSocket, source: 'headless',
++  recordPhysics: recordingMode !== 'events' }) : null;
+ function attachRecorder() {
+   world.setResource('sceneGeneration', epoch);
+   world.setResource('researchClock', { generation: epoch, step: 0, time: 0, source: 'headless.researchClock' });
+@@ -143,10 +144,12 @@ const server = http.createServer(async (request, reply) => {
+     if (recorder && (!recorder.socket || recorder.socket.readyState !== 1)) throw new Error(recorder.error || 'Flight recorder disconnected');
+     if (request.url === '/gcode') {
+       const commandId = `${process.pid}:${totalSteps}:${Date.now()}`;
++      event('gcode_send', { command_id: commandId, line: args.line });
+       recorder?.recordEvent('service_gcode_send', { commandId, line: args.line });
+       // Drain outside RRF's short encoder resolver timeout before its M569.3 query.
+       if (/^M569\.3\b/i.test(args.line)) await advance(0, true);
+       result = await bridge.sendGcodeLine(args.line, { timeout: 120000 });
++      event('gcode_reply', { command_id: commandId, result });
+       if (/^Error:/im.test(result?.reply ?? '')) throw new Error(result.reply);
+       await bridge.sendEncoderRequest([], 120000); // barrier for all preceding CAN payloads
+       recorder?.recordEvent('service_gcode_reply', { commandId, result });
+diff --git a/scripts/hangprinter_flight_recorder.py b/scripts/hangprinter_flight_recorder.py
+index 7fed54d4..15f49c8b 100644
+--- a/scripts/hangprinter_flight_recorder.py
++++ b/scripts/hangprinter_flight_recorder.py
+@@ -381,6 +381,15 @@ async def run(args):
+                 sample = json.loads(message)
+                 if sample.get("version") != 1:
+                     raise ValueError("Unsupported flight recorder protocol version")
++                if sample.get("type") == "event_source":
++                    if extended_recording is None or sample.get("source") not in ("browser", "headless"):
++                        raise ValueError("Event sources require an extended browser/headless recording")
++                    if active_physics is not None and active_physics is not socket:
++                        raise ValueError("Extended reference already has an active physics source")
++                    active_physics = socket
++                    extended_recording.manifest.update(backend=f'{sample["source"]}-js', recording_mode='events')
++                    await socket.send(json.dumps({"type": "ack"}))
++                    continue
+                 if sample.get("type") in ("autocal_event", "autocal_event_batch"):
+                     if extended_recording is None:
+                         raise ValueError("Events require --extended-reference")
+diff --git a/scripts/hp_sim5_mcp.py b/scripts/hp_sim5_mcp.py
+index 37b5d9d7..5ce9883d 100644
+--- a/scripts/hp_sim5_mcp.py
++++ b/scripts/hp_sim5_mcp.py
+@@ -56,6 +56,7 @@ def capabilities() -> dict[str, Any]:
+                                       'reset': 'Retains accepted settings; reloads scene, JS and firmware sources',
+                                       'active_jobs': 'Explicit cancellation required before reset or reconfiguration'}},
+             'full_autocal': {'operations': ['start_autocal', 'autocal_status', 'cancel_autocal'],
++                             'recording_modes': ['none', 'events', 'sampled', 'full'], 'default_recording_mode': 'events',
+                              'machines': ['hp3', 'hp4'], 'backend': 'headless-js', 'isolated_world': True,
+                              'workflow': 'Production one-click CLI: physical collection, fitting, planning, selection, automatic stopping',
+                              'statuses': ['running', 'cancelling', 'accepted', 'budget_exhausted', 'cancelled', 'failed'],
+@@ -164,7 +165,8 @@ def start_autocal(machine: str = 'hp3', layering: bool = False,
+                   find_radii: str = 'off', find_buildup_factor: str = 'off',
+                   optimizer: dict | None = None, budgets: dict | None = None,
+                   collection: dict | None = None,
+-                  artifact_dir: str | None = None) -> dict[str, Any]:
++                  artifact_dir: str | None = None,
++                  recording_mode: Literal['none', 'events', 'sampled', 'full'] = 'events') -> dict[str, Any]:
+     """Return a full-autocal job ID immediately; the supervisor runs an isolated production CLI world.
+ 
+     base_radii_mm: one or four known/initial radii (default [30]); fitting modes: off/global/per-anchor.
+@@ -175,12 +177,15 @@ def start_autocal(machine: str = 'hp3', layering: bool = False,
+     collection optionally supplies force_low_n, force_mid_n, force_max_n together (0.001–10 N,
+     low < mid <= max) to use the CLI's manual forces, and/or sensor_collection_force_n.
+     Omitted forces preserve production autotuning.
++    recording_mode: none retains numerical artifacts and command traces; events (default) records
++    G-code, replies, encoder reads and stages; sampled adds physics every 100 steps;
++    full retains the extended RRD (physics every 10 steps). Both use compact geometry.
+     artifact_dir must be new and inside session artifacts. Poll autocal_status; cancel_autocal stops
+     physical activity and finalizes partial evidence. Budget exhaustion is not automatic acceptance.
+     """
+     args = dict(machine=machine, layering=layering, base_radii_mm=base_radii_mm if base_radii_mm is not None else [30],
+                 buildup_factor=buildup_factor, find_radii=find_radii, find_buildup_factor=find_buildup_factor,
+-                optimizer=optimizer or {}, budgets=budgets or {}, collection=collection or {})
++                optimizer=optimizer or {}, budgets=budgets or {}, collection=collection or {}, recording_mode=recording_mode)
+     if artifact_dir is not None:
+         args['artifact_dir'] = artifact_dir
+     return supervised_request('start_autocal', **args)
+diff --git a/scripts/profile_headless.mjs b/scripts/profile_headless.mjs
+index 1db0d102..1ca73ba9 100644
+--- a/scripts/profile_headless.mjs
++++ b/scripts/profile_headless.mjs
+@@ -95,7 +95,7 @@ export function loadWorkload(source, events = false) {
+   return { steps, boundaries, kind: 'frozen_autocal_replay' };
+ }
+ 
+-function observe(world, remote) {
++export function observe(world, remote) {
+   const snapshot = captureFlightRecorderSnapshot(world, { geometryDetail: 'compact' });
+   snapshot.motors = world.query([StepperMotorComponent]).map(id => {
+     const motor = world.getComponent(id, StepperMotorComponent);
+diff --git a/src/python/hp_sim5_research/autocal_jobs.py b/src/python/hp_sim5_research/autocal_jobs.py
+index e80ace14..fc6d332b 100644
+--- a/src/python/hp_sim5_research/autocal_jobs.py
++++ b/src/python/hp_sim5_research/autocal_jobs.py
+@@ -16,13 +16,15 @@ from .services import register_test_process
+ 
+ def settings(args):
+     allowed = {'machine', 'layering', 'base_radii_mm', 'buildup_factor', 'find_radii',
+-               'find_buildup_factor', 'optimizer', 'budgets', 'collection', 'artifact_dir'}
++               'find_buildup_factor', 'optimizer', 'budgets', 'collection', 'artifact_dir', 'recording_mode'}
+     if not isinstance(args, dict) or set(args) - allowed:
+         raise ValueError(f'Autocal settings must be among {sorted(allowed)}')
+     result = {'machine': 'hp3', 'layering': False, 'base_radii_mm': [30.0], 'buildup_factor': 0.0,
+-              'find_radii': 'off', 'find_buildup_factor': 'off', **{k: v for k, v in args.items()
++              'find_radii': 'off', 'find_buildup_factor': 'off', 'recording_mode': 'events', **{k: v for k, v in args.items()
+               if k not in ('optimizer', 'budgets', 'collection', 'artifact_dir')}}
+     validate_spools(result['machine'], result['layering'], result['base_radii_mm'], result['buildup_factor'])
++    if result['recording_mode'] not in ('none', 'events', 'sampled', 'full'):
++        raise ValueError('recording_mode must be none, events, sampled or full')
+     for key in ('find_radii', 'find_buildup_factor'):
+         if result[key] not in ('off', 'global', 'per-anchor'):
+             raise ValueError(f'{key} must be off, global or per-anchor')
+@@ -76,7 +78,8 @@ def settings(args):
+ 
+ def command(root, directory, config):
+     opt, budget = config['optimizer'], config['budgets']
+-    argv = [str(root / '.venv/bin/python'), 'autocal/autocal.py', '--headless-sim', '--extended-reference',
++    argv = [str(root / '.venv/bin/python'), 'autocal/autocal.py', '--headless-sim',
++            '--recording-mode', config['recording_mode'],
+             '--machine-type', f'hangprinter_{config["machine"][-1]}', '--dataset', str(directory / 'sweeps.json'),
+             '--rrf-config', firmware_path(config['machine'], config['layering']),
+             '--base-radii', ','.join(map(str, config['base_radii_mm'])),
+diff --git a/tests/js/hp-sim-3d/flightRecorder.test.js b/tests/js/hp-sim-3d/flightRecorder.test.js
+index 9adc5c21..4684b37c 100644
+--- a/tests/js/hp-sim-3d/flightRecorder.test.js
++++ b/tests/js/hp-sim-3d/flightRecorder.test.js
+@@ -218,6 +218,32 @@ describe('flight recorder delivery', () => {
+     await expect(recorder.drain()).rejects.toThrow('disconnected');
+   });
+ 
++  test('event-only recording registers and batches events without capturing physics across resets', () => {
++    const world = new World();
++    const recorder = new FlightRecorder({ world, WebSocketClass: FakeSocket, source: 'headless', recordPhysics: false });
++    recorder.extendedReference = true;
++    recorder.connect();
++    const socket = recorder.socket;
++    socket.readyState = 1; socket.emit('open');
++    expect(socket.samples[0]).toEqual({ version: 1, type: 'event_source', source: 'headless', session: 'session' });
++    socket.emit('message', { type: 'ack' });
++    for (let step = 1; step <= 1000; step++) {
++      world.setResource('researchClock', { time: step * .001 });
++      if (step === 500) world.setResource('sceneGeneration', 1);
++      recorder.update(world, .001);
++      recorder.recordEvent('encoder_read', { step });
++    }
++    recorder.flushEvents();
++    expect(recorder.pending).toBe(0);
++    expect(socket.samples.every(message => ['event_source', 'autocal_event_batch'].includes(message.type))).toBe(true);
++    const events = socket.samples.flatMap(message => message.events ?? []);
++    expect(events.filter(event => event.kind === 'scene_context')).toHaveLength(2);
++    expect(events.filter(event => event.kind === 'encoder_read')).toHaveLength(1000);
++    expect(events.at(-1).sim_time_s).toBe(1);
++    expect(socket.samples.length).toBeLessThan(10);
++    recorder.disconnect();
++  });
++
+   test('physics resumes when capacity returns without waiting for a continuing event stream to drain', async () => {
+     const recorder = new FlightRecorder({ world: new World(), WebSocketClass: FakeSocket });
+     recorder.connect();
+diff --git a/tests/python/test_autocal_jobs.py b/tests/python/test_autocal_jobs.py
+index 615fdbef..9c8c844c 100644
+--- a/tests/python/test_autocal_jobs.py
++++ b/tests/python/test_autocal_jobs.py
+@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[2]
+     {'collection': {'force_max_n': 9.2}},
+     {'collection': {'force_low_n': .1, 'force_mid_n': .2, 'force_max_n': 11}},
+     {'collection': {'sensor_collection_force_n': float('inf')}},
++    {'recording_mode': 'debug'}, {'recording_mode': None}, {'recording_mode': True},
+ ])
+ def test_autocal_rejects_unbounded_or_untyped_settings(args):
+     with pytest.raises(ValueError):
+@@ -39,6 +40,15 @@ def test_autocal_command_runs_one_production_cli_with_explicit_configuration(tmp
+     assert '--no-auto-tune-force' in command(ROOT, tmp_path, cfg)
+ 
+ 
++@pytest.mark.parametrize('mode', ['none', 'events', 'sampled', 'full'])
++def test_autocal_recording_mode_reaches_cli(tmp_path, mode):
++    assert settings({})['recording_mode'] == 'events'
++    cfg = settings({'recording_mode': mode})
++    argv = command(ROOT, tmp_path, cfg)
++    assert argv[argv.index('--recording-mode') + 1] == mode
++    assert '--extended-reference' not in argv
++
++
+ @pytest.mark.asyncio
+ async def test_autocal_validates_new_artifact_directory_and_exclusive_job(tmp_path):
+     manager = AutocalJobs(ROOT, tmp_path)
+@@ -167,6 +177,7 @@ async def test_supervised_live_stop_finalizes_rrd_without_mutating_hp4(tmp_path,
+     try:
+         before = await asyncio.to_thread(service.call, 'status')
+         job = await asyncio.to_thread(service.call, 'start_autocal', machine='hp3',
++                                     recording_mode='full',
+                                      budgets={'max_physics_steps': 1000} if stop == 'physics-budget' else {})
+         for _ in range(1200):
+             state = await asyncio.to_thread(service.call, 'autocal_status', job_id=job['job_id'])
+diff --git a/tests/python/test_research_agent.py b/tests/python/test_research_agent.py
+index 8d487119..a79e1cc9 100644
+--- a/tests/python/test_research_agent.py
++++ b/tests/python/test_research_agent.py
+@@ -132,9 +132,14 @@ async def test_stdio_mcp_discovery_execution_readback_and_error():
+         settings_schema = config_tool.input_schema['$defs']['WorldSettings']
+         assert settings_schema['additionalProperties'] is False
+         assert settings_schema['properties']['machine']['enum'] == ['hp3', 'hp4']
++        autocal_tool = next(tool for tool in tools if tool.name == 'start_autocal')
++        recording = autocal_tool.input_schema['properties']['recording_mode']
++        assert recording['enum'] == ['none', 'events', 'sampled', 'full']
++        assert recording['default'] == 'events'
+         result = await client.call_tool('capabilities', {})
+         assert not result.is_error
+         assert SCENE in result.structured_content['scenes']
++        assert result.structured_content['full_autocal']['default_recording_mode'] == 'events'
+         result = await client.call_tool('run_experiment', {'steps': 3, 'record': False})
+         assert not result.is_error, result.content
+         run = result.structured_content

@@ -1,0 +1,167 @@
+diff --git a/autocal/control/behaviors/sweep_data_collection.mjs b/autocal/control/behaviors/sweep_data_collection.mjs
+index 1efd1190..32eb006b 100644
+--- a/autocal/control/behaviors/sweep_data_collection.mjs
++++ b/autocal/control/behaviors/sweep_data_collection.mjs
+@@ -1126,7 +1126,14 @@ export async function performForceSweep(sendFn, sweepConfig, options) {
+     validateAngles: angles => assertFixedAnchorAngles(angles, { fixedTargetByAnchor, mmPerDeg }),
+   };
+ 
+-  await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
++  // Fixed-target preparation leaves the free motors pulling across the
++  // workspace. Give that transit the pullout budget before ordinary point waits.
++  await waitForStableEncoders(sendFn, motorIds, speedup, {
++    ...settleOptions,
++    timeoutMs: FORCE_TRAVEL_TIMEOUT_MS,
++    wallTimeoutMs: FORCE_TRAVEL_TIMEOUT_MS + 30000,
++    onProgress: message => console.log(`; sweep preparation: ${message.replace(/^; /, '')}`),
++  });
+   const initialLengths = await getCurrentLengths(sendFn, motorIds, mmPerDeg);
+   const driveStartPointMm = initialLengths[driveAnchor] ?? 0;
+ 
+diff --git a/autocal/control/primitives/simulation_deadline.mjs b/autocal/control/primitives/simulation_deadline.mjs
+index 983e6b31..b2c7ebdd 100644
+--- a/autocal/control/primitives/simulation_deadline.mjs
++++ b/autocal/control/primitives/simulation_deadline.mjs
+@@ -1,9 +1,9 @@
+ // Wall deadlines for waits expressed in simulated time.
+ //
+ // A simulated clock advances only as fast as the physics can step, so a fixed
+-// wall budget measures host load rather than a stuck trial. At --speedup 25 a
+-// 25 s window covers 625 s of physics, which outlives a 120 s budget whenever
+-// the engine runs below the requested playback speed. Keep the configured
++// wall budget measures host load rather than a stuck trial. Requested playback
++// speed does not establish actual throughput; a simulated window can outlive
++// its wall budget on a slow host. Keep the configured
+ // budget as a floor, but extend it by the wall time actually needed for the
+ // remaining simulated window. Only forward clock progress earns an extension,
+ // so a clock that has stopped still reaches the floor deadline, and the hard
+diff --git a/autocal/control/tests/behaviors/force_sweep_settling.test.mjs b/autocal/control/tests/behaviors/force_sweep_settling.test.mjs
+index 6720aa4b..e1df655f 100644
+--- a/autocal/control/tests/behaviors/force_sweep_settling.test.mjs
++++ b/autocal/control/tests/behaviors/force_sweep_settling.test.mjs
+@@ -3,15 +3,19 @@ import { EncoderStabilityTimeoutError, FixedAnchorDriftError } from '../../primi
+ 
+ // Endpoint travel may continue indefinitely under force. Measurements must still
+ // settle after the drive is held, and every fixed-anchor reading stays guarded.
+-function movingPullout({ fixedDrift = false, measurementDrift = false, transportError = null, stalled = false } = {}) {
++function movingPullout({ fixedDrift = false, measurementDrift = false, transportError = null, stalled = false, preparationDrift = false } = {}) {
+   let now = 0;
+-  let modes = [0, 0, 0, 0];
++  let modes = preparationDrift ? [0, 2.4, 2.4, 0] : [0, 0, 0, 0];
++  let preparing = preparationDrift;
+   let angles = [0, 0, 0, 0];
+   const commands = [];
+   const points = [];
+   const send = async line => {
+     commands.push({ line, now });
+-    if (line.startsWith('M569.4')) modes = line.split(' T')[1].split(':').map(Number);
++    if (line.startsWith('M569.4')) {
++      modes = line.split(' T')[1].split(':').map(Number);
++      preparing = false;
++    }
+     if (line.startsWith('M569.3')) {
+       if (modes[1] > 0 && transportError) throw transportError;
+       return { reply: angles.join(' ') };
+@@ -25,6 +29,7 @@ function movingPullout({ fixedDrift = false, measurementDrift = false, transport
+     sleep: async ms => {
+       if (stalled && modes[1] > 0) throw new Error('Simulation advance stalled');
+       now += ms;
++      if (preparing && now >= 60000) return;
+       if (modes[1] > 0) {
+         angles[1] += ms / 1000;
+         angles[2] -= ms / 1000;
+@@ -60,6 +65,13 @@ test('continues to reject measurement drift after a bounded pullout', async () =
+   expect(trial.points).toHaveLength(0);
+ });
+ 
++test('allows slow fixed-target preparation before starting the bounded pullout', async () => {
++  const trial = movingPullout({ preparationDrift: true });
++  const result = await trial.run();
++  expect(trial.commands.find(command => command.line.startsWith('M569.4')).now).toBeGreaterThan(60000);
++  expect(result.dataPoints).toHaveLength(2);
++});
++
+ test('does not recover fixed-anchor slip during endpoint search', async () => {
+   const trial = movingPullout({ fixedDrift: true });
+   await expect(trial.run()).rejects.toBeInstanceOf(FixedAnchorDriftError);
+diff --git a/autocal/tests/test_headless_sim.py b/autocal/tests/test_headless_sim.py
+index 7512aebb..02814e63 100644
+--- a/autocal/tests/test_headless_sim.py
++++ b/autocal/tests/test_headless_sim.py
+@@ -130,7 +130,9 @@ def test_headless_recording_modes_preserve_events_resets_and_finalization(tmp_pa
+         service.request('payload', payload={'type': 'reset'})
+         service.request('payload', payload={'type': 'set_speed_scale', 'value': 25})
+         state = service.request('advance', seconds=.01)
+-        assert state['step'] == 125 and state['collector_time_s'] == pytest.approx(.06)
++        assert state['step'] == 5 and state['collector_time_s'] == pytest.approx(.06)
++        assert state['simulated_s'] == pytest.approx(.06)
++        assert state['settings']['timeScale'] == 25
+         extended_reference.emit('run_complete', returncode=0)
+     assert 'AUTOCAL_REFERENCE_WS' not in os.environ
+     assert service.manifest['recording_mode'] == (mode or 'full')
+@@ -156,13 +158,13 @@ def test_headless_recording_modes_preserve_events_resets_and_finalization(tmp_pa
+         assert [segment['generation'] for segment in recording['headless_segments']] == [0, 1]
+         assert recording['sample_stride'] == (100 if mode == 'sampled' else 10)
+         assert recording['geometry_detail'] == 'compact'
+-        assert recording['physics_samples'] == (3 if mode == 'sampled' else 16)
++        assert recording['physics_samples'] == (2 if mode == 'sampled' else 4)
+     path = recording['rrd']
+     assert len(RrdReader(path).recordings()) == 1
+     events = recorded_events(path, 'headless')
+     assert sum(event['kind'] == 'scene_context' for event in events) == 2
+     assert events[-1]['kind'] == 'service_stopped'
+-    assert events[-1]['sim_time_s'] == pytest.approx(.25)
++    assert events[-1]['sim_time_s'] == pytest.approx(.01)
+     assert all(event['sim_time_source'] == 'headless.researchClock' for event in events)
+     encoder_events = [event for event in events if event['kind'] == 'encoder_response_sent']
+     assert encoder_events and all(event['payload']['simulationClock']['source'] == 'headless.researchClock' for event in encoder_events)
+@@ -309,7 +311,7 @@ def test_headless_uses_external_recorder_and_preserves_collector_clock(tmp_path,
+     manifest, = [json.loads(path.read_text()) for path in tmp_path.glob('hangprinter-*.json')]
+     assert manifest['status'] == 'finalized' and not manifest['rejected_messages']
+     assert manifest['sample_stride'] == 1 and manifest['geometry_detail'] == 'full'
+-    assert manifest['end_step'] == 125 and manifest['end_time_s'] == pytest.approx(.25)
++    assert manifest['end_step'] == 5 and manifest['end_time_s'] == pytest.approx(.01)
+     events = recorded_events(manifest['rrd'], 'collector')
+     assert [event['kind'] for event in events] == ['gcode_send', 'gcode_reply']
+     assert all(event['sim_time_s'] == pytest.approx(.01) for event in events)
+diff --git a/research/README.md b/research/README.md
+index b53d219d..71aeaee0 100644
+--- a/research/README.md
++++ b/research/README.md
+@@ -575,6 +575,11 @@ machine, dataset and optimizer flags. It owns the Node/RRF/recorder services and
+ finalizes physics, collection events, Python logs and stage artifacts together
+ without a browser. See the [headless extended reference guide](../autocal/data/references/extended-reference.md#headless-full-auto-collection).
+ 
++Headless physics runs as fast as possible. `--speedup` retains the requested
++playback setting, but collector waits and deadlines always use actual simulation
++seconds, matching the browser clock. Increasing playback speed does not lengthen
++force trials or settling windows.
++
+ ### Local networking for full-auto runs
+ 
+ Standalone `--headless-sim` needs localhost sockets for RRF, physics and
+diff --git a/scripts/autocal_headless.mjs b/scripts/autocal_headless.mjs
+index 49eb7292..94ae2bcb 100644
+--- a/scripts/autocal_headless.mjs
++++ b/scripts/autocal_headless.mjs
+@@ -61,7 +61,10 @@ function status() {
+ }
+ async function advance(seconds = 0, drain = false) {
+   if (!Number.isFinite(seconds) || seconds < 0) throw new Error('Advance seconds must be finite and nonnegative');
+-  const count = Math.max(Math.ceil(seconds * speed / dt - 1e-9), drain ? remote.getQueueLength() : 0);
++  // Collector waits are simulation seconds, as in createBrowserClock. This
++  // headless world already steps as fast as possible; playback speed must not
++  // lengthen force trials or change their polling and settling windows.
++  const count = Math.max(Math.ceil(seconds / dt - 1e-9), drain ? remote.getQueueLength() : 0);
+   for (let i = 0; i < count; i++) {
+     if (stopped || failure) throw new Error(failure ?? 'Simulation stopped');
+     if (totalSteps >= maxPhysicsSteps) {
+@@ -72,7 +75,7 @@ async function advance(seconds = 0, drain = false) {
+       if (!recorder.socket || recorder.socket.readyState !== 1) throw new Error(recorder.error || 'Flight recorder disconnected');
+       if (!recorder.readyForStep()) await recorder.drain(10000, { all: false });
+     }
+-    world.update(dt); step++; totalSteps++; collectorTime += dt / speed;
++    world.update(dt); step++; totalSteps++; collectorTime += dt;
+     world.setResource('researchClock', { generation: epoch, step, time: step * dt, source: 'headless.researchClock' });
+     if (totalSteps % 1000 === 0) fs.writeFileSync(`${directory}/clock.json`, JSON.stringify(status()));
+     if (i % 50 === 49) await yieldStep();

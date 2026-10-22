@@ -1,0 +1,107 @@
+{
+  "outcome": "SMOKE_STOP_AFTER_FIRST_POINT",
+  "machine": "hp3",
+  "rpcPhysicsS": 1,
+  "phases": [
+    {
+      "phase": "size-probe",
+      "message": "start",
+      "physicsMs": 26188
+    },
+    {
+      "phase": "size-probe",
+      "message": "3.872s wall, 202.270s simulation",
+      "physicsMs": 228458
+    },
+    {
+      "phase": "sweep-endpoint-probe",
+      "message": "start",
+      "physicsMs": 271260
+    },
+    {
+      "phase": "sweep-endpoint-probe",
+      "message": "3.940s wall, 205.500s simulation",
+      "physicsMs": 476760
+    },
+    {
+      "phase": "sweep-preload-settle",
+      "message": "start",
+      "physicsMs": 476760
+    },
+    {
+      "phase": "sweep-preload-settle",
+      "message": "0.023s wall, 1.016s simulation",
+      "physicsMs": 477776
+    },
+    {
+      "phase": "point-settle",
+      "message": "start",
+      "physicsMs": 481312
+    },
+    {
+      "phase": "point-settle",
+      "message": "0.032s wall, 1.500s simulation",
+      "physicsMs": 482812
+    },
+    {
+      "phase": "final-held-observation",
+      "physicsMs": 483132
+    }
+  ],
+  "point": {
+    "l_drive": -476.86234888839465,
+    "l_sensor": 200.8943782215553,
+    "timestamp_ms": 482812,
+    "raw_angles_deg": [
+      794.38,
+      -910.74,
+      383.68,
+      0
+    ],
+    "drive_setpoint_mm": -476.8623488883947,
+    "step_index": 0,
+    "step_count": 2,
+    "collection_attempt": 0,
+    "fixed_target_angles_deg": [
+      794.38,
+      null,
+      null,
+      0
+    ],
+    "fixed_error_angles_deg": [
+      0,
+      null,
+      null,
+      0
+    ],
+    "sensor_force_n": 1.3421772800000007,
+    "mu": [
+      794.38,
+      -910.74,
+      383.68,
+      0
+    ],
+    "sigma": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "sample_count": 8,
+    "sampling_hz": 25,
+    "sample_duration_ms": 320,
+    "fixed_error_angles_mu_deg": [
+      0,
+      null,
+      null,
+      0
+    ],
+    "l_drive_mu": -476.86234888839465,
+    "l_sensor_mu": 200.8943782215553,
+    "noise_warnings": [
+      "sigma_below_floor"
+    ]
+  },
+  "wallS": 9.701263895999999,
+  "physicsMs": 498132
+}

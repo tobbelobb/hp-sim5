@@ -1,0 +1,158 @@
+diff --git a/autocal/README.md b/autocal/README.md
+index 379b61d6..9d4a5536 100644
+--- a/autocal/README.md
++++ b/autocal/README.md
+@@ -11,6 +11,10 @@ The basic idea is that a Hangprinter or other CDPR with
+ ... should be able to "wiggle around a little bit" and through that learn, optimize, or calculate its own calibration parameters.
+ The user experience is meant to be one-click.
+ The user should be able to push a button, the machine "wiggles", and is ready to be used once the wiggling is done.
++During a sweep, a drive move that leaves measurement preload unchanged uses its
++completed encoder quiet check for the next point. The collector keeps fixed-motor
++drift checks and all noise samples, and settles again whenever measurement force
++changes. This removes a repeated wait without reducing the number of points.
+ THe "click of a button" is currently a terminal call to a python script with many flags and options, and the wiggling goes on for 1-2 hours.
+ But it does work.
+ Even if huge parts of the data turns out to be rubbish, it still works.
+diff --git a/autocal/control/behaviors/sweep_data_collection.mjs b/autocal/control/behaviors/sweep_data_collection.mjs
+index 7bc3737b..c9b79f93 100644
+--- a/autocal/control/behaviors/sweep_data_collection.mjs
++++ b/autocal/control/behaviors/sweep_data_collection.mjs
+@@ -1185,6 +1185,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
+       ? driveEndPointMm + initialStepMm
+       : driveEndPointMm + initialStepMm + stepDelta * (stepIdx - 1);
+     const delta = target - currentDrive;
++    let settledMeasurement = null;
+     if (Number.isFinite(delta) && Math.abs(delta) > 1e-6) {
+       if (!measurementPreloadActive) {
+         // eslint-disable-next-line no-await-in-loop
+@@ -1221,8 +1222,9 @@ async function performForceSweep(sendFn, sweepConfig, options) {
+         { axes },
+       );
+       // eslint-disable-next-line no-await-in-loop
+-      await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+-      measurementPreloadActive = false;
++      const settled = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
++      // Moving the drive leaves the sensor's measurement force unchanged.
++      if (measurementPreloadActive) settledMeasurement = settled;
+     }
+     // eslint-disable-next-line no-await-in-loop
+     const collected = await collectDataPoint(sendFn, {
+@@ -1244,6 +1246,7 @@ async function performForceSweep(sendFn, sweepConfig, options) {
+       stepIndex: stepIdx - 1,
+       stepCount,
+       projectZeroTension: !!projectZeroTension,
++      settledMeasurement,
+       skipReturnModePrep: Number.isFinite(delta) && Math.abs(delta) > 1e-6,
+       encoderNoiseOptions: {
+         sampleCount: noiseSampleCount,
+diff --git a/autocal/control/primitives/uncalibrated_actions.mjs b/autocal/control/primitives/uncalibrated_actions.mjs
+index 5b879e55..5d4cb8cd 100644
+--- a/autocal/control/primitives/uncalibrated_actions.mjs
++++ b/autocal/control/primitives/uncalibrated_actions.mjs
+@@ -395,6 +395,7 @@ export async function collectDataPoint(sendFn, options = {}) {
+     restoreToModeWhenFinished,
+     projectZeroTension = false,
+     skipReturnModePrep = false,
++    settledMeasurement = null,
+     encoderNoiseOptions = null,
+   } = options;
+ 
+@@ -431,7 +432,10 @@ export async function collectDataPoint(sendFn, options = {}) {
+     sensorCollectionForce,
+   });
+ 
+-  if (!skipReturnModePrep) {
++  // The sweep caller can supply its just-completed quiet check when no motor
++  // mode or measurement force changed after that check.
++  const reuseMeasurement = !projectZeroTension && settledMeasurement !== null;
++  if (!skipReturnModePrep && !reuseMeasurement) {
+     await applyForceModeState(sendFn, { motorIds, modes: preloadModes });
+     await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+   }
+@@ -495,6 +499,10 @@ export async function collectDataPoint(sendFn, options = {}) {
+       stableData = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+       anglesDeg = stableData.anglesDeg;
+     }
++  } else if (reuseMeasurement) {
++    stableData = settledMeasurement;
++    anglesDeg = stableData.anglesDeg;
++    settleOptions.validateAngles?.(anglesDeg);
+   } else {
+     await applyForceModeState(sendFn, { motorIds, modes: measurementModes });
+     stableData = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
+diff --git a/autocal/control/tests/primitives/uncalibrated_actions.test.mjs b/autocal/control/tests/primitives/uncalibrated_actions.test.mjs
+index 7e9afaee..a8953783 100644
+--- a/autocal/control/tests/primitives/uncalibrated_actions.test.mjs
++++ b/autocal/control/tests/primitives/uncalibrated_actions.test.mjs
+@@ -29,6 +29,71 @@ function createSettleOptions() {
+ }
+ 
+ describe('uncalibrated_actions', () => {
++  test('a settled measurement retains noise sampling and the fixed-angle guard', async () => {
++    const { commands, send } = createCollectDataSend('1 2 3');
++    const validateAngles = jest.fn();
++    const recordPoint = jest.fn();
++    const settledMeasurement = { anglesDeg: [1, 2, 3], elapsedMs: 1500 };
++    const clock = createSettleOptions();
++    const result = await collectDataPoint(send, {
++      motorIds: ['40.0', '41.0', '42.0'],
++      axes: ['X', 'Y', 'Z'],
++      mmPerDeg: [1, 1, 1],
++      driveAnchor: 0,
++      sensorAnchors: [1],
++      fixedAnchors: [2],
++      forceMid: 0.2,
++      forceMax: 10,
++      settledMeasurement,
++      settleOptions: { validateAngles },
++      recordPoint,
++      encoderNoiseOptions: { sampleCount: 16, sleepFn: clock.sleepFn, nowFn: clock.nowFn },
++    });
++    expect(result.stableData).toBe(settledMeasurement);
++    expect(result.lengths).toEqual([1, 2, 3]);
++    expect(result.noiseStats.sampleCount).toBe(16);
++    expect(commands).toHaveLength(16);
++    expect(commands.every(command => command.startsWith('M569.3 '))).toBe(true);
++    expect(validateAngles).toHaveBeenCalledWith([1, 2, 3]);
++    expect(recordPoint).toHaveBeenCalledTimes(1);
++  });
++
++  test('a settled reading cannot bypass a fixed-angle rejection', async () => {
++    const { send } = createCollectDataSend();
++    const recordPoint = jest.fn();
++    await expect(collectDataPoint(send, {
++      motorIds: ['40.0', '41.0', '42.0'],
++      axes: ['X', 'Y', 'Z'],
++      mmPerDeg: [1, 1, 1],
++      driveAnchor: 0,
++      sensorAnchors: [1],
++      settledMeasurement: { anglesDeg: [1, 2, 3] },
++      settleOptions: { validateAngles: () => { throw new Error('fixed drift'); } },
++      recordPoint,
++    })).rejects.toThrow('fixed drift');
++    expect(recordPoint).not.toHaveBeenCalled();
++  });
++
++  test('zero-tension projection performs its force trials even with a settled reading', async () => {
++    const { commands, send } = createCollectDataSend('1 2 3');
++    const result = await collectDataPoint(send, {
++      motorIds: ['40.0', '41.0', '42.0'],
++      axes: ['X', 'Y', 'Z'],
++      mmPerDeg: [1, 1, 1],
++      driveAnchor: 0,
++      sensorAnchors: [1],
++      fixedAnchors: [2],
++      forceMid: 2,
++      forceMin: 1,
++      forceMax: 10,
++      projectZeroTension: true,
++      settledMeasurement: { anglesDeg: [9, 9, 9] },
++      settleOptions: createSettleOptions(),
++    });
++    expect(result.anglesDeg).toEqual([1, 2, 3]);
++    expect(commands.filter(command => command.startsWith('M569.4 '))).toHaveLength(11);
++  });
++
+   test('calculateReturnOrder', () => {
+     const order = calculateReturnOrder({
+       fixedAnchors: [2],

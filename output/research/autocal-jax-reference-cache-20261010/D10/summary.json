@@ -1,0 +1,11 @@
+{
+  "trial": "D10",
+  "mode": "off",
+  "elapsed_s": 24.617535866000253,
+  "returncode": 0,
+  "hits": {},
+  "misses": {},
+  "compatibility_warnings": 0,
+  "regression_pass": true,
+  "exact_full_precision_metrics_equal": true
+}

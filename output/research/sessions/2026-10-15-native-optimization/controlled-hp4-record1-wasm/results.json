@@ -1,0 +1,131 @@
+[
+  {
+    "wall_s": 4.4693271930000265,
+    "construction_s": 0.1869869849999759,
+    "status": {
+      "connected": false,
+      "epoch": 0,
+      "step": 10000,
+      "sim_time_s": 20.0,
+      "collector_time_s": 20.000000000000014,
+      "dt_s": 0.002,
+      "speed_scale": 1.0,
+      "queue_length": 0,
+      "layering_flags": {
+        "enableLayering": true,
+        "layeringFrictionEffectiveRadius": true,
+        "layeringRenderWraps": true
+      },
+      "cable_half_widths_m": [
+        0.001
+      ],
+      "backend": "headless-js",
+      "physics_engine": "rust-wasm",
+      "physics_artifact": null,
+      "physics_wall_s": 1.2443349289999983,
+      "worker_wall_s": 1.5202675449982053,
+      "observation_wall_s": 2.6782840759981354,
+      "clock": "fixed-step; collector delays advance simulation time",
+      "error": null
+    },
+    "steps": 10000,
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/controlled-hp4-record1-wasm/run-0/observations.json",
+    "angles_deg": [
+      -90.44299750699612,
+      34.84559852462953,
+      57.60000000458897,
+      0.006912974594901159
+    ],
+    "scene_sha256": "72f6eef0387fd703e560fa476a9d800f9b29c3f875ed7083a41bd7b572a8c5f0",
+    "repeat": 0,
+    "machine": "hp4",
+    "record": true,
+    "mode": "controlled"
+  },
+  {
+    "wall_s": 4.38289027299993,
+    "construction_s": 0.1652395850001085,
+    "status": {
+      "connected": false,
+      "epoch": 0,
+      "step": 10000,
+      "sim_time_s": 20.0,
+      "collector_time_s": 20.000000000000014,
+      "dt_s": 0.002,
+      "speed_scale": 1.0,
+      "queue_length": 0,
+      "layering_flags": {
+        "enableLayering": true,
+        "layeringFrictionEffectiveRadius": true,
+        "layeringRenderWraps": true
+      },
+      "cable_half_widths_m": [
+        0.001
+      ],
+      "backend": "headless-js",
+      "physics_engine": "rust-wasm",
+      "physics_artifact": null,
+      "physics_wall_s": 1.2359349029999975,
+      "worker_wall_s": 1.500553296999442,
+      "observation_wall_s": 2.5978414510013863,
+      "clock": "fixed-step; collector delays advance simulation time",
+      "error": null
+    },
+    "steps": 10000,
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/controlled-hp4-record1-wasm/run-1/observations.json",
+    "angles_deg": [
+      -90.44299750699612,
+      34.84559852462953,
+      57.60000000458897,
+      0.006912974594901159
+    ],
+    "scene_sha256": "72f6eef0387fd703e560fa476a9d800f9b29c3f875ed7083a41bd7b572a8c5f0",
+    "repeat": 1,
+    "machine": "hp4",
+    "record": true,
+    "mode": "controlled"
+  },
+  {
+    "wall_s": 4.509297478000008,
+    "construction_s": 0.16740968900012376,
+    "status": {
+      "connected": false,
+      "epoch": 0,
+      "step": 10000,
+      "sim_time_s": 20.0,
+      "collector_time_s": 20.000000000000014,
+      "dt_s": 0.002,
+      "speed_scale": 1.0,
+      "queue_length": 0,
+      "layering_flags": {
+        "enableLayering": true,
+        "layeringFrictionEffectiveRadius": true,
+        "layeringRenderWraps": true
+      },
+      "cable_half_widths_m": [
+        0.001
+      ],
+      "backend": "headless-js",
+      "physics_engine": "rust-wasm",
+      "physics_artifact": null,
+      "physics_wall_s": 1.2368017700000036,
+      "worker_wall_s": 1.524560098001075,
+      "observation_wall_s": 2.705969914000434,
+      "clock": "fixed-step; collector delays advance simulation time",
+      "error": null
+    },
+    "steps": 10000,
+    "observations": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-15-native-optimization/controlled-hp4-record1-wasm/run-2/observations.json",
+    "angles_deg": [
+      -90.44299750699612,
+      34.84559852462953,
+      57.60000000458897,
+      0.006912974594901159
+    ],
+    "scene_sha256": "72f6eef0387fd703e560fa476a9d800f9b29c3f875ed7083a41bd7b572a8c5f0",
+    "repeat": 2,
+    "machine": "hp4",
+    "record": true,
+    "mode": "controlled"
+  }
+]

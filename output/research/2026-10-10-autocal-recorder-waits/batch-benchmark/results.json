@@ -1,0 +1,19 @@
+{
+  "baseline": {
+    "log_seconds": 1.6699472079999396,
+    "log_and_close_seconds": 1.6744557120000536,
+    "events": 16162,
+    "chunks": 16,
+    "rrd_bytes": 1596196,
+    "rrd": "output/research/2026-10-10-autocal-recorder-waits/batch-benchmark/baseline/hangprinter-20261010T142748.004659Z-881e508d.rrd"
+  },
+  "batched": {
+    "log_seconds": 0.10859476499899756,
+    "log_and_close_seconds": 0.11007351399894105,
+    "events": 16162,
+    "chunks": 64,
+    "rrd_bytes": 1366227,
+    "rrd": "output/research/2026-10-10-autocal-recorder-waits/batch-benchmark/batched/hangprinter-20261010T142749.864098Z-da604547.rrd"
+  },
+  "speedup": 15.377787391642267
+}

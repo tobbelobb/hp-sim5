@@ -1,0 +1,33 @@
+--- a/src/js/cable_joints_3d/cable_joints_core.js
++++ b/src/js/cable_joints_3d/cable_joints_core.js
+@@ -3141,7 +3141,7 @@
+     world.setResource('torqueModeCableLoadTorques', cableLoadTorques);
+     world.setResource('torqueModeCableLoadStiffnesses', cableLoadStiffnesses);
+     world.setResource('torqueModeCableLoadDampings', cableLoadDampings);
+-    const recordTorqueModeCableLoad = (path, memberSpin, loadGradSpin, lambda, invDtSq) => {
++    const recordTorqueModeCableLoad = (path, memberSpin, loadGradSpin, lambda, invDtSq, recordCoefficients) => {
+       if (
+         !memberSpin
+         || !memberSpin.torqueMode
+@@ -3159,7 +3159,7 @@
+       }
+       const previous = cableLoadTorques.get(memberSpin.entityId) ?? 0.0;
+       cableLoadTorques.set(memberSpin.entityId, previous + torque);
+-      if (memberSpin.recordTorqueLoadImplicitCoeffs) {
++      if (memberSpin.recordTorqueLoadImplicitCoeffs && recordCoefficients) {
+         const stiffness = Number.isFinite(path?.spring_constant)
+           ? Math.max(0.0, path.spring_constant)
+           : 0.0;
+@@ -3420,10 +3420,8 @@
+       multipliers.set(joint, (multipliers.get(joint) ?? 0.0) + lambda);
+       // Solver visits refine one physical constraint; they are not extra
+       // parallel springs or additional cable loads. Match the force snapshot.
+-      if (solveIteration === 0) {
+-        recordTorqueModeCableLoad(path, memberSpinA, loadGradSpinA, lambda, invDtSq);
+-        recordTorqueModeCableLoad(path, memberSpinB, loadGradSpinB, lambda, invDtSq);
+-      }
++      recordTorqueModeCableLoad(path, memberSpinA, loadGradSpinA, lambda, invDtSq, solveIteration === 0);
++      recordTorqueModeCableLoad(path, memberSpinB, loadGradSpinB, lambda, invDtSq, solveIteration === 0);
+ 
+       if (mechanicalDenom(solveMemberInvInertiaA, solveMemberInvInertiaB) <= EPSILON) {
+         return;

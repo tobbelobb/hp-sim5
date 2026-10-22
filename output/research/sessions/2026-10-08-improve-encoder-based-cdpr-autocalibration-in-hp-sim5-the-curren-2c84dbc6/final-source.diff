@@ -1,0 +1,42 @@
+diff --git a/autocal/README.md b/autocal/README.md
+index 1b26945f..e5626dc6 100644
+--- a/autocal/README.md
++++ b/autocal/README.md
+@@ -14,6 +14,12 @@ JAX is optional. The default `--optimizer-mode fast` uses it on the CPU.
+ Autocal falls back to numerical gradients when JAX is unavailable.
+ Use `--optimizer-mode legacy` to disable the JAX objective.
+ 
++JAX saves compiled CPU objectives in `output/autocal-jax-cache`.
++Later launches with matching solver settings and data shapes can reuse them.
++The first run still compiles; caching does not change calibration or stopping.
++Set `JAX_COMPILATION_CACHE_DIR` to choose another directory, or
++`JAX_ENABLE_COMPILATION_CACHE=false` to disable it. Cache files can be deleted.
++
+ From the root of the hp-sim5 repo, run:
+ 
+ ```bash
+diff --git a/autocal/ellipse_objective_jax.py b/autocal/ellipse_objective_jax.py
+index 5c9081eb..fb803ffb 100644
+--- a/autocal/ellipse_objective_jax.py
++++ b/autocal/ellipse_objective_jax.py
+@@ -3,6 +3,7 @@ from __future__ import annotations
+ """JAX-native objective for ellipse anchor optimization."""
+ 
+ from dataclasses import dataclass
++from pathlib import Path
+ from typing import Callable, List, Optional, Tuple
+ import logging
+ import os
+@@ -23,6 +24,12 @@ from autocal.theoretical_ellipse import (
+ os.environ["JAX_PLATFORMS"] = "cpu"
+ os.environ["JAX_PLATFORM_NAME"] = "cpu"
+ os.environ["CUDA_VISIBLE_DEVICES"] = ""
++# Reuse CPU executables across calibration launches; keep user cache settings.
++os.environ.setdefault(
++    "JAX_COMPILATION_CACHE_DIR",
++    str(Path(__file__).resolve().parents[1] / "output" / "autocal-jax-cache"),
++)
++os.environ.setdefault("JAX_PERSISTENT_CACHE_MIN_COMPILE_TIME_SECS", "0")
+ logging.getLogger("jax._src.xla_bridge").setLevel(logging.CRITICAL)
+ 
+ try:

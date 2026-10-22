@@ -1,0 +1,810 @@
+[
+  {
+    "name": "REF",
+    "mode": "center",
+    "transform": {
+      "sweep_index": 1,
+      "point_index": 9,
+      "offsets_mm": [
+        -184.43243271674473,
+        516.9490711482003,
+        -180.21222658542248,
+        0.0
+      ],
+      "estimated_position_mm": [
+        -442.5050711037602,
+        -258.0476142811612,
+        69.80410344100258
+      ],
+      "estimated_shift_distance_mm": 516.9834833395986,
+      "reference_seed_closure_mm": [
+        0.0074060332904082316,
+        0.0028210630321154895,
+        0.007396696757950849,
+        0.0035250683461072185
+      ],
+      "distance_to_estimated_centroid_mm": 548.8754015176986,
+      "seed_within_original_solver_bounds": true
+    },
+    "command": [
+      "/home/torbjorn/repos/hp-sim5/.venv/bin/python",
+      "-m",
+      "autocal.autocal",
+      "--sim",
+      "--no-collect",
+      "--machine-type",
+      "hangprinter_3",
+      "--dataset",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E06/REF-center/sweeps.json",
+      "--base-radii",
+      "30",
+      "--buildup-factor",
+      "0",
+      "--find-radii",
+      "off",
+      "--find-buildup-factor",
+      "off",
+      "--stage-artifacts",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E06/REF-center/stages",
+      "--full-auto-log",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E06/REF-center/run.jsonl"
+    ],
+    "rc": 0,
+    "seconds": 18.25326216099711,
+    "restoration": {
+      "anchors": [
+        [
+          7.757918586231324e-14,
+          -1906.2727694163102,
+          -279.22320509101723
+        ],
+        [
+          1651.204726269769,
+          953.4185976448937,
+          -279.22320509101723
+        ],
+        [
+          -1650.4693813800252,
+          952.7048925683088,
+          -279.22320509101723
+        ],
+        [
+          -0.004287227563390556,
+          0.15941507954006937,
+          1898.9667949089826
+        ]
+      ],
+      "old_origin_in_shifted_frame_mm": [
+        494.06282394569513,
+        134.50492102369674,
+        -70.40679490898273
+      ],
+      "closure_mm": [
+        0.10604488653257249,
+        0.10604868862264993,
+        0.10604168964960081,
+        0.046108369107741964
+      ],
+      "closure_rms_mm": 0.09468720077683146
+    },
+    "rmse_mm": 5.4672920397566935,
+    "pairwise_rmse_mm": 7.86840693267634,
+    "iterations": [
+      {
+        "iteration": 1,
+        "selected_run": "default",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 0.19392571117387006
+      },
+      {
+        "iteration": 2,
+        "selected_run": "default.warm",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 0.21075104784850668
+      },
+      {
+        "iteration": 3,
+        "selected_run": "default",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 0.21075098091551425
+      },
+      {
+        "iteration": 4,
+        "selected_run": "default.warm",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 0.2107509865708689
+      },
+      {
+        "iteration": 5,
+        "selected_run": "default.warm",
+        "decision": "accept",
+        "stop_spread_hit": true,
+        "cost": 0.24368209249981804
+      }
+    ],
+    "sweeps_used": 7,
+    "points_used": 140
+  },
+  {
+    "name": "REF",
+    "mode": "edge",
+    "transform": {
+      "sweep_index": 2,
+      "point_index": 0,
+      "offsets_mm": [
+        -706.8583470577034,
+        484.2607995875988,
+        516.9490711482003,
+        0.0
+      ],
+      "estimated_position_mm": [
+        24.035342818031527,
+        -770.195349502243,
+        161.97930162414414
+      ],
+      "estimated_shift_distance_mm": 787.4108636880163,
+      "reference_seed_closure_mm": [
+        -0.007925319741389103,
+        -0.004049826585287519,
+        -0.003672111647119891,
+        -0.004702814037273129
+      ],
+      "distance_to_estimated_centroid_mm": 777.6707642802392,
+      "seed_within_original_solver_bounds": true
+    },
+    "command": [
+      "/home/torbjorn/repos/hp-sim5/.venv/bin/python",
+      "-m",
+      "autocal.autocal",
+      "--sim",
+      "--no-collect",
+      "--machine-type",
+      "hangprinter_3",
+      "--dataset",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E06/REF-edge/sweeps.json",
+      "--base-radii",
+      "30",
+      "--buildup-factor",
+      "0",
+      "--find-radii",
+      "off",
+      "--find-buildup-factor",
+      "off",
+      "--stage-artifacts",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E06/REF-edge/stages",
+      "--full-auto-log",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E06/REF-edge/run.jsonl"
+    ],
+    "rc": 0,
+    "seconds": 23.320624232997943,
+    "restoration": {
+      "anchors": [
+        [
+          4.225531249157239e-14,
+          -1904.9307514152297,
+          -279.21976378894954
+        ],
+        [
+          1648.9187081090588,
+          952.0536695167347,
+          -279.21976378894954
+        ],
+        [
+          -1648.7917689100295,
+          951.9825461271607,
+          -279.21976378894954
+        ],
+        [
+          -0.06288012680585676,
+          0.08746798480772897,
+          1900.4202362110505
+        ]
+      ],
+      "old_origin_in_shifted_frame_mm": [
+        -40.32528236302496,
+        769.2938827184718,
+        -163.2002362110505
+      ],
+      "closure_mm": [
+        0.052486180255300496,
+        0.05248395562307451,
+        0.052483180949366215,
+        0.02284269158440111
+      ],
+      "closure_rms_mm": 0.04686586592878855
+    },
+    "rmse_mm": 3.797177280884411,
+    "pairwise_rmse_mm": 5.558638700688173,
+    "iterations": [
+      {
+        "iteration": 1,
+        "selected_run": "default",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 100.0
+      },
+      {
+        "iteration": 2,
+        "selected_run": "default",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 0.1728389383776061
+      },
+      {
+        "iteration": 3,
+        "selected_run": "default.warm",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 0.1828150779272669
+      },
+      {
+        "iteration": 4,
+        "selected_run": "default.warm",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 0.20142962547091553
+      },
+      {
+        "iteration": 5,
+        "selected_run": "default.warm",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 0.24150047879581477
+      },
+      {
+        "iteration": 6,
+        "selected_run": "default.warm",
+        "decision": "accept",
+        "stop_spread_hit": true,
+        "cost": 0.24804262577122815
+      }
+    ],
+    "sweeps_used": 8,
+    "points_used": 160
+  },
+  {
+    "name": "W00",
+    "mode": "center",
+    "transform": {
+      "sweep_index": 2,
+      "point_index": 9,
+      "offsets_mm": [
+        -184.43243271674478,
+        -180.19128263439856,
+        516.8914752828846,
+        0.0
+      ],
+      "estimated_position_mm": [
+        442.44097730317327,
+        -258.02716154775015,
+        69.85601247492201
+      ],
+      "estimated_shift_distance_mm": 516.9254268966389,
+      "reference_seed_closure_mm": [
+        0.009111729659480261,
+        0.009100270424823975,
+        0.003471202308901411,
+        0.00433503584713435
+      ],
+      "distance_to_estimated_centroid_mm": 548.7616604030814,
+      "seed_within_original_solver_bounds": true
+    },
+    "command": [
+      "/home/torbjorn/repos/hp-sim5/.venv/bin/python",
+      "-m",
+      "autocal.autocal",
+      "--sim",
+      "--no-collect",
+      "--machine-type",
+      "hangprinter_3",
+      "--dataset",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E06/W00-center/sweeps.json",
+      "--base-radii",
+      "30",
+      "--buildup-factor",
+      "0",
+      "--find-radii",
+      "off",
+      "--find-buildup-factor",
+      "off",
+      "--stage-artifacts",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E06/W00-center/stages",
+      "--full-auto-log",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E06/W00-center/run.jsonl"
+    ],
+    "rc": 0,
+    "seconds": 28.12841239699992,
+    "restoration": {
+      "anchors": [
+        [
+          1.0381838934995691e-13,
+          -1904.8154478400936,
+          -279.2598592668833
+        ],
+        [
+          1649.4882773973272,
+          952.1747074157479,
+          -279.2598592668833
+        ],
+        [
+          -1649.4971090051527,
+          952.3919696540655,
+          -279.2598592668833
+        ],
+        [
+          -0.10237127925268694,
+          0.1508682715904878,
+          1899.9801407331165
+        ]
+      ],
+      "old_origin_in_shifted_frame_mm": [
+        -494.0819994198234,
+        134.41084902829,
+        -70.37014073311668
+      ],
+      "closure_mm": [
+        0.06052224805534934,
+        0.06052190257901202,
+        0.06052353774794028,
+        0.026339147576209143
+      ],
+      "closure_rms_mm": 0.05404325239570694
+    },
+    "rmse_mm": 4.123204006813681,
+    "pairwise_rmse_mm": 6.026746362862495,
+    "iterations": [
+      {
+        "iteration": 1,
+        "selected_run": "default",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 100.0
+      },
+      {
+        "iteration": 2,
+        "selected_run": "default",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 100.0
+      },
+      {
+        "iteration": 3,
+        "selected_run": "default",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 12.17649417839413
+      },
+      {
+        "iteration": 4,
+        "selected_run": "default.warm",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 19.364968594040985
+      },
+      {
+        "iteration": 5,
+        "selected_run": "default",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 0.25227180192896076
+      },
+      {
+        "iteration": 6,
+        "selected_run": "default.warm",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 0.27039198628301253
+      },
+      {
+        "iteration": 7,
+        "selected_run": "default.warm",
+        "decision": "accept",
+        "stop_spread_hit": true,
+        "cost": 0.27039198863963776
+      }
+    ],
+    "sweeps_used": 9,
+    "points_used": 180
+  },
+  {
+    "name": "W00",
+    "mode": "edge",
+    "transform": {
+      "sweep_index": 1,
+      "point_index": 0,
+      "offsets_mm": [
+        -706.8583470577034,
+        516.8914752828846,
+        484.32363144067045,
+        0.0
+      ],
+      "estimated_position_mm": [
+        -23.96059040042135,
+        -770.1784799850993,
+        162.0837681759215
+      ],
+      "estimated_shift_distance_mm": 787.4135818174593,
+      "reference_seed_closure_mm": [
+        -0.007773654016318687,
+        -0.0036020983270645957,
+        -0.003971238701524271,
+        -0.004611959352814665
+      ],
+      "distance_to_estimated_centroid_mm": 777.6101254630603,
+      "seed_within_original_solver_bounds": true
+    },
+    "command": [
+      "/home/torbjorn/repos/hp-sim5/.venv/bin/python",
+      "-m",
+      "autocal.autocal",
+      "--sim",
+      "--no-collect",
+      "--machine-type",
+      "hangprinter_3",
+      "--dataset",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E06/W00-edge/sweeps.json",
+      "--base-radii",
+      "30",
+      "--buildup-factor",
+      "0",
+      "--find-radii",
+      "off",
+      "--find-buildup-factor",
+      "off",
+      "--stage-artifacts",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E06/W00-edge/stages",
+      "--full-auto-log",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E06/W00-edge/run.jsonl"
+    ],
+    "rc": 0,
+    "seconds": 23.766872312000487,
+    "restoration": {
+      "anchors": [
+        [
+          3.1912282599271824e-14,
+          -1903.9209990423662,
+          -279.257549630834
+        ],
+        [
+          1648.0713121025456,
+          951.5326445009139,
+          -279.257549630834
+        ],
+        [
+          -1648.043809747949,
+          951.5297293806381,
+          -279.257549630834
+        ],
+        [
+          -0.042604090665822124,
+          0.11278720852160636,
+          1901.362450369166
+        ]
+      ],
+      "old_origin_in_shifted_frame_mm": [
+        40.21021255765509,
+        769.3063381631575,
+        -163.112450369166
+      ],
+      "closure_mm": [
+        0.027387196548488646,
+        0.027386330562876537,
+        0.027386107909933344,
+        0.01192685593719034
+      ],
+      "closure_rms_mm": 0.02445566619152758
+    },
+    "rmse_mm": 3.0490545872993344,
+    "pairwise_rmse_mm": 4.495035730744485,
+    "iterations": [
+      {
+        "iteration": 1,
+        "selected_run": "default",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 0.19073089109101535
+      },
+      {
+        "iteration": 2,
+        "selected_run": "default.warm",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 0.19073089876034305
+      },
+      {
+        "iteration": 3,
+        "selected_run": "default.warm",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 0.19073089321291942
+      },
+      {
+        "iteration": 4,
+        "selected_run": "default.warm",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 0.21599942739520603
+      },
+      {
+        "iteration": 5,
+        "selected_run": "default.warm",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 0.24070029534564874
+      },
+      {
+        "iteration": 6,
+        "selected_run": "default.warm",
+        "decision": "accept",
+        "stop_spread_hit": true,
+        "cost": 0.2615530802909896
+      }
+    ],
+    "sweeps_used": 8,
+    "points_used": 160
+  },
+  {
+    "name": "W08",
+    "mode": "center",
+    "transform": {
+      "sweep_index": 2,
+      "point_index": 9,
+      "offsets_mm": [
+        -177.1858256624643,
+        -176.7669466419857,
+        490.14604982532353,
+        0.0
+      ],
+      "estimated_position_mm": [
+        420.97547547917185,
+        -243.25919628022214,
+        62.63256892059153
+      ],
+      "estimated_shift_distance_mm": 490.22262924043713,
+      "reference_seed_closure_mm": [
+        0.0019557439150048594,
+        0.0019553949291548633,
+        0.0008178153584594838,
+        0.0009209763823037065
+      ],
+      "distance_to_estimated_centroid_mm": 527.2146818581124,
+      "seed_within_original_solver_bounds": true
+    },
+    "command": [
+      "/home/torbjorn/repos/hp-sim5/.venv/bin/python",
+      "-m",
+      "autocal.autocal",
+      "--sim",
+      "--no-collect",
+      "--machine-type",
+      "hangprinter_3",
+      "--dataset",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E06/W08-center/sweeps.json",
+      "--base-radii",
+      "30",
+      "--buildup-factor",
+      "0",
+      "--find-radii",
+      "off",
+      "--find-buildup-factor",
+      "off",
+      "--stage-artifacts",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E06/W08-center/stages",
+      "--full-auto-log",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E06/W08-center/run.jsonl"
+    ],
+    "rc": 0,
+    "seconds": 17.199796149001486,
+    "restoration": {
+      "anchors": [
+        [
+          2.2158433572081976e-13,
+          -1907.0170884007593,
+          -279.19071392986507
+        ],
+        [
+          1646.4076111535271,
+          952.0803340274688,
+          -279.19071392986507
+        ],
+        [
+          -1636.2742935816984,
+          944.63348745241,
+          -279.19071392986507
+        ],
+        [
+          -0.40282048484216254,
+          0.13203482889959348,
+          1905.169286070135
+        ]
+      ],
+      "old_origin_in_shifted_frame_mm": [
+        -467.8370979346926,
+        132.32082154545247,
+        -63.15928607013496
+      ],
+      "closure_mm": [
+        -0.06896007760860812,
+        -0.06894049995503337,
+        -0.06891376782368752,
+        -0.030076332556973284
+      ],
+      "closure_rms_mm": 0.0615669919956505
+    },
+    "rmse_mm": 7.006130020443959,
+    "pairwise_rmse_mm": 6.437332078668172,
+    "iterations": [
+      {
+        "iteration": 1,
+        "selected_run": "default",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 133.44303201252183
+      },
+      {
+        "iteration": 2,
+        "selected_run": "default",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 284.8121175234904
+      },
+      {
+        "iteration": 3,
+        "selected_run": "default.warm",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 280.1093439009959
+      },
+      {
+        "iteration": 4,
+        "selected_run": "default.warm",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 0.9185377295959285
+      },
+      {
+        "iteration": 5,
+        "selected_run": "default.warm",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 0.2072227574881476
+      }
+    ],
+    "sweeps_used": 7,
+    "points_used": 140
+  },
+  {
+    "name": "W08",
+    "mode": "edge",
+    "transform": {
+      "sweep_index": 2,
+      "point_index": 0,
+      "offsets_mm": [
+        -706.8583470577034,
+        510.47215429404946,
+        490.14604982532353,
+        0.0
+      ],
+      "estimated_position_mm": [
+        -14.960130038574254,
+        -769.951200004102,
+        161.31617202569404
+      ],
+      "estimated_shift_distance_mm": 786.8110085881813,
+      "reference_seed_closure_mm": [
+        -0.0005284650908379263,
+        -0.00025005093857544125,
+        -0.0002657009486028983,
+        -0.0003135924412163149
+      ],
+      "distance_to_estimated_centroid_mm": 776.9939077552198,
+      "seed_within_original_solver_bounds": true
+    },
+    "command": [
+      "/home/torbjorn/repos/hp-sim5/.venv/bin/python",
+      "-m",
+      "autocal.autocal",
+      "--sim",
+      "--no-collect",
+      "--machine-type",
+      "hangprinter_3",
+      "--dataset",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E06/W08-edge/sweeps.json",
+      "--base-radii",
+      "30",
+      "--buildup-factor",
+      "0",
+      "--find-radii",
+      "off",
+      "--find-buildup-factor",
+      "off",
+      "--stage-artifacts",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E06/W08-edge/stages",
+      "--full-auto-log",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/E06/W08-edge/run.jsonl"
+    ],
+    "rc": 0,
+    "seconds": 19.155703996999364,
+    "restoration": {
+      "anchors": [
+        [
+          2.0096276916228892e-13,
+          -1905.4964959401923,
+          -287.8947879110659
+        ],
+        [
+          1646.1873001620067,
+          962.2085338328009,
+          -287.8947879110659
+        ],
+        [
+          -1647.3327833476676,
+          963.2129333690965,
+          -287.8947879110659
+        ],
+        [
+          -0.04145869376023279,
+          -11.822125600566991,
+          1894.965212088934
+        ]
+      ],
+      "old_origin_in_shifted_frame_mm": [
+        25.147475635372974,
+        768.1105488837153,
+        -157.14521208893407
+      ],
+      "closure_mm": [
+        -0.9362617451890856,
+        -0.9301168238625905,
+        -0.9301719406464599,
+        -0.4174996172821466
+      ],
+      "closure_rms_mm": 0.8338508756266744
+    },
+    "rmse_mm": 13.323159808928116,
+    "pairwise_rmse_mm": 11.520901128579627,
+    "iterations": [
+      {
+        "iteration": 1,
+        "selected_run": "default",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 100.0
+      },
+      {
+        "iteration": 2,
+        "selected_run": "default",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 0.18645244984232412
+      },
+      {
+        "iteration": 3,
+        "selected_run": "default.warm",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 0.1848304736305872
+      },
+      {
+        "iteration": 4,
+        "selected_run": "default.warm",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 0.2410608371431248
+      },
+      {
+        "iteration": 5,
+        "selected_run": "default.warm",
+        "decision": "collect",
+        "stop_spread_hit": false,
+        "cost": 0.22053028829025192
+      }
+    ],
+    "sweeps_used": 7,
+    "points_used": 140
+  }
+]

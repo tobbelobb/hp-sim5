@@ -1,0 +1,3 @@
+# PBD constraint hotspot optimization
+
+We tested whether settled-constraint skipping and per-update invariant caching can speed up the JavaScript 3D PBD solver without changing physics. Across frozen HP3/HP4 logo and autocal replays, the retained endpoint/path cache matched all checkpoints exactly and reduced median whole-physics time by 1.2–3.6% in the final batch. An A/B/A source isolation showed the later compliance fallback did not cause the smaller result; run-condition variability remains the likely but unverified explanation. Active-set skipping regressed timing, and scratch-vector reuse added no reliable gain. Frozen replays do not validate adaptive collector behavior or hardware accuracy.

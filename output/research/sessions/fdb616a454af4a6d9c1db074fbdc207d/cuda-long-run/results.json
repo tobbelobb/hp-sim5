@@ -1,0 +1,541 @@
+{
+  "kind": "controlled_long_native_session_comparison",
+  "steps": 10000,
+  "dt_s": 0.002,
+  "simulated_s": 20.0,
+  "record": false,
+  "method": "Same frozen scene and commands, 10 Hz numerical observations; no new firmware collection",
+  "python": "3.12.3",
+  "revision": "62c086eb9f4ede26cff7d2f2c50d8576da11c15d",
+  "trials": [
+    {
+      "machine": "hp3",
+      "repeat": 0,
+      "backend": "native-warp",
+      "construction_wall_s": 0.23145195100005367,
+      "warmup_wall_s": 1.480150985000364,
+      "scene_sha256": "39416f8e079cd1e9e4371d9009f446bd418ea5ef3e3adf3e41c0320cbcf2585e",
+      "gpu_before": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 2 %, 1232 MiB, 57",
+        "error": ""
+      },
+      "status": "complete",
+      "steps": 10000,
+      "physics_wall_s": 26.91138863015658,
+      "worker_wall_s": 0.0,
+      "observation_wall_s": 0.0869538240149268,
+      "solver_adapter_wall_s": 5.452568066826643,
+      "wall_s": 27.021259744000417,
+      "realtime_factor": 0.7401579419124099,
+      "gpu_after": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 30 %, 1307 MiB, 53",
+        "error": ""
+      }
+    },
+    {
+      "machine": "hp3",
+      "repeat": 0,
+      "backend": "native-warp-cuda",
+      "construction_wall_s": 0.018249971999466652,
+      "warmup_wall_s": 0.09669606299939915,
+      "scene_sha256": "39416f8e079cd1e9e4371d9009f446bd418ea5ef3e3adf3e41c0320cbcf2585e",
+      "gpu_before": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 14 %, 1506 MiB, 53",
+        "error": ""
+      },
+      "status": "complete",
+      "steps": 10000,
+      "physics_wall_s": 37.62827029714754,
+      "worker_wall_s": 0.0,
+      "observation_wall_s": 0.08681723300833255,
+      "solver_adapter_wall_s": 15.557454958037852,
+      "wall_s": 37.7398805039993,
+      "realtime_factor": 0.5299433843697676,
+      "gpu_after": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 34 %, 1430 MiB, 60",
+        "error": ""
+      }
+    },
+    {
+      "machine": "hp3",
+      "repeat": 0,
+      "backend": "headless-js",
+      "construction_wall_s": 0.06521649500064086,
+      "warmup_wall_s": 0.006662091000180226,
+      "scene_sha256": "39416f8e079cd1e9e4371d9009f446bd418ea5ef3e3adf3e41c0320cbcf2585e",
+      "gpu_before": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 21 %, 1423 MiB, 60",
+        "error": ""
+      },
+      "status": "complete",
+      "steps": 10000,
+      "physics_wall_s": 1.0782856889999999,
+      "worker_wall_s": 1.1644156939837558,
+      "observation_wall_s": 0.09267863203422166,
+      "solver_adapter_wall_s": null,
+      "wall_s": 1.2940406809975684,
+      "realtime_factor": 15.455464649366446,
+      "gpu_after": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 7 %, 1389 MiB, 60",
+        "error": ""
+      }
+    },
+    {
+      "machine": "hp3",
+      "repeat": 1,
+      "backend": "native-warp-cuda",
+      "construction_wall_s": 0.017922267001267755,
+      "warmup_wall_s": 0.0035900959992432036,
+      "scene_sha256": "39416f8e079cd1e9e4371d9009f446bd418ea5ef3e3adf3e41c0320cbcf2585e",
+      "gpu_before": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 7 %, 1389 MiB, 60",
+        "error": ""
+      },
+      "status": "complete",
+      "steps": 10000,
+      "physics_wall_s": 37.12432733876631,
+      "worker_wall_s": 0.0,
+      "observation_wall_s": 0.08451740597956814,
+      "solver_adapter_wall_s": 15.328896130784415,
+      "wall_s": 37.23064955300288,
+      "realtime_factor": 0.5371918094398888,
+      "gpu_after": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 29 %, 1317 MiB, 55",
+        "error": ""
+      }
+    },
+    {
+      "machine": "hp3",
+      "repeat": 1,
+      "backend": "headless-js",
+      "construction_wall_s": 0.07980160799706937,
+      "warmup_wall_s": 0.006172215998958563,
+      "scene_sha256": "39416f8e079cd1e9e4371d9009f446bd418ea5ef3e3adf3e41c0320cbcf2585e",
+      "gpu_before": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 29 %, 1317 MiB, 55",
+        "error": ""
+      },
+      "status": "complete",
+      "steps": 10000,
+      "physics_wall_s": 1.070972767,
+      "worker_wall_s": 1.1533901009897818,
+      "observation_wall_s": 0.08326911798576475,
+      "solver_adapter_wall_s": null,
+      "wall_s": 1.269334524997248,
+      "realtime_factor": 15.756287728834414,
+      "gpu_after": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 4 %, 1317 MiB, 55",
+        "error": ""
+      }
+    },
+    {
+      "machine": "hp3",
+      "repeat": 1,
+      "backend": "native-warp",
+      "construction_wall_s": 0.0275356849997479,
+      "warmup_wall_s": 0.00286436099850107,
+      "scene_sha256": "39416f8e079cd1e9e4371d9009f446bd418ea5ef3e3adf3e41c0320cbcf2585e",
+      "gpu_before": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 4 %, 1317 MiB, 55",
+        "error": ""
+      },
+      "status": "complete",
+      "steps": 10000,
+      "physics_wall_s": 26.76593445312028,
+      "worker_wall_s": 0.0,
+      "observation_wall_s": 0.08252368700777879,
+      "solver_adapter_wall_s": 5.419229740778974,
+      "wall_s": 26.867048658001295,
+      "realtime_factor": 0.7444062894509176,
+      "gpu_after": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 53 %, 1317 MiB, 47",
+        "error": ""
+      }
+    },
+    {
+      "machine": "hp3",
+      "repeat": 2,
+      "backend": "headless-js",
+      "construction_wall_s": 0.06686967599671334,
+      "warmup_wall_s": 0.006315935999737121,
+      "scene_sha256": "39416f8e079cd1e9e4371d9009f446bd418ea5ef3e3adf3e41c0320cbcf2585e",
+      "gpu_before": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 53 %, 1317 MiB, 47",
+        "error": ""
+      },
+      "status": "complete",
+      "steps": 10000,
+      "physics_wall_s": 1.0513392040000002,
+      "worker_wall_s": 1.1302489310401143,
+      "observation_wall_s": 0.08693842100183247,
+      "solver_adapter_wall_s": null,
+      "wall_s": 1.2501586830003362,
+      "realtime_factor": 15.997969115409186,
+      "gpu_after": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 20 %, 1317 MiB, 47",
+        "error": ""
+      }
+    },
+    {
+      "machine": "hp3",
+      "repeat": 2,
+      "backend": "native-warp",
+      "construction_wall_s": 0.027431121001427528,
+      "warmup_wall_s": 0.0028800500003853813,
+      "scene_sha256": "39416f8e079cd1e9e4371d9009f446bd418ea5ef3e3adf3e41c0320cbcf2585e",
+      "gpu_before": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 20 %, 1317 MiB, 47",
+        "error": ""
+      },
+      "status": "complete",
+      "steps": 10000,
+      "physics_wall_s": 26.518942301110656,
+      "worker_wall_s": 0.0,
+      "observation_wall_s": 0.08656949298165273,
+      "solver_adapter_wall_s": 5.366010577898123,
+      "wall_s": 26.623587221998605,
+      "realtime_factor": 0.7512135698781549,
+      "gpu_after": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 42 %, 1317 MiB, 46",
+        "error": ""
+      }
+    },
+    {
+      "machine": "hp3",
+      "repeat": 2,
+      "backend": "native-warp-cuda",
+      "construction_wall_s": 0.01837565599998925,
+      "warmup_wall_s": 0.01962342600018019,
+      "scene_sha256": "39416f8e079cd1e9e4371d9009f446bd418ea5ef3e3adf3e41c0320cbcf2585e",
+      "gpu_before": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 42 %, 1317 MiB, 46",
+        "error": ""
+      },
+      "status": "complete",
+      "steps": 10000,
+      "physics_wall_s": 37.132461013345164,
+      "worker_wall_s": 0.0,
+      "observation_wall_s": 0.08411257601255784,
+      "solver_adapter_wall_s": 15.278570650811162,
+      "wall_s": 37.236350260998734,
+      "realtime_factor": 0.5371095679306668,
+      "gpu_after": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 33 %, 1316 MiB, 55",
+        "error": ""
+      }
+    },
+    {
+      "machine": "hp4",
+      "repeat": 0,
+      "backend": "native-warp",
+      "construction_wall_s": 0.048893199000303866,
+      "warmup_wall_s": 0.009416380999027751,
+      "scene_sha256": "7e2b8ffcb129ea6f8f56e2f85fbc9d716875478c0240203005ab715130706717",
+      "gpu_before": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 33 %, 1316 MiB, 55",
+        "error": ""
+      },
+      "status": "complete",
+      "steps": 10000,
+      "physics_wall_s": 105.77783498604549,
+      "worker_wall_s": 0.0,
+      "observation_wall_s": 0.14703979398836964,
+      "solver_adapter_wall_s": 14.388593531941297,
+      "wall_s": 105.94882397200126,
+      "realtime_factor": 0.18877038224874806,
+      "gpu_after": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 16 %, 1316 MiB, 50",
+        "error": ""
+      }
+    },
+    {
+      "machine": "hp4",
+      "repeat": 0,
+      "backend": "native-warp-cuda",
+      "construction_wall_s": 0.055098487999202916,
+      "warmup_wall_s": 0.029243110999232158,
+      "scene_sha256": "7e2b8ffcb129ea6f8f56e2f85fbc9d716875478c0240203005ab715130706717",
+      "gpu_before": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 16 %, 1316 MiB, 50",
+        "error": ""
+      },
+      "status": "complete",
+      "steps": 10000,
+      "physics_wall_s": 168.43325004389771,
+      "worker_wall_s": 0.0,
+      "observation_wall_s": 0.14847818501584698,
+      "solver_adapter_wall_s": 77.10494268397451,
+      "wall_s": 168.606791831,
+      "realtime_factor": 0.1186191836213018,
+      "gpu_after": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 40 %, 1316 MiB, 52",
+        "error": ""
+      }
+    },
+    {
+      "machine": "hp4",
+      "repeat": 0,
+      "backend": "headless-js",
+      "construction_wall_s": 0.11029367800074397,
+      "warmup_wall_s": 0.009519670998997753,
+      "scene_sha256": "7e2b8ffcb129ea6f8f56e2f85fbc9d716875478c0240203005ab715130706717",
+      "gpu_before": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 40 %, 1316 MiB, 52",
+        "error": ""
+      },
+      "status": "complete",
+      "steps": 10000,
+      "physics_wall_s": 6.176963805999998,
+      "worker_wall_s": 6.385471512956428,
+      "observation_wall_s": 0.15829190499789547,
+      "solver_adapter_wall_s": null,
+      "wall_s": 6.625046676002967,
+      "realtime_factor": 3.018846655442197,
+      "gpu_after": {
+        "returncode": 0,
+        "output": "NVIDIA GeForce RTX 3070 Ti, 4 %, 1305 MiB, 51",
+        "error": ""
+      }
+    }
+  ],
+  "comparisons": [
+    {
+      "machine": "hp3",
+      "repeat": 0,
+      "first": "native-warp-cuda",
+      "second": "native-warp",
+      "raw_encoder_deg": 0.0010360678204088523,
+      "effector_position_mm": 0.0005805032335799144,
+      "cable_length_mm": 0.0007052290018627616,
+      "segment_force_n": 0.0029919018467515768,
+      "observation_count": 201,
+      "encoder_within_0_01_deg": true
+    },
+    {
+      "machine": "hp3",
+      "repeat": 0,
+      "first": "native-warp-cuda",
+      "second": "headless-js",
+      "raw_encoder_deg": 0.0014521458177656715,
+      "effector_position_mm": 0.0002269240206322886,
+      "cable_length_mm": 0.001525213215280985,
+      "segment_force_n": 0.006670828670151566,
+      "observation_count": 201,
+      "encoder_within_0_01_deg": true
+    },
+    {
+      "machine": "hp3",
+      "repeat": 0,
+      "first": "native-warp",
+      "second": "headless-js",
+      "raw_encoder_deg": 0.0017783449389471655,
+      "effector_position_mm": 0.00035456734141071233,
+      "cable_length_mm": 0.0015260125034721739,
+      "segment_force_n": 0.0067649336371368406,
+      "observation_count": 201,
+      "encoder_within_0_01_deg": true
+    },
+    {
+      "machine": "hp3",
+      "repeat": 1,
+      "first": "native-warp-cuda",
+      "second": "native-warp",
+      "raw_encoder_deg": 0.0010360678204088523,
+      "effector_position_mm": 0.0005805032335799144,
+      "cable_length_mm": 0.0007052290018627616,
+      "segment_force_n": 0.0029919018467515768,
+      "observation_count": 201,
+      "encoder_within_0_01_deg": true
+    },
+    {
+      "machine": "hp3",
+      "repeat": 1,
+      "first": "native-warp-cuda",
+      "second": "headless-js",
+      "raw_encoder_deg": 0.0014521458177656715,
+      "effector_position_mm": 0.0002269240206322886,
+      "cable_length_mm": 0.001525213215280985,
+      "segment_force_n": 0.006670828670151566,
+      "observation_count": 201,
+      "encoder_within_0_01_deg": true
+    },
+    {
+      "machine": "hp3",
+      "repeat": 1,
+      "first": "native-warp",
+      "second": "headless-js",
+      "raw_encoder_deg": 0.0017783449389471655,
+      "effector_position_mm": 0.00035456734141071233,
+      "cable_length_mm": 0.0015260125034721739,
+      "segment_force_n": 0.0067649336371368406,
+      "observation_count": 201,
+      "encoder_within_0_01_deg": true
+    },
+    {
+      "machine": "hp3",
+      "repeat": 2,
+      "first": "native-warp-cuda",
+      "second": "native-warp",
+      "raw_encoder_deg": 0.0010360678204088523,
+      "effector_position_mm": 0.0005805032335799144,
+      "cable_length_mm": 0.0007052290018627616,
+      "segment_force_n": 0.0029919018467515768,
+      "observation_count": 201,
+      "encoder_within_0_01_deg": true
+    },
+    {
+      "machine": "hp3",
+      "repeat": 2,
+      "first": "native-warp-cuda",
+      "second": "headless-js",
+      "raw_encoder_deg": 0.0014521458177656715,
+      "effector_position_mm": 0.0002269240206322886,
+      "cable_length_mm": 0.001525213215280985,
+      "segment_force_n": 0.006670828670151566,
+      "observation_count": 201,
+      "encoder_within_0_01_deg": true
+    },
+    {
+      "machine": "hp3",
+      "repeat": 2,
+      "first": "native-warp",
+      "second": "headless-js",
+      "raw_encoder_deg": 0.0017783449389471655,
+      "effector_position_mm": 0.00035456734141071233,
+      "cable_length_mm": 0.0015260125034721739,
+      "segment_force_n": 0.0067649336371368406,
+      "observation_count": 201,
+      "encoder_within_0_01_deg": true
+    },
+    {
+      "machine": "hp4",
+      "repeat": 0,
+      "first": "native-warp-cuda",
+      "second": "native-warp",
+      "raw_encoder_deg": 1.0206443485985022e-05,
+      "effector_position_mm": 2.8440240762285777e-06,
+      "cable_length_mm": 8.372377457988023e-06,
+      "segment_force_n": 5.018570977094461e-06,
+      "observation_count": 201,
+      "encoder_within_0_01_deg": true
+    },
+    {
+      "machine": "hp4",
+      "repeat": 0,
+      "first": "native-warp-cuda",
+      "second": "headless-js",
+      "raw_encoder_deg": 0.002160545266531714,
+      "effector_position_mm": 0.0006026015064579661,
+      "cable_length_mm": 0.0017723055663054765,
+      "segment_force_n": 0.0010620805207589012,
+      "observation_count": 201,
+      "encoder_within_0_01_deg": true
+    },
+    {
+      "machine": "hp4",
+      "repeat": 0,
+      "first": "native-warp",
+      "second": "headless-js",
+      "raw_encoder_deg": 0.002170751710017699,
+      "effector_position_mm": 0.0006054455302388325,
+      "cable_length_mm": 0.0017806779242235393,
+      "segment_force_n": 0.0010670990917359957,
+      "observation_count": 201,
+      "encoder_within_0_01_deg": true
+    }
+  ],
+  "warp_version": "1.12.0",
+  "warp_source_sha256": "0374bd4520a20f80fd9ca07c0b0f4516b9b1fc97e7a2f43afcd866febc8ea415",
+  "commands_sha256": "8df6a0ac5ef75f67d8d84a8e43804774b723663ca1bc4b3e3574f15bb70c34b8",
+  "summaries": [
+    {
+      "machine": "hp3",
+      "backend": "native-warp",
+      "repetitions": 3,
+      "median_wall_s": 26.867048658001295,
+      "wall_s": [
+        27.021259744000417,
+        26.867048658001295,
+        26.623587221998605
+      ],
+      "median_realtime_factor": 0.7444062894509176
+    },
+    {
+      "machine": "hp3",
+      "backend": "native-warp-cuda",
+      "repetitions": 3,
+      "median_wall_s": 37.236350260998734,
+      "wall_s": [
+        37.7398805039993,
+        37.23064955300288,
+        37.236350260998734
+      ],
+      "median_realtime_factor": 0.5371095679306668
+    },
+    {
+      "machine": "hp3",
+      "backend": "headless-js",
+      "repetitions": 3,
+      "median_wall_s": 1.269334524997248,
+      "wall_s": [
+        1.2940406809975684,
+        1.269334524997248,
+        1.2501586830003362
+      ],
+      "median_realtime_factor": 15.756287728834414
+    },
+    {
+      "machine": "hp4",
+      "backend": "native-warp",
+      "repetitions": 1,
+      "median_wall_s": 105.94882397200126,
+      "wall_s": [
+        105.94882397200126
+      ],
+      "median_realtime_factor": 0.18877038224874806
+    },
+    {
+      "machine": "hp4",
+      "backend": "native-warp-cuda",
+      "repetitions": 1,
+      "median_wall_s": 168.606791831,
+      "wall_s": [
+        168.606791831
+      ],
+      "median_realtime_factor": 0.1186191836213018
+    },
+    {
+      "machine": "hp4",
+      "backend": "headless-js",
+      "repetitions": 1,
+      "median_wall_s": 6.625046676002967,
+      "wall_s": [
+        6.625046676002967
+      ],
+      "median_realtime_factor": 3.018846655442197
+    }
+  ]
+}
