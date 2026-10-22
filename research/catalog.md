@@ -154,3 +154,18 @@ and passes the default-one-substep stability gate. The PR's damping correction
 fails loaded-state settling and is deferred. Matched native Squares prefixes
 still pull B out at finer steps; coarse zero-loss behavior is unreliable evidence
 of accuracy. [Review, measurements and integration decision](hp4-squares-substeps.md).
+
+## Autocal flag audit and experiment handoff
+
+Status: static investigation complete, 2026-10-22; numerical experiments not run.
+Topics: autocalibration, CLI flags, robust filtering, scale polish, solver budgets,
+parameter interactions, ranking, experiment design.
+
+[Assessment and bounded experiments](autocal-flag-audit/report.md),
+[92-option inventory](autocal-flag-audit/inventory.md),
+[abstract](autocal-flag-audit/abstract.md), and
+[notebook](autocal-flag-audit/research.md). Preserves the user's KEEP annotations;
+no numerical default was established as optimal and no runtime flags were removed.
+
+The [six-lane launch index](autocal-flag-audit/handoffs/README.md) provides separate
+parallel handoffs with ownership, budgets, output isolation and integration rules.

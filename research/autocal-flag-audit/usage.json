@@ -1,0 +1,2997 @@
+{
+  "revision": "e7179384192a9a06bda3b548b16aaa94d864e5dc",
+  "method": "Literal option spellings, file counts not invocations; includes help/comments. Absence is not non-use. Defaults/JSON keys not counted. Files >8 MB excluded.",
+  "scanned_files": 13863,
+  "roots": [
+    "autocal/data",
+    "output/research",
+    "research",
+    "autocal/tests",
+    "autocal/tools"
+  ],
+  "flags": {
+    "--b-bounds": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3409",
+          "type": "str",
+          "default": "None",
+          "help": "\"Bounds for fitted buildup factor as 'min,max' (default: 0,1).\""
+        },
+        {
+          "source": "autocal/_autocal_common.py:4078",
+          "default": "None"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 9,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3401",
+          "excerpt": "        \"--b-bounds\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3890",
+          "excerpt": "        b_bounds = _parse_min_max_bounds(args.b_bounds, label=\"--b-bounds\")"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:4061",
+          "excerpt": "    parser.add_argument(\"--b-bounds\", default=None)"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/autocal.py:1155",
+          "excerpt": "                    settings[\"b_bounds\"] = _parse_min_max_bounds(raw_b_bounds, label=\"--b-bounds\")"
+        }
+      ]
+    },
+    "--b-prior-sigma": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3421",
+          "type": "float",
+          "default": "None",
+          "help": "'Gaussian prior sigma for buildup-factor fitting (auto default: 0.1 when fitting k).'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4080",
+          "type": "float",
+          "default": "None"
+        }
+      ],
+      "log_files": 2,
+      "other_files": 3,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3413",
+          "excerpt": "        \"--b-prior-sigma\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3914",
+          "excerpt": "            parser.error(\"--b-prior-sigma must be numeric\")"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3916",
+          "excerpt": "            parser.error(\"--b-prior-sigma must be finite and > 0\")"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:4063",
+          "excerpt": "    parser.add_argument(\"--b-prior-sigma\", type=float, default=None)"
+        }
+      ]
+    },
+    "--base-radii": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3367",
+          "type": "str",
+          "default": "None",
+          "help": "'Comma-separated base radii in mm (defaults to config m666_adjusted_by_data_collector/m666_before_data_collection R).'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4075",
+          "default": "None"
+        }
+      ],
+      "log_files": 4054,
+      "other_files": 46,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_08baf573/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_08baf573/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_0ab396c8/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_0ab396c8/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_0acdba5a/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_0acdba5a/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        }
+      ]
+    },
+    "--buildup-factor": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3373",
+          "type": "float",
+          "default": "None",
+          "help": "'Use this buildup factor k in the model transform (if omitted, falls back to config m666_adjusted_by_data_collector/m666_before_data_collection Q, else 0).'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4076",
+          "type": "float",
+          "default": "None"
+        }
+      ],
+      "log_files": 4069,
+      "other_files": 51,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_08baf573/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_08baf573/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_0ab396c8/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_0ab396c8/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_0acdba5a/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_0acdba5a/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        }
+      ]
+    },
+    "--candidate-count": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3578",
+          "type": "int",
+          "default": "41",
+          "help": "'Grid size when deltas not provided'"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 3,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3569",
+          "excerpt": "    parser.add_argument(\"--candidate-count\", type=int, default=41, help=\"Grid size when deltas not provided\")"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3539",
+          "excerpt": "    parser.add_argument(\"--candidate-count\", type=int, default=41, help=\"Grid size when deltas not provided\")"
+        },
+        {
+          "source": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/source/_autocal_common.py:3569",
+          "excerpt": "    parser.add_argument(\"--candidate-count\", type=int, default=41, help=\"Grid size when deltas not provided\")"
+        },
+        {
+          "source": "output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E04-baseline.stdout.log:39",
+          "excerpt": "                  [--candidate-count CANDIDATE_COUNT] [--delta-min DELTA_MIN]"
+        }
+      ]
+    },
+    "--candidate-deltas": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3577",
+          "type": "str",
+          "default": "None",
+          "help": "'Comma-separated fixed deltas (mm)'"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 3,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3568",
+          "excerpt": "    parser.add_argument(\"--candidate-deltas\", type=str, default=None, help=\"Comma-separated fixed deltas (mm)\")"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3538",
+          "excerpt": "    parser.add_argument(\"--candidate-deltas\", type=str, default=None, help=\"Comma-separated fixed deltas (mm)\")"
+        },
+        {
+          "source": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/source/_autocal_common.py:3568",
+          "excerpt": "    parser.add_argument(\"--candidate-deltas\", type=str, default=None, help=\"Comma-separated fixed deltas (mm)\")"
+        },
+        {
+          "source": "output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E04-baseline.stdout.log:38",
+          "excerpt": "                  [--report] [--candidate-deltas CANDIDATE_DELTAS]"
+        }
+      ]
+    },
+    "--collector-args": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3731",
+          "nargs": "argparse.REMAINDER",
+          "default": "()",
+          "help": "'Extra args passed to autocal/control/cli/collect_sweep_data.mjs (after --collector-args)'"
+        }
+      ],
+      "log_files": 78,
+      "other_files": 25,
+      "examples": [
+        {
+          "source": "autocal/data/default_dataset.full_auto.log:1",
+          "excerpt": "; command: autocal/autocal.py --sim --machine-type hangprinter_4 --find-radii global --base-radii 30 --buildup-factor 0.636619 --verbose --r0-bounds 39,40 --collector-args --speedup 40"
+        },
+        {
+          "source": "autocal/data/default_dataset.full_auto_1.log:1",
+          "excerpt": "; command: autocal/autocal.py --sim --machine-type hangprinter_4 --find-radii global --base-radii 30 --buildup-factor 0.636619 --verbose --r0-bounds 39,40 --collector-args --speedup 40"
+        },
+        {
+          "source": "autocal/data/default_dataset.full_auto_2.log:1",
+          "excerpt": "; command: autocal/autocal.py --sim --machine-type hangprinter_4 --find-radii global --base-radii 30 --buildup-factor 0.636619 --verbose --r0-bounds 39,40 --collector-args --speedup 40"
+        },
+        {
+          "source": "autocal/data/default_dataset.full_auto_3.log:1",
+          "excerpt": "; command: autocal/autocal.py --sim --machine-type hangprinter_4 --find-radii global --base-radii 30 --buildup-factor 0.636619 --verbose --r0-bounds 39,40 --collector-args --speedup 40"
+        }
+      ]
+    },
+    "--config": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3743",
+          "type": "str",
+          "default": "None",
+          "help": "'Generic simulator config path. Interpreted as --rrf-config when --firmware rrf, or as --klipper-config when --firmware klipper.'"
+        }
+      ],
+      "log_files": 5,
+      "other_files": 12,
+      "examples": [
+        {
+          "source": "autocal/data/klipper_1.full_auto_1.log:6",
+          "excerpt": ";   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file autocal/data/klipper_1.bootstrap_cfg.txt --output-file autocal/data/klipper_1.json --speedup 10 --firmware klipper --config examples/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg --no-spawn-rrf-simulator --force-base-radii 30 --force-buildup-fac"
+        },
+        {
+          "source": "autocal/data/klipper_2.full_auto.log:6",
+          "excerpt": ";   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file autocal/data/klipper_2.bootstrap_cfg.txt --output-file autocal/data/klipper_2.json --speedup 10 --firmware klipper --config examples/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg --no-spawn-rrf-simulator --force-base-radii 30 --force-buildup-fac"
+        },
+        {
+          "source": "autocal/data/klipper_2.full_auto_1.log:6",
+          "excerpt": ";   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file autocal/data/klipper_2.bootstrap_cfg.txt --output-file autocal/data/klipper_2.json --speedup 10 --firmware klipper --config examples/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg --sim --no-spawn-rrf-simulator --force-base-radii 30 --force-build"
+        },
+        {
+          "source": "autocal/data/klipper_2.full_auto_1.log:149",
+          "excerpt": ";   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file autocal/data/klipper_2.active_sweep_cfg.default.txt --fixed-targets 0.0,0.0 --output-file autocal/data/klipper_2.new_001.json --speedup 10 --firmware klipper --config examples/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg --sim --no-spawn-rrf-si"
+        }
+      ]
+    },
+    "--dataset": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3820",
+          "type": "Path",
+          "default": "None",
+          "help": "'Dataset file updated each iteration (default: autocal/data/default_dataset.json).'"
+        }
+      ],
+      "log_files": 4140,
+      "other_files": 90,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_08baf573/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_08baf573/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_0ab396c8/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_0ab396c8/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_0acdba5a/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_0acdba5a/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        }
+      ]
+    },
+    "--debug-sweep-actions": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3785",
+          "action": "'store_true'",
+          "help": "'Enable sweep collector debug traces (force modes, waits, moves, data points).'"
+        }
+      ],
+      "log_files": 5,
+      "other_files": 10,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3773",
+          "excerpt": "        \"--debug-sweep-actions\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/autocal.py:1600",
+          "excerpt": "    if bool(args.debug_sweep_actions) and not _arg_has_flag(collector_args, \"--debug-sweep-actions\"):"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/autocal.py:1601",
+          "excerpt": "        collector_args.append(\"--debug-sweep-actions\")"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/ellipse_active.py:61",
+          "excerpt": "    if bool(args.debug_sweep_actions) and not _arg_has_flag(collector_args, \"--debug-sweep-actions\"):"
+        }
+      ]
+    },
+    "--delta-max": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3580",
+          "type": "float",
+          "default": "None"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 3,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3571",
+          "excerpt": "    parser.add_argument(\"--delta-max\", type=float, default=None)"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3541",
+          "excerpt": "    parser.add_argument(\"--delta-max\", type=float, default=None)"
+        },
+        {
+          "source": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/source/_autocal_common.py:3571",
+          "excerpt": "    parser.add_argument(\"--delta-max\", type=float, default=None)"
+        },
+        {
+          "source": "output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E04-baseline.stdout.log:40",
+          "excerpt": "                  [--delta-max DELTA_MAX] [--fd-eps-mm FD_EPS_MM]"
+        }
+      ]
+    },
+    "--delta-min": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3579",
+          "type": "float",
+          "default": "None"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 3,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3570",
+          "excerpt": "    parser.add_argument(\"--delta-min\", type=float, default=None)"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3540",
+          "excerpt": "    parser.add_argument(\"--delta-min\", type=float, default=None)"
+        },
+        {
+          "source": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/source/_autocal_common.py:3570",
+          "excerpt": "    parser.add_argument(\"--delta-min\", type=float, default=None)"
+        },
+        {
+          "source": "output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E04-baseline.stdout.log:39",
+          "excerpt": "                  [--candidate-count CANDIDATE_COUNT] [--delta-min DELTA_MIN]"
+        }
+      ]
+    },
+    "--existing-tol-mm": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3584",
+          "type": "float",
+          "default": "10.0",
+          "help": "'Treat sweeps with the same fixed anchors/drive/sensor and fixed delta within this tolerance as duplicates'"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 3,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3576",
+          "excerpt": "        \"--existing-tol-mm\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3546",
+          "excerpt": "        \"--existing-tol-mm\","
+        },
+        {
+          "source": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/source/_autocal_common.py:3576",
+          "excerpt": "        \"--existing-tol-mm\","
+        },
+        {
+          "source": "output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E04-baseline.stdout.log:42",
+          "excerpt": "                  [--existing-tol-mm EXISTING_TOL_MM]"
+        }
+      ]
+    },
+    "--extended-recording": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/autocal.py:1770",
+          "action": "'store_true'",
+          "help": "'Start and finalize an extended recorder automatically; output is derived from --dataset.'"
+        }
+      ],
+      "log_files": 0,
+      "other_files": 3,
+      "examples": [
+        {
+          "source": "autocal/data/references/extended-reference.md:10",
+          "excerpt": "Add `--extended-recording` (aliases: `--recording`, `--record`) to a simulated"
+        },
+        {
+          "source": "autocal/data/references/extended-reference.md:17",
+          "excerpt": "  --extended-recording"
+        },
+        {
+          "source": "autocal/tests/test_browser_recording.py:14",
+          "excerpt": "@pytest.mark.parametrize(\"flag\", [\"--extended-recording\", \"--recording\", \"--record\"])"
+        },
+        {
+          "source": "output/research/sessions/2026-10-19-interactive-research-bf5d807a/final-source/autocal/data/references/extended-reference.md:10",
+          "excerpt": "Add `--extended-recording` (aliases: `--recording`, `--record`) to a simulated"
+        }
+      ]
+    },
+    "--extended-reference": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/autocal.py:1774",
+          "action": "'store_true'",
+          "help": "'Record headless physics and all autocal events in one RRD; starts an owned recorder unless a WebSocket URL is supplied'"
+        }
+      ],
+      "log_files": 17,
+      "other_files": 27,
+      "examples": [
+        {
+          "source": "autocal/data/references/extended-reference.md:55",
+          "excerpt": "retain their existing numerical-only behavior. `--extended-reference` retains"
+        },
+        {
+          "source": "autocal/data/references/extended-reference.md:63",
+          "excerpt": "Add `--extended-reference` to a headless autocal run:"
+        },
+        {
+          "source": "autocal/data/references/extended-reference.md:67",
+          "excerpt": "  --headless-sim --extended-reference --machine-type hangprinter_3 \\"
+        },
+        {
+          "source": "autocal/data/references/extended-reference.md:113",
+          "excerpt": "  --extended-reference --output output/extended-autocal/trial-001"
+        }
+      ]
+    },
+    "--extended-reference-ws": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/autocal.py:1772",
+          "metavar": "'URL'",
+          "help": "'Record timestamped logs and collector events in an --extended-reference flight recorder'"
+        }
+      ],
+      "log_files": 6,
+      "other_files": 10,
+      "examples": [
+        {
+          "source": "autocal/data/references/extended-reference.md:30",
+          "excerpt": "store output in `sweeps.headless/`. An explicit `--extended-reference-ws` or"
+        },
+        {
+          "source": "autocal/data/references/extended-reference.md:89",
+          "excerpt": "`--extended-reference-ws ws://127.0.0.1:9877` to `--headless-sim`. The inherited"
+        },
+        {
+          "source": "autocal/data/references/extended-reference.md:123",
+          "excerpt": "reapplies the requested speed and Trace. `--extended-reference-ws` also connects"
+        },
+        {
+          "source": "autocal/data/references/extended-reference.md:133",
+          "excerpt": "  --extended-reference-ws ws://127.0.0.1:9877"
+        }
+      ]
+    },
+    "--fd-eps-mm": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3581",
+          "type": "float",
+          "default": "1.0"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 3,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3572",
+          "excerpt": "    parser.add_argument(\"--fd-eps-mm\", type=float, default=1.0)"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3542",
+          "excerpt": "    parser.add_argument(\"--fd-eps-mm\", type=float, default=1.0)"
+        },
+        {
+          "source": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/source/_autocal_common.py:3572",
+          "excerpt": "    parser.add_argument(\"--fd-eps-mm\", type=float, default=1.0)"
+        },
+        {
+          "source": "output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E04-baseline.stdout.log:40",
+          "excerpt": "                  [--delta-max DELTA_MAX] [--fd-eps-mm FD_EPS_MM]"
+        }
+      ]
+    },
+    "--filter-schedule": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3460",
+          "type": "str",
+          "default": "'warmup,warmup,warmup,dynamic'",
+          "help": "'Explicit filter-pass schedule as comma-separated words or numbers. Words: warmup,dynamic,constant. Numbers: 0=warmup, 1=dynamic, 2=constant. Default: warmup,warmup,warmup,dynamic.'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4086",
+          "default": "None"
+        }
+      ],
+      "log_files": 410,
+      "other_files": 11,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_01cbb9aa/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_01cbb9aa/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_1075e1a1/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_1075e1a1/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_191b2f12/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_191b2f12/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_1d168535/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_1d168535/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        }
+      ]
+    },
+    "--find-buildup-factor": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3359",
+          "choices": "_SPOOL_FIND_MODE_CHOICES",
+          "nargs": "'?'",
+          "const": "'per-anchor'",
+          "default": "'off'",
+          "help": "'Buildup-factor fit mode: off | global | per-anchor (default: off).'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4068",
+          "choices": "_SPOOL_FIND_MODE_CHOICES",
+          "nargs": "'?'",
+          "const": "'per-anchor'",
+          "default": "None"
+        }
+      ],
+      "log_files": 62,
+      "other_files": 34,
+      "examples": [
+        {
+          "source": "autocal/data/fifth_hp3_dataset.full_auto_89.log:1",
+          "excerpt": "; command: autocal/autocal.py --sim --machine-type hangprinter_4 --verbose --dataset autocal/data/fifth_hp3_dataset.json --find-radii global --base-radii 39.1845 --find-buildup-factor global --no-collect --r0-bounds 39,40"
+        },
+        {
+          "source": "autocal/data/fifth_hp3_dataset.full_auto_90.log:1",
+          "excerpt": "; command: autocal/autocal.py --sim --machine-type hangprinter_4 --verbose --dataset autocal/data/fifth_hp3_dataset.json --find-radii global --base-radii 39.1845 --find-buildup-factor global --no-collect --r0-bounds 39,40"
+        },
+        {
+          "source": "autocal/data/fifth_hp3_dataset.full_auto_91.log:1",
+          "excerpt": "; command: autocal/autocal.py --sim --machine-type hangprinter_4 --verbose --dataset autocal/data/fifth_hp3_dataset.json --find-radii global --base-radii 39.1845 --find-buildup-factor global --no-collect --r0-bounds 39,40"
+        },
+        {
+          "source": "autocal/data/twentieth_hp3_dataset_even_more_pressure.full_auto_5.log:1",
+          "excerpt": "; command: autocal/autocal.py --sim --machine-type hangprinter_4 --verbose --dataset autocal/data/twentieth_hp3_dataset_even_more_pressure.json --find-radii per-anchor --base-radii 30 --find-buildup-factor global --r0-bounds 39,40 --no-collect"
+        }
+      ]
+    },
+    "--find-radii": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3351",
+          "choices": "_SPOOL_FIND_MODE_CHOICES",
+          "nargs": "'?'",
+          "const": "'per-anchor'",
+          "default": "'off'",
+          "help": "'Spool-radius fit mode: off | global | per-anchor (default: off).'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4061",
+          "choices": "_SPOOL_FIND_MODE_CHOICES",
+          "nargs": "'?'",
+          "const": "'per-anchor'",
+          "default": "None"
+        }
+      ],
+      "log_files": 4093,
+      "other_files": 65,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_08baf573/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_08baf573/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_0ab396c8/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_0ab396c8/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_0acdba5a/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_0acdba5a/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        }
+      ]
+    },
+    "--firmware": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3737",
+          "choices": "['rrf', 'klipper']",
+          "default": "'rrf'",
+          "help": "'Firmware flavor to target (default: rrf)'"
+        }
+      ],
+      "log_files": 1368,
+      "other_files": 15,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.full_auto.log:107",
+          "excerpt": ";   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 217.1921231503382,-265.4570394059689 --output-file /home/torbjorn/repos/hp-sim5/autocal/data"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.full_auto.log:183",
+          "excerpt": ";   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 458.5167044284918,0.0 --output-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_paral"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.full_auto.log:261",
+          "excerpt": ";   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 458.5167044284918,-24.13245812781537 --output-file /home/torbjorn/repos/hp-sim5/autocal/data"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.full_auto.log:340",
+          "excerpt": ";   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 0.0,-482.6491625563071 --output-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_para"
+        }
+      ]
+    },
+    "--fit-structure": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3451",
+          "type": "str",
+          "default": "'3'",
+          "help": "'Enable fit-structure rank penalties by id (comma-separated): 1=tail_ratio, 2=sweep_bias_directionality, 3=tail_factor (default: 3).'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4085",
+          "default": "None"
+        }
+      ],
+      "log_files": 1154,
+      "other_files": 7,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_000b9760/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_000b9760/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_010e0fb8/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_010e0fb8/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_01cbb9aa/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_01cbb9aa/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_0441486b/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_0441486b/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        }
+      ]
+    },
+    "--flex": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3350",
+          "action": "'store_true'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4055",
+          "dest": "'use_flex'",
+          "action": "'store_true'",
+          "default": "None"
+        }
+      ],
+      "log_files": 3,
+      "other_files": 10,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3341",
+          "excerpt": "    parser.add_argument(\"--flex\", action=\"store_true\")"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:4039",
+          "excerpt": "        \"--flex\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/calibrate.py:1195",
+          "excerpt": "        \"--flex\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/calibrate.py:1219",
+          "excerpt": "        \"--flex\","
+        }
+      ]
+    },
+    "--full-auto-log": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3855",
+          "type": "Path",
+          "default": "None",
+          "help": "'Write full-auto JSONL logs to this path (default: <dataset>.full_auto_log.jsonl).'"
+        }
+      ],
+      "log_files": 3620,
+      "other_files": 42,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_08baf573/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_08baf573/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_0ab396c8/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_0ab396c8/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_0acdba5a/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_0acdba5a/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        }
+      ]
+    },
+    "--full-auto-run": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3840",
+          "action": "'append'",
+          "default": "None",
+          "help": "'Full-auto run override flags (repeatable). Example: --full-auto-run \"--sweep-metric mad --use-raw-lengths\"'"
+        }
+      ],
+      "log_files": 3,
+      "other_files": 3,
+      "examples": [
+        {
+          "source": "autocal/data/layered_manual_some_bad_points.full_auto.log:1",
+          "excerpt": "; command: autocal/autocal.py --sim --machine-type slideprinter --full-auto-run default --dataset autocal/data/layered_manual_some_bad_points.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode fast --fit-structure 3 --filter-schedule 0,0,0,1"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3828",
+          "excerpt": "        \"--full-auto-run\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3831",
+          "excerpt": "        help=\"Full-auto run override flags (repeatable). Example: --full-auto-run \\\"--sweep-metric mad --use-raw-lengths\\\"\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3639",
+          "excerpt": "        \"--full-auto-run\","
+        }
+      ]
+    },
+    "--headless-sim": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/autocal.py:1778",
+          "action": "'store_true'",
+          "help": "'Run simulated RRF and production JS physics/collector in Node without a browser; implies --sim'"
+        }
+      ],
+      "log_files": 61,
+      "other_files": 27,
+      "examples": [
+        {
+          "source": "autocal/data/references/extended-reference.md:29",
+          "excerpt": "With `--headless-sim`, these flags use the existing managed headless recorder and"
+        },
+        {
+          "source": "autocal/data/references/extended-reference.md:45",
+          "excerpt": "The CLI exposes the same choices with `--headless-sim --recording-mode MODE`:"
+        },
+        {
+          "source": "autocal/data/references/extended-reference.md:67",
+          "excerpt": "  --headless-sim --extended-reference --machine-type hangprinter_3 \\"
+        },
+        {
+          "source": "autocal/data/references/extended-reference.md:89",
+          "excerpt": "`--extended-reference-ws ws://127.0.0.1:9877` to `--headless-sim`. The inherited"
+        }
+      ]
+    },
+    "--help": {
+      "keep": true,
+      "definitions": [],
+      "log_files": 1,
+      "other_files": 11,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/README_elliptical_feature_calibration.md:121",
+          "excerpt": "See `--help` for the full list of options."
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/README_elliptical_feature_calibration.md:107",
+          "excerpt": "See `--help` for the full list of options."
+        },
+        {
+          "source": "output/research/sessions/2026-10-12-network-enabled-preflight-revalidation-31a423c7/native/tests/3afc3c2920024414ba40b3c9bc4fbf29/pytest-temp/test_reset_reloads_scene_and_j0/repo/scripts/research_agent.py:268",
+          "excerpt": "        result = subprocess.run([str(rerun), 'viewer-mcp', '--help'], capture_output=True, timeout=15)"
+        },
+        {
+          "source": "output/research/sessions/2026-10-12-network-enabled-preflight-revalidation-31a423c7/source/scripts/research_agent.py:47",
+          "excerpt": "        result = subprocess.run([str(rerun), 'viewer-mcp', '--help'], capture_output=True, timeout=15)"
+        }
+      ]
+    },
+    "--hp-sim-reset": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3775",
+          "action": "'store_true'",
+          "help": "'Reset hp-sim once before the first sweep (only when --sim)'"
+        }
+      ],
+      "log_files": 4055,
+      "other_files": 8,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.full_auto.log:3",
+          "excerpt": "; auto-enabling --hp-sim-reset for spool search in simulation"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_08baf573/23_april_2026.full_auto.log:3",
+          "excerpt": "; auto-enabling --hp-sim-reset for spool search in simulation"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_0ab396c8/23_april_2026.full_auto.log:3",
+          "excerpt": "; auto-enabling --hp-sim-reset for spool search in simulation"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_0acdba5a/23_april_2026.full_auto.log:3",
+          "excerpt": "; auto-enabling --hp-sim-reset for spool search in simulation"
+        }
+      ]
+    },
+    "--keep-sim-alive": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3770",
+          "action": "'store_true'",
+          "help": "'Leave simulator process running after exit (only when --sim)'"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 7,
+      "examples": [
+        {
+          "source": "autocal/data/references/extended-reference.md:83",
+          "excerpt": "With `--keep-sim-alive`, the owned services and recording remain open after a"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3758",
+          "excerpt": "        \"--keep-sim-alive\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3574",
+          "excerpt": "        \"--keep-sim-alive\","
+        },
+        {
+          "source": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/source/_autocal_common.py:3758",
+          "excerpt": "        \"--keep-sim-alive\","
+        }
+      ]
+    },
+    "--klipper-config": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3758",
+          "type": "str",
+          "default": "None",
+          "help": "'Path to Klipper simulator config file (env fallback: AUTOCAL_KLIPPER_SIM_CONFIG)'"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 2,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3736",
+          "excerpt": "            \"or as --klipper-config when --firmware klipper.\""
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3746",
+          "excerpt": "        \"--klipper-config\","
+        },
+        {
+          "source": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/source/_autocal_common.py:3736",
+          "excerpt": "            \"or as --klipper-config when --firmware klipper.\""
+        },
+        {
+          "source": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/source/_autocal_common.py:3746",
+          "excerpt": "        \"--klipper-config\","
+        }
+      ]
+    },
+    "--line-width": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3379",
+          "type": "float",
+          "default": "DEFAULT_LAYER_LINE_WIDTH_MM",
+          "help": "'Estimated line width in mm used by the layered noise model (default: 1.0).'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4088",
+          "type": "float",
+          "default": "None"
+        }
+      ],
+      "log_files": 11,
+      "other_files": 12,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_5191e62f/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_5191e62f/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_65df71c6/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_65df71c6/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/layered_manual_some_bad_points_00501f6e/layered_manual_some_bad_points.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/layered_manual_some_bad_points_00501f6e/layered_manual_some_bad_points.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimi"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/layered_manual_some_bad_points_b3156111/layered_manual_some_bad_points.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/layered_manual_some_bad_points_b3156111/layered_manual_some_bad_points.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimi"
+        }
+      ]
+    },
+    "--low-anchor-z": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3397",
+          "type": "float",
+          "default": "None",
+          "help": "'For hangprinter_4, fix the shared low-anchor Z plane to this value in mm.'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4091",
+          "type": "float",
+          "default": "None"
+        }
+      ],
+      "log_files": 20,
+      "other_files": 6,
+      "examples": [
+        {
+          "source": "autocal/data/fifth_hp3_dataset.full_auto_1.log:1",
+          "excerpt": "; command: autocal/active_calibrate.py --sim --machine-type hangprinter_4 --full-auto --dataset autocal/data/fifth_hp3_dataset.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --low-anchor-z -280 --no-collect"
+        },
+        {
+          "source": "autocal/data/fifth_hp3_dataset.full_auto_11.log:1",
+          "excerpt": "; command: autocal/active_calibrate.py --sim --machine-type hangprinter_4 --full-auto --dataset autocal/data/fifth_hp3_dataset.json --find-radii global --base-radii 39.1845 --buildup-factor 0.636619 --no-collect --filter-schedule 1,1,1,1 --r0-bounds 38,40 --low-anchor-z -280"
+        },
+        {
+          "source": "autocal/data/fifth_hp3_dataset.full_auto_12.log:1",
+          "excerpt": "; command: autocal/active_calibrate.py --sim --machine-type hangprinter_4 --full-auto --dataset autocal/data/fifth_hp3_dataset.json --find-radii global --base-radii 39 --buildup-factor 0.636619 --no-collect --filter-schedule 0,0,0,1,1,2,2,2 --r0-bounds 39,40 --low-anchor-z -280"
+        },
+        {
+          "source": "autocal/data/fifth_hp3_dataset.full_auto_13.log:1",
+          "excerpt": "; command: autocal/active_calibrate.py --sim --machine-type hangprinter_4 --full-auto --dataset autocal/data/fifth_hp3_dataset.json --find-radii global --base-radii 39 --buildup-factor 0.636619 --no-collect --filter-schedule 0,0,0,1,1,2,2,2 --r0-bounds 39,40 --low-anchor-z -280"
+        }
+      ]
+    },
+    "--machine-type": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3804",
+          "choices": "MACHINE_TYPE_INPUT_CHOICES",
+          "required": "True",
+          "help": "f'Machine type ({MACHINE_TYPE_CHOICES_STR})'"
+        }
+      ],
+      "log_files": 4162,
+      "other_files": 76,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_08baf573/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_08baf573/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_0ab396c8/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_0ab396c8/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_0acdba5a/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_0acdba5a/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        }
+      ]
+    },
+    "--max-steps": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3837",
+          "type": "int",
+          "default": "20",
+          "help": "'Maximum active-learning iterations'"
+        }
+      ],
+      "log_files": 82,
+      "other_files": 24,
+      "examples": [
+        {
+          "source": "autocal/data/default_dataset.full_auto_9.log:1",
+          "excerpt": "; command: autocal/autocal.py --sim --no-collect --machine-type slideprinter --dataset autocal/data/default_dataset.json --max-steps 1"
+        },
+        {
+          "source": "autocal/data/fifth_hp3_dataset.full_auto_22.log:1",
+          "excerpt": "; command: autocal/active_calibrate.py --sim --machine-type hangprinter_4 --full-auto --max-steps 2 --full-auto-verbose --dataset autocal/data/fifth_hp3_dataset.json --find-radii global --base-radii 39 --buildup-factor 0.636619 --no-collect --r0-bounds 39,40 --no-center-d-anchor-over-origin --low-anchors-in-one-plane"
+        },
+        {
+          "source": "autocal/data/fifth_hp3_dataset.full_auto_23.log:1",
+          "excerpt": "; command: autocal/active_calibrate.py --sim --machine-type hangprinter_4 --full-auto --max-steps 2 --full-auto-verbose --dataset autocal/data/fifth_hp3_dataset.json --find-radii global --base-radii 39 --buildup-factor 0.636619 --no-collect --r0-bounds 39,40 --no-center-d-anchor-over-origin --low-anchors-in-one-plane"
+        },
+        {
+          "source": "autocal/data/fifth_hp3_dataset.full_auto_24.log:1",
+          "excerpt": "; command: autocal/active_calibrate.py --sim --machine-type hangprinter_4 --full-auto --max-steps 2 --full-auto-verbose --dataset autocal/data/fifth_hp3_dataset.json --find-radii global --base-radii 39 --buildup-factor 0.636619 --no-collect --r0-bounds 39,40 --no-center-d-anchor-over-origin --low-anchors-in-one-plane"
+        }
+      ]
+    },
+    "--min-fixed-delta-spacing-mm": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3590",
+          "type": "float",
+          "default": "20.0",
+          "help": "'Minimum spacing (mm) from previously collected fixed deltas with the same sign'"
+        }
+      ],
+      "log_files": 8,
+      "other_files": 3,
+      "examples": [
+        {
+          "source": "autocal/data/old_data/ten_points_bigger_deltas4.full_auto.log:1",
+          "excerpt": "; command: autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset autocal/data/ten_points_bigger_deltas4.json --find-radii global --buildup-factor 0.636619 --min-fixed-delta-spacing-mm 300 --collector-args --speedup 40"
+        },
+        {
+          "source": "autocal/data/old_data/ten_points_bigger_deltas5.full_auto.log:1",
+          "excerpt": "; command: autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset autocal/data/ten_points_bigger_deltas5.json --find-radii global --buildup-factor 0.636619 --min-fixed-delta-spacing-mm 300 --collector-args --speedup 40 --project-zero-tension"
+        },
+        {
+          "source": "autocal/data/old_data/ten_points_bigger_deltas6.full_auto.log:1",
+          "excerpt": "; command: autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset autocal/data/ten_points_bigger_deltas6.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --project-zero-tension --min-fixed-delta-spacing-mm 300 --collector-args --speedup 40 --project-zero-tension"
+        },
+        {
+          "source": "autocal/data/old_data/ten_points_bigger_deltas7.full_auto.log:1",
+          "excerpt": "; command: autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset autocal/data/ten_points_bigger_deltas7.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --min-fixed-delta-spacing-mm 300 --collector-args --speedup 40"
+        }
+      ]
+    },
+    "--no-collect": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3810",
+          "action": "'store_true'",
+          "help": "'Do not collect new sweeps; stop when replayed data is exhausted.'"
+        }
+      ],
+      "log_files": 4138,
+      "other_files": 72,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.full_auto.log:515",
+          "excerpt": "Wrote to console: ; --sim + --no-collect set; skipping M669 send."
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_08baf573/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_08baf573/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_08baf573/23_april_2026.full_auto.log:515",
+          "excerpt": "Wrote to console: ; --sim + --no-collect set; skipping M669 send."
+        }
+      ]
+    },
+    "--no-exclude-existing": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3583",
+          "action": "'store_true'"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 3,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3574",
+          "excerpt": "    parser.add_argument(\"--no-exclude-existing\", action=\"store_true\")"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3544",
+          "excerpt": "    parser.add_argument(\"--no-exclude-existing\", action=\"store_true\")"
+        },
+        {
+          "source": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/source/_autocal_common.py:3574",
+          "excerpt": "    parser.add_argument(\"--no-exclude-existing\", action=\"store_true\")"
+        },
+        {
+          "source": "output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E04-baseline.stdout.log:41",
+          "excerpt": "                  [--regularization REGULARIZATION] [--no-exclude-existing]"
+        }
+      ]
+    },
+    "--no-pointwise-filtering": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3493",
+          "dest": "'pointwise_filtering'",
+          "action": "'store_false'",
+          "help": "'Disable pointwise filtering.'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4007",
+          "dest": "'pointwise_filtering'",
+          "action": "'store_false'"
+        }
+      ],
+      "log_files": 35,
+      "other_files": 11,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_39eee9ab/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_39eee9ab/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_4d7830c9/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_4d7830c9/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_997f5774/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_997f5774/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_9b17e6ad/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_9b17e6ad/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        }
+      ]
+    },
+    "--no-robust-debug": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3554",
+          "dest": "'robust_debug'",
+          "action": "'store_false'",
+          "help": "'Disable robustness filtering diagnostics.'"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 3,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3546",
+          "excerpt": "        \"--no-robust-debug\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3516",
+          "excerpt": "        \"--no-robust-debug\","
+        },
+        {
+          "source": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/source/_autocal_common.py:3546",
+          "excerpt": "        \"--no-robust-debug\","
+        },
+        {
+          "source": "output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E04-baseline.stdout.log:37",
+          "excerpt": "                  [--no-robust-debug] [--residuals-csv RESIDUALS_CSV]"
+        }
+      ]
+    },
+    "--no-sweep-wise-filtering": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3517",
+          "dest": "'sweep_wise_filtering'",
+          "action": "'store_false'",
+          "help": "'Disable sweep-wise outlier rejection.'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4029",
+          "dest": "'sweep_wise_filtering'",
+          "action": "'store_false'"
+        }
+      ],
+      "log_files": 36,
+      "other_files": 11,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_1327cfb9/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_1327cfb9/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_3a134a4f/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_3a134a4f/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_77ded98a/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_77ded98a/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_9b17e6ad/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_9b17e6ad/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        }
+      ]
+    },
+    "--no-trf-solver-fallback": {
+      "keep": false,
+      "definitions": [],
+      "log_files": 12,
+      "other_files": 4,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_df588e62/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_df588e62/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --no-trf-solver-fallback --verbose --r0-bounds 39,40 --full-auto"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/fifth_hp3_dataset_f0eef2c9/fifth_hp3_dataset.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/fifth_hp3_dataset_f0eef2c9/fifth_hp3_dataset.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --no-trf-solver-fallback --verbose --r0-bounds 39,40 --f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_0c9b31c8/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type slideprinter --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_0c9b31c8/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --no-trf-solver-fallback --full-auto-lo"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/flexible_lines_2000_d671616e/flexible_lines_2000.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type slideprinter --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/flexible_lines_2000_d671616e/flexible_lines_2000.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --no-trf-solver-fallback --full-auto-log /home/torb"
+        }
+      ]
+    },
+    "--objective-schedule": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3470",
+          "type": "str",
+          "default": "'1,1,1,1'",
+          "help": "'Explicit spool objective schedule as comma-separated words or numbers. Words: prefit,pointwise,position. Numbers: 0=ellipse_prefit, 1=pointwise_forward_model, 2=position_reconstruction. Default: 1,1,1,1.'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4087",
+          "default": "None"
+        }
+      ],
+      "log_files": 27,
+      "other_files": 7,
+      "examples": [
+        {
+          "source": "autocal/data/fifth_hp3_dataset.full_auto_39.log:1",
+          "excerpt": "; command: autocal/active_calibrate.py --sim --machine-type hangprinter_4 --full-auto --full-auto-verbose --dataset autocal/data/fifth_hp3_dataset.json --find-radii global --base-radii 39 --buildup-factor 0.636619 --no-collect --r0-bounds 39,40 --no-center-d-anchor-over-origin --low-anchors-in-one-plane --objective-schedule 1,1,1,1"
+        },
+        {
+          "source": "autocal/data/fifth_hp3_dataset.full_auto_40.log:1",
+          "excerpt": "; command: autocal/active_calibrate.py --sim --machine-type hangprinter_4 --full-auto --full-auto-verbose --dataset autocal/data/fifth_hp3_dataset.json --find-radii global --base-radii 39 --buildup-factor 0.636619 --no-collect --r0-bounds 39,40 --no-center-d-anchor-over-origin --low-anchors-in-one-plane --objective-schedule 0,0,0,0"
+        },
+        {
+          "source": "autocal/data/fifth_hp3_dataset.full_auto_41.log:1",
+          "excerpt": "; command: autocal/active_calibrate.py --sim --machine-type hangprinter_4 --full-auto --full-auto-verbose --dataset autocal/data/fifth_hp3_dataset.json --find-radii global --base-radii 39 --buildup-factor 0.636619 --no-collect --r0-bounds 39,40 --no-center-d-anchor-over-origin --low-anchors-in-one-plane --objective-schedule 2,2,2,2"
+        },
+        {
+          "source": "autocal/data/fifth_hp3_dataset.full_auto_42.log:1",
+          "excerpt": "; command: autocal/active_calibrate.py --sim --machine-type hangprinter_4 --full-auto --full-auto-verbose --dataset autocal/data/fifth_hp3_dataset.json --find-radii global --base-radii 39 --buildup-factor 0.636619 --no-collect --r0-bounds 39,40 --no-center-d-anchor-over-origin --low-anchors-in-one-plane --objective-schedule 2,2,2,2"
+        }
+      ]
+    },
+    "--open-loop-motors": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3729",
+          "action": "'store_true'",
+          "help": "'Use open-loop motors in the simulator instead of closed-loop motors.'"
+        }
+      ],
+      "log_files": 0,
+      "other_files": 1,
+      "examples": [
+        {
+          "source": "autocal/tests/test_autocal_cli.py:373",
+          "excerpt": "    _, args = _parse_spool_args(\"--open-loop-motors\")"
+        }
+      ]
+    },
+    "--optimizer-mode": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3338",
+          "choices": "_OPTIMIZER_MODE_CHOICES",
+          "default": "_normalize_optimizer_mode(os.environ.get('AUTOCAL_OPTIMIZER_MODE', 'fast'))",
+          "help": "\"Optimization mode: 'fast' (JAX exact Jacobian), 'fast-fd' (JAX value + SciPy finite differences), or 'legacy' (no JAX + SciPy finite differences).\""
+        },
+        {
+          "source": "autocal/_autocal_common.py:4097",
+          "choices": "_OPTIMIZER_MODE_CHOICES",
+          "default": "None"
+        }
+      ],
+      "log_files": 1726,
+      "other_files": 16,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/fifth_hp3_dataset_c79a9cd7/fifth_hp3_dataset.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/fifth_hp3_dataset_c79a9cd7/fifth_hp3_dataset.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --optimizer-mode legacy --no-collect --verbose --r0-bounds 39,40 --fu"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/fifth_hp3_dataset_c8ae2b12/fifth_hp3_dataset.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/fifth_hp3_dataset_c8ae2b12/fifth_hp3_dataset.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --optimizer-mode fast-fd --no-collect --verbose --r0-bounds 39,40 --f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/fifth_hp3_dataset_cdcff098/fifth_hp3_dataset.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/fifth_hp3_dataset_cdcff098/fifth_hp3_dataset.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --optimizer-mode fast --no-collect --verbose --r0-bounds 39,40 --full"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/fifth_hp3_dataset_dba27059/fifth_hp3_dataset.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/fifth_hp3_dataset_dba27059/fifth_hp3_dataset.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --optimizer-mode legacy --no-collect --verbose --r0-bounds 39,40 --fu"
+        }
+      ]
+    },
+    "--output-with-explanations": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3793",
+          "action": "'store_true'",
+          "help": "'Include explanatory notes for rank deficiency and covariance behavior.'"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 3,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3781",
+          "excerpt": "        \"--output-with-explanations\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3597",
+          "excerpt": "        \"--output-with-explanations\","
+        },
+        {
+          "source": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/source/_autocal_common.py:3781",
+          "excerpt": "        \"--output-with-explanations\","
+        },
+        {
+          "source": "output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E04-baseline.stdout.log:44",
+          "excerpt": "                  [--top-k TOP_K] [--output-with-explanations]"
+        }
+      ]
+    },
+    "--patience": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3866",
+          "type": "int",
+          "default": "3",
+          "help": "'Number of non-improving full-auto iterations to allow (default: 3).'"
+        }
+      ],
+      "log_files": 2,
+      "other_files": 9,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3850",
+          "excerpt": "        \"--patience\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3661",
+          "excerpt": "        \"--patience\","
+        },
+        {
+          "source": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/source/_autocal_common.py:3854",
+          "excerpt": "        \"--patience\","
+        },
+        {
+          "source": "output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E04-baseline.stdout.log:9",
+          "excerpt": "                  [--patience PATIENCE] [--solve-restarts SOLVE_RESTARTS]"
+        }
+      ]
+    },
+    "--physics-substeps": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3727",
+          "type": "int",
+          "choices": "range(1, 17)",
+          "help": "'Simulator physics steps per firmware tick (default: simulator setting, initially 1)'"
+        }
+      ],
+      "log_files": 32,
+      "other_files": 13,
+      "examples": [
+        {
+          "source": "output/research/index.md:1509",
+          "excerpt": "Substeps are now selectable in the browser and through autocal's --physics-substeps setting for browser/headless collection, defaulting to one. A fixed-torque no-layering HP4 experiment shows the unchanged settling check passing after about 472 simulated seconds at one step versus 120 at four steps. Running the production size-tuning routine agains"
+        },
+        {
+          "source": "output/research/index.md:1754",
+          "excerpt": "HP4 autocal at the default `--physics-substeps 1` did not settle: the effector"
+        },
+        {
+          "source": "output/research/sessions/2026-10-16-hp4-load-bookkeeping/autocal/sweeps.full_auto.log:1",
+          "excerpt": "; command: autocal/autocal.py --headless-sim --machine-type hangprinter_4 --speedup 1 --physics-substeps 1 --max-steps 1 --dataset output/research/sessions/2026-10-16-hp4-load-bookkeeping/autocal/sweeps.json --recording-mode events"
+        },
+        {
+          "source": "output/research/sessions/2026-10-16-hp4-load-bookkeeping/autocal/sweeps.full_auto.log:5",
+          "excerpt": ";   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file output/research/sessions/2026-10-16-hp4-load-bookkeeping/autocal/sweeps.bootstrap_cfg.txt --output-file output/research/sessions/2026-10-16-hp4-load-bookkeeping/autocal/sweeps.json --physics-substeps 1 --speedup 1 --server http://127.0.0.1:38379 --he"
+        }
+      ]
+    },
+    "--plot-residual-histogram": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3832",
+          "action": "'store_true'",
+          "help": "'Write residuals CSV next to the dataset and render a histogram PNG (gamma fit included).'"
+        }
+      ],
+      "log_files": 2,
+      "other_files": 6,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/README_elliptical_feature_calibration.md:136",
+          "excerpt": "pointwise residuals. The legacy `--plot-residual-histogram` parser flag is not"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3820",
+          "excerpt": "        \"--plot-residual-histogram\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/README.md:32",
+          "excerpt": "You can add `--plot-residual-histogram` to learn about the quality of your data."
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/README_elliptical_feature_calibration.md:11",
+          "excerpt": "  --plot-residual-histogram \\"
+        }
+      ]
+    },
+    "--pointwise-filtering": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3487",
+          "dest": "'pointwise_filtering'",
+          "action": "'store_true'",
+          "help": "'Enable GNC-IRLS style pointwise filtering (default).'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4001",
+          "dest": "'pointwise_filtering'",
+          "action": "'store_true'",
+          "default": "None"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 11,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3479",
+          "excerpt": "        \"--pointwise-filtering\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3985",
+          "excerpt": "        \"--pointwise-filtering\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/calibrate.py:1051",
+          "excerpt": "        \"--pointwise-filtering\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3449",
+          "excerpt": "        \"--pointwise-filtering\","
+        }
+      ]
+    },
+    "--pointwise-global-mad": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3499",
+          "dest": "'pointwise_global_mad'",
+          "action": "'store_true'",
+          "help": "'Use a single global MAD scale for pointwise filtering (default).'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4012",
+          "dest": "'pointwise_global_mad'",
+          "action": "'store_true'",
+          "default": "None"
+        }
+      ],
+      "log_files": 2,
+      "other_files": 11,
+      "examples": [
+        {
+          "source": "autocal/data/fifth_hp3_dataset.full_auto_37.log:1",
+          "excerpt": "; command: autocal/active_calibrate.py --sim --machine-type hangprinter_4 --full-auto --full-auto-verbose --dataset autocal/data/fifth_hp3_dataset.json --find-radii global --base-radii 39 --buildup-factor 0.636619 --no-collect --r0-bounds 39,40 --no-center-d-anchor-over-origin --low-anchors-in-one-plane --pointwise-global-mad"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3491",
+          "excerpt": "        \"--pointwise-global-mad\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3996",
+          "excerpt": "        \"--pointwise-global-mad\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/calibrate.py:1063",
+          "excerpt": "        \"--pointwise-global-mad\","
+        }
+      ]
+    },
+    "--pointwise-per-sweep-mad": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3505",
+          "dest": "'pointwise_global_mad'",
+          "action": "'store_false'",
+          "help": "'Use a per-sweep MAD scale for pointwise filtering.'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4018",
+          "dest": "'pointwise_global_mad'",
+          "action": "'store_false'"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 11,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3497",
+          "excerpt": "        \"--pointwise-per-sweep-mad\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:4002",
+          "excerpt": "        \"--pointwise-per-sweep-mad\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/calibrate.py:1069",
+          "excerpt": "        \"--pointwise-per-sweep-mad\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3467",
+          "excerpt": "        \"--pointwise-per-sweep-mad\","
+        }
+      ]
+    },
+    "--pointwise-residual": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3481",
+          "choices": "['sampson', 'euclidean']",
+          "default": "'sampson'",
+          "help": "'Pointwise residual metric (default: sampson)'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:3996",
+          "choices": "['sampson', 'euclidean']",
+          "default": "None"
+        }
+      ],
+      "log_files": 4,
+      "other_files": 6,
+      "examples": [
+        {
+          "source": "autocal/data/fifth_hp3_dataset.full_auto_35.log:1",
+          "excerpt": "; command: autocal/active_calibrate.py --sim --machine-type hangprinter_4 --full-auto --full-auto-verbose --dataset autocal/data/fifth_hp3_dataset.json --find-radii global --base-radii 39 --buildup-factor 0.636619 --no-collect --r0-bounds 39,40 --no-center-d-anchor-over-origin --low-anchors-in-one-plane --pointwise-residual euclidean"
+        },
+        {
+          "source": "autocal/data/fifth_hp3_dataset.full_auto_38.log:1",
+          "excerpt": "; command: autocal/active_calibrate.py --sim --machine-type hangprinter_4 --full-auto --full-auto-verbose --dataset autocal/data/fifth_hp3_dataset.json --find-radii global --base-radii 39 --buildup-factor 0.636619 --no-collect --r0-bounds 39,40 --no-center-d-anchor-over-origin --low-anchors-in-one-plane --pointwise-residual euclidean --no-pointwise"
+        },
+        {
+          "source": "autocal/data/sixteenth_hp3_dataset_even_more_pressure.full_auto_6.log:1",
+          "excerpt": "; command: autocal/autocal.py --sim --machine-type hangprinter_4 --verbose --dataset autocal/data/sixteenth_hp3_dataset_even_more_pressure.json --find-radii per-anchor --base-radii 30 --buildup-factor 0.636619 --r0-bounds 39,40 --no-collect --no-pointwise-filtering --no-sweep-wise-filtering --pointwise-residual euclidean"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3473",
+          "excerpt": "        \"--pointwise-residual\","
+        }
+      ]
+    },
+    "--project-zero-tension": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3780",
+          "action": "'store_true'",
+          "help": "'Project encoder readings to zero tension during each data point.'"
+        }
+      ],
+      "log_files": 13,
+      "other_files": 14,
+      "examples": [
+        {
+          "source": "autocal/data/old_data/flexible_lines_2000_project_zero_tension.full_auto.log:1",
+          "excerpt": "; command: autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset autocal/data/flexible_lines_2000_project_zero_tension.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --scale-fix 3 --fit-structure off --project-zero-tension --collector-args --speedup 40 --project-zero-tension"
+        },
+        {
+          "source": "autocal/data/old_data/flexible_lines_2000_project_zero_tension.full_auto.log:6",
+          "excerpt": ";   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweep-config-file autocal/data/flexible_lines_2000_project_zero_tension.bootstrap_cfg.txt --output-file autocal/data/flexible_lines_2000_project_zero_tension.json --speedup 40 --project-zero-tension --no-spawn-rrf-simulator --preserve-buildup-factor --hp-sim-reset --re"
+        },
+        {
+          "source": "autocal/data/old_data/flexible_lines_2000_project_zero_tension.full_auto.log:128",
+          "excerpt": ";   node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweep-config-file autocal/data/flexible_lines_2000_project_zero_tension.active_sweep_cfg.default.txt --fixed-targets 727.1634656875035 --output-file autocal/data/flexible_lines_2000_project_zero_tension.new_001.json --speedup 40 --project-zero-tension --no-spawn-rrf-si"
+        },
+        {
+          "source": "autocal/data/old_data/flexible_lines_2000_project_zero_tension.full_auto.log:136",
+          "excerpt": "; running: node autocal/control/cli/collect_sweep_data.mjs --machineType slideprinter --sweep-config-file autocal/data/flexible_lines_2000_project_zero_tension.active_sweep_cfg.default.txt --fixed-targets 727.1634656875035 --output-file autocal/data/flexible_lines_2000_project_zero_tension.new_001.json --speedup 40 --project-zero-tension --no-spawn"
+        }
+      ]
+    },
+    "--r0-bounds": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3403",
+          "type": "str",
+          "default": "None",
+          "help": "\"Bounds for fitted r0 in mm as 'min,max' (default [base_radius, 1.5*base_radius]).\""
+        },
+        {
+          "source": "autocal/_autocal_common.py:4077",
+          "default": "None"
+        }
+      ],
+      "log_files": 810,
+      "other_files": 34,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_08baf573/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_08baf573/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_0ab396c8/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_0ab396c8/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_0acdba5a/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_0acdba5a/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        }
+      ]
+    },
+    "--r0-prior-sigma-mm": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3415",
+          "type": "float",
+          "default": "None",
+          "help": "'Gaussian prior sigma (mm) around base radii during radius fitting.'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4079",
+          "type": "float",
+          "default": "None"
+        }
+      ],
+      "log_files": 11,
+      "other_files": 3,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_635e73f2/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_635e73f2/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --solve-restarts 2"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/layered_manual_some_bad_points_4affda80/layered_manual_some_bad_points.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/layered_manual_some_bad_points_4affda80/layered_manual_some_bad_points.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --solve-"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/ten_points_bigger_deltas_4dc4c00e/ten_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/ten_points_bigger_deltas_4dc4c00e/ten_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --solve-restarts 20 "
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/ten_points_w_buildup2_9278dab8/ten_points_w_buildup2.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/ten_points_w_buildup2_9278dab8/ten_points_w_buildup2.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --solve-restarts 20 --r0-p"
+        }
+      ]
+    },
+    "--record": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/autocal.py:1770",
+          "action": "'store_true'",
+          "help": "'Start and finalize an extended recorder automatically; output is derived from --dataset.'"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 5,
+      "examples": [
+        {
+          "source": "autocal/data/references/extended-reference.md:10",
+          "excerpt": "Add `--extended-recording` (aliases: `--recording`, `--record`) to a simulated"
+        },
+        {
+          "source": "autocal/tests/test_browser_recording.py:14",
+          "excerpt": "@pytest.mark.parametrize(\"flag\", [\"--extended-recording\", \"--recording\", \"--record\"])"
+        },
+        {
+          "source": "autocal/tests/test_browser_recording.py:92",
+          "excerpt": "    assert ac.main([\"--headless-sim\", \"--machine-type\", \"hp4\", \"--record\"]) == 0"
+        },
+        {
+          "source": "output/research/sessions/2026-10-19-interactive-research-41c8bab5/historical-timeout/sweeps.full_auto.log:1",
+          "excerpt": "; command: autocal/autocal.py --record --sim --machine-type hangprinter_4 --physics-substeps 2 --speedup 25 --dataset output/extended-autocal/no-buildup-reference-010/sweeps.json"
+        }
+      ]
+    },
+    "--recording": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/autocal.py:1770",
+          "action": "'store_true'",
+          "help": "'Start and finalize an extended recorder automatically; output is derived from --dataset.'"
+        }
+      ],
+      "log_files": 10,
+      "other_files": 8,
+      "examples": [
+        {
+          "source": "autocal/data/references/extended-reference.md:10",
+          "excerpt": "Add `--extended-recording` (aliases: `--recording`, `--record`) to a simulated"
+        },
+        {
+          "source": "autocal/tests/test_browser_recording.py:14",
+          "excerpt": "@pytest.mark.parametrize(\"flag\", [\"--extended-recording\", \"--recording\", \"--record\"])"
+        },
+        {
+          "source": "output/research/sessions/2026-10-19-interactive-research-bf5d807a/final-source/autocal/data/references/extended-reference.md:10",
+          "excerpt": "Add `--extended-recording` (aliases: `--recording`, `--record`) to a simulated"
+        },
+        {
+          "source": "output/research/sessions/2026-10-20-interactive-research-ae0174ce/E13-baseline/sweeps.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-20-interactive-research-ae0174ce/tools/fresh_reference.py --variant baseline --label E13-baseline --max-steps 1 --recording sampled"
+        }
+      ]
+    },
+    "--recording-mode": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/autocal.py:1776",
+          "choices": "['none', 'events', 'sampled', 'full']",
+          "help": "'Headless evidence: none (numerical artifacts/traces), events, sampled (physics stride 100), full (extended RRD, stride 10); geometry stays compact'"
+        }
+      ],
+      "log_files": 44,
+      "other_files": 11,
+      "examples": [
+        {
+          "source": "autocal/data/references/extended-reference.md:45",
+          "excerpt": "The CLI exposes the same choices with `--headless-sim --recording-mode MODE`:"
+        },
+        {
+          "source": "autocal/data/references/extended-reference.md:56",
+          "excerpt": "the existing full extended recording behavior. Use either `--recording-mode` or"
+        },
+        {
+          "source": "autocal/tests/test_headless_sim.py:54",
+          "excerpt": "        ac.main(['--recording-mode', 'events', *flags])"
+        },
+        {
+          "source": "autocal/tests/test_headless_sim.py:60",
+          "excerpt": "        ac.main(['--headless-sim', '--recording-mode', 'none'])"
+        }
+      ]
+    },
+    "--regularization": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3582",
+          "type": "float",
+          "default": "1e-06"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 3,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3573",
+          "excerpt": "    parser.add_argument(\"--regularization\", type=float, default=1e-6)"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3543",
+          "excerpt": "    parser.add_argument(\"--regularization\", type=float, default=1e-6)"
+        },
+        {
+          "source": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/source/_autocal_common.py:3573",
+          "excerpt": "    parser.add_argument(\"--regularization\", type=float, default=1e-6)"
+        },
+        {
+          "source": "output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E04-baseline.stdout.log:41",
+          "excerpt": "                  [--regularization REGULARIZATION] [--no-exclude-existing]"
+        }
+      ]
+    },
+    "--report": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3566",
+          "action": "'store_true'",
+          "help": "'Write a PNG report (like calibrate.py)'"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 3,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3557",
+          "excerpt": "    parser.add_argument(\"--report\", action=\"store_true\", help=\"Write a PNG report (like calibrate.py)\")"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3527",
+          "excerpt": "    parser.add_argument(\"--report\", action=\"store_true\", help=\"Write a PNG report (like calibrate.py)\")"
+        },
+        {
+          "source": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/source/_autocal_common.py:3557",
+          "excerpt": "    parser.add_argument(\"--report\", action=\"store_true\", help=\"Write a PNG report (like calibrate.py)\")"
+        },
+        {
+          "source": "output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E04-baseline.stdout.log:38",
+          "excerpt": "                  [--report] [--candidate-deltas CANDIDATE_DELTAS]"
+        }
+      ]
+    },
+    "--residuals-csv": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3560",
+          "type": "Path",
+          "default": "None",
+          "help": "'Write pointwise residuals (approx mm) to CSV after the final GNC stage.'"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 13,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/README.md:76",
+          "excerpt": "--residuals-csv autocal/data/default_dataset.residuals.csv"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/README_elliptical_feature_calibration.md:11",
+          "excerpt": "  --residuals-csv autocal/data/default_dataset.residuals.csv \\"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/README_elliptical_feature_calibration.md:16",
+          "excerpt": "`--residuals-csv` writes the requested CSV; render it separately with:"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/README_elliptical_feature_calibration.md:83",
+          "excerpt": "Use `--residuals-csv` to emit pointwise residuals, then pass that file to"
+        }
+      ]
+    },
+    "--robust-debug": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3548",
+          "dest": "'robust_debug'",
+          "action": "'store_true'",
+          "help": "'Print diagnostics for robustness filtering (default).'"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 6,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3540",
+          "excerpt": "        \"--robust-debug\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/calibrate.py:1149",
+          "excerpt": "        \"--robust-debug\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3510",
+          "excerpt": "        \"--robust-debug\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/calibrate.py:1149",
+          "excerpt": "        \"--robust-debug\","
+        }
+      ]
+    },
+    "--rrf-config": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3752",
+          "type": "str",
+          "default": "None",
+          "help": "'Path to RRF simulator config file (env fallback: AUTOCAL_RRF_SIM_CONFIG)'"
+        }
+      ],
+      "log_files": 27,
+      "other_files": 7,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3735",
+          "excerpt": "            \"Generic simulator config path. Interpreted as --rrf-config when --firmware rrf, \""
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3740",
+          "excerpt": "        \"--rrf-config\","
+        },
+        {
+          "source": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/source/_autocal_common.py:3735",
+          "excerpt": "            \"Generic simulator config path. Interpreted as --rrf-config when --firmware rrf, \""
+        },
+        {
+          "source": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/source/_autocal_common.py:3740",
+          "excerpt": "        \"--rrf-config\","
+        }
+      ]
+    },
+    "--scale-fix": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3445",
+          "type": "str",
+          "default": "'3'",
+          "help": "\"Enable scale-coupling fixes by id (comma-separated): 1,2,3 (default: 3). Use 'off' to disable.\""
+        },
+        {
+          "source": "autocal/_autocal_common.py:4084",
+          "default": "None"
+        }
+      ],
+      "log_files": 1607,
+      "other_files": 7,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_000b9760/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_000b9760/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_010e0fb8/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_010e0fb8/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_0146cd40/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_0146cd40/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --scale-fix 3 --fu"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_01cbb9aa/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_01cbb9aa/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        }
+      ]
+    },
+    "--shotgun": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3846",
+          "action": "'store_true'",
+          "help": "'Append full-auto runs from shotgun.conf.'"
+        }
+      ],
+      "log_files": 10,
+      "other_files": 7,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_b22277e0/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_b22277e0/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/layered_manual_some_bad_points_c9d68a83/layered_manual_some_bad_points.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/layered_manual_some_bad_points_c9d68a83/layered_manual_some_bad_points.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimi"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/ten_points_bigger_deltas_189c0052/ten_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/ten_points_bigger_deltas_189c0052/ten_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode fas"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/ten_points_w_buildup2_c81d049c/ten_points_w_buildup2.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/ten_points_w_buildup2_c81d049c/ten_points_w_buildup2.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode fast --sc"
+        }
+      ]
+    },
+    "--sigma-floor-mm": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3385",
+          "type": "float",
+          "default": "None",
+          "help": "'Override the base sigma floor (mm) used in the composite noise model.'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4089",
+          "type": "float",
+          "default": "None"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 12,
+      "examples": [
+        {
+          "source": "autocal/tests/test_autocal_cli.py:44",
+          "excerpt": "        \"--sigma-floor-mm\","
+        },
+        {
+          "source": "autocal/tests/test_autocal_cli.py:88",
+          "excerpt": "    parser, args = _parse_spool_args(\"--sigma-floor-mm\", \"0\")"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3377",
+          "excerpt": "        \"--sigma-floor-mm\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3942",
+          "excerpt": "            parser.error(\"--sigma-floor-mm must be numeric\")"
+        }
+      ]
+    },
+    "--sigma-source": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3529",
+          "choices": "['auto', 'point', 'origin', 'min']",
+          "default": "'auto'",
+          "help": "'Sigma source for normalization: per-point, origin, or fallback min (default: auto).'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4039",
+          "choices": "['auto', 'point', 'origin', 'min']",
+          "default": "None"
+        }
+      ],
+      "log_files": 21,
+      "other_files": 14,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_b22277e0/five_points_bigger_deltas.full_auto.log:12",
+          "excerpt": "; full-auto run run_01: flags='--sweep-metric outlier_ratio --sigma-source point'"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_b22277e0/five_points_bigger_deltas.full_auto.log:46",
+          "excerpt": "; full-auto run run_02: flags='--sweep-metric mad --sigma-source point'"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_b22277e0/five_points_bigger_deltas.full_auto.log:80",
+          "excerpt": "; full-auto run run_03: flags='--sweep-metric median_abs --sigma-source point'"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_b22277e0/five_points_bigger_deltas.full_auto.log:149",
+          "excerpt": "; selected run=run_01 flags='--sweep-metric outlier_ratio --sigma-source point' score_ui=0.1257 score_basis=layered-calibrated cost=100 rel_std=2.168 max_std=6390mm"
+        }
+      ]
+    },
+    "--sigma-used-mm": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3391",
+          "type": "float",
+          "default": "None",
+          "help": "'Override the final sigma used for pointwise normalization (mm).'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4090",
+          "type": "float",
+          "default": "None"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 12,
+      "examples": [
+        {
+          "source": "autocal/tests/test_autocal_cli.py:46",
+          "excerpt": "        \"--sigma-used-mm\","
+        },
+        {
+          "source": "autocal/tests/test_autocal_cli.py:94",
+          "excerpt": "    parser, args = _parse_spool_args(\"--sigma-used-mm\", \"0\")"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3383",
+          "excerpt": "        \"--sigma-used-mm\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3951",
+          "excerpt": "            parser.error(\"--sigma-used-mm must be numeric\")"
+        }
+      ]
+    },
+    "--sim": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3764",
+          "action": "'store_true'",
+          "help": "'Use simulator + hp-sim WebSocket bridge (default: talk to real firmware)'"
+        }
+      ],
+      "log_files": 4323,
+      "other_files": 77,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.full_auto.log:107",
+          "excerpt": ";   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 217.1921231503382,-265.4570394059689 --output-file /home/torbjorn/repos/hp-sim5/autocal/data"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.full_auto.log:183",
+          "excerpt": ";   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 458.5167044284918,0.0 --output-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_paral"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.full_auto.log:261",
+          "excerpt": ";   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.replay_tmp.active_sweep_cfg.default.txt --fixed-targets 458.5167044284918,-24.13245812781537 --output-file /home/torbjorn/repos/hp-sim5/autocal/data"
+        }
+      ]
+    },
+    "--simulation": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3764",
+          "action": "'store_true'",
+          "help": "'Use simulator + hp-sim WebSocket bridge (default: talk to real firmware)'"
+        }
+      ],
+      "log_files": 0,
+      "other_files": 3,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:454",
+          "excerpt": "        if not _arg_has_flag(args, \"--sim\", \"--simulation\"):"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3753",
+          "excerpt": "        \"--simulation\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3569",
+          "excerpt": "        \"--simulation\","
+        },
+        {
+          "source": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/source/_autocal_common.py:454",
+          "excerpt": "        if not _arg_has_flag(args, \"--sim\", \"--simulation\"):"
+        }
+      ]
+    },
+    "--solve-iterations": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3322",
+          "type": "int",
+          "default": "400"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4095",
+          "type": "int",
+          "default": "None"
+        }
+      ],
+      "log_files": 43,
+      "other_files": 17,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_0fbf049e/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_0fbf049e/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --solve-restarts 2"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_a2cfd26b/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_a2cfd26b/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --scale-fix 3 --re"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_af2b83b3/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_af2b83b3/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --scale-fix 3 --re"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/layered_manual_some_bad_points_64c6afa6/layered_manual_some_bad_points.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/layered_manual_some_bad_points_64c6afa6/layered_manual_some_bad_points.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --solve-"
+        }
+      ]
+    },
+    "--solve-optimizer": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3323",
+          "choices": "_SOLVE_OPTIMIZER_CHOICES",
+          "default": "'lbfgsb'",
+          "help": "'Anchor solver: lbfgsb (default), trf, or lm.'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4096",
+          "choices": "_SOLVE_OPTIMIZER_CHOICES",
+          "default": "None"
+        }
+      ],
+      "log_files": 128,
+      "other_files": 28,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_20ed5acd/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_20ed5acd/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --solve-optimizer trf --no-collect --verbose --r0-bounds 39,40 --full-auto-lo"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_34832e2b/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_34832e2b/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --solve-optimizer trf --verbose --r0-bounds 39,40 --full-auto-lo"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_34e09aa4/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_34e09aa4/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --solve-optimizer trf --no-collect --verbose --r0-bounds 39,40 --full-auto-lo"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_5ebddcb8/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_5ebddcb8/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --solve-optimizer trf --no-collect --verbose --r0-bounds 39,40 --full-auto-lo"
+        }
+      ]
+    },
+    "--solve-restarts": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3321",
+          "type": "int",
+          "default": "4"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4094",
+          "type": "int",
+          "default": "None"
+        }
+      ],
+      "log_files": 119,
+      "other_files": 8,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_0fbf049e/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_0fbf049e/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --solve-restarts 2"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_2d75666d/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_2d75666d/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_394d4aea/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_394d4aea/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_635e73f2/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_635e73f2/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --solve-restarts 2"
+        }
+      ]
+    },
+    "--sparse-recovery": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3815",
+          "action": "'store_true'",
+          "help": "'Use an endpoint-preserving sparse seed when underconstrained recovery needs it.'"
+        }
+      ],
+      "log_files": 13,
+      "other_files": 12,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_8627928d/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_8627928d/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --sparse-recovery --verbose --r0-bounds 39,40 --full-auto-log /h"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/fifth_hp3_dataset_4f38e9eb/fifth_hp3_dataset.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/fifth_hp3_dataset_4f38e9eb/fifth_hp3_dataset.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --sparse-recovery --verbose --r0-bounds 39,40 --full-aut"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_08ee0fb2/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type slideprinter --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_08ee0fb2/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --sparse-recovery --full-auto-log /home"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/flexible_lines_2000_d0be757a/flexible_lines_2000.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type slideprinter --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/flexible_lines_2000_d0be757a/flexible_lines_2000.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --sparse-recovery --full-auto-log /home/torbjorn/re"
+        }
+      ]
+    },
+    "--speedup": {
+      "keep": true,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3882",
+          "type": "float",
+          "default": "None",
+          "help": "'Forward this hp-sim speed scale to the collector (shortcut for --collector-args --speedup).'"
+        }
+      ],
+      "log_files": 223,
+      "other_files": 35,
+      "examples": [
+        {
+          "source": "autocal/data/apr_23.full_auto_1.log:1",
+          "excerpt": "; command: autocal/autocal.py --sim --machine-type hp3 --dataset autocal/data/apr_23.json --find-radii global --buildup-factor 0.636619 --base-radii 30 --speedup 25"
+        },
+        {
+          "source": "autocal/data/apr_23.full_auto_1.log:6",
+          "excerpt": ";   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file autocal/data/apr_23.bootstrap_cfg.txt --output-file autocal/data/apr_23.json --speedup 25 --firmware rrf --sim --no-spawn-rrf-simulator --force-base-radii 30 --force-buildup-factor 0.636619 --hp-sim-reset --return-to-origin"
+        },
+        {
+          "source": "autocal/data/apr_23.full_auto_10.log:1",
+          "excerpt": "; command: autocal/autocal.py --sim --machine-type hp3 --dataset autocal/data/apr_23.json --find-radii global --buildup-factor 0.636619 --base-radii 30 --speedup 25"
+        },
+        {
+          "source": "autocal/data/apr_23.full_auto_10.log:6",
+          "excerpt": ";   node autocal/control/cli/collect_sweep_data.mjs --machineType hangprinter_4 --sweep-config-file autocal/data/apr_23.bootstrap_cfg.txt --output-file autocal/data/apr_23.json --speedup 25 --firmware rrf --sim --no-spawn-rrf-simulator --force-base-radii 30 --force-buildup-factor 0.636619 --hp-sim-reset --return-to-origin"
+        }
+      ]
+    },
+    "--spool-inner-iters": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3433",
+          "type": "int",
+          "default": "30",
+          "help": "'Inner optimizer iterations per spool refinement step.'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4082",
+          "type": "int",
+          "default": "None"
+        }
+      ],
+      "log_files": 40,
+      "other_files": 7,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_20b1ca0b/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_20b1ca0b/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_3cd857f1/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_3cd857f1/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/flexible_lines_2000_0a3841dc/flexible_lines_2000.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/flexible_lines_2000_0a3841dc/flexible_lines_2000.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode fast --scale-"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/flexible_lines_2000_99666f33/flexible_lines_2000.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/flexible_lines_2000_99666f33/flexible_lines_2000.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode fast --scale-"
+        }
+      ]
+    },
+    "--spool-outer-iters": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3427",
+          "type": "int",
+          "default": "3",
+          "help": "'Outer iterations for spool parameter refinement.'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4081",
+          "type": "int",
+          "default": "None"
+        }
+      ],
+      "log_files": 46,
+      "other_files": 7,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_4f02e802/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_4f02e802/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_a736919b/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_a736919b/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_aa9fd03e/five_points_bigger_deltas.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/five_points_bigger_deltas_aa9fd03e/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode f"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/flexible_lines_2000_7aedb708/flexible_lines_2000.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/flexible_lines_2000_7aedb708/flexible_lines_2000.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --optimizer-mode fast --scale-"
+        }
+      ]
+    },
+    "--spring-k-multiplier": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3349",
+          "type": "float",
+          "default": "1.0"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4092",
+          "type": "float",
+          "default": "None"
+        }
+      ],
+      "log_files": 2,
+      "other_files": 15,
+      "examples": [
+        {
+          "source": "autocal/tests/test_calibrate.py:292",
+          "excerpt": "            \"--spring-k-multiplier\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3340",
+          "excerpt": "    parser.add_argument(\"--spring-k-multiplier\", type=float, default=1.0)"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:4075",
+          "excerpt": "    parser.add_argument(\"--spring-k-multiplier\", type=float, default=None)"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/calibrate.py:1183",
+          "excerpt": "        \"--spring-k-multiplier\","
+        }
+      ]
+    },
+    "--stage-artifacts": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3851",
+          "type": "Path",
+          "default": "None",
+          "help": "'Save frozen fit/history JSON artifacts for independent stage experiments (opt-in).'"
+        }
+      ],
+      "log_files": 56,
+      "other_files": 33,
+      "examples": [
+        {
+          "source": "autocal/data/references/extended-reference.md:157",
+          "excerpt": "stage-artifact writer; `--stage-artifacts` can select its directory. Keep the"
+        },
+        {
+          "source": "output/research/autocal-jax-reference-cache-20261010/D10/sweeps.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/output/research/autocal-jax-reference-cache-20261010/D10/sweeps.json --find-radii off --base-radii 30 --buildup-factor 0 --no-collect --stage-artifacts /home/torbjorn/repos/hp-sim5/output/research/autocal-jax-referenc"
+        },
+        {
+          "source": "output/research/autocal-jax-reference-cache-20261010/D11/sweeps.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/output/research/autocal-jax-reference-cache-20261010/D11/sweeps.json --find-radii off --base-radii 30 --buildup-factor 0 --no-collect --stage-artifacts /home/torbjorn/repos/hp-sim5/output/research/autocal-jax-referenc"
+        },
+        {
+          "source": "output/research/autocal-jax-reference-cache-20261010/D15/sweeps.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/output/research/autocal-jax-reference-cache-20261010/D15/sweeps.json --find-radii off --base-radii 30 --buildup-factor 0 --no-collect --stage-artifacts /home/torbjorn/repos/hp-sim5/output/research/autocal-jax-referenc"
+        }
+      ]
+    },
+    "--stop-cost": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3838",
+          "type": "float",
+          "default": "None",
+          "help": "'Optional stop condition on ellipse cost'"
+        }
+      ],
+      "log_files": 2,
+      "other_files": 3,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3825",
+          "excerpt": "    parser.add_argument(\"--stop-cost\", type=float, default=None, help=\"Optional stop condition on ellipse cost\")"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3636",
+          "excerpt": "    parser.add_argument(\"--stop-cost\", type=float, default=None, help=\"Optional stop condition on ellipse cost\")"
+        },
+        {
+          "source": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/source/_autocal_common.py:3825",
+          "excerpt": "    parser.add_argument(\"--stop-cost\", type=float, default=None, help=\"Optional stop condition on ellipse cost\")"
+        },
+        {
+          "source": "output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E04-baseline.stdout.log:5",
+          "excerpt": "                  [--max-steps MAX_STEPS] [--stop-cost STOP_COST]"
+        }
+      ]
+    },
+    "--stop-std-mm": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3839",
+          "type": "float",
+          "default": "None",
+          "help": "'Optional stop condition on max parameter std'"
+        }
+      ],
+      "log_files": 2,
+      "other_files": 3,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3826",
+          "excerpt": "    parser.add_argument(\"--stop-std-mm\", type=float, default=None, help=\"Optional stop condition on max parameter std\")"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3637",
+          "excerpt": "    parser.add_argument(\"--stop-std-mm\", type=float, default=None, help=\"Optional stop condition on max parameter std\")"
+        },
+        {
+          "source": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/source/_autocal_common.py:3826",
+          "excerpt": "    parser.add_argument(\"--stop-std-mm\", type=float, default=None, help=\"Optional stop condition on max parameter std\")"
+        },
+        {
+          "source": "output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E04-baseline.stdout.log:6",
+          "excerpt": "                  [--stop-std-mm STOP_STD_MM] [--full-auto-run FULL_AUTO_RUN]"
+        }
+      ]
+    },
+    "--sweep-metric": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3523",
+          "choices": "['mad', 'median_abs', 'outlier_ratio']",
+          "default": "'outlier_ratio'",
+          "help": "'Per-sweep metric used by sweep-wise filtering (default: outlier_ratio).'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4034",
+          "choices": "['mad', 'median_abs', 'outlier_ratio']",
+          "default": "None"
+        }
+      ],
+      "log_files": 22,
+      "other_files": 14,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_b22277e0/five_points_bigger_deltas.full_auto.log:12",
+          "excerpt": "; full-auto run run_01: flags='--sweep-metric outlier_ratio --sigma-source point'"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_b22277e0/five_points_bigger_deltas.full_auto.log:46",
+          "excerpt": "; full-auto run run_02: flags='--sweep-metric mad --sigma-source point'"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_b22277e0/five_points_bigger_deltas.full_auto.log:80",
+          "excerpt": "; full-auto run run_03: flags='--sweep-metric median_abs --sigma-source point'"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/five_points_bigger_deltas_b22277e0/five_points_bigger_deltas.full_auto.log:149",
+          "excerpt": "; selected run=run_01 flags='--sweep-metric outlier_ratio --sigma-source point' score_ui=0.1257 score_basis=layered-calibrated cost=100 rel_std=2.168 max_std=6390mm"
+        }
+      ]
+    },
+    "--sweep-points": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3826",
+          "type": "int",
+          "default": "None",
+          "help": "'Points per sub-sweep (passed to the collector and histogram plot).'"
+        }
+      ],
+      "log_files": 28,
+      "other_files": 15,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3814",
+          "excerpt": "        \"--sweep-points\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/autocal.py:318",
+          "excerpt": "    raw_sweep_points = _arg_value(collector_args_eff, \"--sweepPoints\", \"--sweep-points\")"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/plot_residual_hist.py:249",
+          "excerpt": "        \"--sweep-points\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3625",
+          "excerpt": "        \"--sweep-points\","
+        }
+      ]
+    },
+    "--sweep-wise-filtering": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3511",
+          "dest": "'sweep_wise_filtering'",
+          "action": "'store_true'",
+          "help": "'Enable sweep-wise outlier rejection (default).'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4023",
+          "dest": "'sweep_wise_filtering'",
+          "action": "'store_true'",
+          "default": "None"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 11,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3503",
+          "excerpt": "        \"--sweep-wise-filtering\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:4007",
+          "excerpt": "        \"--sweep-wise-filtering\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/calibrate.py:1075",
+          "excerpt": "        \"--sweep-wise-filtering\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3473",
+          "excerpt": "        \"--sweep-wise-filtering\","
+        }
+      ]
+    },
+    "--theta0-mode": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3439",
+          "choices": "_THETA0_MODE_CHOICES",
+          "default": "'zero'",
+          "help": "'Theta offset mode for spool model: infer | zero (default: zero).'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4083",
+          "choices": "_THETA0_MODE_CHOICES",
+          "default": "None"
+        }
+      ],
+      "log_files": 4,
+      "other_files": 7,
+      "examples": [
+        {
+          "source": "autocal/data/old_data/five_points_bigger_deltas.full_auto_10.log:1",
+          "excerpt": "; command: autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset autocal/data/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --theta0-mode infer"
+        },
+        {
+          "source": "autocal/data/old_data/five_points_bigger_deltas.full_auto_11.log:1",
+          "excerpt": "; command: autocal/active_calibrate.py --sim --machine-type slideprinter --full-auto --dataset autocal/data/five_points_bigger_deltas.json --find-radii global --base-radii 30.0 --buildup-factor 0.636619 --no-collect --theta0-mode infer"
+        },
+        {
+          "source": "autocal/tests/test_autocal_cli.py:34",
+          "excerpt": "        \"--theta0-mode\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3431",
+          "excerpt": "        \"--theta0-mode\","
+        }
+      ]
+    },
+    "--threshold": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3348",
+          "type": "float",
+          "default": "250.0"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4093",
+          "type": "float",
+          "default": "None"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 25,
+      "examples": [
+        {
+          "source": "autocal/tests/test_calibrate.py:290",
+          "excerpt": "            \"--threshold\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3339",
+          "excerpt": "    parser.add_argument(\"--threshold\", type=float, default=250.0)"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:4076",
+          "excerpt": "    parser.add_argument(\"--threshold\", type=float, default=None)"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/calibrate.py:1037",
+          "excerpt": "        \"--threshold\","
+        }
+      ]
+    },
+    "--top-k": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3596",
+          "type": "int",
+          "default": "10"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 3,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3587",
+          "excerpt": "    parser.add_argument(\"--top-k\", type=int, default=10)"
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3557",
+          "excerpt": "    parser.add_argument(\"--top-k\", type=int, default=10)"
+        },
+        {
+          "source": "output/research/sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-df7f5fd7/source/_autocal_common.py:3587",
+          "excerpt": "    parser.add_argument(\"--top-k\", type=int, default=10)"
+        },
+        {
+          "source": "output/research/sessions/2026-10-10-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-51aa157a/E04-baseline.stdout.log:44",
+          "excerpt": "                  [--top-k TOP_K] [--output-with-explanations]"
+        }
+      ]
+    },
+    "--trf-solver-fallback": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3329",
+          "action": "argparse.BooleanOptionalAction",
+          "default": "False",
+          "help": "'Retry unsuccessful or invalid lbfgsb restarts with bounded trf (default: disabled; can change the final consensus).'"
+        }
+      ],
+      "log_files": 0,
+      "other_files": 4,
+      "examples": [
+        {
+          "source": "autocal/tests/test_autocal_cli.py:195",
+          "excerpt": "        ([\"--trf-solver-fallback\"], True),"
+        },
+        {
+          "source": "output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9d784051/report.md:522",
+          "excerpt": "`--solve-optimizer trf` and opt-in `--trf-solver-fallback`; the CLI now defaults to"
+        },
+        {
+          "source": "output/research/sessions/2026-10-20-interactive-research-ae0174ce/source/autocal/README.md:363",
+          "excerpt": "- `--trf-solver-fallback` optionally retries an unsuccessful or invalid `lbfgsb`"
+        },
+        {
+          "source": "output/research/sessions/2026-10-20-interactive-research-ae0174ce/source-fresh/README.md:366",
+          "excerpt": "- `--trf-solver-fallback` optionally retries an unsuccessful or invalid `lbfgsb`"
+        }
+      ]
+    },
+    "--use-noise-mean": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3536",
+          "dest": "'use_noise_mean'",
+          "action": "'store_true'",
+          "help": "'Use encoder noise mean lengths when available (default).'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4044",
+          "dest": "'use_noise_mean'",
+          "action": "'store_true'",
+          "default": "None"
+        }
+      ],
+      "log_files": 1,
+      "other_files": 11,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3528",
+          "excerpt": "        \"--use-noise-mean\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:4028",
+          "excerpt": "        \"--use-noise-mean\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/calibrate.py:1100",
+          "excerpt": "        \"--use-noise-mean\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3498",
+          "excerpt": "        \"--use-noise-mean\","
+        }
+      ]
+    },
+    "--use-raw-lengths": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3542",
+          "dest": "'use_noise_mean'",
+          "action": "'store_false'",
+          "help": "'Use raw l_drive/l_sensor lengths (disable noise-mean datapoints).'"
+        },
+        {
+          "source": "autocal/_autocal_common.py:4050",
+          "dest": "'use_noise_mean'",
+          "action": "'store_false'"
+        }
+      ],
+      "log_files": 2,
+      "other_files": 11,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3534",
+          "excerpt": "        \"--use-raw-lengths\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3831",
+          "excerpt": "        help=\"Full-auto run override flags (repeatable). Example: --full-auto-run \\\"--sweep-metric mad --use-raw-lengths\\\"\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:4034",
+          "excerpt": "        \"--use-raw-lengths\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/calibrate.py:1106",
+          "excerpt": "        \"--use-raw-lengths\","
+        }
+      ]
+    },
+    "--verbose": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3861",
+          "action": "'store_true'",
+          "help": "'Enable verbose iteration output, including anchors, M666, and rank scoring.'"
+        }
+      ],
+      "log_files": 754,
+      "other_files": 28,
+      "examples": [
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_046947ab/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_08baf573/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_08baf573/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_0ab396c8/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_0ab396c8/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        },
+        {
+          "source": "autocal/data/.regress_parallel_runs/23_april_2026_0acdba5a/23_april_2026.full_auto.log:1",
+          "excerpt": "; command: /home/torbjorn/repos/hp-sim5/autocal/autocal.py --sim --machine-type hangprinter_4 --dataset /home/torbjorn/repos/hp-sim5/autocal/data/.regress_parallel_runs/23_april_2026_0acdba5a/23_april_2026.json --find-radii global --base-radii 30 --buildup-factor 0.636619 --no-collect --verbose --r0-bounds 39,40 --full-auto-log /home/torbjorn/repos"
+        }
+      ]
+    },
+    "--write-sweep-config": {
+      "keep": false,
+      "definitions": [
+        {
+          "source": "autocal/_autocal_common.py:3875",
+          "type": "Path",
+          "default": "None",
+          "help": "'Write the suggested sweep config to this path (default: <dataset>.active_sweep_cfg.txt)'"
+        }
+      ],
+      "log_files": 2,
+      "other_files": 6,
+      "examples": [
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/_autocal_common.py:3859",
+          "excerpt": "        \"--write-sweep-config\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/current/autocal/ellipse_active.py:35",
+          "excerpt": "        \"--write-sweep-config\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/_autocal_common.py:3670",
+          "excerpt": "        \"--write-sweep-config\","
+        },
+        {
+          "source": "output/research/fifth-hp3-reference-audit/march/autocal/ellipse_active.py:35",
+          "excerpt": "        \"--write-sweep-config\","
+        }
+      ]
+    }
+  }
+}
