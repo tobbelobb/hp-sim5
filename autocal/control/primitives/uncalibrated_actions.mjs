@@ -491,7 +491,6 @@ export async function collectDataPoint(sendFn, options = {}) {
       && sample.anglesDeg.length === motorIds.length
       && sample.anglesDeg.every((val) => Number.isFinite(val)),
     );
-    const fallbackAngles = valid.length > 0 ? valid[valid.length - 1].anglesDeg : null;
     let projected = null;
     if (valid.length >= 2) {
       const forces = valid.map((sample) => sample.force);
@@ -519,11 +518,10 @@ export async function collectDataPoint(sendFn, options = {}) {
         }
       }
     }
-    anglesDeg = projected ?? fallbackAngles;
-    if (!Array.isArray(anglesDeg)) {
-      stableData = await waitForStableEncoders(sendFn, motorIds, speedup, settleOptions);
-      anglesDeg = stableData.anglesDeg;
+    if (projected === null) {
+      throw new Error('Zero-tension projection requires finite encoder samples at distinct forces');
     }
+    anglesDeg = projected;
   } else if (reuseMeasurement) {
     stableData = settledMeasurement;
     anglesDeg = stableData.anglesDeg;

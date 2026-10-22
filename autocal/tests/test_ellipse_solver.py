@@ -14,7 +14,6 @@ class _QuadraticCost:
         self.dimensions = 3
         self.machine_type = "hangprinter_4"
         self.pointwise_residual_mode = "sampson"
-        self.flex_model = None
         self._packed_sweeps = []
 
     def evaluate(self, x: np.ndarray) -> float:
@@ -612,8 +611,6 @@ def test_prepare_frozen_dataset_and_flags_filters_points_and_sweeps(monkeypatch)
         np.zeros(6, dtype=float),
         pointwise_residual_mode="sampson",
         invalid_sweep_penalty=1e6,
-        spring_k_multiplier=1.0,
-        use_flex=False,
         robust_loss=False,
         huber_delta=1.0,
         pointwise_filtering=True,
@@ -651,8 +648,6 @@ def test_prepare_frozen_dataset_and_flags_respects_disable_env(monkeypatch):
         np.zeros(6, dtype=float),
         pointwise_residual_mode="sampson",
         invalid_sweep_penalty=1e6,
-        spring_k_multiplier=1.0,
-        use_flex=False,
         robust_loss=False,
         huber_delta=1.0,
         pointwise_filtering=True,

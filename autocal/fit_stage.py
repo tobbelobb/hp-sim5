@@ -11,8 +11,6 @@ def fit_ellipse_dataset(
     solve_restarts: int,
     solve_iterations: int,
     solve_optimizer: str,
-    spring_k_multiplier: float,
-    use_flex: bool,
     pointwise_residual_mode: str,
     pointwise_filtering: bool,
     pointwise_global_mad: bool,
@@ -140,11 +138,13 @@ def fit_ellipse_dataset(
         project_zero_tension=bool(prefer_zero_tension_angles),
     )
 
-    if search_radii or search_buildup:
+    if search_radii or search_buildup or prefer_zero_tension_angles:
         validate_dataset_has_raw_angles(
             dataset,
             prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
         )
+
+    if search_radii or search_buildup:
         lm_params = _resolve_length_model_base_params(
             dataset,
             num_anchors=int(num_anchors),
@@ -173,8 +173,6 @@ def fit_ellipse_dataset(
             num_restarts=int(seed_restarts),
             max_iterations=int(seed_iterations),
             method=str(solve_optimizer),
-            spring_k_multiplier=float(spring_k_multiplier),
-            use_flex=bool(use_flex),
             verbose=False,
             use_parallel=False,
             pointwise_residual_mode=str(pointwise_residual_mode),
@@ -211,8 +209,6 @@ def fit_ellipse_dataset(
                 solve_restarts=int(solve_restarts),
                 solve_iterations=int(solve_iterations),
                 solve_optimizer=str(solve_optimizer),
-                spring_k_multiplier=float(spring_k_multiplier),
-                use_flex=bool(use_flex),
                 pointwise_residual_mode=str(pointwise_residual_mode),
                 pointwise_filtering=bool(pointwise_filtering),
                 pointwise_global_mad=bool(pointwise_global_mad),
@@ -259,8 +255,6 @@ def fit_ellipse_dataset(
                 num_restarts=int(solve_restarts),
                 max_iterations=int(solve_iterations),
                 method=str(solve_optimizer),
-                spring_k_multiplier=float(spring_k_multiplier),
-                use_flex=bool(use_flex),
                 verbose=False,
                 use_parallel=False,
                 pointwise_residual_mode=str(pointwise_residual_mode),
@@ -339,8 +333,6 @@ def fit_ellipse_dataset(
             num_restarts=int(solve_restarts),
             max_iterations=int(solve_iterations),
             method=str(solve_optimizer),
-            spring_k_multiplier=float(spring_k_multiplier),
-            use_flex=bool(use_flex),
             verbose=False,
             use_parallel=False,
             pointwise_residual_mode=str(pointwise_residual_mode),
@@ -363,8 +355,6 @@ def fit_ellipse_dataset(
         _evaluate_cost_at_anchors(
             dataset_for_estimation,
             anchors,
-            spring_k_multiplier=float(spring_k_multiplier),
-            use_flex=bool(use_flex),
             pointwise_residual_mode=str(pointwise_residual_mode),
             pointwise_filtering=bool(pointwise_filtering),
             pointwise_global_mad=bool(pointwise_global_mad),
@@ -397,8 +387,6 @@ def fit_ellipse_dataset(
     if isinstance(noise_metrics, dict) and bool(search_radii or search_buildup):
         cost_fn = _build_ellipse_cost_function(
             dataset_for_estimation,
-            spring_k_multiplier=float(spring_k_multiplier),
-            use_flex=bool(use_flex),
             pointwise_residual_mode=str(pointwise_residual_mode),
             pointwise_filtering=bool(pointwise_filtering),
             pointwise_global_mad=bool(pointwise_global_mad),

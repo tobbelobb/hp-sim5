@@ -1,7 +1,7 @@
 usage: autocal.py [-h] --machine-type {slideprinter,hangprinter_3,hangprinter_4,hangprinter_5,cubecorners,skycam,hp3,hp4,v3,v4,four_high_anchors,cube_corners} [--no-collect] [--sparse-recovery] [--dataset DATASET] [--sweep-points SWEEP_POINTS]
                   [--plot-residual-histogram] [--max-steps MAX_STEPS] [--stop-cost STOP_COST] [--stop-std-mm STOP_STD_MM] [--full-auto-run FULL_AUTO_RUN] [--shotgun] [--stage-artifacts STAGE_ARTIFACTS] [--full-auto-log FULL_AUTO_LOG] [--verbose]
                   [--patience PATIENCE] [--solve-restarts SOLVE_RESTARTS] [--solve-iterations SOLVE_ITERATIONS] [--solve-optimizer {lbfgsb,lm,trf}] [--trf-solver-fallback | --no-trf-solver-fallback] [--optimizer-mode {fast,fast-fd,legacy}]
-                  [--spring-k-multiplier SPRING_K_MULTIPLIER] [--flex] [--find-radii [{off,global,per-anchor}]] [--find-buildup-factor [{off,global,per-anchor}]] [--base-radii BASE_RADII] [--buildup-factor BUILDUP_FACTOR]
+                  [--find-radii [{off,global,per-anchor}]] [--find-buildup-factor [{off,global,per-anchor}]] [--base-radii BASE_RADII] [--buildup-factor BUILDUP_FACTOR]
                   [--line-width LINE_WIDTH] [--sigma-floor-mm SIGMA_FLOOR_MM] [--low-anchor-z LOW_ANCHOR_Z] [--r0-bounds R0_BOUNDS] [--b-bounds B_BOUNDS] [--r0-prior-sigma-mm R0_PRIOR_SIGMA_MM]
                   [--b-prior-sigma B_PRIOR_SIGMA] [--spool-outer-iters SPOOL_OUTER_ITERS] [--theta0-mode {infer,zero}] [--fit-structure FIT_STRUCTURE] [--filter-schedule FILTER_SCHEDULE]
                   [--objective-schedule OBJECTIVE_SCHEDULE] [--pointwise-residual {sampson,euclidean}] [--pointwise-filtering] [--no-pointwise-filtering] [--pointwise-global-mad] [--pointwise-per-sweep-mad] [--sweep-wise-filtering]
@@ -48,8 +48,6 @@ KEEP  --dataset DATASET     Dataset file updated each iteration (default: autoca
                         Retry unsuccessful or invalid lbfgsb restarts with bounded trf (default: disabled; can change the final consensus).
   --optimizer-mode {fast,fast-fd,legacy}
                         Optimization mode: 'fast' (JAX exact Jacobian), 'fast-fd' (JAX value + SciPy finite differences), or 'legacy' (no JAX + SciPy finite differences).
-  --spring-k-multiplier SPRING_K_MULTIPLIER
-  --flex
 KEEP  --find-radii [{off,global,per-anchor}]
                         Spool-radius fit mode: off | global | per-anchor (default: off).
 KEEP  --find-buildup-factor [{off,global,per-anchor}]
@@ -199,3 +197,17 @@ The original inventory and handoffs remain historical research records.
 consumer. Keep using `autocal/plot_residual_hist.py` with exported residual CSVs.
 The help text above is the original audit snapshot, not current CLI help.
 Ranking/consensus defaults are unchanged. See [integration findings](research/autocal-ranking-lane04-integration.md).
+
+## Lane 05 integration, 2026-10-22
+
+Removed `--flex` and `--spring-k-multiplier` from the ellipse/autocal pipeline,
+including full-auto variants, fitting and history-validation plumbing. The
+collector never supplied the per-point tensions this correction required.
+Legacy point calibration and the explicit flex plotting helper remain separate.
+`--theta0-mode` and `--low-anchor-z` are retained with their existing defaults.
+`--project-zero-tension` now rejects failed projections and requires projected
+angle fields during fitting instead of silently using raw angles.
+
+See the [integration report](research/autocal-physical-model-cleanup/report.md)
+for preserved lane evidence, fit-free equivalence checks, regression results and
+the saved-geometry sentinel probe. The earlier inventory is historical evidence.

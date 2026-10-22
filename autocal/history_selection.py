@@ -8,8 +8,7 @@ import numpy as np
 
 
 def evaluate_history_candidates(
-    history_candidates, *, collector_args=(), use_flex=False,
-    spring_k_multiplier=1.0, use_noise_mean=True,
+    history_candidates, *, collector_args=(), use_noise_mean=True,
     pointwise_residual_mode="sampson", sigma_source="auto", log_line=lambda _line: None,
 ):
     """Evaluate saved models on future sweeps, keeping every model frozen."""
@@ -59,10 +58,6 @@ def evaluate_history_candidates(
                 spool_params=candidate_plan.get("spool_model_params"),
                 prefer_zero_tension_angles=_arg_has_flag(
                     collector_args, "--project-zero-tension"
-                ),
-                use_flex=bool(settings.get("use_flex", use_flex)),
-                spring_k_multiplier=float(
-                    settings.get("spring_k_multiplier", spring_k_multiplier)
                 ),
                 use_noise_mean=bool(settings.get("use_noise_mean", use_noise_mean)),
                 pointwise_residual_mode=str(

@@ -928,8 +928,6 @@ def _float_or_none(value: object) -> Optional[float]:
 def _build_ellipse_cost_function(
     dataset: dict,
     *,
-    spring_k_multiplier: float,
-    use_flex: bool,
     pointwise_residual_mode: str,
     pointwise_filtering: bool,
     pointwise_global_mad: bool,
@@ -943,8 +941,6 @@ def _build_ellipse_cost_function(
     return EllipseCostFunction(
         dataset,
         pointwise_residual_mode=str(pointwise_residual_mode),
-        spring_k_multiplier=float(spring_k_multiplier),
-        use_flex=bool(use_flex),
         pointwise_filtering=bool(pointwise_filtering),
         pointwise_global_mad=bool(pointwise_global_mad),
         sweep_wise_filtering=bool(sweep_wise_filtering),
@@ -1535,8 +1531,6 @@ def _evaluate_cost_at_anchors(
     dataset: dict,
     anchors: np.ndarray,
     *,
-    spring_k_multiplier: float,
-    use_flex: bool,
     pointwise_residual_mode: str,
     pointwise_filtering: bool,
     pointwise_global_mad: bool,
@@ -1548,8 +1542,6 @@ def _evaluate_cost_at_anchors(
 ) -> float:
     cost_fn = _build_ellipse_cost_function(
         dataset,
-        spring_k_multiplier=float(spring_k_multiplier),
-        use_flex=bool(use_flex),
         pointwise_residual_mode=str(pointwise_residual_mode),
         pointwise_filtering=bool(pointwise_filtering),
         pointwise_global_mad=bool(pointwise_global_mad),
@@ -3309,8 +3301,6 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
             "or 'legacy' (no JAX + SciPy finite differences)."
         ),
     )
-    parser.add_argument("--spring-k-multiplier", type=float, default=1.0)
-    parser.add_argument("--flex", action="store_true")
     parser.add_argument(
         "--find-radii",
         choices=_SPOOL_FIND_MODE_CHOICES,
@@ -3947,12 +3937,6 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
         action="store_false",
     )
     parser.add_argument(
-        "--flex",
-        dest="use_flex",
-        action="store_true",
-        default=None,
-    )
-    parser.add_argument(
         "--find-radii",
         choices=_SPOOL_FIND_MODE_CHOICES,
         nargs="?",
@@ -3980,7 +3964,6 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     parser.add_argument("--line-width", type=float, default=None)
     parser.add_argument("--sigma-floor-mm", type=float, default=None)
     parser.add_argument("--low-anchor-z", type=float, default=None)
-    parser.add_argument("--spring-k-multiplier", type=float, default=None)
     parser.add_argument("--solve-restarts", type=int, default=None)
     parser.add_argument("--solve-iterations", type=int, default=None)
     parser.add_argument("--solve-optimizer", choices=_SOLVE_OPTIMIZER_CHOICES, default=None)

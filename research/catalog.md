@@ -206,3 +206,13 @@ a cap of 30. Full validation details and limitations are linked in the report.
 histogram flag, extracted final history selection for shared offline replay,
 and verified identical results on three saved histories. Noise metrics were
 present in all 14 saved candidates. Numerical defaults remain unchanged.
+
+## Lane 05 physical-model integration
+
+Status: complete, 2026-10-22. Topics: autocalibration, flex removal, zero-tension
+projection, invalid geometry, CLI cleanup. [Integration report](autocal-physical-model-cleanup/report.md),
+[abstract](autocal-physical-model-cleanup/abstract.md), [notebook](autocal-physical-model-cleanup/research.md).
+Removed inert ellipse flex settings and fixed silent projection fallback. Seventy-two
+fit-free comparisons match exactly, and two complete replays match references.
+Saved sentinel geometries remain invalid without sweep rejection; trajectory-level
+solver diagnosis is still needed. No hardware or new collection evidence.

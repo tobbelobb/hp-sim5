@@ -1100,8 +1100,6 @@ def _build_residual_rows(
 
     cost_fn = ac._build_ellipse_cost_function(
         dataset_eval,
-        spring_k_multiplier=1.0,
-        use_flex=False,
         pointwise_residual_mode="sampson",
         pointwise_filtering=bool(pointwise_filtering),
         pointwise_global_mad=bool(pointwise_global_mad),

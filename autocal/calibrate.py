@@ -661,8 +661,6 @@ def calibrate_elliptical(
     num_restarts: int = 8,
     max_iterations: int = 1000,
     method: str = "SLSQP",
-    spring_k_multiplier: float = 1.0,
-    use_flex: bool = False,
     robust_loss: bool = False,
     huber_delta: float = 1.0,
     robust_debug: bool = False,
@@ -718,7 +716,6 @@ def calibrate_elliptical(
             f"restarts={num_restarts}",
             f"maxiter={max_iterations}",
             f"progress_every={progress_every}",
-            f"flex={use_flex}",
         )
 
     solution = solve_anchors(
@@ -730,8 +727,6 @@ def calibrate_elliptical(
         use_parallel=bool(use_parallel) and not bool(verbose),
         progress_every=int(progress_every),
         pointwise_residual_mode=str(pointwise_residual_mode),
-        spring_k_multiplier=float(spring_k_multiplier),
-        use_flex=bool(use_flex),
         robust_loss=bool(robust_loss),
         huber_delta=float(huber_delta),
         robust_debug=bool(robust_debug),
@@ -771,7 +766,6 @@ def calibrate_elliptical(
         "anchor_norms": _anchor_norms(anchors_arr),
         "pairwise_distances": _pairwise_anchor_distances(anchors_arr),
         "gcode": gcode,
-        "use_flex": bool(use_flex),
     }
 
     details = solution.get("details")
@@ -1173,30 +1167,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ellipse_parser.set_defaults(parallel=True)
     ellipse_parser.add_argument("--no-report", action="store_true", help="Skip report generation")
     ellipse_parser.add_argument(
-        "--spring-k-multiplier",
-        type=float,
-        default=1.0,
-        help="Multiply M666 S by this factor (e.g. 2.0 for two parallel lines per axis).",
-    )
-    ellipse_parser.add_argument(
         "--regularize-supersweep",
         action="store_true",
         help="Apply optional super-sweep regularization (currently a no-op for ellipse mode).",
     )
-    ellipse_flex_group = ellipse_parser.add_mutually_exclusive_group()
-    ellipse_flex_group.add_argument(
-        "--flex",
-        dest="use_flex",
-        action="store_true",
-        help="Enable flex compensation (default: disabled).",
-    )
-    ellipse_flex_group.add_argument(
-        "--no-flex",
-        dest="use_flex",
-        action="store_false",
-        help="Disable flex compensation (default).",
-    )
-    ellipse_parser.set_defaults(use_flex=False)
 
     point_parser = subparsers.add_parser("point", help="Legacy point-based calibration")
     point_parser.add_argument(
@@ -1318,8 +1292,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             num_restarts=int(args.restarts),
             max_iterations=args.iterations,
             method=args.optimizer,
-            spring_k_multiplier=float(args.spring_k_multiplier),
-            use_flex=bool(args.use_flex),
             robust_loss=bool(args.huber_loss),
             huber_delta=float(args.huber_delta),
             robust_debug=bool(args.robust_debug),

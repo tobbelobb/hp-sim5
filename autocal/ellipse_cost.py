@@ -11,7 +11,6 @@ from autocal.ellipse_fitting import (
     ellipse_euclidean_residuals,
     ellipse_sampson_residuals,
 )
-from autocal.flex import FlexModel
 from autocal.sweep_types import MachineConfig, MachineType, Sweep
 from autocal.theoretical_ellipse import (
     anchor_opt_vec_to_matrix,
@@ -81,8 +80,6 @@ class _PackedSweep:
     l_sensor: np.ndarray
     sigma_drive_mm: Optional[np.ndarray]
     sigma_sensor_mm: Optional[np.ndarray]
-    tension_drive_n: Optional[np.ndarray]
-    tension_sensor_n: Optional[np.ndarray]
 
 
 def canonicalize_geometry(
@@ -239,8 +236,6 @@ class EllipseCostFunction:
         pointwise_residual_mode: str = "sampson",
         invalid_sweep_penalty: float = 1e6,
         pointwise_cost_weight: float = 1e8,
-        spring_k_multiplier: float = 1.0,
-        use_flex: bool = True,
         robust_loss: bool = False,
         huber_delta: float = 1.0,
         pointwise_filtering: bool = True,
@@ -335,15 +330,6 @@ class EllipseCostFunction:
         self._pointwise_sigma_floor_source = sigma_source
         self._pointwise_sigma_floor_norm = float(self._pointwise_sigma_floor_mm / denom)
 
-        self.flex_model: Optional[FlexModel] = None
-        if bool(use_flex) and isinstance(dataset, dict):
-            config = dataset.get("config", {}) or {}
-            m666 = self._extract_preferred_m666(config) if isinstance(config, dict) else None
-            self.flex_model = FlexModel.from_m666(
-                m666,
-                num_axes=self.num_anchors,
-                spring_k_multiplier=float(spring_k_multiplier),
-            )
         self._packed_sweeps = tuple(self._pack_sweep(sweep) for sweep in self.sweeps)
         self._packed_sweep_by_objid = {
             id(sweep): packed for sweep, packed in zip(self.sweeps, self._packed_sweeps)
@@ -375,7 +361,6 @@ class EllipseCostFunction:
         l_drive, l_sensor, sigma_drive_mm, sigma_sensor_mm = self._extract_point_arrays(
             data_points, drive_idx, sensor_idx
         )
-        tension_drive_n, tension_sensor_n = self._extract_tension_arrays_from_raw(sweep)
         return _PackedSweep(
             sweep_id=sweep_id,
             fixed_indices=fixed_indices,
@@ -393,16 +378,6 @@ class EllipseCostFunction:
                 None
                 if sigma_sensor_mm is None
                 else np.asarray(sigma_sensor_mm, dtype=float)
-            ),
-            tension_drive_n=(
-                None
-                if tension_drive_n is None
-                else np.asarray(tension_drive_n, dtype=float)
-            ),
-            tension_sensor_n=(
-                None
-                if tension_sensor_n is None
-                else np.asarray(tension_sensor_n, dtype=float)
             ),
         )
 
@@ -441,32 +416,6 @@ class EllipseCostFunction:
             packed.sigma_sensor_mm,
         )
 
-    @staticmethod
-    def _extract_tension_arrays_from_raw(
-        sweep: Union[Sweep, dict]
-    ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
-        if isinstance(sweep, Sweep):
-            return None, None
-
-        data_points = sweep.get("data_points", [])
-        if not isinstance(data_points, list) or not data_points:
-            return None, None
-
-        t_drive = np.array([p.get("assumed_tension_drive_n", np.nan) for p in data_points], dtype=float)
-        t_sensor = np.array([p.get("assumed_tension_sensor_n", np.nan) for p in data_points], dtype=float)
-        if t_drive.ndim != 1 or t_sensor.ndim != 1:
-            return None, None
-        return t_drive, t_sensor
-
-    def _extract_tension_arrays(
-        self, sweep: Union[Sweep, dict, _PackedSweep]
-    ) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
-        if isinstance(sweep, _PackedSweep):
-            return sweep.tension_drive_n, sweep.tension_sensor_n
-        packed = self._packed_sweep_by_objid.get(id(sweep))
-        if packed is not None:
-            return packed.tension_drive_n, packed.tension_sensor_n
-        return self._extract_tension_arrays_from_raw(sweep)
 
     def _reconstruct_lengths(
         self, sweep: Union[Sweep, dict, _PackedSweep], anchors: np.ndarray
@@ -1323,16 +1272,6 @@ class EllipseCostFunction:
             sigma_sensor_mm,
         ) = self._reconstruct_lengths(sweep, anchors)
 
-        if self.flex_model is not None:
-            t_drive, t_sensor = self._extract_tension_arrays(sweep)
-            if (
-                t_drive is not None
-                and t_sensor is not None
-                and t_drive.shape == l_drive_abs.shape
-                and t_sensor.shape == l_sensor_abs.shape
-            ):
-                l_drive_abs = self.flex_model.corrected_distance_mm(l_drive_abs, t_drive, axis=drive_idx)
-                l_sensor_abs = self.flex_model.corrected_distance_mm(l_sensor_abs, t_sensor, axis=sensor_idx)
 
         fixed_indices, _, drive_idx2, sensor_idx2, *_rest = self._extract_sweep_arrays(sweep)
         coeffs = predict_ellipse_coefficients(

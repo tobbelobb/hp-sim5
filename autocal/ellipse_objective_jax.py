@@ -117,8 +117,6 @@ def _can_use_jax_objective(cost_fn: EllipseCostFunction) -> bool:
         return False
     if str(cost_fn.pointwise_residual_mode or "").strip().lower() not in ("sampson", ""):
         return False
-    if cost_fn.flex_model is not None:
-        return False
     return True
 
 

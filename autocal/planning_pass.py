@@ -234,8 +234,6 @@ def plan_next_ellipse_sweep(
     solve_restarts: int,
     solve_iterations: int,
     solve_optimizer: str,
-    spring_k_multiplier: float,
-    use_flex: bool,
     pointwise_residual_mode: str,
     pointwise_filtering: bool,
     pointwise_global_mad: bool,

@@ -143,24 +143,20 @@ class SpoolModelParams:
 def _extract_raw_angles(
     point: dict, num_anchors: int, *, prefer_zero_tension_angles: bool = False
 ) -> List[float]:
-    keys = ("raw_angles_zero_tension_deg", "raw_angles_deg") if bool(prefer_zero_tension_angles) else ("raw_angles_deg",)
-    for key in keys:
-        if key not in point:
-            continue
-        raw = point.get(key)
-        if not isinstance(raw, list) or len(raw) < int(num_anchors):
-            raise ValueError(f"{key} missing or wrong length")
-        out: List[float] = []
-        for idx in range(int(num_anchors)):
-            try:
-                val = float(raw[idx])
-            except (TypeError, ValueError):
-                raise ValueError(f"{key} contains non-numeric values") from None
-            if not np.isfinite(val):
-                raise ValueError(f"{key} contains non-finite values")
-            out.append(val)
-        return out
-    raise ValueError("raw_angles_deg missing or wrong length")
+    key = "raw_angles_zero_tension_deg" if prefer_zero_tension_angles else "raw_angles_deg"
+    raw = point.get(key)
+    if not isinstance(raw, list) or len(raw) < int(num_anchors):
+        raise ValueError(f"{key} missing or wrong length")
+    out: List[float] = []
+    for idx in range(int(num_anchors)):
+        try:
+            val = float(raw[idx])
+        except (TypeError, ValueError):
+            raise ValueError(f"{key} contains non-numeric values") from None
+        if not np.isfinite(val):
+            raise ValueError(f"{key} contains non-finite values")
+        out.append(val)
+    return out
 
 
 def _point_len_base(

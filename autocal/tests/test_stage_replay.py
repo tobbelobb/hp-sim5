@@ -148,7 +148,8 @@ def test_fit_replay_reads_old_artifacts_without_removed_options(tmp_path, monkey
     write_stage_artifact(artifact, "fit", {
         "fit": {"dataset": {"sweeps": []}},
         "fit_options": {"residual_threshold": 250.0, "sigma_used_mm": 1.0,
-                        "scale_fix": [3], "spool_inner_iters": 30},
+                        "scale_fix": [3], "spool_inner_iters": 30,
+                        "use_flex": False, "spring_k_multiplier": 1.0},
     })
     calls = []
 
@@ -162,14 +163,16 @@ def test_fit_replay_reads_old_artifacts_without_removed_options(tmp_path, monkey
     assert main(["fit", str(artifact), "--output", str(output)]) == 0
     assert calls == [(None, False)]
     options = read_stage_artifact(output)["payload"]["fit_options"]
-    assert not {"residual_threshold", "sigma_used_mm", "scale_fix", "spool_inner_iters"}.intersection(options)
+    assert not {"residual_threshold", "sigma_used_mm", "scale_fix", "spool_inner_iters",
+                "use_flex", "spring_k_multiplier"}.intersection(options)
     override = tmp_path / "override.json"
     override.write_text(json.dumps({"residual_threshold": 0.01}))
     with pytest.raises(SystemExit):
         main(["fit", str(artifact), "--options", str(override), "--output", str(output)])
 
 
-@pytest.mark.parametrize("saved", [{"scale_fix": []}, {"scale_fix": [1]}, {"spool_inner_iters": 60}])
+@pytest.mark.parametrize("saved", [{"scale_fix": []}, {"scale_fix": [1]}, {"spool_inner_iters": 60},
+                                   {"use_flex": True}])
 def test_fit_replay_rejects_nondefault_removed_spool_policies(tmp_path, saved):
     artifact = tmp_path / "old-fit.json"
     write_stage_artifact(artifact, "fit", {
@@ -177,6 +180,19 @@ def test_fit_replay_rejects_nondefault_removed_spool_policies(tmp_path, saved):
     })
     with pytest.raises(SystemExit):
         main(["fit", str(artifact), "--output", str(tmp_path / "result.json")])
+
+
+def test_history_replay_migrates_flex_disabled_options_but_rejects_corrections(tmp_path):
+    source = tmp_path / 'history.json'
+    output = tmp_path / 'evaluated.json'
+    payload = {'candidates': [], 'validation_options': {'use_flex': False, 'spring_k_multiplier': 1.0}}
+    write_stage_artifact(source, 'history', payload)
+    assert main(['evaluate', str(source), '--output', str(output)]) == 0
+    assert read_stage_artifact(output)['payload']['validation_options'] == {}
+    payload['candidates'] = [{'settings': {'use_flex': True}}]
+    write_stage_artifact(source, 'history', payload)
+    with pytest.raises(SystemExit):
+        main(['evaluate', str(source), '--output', str(output)])
 
 
 def test_rank_replay_exports_applied_consensus_separately_from_selected_fit(tmp_path):

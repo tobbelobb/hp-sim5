@@ -76,6 +76,7 @@ describe('uncalibrated_actions', () => {
 
   test('zero-tension projection performs its force trials even with a settled reading', async () => {
     const { commands, send } = createCollectDataSend('1 2 3');
+    const recordPoint = jest.fn();
     const result = await collectDataPoint(send, {
       motorIds: ['40.0', '41.0', '42.0'],
       axes: ['X', 'Y', 'Z'],
@@ -89,9 +90,37 @@ describe('uncalibrated_actions', () => {
       projectZeroTension: true,
       settledMeasurement: { anglesDeg: [9, 9, 9] },
       settleOptions: createSettleOptions(),
+      recordPoint,
     });
     expect(result.anglesDeg).toEqual([1, 2, 3]);
+    expect(recordPoint).toHaveBeenCalledWith(
+      [1, 2, 3], undefined, undefined, undefined,
+      { raw_angles_zero_tension_deg: [1, 2, 3] },
+    );
     expect(commands.filter(command => command.startsWith('M569.4 '))).toHaveLength(11);
+  });
+
+  test.each([
+    ['missing force range', undefined, undefined],
+    ['constant force', 2, 2],
+  ])('rejects zero-tension projection with %s without recording raw angles as projected', async (_label, forceMin, forceMax) => {
+    const { send } = createCollectDataSend('1 2 3');
+    const recordPoint = jest.fn();
+    await expect(collectDataPoint(send, {
+      motorIds: ['40.0', '41.0', '42.0'],
+      axes: ['X', 'Y', 'Z'],
+      mmPerDeg: [1, 1, 1],
+      driveAnchor: 0,
+      sensorAnchors: [1],
+      fixedAnchors: [2],
+      forceMid: 2,
+      forceMin,
+      forceMax,
+      projectZeroTension: true,
+      settleOptions: createSettleOptions(),
+      recordPoint,
+    })).rejects.toThrow('Zero-tension projection requires');
+    expect(recordPoint).not.toHaveBeenCalled();
   });
 
   test('calculateReturnOrder', () => {

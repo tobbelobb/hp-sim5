@@ -23,6 +23,9 @@ def main(argv=None):
     artifact = read_stage_artifact(args.artifact)
     payload = artifact["payload"]
     overrides = json.loads(args.options.read_text()) if args.options else {}
+    removed_flex = {"use_flex", "spring_k_multiplier"}
+    if removed_flex.intersection(overrides):
+        parser.error("removed options: " + ", ".join(sorted(removed_flex.intersection(overrides))))
     started = time.perf_counter()
     if args.stage in ("fit", "plan"):
         if artifact["kind"] != "fit":
@@ -30,10 +33,12 @@ def main(argv=None):
         if args.stage == "fit":
             # Version-1 artifacts included removed fit options.
             # Keep old snapshots replayable, but reject new requests for them.
-            removed = {"residual_threshold", "sigma_used_mm", "scale_fix", "spool_inner_iters"}
+            removed = {"residual_threshold", "sigma_used_mm", "scale_fix", "spool_inner_iters"} | removed_flex
             if removed.intersection(overrides):
                 parser.error("removed fit options: " + ", ".join(sorted(removed.intersection(overrides))))
             saved = payload["fit_options"]
+            if saved.get("use_flex"):
+                parser.error("cannot replay removed flex correction; only flex-disabled fits are supported")
             if "scale_fix" in saved and saved["scale_fix"] != [3]:
                 parser.error("cannot replay removed scale_fix policy; only the former default [3] is supported")
             if "spool_inner_iters" in saved and saved["spool_inner_iters"] != 30:
@@ -63,7 +68,14 @@ def main(argv=None):
         if args.stage == "evaluate":
             if artifact["kind"] != "history":
                 parser.error("evaluate requires original frozen history candidates")
-            options = {**payload["validation_options"], **overrides}
+            saved = payload["validation_options"]
+            if saved.get("use_flex") or any(
+                (candidate.get("settings") or {}).get("use_flex")
+                for candidate in payload["candidates"]
+            ):
+                parser.error("cannot replay removed flex correction; only flex-disabled histories are supported")
+            options = {key: value for key, value in saved.items() if key not in removed_flex}
+            options.update(overrides)
             evaluated = evaluate_history_candidates(payload["candidates"], **options)
             output = {"evaluated": evaluated, "validation_options": options}
             kind = "evaluated_history"

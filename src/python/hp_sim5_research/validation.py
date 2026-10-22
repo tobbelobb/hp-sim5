@@ -45,7 +45,7 @@ def validate_collection(path, anchors=None):
     anchors = np.asarray([config[axis] for axis in 'ABCD'] if anchors is None else anchors, dtype=float)
     if anchors.shape != (4, 3) or not np.isfinite(anchors).all():
         raise ValueError('Collection must preserve all three firmware coordinates for each HP4 anchor')
-    objective = EllipseCostFunction(dataset, min_points=5, use_flex=False,
+    objective = EllipseCostFunction(dataset, min_points=5,
                                    pointwise_filtering=False, sweep_wise_filtering=False)
     vector = anchors_matrix_to_opt_vec(anchors, 'hangprinter_4')
     rows = objective.pointwise_residual_rows(vector)

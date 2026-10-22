@@ -128,8 +128,6 @@ def full_auto_loop(
     solve_restarts: int,
     solve_iterations: int,
     solve_optimizer: str,
-    spring_k_multiplier: float,
-    use_flex: bool,
     pointwise_residual_mode: str,
     pointwise_filtering: bool,
     pointwise_global_mad: bool,
@@ -589,8 +587,6 @@ def full_auto_loop(
         "solve_iterations": int(solve_iterations),
         "solve_optimizer": str(solve_optimizer),
         "optimizer_mode": _normalize_optimizer_mode(os.environ.get("AUTOCAL_OPTIMIZER_MODE", "fast")),
-        "spring_k_multiplier": float(spring_k_multiplier),
-        "use_flex": bool(use_flex),
         "pointwise_residual_mode": str(pointwise_residual_mode),
         "pointwise_filtering": bool(pointwise_filtering),
         "pointwise_global_mad": bool(pointwise_global_mad),
@@ -656,7 +652,6 @@ def full_auto_loop(
         if history_candidates:
             scored = evaluate_history_candidates(
                 history_candidates, collector_args=collector_args_eff,
-                use_flex=use_flex, spring_k_multiplier=spring_k_multiplier,
                 use_noise_mean=use_noise_mean,
                 pointwise_residual_mode=pointwise_residual_mode,
                 sigma_source=sigma_source, log_line=_log_line,
@@ -665,8 +660,7 @@ def full_auto_loop(
                 write_stage_artifact(stage_artifacts / f"history-{history_total_iterations:03d}.json", "history", {
                     "candidates": history_candidates, "evaluated": scored,
                     "validation_options": {
-                        "collector_args": collector_args_eff, "use_flex": use_flex,
-                        "spring_k_multiplier": spring_k_multiplier, "use_noise_mean": use_noise_mean,
+                        "collector_args": collector_args_eff, "use_noise_mean": use_noise_mean,
                         "pointwise_residual_mode": pointwise_residual_mode, "sigma_source": sigma_source,
                     },
                 })
@@ -840,8 +834,6 @@ def full_auto_loop(
                 solve_restarts=int(settings["solve_restarts"]),
                 solve_iterations=int(settings["solve_iterations"]),
                 solve_optimizer=str(settings["solve_optimizer"]),
-                spring_k_multiplier=float(settings["spring_k_multiplier"]),
-                use_flex=bool(settings["use_flex"]),
                 pointwise_residual_mode=str(settings["pointwise_residual_mode"]),
                 pointwise_filtering=bool(settings["pointwise_filtering"]),
                 pointwise_global_mad=bool(settings["pointwise_global_mad"]),
@@ -1813,8 +1805,6 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         solve_restarts=int(args.solve_restarts),
         solve_iterations=int(args.solve_iterations),
         solve_optimizer=solve_optimizer,
-        spring_k_multiplier=float(args.spring_k_multiplier),
-        use_flex=bool(args.flex),
         pointwise_residual_mode=str(args.pointwise_residual),
         pointwise_filtering=bool(args.pointwise_filtering),
         pointwise_global_mad=bool(args.pointwise_global_mad),

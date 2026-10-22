@@ -112,8 +112,6 @@ def test_plan_next_ellipse_sweep_uses_explicit_warm_start_seeds(monkeypatch, tmp
         solve_restarts=1,
         solve_iterations=1,
         solve_optimizer="L-BFGS-B",
-        spring_k_multiplier=1.0,
-        use_flex=False,
         pointwise_residual_mode="sampson",
         pointwise_filtering=True,
         pointwise_global_mad=True,

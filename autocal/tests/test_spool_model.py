@@ -9,6 +9,7 @@ from autocal.spool_model import (
     build_spool_model_params,
     dataset_with_modeled_lengths,
     sweep_configs_with_modeled_lengths,
+    validate_dataset_has_raw_angles,
 )
 
 
@@ -86,6 +87,30 @@ def test_build_spool_model_params_defaults_theta0_to_zero():
         lines_per_spool=[1.0, 1.0, 1.0],
     )
     assert tuple(float(v) for v in params.theta0_deg) == (0.0, 0.0, 0.0)
+
+
+def test_zero_tension_validation_requires_projected_angles_even_when_raw_angles_exist():
+    dataset = _sample_dataset()
+    validate_dataset_has_raw_angles(dataset)
+    with pytest.raises(ValueError, match="raw_angles_zero_tension_deg missing"):
+        validate_dataset_has_raw_angles(dataset, prefer_zero_tension_angles=True)
+
+
+def test_modeled_lengths_cannot_fall_back_to_raw_angles_for_a_partially_projected_dataset():
+    dataset = _sample_dataset()
+    params = build_spool_model_params(
+        dataset,
+        base_radii_mm=[10.0] * 3,
+        modeled_radii_mm=[10.0] * 3,
+        modeled_buildup_factor=[0.0] * 3,
+        spool_to_motor_gearing_factor=[1.0] * 3,
+        mechanical_advantage=[1.0] * 3,
+        lines_per_spool=[1.0] * 3,
+    )
+    point = dataset['sweeps'][0]['data_points'][0]
+    point['raw_angles_zero_tension_deg'] = list(point['raw_angles_deg'])
+    with pytest.raises(ValueError, match="raw_angles_zero_tension_deg missing"):
+        dataset_with_modeled_lengths(dataset, params, prefer_zero_tension_angles=True)
 
 
 def test_build_spool_model_params_can_infer_theta0():
