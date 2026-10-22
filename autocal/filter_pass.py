@@ -480,7 +480,6 @@ def estimate_effective_radii_with_spool_model(
     solve_restarts: int,
     solve_iterations: int,
     solve_optimizer: str,
-    residual_threshold: float,
     spring_k_multiplier: float,
     use_flex: bool,
     pointwise_residual_mode: str,
@@ -633,7 +632,6 @@ def estimate_effective_radii_with_spool_model(
         try:
             cost_fn = _build_ellipse_cost_function(
                 source_dataset,
-                residual_threshold=float(residual_threshold),
                 spring_k_multiplier=float(spring_k_multiplier),
                 use_flex=bool(use_flex),
                 pointwise_residual_mode=str(pointwise_residual_mode),
@@ -826,7 +824,6 @@ def estimate_effective_radii_with_spool_model(
                 solve_restarts=solve_restarts,
                 solve_iterations=solve_iterations,
                 solve_optimizer=solve_optimizer,
-                residual_threshold=residual_threshold,
                 spring_k_multiplier=spring_k_multiplier,
                 use_flex=use_flex,
                 pointwise_residual_mode=pointwise_residual_mode,
@@ -850,7 +847,6 @@ def estimate_effective_radii_with_spool_model(
             cal_pass = calibrate_elliptical(
                 transformed_pass,
                 output_path=None,
-                residual_threshold=float(residual_threshold),
                 num_restarts=int(solve_restarts),
                 max_iterations=int(solve_iterations),
                 method=str(solve_optimizer),
@@ -1076,7 +1072,6 @@ def estimate_effective_radii_with_spool_model(
         try:
             cost_fn = _build_ellipse_cost_function(
                 transformed_dataset,
-                residual_threshold=float(residual_threshold),
                 spring_k_multiplier=float(spring_k_multiplier),
                 use_flex=bool(use_flex),
                 pointwise_residual_mode=str(pointwise_residual_mode),
@@ -1192,7 +1187,6 @@ def estimate_effective_radii_with_spool_model(
                 _evaluate_cost_at_anchors(
                     transformed_dataset,
                     anchors_eval,
-                    residual_threshold=float(residual_threshold),
                     spring_k_multiplier=float(spring_k_multiplier),
                     use_flex=bool(use_flex),
                     pointwise_residual_mode=str(pointwise_residual_mode),
@@ -1508,7 +1502,6 @@ def estimate_effective_radii_with_spool_model(
                 np.asarray(initial_guess, dtype=float),
                 method=str(method_lsq),
                 max_iterations=int(max_iterations),
-                residual_threshold=float(residual_threshold),
                 pointwise_residual_mode=str(pointwise_residual_mode),
                 invalid_sweep_penalty=1e6,
                 spring_k_multiplier=float(spring_k_multiplier),
@@ -1532,7 +1525,6 @@ def estimate_effective_radii_with_spool_model(
         result = calibrate_elliptical(
             transformed_dataset,
             output_path=None,
-            residual_threshold=float(residual_threshold),
             num_restarts=int(num_restarts),
             max_iterations=int(max_iterations),
             method=str(solve_optimizer),
@@ -1723,7 +1715,6 @@ def estimate_effective_radii_with_spool_model(
         solve_restarts=solve_restarts,
         solve_iterations=solve_iterations,
         solve_optimizer=solve_optimizer,
-        residual_threshold=residual_threshold,
         spring_k_multiplier=spring_k_multiplier,
         use_flex=use_flex,
         pointwise_residual_mode=pointwise_residual_mode,
@@ -1773,7 +1764,6 @@ def estimate_effective_radii_with_spool_model(
         solve_restarts=solve_restarts,
         solve_iterations=solve_iterations,
         solve_optimizer=solve_optimizer,
-        residual_threshold=residual_threshold,
         spring_k_multiplier=spring_k_multiplier,
         use_flex=use_flex,
         pointwise_residual_mode=pointwise_residual_mode,

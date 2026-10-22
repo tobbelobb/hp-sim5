@@ -929,7 +929,6 @@ def _float_or_none(value: object) -> Optional[float]:
 def _build_ellipse_cost_function(
     dataset: dict,
     *,
-    residual_threshold: float,
     spring_k_multiplier: float,
     use_flex: bool,
     pointwise_residual_mode: str,
@@ -944,7 +943,6 @@ def _build_ellipse_cost_function(
     stage = 2 if bool(pointwise_filtering) else 0
     return EllipseCostFunction(
         dataset,
-        residual_threshold=float(residual_threshold),
         pointwise_residual_mode=str(pointwise_residual_mode),
         spring_k_multiplier=float(spring_k_multiplier),
         use_flex=bool(use_flex),
@@ -1538,7 +1536,6 @@ def _evaluate_cost_at_anchors(
     dataset: dict,
     anchors: np.ndarray,
     *,
-    residual_threshold: float,
     spring_k_multiplier: float,
     use_flex: bool,
     pointwise_residual_mode: str,
@@ -1552,7 +1549,6 @@ def _evaluate_cost_at_anchors(
 ) -> float:
     cost_fn = _build_ellipse_cost_function(
         dataset,
-        residual_threshold=float(residual_threshold),
         spring_k_multiplier=float(spring_k_multiplier),
         use_flex=bool(use_flex),
         pointwise_residual_mode=str(pointwise_residual_mode),
@@ -2628,7 +2624,6 @@ def _annotate_dataset_noise_model(
     *,
     line_width_mm: float,
     sigma_floor_mm: Optional[float],
-    sigma_used_mm: Optional[float],
     find_radii_mode: str,
     find_buildup_mode: str,
     project_zero_tension: bool,
@@ -2664,13 +2659,8 @@ def _annotate_dataset_noise_model(
             sigma_floor = float("nan")
         if np.isfinite(sigma_floor) and sigma_floor > 0.0:
             noise_model["sigma_floor_mm"] = float(sigma_floor)
-    if sigma_used_mm is not None:
-        try:
-            sigma_used = float(sigma_used_mm)
-        except (TypeError, ValueError):
-            sigma_used = float("nan")
-        if np.isfinite(sigma_used) and sigma_used > 0.0:
-            noise_model["sigma_used_mm"] = float(sigma_used)
+    # Old datasets may contain the removed, incorrectly normalized override.
+    noise_model.pop("sigma_used_mm", None)
     config[_NOISE_MODEL_CONFIG_KEY] = noise_model
 
 
@@ -3168,7 +3158,6 @@ def _print_ellipse_plan(
                 sigma_line_width = noise_metrics.get("sigma_line_width_mm")
                 sigma_base_radius = noise_metrics.get("sigma_base_radius_mm")
                 sigma_layered = noise_metrics.get("sigma_layered_enabled")
-                sigma_used_override = noise_metrics.get("sigma_used_override_mm")
                 if any(
                     val is not None
                     for val in (
@@ -3187,7 +3176,6 @@ def _print_ellipse_plan(
                         sigma_line_width,
                         sigma_base_radius,
                         sigma_layered,
-                        sigma_used_override,
                     )
                 ):
                     layered_str = "n/a"
@@ -3210,7 +3198,6 @@ def _print_ellipse_plan(
                         f"mode_factor={_fmt_float(sigma_mode_factor)} "
                         f"line_width={_fmt_float(sigma_line_width, suffix='mm')} "
                         f"base_radius={_fmt_float(sigma_base_radius, suffix='mm')} "
-                        f"used_override={_fmt_float(sigma_used_override, suffix='mm')}"
                     )
     if info.ndim == 2 and info.shape[0] == info.shape[1]:
         rank_val = int(info_rank) if isinstance(info_rank, int) else int(np.linalg.matrix_rank(info))
@@ -3351,7 +3338,6 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
             "or 'legacy' (no JAX + SciPy finite differences)."
         ),
     )
-    parser.add_argument("--threshold", type=float, default=250.0)
     parser.add_argument("--spring-k-multiplier", type=float, default=1.0)
     parser.add_argument("--flex", action="store_true")
     parser.add_argument(
@@ -3392,13 +3378,7 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         "--sigma-floor-mm",
         type=float,
         default=None,
-        help="Override the base sigma floor (mm) used in the composite noise model.",
-    )
-    parser.add_argument(
-        "--sigma-used-mm",
-        type=float,
-        default=None,
-        help="Override the final sigma used for pointwise normalization (mm).",
+        help="Minimum noise-model sigma in mm; changing it rescales normalized costs, so costs across floors are not comparable.",
     )
     parser.add_argument(
         "--low-anchor-z",
@@ -3492,15 +3472,9 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument(
         "--pointwise-filtering",
-        dest="pointwise_filtering",
-        action="store_true",
-        help="Enable GNC-IRLS style pointwise filtering (default).",
-    )
-    parser.add_argument(
-        "--no-pointwise-filtering",
-        dest="pointwise_filtering",
-        action="store_false",
-        help="Disable pointwise filtering.",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Use staged pseudo-Huber loss and a final 3-MAD trim; disable for squared residuals (default: enabled).",
     )
     parser.add_argument(
         "--pointwise-global-mad",
@@ -3516,21 +3490,15 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument(
         "--sweep-wise-filtering",
-        dest="sweep_wise_filtering",
-        action="store_true",
-        help="Enable sweep-wise outlier rejection (default).",
-    )
-    parser.add_argument(
-        "--no-sweep-wise-filtering",
-        dest="sweep_wise_filtering",
-        action="store_false",
-        help="Disable sweep-wise outlier rejection.",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Enable sweep rejection (default: enabled). outlier_ratio requires pointwise filtering.",
     )
     parser.add_argument(
         "--sweep-metric",
         choices=["mad", "median_abs", "outlier_ratio"],
         default="outlier_ratio",
-        help="Per-sweep metric used by sweep-wise filtering (default: outlier_ratio).",
+        help="Sweep rejection metric (default: outlier_ratio, which requires pointwise filtering).",
     )
     parser.add_argument(
         "--sigma-source",
@@ -3553,15 +3521,9 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument(
         "--robust-debug",
-        dest="robust_debug",
-        action="store_true",
-        help="Print diagnostics for robustness filtering (default).",
-    )
-    parser.add_argument(
-        "--no-robust-debug",
-        dest="robust_debug",
-        action="store_false",
-        help="Disable robustness filtering diagnostics.",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Print robustness diagnostics (default: enabled).",
     )
     parser.add_argument(
         "--residuals-csv",
@@ -3966,15 +3928,6 @@ def _resolve_spool_cli_options(
         if not np.isfinite(sigma_floor_mm) or sigma_floor_mm <= 0.0:
             parser.error("--sigma-floor-mm must be finite and > 0")
 
-    sigma_used_mm = args.sigma_used_mm
-    if sigma_used_mm is not None:
-        try:
-            sigma_used_mm = float(sigma_used_mm)
-        except (TypeError, ValueError):
-            parser.error("--sigma-used-mm must be numeric")
-        if not np.isfinite(sigma_used_mm) or sigma_used_mm <= 0.0:
-            parser.error("--sigma-used-mm must be finite and > 0")
-
     return {
         "find_radii": str(find_radii_mode),
         "find_buildup_factor": str(find_buildup_mode),
@@ -3989,7 +3942,6 @@ def _resolve_spool_cli_options(
         "objective_schedule": [int(v) for v in objective_schedule],
         "line_width": float(line_width),
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
-        "sigma_used_mm": (None if sigma_used_mm is None else float(sigma_used_mm)),
         "scale_fix": [int(v) for v in scale_fix_levels],
         "fit_structure": [int(v) for v in fit_structure_levels],
     }
@@ -4006,14 +3958,9 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--pointwise-filtering",
-        dest="pointwise_filtering",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
         default=None,
-    )
-    parser.add_argument(
-        "--no-pointwise-filtering",
-        dest="pointwise_filtering",
-        action="store_false",
+        help="Use staged pseudo-Huber loss and a final 3-MAD trim; disable for squared residuals (default: enabled).",
     )
     parser.add_argument(
         "--pointwise-global-mad",
@@ -4028,14 +3975,9 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--sweep-wise-filtering",
-        dest="sweep_wise_filtering",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
         default=None,
-    )
-    parser.add_argument(
-        "--no-sweep-wise-filtering",
-        dest="sweep_wise_filtering",
-        action="store_false",
+        help="Enable sweep rejection (default: enabled). outlier_ratio requires pointwise filtering.",
     )
     parser.add_argument(
         "--sweep-metric",
@@ -4093,10 +4035,8 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     parser.add_argument("--objective-schedule", default=None)
     parser.add_argument("--line-width", type=float, default=None)
     parser.add_argument("--sigma-floor-mm", type=float, default=None)
-    parser.add_argument("--sigma-used-mm", type=float, default=None)
     parser.add_argument("--low-anchor-z", type=float, default=None)
     parser.add_argument("--spring-k-multiplier", type=float, default=None)
-    parser.add_argument("--threshold", type=float, default=None)
     parser.add_argument("--solve-restarts", type=int, default=None)
     parser.add_argument("--solve-iterations", type=int, default=None)
     parser.add_argument("--solve-optimizer", choices=_SOLVE_OPTIMIZER_CHOICES, default=None)

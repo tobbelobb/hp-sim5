@@ -26,7 +26,6 @@ def run_alternating_refinement(
     solve_restarts: int,
     solve_iterations: int,
     solve_optimizer: str,
-    residual_threshold: float,
     spring_k_multiplier: float,
     use_flex: bool,
     pointwise_residual_mode: str,

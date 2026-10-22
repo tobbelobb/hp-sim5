@@ -610,7 +610,6 @@ def test_prepare_frozen_dataset_and_flags_filters_points_and_sweeps(monkeypatch)
     frozen_dataset, flags = ellipse_solver._prepare_frozen_dataset_and_flags(
         dataset,
         np.zeros(6, dtype=float),
-        residual_threshold=0.01,
         pointwise_residual_mode="sampson",
         invalid_sweep_penalty=1e6,
         spring_k_multiplier=1.0,
@@ -650,7 +649,6 @@ def test_prepare_frozen_dataset_and_flags_respects_disable_env(monkeypatch):
     frozen_dataset, flags = ellipse_solver._prepare_frozen_dataset_and_flags(
         dataset,
         np.zeros(6, dtype=float),
-        residual_threshold=0.01,
         pointwise_residual_mode="sampson",
         invalid_sweep_penalty=1e6,
         spring_k_multiplier=1.0,

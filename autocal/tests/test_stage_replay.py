@@ -139,3 +139,30 @@ def test_artifacts_reject_wrong_stage_and_version(tmp_path):
     path.write_text(json.dumps(content))
     with pytest.raises(ValueError, match="version"):
         read_stage_artifact(path)
+
+
+def test_fit_replay_reads_old_artifacts_without_removed_options(tmp_path, monkeypatch):
+    import autocal.tools.replay_stage as replay
+
+    artifact = tmp_path / "old-fit.json"
+    write_stage_artifact(artifact, "fit", {
+        "fit": {"dataset": {"sweeps": []}},
+        "fit_options": {"residual_threshold": 250.0, "sigma_used_mm": 1.0},
+    })
+    calls = []
+
+    def fit(dataset_path, *, residuals_csv, generate_report):
+        assert json.loads(dataset_path.read_text()) == {"sweeps": []}
+        calls.append((residuals_csv, generate_report))
+        return {"dataset": {"sweeps": []}}
+
+    monkeypatch.setattr(replay, "fit_ellipse_dataset", fit)
+    output = tmp_path / "new-fit.json"
+    assert main(["fit", str(artifact), "--output", str(output)]) == 0
+    assert calls == [(None, False)]
+    options = read_stage_artifact(output)["payload"]["fit_options"]
+    assert "residual_threshold" not in options and "sigma_used_mm" not in options
+    override = tmp_path / "override.json"
+    override.write_text(json.dumps({"residual_threshold": 0.01}))
+    with pytest.raises(SystemExit):
+        main(["fit", str(artifact), "--options", str(override), "--output", str(output)])

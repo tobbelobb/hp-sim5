@@ -42,7 +42,6 @@ def test_calibrate_elliptical_runs(tmp_path):
     result = calibrate_elliptical(
         input_path,
         output_path=None,
-        residual_threshold=1e9,
         num_restarts=1,
         max_iterations=2,
         method="SLSQP",
@@ -60,7 +59,6 @@ def test_calibrate_elliptical_accepts_in_memory_dataset(tmp_path):
     result = calibrate_elliptical(
         dataset,
         output_path=None,
-        residual_threshold=1e9,
         num_restarts=1,
         max_iterations=2,
         method="SLSQP",
@@ -90,7 +88,6 @@ def test_calibrate_elliptical_corrects_reversed_point_roles(tmp_path):
     result = calibrate_elliptical(
         dataset,
         output_path=None,
-        residual_threshold=1e9,
         num_restarts=1,
         max_iterations=2,
         method="SLSQP",
@@ -122,7 +119,6 @@ def test_calibrate_elliptical_keeps_canonical_points_with_reversed_source_metada
     result = calibrate_elliptical(
         dataset,
         output_path=None,
-        residual_threshold=1e9,
         num_restarts=1,
         max_iterations=2,
         method="SLSQP",
@@ -263,7 +259,6 @@ def test_calibrate_elliptical_forwards_initial_guess(tmp_path, monkeypatch):
     result = calibrate_module.calibrate_elliptical(
         dataset,
         output_path=None,
-        residual_threshold=1e9,
         num_restarts=1,
         max_iterations=2,
         method="L-BFGS-B",
@@ -293,8 +288,6 @@ def test_cli_subcommand_does_not_collide_with_optimizer_flag(tmp_path, capsys):
             "2",
             "--restarts",
             "1",
-            "--threshold",
-            "1000000000",
             "--spring-k-multiplier",
             "1.0",
             "--debug",

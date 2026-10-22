@@ -129,7 +129,6 @@ def full_auto_loop(
     solve_restarts: int,
     solve_iterations: int,
     solve_optimizer: str,
-    residual_threshold: float,
     spring_k_multiplier: float,
     use_flex: bool,
     pointwise_residual_mode: str,
@@ -155,7 +154,6 @@ def full_auto_loop(
     theta0_mode: str,
     line_width: float,
     sigma_floor_mm: Optional[float],
-    sigma_used_mm: Optional[float],
     candidate_deltas: Optional[List[float]],
     candidate_count: int,
     delta_min: Optional[float],
@@ -594,7 +592,6 @@ def full_auto_loop(
         "solve_iterations": int(solve_iterations),
         "solve_optimizer": str(solve_optimizer),
         "optimizer_mode": _normalize_optimizer_mode(os.environ.get("AUTOCAL_OPTIMIZER_MODE", "fast")),
-        "residual_threshold": float(residual_threshold),
         "spring_k_multiplier": float(spring_k_multiplier),
         "use_flex": bool(use_flex),
         "pointwise_residual_mode": str(pointwise_residual_mode),
@@ -631,7 +628,6 @@ def full_auto_loop(
         "fit_structure": [int(v) for v in _parse_fit_structure_levels(fit_structure)],
         "line_width": float(line_width),
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
-        "sigma_used_mm": (None if sigma_used_mm is None else float(sigma_used_mm)),
         "low_anchor_z": (None if low_anchor_z is None else float(low_anchor_z)),
     }
 
@@ -871,7 +867,6 @@ def full_auto_loop(
                 solve_restarts=int(settings["solve_restarts"]),
                 solve_iterations=int(settings["solve_iterations"]),
                 solve_optimizer=str(settings["solve_optimizer"]),
-                residual_threshold=float(settings["residual_threshold"]),
                 spring_k_multiplier=float(settings["spring_k_multiplier"]),
                 use_flex=bool(settings["use_flex"]),
                 pointwise_residual_mode=str(settings["pointwise_residual_mode"]),
@@ -918,11 +913,6 @@ def full_auto_loop(
                     None
                     if settings.get("sigma_floor_mm") is None
                     else float(settings.get("sigma_floor_mm"))
-                ),
-                sigma_used_mm=(
-                    None
-                    if settings.get("sigma_used_mm") is None
-                    else float(settings.get("sigma_used_mm"))
                 ),
                 low_anchor_z=(
                     None
@@ -1298,10 +1288,6 @@ def full_auto_loop(
                     settings["sigma_floor_mm"] = float(settings["sigma_floor_mm"])
                     if not np.isfinite(settings["sigma_floor_mm"]) or settings["sigma_floor_mm"] <= 0.0:
                         settings["sigma_floor_mm"] = None
-                if settings.get("sigma_used_mm") is not None:
-                    settings["sigma_used_mm"] = float(settings["sigma_used_mm"])
-                    if not np.isfinite(settings["sigma_used_mm"]) or settings["sigma_used_mm"] <= 0.0:
-                        settings["sigma_used_mm"] = None
                 if settings.get("low_anchor_z") is not None:
                     settings["low_anchor_z"] = float(settings["low_anchor_z"])
                     if not np.isfinite(settings["low_anchor_z"]):
@@ -1858,7 +1844,6 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         solve_restarts=int(args.solve_restarts),
         solve_iterations=int(args.solve_iterations),
         solve_optimizer=solve_optimizer,
-        residual_threshold=float(args.threshold),
         spring_k_multiplier=float(args.spring_k_multiplier),
         use_flex=bool(args.flex),
         pointwise_residual_mode=str(args.pointwise_residual),
@@ -1884,7 +1869,6 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         theta0_mode=str(spool_opts["theta0_mode"]),
         line_width=float(spool_opts["line_width"]),
         sigma_floor_mm=(None if spool_opts.get("sigma_floor_mm") is None else float(spool_opts["sigma_floor_mm"])),
-        sigma_used_mm=(None if spool_opts.get("sigma_used_mm") is None else float(spool_opts["sigma_used_mm"])),
         low_anchor_z=args.low_anchor_z,
         candidate_deltas=_parse_csv_floats(args.candidate_deltas),
         candidate_count=int(args.candidate_count),

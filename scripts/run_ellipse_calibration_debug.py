@@ -311,7 +311,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
             cost_fn = EllipseCostFunction(
                 dataset,
-                residual_threshold=args.threshold,
                 min_points=args.min_points,
             )
             cost_history.append(cost_fn.evaluate(xk))
@@ -321,7 +320,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             method=args.method,
             max_iterations=2000,
             num_restarts=4,
-            residual_threshold=args.threshold,
             cost_callback=_cb,
             verbose=True,
         )

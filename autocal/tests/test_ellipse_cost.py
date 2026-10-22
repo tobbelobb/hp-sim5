@@ -112,7 +112,7 @@ def test_canonicalize_geometry_enforces_order_and_wrap():
 
 def test_cost_is_low_for_true_anchors():
     dataset, anchors = _synthetic_dataset()
-    cost_fn = EllipseCostFunction(dataset, residual_threshold=0.01)
+    cost_fn = EllipseCostFunction(dataset)
 
     cost = cost_fn.evaluate(anchors.ravel())
     detailed = cost_fn.evaluate_detailed(anchors.ravel())
@@ -126,7 +126,6 @@ def test_pointwise_euclidean_cost_is_low_for_true_anchors():
     dataset, anchors = _synthetic_dataset()
     cost_fn = EllipseCostFunction(
         dataset,
-        residual_threshold=0.01,
         pointwise_residual_mode="euclidean",
     )
     cost = cost_fn.evaluate(anchors.ravel())
@@ -274,22 +273,15 @@ def test_sigma_components_layered_include_mode_and_linewidth_terms():
     assert sigma_total > sigma_non_layered
 
 
-def test_sigma_used_override_sets_final_normalization_sigma():
+def test_obsolete_sigma_used_metadata_does_not_change_cost_or_scale():
     dataset, anchors = _synthetic_dataset()
-    dataset = _with_noise_model(
-        dataset,
-        find_radii_mode="global",
-        find_buildup_mode="off",
-        line_width_mm=1.0,
-        sigma_floor_mm=0.05,
-        sigma_used_mm=0.9,
-    )
-    cost_fn = EllipseCostFunction(dataset)
-    diag = cost_fn.robustness_diagnostics(anchors.ravel())
-    pw = diag["pointwise_filtering"]
-    assert np.isclose(float(pw["sigma_min_mm"]), 0.05, atol=1e-12)
-    assert float(pw["sigma_model_mm"]) > 0.05
-    assert np.isclose(float(pw["sigma_used_mm"]), 0.9, atol=1e-12)
-    assert np.isclose(float(pw["sigma_floor_mm"]), 0.9, atol=1e-12)
-    assert np.isclose(float(pw["sigma_used_override_mm"]), 0.9, atol=1e-12)
-    assert pw["sigma_floor_source"] == "override"
+    dataset = _with_noise_model(dataset, find_radii_mode="off",
+                                find_buildup_mode="off", line_width_mm=1.0)
+    baseline = EllipseCostFunction(dataset)
+    # Historical dataset metadata must not resurrect the removed override.
+    dataset = _with_noise_model(dataset, find_radii_mode="off",
+                                find_buildup_mode="off", line_width_mm=1.0, sigma_used_mm=1e9)
+    restored = EllipseCostFunction(dataset)
+    assert restored.evaluate(anchors.ravel()) == baseline.evaluate(anchors.ravel())
+    assert restored._pointwise_sigma_floor_mm == baseline._pointwise_sigma_floor_mm
+    assert "sigma_used_override_mm" not in restored._sigma_components

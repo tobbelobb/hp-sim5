@@ -373,3 +373,27 @@ non-finite or geometrically invalid primary results, including a reported
 convergence with no valid sweeps. An attempted retry is recorded even if its
 result is not chosen. A disabled fallback having zero triggers is not evidence
 that the retry capability is unnecessary.
+
+### Noise and filtering controls
+
+`--pointwise-filtering` (enabled by default) uses staged pseudo-Huber loss and a
+final 3-MAD hard trim. `--no-pointwise-filtering` uses squared residuals. This
+changes both loss shape and trimming; it is not a switch that simply deletes bad
+points. The default sweep rejection metric, `outlier_ratio`, needs the pointwise
+inlier mask and cannot reject sweeps when pointwise filtering is disabled.
+
+`--sigma-floor-mm` sets a minimum noise-model sigma. Changing it rescales
+normalized costs, so compare physical errors and predictions rather than costs
+across different floors. Filtering defaults remain unchanged pending validation.
+
+The unused anchor-fit `--threshold` and misleading `--sigma-used-mm` override
+have been removed from autocal (including full-auto variants). The unused
+threshold in `calibrate.py ellipse` is removed too. Remove these options from
+commands and Python fit calls. Old fit-stage artifacts remain replayable: their
+saved obsolete options and sigma override metadata are ignored, while explicitly
+requesting a removed replay override is rejected. Computed `sigma_used_mm`
+diagnostics remain available. The standalone ellipse-fitting API and
+`scripts/run_ellipse_calibration_debug.py` retain their working validity threshold.
+
+See [Lane 02 integration evidence](../research/autocal-filtering-lane02-integration.md)
+for the bounded checks and remaining model/normalization questions.

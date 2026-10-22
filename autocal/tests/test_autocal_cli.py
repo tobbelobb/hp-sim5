@@ -43,8 +43,6 @@ def test_spool_cli_options_parse_modes_and_bounds():
         "1.25",
         "--sigma-floor-mm",
         "0.05",
-        "--sigma-used-mm",
-        "0.8",
     )
     opts = _resolve_spool_cli_options(parser, args)
     assert opts["find_radii"] == "global"
@@ -57,7 +55,6 @@ def test_spool_cli_options_parse_modes_and_bounds():
     assert opts["objective_schedule"] == [1, 1, 1, 1]
     assert opts["line_width"] == 1.25
     assert opts["sigma_floor_mm"] == 0.05
-    assert opts["sigma_used_mm"] == 0.8
     assert opts["fit_structure"] == [3]
 
 
@@ -89,11 +86,6 @@ def test_spool_cli_rejects_nonpositive_sigma_floor_mm():
     with pytest.raises(SystemExit):
         _resolve_spool_cli_options(parser, args)
 
-
-def test_spool_cli_rejects_nonpositive_sigma_used_mm():
-    parser, args = _parse_spool_args("--sigma-used-mm", "0")
-    with pytest.raises(SystemExit):
-        _resolve_spool_cli_options(parser, args)
 
 
 def test_spool_cli_parses_scale_fix_levels():
@@ -374,3 +366,26 @@ def test_open_loop_motors_option():
     assert args.open_loop_motors is True
     _, defaults = _parse_spool_args()
     assert defaults.open_loop_motors is False
+
+
+@pytest.mark.parametrize("positive,negative,key", [
+    ("--pointwise-filtering", "--no-pointwise-filtering", "pointwise_filtering"),
+    ("--sweep-wise-filtering", "--no-sweep-wise-filtering", "sweep_wise_filtering"),
+    ("--pointwise-global-mad", "--pointwise-per-sweep-mad", "pointwise_global_mad"),
+    ("--use-noise-mean", "--use-raw-lengths", "use_noise_mean"),
+])
+def test_filter_variants_preserve_inheritance_and_explicit_reenable(positive, negative, key):
+    _, args = _parse_spool_args(negative)
+    assert getattr(args, key) is False
+    assert _parse_full_auto_run_spec("")[1] == {}
+    assert _parse_full_auto_run_spec(positive)[1] == {key: True}
+    assert _parse_full_auto_run_spec(negative)[1] == {key: False}
+    assert _parse_full_auto_run_spec(f"{negative} {positive}")[1] == {key: True}
+
+
+@pytest.mark.parametrize("flag", ["--threshold", "--sigma-used-mm"])
+def test_removed_fit_flags_rejected_in_main_and_variant_parsers(flag):
+    with pytest.raises(SystemExit):
+        _parse_spool_args(flag, "1")
+    with pytest.raises(ValueError):
+        _parse_full_auto_run_spec(f"{flag} 1")

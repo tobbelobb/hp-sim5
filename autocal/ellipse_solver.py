@@ -370,7 +370,6 @@ def _optimize_restart_worker(payload: dict) -> dict:
     x0_clipped = np.asarray(payload["x0"], dtype=float)
     method_raw = str(payload["method"])
     max_iterations = int(payload["max_iterations"])
-    residual_threshold = float(payload["residual_threshold"])
     pointwise_residual_mode = str(payload.get("pointwise_residual_mode", "sampson"))
     invalid_sweep_penalty = float(payload["invalid_sweep_penalty"])
     spring_k_multiplier = float(payload["spring_k_multiplier"])
@@ -397,7 +396,6 @@ def _optimize_restart_worker(payload: dict) -> dict:
     cost_fn, _dataset_eff, _flags = _build_restart_cost_fn(
         dataset,
         x0_clipped,
-        residual_threshold=float(residual_threshold),
         pointwise_residual_mode=str(pointwise_residual_mode),
         invalid_sweep_penalty=float(invalid_sweep_penalty),
         spring_k_multiplier=float(spring_k_multiplier),
@@ -537,7 +535,6 @@ def _freeze_filter_masks_enabled() -> bool:
 def _build_cost_fn(
     dataset: Union[dict, "SweepDataset"],
     *,
-    residual_threshold: float,
     pointwise_residual_mode: str,
     invalid_sweep_penalty: float,
     spring_k_multiplier: float,
@@ -555,7 +552,6 @@ def _build_cost_fn(
 ) -> EllipseCostFunction:
     return EllipseCostFunction(
         dataset,
-        residual_threshold=residual_threshold,
         pointwise_residual_mode=str(pointwise_residual_mode),
         invalid_sweep_penalty=invalid_sweep_penalty,
         spring_k_multiplier=float(spring_k_multiplier),
@@ -577,7 +573,6 @@ def _prepare_frozen_dataset_and_flags(
     dataset: Union[dict, "SweepDataset"],
     x0: np.ndarray,
     *,
-    residual_threshold: float,
     pointwise_residual_mode: str,
     invalid_sweep_penalty: float,
     spring_k_multiplier: float,
@@ -627,7 +622,6 @@ def _prepare_frozen_dataset_and_flags(
 
     probe_cost_fn = _build_cost_fn(
         dataset,
-        residual_threshold=float(residual_threshold),
         pointwise_residual_mode=str(pointwise_residual_mode),
         invalid_sweep_penalty=float(invalid_sweep_penalty),
         spring_k_multiplier=float(spring_k_multiplier),
@@ -694,7 +688,6 @@ def _build_restart_cost_fn(
     dataset: Union[dict, "SweepDataset"],
     x0: np.ndarray,
     *,
-    residual_threshold: float,
     pointwise_residual_mode: str,
     invalid_sweep_penalty: float,
     spring_k_multiplier: float,
@@ -713,7 +706,6 @@ def _build_restart_cost_fn(
     dataset_eff, flags = _prepare_frozen_dataset_and_flags(
         dataset,
         x0,
-        residual_threshold=float(residual_threshold),
         pointwise_residual_mode=str(pointwise_residual_mode),
         invalid_sweep_penalty=float(invalid_sweep_penalty),
         spring_k_multiplier=float(spring_k_multiplier),
@@ -731,7 +723,6 @@ def _build_restart_cost_fn(
     )
     cost_fn = _build_cost_fn(
         dataset_eff,
-        residual_threshold=float(residual_threshold),
         pointwise_residual_mode=str(pointwise_residual_mode),
         invalid_sweep_penalty=float(invalid_sweep_penalty),
         spring_k_multiplier=float(spring_k_multiplier),
@@ -756,7 +747,6 @@ def solve_anchor_proposal_lsq(
     *,
     method: str = "trf",
     max_iterations: int = 1000,
-    residual_threshold: float = 0.01,
     pointwise_residual_mode: str = "sampson",
     invalid_sweep_penalty: float = 1e6,
     spring_k_multiplier: float = 1.0,
@@ -791,7 +781,6 @@ def solve_anchor_proposal_lsq(
     cost_fn, _dataset_eff, _flags = _build_restart_cost_fn(
         dataset,
         x0,
-        residual_threshold=float(residual_threshold),
         pointwise_residual_mode=str(pointwise_residual_mode),
         invalid_sweep_penalty=float(invalid_sweep_penalty),
         spring_k_multiplier=float(spring_k_multiplier),
@@ -842,7 +831,6 @@ def solve_anchors(
     use_parallel: bool = True,
     max_workers: Optional[int] = None,
     progress_every: int = 10,
-    residual_threshold: float = 0.01,
     pointwise_residual_mode: str = "sampson",
     invalid_sweep_penalty: float = 1e6,
     spring_k_multiplier: float = 1.0,
@@ -905,7 +893,6 @@ def solve_anchors(
                 use_parallel=bool(use_parallel) and stage_restarts > 1,
                 max_workers=max_workers,
                 progress_every=progress_every,
-                residual_threshold=residual_threshold,
                 pointwise_residual_mode=pointwise_residual_mode,
                 invalid_sweep_penalty=invalid_sweep_penalty,
                 spring_k_multiplier=spring_k_multiplier,
@@ -939,7 +926,6 @@ def solve_anchors(
 
     cost_fn = _build_cost_fn(
         dataset,
-        residual_threshold=float(residual_threshold),
         pointwise_residual_mode=str(pointwise_residual_mode),
         invalid_sweep_penalty=float(invalid_sweep_penalty),
         spring_k_multiplier=float(spring_k_multiplier),
@@ -1317,7 +1303,6 @@ def solve_anchors(
                 "x0": np.clip(np.asarray(x0, dtype=float), lb, ub),
                 "method": method_raw,
                 "max_iterations": int(max_iterations),
-                "residual_threshold": float(residual_threshold),
                 "pointwise_residual_mode": str(pointwise_residual_mode),
                 "invalid_sweep_penalty": float(invalid_sweep_penalty),
                 "spring_k_multiplier": float(spring_k_multiplier),
@@ -1373,7 +1358,6 @@ def solve_anchors(
             cost_fn, _dataset_eff, _flags = _build_restart_cost_fn(
                 dataset,
                 x0_clipped,
-                residual_threshold=float(residual_threshold),
                 pointwise_residual_mode=str(pointwise_residual_mode),
                 invalid_sweep_penalty=float(invalid_sweep_penalty),
                 spring_k_multiplier=float(spring_k_multiplier),
@@ -1554,7 +1538,6 @@ def solve_anchors(
         best_cost_fn, _dataset_eff, _flags = _build_restart_cost_fn(
             dataset,
             best_x0,
-            residual_threshold=float(residual_threshold),
             pointwise_residual_mode=str(pointwise_residual_mode),
             invalid_sweep_penalty=float(invalid_sweep_penalty),
             spring_k_multiplier=float(spring_k_multiplier),

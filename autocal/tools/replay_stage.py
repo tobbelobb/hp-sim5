@@ -28,7 +28,14 @@ def main(argv=None):
         if artifact["kind"] != "fit":
             parser.error("fit and plan require a fit artifact")
         if args.stage == "fit":
-            options = {**payload["fit_options"], **overrides}
+            # Version-1 artifacts included two removed anchor-fit options.
+            # Keep old snapshots replayable, but reject new requests for them.
+            removed = {"residual_threshold", "sigma_used_mm"}
+            if removed.intersection(overrides):
+                parser.error("removed fit options: " + ", ".join(sorted(removed.intersection(overrides))))
+            options = {key: value for key, value in payload["fit_options"].items()
+                       if key not in removed}
+            options.update(overrides)
             # Use the embedded sweep snapshot, never the growing live dataset.
             with tempfile.TemporaryDirectory(prefix="autocal-fit-") as temporary:
                 dataset_path = Path(temporary) / "sweeps.json"

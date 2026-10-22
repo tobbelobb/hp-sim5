@@ -235,7 +235,6 @@ class EllipseCostFunction:
     def __init__(
         self,
         dataset: Union[dict, "SweepDataset"],
-        residual_threshold: float = 0.01,
         min_points: int = 10,
         pointwise_residual_mode: str = "sampson",
         invalid_sweep_penalty: float = 1e6,
@@ -266,7 +265,6 @@ class EllipseCostFunction:
             _MIN_SWEEPS_AFTER_TRIM_BY_MACHINE.get(machine_key, _MIN_SWEEPS_AFTER_TRIM_DEFAULT)
         )
 
-        self.residual_threshold = residual_threshold
         self.min_points = min_points
         self.pointwise_residual_mode = str(pointwise_residual_mode or "sampson").strip().lower()
         self.invalid_penalty = invalid_sweep_penalty
@@ -323,15 +321,7 @@ class EllipseCostFunction:
         if raw_noise_mm is not None:
             sigma_scaled_mm = float(self._pointwise_sigma_mult * raw_noise_mm)
         self._pointwise_sigma_scaled_mm = sigma_scaled_mm
-        sigma_used_override_mm = self._sigma_components.get("sigma_used_override_mm")
-        if (
-            isinstance(sigma_used_override_mm, (int, float))
-            and np.isfinite(float(sigma_used_override_mm))
-            and float(sigma_used_override_mm) > 0.0
-        ):
-            sigma_floor_mm = float(sigma_used_override_mm)
-            sigma_source = "override"
-        elif sigma_scaled_mm is not None and sigma_scaled_mm >= self._pointwise_sigma_model_mm:
+        if sigma_scaled_mm is not None and sigma_scaled_mm >= self._pointwise_sigma_model_mm:
             sigma_floor_mm = float(sigma_scaled_mm)
             sigma_source = "noise"
         else:
@@ -923,13 +913,6 @@ class EllipseCostFunction:
                 + sigma_floor_term**2
             )
         )
-        sigma_used_override_mm: Optional[float] = None
-        sigma_used_override = noise_model.get("sigma_used_mm")
-        if isinstance(sigma_used_override, (int, float)):
-            sigma_used_val = float(sigma_used_override)
-            if np.isfinite(sigma_used_val) and sigma_used_val > 0.0:
-                sigma_used_override_mm = float(sigma_used_val)
-
         if isinstance(dataset, dict):
             config = dataset.get("config", {}) or {}
         else:
@@ -978,7 +961,6 @@ class EllipseCostFunction:
             "sigma_flex_mm": float(sigma_flex),
             "sigma_flex_source": str(sigma_flex_source),
             "sigma_floor_term_mm": float(sigma_floor_term),
-            "sigma_used_override_mm": sigma_used_override_mm,
             "sigma_non_layered_mm": float(sigma_non_layered),
             "sigma_layer_changes_mm": float(sigma_layer_changes),
             "sigma_mode_addition_mm": float(sigma_mode_addition),

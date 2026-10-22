@@ -1047,7 +1047,6 @@ def _build_residual_rows(
     modeled_radii_mm: Optional[np.ndarray],
     modeled_buildup_factor: Optional[np.ndarray],
     base_radii_override: Optional[List[float]],
-    residual_threshold: float,
     pointwise_filtering: bool,
     pointwise_global_mad: bool,
     sweep_wise_filtering: bool,
@@ -1057,7 +1056,6 @@ def _build_residual_rows(
     prefer_zero_tension_angles: bool,
     line_width: float,
     sigma_floor_mm: Optional[float],
-    sigma_used_mm: Optional[float],
 ) -> Tuple[List[dict], dict]:
     dataset_local = copy.deepcopy(dataset)
     find_radii_mode = "off" if modeled_radii_mm is None else "global"
@@ -1066,7 +1064,6 @@ def _build_residual_rows(
         dataset_local,
         line_width_mm=float(line_width),
         sigma_floor_mm=sigma_floor_mm,
-        sigma_used_mm=sigma_used_mm,
         find_radii_mode=find_radii_mode,
         find_buildup_mode=find_buildup_mode,
         project_zero_tension=bool(prefer_zero_tension_angles),
@@ -1103,7 +1100,6 @@ def _build_residual_rows(
 
     cost_fn = ac._build_ellipse_cost_function(
         dataset_eval,
-        residual_threshold=float(residual_threshold),
         spring_k_multiplier=1.0,
         use_flex=False,
         pointwise_residual_mode="sampson",
@@ -1136,7 +1132,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--log", type=Path, default=None, help="Full-auto text log to parse model from")
     parser.add_argument("--log-iteration", type=int, default=None, help="Use iteration N from --log")
     parser.add_argument("--log-summary", action="store_true", help="Use the final summary model from --log")
-    parser.add_argument("--threshold", type=float, default=250.0, help="Residual threshold")
     parser.add_argument("--pointwise-filtering", dest="pointwise_filtering", action="store_true")
     parser.add_argument("--no-pointwise-filtering", dest="pointwise_filtering", action="store_false")
     parser.add_argument("--pointwise-global-mad", dest="pointwise_global_mad", action="store_true")
@@ -1150,7 +1145,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--prefer-zero-tension-angles", action="store_true")
     parser.add_argument("--line-width", type=float, default=1.0)
     parser.add_argument("--sigma-floor-mm", type=float, default=None)
-    parser.add_argument("--sigma-used-mm", type=float, default=None)
     parser.add_argument("--annotate-points", action="store_true")
     parser.add_argument("--per-sweep-fits", action="store_true", help="Write one raw-length fit SVG per sweep")
     parser.set_defaults(
@@ -1181,7 +1175,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         modeled_radii_mm=None if radii is None else np.asarray(radii, dtype=float),
         modeled_buildup_factor=None if buildup is None else np.asarray(buildup, dtype=float),
         base_radii_override=base_radii_override,
-        residual_threshold=float(args.threshold),
         pointwise_filtering=bool(args.pointwise_filtering),
         pointwise_global_mad=bool(args.pointwise_global_mad),
         sweep_wise_filtering=bool(args.sweep_wise_filtering),
@@ -1191,7 +1184,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         prefer_zero_tension_angles=bool(args.prefer_zero_tension_angles),
         line_width=float(args.line_width),
         sigma_floor_mm=args.sigma_floor_mm,
-        sigma_used_mm=args.sigma_used_mm,
     )
 
     out_dir = Path(args.out_dir)

@@ -178,3 +178,17 @@ Historical/current HP3 geometry agrees with the existing nominal truth; poor fit
 agreement with an older fitted reference does not establish a scene mismatch.
 Compact solver diagnostics and an invalid-primary retry fix preserve default
 numerics on five frozen fits and three full replay regressions.
+
+## Autocal Lane 02 integration: unused fit controls
+
+Status: complete, 2026-10-22. Topics: autocalibration, filtering, noise normalization,
+CLI cleanup, old stage artifacts, reference provenance and consensus.
+
+[Integration report](autocal-filtering-lane02-integration.md): removes unused
+anchor-fit threshold and misleading sigma-used override; retains numerical
+defaults and old artifact replay. Four bounded fits and three full fixture
+regressions preserve default results; 267 targeted tests pass. The alleged layered
+fallback regression compared an individual fit with a selected final consensus.
+[Session abstract](../output/research/sessions/2026-10-22-autocal-filtering-integration/abstract.md)
+and [notebook](../output/research/sessions/2026-10-22-autocal-filtering-integration/research.md)
+retain raw evidence and limitations.

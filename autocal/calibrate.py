@@ -658,7 +658,6 @@ def _debug_print_legacy_config_comparison(sim: Any, dataset: dict, num_axes: int
 def calibrate_elliptical(
     input_path: Union[Path, Dict[str, Any]],
     output_path: Optional[Path] = None,
-    residual_threshold: float = 0.01,
     num_restarts: int = 8,
     max_iterations: int = 1000,
     method: str = "SLSQP",
@@ -718,7 +717,6 @@ def calibrate_elliptical(
             f"optimizer={method}",
             f"restarts={num_restarts}",
             f"maxiter={max_iterations}",
-            f"threshold={residual_threshold}",
             f"progress_every={progress_every}",
             f"flex={use_flex}",
         )
@@ -731,7 +729,6 @@ def calibrate_elliptical(
         num_restarts=num_restarts,
         use_parallel=bool(use_parallel) and not bool(verbose),
         progress_every=int(progress_every),
-        residual_threshold=residual_threshold,
         pointwise_residual_mode=str(pointwise_residual_mode),
         spring_k_multiplier=float(spring_k_multiplier),
         use_flex=bool(use_flex),
@@ -1035,13 +1032,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     ellipse_parser = subparsers.add_parser("ellipse", help="Elliptical feature calibration")
     ellipse_parser.add_argument("input", type=Path, help="Sweep data JSON file (deltas from origin)")
     ellipse_parser.add_argument("-o", "--output", type=Path, help="Output results JSON")
-    ellipse_parser.add_argument(
-        "-t",
-        "--threshold",
-        type=float,
-        default=None,
-        help="Sampson RMS threshold (default depends on machine_type)",
-    )
     ellipse_parser.add_argument("-r", "--restarts", type=int, default=8, help="Number of optimization restarts")
     ellipse_parser.add_argument("-i", "--iterations", type=int, default=1000, help="Max iterations per restart")
     ellipse_parser.add_argument(
@@ -1322,19 +1312,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "ellipse":
-        dataset = _load_json(args.input)
-        if args.threshold is None:
-            if str(dataset.get("machine_type", "")) == "slideprinter":
-                threshold = 250.0
-            else:
-                threshold = 0.01
-        else:
-            threshold = float(args.threshold)
-
         result = calibrate_elliptical(
             args.input,
             args.output,
-            residual_threshold=threshold,
             num_restarts=int(args.restarts),
             max_iterations=args.iterations,
             method=args.optimizer,

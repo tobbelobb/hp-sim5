@@ -1,8 +1,8 @@
 usage: autocal.py [-h] --machine-type {slideprinter,hangprinter_3,hangprinter_4,hangprinter_5,cubecorners,skycam,hp3,hp4,v3,v4,four_high_anchors,cube_corners} [--no-collect] [--sparse-recovery] [--dataset DATASET] [--sweep-points SWEEP_POINTS]
                   [--plot-residual-histogram] [--max-steps MAX_STEPS] [--stop-cost STOP_COST] [--stop-std-mm STOP_STD_MM] [--full-auto-run FULL_AUTO_RUN] [--shotgun] [--stage-artifacts STAGE_ARTIFACTS] [--full-auto-log FULL_AUTO_LOG] [--verbose]
                   [--patience PATIENCE] [--solve-restarts SOLVE_RESTARTS] [--solve-iterations SOLVE_ITERATIONS] [--solve-optimizer {lbfgsb,lm,trf}] [--trf-solver-fallback | --no-trf-solver-fallback] [--optimizer-mode {fast,fast-fd,legacy}]
-                  [--threshold THRESHOLD] [--spring-k-multiplier SPRING_K_MULTIPLIER] [--flex] [--find-radii [{off,global,per-anchor}]] [--find-buildup-factor [{off,global,per-anchor}]] [--base-radii BASE_RADII] [--buildup-factor BUILDUP_FACTOR]
-                  [--line-width LINE_WIDTH] [--sigma-floor-mm SIGMA_FLOOR_MM] [--sigma-used-mm SIGMA_USED_MM] [--low-anchor-z LOW_ANCHOR_Z] [--r0-bounds R0_BOUNDS] [--b-bounds B_BOUNDS] [--r0-prior-sigma-mm R0_PRIOR_SIGMA_MM]
+                  [--spring-k-multiplier SPRING_K_MULTIPLIER] [--flex] [--find-radii [{off,global,per-anchor}]] [--find-buildup-factor [{off,global,per-anchor}]] [--base-radii BASE_RADII] [--buildup-factor BUILDUP_FACTOR]
+                  [--line-width LINE_WIDTH] [--sigma-floor-mm SIGMA_FLOOR_MM] [--low-anchor-z LOW_ANCHOR_Z] [--r0-bounds R0_BOUNDS] [--b-bounds B_BOUNDS] [--r0-prior-sigma-mm R0_PRIOR_SIGMA_MM]
                   [--b-prior-sigma B_PRIOR_SIGMA] [--spool-outer-iters SPOOL_OUTER_ITERS] [--spool-inner-iters SPOOL_INNER_ITERS] [--theta0-mode {infer,zero}] [--scale-fix SCALE_FIX] [--fit-structure FIT_STRUCTURE] [--filter-schedule FILTER_SCHEDULE]
                   [--objective-schedule OBJECTIVE_SCHEDULE] [--pointwise-residual {sampson,euclidean}] [--pointwise-filtering] [--no-pointwise-filtering] [--pointwise-global-mad] [--pointwise-per-sweep-mad] [--sweep-wise-filtering]
                   [--no-sweep-wise-filtering] [--sweep-metric {mad,median_abs,outlier_ratio}] [--sigma-source {auto,point,origin,min}] [--use-noise-mean | --use-raw-lengths] [--robust-debug] [--no-robust-debug] [--residuals-csv RESIDUALS_CSV]
@@ -48,7 +48,6 @@ KEEP  --dataset DATASET     Dataset file updated each iteration (default: autoca
                         Retry unsuccessful or invalid lbfgsb restarts with bounded trf (default: disabled; can change the final consensus).
   --optimizer-mode {fast,fast-fd,legacy}
                         Optimization mode: 'fast' (JAX exact Jacobian), 'fast-fd' (JAX value + SciPy finite differences), or 'legacy' (no JAX + SciPy finite differences).
-  --threshold THRESHOLD
   --spring-k-multiplier SPRING_K_MULTIPLIER
   --flex
 KEEP  --find-radii [{off,global,per-anchor}]
@@ -63,8 +62,6 @@ KEEP  --line-width LINE_WIDTH
                         Estimated line width in mm used by the layered noise model (default: 1.0).
   --sigma-floor-mm SIGMA_FLOOR_MM
                         Override the base sigma floor (mm) used in the composite noise model.
-  --sigma-used-mm SIGMA_USED_MM
-                        Override the final sigma used for pointwise normalization (mm).
   --low-anchor-z LOW_ANCHOR_Z
                         For hangprinter_4, fix the shared low-anchor Z plane to this value in mm.
 KEEP  --r0-bounds R0_BOUNDS
@@ -185,3 +182,12 @@ The nominal HP3 scene matches the existing effective-anchor truth; the seventh
 fixture remains substantially biased against it. Defaults are retained. Solver
 traces now expose methods, budgets, convergence and retry attempts; an enabled
 fallback no longer skips a converged primary with zero valid sweeps.
+
+## Lane 02 integration, 2026-10-22
+
+Removed `--threshold` from the anchor-fit path after a 0.01 versus 250 replay
+produced identical parameters and costs. Removed the misleading `--sigma-used-mm`
+override and its plumbing; it did not override per-point normalization. Default
+filtering and solver policies remain unchanged. Boolean filter switches retain
+both spellings and full-auto inheritance. Older fit-stage snapshots are migrated
+on replay. See [integration findings](research/autocal-filtering-lane02-integration.md).

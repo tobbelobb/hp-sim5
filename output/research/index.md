@@ -2051,6 +2051,50 @@ HP4, Print Squares, missed steps, physics substeps, open-loop torque balance, ro
 
 - [Commit patch](sessions/2026-10-21-interactive-research-cdfb5278/hp4-open-loop-torque-balance.patch) and [bundle](sessions/2026-10-21-interactive-research-cdfb5278/hp4-open-loop-torque-balance.bundle): packaged commit `838133d4`; original `.git` is read-only and source edits remain in the working tree.
 
+## [2026-10-22-autocal-filtering-integration](sessions/2026-10-22-autocal-filtering-integration/)
+
+[abstract.md](sessions/2026-10-22-autocal-filtering-integration/abstract.md) · [report.md](sessions/2026-10-22-autocal-filtering-integration/report.md) · [research.md](sessions/2026-10-22-autocal-filtering-integration/research.md)
+
+### Autocal Lane 02 cleanup and reference-comparison audit
+
+Status: complete.
+
+#### Abstract
+
+Lane 02 found an unused anchor-fit threshold and a sigma override that did not
+control per-point normalization. Four bounded frozen-fit replays confirmed that
+changing threshold 250 to 0.01 preserves anchors, radii and both costs exactly;
+the 1 mm sigma override preserved parameters and normalized cost but changed raw
+cost. The cleanup removes both options and their plumbing, consolidates paired
+filter booleans, clarifies filtering/noise help and preserves old stage-artifact
+replay. A post-change replay exactly matches the control. Three complete fixture
+regressions preserve final and iteration parameters, scores and collection counts;
+267 targeted tests pass. A provenance check also resolves the reported layered
+accuracy gap: Lane 02's own final consensus is 1.58 mm anchor RMSE, matching the
+later October reference; its 7.68 mm result is an individual fit. No filtering,
+solver or stopping default was changed, and no accuracy or speed gain is claimed.
+Evidence is recorded simulation and source tracing, not new hardware or collection.
+
+
+#### Topics
+
+autocalibration, filtering, noise sigma, dead flags, threshold, parser inheritance,
+stage artifacts, reference provenance, consensus, solver fallback
+
+#### Tested hypotheses
+
+| Hypothesis | IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Anchor-fit threshold changes the frozen fit | T1 | Rejected | [Before checks](sessions/2026-10-22-autocal-filtering-integration/before-checks.json) |
+| Sigma override is entirely inert | S1 | Rejected for raw cost; parameters unchanged | [Before checks](sessions/2026-10-22-autocal-filtering-integration/before-checks.json) |
+| Default numerics survive cleanup | C1/R1 | Supported on tested replay/fixtures | [After checks](sessions/2026-10-22-autocal-filtering-integration/after-checks.json), [regressions](sessions/2026-10-22-autocal-filtering-integration/regression.log) |
+| Layered comparison establishes fallback regression | H1 | Rejected as inference | [Summary comparison](sessions/2026-10-22-autocal-filtering-integration/summary-comparison.json), [history](sessions/2026-10-22-autocal-filtering-integration/fallback-history.json) |
+
+#### References
+
+- [Report](sessions/2026-10-22-autocal-filtering-integration/report.md): implementation and evidence.
+- [Notebook](sessions/2026-10-22-autocal-filtering-integration/research.md): decisions and commands.
+
 ## [2026-10-22-autocal-solver-integration](sessions/2026-10-22-autocal-solver-integration/)
 
 [abstract.md](sessions/2026-10-22-autocal-solver-integration/abstract.md) · [report.md](sessions/2026-10-22-autocal-solver-integration/report.md) · [research.md](sessions/2026-10-22-autocal-solver-integration/research.md)

@@ -11,7 +11,6 @@ def fit_ellipse_dataset(
     solve_restarts: int,
     solve_iterations: int,
     solve_optimizer: str,
-    residual_threshold: float,
     spring_k_multiplier: float,
     use_flex: bool,
     pointwise_residual_mode: str,
@@ -37,7 +36,6 @@ def fit_ellipse_dataset(
     theta0_mode: str,
     line_width: float,
     sigma_floor_mm: Optional[float],
-    sigma_used_mm: Optional[float],
     fd_eps_mm: float,
     regularization: float,
     collector_args: Sequence[str],
@@ -140,7 +138,6 @@ def fit_ellipse_dataset(
         dataset,
         line_width_mm=float(line_width),
         sigma_floor_mm=sigma_floor_mm,
-        sigma_used_mm=sigma_used_mm,
         find_radii_mode=find_radii_mode,
         find_buildup_mode=find_buildup_mode,
         project_zero_tension=bool(prefer_zero_tension_angles),
@@ -176,7 +173,6 @@ def fit_ellipse_dataset(
         seed_cal = calibrate_elliptical(
             dataset,
             output_path=None,
-            residual_threshold=float(residual_threshold),
             num_restarts=int(seed_restarts),
             max_iterations=int(seed_iterations),
             method=str(solve_optimizer),
@@ -219,7 +215,6 @@ def fit_ellipse_dataset(
                 solve_restarts=int(solve_restarts),
                 solve_iterations=int(solve_iterations),
                 solve_optimizer=str(solve_optimizer),
-                residual_threshold=float(residual_threshold),
                 spring_k_multiplier=float(spring_k_multiplier),
                 use_flex=bool(use_flex),
                 pointwise_residual_mode=str(pointwise_residual_mode),
@@ -266,7 +261,6 @@ def fit_ellipse_dataset(
             cal = calibrate_elliptical(
                 dataset_for_estimation,
                 output_path=None,
-                residual_threshold=float(residual_threshold),
                 num_restarts=int(solve_restarts),
                 max_iterations=int(solve_iterations),
                 method=str(solve_optimizer),
@@ -349,7 +343,6 @@ def fit_ellipse_dataset(
         cal = calibrate_elliptical(
             dataset,
             output_path=None,
-            residual_threshold=float(residual_threshold),
             num_restarts=int(solve_restarts),
             max_iterations=int(solve_iterations),
             method=str(solve_optimizer),
@@ -377,7 +370,6 @@ def fit_ellipse_dataset(
         _evaluate_cost_at_anchors(
             dataset_for_estimation,
             anchors,
-            residual_threshold=float(residual_threshold),
             spring_k_multiplier=float(spring_k_multiplier),
             use_flex=bool(use_flex),
             pointwise_residual_mode=str(pointwise_residual_mode),
@@ -412,7 +404,6 @@ def fit_ellipse_dataset(
     if isinstance(noise_metrics, dict) and bool(search_radii or search_buildup):
         cost_fn = _build_ellipse_cost_function(
             dataset_for_estimation,
-            residual_threshold=float(residual_threshold),
             spring_k_multiplier=float(spring_k_multiplier),
             use_flex=bool(use_flex),
             pointwise_residual_mode=str(pointwise_residual_mode),
@@ -492,7 +483,6 @@ def fit_ellipse_dataset(
         "spool_model_params": spool_params,
         "line_width_mm": float(line_width),
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
-        "sigma_used_mm": (None if sigma_used_mm is None else float(sigma_used_mm)),
         "fit_structure_levels": [int(v) for v in fit_structure_levels],
         "dataset_for_estimation": dataset_for_estimation,
     }
