@@ -2051,6 +2051,42 @@ HP4, Print Squares, missed steps, physics substeps, open-loop torque balance, ro
 
 - [Commit patch](sessions/2026-10-21-interactive-research-cdfb5278/hp4-open-loop-torque-balance.patch) and [bundle](sessions/2026-10-21-interactive-research-cdfb5278/hp4-open-loop-torque-balance.bundle): packaged commit `838133d4`; original `.git` is read-only and source edits remain in the working tree.
 
+## [2026-10-22-interactive-research-a430536f](sessions/2026-10-22-interactive-research-a430536f/)
+
+[abstract.md](sessions/2026-10-22-interactive-research-a430536f/abstract.md) · [report.md](sessions/2026-10-22-interactive-research-a430536f/report.md) · [research.md](sessions/2026-10-22-interactive-research-a430536f/research.md)
+
+### HP3 encoder autocal: where simulated collection time goes, and feed rate as a speed lever
+
+Status: complete for the bounded scope; no production change accepted.
+
+#### Abstract
+
+Can encoder-only autocal collect data faster without losing robustness? We profiled the user's HP3 no-buildup reference run (9 sweeps, 180 points, 6,756 s simulated) from its saved per-point timestamps and ran three native headless single-sweep collections (20 points each) at feed 700, 1400 and 2800 mm/min. Sampling is only about 6% of simulated time; the rest is motion plus settling, roughly proportional to travel. Feed 1400, the current default, gave the shortest collection of the three (51.6 s vs 62.9 s and 62.2 s from sweeps.json). Faster feeds did not shorten collection because settle time grew with move speed. No anchor accuracy was scored: the reference has no authored point-anchor ground truth, and each experiment is a single sweep.
+
+#### Topics
+
+autocalibration, HP3, encoder-only calibration, collection time, settling, feed rate, native Rust headless collection, reference run profiling, ground truth limits
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Per-point collection cost is dominated by sampling | Reference profile | Rejected: sampling is 410 s of 6,756 s (about 6%) | [reference sweeps](sessions/2026-10-22-interactive-research-a430536f/../../../extended-autocal/no-buildup-reference-003/sweeps.json), [notebook](sessions/2026-10-22-interactive-research-a430536f/research.md) |
+| Per-point cost has a large fixed settle constant | Reference profile, E01–E03 | Rejected for the reference (intercept ≈ 0); native intercepts 0.15–0.73 s | [research notes](sessions/2026-10-22-interactive-research-a430536f/research.md) |
+| A higher drive feed shortens collection | E01, E02, E03 | Rejected: 2800 mm/min took 62.2 s vs 51.6 s at 1400; 700 mm/min took 62.9 s | [E01](sessions/2026-10-22-interactive-research-a430536f/native/ab74bf4b36fc4bf2a00375f3a2234055/5452996a02a3490ea37ead50a55f7eb1/sweeps.json), [E02](sessions/2026-10-22-interactive-research-a430536f/native/ab74bf4b36fc4bf2a00375f3a2234055/c45535d5062240c28aa37fad1b59df1e/sweeps.json), [E03](sessions/2026-10-22-interactive-research-a430536f/native/ab74bf4b36fc4bf2a00375f3a2234055/42f64ae035934f56968ac5ff84657b95/sweeps.json) |
+| Settle time per mm of travel grows with feed | E01–E03 gap fits | Supported within this native sweep: 0.235 s/mm (1400), 0.296 (700), 0.393 (2800) | [research notes](sessions/2026-10-22-interactive-research-a430536f/research.md) |
+| Anchor-selection disagreement with geometry can be fixed by a cheaper selector | Not tested | Not tested | None |
+| Reference fit anchors are within a known error of truth | Not tested | Not tested: no authored point-anchor truth available | [native-collection guide](sessions/2026-10-22-interactive-research-a430536f/../../../../research/native-collection.md) |
+
+#### References
+
+- [Full report](sessions/2026-10-22-interactive-research-a430536f/report.md): analysis, measurements and limitations.
+- [Research notebook](sessions/2026-10-22-interactive-research-a430536f/research.md): experiment decisions and accepted steering.
+- [Reference run](sessions/2026-10-22-interactive-research-a430536f/../../../extended-autocal/no-buildup-reference-003/sweeps.json): HP3 no-buildup run used for the profile.
+- [Native collection guide](sessions/2026-10-22-interactive-research-a430536f/../../../../research/native-collection.md): authored-scene ground truth limits.
+- [Recording-mode cost](sessions/2026-10-22-interactive-research-a430536f/../2026-10-15-autocal-recording-modes/abstract.md): earlier recording-cost measurements, relevant to choosing `none` for sweeps.
+- [HP4 timing and transit budget](sessions/2026-10-22-interactive-research-a430536f/../2026-10-19-interactive-research-8d7a82a2/abstract.md): earlier HP4 collection-duration work; not re-tested here.
+
 ## [2026-10-22-interactive-research-d1d37c7f](sessions/2026-10-22-interactive-research-d1d37c7f/)
 
 [abstract.md](sessions/2026-10-22-interactive-research-d1d37c7f/abstract.md) · [research.md](sessions/2026-10-22-interactive-research-d1d37c7f/research.md)
