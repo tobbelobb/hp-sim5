@@ -193,7 +193,7 @@ async def test_stdio_mcp_discovery_execution_readback_and_error():
 @pytest.mark.parametrize('network_override', [None, False])
 def test_launcher_dry_run_works_outside_repo_and_preserves_prompt(network_override):
     prompt = 'Compare $targets and `angles`, with "quoted" names.\nRetain failed trials.'
-    command = [str(ROOT / 'hp-sim5-research-agent'), '--dry-run', '--viewer', 'none', '--prompt', prompt]
+    command = [str(ROOT / 'hp-sim5-research-agent'), '--codex', '--dry-run', '--viewer', 'none', '--prompt', prompt]
     if network_override is not None:
         command += ['--', '-c', 'sandbox_workspace_write.network_access=false']
     result = subprocess.run(command,
@@ -212,7 +212,7 @@ def test_launcher_dry_run_works_outside_repo_and_preserves_prompt(network_overri
 
 
 def test_launcher_selects_model_provider_and_model_by_option_or_forwarding():
-    base = [str(ROOT / 'hp-sim5-research-agent'), '--dry-run', '--viewer', 'none', '--sidebar-section', 'none']
+    base = [str(ROOT / 'hp-sim5-research-agent'), '--codex', '--dry-run', '--viewer', 'none', '--sidebar-section', 'none']
     result = subprocess.run(base + ['--model-provider', 'opencode_go', '--model', 'deepseek-v4.1-flash',
                                     '--prompt', 'Research check'], capture_output=True, text=True, timeout=15)
     assert result.returncode == 0, result.stderr
@@ -244,7 +244,7 @@ def test_launcher_selects_model_provider_and_model_by_option_or_forwarding():
 
 def test_launcher_worktree_dry_run_plans_without_creating_anything(tmp_path):
     target = tmp_path / 'worktrees'
-    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--dry-run', '--worktree', '--worktree-dir',
+    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--codex', '--dry-run', '--worktree', '--worktree-dir',
                              str(target), '--viewer', 'none', '--prompt', 'Optimize anchor layout'],
                             capture_output=True, text=True, timeout=15)
     assert result.returncode == 0, result.stderr
@@ -256,7 +256,7 @@ def test_launcher_worktree_dry_run_plans_without_creating_anything(tmp_path):
                                                'src/wasm/cable_solver/target/native/physics.node'}
     assert isinstance(plan['worktree']['includes'], list)
     assert not target.exists()
-    missing = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--dry-run', '--worktree-dir', str(target),
+    missing = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--codex', '--dry-run', '--worktree-dir', str(target),
                               '--viewer', 'none', '--prompt', 'x'], capture_output=True, text=True, timeout=15)
     assert missing.returncode != 0 and '--worktree-dir requires --worktree' in missing.stderr
 
@@ -343,7 +343,7 @@ def test_launcher_loads_provider_key_from_env_file_without_leaking_it(tmp_path, 
     monkeypatch.setattr(launcher, 'ensure_native_physics', lambda: None)
     monkeypatch.setenv('PATH', str(tmp_path) + os.pathsep + os.environ['PATH'])
     session = tmp_path / 'provider session'
-    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--viewer', 'none', '--prompt', 'provider key check',
+    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--codex', '--viewer', 'none', '--prompt', 'provider key check',
                                       '--model-provider', 'opencode_go', '--model', 'deepseek-v4.1-flash',
                                       '--session-dir', str(session), '--sidebar-section', 'none'])
     assert launcher.main() == 0
@@ -377,7 +377,7 @@ def _stub_runtime_service():
 
 def test_launcher_named_session_keeps_explicit_path_and_summary_instructions(tmp_path):
     session = tmp_path / 'HP3 radius validation'
-    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--dry-run', '--viewer', 'none',
+    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--codex', '--dry-run', '--viewer', 'none',
                              '--sidebar-section', 'none', '--name', 'HP3 radius validation',
                              '--session-dir', str(session), '--prompt', 'Test candidate ranking'],
                             capture_output=True, text=True, timeout=15)
@@ -397,7 +397,7 @@ def test_launcher_named_session_keeps_explicit_path_and_summary_instructions(tmp
     (['--serve', '--dont-ask'], False),
 ])
 def test_launcher_clarification_setting(options, enabled):
-    command = [str(ROOT / 'hp-sim5-research-agent'), '--dry-run', '--viewer', 'none', *options]
+    command = [str(ROOT / 'hp-sim5-research-agent'), '--codex', '--dry-run', '--viewer', 'none', *options]
     if '--serve' not in options:
         command += ['--prompt', 'Research check']
     result = subprocess.run(command, capture_output=True, text=True, timeout=15)
@@ -420,7 +420,7 @@ def test_sidebar_hook_uses_lifecycle_identity_without_model_instructions(tmp_pat
     codex.chmod(0o755)
     monkeypatch.setenv('PATH', str(tmp_path) + os.pathsep + os.environ['PATH'])
     section = '6f8f42eb-e2ae-4882-a538-5bf0202ec59b'
-    command = [str(ROOT / 'hp-sim5-research-agent'), '--dry-run', '--viewer', 'none',
+    command = [str(ROOT / 'hp-sim5-research-agent'), '--codex', '--dry-run', '--viewer', 'none',
                '--sidebar-section', section, *mode]
     if '--serve' not in mode:
         command += ['--prompt', 'Research check', '--', '-c', 'features.apps=true']
@@ -439,7 +439,7 @@ def test_sidebar_hook_uses_lifecycle_identity_without_model_instructions(tmp_pat
     instructions = next(value for value in argv if value.startswith('developer_instructions='))
     assert 'move_thread_to_sidebar_section' not in instructions
     assert section not in instructions
-    disabled = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--dry-run', '--sidebar-section', 'none'],
+    disabled = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--codex', '--dry-run', '--sidebar-section', 'none'],
                               capture_output=True, text=True, timeout=15)
     assert disabled.returncode == 0, disabled.stderr
     assert not disabled.stderr
@@ -526,7 +526,7 @@ else:
     monkeypatch.setenv('OPENAI_API_KEY', 'test-sentinel')
     monkeypatch.setenv('CODEX_API_KEY', 'test-sentinel')
     session = tmp_path / session_name('HP3 held-out validation')
-    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--viewer', 'none', '--prompt', 'preservation check',
+    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--codex', '--viewer', 'none', '--prompt', 'preservation check',
                                     '--session-dir', str(session),
                                     '--sidebar-section', '6f8f42eb-e2ae-4882-a538-5bf0202ec59b'] + (['--batch'] if batch else []))
     assert launcher.main() == 0
@@ -566,7 +566,7 @@ else:
 
 def test_launcher_refuses_existing_session_without_overwriting_evidence(tmp_path):
     (tmp_path / 'exit.json').write_text('{"returncode": 42}')
-    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--viewer', 'none',
+    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--codex', '--viewer', 'none',
                              '--session-dir', str(tmp_path)], capture_output=True, text=True, timeout=10)
     assert result.returncode == 1
     assert (tmp_path / 'exit.json').read_text() == '{"returncode": 42}'
@@ -577,7 +577,7 @@ def test_service_only_launcher_exits_cleanly_on_supervisor_shutdown(tmp_path):
     import time
     from hp_sim5_research.services import request
     directory = tmp_path / 'desktop-session'
-    process = subprocess.Popen([str(ROOT / 'hp-sim5-research-agent'), '--serve', '--viewer', 'none',
+    process = subprocess.Popen([str(ROOT / 'hp-sim5-research-agent'), '--codex', '--serve', '--viewer', 'none',
                                 '--session-dir', str(directory)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     try:
         deadline = time.monotonic() + 20
@@ -594,3 +594,99 @@ def test_service_only_launcher_exits_cleanly_on_supervisor_shutdown(tmp_path):
         if process.poll() is None:
             process.terminate()
             process.wait(timeout=10)
+
+
+@pytest.mark.parametrize('flags', [[], ['--codex', '--claude']])
+def test_launcher_requires_exactly_one_backend(flags):
+    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), *flags, '--dry-run'],
+                            capture_output=True, text=True, timeout=15)
+    assert result.returncode == 2
+    assert '--codex' in result.stderr and '--claude' in result.stderr
+
+
+@pytest.mark.parametrize('batch', [False, True])
+def test_claude_dry_run_uses_session_attachment_and_preserves_forwarded_options(batch):
+    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--claude', '--dry-run',
+                             '--model', 'haiku', '--dont-ask', '--prompt', 'Research check',
+                             *(['--batch'] if batch else []), '--', '--resume', 'session-id'],
+                            capture_output=True, text=True, timeout=15)
+    assert result.returncode == 0, result.stderr
+    launch = json.loads(result.stdout)
+    command = launch['argv']
+    assert command[0] == 'claude'
+    assert '--strict-mcp-config' in command
+    assert '--append-system-prompt-file' in command
+    assert command[command.index('--model') + 1] == 'haiku'
+    assert command[command.index('--disallowedTools') + 1] == 'AskUserQuestion'
+    assert '--resume' in command
+    assert ('--print' in command) == batch
+    assert command[-1] == ('session-id' if batch else 'Research check')
+    assert set(launch['mcp_config']['mcpServers']) == {'hp_sim5', 'rerun'}
+    for server in launch['mcp_config']['mcpServers'].values():
+        assert server['args'][0].endswith('research_attach.py')
+        assert server['args'][1].endswith('connection.json')
+    assert launch['model_provider'] is None
+
+
+@pytest.mark.parametrize('batch,error', [(False, False), (True, False), (True, True)])
+def test_claude_launcher_lifecycle(tmp_path, monkeypatch, batch, error):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('research_agent', ROOT / 'scripts/research_agent.py')
+    launcher = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(launcher)
+    services = []
+
+    class Service:
+        endpoint = 'http://127.0.0.1:12345'
+        token = 'secret-supervisor-token'
+
+        def __init__(self, *args, **kwargs):
+            self.closed = False
+            services.append(self)
+
+        def start(self):
+            return self
+
+        def call(self, operation):
+            assert operation == 'status'
+            return {'session_id': 'test'}
+
+        def close(self):
+            self.closed = True
+
+    executable = tmp_path / 'claude'
+    executable.write_text(f'#!{sys.executable}\n' + '''
+import json
+from pathlib import Path
+import sys
+args = sys.argv
+config = json.loads(Path(args[args.index('--mcp-config') + 1]).read_text())
+assert set(config['mcpServers']) == {'hp_sim5'}
+assert '--strict-mcp-config' in args
+instructions = Path(args[args.index('--append-system-prompt-file') + 1]).read_text()
+assert 'Prefer small code changes' in instructions
+assert 'Session artifacts:' in instructions
+session = Path(config['mcpServers']['hp_sim5']['args'][1]).parent
+assert json.loads((session / 'connection.json').read_text())['runtime_token'] == 'secret-supervisor-token'
+if '--print' in args:
+    assert sys.stdin.read() == 'Claude lifecycle check'
+    print(json.dumps({'type': 'system', 'subtype': 'init'}))
+    print(json.dumps({'type': 'result', 'result': 'Claude finished', 'is_error': ERROR}))
+else:
+    assert args[-1] == 'Claude lifecycle check'
+'''.replace('ERROR', repr(error)))
+    executable.chmod(0o755)
+    monkeypatch.setenv('PATH', str(tmp_path) + os.pathsep + os.environ['PATH'])
+    monkeypatch.setattr(launcher, 'RuntimeService', Service)
+    monkeypatch.setattr(launcher, 'ensure_native_physics', lambda: None)
+    session = tmp_path / 'session'
+    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--claude', '--viewer', 'none',
+                                    '--session-dir', str(session), '--prompt', 'Claude lifecycle check',
+                                    *(['--batch'] if batch else [])])
+    assert launcher.main() == int(error)
+    assert services[0].closed
+    assert json.loads((session / 'exit.json').read_text())['returncode'] == int(error)
+    assert 'secret-supervisor-token' not in (session / 'launch.json').read_text()
+    if batch:
+        assert (session / 'final-message.md').read_text() == 'Claude finished\n'
+        assert len((session / 'events.jsonl').read_text().splitlines()) == 2

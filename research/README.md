@@ -1,6 +1,6 @@
-# Hangprinter research with Codex
+# Hangprinter research with Codex or Claude Code
 
-`hp-sim5-research-agent` opens an ordinary interactive Codex conversation with
+`hp-sim5-research-agent --codex` or `hp-sim5-research-agent --claude` opens an interactive conversation with
 native experiment tools and an assigned Rerun Viewer. Conversation, steering,
 interrupts, resume and Goal mode belong to Codex. The launcher owns the continuing
 physics world, real RRF planner, production collector bridge, optional browser
@@ -33,14 +33,40 @@ From the repository root:
 .venv/bin/python -m pip install -r requirements.txt
 npm run build:native               # Rust, C compiler and Node headers
 codex login                       # choose ChatGPT
-./hp-sim5-research-agent
-./hp-sim5-research-agent --prompt "Compare HP4 settling with a small A-axis movement. Run both experiments, inspect their recordings and explain the measured difference."
-./hp-sim5-research-agent --prompt-file research/prompts/autocal.txt
-./hp-sim5-research-agent --name "HP3 held-out sweep ranking" --prompt-file research/prompts/autocal.txt
-./hp-sim5-research-agent --viewer none --prompt "Investigate autocal candidate ranking on recorded datasets."
-./hp-sim5-research-agent --machine hp3 --viewer none --no-record --prompt "Collect independent HP3 calibration sweeps."
-./hp-sim5-research-agent --model-provider opencode_go --model deepseek-v4.1-flash --prompt "Say hello"
+./hp-sim5-research-agent --codex
+./hp-sim5-research-agent --codex --prompt "Compare HP4 settling with a small A-axis movement. Run both experiments, inspect their recordings and explain the measured difference."
+./hp-sim5-research-agent --codex --prompt-file research/prompts/autocal.txt
+./hp-sim5-research-agent --codex --name "HP3 held-out sweep ranking" --prompt-file research/prompts/autocal.txt
+./hp-sim5-research-agent --codex --viewer none --prompt "Investigate autocal candidate ranking on recorded datasets."
+./hp-sim5-research-agent --codex --machine hp3 --viewer none --no-record --prompt "Collect independent HP3 calibration sweeps."
+./hp-sim5-research-agent --codex --model-provider opencode_go --model deepseek-v4.1-flash --prompt "Say hello"
 ```
+
+Choose exactly one of `--codex` and `--claude`; omitting both exits with a usage
+error, including for diagnostics and service mode. Claude Code must be installed
+and authenticated (`claude auth login`, or `ANTHROPIC_API_KEY` in the environment
+or repository `.env`). For example:
+
+```bash
+./hp-sim5-research-agent --claude --prompt "Investigate HP3 calibration evidence."
+./hp-sim5-research-agent --claude --batch --model haiku --viewer none --prompt "Describe the attached tools." -- --max-budget-usd 0.02
+```
+
+Arguments after `--` go unchanged to the selected CLI, including its resume
+options. `--model` works with either backend; `--model-provider` is Codex-only.
+Claude receives the root and research AGENTS instructions explicitly and loads
+only the session MCP servers from `attachment.json`. `instructions.md` records
+the supplied instructions. Both MCP servers use the supervised connection
+file, and their tools are allowed through Claude's permission checks. Other
+permissions follow Claude's local configuration; the Codex filesystem sandbox
+settings do not apply to Claude. `--dont-ask` disables Claude's AskUserQuestion
+tool. Sidebar hooks, Goal mode and Codex structured questions are Codex features.
+Batch mode saves raw `events.jsonl` and extracts Claude's result into
+`final-message.md`; a Claude error result makes the launcher fail. Both backends
+share service lifetime, interruption handling and research artifact paths.
+`--serve` prints `attachment.json` for Claude or `attachment.toml` for Codex.
+See the official [Claude CLI reference](https://code.claude.com/docs/en/cli-reference)
+and [MCP configuration guide](https://code.claude.com/docs/en/mcp).
 
 The launcher checks the native Rust physics build before starting services and
 runs `npm run build:native` automatically when it is stale or missing, printing
@@ -75,9 +101,9 @@ and [Goal mode documentation](https://learn.chatgpt.com/docs/long-running-work).
 Put normal Codex arguments after `--`; the launcher forwards them unchanged:
 
 ```bash
-./hp-sim5-research-agent -- --model MODEL --no-alt-screen
-./hp-sim5-research-agent -- --image output/example.png
-./hp-sim5-research-agent -- resume --last
+./hp-sim5-research-agent --codex -- --model MODEL --no-alt-screen
+./hp-sim5-research-agent --codex -- --image output/example.png
+./hp-sim5-research-agent --codex -- resume --last
 ```
 
 Structured clarification questions are enabled by default during interactive
@@ -87,14 +113,14 @@ Use `--dont-ask` before the argument separator to disable these Default-mode
 question prompts:
 
 ```bash
-./hp-sim5-research-agent --dont-ask --prompt-file research/prompts/autocal.txt
+./hp-sim5-research-agent --codex --dont-ask --prompt-file research/prompts/autocal.txt
 ```
 
 The underlying Codex feature is `default_mode_request_user_input`. You can also
 enable it explicitly with a forwarded Codex option:
 
 ```bash
-./hp-sim5-research-agent -- --enable default_mode_request_user_input
+./hp-sim5-research-agent --codex -- --enable default_mode_request_user_input
 ```
 
 Forwarded Codex options can override launcher defaults. Codex 0.160.1 labels
@@ -127,8 +153,8 @@ conversation away from its attached tools.
 the worktree instead of the original checkout:
 
 ```bash
-./hp-sim5-research-agent --worktree --prompt-file research/prompts/autocal.txt
-./hp-sim5-research-agent --worktree --name "deferred bake" --worktree-dir /tmp/hp-sim5-worktrees
+./hp-sim5-research-agent --codex --worktree --prompt-file research/prompts/autocal.txt
+./hp-sim5-research-agent --codex --worktree --name "deferred bake" --worktree-dir /tmp/hp-sim5-worktrees
 ```
 
 It runs `git worktree add -b research/<name>-<id> <dir>` from the current `HEAD`,
@@ -163,7 +189,7 @@ Use the exact conversation ID rather than `--last`, which can select an unrelate
 chat. After releasing the other client, resume with fresh supervised tools:
 
 ```bash
-./hp-sim5-research-agent -- resume CONVERSATION_ID
+./hp-sim5-research-agent --codex -- resume CONVERSATION_ID
 ```
 
 Read the previous session's `research.md`, experiment manifests and current Git
@@ -219,8 +245,8 @@ and `--model` select another configured provider and model, and forwarded Codex
 `-c model_provider=... -m ...` arguments are detected too:
 
 ```bash
-./hp-sim5-research-agent --model-provider opencode_go --model deepseek-v4.1-flash
-./hp-sim5-research-agent -- -c 'model_provider="opencode_go"' -m deepseek-v4.1-flash
+./hp-sim5-research-agent --codex --model-provider opencode_go --model deepseek-v4.1-flash
+./hp-sim5-research-agent --codex -- -c 'model_provider="opencode_go"' -m deepseek-v4.1-flash
 ```
 
 When the selected provider declares an `env_key` in the Codex configuration, the
@@ -249,7 +275,7 @@ provider in its client configuration.
 Start a supervisor in a dedicated worktree and keep its terminal open:
 
 ```bash
-./hp-sim5-research-agent --serve --session-dir output/research/my-chat
+./hp-sim5-research-agent --codex --serve --session-dir output/research/my-chat
 ```
 
 The directory must be new. The launcher prints the path to `attachment.toml`.
@@ -312,10 +338,10 @@ the topic guide preserves a short account of the existing findings in the repo.
 ## Batch mode and diagnostics
 
 ```bash
-./hp-sim5-research-agent --batch --prompt-file research/prompts/autocal.txt
-./hp-sim5-research-agent --dry-run --prompt "Optimize the HP4 anchor layout"
-./hp-sim5-research-agent --doctor
-./hp-sim5-research-agent --preflight
+./hp-sim5-research-agent --codex --batch --prompt-file research/prompts/autocal.txt
+./hp-sim5-research-agent --codex --dry-run --prompt "Optimize the HP4 anchor layout"
+./hp-sim5-research-agent --codex --doctor
+./hp-sim5-research-agent --codex --preflight
 ```
 
 Batch mode retains `codex exec`, prompt input, JSONL events and the separate
@@ -612,7 +638,7 @@ Command networking remains useful for ad hoc HTTP experiments and integration
 tests after supervised job tools are available. To disable it explicitly:
 
 ```bash
-./hp-sim5-research-agent --machine hp3 --prompt-file research/prompts/autocal.txt -- \
+./hp-sim5-research-agent --codex --machine hp3 --prompt-file research/prompts/autocal.txt -- \
   -c sandbox_workspace_write.network_access=false
 ```
 

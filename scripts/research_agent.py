@@ -1,4 +1,4 @@
-"""Launch Codex with local physics tools and a separately supervised Rerun Viewer."""
+"""Launch a chosen coding agent with local physics tools and a separately supervised Rerun Viewer."""
 import argparse
 import signal
 from importlib import import_module
@@ -215,7 +215,7 @@ def worktree_launch(args, launcher_args, codex_args, provider, model):
     topic = args.name or (prompt.strip().splitlines()[0] if prompt and prompt.strip() else 'research')
     if args.dry_run:
         plan = worktree_plan(worktree_slug(topic), args.worktree_dir)
-        print(json.dumps({'mode': 'worktree', 'model_provider': provider, 'model': model,
+        print(json.dumps({'mode': 'worktree', 'backend': args.backend, 'model_provider': provider, 'model': model,
                           'worktree': {'path': str(plan['path']), 'branch': plan['branch'], 'links': plan['links'],
                                        'includes': [str(source.relative_to(ROOT))
                                                     for source in worktree_include_sources()]}}, indent=2))
@@ -235,7 +235,7 @@ def worktree_launch(args, launcher_args, codex_args, provider, model):
     os.execv(str(python), [str(python), str(script), *remaining])
 
 
-def doctor(provider=CHATGPT_SIGN_IN, model=None):
+def doctor(provider=CHATGPT_SIGN_IN, model=None, *, backend='codex'):
     checks = {}
     for module, package in [('numpy', 'numpy'), ('pxr', 'usd-core'), ('rerun', 'rerun-sdk'), ('mcp', 'mcp')]:
         try:
@@ -243,15 +243,20 @@ def doctor(provider=CHATGPT_SIGN_IN, model=None):
             checks[package] = {'ok': True, 'version': version(package)}
         except ImportError as error:
             checks[package] = {'ok': False, 'error': str(error)}
-    codex = shutil.which('codex')
-    checks['codex'] = {'ok': codex is not None, 'path': codex}
-    if codex is not None and provider == CHATGPT_SIGN_IN:
-        result = subprocess.run([codex, 'login', 'status'], capture_output=True, text=True,
+    executable = shutil.which(backend)
+    checks[backend] = {'ok': executable is not None, 'path': executable}
+    if backend == 'claude' and executable is not None:
+        result = subprocess.run([executable, 'auth', 'status'], capture_output=True, text=True,
+                                env=claude_environment(), timeout=15)
+        checks['claude_login'] = {'ok': result.returncode == 0,
+                                   'next_step': None if result.returncode == 0 else 'claude auth login'}
+    elif executable is not None and provider == CHATGPT_SIGN_IN:
+        result = subprocess.run([executable, 'login', 'status'], capture_output=True, text=True,
                                 env=codex_environment(provider), timeout=15)
         signed_in = result.returncode == 0 and 'ChatGPT' in result.stdout + result.stderr
         checks['chatgpt_login'] = {'ok': signed_in,
                                    'next_step': None if signed_in else 'codex login (choose ChatGPT)'}
-    elif provider != CHATGPT_SIGN_IN:
+    elif backend == 'codex' and provider != CHATGPT_SIGN_IN:
         variable = provider_env_key(provider)
         available = bool(variable and codex_environment(provider).get(variable))
         checks['provider_credentials'] = {'ok': available or variable is None, 'variable': variable,
@@ -290,7 +295,7 @@ def doctor(provider=CHATGPT_SIGN_IN, model=None):
             if runtime is not None:
                 runtime.close()
     return {'ok': all(check['ok'] for check in checks.values()), 'repo': str(ROOT),
-            'model_provider': provider, 'model': model, 'checks': checks}
+            'backend': backend, 'model_provider': provider, 'model': model, 'checks': checks}
 
 
 def toml_literal(value):
@@ -368,6 +373,40 @@ def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, dont_a
     return command + list(codex_args) + (['-'] if batch else [])
 
 
+def claude_mcp_config(session, viewer_endpoint):
+    servers = {'hp_sim5': {'command': sys.executable,
+                           'args': [str(ROOT / 'scripts/research_attach.py'), str(session / 'connection.json')]}}
+    if viewer_endpoint is not None:
+        servers['rerun'] = {'command': sys.executable,
+                            'args': [str(ROOT / 'scripts/research_attach.py'),
+                                     str(session / 'connection.json'), '--rerun']}
+    return {'mcpServers': servers}
+
+
+def claude_command(session, viewer_endpoint=None, runtime=None, *, batch=False, dont_ask=False, codex_args=(), model=None, **_):
+    command = ['claude', '--mcp-config', str(session / 'attachment.json'), '--strict-mcp-config',
+               '--append-system-prompt-file', str(session / 'instructions.md'),
+               '--allowedTools', 'mcp__hp_sim5,mcp__rerun']
+    if dont_ask:
+        command += ['--disallowedTools', 'AskUserQuestion']
+    if batch:
+        command += ['--print', '--output-format', 'stream-json', '--verbose']
+    if model:
+        command += ['--model', model]
+    return command + list(codex_args)
+
+
+def claude_environment():
+    environment = dict(os.environ)
+    if not environment.get('ANTHROPIC_API_KEY'):
+        key = dotenv_values().get('ANTHROPIC_API_KEY')
+        if key:
+            environment['ANTHROPIC_API_KEY'] = key
+    # Match the supervisor's long-running experiment tool budget (milliseconds).
+    environment['MCP_TOOL_TIMEOUT'] = '14500000'
+    return environment
+
+
 def start_viewer(mode, session):
     port = free_port()
     command = [str(ROOT / '.venv/bin/rerun'), '--bind', '127.0.0.1', '--port', str(port), '--memory-limit', '1GB']
@@ -376,7 +415,7 @@ def start_viewer(mode, session):
     environment = {**os.environ, 'XDG_DATA_HOME': str(session / 'viewer-data'),
                    'XDG_CONFIG_HOME': str(session / 'viewer-config'), 'XDG_CACHE_HOME': str(session / 'viewer-cache')}
     with (session / 'viewer.log').open('w') as log:
-        # Only Codex may own terminal input and receive terminal interrupt signals.
+        # Only the agent may own terminal input and receive terminal interrupt signals.
         viewer = subprocess.Popen(command, cwd=ROOT, env=environment, stdin=subprocess.DEVNULL,
                                   stdout=log, stderr=log, start_new_session=True)
     register_test_process(viewer)
@@ -397,12 +436,15 @@ def interrupted(_signum, _frame):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    backend = parser.add_mutually_exclusive_group(required=True)
+    backend.add_argument('--codex', action='store_const', const='codex', dest='backend', help='Use Codex CLI')
+    backend.add_argument('--claude', action='store_const', const='claude', dest='backend', help='Use Claude Code CLI')
     task = parser.add_mutually_exclusive_group()
     task.add_argument('--prompt', help='Research or robot design task')
     task.add_argument('--prompt-file', type=Path, help='UTF-8 task file')
     parser.add_argument('--doctor', action='store_true', help='Explicitly run diagnostics, including real RRF/native collection and autocal loading')
     parser.add_argument('--preflight', action='store_true', help='Run bounded non-moving supervised checks and exit; command networking remains untested')
-    parser.add_argument('--dry-run', action='store_true', help='Show the Codex command and task without starting processes')
+    parser.add_argument('--dry-run', action='store_true', help='Show the agent command and task without starting processes')
     parser.add_argument('--viewer', choices=['headless', 'window', 'none'], default='headless')
     parser.add_argument('--physics-backend', choices=['headless-js', 'native-python', 'native-warp', 'native-warp-cuda'], default='headless-js',
                         help='Continuing physics: native Rust by default; native-warp compiles the Python cable solver (CUDA experimental)')
@@ -410,26 +452,38 @@ def main():
     parser.add_argument('--machine', choices=['hp3', 'hp4'], default='hp4', help='Matched scene and RRF configuration')
     parser.add_argument('--model-provider', default=CHATGPT_SIGN_IN,
                         help='Codex model provider; opencode_go reads OPENCODE_GO_API_KEY, falling back to the .env file')
-    parser.add_argument('--model', help='Codex model name, for example deepseek-v4.1-flash')
+    parser.add_argument('--model', help='Model name for the selected backend')
     parser.add_argument('--worktree', action='store_true',
                         help='Create a fresh Git worktree and run the whole session from it')
     parser.add_argument('--worktree-dir', type=Path,
                         help='Parent directory for --worktree (default: a sibling of the repository)')
     parser.add_argument('--dont-ask', action='store_true', help='Disable structured clarification questions in Default mode')
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument('--batch', action='store_true', help='Run codex exec and save JSONL events')
+    mode.add_argument('--batch', action='store_true', help='Run the selected backend non-interactively and save JSONL events')
     mode.add_argument('--serve', action='store_true', help='Supervise services for desktop MCP attachment until interrupted')
     parser.add_argument('--session-dir', type=Path, help='New session artifact directory (must not exist)')
     parser.add_argument('--name', help='Short research topic used in the default session directory name')
     parser.add_argument('--sidebar-section', help='Desktop sidebar section UUID, or none; defaults to output/research/sidebar.json')
-    # Everything after -- belongs to Codex, including resume and its normal options.
+    # Everything after -- belongs to the selected backend, including resume and its normal options.
     argv = sys.argv[1:]
     split = argv.index('--') if '--' in argv else len(argv)
     args = parser.parse_args(argv[:split])
     codex_args = argv[split + 1:]
     # Forwarded `-c model_provider=...` and `--model` win, matching Codex's own last-wins order.
     forwarded, forwarded_model = forwarded_settings(codex_args)
-    provider = forwarded.get('model_provider', args.model_provider)
+    if args.backend == 'claude':
+        forwarded = {}
+        forwarded_model = None
+        arguments = iter(codex_args)
+        for argument in arguments:
+            if argument == '--model':
+                forwarded_model = next(arguments, None)
+            elif argument.startswith('--model='):
+                forwarded_model = argument.split('=', 1)[1]
+        if '--model-provider' in argv[:split] or any(a.startswith('--model-provider=') for a in argv[:split]):
+            parser.error('--model-provider is only supported with --codex')
+    command_builder = claude_command if args.backend == 'claude' else codex_command
+    provider = forwarded.get('model_provider', args.model_provider) if args.backend == 'codex' else None
     model = forwarded_model or args.model
     # Codex rejects a repeated --model, so only add options the caller did not forward.
     injected_provider = None if 'model_provider' in forwarded else args.model_provider
@@ -446,17 +500,17 @@ def main():
         if args.doctor:
             if args.preflight:
                 parser.error('--doctor and --preflight are separate diagnostics; select one')
-            result = doctor(provider, model)
+            result = doctor(provider, model, backend=args.backend)
             print(json.dumps(result, indent=2))
             return 0 if result['ok'] else 1
         prompt = args.prompt_file.read_text() if args.prompt_file else args.prompt
         if args.batch and not args.preflight and (not prompt or not prompt.strip()):
             parser.error('Batch mode requires --prompt or --prompt-file')
         if args.serve and (prompt or codex_args):
-            parser.error('--serve accepts neither a task nor Codex arguments')
-        sidebar_section = args.sidebar_section
+            parser.error('--serve accepts neither a task nor agent arguments')
+        sidebar_section = args.sidebar_section if args.backend == 'codex' else None
         sidebar_config = ROOT / 'output/research/sidebar.json'
-        if sidebar_section is None and sidebar_config.exists():
+        if args.backend == 'codex' and sidebar_section is None and sidebar_config.exists():
             sidebar_section = json.loads(sidebar_config.read_text())['section_id']
         if sidebar_section == 'none':
             sidebar_section = None
@@ -473,6 +527,8 @@ def main():
         catalog_root = (ROOT / 'output/research' if session.is_relative_to(ROOT / 'output/research')
                         else session.parent)
         instructions = (ROOT / 'research/AGENTS.md').read_text()
+        if args.backend == 'claude':
+            instructions = (ROOT / 'AGENTS.md').read_text() + '\n' + instructions
         instructions += (f'\nSession artifacts: {session}\n'
                          f'Write the research record to {session / "research.md"} and final report to {session / "report.md"}.\n'
                          f'Keep the searchable abstract at {session / "abstract.md"} current too.\n'
@@ -481,14 +537,15 @@ def main():
         if args.dry_run:
             endpoint = None if args.viewer == 'none' else 'http://127.0.0.1:PORT'
             print(json.dumps({'mode': 'serve' if args.serve else 'batch' if args.batch else 'interactive',
-                              'model_provider': provider, 'model': model,
-                              'argv': codex_command(session, endpoint, batch=args.batch, dont_ask=args.dont_ask, codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section, model_provider=injected_provider, model=injected_model) + ([] if args.batch or not prompt else [prompt]),
+                              'backend': args.backend, 'model_provider': provider, 'model': model,
+                              'mcp_config': claude_mcp_config(session, endpoint) if args.backend == 'claude' else None,
+                              'argv': command_builder(session, endpoint, batch=args.batch, dont_ask=args.dont_ask, codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section, model_provider=injected_provider, model=injected_model) + ([] if args.batch or not prompt else [prompt]),
                               'prompt': full_prompt}, indent=2))
             return 0
         session.mkdir(parents=True)
         session_created = True
         (session / 'prompt.txt').write_text(full_prompt)
-        (session / 'research.md').write_text(f'# Research record\n\nObjective: {prompt or "Set in the Codex conversation"}\n\nCurrent hypothesis: pending.\nConstraints and budgets: set before experiments.\nExperiment IDs: none yet.\nAccepted steering: none yet.\nNext decision: establish a measurable baseline.\n')
+        (session / 'research.md').write_text(f'# Research record\n\nObjective: {prompt or "Set in the agent conversation"}\n\nCurrent hypothesis: pending.\nConstraints and budgets: set before experiments.\nExperiment IDs: none yet.\nAccepted steering: none yet.\nNext decision: establish a measurable baseline.\n')
         (session / 'abstract.md').write_text(initial_abstract(topic))
         write_index(catalog_root)
         if args.physics_backend == 'headless-js':
@@ -522,48 +579,57 @@ def main():
         if sidebar_section:
             attachment += '\n[hooks]\n' + '\n'.join(f'{key} = {toml_literal(value)}' for key, value in sidebar_hooks(sidebar_section).items()) + '\n'
         (session / 'attachment.toml').write_text(attachment)
-        command = codex_command(session, endpoint, runtime, batch=args.batch, dont_ask=args.dont_ask, codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section,
+        (session / 'attachment.json').write_text(json.dumps(claude_mcp_config(session, endpoint), indent=2) + '\n')
+        (session / 'instructions.md').write_text(instructions)
+        command = command_builder(session, endpoint, runtime, batch=args.batch, dont_ask=args.dont_ask, codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section,
                                 model_provider=injected_provider, model=injected_model)
         if not args.batch and prompt:
             command += [prompt]
         # Keep bearer credentials out of launch artifacts.
         saved_command = [arg.replace(runtime.token, '<runtime token>') for arg in command]
         (session / 'launch.json').write_text(json.dumps({'argv': saved_command, 'runtime_status': runtime_status,
-                                                       'model_provider': provider, 'model': model,
+                                                       'backend': args.backend, 'model_provider': provider, 'model': model,
                                                        'viewer_endpoint': endpoint, 'runtime_endpoint': runtime.endpoint}, indent=2) + '\n')
         print(f'Research session: {session}', file=sys.stderr, flush=True)
         if args.serve:
-            print(f'MCP configuration: {session / "attachment.toml"}', file=sys.stderr, flush=True)
+            print(f'MCP configuration: {session / ("attachment.json" if args.backend == "claude" else "attachment.toml")}', file=sys.stderr, flush=True)
             while runtime.process.poll() is None:
                 time.sleep(.2)
             if runtime.process.returncode == 0:
                 returncode = 0
                 return 0
             raise RuntimeError(f'Runtime stopped; read {session / "native/runtime.log"}')
+        environment = claude_environment() if args.backend == 'claude' else codex_environment(provider)
         if not args.batch:
-            # Codex owns the terminal and conversation across all research turns.
-            agent = subprocess.Popen(command, cwd=ROOT, env=codex_environment(provider))
-            # Ctrl-C belongs to Codex's turn interruption UI, not supervisor shutdown.
+            # The agent owns the terminal and conversation across all research turns.
+            agent = subprocess.Popen(command, cwd=ROOT, env=environment)
+            # Ctrl-C belongs to the agent's turn interruption UI, not supervisor shutdown.
             previous_sigint = signal.signal(signal.SIGINT, lambda *_: None)
             try:
                 returncode = agent.wait()
             finally:
                 signal.signal(signal.SIGINT, previous_sigint)
             return returncode
-        agent = subprocess.Popen(command, cwd=ROOT, env=codex_environment(provider),
+        agent = subprocess.Popen(command, cwd=ROOT, env=environment,
                                  stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
         agent.stdin.write(full_prompt)
         agent.stdin.close()
+        batch_failed = args.backend == 'claude'
         with (session / 'events.jsonl').open('w') as output:
             for line in agent.stdout:
                 output.write(line)
                 output.flush()
                 event = json.loads(line)
-                if event.get('type') == 'item.completed' and event.get('item', {}).get('type') == 'agent_message':
+                if args.backend == 'claude' and event.get('type') == 'result':
+                    message = event.get('result', '')
+                    (session / 'final-message.md').write_text(message + '\n')
+                    print(message or json.dumps(event), flush=True)
+                    batch_failed = bool(event.get('is_error'))
+                elif event.get('type') == 'item.completed' and event.get('item', {}).get('type') == 'agent_message':
                     print(event['item']['text'], flush=True)
                 elif event.get('type') in ('error', 'turn.failed'):
                     print(line.strip(), file=sys.stderr, flush=True)
-        returncode = agent.wait()
+        returncode = agent.wait() or int(batch_failed)
         return returncode
     except KeyboardInterrupt:
         returncode = 130

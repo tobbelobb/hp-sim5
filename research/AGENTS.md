@@ -45,9 +45,9 @@ There's a document called `More_on_browser_based_work.md` if more interactive si
 There's also a description of and advanced workflow for autocalibration work in `Advanced_research_example_autocal.md`.
 The repo is full of other tools as well, which you are encouraged to explore to find out what suits your task and research instincts.
 
-# Take Advantage of Research Notebooks and Codex' Capabilities
-Research runs in an ordinary Codex conversation.
-That can be leveraged in many ways, eg using goal mode or other special Codex capabilities.
+# Take Advantage of Research Notebooks and Agent Capabilities
+Research runs in an ordinary conversation in the selected coding agent.
+Use the capabilities available in that client, such as Goal mode when using Codex.
 Do not build an outer prompt loop.
 Keep `research.md` in the supplied session directory current with objective, hypothesis, constraints, movement/experiment/compute budgets, experiment IDs, accepted steering and the next decision.
 Update it when steering changes the experiment choice.
