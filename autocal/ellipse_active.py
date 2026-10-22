@@ -86,7 +86,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         r0_prior_sigma_mm=spool_options["r0_prior_sigma_mm"],
         b_prior_sigma=spool_options["b_prior_sigma"],
         spool_outer_iters=int(spool_options["spool_outer_iters"]),
-        spool_inner_iters=int(spool_options["spool_inner_iters"]),
         theta0_mode=str(spool_options["theta0_mode"]),
         line_width=float(spool_options["line_width"]),
         sigma_floor_mm=spool_options["sigma_floor_mm"],
@@ -106,7 +105,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         low_anchor_z=args.low_anchor_z,
         filter_schedule=spool_options["filter_schedule"],
         objective_schedule=spool_options["objective_schedule"],
-        scale_fix=spool_options["scale_fix"],
         fit_structure=spool_options["fit_structure"],
     )
     _print_ellipse_plan(

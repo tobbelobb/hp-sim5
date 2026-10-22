@@ -31,7 +31,7 @@ def settings(args):
     if not result['layering'] and (result['buildup_factor'] != 0 or result['find_buildup_factor'] != 'off'):
         raise ValueError('Nonzero or fitted buildup requires layering')
     optimizer = dict(mode='fast', solver='lbfgsb', solve_iterations=400, solve_restarts=4,
-                     spool_outer_iters=3, spool_inner_iters=30)
+                     spool_outer_iters=3)
     supplied = args.get('optimizer', {})
     if not isinstance(supplied, dict) or set(supplied) - (set(optimizer) | {'r0_bounds_mm', 'b_bounds'}):
         raise ValueError('Unknown optimizer setting')
@@ -39,7 +39,7 @@ def settings(args):
     if optimizer['mode'] not in ('fast', 'fast-fd', 'legacy') or optimizer['solver'] not in ('lbfgsb', 'trf'):
         raise ValueError('Unknown optimizer mode or solver')
     for key, high in [('solve_iterations', 2000), ('solve_restarts', 16),
-                      ('spool_outer_iters', 20), ('spool_inner_iters', 2000)]:
+                      ('spool_outer_iters', 20)]:
         number(key, optimizer[key], 1, high, integer=True)
     for key, low, high in [('r0_bounds_mm', 1, 200), ('b_bounds', 0, 2)]:
         if key in optimizer:
@@ -86,7 +86,7 @@ def command(root, directory, config):
             '--buildup-factor', str(config['buildup_factor']), '--find-radii', config['find_radii'],
             '--find-buildup-factor', config['find_buildup_factor'], '--optimizer-mode', opt['mode'],
             '--solve-optimizer', opt['solver'], '--stage-artifacts', str(directory / 'sweeps.stages')]
-    for key in ('solve_iterations', 'solve_restarts', 'spool_outer_iters', 'spool_inner_iters'):
+    for key in ('solve_iterations', 'solve_restarts', 'spool_outer_iters'):
         argv += ['--' + key.replace('_', '-'), str(opt[key])]
     for key, flag in [('r0_bounds_mm', '--r0-bounds'), ('b_bounds', '--b-bounds')]:
         if key in opt:

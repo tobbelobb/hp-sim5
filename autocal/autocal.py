@@ -150,7 +150,6 @@ def full_auto_loop(
     r0_prior_sigma_mm: Optional[float],
     b_prior_sigma: Optional[float],
     spool_outer_iters: int,
-    spool_inner_iters: int,
     theta0_mode: str,
     line_width: float,
     sigma_floor_mm: Optional[float],
@@ -178,7 +177,6 @@ def full_auto_loop(
     low_anchor_z: Optional[float] = None,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
-    scale_fix: Optional[Sequence[int]] = None,
     fit_structure: Optional[Sequence[int]] = None,
     no_collect: bool = False,
     sparse_recovery: bool = False,
@@ -616,7 +614,6 @@ def full_auto_loop(
         ),
         "b_prior_sigma": (None if b_prior_sigma is None else float(b_prior_sigma)),
         "spool_outer_iters": int(spool_outer_iters),
-        "spool_inner_iters": int(spool_inner_iters),
         "theta0_mode": str(_normalize_theta0_mode(theta0_mode)),
         "filter_schedule": [
             str(v) for v in _parse_filter_schedule(filter_schedule, label="filter_schedule")
@@ -624,7 +621,6 @@ def full_auto_loop(
         "objective_schedule": [
             int(v) for v in _parse_objective_schedule(objective_schedule, label="objective_schedule")
         ],
-        "scale_fix": [int(v) for v in _parse_scale_fix_levels(scale_fix)],
         "fit_structure": [int(v) for v in _parse_fit_structure_levels(fit_structure)],
         "line_width": float(line_width),
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
@@ -904,7 +900,6 @@ def full_auto_loop(
                     else None
                 ),
                 spool_outer_iters=int(settings.get("spool_outer_iters", 3)),
-                spool_inner_iters=int(settings.get("spool_inner_iters", 30)),
                 theta0_mode=str(settings.get("theta0_mode", "zero")),
                 filter_schedule=settings.get("filter_schedule"),
                 objective_schedule=settings.get("objective_schedule"),
@@ -932,7 +927,6 @@ def full_auto_loop(
                 write_cfg=cfg_path,
                 collector_output=collector_output,
                 collector_args=collector_args_eff,
-                scale_fix=settings.get("scale_fix"),
                 fit_structure=settings.get("fit_structure"),
                 stage_artifact=(
                     stage_artifacts / f"fit-{step:03d}-{cfg_run_id}.json"
@@ -1240,7 +1234,6 @@ def full_auto_loop(
                     settings.get("find_buildup_factor")
                 )
                 settings["theta0_mode"] = _normalize_theta0_mode(settings.get("theta0_mode"))
-                settings["scale_fix"] = [int(v) for v in _parse_scale_fix_levels(settings.get("scale_fix"))]
                 settings["fit_structure"] = [
                     int(v) for v in _parse_fit_structure_levels(settings.get("fit_structure"))
                 ]
@@ -1266,7 +1259,6 @@ def full_auto_loop(
                 if settings.get("b_prior_sigma") is not None:
                     settings["b_prior_sigma"] = float(settings["b_prior_sigma"])
                 settings["spool_outer_iters"] = int(settings.get("spool_outer_iters", 3))
-                settings["spool_inner_iters"] = int(settings.get("spool_inner_iters", 30))
                 settings["filter_schedule"] = [
                     str(v)
                     for v in _parse_filter_schedule(
@@ -1865,7 +1857,6 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         r0_prior_sigma_mm=spool_opts["r0_prior_sigma_mm"],
         b_prior_sigma=spool_opts["b_prior_sigma"],
         spool_outer_iters=int(spool_opts["spool_outer_iters"]),
-        spool_inner_iters=int(spool_opts["spool_inner_iters"]),
         theta0_mode=str(spool_opts["theta0_mode"]),
         line_width=float(spool_opts["line_width"]),
         sigma_floor_mm=(None if spool_opts.get("sigma_floor_mm") is None else float(spool_opts["sigma_floor_mm"])),
@@ -1893,7 +1884,6 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         verbose=bool(args.verbose),
         filter_schedule=spool_opts.get("filter_schedule"),
         objective_schedule=spool_opts.get("objective_schedule"),
-        scale_fix=spool_opts.get("scale_fix"),
         fit_structure=spool_opts.get("fit_structure"),
         no_collect=bool(args.no_collect),
         sparse_recovery=bool(args.sparse_recovery),

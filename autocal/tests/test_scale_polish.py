@@ -45,8 +45,6 @@ def test_apply_final_scale_polish_rejects_rank_regression():
 
     updated, info = apply_final_scale_polish(
         best=best,
-        use_scale_fix_2=True,
-        use_scale_fix_3=False,
         prior_cost=lambda *_args, **_kwargs: 0.0,
         spool_rank_score=lambda *_args, **_kwargs: (2.0, 2.0),
         rank_better=lambda rank_try, total_try, rank_ref, total_ref: (

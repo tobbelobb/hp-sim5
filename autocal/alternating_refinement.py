@@ -19,8 +19,6 @@ def run_alternating_refinement(
     lo: np.ndarray,
     hi: np.ndarray,
     kinds: Sequence[str],
-    search_r: bool,
-    use_scale_fix_1: bool,
     outer_iters: int,
     inner_iters: int,
     solve_restarts: int,
@@ -50,7 +48,6 @@ def run_alternating_refinement(
     coordinate_descent_spool: Callable[..., Tuple[np.ndarray, Dict[str, object]]],
     extract_noise_metrics: Callable[[object], Optional[dict]],
     spool_anchor_step_gate: Callable[[float, float], Tuple[bool, float, float]],
-    uniform_radius_scale: Callable[[np.ndarray, np.ndarray], Optional[float]],
     solve_anchor_proposal: Callable[..., Dict[str, object]],
 ) -> Dict[str, object]:
     history: list[dict[str, object]] = []
@@ -243,22 +240,8 @@ def run_alternating_refinement(
         spool_cost_fixed = float(data_cost(transformed_opt, anchors_current))
         spool_prior = float(prior_cost(radii_opt, buildup_opt))
 
-        scale_fix1_ratio = None
-        scale_fix1_applied = False
         anchors_step_seed = np.asarray(anchors_current, dtype=float)
         anchors_step_seed_cost = float(spool_cost_fixed)
-        if use_scale_fix_1 and search_r and np.isfinite(spool_cost_fixed):
-            scale_try = uniform_radius_scale(radii_opt, radii_current)
-            if scale_try is not None and abs(float(scale_try) - 1.0) > 1e-12:
-                anchors_scaled = np.asarray(anchors_current * float(scale_try), dtype=float)
-                scaled_cost = float(data_cost(transformed_opt, anchors_scaled))
-                if np.isfinite(scaled_cost):
-                    improve_tol_fix1 = max(1e-9, 1e-4 * max(1.0, abs(float(spool_cost_fixed))))
-                    if scaled_cost + improve_tol_fix1 < float(spool_cost_fixed):
-                        anchors_step_seed = np.asarray(anchors_scaled, dtype=float)
-                        anchors_step_seed_cost = float(scaled_cost)
-                        scale_fix1_applied = True
-                        scale_fix1_ratio = float(scale_try)
 
         anchors_candidate = np.asarray(anchors_step_seed, dtype=float)
         anchor_cost = float("nan")
@@ -343,12 +326,6 @@ def run_alternating_refinement(
         transformed_candidate = transformed_opt
         candidate_data_cost = float(accepted_cost)
         candidate_prior_cost = float(spool_prior)
-        scale_fix3_info: Dict[str, object] = {
-            "attempted": False,
-            "success": False,
-            "accepted": False,
-            "message": "scale polish disabled",
-        }
         accepted_total_cost = (
             float(candidate_data_cost + candidate_prior_cost)
             if np.isfinite(candidate_data_cost) and np.isfinite(candidate_prior_cost)
@@ -501,10 +478,6 @@ def run_alternating_refinement(
                     if np.isfinite(spool_cost_fixed) and np.isfinite(spool_prior)
                     else None
                 ),
-                "scale_fix_1_applied": bool(scale_fix1_applied),
-                "scale_fix_1_ratio": (
-                    float(scale_fix1_ratio) if isinstance(scale_fix1_ratio, (int, float)) else None
-                ),
                 "spool_data_cost_scale_seed": (
                     float(anchors_step_seed_cost) if np.isfinite(anchors_step_seed_cost) else None
                 ),
@@ -552,7 +525,6 @@ def run_alternating_refinement(
                 ),
                 "accepted_update": str(accepted_update),
                 "anchor_blend_alpha": float(accepted_alpha),
-                "scale_fix_3": dict(scale_fix3_info),
                 "step_final": opt_info.get("step_final"),
                 "seed_choice": str(opt_info.get("seed_choice", "")),
                 "seed_cost": opt_info.get("seed_cost"),

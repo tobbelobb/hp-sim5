@@ -2140,6 +2140,49 @@ TRF fallback, restarts, iteration budgets, calibration bias
 - [Notebook](sessions/2026-10-22-autocal-solver-integration/research.md): budget, intermediate hypothesis and outcome.
 - [Tracked integration report](sessions/2026-10-22-autocal-solver-integration/../../../../research/autocal-solver-lane01-integration.md).
 
+## [2026-10-22-autocal-spool-simplification](sessions/2026-10-22-autocal-spool-simplification/)
+
+[abstract.md](sessions/2026-10-22-autocal-spool-simplification/abstract.md) · [report.md](sessions/2026-10-22-autocal-spool-simplification/report.md) · [research.md](sessions/2026-10-22-autocal-spool-simplification/research.md)
+
+### Integrating spool scale policy and removing two autocal controls
+
+Status: complete.
+
+#### Abstract
+
+Lane 03 identified per-pass scale polish and the default inner spool cap as
+simplification candidates. Twelve sequential fits on three additional simulated
+fixture prefixes compared default/off/inner60 before simplification and defaults
+afterward, with the final three sweeps held out. The cap of 60 exactly reproduced
+30, with all-pass iteration maxima 19, 16 and 11. Removing polish worsened physical
+error from 108.4 to 776.1 mm on flexible lines and from 8.24 to 301.3 mm on the
+ten-point fixture; the pressure fixture was unchanged. Fixing the previous
+default policy exactly preserved anchors, radii, costs, held-out statistics and
+iteration counts. Two CLI/API controls and their obsolete paths were removed.
+The flexible prefix still has a pre-existing cost sentinel; no general accuracy,
+speed or hardware claim follows. All twelve recorded regression fixtures exactly preserve the compared summaries,
+iteration parameters and collection counts.
+
+#### Topics
+
+autocalibration, CLI simplification, scale polish, spool refinement, coordinate
+descent, validation, held-out sweeps, default equivalence
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Cap 60 improves the tested validation prefixes over 30 | V01–V09 | Rejected: identical outputs and counts | [Before trials](sessions/2026-10-22-autocal-spool-simplification/before.log) |
+| Removing polish preserves the two additional scale-sensitive fits | V01–V09 | Rejected: physical/held-out errors worsen | [Before trials](sessions/2026-10-22-autocal-spool-simplification/before.log) |
+| Fixed policy preserves the default validation outputs | V10–V12 | Supported exactly on the three prefixes | [After trials](sessions/2026-10-22-autocal-spool-simplification/after.log), [trials](sessions/2026-10-22-autocal-spool-simplification/trials.json) |
+
+#### References
+
+- [Notebook](sessions/2026-10-22-autocal-spool-simplification/research.md): objective, budgets and constraints.
+- [Report](sessions/2026-10-22-autocal-spool-simplification/report.md): integration scope and evidence.
+- [Validation harness](sessions/2026-10-22-autocal-spool-simplification/harness/validate.py): frozen input selection and measurements.
+- [Tracked integration report](sessions/2026-10-22-autocal-spool-simplification/../../../../research/autocal-spool-lane03-integration.md).
+
 ## [2026-10-22-interactive-research-a430536f](sessions/2026-10-22-interactive-research-a430536f/)
 
 [abstract.md](sessions/2026-10-22-interactive-research-a430536f/abstract.md) · [report.md](sessions/2026-10-22-interactive-research-a430536f/report.md) · [research.md](sessions/2026-10-22-interactive-research-a430536f/research.md)

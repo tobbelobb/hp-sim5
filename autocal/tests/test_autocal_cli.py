@@ -37,8 +37,6 @@ def test_spool_cli_options_parse_modes_and_bounds():
         "12,34",
         "--spool-outer-iters",
         "5",
-        "--spool-inner-iters",
-        "17",
         "--line-width",
         "1.25",
         "--sigma-floor-mm",
@@ -50,7 +48,6 @@ def test_spool_cli_options_parse_modes_and_bounds():
     assert opts["theta0_mode"] == "infer"
     assert opts["r0_bounds"] == (12.0, 34.0)
     assert opts["spool_outer_iters"] == 5
-    assert opts["spool_inner_iters"] == 17
     assert opts["filter_schedule"] == ["warmup", "warmup", "warmup", "dynamic"]
     assert opts["objective_schedule"] == [1, 1, 1, 1]
     assert opts["line_width"] == 1.25
@@ -87,25 +84,6 @@ def test_spool_cli_rejects_nonpositive_sigma_floor_mm():
         _resolve_spool_cli_options(parser, args)
 
 
-
-def test_spool_cli_parses_scale_fix_levels():
-    parser, args = _parse_spool_args("--scale-fix", "1,3")
-    opts = _resolve_spool_cli_options(parser, args)
-    assert opts["scale_fix"] == [1, 3]
-
-
-def test_spool_cli_rejects_invalid_scale_fix_level():
-    parser, args = _parse_spool_args("--scale-fix", "1,4")
-    with pytest.raises(SystemExit):
-        _resolve_spool_cli_options(parser, args)
-
-
-def test_spool_cli_default_enables_scale_fix_2():
-    parser, args = _parse_spool_args()
-    opts = _resolve_spool_cli_options(parser, args)
-    assert opts["scale_fix"] == [3]
-
-
 def test_spool_cli_parses_filter_schedule_words():
     parser, args = _parse_spool_args("--filter-schedule", "warmup,warmup,dynamic,constant")
     opts = _resolve_spool_cli_options(parser, args)
@@ -140,12 +118,6 @@ def test_spool_cli_rejects_constant_without_dynamic_since_last_warmup():
     parser, args = _parse_spool_args("--filter-schedule", "warmup,constant")
     with pytest.raises(SystemExit):
         _resolve_spool_cli_options(parser, args)
-
-
-def test_spool_cli_allows_disabling_scale_fixes():
-    parser, args = _parse_spool_args("--scale-fix", "off")
-    opts = _resolve_spool_cli_options(parser, args)
-    assert opts["scale_fix"] == []
 
 
 def test_spool_cli_parses_fit_structure_levels():
@@ -383,7 +355,7 @@ def test_filter_variants_preserve_inheritance_and_explicit_reenable(positive, ne
     assert _parse_full_auto_run_spec(f"{negative} {positive}")[1] == {key: True}
 
 
-@pytest.mark.parametrize("flag", ["--threshold", "--sigma-used-mm"])
+@pytest.mark.parametrize("flag", ["--threshold", "--sigma-used-mm", "--scale-fix", "--spool-inner-iters"])
 def test_removed_fit_flags_rejected_in_main_and_variant_parsers(flag):
     with pytest.raises(SystemExit):
         _parse_spool_args(flag, "1")

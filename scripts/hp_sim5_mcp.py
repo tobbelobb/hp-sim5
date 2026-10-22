@@ -171,7 +171,7 @@ def start_autocal(machine: str = 'hp3', layering: bool = False,
 
     base_radii_mm: one or four known/initial radii (default [30]); fitting modes: off/global/per-anchor.
     Nonzero or fitted buildup requires layering. optimizer: mode (fast/fast-fd/legacy), solver
-    (lbfgsb/trf), solve_iterations, solve_restarts, spool_outer_iters, spool_inner_iters,
+    (lbfgsb/trf), solve_iterations, solve_restarts, spool_outer_iters,
     r0_bounds_mm and b_bounds (two-element lists). budgets: max_steps (default 20),
     sweep_points (20), wall_timeout_s (3600), max_physics_steps (5000000), threads (1).
     collection optionally supplies force_low_n, force_mid_n, force_max_n together (0.001–10 N,

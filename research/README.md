@@ -537,8 +537,8 @@ these are frozen recording-workload costs, not complete autocal job timings.
 
 `optimizer` accepts `mode` (`fast`, `fast-fd`, `legacy`) and `solver` (`lbfgsb`,
 `trf`). Defaults are `fast`/`lbfgsb`, 400 `solve_iterations` (1–2000), four
-`solve_restarts` (1–16), three `spool_outer_iters` (1–20), and 30
-`spool_inner_iters` (1–2000). Optional `r0_bounds_mm` and `b_bounds` are increasing
+`solve_restarts` (1–16), and three `spool_outer_iters` (1–20). Inner spool
+refinement uses a fixed cap of 30 with tolerance/stall stopping. Optional `r0_bounds_mm` and `b_bounds` are increasing
 two-element lists within the radius/buildup bounds above. `budgets` defaults to
 20 `max_steps` (1–100), 20 `sweep_points` per sub-sweep (3–100), 3600
 `wall_timeout_s` (1–14400), 5,000,000 `max_physics_steps` (1–10,000,000), and one

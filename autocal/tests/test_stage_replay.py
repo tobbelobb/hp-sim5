@@ -147,7 +147,8 @@ def test_fit_replay_reads_old_artifacts_without_removed_options(tmp_path, monkey
     artifact = tmp_path / "old-fit.json"
     write_stage_artifact(artifact, "fit", {
         "fit": {"dataset": {"sweeps": []}},
-        "fit_options": {"residual_threshold": 250.0, "sigma_used_mm": 1.0},
+        "fit_options": {"residual_threshold": 250.0, "sigma_used_mm": 1.0,
+                        "scale_fix": [3], "spool_inner_iters": 30},
     })
     calls = []
 
@@ -161,8 +162,18 @@ def test_fit_replay_reads_old_artifacts_without_removed_options(tmp_path, monkey
     assert main(["fit", str(artifact), "--output", str(output)]) == 0
     assert calls == [(None, False)]
     options = read_stage_artifact(output)["payload"]["fit_options"]
-    assert "residual_threshold" not in options and "sigma_used_mm" not in options
+    assert not {"residual_threshold", "sigma_used_mm", "scale_fix", "spool_inner_iters"}.intersection(options)
     override = tmp_path / "override.json"
     override.write_text(json.dumps({"residual_threshold": 0.01}))
     with pytest.raises(SystemExit):
         main(["fit", str(artifact), "--options", str(override), "--output", str(output)])
+
+
+@pytest.mark.parametrize("saved", [{"scale_fix": []}, {"scale_fix": [1]}, {"spool_inner_iters": 60}])
+def test_fit_replay_rejects_nondefault_removed_spool_policies(tmp_path, saved):
+    artifact = tmp_path / "old-fit.json"
+    write_stage_artifact(artifact, "fit", {
+        "fit": {"dataset": {"sweeps": []}}, "fit_options": saved,
+    })
+    with pytest.raises(SystemExit):
+        main(["fit", str(artifact), "--output", str(tmp_path / "result.json")])

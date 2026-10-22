@@ -475,7 +475,6 @@ def estimate_effective_radii_with_spool_model(
     r0_prior_sigma_mm: Optional[float],
     b_prior_sigma: Optional[float],
     spool_outer_iters: int,
-    spool_inner_iters: int,
     theta0_mode: str,
     solve_restarts: int,
     solve_iterations: int,
@@ -492,7 +491,6 @@ def estimate_effective_radii_with_spool_model(
     robust_debug: bool,
     low_anchor_z: Optional[float] = None,
     prefer_zero_tension_angles: bool = False,
-    scale_fix_levels: Optional[Sequence[int]] = None,
     fit_structure_levels: Optional[Sequence[int]] = None,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
@@ -510,11 +508,7 @@ def estimate_effective_radii_with_spool_model(
     theta0_mode_norm = _normalize_theta0_mode(theta0_mode)
     search_r = _spool_mode_enabled(mode_r)
     search_b = _spool_mode_enabled(mode_b)
-    scale_fix_set = set(_parse_scale_fix_levels(scale_fix_levels))
     fit_structure_set = set(_parse_fit_structure_levels(fit_structure_levels))
-    use_scale_fix_1 = 1 in scale_fix_set
-    use_scale_fix_2 = 2 in scale_fix_set
-    use_scale_fix_3 = 3 in scale_fix_set
     if not (search_r or search_b):
         raise ValueError("spool estimation requires find_radii and/or find_buildup_factor")
 
@@ -791,13 +785,6 @@ def estimate_effective_radii_with_spool_model(
                         "filter_schedule constant pass requires a locked mask from a prior "
                         "dynamic pass"
                     )
-            pass_scale_fix_set = set(scale_fix_set)
-            # scale_fix 2: final polish only on the last filter-schedule pass.
-            # scale_fix 3: final polish on every filter-schedule pass.
-            if (2 in pass_scale_fix_set) and (3 not in pass_scale_fix_set) and (
-                schedule_idx < len(requested_filter_schedule) - 1
-            ):
-                pass_scale_fix_set.discard(2)
             (
                 eff_r_pass,
                 fit_anchors_pass,
@@ -819,7 +806,6 @@ def estimate_effective_radii_with_spool_model(
                 r0_prior_sigma_mm=r0_prior_sigma_mm,
                 b_prior_sigma=b_prior_sigma,
                 spool_outer_iters=spool_outer_iters,
-                spool_inner_iters=spool_inner_iters,
                 theta0_mode=theta0_mode,
                 solve_restarts=solve_restarts,
                 solve_iterations=solve_iterations,
@@ -835,7 +821,6 @@ def estimate_effective_radii_with_spool_model(
                 sigma_source=sigma_source,
                 robust_debug=robust_debug,
                 prefer_zero_tension_angles=prefer_zero_tension_angles,
-                scale_fix_levels=sorted(int(v) for v in pass_scale_fix_set),
                 fit_structure_levels=sorted(int(v) for v in fit_structure_set),
                 filter_schedule=None,
                 objective_schedule=[int(pass_objective_id)],
@@ -906,9 +891,6 @@ def estimate_effective_radii_with_spool_model(
                     "constant_mask_applied": bool(
                         pass_kind == "constant" and isinstance(constant_mask_dataset, dict)
                     ),
-                    "scale_fix_levels": [int(v) for v in sorted(pass_scale_fix_set)],
-                    "scale_fix_2_active": bool(2 in pass_scale_fix_set),
-                    "scale_fix_3_active": bool(3 in pass_scale_fix_set),
                     "final_scale_polish_attempted": bool(
                         ((fit_info_pass.get("final_scale_polish") or {}).get("attempted", False))
                         if isinstance(fit_info_pass, dict)
@@ -968,7 +950,9 @@ def estimate_effective_radii_with_spool_model(
         find_buildup_mode=mode_b,
     )
     outer_iters = max(1, int(spool_outer_iters))
-    inner_iters = max(1, int(spool_inner_iters))
+    # Coordinate descent already stops on parameter tolerances or stalled gain.
+    # Validation fits converge below this cap; it is not a user tuning control.
+    inner_iters = 30
 
     dataset_params_cache: Dict[
         Tuple[Tuple[float, ...], Tuple[float, ...]], Tuple[SpoolModelParams, dict]
@@ -1757,8 +1741,6 @@ def estimate_effective_radii_with_spool_model(
         lo=lo,
         hi=hi,
         kinds=kinds,
-        search_r=search_r,
-        use_scale_fix_1=use_scale_fix_1,
         outer_iters=outer_iters,
         inner_iters=inner_iters,
         solve_restarts=solve_restarts,
@@ -1788,7 +1770,6 @@ def estimate_effective_radii_with_spool_model(
         coordinate_descent_spool=_coordinate_descent_spool,
         extract_noise_metrics=_extract_noise_metrics,
         spool_anchor_step_gate=_spool_anchor_step_gate,
-        uniform_radius_scale=_uniform_radius_scale,
         solve_anchor_proposal=_solve_anchor_proposal,
     )
     best = refinement_result["best"]
@@ -1858,8 +1839,6 @@ def estimate_effective_radii_with_spool_model(
 
     best, final_scale_polish_info = apply_final_scale_polish(
         best=best,
-        use_scale_fix_2=use_scale_fix_2,
-        use_scale_fix_3=use_scale_fix_3,
         prior_cost=_prior_cost,
         spool_rank_score=_spool_rank_score,
         rank_better=_rank_better,
@@ -1952,11 +1931,7 @@ def estimate_effective_radii_with_spool_model(
         "anchor_step_improvement_rel_threshold": float(_SPOOL_ANCHOR_STEP_IMPROVE_REL),
         "filter_schedule_requested": [str(v) for v in requested_filter_schedule],
         "objective_schedule_requested": [int(v) for v in requested_objective_schedule],
-        "scale_fix_levels": [int(v) for v in sorted(scale_fix_set)],
         "fit_structure_levels": [int(v) for v in sorted(fit_structure_set)],
-        "scale_fix_1_enabled": bool(use_scale_fix_1),
-        "scale_fix_2_enabled": bool(use_scale_fix_2),
-        "scale_fix_3_enabled": bool(use_scale_fix_3),
         "prefit_enabled": bool(enable_prefit),
         "bootstrap_anchor_refresh_enabled": bool(enable_bootstrap_anchor_refresh),
         "prefit": dict(prefit_info),

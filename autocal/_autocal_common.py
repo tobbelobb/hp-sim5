@@ -56,7 +56,6 @@ _SPOOL_FIND_MODE_CHOICES = ("off", "global", "per-anchor")
 _SOLVE_OPTIMIZER_CHOICES = ("lbfgsb", "lm", "trf")
 _OPTIMIZER_MODE_CHOICES = ("fast", "fast-fd", "legacy")
 _THETA0_MODE_CHOICES = ("infer", "zero")
-_SCALE_FIX_LEVELS = (1, 2, 3)
 _FIT_STRUCTURE_LEVELS = (1, 2, 3)
 _OBJECTIVE_SCHEDULE_LEVELS = (0, 1, 2)
 _FILTER_SCHEDULE_PASS_CHOICES = ("warmup", "dynamic", "constant")
@@ -1793,34 +1792,6 @@ def _apply_optimizer_mode_env(mode: Optional[str]) -> str:
     return mode_norm
 
 
-def _parse_scale_fix_levels(spec: Optional[Any], *, label: str = "--scale-fix") -> Tuple[int, ...]:
-    if spec is None:
-        return tuple()
-    if isinstance(spec, (list, tuple, set)):
-        parts = [str(v).strip() for v in spec]
-    else:
-        text = str(spec).strip()
-        if not text:
-            return tuple()
-        if text.lower() in ("off", "none", "false", "0"):
-            return tuple()
-        parts = [p.strip() for p in text.split(",")]
-    out: List[int] = []
-    for part in parts:
-        if not part:
-            continue
-        try:
-            val = int(part)
-        except (TypeError, ValueError) as exc:
-            raise ValueError(f"{label} must be a comma-separated list of integers: 1,2,3") from exc
-        if val not in _SCALE_FIX_LEVELS:
-            allowed = ",".join(str(v) for v in _SCALE_FIX_LEVELS)
-            raise ValueError(f"{label} allows only: {allowed}")
-        if val not in out:
-            out.append(int(val))
-    return tuple(out)
-
-
 def _parse_fit_structure_levels(
     spec: Optional[Any],
     *,
@@ -3417,22 +3388,10 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         help="Outer iterations for spool parameter refinement.",
     )
     parser.add_argument(
-        "--spool-inner-iters",
-        type=int,
-        default=30,
-        help="Inner optimizer iterations per spool refinement step.",
-    )
-    parser.add_argument(
         "--theta0-mode",
         choices=_THETA0_MODE_CHOICES,
         default="zero",
         help="Theta offset mode for spool model: infer | zero (default: zero).",
-    )
-    parser.add_argument(
-        "--scale-fix",
-        type=str,
-        default="3",
-        help="Enable scale-coupling fixes by id (comma-separated): 1,2,3 (default: 3). Use 'off' to disable.",
     )
     parser.add_argument(
         "--fit-structure",
@@ -3873,7 +3832,6 @@ def _resolve_spool_cli_options(
         theta0_mode = _normalize_theta0_mode(args.theta0_mode)
         r0_bounds = _parse_min_max_bounds(args.r0_bounds, label="--r0-bounds")
         b_bounds = _parse_min_max_bounds(args.b_bounds, label="--b-bounds")
-        scale_fix_levels = _parse_scale_fix_levels(args.scale_fix, label="--scale-fix")
         fit_structure_levels = _parse_fit_structure_levels(args.fit_structure, label="--fit-structure")
         objective_schedule = _parse_objective_schedule(
             args.objective_schedule,
@@ -3901,11 +3859,8 @@ def _resolve_spool_cli_options(
             parser.error("--b-prior-sigma must be finite and > 0")
 
     spool_outer_iters = int(args.spool_outer_iters)
-    spool_inner_iters = int(args.spool_inner_iters)
     if spool_outer_iters < 1:
         parser.error("--spool-outer-iters must be >= 1")
-    if spool_inner_iters < 1:
-        parser.error("--spool-inner-iters must be >= 1")
     try:
         filter_schedule = _parse_filter_schedule(args.filter_schedule, label="--filter-schedule")
     except ValueError as exc:
@@ -3937,16 +3892,12 @@ def _resolve_spool_cli_options(
         "r0_prior_sigma_mm": r0_prior_sigma_mm,
         "b_prior_sigma": b_prior_sigma,
         "spool_outer_iters": int(spool_outer_iters),
-        "spool_inner_iters": int(spool_inner_iters),
         "filter_schedule": [str(v) for v in filter_schedule],
         "objective_schedule": [int(v) for v in objective_schedule],
         "line_width": float(line_width),
         "sigma_floor_mm": (None if sigma_floor_mm is None else float(sigma_floor_mm)),
-        "scale_fix": [int(v) for v in scale_fix_levels],
         "fit_structure": [int(v) for v in fit_structure_levels],
     }
-
-
 
 
 def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
@@ -4027,9 +3978,7 @@ def _build_full_auto_run_override_parser() -> argparse.ArgumentParser:
     parser.add_argument("--r0-prior-sigma-mm", type=float, default=None)
     parser.add_argument("--b-prior-sigma", type=float, default=None)
     parser.add_argument("--spool-outer-iters", type=int, default=None)
-    parser.add_argument("--spool-inner-iters", type=int, default=None)
     parser.add_argument("--theta0-mode", choices=_THETA0_MODE_CHOICES, default=None)
-    parser.add_argument("--scale-fix", default=None)
     parser.add_argument("--fit-structure", default=None)
     parser.add_argument("--filter-schedule", default=None)
     parser.add_argument("--objective-schedule", default=None)

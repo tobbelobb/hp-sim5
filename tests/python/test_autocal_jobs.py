@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 @pytest.mark.parametrize('args', [
     {'machine': 'hp5'}, {'layering': 1}, {'buildup_factor': .6},
     {'base_radii_mm': [float('nan')]}, {'base_radii_mm': [30, 30]},
-    {'optimizer': {'mode': 'shell'}}, {'optimizer': {'r0_bounds_mm': [40, 30]}},
+    {'optimizer': {'mode': 'shell'}}, {'optimizer': {'spool_inner_iters': 30}}, {'optimizer': {'r0_bounds_mm': [40, 30]}},
     {'budgets': {'max_steps': True}}, {'budgets': {'wall_timeout_s': 14401}},
     {'budgets': {'threads': 0}}, {'collector_args': ['--server', 'external']},
     {'collection': {'force_max_n': 9.2}},
@@ -36,6 +36,7 @@ def test_autocal_command_runs_one_production_cli_with_explicit_configuration(tmp
     assert argv[argv.index('--rrf-config') + 1] == 'sys/config_hp3_w_line_layers.g'
     assert argv[-2:] == ['--collector-args', '--line-layering']
     assert '--no-collect' not in argv and '--keep-sim-alive' not in argv
+    assert '--spool-inner-iters' not in argv
     cfg = settings({'collection': {'force_low_n': .01, 'force_mid_n': .23, 'force_max_n': 9.2}})
     assert '--no-auto-tune-force' in command(ROOT, tmp_path, cfg)
 

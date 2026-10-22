@@ -32,7 +32,6 @@ def fit_ellipse_dataset(
     r0_prior_sigma_mm: Optional[float],
     b_prior_sigma: Optional[float],
     spool_outer_iters: int,
-    spool_inner_iters: int,
     theta0_mode: str,
     line_width: float,
     sigma_floor_mm: Optional[float],
@@ -42,7 +41,6 @@ def fit_ellipse_dataset(
     low_anchor_z: Optional[float] = None,
     filter_schedule: Optional[Sequence[Any]] = None,
     objective_schedule: Optional[Sequence[Any]] = None,
-    scale_fix: Optional[Sequence[int]] = None,
     fit_structure: Optional[Sequence[int]] = None,
     initial_guess: Optional[np.ndarray] = None,
     initial_radii_mm: Optional[np.ndarray] = None,
@@ -68,7 +66,6 @@ def fit_ellipse_dataset(
         warnings.append(f"point_role_remap_applied:{int(remapped_points)}")
     find_radii_mode = _normalize_spool_find_mode(find_radii)
     find_buildup_mode = _normalize_spool_find_mode(find_buildup_factor)
-    scale_fix_levels = _parse_scale_fix_levels(scale_fix)
     fit_structure_levels = _parse_fit_structure_levels(fit_structure)
     theta0_mode_norm = _normalize_theta0_mode(theta0_mode)
     search_radii = _spool_mode_enabled(find_radii_mode)
@@ -210,7 +207,6 @@ def fit_ellipse_dataset(
                 r0_prior_sigma_mm=r0_prior_sigma_mm,
                 b_prior_sigma=b_prior_sigma,
                 spool_outer_iters=int(spool_outer_iters),
-                spool_inner_iters=int(spool_inner_iters),
                 theta0_mode=theta0_mode_norm,
                 solve_restarts=int(solve_restarts),
                 solve_iterations=int(solve_iterations),
@@ -227,7 +223,6 @@ def fit_ellipse_dataset(
                 robust_debug=bool(robust_debug),
                 low_anchor_z=low_anchor_z,
                 prefer_zero_tension_angles=bool(prefer_zero_tension_angles),
-                scale_fix_levels=scale_fix_levels,
                 fit_structure_levels=fit_structure_levels,
                 filter_schedule=_parse_filter_schedule(filter_schedule, label="filter_schedule"),
                 objective_schedule=_parse_objective_schedule(
@@ -321,7 +316,6 @@ def fit_ellipse_dataset(
                 else None
             ),
             "spool_outer_iters": int(spool_outer_iters),
-            "spool_inner_iters": int(spool_inner_iters),
             "filter_schedule": [
                 str(v) for v in _parse_filter_schedule(filter_schedule, label="filter_schedule")
             ],
@@ -333,7 +327,6 @@ def fit_ellipse_dataset(
                 )
             ],
             "theta0_mode": theta0_mode_norm,
-            "scale_fix_levels": [int(v) for v in scale_fix_levels],
             "fit_structure_levels": [int(v) for v in fit_structure_levels],
             "radii_fit": radii_fit,
             "spool_fit": radii_fit,

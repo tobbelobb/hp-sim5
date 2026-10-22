@@ -115,7 +115,6 @@ def test_spool_fit_buildup_only_keeps_radii_fixed(monkeypatch):
         r0_prior_sigma_mm=None,
         b_prior_sigma=1e9,
         spool_outer_iters=1,
-        spool_inner_iters=40,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
@@ -165,7 +164,6 @@ def test_spool_fit_radius_similarity_prior_reduces_spread(monkeypatch):
         r0_prior_sigma_mm=None,
         b_prior_sigma=None,
         spool_outer_iters=1,
-        spool_inner_iters=60,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
@@ -208,7 +206,6 @@ def test_spool_fit_uses_default_b_prior_when_not_provided(monkeypatch):
         r0_prior_sigma_mm=None,
         b_prior_sigma=None,
         spool_outer_iters=1,
-        spool_inner_iters=4,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
@@ -259,7 +256,6 @@ def test_spool_fit_anchor_step_caps_solver_settings(monkeypatch):
         r0_prior_sigma_mm=2.0,
         b_prior_sigma=0.1,
         spool_outer_iters=2,
-        spool_inner_iters=4,
         theta0_mode="zero",
         solve_restarts=7,
         solve_iterations=999,
@@ -322,7 +318,6 @@ def test_anchor_step_skips_when_spool_objective_does_not_improve(monkeypatch):
         r0_prior_sigma_mm=None,
         b_prior_sigma=1e9,
         spool_outer_iters=1,
-        spool_inner_iters=4,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
@@ -1102,7 +1097,6 @@ def test_global_b_prior_penalty_is_not_multiplied_by_anchor_count(monkeypatch):
         r0_prior_sigma_mm=None,
         b_prior_sigma=0.1,
         spool_outer_iters=1,
-        spool_inner_iters=1,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
@@ -1173,7 +1167,6 @@ def test_spool_fit_seed_selection_can_move_off_current(monkeypatch):
         r0_prior_sigma_mm=None,
         b_prior_sigma=None,
         spool_outer_iters=1,
-        spool_inner_iters=1,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
@@ -1299,7 +1292,6 @@ def test_spool_prefit_grid_avoids_false_basin_for_low_base_radius(monkeypatch):
             r0_prior_sigma_mm=None,
             b_prior_sigma=None,
             spool_outer_iters=1,
-            spool_inner_iters=2,
             theta0_mode="zero",
             solve_restarts=1,
             solve_iterations=10,
@@ -1433,7 +1425,6 @@ def test_spool_prefit_monotonic_boundary_is_guarded_for_base30_vs_38p7(monkeypat
             r0_prior_sigma_mm=None,
             b_prior_sigma=None,
             spool_outer_iters=1,
-            spool_inner_iters=12,
             theta0_mode="zero",
             solve_restarts=1,
             solve_iterations=10,
@@ -1591,7 +1582,6 @@ def test_spool_prefit_ellipse_can_reseed_before_anchor_step(monkeypatch):
         r0_prior_sigma_mm=None,
         b_prior_sigma=None,
         spool_outer_iters=1,
-        spool_inner_iters=2,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
@@ -1701,7 +1691,6 @@ def test_bootstrap_anchor_refresh_runs_before_first_spool_radius_step(monkeypatc
         r0_prior_sigma_mm=None,
         b_prior_sigma=None,
         spool_outer_iters=1,
-        spool_inner_iters=1,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
@@ -1732,111 +1721,11 @@ def test_bootstrap_anchor_refresh_runs_before_first_spool_radius_step(monkeypatc
     )
 
 
-def test_scale_fix_1_scales_anchor_seed_for_first_anchor_step(monkeypatch):
-    base = np.array([30.0, 30.0, 30.0], dtype=float)
-
-    def fake_build_spool_model_params(
-        dataset,
-        *,
-        base_radii_mm,
-        modeled_radii_mm,
-        modeled_buildup_factor,
-        spool_to_motor_gearing_factor,
-        mechanical_advantage,
-        lines_per_spool,
-        base_buildup_factor=None,
-        theta0_mode="zero",
-        prefer_zero_tension_angles=False,
-    ):
-        _ = (
-            dataset,
-            base_radii_mm,
-            spool_to_motor_gearing_factor,
-            mechanical_advantage,
-            lines_per_spool,
-            base_buildup_factor,
-            theta0_mode,
-            prefer_zero_tension_angles,
-        )
-        return {
-            "radii_mm": np.asarray(modeled_radii_mm, dtype=float).reshape(-1),
-            "buildup_factor": np.asarray(modeled_buildup_factor, dtype=float).reshape(-1),
-        }
-
-    def fake_dataset_with_modeled_lengths(
-        dataset,
-        spool_params,
-        *,
-        prefer_zero_tension_angles=False,
-        copy_metadata=True,
-    ):
-        _ = prefer_zero_tension_angles
-        return {
-            "num_anchors": int(dataset.get("num_anchors", 3)),
-            "sweeps": [],
-            "_spool_r": float(np.median(np.asarray(spool_params["radii_mm"], dtype=float))),
-        }
-
-    cal_calls = []
-
-    def fake_calibrate_elliptical(dataset_or_path, **kwargs):
-        _ = dataset_or_path
-        cal_calls.append(np.asarray(kwargs.get("initial_guess"), dtype=float))
-        return {"anchors": np.asarray(kwargs.get("initial_guess"), dtype=float), "cost": 0.0}
-
-    def fake_evaluate_cost_at_anchors(dataset, anchors, **kwargs):
-        _ = kwargs
-        r = float(dataset.get("_spool_r", 30.0))
-        anchor_mean = float(np.mean(np.asarray(anchors, dtype=float)))
-        return float((r - 40.0) ** 2.0 + 0.01 * (anchor_mean - (r / 30.0)) ** 2.0)
-
-    _patch_runtime_attr(monkeypatch, "build_spool_model_params", fake_build_spool_model_params)
-    _patch_runtime_attr(monkeypatch, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
-    _patch_runtime_attr(monkeypatch, "calibrate_elliptical", fake_calibrate_elliptical)
-    _patch_runtime_attr(monkeypatch, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
-
-    seed_anchors = np.ones((3, 2), dtype=float)
-    _eff_r, _fit_anchors, _spool_params, _transformed, fit_info = ac._estimate_effective_radii_with_spool_model(
-        {"num_anchors": 3, "sweeps": []},
-        seed_anchors,
-        find_radii_mode="global",
-        find_buildup_mode="off",
-        base_radii_mm=base,
-        modeled_buildup_factor=np.zeros(3, dtype=float),
-        spool_to_motor_gearing_factor=np.ones(3, dtype=float),
-        mechanical_advantage=np.ones(3, dtype=float),
-        lines_per_spool=np.ones(3, dtype=float),
-        r0_bounds=None,
-        b_bounds=None,
-        r0_prior_sigma_mm=None,
-        b_prior_sigma=None,
-        spool_outer_iters=1,
-        spool_inner_iters=1,
-        theta0_mode="zero",
-        solve_restarts=1,
-        solve_iterations=10,
-        solve_optimizer="L-BFGS-B",
-        spring_k_multiplier=1.0,
-        use_flex=False,
-        pointwise_residual_mode="sampson",
-        pointwise_filtering=False,
-        pointwise_global_mad=False,
-        sweep_wise_filtering=False,
-        sweep_metric="mad",
-        use_noise_mean=False,
-        sigma_source="auto",
-        robust_debug=False,
-        scale_fix_levels=(1,),
-    )
-
-    assert len(cal_calls) >= 2
-    assert float(np.mean(cal_calls[1])) > 1.2
-    history = fit_info.get("history")
-    assert isinstance(history, list) and history
-    assert history[0].get("scale_fix_1_applied") is True
 
 
-def test_scale_fix_2_runs_final_uniform_scale_polish(monkeypatch):
+
+
+def test_scale_polish_runs_after_single_pass_refinement(monkeypatch):
     base = np.array([30.0, 30.0, 30.0], dtype=float)
 
     def fake_build_spool_model_params(
@@ -1896,113 +1785,7 @@ def test_scale_fix_2_runs_final_uniform_scale_polish(monkeypatch):
     _patch_runtime_attr(monkeypatch, "calibrate_elliptical", fake_calibrate_elliptical)
     _patch_runtime_attr(monkeypatch, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
 
-    seed_anchors = np.ones((3, 2), dtype=float)
-
-    def _run(scale_fix_levels):
-        eff_r, _fit_anchors, _spool_params, _transformed, fit_info = ac._estimate_effective_radii_with_spool_model(
-            {"num_anchors": 3, "sweeps": []},
-            seed_anchors,
-            find_radii_mode="global",
-            find_buildup_mode="off",
-            base_radii_mm=base,
-            modeled_buildup_factor=np.zeros(3, dtype=float),
-            spool_to_motor_gearing_factor=np.ones(3, dtype=float),
-            mechanical_advantage=np.ones(3, dtype=float),
-            lines_per_spool=np.ones(3, dtype=float),
-            r0_bounds=None,
-            b_bounds=None,
-            r0_prior_sigma_mm=None,
-            b_prior_sigma=None,
-            spool_outer_iters=1,
-            spool_inner_iters=1,
-            theta0_mode="zero",
-            solve_restarts=1,
-            solve_iterations=10,
-            solve_optimizer="L-BFGS-B",
-            spring_k_multiplier=1.0,
-            use_flex=False,
-            pointwise_residual_mode="sampson",
-            pointwise_filtering=False,
-            pointwise_global_mad=False,
-            sweep_wise_filtering=False,
-            sweep_metric="mad",
-            use_noise_mean=False,
-            sigma_source="auto",
-            robust_debug=False,
-            scale_fix_levels=scale_fix_levels,
-        )
-        return float(np.median(np.asarray(eff_r, dtype=float))), fit_info
-
-    r_no_fix, _ = _run(tuple())
-    r_fix2, fit_fix2 = _run((2,))
-
-    assert r_fix2 > r_no_fix + 1.0
-    final_polish = fit_fix2.get("final_scale_polish", {})
-    assert final_polish.get("attempted") is True
-    assert final_polish.get("accepted") is True
-
-
-def test_scale_fix_3_keeps_final_polish_only_in_single_pass(monkeypatch):
-    base = np.array([30.0, 30.0, 30.0], dtype=float)
-
-    def fake_build_spool_model_params(
-        dataset,
-        *,
-        base_radii_mm,
-        modeled_radii_mm,
-        modeled_buildup_factor,
-        spool_to_motor_gearing_factor,
-        mechanical_advantage,
-        lines_per_spool,
-        base_buildup_factor=None,
-        theta0_mode="zero",
-        prefer_zero_tension_angles=False,
-    ):
-        _ = (
-            dataset,
-            base_radii_mm,
-            spool_to_motor_gearing_factor,
-            mechanical_advantage,
-            lines_per_spool,
-            base_buildup_factor,
-            theta0_mode,
-            prefer_zero_tension_angles,
-        )
-        return {
-            "radii_mm": np.asarray(modeled_radii_mm, dtype=float).reshape(-1),
-            "buildup_factor": np.asarray(modeled_buildup_factor, dtype=float).reshape(-1),
-        }
-
-    def fake_dataset_with_modeled_lengths(
-        dataset,
-        spool_params,
-        *,
-        prefer_zero_tension_angles=False,
-        copy_metadata=True,
-    ):
-        _ = prefer_zero_tension_angles
-        return {
-            "num_anchors": int(dataset.get("num_anchors", 3)),
-            "sweeps": [],
-            "_spool_r": float(np.median(np.asarray(spool_params["radii_mm"], dtype=float))),
-        }
-
-    def fake_calibrate_elliptical(dataset_or_path, **kwargs):
-        _ = dataset_or_path
-        return {"anchors": np.asarray(kwargs.get("initial_guess"), dtype=float), "cost": 0.0}
-
-    def fake_evaluate_cost_at_anchors(dataset, anchors, **kwargs):
-        _ = kwargs
-        r = float(dataset.get("_spool_r", 30.0))
-        anchor_mean = float(np.mean(np.asarray(anchors, dtype=float)))
-        return float((r / max(anchor_mean, 1e-9) - 40.0) ** 2.0 + 5.0 * (anchor_mean - 1.05) ** 2.0)
-
-    _patch_runtime_attr(monkeypatch, "build_spool_model_params", fake_build_spool_model_params)
-    _patch_runtime_attr(monkeypatch, "dataset_with_modeled_lengths", fake_dataset_with_modeled_lengths)
-    _patch_runtime_attr(monkeypatch, "calibrate_elliptical", fake_calibrate_elliptical)
-    _patch_runtime_attr(monkeypatch, "_evaluate_cost_at_anchors", fake_evaluate_cost_at_anchors)
-
-    def _run(scale_fix_levels):
+    def _run():
         eff_r, _fit_anchors, _spool_params, _transformed, fit_info = ac._estimate_effective_radii_with_spool_model(
             {"num_anchors": 3, "sweeps": []},
             np.ones((3, 2), dtype=float),
@@ -2018,7 +1801,6 @@ def test_scale_fix_3_keeps_final_polish_only_in_single_pass(monkeypatch):
             r0_prior_sigma_mm=None,
             b_prior_sigma=None,
             spool_outer_iters=1,
-            spool_inner_iters=1,
             theta0_mode="zero",
             solve_restarts=1,
             solve_iterations=10,
@@ -2033,11 +1815,10 @@ def test_scale_fix_3_keeps_final_polish_only_in_single_pass(monkeypatch):
             use_noise_mean=False,
             sigma_source="auto",
             robust_debug=False,
-            scale_fix_levels=scale_fix_levels,
         )
         return float(np.median(np.asarray(eff_r, dtype=float))), fit_info
 
-    r_fix3, fit_fix3 = _run((3,))
+    r_fix3, fit_fix3 = _run()
 
     final_polish3 = fit_fix3.get("final_scale_polish", {})
     assert final_polish3.get("attempted") is True
@@ -2150,7 +1931,6 @@ def test_final_scale_polish_requires_rank_improvement(monkeypatch):
         r0_prior_sigma_mm=None,
         b_prior_sigma=None,
         spool_outer_iters=1,
-        spool_inner_iters=1,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
@@ -2165,7 +1945,6 @@ def test_final_scale_polish_requires_rank_improvement(monkeypatch):
         use_noise_mean=False,
         sigma_source="auto",
         robust_debug=False,
-        scale_fix_levels=(2,),
     )
 
     final_polish = fit_info.get("final_scale_polish", {})
@@ -2292,7 +2071,6 @@ def test_final_scale_polish_requires_total_objective_improvement(monkeypatch):
         r0_prior_sigma_mm=0.2,
         b_prior_sigma=None,
         spool_outer_iters=1,
-        spool_inner_iters=1,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
@@ -2307,7 +2085,6 @@ def test_final_scale_polish_requires_total_objective_improvement(monkeypatch):
         use_noise_mean=False,
         sigma_source="auto",
         robust_debug=False,
-        scale_fix_levels=(2,),
     )
 
     final_polish = fit_info.get("final_scale_polish", {})
@@ -2390,7 +2167,6 @@ def test_spool_block_update_rolls_back_when_not_improving(monkeypatch):
         r0_prior_sigma_mm=None,
         b_prior_sigma=1e9,
         spool_outer_iters=1,
-        spool_inner_iters=1,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
@@ -2512,7 +2288,6 @@ def test_spool_block_update_prefers_layered_rank_objective(monkeypatch):
         r0_prior_sigma_mm=None,
         b_prior_sigma=1e9,
         spool_outer_iters=1,
-        spool_inner_iters=1,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
@@ -2651,7 +2426,6 @@ def test_spool_block_update_inner_loop_ignores_sweep_bias(monkeypatch):
         r0_prior_sigma_mm=None,
         b_prior_sigma=1e9,
         spool_outer_iters=1,
-        spool_inner_iters=1,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
@@ -2701,7 +2475,6 @@ def test_spool_fit_filter_schedule_runs_multiple_passes(monkeypatch):
         r0_prior_sigma_mm=None,
         b_prior_sigma=None,
         spool_outer_iters=1,
-        spool_inner_iters=4,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=5,
@@ -2716,7 +2489,6 @@ def test_spool_fit_filter_schedule_runs_multiple_passes(monkeypatch):
         use_noise_mean=False,
         sigma_source="auto",
         robust_debug=False,
-        scale_fix_levels=[2],
         filter_schedule=["warmup", "warmup", "warmup"],
     )
 
@@ -2739,11 +2511,8 @@ def test_spool_fit_filter_schedule_runs_multiple_passes(monkeypatch):
     assert bool(filter_schedule_history[0].get("sweep_wise_filtering", True)) is False
     assert bool(filter_schedule_history[1].get("sweep_wise_filtering", True)) is False
     assert bool(filter_schedule_history[2].get("sweep_wise_filtering", True)) is False
-    assert bool(filter_schedule_history[0].get("scale_fix_2_active", True)) is False
-    assert bool(filter_schedule_history[1].get("scale_fix_2_active", True)) is False
-    assert bool(filter_schedule_history[2].get("scale_fix_2_active", False)) is True
-    assert bool(filter_schedule_history[0].get("final_scale_polish_attempted", True)) is False
-    assert bool(filter_schedule_history[1].get("final_scale_polish_attempted", True)) is False
+    assert bool(filter_schedule_history[0].get("final_scale_polish_attempted", False)) is True
+    assert bool(filter_schedule_history[1].get("final_scale_polish_attempted", False)) is True
     assert bool(filter_schedule_history[2].get("final_scale_polish_attempted", False)) is True
     assert isinstance(fit_info.get("filter_schedule_final_calibration"), dict)
     assert "refreeze_final_calibration" not in fit_info
@@ -2775,7 +2544,6 @@ def test_spool_fit_objective_schedule_tracks_each_filter_pass(monkeypatch):
         r0_prior_sigma_mm=None,
         b_prior_sigma=None,
         spool_outer_iters=1,
-        spool_inner_iters=4,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=5,
@@ -2981,7 +2749,6 @@ def test_non_pointwise_objective_schedule_controls_anchor_proposals(monkeypatch,
         r0_prior_sigma_mm=None,
         b_prior_sigma=None,
         spool_outer_iters=1,
-        spool_inner_iters=4,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
@@ -3056,7 +2823,6 @@ def test_pointwise_lm_anchor_proposal_uses_lsq_seam(monkeypatch):
         r0_prior_sigma_mm=None,
         b_prior_sigma=None,
         spool_outer_iters=1,
-        spool_inner_iters=4,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
@@ -3130,7 +2896,6 @@ def test_pointwise_trf_anchor_proposal_keeps_calibrate_elliptical_path(monkeypat
         r0_prior_sigma_mm=None,
         b_prior_sigma=None,
         spool_outer_iters=1,
-        spool_inner_iters=4,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
@@ -3154,7 +2919,7 @@ def test_pointwise_trf_anchor_proposal_keeps_calibrate_elliptical_path(monkeypat
     assert bootstrap.get("solver") == "least_squares_trf"
 
 
-def test_scale_fix_3_applies_final_polish_on_every_filter_pass(monkeypatch):
+def test_scale_polish_applies_on_every_filter_pass(monkeypatch):
     base = np.array([30.0, 30.0, 30.0], dtype=float)
     target_r = np.array([39.0, 39.0, 39.0], dtype=float)
     target_k = np.array([0.636619, 0.636619, 0.636619], dtype=float)
@@ -3177,7 +2942,6 @@ def test_scale_fix_3_applies_final_polish_on_every_filter_pass(monkeypatch):
         r0_prior_sigma_mm=None,
         b_prior_sigma=None,
         spool_outer_iters=1,
-        spool_inner_iters=4,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=5,
@@ -3192,16 +2956,12 @@ def test_scale_fix_3_applies_final_polish_on_every_filter_pass(monkeypatch):
         use_noise_mean=False,
         sigma_source="auto",
         robust_debug=False,
-        scale_fix_levels=[3],
         filter_schedule=["warmup", "warmup", "warmup"],
     )
 
     filter_schedule_history = fit_info.get("filter_schedule_history")
     assert isinstance(filter_schedule_history, list)
     assert len(filter_schedule_history) == 3
-    assert bool(filter_schedule_history[0].get("scale_fix_3_active", False)) is True
-    assert bool(filter_schedule_history[1].get("scale_fix_3_active", False)) is True
-    assert bool(filter_schedule_history[2].get("scale_fix_3_active", False)) is True
     assert bool(filter_schedule_history[0].get("final_scale_polish_attempted", False)) is True
     assert bool(filter_schedule_history[1].get("final_scale_polish_attempted", False)) is True
     assert bool(filter_schedule_history[2].get("final_scale_polish_attempted", False)) is True
@@ -3288,7 +3048,6 @@ def test_filter_schedule_follows_explicit_3_2_3_pass_sequence(monkeypatch):
         r0_prior_sigma_mm=None,
         b_prior_sigma=None,
         spool_outer_iters=1,
-        spool_inner_iters=4,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=5,
@@ -3303,7 +3062,6 @@ def test_filter_schedule_follows_explicit_3_2_3_pass_sequence(monkeypatch):
         use_noise_mean=False,
         sigma_source="auto",
         robust_debug=False,
-        scale_fix_levels=[2],
         filter_schedule=[
             "warmup",
             "warmup",
@@ -3421,7 +3179,6 @@ def test_filter_schedule_constant_mask_hard_locks_precomputed_inliers(monkeypatc
         r0_prior_sigma_mm=None,
         b_prior_sigma=None,
         spool_outer_iters=1,
-        spool_inner_iters=4,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=5,
@@ -3436,7 +3193,6 @@ def test_filter_schedule_constant_mask_hard_locks_precomputed_inliers(monkeypatc
         use_noise_mean=False,
         sigma_source="auto",
         robust_debug=False,
-        scale_fix_levels=[2],
         filter_schedule=[
             "warmup",
             "warmup",
@@ -3543,7 +3299,6 @@ def test_filter_schedule_warmup_clears_mask_and_later_dynamic_rebuilds_it(monkey
         r0_prior_sigma_mm=None,
         b_prior_sigma=None,
         spool_outer_iters=1,
-        spool_inner_iters=4,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=5,
@@ -3558,7 +3313,6 @@ def test_filter_schedule_warmup_clears_mask_and_later_dynamic_rebuilds_it(monkey
         use_noise_mean=False,
         sigma_source="auto",
         robust_debug=False,
-        scale_fix_levels=[2],
         filter_schedule=["dynamic", "constant", "warmup", "dynamic", "constant"],
     )
 
@@ -3757,7 +3511,6 @@ def test_spool_fit_reuses_single_eval_bundle_per_dataset_anchor(monkeypatch, fil
         r0_prior_sigma_mm=None,
         b_prior_sigma=None,
         spool_outer_iters=1,
-        spool_inner_iters=1,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
@@ -3772,7 +3525,6 @@ def test_spool_fit_reuses_single_eval_bundle_per_dataset_anchor(monkeypatch, fil
         use_noise_mean=False,
         sigma_source="auto",
         robust_debug=False,
-        scale_fix_levels=(),
         filter_schedule=filter_schedule,
         enable_prefit=False,
         enable_bootstrap_anchor_refresh=False,
@@ -3870,7 +3622,6 @@ def test_spool_fit_rank_score_rescores_rows_even_when_direct_metric_exists(monke
         r0_prior_sigma_mm=None,
         b_prior_sigma=None,
         spool_outer_iters=1,
-        spool_inner_iters=1,
         theta0_mode="zero",
         solve_restarts=1,
         solve_iterations=10,
@@ -3885,7 +3636,6 @@ def test_spool_fit_rank_score_rescores_rows_even_when_direct_metric_exists(monke
         use_noise_mean=False,
         sigma_source="auto",
         robust_debug=False,
-        scale_fix_levels=(),
         enable_prefit=False,
         enable_bootstrap_anchor_refresh=False,
     )

@@ -28,11 +28,16 @@ def main(argv=None):
         if artifact["kind"] != "fit":
             parser.error("fit and plan require a fit artifact")
         if args.stage == "fit":
-            # Version-1 artifacts included two removed anchor-fit options.
+            # Version-1 artifacts included removed fit options.
             # Keep old snapshots replayable, but reject new requests for them.
-            removed = {"residual_threshold", "sigma_used_mm"}
+            removed = {"residual_threshold", "sigma_used_mm", "scale_fix", "spool_inner_iters"}
             if removed.intersection(overrides):
                 parser.error("removed fit options: " + ", ".join(sorted(removed.intersection(overrides))))
+            saved = payload["fit_options"]
+            if "scale_fix" in saved and saved["scale_fix"] != [3]:
+                parser.error("cannot replay removed scale_fix policy; only the former default [3] is supported")
+            if "spool_inner_iters" in saved and saved["spool_inner_iters"] != 30:
+                parser.error("cannot replay removed spool_inner_iters budget; only the former default 30 is supported")
             options = {key: value for key, value in payload["fit_options"].items()
                        if key not in removed}
             options.update(overrides)

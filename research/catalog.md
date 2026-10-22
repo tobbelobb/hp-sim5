@@ -192,3 +192,10 @@ fallback regression compared an individual fit with a selected final consensus.
 [Session abstract](../output/research/sessions/2026-10-22-autocal-filtering-integration/abstract.md)
 and [notebook](../output/research/sessions/2026-10-22-autocal-filtering-integration/research.md)
 retain raw evidence and limitations.
+
+## Spool lane 03 integration
+
+[Integration report](autocal-spool-lane03-integration.md): removes scale-fix and
+inner-spool-budget controls while preserving the previous default. Twelve fits
+on three additional simulated prefixes support fixed per-pass scale polish and
+a cap of 30. Full validation details and limitations are linked in the report.

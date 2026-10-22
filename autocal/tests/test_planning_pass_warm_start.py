@@ -133,7 +133,6 @@ def test_plan_next_ellipse_sweep_uses_explicit_warm_start_seeds(monkeypatch, tmp
         r0_prior_sigma_mm=None,
         b_prior_sigma=None,
         spool_outer_iters=1,
-        spool_inner_iters=1,
         theta0_mode="zero",
         line_width=0.4,
         sigma_floor_mm=None,

@@ -217,8 +217,6 @@ def run_uniform_scale_polish(
 def apply_final_scale_polish(
     *,
     best: Dict[str, object],
-    use_scale_fix_2: bool,
-    use_scale_fix_3: bool,
     prior_cost: Callable[[np.ndarray, np.ndarray], float],
     spool_rank_score: Callable[..., Tuple[float, Optional[float]]],
     rank_better: Callable[[float, float, float, float], bool],
@@ -228,10 +226,8 @@ def apply_final_scale_polish(
         "attempted": False,
         "success": False,
         "accepted": False,
-        "message": "final scale polish disabled",
+        "message": "scale polish skipped (no fitted dataset)",
     }
-    if not (use_scale_fix_2 or use_scale_fix_3):
-        return best, final_scale_polish_info
     if best["dataset"] is None or best["spool_params"] is None:
         return best, final_scale_polish_info
 

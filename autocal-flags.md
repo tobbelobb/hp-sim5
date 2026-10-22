@@ -3,7 +3,7 @@ usage: autocal.py [-h] --machine-type {slideprinter,hangprinter_3,hangprinter_4,
                   [--patience PATIENCE] [--solve-restarts SOLVE_RESTARTS] [--solve-iterations SOLVE_ITERATIONS] [--solve-optimizer {lbfgsb,lm,trf}] [--trf-solver-fallback | --no-trf-solver-fallback] [--optimizer-mode {fast,fast-fd,legacy}]
                   [--spring-k-multiplier SPRING_K_MULTIPLIER] [--flex] [--find-radii [{off,global,per-anchor}]] [--find-buildup-factor [{off,global,per-anchor}]] [--base-radii BASE_RADII] [--buildup-factor BUILDUP_FACTOR]
                   [--line-width LINE_WIDTH] [--sigma-floor-mm SIGMA_FLOOR_MM] [--low-anchor-z LOW_ANCHOR_Z] [--r0-bounds R0_BOUNDS] [--b-bounds B_BOUNDS] [--r0-prior-sigma-mm R0_PRIOR_SIGMA_MM]
-                  [--b-prior-sigma B_PRIOR_SIGMA] [--spool-outer-iters SPOOL_OUTER_ITERS] [--spool-inner-iters SPOOL_INNER_ITERS] [--theta0-mode {infer,zero}] [--scale-fix SCALE_FIX] [--fit-structure FIT_STRUCTURE] [--filter-schedule FILTER_SCHEDULE]
+                  [--b-prior-sigma B_PRIOR_SIGMA] [--spool-outer-iters SPOOL_OUTER_ITERS] [--theta0-mode {infer,zero}] [--fit-structure FIT_STRUCTURE] [--filter-schedule FILTER_SCHEDULE]
                   [--objective-schedule OBJECTIVE_SCHEDULE] [--pointwise-residual {sampson,euclidean}] [--pointwise-filtering] [--no-pointwise-filtering] [--pointwise-global-mad] [--pointwise-per-sweep-mad] [--sweep-wise-filtering]
                   [--no-sweep-wise-filtering] [--sweep-metric {mad,median_abs,outlier_ratio}] [--sigma-source {auto,point,origin,min}] [--use-noise-mean | --use-raw-lengths] [--robust-debug] [--no-robust-debug] [--residuals-csv RESIDUALS_CSV]
                   [--report] [--candidate-deltas CANDIDATE_DELTAS] [--candidate-count CANDIDATE_COUNT] [--delta-min DELTA_MIN] [--delta-max DELTA_MAX] [--fd-eps-mm FD_EPS_MM] [--regularization REGULARIZATION] [--no-exclude-existing]
@@ -73,12 +73,8 @@ KEEP  --b-bounds B_BOUNDS   Bounds for fitted buildup factor as 'min,max' (defau
                         Gaussian prior sigma for buildup-factor fitting (auto default: 0.1 when fitting k).
   --spool-outer-iters SPOOL_OUTER_ITERS
                         Outer iterations for spool parameter refinement.
-  --spool-inner-iters SPOOL_INNER_ITERS
-                        Inner optimizer iterations per spool refinement step.
   --theta0-mode {infer,zero}
                         Theta offset mode for spool model: infer | zero (default: zero).
-  --scale-fix SCALE_FIX
-                        Enable scale-coupling fixes by id (comma-separated): 1,2,3 (default: 3). Use 'off' to disable.
   --fit-structure FIT_STRUCTURE
                         Enable fit-structure rank penalties by id (comma-separated): 1=tail_ratio, 2=sweep_bias_directionality, 3=tail_factor (default: 3).
   --filter-schedule FILTER_SCHEDULE
@@ -191,3 +187,8 @@ override and its plumbing; it did not override per-point normalization. Default
 filtering and solver policies remain unchanged. Boolean filter switches retain
 both spellings and full-auto inheritance. Older fit-stage snapshots are migrated
 on replay. See [integration findings](research/autocal-filtering-lane02-integration.md).
+
+Lane 03 integration removed `--scale-fix` and `--spool-inner-iters` from the
+current interface. Per-pass scale polish and the existing cap of 30 are now fixed
+behavior. See [integration evidence](research/autocal-spool-lane03-integration.md).
+The original inventory and handoffs remain historical research records.

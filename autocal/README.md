@@ -397,3 +397,18 @@ diagnostics remain available. The standalone ellipse-fitting API and
 
 See [Lane 02 integration evidence](../research/autocal-filtering-lane02-integration.md)
 for the bounded checks and remaining model/normalization questions.
+
+### Spool refinement policy
+
+Uniform anchor/radius scale polish runs after every spool filter pass when radii
+are fitted, within the configured radius bounds and rank acceptance checks.
+The former `--scale-fix` choices have been removed; this is the former default
+level 3. The inner spool solve retains its cap of 30 and its tolerance/stall
+stopping, so `--spool-inner-iters` has also been removed from the CLI, full-auto
+variants and supervisor settings. Remove both flags from existing commands.
+
+Default-valued old stage snapshots (`scale_fix=[3]`, `spool_inner_iters=30`) remain
+replayable. Snapshots requesting removed nondefault policies are rejected rather
+than replayed with changed semantics. Outer budgets, priors and objective schedules
+remain available because their investigations are mixed or incomplete.
+See [validation and integration evidence](../research/autocal-spool-lane03-integration.md).
