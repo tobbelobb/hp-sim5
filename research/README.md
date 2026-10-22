@@ -133,18 +133,20 @@ the worktree instead of the original checkout:
 
 It runs `git worktree add -b research/<name>-<id> <dir>` from the current `HEAD`,
 links the Git-ignored pieces a bare checkout lacks (`.venv`, `.env`,
-`node_modules`, `RRF/build` and the compiled native physics addon), and copies
-the repository paths listed in `.worktreeinclude` (when present) into the new
-worktree so prior local research travels with it. It then re-executes the
+`node_modules`, `RRF/build`, `output/` and the compiled native physics addon).
+The shared `output/` link makes prior local research available and keeps new
+session artifacts in the original checkout. It also copies any additional
+repository paths listed in `.worktreeinclude` (when present) into the new
+worktree. It then re-executes the
 worktree's own launcher. The default
 parent directory is a sibling named `<repo>-worktrees`; override it with
-`--worktree-dir`. Each worktree keeps its own `output/research/` evidence. The
-shared addon is only a starting build: each worktree has local build metadata
-and build output, so rebuilding its native physics does not change another
-worktree. Each launched supervisor also owns its own physics process and session
-artifacts. The branch name derives from `--name`, otherwise from the prompt's first line,
-otherwise `research`. `.worktreeinclude` accepts comments, plain relative paths
-and simple globs; missing entries are ignored.
+`--worktree-dir`. The shared addon is only a starting build: each worktree has
+local build metadata and build output, so rebuilding its native physics does
+not change another worktree. Each launched supervisor owns its own physics
+process; session artifacts are stored in the shared `output/` tree. The branch
+name derives from `--name`, otherwise from the prompt's first line, otherwise
+`research`. `.worktreeinclude` accepts comments, plain relative paths and
+simple globs; missing entries are ignored.
 
 The worktree checks out committed `HEAD`, so commit launcher or tool changes
 before using `--worktree`; uncommitted edits in the original checkout are not

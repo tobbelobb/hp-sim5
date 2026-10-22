@@ -252,7 +252,7 @@ def test_launcher_worktree_dry_run_plans_without_creating_anything(tmp_path):
     assert plan['mode'] == 'worktree'
     assert plan['worktree']['path'].startswith(str(target))
     assert plan['worktree']['branch'].startswith('research/optimize-anchor-layout-')
-    assert set(plan['worktree']['links']) == {'.venv', '.env', 'node_modules', 'RRF/build',
+    assert set(plan['worktree']['links']) == {'.venv', '.env', 'node_modules', 'RRF/build', 'output',
                                                'src/wasm/cable_solver/target/native/physics.node'}
     assert isinstance(plan['worktree']['includes'], list)
     assert not target.exists()
@@ -266,11 +266,13 @@ def test_create_worktree_links_ignored_runtime_pieces(tmp_path, monkeypatch):
     repo = tmp_path / 'repo'
     (repo / 'scripts').mkdir(parents=True)
     (repo / 'scripts/research_agent.py').write_text('')
-    (repo / '.gitignore').write_text('.venv\n.env\nnode_modules/\nRRF/build\n'
+    (repo / '.gitignore').write_text('.venv\n.env\nnode_modules/\nRRF/build\noutput/\n'
                                      'src/wasm/cable_solver/target/\n.worktreeinclude\nlocal/\n')
     (repo / 'tracked.txt').write_text('tracked\n')
     (repo / 'local').mkdir()
     (repo / 'local/notes.md').write_text('prior research\n')
+    (repo / 'output/research').mkdir(parents=True)
+    (repo / 'output/research/index.md').write_text('shared catalog\n')
     (repo / '.worktreeinclude').write_text('# local research to copy\nlocal/notes.md\n')
     subprocess.run(['git', '-C', str(repo), 'init', '-q', '-b', 'main'], check=True, capture_output=True)
     subprocess.run(['git', '-C', str(repo), 'add', '-A'], check=True, capture_output=True)
@@ -301,6 +303,9 @@ def test_create_worktree_links_ignored_runtime_pieces(tmp_path, monkeypatch):
     assert plan['includes'] == ['local/notes.md']
     copied = plan['path'] / 'local/notes.md'
     assert copied.read_text() == 'prior research\n' and not copied.is_symlink()
+    output = plan['path'] / 'output'
+    assert output.is_symlink() and output.resolve() == (repo / 'output').resolve()
+    assert (output / 'research/index.md').read_text() == 'shared catalog\n'
     assert (repo / 'local/notes.md').read_text() == 'prior research\n'
     assert plan['branch'] in subprocess.run(['git', '-C', str(repo), 'worktree', 'list'],
                                             capture_output=True, text=True).stdout

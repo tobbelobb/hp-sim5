@@ -26,7 +26,7 @@ ENV_FILE = ROOT / '.env'
 CHATGPT_SIGN_IN = 'openai'
 STRIPPED_KEYS = ('OPENAI_API_KEY', 'CODEX_API_KEY')
 # Ignored, machine-specific pieces a raw worktree checkout lacks but the launcher needs.
-WORKTREE_LINKS = ('.venv', '.env', 'node_modules', 'RRF/build',
+WORKTREE_LINKS = ('.venv', '.env', 'node_modules', 'RRF/build', 'output',
                   'src/wasm/cable_solver/target/native/physics.node')
 
 
