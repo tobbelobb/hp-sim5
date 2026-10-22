@@ -238,6 +238,37 @@ def apply_consensus_plan(chosen_plan, anchors):
     return plan
 
 
+def select_history_plan(scored):
+    """Return the applied plan, single-fit diagnostics and ordered candidates.
+
+    Held-out predictions rank individual fits. Geometric consensus separately
+    uses all fitted candidates, including the newest unvalidated fit. The
+    reported score therefore describes the best-ranked single fit, not the
+    averaged geometry. Keep the two policies together here so offline replay
+    can reproduce the calibration actually applied by the loop.
+
+    Failed held-out predictions veto application when no validated fit remains.
+    """
+    ranked = rank_history_candidates(scored)
+    if not ranked:
+        return None, None, ranked
+    _key, chosen, info = ranked[0]
+    anchors, members, spread = consensus_anchor_estimate(scored)
+    plan = apply_consensus_plan(chosen.get("plan"), anchors)
+    meta = dict(chosen.get("summary_meta") or {})
+    meta.update({
+        "history_iteration_adjust": info.get("iteration_adjust"),
+        "history_coverage_adjust": info.get("coverage_adjust"),
+        "history_selection_score": info.get("selection_score"),
+        "heldout_prediction_score": info.get("prediction_score"),
+        "heldout_prediction_sweeps": info.get("prediction_sweeps"),
+        "anchor_comparison_score": info.get("anchor_comparison_score"),
+        "history_consensus_members": list(members),
+        "history_consensus_spread_mm": spread,
+    })
+    return plan, meta, ranked
+
+
 SPREAD_STOP_FRAC = 1.5e-3
 SPREAD_STOP_MIN_CANDIDATES = 4
 SPREAD_STOP_CONSECUTIVE = 2

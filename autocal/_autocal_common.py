@@ -3754,12 +3754,7 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
         "--sweep-points",
         type=int,
         default=None,
-        help="Points per sub-sweep (passed to the collector and histogram plot).",
-    )
-    parser.add_argument(
-        "--plot-residual-histogram",
-        action="store_true",
-        help="Write residuals CSV next to the dataset and render a histogram PNG (gamma fit included).",
+        help="Points per sub-sweep (passed to the collector).",
     )
     parser.add_argument("--max-steps", type=int, default=20, help="Maximum active-learning iterations")
     parser.add_argument("--stop-cost", type=float, default=None, help="Optional stop condition on ellipse cost")

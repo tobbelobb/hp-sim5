@@ -199,3 +199,10 @@ retain raw evidence and limitations.
 inner-spool-budget controls while preserving the previous default. Twelve fits
 on three additional simulated prefixes support fixed per-pass scale polish and
 a cap of 30. Full validation details and limitations are linked in the report.
+
+## Autocal lane 04 cleanup integration
+
+[Integration report](autocal-ranking-lane04-integration.md): removed the unused
+histogram flag, extracted final history selection for shared offline replay,
+and verified identical results on three saved histories. Noise metrics were
+present in all 14 saved candidates. Numerical defaults remain unchanged.

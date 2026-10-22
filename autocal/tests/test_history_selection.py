@@ -8,6 +8,7 @@ from autocal.history_selection import (
     consensus_anchor_estimate,
     consensus_spread_hit,
     rank_history_candidates,
+    select_history_plan,
 )
 
 
@@ -168,3 +169,38 @@ def test_spread_hit_fraction_can_be_tightened_or_loosened():
     # 8 mm separation is loose for the default and tight for a 1% tolerance.
     assert consensus_spread_hit(anchors, spread)[0] is False
     assert consensus_spread_hit(anchors, spread, frac=1e-2)[0] is True
+
+
+def test_selected_plan_keeps_single_fit_scores_and_all_candidate_consensus():
+    best = _item(1, _anchors(0.0), prediction=0.1)
+    newest = _item(2, _anchors(2.0), prediction=None)
+    best[1]['summary_meta'] = {'score_ui': 7.0}
+    best[1]['plan']['calibration'] = {'anchors': 'cached single fit'}
+    best[2].update(anchor_comparison_score=0.2, prediction_sweeps=3.0)
+
+    plan, meta, ranked = select_history_plan([best, newest])
+
+    assert ranked == [best]
+    np.testing.assert_allclose(plan['anchors'], _anchors(1.0))
+    assert 'calibration' not in plan
+    assert meta['score_ui'] == 7.0
+    assert meta['heldout_prediction_score'] == 0.1
+    assert meta['anchor_comparison_score'] == 0.2
+    assert meta['history_consensus_members'] == [1, 2]
+    assert meta['history_consensus_spread_mm'] == 2.0
+    # Summary construction must leave the saved candidates intact for replay.
+    assert best[1]['summary_meta'] == {'score_ui': 7.0}
+    assert 'calibration' in best[1]['plan']
+    np.testing.assert_allclose(best[1]['plan']['anchors'], _anchors(0.0))
+
+
+def test_selected_plan_preserves_prediction_veto_and_no_holdout_fallback():
+    assert select_history_plan([]) == (None, None, [])
+    failed = _item(1, _anchors(0.0), prediction=float('inf'))
+    unvalidated = _item(2, _anchors(1.0), prediction=None)
+    assert select_history_plan([failed, unvalidated]) == (None, None, [])
+    plan, meta, ranked = select_history_plan([unvalidated])
+    np.testing.assert_allclose(plan['anchors'], _anchors(1.0))
+    assert meta['history_consensus_members'] == [2]
+    assert meta['heldout_prediction_score'] is None
+    assert ranked == [unvalidated]

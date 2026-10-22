@@ -412,3 +412,12 @@ replayable. Snapshots requesting removed nondefault policies are rejected rather
 than replayed with changed semantics. Outer budgets, priors and objective schedules
 remain available because their investigations are mixed or incomplete.
 See [validation and integration evidence](../research/autocal-spool-lane03-integration.md).
+
+### History selection replay
+
+History `rank` replay exports both `chosen_iteration` (the best-ranked single fit)
+and `applied_anchors` (which can be a consensus). `summary_meta` records the
+consensus members/spread alongside the single-fit diagnostics, using the same
+selection function as full-auto. Saved history candidate plans retain noise
+metrics at `plan.calibration.details.noise_metrics` when provided by the fit;
+inspect those before scheduling new fits for a scoring-only experiment.

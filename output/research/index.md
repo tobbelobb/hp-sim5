@@ -2095,6 +2095,44 @@ stage artifacts, reference provenance, consensus, solver fallback
 - [Report](sessions/2026-10-22-autocal-filtering-integration/report.md): implementation and evidence.
 - [Notebook](sessions/2026-10-22-autocal-filtering-integration/research.md): decisions and commands.
 
+## [2026-10-22-autocal-lane04-cleanup](sessions/2026-10-22-autocal-lane04-cleanup/)
+
+[abstract.md](sessions/2026-10-22-autocal-lane04-cleanup/abstract.md) · [report.md](sessions/2026-10-22-autocal-lane04-cleanup/report.md) · [research.md](sessions/2026-10-22-autocal-lane04-cleanup/research.md)
+
+### Autocal lane 04 integration and history selection replay
+
+Status: complete.
+
+#### Abstract
+
+This integration removes an unused histogram CLI option and extracts final history
+selection into a function shared by full-auto and offline replay. The standalone
+histogram utility remains supported. Three saved simulated histories reproduce
+the previous inline selection exactly. All 14 saved candidate plans contain 83
+noise-metric fields, correcting the earlier report's claim that those metrics
+were missing. Offline rank artifacts now distinguish the best-ranked single fit
+from applied consensus anchors. No numerical defaults changed and no fitting,
+collection or hardware experiment was run. Focused validation passed 88 tests;
+the results establish refactor equivalence, not improved calibration accuracy.
+
+#### Topics
+
+autocalibration, ranking, consensus, CLI cleanup, frozen replay, noise metrics
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Extraction preserves selection on the three saved histories | I04-1 | Supported | [Checks](sessions/2026-10-22-autocal-lane04-cleanup/checks.json) |
+| Saved history candidate plans lack noise metrics | I04-2 | Rejected for inspected artifacts | [Counts](sessions/2026-10-22-autocal-lane04-cleanup/checks.json) |
+| Validated-only consensus or penalty 2 improves general calibration | None | Not tested | [Integration report](sessions/2026-10-22-autocal-lane04-cleanup/report.md) |
+
+#### References
+
+- [Report](sessions/2026-10-22-autocal-lane04-cleanup/report.md): decisions and source evidence.
+- [Notebook](sessions/2026-10-22-autocal-lane04-cleanup/research.md): scope and budgets.
+- [Checks](sessions/2026-10-22-autocal-lane04-cleanup/checks.json), [script](sessions/2026-10-22-autocal-lane04-cleanup/check_histories.py): artifact hashes and reproduction.
+
 ## [2026-10-22-autocal-solver-integration](sessions/2026-10-22-autocal-solver-integration/)
 
 [abstract.md](sessions/2026-10-22-autocal-solver-integration/abstract.md) · [report.md](sessions/2026-10-22-autocal-solver-integration/report.md) · [research.md](sessions/2026-10-22-autocal-solver-integration/research.md)

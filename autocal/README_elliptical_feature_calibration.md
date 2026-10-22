@@ -201,7 +201,8 @@ Render a histogram separately:
 The normal multi-pass spool path reuses its final calibration.
 Those per-pass solves currently receive neither the requested CSV path nor report flag.
 So `--residuals-csv` and `--report` are skipped on that path.
-The legacy `--plot-residual-histogram` flag is also unwired in full-auto.
+The unused `--plot-residual-histogram` option has been removed. Use the standalone
+histogram command above with a residual CSV.
 
 Detailed output goes to `<dataset-stem>.full_auto.log`.
 Machine-readable iteration events go to `<dataset-stem>.full_auto_log.jsonl`.
@@ -218,8 +219,16 @@ Existing log files get a unique suffix.
 | `underconstrained_recovery` | Retries that restore constraints |
 | `next_sweep score=...` | Information gain for a proposed movement |
 | `selected run=...` | Current iteration's selected variant and fit scores |
-| `history_select` | Final history ranking, including both prediction scores |
+| `history_select` | Final single-fit ranking and a separate geometric consensus |
 | `history_validate ... failed_prediction=True` | A candidate failed own-model validation |
+
+The final history ordering prioritizes held-out anchor comparison, then own-model
+prediction, then rank-score tie-breakers. `--fit-structure` also affects fitting
+and per-iteration variant selection; it is not solely a final-history rank knob.
+Consensus can include the newest fit without held-out observations. Reported fit
+scores and prediction diagnostics describe the best-ranked single candidate;
+the applied anchors may instead be the consensus mean. The consensus log lists
+its members and spread. These diagnostics do not validate the averaged geometry.
 
 ## Manual utilities
 

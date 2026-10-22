@@ -19,11 +19,10 @@ from autocal.history_selection import (
     SPREAD_STOP_CONSECUTIVE,
     SPREAD_STOP_FRAC,
     SPREAD_STOP_MIN_CANDIDATES,
-    apply_consensus_plan,
     consensus_anchor_estimate,
     consensus_spread_hit,
     evaluate_history_candidates,
-    rank_history_candidates,
+    select_history_plan,
 )
 from autocal.stage_artifacts import write_stage_artifact
 from autocal import extended_reference
@@ -671,15 +670,13 @@ def full_auto_loop(
                         "pointwise_residual_mode": pointwise_residual_mode, "sigma_source": sigma_source,
                     },
                 })
-            ranked = rank_history_candidates(scored)
+            applied_plan, summary_meta, ranked = select_history_plan(scored)
             if not ranked:
                 _log_console(
                     "; full-auto: all held-out predictions failed; "
                     "stopping without applying calibration."
                 )
                 return None, None
-            chosen = ranked[0][1]
-            chosen_info = ranked[0][2]
             _log_line(
                 f"; history_select: reason={reason} "
                 f"candidates={len(ranked)} total_iterations={history_total_iterations}"
@@ -697,32 +694,12 @@ def full_auto_loop(
                     f"coverage_adjust={_fmt_float(info.get('coverage_adjust'))} "
                     f"selection_score={_fmt_float(info.get('selection_score'))}"
                 )
-            # The applied geometry is the geometric consensus of the fitted
-            # candidates; the diagnostics above stay those of the best-ranked
-            # single candidate, which remains the reported fit-quality score.
-            consensus_anchors, consensus_members, consensus_spread = (
-                consensus_anchor_estimate(scored)
-            )
-            applied_plan = apply_consensus_plan(chosen.get("plan"), consensus_anchors)
             _log_line(
                 f"; history_select: consensus reason={reason} "
-                f"members={list(consensus_members)} "
-                f"spread_mm={_fmt_float(consensus_spread)} "
+                f"members={summary_meta['history_consensus_members']} "
+                f"spread_mm={_fmt_float(summary_meta['history_consensus_spread_mm'])} "
                 f"max_spread_mm={HISTORY_CONSENSUS_MAX_SPREAD_MM:g} "
-                f"applied={'consensus' if len(consensus_members) > 1 else 'best-ranked'}"
-            )
-            summary_meta = dict(chosen.get("summary_meta") or {})
-            summary_meta.update(
-                {
-                    "history_iteration_adjust": chosen_info.get("iteration_adjust"),
-                    "history_coverage_adjust": chosen_info.get("coverage_adjust"),
-                    "history_selection_score": chosen_info.get("selection_score"),
-                    "heldout_prediction_score": chosen_info.get("prediction_score"),
-                    "heldout_prediction_sweeps": chosen_info.get("prediction_sweeps"),
-                    "anchor_comparison_score": chosen_info.get("anchor_comparison_score"),
-                    "history_consensus_members": list(consensus_members),
-                    "history_consensus_spread_mm": consensus_spread,
-                }
+                f"applied={'consensus' if len(summary_meta['history_consensus_members']) > 1 else 'best-ranked'}"
             )
             return applied_plan, summary_meta
 

@@ -8,7 +8,7 @@ import tempfile
 import time
 
 from autocal.fit_stage import fit_ellipse_dataset
-from autocal.history_selection import evaluate_history_candidates, rank_history_candidates
+from autocal.history_selection import evaluate_history_candidates, select_history_plan
 from autocal.planning_pass import plan_ellipse_sweep
 from autocal.stage_artifacts import read_stage_artifact, write_stage_artifact
 
@@ -69,10 +69,12 @@ def main(argv=None):
             kind = "evaluated_history"
         else:
             if overrides:
-                parser.error("rank has no keyword options; change rank_history_candidates to test a policy")
-            ranked = rank_history_candidates(payload["evaluated"])
+                parser.error("rank has no keyword options; change history_selection to test a policy")
+            applied_plan, summary_meta, ranked = select_history_plan(payload["evaluated"])
             output = {"ranked": ranked, "chosen_iteration": ranked[0][1]["iteration"] if ranked else None,
-                      "failed_predictions": bool(payload["evaluated"]) and not bool(ranked)}
+                      "failed_predictions": bool(payload["evaluated"]) and not bool(ranked),
+                      "applied_anchors": applied_plan.get("anchors") if applied_plan is not None else None,
+                      "summary_meta": summary_meta}
             kind = "ranked_history"
     seconds = time.perf_counter() - started
     output["stage_seconds"] = seconds

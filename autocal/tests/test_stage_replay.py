@@ -177,3 +177,22 @@ def test_fit_replay_rejects_nondefault_removed_spool_policies(tmp_path, saved):
     })
     with pytest.raises(SystemExit):
         main(["fit", str(artifact), "--output", str(tmp_path / "result.json")])
+
+
+def test_rank_replay_exports_applied_consensus_separately_from_selected_fit(tmp_path):
+    first = np.array([[0., -1900.], [1645., 950.], [-1645., 950.]])
+    newest = first.copy()
+    newest[0, 1] += 2.0
+    evaluated = [
+        ((0.,), {"iteration": 1, "plan": {"anchors": first}}, {"prediction_score": 0.1}),
+        ((1.,), {"iteration": 2, "plan": {"anchors": newest}}, {"prediction_score": None}),
+    ]
+    source = tmp_path / "history.json"
+    output = tmp_path / "rank.json"
+    write_stage_artifact(source, "history", {"evaluated": evaluated})
+    assert main(["rank", str(source), "--output", str(output)]) == 0
+    result = read_stage_artifact(output)["payload"]
+    assert result["chosen_iteration"] == 1
+    np.testing.assert_array_equal(result["applied_anchors"], (first + newest) / 2.)
+    assert result["summary_meta"]["history_consensus_members"] == [1, 2]
+    assert result["summary_meta"]["heldout_prediction_score"] == 0.1

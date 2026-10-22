@@ -192,3 +192,10 @@ Lane 03 integration removed `--scale-fix` and `--spool-inner-iters` from the
 current interface. Per-pass scale polish and the existing cap of 30 are now fixed
 behavior. See [integration evidence](research/autocal-spool-lane03-integration.md).
 The original inventory and handoffs remain historical research records.
+
+## Lane 04 integration
+
+`--plot-residual-histogram` has been removed because it was parsed without a
+consumer. Keep using `autocal/plot_residual_hist.py` with exported residual CSVs.
+The help text above is the original audit snapshot, not current CLI help.
+Ranking/consensus defaults are unchanged. See [integration findings](research/autocal-ranking-lane04-integration.md).
