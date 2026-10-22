@@ -68,18 +68,12 @@ def _sparse_recovery_dataset(dataset: Dict[str, object], fraction: float = 0.5) 
 
 
 def _spread_stop_fraction() -> float:
-    """Fraction of machine size at which agreeing fits trigger the early stop.
+    """Optional early-stop heuristic based on geometric fit agreement.
 
-    The shipped full-auto loop already stops on patience or on an absolute
-    cost/std threshold.  The two mutually most consistent candidate fits carry
-    the geometric signal the ranking scalar loses, so when they agree to within
-    a small fraction of the machine's own extent the applied estimate has
-    converged and further sweeps only cost move and settle time.
-
-    `HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC` overrides the default
-    `SPREAD_STOP_FRAC`; `off` (or any non-positive number) disables the stop
-    entirely.  Invalid text keeps the default so a typo cannot disable a
-    user-facing safety net silently.
+    Agreement is not calibrated uncertainty or proof of accuracy. The default
+    and its override are retained pending broader acquisition evidence.
+    `HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC=off` disables this heuristic; invalid or
+    non-finite values retain the default.
     """
     raw = os.environ.get("HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC", "").strip()
     if not raw:
@@ -89,6 +83,8 @@ def _spread_stop_fraction() -> float:
     try:
         value = float(raw)
     except ValueError:
+        return float(SPREAD_STOP_FRAC)
+    if not np.isfinite(value):
         return float(SPREAD_STOP_FRAC)
     return 0.0 if value <= 0.0 else float(value)
 
@@ -123,8 +119,6 @@ def full_auto_loop(
     work_dataset: Optional[Path],
     machine_type: str,
     max_steps: int,
-    stop_cost: Optional[float],
-    stop_std_mm: Optional[float],
     solve_restarts: int,
     solve_iterations: int,
     solve_optimizer: str,
@@ -150,16 +144,11 @@ def full_auto_loop(
     theta0_mode: str,
     line_width: float,
     sigma_floor_mm: Optional[float],
-    candidate_deltas: Optional[List[float]],
     candidate_count: int,
     delta_min: Optional[float],
     delta_max: Optional[float],
-    fd_eps_mm: float,
     regularization: float,
-    exclude_existing: bool,
-    existing_tol_mm: float,
     min_fixed_delta_spacing_mm: float,
-    top_k: int,
     write_cfg: Optional[Path],
     collector_args: Sequence[str],
     sim: bool,
@@ -690,6 +679,8 @@ def full_auto_loop(
                 )
             _log_line(
                 f"; history_select: consensus reason={reason} "
+                f"selected_iter={summary_meta.get('iteration')} "
+                f"selected_run={summary_meta.get('run_id')} "
                 f"members={summary_meta['history_consensus_members']} "
                 f"spread_mm={_fmt_float(summary_meta['history_consensus_spread_mm'])} "
                 f"max_spread_mm={HISTORY_CONSENSUS_MAX_SPREAD_MM:g} "
@@ -883,16 +874,11 @@ def full_auto_loop(
                     if settings.get("low_anchor_z") is None
                     else float(settings.get("low_anchor_z"))
                 ),
-                candidate_deltas=candidate_deltas,
                 candidate_count=int(candidate_count),
                 delta_min=delta_min,
                 delta_max=delta_max,
-                fd_eps_mm=float(fd_eps_mm),
                 regularization=float(regularization),
-                exclude_existing=bool(exclude_existing),
-                existing_tol_mm=float(existing_tol_mm),
                 min_fixed_delta_spacing_mm=float(min_fixed_delta_spacing_mm),
-                top_k=int(top_k),
                 write_cfg=cfg_path,
                 collector_output=collector_output,
                 collector_args=collector_args_eff,
@@ -1491,17 +1477,6 @@ def full_auto_loop(
                 )
             history_total_iterations = max(history_total_iterations, int(step))
 
-            stop_cost_hit = False
-            stop_std_hit = False
-            if best_plan is not None:
-                if stop_cost is not None and np.isfinite(best_cost) and best_cost <= float(stop_cost):
-                    stop_cost_hit = True
-                if stop_std_mm is not None and isinstance(best_meta.get("max_std_mm"), (int, float)):
-                    stop_std_hit = bool(
-                        np.isfinite(float(best_meta["max_std_mm"]))
-                        and float(best_meta["max_std_mm"]) <= float(stop_std_mm)
-                    )
-
             summary_flags = f" flags='{selected_flags}'" if selected_flags else ""
             summary_rel = _fmt_float(selected_rel_std)
             summary_std = _fmt_float(selected_max_std, suffix="mm")
@@ -1537,14 +1512,9 @@ def full_auto_loop(
             if selected_underconstrained:
                 _log_console("; selected run hit underconstrained sentinel; continuing to collect more sweeps.")
 
-            threshold_accept = False
-            if stop_cost is not None and stop_cost_hit:
-                threshold_accept = True
-            if stop_std_mm is not None and stop_std_hit:
-                threshold_accept = True
             if selected_underconstrained:
                 decision = "collect"
-            elif threshold_accept or spread_stop_hit or no_improve >= patience_limit:
+            elif spread_stop_hit or no_improve >= patience_limit:
                 decision = "accept"
             else:
                 decision = "collect"
@@ -1593,8 +1563,6 @@ def full_auto_loop(
                     "no_improve_count": no_improve,
                     "patience": patience_limit,
                     "min_delta": min_delta,
-                    "stop_cost_hit": stop_cost_hit,
-                    "stop_std_hit": stop_std_hit,
                     "stop_spread_hit": spread_stop_hit,
                     "consensus_spread_mm": spread_stop_spread,
                     "consensus_spread_limit_mm": spread_stop_limit,
@@ -1800,8 +1768,6 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         work_dataset=args.dataset,
         machine_type=str(machine_type),
         max_steps=int(args.max_steps),
-        stop_cost=args.stop_cost,
-        stop_std_mm=args.stop_std_mm,
         solve_restarts=int(args.solve_restarts),
         solve_iterations=int(args.solve_iterations),
         solve_optimizer=solve_optimizer,
@@ -1828,16 +1794,11 @@ def _run_full_auto(args, spool_opts, machine_type, full_auto_runs, collector_arg
         line_width=float(spool_opts["line_width"]),
         sigma_floor_mm=(None if spool_opts.get("sigma_floor_mm") is None else float(spool_opts["sigma_floor_mm"])),
         low_anchor_z=args.low_anchor_z,
-        candidate_deltas=_parse_csv_floats(args.candidate_deltas),
         candidate_count=int(args.candidate_count),
         delta_min=args.delta_min,
         delta_max=args.delta_max,
-        fd_eps_mm=float(args.fd_eps_mm),
         regularization=float(args.regularization),
-        exclude_existing=not bool(args.no_exclude_existing),
-        existing_tol_mm=float(args.existing_tol_mm),
         min_fixed_delta_spacing_mm=float(args.min_fixed_delta_spacing_mm),
-        top_k=int(args.top_k),
         write_cfg=args.write_sweep_config,
         collector_args=collector_args,
         sim=bool(args.sim),

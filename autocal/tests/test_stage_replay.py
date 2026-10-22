@@ -212,3 +212,55 @@ def test_rank_replay_exports_applied_consensus_separately_from_selected_fit(tmp_
     np.testing.assert_array_equal(result["applied_anchors"], (first + newest) / 2.)
     assert result["summary_meta"]["history_consensus_members"] == [1, 2]
     assert result["summary_meta"]["heldout_prediction_score"] == 0.1
+
+
+@pytest.mark.parametrize("minimum,maximum,expected", [
+    (-200.0, None, (-200.0, 1000.0)),
+    (None, 200.0, (-1000.0, 200.0)),
+])
+def test_one_sided_range_keeps_machine_default_for_other_bound(
+    tmp_path, monkeypatch, minimum, maximum, expected,
+):
+    import autocal.planning_pass as pp
+
+    fit = _frozen_fit(False)
+    fit["dataset"]["config"] = {"max_travel_mm": 1000.0}
+    seen = []
+    original = pp.generate_candidate_sweeps
+
+    def capture(**kwargs):
+        seen.extend(kwargs["fixed_delta_values_mm"])
+        return original(**kwargs)
+
+    monkeypatch.setattr(pp, "generate_candidate_sweeps", capture)
+    plan_ellipse_sweep(fit, tmp_path / "sweeps.json", candidate_count=5,
+                       delta_min=minimum, delta_max=maximum)
+    assert (min(seen), max(seen)) == expected
+
+
+@pytest.mark.parametrize("minimum,maximum", [
+    (1000.0, 1000.0), (1001.0, None), (None, -1001.0),
+    (float("nan"), None), (None, float("inf")),
+])
+def test_explicit_invalid_delta_range_is_rejected(tmp_path, minimum, maximum):
+    fit = _frozen_fit(False)
+    fit["dataset"]["config"] = {"max_travel_mm": 1000.0}
+    with pytest.raises(ValueError, match="delta_min < delta_max"):
+        plan_ellipse_sweep(fit, tmp_path / "sweeps.json",
+                           delta_min=minimum, delta_max=maximum)
+
+
+def test_exhausted_candidates_do_not_recollect_existing_sweeps(tmp_path):
+    fit = _frozen_fit(False)
+    plan = plan_ellipse_sweep(fit, tmp_path / "sweeps.json", candidate_deltas=[0.0])
+    assert plan["best_cfg"] is None
+    assert plan["collect_command"] is None
+    assert not plan["cfg_path"].exists()
+
+
+def test_spacing_exhaustion_relaxes_spacing_without_recollecting_existing(tmp_path):
+    fit = _frozen_fit(False)
+    plan = plan_ellipse_sweep(fit, tmp_path / "sweeps.json", candidate_deltas=[0.0, 15.0],
+                              min_fixed_delta_spacing_mm=100.0)
+    assert plan["best_cfg"] is not None
+    assert plan["best_cfg"].fixed_deltas_mm == (15.0,)

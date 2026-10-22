@@ -216,3 +216,13 @@ Removed inert ellipse flex settings and fixed silent projection fallback. Sevent
 fit-free comparisons match exactly, and two complete replays match references.
 Saved sentinel geometries remain invalid without sweep rejection; trajectory-level
 solver diagnosis is still needed. No hardware or new collection evidence.
+
+## Lane 06 integration: planning and stopping cleanup
+
+Status: complete, 2026-10-22. Topics: autocalibration, CLI flags, candidate ranges,
+duplicate exclusion, spread stopping and held-out final selection.
+
+[Implementation and validation](autocal-planning-lane06-integration.md): seven
+CLI controls removed, range/exclusion bugs fixed, selected final model identified.
+Six paired replays did not justify changing stopping defaults; 533 tests and four
+selected calibration regressions passed. [Session evidence](../output/research/sessions/2026-10-22-autocal-lane06-integration/report.md).

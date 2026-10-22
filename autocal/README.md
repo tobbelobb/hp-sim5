@@ -421,3 +421,23 @@ consensus members/spread alongside the single-fit diagnostics, using the same
 selection function as full-auto. Saved history candidate plans retain noise
 metrics at `plan.calibration.details.noise_metrics` when provided by the fit;
 inspect those before scheduling new fits for a scoring-only experiment.
+
+### Planning controls
+
+Use `--candidate-count` (default 41) and `--delta-min`/`--delta-max` for the
+candidate grid. A single bound replaces only that side of the machine's default
+range. Invalid ranges fail rather than silently changing the requested bounds.
+Duplicate exclusion stays enabled, including after the spacing fallback.
+`--min-fixed-delta-spacing-mm` still controls novelty spacing.
+
+The information finite-difference step is fixed at 1 mm in the CLI workflow;
+the duplicate-key tolerance is 10 mm and the diagnostic shortlist is ten entries.
+`--candidate-deltas`, `--fd-eps-mm`, `--no-exclude-existing`, `--existing-tol-mm`
+and `--top-k` are removed from the CLI. Independent fit/plan stage APIs retain
+research overrides. `--regularization` keeps its 1e-6 default and requires a
+finite positive value; the resulting covariance is not calibrated uncertainty.
+
+`--stop-cost` and `--stop-std-mm` are removed. Patience stays at 3; the
+`HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC` early-stop heuristic is documented in
+[the flag audit](../autocal-flags.md). Final history-selection logs identify the
+held-out-selected iteration/run separately from the running training-rank best.

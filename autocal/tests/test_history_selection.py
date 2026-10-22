@@ -204,3 +204,18 @@ def test_selected_plan_preserves_prediction_veto_and_no_holdout_fallback():
     assert meta['history_consensus_members'] == [2]
     assert meta['heldout_prediction_score'] is None
     assert ranked == [unvalidated]
+
+
+def test_final_heldout_selection_is_distinct_from_running_training_best():
+    training_best = _item(2, _anchors(20.0), prediction=5.0, sort_key=5.0)
+    validated_best = _item(4, _anchors(0.0), prediction=1.0, sort_key=1.0)
+    training_best[1]["rank_score"] = 1.0
+    validated_best[1]["rank_score"] = 2.0
+    # Even incomplete/stale summary metadata must identify the final candidate.
+    validated_best[1]["summary_meta"] = {"iteration": 2, "run_id": "old"}
+    plan, meta, ranked = select_history_plan([training_best, validated_best])
+    assert ranked[0][1]["iteration"] == 4
+    assert meta["iteration"] == 4
+    assert meta["run_id"] == "default"
+    assert meta["history_consensus_members"] == []
+    np.testing.assert_array_equal(plan["anchors"], _anchors(0.0))

@@ -42,7 +42,7 @@ DEFAULT_FULL_AUTO_MIN_DELTA = 0.0
 # normal completion: the loop ran its automatic stopping logic and applied the
 # parameters it settled on.  Kept here so the loop and the headless manifest
 # cannot drift apart on the spelling.
-FULL_AUTO_STOP_REASON_PATIENCE = "patience-or-threshold"
+FULL_AUTO_STOP_REASON_PATIENCE = "patience"
 SPREAD_STOP_REASON = "spread-consensus"
 NORMAL_STOP_REASONS = (FULL_AUTO_STOP_REASON_PATIENCE, SPREAD_STOP_REASON)
 _MIN_RADIUS_SCALE = 0.2
@@ -3490,19 +3490,20 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _positive_finite_float(value: str) -> float:
+    number = float(value)
+    if not np.isfinite(number) or number <= 0.0:
+        raise argparse.ArgumentTypeError("must be finite and positive")
+    return number
+
+
 def _add_candidate_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--candidate-deltas", type=str, default=None, help="Comma-separated fixed deltas (mm)")
-    parser.add_argument("--candidate-count", type=int, default=41, help="Grid size when deltas not provided")
+    parser.add_argument("--candidate-count", type=int, default=41, help="Number of fixed-delta grid values (default: 41)")
     parser.add_argument("--delta-min", type=float, default=None)
     parser.add_argument("--delta-max", type=float, default=None)
-    parser.add_argument("--fd-eps-mm", type=float, default=1.0)
-    parser.add_argument("--regularization", type=float, default=1e-6)
-    parser.add_argument("--no-exclude-existing", action="store_true")
     parser.add_argument(
-        "--existing-tol-mm",
-        type=float,
-        default=10.0,
-        help="Treat sweeps with the same fixed anchors/drive/sensor and fixed delta within this tolerance as duplicates",
+        "--regularization", type=_positive_finite_float, default=1e-6,
+        help="Positive information-matrix ridge (default: 1e-6); affects planning and covariance, not calibrated uncertainty.",
     )
     parser.add_argument(
         "--min-fixed-delta-spacing-mm",
@@ -3510,7 +3511,6 @@ def _add_candidate_args(parser: argparse.ArgumentParser) -> None:
         default=20.0,
         help="Minimum spacing (mm) from previously collected fixed deltas with the same sign",
     )
-    parser.add_argument("--top-k", type=int, default=10)
 
 
 from abc import ABC, abstractmethod
@@ -3747,8 +3747,6 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
         help="Points per sub-sweep (passed to the collector).",
     )
     parser.add_argument("--max-steps", type=int, default=20, help="Maximum active-learning iterations")
-    parser.add_argument("--stop-cost", type=float, default=None, help="Optional stop condition on ellipse cost")
-    parser.add_argument("--stop-std-mm", type=float, default=None, help="Optional stop condition on max parameter std")
     parser.add_argument(
         "--full-auto-run",
         action="append",

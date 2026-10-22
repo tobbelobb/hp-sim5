@@ -69,34 +69,17 @@ def plan_ellipse_sweep(
         max_total_fixed_delta_mm = float(max_travel_mm)
 
     if candidate_deltas is None:
-        explicit_delta_range = delta_min is not None or delta_max is not None
-
-        default_range = None
-        if not explicit_delta_range:
-            default_range = _default_delta_range(
-                max_travel_mm=max_travel_mm,
-                observed_deltas=observed_deltas,
-            )
-        if default_range is not None:
-            lo, hi = default_range
-        elif observed_deltas:
-            lo = float(np.min(observed_deltas))
-            hi = float(np.max(observed_deltas))
-        else:
-            lo, hi = -600.0, 600.0
+        # Resolve the machine's range first, then replace only explicit bounds.
+        default_range = _default_delta_range(
+            max_travel_mm=max_travel_mm, observed_deltas=observed_deltas,
+        )
+        lo, hi = default_range or (-600.0, 600.0)
         if delta_min is not None:
             lo = float(delta_min)
         if delta_max is not None:
             hi = float(delta_max)
-        if not np.isfinite(lo) or not np.isfinite(hi) or abs(hi - lo) < 1e-9:
-            fallback = _default_delta_range(
-                max_travel_mm=max_travel_mm,
-                observed_deltas=observed_deltas,
-            )
-            if fallback is not None:
-                lo, hi = fallback
-            else:
-                lo, hi = -600.0, 600.0
+        if not np.isfinite(lo) or not np.isfinite(hi) or hi <= lo:
+            raise ValueError("candidate delta range must be finite with delta_min < delta_max")
         values = np.linspace(lo, hi, max(3, int(candidate_count)))
         candidate_deltas = [float(v) for v in values.tolist()]
 
@@ -107,35 +90,17 @@ def plan_ellipse_sweep(
         machine_type=machine_type,
         max_total_fixed_delta_mm=max_total_fixed_delta_mm,
     )
-    raw_candidates = list(candidates)
+    if exclude_existing:
+        existing_keys = {cfg.normalized_key(tol_mm=existing_tol_mm) for cfg in sweeps_obs}
+        candidates = [cfg for cfg in candidates
+                      if cfg.normalized_key(tol_mm=existing_tol_mm) not in existing_keys]
+    novel_candidates = list(candidates)
     candidates = _filter_candidates_by_spacing(
-        candidates,
-        sweeps_obs,
-        min_spacing_mm=float(min_fixed_delta_spacing_mm),
+        candidates, sweeps_obs, min_spacing_mm=float(min_fixed_delta_spacing_mm),
     )
-    if bool(exclude_existing):
-        existing_keys = {
-            cfg.normalized_key(tol_mm=float(existing_tol_mm))
-            for cfg in sweeps_obs
-        }
-        candidates = [
-            cfg
-            for cfg in candidates
-            if cfg.normalized_key(tol_mm=float(existing_tol_mm)) not in existing_keys
-        ]
-
-    if not candidates and raw_candidates:
-        # Keep collecting when novelty spacing or existing-key filtering has
-        # exhausted the normal set. Preserve the machine's legal configurations.
-        candidates = [
-            cfg for cfg in raw_candidates
-            if cfg.normalized_key(tol_mm=float(existing_tol_mm)) not in {
-                observed.normalized_key(tol_mm=float(existing_tol_mm))
-                for observed in sweeps_obs
-            }
-        ]
-        if not candidates:
-            candidates = raw_candidates
+    if not candidates:
+        # Relax novelty spacing if needed, but never re-admit excluded repeats.
+        candidates = novel_candidates
 
     if spool_params is not None:
         candidates_model = sweep_configs_with_modeled_lengths(candidates, spool_params)
@@ -256,16 +221,11 @@ def plan_next_ellipse_sweep(
     theta0_mode: str,
     line_width: float,
     sigma_floor_mm: Optional[float],
-    candidate_deltas: Optional[List[float]],
     candidate_count: int,
     delta_min: Optional[float],
     delta_max: Optional[float],
-    fd_eps_mm: float,
     regularization: float,
-    exclude_existing: bool,
-    existing_tol_mm: float,
     min_fixed_delta_spacing_mm: float,
-    top_k: int,
     write_cfg: Optional[Path],
     collector_output: Optional[Path],
     collector_args: Sequence[str],
@@ -274,6 +234,11 @@ def plan_next_ellipse_sweep(
     objective_schedule: Optional[Sequence[Any]] = None,
     fit_structure: Optional[Sequence[int]] = None,
     stage_artifact: Optional[Path] = None,
+    candidate_deltas: Optional[List[float]] = None,
+    fd_eps_mm: float = 1.0,
+    exclude_existing: bool = True,
+    existing_tol_mm: float = 10.0,
+    top_k: int = 10,
     initial_guess: Optional[np.ndarray] = None,
     initial_radii_mm: Optional[np.ndarray] = None,
     initial_buildup_factor: Optional[np.ndarray] = None,

@@ -252,6 +252,8 @@ def select_history_plan(scored):
     plan = apply_consensus_plan(chosen.get("plan"), anchors)
     meta = dict(chosen.get("summary_meta") or {})
     meta.update({
+        "iteration": chosen.get("iteration"),
+        "run_id": chosen.get("run_id"),
         "history_iteration_adjust": info.get("iteration_adjust"),
         "history_coverage_adjust": info.get("coverage_adjust"),
         "history_selection_score": info.get("selection_score"),
@@ -270,26 +272,14 @@ SPREAD_STOP_CONSECUTIVE = 2
 
 
 def consensus_spread_hit(consensus_anchors, consensus_spread, *, frac=SPREAD_STOP_FRAC):
-    """Whether the closest two distinct fits agree to within `frac` of machine size.
+    """Test geometric agreement, not calibrated uncertainty or accuracy.
 
-    The shipped consensus averages the two mutually most consistent candidate
-    anchor sets and reports their separation as `spread_mm`.  Once that
-    separation is a small fraction of the applied geometry's own extent, the
-    independent fits have converged: more sweeps move the applied estimate far
-    less than the machine's own scale, so collecting them only spends move and
-    settle time.  The test is fractional, so it transfers to a smaller machine.
+    Compare the closest distinct pair's separation with a fraction of the
+    geometry's extent. The same pair can persist while later fits disagree;
+    passing this test does not establish that additional sweeps are unnecessary.
+    The caller also requires a minimum candidate count and consecutive hits.
 
-    This is deliberately *not* a stability test on the running estimate.  A
-    stable estimate is not evidence of a correct one: adding a candidate whose
-    anchors sit inside the current consensus pair leaves the estimate unmoved
-    while telling us nothing new.  `spread_mm` measures a distance *between*
-    distinct fits, so it cannot fire while the best available consensus is
-    still loose.
-
-    Returns `(hit, spread_mm, limit_mm)`.  `hit` is False whenever the inputs
-    cannot be evaluated, so this predicate alone can never stop a run; the
-    caller additionally requires a minimum candidate count and a consecutive
-    streak.
+    Return `(hit, spread_mm, limit_mm)`; unevaluable geometry never passes.
     """
     if consensus_anchors is None or consensus_spread is None:
         return False, None, None

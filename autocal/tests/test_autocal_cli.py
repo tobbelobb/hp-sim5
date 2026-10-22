@@ -361,3 +361,30 @@ def test_removed_fit_flags_rejected_in_main_and_variant_parsers(flag):
         _parse_spool_args(flag, "1")
     with pytest.raises(ValueError):
         _parse_full_auto_run_spec(f"{flag} 1")
+
+
+@pytest.mark.parametrize("flag,value", [
+    ("--stop-cost", "1"), ("--stop-std-mm", "1"),
+    ("--candidate-deltas", "0,10"), ("--fd-eps-mm", "1"),
+    ("--no-exclude-existing", None), ("--existing-tol-mm", "10"),
+    ("--top-k", "10"),
+])
+def test_removed_planning_and_stopping_flags_are_rejected(flag, value):
+    with pytest.raises(SystemExit):
+        _parse_spool_args(flag, *([] if value is None else [value]))
+
+
+@pytest.mark.parametrize("value", ["0", "-1", "nan", "inf"])
+def test_planning_ridge_requires_a_finite_positive_value(value):
+    with pytest.raises(SystemExit):
+        _parse_spool_args("--regularization", value)
+
+
+@pytest.mark.parametrize("value,expected", [
+    ("off", 0.0), ("0", 0.0), ("-1", 0.0), ("0.002", 0.002),
+    ("nan", ac.SPREAD_STOP_FRAC), ("inf", ac.SPREAD_STOP_FRAC),
+    ("typo", ac.SPREAD_STOP_FRAC),
+])
+def test_spread_stop_override_requires_a_finite_fraction(monkeypatch, value, expected):
+    monkeypatch.setenv("HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC", value)
+    assert ac._spread_stop_fraction() == expected

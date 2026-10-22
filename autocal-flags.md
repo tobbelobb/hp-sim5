@@ -211,3 +211,28 @@ angle fields during fitting instead of silently using raw angles.
 See the [integration report](research/autocal-physical-model-cleanup/report.md)
 for preserved lane evidence, fit-free equivalence checks, regression results and
 the saved-geometry sentinel probe. The earlier inventory is historical evidence.
+
+## Lane 06 integration, 2026-10-22
+
+Removed from the autocal and ellipse-planning CLI: `--stop-cost`, `--stop-std-mm`,
+`--candidate-deltas`, `--fd-eps-mm`, `--no-exclude-existing`, `--existing-tol-mm`,
+and `--top-k`. Candidate generation uses the grid/range controls; the composed
+fit/plan uses the existing 1 mm information difference step, enabled duplicate
+exclusion with 10 mm key tolerance, and a ten-entry diagnostic shortlist.
+Independent stage APIs retain explicit experiment overrides.
+
+One-sided `--delta-min`/`--delta-max` now override only that side of the normal
+machine range. Invalid ranges are rejected. Exhausting spacing can relax spacing,
+but cannot re-admit excluded duplicate sweeps. `--regularization` retains 1e-6
+and now requires a finite positive CLI value; it is not calibrated uncertainty.
+Patience remains 3, and sparse recovery remains opt-in.
+
+### Environment-controlled stopping option
+
+`HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC` was absent from the initial CLI inventory.
+It controls the geometric-agreement early stop: default 0.0015 times machine
+extent, with at least four candidate fits and two consecutive hits. `off` or a
+non-positive number disables it; invalid/non-finite text falls back to default.
+The closest-pair consensus is also capped by the existing 5 mm gate.
+Agreement does not establish physical accuracy. The default is retained pending
+broader evidence; see [integration findings](research/autocal-planning-lane06-integration.md).

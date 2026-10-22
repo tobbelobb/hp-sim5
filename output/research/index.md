@@ -2095,6 +2095,46 @@ stage artifacts, reference provenance, consensus, solver fallback
 - [Report](sessions/2026-10-22-autocal-filtering-integration/report.md): implementation and evidence.
 - [Notebook](sessions/2026-10-22-autocal-filtering-integration/research.md): decisions and commands.
 
+## [2026-10-22-autocal-flags-06-planning-stopping](sessions/2026-10-22-autocal-flags-06-planning-stopping/)
+
+[abstract.md](sessions/2026-10-22-autocal-flags-06-planning-stopping/abstract.md) · [report.md](sessions/2026-10-22-autocal-flags-06-planning-stopping/report.md) · [research.md](sessions/2026-10-22-autocal-flags-06-planning-stopping/research.md)
+
+### Autocal planning, recovery and stopping flags: candidate grid, ridge, stop rules and sparse recovery
+
+Status: complete for the bounded initial screen (lane 06). No fresh collection, movement, browser or hardware evidence.
+
+#### Abstract
+
+Question: which of the 16 planning, recovery, stopping and candidate-count options in `autocal.py` are used, and which could be removed, hard-coded, redesigned or retained? Method: three lane-local full-auto replays on the development fixtures (no collection); 12 `replay_stage plan` executions (four variants: baseline, grid 21/81, ridge 1e-8 on each of three iteration-3 fits); three sparse-recovery replays; counterfactual stop rules on the logged prefixes; non-ranking information and candidate-feasibility diagnostics. Measured results: the default ridge (1e-6) is the same order as the observed information (about 1e-7 to 2e-6) and changes the HP3 choice when lowered to 1e-8; the chosen sweep on two fixtures moves with the grid (938, 990 and 1016 mm); `--fd-eps-mm` in 0.1–10 mm changes candidate information negligibly, and exact-repeat exclusion is redundant at the default 20 mm spacing; `--stop-std-mm` and `--stop-cost` are not usable thresholds on these fixtures; sparse recovery is mixed. Main limitations: each replay ran five iterations and stopped with one to three reference sweeps unused, so stop rules are judged only inside that prefix; the independent error is simulation truth, not held-out prediction; no planner choice was validated by a new measurement.
+
+#### Topics
+
+autocalibration, Hangprinter, CDPR, D-optimal sweep planning, Fisher information ridge, candidate grid density, duplicate exclusion, underconstrained recovery, sparse seed, patience, consensus stopping, uncertainty stop thresholds, replay counterfactuals.
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| H1. The chosen sweep is stable when the candidate grid density changes 21/41/81 | 06-P-{five,layered,hp3}-{baseline,grid21,grid81} | Rejected: sweep changes (five and layered delta 938/990/1016 mm; HP3 different fixed anchors at grid 21) | [trials.json](sessions/2026-10-22-autocal-flags-06-planning-stopping/trials.json), [report §3](sessions/2026-10-22-autocal-flags-06-planning-stopping/report.md#3-planning-screen) |
+| H2. The default ridge 1e-6 is a negligible numerical stabilizer | 06-P-*-ridge1e-8, 06-D-hp3-* | Rejected: same order as observed information; HP3 choice changes at 1e-8 | [report §3.2](sessions/2026-10-22-autocal-flags-06-planning-stopping/report.md#32-ridge-and-information-scale) |
+| H3. `--fd-eps-mm` between 0.1 and 10 mm does not change candidate information | 06-D-*-eps0.1, 06-D-*-eps10.0 | Supported (information-level; ranking not re-run) | [diag_eps_exclusion.json](sessions/2026-10-22-autocal-flags-06-planning-stopping/diag_eps_exclusion.json) |
+| H4. Existing-sweep exclusion is redundant at default spacing | 06-D-*-spacing20.0, 06-D-*-spacing0.0 | Supported at 20 mm; false at 0 mm (removes 5 exact repeats per fixture) | [diag_eps_exclusion.json](sessions/2026-10-22-autocal-flags-06-planning-stopping/diag_eps_exclusion.json) |
+| H5. Patience 1/3/5 changes the final result on the development replays | 06-S-* (counterfactual on 06-B1..B3) | Mixed and inconclusive: patience 1 would have chosen a better prefix on five-point (7.04 vs 11.78 mm) and saved two sweeps on HP3 with the same error; patience 2 and 5 are unobserved beyond iteration 5 | [report §5.4](sessions/2026-10-22-autocal-flags-06-planning-stopping/report.md#54-patience) |
+| H6. A stop threshold on `max_std_mm` or `cost` can be chosen without fixture-specific tuning | 06-B1..B3, 06-R1..R3 | Rejected: std 7,000–29,000 mm; cost 46–248 with the lowest cost at 262 mm error | [report §5.2](sessions/2026-10-22-autocal-flags-06-planning-stopping/report.md#52-threshold-rules) |
+| H7. Sparse recovery improves underconstrained recovery | 06-R1..R3 | Mixed: repaired HP3 iteration 1 from no candidate to 229 mm; five-point iteration 1 worsened 6.75 → 13.48 mm; HP3 final worsened 202 → 236 mm | [report §6](sessions/2026-10-22-autocal-flags-06-planning-stopping/report.md#6-sparse-recovery) |
+| H8. The spread-consensus stop indicates convergence | 06-B1, 06-B2 (stops at iteration 5 with 1 and 2 sweeps unused) | Not supported: two agreeing fits (spread 0.98 mm and 4.26 mm) gave applied errors of 11.2 and 7.0 mm | [report §5.3](sessions/2026-10-22-autocal-flags-06-planning-stopping/report.md#53-consensus-stop) |
+| H9. `--top-k` changes which sweep is collected | code trace only | Rejected by code trace (`ranked[0]` alone sets the collection hint) | [report §4](sessions/2026-10-22-autocal-flags-06-planning-stopping/report.md#4-flag-by-flag-assessment) |
+
+#### References
+
+- [Full report](sessions/2026-10-22-autocal-flags-06-planning-stopping/report.md): analysis, measurements, dispositions and limitations.
+- [Research notebook](sessions/2026-10-22-autocal-flags-06-planning-stopping/research.md): decisions, budget and steering.
+- [Trial table](sessions/2026-10-22-autocal-flags-06-planning-stopping/trials.json) and [CSV](sessions/2026-10-22-autocal-flags-06-planning-stopping/trials.csv): one row per trial with overrides and outcomes.
+- [Commands and overrides](sessions/2026-10-22-autocal-flags-06-planning-stopping/commands.md) and [provenance](sessions/2026-10-22-autocal-flags-06-planning-stopping/provenance.json): revision `4f175079`, fixture SHA-256, package versions.
+- [Handoff](sessions/2026-10-22-autocal-flags-06-planning-stopping/../../../../research/autocal-flag-audit/handoffs/06-planning-stopping.md) and [audit](sessions/2026-10-22-autocal-flags-06-planning-stopping/../../../../research/autocal-flag-audit/report.md) that defined the screen.
+- [Reference provenance](sessions/2026-10-22-autocal-flags-06-planning-stopping/../../../../autocal/data/references/README.md) and [regression runner](sessions/2026-10-22-autocal-flags-06-planning-stopping/../../../../autocal/tools/regress_calibration_logs.py): ground truth (`DatasetSpec.true_anchors`, `true_radii`) and `error_to_true`.
+- [Recording performance note](sessions/2026-10-22-autocal-flags-06-planning-stopping/../../../../research/autocal-recording-performance.md): recording costs; not used for timing here (recording none).
+
 ## [2026-10-22-autocal-lane04-cleanup](sessions/2026-10-22-autocal-lane04-cleanup/)
 
 [abstract.md](sessions/2026-10-22-autocal-lane04-cleanup/abstract.md) · [report.md](sessions/2026-10-22-autocal-lane04-cleanup/report.md) · [research.md](sessions/2026-10-22-autocal-lane04-cleanup/research.md)
@@ -2132,6 +2172,50 @@ autocalibration, ranking, consensus, CLI cleanup, frozen replay, noise metrics
 - [Report](sessions/2026-10-22-autocal-lane04-cleanup/report.md): decisions and source evidence.
 - [Notebook](sessions/2026-10-22-autocal-lane04-cleanup/research.md): scope and budgets.
 - [Checks](sessions/2026-10-22-autocal-lane04-cleanup/checks.json), [script](sessions/2026-10-22-autocal-lane04-cleanup/check_histories.py): artifact hashes and reproduction.
+
+## [2026-10-22-autocal-lane06-integration](sessions/2026-10-22-autocal-lane06-integration/)
+
+[abstract.md](sessions/2026-10-22-autocal-lane06-integration/abstract.md) · [report.md](sessions/2026-10-22-autocal-lane06-integration/report.md) · [research.md](sessions/2026-10-22-autocal-lane06-integration/research.md)
+
+### Lane 06 integration: planning CLI cleanup and stop attribution
+
+Status: complete.
+
+#### Abstract
+
+This investigation asks which lane 06 findings justify changes to autocal.
+Six current-source, no-collection replays compare default and disabled spread
+stopping with an eight-iteration ceiling. Two fixtures retain identical applied
+parameters; the outlier fixture's combined truth error improves from 7.009 to
+6.705 mm while its anchor error worsens. This mixed simulation evidence does not
+justify a default stopping-policy change. Replaying the saved HP3 history explains
+the alleged final-anchor discrepancy: held-out ranking selects iteration 4,
+while the running training best is iteration 2. The implementation removes seven
+CLI controls, fixes one-sided ranges and repeat-exclusion fallback, and makes
+final selection explicit. The focused suite passes 140 tests; the broader suite
+passes 533 with seven slow tests deselected. All four selected calibration
+regression fixtures pass with unchanged parameters, iteration comparisons and
+replay sweep/point totals. No hardware, fresh collection or physics changes are
+involved.
+
+#### Topics
+
+autocalibration, planning, CLI simplification, stopping, spread consensus,
+range resolution, duplicate sweeps, held-out selection, regression
+
+#### Tested hypotheses
+
+| Hypothesis | IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Disabling spread stopping improves physical calibration generally | I02, six paired replay controls | Mixed, no default change | [Paired results](sessions/2026-10-22-autocal-lane06-integration/paired-results.json) |
+| HP3 final output disagrees with the actual selected model | I01 | Rejected on saved history | [Report](sessions/2026-10-22-autocal-lane06-integration/report.md) |
+| Cleanup preserves tested contracts and fixes range/exclusion bugs | T01/T02 | Supported tool checks, not accuracy evidence | [Tests](sessions/2026-10-22-autocal-lane06-integration/tests.log) |
+
+#### References
+
+- [Report](sessions/2026-10-22-autocal-lane06-integration/report.md), [notebook](sessions/2026-10-22-autocal-lane06-integration/research.md), [provenance](sessions/2026-10-22-autocal-lane06-integration/provenance.json).
+- [Preceding lane](sessions/2026-10-22-autocal-lane06-integration/../2026-10-22-autocal-flags-06-planning-stopping/report.md).
+- [Replay harness](sessions/2026-10-22-autocal-lane06-integration/replay.py), [paired results](sessions/2026-10-22-autocal-lane06-integration/paired-results.json).
 
 ## [2026-10-22-autocal-physical-model-cleanup](sessions/2026-10-22-autocal-physical-model-cleanup/)
 
@@ -2263,6 +2347,33 @@ descent, validation, held-out sweeps, default equivalence
 - [Report](sessions/2026-10-22-autocal-spool-simplification/report.md): integration scope and evidence.
 - [Validation harness](sessions/2026-10-22-autocal-spool-simplification/harness/validate.py): frozen input selection and measurements.
 - [Tracked integration report](sessions/2026-10-22-autocal-spool-simplification/../../../../research/autocal-spool-lane03-integration.md).
+
+## [2026-10-22-interactive-research-7345527c](sessions/2026-10-22-interactive-research-7345527c/)
+
+[abstract.md](sessions/2026-10-22-interactive-research-7345527c/abstract.md) · [research.md](sessions/2026-10-22-interactive-research-7345527c/research.md)
+
+### interactive research
+
+Status: not yet summarized.
+
+#### Abstract
+
+The session has started. No research result has been summarized yet.
+
+#### Topics
+
+interactive research
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| None recorded yet | None | Not tested | None |
+
+#### References
+
+- [Original task](sessions/2026-10-22-interactive-research-7345527c/prompt.txt)
+- [Research notebook](sessions/2026-10-22-interactive-research-7345527c/research.md)
 
 ## [2026-10-22-interactive-research-a430536f](sessions/2026-10-22-interactive-research-a430536f/)
 
