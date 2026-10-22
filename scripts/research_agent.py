@@ -25,7 +25,7 @@ from hp_sim5_research.archive import initial_abstract, session_name, write_index
 ENV_FILE = ROOT / '.env'
 CHATGPT_SIGN_IN = 'openai'
 STRIPPED_KEYS = ('OPENAI_API_KEY', 'CODEX_API_KEY')
-# Ignored, machine-specific pieces a raw worktree checkout lacks but the launcher needs.
+# Shared runtime pieces; output can also contain tracked research files.
 WORKTREE_LINKS = ('.venv', '.env', 'node_modules', 'RRF/build', 'output',
                   'src/wasm/cable_solver/target/native/physics.node')
 
@@ -178,8 +178,21 @@ def create_worktree(topic, directory=None):
                          capture_output=True, text=True)
     if add.returncode != 0:
         raise RuntimeError(f'git worktree add failed: {(add.stderr or add.stdout).strip()}')
+    common_git = subprocess.run(
+        ['git', '-C', str(ROOT), 'rev-parse', '--path-format=absolute', '--git-common-dir'],
+        check=True, capture_output=True, text=True)
+    shared_output = Path(common_git.stdout.strip()).parent / 'output'
+    shared_output.mkdir(exist_ok=True)
     for entry in WORKTREE_LINKS:
         source, target = ROOT / entry, plan['path'] / entry
+        if entry == 'output':
+            source = shared_output.resolve()
+            # This is a fresh checkout: discard only Git's checked-out copy,
+            # before any includes or session artifacts can be written there.
+            if target.is_symlink():
+                target.unlink()
+            elif target.exists():
+                shutil.rmtree(target)
         if source.exists() and not target.exists():
             target.parent.mkdir(parents=True, exist_ok=True)
             target.symlink_to(source, target_is_directory=source.is_dir())
@@ -343,6 +356,7 @@ def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, dont_a
     if batch:
         command += ['--json', '--output-last-message', str(session / 'final-message.md')]
     settings = {'sandbox_workspace_write.network_access': True,
+                'sandbox_workspace_write.writable_roots': [str((ROOT / 'output').resolve())],
                 'features.default_mode_request_user_input': not (dont_ask or batch),
                 'features.goals': goal_mode,
                 'mcp_servers.hp_sim5.command': sys.executable,
@@ -570,7 +584,8 @@ def main():
         descriptor.write_text(json.dumps({'repo': str(ROOT), 'session_id': runtime_status['session_id'],
                                           'runtime_endpoint': runtime.endpoint, 'runtime_token': runtime.token,
                                           'viewer_endpoint': endpoint}) + '\n')
-        attachment = ('[sandbox_workspace_write]\nnetwork_access = true\n\n'
+        attachment = ('[sandbox_workspace_write]\nnetwork_access = true\n'
+                      f'writable_roots = {toml_literal([str((ROOT / "output").resolve())])}\n\n'
                       '[features]\n'
                       f'default_mode_request_user_input = {toml_literal(not (args.dont_ask or args.batch))}\n\n'
                       f'[mcp_servers.hp_sim5]\ncommand = {json.dumps(sys.executable)}\n'

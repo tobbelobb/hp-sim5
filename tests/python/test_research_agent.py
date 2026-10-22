@@ -261,7 +261,8 @@ def test_launcher_worktree_dry_run_plans_without_creating_anything(tmp_path):
     assert missing.returncode != 0 and '--worktree-dir requires --worktree' in missing.stderr
 
 
-def test_create_worktree_links_ignored_runtime_pieces(tmp_path, monkeypatch):
+@pytest.mark.parametrize('tracked_output', [False, True])
+def test_create_worktree_links_shared_runtime_pieces(tmp_path, monkeypatch, tracked_output):
     import importlib.util
     repo = tmp_path / 'repo'
     (repo / 'scripts').mkdir(parents=True)
@@ -276,6 +277,9 @@ def test_create_worktree_links_ignored_runtime_pieces(tmp_path, monkeypatch):
     (repo / '.worktreeinclude').write_text('# local research to copy\nlocal/notes.md\n')
     subprocess.run(['git', '-C', str(repo), 'init', '-q', '-b', 'main'], check=True, capture_output=True)
     subprocess.run(['git', '-C', str(repo), 'add', '-A'], check=True, capture_output=True)
+    if tracked_output:
+        subprocess.run(['git', '-C', str(repo), 'add', '-f', 'output/research/index.md'],
+                       check=True, capture_output=True)
     subprocess.run(['git', '-C', str(repo), '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-qm', 'init'],
                    check=True, capture_output=True)
     (repo / '.venv/bin').mkdir(parents=True)
@@ -306,6 +310,19 @@ def test_create_worktree_links_ignored_runtime_pieces(tmp_path, monkeypatch):
     output = plan['path'] / 'output'
     assert output.is_symlink() and output.resolve() == (repo / 'output').resolve()
     assert (output / 'research/index.md').read_text() == 'shared catalog\n'
+    (output / 'research/new-result.txt').write_text('new evidence\n')
+    assert (repo / 'output/research/new-result.txt').read_text() == 'new evidence\n'
+    # Even a launcher in an older worktree with private output must use the
+    # main checkout's output when it creates another worktree.
+    monkeypatch.setattr(launcher, 'ROOT', plan['path'])
+    command = launcher.codex_command(output / 'research/session', None, goal_mode=False)
+    assert ('sandbox_workspace_write.writable_roots=' + json.dumps([str(repo / 'output')])) in command
+    output.unlink()
+    output.mkdir()
+    (output / 'private.txt').write_text('old private output\n')
+    nested = launcher.create_worktree('Nested Topic', tmp_path / 'worktrees')
+    assert (nested['path'] / 'output').resolve() == (repo / 'output').resolve()
+    assert (nested['path'] / 'output/research/new-result.txt').read_text() == 'new evidence\n'
     assert (repo / 'local/notes.md').read_text() == 'prior research\n'
     assert plan['branch'] in subprocess.run(['git', '-C', str(repo), 'worktree', 'list'],
                                             capture_output=True, text=True).stdout
@@ -569,6 +586,7 @@ else:
     import tomllib
     attachment = tomllib.loads((session / 'attachment.toml').read_text())
     assert attachment['sandbox_workspace_write']['network_access'] is True
+    assert attachment['sandbox_workspace_write']['writable_roots'] == [str((ROOT / 'output').resolve())]
     assert attachment['features']['default_mode_request_user_input'] == (not batch)
     assert attachment['hooks']['UserPromptSubmit'][0]['hooks'][0]['input']['threadId'] == '${session_id}'
     launch = (session / 'launch.json').read_text()

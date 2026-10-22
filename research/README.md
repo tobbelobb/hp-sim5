@@ -162,10 +162,12 @@ the worktree instead of the original checkout:
 ```
 
 It runs `git worktree add -b research/<name>-<id> <dir>` from the current `HEAD`,
-links the Git-ignored pieces a bare checkout lacks (`.venv`, `.env`,
+links the shared runtime pieces a bare checkout lacks (`.venv`, `.env`,
 `node_modules`, `RRF/build`, `output/` and the compiled native physics addon).
-The shared `output/` link makes prior local research available and keeps new
-session artifacts in the original checkout. It also copies any additional
+The shared `output/` link replaces the fresh checkout's tracked output files,
+makes prior local research available and keeps new session artifacts in the
+main checkout, including when launching from another worktree. Codex also gets
+sandbox write access to the shared output directory. It copies any additional
 repository paths listed in `.worktreeinclude` (when present) into the new
 worktree. It then re-executes the
 worktree's own launcher. The default
