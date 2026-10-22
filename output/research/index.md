@@ -2388,6 +2388,88 @@ descent, validation, held-out sweeps, default equivalence
 - [Validation harness](sessions/2026-10-22-autocal-spool-simplification/harness/validate.py): frozen input selection and measurements.
 - [Tracked integration report](sessions/2026-10-22-autocal-spool-simplification/../../../../research/autocal-spool-lane03-integration.md).
 
+## [2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/)
+
+[abstract.md](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/abstract.md) · [report.md](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/report.md) · [research.md](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/research.md)
+
+### Faster failure handling for encoder-only HP3 autocalibration
+
+Status: complete.
+
+#### Abstract
+
+Can encoder-only HP3 autocalibration become faster and more reliable without collecting fewer useful observations or changing one-click stopping? We audited the supplied zero-buildup reference, ran recorded-data solver and thinning trials, tested twelve varied kinematic worlds, and completed three production native HP3 runs. The reference’s lowest training score has 8.00 mm anchor RMSE versus 2.53 mm for its last fit. Thinning and several plausible solver changes fail controls; validity-first restart selection improves intermediate fits but worsens one regression’s applied geometry. The retained change bypasses L-BFGS-B compilation when fixed point counts make every possible anchor geometry underconstrained. In four isolated repeats, a recorded failing restart falls from a median 662 ms to 0.400 ms with identical parameters and sentinel. All twelve fixture regressions and 505 tests pass. A complete paired run preserves all 160 observations, 4503.840 simulated seconds, 3.204 mm anchor RMSE and automatic stopping exactly. This saves wasted fitting computation; no collection-time or calibration-accuracy improvement is established. Evidence is simulated or synthetic, not hardware.
+
+#### Topics
+
+HP3, CDPR, encoder-only autocalibration, constant objective, JAX compilation, underconstrained fits, candidate ranking, fewer points, synthetic worlds, automatic stopping
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Lower fit score identifies better anchors | E01 | Rejected on reference | [Audit](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E01-reference-audit.json) |
+| Within-sweep fixed encoder drift explains this reference | E01 | Rejected: range exactly zero; fixed deltas match observations | [Audit](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E01-reference-audit.json) |
+| Common future sweeps repair the individual-candidate ranking | E24 | Rejected on this pool: still selects iteration 4 over more accurate 6 | [Common validation](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E24-common-validation.json) |
+| Endpoint-preserving 40% thinning preserves robust fits | E02 | Rejected: two of three sparse prefixes return sentinels | [Baseline fits](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E02-baseline/results.json) |
+| Centered squared-length arithmetic improves robustness | E03 | Rejected: dense nine-sweep fit fails | [Paired fits](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E03-centered/results.json) |
+| TRF resolves sparse fitting failures | E04 | Mixed: rescues 108 points, still fails at 36 points | [TRF fits](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E04-trf/results.json) |
+| Resetting an invalid recovery seed produces useful sparse geometry | E06–E07 | Mixed: avoids boundary trap, but about 41 mm error remains | [L-BFGS-B](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E06-recovery/results.json), [TRF](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E07-recovery-trf/results.json) |
+| Favoring constrained restarts improves the applied calibration safely | E08, E12–E14 | Rejected as a general default: seventh fixture worsens | [Regression evidence](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E13-regressions.log), [live comparison](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E22-live-comparison.json) |
+| Lowering the minimum points per sweep to three fixes sparse calibration | E11 | Rejected: one sentinel removed with worse geometry; another remains | [Fits](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E11-min3/results.json) |
+| Structurally constant L-BFGS-B objectives can skip compilation exactly | E16–E23 | Supported within tested scope | [Timing](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E19-benchmark/summary.json), [regressions](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E20-final-regressions.log), [live equality](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E22-live-comparison.json), [synthetic controls](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/E23-final-synthetic/results.json) |
+| Reusing quiet samples, force-isolation experiments, cost-aware movement or task-space uncertainty improves acquisition | none | Not tested | [Notebook](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/research.md) |
+
+#### References
+
+- [Full report](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/report.md): interpretation, reproduction and limitations.
+- [Notebook](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/research.md): hypotheses, budgets, failures and decisions.
+- [Supplied HP3 reference](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/../../../extended-autocal/no-buildup-reference-003/sweeps.json) and [saved candidates](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/../../../extended-autocal/no-buildup-reference-003/sweeps.stages/history-007.json): ranking and thinning inputs.
+- [Reference event extraction from the October 12 session](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/../2026-10-12-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-2f03cb59/E01-events.jsonl): original recording events used for the timing audit; the original RRD is absent here.
+- [Final source patch](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/final-source.diff), [provenance](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/provenance.json): implementation based on revision `9e40f995da14102612f4a7f57c3fc0a0665bbdf5`.
+- [Prior solver/force study](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/../2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9d784051/report.md), [prior thinning/roundoff study](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/../2026-10-12-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-2f03cb59/report.md), [prior warm-start study](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/../2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-267d719f/report.md): existing gains and negative results that informed the pilots.
+- Caverly, R. J.; Cheah, S. K.; Bunker, K. R.; Patel, S.; Sexton, N.; Nguyen, V. L. (2025), “Online Self-Calibration of Cable-Driven Parallel Robots Using Covariance-Based Data Quality Assessment Metrics,” DOI [10.1115/1.4065236](https://experts.umn.edu/en/publications/online-self-calibration-of-cable-driven-parallel-robots-using-cov/): joint pose/bias estimation and data-quality stopping motivate future experiments; these methods were not implemented here.
+- Wang, H.; Gao, T.; Kinugawa, J.; Kosuge, K. (2017), “Finding Measurement Configurations for Accurate Robot Calibration: Validation with a Cable-Driven Robot,” DOI [10.1109/TRO.2017.2707562](https://scholars.cityu.edu.hk/en/publications/finding-measurement-configurations-for-accurate-robot-calibration/): observability-based configuration selection motivates targeted acquisition.
+- Alexandre dit Sandretto, J.; Daney, D.; Gouttefarde, M. (2012), “Calibration of a Fully-Constrained Parallel Cable-Driven Robot,” [author PDF](https://www-sop.inria.fr/coprin/PDF/a_romansy2012.pdf): redundant internal length constraints and joint nuisance-pose estimation motivate encoder-only alternatives. Its eight-cable, six-DOF embodiment differs from HP3.
+- [Algorithm overview](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/../../../../autocal/optimization_algorithm_overview), [objective overview](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/../../../../autocal/objective_functions_overview), [stage API](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/../../../../autocal/README.md), [recording workload costs](sessions/2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37/../../../../research/autocal-recording-performance.md): current workflow and budget contracts actually consulted.
+
+## [2026-10-22-interactive-research-49c8bfde](sessions/2026-10-22-interactive-research-49c8bfde/)
+
+[abstract.md](sessions/2026-10-22-interactive-research-49c8bfde/abstract.md) · [report.md](sessions/2026-10-22-interactive-research-49c8bfde/report.md) · [research.md](sessions/2026-10-22-interactive-research-49c8bfde/research.md)
+
+### Can cable-flex compensation improve HP3 autocalibration?
+
+Status: complete, 2026-10-22.
+
+#### Abstract
+
+I tested why the removed autocal `--flex` flag was inactive and whether a repaired flex correction can improve Hangprinter 3 calibration. Saved HP3 fixtures have no drive or fixed-cable tension fields, so flex-on and flex-off fits are necessarily identical. Native HP3 fixed-pose tests show repeatable material extension up to 0.382 mm from 0.256 to 3.817 N, but the deterministic solver uses constant joint stiffness, so it cannot establish material length dependence, hysteresis or creep. In a controlled 12-fit synthetic HP3 matrix, the exact old correction recovered anchors to numerical precision only when fixed cables were rigid and origin extension was zero. With all cables compliant and nonzero origin extension, the old path was worse than no correction (6.632 versus 6.452 mm anchor RMSE), while an all-role delta correction reached zero. With 0.1 mm noise, all-role correction reduced RMSE from 10.825 to 6.125 mm and held-out error from 0.200 to 0.097 mm. Halving stiffness removed the benefit. This supports the physical idea conditionally, not the removed implementation or a hardware gain.
+
+#### Topics
+
+autocalibration, Hangprinter 3, cable elasticity, flex compensation, encoder deltas, measurement origin, tension, synthetic identification, held-out sweeps, native Rust simulation
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| The removed flag is inactive on saved data because tension inputs are absent | Lane 05 activation probe; 2026-10-22 existing-data check | Supported | All fixtures lack drive/fixed tension; on/off objectives are identical |
+| Correct flex compensation is identifiable and improves anchor recovery under a matched model | Synthetic fit matrix in this session | Mixed | Correct all-role model reaches zero error; exact old path succeeds only in the favorable zero-origin rigid-fixed case; wrong stiffness fails |
+| Native HP3 has repeatable load-dependent extension | Native IDs `6b50bde7...`, `40508c31...` | Supported in simulation | Extension 0.02543-0.38159 mm over four loads; revisits below `2e-15 m`; no physical hysteresis test |
+| Elastic extension is too small to affect calibration in the measured range | None | Inconclusive | 0.526 mm synthetic strain produced 10.8-13.1 mm anchor error; native law and real-hardware scale are unresolved |
+
+#### References
+
+- [Full report](sessions/2026-10-22-interactive-research-49c8bfde/report.md): methods, results, limitations and decision.
+- [Research notebook](sessions/2026-10-22-interactive-research-49c8bfde/research.md): hypotheses, budgets, experiment IDs and steering.
+- [Synthetic fit matrix](sessions/2026-10-22-interactive-research-49c8bfde/synthetic-flex-results.json): 12 analytic fits, held-out residuals and generated cases.
+- [Synthetic harness](sessions/2026-10-22-interactive-research-49c8bfde/harness/synthetic_flex.py): truth model and exact correction variants.
+- [Native HP3 load summary](sessions/2026-10-22-interactive-research-49c8bfde/high-load-summary.json): fixed-pose force/extension measurements.
+- [Longer-line native control](sessions/2026-10-22-interactive-research-49c8bfde/high-load-longer-summary.json): length-invariance limitation.
+- [Failed optimizer pilot](sessions/2026-10-22-interactive-research-49c8bfde/synthetic-flex-optimizer-pilot.json): preserved non-truth local-minimum result.
+- [Invalid zero-buildup fixture fit](sessions/2026-10-22-interactive-research-49c8bfde/existing-fifth-uncorrected.json): existing-data configuration mismatch.
+- Git revision `06bc6c41`: removal of `--flex` and `--spring-k-multiplier`.
+
 ## [2026-10-22-interactive-research-7345527c](sessions/2026-10-22-interactive-research-7345527c/)
 
 [abstract.md](sessions/2026-10-22-interactive-research-7345527c/abstract.md) · [research.md](sessions/2026-10-22-interactive-research-7345527c/research.md)

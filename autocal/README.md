@@ -397,6 +397,10 @@ these budgets can change the fitted basin; a lower objective does not guarantee
 more accurate physical anchors.
 
 Calibration results and frozen fit artifacts retain `solver` and `optimizer_runs`.
+L-BFGS-B skips compilation and optimization when the retained point counts make
+the minimum sweep count impossible for every anchor geometry. It returns the
+same initial anchors and underconstrained sentinel, so recovery and collection
+continue through the normal automatic loop.
 Full-auto JSONL run entries retain `optimizer_runs` too. Each entry identifies its
 GNC stage and zero-based restart, selected restart, resolved method, actual budget, cost, success,
 iterations/evaluations, termination message and TRF fallback attempt/use. Costs

@@ -134,7 +134,7 @@ def test_pointwise_euclidean_cost_is_low_for_true_anchors():
 
 def test_invalid_sweep_is_ignored_in_cost():
     dataset, anchors = _synthetic_dataset(num_sweeps=4)
-    # Trim to force an invalid fit (min_points default is 3)
+    # Trim below the point minimum to force an invalid sweep.
     dataset["sweeps"][0]["data_points"] = dataset["sweeps"][0]["data_points"][:2]
 
     cost_fn = EllipseCostFunction(

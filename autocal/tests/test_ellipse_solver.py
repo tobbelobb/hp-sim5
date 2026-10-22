@@ -988,3 +988,53 @@ def test_trf_fallback_retries_failed_or_invalid_primary(
     assert calls == (["trf"] if expected_retry else [])
     assert result["trf_fallback_attempted"] is expected_retry
     assert result["trf_fallback_used"] is expected_retry
+
+
+@pytest.mark.parametrize("point_counts", [(10, 10), (10, 10, 9), (6, 6, 6)])
+def test_lbfgsb_skips_only_structurally_underconstrained_data(monkeypatch, point_counts):
+    from autocal.ellipse_cost import EllipseCostFunction
+
+    dataset = {"machine_type": "slideprinter", "num_anchors": 3, "dimensions": 2,
+               "sweeps": [dict(id=str(i), fixed_anchors=[0], fixed_lengths=[0.0],
+                               drive_anchor=1, sensor_anchor=2,
+                               data_points=[dict(l_drive=0.0, l_sensor=0.0)] * count)
+                          for i, count in enumerate(point_counts)]}
+    cost = EllipseCostFunction(dataset)
+    lb, ub = ellipse_solver.get_anchor_opt_bounds("slideprinter", 3, 2)
+    x0 = .5 * (lb + ub)
+
+    def no_compile(*args, **kwargs):
+        pytest.fail("a constant underconstrained objective must not compile")
+
+    monkeypatch.setattr(ellipse_solver, "build_compiled_value_and_grad", no_compile)
+    monkeypatch.setattr(ellipse_solver, "build_compiled_objective", no_compile)
+    result = ellipse_solver._run_lbfgsb_minimize(
+        cost, x0, lb=lb, ub=ub, bounds=list(zip(lb, ub)), max_iterations=10,
+    )
+    assert cost.evaluate(x0) == cost.evaluate(x0 * .8) == result.fun == 100.0
+    np.testing.assert_array_equal(result.x, x0)
+    assert result.nit == 0
+    assert "too few retained sweeps" in result.message
+
+
+def test_lbfgsb_does_not_skip_repairable_invalid_geometry(monkeypatch):
+    from autocal.ellipse_cost import EllipseCostFunction
+
+    dataset = {"machine_type": "hangprinter_4", "num_anchors": 4, "dimensions": 3,
+               "sweeps": [dict(id=str(i), fixed_anchors=[0, 3], fixed_lengths=[-1e4, 0.0],
+                               drive_anchor=1, sensor_anchor=2,
+                               data_points=[dict(l_drive=0.0, l_sensor=0.0)] * 10)
+                          for i in range(3)]}
+    cost = EllipseCostFunction(dataset)
+    lb, ub = ellipse_solver.get_anchor_opt_bounds("hangprinter_4", 4, 3)
+    x0 = .5 * (lb + ub)
+    assert cost.evaluate(x0) == 100.0
+    calls = []
+    monkeypatch.setattr(ellipse_solver, "_lbfgsb_jax_mode", lambda: "jac")
+    monkeypatch.setattr(ellipse_solver, "_build_lbfgsb_objective_with_jac",
+                        lambda *a: calls.append("compile") or (lambda x: (1.0, np.zeros_like(x))))
+    monkeypatch.setattr(ellipse_solver, "minimize", lambda *a, **kw: OptimizeResult(x=x0, fun=1.0))
+    ellipse_solver._run_lbfgsb_minimize(
+        cost, x0, lb=lb, ub=ub, bounds=list(zip(lb, ub)), max_iterations=10,
+    )
+    assert calls == ["compile"]

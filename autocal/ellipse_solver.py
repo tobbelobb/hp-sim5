@@ -232,6 +232,17 @@ def _run_lbfgsb_minimize(
     callback: Optional[Callable[[np.ndarray], None]] = None,
 ) -> OptimizeResult:
     x0_clipped = np.clip(np.asarray(x0, dtype=float).reshape(-1), lb, ub)
+    # Frozen masks can leave too few eligible sweeps for any anchor geometry.
+    # That objective is identically the sentinel; avoid compiling/differentiating it.
+    if isinstance(cost_fn, EllipseCostFunction) and cost_fn.sweeps:
+        eligible = sum(sweep.l_drive.size >= cost_fn.min_points for sweep in cost_fn._packed_sweeps)
+        if eligible < cost_fn._min_sweeps_after_trim:
+            return OptimizeResult(
+                x=x0_clipped, fun=float(cost_fn.evaluate(x0_clipped)),
+                success=True, status=0, nit=0, nfev=1, njev=0,
+                jac=np.zeros_like(x0_clipped),
+                message="CONVERGENCE: constant underconstrained objective (too few retained sweeps)",
+            )
     mode = _lbfgsb_jax_mode()
     if mode == "fun":
         objective = _build_lbfgsb_objective_value_only(cost_fn, lb, ub)
