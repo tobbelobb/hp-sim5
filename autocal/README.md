@@ -350,3 +350,26 @@ For full details and log interpretation, see
 The [algorithm overview](optimization_algorithm_overview) describes the loops.
 The [objective overview](objective_functions_overview) explains optimization,
 patience, prediction ranking, and displayed quality.
+
+### Anchor solver budgets and diagnostics
+
+`--solve-restarts` sets the multistart budget (default 4). With pointwise filtering,
+only the first GNC stage uses that many starts; subsequent stages use one warm
+start. `--solve-iterations` defaults to 400, with GNC iteration factors 1, 0.6
+and 0.4. Seed and spool-refinement solves apply their own smaller caps. Reducing
+these budgets can change the fitted basin; a lower objective does not guarantee
+more accurate physical anchors.
+
+Calibration results and frozen fit artifacts retain `solver` and `optimizer_runs`.
+Full-auto JSONL run entries retain `optimizer_runs` too. Each entry identifies its
+GNC stage and zero-based restart, selected restart, resolved method, actual budget, cost, success,
+iterations/evaluations, termination message and TRF fallback attempt/use. Costs
+across filtering stages or restart-specific masks need not be comparable. The
+trace describes the reported anchor calibration, not every nested spool objective
+evaluation. Least-squares `nit` uses the backend's Jacobian-evaluation count.
+
+TRF fallback remains disabled by default. When enabled, it retries unsuccessful,
+non-finite or geometrically invalid primary results, including a reported
+convergence with no valid sweeps. An attempted retry is recorded even if its
+result is not chosen. A disabled fallback having zero triggers is not evidence
+that the retry capability is unnecessary.

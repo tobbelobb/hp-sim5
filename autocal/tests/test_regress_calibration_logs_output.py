@@ -758,3 +758,28 @@ def test_hp4_fixed_radius_reference_parses_summary_and_iterations():
     assert all(iteration.radii == [30.0] * 4 for iteration in parsed.iterations)
     # Without known fixed inputs, missing radius output must stay unavailable.
     assert rcl.parse_log_file(path).summary is None
+
+
+@pytest.mark.parametrize("axis,anchor,attachment", [
+    (0, "AnchorAL", "AttachAL"), (0, "AnchorAR", "AttachAR"),
+    (1, "AnchorBL", "AttachAR"), (1, "AnchorBR", "AttachBR"),
+    (2, "AnchorCL", "AttachBR"), (2, "AnchorCR", "AttachAL"),
+    (3, "AnchorD0", "AttachAL"), (3, "AnchorD1", "AttachAR"),
+    (3, "AnchorD2", "AttachBR"),
+])
+def test_hp3_reference_truth_matches_effective_scene_anchors(axis, anchor, attachment):
+    import re
+
+    scene = (REPO_ROOT / "public/usd_scenes/hp3_rigid_body.usda").read_text()
+
+    def translation(name):
+        block = re.search(r'def (?:Xform|Circle) "' + name + r'"[^{}]*\{([^{}]*)\}', scene)
+        assert block is not None, name
+        value = re.search(r'double3 xformOp:translate = \(([^)]+)\)', block[1])
+        assert value is not None, name
+        return [float(v) for v in value[1].split(",")]
+
+    # Firmware/autocal anchors are pivot-to-attachment offsets at home, not
+    # raw world-space pinhole positions. SIM_3D rounds B/C X to 0.01 mm.
+    effective = [(a - b) * 1000 for a, b in zip(translation(anchor), translation(attachment))]
+    assert effective == pytest.approx(rcl.SIM_3D_TRUE_ANCHORS[axis], abs=0.002)

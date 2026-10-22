@@ -3318,8 +3318,14 @@ def _print_ellipse_plan(
 
 
 def _add_solver_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--solve-restarts", type=int, default=4)
-    parser.add_argument("--solve-iterations", type=int, default=400)
+    parser.add_argument(
+        "--solve-restarts", type=int, default=4,
+        help="Anchor multistarts (default: 4); with pointwise filtering, later GNC stages use one warm start. Seed/refinement solves cap this budget.",
+    )
+    parser.add_argument(
+        "--solve-iterations", type=int, default=400,
+        help="Anchor iteration budget (default: 400); GNC stages scale it by 1/0.6/0.4 and seed/refinement solves cap it.",
+    )
     parser.add_argument(
         "--solve-optimizer",
         choices=_SOLVE_OPTIMIZER_CHOICES,

@@ -962,6 +962,7 @@ def full_auto_loop(
             "settings": dict(settings),
             "plan": plan,
             "metrics": metrics,
+            "optimizer_runs": (plan.get("calibration") or {}).get("optimizer_runs", []),
         }
 
     def _warm_start_seeds_from_plan(plan: Dict[str, object]) -> Dict[str, np.ndarray]:
@@ -1370,6 +1371,7 @@ def full_auto_loop(
                                 "id": r["id"],
                                 "flags": r["flags"],
                                 "metrics": r["metrics"],
+                                "optimizer_runs": r["optimizer_runs"],
                             }
                             for r in run_results
                         ],
@@ -1618,6 +1620,7 @@ def full_auto_loop(
                             "flags": r["flags"],
                             "settings": r["settings"],
                             "metrics": r["metrics"],
+                            "optimizer_runs": r["optimizer_runs"],
                         }
                         for r in run_results
                     ],

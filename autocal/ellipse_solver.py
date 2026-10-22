@@ -131,8 +131,9 @@ def _run_lbfgsb_with_fallback(
 
     if not enabled or (
         bool(getattr(primary, "success", False))
-        and _optimizer_result_is_finite(primary, x0_arr.size)
+        and _optimizer_result_is_usable(primary, x0_arr.size, cost_fn)
     ):
+        primary["trf_fallback_attempted"] = False
         primary["trf_fallback_used"] = False
         return primary
 
@@ -150,6 +151,8 @@ def _run_lbfgsb_with_fallback(
 
     fallback_ok = _optimizer_result_is_usable(fallback, x0_arr.size, cost_fn)
     primary_ok = _optimizer_result_is_usable(primary, x0_arr.size, cost_fn)
+    primary["trf_fallback_attempted"] = True
+    fallback["trf_fallback_attempted"] = True
     if fallback_ok and (bool(getattr(fallback, "success", False)) or not primary_ok):
         chosen = fallback
         chosen["trf_fallback_used"] = True
@@ -505,6 +508,7 @@ def _optimize_restart_worker(payload: dict) -> dict:
         message=str(getattr(result, "message", "")),
         nit=int(getattr(result, "nit", 0) or 0),
         nfev=int(getattr(result, "nfev", 0) or 0),
+        trf_fallback_attempted=bool(getattr(result, "trf_fallback_attempted", False)),
         trf_fallback_used=bool(getattr(result, "trf_fallback_used", False)),
     )
     return dict(best)
@@ -886,6 +890,7 @@ def solve_anchors(
         current_guess = initial_guess
         final_result: Optional[Dict[str, object]] = None
         trf_fallback_used = False
+        optimizer_runs = []
         for idx, stage in enumerate(stages):
             stage_iters = int(max(1, round(max_iterations * stage["iter_factor"])))
             stage_restarts = int(stage["restarts"])
@@ -923,11 +928,13 @@ def solve_anchors(
             if final_result is None:
                 break
             trf_fallback_used = trf_fallback_used or bool(final_result.get("trf_fallback_used", False))
+            optimizer_runs.extend(final_result.get("optimizer_runs", []))
             anchors_out = final_result.get("anchors")
             if anchors_out is not None:
                 current_guess = np.asarray(anchors_out, dtype=float)
         if final_result is not None:
             final_result["trf_fallback_used"] = trf_fallback_used
+            final_result["optimizer_runs"] = optimizer_runs
             return final_result
 
     cost_fn = _build_cost_fn(
@@ -1268,6 +1275,23 @@ def solve_anchors(
     best_cost = np.inf
     best_restart_idx: Optional[int] = None
     best_cost_fn: Optional[EllipseCostFunction] = None
+    optimizer_runs = []
+
+    def _record_restart(index: int, result: OptimizeResult) -> None:
+        # Keep termination evidence even for losing restarts and earlier GNC stages.
+        optimizer_runs.append({
+            "stage": int(pointwise_filter_stage or 0),
+            "restart": int(index),
+            "method": "trf" if result.get("trf_fallback_used", False) else method_norm,
+            "max_iterations": int(max_iterations),
+            "cost": float(result.fun) if np.isfinite(result.fun) else None,
+            "success": bool(result.get("success", False)),
+            "nit": int(result.get("nit", 0) or 0),
+            "nfev": int(result.get("nfev", 0) or 0),
+            "message": str(result.get("message", "")),
+            "trf_fallback_attempted": bool(result.get("trf_fallback_attempted", False)),
+            "trf_fallback_used": bool(result.get("trf_fallback_used", False)),
+        })
 
     def _bounded_objective(x: np.ndarray) -> float:
         """Objective wrapper that penalizes leaving bounds (for methods without bounds support)."""
@@ -1318,6 +1342,7 @@ def solve_anchors(
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 for idx, out in enumerate(executor.map(_optimize_restart_worker, payloads), start=1):
                     result = OptimizeResult(out)
+                    _record_restart(idx - 1, result)
                     if verbose:
                         print(
                             f"[restart {idx} done] fun={float(result.fun):.6g} success={bool(getattr(result,'success',True))} "
@@ -1337,6 +1362,7 @@ def solve_anchors(
             with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                 for idx, out in enumerate(executor.map(_optimize_restart_worker, payloads), start=1):
                     result = OptimizeResult(out)
+                    _record_restart(idx - 1, result)
                     if float(result.fun) < best_cost:
                         best_cost = float(result.fun)
                         best_result = result
@@ -1500,6 +1526,7 @@ def solve_anchors(
                 except Exception:
                     pass
 
+            _record_restart(idx, result)
             if result.fun < best_cost:
                 best_cost = float(result.fun)
                 best_result = result
@@ -1513,7 +1540,11 @@ def solve_anchors(
             "success": False,
             "details": None,
             "raw_result": None,
+            "optimizer_runs": optimizer_runs,
         }
+
+    for run in optimizer_runs:
+        run["selected"] = run["restart"] == best_restart_idx
 
     if best_cost_fn is None:
         if best_restart_idx is not None and 0 <= int(best_restart_idx) < len(initial_guesses):
@@ -1597,6 +1628,7 @@ def solve_anchors(
         "details": detailed,
         "raw_result": best_result,
         "solver": f"least_squares_{method_norm}" if method_norm in _ANCHOR_LSQ_METHODS else "ellipse_solver",
+        "optimizer_runs": optimizer_runs,
         "trf_fallback_used": bool(getattr(best_result, "trf_fallback_used", False)),
     }
 

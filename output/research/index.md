@@ -2051,6 +2051,51 @@ HP4, Print Squares, missed steps, physics substeps, open-loop torque balance, ro
 
 - [Commit patch](sessions/2026-10-21-interactive-research-cdfb5278/hp4-open-loop-torque-balance.patch) and [bundle](sessions/2026-10-21-interactive-research-cdfb5278/hp4-open-loop-torque-balance.bundle): packaged commit `838133d4`; original `.git` is read-only and source edits remain in the working tree.
 
+## [2026-10-22-autocal-solver-integration](sessions/2026-10-22-autocal-solver-integration/)
+
+[abstract.md](sessions/2026-10-22-autocal-solver-integration/abstract.md) · [report.md](sessions/2026-10-22-autocal-solver-integration/report.md) · [research.md](sessions/2026-10-22-autocal-solver-integration/research.md)
+
+### HP3 nominal truth verification and lane 01 solver integration
+
+Status: complete.
+
+#### Abstract
+
+The lane 01 report inferred a seventh-fixture scene mismatch from poor fits and
+agreement with an older fitted reference. Static reconstruction from the scene at
+first data commit `0a5a0f6d` and today's HP3 scene instead reproduces the existing
+nominal effective-anchor truth within 0.002 mm rounding. Rescored saved fits have
+63.84–65.05 mm anchor RMSE against that truth; the lane's smaller distances describe
+reference-fit agreement. Five bounded frozen-fit replays preserve the lane's
+numerical results while new traces establish actual solver methods and termination.
+A separate scalar control exercises the production TRF retry; function-level tests
+expose and fix an enabled-fallback bug that skipped finite but invalid converged
+primary fits. Three full replay regressions pass without parameter or collection
+changes. No physical-accuracy improvement, hardware result or new default is
+claimed; original unrecorded browser settings remain a provenance limitation.
+
+
+#### Topics
+
+autocalibration, HP3, effective anchors, simulation truth, solver diagnostics,
+TRF fallback, restarts, iteration budgets, calibration bias
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Nominal scene matches existing truth | T1 | Supported | [Derivation](sessions/2026-10-22-autocal-solver-integration/truth-verification.json) |
+| Diagnostic propagation preserves fitted numerics | D1 | Supported on measured replays | [Controls](sessions/2026-10-22-autocal-solver-integration/replay-checks.json), [variants](sessions/2026-10-22-autocal-solver-integration/followup-checks.json) |
+| Reduced iteration budget is non-binding | I1 | Rejected on measured seventh trajectory | [Variant trace](sessions/2026-10-22-autocal-solver-integration/followup-checks.json) |
+| TRF retry can activate without being selected | F1 | Supported tool control | [Scalar result](sessions/2026-10-22-autocal-solver-integration/forced-fallback.json) |
+| Retry correctly handles converged invalid primary fits | F2 | Fixed and verified by targeted test | [Tests](sessions/2026-10-22-autocal-solver-integration/pytest.log) |
+
+#### References
+
+- [Report](sessions/2026-10-22-autocal-solver-integration/report.md): findings, code changes, source provenance and limits.
+- [Notebook](sessions/2026-10-22-autocal-solver-integration/research.md): budget, intermediate hypothesis and outcome.
+- [Tracked integration report](sessions/2026-10-22-autocal-solver-integration/../../../../research/autocal-solver-lane01-integration.md).
+
 ## [2026-10-22-interactive-research-a430536f](sessions/2026-10-22-interactive-research-a430536f/)
 
 [abstract.md](sessions/2026-10-22-interactive-research-a430536f/abstract.md) · [report.md](sessions/2026-10-22-interactive-research-a430536f/report.md) · [research.md](sessions/2026-10-22-interactive-research-a430536f/research.md)

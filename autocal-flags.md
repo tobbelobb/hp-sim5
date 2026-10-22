@@ -179,3 +179,9 @@ budgets. No runtime flags or user KEEP decisions were changed.
 
 Six researchers can start from the [parallel handoff index](research/autocal-flag-audit/handoffs/README.md),
 which assigns exclusive topics, isolated outputs, budgets and integration checks.
+
+Lane 01 follow-up: [truth verification and solver integration](research/autocal-solver-lane01-integration.md).
+The nominal HP3 scene matches the existing effective-anchor truth; the seventh
+fixture remains substantially biased against it. Defaults are retained. Solver
+traces now expose methods, budgets, convergence and retry attempts; an enabled
+fallback no longer skips a converged primary with zero valid sweeps.

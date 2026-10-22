@@ -243,6 +243,7 @@ def test_calibrate_elliptical_forwards_initial_guess(tmp_path, monkeypatch):
         dtype=float,
     )
     seen = {"initial_guess": None}
+    optimizer_runs = [{"method": "trf", "max_iterations": 2, "message": "converged"}]
 
     def fake_solve_anchors(dataset_arg, **kwargs):
         _ = dataset_arg
@@ -253,11 +254,13 @@ def test_calibrate_elliptical_forwards_initial_guess(tmp_path, monkeypatch):
             "success": True,
             "details": {},
             "raw_result": {},
+            "solver": "least_squares_trf",
+            "optimizer_runs": optimizer_runs,
         }
 
     monkeypatch.setattr(calibrate_module, "solve_anchors", fake_solve_anchors)
 
-    calibrate_module.calibrate_elliptical(
+    result = calibrate_module.calibrate_elliptical(
         dataset,
         output_path=None,
         residual_threshold=1e9,
@@ -272,6 +275,9 @@ def test_calibrate_elliptical_forwards_initial_guess(tmp_path, monkeypatch):
     got = np.asarray(seen["initial_guess"], dtype=float)
     assert got.shape == initial_guess.shape
     assert np.allclose(got, initial_guess)
+    assert result["solver"] == "least_squares_trf"
+    assert result["optimizer_runs"] == optimizer_runs
+    json.dumps(result, allow_nan=False)
 
 
 def test_cli_subcommand_does_not_collide_with_optimizer_flag(tmp_path, capsys):

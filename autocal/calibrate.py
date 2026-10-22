@@ -769,6 +769,8 @@ def calibrate_elliptical(
         "cost": float(solution.get("cost", float("nan"))),
         "success": bool(solution.get("success", False)),
         "trf_fallback_used": bool(solution.get("trf_fallback_used", False)),
+        "solver": solution.get("solver"),
+        "optimizer_runs": solution.get("optimizer_runs", []),
         "anchor_norms": _anchor_norms(anchors_arr),
         "pairwise_distances": _pairwise_anchor_distances(anchors_arr),
         "gcode": gcode,

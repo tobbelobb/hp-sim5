@@ -83,3 +83,20 @@ the original log has iteration results but no final calibration summary.
 The dated `full_auto_reference_run` log is a separate no-collection replay baseline.
 Both regression and reference generation use the shared `DATASETS` entry, with
 fixed 30 mm radii and zero buildup to match this collection.
+
+## HP3 effective-anchor truth check, 2026-10-22
+
+The seventh fixture's poor fitted coordinates do not establish a scene/truth
+mismatch. At its first-data revision `0a5a0f6d`,
+`examples/usd_scenes/hp3.usda` gives the same nominal effective anchors as today's
+`public/usd_scenes/hp3_rigid_body.usda`: subtract each paired mover attachment's
+home position from its fixed pinhole position. Both A branches give
+`(0,-1900,-280)` mm, both B branches `(1645.44826719,950,-280)`, both C branches
+`(-1645.44826719,950,-280)`, and all D branches `(0,0,1900)`.
+These agree with `SIM_3D_TRUE_ANCHORS` within its 0.002 mm rounding tolerance.
+`test_hp3_reference_truth_matches_effective_scene_anchors` checks every branch.
+
+A stored calibration reference is a regression baseline, not a replacement for
+simulation truth. Report distances to that fit as reference agreement, not
+physical accuracy. Original unrecorded browser overrides remain a provenance
+limitation; neither a bad fit nor agreement between two fits proves an override.

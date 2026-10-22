@@ -169,3 +169,12 @@ no numerical default was established as optimal and no runtime flags were remove
 
 The [six-lane launch index](autocal-flag-audit/handoffs/README.md) provides separate
 parallel handoffs with ownership, budgets, output isolation and integration rules.
+
+## HP3 nominal truth and lane 01 solver integration
+
+Status: complete, 2026-10-22. Topics: effective anchors, simulation truth, solver
+tracing, iteration budgets, TRF fallback. [Integration report](autocal-solver-lane01-integration.md).
+Historical/current HP3 geometry agrees with the existing nominal truth; poor fit
+agreement with an older fitted reference does not establish a scene mismatch.
+Compact solver diagnostics and an invalid-primary retry fix preserve default
+numerics on five frozen fits and three full replay regressions.

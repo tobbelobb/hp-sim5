@@ -480,6 +480,10 @@ def test_solve_anchors_trf_uses_reduced_vector_and_lsq_backend(monkeypatch):
     assert seen["method"] == "trf"
     assert np.asarray(seen["x0"], dtype=float).shape == (5,)
     assert result["solver"] == "least_squares_trf"
+    assert result["optimizer_runs"][0]["method"] == "trf"
+    assert result["optimizer_runs"][0]["max_iterations"] == 4
+    assert result["optimizer_runs"][0]["nfev"] == 1
+    assert result["optimizer_runs"][0]["message"] == "ok"
     assert np.asarray(result["anchors"], dtype=float).shape == (3, 2)
 
 
@@ -569,6 +573,7 @@ def test_solve_anchors_lm_uses_reduced_vector_and_lsq_backend(monkeypatch):
     assert seen["has_bounds"] is False
     assert np.asarray(seen["x0"], dtype=float).shape == (5,)
     assert result["solver"] == "least_squares_lm"
+    assert result["optimizer_runs"][0]["method"] == "lm"
     assert np.asarray(result["anchors"], dtype=float).shape == (3, 2)
 
 
@@ -956,3 +961,37 @@ def test_solve_anchors_clips_hangprinter_4_initial_guess_into_sign_constrained_h
     assert anchors[2, 0] < 0.0
     assert anchors[2, 1] > 0.0
     assert anchors[3, 2] > 0.0
+
+
+@pytest.mark.parametrize("enabled,primary_success,primary_valid,expected_retry", [
+    (False, False, True, False),
+    (True, True, True, False),
+    (True, False, True, True),
+    (True, True, False, True),
+])
+def test_trf_fallback_retries_failed_or_invalid_primary(
+    monkeypatch, enabled, primary_success, primary_valid, expected_retry
+):
+    from types import SimpleNamespace
+
+    class Cost:
+        def evaluate_detailed(self, x):
+            valid = primary_valid if x[0] == 1.0 else True
+            return SimpleNamespace(num_valid_sweeps=int(valid), total_cost=1.0)
+
+    calls = []
+    monkeypatch.setattr(ellipse_solver, "_run_lbfgsb_minimize", lambda *a, **kw:
+                        OptimizeResult(x=np.array([1.0]), fun=2.0, success=primary_success))
+
+    def retry(*args, **kwargs):
+        calls.append(kwargs["method"])
+        return OptimizeResult(x=np.array([0.0]), fun=1.0, success=True)
+
+    monkeypatch.setattr(ellipse_solver, "_run_anchor_least_squares", retry)
+    result = ellipse_solver._run_lbfgsb_with_fallback(
+        Cost(), np.array([1.0]), lb=np.array([-2.0]), ub=np.array([2.0]),
+        bounds=[(-2.0, 2.0)], max_iterations=1, enabled=enabled,
+    )
+    assert calls == (["trf"] if expected_retry else [])
+    assert result["trf_fallback_attempted"] is expected_retry
+    assert result["trf_fallback_used"] is expected_retry
