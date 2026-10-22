@@ -336,7 +336,7 @@ def sidebar_server_enabled(codex_args, provider=CHATGPT_SIGN_IN):
     return False
 
 
-def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, dont_ask=False, codex_args=(), instructions='', sidebar_section=None,
+def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, dont_ask=False, goal_mode, codex_args=(), instructions='', sidebar_section=None,
                   model_provider=CHATGPT_SIGN_IN, model=None):
     command = ['codex'] + (['exec'] if batch else [])
     command += ['--cd', str(ROOT), '--sandbox', 'workspace-write', '-c', 'approval_policy="never"']
@@ -344,6 +344,7 @@ def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, dont_a
         command += ['--json', '--output-last-message', str(session / 'final-message.md')]
     settings = {'sandbox_workspace_write.network_access': True,
                 'features.default_mode_request_user_input': not (dont_ask or batch),
+                'features.goals': goal_mode,
                 'mcp_servers.hp_sim5.command': sys.executable,
                 'mcp_servers.hp_sim5.args': [str(ROOT / 'scripts/hp_sim5_mcp.py')],
                 'mcp_servers.hp_sim5.cwd': str(ROOT), 'mcp_servers.hp_sim5.required': True,
@@ -383,10 +384,11 @@ def claude_mcp_config(session, viewer_endpoint):
     return {'mcpServers': servers}
 
 
-def claude_command(session, viewer_endpoint=None, runtime=None, *, batch=False, dont_ask=False, codex_args=(), model=None, **_):
+def claude_command(session, viewer_endpoint=None, runtime=None, *, batch=False, dont_ask=False, goal_mode, codex_args=(), model=None, **_):
     command = ['claude', '--mcp-config', str(session / 'attachment.json'), '--strict-mcp-config',
                '--append-system-prompt-file', str(session / 'instructions.md'),
-               '--allowedTools', 'mcp__hp_sim5,mcp__rerun']
+               '--allowedTools', 'mcp__hp_sim5,mcp__rerun',
+               '--settings', json.dumps({'modelProposedGoals': 'auto' if goal_mode else 'disabled'})]
     if dont_ask:
         command += ['--disallowedTools', 'AskUserQuestion']
     if batch:
@@ -458,6 +460,8 @@ def main():
     parser.add_argument('--worktree-dir', type=Path,
                         help='Parent directory for --worktree (default: a sibling of the repository)')
     parser.add_argument('--dont-ask', action='store_true', help='Disable structured clarification questions in Default mode')
+    parser.add_argument('--goal-mode', action=argparse.BooleanOptionalAction, default=True,
+                        help='Goal mode for autonomous continuation: Codex goals or Claude /goal (default: on; --no-goal-mode disables)')
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--batch', action='store_true', help='Run the selected backend non-interactively and save JSONL events')
     mode.add_argument('--serve', action='store_true', help='Supervise services for desktop MCP attachment until interrupted')
@@ -539,7 +543,7 @@ def main():
             print(json.dumps({'mode': 'serve' if args.serve else 'batch' if args.batch else 'interactive',
                               'backend': args.backend, 'model_provider': provider, 'model': model,
                               'mcp_config': claude_mcp_config(session, endpoint) if args.backend == 'claude' else None,
-                              'argv': command_builder(session, endpoint, batch=args.batch, dont_ask=args.dont_ask, codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section, model_provider=injected_provider, model=injected_model) + ([] if args.batch or not prompt else [prompt]),
+                              'argv': command_builder(session, endpoint, batch=args.batch, dont_ask=args.dont_ask, goal_mode=args.goal_mode, codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section, model_provider=injected_provider, model=injected_model) + ([] if args.batch or not prompt else [prompt]),
                               'prompt': full_prompt}, indent=2))
             return 0
         session.mkdir(parents=True)
@@ -581,7 +585,7 @@ def main():
         (session / 'attachment.toml').write_text(attachment)
         (session / 'attachment.json').write_text(json.dumps(claude_mcp_config(session, endpoint), indent=2) + '\n')
         (session / 'instructions.md').write_text(instructions)
-        command = command_builder(session, endpoint, runtime, batch=args.batch, dont_ask=args.dont_ask, codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section,
+        command = command_builder(session, endpoint, runtime, batch=args.batch, dont_ask=args.dont_ask, goal_mode=args.goal_mode, codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section,
                                 model_provider=injected_provider, model=injected_model)
         if not args.batch and prompt:
             command += [prompt]

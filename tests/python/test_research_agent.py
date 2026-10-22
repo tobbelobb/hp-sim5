@@ -408,6 +408,22 @@ def test_launcher_clarification_setting(options, enabled):
     assert '--dont-ask' not in argv
 
 
+@pytest.mark.parametrize('backend', ['--codex', '--claude'])
+@pytest.mark.parametrize('options, enabled', [
+    ([], True), (['--goal-mode'], True), (['--no-goal-mode'], False),
+])
+def test_launcher_goal_mode_setting(backend, options, enabled):
+    command = [str(ROOT / 'hp-sim5-research-agent'), backend, '--dry-run', '--viewer', 'none', *options, '--prompt', 'Research check']
+    result = subprocess.run(command, capture_output=True, text=True, timeout=15)
+    assert result.returncode == 0, result.stderr
+    argv = json.loads(result.stdout)['argv']
+    if backend == '--codex':
+        assert f'features.goals={str(enabled).lower()}' in argv
+    else:
+        assert json.loads(argv[argv.index('--settings') + 1]) == {'modelProposedGoals': 'auto' if enabled else 'disabled'}
+        assert '--disable-slash-commands' not in argv
+
+
 @pytest.mark.parametrize('mode', [[], ['--batch'], ['--serve']])
 @pytest.mark.parametrize('servers', [[], [{'name': 'codex_app', 'enabled': False}],
                                     [{'name': 'codex_app', 'enabled': True}]])

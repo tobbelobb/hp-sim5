@@ -2051,6 +2051,33 @@ HP4, Print Squares, missed steps, physics substeps, open-loop torque balance, ro
 
 - [Commit patch](sessions/2026-10-21-interactive-research-cdfb5278/hp4-open-loop-torque-balance.patch) and [bundle](sessions/2026-10-21-interactive-research-cdfb5278/hp4-open-loop-torque-balance.bundle): packaged commit `838133d4`; original `.git` is read-only and source edits remain in the working tree.
 
+## [2026-10-22-interactive-research-d1d37c7f](sessions/2026-10-22-interactive-research-d1d37c7f/)
+
+[abstract.md](sessions/2026-10-22-interactive-research-d1d37c7f/abstract.md) · [research.md](sessions/2026-10-22-interactive-research-d1d37c7f/research.md)
+
+### interactive research
+
+Status: not yet summarized.
+
+#### Abstract
+
+The session has started. No research result has been summarized yet.
+
+#### Topics
+
+interactive research
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| None recorded yet | None | Not tested | None |
+
+#### References
+
+- [Original task](sessions/2026-10-22-interactive-research-d1d37c7f/prompt.txt)
+- [Research notebook](sessions/2026-10-22-interactive-research-d1d37c7f/research.md)
+
 ## [architecture-batch](architecture-batch/)
 
 [abstract.md](architecture-batch/abstract.md) · [report.md](architecture-batch/report.md) · [research.md](architecture-batch/research.md)

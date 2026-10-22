@@ -2,7 +2,7 @@
 
 `hp-sim5-research-agent --codex` or `hp-sim5-research-agent --claude` opens an interactive conversation with
 native experiment tools and an assigned Rerun Viewer. Conversation, steering,
-interrupts, resume and Goal mode belong to Codex. The launcher owns the continuing
+interrupts and resume belong to Codex. Goal mode works with both backends. The launcher owns the continuing
 physics world, real RRF planner, production collector bridge, optional browser
 service and requested browser recorder for the lifetime of the session.
 
@@ -60,7 +60,11 @@ the supplied instructions. Both MCP servers use the supervised connection
 file, and their tools are allowed through Claude's permission checks. Other
 permissions follow Claude's local configuration; the Codex filesystem sandbox
 settings do not apply to Claude. `--dont-ask` disables Claude's AskUserQuestion
-tool. Sidebar hooks, Goal mode and Codex structured questions are Codex features.
+tool. Goal mode is on by default for both backends: Codex `features.goals`, or
+Claude `modelProposedGoals` set to `auto` or `disabled`. `--no-goal-mode` turns off
+Codex's `features.goals` and stops Claude from proposing goals. A typed `/goal`
+still works in Claude, so the user can add goal mode manually later.
+`--goal-mode` enables it explicitly. Sidebar hooks and Codex structured questions are Codex features.
 Batch mode saves raw `events.jsonl` and extracts Claude's result into
 `final-message.md`; a Claude error result makes the launcher fail. Both backends
 share service lifetime, interruption handling and research artifact paths.
