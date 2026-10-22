@@ -3,6 +3,7 @@ import os
 import pytest
 
 import autocal.autocal as ac
+from autocal.stopping import SPREAD_STOP_FRAC, spread_stop_fraction
 from autocal._autocal_common import (
     _apply_optimizer_mode_env,
     _parse_filter_schedule,
@@ -382,9 +383,48 @@ def test_planning_ridge_requires_a_finite_positive_value(value):
 
 @pytest.mark.parametrize("value,expected", [
     ("off", 0.0), ("0", 0.0), ("-1", 0.0), ("0.002", 0.002),
-    ("nan", ac.SPREAD_STOP_FRAC), ("inf", ac.SPREAD_STOP_FRAC),
-    ("typo", ac.SPREAD_STOP_FRAC),
+    ("nan", SPREAD_STOP_FRAC), ("inf", SPREAD_STOP_FRAC),
+    ("typo", SPREAD_STOP_FRAC),
 ])
 def test_spread_stop_override_requires_a_finite_fraction(monkeypatch, value, expected):
     monkeypatch.setenv("HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC", value)
-    assert ac._spread_stop_fraction() == expected
+    assert spread_stop_fraction() == expected
+
+
+def test_everyday_help_is_short_and_research_help_lists_all_controls(capsys, monkeypatch):
+    monkeypatch.setenv("COLUMNS", "80")
+    with pytest.raises(SystemExit) as exit_info:
+        ac.main(["--help"])
+    assert exit_info.value.code == 0
+    captured = capsys.readouterr()
+    everyday = captured.out
+    assert not captured.err
+    assert len(everyday.splitlines()) < 90
+    assert "--help-research" in everyday and "--headless-sim" in everyday
+    assert "--solve-restarts" not in everyday
+    assert "--filter-schedule" not in everyday
+    assert "--regularization" not in everyday
+
+    with pytest.raises(SystemExit) as exit_info:
+        ac.main(["--help-research"])
+    assert exit_info.value.code == 0
+    captured = capsys.readouterr()
+    assert not captured.err
+    for action in build_semi_auto_parser()._actions:
+        for option in action.option_strings:
+            assert option in captured.out
+    assert "--extended-reference-ws" in captured.out
+    assert "Research: solver and recovery" in captured.out
+    assert "hp3" in captured.out
+
+
+def test_help_views_preserve_defaults_and_hidden_controls_remain_parseable():
+    parser = build_semi_auto_parser()
+    before = vars(parser.parse_args(["--machine-type", "slideprinter"]))
+    parser.format_help()
+    parser.format_help(research=True)
+    after = vars(parser.parse_args(["--machine-type", "slideprinter"]))
+    assert before == after and "help_research" not in after
+    args = parser.parse_args(["--machine-type", "slideprinter",
+                              "--solve-restarts", "2", "--no-pointwise-filtering"])
+    assert args.solve_restarts == 2 and not args.pointwise_filtering

@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import atexit
-import copy
 import os
 import sys
-import time
 from contextlib import nullcontext, ExitStack
 from pathlib import Path
 
@@ -16,102 +14,13 @@ from autocal._autocal_common import *  # noqa: F401,F403
 from autocal.planning_pass import plan_next_ellipse_sweep
 from autocal.history_selection import (
     HISTORY_CONSENSUS_MAX_SPREAD_MM,
-    SPREAD_STOP_CONSECUTIVE,
-    SPREAD_STOP_FRAC,
-    SPREAD_STOP_MIN_CANDIDATES,
-    consensus_anchor_estimate,
-    consensus_spread_hit,
     evaluate_history_candidates,
     select_history_plan,
 )
 from autocal.stage_artifacts import write_stage_artifact
 from autocal import extended_reference
-from autocal.theoretical_ellipse import get_anchor_bounds
-
-
-def _sparse_recovery_dataset(dataset: Dict[str, object], fraction: float = 0.5) -> Dict[str, object]:
-    """Return a small, endpoint-preserving training subset for recovery seeding."""
-    result = copy.deepcopy(dataset)
-    for sweep in result.get("sweeps", []):
-        if not isinstance(sweep, dict) or not isinstance(sweep.get("data_points"), list):
-            continue
-        points = sweep["data_points"]
-        groups: Dict[object, List[int]] = {}
-        for index, point in enumerate(points):
-            if not isinstance(point, dict):
-                continue
-            direction = point.get("source_drive_anchor", sweep.get("drive_anchor"))
-            groups.setdefault(direction, []).append(index)
-        keep = set()
-        for indices in groups.values():
-            if not indices:
-                continue
-            target = min(len(indices), max(5, int(np.ceil(float(fraction) * len(indices)))))
-            positions = {
-                i: float(points[i].get("drive_setpoint_mm", points[i].get("l_drive", i)))
-                for i in indices
-            }
-            selected = {min(indices, key=positions.get), max(indices, key=positions.get)}
-            while len(selected) < target:
-                selected.add(
-                    max(
-                        (i for i in indices if i not in selected),
-                        key=lambda i: (
-                            min(abs(positions[i] - positions[j]) for j in selected),
-                            -i,
-                        ),
-                    )
-                )
-            keep.update(selected)
-        sweep["data_points"] = [point for i, point in enumerate(points) if i in keep]
-    return result
-
-
-def _spread_stop_fraction() -> float:
-    """Optional early-stop heuristic based on geometric fit agreement.
-
-    Agreement is not calibrated uncertainty or proof of accuracy. The default
-    and its override are retained pending broader acquisition evidence.
-    `HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC=off` disables this heuristic; invalid or
-    non-finite values retain the default.
-    """
-    raw = os.environ.get("HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC", "").strip()
-    if not raw:
-        return float(SPREAD_STOP_FRAC)
-    if raw.lower() in {"off", "false", "no", "none", "disabled"}:
-        return 0.0
-    try:
-        value = float(raw)
-    except ValueError:
-        return float(SPREAD_STOP_FRAC)
-    if not np.isfinite(value):
-        return float(SPREAD_STOP_FRAC)
-    return 0.0 if value <= 0.0 else float(value)
-
-
-def _recovery_geometry_valid(plan: Dict[str, object]) -> bool:
-    """Reject non-finite, out-of-bounds, or degenerate anchor layouts."""
-    try:
-        anchors = np.asarray(plan.get("anchors"), dtype=float)
-        machine_type = str(plan.get("machine_type", ""))
-        if anchors.ndim != 2 or anchors.size == 0 or not np.all(np.isfinite(anchors)):
-            return False
-        lower, upper = get_anchor_bounds(machine_type)
-        lower = np.asarray(lower, dtype=float).reshape(anchors.shape)
-        upper = np.asarray(upper, dtype=float).reshape(anchors.shape)
-        margin = np.maximum(1e-5, 1e-5 * np.maximum(np.abs(lower), np.abs(upper)))
-        if np.any(anchors <= lower + margin) or np.any(anchors >= upper - margin):
-            return False
-        centered = anchors - np.mean(anchors, axis=0, keepdims=True)
-        if np.linalg.matrix_rank(centered) < min(anchors.shape[1], anchors.shape[0] - 1):
-            return False
-        for i in range(anchors.shape[0]):
-            for j in range(i):
-                if float(np.linalg.norm(anchors[i] - anchors[j])) <= 1e-3:
-                    return False
-        return True
-    except (TypeError, ValueError, np.linalg.LinAlgError):
-        return False
+from autocal.fit_recovery import attempt_underconstrained_recovery, warm_start_seeds_from_plan
+from autocal.stopping import StoppingPolicy
 
 
 def full_auto_loop(
@@ -618,19 +527,9 @@ def full_auto_loop(
     best_meta: Dict[str, object] = {}
     history_candidates: List[Dict[str, object]] = []
     history_total_iterations = 0
-    no_improve = 0
-    spread_stop_frac = _spread_stop_fraction()
-    spread_stop_streak = 0
-    if spread_stop_frac > 0.0:
-        _log_console(
-            f"; full-auto: early stop when the two closest distinct fits agree to "
-            f"{spread_stop_frac:g} of the machine size, sustained "
-            f"{SPREAD_STOP_CONSECUTIVE} iterations, from "
-            f"{SPREAD_STOP_MIN_CANDIDATES} candidates "
-            f"(disable with HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC=off)"
-        )
+    stopping = StoppingPolicy(patience=patience, stop_file=stop_file)
+    stopping.announce(_log_console)
     min_delta = float(DEFAULT_FULL_AUTO_MIN_DELTA)
-    patience_limit = max(1, int(patience))
     has_variants = bool(full_auto_runs)
     def _select_history_summary_candidate(
         *,
@@ -693,33 +592,6 @@ def full_auto_loop(
         if fallback_plan is not None:
             return fallback_plan, dict(fallback_meta or {})
         return None, None
-
-    def _current_history_rank_position(*, iteration: int) -> Optional[int]:
-        if not history_candidates:
-            return None
-        scored: List[Tuple[Tuple[float, float, float, float, float], Dict[str, object]]] = []
-        for candidate in history_candidates:
-            candidate_rank = _float_or_none(candidate.get("rank_score"))
-            selection_score, _selection_info = _full_auto_history_selection_score(
-                candidate_rank,
-                iteration_index=int(candidate.get("iteration", 1)),
-                coverage_adjust=_float_or_none(candidate.get("rank_coverage_adjust")),
-            )
-            rel_std = _float_or_none(candidate.get("rel_std"))
-            cost = _float_or_none(candidate.get("cost"))
-            sort_key = (
-                float(selection_score),
-                float(candidate_rank) if candidate_rank is not None else float("inf"),
-                float(rel_std) if rel_std is not None else float("inf"),
-                float(cost) if cost is not None else float("inf"),
-                -float(candidate.get("iteration", 0)),
-            )
-            scored.append((sort_key, candidate))
-        scored.sort(key=lambda item: item[0])
-        for idx, (_sort_key, candidate) in enumerate(scored, start=1):
-            if int(candidate.get("iteration", -1)) == int(iteration):
-                return idx
-        return None
 
     def _accept_best(reason: str) -> int:
         if headless_sim is not None:
@@ -904,260 +776,9 @@ def full_auto_loop(
             "optimizer_runs": (plan.get("calibration") or {}).get("optimizer_runs", []),
         }
 
-    def _warm_start_seeds_from_plan(plan: Dict[str, object]) -> Dict[str, np.ndarray]:
-        def _coerce_matrix(value: object) -> Optional[np.ndarray]:
-            try:
-                arr = np.asarray(value, dtype=float)
-            except (TypeError, ValueError):
-                return None
-            if arr.ndim != 2 or arr.size <= 0 or not np.all(np.isfinite(arr)):
-                return None
-            return arr
-
-        def _coerce_vector(
-            value: object,
-            *,
-            size: Optional[int] = None,
-            positive: bool = False,
-        ) -> Optional[np.ndarray]:
-            try:
-                arr = np.asarray(value, dtype=float).reshape(-1)
-            except (TypeError, ValueError):
-                return None
-            if arr.size <= 0 or not np.all(np.isfinite(arr)):
-                return None
-            if arr.size == 1 and size is not None and size > 1:
-                arr = np.full(size, float(arr[0]), dtype=float)
-            if size is not None and arr.size != size:
-                return None
-            if positive and np.any(arr <= 0.0):
-                return None
-            return arr
-
-        seeds: Dict[str, np.ndarray] = {}
-        anchors = _coerce_matrix(plan.get("anchors"))
-        if anchors is not None:
-            seeds["initial_guess"] = anchors
-        anchor_count = int(anchors.shape[0]) if anchors is not None else None
-
-        length_model = plan.get("length_model")
-        if not isinstance(length_model, dict):
-            return seeds
-
-        radii_seed = _coerce_vector(
-            length_model.get("effective_radii_mm", length_model.get("modeled_radii_mm")),
-            size=anchor_count,
-            positive=True,
-        )
-        if radii_seed is not None:
-            seeds["initial_radii_mm"] = radii_seed
-
-        buildup_seed = _coerce_vector(
-            length_model.get("modeled_buildup_factor"),
-            size=anchor_count,
-        )
-        if buildup_seed is None and length_model.get("buildup_factor_k") is not None:
-            buildup_seed = _coerce_vector(
-                length_model.get("buildup_factor_k"),
-                size=anchor_count,
-            )
-        if buildup_seed is not None:
-            seeds["initial_buildup_factor"] = buildup_seed
-        return seeds
-
-    def _single_objective_schedule(value: object) -> List[int]:
-        if isinstance(value, (list, tuple)) and value:
-            try:
-                return [int(value[-1])]
-            except (TypeError, ValueError):
-                pass
-        return [1]
-
-    def _build_underconstrained_recovery_attempts(
-        settings: Dict[str, object]
-    ) -> List[Tuple[str, Dict[str, object]]]:
-        attempts: List[Tuple[str, Dict[str, object]]] = []
-        current = dict(settings)
-        if bool(current.get("sweep_wise_filtering")):
-            current = dict(current)
-            current["sweep_wise_filtering"] = False
-            attempts.append(("restore_sweeps", dict(current)))
-        if bool(current.get("pointwise_filtering")):
-            current = dict(current)
-            current["pointwise_filtering"] = False
-            current["pointwise_global_mad"] = False
-            attempts.append(("restore_points", dict(current)))
-
-        out: List[Tuple[str, Dict[str, object]]] = []
-        for label, attempt_settings in attempts:
-            settings_eff = dict(attempt_settings)
-            if (
-                not bool(settings_eff.get("pointwise_filtering"))
-                and not bool(settings_eff.get("sweep_wise_filtering"))
-            ):
-                settings_eff["filter_schedule"] = ["warmup"]
-                settings_eff["objective_schedule"] = _single_objective_schedule(
-                    settings_eff.get("objective_schedule")
-                )
-            out.append((label, settings_eff))
-        return out
-
-    def _attempt_underconstrained_recovery(
-        selected: Dict[str, object],
-        *,
-        collector_output: Path,
-    ) -> Tuple[Optional[Dict[str, object]], Optional[Dict[str, object]]]:
-        settings = dict(selected.get("settings") or {})
-        attempts = _build_underconstrained_recovery_attempts(settings)
-        if not attempts:
-            return None, None
-
-        run_id = str(selected.get("id", "run"))
-        run_flags = str(selected.get("flags", ""))
-        overrides = dict(selected.get("overrides") or {})
-        _log_console(
-            "; selected run underconstrained; trying to restore sweeps/points from current data."
-        )
-
-        warm_start = _warm_start_seeds_from_plan(selected["plan"])
-        started = time.perf_counter()
-        valid_results: List[Dict[str, object]] = []
-        recovery_labels = [label for label, _settings in attempts]
-        if sparse_recovery:
-            recovery_labels.extend(("sparse_seed", "sparse_refine"))
-        recovery_info: Dict[str, object] = {
-            "attempts_total": int(len(recovery_labels)),
-            "attempt_labels": recovery_labels,
-            "sparse_enabled": bool(sparse_recovery),
-            "success": False,
-        }
-        for idx, (label, settings_try) in enumerate(attempts, start=1):
-            _log_line(
-                f"; underconstrained_recovery: run={run_id} "
-                f"attempt={idx}/{len(attempts)} mode={label}"
-            )
-            result = _execute_plan_run(
-                run_id=run_id,
-                run_flags=run_flags,
-                overrides=overrides,
-                settings=settings_try,
-                collector_output=collector_output,
-                log_prefix=f"; full-auto recovery {run_id} [{label}]",
-                path_tag=f"{run_id}.{label}",
-                initial_guess=warm_start.get("initial_guess"),
-                initial_radii_mm=warm_start.get("initial_radii_mm"),
-                initial_buildup_factor=warm_start.get("initial_buildup_factor"),
-            )
-            recovery_info.update(
-                {
-                    "attempt": str(label),
-                    "attempt_index": int(idx),
-                }
-            )
-            result["recovery"] = dict(recovery_info)
-            result_valid = (
-                bool(result["metrics"].get("valid"))
-                and not bool(result["metrics"].get("underconstrained_penalty", False))
-                and _recovery_geometry_valid(result["plan"])
-            )
-            if result_valid:
-                valid_results.append(result)
-                if not sparse_recovery:
-                    recovery_info["success"] = True
-                    result["recovery"] = dict(recovery_info)
-                    _log_console(
-                        "; underconstrained recovery succeeded; continuing with the repaired constrained estimate."
-                    )
-                    return result, dict(recovery_info)
-            if _recovery_geometry_valid(result["plan"]):
-                warm_start = _warm_start_seeds_from_plan(result["plan"])
-
-        if sparse_recovery:
-            sparse_settings = dict(attempts[-1][1])
-            sparse_path = work_path.with_name(
-                f".{work_path.stem}.{run_id}.sparse_recovery.json"
-            )
-            sparse_dataset = _sparse_recovery_dataset(_load_json(work_path))
-            _write_json(sparse_path, sparse_dataset)
-            try:
-                _log_line(
-                    f"; underconstrained_recovery: run={run_id} sparse seed points="
-                    f"{sum(len(s.get('data_points', [])) for s in sparse_dataset.get('sweeps', []))}"
-                )
-                sparse_result = _execute_plan_run(
-                    run_id=run_id,
-                    run_flags=run_flags,
-                    overrides=overrides,
-                    settings=sparse_settings,
-                    collector_output=collector_output,
-                    log_prefix=f"; full-auto recovery {run_id} [sparse_seed]",
-                    path_tag=f"{run_id}.sparse_seed",
-                    dataset_path_override=sparse_path,
-                    initial_guess=warm_start.get("initial_guess"),
-                    initial_radii_mm=warm_start.get("initial_radii_mm"),
-                    initial_buildup_factor=warm_start.get("initial_buildup_factor"),
-                )
-                recovery_info["sparse_seed_valid"] = _recovery_geometry_valid(sparse_result["plan"])
-                if recovery_info["sparse_seed_valid"]:
-                    sparse_warm_start = _warm_start_seeds_from_plan(sparse_result["plan"])
-                    refined = _execute_plan_run(
-                        run_id=run_id,
-                        run_flags=run_flags,
-                        overrides=overrides,
-                        settings=sparse_settings,
-                        collector_output=collector_output,
-                        log_prefix=f"; full-auto recovery {run_id} [sparse_refine]",
-                        path_tag=f"{run_id}.sparse_refine",
-                        initial_guess=sparse_warm_start.get("initial_guess"),
-                        initial_radii_mm=sparse_warm_start.get("initial_radii_mm"),
-                        initial_buildup_factor=sparse_warm_start.get("initial_buildup_factor"),
-                    )
-                    refined_valid = (
-                        bool(refined["metrics"].get("valid"))
-                        and not bool(refined["metrics"].get("underconstrained_penalty", False))
-                        and _recovery_geometry_valid(refined["plan"])
-                    )
-                    recovery_info["sparse_refine_valid"] = refined_valid
-                    if refined_valid:
-                        valid_results.append(refined)
-            finally:
-                try:
-                    sparse_path.unlink()
-                except OSError:
-                    pass
-
-        if valid_results:
-            best = min(
-                valid_results,
-                key=lambda item: (
-                    float(item["metrics"].get("rank_score", float("inf"))),
-                    float(item["metrics"].get("primary_cost", float("inf"))),
-                ),
-            )
-            recovery_info["success"] = True
-            recovery_info["valid_candidates"] = int(len(valid_results))
-            recovery_info["elapsed_seconds"] = float(time.perf_counter() - started)
-            best["recovery"] = dict(recovery_info)
-            _log_console(
-                "; underconstrained recovery succeeded; continuing with the best valid repaired estimate."
-            )
-            return best, dict(recovery_info)
-
-        _log_console(
-            "; underconstrained recovery exhausted current data without re-establishing constraints."
-        )
-        recovery_info["elapsed_seconds"] = float(time.perf_counter() - started)
-        return None, dict(recovery_info)
-
-    def _stop_file_requested() -> bool:
-        try:
-            return stop_file.exists()
-        except OSError:
-            return False
-
     try:
         for step in range(1, max(1, int(max_steps)) + 1):
-            if _stop_file_requested():
+            if stopping.stop_requested():
                 return _accept_best(f"stop-file {stop_file}")
             _log_line(f"\n; === full-auto iteration {step}/{max_steps} dataset={work_path} ===")
             _log_console("")
@@ -1271,7 +892,7 @@ def full_auto_loop(
                 )
 
             for run in runs:
-                if _stop_file_requested():
+                if stopping.stop_requested():
                     return _accept_best(f"stop-file {stop_file}")
                 run_results.append(_execute_run_variant(run))
 
@@ -1284,8 +905,8 @@ def full_auto_loop(
                     warm_source = candidate_plan
             if warm_source is None and isinstance(best_plan, dict):
                 warm_source = best_plan
-            if warm_source is not None and not _stop_file_requested():
-                warm_seeds = _warm_start_seeds_from_plan(warm_source)
+            if warm_source is not None and not stopping.stop_requested():
+                warm_seeds = warm_start_seeds_from_plan(warm_source)
                 if warm_seeds.get("initial_guess") is not None:
                     run_results.append(_execute_run_variant(runs[0], warm_seeds=warm_seeds))
 
@@ -1333,9 +954,14 @@ def full_auto_loop(
             selected = sorted(valid_runs, key=_sort_key)[0]
             recovery_info = None
             if bool(selected["metrics"].get("underconstrained_penalty", False)):
-                recovered, recovery_info = _attempt_underconstrained_recovery(
+                recovered, recovery_info = attempt_underconstrained_recovery(
                     selected,
                     collector_output=collector_output,
+                    work_path=work_path,
+                    sparse_recovery=sparse_recovery,
+                    execute_plan_run=_execute_plan_run,
+                    log_console=_log_console,
+                    log_line=_log_line,
                 )
                 if recovered is not None:
                     selected = recovered
@@ -1419,9 +1045,8 @@ def full_auto_loop(
                 best_meta = dict(selected_summary_meta)
                 improved = True
 
-            score_rank: Optional[int] = None
-            history_improved = False
-            if (not selected_underconstrained) and np.isfinite(selected_rank_score):
+            history_admissible = (not selected_underconstrained) and np.isfinite(selected_rank_score)
+            if history_admissible:
                 training_dataset = plan.get("dataset")
                 training_sweeps = (
                     training_dataset.get("sweeps", [])
@@ -1452,29 +1077,10 @@ def full_auto_loop(
                         "settings": dict(selected["settings"]),
                     }
                 )
-                score_rank = _current_history_rank_position(iteration=step)
-                history_improved = bool(score_rank == 1)
-                if history_improved:
-                    no_improve = 0
-                else:
-                    no_improve += 1
-            spread_stop_hit = False
-            spread_stop_spread = None
-            spread_stop_limit = None
-            if spread_stop_frac > 0.0 and len(history_candidates) >= SPREAD_STOP_MIN_CANDIDATES:
-                consensus_anchors, _consensus_members, consensus_spread = (
-                    consensus_anchor_estimate(history_candidates)
-                )
-                hit, spread_stop_spread, spread_stop_limit = consensus_spread_hit(
-                    consensus_anchors, consensus_spread, frac=spread_stop_frac
-                )
-                spread_stop_streak = spread_stop_streak + 1 if hit else 0
-                spread_stop_hit = bool(spread_stop_streak >= SPREAD_STOP_CONSECUTIVE)
-                _log_line(
-                    f"; history_select: spread_stop spread_mm={_fmt_float(spread_stop_spread)} "
-                    f"limit_mm={_fmt_float(spread_stop_limit)} "
-                    f"streak={spread_stop_streak}/{SPREAD_STOP_CONSECUTIVE}"
-                )
+            stop = stopping.update(
+                history_candidates, iteration=step, admissible=bool(history_admissible),
+                underconstrained=selected_underconstrained, log_line=_log_line,
+            )
             history_total_iterations = max(history_total_iterations, int(step))
 
             summary_flags = f" flags='{selected_flags}'" if selected_flags else ""
@@ -1504,25 +1110,19 @@ def full_auto_loop(
             elif has_variants:
                 _log_console(f"; selected run={selected_id}{summary_flags}")
             if not selected_underconstrained:
-                if score_rank is not None:
-                    rank_label = "best" if score_rank == 1 else _ordinal(score_rank) + " best"
+                if stop.rank is not None:
+                    rank_label = "best" if stop.rank == 1 else _ordinal(stop.rank) + " best"
                     _log_console(f"The {rank_label} try so far.")
-                if history_improved:
+                if stop.history_improved:
                     _log_console("Patience reset.")
             if selected_underconstrained:
                 _log_console("; selected run hit underconstrained sentinel; continuing to collect more sweeps.")
 
-            if selected_underconstrained:
-                decision = "collect"
-            elif spread_stop_hit or no_improve >= patience_limit:
-                decision = "accept"
-            else:
-                decision = "collect"
-            if decision == "accept" and spread_stop_hit:
+            if stop.decision == "accept" and stop.spread_hit:
                 _log_console(
                     "; full-auto: stopping early; the two closest distinct fits "
-                    f"agree to {_fmt_float(spread_stop_spread, suffix='mm')} "
-                    f"(limit {_fmt_float(spread_stop_limit, suffix='mm')})."
+                    f"agree to {_fmt_float(stop.spread_mm, suffix='mm')} "
+                    f"(limit {_fmt_float(stop.spread_limit_mm, suffix='mm')})."
                 )
 
             _append_jsonl(
@@ -1542,7 +1142,7 @@ def full_auto_loop(
                         for r in run_results
                     ],
                     "selected_run": selected_id,
-                    "decision": decision,
+                    "decision": stop.decision,
                     "cost": selected_cost,
                     "cost_improvement": improvement,
                     "score_ui": selected_fit_score_ui,
@@ -1560,21 +1160,19 @@ def full_auto_loop(
                     "best_score_basis": best_meta.get("score_basis"),
                     "best_run": best_meta.get("run_id"),
                     "best_iteration": best_meta.get("iteration"),
-                    "no_improve_count": no_improve,
-                    "patience": patience_limit,
+                    "no_improve_count": stopping.no_improve,
+                    "patience": stopping.patience,
                     "min_delta": min_delta,
-                    "stop_spread_hit": spread_stop_hit,
-                    "consensus_spread_mm": spread_stop_spread,
-                    "consensus_spread_limit_mm": spread_stop_limit,
+                    "stop_spread_hit": stop.spread_hit,
+                    "consensus_spread_mm": stop.spread_mm,
+                    "consensus_spread_limit_mm": stop.spread_limit_mm,
                     "warnings": selected_warnings,
                     "recovery": recovery_info,
                 },
             )
 
-            if decision == "accept":
-                stop_reason = (
-                    SPREAD_STOP_REASON if spread_stop_hit else FULL_AUTO_STOP_REASON_PATIENCE
-                )
+            if stop.decision == "accept":
+                stop_reason = stop.reason
                 if headless_sim is not None:
                     headless_sim.manifest["stop_reason"] = stop_reason
                 summary_plan, summary_meta = _select_history_summary_candidate(reason=stop_reason)
@@ -1587,7 +1185,7 @@ def full_auto_loop(
                     summary_meta=summary_meta,
                 )
 
-            remaining = max(0, patience_limit - no_improve)
+            remaining = stopping.remaining
 
             if replay_mode:
                 if replay_index >= len(replay_sweeps):
@@ -1686,15 +1284,15 @@ def full_auto_loop(
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_semi_auto_parser()
     parser.add_argument("--extended-recording", "--recording", "--record", action="store_true",
-                        help="Start and finalize an extended recorder automatically; output is derived from --dataset.")
+                        help='Record simulated collection beside the dataset.')
     parser.add_argument("--extended-reference-ws", metavar="URL",
                         help="Record timestamped logs and collector events in an --extended-reference flight recorder")
     parser.add_argument("--extended-reference", action="store_true",
                         help="Record headless physics and all autocal events in one RRD; starts an owned recorder unless a WebSocket URL is supplied")
     parser.add_argument("--recording-mode", choices=['none', 'events', 'sampled', 'full'],
-                        help="Headless evidence: none (numerical artifacts/traces), events, sampled (physics stride 100), full (extended RRD, stride 10); geometry stays compact")
+                        help='Headless evidence: events, sampled physics, full physics, or none.')
     parser.add_argument("--headless-sim", action="store_true",
-                        help="Run simulated RRF and production JS physics/collector in Node without a browser; implies --sim")
+                        help='Collect in the headless production simulator; implies --sim')
     args = parser.parse_args(argv)
     if args.extended_recording:
         if args.no_collect or not (args.sim or args.headless_sim):

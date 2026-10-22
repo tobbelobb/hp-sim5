@@ -3307,7 +3307,7 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         nargs="?",
         const="per-anchor",
         default="off",
-        help="Spool-radius fit mode: off | global | per-anchor (default: off).",
+        help='Fit spool radii; bare flag means per-anchor (default: off).',
     )
     parser.add_argument(
         "--find-buildup-factor",
@@ -3315,19 +3315,19 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         nargs="?",
         const="per-anchor",
         default="off",
-        help="Buildup-factor fit mode: off | global | per-anchor (default: off).",
+        help='Fit buildup; bare flag means per-anchor (default: off).',
     )
     parser.add_argument(
         "--base-radii",
         type=str,
         default=None,
-        help="Comma-separated base radii in mm (defaults to config m666_adjusted_by_data_collector/m666_before_data_collection R).",
+        help='Base spool radii in mm, comma-separated (default: recorded configuration).',
     )
     parser.add_argument(
         "--buildup-factor",
         type=float,
         default=None,
-        help="Use this buildup factor k in the model transform (if omitted, falls back to config m666_adjusted_by_data_collector/m666_before_data_collection Q, else 0).",
+        help='Fixed buildup factor (default: recorded configuration, then 0).',
     )
     parser.add_argument(
         "--line-width",
@@ -3480,7 +3480,7 @@ def _add_solver_args(parser: argparse.ArgumentParser) -> None:
         default=None,
         help="Write pointwise residuals (approx mm) to CSV after the final GNC stage.",
     )
-    parser.add_argument("--report", action="store_true", help="Write a PNG report (like calibrate.py)")
+    parser.add_argument("--report", action="store_true", help='Write a calibration report PNG')
     parser.set_defaults(
         pointwise_filtering=True,
         pointwise_global_mad=True,
@@ -3641,15 +3641,15 @@ def get_firmware_provider(firmware: str) -> FirmwareProvider:
 
 
 def _add_collector_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--physics-substeps", type=int, choices=range(1, 17),
-                        help="Simulator physics steps per firmware tick (default: simulator setting, initially 1)")
+    parser.add_argument("--physics-substeps", type=int, choices=range(1, 17), metavar="N",
+                        help="Physics steps per firmware tick, 1..16 (default: simulator setting)")
     parser.add_argument("--open-loop-motors", action="store_true",
                         help="Use open-loop motors in the simulator instead of closed-loop motors.")
     parser.add_argument(
         "--collector-args",
         nargs=argparse.REMAINDER,
         default=(),
-        help="Extra args passed to autocal/control/cli/collect_sweep_data.mjs (after --collector-args)",
+        help='Extra collector options; place this argument last.',
     )
     parser.add_argument(
         "--firmware",
@@ -3662,8 +3662,7 @@ def _add_collector_args(parser: argparse.ArgumentParser) -> None:
         type=str,
         default=None,
         help=(
-            "Generic simulator config path. Interpreted as --rrf-config when --firmware rrf, "
-            "or as --klipper-config when --firmware klipper."
+            'Simulator configuration path for the selected firmware.'
         ),
     )
     parser.add_argument(
@@ -3715,19 +3714,22 @@ def _add_output_args(parser: argparse.ArgumentParser) -> None:
 
 
 def build_semi_auto_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+    from autocal.cli_help import CalibrationArgumentParser
+
+    parser = CalibrationArgumentParser(
         description="Non-interactive autocal active-learning loop."
     )
     parser.add_argument(
         "--machine-type",
         choices=MACHINE_TYPE_INPUT_CHOICES,
         required=True,
-        help=f"Machine type ({MACHINE_TYPE_CHOICES_STR})",
+        metavar="TYPE",
+        help="Machine geometry: slideprinter, hangprinter_3/4/5, cubecorners or skycam (aliases accepted).",
     )
     parser.add_argument(
         "--no-collect",
         action="store_true",
-        help="Do not collect new sweeps; stop when replayed data is exhausted.",
+        help="Replay saved sweeps without collecting new measurements.",
     )
     parser.add_argument(
         "--sparse-recovery",
@@ -3738,7 +3740,7 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
         "--dataset",
         type=Path,
         default=None,
-        help="Dataset file updated each iteration (default: autocal/data/default_dataset.json).",
+        help="Input/output sweep dataset (default: autocal/data/default_dataset.json).",
     )
     parser.add_argument(
         "--sweep-points",
@@ -3746,7 +3748,7 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
         default=None,
         help="Points per sub-sweep (passed to the collector).",
     )
-    parser.add_argument("--max-steps", type=int, default=20, help="Maximum active-learning iterations")
+    parser.add_argument("--max-steps", type=int, default=20, help="Maximum fit/collect iterations (default: 20)")
     parser.add_argument(
         "--full-auto-run",
         action="append",
@@ -3771,7 +3773,7 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--verbose",
         action="store_true",
-        help="Enable verbose iteration output, including anchors, M666, and rank scoring.",
+        help='Print per-iteration anchors, spool settings and rank diagnostics.',
     )
     parser.add_argument(
         "--patience",
@@ -3793,7 +3795,7 @@ def build_semi_auto_parser() -> argparse.ArgumentParser:
         "--speedup",
         type=float,
         default=None,
-        help="Forward this hp-sim speed scale to the collector (shortcut for --collector-args --speedup).",
+        help='Simulator speed multiplier passed to collection.',
     )
     return parser
 

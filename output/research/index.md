@@ -2051,6 +2051,46 @@ HP4, Print Squares, missed steps, physics substeps, open-loop torque balance, ro
 
 - [Commit patch](sessions/2026-10-21-interactive-research-cdfb5278/hp4-open-loop-torque-balance.patch) and [bundle](sessions/2026-10-21-interactive-research-cdfb5278/hp4-open-loop-torque-balance.bundle): packaged commit `838133d4`; original `.git` is read-only and source edits remain in the working tree.
 
+## [2026-10-22-autocal-cli-orchestration](sessions/2026-10-22-autocal-cli-orchestration/)
+
+[abstract.md](sessions/2026-10-22-autocal-cli-orchestration/abstract.md) · [report.md](sessions/2026-10-22-autocal-cli-orchestration/report.md) · [research.md](sessions/2026-10-22-autocal-cli-orchestration/research.md)
+
+### Everyday autocal help and extracted recovery/stopping
+
+Status: complete.
+
+#### Abstract
+
+Ordinary autocal help now shows routine settings and a short usage line; extended
+`--help-research` lists every control by topic. At an 80-column terminal, ordinary
+help shrinks from 243 to 72 lines. All existing flags remain parseable without an
+extra enable switch. Representative parser namespaces match the starting revision
+exactly. Recovery orchestration and stopping state move into dedicated modules,
+reducing `autocal.py` from 1,836 to 1,434 lines. Recovery ordering, sparse seeding,
+patience, consensus and stopping precedence retain their behavior. The non-slow
+Python suite passes 538 tests, and four recorded calibration regressions preserve
+parameter comparisons and totals of 27 sweeps / 470 points. These are interface,
+refactoring and compatibility results, not an accuracy or speed improvement.
+No physics, motor, cable transport or scene dynamics implementation changed.
+
+#### Topics
+
+autocalibration, CLI help, research controls, recovery, stopping, refactoring,
+compatibility, parser defaults
+
+#### Tested hypotheses
+
+| Hypothesis | ID | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Help views preserve existing defaults and acceptance of tuning options | P01 | Supported on representative namespaces and parser tests | [Parser comparison](sessions/2026-10-22-autocal-cli-orchestration/parser-equivalence.json), [tests](sessions/2026-10-22-autocal-cli-orchestration/tests.log) |
+| Recovery/stopping extraction preserves recorded calibration behavior | R01 | Supported on four fixtures | [Regressions](sessions/2026-10-22-autocal-cli-orchestration/regressions.log) |
+| Ordinary help is substantially shorter | H01 | Supported at 80 columns, 243 → 72 lines | [Before](sessions/2026-10-22-autocal-cli-orchestration/help-before.txt), [after](sessions/2026-10-22-autocal-cli-orchestration/help.txt), [summary](sessions/2026-10-22-autocal-cli-orchestration/summary.json) |
+
+#### References
+
+- [Report](sessions/2026-10-22-autocal-cli-orchestration/report.md), [notebook](sessions/2026-10-22-autocal-cli-orchestration/research.md).
+- [Full help](sessions/2026-10-22-autocal-cli-orchestration/help-research.txt), [parser comparison](sessions/2026-10-22-autocal-cli-orchestration/parser-equivalence.json).
+
 ## [2026-10-22-autocal-filtering-integration](sessions/2026-10-22-autocal-filtering-integration/)
 
 [abstract.md](sessions/2026-10-22-autocal-filtering-integration/abstract.md) · [report.md](sessions/2026-10-22-autocal-filtering-integration/report.md) · [research.md](sessions/2026-10-22-autocal-filtering-integration/research.md)

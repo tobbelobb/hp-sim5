@@ -39,6 +39,42 @@ Autocal collects circular sweeps and fits anchor positions from their ellipse ge
 It chooses new sweeps by information gain. It can also fit spool radii and buildup.
 At final acceptance, it checks saved estimates against sweeps collected after their fit.
 
+## Everyday and research options
+
+Start with ordinary help for routine calibration:
+
+```bash
+.venv/bin/python autocal/autocal.py --help
+```
+
+It groups machine/model settings, collection and simulator options, and output.
+The usage line stays short. Solver budgets, robust filtering, experimental
+objectives, movement scoring, run comparisons and diagnostic exports appear in
+extended help:
+
+```bash
+.venv/bin/python autocal/autocal.py --help-research
+```
+
+Both views describe the same parser and defaults. Research options remain directly
+usable in normal commands; no extra switch is needed to enable them. The existing
+machine aliases and collector forwarding are unchanged. Put `--collector-args`
+last because it consumes the remaining arguments.
+
+For replay without new measurements:
+
+```bash
+.venv/bin/python autocal/autocal.py --machine-type slideprinter \
+  --dataset PATH_TO_SAVED_SWEEPS.json --no-collect
+```
+
+Recovery orchestration lives in `fit_recovery.py`: restore filtered sweeps/points,
+then optionally seed from an endpoint-preserving sparse subset and refine on the
+full data. `stopping.py` owns training-history patience, spread agreement and the
+stop-file check. The main loop still handles collection, final held-out selection
+and applying the chosen calibration. This extraction preserves the existing
+policies and diagnostics.
+
 ## Python dependencies
 
 The root `requirements.txt` covers the Python dependencies in `autocal/`.

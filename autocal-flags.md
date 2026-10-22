@@ -236,3 +236,11 @@ non-positive number disables it; invalid/non-finite text falls back to default.
 The closest-pair consensus is also capped by the existing 5 mm gate.
 Agreement does not establish physical accuracy. The default is retained pending
 broader evidence; see [integration findings](research/autocal-planning-lane06-integration.md).
+
+## Everyday and research help
+
+`autocal.py --help` now shows routine configuration with a short usage line.
+`autocal.py --help-research` lists every option, grouped by solver/recovery,
+spool objectives, filtering, planning/comparisons and diagnostics. All flags remain
+accepted directly and defaults are unchanged. Recovery and stopping orchestration
+now live in `autocal/fit_recovery.py` and `autocal/stopping.py`.

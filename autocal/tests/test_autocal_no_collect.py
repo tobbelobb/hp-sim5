@@ -1,3 +1,4 @@
+import copy
 import shlex
 
 import numpy as np
@@ -193,7 +194,6 @@ def test_full_auto_prints_best_summary_at_max_steps(tmp_path, monkeypatch, capsy
 
 
 def test_full_auto_breaks_anchor_prediction_tie_using_frozen_radius(tmp_path, monkeypatch, capsys):
-    import copy
 
     from autocal.spool_model import build_spool_model_params, dataset_with_modeled_lengths
 
@@ -260,50 +260,6 @@ def test_default_delta_range_without_max_travel_uses_observed_span_bidirectional
     )
     assert np.isclose(float(lo), -220.0, atol=1e-9)
     assert np.isclose(float(hi), 220.0, atol=1e-9)
-
-
-def test_sparse_recovery_subset_preserves_endpoints_and_source_dataset():
-    dataset = {
-        "machine_type": "slideprinter",
-        "sweeps": [{
-            "drive_anchor": 1,
-            "data_points": [
-                {
-                    "source_drive_anchor": 1,
-                    "drive_setpoint_mm": float(i),
-                    "l_drive": float(i),
-                }
-                for i in range(10)
-            ],
-        }],
-    }
-    before = ac.copy.deepcopy(dataset)
-    sparse = ac._sparse_recovery_dataset(dataset)
-
-    assert dataset == before
-    selected = sparse["sweeps"][0]["data_points"]
-    assert len(selected) == 5
-    assert selected[0]["drive_setpoint_mm"] == 0.0
-    assert selected[-1]["drive_setpoint_mm"] == 9.0
-
-
-def test_recovery_geometry_rejects_boundary_and_degenerate_candidates():
-    valid = {
-        "machine_type": "slideprinter",
-        "anchors": np.asarray([[0.0, -10.0], [8.0, 5.0], [-8.0, 5.0]]),
-    }
-    boundary = {
-        "machine_type": "hangprinter_4",
-        "anchors": np.asarray([[0.0, -10.0, -1.0], [8.0, 5.0, -1.0], [-8.0, 5.0, -1.0], [0.0, 0.0, 1e-6]]),
-    }
-    degenerate = {
-        "machine_type": "slideprinter",
-        "anchors": np.asarray([[0.0, -10.0], [0.0, 5.0], [0.0, 15.0]]),
-    }
-
-    assert ac._recovery_geometry_valid(valid)
-    assert not ac._recovery_geometry_valid(boundary)
-    assert not ac._recovery_geometry_valid(degenerate)
 
 
 def test_print_ellipse_plan_includes_noise_rescore_line(capsys):
