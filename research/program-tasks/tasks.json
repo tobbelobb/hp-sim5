@@ -57,7 +57,7 @@
       "id": "006",
       "priority": 50,
       "title": "Make a research handoff recoverable after worktree or session turnover",
-      "status": "ready",
+      "status": "done",
       "depends_on": [],
       "budget": {
         "new_physics_runs": 0,

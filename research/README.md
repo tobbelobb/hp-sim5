@@ -329,6 +329,13 @@ reading long reports or raw telemetry:
 .venv/bin/python scripts/research_index.py --search "winding"
 ```
 
+For worktree/session turnover, use the [portable handoff procedure](handoffs.md):
+`scripts/research_handoff.py export` copies explicitly selected evidence with
+hashes and relative references; `show` verifies a relocated bundle and `job`
+reads historical `job.json` outcomes without a running supervisor. A saved
+`running` observation does not establish current liveness, and CLI acceptance
+does not establish calibration accuracy.
+
 New default directories use `YYYY-MM-DD-topic-unique-suffix`, with a UTC date. The topic comes
 from `--name` or the first prompt line. Use `--name` for a short, specific topic;
 interactive sessions without an initial prompt start as `interactive-research`.

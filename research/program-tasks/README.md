@@ -30,7 +30,7 @@ Cards remain revisable options. Park work whose benefit disappears.
 | [002](002-short-decision-handoff.md) | A short decision/next-experiment handoff in the existing abstract |
 | [003](003-one-next-question.md) | A prompt that turns a broad question into one economical assignment |
 | [004](004-saved-evidence-pilot.md) | Broader replay rejects the blanket consensus restriction; preserve defaults |
-| [006](006-read-ended-job-evidence.md) | Preserve usable research evidence and status across worktree/session turnover |
+| [006](006-read-ended-job-evidence.md) | Completed: explicit portable evidence export and offline historical job inspection |
 | [005](005-follow-explicit-dependencies.md) | Use a living research agenda to prioritize the next question and trace its evidence |
 
 ## Cost and evidence rules
@@ -130,5 +130,8 @@ membership improved one, worsened two and left five unchanged. The aggregate
 gain was only 0.303245 mm summed anchor error; changed cases had no common
 unseen prediction fold. Retire the blanket default-change proposal and preserve
 current policy. The task-specific archived inputs make this result reproducible;
-task 006 still owns the general handoff/recovery workflow, followed by task 005's
-agenda using this scoped negative result.
+task 006 has now delivered the general [handoff/recovery workflow](../handoffs.md).
+Its relocated CM-E1 bundle retained nineteen selected files, eleven input hashes
+and the scoped decision after temporary source deletion; focused tests cover
+partial/corrupt evidence and stale historical jobs. Task 005's agenda is next,
+using this scoped negative result without repeating its numerical work.

@@ -1,0 +1,40 @@
+{
+  "base_revision": "166f0352e032266711887d0abd01d194cbd4acf2",
+  "source_sha256": {
+    "src/python/hp_sim5_research/archive.py": "1828ad8645037132a4d36f06f16faaa0b12b441055f2cbae7756cf1011d4a1cd",
+    "scripts/research_handoff.py": "0ffe27ad91061e9ea4cd3f3983fd1abbfa257a9227f762cfbdbc64cf1e302c93",
+    "tests/python/test_research_archive.py": "d9bd871ef7ecd83a9e234c675a627096023ad68f50a26539da80a1b8f46e6056",
+    "tests/python/test_research_handoff.py": "f625bbd87d639db2653031c650ff95cea2ecf8871d773c0c683d9d2a392f52fb"
+  },
+  "DH-T1": {
+    "command": ".venv/bin/python -m pytest -q tests/python/test_research_archive.py tests/python/test_research_handoff.py",
+    "exit_code": 0,
+    "stdout": "21 passed in 0.17s",
+    "initial_failure": "First collection: SyntaxError at archive.py:155, missing closing list bracket; corrected before passing run.",
+    "scope": "Synthetic archive/CLI/lifecycle checks; no numerical reproduction or live supervisor."
+  },
+  "DH-E1": {
+    "command": ".venv/bin/python output/research/sessions/2026-10-23-durable-handoff/demonstrate.py",
+    "exit_code": 0,
+    "result": "results.json",
+    "source_paths_unavailable": true,
+    "selected_files": 19,
+    "selected_inputs": 11,
+    "selected_bytes": 4509141
+  },
+  "science": {
+    "physics_runs": 0,
+    "fresh_fits": 0,
+    "collections": 0,
+    "scientific_accuracy_assessed": false
+  },
+  "catalog": "Generated current catalog; retained pre-existing catalog-only summaries and added generated session entry.",
+  "final_checks": {
+    "local_link_count": 32,
+    "local_links": "passed",
+    "report_abstract": "identical",
+    "queue_dependencies": "passed",
+    "git_diff_check": "passed",
+    "catalog_preserved_history": true
+  }
+}

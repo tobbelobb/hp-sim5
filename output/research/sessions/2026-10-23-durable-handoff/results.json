@@ -1,0 +1,35 @@
+{
+  "experiment_id": "DH-E1",
+  "source_revision": "166f0352e032266711887d0abd01d194cbd4acf2",
+  "source_session": "output/research/sessions/2026-10-23-consensus-membership",
+  "selected_files": 19,
+  "selected_input_files": 11,
+  "copied_bytes": 4509141,
+  "original_source_paths_unavailable": true,
+  "scoped_decision_preserved": true,
+  "selected_hashes_verified": true,
+  "commands": [
+    [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_handoff.py",
+      "export",
+      "/tmp/hp-sim5-handoff-_e8rdtu9/old-worktree/session",
+      "/tmp/hp-sim5-handoff-_e8rdtu9/selection.json",
+      "/tmp/hp-sim5-handoff-_e8rdtu9/export"
+    ],
+    [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_handoff.py",
+      "show",
+      "/tmp/hp-sim5-handoff-_e8rdtu9/new-host/handoff"
+    ]
+  ],
+  "limitations": [
+    "Portability and byte identity check only; CM-E1 numerical work is not rerun.",
+    "Prior-study links are retained as context; those reports are absent in this checkout.",
+    "Analysis requires the recorded source revision and its dependencies/layout; runtime is not bundled."
+  ],
+  "physics_runs": 0,
+  "fresh_fits": 0,
+  "collections": 0
+}

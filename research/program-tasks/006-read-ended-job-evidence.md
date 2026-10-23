@@ -38,3 +38,15 @@ No scheduler, live-job adoption, checkpoint/resume engine or cancellation redesi
 Budget: queue wall allowance, zero physics/fits/collections. Use saved artifacts,
 temporary trees and fake child processes. The real world need not start to prove
 that a handoff and an ended-job record remain readable after relocation.
+
+## Completed outcome
+
+Implemented the standard-library `scripts/research_handoff.py export/show/job`
+route in the existing archive module. The [procedure](../handoffs.md) covers
+explicit evidence selection, hashes, relative references, limitations and offline
+job interpretation. [DH-E1/DH-T1](../../output/research/sessions/2026-10-23-durable-handoff/report.md)
+record one relocated CM-E1 handoff (19 files, eleven inputs, all hashes verified
+after original paths disappeared) and 21 passing focused archive/handoff tests.
+Missing/corrupt evidence leaves a partial record; terminal observations remain
+separate from current liveness and scientific success. No numerical work or
+live-job adoption was required. Task 005 is the next queue item.

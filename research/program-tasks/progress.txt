@@ -141,3 +141,19 @@ and anchors passed, report/abstract and saved-result claims agree. Regenerated
 the research catalog; git diff --check passed. No runtime dynamics changed, so
 the physics delivery gate does not apply. All acceptance criteria are met.
 Next: task 006 durable handoff, then task 005's agenda using these exceptions.
+
+2026-10-23 task 006: portable evidence and historical job handoff
+Extended archive.py; added scripts/research_handoff.py, focused tests and
+research/handoffs.md; updated research README, task/queue status and catalog.
+Saved report, notebook, source identities and evidence under
+output/research/sessions/2026-10-23-durable-handoff/.
+One DH-E1 packaging/relocation check preserved 19 files/11 compressed inputs
+(4,509,141 bytes), hashes and CM-E1's scoped decision after temporary source
+deletion. Focused archive/handoff tests: 21 passed; the first collection's
+missing bracket was fixed. Reused CM-E1 saved evidence without numerical replay.
+Partial/missing/corrupt evidence has diagnostics; historical running is not live
+status, and CLI acceptance is not scientific success. Evidence selection and
+external runtime dependencies remain explicit. Zero physics/fits/collections;
+no dynamics changed, so the physics delivery gate does not apply. Catalog,
+local-link/queue and diff checks passed. All task 006 criteria are met.
+Next: task 005's living research agenda; no automatic crawler or job adoption.

@@ -1,0 +1,208 @@
+{
+  "directory": "/tmp/hp-sim5-handoff-_e8rdtu9/new-host/handoff",
+  "integrity": "verified_selected_files",
+  "diagnostics": [],
+  "files": [
+    {
+      "path": "abstract.md",
+      "source": "/tmp/hp-sim5-handoff-_e8rdtu9/old-worktree/session/abstract.md",
+      "role": "abstract",
+      "expected_sha256": null,
+      "sha256": "2a1cdfe485b1706a03a26d526daf06ad623a11b44632674d77371ee40b9abbb7",
+      "status": "copied",
+      "current_path": "/tmp/hp-sim5-handoff-_e8rdtu9/new-host/handoff/abstract.md",
+      "integrity": "ok"
+    },
+    {
+      "path": "report.md",
+      "source": "/tmp/hp-sim5-handoff-_e8rdtu9/old-worktree/session/report.md",
+      "role": "report",
+      "expected_sha256": null,
+      "sha256": "2e47bc589aea727b2e76387ff8fc3339b664134145f15d61df7fbbc7f46ef96a",
+      "status": "copied",
+      "current_path": "/tmp/hp-sim5-handoff-_e8rdtu9/new-host/handoff/report.md",
+      "integrity": "ok"
+    },
+    {
+      "path": "research.md",
+      "source": "/tmp/hp-sim5-handoff-_e8rdtu9/old-worktree/session/research.md",
+      "role": "notebook",
+      "expected_sha256": null,
+      "sha256": "997dd76fb6ea578a95623ddc0d7807e36686fa3a55d35a6eabcb58ce4ca21638",
+      "status": "copied",
+      "current_path": "/tmp/hp-sim5-handoff-_e8rdtu9/new-host/handoff/research.md",
+      "integrity": "ok"
+    },
+    {
+      "path": "results.json",
+      "source": "/tmp/hp-sim5-handoff-_e8rdtu9/old-worktree/session/results.json",
+      "role": "evidence",
+      "expected_sha256": "bdd85e0f758ce3a4f0ef4f5be3c0fe094fb830dfa6f3c059d39d7a2d804ab1cd",
+      "sha256": "bdd85e0f758ce3a4f0ef4f5be3c0fe094fb830dfa6f3c059d39d7a2d804ab1cd",
+      "status": "copied",
+      "current_path": "/tmp/hp-sim5-handoff-_e8rdtu9/new-host/handoff/results.json",
+      "integrity": "ok"
+    },
+    {
+      "path": "inputs.json",
+      "source": "/tmp/hp-sim5-handoff-_e8rdtu9/old-worktree/session/inputs.json",
+      "role": "evidence",
+      "expected_sha256": "f58ef95d783a265b7153cefc07d2d8785f77896846bb07d58317b8a009634b44",
+      "sha256": "f58ef95d783a265b7153cefc07d2d8785f77896846bb07d58317b8a009634b44",
+      "status": "copied",
+      "current_path": "/tmp/hp-sim5-handoff-_e8rdtu9/new-host/handoff/inputs.json",
+      "integrity": "ok"
+    },
+    {
+      "path": "audit.json",
+      "source": "/tmp/hp-sim5-handoff-_e8rdtu9/old-worktree/session/audit.json",
+      "role": "evidence",
+      "expected_sha256": "6750c2ac25c1f99a90cc10dd3d98389422e95a726e725bfdd1b1e6c8aac9939e",
+      "sha256": "6750c2ac25c1f99a90cc10dd3d98389422e95a726e725bfdd1b1e6c8aac9939e",
+      "status": "copied",
+      "current_path": "/tmp/hp-sim5-handoff-_e8rdtu9/new-host/handoff/audit.json",
+      "integrity": "ok"
+    },
+    {
+      "path": "probe.py",
+      "source": "/tmp/hp-sim5-handoff-_e8rdtu9/old-worktree/session/probe.py",
+      "role": "evidence",
+      "expected_sha256": "13e49658a5dcabcea59dde72454c1e16ef3dc9e8cff9d46382172110823a966c",
+      "sha256": "13e49658a5dcabcea59dde72454c1e16ef3dc9e8cff9d46382172110823a966c",
+      "status": "copied",
+      "current_path": "/tmp/hp-sim5-handoff-_e8rdtu9/new-host/handoff/probe.py",
+      "integrity": "ok"
+    },
+    {
+      "path": "audit.py",
+      "source": "/tmp/hp-sim5-handoff-_e8rdtu9/old-worktree/session/audit.py",
+      "role": "evidence",
+      "expected_sha256": "a5caea6bc1676b387a82c6b2998d671a731b58c9f0604b0ad4796108f7ae1c92",
+      "sha256": "a5caea6bc1676b387a82c6b2998d671a731b58c9f0604b0ad4796108f7ae1c92",
+      "status": "copied",
+      "current_path": "/tmp/hp-sim5-handoff-_e8rdtu9/new-host/handoff/audit.py",
+      "integrity": "ok"
+    },
+    {
+      "path": "inputs/23_april_2026.history.json.gz",
+      "source": "/tmp/hp-sim5-handoff-_e8rdtu9/old-worktree/external/history.json.gz",
+      "role": "input",
+      "expected_sha256": "abb6e0a51379f37b42177c797a5b3fe5a5d3f5416ed0f32cfab5ce5a75662c61",
+      "sha256": "abb6e0a51379f37b42177c797a5b3fe5a5d3f5416ed0f32cfab5ce5a75662c61",
+      "status": "copied",
+      "current_path": "/tmp/hp-sim5-handoff-_e8rdtu9/new-host/handoff/inputs/23_april_2026.history.json.gz",
+      "integrity": "ok"
+    },
+    {
+      "path": "inputs/fifth_hp3_dataset.history.json.gz",
+      "source": "/tmp/hp-sim5-handoff-_e8rdtu9/old-worktree/session/inputs/fifth_hp3_dataset.history.json.gz",
+      "role": "input",
+      "expected_sha256": "732f557d2be1162a60f0aee9402fdce0575cdbd2649fb36c3c35485d8f01e3e4",
+      "sha256": "732f557d2be1162a60f0aee9402fdce0575cdbd2649fb36c3c35485d8f01e3e4",
+      "status": "copied",
+      "current_path": "/tmp/hp-sim5-handoff-_e8rdtu9/new-host/handoff/inputs/fifth_hp3_dataset.history.json.gz",
+      "integrity": "ok"
+    },
+    {
+      "path": "inputs/nineteenth_hp3_dataset_even_more_pressure.history.json.gz",
+      "source": "/tmp/hp-sim5-handoff-_e8rdtu9/old-worktree/session/inputs/nineteenth_hp3_dataset_even_more_pressure.history.json.gz",
+      "role": "input",
+      "expected_sha256": "3d1376ad2204a2a5a9c0f47b867f42b067c74161d9f1b2d33a7b2e27eb8eca83",
+      "sha256": "3d1376ad2204a2a5a9c0f47b867f42b067c74161d9f1b2d33a7b2e27eb8eca83",
+      "status": "copied",
+      "current_path": "/tmp/hp-sim5-handoff-_e8rdtu9/new-host/handoff/inputs/nineteenth_hp3_dataset_even_more_pressure.history.json.gz",
+      "integrity": "ok"
+    },
+    {
+      "path": "inputs/seventh_hp3_dataset.history.json.gz",
+      "source": "/tmp/hp-sim5-handoff-_e8rdtu9/old-worktree/session/inputs/seventh_hp3_dataset.history.json.gz",
+      "role": "input",
+      "expected_sha256": "a8439bb40e0f050d4d973d620b93fffafb7f6dbc0162878b1109236cad087eba",
+      "sha256": "a8439bb40e0f050d4d973d620b93fffafb7f6dbc0162878b1109236cad087eba",
+      "status": "copied",
+      "current_path": "/tmp/hp-sim5-handoff-_e8rdtu9/new-host/handoff/inputs/seventh_hp3_dataset.history.json.gz",
+      "integrity": "ok"
+    },
+    {
+      "path": "inputs/sixteenth_hp3_dataset_even_more_pressure.history.json.gz",
+      "source": "/tmp/hp-sim5-handoff-_e8rdtu9/old-worktree/session/inputs/sixteenth_hp3_dataset_even_more_pressure.history.json.gz",
+      "role": "input",
+      "expected_sha256": "2af9531ca8e6616099b9d5e39c4c3ce9cc4ba115f9374d581a677892d9e495bb",
+      "sha256": "2af9531ca8e6616099b9d5e39c4c3ce9cc4ba115f9374d581a677892d9e495bb",
+      "status": "copied",
+      "current_path": "/tmp/hp-sim5-handoff-_e8rdtu9/new-host/handoff/inputs/sixteenth_hp3_dataset_even_more_pressure.history.json.gz",
+      "integrity": "ok"
+    },
+    {
+      "path": "inputs/five_points_bigger_deltas.history.json.gz",
+      "source": "/tmp/hp-sim5-handoff-_e8rdtu9/old-worktree/session/inputs/five_points_bigger_deltas.history.json.gz",
+      "role": "input",
+      "expected_sha256": "3e37811c2cd94c94d4a595d83e19230f8a12c9a6d91f17d420e41bc557ef4b3d",
+      "sha256": "3e37811c2cd94c94d4a595d83e19230f8a12c9a6d91f17d420e41bc557ef4b3d",
+      "status": "copied",
+      "current_path": "/tmp/hp-sim5-handoff-_e8rdtu9/new-host/handoff/inputs/five_points_bigger_deltas.history.json.gz",
+      "integrity": "ok"
+    },
+    {
+      "path": "inputs/flexible_lines_2000.history.json.gz",
+      "source": "/tmp/hp-sim5-handoff-_e8rdtu9/old-worktree/session/inputs/flexible_lines_2000.history.json.gz",
+      "role": "input",
+      "expected_sha256": "1daa60b472b8b96cb29e4790cc21cae71493ff90505f3a0a53ec48fca4a33ed2",
+      "sha256": "1daa60b472b8b96cb29e4790cc21cae71493ff90505f3a0a53ec48fca4a33ed2",
+      "status": "copied",
+      "current_path": "/tmp/hp-sim5-handoff-_e8rdtu9/new-host/handoff/inputs/flexible_lines_2000.history.json.gz",
+      "integrity": "ok"
+    },
+    {
+      "path": "inputs/layered_manual_some_bad_points.history.json.gz",
+      "source": "/tmp/hp-sim5-handoff-_e8rdtu9/old-worktree/session/inputs/layered_manual_some_bad_points.history.json.gz",
+      "role": "input",
+      "expected_sha256": "507096999fefce30bc34f755a8d1c9a4102b8839028786e9bec38228e334dda1",
+      "sha256": "507096999fefce30bc34f755a8d1c9a4102b8839028786e9bec38228e334dda1",
+      "status": "copied",
+      "current_path": "/tmp/hp-sim5-handoff-_e8rdtu9/new-host/handoff/inputs/layered_manual_some_bad_points.history.json.gz",
+      "integrity": "ok"
+    },
+    {
+      "path": "inputs/ten_points_bigger_deltas.history.json.gz",
+      "source": "/tmp/hp-sim5-handoff-_e8rdtu9/old-worktree/session/inputs/ten_points_bigger_deltas.history.json.gz",
+      "role": "input",
+      "expected_sha256": "90a5533a6870bea68a36e74ff272a2b029e32e0a7a16934ece1227a05c041b17",
+      "sha256": "90a5533a6870bea68a36e74ff272a2b029e32e0a7a16934ece1227a05c041b17",
+      "status": "copied",
+      "current_path": "/tmp/hp-sim5-handoff-_e8rdtu9/new-host/handoff/inputs/ten_points_bigger_deltas.history.json.gz",
+      "integrity": "ok"
+    },
+    {
+      "path": "inputs/ten_points_w_buildup.history.json.gz",
+      "source": "/tmp/hp-sim5-handoff-_e8rdtu9/old-worktree/session/inputs/ten_points_w_buildup.history.json.gz",
+      "role": "input",
+      "expected_sha256": "e3fb86aad19f952d0dda7afb2d91db9924a2cb1041a095fd55b8afd07b26af30",
+      "sha256": "e3fb86aad19f952d0dda7afb2d91db9924a2cb1041a095fd55b8afd07b26af30",
+      "status": "copied",
+      "current_path": "/tmp/hp-sim5-handoff-_e8rdtu9/new-host/handoff/inputs/ten_points_w_buildup.history.json.gz",
+      "integrity": "ok"
+    },
+    {
+      "path": "inputs/ten_points_w_buildup2.history.json.gz",
+      "source": "/tmp/hp-sim5-handoff-_e8rdtu9/old-worktree/session/inputs/ten_points_w_buildup2.history.json.gz",
+      "role": "input",
+      "expected_sha256": "5b6927c73ba453e4b55ffc1be6f4cf9d36b5c5c355c3b4ec89d3f4dd0073958f",
+      "sha256": "5b6927c73ba453e4b55ffc1be6f4cf9d36b5c5c355c3b4ec89d3f4dd0073958f",
+      "status": "copied",
+      "current_path": "/tmp/hp-sim5-handoff-_e8rdtu9/new-host/handoff/inputs/ten_points_w_buildup2.history.json.gz",
+      "integrity": "ok"
+    }
+  ],
+  "jobs": [],
+  "claim": "CM-E1 rejects a blanket finite-prediction consensus restriction",
+  "scope": "Eleven frozen simulated histories; final selection, no trajectory replay",
+  "decision": "Preserve consensus defaults; common-unseen predictive gain remains unestablished",
+  "source_revision": "166f0352e032266711887d0abd01d194cbd4acf2",
+  "source_session": "/tmp/hp-sim5-handoff-_e8rdtu9/old-worktree/session",
+  "limitations": [
+    "Portability and byte identity check only; CM-E1 numerical work is not rerun.",
+    "Prior-study links are retained as context; those reports are absent in this checkout.",
+    "Analysis requires the recorded source revision and its dependencies/layout; runtime is not bundled."
+  ]
+}
