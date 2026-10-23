@@ -1,30 +1,40 @@
-# 006: Read saved outcomes of ended jobs without rerunning them
+# 006: Make research handoffs survive worktree and session turnover
 
-Activate when a current investigation needs an ended job's status, live tools
-cannot return it, and saved job artifacts exist. Otherwise park this task.
-Benefit: preserve the value of expensive completed or interrupted work.
-Budget: zero simulations, fresh fits or collections. Use temporary files and
-fake child processes for tests; no supervisor/firmware startup is needed.
+Outcome: another researcher can recover a useful completed/interrupted result
+and its necessary inputs without the original process or worktree. This combines
+the old tiny job-status card with the actual evidence-portability gap exposed
+by the sanity check. Solve the whole handoff, not just a JSON formatting command.
 
-Read the relevant part of [the tooling wish list](../prompts/researcher-tooling-wish-list.md),
-[autocal_jobs.py](../../src/python/hp_sim5_research/autocal_jobs.py), and
-[its tests](../../tests/python/test_autocal_jobs.py). Recheck the current gap:
-jobs are tracked in memory, while `job.json` already stores terminal evidence.
-Do not treat the entire historical wish list as an unimplemented specification.
+The initial screen's three histories existed only beneath another worktree's
+output, while this checkout retained checks.json referring to them. They have
+now been copied into the [sanity session](../../output/research/sessions/2026-10-23-program-task-sanity/report.md).
+Historical reports also contain old absolute paths. The tooling wish list records
+lost multi-hour runs; job.json already persists terminal evidence, whereas live
+AutocalJobs.status looks in its in-memory jobs table. Recheck these facts in
+current source before choosing an implementation.
 
-Expose a small read-only path to the saved outcome in the existing research
-index/status tooling, reusing the persisted schema. Choose the narrowest route
-that solves the observed lookup. A fresh launcher uses a new session directory,
-so an old artifact must be locatable explicitly; searching only the new session
-would not solve the problem. Keep job/world/session identity and evidence paths.
+Provide and exercise a lightweight durable handoff route in the existing research
+archive/status tooling. It should locate the report, scoped decision, necessary
+input/evidence references and saved job outcome where present. A small explicit
+export/bundle or existing-manifest-based recovery is preferable to a new registry.
+Copy only the evidence needed to reproduce the claim; avoid duplicating every RRD,
+entire runtime, dependency environment or credential file. Preserve source/input
+identity and missing-artifact limitations. Do not regenerate expensive evidence
+just to repair a reference.
 
-Done when saved accepted/failed/cancelled/budget-exhausted outcomes can be read,
-and a stale `running` record is labeled as an unresolved historical observation
-rather than a live job or completed research. Never infer process ownership from
-a reused PID, signal an old process, or mark calibration accurate from CLI status.
-Missing/corrupt artifacts produce a short useful diagnostic.
+Demonstrate the result in a relocated temporary fixture or copied real handoff
+whose original worktree paths are unavailable. It must distinguish terminal job
+states from a stale historical `running` observation and from scientific success.
+Do not infer ownership from a reused PID, signal old processes, restore a world
+from its final snapshot, or claim calibration accuracy from CLI acceptance.
+Missing/corrupt inputs need a useful diagnostic and a partial recoverable record.
 
-No adoption, physics checkpoint/resume, new durable scheduler, broad CLI parity
-work or changes to cancellation semantics. If the observed need is actually a
-still-live service, use the existing attachment route and record that this task
-was unnecessary. Run only the focused fixture tests for the code actually changed.
+Choose a compact implementation boundary and carry it through the relevant
+fixtures/tests and a usable command or documented procedure. The existing archive
+and autocal-job modules are the starting points. Include hashes and relative
+references needed for the selected evidence, not a universal provenance schema.
+No scheduler, live-job adoption, checkpoint/resume engine or cancellation redesign.
+
+Budget: queue wall allowance, zero physics/fits/collections. Use saved artifacts,
+temporary trees and fake child processes. The real world need not start to prove
+that a handoff and an ended-job record remain readable after relocation.

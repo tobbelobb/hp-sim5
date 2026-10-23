@@ -2562,6 +2562,55 @@ interactive research
 - [Original task](sessions/2026-10-22-interactive-research-d1d37c7f/prompt.txt)
 - [Research notebook](sessions/2026-10-22-interactive-research-d1d37c7f/research.md)
 
+## [2026-10-23-program-task-sanity](sessions/2026-10-23-program-task-sanity/)
+
+[abstract.md](sessions/2026-10-23-program-task-sanity/abstract.md) · [report.md](sessions/2026-10-23-program-task-sanity/report.md) · [research.md](sessions/2026-10-23-program-task-sanity/research.md)
+
+### Research-program sanity check: a useful consensus lead and larger task outcomes
+
+Status: complete.
+
+#### Abstract
+
+Reviewed the three committed workflow changes and independently recomputed the
+finite-held-out-only consensus comparison proposed by task 003. On two recorded
+Slideprinter histories and one HP3 history, all input hashes and baseline errors
+matched saved producer evidence. Restricting consensus membership improved summed
+per-anchor Euclidean error from 10.893581 to 6.988852 mm on five-points and from
+4.670121 to 2.552240 mm on layered. HP3 remained at 197.407724 mm because both
+policies rejected their candidate pairs and retained the same single fit. Six
+selection evaluations used no fitting, prediction reevaluation, physics or
+collection. This supports a larger saved-history investigation, not a default
+change or hardware claim. Archive tests passed. Remaining tasks now cover a real
+research decision, a durable evidence handoff and a living research agenda.
+These are workflow decisions from inspection, not a controlled productivity study.
+
+#### Topics
+
+research workflow, consensus, held-out validation, applied anchors, evidence reuse,
+program agenda, artifact portability, task granularity, negative results.
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Finite-prediction-only consensus is nonworse on the three specified histories | H1, six selection evaluations | Supported on this screen | [Exact metrics and inputs](sessions/2026-10-23-program-task-sanity/results.json) |
+| New prompt structure causally improves research productivity | None | Not tested; task revisions are practical judgments | [Inspection and limits](sessions/2026-10-23-program-task-sanity/report.md) |
+
+#### Decision handoff
+
+- Scope: three frozen simulated histories from 4f175079; selection functions at ea2b7d7a; no changed trajectories or hardware.
+- Review: current agent recomputed selection/anchor errors and matched saved baselines; no independent physics reproduction or consensus prediction check.
+- Decision: retain production defaults; make task 004 a broader research-and-integration decision. Improve evidence handoff before building generic graph tooling.
+- Next: test independent histories and the applied anchors with their actual spool model; this can expose membership regressions not seen in the initial screen.
+
+#### References
+
+- [Report](sessions/2026-10-23-program-task-sanity/report.md), [notebook](sessions/2026-10-23-program-task-sanity/research.md), [reproduction script](sessions/2026-10-23-program-task-sanity/probe.py), [results](sessions/2026-10-23-program-task-sanity/results.json).
+- [Task-003 proposal](sessions/2026-10-23-program-task-sanity/../../../../research/program-tasks/003-one-next-question.md): predeclared comparison and success rule.
+- [Producer checks](sessions/2026-10-23-program-task-sanity/../2026-10-22-autocal-lane04-cleanup/checks.json): hashes and recorded equivalence.
+- [Copied inputs](sessions/2026-10-23-program-task-sanity/inputs/): history inputs and producer policy results retained locally.
+
 ## [architecture-batch](architecture-batch/)
 
 [abstract.md](architecture-batch/abstract.md) · [report.md](architecture-batch/report.md) · [research.md](architecture-batch/research.md)

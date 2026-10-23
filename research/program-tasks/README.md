@@ -17,26 +17,31 @@ fresh one. [tasks.json](tasks.json) owns priorities, dependencies and status;
 briefs whenever our judgment changes. Completed work can be superseded without
 rewriting its history. The one-task prompt requests a local commit, never a push.
 
-The first three tasks provide review, handoff and assignment prompts. Later tasks
-are proposals with activation conditions. An agent may promote one when recorded
-evidence satisfies its condition, or park it when the benefit disappears. Proposed tasks
-are options, not promises. There is no need to finish this entire list.
+Tasks 001-003 are committed. Their runtimes (1m31s, 3m28s and 8m10s) suggest that
+the initial cards were too finely split for these agents. The remaining cards
+cover useful outcomes through research, implementation where justified, checks
+and a decision. A quick success is fine; runtime is not a quality metric and
+there is no minimum duration. Combine shared-context work instead of padding it.
+Cards remain revisable options. Park work whose benefit disappears.
 
-| Task | Small outcome |
+| Task | Outcome |
 | --- | --- |
 | [001](001-evidence-first-review.md) | A review prompt that checks the actual claim and reuses valid evidence |
 | [002](002-short-decision-handoff.md) | A short decision/next-experiment handoff in the existing abstract |
 | [003](003-one-next-question.md) | A prompt that turns a broad question into one economical assignment |
-| [004](004-saved-evidence-pilot.md) | Try the handoff on a few existing investigations and prune this backlog |
-| [005](005-follow-explicit-dependencies.md) | Add minimal dependency lookup only if the pilot needs it |
-| [006](006-read-ended-job-evidence.md) | Recover saved job outcomes only if lost status is a current obstacle |
+| [004](004-saved-evidence-pilot.md) | Validate the promising consensus rule more broadly and decide whether to integrate it |
+| [006](006-read-ended-job-evidence.md) | Preserve usable research evidence and status across worktree/session turnover |
+| [005](005-follow-explicit-dependencies.md) | Use a living research agenda to prioritize the next question and trace its evidence |
 
 ## Cost and evidence rules
 
-All six seed tasks have a budget of **zero new physics simulations, fresh fits or
-collections**. Saved report/JSON inspection, cheap score calculations, text
-fixtures and fake child-process tests are sufficient. A numerical investigation
-that needs more becomes its own scoped task; it does not hide inside this work.
+The queue defaults now allow up to 45 minutes, six fresh fits and two bounded
+headless physics trials of at most 10,000 steps each, with no new collections.
+These are ceilings for exploratory work, not amounts to spend or measured
+runtime quotas. Per-task overrides keep the agenda and recovery work numerical-
+free. Plan a specific lower budget before a probe, using saved artifacts first.
+The user authorized fittings and simulations for this sanity check; the revised
+queue makes bounded numerical work available in subsequent research tasks too.
 
 Use the cheapest evidence that can answer the particular question:
 
@@ -44,7 +49,8 @@ Use the cheapest evidence that can answer the particular question:
 2. Recompute only the needed analysis from saved artifacts when necessary.
 3. Run focused tests for changed behavior. Use synthetic fixtures for bookkeeping.
 4. Refit or recollect only when the scientific question actually needs it and
-   the assignment explicitly budgets it. Small iteration counts can still be slow.
+   the assignment budgets it. Small iteration counts can still be slow. If a
+   feedback loop changes, frozen ranking cannot stand in for its replay.
 
 One producer check and one evidence/code review at a meaningful result boundary
 usually suffice. The reviewer inspects the producer's measurements, commands,
@@ -58,8 +64,9 @@ Evidence reuse requires matching relevant code, inputs, configuration and claim.
 A relevant change can invalidate a previous result; an unrelated documentation
 edit need not invalidate physics measurements. Reuse saves work, not uncertainty.
 The root instructions still require `npm run test:physics` for physics, motor,
-cable transport or scene dynamics changes. Those changes are outside these seed
-tasks. Do not replace that delivery gate with a mock, startup or extra substeps.
+cable transport or scene dynamics changes. Budget required delivery checks
+separately from exploratory trials, run the applicable gate once for the final
+candidate, and do not substitute a mock, startup or extra substeps.
 
 Do not start the research launcher, Viewer, doctor or preflight merely to edit
 these files. Actual research continues through the existing client and supervisor;
@@ -74,8 +81,8 @@ this backlog adds no outer continuation loop for a research conversation.
   ground truth is unavailable to a real calibration algorithm. Keep scope limits
   visible; do not turn every task into a world-variation matrix.
 - [Existing reviewer](../prompts/reviewer.txt): its questions about relevance,
-  reproduction, confounds and maintainability are worth keeping. Its assumption
-  that the latest commit is the result under review needs fixing.
+  reproduction, confounds and maintainability survived task 001, which fixed the
+  assumption that the latest commit is necessarily the result under review.
 - [Lane 04 integration](../autocal-ranking-lane04-integration.md): saved histories
   already contain useful noise metrics and support selection-only comparisons.
   Changes that affect the fitting trajectory still need appropriate replay.
@@ -100,3 +107,19 @@ unneeded dependencies. Sources:
 [Pharos progress assessment](https://github.com/frenzymath/Pharos/blob/main/agents/skills/main/math/assessing-genuine-mathematical-progress/SKILL.md),
 [SHEAF](https://github.com/frenzymath/SHEAF).
 Their larger runtime architectures are not prerequisites for these tasks.
+
+## What the sanity check established
+
+The [task-003 worked proposal](003-one-next-question.md#implemented-prompt-and-worked-desk-check)
+has now been executed on its three frozen histories. Restricting consensus to
+finite-prediction candidates reduced summed per-anchor error from 10.894 to
+6.989 mm on five-points and 4.670 to 2.552 mm on layered; seventh HP3 was unchanged
+at 197.408 mm. These are selection-only simulated results, not RMSE, fresh fitting
+or hardware accuracy. Baselines match saved producer values and input hashes.
+
+Task 004 starts from those results instead of repeating their desk checks. The
+[reproduction record](../../output/research/sessions/2026-10-23-program-task-sanity/report.md)
+contains copied inputs and the six-evaluation script. Do not count duplicate
+histories from cache/performance trials as independent configurations. The
+external worktree inputs were available locally but not in shared output; this
+made durable handoff recovery a concrete task rather than a hypothetical feature.

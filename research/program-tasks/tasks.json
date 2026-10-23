@@ -1,8 +1,10 @@
 {
   "purpose": "Make the best small improvement to research delegation now; revise after use.",
   "default_budget": {
-    "new_physics_runs": 0,
-    "fresh_fits": 0,
+    "wall_minutes": 45,
+    "new_physics_runs": 2,
+    "max_physics_steps_per_run": 10000,
+    "fresh_fits": 6,
     "collections": 0
   },
   "tasks": [
@@ -33,28 +35,35 @@
     {
       "id": "004",
       "priority": 40,
-      "title": "Try the workflow on saved investigations and prune the backlog",
-      "status": "proposed",
+      "title": "Take the promising consensus screen through a real research decision",
+      "status": "ready",
       "depends_on": ["003"],
-      "activate_when": "The review and handoff prompts exist and can be tried against saved evidence.",
       "file": "004-saved-evidence-pilot.md"
     },
     {
       "id": "005",
-      "priority": 50,
-      "title": "Follow explicit dependencies only if ordinary search proves awkward",
-      "status": "proposed",
+      "priority": 60,
+      "title": "Build and use a living research agenda with explicit evidence links",
+      "status": "ready",
       "depends_on": ["004"],
-      "activate_when": "The pilot records a recurring dependency question that current catalog search and direct links handle poorly.",
+      "budget": {
+        "new_physics_runs": 0,
+        "fresh_fits": 0,
+        "collections": 0
+      },
       "file": "005-follow-explicit-dependencies.md"
     },
     {
       "id": "006",
-      "priority": 60,
-      "title": "Read saved outcomes of ended jobs without rerunning them",
-      "status": "proposed",
+      "priority": 50,
+      "title": "Make a research handoff recoverable after worktree or session turnover",
+      "status": "ready",
       "depends_on": [],
-      "activate_when": "A current investigation or the pilot needs an ended job's status that live status tools no longer expose; saved artifacts exist.",
+      "budget": {
+        "new_physics_runs": 0,
+        "fresh_fits": 0,
+        "collections": 0
+      },
       "file": "006-read-ended-job-evidence.md"
     }
   ]

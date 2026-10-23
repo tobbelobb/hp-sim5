@@ -104,3 +104,22 @@ collection, workers or runtime code changes were made. Physics checks are outsid
 this documentation change's scope. All task 003 acceptance criteria are met.
 Next: task 004's activation condition is satisfied; the next invocation can
 promote the saved-evidence workflow pilot and decide whether more tooling helps.
+
+2026-10-23 sanity check and remaining-task revision
+Reviewed commits db7fe8d9, 1b79db95 and ea2b7d7a. All three archive tests passed.
+Executed task 003's proposed finite-prediction-only consensus screen: three
+matching baselines, six selection evaluations, no fits/physics/collection. Summed
+anchor errors improved 10.894 -> 6.989 mm and 4.670 -> 2.552 mm; seventh HP3 was
+unchanged. This is a promising frozen-history lead, not an accuracy default or
+hardware result. Details, copied inputs and reproduction script:
+output/research/sessions/2026-10-23-program-task-sanity/report.md.
+
+User-reported task times (1m31s, 3m28s, 8m10s) motivate coherent outcome-sized work,
+not minimum runtimes. Rewrote 004 as broader research with adoption/retirement and
+implementation when justified; 006 as durable evidence/job handoff; 005 as a
+working research agenda with scoped dependencies. They are ready, ordered
+004 -> 006 -> 005 (005 depends on 004). These tasks have not been completed here.
+Updated queue/prompt/README to allow bounded, justified numerical work for 004;
+agenda and recovery remain numerical-free. Production algorithms are unchanged.
+Queue/dependency/budget and local-link/format checks passed; git diff --check
+passed. The research catalog was regenerated with the sanity abstract.

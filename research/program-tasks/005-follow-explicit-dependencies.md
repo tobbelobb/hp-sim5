@@ -1,28 +1,41 @@
-# 005: Follow explicit dependencies only if ordinary search proves awkward
+# 005: Build and use a living research agenda
 
-Activate only when task 004 identifies a repeated, concrete question such as
-"which decisions relied on this suspect measurement?" that current lookup handles
-poorly. Otherwise park this task.
-Budget: zero simulations, fresh fits or collections.
+Outcome: the human can ask what matters next and receive a grounded answer
+without personally combining all recent sessions. Use task 004's real result,
+earlier contradictory/negative findings and the broader research context. This
+replaces a speculative dependency-lookup feature with a working program-level
+decision surface. Graph infrastructure is still conditional on actual need.
 
-Read the pilot, [archive.py](../../src/python/hp_sim5_research/archive.py), and
-[the graph proposal](../../research-program-design.md#make-the-claim-ledger-an-evidence-graph).
+Use a supplied program note or choose one ordinary Markdown location discoverable
+from the research guide. Keep the human's broad question and practical values
+intact. Identify the consequential uncertainties, the credible routes, their
+obstacles, and why the next allocation deserves time. Use the research corpus,
+current behavior and relevant outside work when it could change that choice.
+Prioritize rather than constructing an exhaustive ontology.
 
-Add the smallest useful explicit relation to the existing Markdown evidence
-records, for example a stable link labeled `Relies on` or `Challenges`. Use it
-for the pilot's few findings. If a lookup command is actually needed, extend
-`scripts/research_index.py` and the existing archive module to follow just these
-relations and show the relevant statements, scope, review extent and links.
-Keep plain search working. Treat ordinary citations as references, not automatic
-logical dependencies or independently verified premises.
+Make the knowledge relationships explicit where they matter: this decision relies
+on this scoped finding; this observation challenges this explanation; this result
+has not been checked on hardware. Links to concrete claims/artifacts are enough
+initially. Shared datasets and equations must not masquerade as independent
+support. A repeated failed method does not itself falsify its underlying idea.
 
-Done when the pilot's specific question can be answered from explicit records,
-missing targets remain visible, and repeated/cyclic links cannot cause unbounded
-traversal. A withdrawn input should identify affected reasoning for review;
-alternate evidence may still support the claim. No automatic confidence arithmetic.
+Exercise the agenda on real decisions: compare materially different routes,
+explain how the latest result changes their priority, and produce the next
+fundable assignment with a cheap discriminator, guardrails and a stated budget.
+Also test what would need reconsideration if one important supporting measurement
+or assumption were withdrawn. Preserve alternative support and old scope rather
+than erasing history. This is a desk exercise, not a claim that a real result was
+retracted. An independent next session should be able to resume from the note
+and cited evidence without reconstructing every experiment log.
 
-Use temporary Markdown fixtures and focused archive tests for changed lookup
-behavior. Keep traversal bounded and use files/IDs already present. No graph
-database, vector service, UI, whole-corpus extraction, immutable-store rollout or
-general graph framework belongs in this task. Split a larger demonstrated need
-into a later card rather than expanding this one.
+Deliver the working agenda, a demonstrated next decision, and the smallest
+connection to the existing prompt/index workflow needed to keep it useful. Trim
+fields that duplicate abstracts. Add lookup code or structured relation fields
+only if the actual exercise exposes a question that direct links cannot answer
+economically; use focused text-fixture tests if code changes. No database,
+general graph framework, whole-corpus extraction or dashboard is required.
+
+Budget: queue wall allowance; zero fresh fits, physics trials or collections.
+The assignment proposed by the agenda may budget later experiments; executing
+those experiments is a later research task. Human hunches and model suggestions
+are useful direction, not automatically accepted empirical premises.

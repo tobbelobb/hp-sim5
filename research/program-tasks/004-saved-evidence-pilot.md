@@ -1,33 +1,49 @@
-# 004: Try the workflow on saved investigations and prune the backlog
+# 004: Carry a promising result through a real research decision
 
-Activate when tasks 001-003 provide usable review and handoff prompts.
-Benefit: find whether the new structure saves handling before adding machinery.
-Budget: zero simulations, fresh fits or collections; at most three existing
-investigations and six reusable findings. No formal benchmark or agent swarm.
+The review, handoff and briefing tools exist. Use them to finish an investigation,
+including implementation if the evidence justifies it. Another desk-check-only
+pilot would duplicate work already done. Keep the broad goal visible: more useful
+encoder-only calibration from the same observations, with less human handling.
 
-Use [Lane 02](../autocal-filtering-lane02-integration.md),
-[Lane 04](../autocal-ranking-lane04-integration.md), and one negative or incomplete
-investigation from [the topic guide](../catalog.md). Read linked local evidence
-where available. If an artifact is absent, preserve the limitation; do not rerun
-the experiment to make this workflow pilot look complete.
+Start from the [executed sanity screen](../../output/research/sessions/2026-10-23-program-task-sanity/report.md)
+and [task 003's proposal](003-one-next-question.md#implemented-prompt-and-worked-desk-check).
+Finite-held-out-only consensus improved two fixtures without worsening the third.
+That is a lead, not enough to change defaults. Use the copied inputs and recorded
+results; do not regenerate this baseline as an admission ritual.
 
-Produce one short `pilot.md` in this task directory. Exercise the new handoff and
-one evidence-first desk review as distinct passes, not three simulated reviewers.
-Answer: what can we reuse; what is still untested; and which smallest useful
-assignment should follow? Record sources actually opened and specific friction,
-including any fields that merely repeated existing information. Proposed
-assignments remain not tested. Do not rewrite historical research conclusions.
+Own the next decision: should this membership rule be adopted, narrowed or
+retired? Choose the most informative additional evidence. Broaden to independent
+saved histories when possible, including cases where the newest fit could be
+useful. Deduplicate repeated runs of the same dataset/settings. Check current
+source and stage-artifact compatibility before attributing changes to policy.
+Known starting points include the saved history/stage investigations linked from
+the topic guide and `output/research/`; let provenance determine which are usable.
 
-Done when:
+Keep truth out of the deployable rule. Evaluate the applied geometry with its
+actual chosen spool parameters, not just a single fit's score. Frozen comparison
+can answer a final-selection claim; it cannot establish a changed stopping,
+fitting or collection trajectory. Follow the actual consumers before deciding
+which replay is needed. Avoid tuning a succession of rules to win these three
+fixtures. A useful negative result or a clear conditional scope can close the task.
 
-- The pilot does not confuse a saved individual fit with final consensus, a
-  simulated result with hardware evidence, or a successful exit with research
-  completion.
-- It identifies a useful next decision, or explains why the new prompt/fields
-  should be simplified or removed. A negative workflow verdict is valid.
-- It revises this queue from actual use. Park 005 if direct links/search suffice;
-  activate 006 only for an actual status-recovery need. Do not add infrastructure
-  merely because the architecture proposal mentions it.
+Use the queue's numerical ceilings, with an explicit smaller probe budget first.
+Selection-only analysis is the first choice. Fresh fits or short headless trials
+are available for a concrete unresolved question; no collection matrix is required.
+Preserve unsuccessful trials. If required evidence cannot fit the allowance,
+return the strongest supported decision and the specific remaining experiment.
 
-No stopwatch accuracy claim is needed. Record rough effort only if observed and
-label estimates. Manual source/link inspection is sufficient validation here.
+Done means a result that can be acted on:
+
+- A reproducible comparison beyond the initial screen, with accuracy, relevant
+  prediction/failure guardrails, coverage and any exceptions reported honestly.
+- A clear adopt/narrow/retire/inconclusive decision. If adoption is justified,
+  include the small production change and relevant tests in this same task;
+  otherwise preserve defaults and the useful finding. Do not rewrite reference
+  outputs or loosen checks merely to make a candidate pass.
+- A concise research report/abstract and next decision using the existing
+  conventions, plus any workflow improvement justified by actual friction.
+
+Choose details and test scope yourself. One useful result can require several
+cheap probes. Do not instantiate a planner, researcher and reviewer service just
+because those roles appear in a saved prompt. Evidence-first review consumes
+the actual artifacts; duplicate numerical execution needs a material reason.
