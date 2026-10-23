@@ -1,0 +1,16 @@
+{
+  "command": ".venv/bin/python output/research/sessions/2026-10-23-research-program-smoke/smoke.py",
+  "source_revision": "0606f031a802a5d5e17b7c16fbe4efde6764685b",
+  "tests_run": 4,
+  "failures": 0,
+  "errors": 0,
+  "passed": true,
+  "cli_invocations": 14,
+  "actual_budget": {
+    "fresh_fits": 0,
+    "physics_steps": 0,
+    "collections": 0,
+    "prediction_evaluations": 0
+  },
+  "scope": "Synthetic CLI/lifecycle smoke checks; no calibration or independent-agent evaluation"
+}

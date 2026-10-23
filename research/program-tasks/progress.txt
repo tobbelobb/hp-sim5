@@ -175,3 +175,19 @@ runtime dynamics changed, so the physics gate does not apply.
 Decision: keep defaults, use direct links; no graph tooling. All criteria met.
 Next: development queue complete; scientific assignment remains proposed and
 requires its own bounded invocation, not automatic execution.
+
+2026-10-23 follow-up: question-first usage and offline smoke checks
+Added research/prompts/research-program.txt and research/program.md, linked from
+research/README.md. The entry connects briefing to one bounded investigation,
+self-review and agenda/handoff updates; default saved-evidence work, no fresh
+experiments. Existing briefing-only use stays available.
+Evidence: output/research/sessions/2026-10-23-research-program-smoke/. Four
+standard-library smoke tests passed once (14 CLI calls): catalog/search and
+pending states; relocation after source deletion; partial/corrupt evidence and
+invalid requests; terminal versus historical job records. Two manual desk cases
+covered an already answered question and an unrelated unresolved physics question.
+55 links/anchors and seven prompt references passed; abstract/report match,
+catalog regenerated with prior unavailable-session entries preserved, diff clean.
+Zero fits/predictions/physics/collection; no independent-agent or live-runtime
+validation. Development tasks remain done. Next: use the entry with a real
+question and explicit constraints/budget when fresh experiments are wanted.

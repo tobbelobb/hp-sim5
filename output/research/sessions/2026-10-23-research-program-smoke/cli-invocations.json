@@ -1,0 +1,178 @@
+[
+  {
+    "command": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_index.py",
+      "--root",
+      "/tmp/program-catalog-q9yh5vyc/catalog"
+    ],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "stdout": "/tmp/program-catalog-q9yh5vyc/catalog/index.md\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_index.py",
+      "--root",
+      "/tmp/program-catalog-q9yh5vyc/catalog",
+      "--search",
+      "observer-next-wave"
+    ],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "stdout": "# Research session catalog\n\nShort abstracts and tested hypotheses from local sessions. Missing or pending summaries are not evidence of completed experiments.\n\nRegenerate with `.venv/bin/python scripts/research_index.py`.\n\n## [descriptive-result](sessions/descriptive-result/)\n\n[abstract.md](sessions/descriptive-result/abstract.md) \u00b7 [report.md](sessions/descriptive-result/report.md) \u00b7 [research.md](sessions/descriptive-result/research.md)\n\n### Synthetic claim\n\n#### Decision handoff\n- Scope: fixture only.\n- Review: synthetic.\n- Decision: preserve defaults.\n- Next: observer-next-wave.\n[Measurements](sessions/descriptive-result/metrics.json)\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_handoff.py",
+      "export",
+      "/tmp/program-relocate-xkaxbj8i/old-worktree/session",
+      "/tmp/program-relocate-xkaxbj8i/selection.json",
+      "/tmp/program-relocate-xkaxbj8i/export"
+    ],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "stdout": "{\n  \"directory\": \"/tmp/program-relocate-xkaxbj8i/export\",\n  \"integrity\": \"verified_selected_files\",\n  \"diagnostics\": [],\n  \"files\": [\n    {\n      \"path\": \"abstract.md\",\n      \"source\": \"/tmp/program-relocate-xkaxbj8i/old-worktree/session/abstract.md\",\n      \"role\": \"abstract\",\n      \"expected_sha256\": null,\n      \"sha256\": \"c4da58218a11db9fd9d05164a20def250470f9151a3239d333ae4799c6f39c66\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-relocate-xkaxbj8i/export/abstract.md\",\n      \"integrity\": \"ok\"\n    },\n    {\n      \"path\": \"report.md\",\n      \"source\": \"/tmp/program-relocate-xkaxbj8i/old-worktree/session/report.md\",\n      \"role\": \"report\",\n      \"expected_sha256\": null,\n      \"sha256\": \"cce13e855257bd803e78aab9c7ddeb6925432f7d8f494ec5f6c088d0040aef7e\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-relocate-xkaxbj8i/export/report.md\",\n      \"integrity\": \"ok\"\n    },\n    {\n      \"path\": \"research.md\",\n      \"source\": \"/tmp/program-relocate-xkaxbj8i/old-worktree/session/research.md\",\n      \"role\": \"notebook\",\n      \"expected_sha256\": null,\n      \"sha256\": \"a0ee630a41bb8888b255375fc8bf91433c9aeaf5b7cb8b2f7937270ef0cc11e2\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-relocate-xkaxbj8i/export/research.md\",\n      \"integrity\": \"ok\"\n    },\n    {\n      \"path\": \"metrics.json\",\n      \"source\": \"/tmp/program-relocate-xkaxbj8i/old-worktree/session/metrics.json\",\n      \"role\": \"evidence\",\n      \"expected_sha256\": null,\n      \"sha256\": \"566204b7b749e95a904f194949060dce160e36244dc5eb37e25acd235cd6a667\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-relocate-xkaxbj8i/export/metrics.json\",\n      \"integrity\": \"ok\"\n    },\n    {\n      \"path\": \"job.json\",\n      \"source\": \"/tmp/program-relocate-xkaxbj8i/old-worktree/session/job.json\",\n      \"role\": \"job\",\n      \"expected_sha256\": null,\n      \"sha256\": \"4953480caa0921a978e92fcbff8402f4043d805556e3d4952aad52b207ebfc60\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-relocate-xkaxbj8i/export/job.json\",\n      \"integrity\": \"ok\"\n    },\n    {\n      \"path\": \"inputs/history.json\",\n      \"source\": \"/tmp/program-relocate-xkaxbj8i/old-worktree/external-input.json\",\n      \"role\": \"input\",\n      \"expected_sha256\": \"dc9aa3d280b125bb8a83e1469217b1a8b6bb1f7f30c26a82787e8f493cae4f20\",\n      \"sha256\": \"dc9aa3d280b125bb8a83e1469217b1a8b6bb1f7f30c26a82787e8f493cae4f20\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-relocate-xkaxbj8i/export/inputs/history.json\",\n      \"integrity\": \"ok\"\n    }\n  ],\n  \"jobs\": [\n    {\n      \"record\": \"/tmp/program-relocate-xkaxbj8i/export/job.json\",\n      \"saved_status\": \"accepted\",\n      \"observation\": \"terminal\",\n      \"live_status\": \"unknown\",\n      \"scientific_success\": \"not_assessed\",\n      \"diagnostics\": [],\n      \"exit_code\": 0\n    }\n  ],\n  \"claim\": \"Synthetic smoke fixture\",\n  \"scope\": \"Selected bytes only\",\n  \"decision\": \"Preserve defaults\",\n  \"source_revision\": \"fixture-revision\",\n  \"source_session\": \"/tmp/program-relocate-xkaxbj8i/old-worktree/session\",\n  \"limitations\": []\n}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_handoff.py",
+      "show",
+      "/tmp/program-relocate-xkaxbj8i/new-host"
+    ],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "stdout": "{\n  \"directory\": \"/tmp/program-relocate-xkaxbj8i/new-host\",\n  \"integrity\": \"verified_selected_files\",\n  \"diagnostics\": [],\n  \"files\": [\n    {\n      \"path\": \"abstract.md\",\n      \"source\": \"/tmp/program-relocate-xkaxbj8i/old-worktree/session/abstract.md\",\n      \"role\": \"abstract\",\n      \"expected_sha256\": null,\n      \"sha256\": \"c4da58218a11db9fd9d05164a20def250470f9151a3239d333ae4799c6f39c66\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-relocate-xkaxbj8i/new-host/abstract.md\",\n      \"integrity\": \"ok\"\n    },\n    {\n      \"path\": \"report.md\",\n      \"source\": \"/tmp/program-relocate-xkaxbj8i/old-worktree/session/report.md\",\n      \"role\": \"report\",\n      \"expected_sha256\": null,\n      \"sha256\": \"cce13e855257bd803e78aab9c7ddeb6925432f7d8f494ec5f6c088d0040aef7e\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-relocate-xkaxbj8i/new-host/report.md\",\n      \"integrity\": \"ok\"\n    },\n    {\n      \"path\": \"research.md\",\n      \"source\": \"/tmp/program-relocate-xkaxbj8i/old-worktree/session/research.md\",\n      \"role\": \"notebook\",\n      \"expected_sha256\": null,\n      \"sha256\": \"a0ee630a41bb8888b255375fc8bf91433c9aeaf5b7cb8b2f7937270ef0cc11e2\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-relocate-xkaxbj8i/new-host/research.md\",\n      \"integrity\": \"ok\"\n    },\n    {\n      \"path\": \"metrics.json\",\n      \"source\": \"/tmp/program-relocate-xkaxbj8i/old-worktree/session/metrics.json\",\n      \"role\": \"evidence\",\n      \"expected_sha256\": null,\n      \"sha256\": \"566204b7b749e95a904f194949060dce160e36244dc5eb37e25acd235cd6a667\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-relocate-xkaxbj8i/new-host/metrics.json\",\n      \"integrity\": \"ok\"\n    },\n    {\n      \"path\": \"job.json\",\n      \"source\": \"/tmp/program-relocate-xkaxbj8i/old-worktree/session/job.json\",\n      \"role\": \"job\",\n      \"expected_sha256\": null,\n      \"sha256\": \"4953480caa0921a978e92fcbff8402f4043d805556e3d4952aad52b207ebfc60\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-relocate-xkaxbj8i/new-host/job.json\",\n      \"integrity\": \"ok\"\n    },\n    {\n      \"path\": \"inputs/history.json\",\n      \"source\": \"/tmp/program-relocate-xkaxbj8i/old-worktree/external-input.json\",\n      \"role\": \"input\",\n      \"expected_sha256\": \"dc9aa3d280b125bb8a83e1469217b1a8b6bb1f7f30c26a82787e8f493cae4f20\",\n      \"sha256\": \"dc9aa3d280b125bb8a83e1469217b1a8b6bb1f7f30c26a82787e8f493cae4f20\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-relocate-xkaxbj8i/new-host/inputs/history.json\",\n      \"integrity\": \"ok\"\n    }\n  ],\n  \"jobs\": [\n    {\n      \"record\": \"/tmp/program-relocate-xkaxbj8i/new-host/job.json\",\n      \"saved_status\": \"accepted\",\n      \"observation\": \"terminal\",\n      \"live_status\": \"unknown\",\n      \"scientific_success\": \"not_assessed\",\n      \"diagnostics\": [],\n      \"exit_code\": 0\n    }\n  ],\n  \"claim\": \"Synthetic smoke fixture\",\n  \"scope\": \"Selected bytes only\",\n  \"decision\": \"Preserve defaults\",\n  \"source_revision\": \"fixture-revision\",\n  \"source_session\": \"/tmp/program-relocate-xkaxbj8i/old-worktree/session\",\n  \"limitations\": []\n}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_handoff.py",
+      "show",
+      "/tmp/program-relocate-xkaxbj8i/new-host"
+    ],
+    "expected_exit": 1,
+    "exit_code": 1,
+    "stdout": "{\n  \"directory\": \"/tmp/program-relocate-xkaxbj8i/new-host\",\n  \"integrity\": \"partial\",\n  \"diagnostics\": [\n    \"inputs/history.json: SHA-256 mismatch; evidence changed after export\"\n  ],\n  \"files\": [\n    {\n      \"path\": \"abstract.md\",\n      \"source\": \"/tmp/program-relocate-xkaxbj8i/old-worktree/session/abstract.md\",\n      \"role\": \"abstract\",\n      \"expected_sha256\": null,\n      \"sha256\": \"c4da58218a11db9fd9d05164a20def250470f9151a3239d333ae4799c6f39c66\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-relocate-xkaxbj8i/new-host/abstract.md\",\n      \"integrity\": \"ok\"\n    },\n    {\n      \"path\": \"report.md\",\n      \"source\": \"/tmp/program-relocate-xkaxbj8i/old-worktree/session/report.md\",\n      \"role\": \"report\",\n      \"expected_sha256\": null,\n      \"sha256\": \"cce13e855257bd803e78aab9c7ddeb6925432f7d8f494ec5f6c088d0040aef7e\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-relocate-xkaxbj8i/new-host/report.md\",\n      \"integrity\": \"ok\"\n    },\n    {\n      \"path\": \"research.md\",\n      \"source\": \"/tmp/program-relocate-xkaxbj8i/old-worktree/session/research.md\",\n      \"role\": \"notebook\",\n      \"expected_sha256\": null,\n      \"sha256\": \"a0ee630a41bb8888b255375fc8bf91433c9aeaf5b7cb8b2f7937270ef0cc11e2\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-relocate-xkaxbj8i/new-host/research.md\",\n      \"integrity\": \"ok\"\n    },\n    {\n      \"path\": \"metrics.json\",\n      \"source\": \"/tmp/program-relocate-xkaxbj8i/old-worktree/session/metrics.json\",\n      \"role\": \"evidence\",\n      \"expected_sha256\": null,\n      \"sha256\": \"566204b7b749e95a904f194949060dce160e36244dc5eb37e25acd235cd6a667\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-relocate-xkaxbj8i/new-host/metrics.json\",\n      \"integrity\": \"ok\"\n    },\n    {\n      \"path\": \"job.json\",\n      \"source\": \"/tmp/program-relocate-xkaxbj8i/old-worktree/session/job.json\",\n      \"role\": \"job\",\n      \"expected_sha256\": null,\n      \"sha256\": \"4953480caa0921a978e92fcbff8402f4043d805556e3d4952aad52b207ebfc60\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-relocate-xkaxbj8i/new-host/job.json\",\n      \"integrity\": \"ok\"\n    },\n    {\n      \"path\": \"inputs/history.json\",\n      \"source\": \"/tmp/program-relocate-xkaxbj8i/old-worktree/external-input.json\",\n      \"role\": \"input\",\n      \"expected_sha256\": \"dc9aa3d280b125bb8a83e1469217b1a8b6bb1f7f30c26a82787e8f493cae4f20\",\n      \"sha256\": \"dc9aa3d280b125bb8a83e1469217b1a8b6bb1f7f30c26a82787e8f493cae4f20\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-relocate-xkaxbj8i/new-host/inputs/history.json\",\n      \"integrity\": \"hash_mismatch\"\n    }\n  ],\n  \"jobs\": [\n    {\n      \"record\": \"/tmp/program-relocate-xkaxbj8i/new-host/job.json\",\n      \"saved_status\": \"accepted\",\n      \"observation\": \"terminal\",\n      \"live_status\": \"unknown\",\n      \"scientific_success\": \"not_assessed\",\n      \"diagnostics\": [],\n      \"exit_code\": 0\n    }\n  ],\n  \"claim\": \"Synthetic smoke fixture\",\n  \"scope\": \"Selected bytes only\",\n  \"decision\": \"Preserve defaults\",\n  \"source_revision\": \"fixture-revision\",\n  \"source_session\": \"/tmp/program-relocate-xkaxbj8i/old-worktree/session\",\n  \"limitations\": []\n}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_handoff.py",
+      "job",
+      "/tmp/program-status-s6skrbg0/job.json"
+    ],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "stdout": "{\n  \"record\": \"/tmp/program-status-s6skrbg0/job.json\",\n  \"saved_status\": \"accepted\",\n  \"observation\": \"terminal\",\n  \"live_status\": \"unknown\",\n  \"scientific_success\": \"not_assessed\",\n  \"diagnostics\": [],\n  \"exit_code\": 0\n}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_handoff.py",
+      "job",
+      "/tmp/program-status-s6skrbg0/job.json"
+    ],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "stdout": "{\n  \"record\": \"/tmp/program-status-s6skrbg0/job.json\",\n  \"saved_status\": \"failed\",\n  \"observation\": \"terminal\",\n  \"live_status\": \"unknown\",\n  \"scientific_success\": \"not_assessed\",\n  \"diagnostics\": [],\n  \"exit_code\": 0\n}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_handoff.py",
+      "job",
+      "/tmp/program-status-s6skrbg0/job.json"
+    ],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "stdout": "{\n  \"record\": \"/tmp/program-status-s6skrbg0/job.json\",\n  \"saved_status\": \"cancelled\",\n  \"observation\": \"terminal\",\n  \"live_status\": \"unknown\",\n  \"scientific_success\": \"not_assessed\",\n  \"diagnostics\": [],\n  \"exit_code\": 0\n}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_handoff.py",
+      "job",
+      "/tmp/program-status-s6skrbg0/job.json"
+    ],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "stdout": "{\n  \"record\": \"/tmp/program-status-s6skrbg0/job.json\",\n  \"saved_status\": \"budget_exhausted\",\n  \"observation\": \"terminal\",\n  \"live_status\": \"unknown\",\n  \"scientific_success\": \"not_assessed\",\n  \"diagnostics\": [],\n  \"exit_code\": 0\n}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_handoff.py",
+      "job",
+      "/tmp/program-status-s6skrbg0/job.json"
+    ],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "stdout": "{\n  \"record\": \"/tmp/program-status-s6skrbg0/job.json\",\n  \"saved_status\": \"running\",\n  \"observation\": \"historical_nonterminal\",\n  \"live_status\": \"unknown\",\n  \"scientific_success\": \"not_assessed\",\n  \"diagnostics\": [],\n  \"exit_code\": 0\n}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_handoff.py",
+      "job",
+      "/tmp/program-status-s6skrbg0/job.json"
+    ],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "stdout": "{\n  \"record\": \"/tmp/program-status-s6skrbg0/job.json\",\n  \"saved_status\": \"cancelling\",\n  \"observation\": \"historical_nonterminal\",\n  \"live_status\": \"unknown\",\n  \"scientific_success\": \"not_assessed\",\n  \"diagnostics\": [],\n  \"exit_code\": 0\n}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_handoff.py",
+      "job",
+      "/tmp/program-status-s6skrbg0/job.json"
+    ],
+    "expected_exit": 1,
+    "exit_code": 1,
+    "stdout": "{\n  \"record\": \"/tmp/program-status-s6skrbg0/job.json\",\n  \"saved_status\": null,\n  \"observation\": \"unavailable\",\n  \"live_status\": \"unknown\",\n  \"scientific_success\": \"not_assessed\",\n  \"diagnostics\": [\n    \"/tmp/program-status-s6skrbg0/job.json: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)\"\n  ]\n}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_handoff.py",
+      "export",
+      "/tmp/program-partial-_0z_hi3h/old-worktree/session",
+      "/tmp/program-partial-_0z_hi3h/selection.json",
+      "/tmp/program-partial-_0z_hi3h/partial"
+    ],
+    "expected_exit": 1,
+    "exit_code": 1,
+    "stdout": "{\n  \"directory\": \"/tmp/program-partial-_0z_hi3h/partial\",\n  \"integrity\": \"partial\",\n  \"diagnostics\": [\n    \"metrics.json: Source differs from selected SHA-256\",\n    \"/tmp/program-partial-_0z_hi3h/partial/job.json: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)\",\n    \"missing-input.json: [Errno 2] No such file or directory: '/tmp/program-partial-_0z_hi3h/old-worktree/session/missing-input.json'\",\n    \"missing-input.json: [Errno 2] No such file or directory: '/tmp/program-partial-_0z_hi3h/partial/missing-input.json'\"\n  ],\n  \"files\": [\n    {\n      \"path\": \"abstract.md\",\n      \"source\": \"/tmp/program-partial-_0z_hi3h/old-worktree/session/abstract.md\",\n      \"role\": \"abstract\",\n      \"expected_sha256\": null,\n      \"sha256\": \"c4da58218a11db9fd9d05164a20def250470f9151a3239d333ae4799c6f39c66\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-partial-_0z_hi3h/partial/abstract.md\",\n      \"integrity\": \"ok\"\n    },\n    {\n      \"path\": \"report.md\",\n      \"source\": \"/tmp/program-partial-_0z_hi3h/old-worktree/session/report.md\",\n      \"role\": \"report\",\n      \"expected_sha256\": null,\n      \"sha256\": \"cce13e855257bd803e78aab9c7ddeb6925432f7d8f494ec5f6c088d0040aef7e\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-partial-_0z_hi3h/partial/report.md\",\n      \"integrity\": \"ok\"\n    },\n    {\n      \"path\": \"research.md\",\n      \"source\": \"/tmp/program-partial-_0z_hi3h/old-worktree/session/research.md\",\n      \"role\": \"notebook\",\n      \"expected_sha256\": null,\n      \"sha256\": \"a0ee630a41bb8888b255375fc8bf91433c9aeaf5b7cb8b2f7937270ef0cc11e2\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-partial-_0z_hi3h/partial/research.md\",\n      \"integrity\": \"ok\"\n    },\n    {\n      \"path\": \"metrics.json\",\n      \"source\": \"/tmp/program-partial-_0z_hi3h/old-worktree/session/metrics.json\",\n      \"role\": \"evidence\",\n      \"expected_sha256\": \"0000000000000000000000000000000000000000000000000000000000000000\",\n      \"sha256\": \"566204b7b749e95a904f194949060dce160e36244dc5eb37e25acd235cd6a667\",\n      \"status\": \"hash_mismatch\",\n      \"diagnostic\": \"Source differs from selected SHA-256\",\n      \"current_path\": \"/tmp/program-partial-_0z_hi3h/partial/metrics.json\",\n      \"integrity\": \"ok\"\n    },\n    {\n      \"path\": \"job.json\",\n      \"source\": \"/tmp/program-partial-_0z_hi3h/old-worktree/session/job.json\",\n      \"role\": \"job\",\n      \"expected_sha256\": null,\n      \"sha256\": \"61cec388d0b962bf70c142f482bb4f67ba433b74c932bfe052ccc678d380065d\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-partial-_0z_hi3h/partial/job.json\",\n      \"integrity\": \"ok\"\n    },\n    {\n      \"path\": \"inputs/history.json\",\n      \"source\": \"/tmp/program-partial-_0z_hi3h/old-worktree/external-input.json\",\n      \"role\": \"input\",\n      \"expected_sha256\": \"dc9aa3d280b125bb8a83e1469217b1a8b6bb1f7f30c26a82787e8f493cae4f20\",\n      \"sha256\": \"dc9aa3d280b125bb8a83e1469217b1a8b6bb1f7f30c26a82787e8f493cae4f20\",\n      \"status\": \"copied\",\n      \"current_path\": \"/tmp/program-partial-_0z_hi3h/partial/inputs/history.json\",\n      \"integrity\": \"ok\"\n    },\n    {\n      \"path\": \"missing-input.json\",\n      \"source\": \"/tmp/program-partial-_0z_hi3h/old-worktree/session/missing-input.json\",\n      \"role\": \"input\",\n      \"expected_sha256\": null,\n      \"sha256\": null,\n      \"status\": \"unavailable\",\n      \"diagnostic\": \"[Errno 2] No such file or directory: '/tmp/program-partial-_0z_hi3h/old-worktree/session/missing-input.json'\",\n      \"current_path\": \"/tmp/program-partial-_0z_hi3h/partial/missing-input.json\",\n      \"integrity\": \"unavailable\"\n    }\n  ],\n  \"jobs\": [\n    {\n      \"record\": \"/tmp/program-partial-_0z_hi3h/partial/job.json\",\n      \"saved_status\": null,\n      \"observation\": \"unavailable\",\n      \"live_status\": \"unknown\",\n      \"scientific_success\": \"not_assessed\",\n      \"diagnostics\": [\n        \"/tmp/program-partial-_0z_hi3h/partial/job.json: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)\"\n      ]\n    }\n  ],\n  \"claim\": \"Synthetic smoke fixture\",\n  \"scope\": \"Selected bytes only\",\n  \"decision\": \"Preserve defaults\",\n  \"source_revision\": \"fixture-revision\",\n  \"source_session\": \"/tmp/program-partial-_0z_hi3h/old-worktree/session\",\n  \"limitations\": []\n}\n",
+    "stderr": ""
+  },
+  {
+    "command": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_handoff.py",
+      "export",
+      "/tmp/program-partial-_0z_hi3h/old-worktree/session",
+      "/tmp/program-partial-_0z_hi3h/selection.json",
+      "/tmp/program-partial-_0z_hi3h/invalid"
+    ],
+    "expected_exit": 2,
+    "exit_code": 2,
+    "stdout": "",
+    "stderr": "Handoff paths must be relative files without ..: '../escape'\n"
+  }
+]

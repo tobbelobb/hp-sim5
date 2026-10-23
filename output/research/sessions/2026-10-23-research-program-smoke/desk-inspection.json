@@ -1,0 +1,45 @@
+{
+  "kind": "saved evidence inspected; no numerical reproduction",
+  "source_revision": "0606f031a802a5d5e17b7c16fbe4efde6764685b",
+  "saved_summary": {
+    "datasets": 8,
+    "improved": 1,
+    "worsened": 2,
+    "unchanged": 5,
+    "baseline_sum_anchor_error_mm": 401.10027562823973,
+    "variant_sum_anchor_error_mm": 400.7970309548157,
+    "delta_sum_anchor_error_mm": -0.303244673424079
+  },
+  "saved_changed_cases": [
+    {
+      "fixture": "flexible_lines_2000",
+      "delta_sum_anchor_error_mm": 0.5029977549565103,
+      "common_unseen_fold_ids": []
+    },
+    {
+      "fixture": "ten_points_w_buildup",
+      "delta_sum_anchor_error_mm": 0.09415630167794076,
+      "common_unseen_fold_ids": []
+    },
+    {
+      "fixture": "ten_points_w_buildup2",
+      "delta_sum_anchor_error_mm": -0.9003987300585301,
+      "common_unseen_fold_ids": []
+    }
+  ],
+  "selection_source_matches_cm_e1": true,
+  "inspected_sha256": {
+    "output/research/sessions/2026-10-23-consensus-membership/report.md": "2e47bc589aea727b2e76387ff8fc3339b664134145f15d61df7fbbc7f46ef96a",
+    "output/research/sessions/2026-10-23-consensus-membership/results.json": "bdd85e0f758ce3a4f0ef4f5be3c0fe094fb830dfa6f3c059d39d7a2d804ab1cd",
+    "autocal/history_selection.py": "c4f45578510f41f9f6f8b6b7d8bec03aecd1daefd45ea08bc847adfa72ec8f2e",
+    "output/research/sessions/2026-10-16-hp4-effector-instability/abstract.md": "5c8158f02dddb073ffe3f1ea66ec3280191e2fa0acfb327e657c451dd6579dc9",
+    "output/research/sessions/2026-10-16-hp4-one-step-autocal/report.md": "29b1b8e8674c7bf45c518b36829abcb1ae10529e915ff2c1259080eec4e8ea3a",
+    "output/research/sessions/2026-10-16-hp4-load-bookkeeping/abstract.md": "7dc84a7865747329dccb186e5a5c2840aed6c9f6afc84b11872c487e59fda8b0"
+  },
+  "manual_cases": [
+    "RP-D1a: existing evidence closes unconditional-policy question",
+    "RP-D1b: distinct HP4 topic, superseded report and no fresh-physics allowance"
+  ],
+  "review": "same-agent self-review; no independent agent evaluation",
+  "fresh_experiments": 0
+}

@@ -1,0 +1,58 @@
+Use the research question and constraints supplied in this conversation to carry
+out one useful, bounded research iteration in this repository. Follow the root
+and research AGENTS.md instructions. Preserve the human's goal and accepted
+steering. If the question itself is missing, ask for it; do not invent one.
+
+Start with research/program.md, research/catalog.md and a targeted search of the
+local research catalog. Read only the abstracts, evidence and current code that
+can change the decision. Use an existing relevant agenda, such as
+research/autocal-agenda.md for autocal work. If there is no relevant agenda,
+create one ordinary Markdown note for this question, linked from the research
+guide. Keep its purpose, credible routes, scoped supporting/conflicting evidence
+and next allocation concise. An unrelated agenda must not replace the question.
+
+Use research/prompts/next-assignment.txt to prepare one economical assignment
+with a leading hypothesis, credible rival, discriminator, decision criteria and
+explicit budget. Its preparation phase ends with a proposal. This entry prompt
+then authorizes executing that assignment within the human's constraints: do not
+stop at a proposal when useful work fits the available budget. If existing
+evidence already answers the question, inspect it and close with that scoped
+decision instead of manufacturing an experiment.
+
+The human's budget takes precedence. Without an explicit experiment allowance,
+use a default ceiling of 30 minutes of source/evidence inspection and analysis
+of saved artifacts, zero fresh fits, zero physics runs/steps and zero new
+collections or movements. Write a smaller concrete artifact/analysis budget in
+research.md before work. These are work limits, not enforced runtime quotas.
+If fresh experiments are necessary, retain the useful evidence assessment and
+state the smallest next experiment and budget needed. No elapsed time or missing
+reply authorizes extra work. Required repository delivery checks still apply;
+an incompatible budget blocks that implementation rather than waiving a gate.
+
+Use the supplied session directory when present. In an ordinary coding session,
+create a descriptive directory under output/research/sessions/ for research.md,
+report.md and abstract.md; use research/abstract-template.md. Record actual
+commands, source/input identities, observations and failures. Separate reported,
+inspected and independently recomputed evidence, individual fits and applied
+consensus, numerical metrics and physical accuracy, and simulation and hardware.
+Missing evidence is a limitation, not a negative experiment or automatic rerun.
+Live simulation uses the existing research launcher and supervisor; an archive
+or successful tool check does not establish a running world or accuracy.
+
+At the result boundary, apply research/prompts/reviewer.txt to the exact claim,
+report and relevant candidate/checks. In this single conversation, label this a
+self-review. A separately requested reviewer can inspect the same saved evidence;
+another full experiment is justified only by a named gap. Resolve material
+issues within budget or retain an explicit blocked/inconclusive result.
+
+Update the agenda's affected evidence, priorities and next decision without
+erasing earlier scope. Keep the session's abstract and short decision handoff
+current and regenerate the research catalog. Use research/handoffs.md when a
+portable copy is needed; select only the evidence for the claim. Do not require
+an export for every local iteration.
+
+End with the answer or changed understanding, evidence and scope, what remains
+uncertain, session/agenda links and the one next useful decision. Stop after
+this iteration; continuing is the human's next message or an explicitly bounded
+instruction. This workflow runs in the existing agent conversation and does
+not require another agent, a scheduler or the completed development task queue.

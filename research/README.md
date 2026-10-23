@@ -10,6 +10,11 @@ Start with the [execution architecture map](architecture.md) for ownership,
 configuration flow and recording scope across the five research workflows.
 This README contains the operating instructions and tool arguments.
 
+To start with only a research question, use the [research program quickstart](program.md).
+Ask your agent to read `research/prompts/research-program.txt` and investigate
+your question. It connects evidence discovery, one bounded assignment, execution,
+review and a durable decision handoff in the same conversation.
+
 ## Setup and interactive use
 
 ### Required physics stability check
