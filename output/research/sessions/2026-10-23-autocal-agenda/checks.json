@@ -1,0 +1,79 @@
+{
+  "command": ".venv/bin/python output/research/sessions/2026-10-23-autocal-agenda/verify.py",
+  "base_revision": "fd10fd94aaf5a3d3ad4eb92fd1ce066d9d6a550f",
+  "result": "passed",
+  "kind": "saved-evidence and documentation inspection; no numerical reproduction",
+  "inspected_current_source_sha256": {
+    "autocal/history_selection.py": "c4f45578510f41f9f6f8b6b7d8bec03aecd1daefd45ea08bc847adfa72ec8f2e",
+    "autocal/predictive_validation.py": "930d9759226f38aaf7bb7666f511e1297d41faf9462d2fb806df1123754351d6",
+    "autocal/autocal.py": "c360119fa34159cd34365a646f669bbefcb6c455c6e7b48f7a39f48cb98903b5",
+    "autocal/stopping.py": "56d331a0f2578b79fb670bbf1eb67f8d61cb819a3e6c9f2fcaee3fa0785c83f2",
+    "autocal/spool_model.py": "48a9b30a633fe8c5f6b439cb29560683380f47342ce46320e904063a9e20a910",
+    "autocal/ellipse_cost.py": "591a0e610d65baf9a0ba8b3d8e5c1e8541e97123d7396b1e240c3c8e30c32ccf"
+  },
+  "source_sha256_matching_cm_e1_analysis": {
+    "autocal/history_selection.py": "c4f45578510f41f9f6f8b6b7d8bec03aecd1daefd45ea08bc847adfa72ec8f2e",
+    "autocal/predictive_validation.py": "930d9759226f38aaf7bb7666f511e1297d41faf9462d2fb806df1123754351d6",
+    "autocal/autocal.py": "c360119fa34159cd34365a646f669bbefcb6c455c6e7b48f7a39f48cb98903b5",
+    "autocal/spool_model.py": "48a9b30a633fe8c5f6b439cb29560683380f47342ce46320e904063a9e20a910",
+    "autocal/ellipse_cost.py": "591a0e610d65baf9a0ba8b3d8e5c1e8541e97123d7396b1e240c3c8e30c32ccf"
+  },
+  "source_without_saved_cm_e1_hash": [
+    "autocal/stopping.py"
+  ],
+  "inspected_evidence_sha256": {
+    "output/research/sessions/2026-10-23-consensus-membership/report.md": "2e47bc589aea727b2e76387ff8fc3339b664134145f15d61df7fbbc7f46ef96a",
+    "output/research/sessions/2026-10-23-consensus-membership/results.json": "bdd85e0f758ce3a4f0ef4f5be3c0fe094fb830dfa6f3c059d39d7a2d804ab1cd",
+    "output/research/sessions/2026-10-23-consensus-membership/inputs.json": "f58ef95d783a265b7153cefc07d2d8785f77896846bb07d58317b8a009634b44",
+    "output/research/sessions/2026-10-23-consensus-membership/audit.json": "6750c2ac25c1f99a90cc10dd3d98389422e95a726e725bfdd1b1e6c8aac9939e",
+    "output/research/sessions/b7deb1bcc9cb418388273e2b7b9adc8c/report.md": "c31b3b62c35678dd5e2a81ef7cbc54d5d69527a53435f5d7366b4451c25b203f",
+    "output/research/reference-refresh-october-7-2026/report.md": "95898f1c0c39806904d3c34f600b3831007063a66edb2d48647caef9be3eae61",
+    "output/research/2026-10-09-slip-recovery-and-encoder-model/report.md": "5b9dc1138d77d12ee687bd5de9eaccfaf78bae80401e3e19914e6b4e8faecbb1",
+    "research/autocal-filtering-lane02-integration.md": "4e71fcbb137b60c57c79670f30866611a02331cd44be5968322fa579c1c6bc48",
+    "research/autocal-solver-lane01-integration.md": "0bbc5c6a8e3fa5d01f3fd2c4b67508e65c93daa11d6faa8e493ee816c3e89eba",
+    "research/autocal-ranking-lane04-integration.md": "edc25a4ae896b0ee8d99b3bc609444748c1f0c6c90c523be734b76dda28a5be6"
+  },
+  "saved_summary_counts": {
+    "datasets": 8,
+    "improved": 1,
+    "worsened": 2,
+    "unchanged": 5
+  },
+  "saved_changed_cases_without_common_unseen_fold": [
+    "flexible_lines_2000",
+    "ten_points_w_buildup",
+    "ten_points_w_buildup2"
+  ],
+  "missing_artifacts": [
+    "output/research/sessions/2026-10-23-program-task-sanity/report.md",
+    "output/research/sessions/b7deb1bcc9cb418388273e2b7b9adc8c/paired_regressions.json",
+    "output/research/reference-refresh-october-7-2026/comparison.json",
+    "output/research/sessions/2026-10-22-autocal-filtering-integration/summary-comparison.json",
+    "output/research/sessions/2026-10-22-autocal-solver-integration/truth-verification.json",
+    "output/research/2026-10-09-slip-recovery-and-encoder-model/encoder-objective-audit.json"
+  ],
+  "local_links_and_anchors_checked": 45,
+  "queue_statuses": {
+    "001": "done",
+    "002": "done",
+    "003": "done",
+    "004": "done",
+    "005": "done",
+    "006": "done"
+  },
+  "catalog": "generated via scripts/research_index.py; new entry retained with historical entries whose local artifacts are absent",
+  "abstract_report_match": true,
+  "guide_prompt_discovery": true,
+  "workflow_exercises": {
+    "AG-D1": "four routes compared, one next brief",
+    "AG-D2": "counterfactual withdrawal changes allocation"
+  },
+  "actual_experiments": {
+    "fresh_fits": 0,
+    "selection_evaluations": 0,
+    "prediction_evaluations": 0,
+    "physics_steps": 0,
+    "collections": 0,
+    "hardware_measurements": 0
+  }
+}

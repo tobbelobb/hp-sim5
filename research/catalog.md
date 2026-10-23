@@ -1,5 +1,9 @@
 # Research topic guide
 
+For current priorities and the next bounded autocal assignment, use the
+[living research agenda](autocal-agenda.md). The historical summaries below
+remain evidence with their original scope.
+
 These summaries describe archived evidence, not new experiments or a statement about the current solver. They were compiled on 2026-10-08 from the reports and notebooks linked below. Raw session artifacts are ignored by Git and may be absent in another checkout. The [local catalog](../output/research/index.md) also lists integration checks, incomplete sessions and their status.
 
 Four hash-named sessions contain substantive autocal work: three have final reports and one has an unfinished notebook. Missing research.md does not imply that no research happened.

@@ -44,7 +44,7 @@
       "id": "005",
       "priority": 60,
       "title": "Build and use a living research agenda with explicit evidence links",
-      "status": "ready",
+      "status": "done",
       "depends_on": ["004"],
       "budget": {
         "new_physics_runs": 0,

@@ -47,3 +47,18 @@ prediction fold. Preserve the initial two gains as scoped evidence rather than
 erasing them or treating the broader finding as a failure of all consensus.
 Any proposed membership follow-up needs a truth-free discriminator and an
 actual applied-anchor-plus-spool comparison on common unseen sweeps.
+
+## Completed outcome, 2026-10-23
+
+Delivered the [living autocal agenda](../autocal-agenda.md), discoverable from
+the research README, topic guide and next-assignment prompt. It compares four
+routes, retains current defaults and proposes a bounded compatible-unseen-sweep
+assignment. The worked CM-E1 withdrawal changes that allocation to evidence
+recovery while preserving other findings and scope. Direct links suffice; no
+dependency lookup code or schema was added.
+
+The [desk-exercise record](../../output/research/sessions/2026-10-23-autocal-agenda/report.md)
+contains AG-D1/AG-D2 outcomes, limitations and verification. Saved measurements
+and relevant current source were inspected; no numerical experiment was rerun.
+Historical missing raw artifacts are named explicitly. The proposed assignment
+remains not tested. All task criteria are met; the development queue is complete.

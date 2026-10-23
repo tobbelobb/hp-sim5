@@ -157,3 +157,21 @@ external runtime dependencies remain explicit. Zero physics/fits/collections;
 no dynamics changed, so the physics delivery gate does not apply. Catalog,
 local-link/queue and diff checks passed. All task 006 criteria are met.
 Next: task 005's living research agenda; no automatic crawler or job adoption.
+
+2026-10-23 task 005: living autocal research agenda
+Added research/autocal-agenda.md with four competing routes, scoped evidence
+dependencies, one bounded compatible-unseen-sweep assignment and a worked CM-E1
+withdrawal that changes the next allocation without erasing other findings.
+Linked README, topic guide and next-assignment prompt; completed task/queue docs.
+Research record: output/research/sessions/2026-10-23-autocal-agenda/.
+Verification: standard-library verify.py passed 45 links/anchors, saved-summary
+and three changed-fold checks, five matching CM-E1 source hashes, guide/prompt
+discovery and queue/dependencies. Initial check expected an absent stopping.py
+hash; corrected it to record that inspected source separately. Reused saved
+CM-E1/earlier reports without numerical reproduction; missing raw artifacts
+remain explicit. Regenerated catalog, preserving prior unavailable-session
+entries; git diff --check passed. Zero fits/predictions/physics/collections; no
+runtime dynamics changed, so the physics gate does not apply.
+Decision: keep defaults, use direct links; no graph tooling. All criteria met.
+Next: development queue complete; scientific assignment remains proposed and
+requires its own bounded invocation, not automatic execution.

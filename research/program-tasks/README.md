@@ -33,6 +33,9 @@ Cards remain revisable options. Park work whose benefit disappears.
 | [006](006-read-ended-job-evidence.md) | Completed: explicit portable evidence export and offline historical job inspection |
 | [005](005-follow-explicit-dependencies.md) | Use a living research agenda to prioritize the next question and trace its evidence |
 
+All six development tasks are complete. The [living autocal agenda](../autocal-agenda.md)
+owns the next proposed scientific assignment; it is not automatically scheduled.
+
 ## Cost and evidence rules
 
 The queue defaults now allow up to 45 minutes, six fresh fits and two bounded

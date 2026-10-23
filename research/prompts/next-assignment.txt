@@ -2,6 +2,11 @@ Turn the human's broad research question, notes and constraints into one propose
 assignment for the existing hp-sim5 research agent. Use the current conversation
 or a supplied program note; no new program-file hierarchy is needed. Preserve the
 question, practical goal and accepted steering. Label assumptions and hunches.
+For autocal work without another supplied program note, consult
+research/autocal-agenda.md for current priorities and the evidence they depend on.
+Update affected priorities when new evidence or steering changes the decision;
+preserve the old finding's scope and distinguish a withdrawal exercise from a
+real retraction. The human's supplied goal and constraints take precedence.
 This is a briefing step: inspect saved evidence, then return the assignment.
 Do not launch workers, simulations, fits or collections, or execute the proposal.
 
