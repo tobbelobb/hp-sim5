@@ -10,7 +10,7 @@
       "id": "001",
       "priority": 10,
       "title": "Review the exact claim using existing evidence first",
-      "status": "ready",
+      "status": "done",
       "depends_on": [],
       "file": "001-evidence-first-review.md"
     },

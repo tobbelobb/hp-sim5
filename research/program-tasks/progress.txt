@@ -10,3 +10,34 @@ Setup validation: checked all six task references, allowed statuses, dependency
 IDs/cycles, local Markdown links, code fences and whitespace. Task 001 is the
 only immediately eligible item. All numerical budgets are zero. git diff --check
 passed. Queue setup is documentation, not completion of any queued task.
+
+2026-10-23 task 001: evidence-first review prompt
+Changed research/prompts/reviewer.txt and this queue's tasks.json/progress.txt.
+The prompt names the claim, report, candidate revision/diff and evidence; checks
+provenance before choosing more work; distinguishes reported, inspected and
+independently recomputed evidence; and separates finding quality from code
+readiness. It retains the original review questions and optional five-point grade,
+with one actionable verdict and only decision-relevant follow-ups.
+
+Verification: one manual desk check against the revised prompt's two cases.
+For Lane 02 H1, inspected research/autocal-filtering-lane02-integration.md,
+output/research/sessions/2026-10-22-autocal-filtering-integration/lane02/report.md,
+and that session's summary-comparison.json and fallback-history.json. The original
+report's 7.683 mm layered control is an individual frozen fit, whereas the saved
+summary gives its full-auto final consensus as 1.582655 mm, with exactly the same
+rounded anchors as the later October reference (the earlier reference is 1.758237
+mm). The saved ancestry evidence also distinguishes reference revisions before
+fallback from those after the opt-in change. Verdict for this attribution claim:
+correct the comparison and reject the inferred fallback regression; no recollection
+or refit is needed to resolve it. This inspects recorded simulation evidence,
+not an independent numerical reproduction or proof of solver/accuracy equivalence.
+
+For a hypothetical changed physics patch without stability evidence, the prompt
+blocks delivery and requires npm run test:physics; startup, unit/parity or
+higher-substep success cannot substitute. A zero-run budget cannot waive that
+gate. No actual physics code changed, so this task did not invoke it. Existing
+measurements were reused only for the attribution desk check; no simulations,
+fresh fits, collection, reviewer agent or prompt-grading framework were run.
+Regenerated the research catalog with .venv/bin/python scripts/research_index.py;
+git diff --check passed. All task 001 acceptance criteria are met.
+Next: task 002 is eligible; put the short decision handoff in the existing abstract.

@@ -1,18 +1,51 @@
-Take a critical look at the newest research report, and the associated code, ie the latest commit.
+Critically review the report, candidate revision or diff, and evidence references
+supplied in the conversation. If the target is implicit, locate the relevant work
+from context and repository links. Do not assume the latest commit is that work.
+Start by naming the exact claim, report, code revision/diff and evidence under
+review. State any missing or ambiguous target that limits your verdict.
 
- - Is the experiment(s) informative?
- - Is the result reproducible?
- - Did the algorithm actually improve something important?
- - Did we change multiple variables simultaneously?
- - Is a surprising result a discovery or a bug?
- - Is the delivered code in line with the repo's overarching goals?
- - Does the delivered features overviewable and maintainable?
+Inspect existing evidence before choosing checks. Trace measurements and supplied
+check results to their commands, inputs, configuration and relevant code revision.
+Check that comparisons concern the same output stage and metric: an individual
+fit and a final consensus are different results. Identify changed variables and
+whether they affect the claim or invalidate earlier evidence.
 
-Grade the most recent work along a scale:
- Grade 1: The whole recent work has obvious fundamental flaws and the commit should be discarded. The report is mostly just valuable just as a documented example on how a research process can derail into non-relevance.
- Grade 2: Parts of it is flawed and should be discarded. The remaining core or branch can be regarded as promising and deserves further exploration.
- Grade 3: The work is promising but incomplete and must be continued, or discarded if continuing it is deemed too expensive.
- Grade 4: The work shows substantial promise, and even some proven value.
- Grade 5: The work is fantastic and even innovative in how it manages to add rigour and value. An example to others to learn from.
+Distinguish evidence reported by the author, artifacts/source you inspected, and
+results you independently recomputed or reproduced. Name the checks you performed
+and their limits. Reading saved output is not independent numerical reproduction.
+Reuse adequate measurements when the relevant code, inputs, configuration and
+claim still match; an unrelated documentation change need not invalidate them.
 
-Suggest three ways to improve quality of the parts that we should keep.
+Request or run an additional check only for a named material gap, such as missing
+provenance, a concrete discrepancy, changed relevant inputs or a broader claim.
+Explain which uncertainty it resolves and choose the cheapest sufficient check:
+saved-artifact/source inspection, then analysis of saved data or focused tests,
+then a fresh fit, simulation or collection only when needed and within the assigned
+budget. If that budget is insufficient, state the blocker and needed check.
+Repository delivery gates still apply: a change to physics, motors, cable
+transport or scene dynamics requires a passing `npm run test:physics` result for
+the candidate. A missing or failed stability result blocks delivery; startup,
+unit/parity checks or higher-substep success cannot replace it. Preserve failures.
+
+Consider:
+ - What information did the experiment gain, including useful negative findings?
+ - Is the result reproducible from the recorded inputs, commands and revisions?
+ - Did the algorithm improve something practically important? A lower fit score
+   alone does not establish better physical accuracy or held-out prediction.
+ - Did multiple variables change at once, and what confounds remain?
+ - Does a surprising result survive provenance checks, or could it be a bug?
+ - Does the code serve the repo's goals, with an understandable, maintainable scope?
+
+Assess finding quality separately from code readiness. A sound negative finding
+can justify keeping a report without adopting a code change; promising findings
+do not excuse missing required checks. If useful, grade the finding:
+ Grade 1: Fundamental flaws undermine the claim; retain any useful failure record.
+ Grade 2: Some claims are flawed, but a useful core remains.
+ Grade 3: Promising but incomplete; further work needs a cost justification.
+ Grade 4: Substantial promise with demonstrated value within the stated scope.
+ Grade 5: Exemplary rigor and demonstrated value, with clear limits.
+
+End with one actionable verdict: what to keep, revise or block, and why. Include
+only follow-ups that would change that decision or address a material limitation;
+none are required when the evidence and scope are already adequate. Do not add
+another review or numerical run merely to make the review independent.
