@@ -1,11 +1,17 @@
 # Start a research program from a question
 
-Current capability: the single-agent workflow below, searchable summaries and
-portable evidence. A separate chat-driven research manager and queryable graph
-are **not yet implemented**. Their required implementation is now queued in
+Current capability: [durable program storage and CLI](program-store.md), the
+single-agent workflow below, searchable summaries and portable evidence. A
+complete chat-driven research manager and queryable graph are **not yet
+implemented**. Their required implementation is tracked in
 [tasks 007–016](program-tasks/README.md), with the
 [manager release contract](program-tasks/MANAGER.md) defining completion. The
 manager will delegate to the existing `hp-sim5-research-agent` rather than replace it.
+
+Use `./hp-sim5-research-program create 'Your question'` to record a durable
+program without starting a world. See the [store guide](program-store.md) for
+questions, approaches, bounded assignments, decisions and exports. This first
+slice records state; later tasks add worker dispatch and reviewed knowledge.
 
 Give an agent at this repository's root your question and the saved entry prompt:
 

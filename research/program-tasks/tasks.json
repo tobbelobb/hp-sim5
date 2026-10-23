@@ -78,7 +78,7 @@
       "id": "007",
       "priority": 70,
       "title": "Create and inspect a durable research program",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "005",
         "006"

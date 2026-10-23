@@ -1,0 +1,7 @@
+#!/bin/sh
+repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+if [ ! -x "$repo_dir/.venv/bin/python" ]; then
+    echo 'Create .venv first. This command needs only the Python standard library.' >&2
+    exit 1
+fi
+exec "$repo_dir/.venv/bin/python" "$repo_dir/scripts/research_program.py" "$@"

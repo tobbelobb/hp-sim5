@@ -227,3 +227,30 @@ Verification: all 16 IDs/files, dependency acyclicity, full one-task selection
 walk 007→016 with no dead ends, 38 new local links and release/status consistency
 passed; git diff --check passed. No implementation task or scientific experiment
 was executed. Next: repeat the one-task prompt to implement 007.
+
+2026-10-23 task 007: durable program store and offline CLI
+Implemented hp-sim5-research-program, scripts/research_program.py and the stdlib
+hp_sim5_research.program.ProgramStore API. Manager-owned SQLite schema/version 1
+stores questions/constraints, alternatives, bounded assignments, external hashed
+artifact references and append-only decisions/steering. Transactions, global IDs,
+record/program revisions, optimistic revision guards and explicit execution/
+review/knowledge states support fresh-process recovery. JSON export/import and
+complete Markdown export preserve the durable records; linked/unsafe storage,
+unsupported versions, duplicate IDs and invalid transitions fail explicitly.
+Documented actual commands, ownership and limitations in research/program-store.md;
+linked the guide and updated the task brief. Marked 007 done after acceptance.
+Verification: .venv/bin/python tests/python/test_research_program.py -v passed
+10 tests, including fresh CLI processes and full roundtrip, four-process store
+initialization, 60 decisions from four concurrent writers without lost revisions,
+and a killed uncommitted writer recovering with SQLite integrity ok. Allocation,
+state/revision, immutable-history, malformed-import and storage-path rejection
+checks passed. Python compilation, affected documentation links and git diff
+--check passed. Ran research_index.py; retained the existing index because this
+checkout lacks some archived sessions and no new scientific session was created.
+Zero model calls/fits/physics/collections; no dynamics changed, so no physics
+delivery gate applies. Assignment limits are recorded, not yet runtime enforced;
+artifact references do not verify scientific bytes, and same-UID workers are not
+adversarially isolated. Full manager readiness remains task 016's live gate.
+Freshness: controller confirmed upstream/main at ae2ffe3f before assignment;
+worker did not retry unavailable shell git networking. Next eligible task: 008,
+using the actual store API for typed evidence/provenance graph semantics.

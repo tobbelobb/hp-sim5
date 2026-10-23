@@ -33,3 +33,27 @@ Done when:
 Use fixtures, no model/physics runs for storage correctness. Make one task-owned
 commit with queue/progress updates. Graph semantics, worker launching and manager
 chat reasoning belong to the later dependent cards.
+
+## Implemented outcome (2026-10-23)
+
+Implemented `hp-sim5-research-program`, `scripts/research_program.py` and the
+stdlib `hp_sim5_research.program.ProgramStore` API. The
+[command/store guide](../program-store.md) documents actual commands, state
+transitions, revision checks, finite assignment allocations and storage ownership.
+SQLite schema/version 1 lives in manager-owned `.research-programs/`, outside
+worker-shared output. JSON export/import preserves IDs, revisions, decisions,
+steering and external evidence references; Markdown renders the complete view.
+
+Verification: `.venv/bin/python tests/python/test_research_program.py -v` passed
+10 offline tests. Fresh CLI processes reconstruct the same program, two routes
+and a bounded assignment; completed execution remains unreviewed/unassessed.
+Four processes initialize concurrently; four writers retain 60 distinct decisions
+and all revision increments. Killing a writer during a transaction leaves no
+partial note/revision and reopens with SQLite integrity `ok`. Duplicate IDs,
+stale revisions, invalid transitions/allocations, import/version errors and linked
+or unsafe store paths fail without partial program state.
+
+No numerical/model/physics work was needed. Recorded allocations are not yet
+runtime enforcement; artifact references do not verify bytes. Same-user workers
+are not adversarially isolated. Graph, dispatch and reviewed admission remain
+the dependent cards, and task 016 remains the manager release gate.
