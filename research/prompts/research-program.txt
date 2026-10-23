@@ -19,15 +19,35 @@ stop at a proposal when useful work fits the available budget. If existing
 evidence already answers the question, inspect it and close with that scoped
 decision instead of manufacturing an experiment.
 
-The human's budget takes precedence. Without an explicit experiment allowance,
-use a default ceiling of 30 minutes of source/evidence inspection and analysis
-of saved artifacts, zero fresh fits, zero physics runs/steps and zero new
-collections or movements. Write a smaller concrete artifact/analysis budget in
-research.md before work. These are work limits, not enforced runtime quotas.
-If fresh experiments are necessary, retain the useful evidence assessment and
-state the smallest next experiment and budget needed. No elapsed time or missing
-reply authorizes extra work. Required repository delivery checks still apply;
-an incompatible budget blocks that implementation rather than waiving a gate.
+Fresh fits, headless/native physics runs and simulated data collection are
+allowed by default when they resolve a named uncertainty. Follow the targeted
+experimental approach in research/prompts/autocal.txt and the relevant topic
+prompts: reuse useful evidence, then run the smallest informative experiment.
+Prefer several quick, cheap probes over a broad or long sweep. Do not stop at
+an evidence assessment merely because the human did not supply numerical limits.
+
+The human's limits take precedence. Otherwise choose a finite budget suited to
+the question and observed workload costs, record it in research.md before
+numerical work, and proceed without requesting a separate experiment allowance.
+Bound configurations/artifacts, fresh fits, physics steps or simulated time,
+collection sweeps/points or movements, and wall time as applicable. Start with
+a small pilot when costs are uncertain. Stop at those bounds, preserve partial
+evidence and state the next decision. These are work limits, not enforced runtime
+quotas. Required repository delivery checks still apply; an incompatible budget
+blocks that implementation rather than waiving a gate.
+
+Use speedup options to avoid real-time waits: for simulated autocal CLI runs use
+--speedup 25 unless a different supported factor is needed for the experiment.
+Prefer the headless native Rust backend. Headless physics already runs as fast
+as possible; record that behavior rather than claiming --speedup makes its
+integration faster. Preserve simulation-time waits/deadlines and the intended
+timestep/substeps. With supervisor tools use their supported acceleration
+settings; do not invent an unsupported speedup parameter. Before choosing autocal
+recording/compute budgets, read research/autocal-recording-performance.md: use
+none for large numerical sweeps, events routinely, and sampled/full when detailed
+physics inspection is necessary. Record the backend, speedup, recording mode and
+actual workload with the result. Follow the existing preflight and command-socket
+checks before long live collection.
 
 Use the supplied session directory when present. In an ordinary coding session,
 create a descriptive directory under output/research/sessions/ for research.md,

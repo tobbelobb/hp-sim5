@@ -55,9 +55,17 @@ Return one brief, marked "Proposed; not tested", with:
   consensus geometry, and physical accuracy from prediction error and fit cost.
 - Bounded cost and stopping. State explicit maxima for artifacts/configurations,
   analysis time, fresh fits, simulation steps/time and collections or movements as
-  applicable, including required checks. Unspecified numerical budgets remain
-  zero. Stop at the cap, preserve partial evidence and name any additional budget
-  needed; do not silently expand the assignment. Read
+  applicable, including required checks. Fresh fits, headless/native physics and
+  simulated collection are allowed when they resolve the question. If the human
+  supplies no numerical limits, choose a finite budget for the smallest useful
+  experiment; do not silently replace missing limits with zero or require a
+  separate allowance. Prefer quick targeted probes, starting with a small pilot
+  when cost is uncertain. Include --speedup 25 for supported simulated autocal
+  CLI runs, or justify another supported factor; headless physics already runs
+  as fast as possible and must retain simulation-time waits/deadlines. Use only
+  supported acceleration settings on supervisor tools. Stop at the cap, preserve
+  partial evidence and name any additional budget needed; do not silently expand
+  the assignment. Read
   research/autocal-recording-performance.md before proposing autocal recording
   or compute budgets. Physics, motor,
   cable transport or scene dynamics changes require npm run test:physics; an

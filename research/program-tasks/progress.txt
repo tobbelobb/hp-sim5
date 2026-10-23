@@ -191,3 +191,19 @@ catalog regenerated with prior unavailable-session entries preserved, diff clean
 Zero fits/predictions/physics/collection; no independent-agent or live-runtime
 validation. Development tasks remain done. Next: use the entry with a real
 question and explicit constraints/budget when fresh experiments are wanted.
+
+2026-10-23 follow-up: targeted fresh experiments allowed by default
+Updated research-program.txt, next-assignment.txt and research/program.md to
+follow the user's autocal prompt policies: fresh fits, native/headless physics
+and simulated collection are allowed when useful. With no supplied limits the
+agent records a finite targeted budget and proceeds; removed the zero-experiment
+and fixed 30-minute defaults. Require supported --speedup 25 (or a justified
+factor), native Rust, suitable recording modes and preserved simulation clocks.
+The guide marks earlier smoke defaults historical; explicit user limits and
+briefing-only mode remain effective. Read the typical autocal/variation/recording
+prompts, reference speedup commands and current headless-clock/recording guidance.
+Checks: 11 guide links/anchors, 9 prompt references, default-policy consistency
+and git diff --check passed. An initial reference regex matched a suffix of
+output/research/index.md; corrected the check, no product path was broken.
+No runtime source or dynamics changed; prior CLI smoke results remain applicable.
+No new scientific experiment or physics delivery gate was needed for this edit.

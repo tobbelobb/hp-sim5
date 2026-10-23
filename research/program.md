@@ -14,24 +14,31 @@ and saves the evidence and next decision. A broad question can need several
 iterations. You receive what changed, what remains uncertain and which decision
 deserves attention next.
 
-The default first iteration uses existing evidence and saved-artifact analysis,
-with a 30-minute ceiling and zero fresh fits, physics runs or collection. Add
-your practical goal, constraints and experiment budget when you have them:
+Fresh fits, headless/native physics runs and simulated data collection are
+allowed by default. The agent starts from useful prior evidence and uses
+targeted experiments whenever they can resolve the question. If you supply no
+numerical limits, it chooses and records a finite budget for the smallest useful
+probe, then executes it. You can add your practical goal, constraints and limits:
 
 ```text
 Read research/prompts/research-program.txt and investigate:
 Can encoder-only HP3 calibration become more accurate from the same measurements?
 
-Preserve one-click operation and automatic stopping. Start from saved data.
-Budget: 30 minutes, at most three saved histories and six frozen prediction
-evaluations; zero fresh fits, physics runs or collections.
+Preserve one-click operation and automatic stopping. Reuse saved data when useful.
+Run targeted fresh fits, physics or simulated collection when necessary.
+Choose and record a finite experiment budget before numerical work.
+Use --speedup 25 for supported simulated autocal CLI runs and prefer headless
+native Rust; choose recording detail to suit the question.
 Complete one useful iteration and update the agenda with the result.
 ```
 
-These numbers illustrate a bounded investigation, not a promise that those
-histories answer every question. If no experiment budget is supplied, the agent
-still completes a useful evidence assessment and states the smallest missing
-experiment. The agent must preserve useful negative and inconclusive results.
+Prefer quick, cheap probes over large unfocused sweeps. Use a small pilot to
+estimate cost when necessary. Headless physics already runs as fast as possible;
+speedup settings must preserve simulation-time waits/deadlines and the intended
+timestep/substeps. Use the [recording-cost guidance](autocal-recording-performance.md)
+to avoid unnecessary capture overhead. The agent preserves negative and
+inconclusive results and stops at the recorded limits. Your explicit constraints
+always take precedence.
 
 ## Choose how far to go
 
@@ -66,7 +73,8 @@ development task.
 
 See the [worked question-to-decision examples](../output/research/sessions/2026-10-23-research-program-smoke/desk-cases.md)
 and [smoke-test record](../output/research/sessions/2026-10-23-research-program-smoke/report.md)
-for what was actually exercised.
+for what was actually exercised. That historical smoke record used the original
+zero-experiment defaults; the policy in this guide supersedes that restriction.
 
 ## When the question needs live simulation
 
@@ -79,7 +87,8 @@ installed, then give the same prompt in its conversation:
 
 See [setup and execution instructions](README.md#setup-and-interactive-use) for
 dependencies, machine settings and the existing supervisor tools. The program
-layer organizes the research; live experiments need those tools and an explicit
-budget. Ordinary coding agents can inspect code, analyze saved artifacts and
-maintain the program without starting a world. A resumed launcher conversation
-starts a fresh world; a saved report or final snapshot does not restore it.
+layer organizes the research; live experiments need those tools and a recorded
+targeted budget, which the agent can choose. Ordinary coding agents can inspect
+code, analyze saved artifacts and maintain the program without starting a world.
+A resumed launcher conversation starts a fresh world; a saved report or final
+snapshot does not restore it.
