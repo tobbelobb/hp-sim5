@@ -1,0 +1,12 @@
+2026-10-23 setup
+Created the revisable queue and one-task prompt after reading current research
+instructions, all existing research prompts, archive code/tests, integration
+findings, recording costs and the tooling wish list. No queued task has been
+implemented. No simulations, fitting or collection were run. Tasks 001-003 are
+ready in dependency order; 004-006 require their recorded activation conditions.
+Next: improve the reviewer prompt's evidence reuse and result attribution (001).
+
+Setup validation: checked all six task references, allowed statuses, dependency
+IDs/cycles, local Markdown links, code fences and whitespace. Task 001 is the
+only immediately eligible item. All numerical budgets are zero. git diff --check
+passed. Queue setup is documentation, not completion of any queued task.

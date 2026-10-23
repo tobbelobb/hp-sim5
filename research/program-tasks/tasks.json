@@ -1,0 +1,61 @@
+{
+  "purpose": "Make the best small improvement to research delegation now; revise after use.",
+  "default_budget": {
+    "new_physics_runs": 0,
+    "fresh_fits": 0,
+    "collections": 0
+  },
+  "tasks": [
+    {
+      "id": "001",
+      "priority": 10,
+      "title": "Review the exact claim using existing evidence first",
+      "status": "ready",
+      "depends_on": [],
+      "file": "001-evidence-first-review.md"
+    },
+    {
+      "id": "002",
+      "priority": 20,
+      "title": "Put a short decision handoff in the existing abstract",
+      "status": "ready",
+      "depends_on": ["001"],
+      "file": "002-short-decision-handoff.md"
+    },
+    {
+      "id": "003",
+      "priority": 30,
+      "title": "Turn a broad question into one economical assignment",
+      "status": "ready",
+      "depends_on": ["002"],
+      "file": "003-one-next-question.md"
+    },
+    {
+      "id": "004",
+      "priority": 40,
+      "title": "Try the workflow on saved investigations and prune the backlog",
+      "status": "proposed",
+      "depends_on": ["003"],
+      "activate_when": "The review and handoff prompts exist and can be tried against saved evidence.",
+      "file": "004-saved-evidence-pilot.md"
+    },
+    {
+      "id": "005",
+      "priority": 50,
+      "title": "Follow explicit dependencies only if ordinary search proves awkward",
+      "status": "proposed",
+      "depends_on": ["004"],
+      "activate_when": "The pilot records a recurring dependency question that current catalog search and direct links handle poorly.",
+      "file": "005-follow-explicit-dependencies.md"
+    },
+    {
+      "id": "006",
+      "priority": 60,
+      "title": "Read saved outcomes of ended jobs without rerunning them",
+      "status": "proposed",
+      "depends_on": [],
+      "activate_when": "A current investigation or the pilot needs an ended job's status that live status tools no longer expose; saved artifacts exist.",
+      "file": "006-read-ended-job-evidence.md"
+    }
+  ]
+}

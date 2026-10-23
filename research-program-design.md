@@ -5,6 +5,11 @@ published "Hand Cranking the Development Engine" post, and the sources linked
 below. No new numerical experiments were run. Proposed commands and files in
 this document are not implemented interfaces.
 
+Implementation now follows the [revisable one-task backlog](research/program-tasks/README.md).
+Its evidence-first prompt and handoff changes come before additional machinery.
+The larger components below are options to justify through use, not prerequisites
+or an obligation to build the whole proposal.
+
 The next useful abstraction is a **research program**: a continuing set of
 questions, evidence, competing approaches and decisions, pursued within a
 human-defined purpose and budget. An hp-sim5-research-agent session remains the

@@ -309,6 +309,10 @@ constraints/budgets, experiment IDs, accepted steering and next decision.
 
 ## Finding previous research
 
+For incremental improvements to this workflow, use the
+[one-task development backlog](program-tasks/README.md). Its first changes reuse
+saved evidence and existing prompts; later infrastructure is conditional on use.
+
 Open the [research topic guide](catalog.md) for the main investigations and
 the local [session catalog](../output/research/index.md) for short abstracts,
 tested hypotheses, outcomes and evidence links. The local catalog includes
