@@ -1,0 +1,22 @@
+{
+  "scoped_negative": {
+    "claim": "On these eight simulated histories, the blanket screen does not reliably improve summed anchor error",
+    "measurements": {"improved": 1, "worsened": 2, "unchanged": 5, "metric": "summed_anchor_error_mm", "hardware": false},
+    "review": {"finding": "supported", "verdict": "keep", "reason": "Keep the scoped negative report and retire this blanket default change; no patch is needed.", "practical_value": "Closes a route without further fits", "code_readiness": "report_only", "limitations": ["Eight frozen simulated histories; no hardware claim"], "discrepancy": null}
+  },
+  "lower_fit_overclaim": {
+    "claim": "A lower fit cost establishes better physical calibration accuracy",
+    "measurements": {"fit_cost_before": 10, "fit_cost_after": 8, "anchor_accuracy": null, "held_out_prediction": null},
+    "review": {"finding": "mixed", "verdict": "revise", "reason": "Keep the lower fit-cost measurement; revise the accuracy claim because no physical or held-out metric was measured.", "practical_value": "Fit score alone does not justify an accuracy change", "code_readiness": "report_only", "limitations": ["Accuracy and held-out prediction unmeasured"], "discrepancy": "Claim exceeds the measured metric"}
+  },
+  "missing_evidence": {
+    "claim": "The claimed improvement is established by the selected measurement",
+    "measurements": null,
+    "review": {"finding": "not_tested", "verdict": "block", "reason": "The selected measurement is missing; preserve this incomplete execution record.", "practical_value": "Identifies the exact evidence needed", "code_readiness": "blocked", "limitations": ["Missing selected measurement"], "discrepancy": null}
+  },
+  "physics_patch": {
+    "claim": "The saved synthetic check records a candidate physics change",
+    "measurements": {"synthetic_fixture": true, "measurement": 1},
+    "review": {"finding": "supported", "verdict": "keep", "reason": "Synthetic fixture observation is scoped; candidate delivery still requires its stability gate.", "practical_value": "Exercises the candidate gate boundary", "code_readiness": "ready", "limitations": ["Lifecycle fixture, not real physics evidence"], "discrepancy": null}
+  }
+}

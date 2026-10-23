@@ -76,7 +76,8 @@ Attempt execution states are `starting`, `running`, `cancelling`, `submitted`,
 `failed`, `cancelled`, `launch_failed` and `ownership_lost`. A zero exit means
 `submitted` and assignment execution `completed`; review remains `unreviewed`
 and knowledge `unassessed`. The adapter never adds or accepts graph claims.
-Task 010 owns fixed evidence submissions and reviewed admission. An externally
+The [task 010 controller](program-review.md) now owns fixed evidence submissions
+and reviewed admission separately from these execution observations. An externally
 changed terminal assignment state is preserved when the child exits.
 
 Cancel sends SIGTERM only to the current birth-verified launcher. Its existing

@@ -1,0 +1,9 @@
+{
+  "src/python/hp_sim5_research/program.py": "f85c28da4600f441e1bb54dc7fe75812120ddbebbb3120506a1bcc2835c7eca1",
+  "src/python/hp_sim5_research/program_graph.py": "43570eab3cbec75a13377cb48bd33bac63b81f508aef1d5c1eb8b5b2f10daf31",
+  "src/python/hp_sim5_research/program_review.py": "af6b6eaaefa6d188dae43a89bcaed8f89d2f7d265a4bb5ddb03eaab054bbfb0d",
+  "src/python/hp_sim5_research/coding_client.py": "9a68a9488463cb817c8f8ff6c0bf238cfdb386f8d83da793fca3de811730c9fe",
+  "scripts/research_agent.py": "2c8e62795824bc41b8f57ad653eb7aea61ff33f4470045561640298c81b30965",
+  "tests/python/test_research_program_review.py": "9680fc7aedeeb3e93ebfeacc02eb7a0abdb516908d479636f6b689e152b191a8",
+  "tests/fixtures/program-review/cases.json": "122ee97c3c55adf8a64acaf12bf21052fec4760762f508318a75c5b4c0ac2bf1"
+}

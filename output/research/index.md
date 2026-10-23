@@ -2768,6 +2768,58 @@ program agenda, artifact portability, task granularity, negative results.
 - [Producer checks](sessions/2026-10-23-program-task-sanity/../2026-10-22-autocal-lane04-cleanup/checks.json): hashes and recorded equivalence.
 - [Copied inputs](sessions/2026-10-23-program-task-sanity/inputs/): history inputs and producer policy results retained locally.
 
+## [2026-10-23-reviewed-claim-admission](sessions/2026-10-23-reviewed-claim-admission/)
+
+[abstract.md](sessions/2026-10-23-reviewed-claim-admission/abstract.md) · [report.md](sessions/2026-10-23-reviewed-claim-admission/report.md) · [research.md](sessions/2026-10-23-reviewed-claim-admission/research.md)
+
+### Fixed submissions and controller-owned evidence admission
+
+Status: complete (task 010 lifecycle capability; manager release not complete).
+
+#### Abstract
+
+This session tested whether a controller can retain exact claim/evidence/candidate
+versions, commission a separate saved-evidence reviewer and admit only that
+assessment. Ninety-six focused tests passed, including twenty-one new review
+fixtures, store/graph/worker regressions and affected Codex/Claude launcher checks.
+A scoped report-only negative finding yields keep, a lower-fit-cost overclaim
+yields revise, and missing evidence or a candidate lacking its required physics
+stability receipt yields block. Tests also cover byte changes, later unfavorable
+reviews, withdrawal, trusted restore and the cooperative same-UID write boundary.
+A separate exercise sealed three existing CM-E1 files and constructed both real
+supported-client commands without starting a client or admitting a claim. These
+are lifecycle/inspection checks, not numerical reproduction, live-model review or
+manager-release proof; task 016 retains the live gate.
+
+#### Topics
+
+research manager, fixed submissions, evidence review, claim admission, provenance,
+negative findings, candidate stability gate, Codex, Claude, same-UID boundary
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Fixed claim/evidence/candidate versions prevent a stale favorable review from admitting changed targets through the controller API | QA-010-1 | Supported within the cooperative API boundary | [Test transcript](sessions/2026-10-23-reviewed-claim-admission/pytest-final.txt), [checks](sessions/2026-10-23-reviewed-claim-admission/checks.json) |
+| Saved evidence can prepare separate supported-client review commands without physics startup | QA-010-2 | Supported for capture and command planning; live dispatch not tested | [Exercise](sessions/2026-10-23-reviewed-claim-admission/exercise.json), [command plans](sessions/2026-10-23-reviewed-claim-admission/command-plans.json), [sealed manifest](sessions/2026-10-23-reviewed-claim-admission/sealed-example/manifest.json) |
+| The complete manager passes its genuine live release gate | None | Not tested | Task 016 remains outstanding |
+
+#### Decision handoff
+
+- Scope: standard-library controller/store operations, synthetic local child reviewers and copied CM-E1 evidence; no fresh numerical work.
+- Review: implementation author inspected tests, metadata and saved source evidence; no independent numerical reproduction or live coding-client verdict occurred.
+- Decision: keep task 010 capability and retain all release limits; same-UID access is not adversarial isolation.
+- Next: task 011 chat entry can use this API. Task 016 must exercise actual independent review through the existing coding client.
+
+#### References
+
+- [Full report](sessions/2026-10-23-reviewed-claim-admission/report.md): behavior and limitations.
+- [Notebook](sessions/2026-10-23-reviewed-claim-admission/research.md): budget and decisions.
+- [Review API guide](sessions/2026-10-23-reviewed-claim-admission/../../../../research/program-review.md): exact controller contract and actual write boundary.
+- [Fixture judgements](sessions/2026-10-23-reviewed-claim-admission/../../../../tests/fixtures/program-review/cases.json): negative/overclaim/missing/gate cases.
+- [Preceding dispatch implementation](sessions/2026-10-23-reviewed-claim-admission/../2026-10-23-program-worker-dispatch/report.md): existing-worker/auth integration.
+- [CM-E1 producer report](sessions/2026-10-23-reviewed-claim-admission/../2026-10-23-consensus-membership/report.md): source of copied saved evidence, not a new admitted result.
+
 ## [architecture-batch](architecture-batch/)
 
 [abstract.md](architecture-batch/abstract.md) · [report.md](architecture-batch/report.md) · [research.md](architecture-batch/research.md)

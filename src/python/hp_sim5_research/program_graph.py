@@ -305,6 +305,13 @@ class EvidenceGraph:
                                                        set(d['affected_claim_ids']) & selected)):
                     selected.add(i)
                     selected.update(d.get('premise_ids', []) + d.get('evidence_ids', []))
+                if r['kind'] == 'submission' and d['manifest']['claim']['id'] in selected:
+                    selected.add(i)
+                    selected.update(a['artifact_id'] for a in d['manifest']['assets'] if a['artifact_id'])
+                if r['kind'] in ('submission_event', 'review_run', 'review', 'admission') and d['submission_id'] in selected:
+                    selected.add(i)
+                if r['kind'] == 'submission' and i in selected:
+                    selected.add(d['manifest']['claim']['id'])
                 if i in selected:
                     selected.update(d.get('evidence_ids', []))
                     if r['kind'] in ('assessment', 'review_event'):
@@ -339,6 +346,58 @@ class EvidenceGraph:
             states[i]['new_applicability'] = [
                 {'context': e['details']['context'], 'state': 'unestablished'} for e in events
                 if e['details']['event'] == 'applicability' and e['id'] in states[i]['review_event_ids']]
+            if r['kind'] in ('claim', 'artifact'):
+                submissions = [s for s in records.values() if s['kind'] == 'submission'
+                               and (s['details']['manifest']['claim']['id'] == i or
+                                    any(a['artifact_id'] == i for a in s['details']['manifest']['assets']))]
+                submission_ids = {s['id'] for s in submissions}
+                history = [a for a in records.values() if a['kind'] == 'admission'
+                           and a['details']['submission_id'] in submission_ids]
+                latest = {}
+                for admission in sorted(history, key=lambda a: (a['created_at'], a['id'])):
+                    latest[admission['details']['submission_id']] = admission['id']
+                invalid = {e['details']['submission_id'] for e in records.values() if e['kind'] == 'submission_event'}
+                live, review_history = [], []
+                for admission in history:
+                    d = admission['details']
+                    submission = records[d['submission_id']]['details']['manifest']
+                    evidence = {i, *(a['artifact_id'] for a in submission['assets'] if a['artifact_id'])}
+                    withdrawn_review = any(e['details']['event'] == 'withdrawal' and
+                                           evidence.intersection(affected_now[e['id']]) for e in events)
+                    state = ('invalidated' if d['submission_id'] in invalid else
+                             'withdrawn' if withdrawn_review else
+                             'superseded' if latest[d['submission_id']] != admission['id'] else d['knowledge_state'])
+                    review_history.append({'admission_id': admission['id'], 'state': state,
+                                           'finding': d['finding'], 'decision': d['decision']})
+                    if state == 'reviewed':
+                        live.append(admission)
+                states[i].update(submission_ids=[s['id'] for s in submissions],
+                                 admission_ids=[a['id'] for a in history], review_history=review_history,
+                                 reviewed_findings=[{'admission_id': a['id'], 'finding': a['details']['finding'],
+                                                     'claim_id': a['details']['claim_id'],
+                                                     'submission_id': a['details']['submission_id']} for a in live])
+                if submissions:
+                    states[i]['assessment_state'] = 'reviewed' if live else 'pending_review'
+                reviewed_ids = {a['details']['submission_id'] for a in live}
+                states[i]['pending_submission_ids'] = sorted(submission_ids - reviewed_ids)
+                states[i]['review_required'] |= bool(submission_ids - reviewed_ids)
+        for i in selected:
+            r = records[i]
+            if r['kind'] != 'submission':
+                continue
+            manifest = r['details']['manifest']
+            reviews = [v for v in records.values() if v['kind'] == 'review' and v['details']['submission_id'] == i]
+            admissions = sorted((a for a in records.values() if a['kind'] == 'admission' and a['details']['submission_id'] == i),
+                                key=lambda a: (a['created_at'], a['id']))
+            invalid = any(e['kind'] == 'submission_event' and e['details']['submission_id'] == i for e in records.values())
+            evidence = {manifest['claim']['id'], *(a['artifact_id'] for a in manifest['assets'] if a['artifact_id'])}
+            withdrawn_submission = any(e['details']['event'] == 'withdrawal' and
+                                       evidence.intersection(affected_now[e['id']]) for e in events)
+            states[i] = {'assessment_state': 'reviewed' if reviews else 'pending_review',
+                         'review_ids': [v['id'] for v in reviews], 'admission_ids': [a['id'] for a in admissions],
+                         'admission_state': ('invalidated' if invalid else 'withdrawn' if withdrawn_submission else
+                                             admissions[-1]['details']['knowledge_state'] if admissions else 'pending'),
+                         'candidate_revision': manifest['candidate_revision'], 'submission_sha256': r['details']['sha256']}
         artifacts = [records[i] for i in sorted(selected) if records[i]['kind'] == 'artifact']
         groups = {}
         for r in artifacts:
@@ -353,4 +412,4 @@ class EvidenceGraph:
                 'relations': selected_edges, 'states': states, 'sources': artifacts,
                 'shared_inputs': {k: v for k, v in groups.items() if len(v) > 1},
                 'independence': 'Shared inputs are correlated; absent lineage does not establish independent confirmation.',
-                'admission': 'Structural support and imported assessments do not certify claims; admission requires review.'}
+                'admission': 'Only explicit controller admission history records reviewed findings for fixed submissions; structural support is separate.'}

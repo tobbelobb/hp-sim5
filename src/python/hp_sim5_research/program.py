@@ -13,7 +13,8 @@ import uuid
 
 SCHEMA_VERSION = 1
 KINDS = ('question', 'approach', 'assignment', 'artifact', 'decision', 'steering',
-         'claim', 'derivation', 'relation', 'assessment', 'review_event', 'attempt')
+         'claim', 'derivation', 'relation', 'assessment', 'review_event', 'attempt',
+         'submission', 'submission_event', 'review_run', 'review', 'admission')
 TRANSITIONS = {
     'program': {'active': {'paused', 'stopped'}, 'paused': {'active', 'stopped'}, 'stopped': set()},
     'approach': {'live': {'promising', 'parked', 'retired'},
@@ -155,6 +156,10 @@ class ProgramStore:
                         f'CREATE TRIGGER IF NOT EXISTS immutable_graph_{action.lower()} BEFORE {action} ON records '
                         "WHEN OLD.kind IN ('claim', 'artifact', 'derivation', 'relation', 'assessment', 'review_event') "
                         "BEGIN SELECT RAISE(ABORT, 'Graph history is append-only'); END")
+                    connection.execute(
+                        f'CREATE TRIGGER IF NOT EXISTS immutable_review_{action.lower()} BEFORE {action} ON records '
+                        "WHEN OLD.kind IN ('submission', 'submission_event', 'review', 'admission') "
+                        "BEGIN SELECT RAISE(ABORT, 'Review history is append-only'); END")
         except BaseException:
             self.close()
             raise
@@ -207,6 +212,11 @@ class ProgramStore:
         """One live dispatcher; saved attempts are inspection records, never PID adoption."""
         from .program_workers import WorkerDispatcher
         return WorkerDispatcher(self, root, **options)
+
+    def reviews(self, root):
+        """Controller submission/review/admission API; starts no world or viewer."""
+        from .program_review import ReviewController
+        return ReviewController(self, root)
 
     def _touch(self, program_id, expected_revision=None):
         program = self.get_program(program_id)
@@ -334,7 +344,10 @@ class ProgramStore:
 
     def overview(self, program_id):
         result = self.snapshot(program_id)
-        result['scientific_result'] = 'No scientific result is available yet; evidence has not been admitted by review.'
+        admissions = [r for r in result['records'] if r['kind'] == 'admission']
+        result['scientific_result'] = ('Reviewed findings are recorded with exact submission scope; inspect graph review history.'
+                                      if any(r['details']['knowledge_state'] == 'reviewed' for r in admissions) else
+                                      'No scientific result is available yet; evidence has not been admitted by review.')
         result['live_alternatives'] = [r['id'] for r in result['records'] if r['kind'] == 'approach'
                                        and r['details']['state'] in ('live', 'promising')]
         result['assignments'] = [r['id'] for r in result['records'] if r['kind'] == 'assignment']
@@ -428,6 +441,8 @@ class ProgramStore:
         validate_graph(by_id)
         from .program_workers import validate_attempts
         validate_attempts(by_id)
+        from .program_review import validate_reviews
+        validate_reviews(by_id)
         with self.transaction():
             self.connection.execute('INSERT INTO programs VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                                     (identity, program['question_id'], program['goal'], _json(program['constraints']),
@@ -442,8 +457,12 @@ class ProgramStore:
 def render_markdown(snapshot):
     """A complete readable export; JSON remains the lossless import format."""
     program = snapshot['program']
+    admission_message = ('Reviewed findings are recorded in scoped admission history.'
+                         if any(r['kind'] == 'admission' and r['details']['knowledge_state'] == 'reviewed'
+                                for r in snapshot['records']) else
+                         'No scientific result is available yet; evidence has not been admitted by review.')
     parts = [f'# {program["goal"]}', f'Program: {program["id"]} · revision {program["revision"]} · {program["state"]}',
-             'No scientific result is available yet; evidence has not been admitted by review.',
+             admission_message,
              '## Program', '```json\n' + json.dumps(program, indent=2, ensure_ascii=False) + '\n```']
     for record in snapshot['records']:
         parts += [f'## {record["kind"]}: {record["title"]}',

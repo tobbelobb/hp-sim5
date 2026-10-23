@@ -3,7 +3,8 @@
 Task 008 extends the [program store](../program-store.md) with scoped claim
 versions, typed relations, derivations, reported assessments and dated review
 events. No graph service or optional Python package is required. The manager
-release still needs tasks 009–016, including reviewed admission in 010.
+release still needs tasks 011–016. Task 010 adds
+[fixed submissions and reviewed admission](../program-review.md) on this store.
 
 ## Commands
 
@@ -43,8 +44,9 @@ lineage never establishes independence. The store validates metadata; callers
 remain responsible for inspecting the referenced bytes and their provenance.
 
 Reported assessment outcomes are `supported`, `rejected`, `mixed`, `inconclusive`
-and `not_tested`. They always retain `unreviewed`/`unassessed`. Import cannot admit
-claims or assessments. Structural support means that a grounded recorded
+and `not_tested`. They always retain `unreviewed`/`unassessed`. A bare imported
+claim/assessment cannot admit knowledge; trusted controller restore can preserve
+validated admission history. Structural support means that a grounded recorded
 derivation survives; it does not certify the scientific conclusion.
 
 ## Queries and change consequences

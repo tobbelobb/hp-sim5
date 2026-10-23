@@ -1,0 +1,110 @@
+{
+  "focused_final": {
+    "argv": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/python/test_research_program_review.py",
+      "tests/python/test_research_program.py",
+      "tests/python/test_research_program_graph.py",
+      "tests/python/test_research_program_workers.py",
+      "tests/python/test_research_agent.py",
+      "-k",
+      "WorkerTests or ProgramTests or GraphTests or test_report_only or test_known_overclaim or test_actual_candidate or test_changed_bytes or test_new_submission or test_corruption_before or test_original_turnover or test_failed_or_mismatched or test_codex_claude_plans or test_api_and_database or test_control_credentials or launcher_native_build_recovery or launcher_dry_run or launcher_selects_model_provider or launcher_worktree_dry_run or create_worktree_links or launcher_loads_provider_key or launcher_named_session or launcher_clarification or launcher_goal_mode or sidebar_hook or launcher_preserves_written_report or launcher_refuses_existing_session or launcher_requires_exactly_one_backend or claude_dry_run or claude_launcher_lifecycle or interrupted or worktree_reexec",
+      "-m",
+      "not slow"
+    ],
+    "exit_code": 0,
+    "seconds": 7.34158002699769,
+    "transcript": "pytest-final.txt",
+    "passed": 96,
+    "deselected": 18,
+    "subtests_passed": 34,
+    "new_review_cases": 21
+  },
+  "boundary": "Real local child fixtures and real supported coding-client argv/auth helpers; no live coding-client conversation or physics.",
+  "initial_regression": {
+    "command": ".venv/bin/python -m pytest tests/python/test_research_program.py tests/python/test_research_program_graph.py -q",
+    "passed": 16,
+    "failed": 1,
+    "failure": "Markdown export for a program with no admissions no longer contained No scientific result. Restored the conditional message before final passing integration."
+  },
+  "initial_review_suite": {
+    "command": ".venv/bin/python -m pytest tests/python/test_research_program_review.py -q",
+    "passed": 14,
+    "failed": 0,
+    "seconds": 1.12
+  },
+  "compilation": {
+    "argv": [
+      ".venv/bin/python",
+      "-m",
+      "compileall",
+      "-q",
+      "src/python/hp_sim5_research/program.py",
+      "src/python/hp_sim5_research/program_graph.py",
+      "src/python/hp_sim5_research/program_review.py",
+      "src/python/hp_sim5_research/coding_client.py",
+      "scripts/research_agent.py",
+      "tests/python/test_research_program_review.py"
+    ],
+    "exit_code": 0
+  },
+  "saved_evidence_exercise": {
+    "command": ".venv/bin/python output/research/sessions/2026-10-23-reviewed-claim-admission/exercise.py",
+    "exit_code": 0,
+    "actual_client_processes": 0,
+    "reviews": 0,
+    "admissions": 0,
+    "copied_selected_files": 3
+  },
+  "catalog": {
+    "command": ".venv/bin/python scripts/research_index.py",
+    "exit_code": 0,
+    "preserved_missing_historical_entries": [
+      "2026-10-22-autocal-cli-orchestration",
+      "2026-10-22-autocal-filtering-integration",
+      "2026-10-22-autocal-flags-06-planning-stopping",
+      "2026-10-22-autocal-lane04-cleanup",
+      "2026-10-22-autocal-lane06-integration",
+      "2026-10-22-autocal-physical-model-cleanup",
+      "2026-10-22-autocal-solver-integration",
+      "2026-10-22-autocal-spool-simplification",
+      "2026-10-22-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-9b850a37",
+      "2026-10-22-interactive-research-49c8bfde",
+      "2026-10-22-interactive-research-7345527c",
+      "2026-10-22-interactive-research-a430536f",
+      "2026-10-22-interactive-research-d1d37c7f",
+      "2026-10-23-program-task-sanity",
+      "autocal-candidate-model-validation-and-throughput-fdb616a4",
+      "autocal-held-out-history-ranking-7ec4260f",
+      "autocal-history-ranking-baseline-incomplete-a71aec03",
+      "autocal-ranking-bounded-updates-negative-results-b7deb1bc",
+      "hp4-baseline-a-axis-tool-check-93c49db4",
+      "hp4-motion-check-no-results-3c944b0c",
+      "hp4-saved-recording-viewer-check-338606b1",
+      "native-and-viewer-mcp-check-3725e1e9",
+      "unassigned-research-no-results-1cb5b420",
+      "unassigned-research-unsuccessful-exit-f9120c9b",
+      "unsuccessful-launch-no-record-32819264",
+      "unsuccessful-launch-no-record-4d08c2cf",
+      "unsuccessful-launch-no-record-8225a40f"
+    ],
+    "new_session": "2026-10-23-reviewed-claim-admission",
+    "merge_policy": "Retain published catalog unchanged and merge only this task-owned regenerated session section; avoid unrelated alias/archive churn."
+  },
+  "tool_provenance": "/tmp/hp-sim5-test-deps/SOURCE-PROVENANCE.json (released pytest source; existing parent-provided venv)",
+  "limits": [
+    "No actual coding-client conversation",
+    "No numerical reproduction, fits, physics, movements or collections",
+    "Same UID is cooperative, not protected evaluation",
+    "Task 016 retains genuine live release gate"
+  ],
+  "final_integrity": {
+    "queue": "010 done; 011 ready and not started",
+    "source_hashes": 7,
+    "sealed_asset_hashes": 3,
+    "git_diff_check": 0
+  }
+}

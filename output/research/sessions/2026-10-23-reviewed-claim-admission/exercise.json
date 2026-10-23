@@ -1,0 +1,15 @@
+{
+  "boundary": "Saved-evidence capture + real reviewer command plans; no actual client dispatch.\n\nThe producer process is a zero-work fixture, not a managed science investigation.\nSource measurements are inspected/copied, not recomputed or newly admitted.",
+  "submission_id": "submission-e9bacd6be07e412f8fd79d36d5b5780f",
+  "submission_sha256": "39a724f8179f1622f0425aae79842e9fb93b8060d826cc2dba0057b8e47ed15f",
+  "selected_files": 3,
+  "reviewer_commands_planned": [
+    "codex",
+    "claude"
+  ],
+  "actual_client_processes": 0,
+  "reviews": 0,
+  "admissions": 0,
+  "source_head": "639661050c0ddd66c9cf3be9c5c71591d69516d7",
+  "source_dirty": true
+}

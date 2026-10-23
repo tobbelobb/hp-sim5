@@ -316,3 +316,43 @@ checks, catalog regeneration preserving absent historical sessions and diff chec
 passed. Task 009 criteria are complete. Freshness: parent confirmed canonical
 main cd2755f3 before dispatch; no fetch/push attempted. Next: 010 reviewed fixed
 submissions; independent deadlines/restart reconciliation/pool remain 013/014.
+
+2026-10-23 task 010: fixed submissions, separate review and scoped admission
+Added ProgramStore.reviews/root ReviewController with explicit selected-byte
+snapshots, immutable claim/config/input/source/base/candidate identities and actual
+git diff capture. Integrity is rechecked before reviewer dispatch, receipt and
+controller admission. Separate Codex/Claude review reuses shared existing argv/auth
+helpers without starting worker physics; zero exits and producer fields never
+admit graph knowledge. The strict target-bound review retains reviewer context,
+contract/prompt hash, actual inspected versus reproduced checks, finding, practical
+value, code readiness, verdict/reason, limits and discrepancy. Controller guards
+block missing/withdrawn evidence, unresolved discrepancies and missing matching
+inspected candidate physics stability gates. Report-only negative findings can
+close useful work with no code patch. Known credential/control descriptors are
+excluded from selection; no broad secret-scanner or isolation claim is made.
+
+Graph queries expose pending submission/candidate versions, reviewer/admission
+history, later unfavorable supersession and invalidation/withdrawal while retaining
+old scope and measurements. Trusted controller export/import preserves historical
+reviewed state; new admission still requires the sealed bytes. Tests/documentation
+state the actual cooperative same-UID write boundary and direct-write limitation.
+Committed code candidates are supported; report-only submissions propose no code.
+
+Verification: final affected integration passed 96 tests, 18 deselected, 34 subtests
+in 7.00s, including 21 new review cases and store/graph/worker/affected launcher
+auth/client/worktree/cleanup regressions. An initial old-store Markdown no-result
+wording regression was corrected before that final pass. The saved CM-E1 capture
+exercise sealed three existing files and planned both real supported-client
+commands; it started no coding client, produced no review or admission, and did
+not recompute measurements. Compilation, source-hash/queue/docs checks, catalog
+regeneration with only the task-owned entry merged, and diff check passed. Exact
+commands, transcript, plans, sealed example and limits are in
+output/research/sessions/2026-10-23-reviewed-claim-admission/; API guide is
+research/program-review.md. Zero fits/replays/physics/steps/collections/movements;
+no dynamics changed, so no physics delivery gate applies to this implementation.
+Actual client startup and production-physics prerequisites remain genuine live016
+limitations; the separate parent MCP SDK recovery is not live review/release proof.
+Freshness: parent confirmed canonical origin/main at 639661050c0ddd66c9cf3be9c5c71591d69516d7;
+no shell fetch/push or network install attempted. This completes 010, not manager
+readiness. Next eligible task 011 starts only in a new invocation; deadline polling/
+restart orchestration and combined integration remain 013/015, live release 016.

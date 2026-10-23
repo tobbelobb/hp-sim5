@@ -36,3 +36,19 @@ Done when:
 
 Use saved data and lifecycle fixtures; do not reproduce numerical experiments by
 default. Real independent review dispatch is exercised in the final live pilot.
+
+## Completed 2026-10-23
+
+Implemented [fixed submissions and controller review admission](../program-review.md)
+through `ProgramStore.reviews(root)`, with shared existing Codex/Claude client/auth
+helpers and graph query/history integration. The focused affected integration
+passed 96 tests (18 deselected, 34 subtests), including 21 review fixtures. These
+cover negative keep, lower-fit overclaim revise, missing evidence and missing
+candidate stability gate block, changed targets, reviewer failures, withdrawal,
+invalidation, trusted restore and the actual cooperative same-UID boundary.
+
+[Evidence record](../../output/research/sessions/2026-10-23-reviewed-claim-admission/report.md)
+retains the full check command/output, explicit zero-numerical budget and a saved
+CM-E1 submission with real supported-client command plans. This is fixture and
+inspection evidence, not actual coding-client review or manager release proof.
+Task 016 retains the genuine live gate. Next eligible task: 011, in a new invocation.

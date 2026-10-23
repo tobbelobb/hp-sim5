@@ -1,0 +1,78 @@
+[
+  {
+    "id": "review-run-78bb895305e24ab6b4087c478d1562b3",
+    "directory": "/tmp/hp-review-plan-klf3mm_6/memory/reviews/review-run-78bb895305e24ab6b4087c478d1562b3",
+    "argv": [
+      "codex",
+      "exec",
+      "--cd",
+      "/workspace/hp-sim5",
+      "--sandbox",
+      "read-only",
+      "-c",
+      "approval_policy=\"never\"",
+      "--json",
+      "--output-last-message",
+      "/tmp/hp-review-plan-klf3mm_6/memory/reviews/review-run-78bb895305e24ab6b4087c478d1562b3/final-message.md",
+      "-c",
+      "sandbox_workspace_write.network_access=true",
+      "-c",
+      "sandbox_workspace_write.writable_roots=[\"/workspace/hp-sim5/output\"]",
+      "-c",
+      "features.default_mode_request_user_input=false",
+      "-c",
+      "features.goals=false",
+      "-c",
+      "mcp_servers.hp_sim5.enabled=false",
+      "-c",
+      "mcp_servers.rerun.enabled=false",
+      "-c",
+      "model_provider=\"openai\"",
+      "-"
+    ],
+    "reviewer": {
+      "context_id": "review-run-78bb895305e24ab6b4087c478d1562b3",
+      "backend": "codex",
+      "model": null,
+      "model_provider": "openai"
+    },
+    "wall_minutes": 5,
+    "submission_id": "submission-e9bacd6be07e412f8fd79d36d5b5780f",
+    "submission_sha256": "39a724f8179f1622f0425aae79842e9fb93b8060d826cc2dba0057b8e47ed15f",
+    "contract": "hp-sim5-evidence-review-v1",
+    "prompt_sha256": "0c647f71c1ce024a7436ae5a00575cb0b984dd86437e256ccfcc360b6aafe9e3"
+  },
+  {
+    "id": "review-run-a820d26031f04a6ea4c65b80d26b5a22",
+    "directory": "/tmp/hp-review-plan-klf3mm_6/memory/reviews/review-run-a820d26031f04a6ea4c65b80d26b5a22",
+    "argv": [
+      "claude",
+      "--mcp-config",
+      "/tmp/hp-review-plan-klf3mm_6/memory/reviews/review-run-a820d26031f04a6ea4c65b80d26b5a22/attachment.json",
+      "--strict-mcp-config",
+      "--append-system-prompt-file",
+      "/tmp/hp-review-plan-klf3mm_6/memory/reviews/review-run-a820d26031f04a6ea4c65b80d26b5a22/instructions.md",
+      "--allowedTools",
+      "Read,Glob,Grep,Bash",
+      "--settings",
+      "{\"modelProposedGoals\": \"disabled\"}",
+      "--disallowedTools",
+      "AskUserQuestion",
+      "--print",
+      "--output-format",
+      "stream-json",
+      "--verbose"
+    ],
+    "reviewer": {
+      "context_id": "review-run-a820d26031f04a6ea4c65b80d26b5a22",
+      "backend": "claude",
+      "model": null,
+      "model_provider": "openai"
+    },
+    "wall_minutes": 5,
+    "submission_id": "submission-e9bacd6be07e412f8fd79d36d5b5780f",
+    "submission_sha256": "39a724f8179f1622f0425aae79842e9fb93b8060d826cc2dba0057b8e47ed15f",
+    "contract": "hp-sim5-evidence-review-v1",
+    "prompt_sha256": "0c647f71c1ce024a7436ae5a00575cb0b984dd86437e256ccfcc360b6aafe9e3"
+  }
+]

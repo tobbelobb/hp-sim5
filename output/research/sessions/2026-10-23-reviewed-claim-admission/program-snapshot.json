@@ -1,0 +1,350 @@
+{
+  "format_version": 1,
+  "program": {
+    "id": "plan-check",
+    "question_id": "question",
+    "goal": "Can saved evidence close a blanket default-change route?",
+    "state": "active",
+    "revision": 13,
+    "created_at": "2026-10-23T22:16:50.046646+00:00",
+    "updated_at": "2026-10-23T22:16:50.089683+00:00",
+    "constraints": {}
+  },
+  "records": [
+    {
+      "id": "question",
+      "program_id": "plan-check",
+      "kind": "question",
+      "title": "Can saved evidence close a blanket default-change route?",
+      "revision": 1,
+      "created_at": "2026-10-23T22:16:50.046778+00:00",
+      "updated_at": "2026-10-23T22:16:50.046778+00:00",
+      "details": {
+        "knowledge_state": "unassessed",
+        "scope": {}
+      }
+    },
+    {
+      "id": "route",
+      "program_id": "plan-check",
+      "kind": "approach",
+      "title": "Inspect existing CM-E1 evidence",
+      "revision": 1,
+      "created_at": "2026-10-23T22:16:50.046953+00:00",
+      "updated_at": "2026-10-23T22:16:50.046953+00:00",
+      "details": {
+        "question_id": "question",
+        "reason": "No duplicate science run",
+        "state": "live"
+      }
+    },
+    {
+      "id": "assignment",
+      "program_id": "plan-check",
+      "kind": "assignment",
+      "title": "Inspect saved evidence only",
+      "revision": 4,
+      "created_at": "2026-10-23T22:16:50.047046+00:00",
+      "updated_at": "2026-10-23T22:16:50.078183+00:00",
+      "details": {
+        "allocation": {
+          "collections": 0,
+          "fresh_fits": 0,
+          "physics_steps": 0,
+          "wall_minutes": 1
+        },
+        "approach_id": "route",
+        "execution_state": "completed",
+        "knowledge_state": "unassessed",
+        "question_id": "question",
+        "review_state": "unreviewed"
+      }
+    },
+    {
+      "id": "decision-5edc5ebf642443bab0e5f720e2f56acb",
+      "program_id": "plan-check",
+      "kind": "decision",
+      "title": "Zero-work fixture can demonstrate capture and planning",
+      "revision": 1,
+      "created_at": "2026-10-23T22:16:50.047234+00:00",
+      "updated_at": "2026-10-23T22:16:50.047234+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "assignment"
+      }
+    },
+    {
+      "id": "attempt-10c746b2ecb9412896c98a3354ac4754",
+      "program_id": "plan-check",
+      "kind": "attempt",
+      "title": "Inspect saved evidence only",
+      "revision": 4,
+      "created_at": "2026-10-23T22:16:50.061336+00:00",
+      "updated_at": "2026-10-23T22:16:50.078145+00:00",
+      "details": {
+        "allocation": {
+          "collections": 0,
+          "fresh_fits": 0,
+          "physics_steps": 0,
+          "wall_minutes": 1
+        },
+        "argv": [
+          "/tmp/hp-review-plan-klf3mm_6/zero-work-producer",
+          "--codex",
+          "--batch",
+          "--prompt-file",
+          "/tmp/hp-review-plan-klf3mm_6/memory/workers/attempt-10c746b2ecb9412896c98a3354ac4754/prompt.txt",
+          "--session-dir",
+          "/workspace/hp-sim5/output/research/sessions/attempt-10c746b2ecb9412896c98a3354ac4754",
+          "--physics-backend",
+          "headless-js",
+          "--machine",
+          "hp4",
+          "--viewer",
+          "headless"
+        ],
+        "artifacts": [
+          {
+            "bytes": 0,
+            "partial": false,
+            "path": "/tmp/hp-review-plan-klf3mm_6/memory/workers/attempt-10c746b2ecb9412896c98a3354ac4754/stdout.log"
+          },
+          {
+            "bytes": 0,
+            "partial": false,
+            "path": "/tmp/hp-review-plan-klf3mm_6/memory/workers/attempt-10c746b2ecb9412896c98a3354ac4754/stderr.log"
+          },
+          {
+            "bytes": 1054,
+            "partial": false,
+            "path": "/tmp/hp-review-plan-klf3mm_6/memory/workers/attempt-10c746b2ecb9412896c98a3354ac4754/prompt.txt"
+          },
+          {
+            "bytes": 890,
+            "partial": false,
+            "path": "/tmp/hp-review-plan-klf3mm_6/memory/workers/attempt-10c746b2ecb9412896c98a3354ac4754/assignment.json"
+          }
+        ],
+        "assignment_id": "assignment",
+        "attempt_dir": "/tmp/hp-review-plan-klf3mm_6/memory/workers/attempt-10c746b2ecb9412896c98a3354ac4754",
+        "cleanup": "unverified; launcher exit manifest missing",
+        "diagnostics": [],
+        "exited_at": "2026-10-23T22:16:50.077872+00:00",
+        "observations": [
+          {
+            "at": "2026-10-23T22:16:50.061262+00:00",
+            "event": "reserved"
+          },
+          {
+            "at": "2026-10-23T22:16:50.061821+00:00",
+            "event": "spawned",
+            "pid": 13808
+          },
+          {
+            "at": "2026-10-23T22:16:50.077886+00:00",
+            "event": "exited",
+            "returncode": 0
+          }
+        ],
+        "owner": {
+          "id": "dispatcher-83b3b6a0e7ab4b129ffebef63275685f",
+          "process": {
+            "birth": "2272642",
+            "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+            "group": 13794,
+            "host": "2df9bd87a6a7",
+            "pid": 13795,
+            "uid": 1000
+          }
+        },
+        "process": {
+          "birth": "2272647",
+          "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+          "group": 13808,
+          "host": "2df9bd87a6a7",
+          "pid": 13808,
+          "uid": 1000
+        },
+        "prompt_sha256": "e22a799aef0708c8bd7bc32d971434fadd54f0e06d769b89d798dba6b32a49e7",
+        "returncode": 0,
+        "scientific_state": "unassessed",
+        "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-10c746b2ecb9412896c98a3354ac4754",
+        "settings": {
+          "backend": "codex",
+          "client_args": [],
+          "dont_ask": false,
+          "goal_mode": true,
+          "machine": "hp4",
+          "physics_backend": "headless-js",
+          "record": true,
+          "viewer": "headless",
+          "worktree": false
+        },
+        "source_dirty": true,
+        "source_revision": "639661050c0ddd66c9cf3be9c5c71591d69516d7",
+        "started_at": "2026-10-23T22:16:50.061816+00:00",
+        "state": "submitted"
+      }
+    },
+    {
+      "id": "claim",
+      "program_id": "plan-check",
+      "kind": "claim",
+      "title": "On eight additional frozen simulated histories, blanket finite-prediction membership did not reliably improve summed anchor error",
+      "revision": 1,
+      "created_at": "2026-10-23T22:16:50.078746+00:00",
+      "updated_at": "2026-10-23T22:16:50.078746+00:00",
+      "details": {
+        "claim_key": "claim",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "evidence_type": "simulated",
+          "hardware": false,
+          "stage": "frozen final consensus"
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "report-artifact",
+      "program_id": "plan-check",
+      "kind": "artifact",
+      "title": "/workspace/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/report.md",
+      "revision": 1,
+      "created_at": "2026-10-23T22:16:50.079040+00:00",
+      "updated_at": "2026-10-23T22:16:50.079040+00:00",
+      "details": {
+        "evidence_type": "simulated",
+        "provenance": {
+          "input_identities": [
+            "CM-E1-frozen-histories"
+          ],
+          "observation": "inspected, not recomputed"
+        },
+        "reference": "/workspace/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/report.md",
+        "sha256": "2e47bc589aea727b2e76387ff8fc3339b664134145f15d61df7fbbc7f46ef96a",
+        "source_revision": "historical CM-E1 source provenance in selected report/results"
+      }
+    },
+    {
+      "id": "abstract-artifact",
+      "program_id": "plan-check",
+      "kind": "artifact",
+      "title": "/workspace/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/abstract.md",
+      "revision": 1,
+      "created_at": "2026-10-23T22:16:50.079173+00:00",
+      "updated_at": "2026-10-23T22:16:50.079173+00:00",
+      "details": {
+        "evidence_type": "simulated",
+        "provenance": {
+          "input_identities": [
+            "CM-E1-frozen-histories"
+          ],
+          "observation": "inspected, not recomputed"
+        },
+        "reference": "/workspace/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/abstract.md",
+        "sha256": "2a1cdfe485b1706a03a26d526daf06ad623a11b44632674d77371ee40b9abbb7",
+        "source_revision": "historical CM-E1 source provenance in selected report/results"
+      }
+    },
+    {
+      "id": "measurements-artifact",
+      "program_id": "plan-check",
+      "kind": "artifact",
+      "title": "/workspace/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/results.json",
+      "revision": 1,
+      "created_at": "2026-10-23T22:16:50.079536+00:00",
+      "updated_at": "2026-10-23T22:16:50.079536+00:00",
+      "details": {
+        "evidence_type": "simulated",
+        "provenance": {
+          "input_identities": [
+            "CM-E1-frozen-histories"
+          ],
+          "observation": "inspected, not recomputed"
+        },
+        "reference": "/workspace/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/results.json",
+        "sha256": "bdd85e0f758ce3a4f0ef4f5be3c0fe094fb830dfa6f3c059d39d7a2d804ab1cd",
+        "source_revision": "historical CM-E1 source provenance in selected report/results"
+      }
+    },
+    {
+      "id": "submission-e9bacd6be07e412f8fd79d36d5b5780f",
+      "program_id": "plan-check",
+      "kind": "submission",
+      "title": "On eight additional frozen simulated histories, blanket finite-prediction membership did not reliably improve summed anchor error",
+      "revision": 1,
+      "created_at": "2026-10-23T22:16:50.090289+00:00",
+      "updated_at": "2026-10-23T22:16:50.090289+00:00",
+      "details": {
+        "manifest": {
+          "assets": [
+            {
+              "artifact_id": "report-artifact",
+              "id": "report",
+              "missing": false,
+              "role": "report",
+              "sha256": "2e47bc589aea727b2e76387ff8fc3339b664134145f15d61df7fbbc7f46ef96a",
+              "source": "/workspace/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/report.md"
+            },
+            {
+              "artifact_id": "abstract-artifact",
+              "id": "abstract",
+              "missing": false,
+              "role": "abstract",
+              "sha256": "2a1cdfe485b1706a03a26d526daf06ad623a11b44632674d77371ee40b9abbb7",
+              "source": "/workspace/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/abstract.md"
+            },
+            {
+              "artifact_id": "measurements-artifact",
+              "id": "measurements",
+              "missing": false,
+              "role": "evidence",
+              "sha256": "bdd85e0f758ce3a4f0ef4f5be3c0fe094fb830dfa6f3c059d39d7a2d804ab1cd",
+              "source": "/workspace/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/results.json"
+            }
+          ],
+          "assignment_id": "assignment",
+          "attempt_id": "attempt-10c746b2ecb9412896c98a3354ac4754",
+          "base_revision": "639661050c0ddd66c9cf3be9c5c71591d69516d7",
+          "candidate_revision": null,
+          "changed_paths": [],
+          "claim": {
+            "created_at": "2026-10-23T22:16:50.078746+00:00",
+            "details": {
+              "claim_key": "claim",
+              "knowledge_state": "unassessed",
+              "scope": {
+                "evidence_type": "simulated",
+                "hardware": false,
+                "stage": "frozen final consensus"
+              },
+              "version": 1
+            },
+            "id": "claim",
+            "kind": "claim",
+            "program_id": "plan-check",
+            "revision": 1,
+            "title": "On eight additional frozen simulated histories, blanket finite-prediction membership did not reliably improve summed anchor error",
+            "updated_at": "2026-10-23T22:16:50.078746+00:00"
+          },
+          "config": {
+            "comparison": "saved CM-E1 only"
+          },
+          "contract": "hp-sim5-evidence-review-v1",
+          "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_state": "submitted",
+          "input_identities": [
+            "CM-E1-frozen-histories"
+          ],
+          "physics_gate_required": false,
+          "producer_checks": [],
+          "source_dirty": true,
+          "source_revision": "639661050c0ddd66c9cf3be9c5c71591d69516d7"
+        },
+        "sha256": "39a724f8179f1622f0425aae79842e9fb93b8060d826cc2dba0057b8e47ed15f"
+      }
+    }
+  ]
+}

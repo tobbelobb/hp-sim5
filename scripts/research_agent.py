@@ -12,12 +12,13 @@ import socket
 import subprocess
 import sys
 import time
-import tomllib
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src/python'))
 sys.path.insert(0, str(ROOT))
+from hp_sim5_research import coding_client
+from hp_sim5_research.coding_client import toml_literal
 from hp_sim5_research.services import RuntimeService, free_port, stop_process, register_test_process
 from hp_sim5_research.archive import initial_abstract, session_name, write_index
 
@@ -48,52 +49,15 @@ def ensure_native_physics():
 
 
 def provider_env_key(provider):
-    # A configured provider names the environment variable holding its credential.
-    if not provider:
-        return None
-    candidates = [ROOT / '.codex/config.toml',
-                  Path(os.environ.get('CODEX_HOME', Path.home() / '.codex')) / 'config.toml']
-    for path in candidates:
-        try:
-            providers = tomllib.loads(path.read_text()).get('model_providers', {})
-        except (OSError, tomllib.TOMLDecodeError):
-            continue
-        variable = providers.get(provider, {}).get('env_key')
-        if variable:
-            return variable
-    return None
+    return coding_client.provider_env_key(provider, root=ROOT)
 
 
 def dotenv_values(path=None):
-    # Read plain KEY=VALUE lines without executing the file or touching the environment.
-    values = {}
-    try:
-        lines = (path or ENV_FILE).read_text().splitlines()
-    except OSError:
-        return values
-    for line in lines:
-        line = line.strip()
-        if line.startswith('export '):
-            line = line[7:].lstrip()
-        if not line or line.startswith('#') or '=' not in line:
-            continue
-        key, _, value = line.partition('=')
-        key, value = key.strip(), value.strip().strip('"').strip("'")
-        if key and value:
-            values[key] = value
-    return values
+    return coding_client.dotenv_values(path or ENV_FILE)
 
 
 def codex_environment(provider=CHATGPT_SIGN_IN):
-    # ChatGPT sign-in needs no OpenAI key. A selected API provider gets its configured
-    # env_key from the Git-ignored .env when the caller has not already exported it.
-    environment = {key: value for key, value in os.environ.items() if key not in STRIPPED_KEYS}
-    variable = provider_env_key(provider)
-    if variable and not environment.get(variable):
-        value = dotenv_values().get(variable)
-        if value:
-            environment[variable] = value
-    return environment
+    return coding_client.codex_environment(provider, root=ROOT, env_file=ENV_FILE)
 
 
 def forwarded_settings(codex_args):
@@ -311,14 +275,6 @@ def doctor(provider=CHATGPT_SIGN_IN, model=None, *, backend='codex'):
             'backend': backend, 'model_provider': provider, 'model': model, 'checks': checks}
 
 
-def toml_literal(value):
-    if isinstance(value, dict):
-        return '{ ' + ', '.join(f'{json.dumps(key)} = {toml_literal(item)}' for key, item in value.items()) + ' }'
-    if isinstance(value, list):
-        return '[' + ', '.join(toml_literal(item) for item in value) + ']'
-    return json.dumps(value)
-
-
 def sidebar_hooks(section_id):
     return {'UserPromptSubmit': [{'hooks': [{
         'type': 'mcp_tool', 'server': 'codex_app', 'tool': 'move_thread_to_sidebar_section',
@@ -351,15 +307,7 @@ def sidebar_server_enabled(codex_args, provider=CHATGPT_SIGN_IN):
 
 def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, dont_ask=False, goal_mode, codex_args=(), instructions='', sidebar_section=None,
                   model_provider=CHATGPT_SIGN_IN, model=None):
-    command = ['codex'] + (['exec'] if batch else [])
-    command += ['--cd', str(ROOT), '--sandbox', 'workspace-write', '-c', 'approval_policy="never"']
-    if batch:
-        command += ['--json', '--output-last-message', str(session / 'final-message.md')]
-    settings = {'sandbox_workspace_write.network_access': True,
-                'sandbox_workspace_write.writable_roots': [str((ROOT / 'output').resolve())],
-                'features.default_mode_request_user_input': not (dont_ask or batch),
-                'features.goals': goal_mode,
-                'mcp_servers.hp_sim5.command': sys.executable,
+    settings = {'mcp_servers.hp_sim5.command': sys.executable,
                 'mcp_servers.hp_sim5.args': [str(ROOT / 'scripts/hp_sim5_mcp.py')],
                 'mcp_servers.hp_sim5.cwd': str(ROOT), 'mcp_servers.hp_sim5.required': True,
                 'mcp_servers.hp_sim5.startup_timeout_sec': 30, 'mcp_servers.hp_sim5.tool_timeout_sec': 14500,
@@ -367,8 +315,6 @@ def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, dont_a
                 'mcp_servers.rerun.enabled': viewer_endpoint is not None,
                 'mcp_servers.rerun.command': str(ROOT / '.venv/bin/rerun'),
                 'mcp_servers.rerun.args': ['viewer-mcp']}
-    if model_provider:
-        settings['model_provider'] = model_provider
     if runtime is not None:
         settings['mcp_servers.hp_sim5.args'] = [str(ROOT / 'scripts/research_attach.py'), str(session / 'connection.json')]
     if viewer_endpoint is not None:
@@ -379,13 +325,10 @@ def codex_command(session, viewer_endpoint, runtime=None, *, batch=False, dont_a
                          'mcp_servers.rerun.default_tools_approval_mode': 'approve'})
     if sidebar_section:
         settings['hooks.UserPromptSubmit'] = sidebar_hooks(sidebar_section)['UserPromptSubmit']
-    for key, value in settings.items():
-        command += ['-c', f'{key}={toml_literal(value)}']
-    if model:
-        command += ['--model', model]
-    if instructions:
-        command += ['-c', f'developer_instructions={json.dumps(instructions)}']
-    return command + list(codex_args) + (['-'] if batch else [])
+    return coding_client.codex_command(ROOT, session, batch=batch, dont_ask=dont_ask,
+                                       goal_mode=goal_mode, codex_args=codex_args,
+                                       instructions=instructions, model_provider=model_provider,
+                                       model=model, settings=settings)
 
 
 def claude_mcp_config(session, viewer_endpoint):
@@ -399,28 +342,12 @@ def claude_mcp_config(session, viewer_endpoint):
 
 
 def claude_command(session, viewer_endpoint=None, runtime=None, *, batch=False, dont_ask=False, goal_mode, codex_args=(), model=None, **_):
-    command = ['claude', '--mcp-config', str(session / 'attachment.json'), '--strict-mcp-config',
-               '--append-system-prompt-file', str(session / 'instructions.md'),
-               '--allowedTools', 'mcp__hp_sim5,mcp__rerun',
-               '--settings', json.dumps({'modelProposedGoals': 'auto' if goal_mode else 'disabled'})]
-    if dont_ask:
-        command += ['--disallowedTools', 'AskUserQuestion']
-    if batch:
-        command += ['--print', '--output-format', 'stream-json', '--verbose']
-    if model:
-        command += ['--model', model]
-    return command + list(codex_args)
+    return coding_client.claude_command(session, batch=batch, dont_ask=dont_ask,
+                                        goal_mode=goal_mode, codex_args=codex_args, model=model)
 
 
 def claude_environment():
-    environment = dict(os.environ)
-    if not environment.get('ANTHROPIC_API_KEY'):
-        key = dotenv_values().get('ANTHROPIC_API_KEY')
-        if key:
-            environment['ANTHROPIC_API_KEY'] = key
-    # Match the supervisor's long-running experiment tool budget (milliseconds).
-    environment['MCP_TOOL_TIMEOUT'] = '14500000'
-    return environment
+    return coding_client.claude_environment(env_file=ENV_FILE)
 
 
 def start_viewer(mode, session):

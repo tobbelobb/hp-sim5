@@ -7,8 +7,9 @@ Task 008 adds the [typed evidence graph](program-graph/README.md), query command
 and withdrawal/applicability review events on this same store.
 Task 009 adds the [existing-worker dispatcher API](program-workers.md), durable
 attempts and session inspection on the same store. The CLI below remains offline.
-The full manager still requires [tasks 010–016](program-tasks/README.md),
-including reviewed admission, chat entry and live verification.
+Task 010 adds [fixed submissions, separate review and controller admission](program-review.md).
+The full manager still requires [tasks 011–016](program-tasks/README.md),
+including chat entry and live verification.
 
 From the repository root, a question alone is sufficient:
 
@@ -67,16 +68,18 @@ is mandatory for every transition. Assignment execution states are
 `planned → ready → running → completed|failed|cancelled`; planned/ready can also
 be cancelled. Creating assignments or marking them ready/running requires an
 active program and a live/promising approach. These transitions record execution
-state only. They do not signal processes. Review stays `unreviewed`, knowledge
-stays `unassessed`, and the overview honestly reports no scientific result.
-Later tasks own evidence admission and actual worker lifecycle.
+state only. They do not signal processes. Assignment review/knowledge observations
+stay `unreviewed`/`unassessed`; explicit scoped admission history determines the
+graph's knowledge state. The overview reports no scientific result until an
+admission exists. See the dispatcher and review APIs linked above.
 
 Artifact types are `simulated`, `synthetic`, `analytic`, `hardware` and `imported`.
 The store retains the supplied external path/URL, SHA-256, source revision and
 provenance. It neither copies nor verifies the scientific bytes. Keep those
 files in the existing [session/handoff layout](handoffs.md); use a portable
 handoff when the original session may disappear. Imports preserve recorded
-execution and provenance but cannot turn unassessed records into accepted facts.
+execution and provenance. Trusted imports restore validated admission history;
+they cannot turn a bare unassessed record into an accepted fact.
 
 ```bash
 ./hp-sim5-research-program export PROGRAM_ID > /tmp/program.json
