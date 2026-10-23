@@ -41,3 +41,30 @@ fresh fits, collection, reviewer agent or prompt-grading framework were run.
 Regenerated the research catalog with .venv/bin/python scripts/research_index.py;
 git diff --check passed. All task 001 acceptance criteria are met.
 Next: task 002 is eligible; put the short decision handoff in the existing abstract.
+
+2026-10-23 task 002: short decision handoff
+Changed research/abstract-template.md, src/python/hp_sim5_research/archive.py,
+tests/python/test_research_archive.py, and this queue's task 002 brief,
+tasks.json and progress.txt. The template asks for a few lines on applicable
+scope, review extent, current decision and the cheapest observation that could
+change it, linked to existing hypotheses/evidence. New-session abstracts say no
+research result or decision is available and leave unrecorded scope/review/next
+observations explicit. Catalog rendering/search and old abstracts need no changes.
+
+Added a completed H1 attribution example to the task brief. Reused the Lane 02
+integration report, summary-comparison.json and fallback-history.json: their
+saved final-consensus comparison resolves the individual-fit attribution issue.
+This is saved simulation evidence inspected for the example, not independent
+numerical reproduction or evidence of broader solver equivalence.
+
+Verification: .venv/bin/python -m pytest -q tests/python/test_research_archive.py
+ran once; all 3 tests passed, including the extended pending-session assertions.
+A temporary catalog built and searched through scripts/research_index.py showed
+all four completed-handoff fields, found a phrase unique to the next observation,
+retained pending and legacy abstracts, and preserved all four relative evidence
+links and their heading targets. Rendered index, search output and check summary
+are in /tmp/hp-sim5-task002-gkm7yek2/ (temporary local evidence).
+Regenerated the local research catalog; git diff --check passed. No simulations,
+fresh fits, collection or physics implementation changes were made. All task 002
+acceptance criteria are met.
+Next: task 003 is eligible; turn a broad question into one economical assignment.

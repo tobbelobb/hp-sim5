@@ -48,6 +48,9 @@ def test_pending_and_legacy_sessions_do_not_claim_completed_research(tmp_path):
     (unrelated / 'telemetry.jsonl').write_text('{}')
     index = render_index(tmp_path)
     assert 'None recorded yet' in index
+    assert 'No research result is available yet' in index
+    assert 'No research decision yet' in index
+    assert 'Scope, review and the next observation have not been recorded' in index
     assert 'Status: abstract missing' in index
     assert 'tested hypotheses have not been cataloged' in index
     assert '[experiments]' not in index

@@ -31,3 +31,20 @@ Done when:
 Run `.venv/bin/python -m pytest -q tests/python/test_research_archive.py` once if
 archive behavior changes. Add a focused behavioral case only if needed to expose
 a real gap. For template-only edits, a temporary rendered catalog is sufficient.
+
+## Completed handoff example
+
+This example uses saved simulation evidence; no new fit or collection was run.
+
+- Scope: [H1](../autocal-filtering-lane02-integration.md#bounded-investigations),
+  the recorded HP3 layered fixture's individual fit and final consensus;
+  broader solver equivalence is untested.
+- Review: task 002 inspected the [comparison](../../output/research/sessions/2026-10-22-autocal-filtering-integration/summary-comparison.json),
+  [revision ancestry](../../output/research/sessions/2026-10-22-autocal-filtering-integration/fallback-history.json)
+  and [H1 analysis](../autocal-filtering-lane02-integration.md#the-layered-reference-comparison).
+  No independent numerical reproduction.
+- Decision: retain H1's rejection of the inferred fallback regression; correct
+  the original report's comparison of an individual fit with final consensus.
+- Next: inspect any saved comparison showing a gap at the same output stage,
+  with matched inputs and attributed revisions, before reopening H1. None was
+  identified here; correcting this attribution needs no new fit.

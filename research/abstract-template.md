@@ -20,6 +20,19 @@ identifiability, cable elasticity or compiler crashes. Use the actual topics.
 | --- | --- | --- | --- |
 | A specific falsifiable claim | Actual IDs, or none | Supported, rejected, mixed, inconclusive or not tested | Link to measurements |
 
+## Decision handoff
+
+Keep this to a few lines. Cite the hypothesis and evidence above rather than
+repeating the result. For pending work, say no result or research decision is
+available yet; leave unrecorded scope, review and next observations explicit.
+
+- Scope: the machine, data and model/settings or revision covered by the finding.
+- Review: evidence reported, inspected or independently recomputed, by whom;
+  name missing evidence that limits the decision.
+- Decision: what to keep, revise or block based on that evidence and scope.
+- Next: the cheapest observation that could change the decision and which
+  uncertainty it resolves, or why no follow-up is needed.
+
 ## References
 
 - [Full report](report.md): analysis, measurements and limitations.

@@ -18,7 +18,7 @@
       "id": "002",
       "priority": 20,
       "title": "Put a short decision handoff in the existing abstract",
-      "status": "ready",
+      "status": "done",
       "depends_on": ["001"],
       "file": "002-short-decision-handoff.md"
     },
