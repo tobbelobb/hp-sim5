@@ -38,3 +38,28 @@ Done when:
 
 Deliver usable graph behavior now. A graph database, embeddings, automatic
 whole-corpus extraction and visualization are unnecessary for this outcome.
+
+## Delivered
+
+Implemented on ProgramStore as `store.graph()` with append-only versioned claims,
+derivations, reported assessments, typed relations and review events. Existing
+program/record identity, transactions and revision guards apply. Six new CLI
+commands provide mutations and citation-preserving queries. Required premises
+are acyclic AND inputs within a derivation; separate derivations are alternatives.
+Withdrawal recomputes support and review needs without editing scope; new source/
+configuration applicability stays unestablished while old measurements remain.
+Unreviewed reports cannot admit claims; admission remains task 010.
+
+The [guide and curated seed](../program-graph/README.md) contain 16 unassessed
+findings from nine inspected sources, with eleven CM-E1 compressed/raw hash
+pairs checked. The [saved transcript](../program-graph/queries.json) records
+twelve successful fresh-process CLI calls including retirement/open-scope queries,
+withdrawal with surviving alternative support, unaffected attribution and source
+change. Missing raw historical artifacts remain explicit. No numerical replay.
+
+Verification: seven graph tests and ten existing store tests pass, covering
+cycle/missing/duplicate/malformed input diagnostics, immutable history, revision
+guards, source/config scope, alternative support and full export/import. The
+[task report](../../output/research/sessions/2026-10-23-program-evidence-graph/report.md)
+and [check log](../../output/research/sessions/2026-10-23-program-evidence-graph/checks.txt)
+state the inspection boundary. This completes 008, not the manager release.

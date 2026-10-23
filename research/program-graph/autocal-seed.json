@@ -1,0 +1,1516 @@
+{
+  "format_version": 1,
+  "program": {
+    "id": "autocal-evidence",
+    "question_id": "q-calibration",
+    "goal": "What supports retiring blanket finite-prediction membership, and what remains unresolved?",
+    "state": "active",
+    "revision": 76,
+    "created_at": "2026-10-23T21:40:56.108561+00:00",
+    "updated_at": "2026-10-23T21:40:56.129757+00:00",
+    "constraints": {
+      "collections": 0,
+      "fresh_fits": 0,
+      "inspection_only": true,
+      "physics_runs": 0
+    }
+  },
+  "records": [
+    {
+      "id": "q-calibration",
+      "program_id": "autocal-evidence",
+      "kind": "question",
+      "title": "What supports retiring blanket finite-prediction membership, and what remains unresolved?",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.108766+00:00",
+      "updated_at": "2026-10-23T21:40:56.108766+00:00",
+      "details": {
+        "knowledge_state": "unassessed",
+        "scope": {}
+      }
+    },
+    {
+      "id": "cm-report",
+      "program_id": "autocal-evidence",
+      "kind": "artifact",
+      "title": "output/research/sessions/2026-10-23-consensus-membership/report.md",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.109493+00:00",
+      "updated_at": "2026-10-23T21:40:56.109493+00:00",
+      "details": {
+        "evidence_type": "simulated",
+        "provenance": {
+          "config": {},
+          "input_identities": [
+            "sha256:16dbb3c48e81be80d5ba03756b4c33886ddbcaa61e1230fab19fe4c32ffd1319",
+            "sha256:160ad70188471623eaf82eea82d73f8140e966d250697fc296982d67a845358e",
+            "sha256:a0acbe7f0d520821b238d74a99428f4154f06b281fb453d4b96ae5943459f84f",
+            "sha256:083c6394c13dd1f66823a8c224bf22fef1e167d99a3457438c151f6a47034a96",
+            "sha256:7b9a325002a7d4859267f0dff9e093990adf066378a88fdffcc0e00076f6f092",
+            "sha256:2c5eb13f18083ac720e64ea4ae86df16ca3209d50515904a21eff66f93333242",
+            "sha256:22a1a0c433e9cb7bd58cec75db6d7f371308b710a5799f67f1a18096d6399f2d",
+            "sha256:9058c37ec4eca9b7b3d2977624fce6e5044acecd0c5ec499c739eabbdb121d2b",
+            "sha256:5cc2716becb70a26561642790506fe65e58fc113287751c7dae78c6ea7e95b02",
+            "sha256:cb8f21af363b3d86383a3b05a12b91cf0a8248f32d6832f3b57b0171f04c86c3",
+            "sha256:5ca2dcf76e6a8e8daadb59517b73d430d58b7a8bde102c7018371046cebaba57"
+          ],
+          "inspection": "Saved report/summary inspected; no independent numerical replay",
+          "missing_artifacts": [],
+          "report_checkout": "f6bbda35"
+        },
+        "reference": "output/research/sessions/2026-10-23-consensus-membership/report.md",
+        "sha256": "2e47bc589aea727b2e76387ff8fc3339b664134145f15d61df7fbbc7f46ef96a",
+        "source_revision": "5400cefc"
+      }
+    },
+    {
+      "id": "cm-results",
+      "program_id": "autocal-evidence",
+      "kind": "artifact",
+      "title": "output/research/sessions/2026-10-23-consensus-membership/results.json",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.109769+00:00",
+      "updated_at": "2026-10-23T21:40:56.109769+00:00",
+      "details": {
+        "evidence_type": "simulated",
+        "provenance": {
+          "config": {
+            "merge_distance_mm": 0.01,
+            "producer_revision": "72523b9d",
+            "spread_limit_mm": 5
+          },
+          "input_identities": [
+            "sha256:16dbb3c48e81be80d5ba03756b4c33886ddbcaa61e1230fab19fe4c32ffd1319",
+            "sha256:160ad70188471623eaf82eea82d73f8140e966d250697fc296982d67a845358e",
+            "sha256:a0acbe7f0d520821b238d74a99428f4154f06b281fb453d4b96ae5943459f84f",
+            "sha256:083c6394c13dd1f66823a8c224bf22fef1e167d99a3457438c151f6a47034a96",
+            "sha256:7b9a325002a7d4859267f0dff9e093990adf066378a88fdffcc0e00076f6f092",
+            "sha256:2c5eb13f18083ac720e64ea4ae86df16ca3209d50515904a21eff66f93333242",
+            "sha256:22a1a0c433e9cb7bd58cec75db6d7f371308b710a5799f67f1a18096d6399f2d",
+            "sha256:9058c37ec4eca9b7b3d2977624fce6e5044acecd0c5ec499c739eabbdb121d2b",
+            "sha256:5cc2716becb70a26561642790506fe65e58fc113287751c7dae78c6ea7e95b02",
+            "sha256:cb8f21af363b3d86383a3b05a12b91cf0a8248f32d6832f3b57b0171f04c86c3",
+            "sha256:5ca2dcf76e6a8e8daadb59517b73d430d58b7a8bde102c7018371046cebaba57"
+          ],
+          "inspection": "Saved report/summary inspected; no independent numerical replay",
+          "missing_artifacts": [],
+          "report_checkout": "f6bbda35"
+        },
+        "reference": "output/research/sessions/2026-10-23-consensus-membership/results.json",
+        "sha256": "bdd85e0f758ce3a4f0ef4f5be3c0fe094fb830dfa6f3c059d39d7a2d804ab1cd",
+        "source_revision": "5400cefc0238007406f5cd572d21ef5a72d2958d"
+      }
+    },
+    {
+      "id": "cm-inputs",
+      "program_id": "autocal-evidence",
+      "kind": "artifact",
+      "title": "output/research/sessions/2026-10-23-consensus-membership/inputs.json",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.109909+00:00",
+      "updated_at": "2026-10-23T21:40:56.109909+00:00",
+      "details": {
+        "evidence_type": "simulated",
+        "provenance": {
+          "config": {
+            "machine_labels": [
+              "hangprinter_4",
+              "slideprinter"
+            ]
+          },
+          "input_identities": [
+            "sha256:16dbb3c48e81be80d5ba03756b4c33886ddbcaa61e1230fab19fe4c32ffd1319",
+            "sha256:160ad70188471623eaf82eea82d73f8140e966d250697fc296982d67a845358e",
+            "sha256:a0acbe7f0d520821b238d74a99428f4154f06b281fb453d4b96ae5943459f84f",
+            "sha256:083c6394c13dd1f66823a8c224bf22fef1e167d99a3457438c151f6a47034a96",
+            "sha256:7b9a325002a7d4859267f0dff9e093990adf066378a88fdffcc0e00076f6f092",
+            "sha256:2c5eb13f18083ac720e64ea4ae86df16ca3209d50515904a21eff66f93333242",
+            "sha256:22a1a0c433e9cb7bd58cec75db6d7f371308b710a5799f67f1a18096d6399f2d",
+            "sha256:9058c37ec4eca9b7b3d2977624fce6e5044acecd0c5ec499c739eabbdb121d2b",
+            "sha256:5cc2716becb70a26561642790506fe65e58fc113287751c7dae78c6ea7e95b02",
+            "sha256:cb8f21af363b3d86383a3b05a12b91cf0a8248f32d6832f3b57b0171f04c86c3",
+            "sha256:5ca2dcf76e6a8e8daadb59517b73d430d58b7a8bde102c7018371046cebaba57"
+          ],
+          "inspection": "Saved report/summary inspected; no independent numerical replay",
+          "missing_artifacts": [],
+          "report_checkout": "f6bbda35"
+        },
+        "reference": "output/research/sessions/2026-10-23-consensus-membership/inputs.json",
+        "sha256": "f58ef95d783a265b7153cefc07d2d8785f77896846bb07d58317b8a009634b44",
+        "source_revision": "72523b9d"
+      }
+    },
+    {
+      "id": "ranking-report",
+      "program_id": "autocal-evidence",
+      "kind": "artifact",
+      "title": "output/research/sessions/b7deb1bcc9cb418388273e2b7b9adc8c/report.md",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.110098+00:00",
+      "updated_at": "2026-10-23T21:40:56.110098+00:00",
+      "details": {
+        "evidence_type": "simulated",
+        "provenance": {
+          "config": {},
+          "input_identities": [
+            "historical-ranking-fixture-families"
+          ],
+          "inspection": "Saved report/summary inspected; no independent numerical replay",
+          "missing_artifacts": [
+            "output/research/sessions/b7deb1bcc9cb418388273e2b7b9adc8c/paired_regressions.json",
+            "output/research/sessions/b7deb1bcc9cb418388273e2b7b9adc8c/heldout_audit.json"
+          ],
+          "report_checkout": "f6bbda35"
+        },
+        "reference": "output/research/sessions/b7deb1bcc9cb418388273e2b7b9adc8c/report.md",
+        "sha256": "c31b3b62c35678dd5e2a81ef7cbc54d5d69527a53435f5d7366b4451c25b203f",
+        "source_revision": "aaf25cf7"
+      }
+    },
+    {
+      "id": "refresh-report",
+      "program_id": "autocal-evidence",
+      "kind": "artifact",
+      "title": "output/research/reference-refresh-october-7-2026/report.md",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.110243+00:00",
+      "updated_at": "2026-10-23T21:40:56.110243+00:00",
+      "details": {
+        "evidence_type": "simulated",
+        "provenance": {
+          "config": {
+            "baseline_revision": "b60856d9"
+          },
+          "input_identities": [
+            "historical-ranking-fixture-families"
+          ],
+          "inspection": "Saved report/summary inspected; no independent numerical replay",
+          "missing_artifacts": [
+            "output/research/reference-refresh-october-7-2026/comparison.json"
+          ],
+          "report_checkout": "f6bbda35"
+        },
+        "reference": "output/research/reference-refresh-october-7-2026/report.md",
+        "sha256": "95898f1c0c39806904d3c34f600b3831007063a66edb2d48647caef9be3eae61",
+        "source_revision": "4daac40c"
+      }
+    },
+    {
+      "id": "attribution-report",
+      "program_id": "autocal-evidence",
+      "kind": "artifact",
+      "title": "research/autocal-filtering-lane02-integration.md",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.110417+00:00",
+      "updated_at": "2026-10-23T21:40:56.110417+00:00",
+      "details": {
+        "evidence_type": "simulated",
+        "provenance": {
+          "config": {},
+          "input_identities": [
+            "layered-lane02-summary"
+          ],
+          "inspection": "Saved report/summary inspected; no independent numerical replay",
+          "missing_artifacts": [
+            "output/research/sessions/2026-10-22-autocal-filtering-integration/summary-comparison.json"
+          ],
+          "report_checkout": "f6bbda35"
+        },
+        "reference": "research/autocal-filtering-lane02-integration.md",
+        "sha256": "4e71fcbb137b60c57c79670f30866611a02331cd44be5968322fa579c1c6bc48",
+        "source_revision": "87093cdd"
+      }
+    },
+    {
+      "id": "pending-abstract",
+      "program_id": "autocal-evidence",
+      "kind": "artifact",
+      "title": "output/research/sessions/a71aec03021f470796a789ba7382e28a/abstract.md",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.110526+00:00",
+      "updated_at": "2026-10-23T21:40:56.110526+00:00",
+      "details": {
+        "evidence_type": "simulated",
+        "provenance": {
+          "config": {},
+          "input_identities": [
+            "unfinished-baseline-notebook"
+          ],
+          "inspection": "Saved report/summary inspected; no independent numerical replay",
+          "missing_artifacts": [],
+          "report_checkout": "f6bbda35"
+        },
+        "reference": "output/research/sessions/a71aec03021f470796a789ba7382e28a/abstract.md",
+        "sha256": "df1e1a86d4d2fcf2b24bc0408063b74a098702719e6b4c38ceaff6e19f34bac8",
+        "source_revision": "retrospective-2026-10-08"
+      }
+    },
+    {
+      "id": "pending-notebook",
+      "program_id": "autocal-evidence",
+      "kind": "artifact",
+      "title": "output/research/sessions/a71aec03021f470796a789ba7382e28a/research.md",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.110629+00:00",
+      "updated_at": "2026-10-23T21:40:56.110629+00:00",
+      "details": {
+        "evidence_type": "simulated",
+        "provenance": {
+          "config": {},
+          "input_identities": [
+            "unfinished-baseline-notebook"
+          ],
+          "inspection": "Saved report/summary inspected; no independent numerical replay",
+          "missing_artifacts": [],
+          "report_checkout": "f6bbda35"
+        },
+        "reference": "output/research/sessions/a71aec03021f470796a789ba7382e28a/research.md",
+        "sha256": "d7a2cda9fe6407e1f5696c01e2f4f4c75b707df7ac60d59674d3ea573e200bd4",
+        "source_revision": "not-recorded"
+      }
+    },
+    {
+      "id": "agenda",
+      "program_id": "autocal-evidence",
+      "kind": "artifact",
+      "title": "research/autocal-agenda.md",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.110754+00:00",
+      "updated_at": "2026-10-23T21:40:56.110754+00:00",
+      "details": {
+        "evidence_type": "simulated",
+        "provenance": {
+          "config": {},
+          "input_identities": [
+            "sha256:16dbb3c48e81be80d5ba03756b4c33886ddbcaa61e1230fab19fe4c32ffd1319",
+            "sha256:160ad70188471623eaf82eea82d73f8140e966d250697fc296982d67a845358e",
+            "sha256:a0acbe7f0d520821b238d74a99428f4154f06b281fb453d4b96ae5943459f84f",
+            "sha256:083c6394c13dd1f66823a8c224bf22fef1e167d99a3457438c151f6a47034a96",
+            "sha256:7b9a325002a7d4859267f0dff9e093990adf066378a88fdffcc0e00076f6f092",
+            "sha256:2c5eb13f18083ac720e64ea4ae86df16ca3209d50515904a21eff66f93333242",
+            "sha256:22a1a0c433e9cb7bd58cec75db6d7f371308b710a5799f67f1a18096d6399f2d",
+            "sha256:9058c37ec4eca9b7b3d2977624fce6e5044acecd0c5ec499c739eabbdb121d2b",
+            "sha256:5cc2716becb70a26561642790506fe65e58fc113287751c7dae78c6ea7e95b02",
+            "sha256:cb8f21af363b3d86383a3b05a12b91cf0a8248f32d6832f3b57b0171f04c86c3",
+            "sha256:5ca2dcf76e6a8e8daadb59517b73d430d58b7a8bde102c7018371046cebaba57",
+            "historical-ranking-fixture-families"
+          ],
+          "inspection": "Saved report/summary inspected; no independent numerical replay",
+          "missing_artifacts": [
+            "output/research/sessions/2026-10-23-program-task-sanity/report.md"
+          ],
+          "report_checkout": "f6bbda35"
+        },
+        "reference": "research/autocal-agenda.md",
+        "sha256": "1cdd8d6673f1311456d0c61fd579b30bfe8e433409a78072c0342253379aff49",
+        "source_revision": "fd10fd94"
+      }
+    },
+    {
+      "id": "cm-mixed",
+      "program_id": "autocal-evidence",
+      "kind": "claim",
+      "title": "CM-E1 additional datasets: finite-only membership improved 1, worsened 2, unchanged 5 of 8.",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.110967+00:00",
+      "updated_at": "2026-10-23T21:40:56.110967+00:00",
+      "details": {
+        "claim_key": "cm-mixed",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "evidence": "simulated",
+          "hardware": false,
+          "machine": "mixed stored fixture labels",
+          "operation": "saved-history selection",
+          "source_revision": "5400cefc"
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "derive-cm-mixed",
+      "program_id": "autocal-evidence",
+      "kind": "derivation",
+      "title": "Reported saved evidence, inspected without numerical replay",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.111137+00:00",
+      "updated_at": "2026-10-23T21:40:56.111137+00:00",
+      "details": {
+        "conclusion_id": "cm-mixed",
+        "evidence_ids": [
+          "cm-results",
+          "cm-report"
+        ],
+        "premise_ids": [],
+        "reason": "Reported saved evidence, inspected without numerical replay"
+      }
+    },
+    {
+      "id": "assess-cm-mixed",
+      "program_id": "autocal-evidence",
+      "kind": "assessment",
+      "title": "Curated producer outcome; admission awaits task 010",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.111324+00:00",
+      "updated_at": "2026-10-23T21:40:56.111324+00:00",
+      "details": {
+        "actor": "task-008-curator",
+        "admission_state": "unassessed",
+        "evidence_ids": [
+          "cm-results",
+          "cm-report"
+        ],
+        "outcome": "supported",
+        "review_state": "unreviewed",
+        "subject_id": "cm-mixed"
+      }
+    },
+    {
+      "id": "cm-regressions",
+      "program_id": "autocal-evidence",
+      "kind": "claim",
+      "title": "CM-E1: flexible_lines_2000 worsened +0.502998 mm and ten_points_w_buildup +0.094156 mm summed anchor error.",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.111504+00:00",
+      "updated_at": "2026-10-23T21:40:56.111504+00:00",
+      "details": {
+        "claim_key": "cm-regressions",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "evidence": "simulated",
+          "hardware": false,
+          "machine": "slideprinter",
+          "metric": "sum of per-anchor Euclidean error mm",
+          "operation": "saved-history selection",
+          "source_revision": "5400cefc"
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "derive-cm-regressions",
+      "program_id": "autocal-evidence",
+      "kind": "derivation",
+      "title": "Reported saved evidence, inspected without numerical replay",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.111674+00:00",
+      "updated_at": "2026-10-23T21:40:56.111674+00:00",
+      "details": {
+        "conclusion_id": "cm-regressions",
+        "evidence_ids": [
+          "cm-results"
+        ],
+        "premise_ids": [],
+        "reason": "Reported saved evidence, inspected without numerical replay"
+      }
+    },
+    {
+      "id": "assess-cm-regressions",
+      "program_id": "autocal-evidence",
+      "kind": "assessment",
+      "title": "Curated producer outcome; admission awaits task 010",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.111839+00:00",
+      "updated_at": "2026-10-23T21:40:56.111839+00:00",
+      "details": {
+        "actor": "task-008-curator",
+        "admission_state": "unassessed",
+        "evidence_ids": [
+          "cm-results"
+        ],
+        "outcome": "supported",
+        "review_state": "unreviewed",
+        "subject_id": "cm-regressions"
+      }
+    },
+    {
+      "id": "cm-aggregate",
+      "program_id": "autocal-evidence",
+      "kind": "claim",
+      "title": "CM-E1 summed anchor error 401.100276 to 400.797031 mm is a small net gain, with regressions.",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.112010+00:00",
+      "updated_at": "2026-10-23T21:40:56.112010+00:00",
+      "details": {
+        "claim_key": "cm-aggregate",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "evidence": "simulated",
+          "hardware": false,
+          "machine": "mixed stored fixture labels",
+          "metric": "anchor error sum, not RMSE",
+          "operation": "saved-history selection",
+          "source_revision": "5400cefc"
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "derive-cm-aggregate",
+      "program_id": "autocal-evidence",
+      "kind": "derivation",
+      "title": "Reported saved evidence, inspected without numerical replay",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.112178+00:00",
+      "updated_at": "2026-10-23T21:40:56.112178+00:00",
+      "details": {
+        "conclusion_id": "cm-aggregate",
+        "evidence_ids": [
+          "cm-results"
+        ],
+        "premise_ids": [],
+        "reason": "Reported saved evidence, inspected without numerical replay"
+      }
+    },
+    {
+      "id": "assess-cm-aggregate",
+      "program_id": "autocal-evidence",
+      "kind": "assessment",
+      "title": "Curated producer outcome; admission awaits task 010",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.112381+00:00",
+      "updated_at": "2026-10-23T21:40:56.112381+00:00",
+      "details": {
+        "actor": "task-008-curator",
+        "admission_state": "unassessed",
+        "evidence_ids": [
+          "cm-results"
+        ],
+        "outcome": "mixed",
+        "review_state": "unreviewed",
+        "subject_id": "cm-aggregate"
+      }
+    },
+    {
+      "id": "cm-holdout-gap",
+      "program_id": "autocal-evidence",
+      "kind": "claim",
+      "title": "All three changed CM-E1 applied models have zero common unseen whole sweeps; predictive safety is unresolved.",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.112579+00:00",
+      "updated_at": "2026-10-23T21:40:56.112579+00:00",
+      "details": {
+        "claim_key": "cm-holdout-gap",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "evidence": "simulated",
+          "hardware": false,
+          "machine": "slideprinter",
+          "operation": "saved-history selection",
+          "source_revision": "5400cefc",
+          "training_overlap": true
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "derive-cm-holdout-gap",
+      "program_id": "autocal-evidence",
+      "kind": "derivation",
+      "title": "Reported saved evidence, inspected without numerical replay",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.112772+00:00",
+      "updated_at": "2026-10-23T21:40:56.112772+00:00",
+      "details": {
+        "conclusion_id": "cm-holdout-gap",
+        "evidence_ids": [
+          "cm-results",
+          "cm-report"
+        ],
+        "premise_ids": [],
+        "reason": "Reported saved evidence, inspected without numerical replay"
+      }
+    },
+    {
+      "id": "assess-cm-holdout-gap",
+      "program_id": "autocal-evidence",
+      "kind": "assessment",
+      "title": "Curated producer outcome; admission awaits task 010",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.113022+00:00",
+      "updated_at": "2026-10-23T21:40:56.113022+00:00",
+      "details": {
+        "actor": "task-008-curator",
+        "admission_state": "unassessed",
+        "evidence_ids": [
+          "cm-results",
+          "cm-report"
+        ],
+        "outcome": "inconclusive",
+        "review_state": "unreviewed",
+        "subject_id": "cm-holdout-gap"
+      }
+    },
+    {
+      "id": "cm-compatibility",
+      "program_id": "autocal-evidence",
+      "kind": "claim",
+      "title": "All 11 chosen single-fit prediction scores match saved values at the reported frozen evaluations; fresh-fit equivalence is unestablished.",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.113235+00:00",
+      "updated_at": "2026-10-23T21:40:56.113235+00:00",
+      "details": {
+        "claim_key": "cm-compatibility",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "evidence": "simulated",
+          "hardware": false,
+          "machine": "mixed stored fixture labels",
+          "operation": "saved-history selection",
+          "producer_revision": "72523b9d",
+          "source_revision": "5400cefc"
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "derive-cm-compatibility",
+      "program_id": "autocal-evidence",
+      "kind": "derivation",
+      "title": "Reported saved evidence, inspected without numerical replay",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.113510+00:00",
+      "updated_at": "2026-10-23T21:40:56.113510+00:00",
+      "details": {
+        "conclusion_id": "cm-compatibility",
+        "evidence_ids": [
+          "cm-results",
+          "cm-report"
+        ],
+        "premise_ids": [],
+        "reason": "Reported saved evidence, inspected without numerical replay"
+      }
+    },
+    {
+      "id": "assess-cm-compatibility",
+      "program_id": "autocal-evidence",
+      "kind": "assessment",
+      "title": "Curated producer outcome; admission awaits task 010",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.113737+00:00",
+      "updated_at": "2026-10-23T21:40:56.113737+00:00",
+      "details": {
+        "actor": "task-008-curator",
+        "admission_state": "unassessed",
+        "evidence_ids": [
+          "cm-results",
+          "cm-report"
+        ],
+        "outcome": "supported",
+        "review_state": "unreviewed",
+        "subject_id": "cm-compatibility"
+      }
+    },
+    {
+      "id": "earlier-gains",
+      "program_id": "autocal-evidence",
+      "kind": "claim",
+      "title": "CM-E1 report preserves earlier two-of-three gains of 3.905 and 2.118 mm; original motivating session is unavailable here.",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.113963+00:00",
+      "updated_at": "2026-10-23T21:40:56.113963+00:00",
+      "details": {
+        "claim_key": "earlier-gains",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "evidence": "simulated",
+          "hardware": false,
+          "inspection": "secondary report only; different producer histories",
+          "machine": "mixed stored fixture labels",
+          "operation": "saved-history selection",
+          "source_revision": "5400cefc"
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "derive-earlier-gains",
+      "program_id": "autocal-evidence",
+      "kind": "derivation",
+      "title": "Reported saved evidence, inspected without numerical replay",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.114189+00:00",
+      "updated_at": "2026-10-23T21:40:56.114189+00:00",
+      "details": {
+        "conclusion_id": "earlier-gains",
+        "evidence_ids": [
+          "cm-report",
+          "agenda"
+        ],
+        "premise_ids": [],
+        "reason": "Reported saved evidence, inspected without numerical replay"
+      }
+    },
+    {
+      "id": "assess-earlier-gains",
+      "program_id": "autocal-evidence",
+      "kind": "assessment",
+      "title": "Curated producer outcome; admission awaits task 010",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.114441+00:00",
+      "updated_at": "2026-10-23T21:40:56.114441+00:00",
+      "details": {
+        "actor": "task-008-curator",
+        "admission_state": "unassessed",
+        "evidence_ids": [
+          "cm-report",
+          "agenda"
+        ],
+        "outcome": "supported",
+        "review_state": "unreviewed",
+        "subject_id": "earlier-gains"
+      }
+    },
+    {
+      "id": "ranking-disagreement",
+      "program_id": "autocal-evidence",
+      "kind": "claim",
+      "title": "Earlier negative study reports 22 adjacent ranking/physical disagreements across 7 of 11 datasets.",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.114684+00:00",
+      "updated_at": "2026-10-23T21:40:56.114684+00:00",
+      "details": {
+        "claim_key": "ranking-disagreement",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "evidence": "simulated",
+          "hardware": false,
+          "metric": "anchor plus 2pi weighted radius",
+          "source_revision": "aaf25cf7"
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "derive-ranking-disagreement",
+      "program_id": "autocal-evidence",
+      "kind": "derivation",
+      "title": "Reported saved evidence, inspected without numerical replay",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.114923+00:00",
+      "updated_at": "2026-10-23T21:40:56.114923+00:00",
+      "details": {
+        "conclusion_id": "ranking-disagreement",
+        "evidence_ids": [
+          "ranking-report"
+        ],
+        "premise_ids": [],
+        "reason": "Reported saved evidence, inspected without numerical replay"
+      }
+    },
+    {
+      "id": "assess-ranking-disagreement",
+      "program_id": "autocal-evidence",
+      "kind": "assessment",
+      "title": "Curated producer outcome; admission awaits task 010",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.115165+00:00",
+      "updated_at": "2026-10-23T21:40:56.115165+00:00",
+      "details": {
+        "actor": "task-008-curator",
+        "admission_state": "unassessed",
+        "evidence_ids": [
+          "ranking-report"
+        ],
+        "outcome": "supported",
+        "review_state": "unreviewed",
+        "subject_id": "ranking-disagreement"
+      }
+    },
+    {
+      "id": "ranking-selector-mixed",
+      "program_id": "autocal-evidence",
+      "kind": "claim",
+      "title": "Earlier whole-sweep prediction selection was physically worse on 5 of 11 datasets, equal on 4, better on 2.",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.115461+00:00",
+      "updated_at": "2026-10-23T21:40:56.115461+00:00",
+      "details": {
+        "claim_key": "ranking-selector-mixed",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "evidence": "simulated",
+          "hardware": false,
+          "raw_artifacts": "missing here",
+          "source_revision": "aaf25cf7"
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "derive-ranking-selector-mixed",
+      "program_id": "autocal-evidence",
+      "kind": "derivation",
+      "title": "Reported saved evidence, inspected without numerical replay",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.115733+00:00",
+      "updated_at": "2026-10-23T21:40:56.115733+00:00",
+      "details": {
+        "conclusion_id": "ranking-selector-mixed",
+        "evidence_ids": [
+          "ranking-report"
+        ],
+        "premise_ids": [],
+        "reason": "Reported saved evidence, inspected without numerical replay"
+      }
+    },
+    {
+      "id": "assess-ranking-selector-mixed",
+      "program_id": "autocal-evidence",
+      "kind": "assessment",
+      "title": "Curated producer outcome; admission awaits task 010",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.115993+00:00",
+      "updated_at": "2026-10-23T21:40:56.115993+00:00",
+      "details": {
+        "actor": "task-008-curator",
+        "admission_state": "unassessed",
+        "evidence_ids": [
+          "ranking-report"
+        ],
+        "outcome": "mixed",
+        "review_state": "unreviewed",
+        "subject_id": "ranking-selector-mixed"
+      }
+    },
+    {
+      "id": "refresh-mixed",
+      "program_id": "autocal-evidence",
+      "kind": "claim",
+      "title": "Refreshed-reference comparison reports 7.71% net composite-error gain with 3 improvements, 5 regressions, 3 unchanged.",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.116263+00:00",
+      "updated_at": "2026-10-23T21:40:56.116263+00:00",
+      "details": {
+        "claim_key": "refresh-mixed",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "baseline_revision": "b60856d9",
+          "evidence": "simulated",
+          "hardware": false,
+          "metric": "anchor plus 2pi weighted radius",
+          "source_revision": "4daac40c"
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "derive-refresh-mixed",
+      "program_id": "autocal-evidence",
+      "kind": "derivation",
+      "title": "Reported saved evidence, inspected without numerical replay",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.116589+00:00",
+      "updated_at": "2026-10-23T21:40:56.116589+00:00",
+      "details": {
+        "conclusion_id": "refresh-mixed",
+        "evidence_ids": [
+          "refresh-report"
+        ],
+        "premise_ids": [],
+        "reason": "Reported saved evidence, inspected without numerical replay"
+      }
+    },
+    {
+      "id": "assess-refresh-mixed",
+      "program_id": "autocal-evidence",
+      "kind": "assessment",
+      "title": "Curated producer outcome; admission awaits task 010",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.116870+00:00",
+      "updated_at": "2026-10-23T21:40:56.116870+00:00",
+      "details": {
+        "actor": "task-008-curator",
+        "admission_state": "unassessed",
+        "evidence_ids": [
+          "refresh-report"
+        ],
+        "outcome": "mixed",
+        "review_state": "unreviewed",
+        "subject_id": "refresh-mixed"
+      }
+    },
+    {
+      "id": "incomparable-folds",
+      "program_id": "autocal-evidence",
+      "kind": "claim",
+      "title": "Refreshed ranking candidates used different future folds; cross-study aggregates cannot establish a general selector.",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.117152+00:00",
+      "updated_at": "2026-10-23T21:40:56.117152+00:00",
+      "details": {
+        "claim_key": "incomparable-folds",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "evidence": "simulated",
+          "hardware": false,
+          "source_revision": "4daac40c"
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "derive-incomparable-folds",
+      "program_id": "autocal-evidence",
+      "kind": "derivation",
+      "title": "Reported saved evidence, inspected without numerical replay",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.117491+00:00",
+      "updated_at": "2026-10-23T21:40:56.117491+00:00",
+      "details": {
+        "conclusion_id": "incomparable-folds",
+        "evidence_ids": [
+          "refresh-report",
+          "agenda"
+        ],
+        "premise_ids": [],
+        "reason": "Reported saved evidence, inspected without numerical replay"
+      }
+    },
+    {
+      "id": "assess-incomparable-folds",
+      "program_id": "autocal-evidence",
+      "kind": "assessment",
+      "title": "Curated producer outcome; admission awaits task 010",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.117796+00:00",
+      "updated_at": "2026-10-23T21:40:56.117796+00:00",
+      "details": {
+        "actor": "task-008-curator",
+        "admission_state": "unassessed",
+        "evidence_ids": [
+          "refresh-report",
+          "agenda"
+        ],
+        "outcome": "supported",
+        "review_state": "unreviewed",
+        "subject_id": "incomparable-folds"
+      }
+    },
+    {
+      "id": "attribution-correction",
+      "program_id": "autocal-evidence",
+      "kind": "claim",
+      "title": "Lane 02 layered alleged fallback gap compares individual fit 7.683 mm RMSE to final consensus 1.583 mm; it is an attribution error.",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.118108+00:00",
+      "updated_at": "2026-10-23T21:40:56.118108+00:00",
+      "details": {
+        "claim_key": "attribution-correction",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "evidence": "simulated",
+          "hardware": false,
+          "machine": "slideprinter",
+          "metric": "anchor RMSE mm",
+          "raw_artifacts": "missing here",
+          "source_revision": "87093cdd"
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "derive-attribution-correction",
+      "program_id": "autocal-evidence",
+      "kind": "derivation",
+      "title": "Reported saved evidence, inspected without numerical replay",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.118438+00:00",
+      "updated_at": "2026-10-23T21:40:56.118438+00:00",
+      "details": {
+        "conclusion_id": "attribution-correction",
+        "evidence_ids": [
+          "attribution-report"
+        ],
+        "premise_ids": [],
+        "reason": "Reported saved evidence, inspected without numerical replay"
+      }
+    },
+    {
+      "id": "assess-attribution-correction",
+      "program_id": "autocal-evidence",
+      "kind": "assessment",
+      "title": "Curated producer outcome; admission awaits task 010",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.118763+00:00",
+      "updated_at": "2026-10-23T21:40:56.118763+00:00",
+      "details": {
+        "actor": "task-008-curator",
+        "admission_state": "unassessed",
+        "evidence_ids": [
+          "attribution-report"
+        ],
+        "outcome": "supported",
+        "review_state": "unreviewed",
+        "subject_id": "attribution-correction"
+      }
+    },
+    {
+      "id": "pending-baseline",
+      "program_id": "autocal-evidence",
+      "kind": "claim",
+      "title": "Unfinished historical notebook reports ten_points_bigger_deltas selection regret 10.96–14.90 mm.",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.119083+00:00",
+      "updated_at": "2026-10-23T21:40:56.119083+00:00",
+      "details": {
+        "claim_key": "pending-baseline",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "evidence": "simulated",
+          "hardware": false,
+          "machine": "slideprinter",
+          "source_revision": "not-recorded"
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "derive-pending-baseline",
+      "program_id": "autocal-evidence",
+      "kind": "derivation",
+      "title": "Reported saved evidence, inspected without numerical replay",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.119432+00:00",
+      "updated_at": "2026-10-23T21:40:56.119432+00:00",
+      "details": {
+        "conclusion_id": "pending-baseline",
+        "evidence_ids": [
+          "pending-notebook"
+        ],
+        "premise_ids": [],
+        "reason": "Reported saved evidence, inspected without numerical replay"
+      }
+    },
+    {
+      "id": "assess-pending-baseline",
+      "program_id": "autocal-evidence",
+      "kind": "assessment",
+      "title": "Curated producer outcome; admission awaits task 010",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.119766+00:00",
+      "updated_at": "2026-10-23T21:40:56.119766+00:00",
+      "details": {
+        "actor": "task-008-curator",
+        "admission_state": "unassessed",
+        "evidence_ids": [
+          "pending-notebook"
+        ],
+        "outcome": "supported",
+        "review_state": "unreviewed",
+        "subject_id": "pending-baseline"
+      }
+    },
+    {
+      "id": "pending-selector",
+      "program_id": "autocal-evidence",
+      "kind": "claim",
+      "title": "Unfinished record has no completed held-out-selector outcome; successful exit does not supply the missing result.",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.120115+00:00",
+      "updated_at": "2026-10-23T21:40:56.120115+00:00",
+      "details": {
+        "claim_key": "pending-selector",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "evidence": "simulated",
+          "hardware": false,
+          "source_revision": "not-recorded",
+          "status": "incomplete"
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "derive-pending-selector",
+      "program_id": "autocal-evidence",
+      "kind": "derivation",
+      "title": "Reported saved evidence, inspected without numerical replay",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.120485+00:00",
+      "updated_at": "2026-10-23T21:40:56.120485+00:00",
+      "details": {
+        "conclusion_id": "pending-selector",
+        "evidence_ids": [
+          "pending-abstract",
+          "pending-notebook"
+        ],
+        "premise_ids": [],
+        "reason": "Reported saved evidence, inspected without numerical replay"
+      }
+    },
+    {
+      "id": "assess-pending-selector",
+      "program_id": "autocal-evidence",
+      "kind": "assessment",
+      "title": "Curated producer outcome; admission awaits task 010",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.120835+00:00",
+      "updated_at": "2026-10-23T21:40:56.120835+00:00",
+      "details": {
+        "actor": "task-008-curator",
+        "admission_state": "unassessed",
+        "evidence_ids": [
+          "pending-abstract",
+          "pending-notebook"
+        ],
+        "outcome": "not_tested",
+        "review_state": "unreviewed",
+        "subject_id": "pending-selector"
+      }
+    },
+    {
+      "id": "cm-hp4-scope",
+      "program_id": "autocal-evidence",
+      "kind": "claim",
+      "title": "CM-E1 includes five unchanged histories labelled hangprinter_4 and six slideprinter histories; it tests frozen simulation selection, with no live HP4 or hardware validation.",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.121193+00:00",
+      "updated_at": "2026-10-23T21:40:56.121193+00:00",
+      "details": {
+        "claim_key": "cm-hp4-scope",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "evidence": "simulated",
+          "hardware": false,
+          "live_collection": false,
+          "machine": "hangprinter_4",
+          "note": "Historical hp3 filenames are not machine identity",
+          "operation": "saved-history selection",
+          "source_revision": "5400cefc"
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "derive-cm-hp4-scope",
+      "program_id": "autocal-evidence",
+      "kind": "derivation",
+      "title": "Reported saved evidence, inspected without numerical replay",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.121609+00:00",
+      "updated_at": "2026-10-23T21:40:56.121609+00:00",
+      "details": {
+        "conclusion_id": "cm-hp4-scope",
+        "evidence_ids": [
+          "cm-inputs",
+          "cm-results",
+          "cm-report"
+        ],
+        "premise_ids": [],
+        "reason": "Reported saved evidence, inspected without numerical replay"
+      }
+    },
+    {
+      "id": "assess-cm-hp4-scope",
+      "program_id": "autocal-evidence",
+      "kind": "assessment",
+      "title": "Curated producer outcome; admission awaits task 010",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.121984+00:00",
+      "updated_at": "2026-10-23T21:40:56.121984+00:00",
+      "details": {
+        "actor": "task-008-curator",
+        "admission_state": "unassessed",
+        "evidence_ids": [
+          "cm-inputs",
+          "cm-results",
+          "cm-report"
+        ],
+        "outcome": "supported",
+        "review_state": "unreviewed",
+        "subject_id": "cm-hp4-scope"
+      }
+    },
+    {
+      "id": "keep-defaults",
+      "program_id": "autocal-evidence",
+      "kind": "claim",
+      "title": "Preserve current consensus defaults while validation comparability remains unresolved.",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.122390+00:00",
+      "updated_at": "2026-10-23T21:40:56.122390+00:00",
+      "details": {
+        "claim_key": "keep-defaults",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "evidence": "simulated",
+          "hardware": false,
+          "machine": "mixed stored fixture labels",
+          "operation": "saved-history selection",
+          "source_revision": "5400cefc"
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "blanket-retired",
+      "program_id": "autocal-evidence",
+      "kind": "claim",
+      "title": "Retire unconditional finite-prediction membership as a default-change proposal in the tested scope.",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.122793+00:00",
+      "updated_at": "2026-10-23T21:40:56.122793+00:00",
+      "details": {
+        "claim_key": "blanket-retired",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "evidence": "simulated",
+          "hardware": false,
+          "machine": "mixed stored fixture labels",
+          "operation": "saved-history selection",
+          "source_revision": "5400cefc"
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "keep-via-cm",
+      "program_id": "autocal-evidence",
+      "kind": "derivation",
+      "title": "CM-E1 regressions AND absent fair validation justify retaining defaults",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.123190+00:00",
+      "updated_at": "2026-10-23T21:40:56.123190+00:00",
+      "details": {
+        "conclusion_id": "keep-defaults",
+        "evidence_ids": [],
+        "premise_ids": [
+          "cm-regressions",
+          "cm-holdout-gap"
+        ],
+        "reason": "CM-E1 regressions AND absent fair validation justify retaining defaults"
+      }
+    },
+    {
+      "id": "keep-via-history",
+      "program_id": "autocal-evidence",
+      "kind": "derivation",
+      "title": "Alternative conservative rationale: mixed historical selectors AND incomparable folds",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.123616+00:00",
+      "updated_at": "2026-10-23T21:40:56.123616+00:00",
+      "details": {
+        "conclusion_id": "keep-defaults",
+        "evidence_ids": [],
+        "premise_ids": [
+          "ranking-selector-mixed",
+          "refresh-mixed",
+          "incomparable-folds"
+        ],
+        "reason": "Alternative conservative rationale: mixed historical selectors AND incomparable folds"
+      }
+    },
+    {
+      "id": "retire-via-cm",
+      "program_id": "autocal-evidence",
+      "kind": "derivation",
+      "title": "Nonworsening failed AND no common unseen fold supports a deployable narrower rule",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.124033+00:00",
+      "updated_at": "2026-10-23T21:40:56.124033+00:00",
+      "details": {
+        "conclusion_id": "blanket-retired",
+        "evidence_ids": [],
+        "premise_ids": [
+          "cm-regressions",
+          "cm-holdout-gap"
+        ],
+        "reason": "Nonworsening failed AND no common unseen fold supports a deployable narrower rule"
+      }
+    },
+    {
+      "id": "assess-keep-defaults",
+      "program_id": "autocal-evidence",
+      "kind": "assessment",
+      "title": "Agenda decision imported; not admitted",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.124465+00:00",
+      "updated_at": "2026-10-23T21:40:56.124465+00:00",
+      "details": {
+        "actor": "importer",
+        "admission_state": "unassessed",
+        "evidence_ids": [
+          "agenda"
+        ],
+        "outcome": "supported",
+        "review_state": "unreviewed",
+        "subject_id": "keep-defaults"
+      }
+    },
+    {
+      "id": "assess-blanket-retired",
+      "program_id": "autocal-evidence",
+      "kind": "assessment",
+      "title": "CM-E1 decision imported; not admitted",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.125083+00:00",
+      "updated_at": "2026-10-23T21:40:56.125083+00:00",
+      "details": {
+        "actor": "importer",
+        "admission_state": "unassessed",
+        "evidence_ids": [
+          "cm-report"
+        ],
+        "outcome": "supported",
+        "review_state": "unreviewed",
+        "subject_id": "blanket-retired"
+      }
+    },
+    {
+      "id": "q-holdout",
+      "program_id": "autocal-evidence",
+      "kind": "question",
+      "title": "Can compatible common unseen sweeps assess the actual applied models?",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.125206+00:00",
+      "updated_at": "2026-10-23T21:40:56.125206+00:00",
+      "details": {
+        "knowledge_state": "unassessed",
+        "scope": {
+          "hardware": false,
+          "machine": "slideprinter",
+          "status": "proposed; not tested"
+        }
+      }
+    },
+    {
+      "id": "q-hardware",
+      "program_id": "autocal-evidence",
+      "kind": "question",
+      "title": "Does any saved selection result establish live HP4 or hardware calibration accuracy?",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.125272+00:00",
+      "updated_at": "2026-10-23T21:40:56.125272+00:00",
+      "details": {
+        "knowledge_state": "unassessed",
+        "scope": {
+          "hardware_accuracy": "unresolved",
+          "machine": "hangprinter_4"
+        }
+      }
+    },
+    {
+      "id": "q-pending",
+      "program_id": "autocal-evidence",
+      "kind": "question",
+      "title": "Did the unfinished historical selector investigation complete?",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.125400+00:00",
+      "updated_at": "2026-10-23T21:40:56.125400+00:00",
+      "details": {
+        "knowledge_state": "unassessed",
+        "scope": {
+          "status": "incomplete result; no documented completion"
+        }
+      }
+    },
+    {
+      "id": "relation-28d8dbc58e3642968e27edecc499e35f",
+      "program_id": "autocal-evidence",
+      "kind": "relation",
+      "title": "Frozen fixture evidence cannot establish live/hardware accuracy",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.125865+00:00",
+      "updated_at": "2026-10-23T21:40:56.125865+00:00",
+      "details": {
+        "reason": "Frozen fixture evidence cannot establish live/hardware accuracy",
+        "relation": "scope_limit",
+        "source_id": "cm-hp4-scope",
+        "target_id": "q-hardware"
+      }
+    },
+    {
+      "id": "relation-d26b145bba8249f4896bac37eafce166",
+      "program_id": "autocal-evidence",
+      "kind": "relation",
+      "title": "Challenges generalization; earlier scoped gains are preserved",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.126428+00:00",
+      "updated_at": "2026-10-23T21:40:56.126428+00:00",
+      "details": {
+        "reason": "Challenges generalization; earlier scoped gains are preserved",
+        "relation": "challenge",
+        "source_id": "cm-regressions",
+        "target_id": "earlier-gains"
+      }
+    },
+    {
+      "id": "relation-a9dcc6fe9fb94e2a8396fe057c15accf",
+      "program_id": "autocal-evidence",
+      "kind": "relation",
+      "title": "Discussion cycle retains the differing producer scopes",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.126924+00:00",
+      "updated_at": "2026-10-23T21:40:56.126924+00:00",
+      "details": {
+        "reason": "Discussion cycle retains the differing producer scopes",
+        "relation": "challenge",
+        "source_id": "earlier-gains",
+        "target_id": "cm-regressions"
+      }
+    },
+    {
+      "id": "relation-96b372ae8e2940269ef3b84384353478",
+      "program_id": "autocal-evidence",
+      "kind": "relation",
+      "title": "Gap motivates a bounded saved-data search",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.127434+00:00",
+      "updated_at": "2026-10-23T21:40:56.127434+00:00",
+      "details": {
+        "reason": "Gap motivates a bounded saved-data search",
+        "relation": "support",
+        "source_id": "cm-holdout-gap",
+        "target_id": "q-holdout"
+      }
+    },
+    {
+      "id": "relation-136c5f167ea146549ccc22fa4b5266da",
+      "program_id": "autocal-evidence",
+      "kind": "relation",
+      "title": "Pending work is not a negative selector result",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.127922+00:00",
+      "updated_at": "2026-10-23T21:40:56.127922+00:00",
+      "details": {
+        "reason": "Pending work is not a negative selector result",
+        "relation": "scope_limit",
+        "source_id": "pending-selector",
+        "target_id": "q-pending"
+      }
+    },
+    {
+      "id": "finite-membership",
+      "program_id": "autocal-evidence",
+      "kind": "approach",
+      "title": "Blanket finite-prediction consensus membership",
+      "revision": 2,
+      "created_at": "2026-10-23T21:40:56.128094+00:00",
+      "updated_at": "2026-10-23T21:40:56.128293+00:00",
+      "details": {
+        "question_id": "q-calibration",
+        "reason": "Motivating gains prompted a broader comparison",
+        "state": "retired"
+      }
+    },
+    {
+      "id": "unseen-sweeps",
+      "program_id": "autocal-evidence",
+      "kind": "approach",
+      "title": "Find compatible saved unseen whole sweeps",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.128171+00:00",
+      "updated_at": "2026-10-23T21:40:56.128171+00:00",
+      "details": {
+        "question_id": "q-holdout",
+        "reason": "Cheapest fair-validation discriminator",
+        "state": "live"
+      }
+    },
+    {
+      "id": "model-adequacy",
+      "program_id": "autocal-evidence",
+      "kind": "approach",
+      "title": "Investigate model adequacy and identifiability",
+      "revision": 2,
+      "created_at": "2026-10-23T21:40:56.128229+00:00",
+      "updated_at": "2026-10-23T21:40:56.128490+00:00",
+      "details": {
+        "question_id": "q-calibration",
+        "reason": "Alternative if fair folds are unavailable",
+        "state": "parked"
+      }
+    },
+    {
+      "id": "decision-ce4f26fb55744ee79f93f8f742a3b644",
+      "program_id": "autocal-evidence",
+      "kind": "decision",
+      "title": "CM-E1 rejects unconditional nonworsening; keep current defaults",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.128396+00:00",
+      "updated_at": "2026-10-23T21:40:56.128396+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "finite-membership"
+      }
+    },
+    {
+      "id": "decision-ff0e88cf47994c6693ef42985e09cd35",
+      "program_id": "autocal-evidence",
+      "kind": "decision",
+      "title": "First resolve saved-data feasibility; no model change funded",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.128517+00:00",
+      "updated_at": "2026-10-23T21:40:56.128517+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "model-adequacy"
+      }
+    },
+    {
+      "id": "retirement",
+      "program_id": "autocal-evidence",
+      "kind": "decision",
+      "title": "Retire blanket finite-only rule; preserve current defaults and search saved common folds.",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.128611+00:00",
+      "updated_at": "2026-10-23T21:40:56.128611+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [
+          "cm-report",
+          "agenda"
+        ],
+        "subject_id": "finite-membership"
+      }
+    },
+    {
+      "id": "relation-c460aefaf0a14ea49e7c6873ef6836f8",
+      "program_id": "autocal-evidence",
+      "kind": "relation",
+      "title": "Dated route retirement rationale",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.129103+00:00",
+      "updated_at": "2026-10-23T21:40:56.129103+00:00",
+      "details": {
+        "reason": "Dated route retirement rationale",
+        "relation": "decision",
+        "source_id": "retirement",
+        "target_id": "finite-membership"
+      }
+    },
+    {
+      "id": "relation-cb717c37315d4eba87ced346f793d75a",
+      "program_id": "autocal-evidence",
+      "kind": "relation",
+      "title": "Scoped negative decision, not universal ranking rejection",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.129676+00:00",
+      "updated_at": "2026-10-23T21:40:56.129676+00:00",
+      "details": {
+        "reason": "Scoped negative decision, not universal ranking rejection",
+        "relation": "support",
+        "source_id": "blanket-retired",
+        "target_id": "retirement"
+      }
+    },
+    {
+      "id": "relation-7ca8fec7eaf845d5be13d9764672066a",
+      "program_id": "autocal-evidence",
+      "kind": "relation",
+      "title": "Program question and competing routes come from the inspected agenda",
+      "revision": 1,
+      "created_at": "2026-10-23T21:40:56.130379+00:00",
+      "updated_at": "2026-10-23T21:40:56.130379+00:00",
+      "details": {
+        "reason": "Program question and competing routes come from the inspected agenda",
+        "relation": "provenance",
+        "source_id": "q-calibration",
+        "target_id": "agenda"
+      }
+    }
+  ]
+}

@@ -89,7 +89,7 @@
       "id": "008",
       "priority": 80,
       "title": "Track findings, evidence and their consequences in a queryable graph",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "007"
       ],

@@ -254,3 +254,32 @@ adversarially isolated. Full manager readiness remains task 016's live gate.
 Freshness: controller confirmed upstream/main at ae2ffe3f before assignment;
 worker did not retry unavailable shell git networking. Next eligible task: 008,
 using the actual store API for typed evidence/provenance graph semantics.
+
+2026-10-23 task 008: queryable typed evidence graph and real-data exercise
+Extended the existing ProgramStore with append-only claim versions, derivations,
+relations, reported assessments and withdrawal/applicability review events in
+program_graph.py. The CLI now provides claim/derive/relate/assess/review-event/query;
+search, support/challenges, upstream/downstream, route rationale and open questions
+retain sources, hashes/config/scope and assessment state. Required-premise AND
+dependencies are acyclic; alternative grounded derivations survive withdrawal,
+while affected conclusions remain queued for review. Discussion cycles remain
+representable. New source/config applicability is unestablished without erasing
+historical measurement scope. Shared hashes/declared inputs warn against false
+independence. Imported claims remain unassessed; task 010 still owns admission.
+Saved research/program-graph/{curate.py,autocal-seed.json,inspection.json,queries.json}
+and guide: 16 findings, four questions, three routes, nine inspected source files,
+eleven compressed/raw CM-E1 hash pairs checked and twelve fresh-process CLI calls.
+Queries reconstruct blanket-membership retirement, unresolved holdout/hardware
+scope, pending results, withdrawal with an alternative surviving and unaffected
+attribution. The manifest's hangprinter_4 labels are retained despite hp3 names;
+frozen selection is not live HP4 or hardware validation. Missing historical raw
+ranking/attribution artifacts and motivating session stay explicit.
+Verification: seven focused graph tests and all ten existing store tests passed;
+the 12-call real-data CLI exercise, compilation and git diff --check passed. Check
+log/report/notebook/abstract saved in output/research/sessions/2026-10-23-program-evidence-graph.
+Regenerated the catalog and merged this session while retaining historical entries
+absent in this checkout. Zero fits, numerical replays, physics/steps/collections,
+movements or model calls; no dynamics changes, so no physics gate applies.
+Freshness: parent verified main at f6bbda35 before dispatch; no shell fetch/push
+retried. This completes 008, not manager readiness. Next eligible task: 009 using
+the existing worker launcher; admission and live release remain tasks 010/016.

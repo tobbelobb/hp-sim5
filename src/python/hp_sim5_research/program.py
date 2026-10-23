@@ -12,7 +12,8 @@ import uuid
 
 
 SCHEMA_VERSION = 1
-KINDS = ('question', 'approach', 'assignment', 'artifact', 'decision', 'steering')
+KINDS = ('question', 'approach', 'assignment', 'artifact', 'decision', 'steering',
+         'claim', 'derivation', 'relation', 'assessment', 'review_event')
 TRANSITIONS = {
     'program': {'active': {'paused', 'stopped'}, 'paused': {'active', 'stopped'}, 'stopped': set()},
     'approach': {'live': {'promising', 'parked', 'retired'},
@@ -148,6 +149,12 @@ class ProgramStore:
                         connection.execute(statement)
                 elif version != SCHEMA_VERSION:
                     raise ProgramError(f'Unsupported program schema {version}; expected {SCHEMA_VERSION}')
+                # Additive record kinds use the existing version-1 record envelope.
+                for action in ('UPDATE', 'DELETE'):
+                    connection.execute(
+                        f'CREATE TRIGGER IF NOT EXISTS immutable_graph_{action.lower()} BEFORE {action} ON records '
+                        "WHEN OLD.kind IN ('claim', 'artifact', 'derivation', 'relation', 'assessment', 'review_event') "
+                        "BEGIN SELECT RAISE(ABORT, 'Graph history is append-only'); END")
         except BaseException:
             self.close()
             raise
@@ -190,6 +197,11 @@ class ProgramStore:
         if kind is not None and result['kind'] != kind:
             raise ProgramError(f'{record_id} must identify a {kind}')
         return result
+
+    def graph(self):
+        """Typed graph operations share this store's transactions and revisions."""
+        from .program_graph import EvidenceGraph
+        return EvidenceGraph(self)
 
     def _touch(self, program_id, expected_revision=None):
         program = self.get_program(program_id)
@@ -250,6 +262,8 @@ class ProgramStore:
         details = {'reference': _text(reference, 'reference'), 'sha256': sha256,
                    'evidence_type': evidence_type, 'source_revision': _text(source_revision, 'source revision'),
                    'provenance': _object({} if provenance is None else provenance, 'provenance')}
+        from .program_graph import validate_artifact
+        validate_artifact(details)
         with self.transaction():
             self._touch(program_id, expected_revision)
             return self._insert(program_id, 'artifact', reference, details, record_id)
@@ -392,7 +406,9 @@ class ProgramStore:
                 _text(details.get('reference'), 'reference')
                 _text(details.get('source_revision'), 'source revision')
                 _object(details.get('provenance'), 'provenance')
-            else:
+                from .program_graph import validate_artifact
+                validate_artifact(details)
+            elif kind in ('decision', 'steering'):
                 subject = details.get('subject_id')
                 if subject is not None:
                     _text(subject, 'subject ID')
@@ -403,6 +419,8 @@ class ProgramStore:
                     raise ProgramError('evidence_ids must be a list')
                 for evidence_id in details['evidence_ids']:
                     require(evidence_id, 'artifact')
+        from .program_graph import validate_graph
+        validate_graph(by_id)
         with self.transaction():
             self.connection.execute('INSERT INTO programs VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                                     (identity, program['question_id'], program['goal'], _json(program['constraints']),

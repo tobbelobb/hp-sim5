@@ -3,8 +3,10 @@
 Task 007 supplies a local program store and offline CLI. It records questions,
 competing approaches, bounded assignments, evidence references and dated
 decisions/steering. It starts no physics world, coding client or worker.
-The full manager still requires [tasks 008–016](program-tasks/README.md),
-including graph queries, dispatch, reviewed admission and chat entry.
+Task 008 adds the [typed evidence graph](program-graph/README.md), query commands
+and withdrawal/applicability review events on this same store.
+The full manager still requires [tasks 009–016](program-tasks/README.md),
+including dispatch, reviewed admission and chat entry.
 
 From the repository root, a question alone is sufficient:
 
@@ -121,6 +123,14 @@ tasks; keep their related SQL writes within one transaction. Public mutations
 already open transactions and should not be nested. Invalid requests raise
 `ProgramError`; SQL uniqueness failures raise `sqlite3.IntegrityError`. The CLI
 reports expected request/storage errors on stderr with exit code 2.
+
+`store.graph()` returns an `EvidenceGraph` using the same program revisions,
+transactions and record table. Its additive record kinds fit the version-1
+envelope without changing tables or existing snapshots. Older software which
+does not know these kinds cannot import graph snapshots. Claims, artifacts,
+derivations, relations, reported assessments and review events are append-only;
+dated new versions/events preserve prior scope and evidence. See the graph guide
+for APIs, query semantics and the inspected real-data seed.
 
 Run the offline contract checks without optional test packages:
 

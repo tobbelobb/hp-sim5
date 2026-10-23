@@ -1,0 +1,51 @@
+$ .venv/bin/python tests/python/test_research_program_graph.py -v
+test_and_premises_alternatives_withdrawal_and_unrelated_claim (__main__.GraphTests.test_and_premises_alternatives_withdrawal_and_unrelated_claim) ... ok
+test_cli_graph_roundtrip_and_useful_errors (__main__.GraphTests.test_cli_graph_roundtrip_and_useful_errors) ... ok
+test_diagnostics_are_atomic_and_graph_history_is_immutable (__main__.GraphTests.test_diagnostics_are_atomic_and_graph_history_is_immutable) ... ok
+test_graph_snapshot_roundtrip_and_import_rejection (__main__.GraphTests.test_graph_snapshot_roundtrip_and_import_rejection) ... ok
+test_no_grounding_from_support_edges_or_discussion_cycles (__main__.GraphTests.test_no_grounding_from_support_edges_or_discussion_cycles) ... ok
+test_revision_changes_preserve_old_measurements_and_claim_versions (__main__.GraphTests.test_revision_changes_preserve_old_measurements_and_claim_versions) ... ok
+test_shared_input_citations_assessments_route_and_open_questions (__main__.GraphTests.test_shared_input_citations_assessments_route_and_open_questions) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.327s
+
+OK
+exit 0
+
+$ .venv/bin/python tests/python/test_research_program.py -v
+test_cli_vertical_slice_and_lossless_export_import (__main__.ProgramTests.test_cli_vertical_slice_and_lossless_export_import) ... ok
+test_concurrent_initialization (__main__.ProgramTests.test_concurrent_initialization) ... ok
+test_concurrent_processes_keep_every_update (__main__.ProgramTests.test_concurrent_processes_keep_every_update) ... ok
+test_import_validation_and_duplicate_identity_rollback (__main__.ProgramTests.test_import_validation_and_duplicate_identity_rollback) ... ok
+test_invalid_allocations_do_not_mutate_program (__main__.ProgramTests.test_invalid_allocations_do_not_mutate_program) ... ok
+test_killed_writer_recovers_without_partial_state (__main__.ProgramTests.test_killed_writer_recovers_without_partial_state) ... ok
+test_question_alone_and_fresh_process_cli (__main__.ProgramTests.test_question_alone_and_fresh_process_cli) ... ok
+test_refuse_symlinks_permissions_and_unknown_schema (__main__.ProgramTests.test_refuse_symlinks_permissions_and_unknown_schema) ... ok
+test_rejections_are_atomic_and_revisions_detect_stale_views (__main__.ProgramTests.test_rejections_are_atomic_and_revisions_detect_stale_views) ... ok
+test_route_and_program_state_guards_with_append_only_notes (__main__.ProgramTests.test_route_and_program_state_guards_with_append_only_notes) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.918s
+
+OK
+exit 0
+
+$ .venv/bin/python research/program-graph/curate.py
+Curated 16 unassessed findings; 12 CLI calls passed; no numerical replay.
+exit 0
+
+$ .venv/bin/python -m py_compile src/python/hp_sim5_research/program.py src/python/hp_sim5_research/program_graph.py scripts/research_program.py research/program-graph/curate.py tests/python/test_research_program_graph.py
+
+exit 0
+
+$ git diff --check
+
+exit 0
+
+$ .venv/bin/python scripts/research_index.py
+exit 0
+Merged only new session; retained historical entries unavailable in checkout.
+
+Documentation links: 43 passed.
+Seed/transcript: 12 successful CLI calls, 16 unassessed claims, no admitted assessment.

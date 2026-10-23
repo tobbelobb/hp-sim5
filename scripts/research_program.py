@@ -8,6 +8,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src/python'))
 from hp_sim5_research.program import ProgramStore, render_markdown
+from hp_sim5_research.program_graph import EVENTS, RELATIONS
 
 
 def main(argv=None):
@@ -25,6 +26,39 @@ def main(argv=None):
             command.add_argument('--format', choices=('json', 'markdown'), default='json')
     restore = commands.add_parser('import', help='Restore a version-1 JSON export; IDs must be new')
     restore.add_argument('source', type=Path)
+    for name in ('claim', 'derive', 'relate', 'assess', 'review-event', 'query'):
+        command = commands.add_parser(name)
+        command.add_argument('program')
+        if name == 'query':
+            command.add_argument('query', choices=('search', 'support', 'upstream', 'downstream', 'rationale', 'open_questions'))
+            command.add_argument('subject', nargs='?')
+            command.add_argument('--text', default='')
+            command.add_argument('--scope', type=json.loads)
+            continue
+        command.add_argument('text', help='Claim text or reason')
+        command.add_argument('--id')
+        command.add_argument('--expected-revision', type=int)
+        if name == 'claim':
+            command.add_argument('--scope', required=True, type=json.loads)
+            command.add_argument('--prior')
+        elif name == 'derive':
+            command.add_argument('--conclusion', required=True)
+            command.add_argument('--premise', action='append', default=[])
+            command.add_argument('--evidence', action='append', default=[])
+        elif name == 'relate':
+            command.add_argument('--relation', required=True, choices=RELATIONS)
+            command.add_argument('--source', required=True)
+            command.add_argument('--target', required=True)
+        elif name == 'assess':
+            command.add_argument('--subject', required=True)
+            command.add_argument('--outcome', required=True, choices=('supported', 'rejected', 'mixed', 'inconclusive', 'not_tested'))
+            command.add_argument('--evidence', action='append', default=[])
+            command.add_argument('--actor', default='importer')
+        else:
+            command.add_argument('--subject', required=True)
+            command.add_argument('--event', required=True, choices=EVENTS)
+            command.add_argument('--context', type=json.loads, default={})
+            command.add_argument('--actor', default='manager')
     for name in ('question', 'approach', 'assignment', 'artifact', 'decision', 'steering', 'transition'):
         command = commands.add_parser(name)
         command.add_argument('program')
@@ -71,9 +105,23 @@ def main(argv=None):
                     return 0
             elif command == 'transition':
                 result = store.transition(args.program, args.record, args.state, args.reason, **options)
+            elif command == 'query':
+                result = store.graph().query(args.program, args.query, args.subject, text=args.text, scope=args.scope)
             else:
                 options['record_id'] = args.id
-                if command == 'question':
+                if command == 'claim':
+                    result = store.graph().add_claim(args.program, args.text, args.scope, prior_id=args.prior, **options)
+                elif command == 'derive':
+                    result = store.graph().add_derivation(args.program, args.conclusion, args.premise, args.evidence, args.text, **options)
+                elif command == 'relate':
+                    result = store.graph().add_relation(args.program, args.relation, args.source, args.target, args.text, **options)
+                elif command == 'assess':
+                    result = store.graph().add_assessment(args.program, args.subject, args.outcome, args.evidence, args.text,
+                                                          actor=args.actor, **options)
+                elif command == 'review-event':
+                    result = store.graph().review_event(args.program, args.subject, args.event, args.text,
+                                                       context=args.context, actor=args.actor, **options)
+                elif command == 'question':
                     result = store.add_question(args.program, args.text, scope=args.scope, **options)
                 elif command == 'approach':
                     result = store.add_approach(args.program, args.question, args.text, args.reason, **options)
