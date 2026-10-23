@@ -1,5 +1,12 @@
 # Start a research program from a question
 
+Current capability: the single-agent workflow below, searchable summaries and
+portable evidence. A separate chat-driven research manager and queryable graph
+are **not yet implemented**. Their required implementation is now queued in
+[tasks 007–016](program-tasks/README.md), with the
+[manager release contract](program-tasks/MANAGER.md) defining completion. The
+manager will delegate to the existing `hp-sim5-research-agent` rather than replace it.
+
 Give an agent at this repository's root your question and the saved entry prompt:
 
 ```text
@@ -67,9 +74,11 @@ summary, decision and next observation) in its session directory. The
 The [entry prompt](prompts/research-program.txt) connects the existing
 [assignment](prompts/next-assignment.txt), [review](prompts/reviewer.txt),
 [abstract](abstract-template.md) and [portable handoff](handoffs.md) conventions.
-The development backlog under program-tasks/ is complete; start new research
-from your question or agenda rather than asking the agent to find another
-development task.
+Tasks 001–006 completed these foundations. Tasks 007–016 now build the full
+manager. Use `research/program-tasks/PROMPT.md` to implement one of those tasks;
+use the question-first prompt above to conduct research with today's single-agent
+workflow. Task 011 adds the actual manager entry, and task 016 verifies the
+complete chat-to-worker path before the release is declared ready.
 
 See the [worked question-to-decision examples](../output/research/sessions/2026-10-23-research-program-smoke/desk-cases.md)
 and [smoke-test record](../output/research/sessions/2026-10-23-research-program-smoke/report.md)

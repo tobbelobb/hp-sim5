@@ -5,6 +5,12 @@ ownership, configuration and recording contracts. Update it when those contracts
 change. The [research README](README.md) contains commands and tool arguments;
 [research instructions](AGENTS.md) describe how to conduct and report experiments.
 
+The chat-driven manager above this execution layer is planned in
+[tasks 007–016](program-tasks/README.md) and the
+[manager contract](program-tasks/MANAGER.md). It will delegate to the launcher and
+worker/supervisor paths documented here. That manager and its queryable graph
+are not implemented yet; task 016 requires live proof before release completion.
+
 ## Who owns execution
 
 Codex owns the conversation, hypotheses, source edits and experiment choices.

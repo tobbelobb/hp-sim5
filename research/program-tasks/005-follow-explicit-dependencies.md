@@ -62,3 +62,8 @@ contains AG-D1/AG-D2 outcomes, limitations and verification. Saved measurements
 and relevant current source were inspected; no numerical experiment was rerun.
 Historical missing raw artifacts are named explicitly. The proposed assignment
 remains not tested. All task criteria are met; the development queue is complete.
+
+That completion describes the original six-task foundation phase. The later
+manager phase, [007–016](README.md), implements the actual chat-driven manager
+and graph under [MANAGER.md](MANAGER.md); this historical agenda result alone
+does not satisfy it.

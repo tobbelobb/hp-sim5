@@ -48,7 +48,12 @@ The repo is full of other tools as well, which you are encouraged to explore to 
 # Take Advantage of Research Notebooks and Agent Capabilities
 Research runs in an ordinary conversation in the selected coding agent.
 Use the capabilities available in that client, such as Goal mode.
-Do not build an outer prompt loop.
+Keep continuation of an unfinished investigation inside that conversation; do
+not build a prompt-restart loop for it. The research manager implementation in
+`research/program-tasks/MANAGER.md` may orchestrate distinct bounded assignments
+and separate reviews through the existing `hp-sim5-research-agent`, including a
+small worker pool. Its controller owns dispatch, budgets and lifecycle; the
+existing worker supervisors continue owning physics and collection.
 Keep `research.md` in the supplied session directory current with objective, hypothesis, constraints, movement/experiment/compute budgets, experiment IDs, accepted steering and the next decision.
 Update it when steering changes the experiment choice.
 Preserve the conversation and prior evidence across turns.

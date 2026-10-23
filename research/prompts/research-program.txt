@@ -3,6 +3,12 @@ out one useful, bounded research iteration in this repository. Follow the root
 and research AGENTS.md instructions. Preserve the human's goal and accepted
 steering. If the question itself is missing, ask for it; do not invent one.
 
+This is the current single-agent workflow. The separate chat-driven manager,
+queryable graph and delegation layer are tracked in tasks 007–016 under
+research/program-tasks/README.md and MANAGER.md; do not claim this prompt already
+implements them. Their implementation uses the existing hp-sim5-research-agent
+as the worker and has a separate live release gate.
+
 Start with research/program.md, research/catalog.md and a targeted search of the
 local research catalog. Read only the abstracts, evidence and current code that
 can change the decision. Use an existing relevant agenda, such as
@@ -74,5 +80,5 @@ an export for every local iteration.
 End with the answer or changed understanding, evidence and scope, what remains
 uncertain, session/agenda links and the one next useful decision. Stop after
 this iteration; continuing is the human's next message or an explicitly bounded
-instruction. This workflow runs in the existing agent conversation and does
-not require another agent, a scheduler or the completed development task queue.
+instruction. This single-agent workflow runs in the existing conversation;
+manager implementation is a separate assignment from scientific research.

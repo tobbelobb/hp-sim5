@@ -1,11 +1,11 @@
 {
-  "purpose": "Make the best small improvement to research delegation now; revise after use.",
+  "purpose": "Deliver the chat-driven research manager in MANAGER.md, building on hp-sim5-research-agent and tasks 001-006.",
   "default_budget": {
-    "wall_minutes": 45,
+    "wall_minutes": 90,
     "new_physics_runs": 2,
     "max_physics_steps_per_run": 10000,
     "fresh_fits": 6,
-    "collections": 0
+    "collections": 1
   },
   "tasks": [
     {
@@ -21,7 +21,9 @@
       "priority": 20,
       "title": "Put a short decision handoff in the existing abstract",
       "status": "done",
-      "depends_on": ["001"],
+      "depends_on": [
+        "001"
+      ],
       "file": "002-short-decision-handoff.md"
     },
     {
@@ -29,7 +31,9 @@
       "priority": 30,
       "title": "Turn a broad question into one economical assignment",
       "status": "done",
-      "depends_on": ["002"],
+      "depends_on": [
+        "002"
+      ],
       "file": "003-one-next-question.md"
     },
     {
@@ -37,7 +41,9 @@
       "priority": 40,
       "title": "Take the promising consensus screen through a real research decision",
       "status": "done",
-      "depends_on": ["003"],
+      "depends_on": [
+        "003"
+      ],
       "file": "004-saved-evidence-pilot.md"
     },
     {
@@ -45,7 +51,9 @@
       "priority": 60,
       "title": "Build and use a living research agenda with explicit evidence links",
       "status": "done",
-      "depends_on": ["004"],
+      "depends_on": [
+        "004"
+      ],
       "budget": {
         "new_physics_runs": 0,
         "fresh_fits": 0,
@@ -65,6 +73,126 @@
         "collections": 0
       },
       "file": "006-read-ended-job-evidence.md"
+    },
+    {
+      "id": "007",
+      "priority": 70,
+      "title": "Create and inspect a durable research program",
+      "status": "ready",
+      "depends_on": [
+        "005",
+        "006"
+      ],
+      "file": "007-durable-program-store.md"
+    },
+    {
+      "id": "008",
+      "priority": 80,
+      "title": "Track findings, evidence and their consequences in a queryable graph",
+      "status": "ready",
+      "depends_on": [
+        "007"
+      ],
+      "file": "008-queryable-evidence-graph.md"
+    },
+    {
+      "id": "009",
+      "priority": 90,
+      "title": "Dispatch and observe the existing hp-sim5-research-agent worker",
+      "status": "ready",
+      "depends_on": [
+        "007"
+      ],
+      "file": "009-existing-worker-dispatch.md"
+    },
+    {
+      "id": "010",
+      "priority": 100,
+      "title": "Review fixed submissions before admitting knowledge",
+      "status": "ready",
+      "depends_on": [
+        "008",
+        "009"
+      ],
+      "file": "010-reviewed-claim-admission.md"
+    },
+    {
+      "id": "011",
+      "priority": 110,
+      "title": "Launch and operate the manager from chat",
+      "status": "ready",
+      "depends_on": [
+        "007",
+        "009",
+        "010"
+      ],
+      "file": "011-chat-manager-entry.md"
+    },
+    {
+      "id": "012",
+      "priority": 120,
+      "title": "Give the manager an evidence-based overview and route decisions",
+      "status": "ready",
+      "depends_on": [
+        "008",
+        "010",
+        "011"
+      ],
+      "file": "012-manager-strategy-and-steering.md"
+    },
+    {
+      "id": "013",
+      "priority": 130,
+      "title": "Continue a managed program across turns and interruptions",
+      "status": "ready",
+      "depends_on": [
+        "009",
+        "010",
+        "011",
+        "012"
+      ],
+      "file": "013-bounded-controller-and-recovery.md"
+    },
+    {
+      "id": "014",
+      "priority": 140,
+      "title": "Coordinate a small bounded worker pool across approaches",
+      "status": "ready",
+      "depends_on": [
+        "013"
+      ],
+      "file": "014-parallel-approach-coordination.md"
+    },
+    {
+      "id": "015",
+      "priority": 150,
+      "title": "Keep research acceptance separate from tested code integration",
+      "status": "ready",
+      "depends_on": [
+        "010",
+        "013",
+        "014"
+      ],
+      "file": "015-tested-patch-integration.md"
+    },
+    {
+      "id": "016",
+      "priority": 160,
+      "title": "Prove and document the complete chat-driven research manager",
+      "status": "ready",
+      "depends_on": [
+        "008",
+        "011",
+        "012",
+        "013",
+        "014",
+        "015"
+      ],
+      "file": "016-live-manager-release.md",
+      "budget": {
+        "wall_minutes": 120
+      }
     }
-  ]
+  ],
+  "completion_task": "016"
 }

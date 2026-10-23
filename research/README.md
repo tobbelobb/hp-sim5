@@ -10,10 +10,18 @@ Start with the [execution architecture map](architecture.md) for ownership,
 configuration flow and recording scope across the five research workflows.
 This README contains the operating instructions and tool arguments.
 
-To start with only a research question, use the [research program quickstart](program.md).
+To start today's single-agent workflow with only a question, use the
+[research program quickstart](program.md).
 Ask your agent to read `research/prompts/research-program.txt` and investigate
 your question. It connects evidence discovery, one bounded assignment, execution,
 review and a durable decision handoff in the same conversation.
+
+The full chat-driven **research manager**, with graph memory and delegation to
+`hp-sim5-research-agent`, is now specified in the
+[manager contract](program-tasks/MANAGER.md) and queued as
+[tasks 007–016](program-tasks/README.md). It is not shipped yet. Repeatedly ask a
+coding agent to read `research/program-tasks/PROMPT.md` and do one task to build it;
+task 016 requires a real end-to-end demonstration before release completion.
 
 ## Setup and interactive use
 

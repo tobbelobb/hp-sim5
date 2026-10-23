@@ -207,3 +207,23 @@ and git diff --check passed. An initial reference regex matched a suffix of
 output/research/index.md; corrected the check, no product path was broken.
 No runtime source or dynamics changed; prior CLI smoke results remain applicable.
 No new scientific experiment or physics delivery gate was needed for this edit.
+
+2026-10-23 backlog expansion: full chat-driven research manager
+The human clarified that the layer must manage approaches and knowledge above
+the existing hp-sim5-research-agent, launchable from a coding chat. Added the
+accepted MANAGER.md release contract and implementation cards 007–016: durable
+program state, queryable evidence graph, existing-worker dispatch, reviewed
+admission, chat CLI/MCP entry, strategy/steering, bounded lifecycle/recovery,
+parallel approach coordination, tested patch integration and a live release gate.
+Updated tasks.json, PROMPT/queue README, research instructions, original design,
+architecture map, quickstart/research README and current single-agent prompt.
+Original six tasks stay done; all ten new cards are ready subject to dependencies.
+007 is next; 016 requires actual chat/launcher/tool/review/graph/replanning proof.
+Default development allowance now includes one targeted simulated collection;
+runtime program budgets remain separately chosen, with speedup and recording
+policies preserved. Clarified the outer-loop rule to allow distinct manager
+assignments without restarting an unfinished conversation.
+Verification: all 16 IDs/files, dependency acyclicity, full one-task selection
+walk 007→016 with no dead ends, 38 new local links and release/status consistency
+passed; git diff --check passed. No implementation task or scientific experiment
+was executed. Next: repeat the one-task prompt to implement 007.

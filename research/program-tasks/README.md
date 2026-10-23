@@ -1,81 +1,94 @@
-# One useful research-workflow change at a time
+# Build the chat-driven research manager, one outcome at a time
 
-This is a revisable development backlog. Start with the small change that helps
-now, observe its use, and change the queue. The
-[architecture proposal](../../research-program-design.md) is background, not a
-list of infrastructure we must eventually build.
+The target is a manager between the human's coding chat and the existing
+`hp-sim5-research-agent`: it maintains queryable knowledge and competing
+approaches, dispatches investigations, reviews evidence, changes priorities and
+recovers across conversations. [MANAGER.md](MANAGER.md) defines this release.
+The [original design](../../research-program-design.md) is background; current
+human steering and the release contract govern implementation.
 
-In an ordinary coding-agent conversation at the repo root, say:
+In an ordinary repository-connected coding-agent chat, repeat:
 
 ```text
-Read research/program-tasks/PROMPT.md and do one task.
+Read research/program-tasks/PROMPT.md and do one task
 ```
 
-Repeat that instruction for the next iteration, in the same conversation or a
-fresh one. [tasks.json](tasks.json) owns priorities, dependencies and status;
-[progress.txt](progress.txt) is append-only history. Edit the queue and task
-briefs whenever our judgment changes. Completed work can be superseded without
-rewriting its history. The one-task prompt requests a local commit, never a push.
+[tasks.json](tasks.json) owns order, dependency eligibility, budgets and status;
+[progress.txt](progress.txt) is append-only history. A fresh agent in the same
+checkout can continue from the preceding local commit. A fresh checkout must
+first incorporate preceding task commits; the prompt itself does not publish
+work. Each iteration implements one useful outcome, verifies it and commits
+only its own changes. Push only when authorized by the human. Do not run the
+next task inside the same invocation.
 
-Tasks 001-003 are committed. Their runtimes (1m31s, 3m28s and 8m10s) suggest that
-the initial cards were too finely split for these agents. The remaining cards
-cover useful outcomes through research, implementation where justified, checks
-and a decision. A quick success is fine; runtime is not a quality metric and
-there is no minimum duration. Combine shared-context work instead of padding it.
-Cards remain revisable options. Park work whose benefit disappears.
+Tasks 001–006 are completed foundations. Tasks 007–016 are required manager
+implementation, not optional proposals. All ten new cards are `ready`; only
+cards with completed dependencies are eligible. Initially **007 is next**; always
+use tasks.json for current eligibility.
+There is no separate proposal/promotion barrier between the implementation cards.
+Implementation choices can evolve, but graph, manager/worker separation and chat
+entry cannot be replaced by prompt-only equivalents and marked complete.
 
-| Task | Outcome |
+| Task | Concrete outcome |
 | --- | --- |
-| [001](001-evidence-first-review.md) | A review prompt that checks the actual claim and reuses valid evidence |
-| [002](002-short-decision-handoff.md) | A short decision/next-experiment handoff in the existing abstract |
-| [003](003-one-next-question.md) | A prompt that turns a broad question into one economical assignment |
-| [004](004-saved-evidence-pilot.md) | Broader replay rejects the blanket consensus restriction; preserve defaults |
-| [006](006-read-ended-job-evidence.md) | Completed: explicit portable evidence export and offline historical job inspection |
-| [005](005-follow-explicit-dependencies.md) | Use a living research agenda to prioritize the next question and trace its evidence |
+| [001](001-evidence-first-review.md) | Done: evidence-first claim review |
+| [002](002-short-decision-handoff.md) | Done: scoped decision handoffs |
+| [003](003-one-next-question.md) | Done: one economical assignment from a broad question |
+| [004](004-saved-evidence-pilot.md) | Done: broader consensus comparison and scoped negative decision |
+| [006](006-read-ended-job-evidence.md) | Done: portable evidence and historical job status |
+| [005](005-follow-explicit-dependencies.md) | Done: living Markdown agenda and dependency exercise |
+| [007](007-durable-program-store.md) | Durable program state and usable create/overview CLI |
+| [008](008-queryable-evidence-graph.md) | Typed evidence graph, queries, withdrawal and alternative support |
+| [009](009-existing-worker-dispatch.md) | Dispatch/status/cancel through hp-sim5-research-agent |
+| [010](010-reviewed-claim-admission.md) | Fixed submissions, separate review and controller-owned admission |
+| [011](011-chat-manager-entry.md) | Manager chat launcher, CLI/MCP tools and existing-chat operation |
+| [012](012-manager-strategy-and-steering.md) | Overview, approach selection/pruning, scouting and human steering |
+| [013](013-bounded-controller-and-recovery.md) | Finite orchestration, budgets, interruption, stop and restart recovery |
+| [014](014-parallel-approach-coordination.md) | Small isolated worker pool and coherent shared decisions |
+| [015](015-tested-patch-integration.md) | Combined patch candidates, conflicts and relevant delivery checks |
+| [016](016-live-manager-release.md) | Actual chat-to-worker/review/graph/replanning pilot and release docs |
 
-All six development tasks are complete. The [living autocal agenda](../autocal-agenda.md)
-owns the next proposed scientific assignment; it is not automatically scheduled.
+The final gate must demonstrate actual coding-client interaction and production
+worker tools. Fake children and graph fixtures are useful earlier verification,
+not proof that the manager release is complete. Missing live prerequisites block
+016 honestly. Until it passes, call the existing layer foundations/single-agent
+workflow. After it passes, report `MANAGER_RELEASE_COMPLETE` with evidence.
 
 ## Cost and evidence rules
 
-The queue defaults now allow up to 45 minutes, six fresh fits and two bounded
-headless physics trials of at most 10,000 steps each, with no new collections.
-These are ceilings for exploratory work, not amounts to spend or measured
-runtime quotas. Per-task overrides keep the agenda and recovery work numerical-
-free. Plan a specific lower budget before a probe, using saved artifacts first.
-The user authorized fittings and simulations for this sanity check; the revised
-queue makes bounded numerical work available in subsequent research tasks too.
+Development defaults allow up to 90 minutes, six fresh fits, two bounded native/
+headless trials of at most 10,000 steps each and one simulated collection.
+Task 016 allows up to 120 minutes for its live integration pilot. These are
+ceilings, not targets or service-enforced quotas. Choose a lower concrete budget
+before numerical work; use fixtures for store/controller correctness. Runtime
+research programs have their own recorded allocations chosen for their question;
+missing human caps do not prohibit necessary targeted experiments.
 
-Use the cheapest evidence that can answer the particular question:
+Use useful saved evidence first, then the cheapest probe that resolves the
+specific gap. Use supported --speedup settings, normally --speedup 25 for a
+simulated autocal CLI; headless native Rust already integrates as fast as possible.
+Read [recording-cost guidance](../autocal-recording-performance.md) before choosing
+capture/compute budgets. Keep collection sweeps/points, physics steps/simulated
+time and wall time explicit. Preserve partial and unsuccessful trials.
 
-1. Read the relevant report, inputs, source and existing check results.
-2. Recompute only the needed analysis from saved artifacts when necessary.
-3. Run focused tests for changed behavior. Use synthetic fixtures for bookkeeping.
-4. Refit or recollect only when the scientific question actually needs it and
-   the assignment budgets it. Small iteration counts can still be slow. If a
-   feedback loop changes, frozen ranking cannot stand in for its replay.
+Review the producer's exact claim, code/inputs/configuration and checks. Inspect
+adequate evidence instead of automatically duplicating physical runs. A concrete
+discrepancy, relevant change or new generalization can justify a fresh check;
+state the uncertainty it resolves. Required delivery checks are additional to
+exploratory budgets. Physics/motor/transport/dynamics changes require the real
+`npm run test:physics` gate; extra substeps, startup or parity are no substitute.
 
-One producer check and one evidence/code review at a meaningful result boundary
-usually suffice. The reviewer inspects the producer's measurements, commands,
-inputs and revisions; another full run is not the default price of independence.
-A concrete discrepancy, changed relevant input, unavailable evidence or new
-generalization claim can justify an additional check. State which uncertainty it
-resolves. Reading a report is not independent numerical reproduction; label the
-extent of checking accurately.
-
-Evidence reuse requires matching relevant code, inputs, configuration and claim.
-A relevant change can invalidate a previous result; an unrelated documentation
-edit need not invalidate physics measurements. Reuse saves work, not uncertainty.
-The root instructions still require `npm run test:physics` for physics, motor,
-cable transport or scene dynamics changes. Budget required delivery checks
-separately from exploratory trials, run the applicable gate once for the final
-candidate, and do not substitute a mock, startup or extra substeps.
-
-Do not start the research launcher, Viewer, doctor or preflight merely to edit
-these files. Actual research continues through the existing client and supervisor;
-this backlog adds no outer continuation loop for a research conversation.
+The manager reuses the existing worker launcher, supervised jobs, worktrees,
+recorders and client authentication. Its controller may orchestrate distinct
+bounded assignments and separate reviews, as explicitly authorized here. It
+must not create a second physics runtime or an outer prompt-restart loop to
+continue one unfinished conversation. Do not start a world or Viewer merely to
+edit these backlog files.
 
 ## What the existing work changes about this queue
+
+The notes below retain the foundation phase's evidence and sequence. Current
+eligibility and release scope are in tasks.json and MANAGER.md above.
 
 - [Current autocal prompt](../prompts/autocal.txt): starts with recorded/synthetic
   work and uses collection when warranted. Keep that ordering.

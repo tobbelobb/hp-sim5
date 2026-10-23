@@ -5,10 +5,15 @@ published "Hand Cranking the Development Engine" post, and the sources linked
 below. No new numerical experiments were run. Proposed commands and files in
 this document are not implemented interfaces.
 
-Implementation now follows the [revisable one-task backlog](research/program-tasks/README.md).
-Its evidence-first prompt and handoff changes come before additional machinery.
-The larger components below are options to justify through use, not prerequisites
-or an obligation to build the whole proposal.
+Implementation follows the [one-task backlog](research/program-tasks/README.md).
+Tasks 001–006 completed the evidence/prompt/handoff foundations. The user has now
+authorized the chat-driven manager, graph memory, approach selection and worker
+orchestration in tasks 007–016. The [manager release contract](research/program-tasks/MANAGER.md)
+defines current required scope and completion; the sections below retain the
+original design rationale. Where they suggest deferring chat/graph/controller
+work or routinely duplicating evaluation, the current contract and evidence-first
+review policy take precedence. Target command names below remain proposals until
+their implementation task ships.
 
 The next useful abstraction is a **research program**: a continuing set of
 questions, evidence, competing approaches and decisions, pursued within a
@@ -91,12 +96,11 @@ another, which claims another result depends on, whether several failed attempts
 have exhausted a direction, and whether individually useful changes remain
 useful when combined.
 
-The current instruction "Do not build an outer prompt loop" protects ordinary
-research conversations from redundant continuation machinery. This proposal
-does not implement a loop. Before implementing program scheduling, clarify that
-instruction to permit dispatching distinct, bounded investigations while keeping
-conversation continuation inside the selected client. A program scheduler should
-not repeatedly restart a worker to push the same unfinished prompt forward.
+The research instructions protect ordinary conversation continuation from
+redundant restart machinery and now explicitly permit the manager to dispatch
+distinct bounded investigations and reviews through the existing launcher. A
+program controller must not repeatedly restart a worker merely to push the same
+unfinished prompt forward. The manager implementation is tracked in tasks 007–016.
 
 ## Responsibilities and authority
 
@@ -560,8 +564,9 @@ SQLite database for transactional leases, budgets and review transitions, plus
 ordinary artifact directories and readable JSON/Markdown exports. Keep live
 attempt artifacts in the existing output structure. Store authoritative program
 state and sealed evidence under controller ownership. Export charters, decisions
-and result references for version control and backup. There is no need to add a
-chat interface, vector database, workflow service or graph platform first.
+and result references for version control and backup. The active release requires
+a chat manager entry through existing coding clients and a queryable typed graph;
+it does not require a custom chat UI, vector database or graph platform.
 
 A possible future interface is `hp-sim5-research-program init`, `run --once`,
 `run --deadline ...`, `status`, `steer`, `pause` and `stop`. The controller should
