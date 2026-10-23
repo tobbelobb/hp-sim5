@@ -68,3 +68,39 @@ Regenerated the local research catalog; git diff --check passed. No simulations,
 fresh fits, collection or physics implementation changes were made. All task 002
 acceptance criteria are met.
 Next: task 003 is eligible; turn a broad question into one economical assignment.
+
+2026-10-23 task 003: one economical research assignment
+Added research/prompts/next-assignment.txt, linked it from research/README.md,
+and added a worked Lane 04 brief to this queue's task 003 file. Updated the queue
+README and tasks.json. The prompt uses the conversation or supplied notes,
+preserves the human's goal, consults a small set of abstracts and relevant linked
+evidence, and returns one proposal with rival explanations, bounded cost,
+decision criteria, guardrails and reviewable provenance. It allows retiring a
+route or reporting inconclusive evidence and never launches the assignment.
+
+Verification: one manual worked desk check using the Lane 04 integration,
+original report/abstract, 04-E4a policy_evaluations.json, saved extraction checks,
+the three history envelopes they reference, and current history selection code.
+Also consulted the negative-ranking and refreshed-reference abstracts and the
+recording-performance guidance for context.
+All three history SHA-256 values match the saved checks; iteration 5 has no
+held-out prediction in each. Saved results show five-points consensus worse than
+its chosen single fit (10.894 versus 6.546 mm summed anchor error), while layered
+consensus is better (4.670 versus 8.983 mm). These inspected saved simulation
+measurements motivate a finite-prediction-only consensus comparison, rather than
+another generic held-out-scoring test. The example proposes at most three
+histories/six selection evaluations within 15 minutes and zero new simulations,
+fits or collections. That membership variant remains not tested; no accuracy
+gain is claimed.
+Artifact inspection initially treated typed tuple envelopes as plain tuples;
+after inspecting the format, it read their value fields. The brief directs later
+work to the existing read_stage_artifact decoder. External session/worktree
+artifacts are available locally but may be absent in another checkout.
+
+Checked new Markdown link targets and queue statuses/dependencies/default budget;
+regenerated the local research catalog with .venv/bin/python scripts/research_index.py;
+git diff --check passed. No simulations, fresh fits, selection experiments,
+collection, workers or runtime code changes were made. Physics checks are outside
+this documentation change's scope. All task 003 acceptance criteria are met.
+Next: task 004's activation condition is satisfied; the next invocation can
+promote the saved-evidence workflow pilot and decide whether more tooling helps.

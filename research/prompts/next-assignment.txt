@@ -1,0 +1,68 @@
+Turn the human's broad research question, notes and constraints into one proposed
+assignment for the existing hp-sim5 research agent. Use the current conversation
+or a supplied program note; no new program-file hierarchy is needed. Preserve the
+question, practical goal and accepted steering. Label assumptions and hunches.
+This is a briefing step: inspect saved evidence, then return the assignment.
+Do not launch workers, simulations, fits or collections, or execute the proposal.
+
+Follow repository instructions. Start with research/catalog.md and the local
+catalog at output/research/index.md. Use scripts/research_index.py --search with
+.venv/bin/python when useful. Read a small set of relevant abstracts and their
+decision handoffs, then follow only report, artifact and source links that affect
+the choice. Check current behavior before proposing an implementation. A missing
+artifact is a limitation, not a reason to rerun its experiment during briefing.
+
+Use earlier negative and mixed findings. An already-tested idea needs a changed
+hypothesis, relevant input or scope to earn another experiment. Explain that
+change. Choose the cheapest probe that can change the decision: inspect saved
+measurements, then recompute needed metrics or replay selection on frozen
+candidates, then fit, simulate or collect only if cheaper evidence cannot answer
+the question and the assignment's budget permits it. A scoring-only replay cannot
+test a changed fitting, stopping or collection trajectory. If simulation cannot
+distinguish the explanations, name the missing measurement and limit the claim.
+
+Return one brief, marked "Proposed; not tested", with:
+
+- The question and decision. State what practical choice this assignment informs
+  and what evidence would change it. Keep the human's desired outcome visible
+  even when this assignment addresses only one uncertainty.
+- Plausible explanations. Contrast the leading hypothesis with a credible rival.
+  Include an alternative route when it could change which probe is worth doing,
+  and explain why the selected route comes first.
+- Existing evidence. Link the relevant hypotheses, experiment IDs, reports and
+  artifacts. Name their machine/data, settings, output stage, metric and source
+  revisions or hashes. Distinguish reported results, evidence inspected during
+  briefing and independent recomputation. Identify missing provenance and whether
+  relevant code or inputs have changed. The latest commit need not be the result
+  being cited. Carry forward limitations from the abstract's decision handoff.
+- One probe. Give its exact inputs, comparison and measurements, holding unrelated
+  variables fixed. Reuse an existing command or tool where possible. Explain
+  which uncertainty it resolves and which claims remain beyond its scope.
+- Outcomes and decisions. Say what would support, reject or leave the hypothesis
+  inconclusive, using decision criteria fixed before the probe. Explicitly allow
+  retiring a route, retaining current behavior or reporting insufficient evidence.
+  If the evidence already settles the decision, propose closing that route rather
+  than inventing an experiment.
+- Guardrails. Carry forward the human's constraints and repository delivery gates.
+  Keep simulated/synthetic findings separate from hardware evidence. For autocal,
+  ground-truth anchors may evaluate a simulated result but cannot choose a model
+  in a deployable encoder-only algorithm. Separate single-fit scores from applied
+  consensus geometry, and physical accuracy from prediction error and fit cost.
+- Bounded cost and stopping. State explicit maxima for artifacts/configurations,
+  analysis time, fresh fits, simulation steps/time and collections or movements as
+  applicable, including required checks. Unspecified numerical budgets remain
+  zero. Stop at the cap, preserve partial evidence and name any additional budget
+  needed; do not silently expand the assignment. Read
+  research/autocal-recording-performance.md before proposing autocal recording
+  or compute budgets. Physics, motor,
+  cable transport or scene dynamics changes require npm run test:physics; an
+  incompatible budget blocks that implementation rather than waiving the gate.
+- Evidence to return. Request the commands actually run, inputs/configuration and
+  relevant code revisions/hashes, measurements with units and output stage, check
+  results, failures and scope limits. Keep the existing research.md, report.md and
+  abstract.md current, including hypothesis outcomes and a short decision handoff.
+  Link reusable producer checks for evidence-first review with reviewer.txt;
+  independent duplicate collection is not a default requirement.
+
+Keep the assignment small enough for one useful result. End at the decision this
+probe can inform; broader Hangprinter questions can remain open.

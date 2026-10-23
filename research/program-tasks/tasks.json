@@ -26,7 +26,7 @@
       "id": "003",
       "priority": 30,
       "title": "Turn a broad question into one economical assignment",
-      "status": "ready",
+      "status": "done",
       "depends_on": ["002"],
       "file": "003-one-next-question.md"
     },

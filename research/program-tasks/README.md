@@ -17,9 +17,9 @@ fresh one. [tasks.json](tasks.json) owns priorities, dependencies and status;
 briefs whenever our judgment changes. Completed work can be superseded without
 rewriting its history. The one-task prompt requests a local commit, never a push.
 
-The first three tasks are ready in dependency order. Later tasks are proposals
-with activation conditions. An agent may promote one when recorded evidence
-satisfies its condition, or park it when the benefit disappears. Proposed tasks
+The first three tasks provide review, handoff and assignment prompts. Later tasks
+are proposals with activation conditions. An agent may promote one when recorded
+evidence satisfies its condition, or park it when the benefit disappears. Proposed tasks
 are options, not promises. There is no need to finish this entire list.
 
 | Task | Small outcome |
