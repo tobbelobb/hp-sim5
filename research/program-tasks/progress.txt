@@ -123,3 +123,21 @@ Updated queue/prompt/README to allow bounded, justified numerical work for 004;
 agenda and recovery remain numerical-free. Production algorithms are unchanged.
 Queue/dependency/budget and local-link/format checks passed; git diff --check
 passed. The research catalog was regenerated with the sanity abstract.
+
+2026-10-23 task 004: broader consensus membership decision
+Completed output/research/sessions/2026-10-23-consensus-membership/ with report,
+abstract/notebook, compressed original inputs, manifests, probe/results and audit.
+Updated task 004, the queue README/status and task 005's evidence handoff.
+One frozen probe: 11 histories, 22 selections, 49 prediction evaluations; zero
+fits, physics or collection. Eight additional dataset names give one improvement,
+two regressions and five unchanged, 401.100276 -> 400.797031 mm summed anchor
+error. All 11 chosen predictions match saved scores; all applied diagnostics
+are finite. Changed selections have no common unseen sweep, so predictive gain
+remains unestablished. Reused the initial screen and October 15 corpus report;
+did not rerun their experiments or count overlapping datasets independently.
+Decision: retire the blanket finite-prediction-only default-change proposal;
+keep production policy. The uniqueness/identity audit passed, 56 local links
+and anchors passed, report/abstract and saved-result claims agree. Regenerated
+the research catalog; git diff --check passed. No runtime dynamics changed, so
+the physics delivery gate does not apply. All acceptance criteria are met.
+Next: task 006 durable handoff, then task 005's agenda using these exceptions.

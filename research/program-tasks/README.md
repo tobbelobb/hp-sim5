@@ -29,7 +29,7 @@ Cards remain revisable options. Park work whose benefit disappears.
 | [001](001-evidence-first-review.md) | A review prompt that checks the actual claim and reuses valid evidence |
 | [002](002-short-decision-handoff.md) | A short decision/next-experiment handoff in the existing abstract |
 | [003](003-one-next-question.md) | A prompt that turns a broad question into one economical assignment |
-| [004](004-saved-evidence-pilot.md) | Validate the promising consensus rule more broadly and decide whether to integrate it |
+| [004](004-saved-evidence-pilot.md) | Broader replay rejects the blanket consensus restriction; preserve defaults |
 | [006](006-read-ended-job-evidence.md) | Preserve usable research evidence and status across worktree/session turnover |
 | [005](005-follow-explicit-dependencies.md) | Use a living research agenda to prioritize the next question and trace its evidence |
 
@@ -123,3 +123,12 @@ contains copied inputs and the six-evaluation script. Do not count duplicate
 histories from cache/performance trials as independent configurations. The
 external worktree inputs were available locally but not in shared output; this
 made durable handoff recovery a concrete task rather than a hypothetical feature.
+
+Task 004's [broader comparison](../../output/research/sessions/2026-10-23-consensus-membership/report.md)
+is complete. Across eight additional dataset names, finite-prediction-only
+membership improved one, worsened two and left five unchanged. The aggregate
+gain was only 0.303245 mm summed anchor error; changed cases had no common
+unseen prediction fold. Retire the blanket default-change proposal and preserve
+current policy. The task-specific archived inputs make this result reproducible;
+task 006 still owns the general handoff/recovery workflow, followed by task 005's
+agenda using this scoped negative result.

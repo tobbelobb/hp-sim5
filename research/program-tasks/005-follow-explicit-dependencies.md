@@ -39,3 +39,11 @@ Budget: queue wall allowance; zero fresh fits, physics trials or collections.
 The assignment proposed by the agenda may budget later experiments; executing
 those experiments is a later research task. Human hunches and model suggestions
 are useful direction, not automatically accepted empirical premises.
+
+Task 004's [completed decision](../../output/research/sessions/2026-10-23-consensus-membership/report.md)
+rejects blanket finite-prediction-only consensus as a default change: two of
+eight additional datasets worsen, and changed selections lack a common unseen
+prediction fold. Preserve the initial two gains as scoped evidence rather than
+erasing them or treating the broader finding as a failure of all consensus.
+Any proposed membership follow-up needs a truth-free discriminator and an
+actual applied-anchor-plus-spool comparison on common unseen sweeps.

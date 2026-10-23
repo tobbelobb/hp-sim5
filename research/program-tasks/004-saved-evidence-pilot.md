@@ -47,3 +47,22 @@ Choose details and test scope yourself. One useful result can require several
 cheap probes. Do not instantiate a planner, researcher and reviewer service just
 because those roles appear in a saved prompt. Evidence-first review consumes
 the actual artifacts; duplicate numerical execution needs a material reason.
+
+## Completed outcome, 2026-10-23
+
+Decision: **retire the blanket membership restriction as a default-change
+proposal; preserve production policy**. The [broader replay](../../output/research/sessions/2026-10-23-consensus-membership/report.md)
+tested eleven archived histories, with eight dataset names beyond the motivating
+screen. Among those eight, one improved, two worsened and five were unchanged;
+summed anchor error changed 401.100276 -> 400.797031 mm. The newest unvalidated
+fit helped in both regression cases. All chosen single-fit predictions matched
+saved scores and applied-model diagnostics stayed finite, but the changed
+comparisons had no common unseen sweep. No narrower rule or predictive gain is
+established. The initial screen remains valid within its original scope.
+
+The one probe used 22 selections and 49 frozen prediction evaluations, with zero
+fits, physics or collection. Compressed original envelopes, hashes, reproducible
+scripts and the nonnumerical uniqueness/identity audit are preserved with the
+report. No source policy or reference outputs were changed. All acceptance
+criteria are met by this actionable negative result; task 006 remains next,
+then task 005 can use the exceptions to prioritize further accuracy work.

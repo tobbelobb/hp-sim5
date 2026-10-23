@@ -36,7 +36,7 @@
       "id": "004",
       "priority": 40,
       "title": "Take the promising consensus screen through a real research decision",
-      "status": "ready",
+      "status": "done",
       "depends_on": ["003"],
       "file": "004-saved-evidence-pilot.md"
     },
