@@ -5,8 +5,10 @@ competing approaches, bounded assignments, evidence references and dated
 decisions/steering. It starts no physics world, coding client or worker.
 Task 008 adds the [typed evidence graph](program-graph/README.md), query commands
 and withdrawal/applicability review events on this same store.
-The full manager still requires [tasks 009–016](program-tasks/README.md),
-including dispatch, reviewed admission and chat entry.
+Task 009 adds the [existing-worker dispatcher API](program-workers.md), durable
+attempts and session inspection on the same store. The CLI below remains offline.
+The full manager still requires [tasks 010–016](program-tasks/README.md),
+including reviewed admission, chat entry and live verification.
 
 From the repository root, a question alone is sufficient:
 

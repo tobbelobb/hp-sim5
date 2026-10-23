@@ -6,9 +6,6 @@ import subprocess
 import sys
 
 import pytest
-from rerun.chunk import RrdReader
-
-from hp_sim5_research.experiments import compare_runs, read_run, run_experiment
 from hp_sim5_research.archive import session_name
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -58,6 +55,8 @@ def experiment_root(tmp_path):
 
 
 def test_real_physics_measurements_recording_and_reproducible_inputs(experiment_root):
+    from rerun.chunk import RrdReader
+    from hp_sim5_research.experiments import compare_runs, read_run, run_experiment
     root = experiment_root
     commands = [{'type': 'Move', 'A': i * .0003} for i in range(30)]
     first = run_experiment(root, steps=30, commands=commands)
@@ -93,6 +92,7 @@ def test_real_physics_measurements_recording_and_reproducible_inputs(experiment_
 
 
 def test_movement_and_torque_changes_are_visible_and_comparison_is_honest(experiment_root):
+    from hp_sim5_research.experiments import compare_runs, read_run, run_experiment
     root = experiment_root
     baseline = run_experiment(root, steps=200, record=False)
     trial = run_experiment(root, steps=200, commands=[{'type': 'Move', 'A': .01}], record=False)
@@ -121,12 +121,14 @@ def test_movement_and_torque_changes_are_visible_and_comparison_is_honest(experi
     ({'commands': [None]}, 'must be an object'),
 ])
 def test_invalid_experiments_do_not_write_success_artifacts(experiment_root, options, message):
+    from hp_sim5_research.experiments import run_experiment
     with pytest.raises(ValueError, match=message):
         run_experiment(experiment_root, record=False, **options)
     assert not (experiment_root / 'output').exists()
 
 
 def test_input_and_artifact_path_boundaries(experiment_root):
+    from hp_sim5_research.experiments import read_run, run_experiment
     with pytest.raises(ValueError, match='inside the repository'):
         run_experiment(experiment_root, str(ROOT / SCENE), record=False)
     with pytest.raises(ValueError, match='run_id'):
@@ -134,6 +136,7 @@ def test_input_and_artifact_path_boundaries(experiment_root):
 
 
 def test_compiled_fresh_experiment_records_backend(experiment_root):
+    from hp_sim5_research.experiments import compare_runs, read_run, run_experiment
     pytest.importorskip('warp')
     trial = run_experiment(experiment_root, steps=5, record=False, cable_solver_device='cpu')
     assert trial['status'] == 'complete'
@@ -604,6 +607,99 @@ def test_launcher_refuses_existing_session_without_overwriting_evidence(tmp_path
                              '--session-dir', str(tmp_path)], capture_output=True, text=True, timeout=10)
     assert result.returncode == 1
     assert (tmp_path / 'exit.json').read_text() == '{"returncode": 42}'
+
+
+@pytest.mark.parametrize('cleanup_error', [False, True])
+def test_launcher_interrupted_runtime_startup_closes_partial_service(tmp_path, monkeypatch, cleanup_error):
+    import importlib.util
+    import signal
+    spec = importlib.util.spec_from_file_location('research_agent', ROOT / 'scripts/research_agent.py')
+    launcher = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(launcher)
+    services = []
+
+    class Service:
+        def __init__(self, *args, **kwargs):
+            self.closed = False
+            services.append(self)
+
+        def start(self):
+            os.kill(os.getpid(), signal.SIGTERM)
+
+        def close(self):
+            self.closed = True
+            if cleanup_error:
+                raise RuntimeError('fixture cleanup failure')
+
+    monkeypatch.setattr(launcher, 'RuntimeService', Service)
+    monkeypatch.setattr(launcher, 'ensure_native_physics', lambda: None)
+    session = tmp_path / 'interrupted session'
+    monkeypatch.setattr(sys, 'argv', ['research_agent.py', '--codex', '--batch', '--viewer', 'none',
+                                    '--sidebar-section', 'none', '--prompt', 'Interrupted startup',
+                                    '--session-dir', str(session)])
+    assert launcher.main() == 130
+    assert services[0].closed
+    exit_observation = json.loads((session / 'exit.json').read_text())
+    assert exit_observation['returncode'] == 130
+    assert bool(exit_observation.get('cleanup_errors')) == cleanup_error
+    manifest = json.loads((session / 'session.json').read_text())
+    assert manifest['session_dir'] == str(session)
+    assert manifest['repo'] == str(ROOT)
+    assert manifest['source_revision'] == subprocess.run(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'],
+                                                        check=True, capture_output=True, text=True).stdout.strip()
+    assert 'runtime_token' not in manifest
+
+
+def test_launcher_interrupted_viewer_readiness_retires_viewer(tmp_path, monkeypatch):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('research_agent', ROOT / 'scripts/research_agent.py')
+    launcher = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(launcher)
+    executable = tmp_path / 'viewer.py'
+    executable.write_text('import time\ntime.sleep(60)\n')
+    process = subprocess.Popen([sys.executable, str(executable)], start_new_session=True)
+    monkeypatch.setattr(launcher.subprocess, 'Popen', lambda *args, **kwargs: process)
+    monkeypatch.setattr(launcher, 'free_port', lambda: 1234)
+
+    def interrupt(*args, **kwargs):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(launcher.socket, 'create_connection', interrupt)
+    try:
+        with pytest.raises(KeyboardInterrupt):
+            launcher.start_viewer('headless', tmp_path)
+        assert process.poll() is not None
+    finally:
+        if process.poll() is None:
+            process.kill()
+        process.wait()
+
+
+def test_launcher_worktree_reexec_preserves_absolute_prompt_and_session(tmp_path, monkeypatch):
+    import argparse
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('research_agent', ROOT / 'scripts/research_agent.py')
+    launcher = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(launcher)
+    prompt = tmp_path / 'exact prompt.txt'
+    prompt.write_text('$literal and `angles`\n')
+    session = tmp_path / 'new shared session'
+    worktree = tmp_path / 'worktree'
+    monkeypatch.setattr(launcher, 'create_worktree', lambda *args: {'path': worktree, 'branch': 'research/test',
+                                                                'base': 'main', 'includes': []})
+    observed = []
+    monkeypatch.setattr(launcher.os, 'execv', lambda executable, argv: observed.append((executable, argv)))
+    args = argparse.Namespace(prompt=None, prompt_file=prompt, name=None, dry_run=False, worktree_dir=None)
+    original = ['--codex', '--batch', '--worktree', '--prompt-file', str(prompt), '--session-dir', str(session)]
+    launcher.worktree_launch(args, original, ['--resume', 'thread'], 'openai', None)
+    executable, argv = observed[0]
+    assert executable == str(worktree / '.venv/bin/python')
+    assert argv[:2] == [executable, str(worktree / 'scripts/research_agent.py')]
+    assert '--worktree' not in argv
+    assert argv[argv.index('--prompt-file') + 1] == str(prompt)
+    assert argv[argv.index('--session-dir') + 1] == str(session)
+    assert argv[-3:] == ['--', '--resume', 'thread']
+    assert not session.exists()
 
 
 @pytest.mark.slow

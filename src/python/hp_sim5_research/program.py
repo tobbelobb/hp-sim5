@@ -13,7 +13,7 @@ import uuid
 
 SCHEMA_VERSION = 1
 KINDS = ('question', 'approach', 'assignment', 'artifact', 'decision', 'steering',
-         'claim', 'derivation', 'relation', 'assessment', 'review_event')
+         'claim', 'derivation', 'relation', 'assessment', 'review_event', 'attempt')
 TRANSITIONS = {
     'program': {'active': {'paused', 'stopped'}, 'paused': {'active', 'stopped'}, 'stopped': set()},
     'approach': {'live': {'promising', 'parked', 'retired'},
@@ -202,6 +202,11 @@ class ProgramStore:
         """Typed graph operations share this store's transactions and revisions."""
         from .program_graph import EvidenceGraph
         return EvidenceGraph(self)
+
+    def workers(self, root, **options):
+        """One live dispatcher; saved attempts are inspection records, never PID adoption."""
+        from .program_workers import WorkerDispatcher
+        return WorkerDispatcher(self, root, **options)
 
     def _touch(self, program_id, expected_revision=None):
         program = self.get_program(program_id)
@@ -421,6 +426,8 @@ class ProgramStore:
                     require(evidence_id, 'artifact')
         from .program_graph import validate_graph
         validate_graph(by_id)
+        from .program_workers import validate_attempts
+        validate_attempts(by_id)
         with self.transaction():
             self.connection.execute('INSERT INTO programs VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                                     (identity, program['question_id'], program['goal'], _json(program['constraints']),

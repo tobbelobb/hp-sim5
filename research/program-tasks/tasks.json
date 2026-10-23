@@ -99,7 +99,7 @@
       "id": "009",
       "priority": 90,
       "title": "Dispatch and observe the existing hp-sim5-research-agent worker",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "007"
       ],

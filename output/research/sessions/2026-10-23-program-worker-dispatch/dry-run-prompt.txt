@@ -1,0 +1,2 @@
+Inspect saved evidence only. Preserve $targets and `literal` text.
+Allocation: wall_minutes=1; fresh_fits=0; collections=0; physics_steps=0.

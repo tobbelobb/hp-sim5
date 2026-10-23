@@ -1,0 +1,22 @@
+{
+  "method": "Source package trees fetched through GitHub connector; build-generated version modules and minimal dist-info staged locally",
+  "sources": [
+    {
+      "repo": "pytest-dev/pytest",
+      "tag": "9.0.2",
+      "commit": "3d10b5148e03eb82b3ee29181dbdc73cf82699e2"
+    },
+    {
+      "repo": "pytest-dev/pluggy",
+      "tag": "1.6.0"
+    },
+    {
+      "repo": "pytest-dev/iniconfig",
+      "tag": "v2.3.0"
+    },
+    {
+      "repo": "pytest-dev/pytest-asyncio",
+      "tag": "v1.3.0"
+    }
+  ]
+}

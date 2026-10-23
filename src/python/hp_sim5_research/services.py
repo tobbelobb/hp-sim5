@@ -9,7 +9,6 @@ import subprocess
 import sys
 import time
 
-from .configuration import world_configuration
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
@@ -81,6 +80,7 @@ def wait_ready(process, endpoint, operation, log, *, token='', timeout=30):
 
 class RuntimeService:
     def __init__(self, root, directory, viewer_endpoint=None, *, backend='headless-js', record=True, machine='hp4', configuration=None):
+        from .configuration import world_configuration
         self.root = Path(root)
         self.directory = Path(directory).resolve()
         self.directory.mkdir(parents=True, exist_ok=True)

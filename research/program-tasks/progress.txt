@@ -283,3 +283,36 @@ movements or model calls; no dynamics changes, so no physics gate applies.
 Freshness: parent verified main at f6bbda35 before dispatch; no shell fetch/push
 retried. This completes 008, not manager readiness. Next eligible task: 009 using
 the existing worker launcher; admission and live release remain tasks 010/016.
+
+2026-10-23 task 009: existing-worker dispatch and observed cleanup
+Added ProgramStore.workers/root WorkerDispatcher with durable attempt records,
+one transactional active reservation, exact assignment/allocation prompt files,
+argv/settings/source/birth ownership, returned session/worktree identities and
+bounded artifact inspection. Start/status/cancel remain responsive; cancellation
+signals only the verified owned launcher. Historical/reused PIDs are never adopted
+or signalled. Zero exits remain unreviewed submissions and graph knowledge stays
+unassessed. Absolute session/prompt paths preserve worktree/shared output behavior.
+The existing launcher now writes early non-secret session identity, retains
+runtime/Viewer startup ownership on interruption, and preserves cleanup errors
+while attempting remaining owned service cleanup. Configuration/physics test
+imports are lazy so real argument/lifecycle regressions need no USD/Rerun.
+
+Checks: first integration passed 69 tests (19 deselected, 30 subtests), including
+all 17 store/graph regressions. After launcher cleanup changes, final focused
+adapter/launcher check passed 57 (19 deselected, 17 subtests); later stricter
+attempt import validation passed all 10 adapter tests with 17 subtests. Reused
+the 17 unaffected store/graph checks. An initial graph comparison assertion
+incorrectly expected no program revision increase; corrected and recorded it.
+Four real launcher dry-runs (Codex/Claude batch/worktree) and actual-launcher
+fake-client/service checks pass, including real SIGTERM startup cleanup. Record,
+commands, outputs, test-tool provenance and parent-observed runtime prerequisites:
+output/research/sessions/2026-10-23-program-worker-dispatch/. No live coding-client
+conversation, production physics, scientific admission or manager release proof
+is claimed. Missing USD/Rerun/native builds, incompatible MCP interface and nested
+Codex writable-state failure remain for 016; no new credentials/network installs.
+Numerical budget/use: zero fits/predictions/physics/steps/collections/movements;
+no dynamics changed, so no physics delivery gate applies. Docs/queue/source-hash
+checks, catalog regeneration preserving absent historical sessions and diff check
+passed. Task 009 criteria are complete. Freshness: parent confirmed canonical
+main cd2755f3 before dispatch; no fetch/push attempted. Next: 010 reviewed fixed
+submissions; independent deadlines/restart reconciliation/pool remain 013/014.

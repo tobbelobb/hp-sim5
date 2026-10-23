@@ -434,20 +434,34 @@ def start_viewer(mode, session):
         # Only the agent may own terminal input and receive terminal interrupt signals.
         viewer = subprocess.Popen(command, cwd=ROOT, env=environment, stdin=subprocess.DEVNULL,
                                   stdout=log, stderr=log, start_new_session=True)
-    register_test_process(viewer)
-    deadline = time.monotonic() + 30
-    while time.monotonic() < deadline and viewer.poll() is None:
-        try:
-            with socket.create_connection(('127.0.0.1', port), timeout=.2):
-                return viewer, f'http://127.0.0.1:{port}'
-        except OSError:
-            time.sleep(.1)
-    stop_process(viewer)
-    raise RuntimeError(f'Rerun did not become ready. Read {session / "viewer.log"}; use --viewer none for numeric experiments.')
+    try:
+        register_test_process(viewer)
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline and viewer.poll() is None:
+            try:
+                with socket.create_connection(('127.0.0.1', port), timeout=.2):
+                    return viewer, f'http://127.0.0.1:{port}'
+            except OSError:
+                time.sleep(.1)
+        raise RuntimeError(f'Rerun did not become ready. Read {session / "viewer.log"}; use --viewer none for numeric experiments.')
+    except BaseException:
+        stop_process(viewer)
+        raise
 
 
 def interrupted(_signum, _frame):
     raise KeyboardInterrupt
+
+
+def session_manifest(session, backend, machine):
+    """Non-secret paths survive worktree re-exec; written before runtime startup."""
+    revision = subprocess.run(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'],
+                              capture_output=True, text=True, check=True).stdout.strip()
+    branch = subprocess.run(['git', '-C', str(ROOT), 'branch', '--show-current'],
+                            capture_output=True, text=True, check=True).stdout.strip()
+    return {'launcher_session_id': uuid.uuid4().hex, 'session_dir': str(session),
+            'repo': str(ROOT), 'source_revision': revision, 'branch': branch,
+            'pid': os.getpid(), 'backend': backend, 'machine': machine}
 
 
 def main():
@@ -562,6 +576,7 @@ def main():
             return 0
         session.mkdir(parents=True)
         session_created = True
+        (session / 'session.json').write_text(json.dumps(session_manifest(session, args.backend, args.machine), indent=2) + '\n')
         (session / 'prompt.txt').write_text(full_prompt)
         (session / 'research.md').write_text(f'# Research record\n\nObjective: {prompt or "Set in the agent conversation"}\n\nCurrent hypothesis: pending.\nConstraints and budgets: set before experiments.\nExperiment IDs: none yet.\nAccepted steering: none yet.\nNext decision: establish a measurable baseline.\n')
         (session / 'abstract.md').write_text(initial_abstract(topic))
@@ -572,7 +587,8 @@ def main():
         if args.viewer != 'none' and not args.preflight:
             viewer, endpoint = start_viewer(args.viewer, session)
         runtime = RuntimeService(ROOT, session / 'native', endpoint,
-                                 backend=args.physics_backend, record=not args.no_record, machine=args.machine).start()
+                                 backend=args.physics_backend, record=not args.no_record, machine=args.machine)
+        runtime.start()
         runtime_status = runtime.call('status')
         if args.preflight:
             result = runtime.call('preflight')
@@ -657,12 +673,20 @@ def main():
         parser.exit(1, f'hp-sim5-research-agent: {error}\n')
     finally:
         signal.signal(signal.SIGTERM, previous_sigterm)
-        stop_process(agent)
-        if runtime is not None:
-            runtime.close()
-        stop_process(viewer)
+        cleanup_errors = []
+        for name, close in (('agent', lambda: stop_process(agent)),
+                            ('runtime', lambda: runtime.close() if runtime is not None else None),
+                            ('viewer', lambda: stop_process(viewer))):
+            try:
+                close()
+            except Exception as error:
+                cleanup_errors.append(f'{name}: {error}')
+                print(f'Research cleanup failed: {name}: {error}', file=sys.stderr, flush=True)
         if session_created:
-            (session / 'exit.json').write_text(json.dumps({'returncode': returncode}) + '\n')
+            exit_observation = {'returncode': returncode}
+            if cleanup_errors:
+                exit_observation['cleanup_errors'] = cleanup_errors
+            (session / 'exit.json').write_text(json.dumps(exit_observation) + '\n')
             try:
                 write_index(catalog_root)
             except OSError as error:

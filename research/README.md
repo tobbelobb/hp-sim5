@@ -22,6 +22,8 @@ The full chat-driven **research manager**, with graph memory and delegation to
 [tasks 007–016](program-tasks/README.md). It is not shipped yet. Repeatedly ask a
 coding agent to read `research/program-tasks/PROMPT.md` and do one task to build it;
 task 016 requires a real end-to-end demonstration before release completion.
+The implemented [worker dispatcher API](program-workers.md) reuses this launcher
+and records its attempts; its fixture/dry-run checks are not a live manager release.
 
 ## Setup and interactive use
 

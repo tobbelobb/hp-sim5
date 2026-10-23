@@ -1,0 +1,83 @@
+{
+  "evidence_boundary": "Real child fixture processes and ProgramStore/graph APIs; actual launcher with fake clients/services; real launcher dry-run only. No live scientific worker.",
+  "first_adapter_run": {
+    "command": ".venv/bin/python tests/python/test_research_program_workers.py -v",
+    "exit_code": 1,
+    "passed": 8,
+    "failed": 1,
+    "failure": "test_exact_assignment_prompt_argv_artifacts_and_no_admission compared graph program_revision 9 versus 4; dispatch correctly advances revision. Assertion fixed to compare graph knowledge separately."
+  },
+  "first_combined_integration": {
+    "argv": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/python/test_research_program_workers.py",
+      "tests/python/test_research_program.py",
+      "tests/python/test_research_program_graph.py",
+      "tests/python/test_research_agent.py",
+      "-k",
+      "WorkerTests or ProgramTests or GraphTests or launcher_native_build_recovery or launcher_dry_run or launcher_selects_model_provider or launcher_worktree_dry_run or create_worktree_links or launcher_named_session or launcher_clarification or launcher_goal_mode or sidebar_hook or launcher_preserves_written_report or launcher_refuses_existing_session or launcher_requires_exactly_one_backend or claude_dry_run or claude_launcher_lifecycle",
+      "-m",
+      "not slow"
+    ],
+    "exit_code": 0,
+    "passed": 69,
+    "deselected": 19,
+    "subtests_passed": 30,
+    "seconds": 5.65
+  },
+  "startup_regressions_after_ownership_fix": {
+    "command": ".venv/bin/python -m pytest -q tests/python/test_research_agent.py -k 'interrupted or worktree_reexec'",
+    "exit_code": 0,
+    "passed": 3,
+    "deselected": 62,
+    "seconds": 0.12
+  },
+  "final_adapter_launcher": {
+    "argv": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/python/test_research_program_workers.py",
+      "tests/python/test_research_agent.py",
+      "-k",
+      "WorkerTests or launcher_native_build_recovery or launcher_dry_run or launcher_selects_model_provider or launcher_worktree_dry_run or create_worktree_links or launcher_named_session or launcher_clarification or launcher_goal_mode or sidebar_hook or launcher_preserves_written_report or launcher_refuses_existing_session or launcher_requires_exactly_one_backend or claude_dry_run or claude_launcher_lifecycle or interrupted or worktree_reexec",
+      "-m",
+      "not slow"
+    ],
+    "exit_code": 0,
+    "passed": 57,
+    "deselected": 19,
+    "subtests_passed": 17,
+    "seconds": 4.27
+  },
+  "final_adapter_after_import_validation": {
+    "argv": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/python/test_research_program_workers.py"
+    ],
+    "exit_code": 0,
+    "passed": 10,
+    "subtests_passed": 17,
+    "seconds": 0.82
+  },
+  "reused_store_graph_tests": 17,
+  "distinct_final_tests_with_reused_store_graph": 74,
+  "four_retained_dry_runs": "dry-run-records.json",
+  "budget_used": {
+    "fresh_fits": 0,
+    "numerical_predictions": 0,
+    "physics_trials": 0,
+    "physics_steps": 0,
+    "collections": 0,
+    "movements": 0
+  },
+  "not_run": "Full physics/MCP integration and live client/worker proof require unavailable runtime prerequisites; task016 remains mandatory. No dynamics changed, so npm run test:physics is outside this change.",
+  "source_base": "cd2755f37f3a7df0462ef313d6bd66f0fac30a4f"
+}

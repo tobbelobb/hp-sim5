@@ -34,3 +34,24 @@ Done when:
 Verify the adapter and required existing launcher regressions once. Keep one
 active worker initially. Bounded parallelism and restart reconciliation have
 their own dependent tasks, rather than hidden untested behavior here.
+
+## Delivered
+
+Task 009 is complete. [The adapter guide](../program-workers.md) documents the
+actual `ProgramStore.workers(root)` start/status/cancel/sessions API, durable
+attempts, absolute prompt/session paths and ownership boundary. One active
+reservation is enforced across a store. The launcher writes an early non-secret
+session manifest with actual paths after worktree re-exec. Interrupted runtime
+and Viewer startup retain cleanup ownership, and cleanup errors remain explicit
+while other owned services still receive cleanup attempts.
+
+[The verification record](../../output/research/sessions/2026-10-23-program-worker-dispatch/report.md)
+contains four actual launcher dry-run outputs, fixture/launcher check counts,
+test-tool provenance and runtime limitations. Final adapter/launcher checks:
+57 passed, 19 deselected, 17 subtests; the later attempt-import validation check
+passed all 10 adapter tests with 17 subtests. The earlier 17 store/graph tests
+passed and are reused. Existing launcher regressions used actual launcher code
+with fake clients/services; dry-runs started neither coding client nor physics.
+The development numerical budget was zero. Runtime allocations are preserved
+worker contracts, with hard lifecycle budgets/reconciliation left to task 013.
+No live research or scientific admission is claimed; task 016 remains mandatory.
