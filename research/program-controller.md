@@ -32,8 +32,8 @@ reserved once. An explicit execution retry uses a new bounded assignment and
 that retry chain and separate reviewer launches per task. Neither loop retries
 automatically. Scientific inconclusive limits remain the strategy's own rule.
 
-One worker slot and one separate reviewer slot can run at once. A submitted
-result holds a review obligation even before submission files are selected.
+One worker and one separate reviewer can run at once by default. An in-flight
+worker holds a future review obligation before it produces any submission files.
 With the default backlog limit of one, the queue waits for its fixed submission,
 separate review and `review_apply` before dispatching the next worker. Reviews
 spend their reserved time; cancelled reviews do not refund it. `fund_review`
@@ -110,3 +110,77 @@ shows three distinct assignments, separate fixture reviews and a fresh host
 continuing after two results. The [report](../output/research/sessions/2026-10-24-bounded-controller/report.md)
 records fault checks and limits. Genuine coding-client and production-tool
 release evidence remains task 016.
+
+## Small worker pool
+
+Pool settings persist for the entire store, across host restarts and unopened
+programs. The store defaults to one worker and one future review obligation.
+Set both limits deliberately, then select each program allocation's capacity:
+
+```bash
+./hp-sim5-research-program tool CONNECTION configure_pool --params '{"worker_limit":2,"review_backlog_limit":2,"reason":"Compare two bounded routes concurrently"}'
+./hp-sim5-research-program tool CONNECTION allocate --params '{"task_limit":2,"wall_minutes":24,"review_minutes":3,"worker_limit":2,"review_backlog_limit":2}'
+./hp-sim5-research-program tool CONNECTION run_within_allocation --params '{"allocation_id":"ALLOCATION","assignment_ids":["ROUTE_A_ASSIGNMENT","ROUTE_B_ASSIGNMENT"]}'
+```
+
+The store supports one through four workers and one through sixteen outstanding
+review obligations. Each program allocation still defaults to one worker and one
+review obligation. Its worker limit applies across that program's allocations.
+Both store and program limits must permit dispatch. Increasing worker capacity
+alone never bypasses the default review backlog. Submitted, unapplied results
+hold their review obligations, including in stopped or unopened programs.
+Cancel/failure releases an unused future obligation; charged worker/review time
+remains spent. A partial result can still receive separately funded review.
+One separate reviewer slot is shared across the store.
+
+The retained file host runs dispatch, review, steering and polling on the single
+SQLite owner thread. Capacity checks and fresh ledger charges commit together
+under `BEGIN IMMEDIATE`, before spawning. Queue dequeue and its worker charge
+commit together. Independent callers use the file-host CLI/MCP interface;
+sharing a SQLite connection across request threads is unsupported. The low-level
+Python helpers do not create another scheduling service.
+
+With a store cap above one, manager dispatch always requests the existing
+launcher's fresh worktree. Its Git branch, supervisor/world, session directory
+and attempt artifact directory belong to that attempt. `runtime_status` reports
+store limits, future obligations, reservation holders with program/record IDs,
+and unknown ownership. A fresh manager can locate an unopened program that
+holds capacity. Saved reservations count until that program is recovered, and
+historical PIDs never grant adoption or signalling authority. Program stop and
+attempt cancellation affect only that program's owned children. They do not
+stop another program's worker or reviewer.
+
+The launcher's output directory, `RRF/build`, dependency links and starting
+native addon are shared. Workers must read shared datasets without modifying
+them and write new artifacts only in their own session. Native rebuild outputs
+are worktree-local, but shared RRF builds, dependency changes and combined
+candidate evaluation require `settings.shared_runtime_write: true`. The
+controller reserves this setting exclusively against every worker and reviewer,
+including the startup gap before a process record exists. A queued exclusive
+assignment waits intact for compatible capacity. For task 015, the store-side
+hooks are `program_pool.check_worker(..., exclusive=True)` and
+`program_pool.check_review`, called within the transaction that records the
+integration/evaluation lease. An integration implementation must retain that
+lease through its checks; task 014 does not run or integrate combined patches.
+These checks require same-UID cooperation. They do not prevent a worker from
+editing shared files outside the API or provide adversarial evaluation isolation.
+
+Attempts snapshot the exact route-plan premise IDs, including funded rival
+plans. A later withdrawal/applicability event appends an attempt-specific
+`premise_conflicts` entry with its assignment, premise and event citations. The
+manager queues review while leaving the worker and its partial evidence intact.
+The graph still retains shared input identities and conflicting findings; two
+results using the same dataset do not become independent confirmations.
+
+An orphaned reviewer can remain live even after recovery marks its run
+`interrupted`. Its guard has its original deadline, but no new host adopts it.
+Unknown reviewer records and uncached startup charges continue holding reviewer
+capacity. After inspecting that boundary, explicitly record a new bounded
+handoff with `recover` using `handoff_review_run_id`, or
+`handoff_review_charge_id` when a charge has no cached run ID, plus a reason.
+These operations reject active/current-owned or live foreign-controller work,
+retain charged seconds and record `reviewer_shutdown: unknown`. They do not
+assert that the historical guard stopped. An acknowledged orphan can overlap a
+new owned process; slot limits cover controller reservations and owned work,
+not an assertion that unknown external activity has ceased. The same limitation
+applies to an explicit worker handoff after unknown physical cleanup.

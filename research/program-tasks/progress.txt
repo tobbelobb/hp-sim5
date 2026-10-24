@@ -476,3 +476,36 @@ Freshness: parent verified upstream main/base 891aef26a82d5b2096c9f1b3e93a419eff
 No shell push/fetch, network installs, key provisioning or HOME/CODEX_HOME overrides.
 Task 013 done, full manager incomplete. Next eligible task 014 adds the small
 bounded pool; 015 integration and actual live release gate 016 remain unstarted.
+
+2026-10-24 task 014: bounded parallel approaches with durable ownership
+Added persisted store-wide worker limits of 1 through 4 and future-review limits of 1 through 16, default 1, plus each
+allocation's default 1 worker/backlog limits. Both scopes gate dispatch. Fresh
+SQLite charges reserve before Popen; queue dequeue commits with its charge.
+Future review obligations include in-flight workers and unopened programs.
+Managed pool workers use the existing launcher's separate worktree/session/world
+path. Poll/cancel/stop/drain scope owned children to the program. Shared-runtime
+writes reserve worker/reviewer exclusion through startup; documented store-side
+hooks let task 015 extend that lease to combined candidate checks. Unknown reviewer
+charges and guards retain capacity until explicit bounded handoff, without PID
+adoption/signals or claiming orphan shutdown. Worker cleanup keeps the same honest
+boundary. Attempt-specific premise changes retain partial evidence, conflicting
+synthetic producer reports and one shared source identity.
+
+Verification: initial pool pass: 9 passed, 1 failure corrected owner-birth fixture setup.
+Affected integration: 75 passed, 16 failed exposed cached backlog/recovery status and
+legacy missing-exit-manifest fixtures; corrected failures remain saved. Fix pass
+61 passed, 1 deselected, 17 subtests in 35.20s. Final store/graph/metadata/defaults/restart
+pass: 22 passed, 20 deselected, 17 subtests in 10.02s. Passing unchanged manager/review
+cases reused from affected run. Actual CLI/file host, real child processes and
+production Git worktree creation were exercised. Worlds/supervisors/reviewer
+judgements were synthetic; no production isolation, calibration or live-release
+claim. Parent read-only audit inspected fixes/results. Exact argv/stdout/JUnit,
+concise CLI evidence, source hashes/report/notebook are retained under
+output/research/sessions/2026-10-24-worker-pool/. Guide: research/program-controller.md.
+Compilation, final source/queue/docs/evidence integrity, catalog regeneration
+preserving published entries and diff check passed. Numerical budget/use zero
+fits, predictions, replays, physics runs/steps, movement or collection. No dynamics
+changed; physics delivery gate not applicable. Parent supplied base/upstream
+main aea237e65d5589eb433a90c345fb7f2e364bf6a9. No shell fetch/push, network approval,
+installs, API key provisioning or HOME/CODEX_HOME overrides. Task 014 done; task 015 is
+next and actual live task 016 remains required for manager release.

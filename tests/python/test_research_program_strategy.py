@@ -73,6 +73,13 @@ def ended_review(controller, work, finding, *, verdict='keep', failed=False):
         worker.write_text((c['tmp'] / 'worker').read_text().replace('sys.exit(0)', 'sys.exit(9)'))
         worker.chmod(0o755)
     workers = c['store'].workers(c['root'], executable=worker)
+    # These fixture scripts start no world and omit launcher exit manifests.
+    # Retain that unknown boundary explicitly before the next distinct task.
+    for historical in workers.sessions('p'):
+        d = historical['details']
+        if d['cleanup'].startswith(('unverified', 'failed', 'unknown')):
+            d['handoff'] = {'reason': 'Distinct synthetic fixture; no world was started', 'physical_shutdown': 'unknown'}
+            workers._save('p', historical['id'], d)
     attempt = workers.start('p', work['assignment']['id'])
     workers.children[attempt['id']].wait(timeout=5)
     c['attempt'] = workers.status('p', attempt['id'])

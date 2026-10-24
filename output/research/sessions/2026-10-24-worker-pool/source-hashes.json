@@ -1,0 +1,22 @@
+{
+  "base": "aea237e65d5589eb433a90c345fb7f2e364bf6a9",
+  "sha256": {
+    "output/research/index.md": "cbcb5828bc4a67a9f06264cf32885226a89fb2e7ecd931ee4c24510a6b7104d0",
+    "research/program-controller.md": "a9328ad81912fdb0aae9660cddd094f2838e9f2438d0127cf91a94718c48484a",
+    "research/program-manager.md": "12f0b1b5861d4746e86760332a540f277330efe330dbe9f2961aae3142728c08",
+    "research/program-tasks/014-parallel-approach-coordination.md": "026dee4963c9c60708a91f14a9b86865dd1c940edf3f2be652e3f79998f3a194",
+    "research/program-tasks/README.md": "aeade12cc2d604af76110bd2d08c6677e6cbe3a392bc6d103fe5d8ed1b85d57e",
+    "research/program-tasks/progress.txt": "0f296a8b5111d62d90b08c2c9c02a107c05f001a487178a03d559aca64342f26",
+    "research/program-tasks/tasks.json": "5e147f93740b84f90e3965b461f879f749d5310aa0251e6451eb487c2f0c5d73",
+    "src/python/hp_sim5_research/program.py": "8d1b54177ebf02ed9b5cbf62d4fed39a99ac8c296fe535f6aeba9da8704e5e3c",
+    "src/python/hp_sim5_research/program_controller.py": "fe267f6c4e45a39a24ed3aaa3a4b8de3fac9f88f41c1ef0e51670272785a6bb6",
+    "src/python/hp_sim5_research/program_manager.py": "792ea32dccada6fe17f25b16e92854bd65fa73e7f6117cb9ec9909f2c562d0d5",
+    "src/python/hp_sim5_research/program_pool.py": "91e8360ec7b4f2908358642aef4636f4750e5a1810e67a3dd19507975f6d223a",
+    "src/python/hp_sim5_research/program_review.py": "23364612a7755fee58ce9832ee74e4ad11ace5f81a7f0d6d1907b397362ab876",
+    "src/python/hp_sim5_research/program_workers.py": "dd9f6998feb96e1d0481f58b673c6552c8eed3b63613ccdf8a91dc439f23724a",
+    "tests/python/test_research_program_manager.py": "ea39a155fe2d400c925b9396c1dab2d37054143a58c02146bb19ee18875b190e",
+    "tests/python/test_research_program_pool.py": "3a94947313cf84e2fb98ddb5bb7a3ba1eb29943168c2a96c57e8d43259a2ded0",
+    "tests/python/test_research_program_strategy.py": "03f2a5eddf1f1da115f1e03f077aa172e12dc29b30cb65c67d544046a6c60633",
+    "tests/python/test_research_program_workers.py": "8508a9251fa5c2828ae3b427818cd890e1c6902191d2a65e3adc10b7ea764ca2"
+  }
+}

@@ -152,6 +152,10 @@ class ProgramStore:
                 elif version != SCHEMA_VERSION:
                     raise ProgramError(f'Unsupported program schema {version}; expected {SCHEMA_VERSION}')
                 # Additive record kinds use the existing version-1 record envelope.
+                connection.execute('CREATE TABLE IF NOT EXISTS worker_pool '
+                                   '(singleton INTEGER PRIMARY KEY CHECK(singleton=1), worker_limit INTEGER NOT NULL, '
+                                   'review_backlog_limit INTEGER NOT NULL)')
+                connection.execute('INSERT OR IGNORE INTO worker_pool VALUES (1, 1, 1)')
                 for action in ('UPDATE', 'DELETE'):
                     connection.execute(
                         f'CREATE TRIGGER IF NOT EXISTS immutable_graph_{action.lower()} BEFORE {action} ON records '
@@ -214,7 +218,7 @@ class ProgramStore:
         return EvidenceGraph(self)
 
     def workers(self, root, **options):
-        """One live dispatcher; saved attempts are inspection records, never PID adoption."""
+        """Bounded dispatcher; saved attempts are inspection records, never PID adoption."""
         from .program_workers import WorkerDispatcher
         return WorkerDispatcher(self, root, **options)
 

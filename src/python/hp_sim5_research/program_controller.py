@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 
 from .program import ProgramError, _json, _now, _text
 from .program_workers import ACTIVE, WorkerDispatcher, process_identity, process_live
+from . import program_pool as pool
 
 STATES = ('active', 'exhausted', 'expired', 'stopped', 'interrupted')
 
@@ -31,6 +32,9 @@ def validate_allocations(records):
             raise ProgramError('Invalid runtime allocation state')
         for field in ('task_limit', 'retry_limit', 'review_backlog_limit'):
             number(d.get(field), field, integer=True)
+        number(d.get('worker_limit', 1), 'worker_limit', integer=True)
+        if d.get('worker_limit', 1) > pool.MAX_WORKERS:
+            raise ProgramError('Worker pool exceeds supported limit')
         for field in ('wall_seconds', 'review_seconds', 'deadline', 'cleanup_deadline', 'lease_until', 'cleanup_seconds', 'wall_reserved_seconds'):
             number(d.get(field), field, positive=field not in ('cleanup_seconds', 'wall_reserved_seconds', 'lease_until'))
         if (not isinstance(d.get('owner'), dict) or not isinstance(d.get('events'), list) or
@@ -82,11 +86,37 @@ class ProgramController:
                                           (_json(record['details']), _now(), record['id']))
         return self.store.get_record(self.program_id, record['id'])
 
-    def allocate(self, program_id, task_limit, wall_minutes, *, review_minutes=5, cleanup_seconds=190,
-                 retry_limit=1, review_backlog_limit=1):
-        """Fund finite tasks and a separate review allowance per task; cleanup is additional wall time."""
-        d = self._funding(program_id, task_limit, wall_minutes, review_minutes, cleanup_seconds, retry_limit, review_backlog_limit)
+    def configure_pool(self, program_id, worker_limit, reason, *, review_backlog_limit=1):
+        """Set the persisted store-wide cap, 1 through 4; each allocation defaults to one."""
+        number(worker_limit, 'worker_limit', integer=True)
+        number(review_backlog_limit, 'review_backlog_limit', integer=True)
+        _text(reason, 'reason')
+        if worker_limit > pool.MAX_WORKERS:
+            raise ProgramError('Supported worker_limit is 1 through 4')
+        if review_backlog_limit > 16:
+            raise ProgramError('Supported store review_backlog_limit is 1 through 16')
         with self.store.transaction():
+            workers, _, _ = pool.occupancy(self.store)
+            if len(pool.obligations(self.store)) > review_backlog_limit:
+                raise ProgramError('Complete reserved reviews before reducing backlog capacity')
+            if len(workers) > worker_limit or (worker_limit > 1 and any(
+                    not r['details'].get('settings', {}).get('worktree') for r in workers)):
+                raise ProgramError('Drain workers before changing to incompatible pool capacity')
+            self.store.connection.execute('UPDATE worker_pool SET worker_limit=?, review_backlog_limit=? WHERE singleton=1',
+                                          (worker_limit, review_backlog_limit))
+            self.store._touch(program_id)
+            self.store._note(program_id, 'decision', reason, program_id, [], 'manager')
+        return self.status(program_id)
+
+    def allocate(self, program_id, task_limit, wall_minutes, *, review_minutes=5, cleanup_seconds=190,
+                 retry_limit=1, review_backlog_limit=1, worker_limit=1):
+        """Fund finite tasks and a separate review allowance per task; cleanup is additional wall time."""
+        with self.store.transaction():
+            d = self._funding(program_id, task_limit, wall_minutes, review_minutes, cleanup_seconds, retry_limit, review_backlog_limit)
+            number(worker_limit, 'worker_limit', integer=True)
+            if worker_limit > pool.limit(self.store):
+                raise ProgramError('Allocation worker_limit exceeds the store-wide pool')
+            d['worker_limit'] = worker_limit
             self.store._touch(program_id)
             r = self.store._insert(program_id, 'runtime_allocation', 'Finite manager allocation', d)
         self.deadlines[r['id']] = time.monotonic() + wall_minutes * 60
@@ -128,7 +158,7 @@ class ProgramController:
                         return a, reservation
         return None, None
 
-    def _ready(self, allocation, assignment_id):
+    def _ready(self, allocation, assignment_id, *, settings=None):
         d = allocation['details']
         if self.store.get_program(self.program_id)['state'] != 'active' or d['state'] != 'active':
             raise ProgramError('Dispatch requires an active program and runtime allocation')
@@ -146,11 +176,10 @@ class ProgramController:
                x['state'] in ('starting', 'interrupted') and not x.get('handoff') for x in r['details']['reservations'])
                for r in records):
             raise ProgramError('An interrupted startup reservation needs an explicit allocation handoff')
-        if any(r['kind'] == 'attempt' and (r['details']['state'] in ACTIVE or
-               (self.unknown_cleanup(r['details']) and not r['details'].get('handoff'))) for r in records):
-            raise ProgramError('Worker slot is occupied or interrupted ownership needs an explicit bounded handoff')
-        if sum(x.get('review_pending', False) and not x.get('superseded_by') for r in records if r['kind'] == 'runtime_allocation'
-                                        for x in r['details']['reservations']) >= d['review_backlog_limit']:
+        pool.check_worker(self.store, self.program_id, assignment_id, program_limit=d.get('worker_limit', 1),
+                          exclusive=(settings or {}).get('shared_runtime_write', False))
+        pool.check_backlog(self.store)
+        if sum(r['program_id'] == self.program_id for r, _ in pool.obligations(self.store)) >= d['review_backlog_limit']:
             raise ProgramError('Review backlog limit reached; complete the reserved separate review first')
         if any(r['kind'] == 'attempt' and r['details']['assignment_id'] == assignment_id for r in records):
             raise ProgramError('An assignment is dispatched once; create a distinct bounded handoff for a retry')
@@ -160,12 +189,13 @@ class ProgramController:
         if (d['wall_reserved_seconds'] + total > d['wall_seconds'] + 1e-6 or
                 time.time() + seconds + d['review_seconds'] > d['deadline']):
             raise ProgramError('Insufficient wall allocation after preserving review capacity')
-        self.manager._worker_contract(self.program_id, assignment_id, '')
         return seconds
 
     def run_once(self, program_id, assignment_id, *, allocation_id=None, settings=None, instructions='', retry_of=None):
         """Dispatch one distinct assignment against finite task/wall/review reservations."""
-        WorkerDispatcher._settings(settings)
+        settings = dict(WorkerDispatcher._settings(settings))
+        if pool.limit(self.store) > 1:
+            settings['worktree'] = True
         if not isinstance(instructions, str):
             raise ProgramError('instructions must be a string')
         if allocation_id is None:
@@ -175,62 +205,78 @@ class ProgramController:
             else:
                 minutes = self.store.get_record(program_id, assignment_id, 'assignment')['details']['allocation']['wall_minutes']
                 allocation_id = self.allocate(program_id, 1, minutes + 5 + .01)['id']
-        a = self.current(allocation_id)
-        seconds = self._ready(a, assignment_id)
-        retry_root = None
-        if retry_of:
-            prior = self.store.get_record(program_id, retry_of, 'attempt')
-            _, previous = self.locate(attempt_id=retry_of)
-            if previous is None or prior['details']['state'] not in ('failed', 'launch_failed', 'cancelled', 'interrupted'):
-                raise ProgramError('Retry requires an ended unsuccessful runtime attempt')
-            retry_root = previous.get('retry_root') or retry_of
-            count = sum(x.get('attempt_id') == retry_root or x.get('retry_root') == retry_root
-                        for r in self.records() if r['kind'] == 'runtime_allocation' for x in r['details']['reservations'])
-            if count >= a['details']['retry_limit']:
-                raise ProgramError('Worker retry limit reached; reframe or explicitly fund a larger bounded attempt limit')
-        # Reserve before Popen. A crash in this gap retains a charged uncertain start.
-        reservation = dict(assignment_id=assignment_id, worker_seconds=seconds, review_seconds=a['details']['review_seconds'],
-                           attempt_id=None, state='starting', reviews=[], review_pending=False,
-                           charged_at=_now(), usage={'estimates': self.store.get_record(program_id, assignment_id)['details']['allocation'],
-                                                    'worker_reports': [], 'supervisor_observations': [],
-                                                    'unmetered': ['shell movement', 'shell compute', 'spend']})
-        reservation['retry_root'] = retry_root
-        a['details']['reservations'].append(reservation)
-        a['details']['wall_reserved_seconds'] += seconds + reservation['review_seconds']
-        self.save(a)
+        self.manager._worker_contract(program_id, assignment_id, '')
+        with self.store.transaction():
+            a = self.current(allocation_id)
+            seconds = self._ready(a, assignment_id, settings=settings)
+            retry_root = None
+            if retry_of:
+                prior = self.store.get_record(program_id, retry_of, 'attempt')
+                _, previous = self.locate(attempt_id=retry_of)
+                if previous is None or prior['details']['state'] not in ('failed', 'launch_failed', 'cancelled', 'interrupted'):
+                    raise ProgramError('Retry requires an ended unsuccessful runtime attempt')
+                retry_root = previous.get('retry_root') or retry_of
+                count = sum(x.get('attempt_id') == retry_root or x.get('retry_root') == retry_root
+                            for r in self.records() if r['kind'] == 'runtime_allocation' for x in r['details']['reservations'])
+                if count >= a['details']['retry_limit']:
+                    raise ProgramError('Worker retry limit reached; reframe or explicitly fund a larger bounded attempt limit')
+            # Reserve before Popen. A crash in this gap retains a charged uncertain start.
+            reservation = dict(assignment_id=assignment_id, worker_seconds=seconds, review_seconds=a['details']['review_seconds'],
+                               attempt_id=None, state='starting', reviews=[], review_pending=False, settings=settings,
+                               charged_at=_now(), usage={'estimates': self.store.get_record(program_id, assignment_id)['details']['allocation'],
+                                                        'worker_reports': [], 'supervisor_observations': [],
+                                                        'unmetered': ['shell movement', 'shell compute', 'spend']})
+            reservation['retry_root'] = retry_root
+            a['details']['reservations'].append(reservation)
+            a['details']['wall_reserved_seconds'] += seconds + reservation['review_seconds']
+            if a['details']['queue'] and a['details']['queue'][0]['assignment_id'] == assignment_id:
+                a['details']['queue'].pop(0)
+            self.store._touch(program_id)
+            self.store.connection.execute('UPDATE records SET details_json=?, revision=revision+1, updated_at=? WHERE id=?',
+                                          (_json(a['details']), _now(), a['id']))
         runtime = {'allocation_id': a['id'], 'assignment_id': assignment_id,
                    'wall_deadline': min(time.time() + seconds, a['details']['deadline'] - reservation['review_seconds']),
                    'cleanup_seconds': a['details']['cleanup_seconds']}
         try:
             result = self.manager._launch_worker(program_id, assignment_id, settings=settings, instructions=instructions, runtime=runtime)
-            reservation.update(attempt_id=result['id'], state=result['details']['state'])
+            self.update_reservation(a['id'], assignment_id, attempt_id=result['id'], state=result['details']['state'])
         except BaseException:
             attempts = [r for r in self.records() if r['kind'] == 'attempt' and r['details'].get('runtime', {}).get('allocation_id') == a['id']
                         and r['details']['assignment_id'] == assignment_id]
-            reservation.update(attempt_id=attempts[-1]['id'] if attempts else None, state='interrupted')
-            self.save(a)
+            self.update_reservation(a['id'], assignment_id, attempt_id=attempts[-1]['id'] if attempts else None, state='interrupted')
             raise
-        self.save(a)
         return result
+
+    def update_reservation(self, allocation_id, assignment_id, **updates):
+        with self.store.transaction():
+            a = self.current(allocation_id)
+            reservation = next(r for r in a["details"]["reservations"] if r["assignment_id"] == assignment_id)
+            reservation.update(updates)
+            self.store._touch(self.program_id)
+            self.store.connection.execute("UPDATE records SET details_json=?, revision=revision+1, updated_at=? WHERE id=?",
+                                          (_json(a["details"]), _now(), a["id"]))
 
     def run_within_allocation(self, program_id, allocation_id, assignment_ids, *, settings=None):
         """Queue the manager's finite ordered selection; wait at the review backlog boundary."""
         if not isinstance(assignment_ids, list) or not assignment_ids or len(set(assignment_ids)) != len(assignment_ids):
             raise ProgramError('Select a nonempty list of distinct assignment IDs')
-        a = self.current(allocation_id)
-        if a['details']['queue']:
-            raise ProgramError('An allocation already has a manager-selected queue')
-        self._ready(a, assignment_ids[0])
-        available = a['details']['task_limit'] - len(a['details']['reservations'])
-        if len(assignment_ids) > available:
-            raise ProgramError('Selected queue exceeds remaining task allocation')
-        total = sum(self.store.get_record(program_id, i, 'assignment')['details']['allocation']['wall_minutes'] * 60 +
-                    a['details']['review_seconds'] for i in assignment_ids)
-        if a['details']['wall_reserved_seconds'] + total > a['details']['wall_seconds']:
-            raise ProgramError('Selected queue exceeds remaining wall/review allocation')
-        self.manager.workers._settings(settings)
-        a['details']['queue'] = [{'assignment_id': i, 'settings': settings} for i in assignment_ids]
-        self.save(a)
+        with self.store.transaction():
+            a = self.current(allocation_id)
+            if a['details']['queue']:
+                raise ProgramError('An allocation already has a manager-selected queue')
+            self._ready(a, assignment_ids[0], settings=settings)
+            available = a['details']['task_limit'] - len(a['details']['reservations'])
+            if len(assignment_ids) > available:
+                raise ProgramError('Selected queue exceeds remaining task allocation')
+            total = sum(self.store.get_record(program_id, i, 'assignment')['details']['allocation']['wall_minutes'] * 60 +
+                        a['details']['review_seconds'] for i in assignment_ids)
+            if a['details']['wall_reserved_seconds'] + total > a['details']['wall_seconds']:
+                raise ProgramError('Selected queue exceeds remaining wall/review allocation')
+            self.manager.workers._settings(settings)
+            a['details']['queue'] = [{'assignment_id': i, 'settings': settings} for i in assignment_ids]
+            self.store._touch(program_id)
+            self.store.connection.execute('UPDATE records SET details_json=?, revision=revision+1, updated_at=? WHERE id=?',
+                                          (_json(a['details']), _now(), a['id']))
         self.poll()
         return self.status(program_id)
 
@@ -240,50 +286,66 @@ class ProgramController:
         if a is None:
             self.fund_review(program_id, submission_id, wall_minutes=settings.get('wall_minutes', 5))
             a, reservation = self.locate(submission_id=submission_id)
-        d = a['details']
-        if (self.store.get_program(program_id)['state'] != 'active' or d['state'] in ('stopped', 'expired', 'interrupted') or
-                d['owner'] != self.owner or time.time() >= d['deadline']):
-            raise ProgramError('Review reservation is stopped, interrupted or expired; retain evidence for a new allocation')
-        if any(r['kind'] == 'review_run' and r['details']['state'] in ('running', 'cancelling') for r in self.records()):
-            raise ProgramError('The separate review concurrency slot is occupied')
-        if len(reservation['reviews']) >= d['retry_limit']:
-            raise ProgramError('Review retry limit reached; fund an explicit new bounded handoff')
-        remaining = reservation['review_seconds'] - sum(r['reserved_seconds'] for r in reservation['reviews'])
-        minutes = settings.get('wall_minutes', min(5, remaining / 60))
-        number(minutes, 'review wall_minutes')
-        if minutes * 60 > remaining + 1e-6 or time.time() + minutes * 60 > d['deadline']:
-            raise ProgramError('Review exceeds its reserved wall capacity')
-        self.manager.reviews.plan(program_id, submission_id, **dict(settings, wall_minutes=minutes))
-        entry = {'run_id': None, 'reserved_seconds': minutes * 60, 'state': 'starting'}
-        reservation['reviews'].append(entry)
-        reservation['review_pending'] = True
-        self.save(a)
+        with self.store.transaction():
+            a, reservation = self.locate(submission_id=submission_id)
+            d = a['details']
+            if (self.store.get_program(program_id)['state'] != 'active' or d['state'] in ('stopped', 'expired', 'interrupted') or
+                    d['owner'] != self.owner or time.time() >= d['deadline']):
+                raise ProgramError('Review reservation is stopped, interrupted or expired; retain evidence for a new allocation')
+            pool.check_review(self.store)
+            pool.check_backlog(self.store, transfer_attempt=reservation.get('attempt_id'))
+            if len(reservation['reviews']) >= d['retry_limit']:
+                raise ProgramError('Review retry limit reached; fund an explicit new bounded handoff')
+            remaining = reservation['review_seconds'] - sum(r['reserved_seconds'] for r in reservation['reviews'])
+            minutes = settings.get('wall_minutes', min(5, remaining / 60))
+            number(minutes, 'review wall_minutes')
+            if minutes * 60 > remaining + 1e-6 or time.time() + minutes * 60 > d['deadline']:
+                raise ProgramError('Review exceeds its reserved wall capacity')
+            self.manager.reviews.plan(program_id, submission_id, **dict(settings, wall_minutes=minutes))
+            entry = {'charge_id': __import__('uuid').uuid4().hex, 'run_id': None, 'reserved_seconds': minutes * 60, 'state': 'starting'}
+            reservation['reviews'].append(entry)
+            reservation['review_pending'] = True
+            self.store._touch(program_id)
+            self.store.connection.execute('UPDATE records SET details_json=?, revision=revision+1, updated_at=? WHERE id=?',
+                                          (_json(a['details']), _now(), a['id']))
         try:
-            result = self.manager.reviews.start(program_id, submission_id, **dict(settings, wall_minutes=minutes))
+            result = self.manager.reviews.start(program_id, submission_id,
+                runtime_reservation=(a['id'], reservation['assignment_id'], entry['charge_id']), **dict(settings, wall_minutes=minutes))
             entry.update(run_id=result['id'], state=result['details']['state'])
         except BaseException:
             entry['state'] = 'interrupted'
-            self.save(a)
+            self.update_review_charge(a['id'], reservation['assignment_id'], entry)
             raise
-        self.save(a)
+        self.update_review_charge(a['id'], reservation['assignment_id'], entry)
         return result
+
+    def update_review_charge(self, allocation_id, assignment_id, entry):
+        with self.store.transaction():
+            a = self.current(allocation_id)
+            reservation = next(r for r in a['details']['reservations'] if r['assignment_id'] == assignment_id)
+            charged = next(r for r in reservation['reviews'] if r.get('charge_id') == entry['charge_id'])
+            charged.update(entry)
+            self.store._touch(self.program_id)
+            self.store.connection.execute('UPDATE records SET details_json=?, revision=revision+1, updated_at=? WHERE id=?',
+                                          (_json(a['details']), _now(), a['id']))
 
     def fund_review(self, program_id, submission_id, *, wall_minutes=5, retry_limit=1, cleanup_seconds=190):
         """Explicitly fund retained evidence when its previous allocation has ended."""
         submission, _ = self.manager.reviews.verify(program_id, submission_id)
         attempt_id = submission['details']['manifest']['attempt_id']
-        old, _ = self.locate(attempt_id=attempt_id)
-        if old and old['details']['state'] in ('active', 'exhausted'):
-            raise ProgramError('Use the existing review reservation before funding another')
-        d = self._funding(program_id, 1, wall_minutes + .01, wall_minutes, cleanup_seconds, retry_limit, 1)
-        d.update(state='exhausted', wall_reserved_seconds=wall_minutes * 60)
-        d['reservations'].append(dict(assignment_id=submission['details']['manifest']['assignment_id'],
-            worker_seconds=0, review_seconds=wall_minutes * 60, attempt_id=attempt_id, state='submitted',
-            reviews=[], review_pending=True, charged_at=_now(), usage={'estimates': {}, 'worker_reports': [],
-            'supervisor_observations': [], 'unmetered': ['shell movement', 'shell compute', 'spend']}))
         # Funding and every predecessor transfer commit together, including when
         # older interrupted allocations already contain this same obligation.
         with self.store.transaction():
+            old, _ = self.locate(attempt_id=attempt_id)
+            if old and old['details']['state'] in ('active', 'exhausted'):
+                raise ProgramError('Use the existing review reservation before funding another')
+            d = self._funding(program_id, 1, wall_minutes + .01, wall_minutes, cleanup_seconds, retry_limit, 1)
+            d.update(state='exhausted', wall_reserved_seconds=wall_minutes * 60)
+            d['reservations'].append(dict(assignment_id=submission['details']['manifest']['assignment_id'],
+                worker_seconds=0, review_seconds=wall_minutes * 60, attempt_id=attempt_id, state='submitted',
+                reviews=[], review_pending=True, charged_at=_now(), usage={'estimates': {}, 'worker_reports': [],
+                'supervisor_observations': [], 'unmetered': ['shell movement', 'shell compute', 'spend']}))
+            pool.check_backlog(self.store, transfer_attempt=attempt_id)
             self.store._touch(program_id)
             result = self.store._insert(program_id, 'runtime_allocation', 'Reserved saved-evidence review', d)
             for previous in self.records():
@@ -399,26 +461,65 @@ class ProgramController:
                     self.store.connection.execute('UPDATE records SET details_json=? WHERE id=?', (_json(d), a['id']))
                 else:
                     self.save(a)
-            if d['state'] == 'active' and d['queue'] and self.store.get_program(self.program_id)['state'] == 'active':
+            while d['state'] == 'active' and d['queue'] and self.store.get_program(self.program_id)['state'] == 'active':
                 next_item = d['queue'][0]
                 try:
-                    self._ready(a, next_item['assignment_id'])
+                    self._ready(a, next_item['assignment_id'], settings=next_item['settings'])
                 except ProgramError:
-                    continue
-                # Persist dequeue before dispatch. Restart never replays this instruction.
-                d['queue'].pop(0)
-                self.save(a)
+                    break
+                # Charge and dequeue together in run_once. Backpressure keeps
+                # the queued selection intact; restart never replays a charge.
                 self.run_once(self.program_id, next_item['assignment_id'], allocation_id=a['id'], settings=next_item['settings'])
+                a = self.current(a['id'])
+                d = a['details']
+        self.premise_conflicts()
+
+    def premise_conflicts(self):
+        """Annotate the exact running or historical attempt; retain every partial artifact."""
+        for attempt in self.records():
+            if attempt['kind'] != 'attempt' or not attempt['details'].get('premise_ids'):
+                continue
+            d = attempt['details']
+            known = set(d.get('premise_event_ids_at_start', [])) | {c['event_id'] for c in d.get('premise_conflicts', [])}
+            affected = {}
+            for premise in d['premise_ids']:
+                state = self.store.graph().query(self.program_id, 'support', premise)['states'][premise]
+                for event in set(state['review_event_ids']) - known:
+                    affected.setdefault(event, []).append(premise)
+            if affected:
+                d.setdefault('premise_conflicts', []).extend({'event_id': event, 'premise_ids': ids,
+                    'assignment_id': d['assignment_id'], 'attempt_id': attempt['id'], 'at': _now(),
+                    'state': 'review_required', 'action': 'Retain partial evidence; manager must review the changed premise'}
+                    for event, ids in sorted(affected.items()))
+                self.save(attempt)
 
     def status(self, program_id):
+        workers, reviews, uncertain = pool.occupancy(self.store)
         return {'allocations': [r for r in self.records() if r['kind'] == 'runtime_allocation'],
-                'enforced': ['finite dispatch/task reservations', 'worker concurrency 1', 'review concurrency 1',
+                'pool': {'store_worker_limit': pool.limit(self.store), 'maximum_worker_limit': pool.MAX_WORKERS,
+                         'store_review_backlog_limit': pool.backlog_limit(self.store),
+                         'store_future_review_obligations': len(pool.obligations(self.store)),
+                         'store_workers_reserved': len(workers), 'store_reviewers_reserved': len(reviews),
+                         'reservation_holders': [{'program_id': r['program_id'], 'record_id': r['id'],
+                             'kind': r['kind'], 'state': r['details']['state'],
+                             'assignment_id': r.get('reservation', r['details']).get('assignment_id')}
+                             for r in [*workers, *reviews, *uncertain]],
+                         'unknown_review_ids': [r.get('reservation', {}).get('reviews', [{}])[-1].get('charge_id', r['id'])
+                                               if r['kind'] == 'runtime_allocation' else r['id'] for r in reviews
+                                               if r['details']['state'] == 'interrupted'],
+                         'unknown_cleanup_ids': [r['id'] for r in uncertain], 'default_program_worker_limit': 1,
+                         'unopened_programs': 'Saved reservations count; no PID adoption or automatic replay'},
+                'shared_filesystem': pool.SHARED_BOUNDARY,
+                'premise_reviews': [{'attempt_id': r['id'], 'conflicts': r['details']['premise_conflicts']} for r in self.records()
+                                    if r['kind'] == 'attempt' and r['details'].get('premise_conflicts')],
+                'enforced': ['finite dispatch/task reservations', 'store-wide and per-program worker limits', 'store-wide review concurrency 1',
                              'review backlog', 'owned launcher/reviewer wall deadlines independent of host polling'],
                 'cleanup': 'Launcher cleanup grace is separate; forced exit or missing manifest leaves physical/recording shutdown unverified',
                 'workload_limits': 'Production tool per-job limits apply only to supported tool calls. Allocation counters are estimates/contracts, not hard aggregate movement or spend caps',
                 'restart': 'No PID adoption. Unverified work is interrupted and requires an explicit new bounded handoff'}
 
-    def recover(self, program_id, *, handoff_attempt_id=None, handoff_allocation_id=None, reason=None):
+    def recover(self, program_id, *, handoff_attempt_id=None, handoff_allocation_id=None,
+                handoff_review_charge_id=None, handoff_review_run_id=None, reason=None):
         """Reconcile leases, birth identities and live supervisor observations without PID adoption."""
         outcomes = []
         for r in self.records():
@@ -448,11 +549,15 @@ class ProgramController:
                 outcomes.append({'attempt_id': r['id'], **d['recovery']})
             elif kind == 'review_run' and d['state'] in ('running', 'cancelling') and r['id'] not in self.manager.reviews.children:
                 if not process_live(d['owner'].get('process')) or d['owner'].get('process') == self.owner['process']:
-                    d.update(state='interrupted', error='Controller ownership lost; no review admitted')
+                    d.update(state='interrupted', error='Controller ownership lost; no review admitted',
+                             cleanup='unknown; unowned reviewer guard may remain live')
                     self.manager.reviews._save(program_id, r['id'], d)
             elif kind == 'runtime_allocation' and d['state'] in ('active', 'exhausted') and d['owner'] != self.owner:
                 if not process_live(d['owner'].get('process')) or d['owner'].get('process') == self.owner['process']:
                     d.update(state='interrupted', queue=[])
+                    for reservation in d['reservations']:
+                        if reservation.get('attempt_id') is None and reservation['state'] == 'starting':
+                            reservation['state'] = 'interrupted'
                     d['events'].append({'at': _now(), 'event': 'controller_restart', 'previous_lease_until': d['lease_until']})
                     self.save(r)
         if handoff_attempt_id:
@@ -472,7 +577,46 @@ class ProgramController:
                 if reservation.get('attempt_id') is None:
                     reservation.update(state='interrupted', handoff={'reason': reason, 'at': _now(), 'physical_shutdown': 'unknown'})
             self.save(r)
+        if handoff_review_charge_id:
+            _text(reason, 'handoff reason acknowledging unknown reviewer shutdown')
+            found = False
+            for allocation in self.records():
+                if allocation['kind'] != 'runtime_allocation':
+                    continue
+                for reservation in allocation['details']['reservations']:
+                    for charge in reservation['reviews']:
+                        if charge.get('charge_id') != handoff_review_charge_id:
+                            continue
+                        found = True
+                        if allocation['details']['state'] != 'interrupted' or charge.get('run_id'):
+                            raise ProgramError('Only an interrupted uncached review charge can receive this handoff')
+                        owner_process = allocation['details']['owner'].get('process')
+                        if process_live(owner_process) and owner_process != self.owner['process']:
+                            raise ProgramError('A live foreign controller retains this review charge')
+                        for run in self.records():
+                            link = run['details'].get('runtime_reservation', [])
+                            if run['kind'] == 'review_run' and len(link) > 2 and link[2] == handoff_review_charge_id:
+                                self.handoff_review(run, reason)
+                        charge.update(state='interrupted', handoff={'at': _now(), 'reason': reason,
+                                      'reviewer_shutdown': 'unknown', 'charged_seconds_retained': charge['reserved_seconds']})
+                        self.save(allocation)
+            if not found:
+                raise ProgramError('Unknown review charge ID')
+        if handoff_review_run_id:
+            _text(reason, 'handoff reason acknowledging unknown reviewer shutdown')
+            self.handoff_review(self.store.get_record(program_id, handoff_review_run_id, 'review_run'), reason)
         return {'reconciled': outcomes, 'runtime': self.status(program_id)}
+
+    def handoff_review(self, run, reason):
+        d = run['details']
+        owner_process = d['owner'].get('process')
+        if (d['state'] != 'interrupted' or not d.get('cleanup', '').startswith('unknown') or
+                run['id'] in self.manager.reviews.children or
+                (process_live(owner_process) and owner_process != self.owner['process'])):
+            raise ProgramError('Only an unowned interrupted reviewer can receive a bounded handoff')
+        d['handoff'] = {'at': _now(), 'reason': reason, 'reviewer_shutdown': 'unknown',
+                        'instruction': 'Retain the charge and evidence; no historical PID was adopted or signalled'}
+        self.save(run)
 
     @staticmethod
     def unknown_cleanup(details):

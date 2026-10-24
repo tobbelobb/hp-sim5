@@ -12,7 +12,6 @@ from .program_controller import ProgramController
 
 
 UNAVAILABLE = {
-    'parallel': 'Task 014: coordinated worker pool',
     'integrate': 'Task 015: combined candidate integration and delivery checks',
 }
 
@@ -53,6 +52,7 @@ class ProgramManager:
             'worker_start': self.worker_start, 'worker_status': self.workers.status,
             'worker_cancel': self.controller.cancel_attempt, 'cancel_attempt': self.controller.cancel_attempt,
             'worker_sessions': self.workers.sessions,
+            'configure_pool': self.controller.configure_pool,
             'submit': self.reviews.submit, 'submission_verify': self.reviews.verify,
             'submission_invalidate': self.reviews.invalidate, 'review_plan': self.reviews.plan,
             'review_start': self.controller.review_start, 'review_status': self.reviews.status,
@@ -109,11 +109,15 @@ class ProgramManager:
 
     def poll(self):
         """Observe owned children between requests, including cancellation cleanup."""
-        for identity in tuple(self.workers.children):
+        for identity in self.child_ids(self.workers, 'attempt'):
             self.workers.status(self.program_id, identity)
-        for identity in tuple(self.reviews.children):
+        for identity in self.child_ids(self.reviews, 'review_run'):
             self.reviews.status(self.program_id, identity)
         self.controller.poll()
+
+    def child_ids(self, dispatcher, kind):
+        return [r[0] for r in self.store.connection.execute(
+            'SELECT id FROM records WHERE program_id=? AND kind=?', (self.program_id, kind)) if r[0] in dispatcher.children]
 
     def overview(self, program_id):
         self.poll()
@@ -123,6 +127,7 @@ class ProgramManager:
         result['runtime'] = self.controller.status(program_id)
         result['next_allocation'] = self.strategy.next_allocation(program_id, board)
         result['brief'] = self.strategy.brief(board, result['next_allocation'])
+        result['brief'] += '\n\nWorker pool: ' + str(result['runtime']['pool']) + '\n' + result['runtime']['shared_filesystem']
         result['manager'] = {'program_id': program_id, 'controller_id': self.controller_id,
                              'stopping': self.stopping, 'physics_world': False,
                              'cleanup_errors': self.cleanup_errors,
@@ -185,14 +190,14 @@ class ProgramManager:
                                       actor=actor, record_id=record_id, expected_revision=expected_revision)
 
     def _cancel_owned(self):
-        for identity in tuple(self.workers.children):
+        for identity in self.child_ids(self.workers, 'attempt'):
             record = self.workers.status(self.program_id, identity)
             if record['details']['state'] in ACTIVE:
                 try:
                     self.controller.cancel_attempt(self.program_id, identity)
                 except ProgramError as error:
                     self.cleanup_errors.append({'attempt_id': identity, 'error': str(error), 'physical_shutdown': 'unknown'})
-        for identity in tuple(self.reviews.children):
+        for identity in self.child_ids(self.reviews, 'review_run'):
             try:
                 self.reviews.cancel(self.program_id, identity)
             except ProgramError as error:
@@ -225,4 +230,5 @@ class ProgramManager:
         return self.overview(program_id)
 
     def drained(self):
-        return all(p.poll() is not None for p in (*self.workers.children.values(), *self.reviews.children.values()))
+        return all(dispatcher.children[i].poll() is not None for dispatcher, kind in
+                   ((self.workers, 'attempt'), (self.reviews, 'review_run')) for i in self.child_ids(dispatcher, kind))

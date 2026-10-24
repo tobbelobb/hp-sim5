@@ -29,3 +29,19 @@ Done when:
 
 Do not add remote scheduling or parallel nested manager hierarchies. Reuse the
 same program/graph/review records so a fresh manager has one coherent overview.
+
+## Completion record, 2026-10-24
+
+Implemented store-wide worker/future-review caps, per-allocation default-one
+capacity, transactional charges/dequeue, real existing-launcher worktrees,
+program-scoped cancellation and unknown ownership handoffs. Attempt premise
+changes retain partial evidence and shared source citations. Shared build writes
+require an exclusive reservation, including startup; task 015 must retain an
+evaluation lease through combined candidate checks.
+
+The [POOL-014 report](../../output/research/sessions/2026-10-24-worker-pool/report.md)
+and [exact checks](../../output/research/sessions/2026-10-24-worker-pool/checks.json)
+record 61 passing fix cases plus 17 subtests and 22 passing final focused cases
+plus 17 subtests, with unaffected manager/review cases reused. Fixture processes
+and real Git worktrees are not live production-world or coding-client proof.
+No numerical work ran. Task 014 is complete; task 016 still owns release proof.

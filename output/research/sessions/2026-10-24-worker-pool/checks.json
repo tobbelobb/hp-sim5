@@ -1,0 +1,140 @@
+{
+  "initial": {
+    "argv": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/python/test_research_program_pool.py",
+      "--basetemp",
+      "/tmp/hp-sim5-task014-pool-initial",
+      "--junitxml",
+      "output/research/sessions/2026-10-24-worker-pool/pytest-initial.xml"
+    ],
+    "exit_code": 1,
+    "transcript": "pytest-initial.txt.gz",
+    "junit": "pytest-initial.xml.gz",
+    "junit_summary": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "1",
+      "skipped": "0",
+      "tests": "10",
+      "time": "16.020",
+      "timestamp": "2026-10-24T13:42:43.101632+00:00",
+      "hostname": "2df9bd87a6a7"
+    },
+    "stdout_summary": "1 failed, 9 passed in 16.02s",
+    "transcript_raw_sha256": "99c9ba579c011ba186d792f8a5c2f009128e641c3d6bb8ebfdd05e44602d195d",
+    "junit_raw_sha256": "f8e9e6a942362b71f8fa806bf12e3eb5b8b6eeef49aa2740d923476524174162"
+  },
+  "affected": {
+    "argv": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/python/test_research_program_pool.py",
+      "tests/python/test_research_program_controller.py",
+      "tests/python/test_research_program_manager.py",
+      "tests/python/test_research_program_workers.py",
+      "tests/python/test_research_program_review.py",
+      "tests/python/test_research_program_strategy.py",
+      "-k",
+      "not several_assignments_real_cli_transcript and not actual_candidate and not launcher_native",
+      "--basetemp",
+      "/tmp/hp-sim5-task014-affected",
+      "--junitxml",
+      "output/research/sessions/2026-10-24-worker-pool/pytest-affected.xml"
+    ],
+    "exit_code": 1,
+    "transcript": "pytest-affected.txt.gz",
+    "junit": "pytest-affected.xml.gz",
+    "junit_summary": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "16",
+      "skipped": "0",
+      "tests": "105",
+      "time": "47.997",
+      "timestamp": "2026-10-24T13:44:20.741249+00:00",
+      "hostname": "2df9bd87a6a7"
+    },
+    "stdout_summary": "16 failed, 75 passed, 5 deselected, 14 subtests passed in 48.00s",
+    "transcript_raw_sha256": "6194a701baf0b4292cc22adcf8cb58151618d46d4cc414de1fe90346acfe698f",
+    "junit_raw_sha256": "c1bf9cd1497ef5cbce9fc6246f030f3e493069dd3993ba48e32628d4b7647166"
+  },
+  "fixes": {
+    "argv": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/python/test_research_program_pool.py",
+      "tests/python/test_research_program_controller.py",
+      "tests/python/test_research_program_workers.py",
+      "tests/python/test_research_program_strategy.py",
+      "-k",
+      "not several_assignments_real_cli_transcript",
+      "--basetemp",
+      "/tmp/hp-sim5-task014-fixes",
+      "--junitxml",
+      "output/research/sessions/2026-10-24-worker-pool/pytest-fixes.xml"
+    ],
+    "exit_code": 0,
+    "transcript": "pytest-fixes.txt",
+    "junit": "pytest-fixes.xml",
+    "junit_summary": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "78",
+      "time": "35.204",
+      "timestamp": "2026-10-24T13:46:27.793443+00:00",
+      "hostname": "2df9bd87a6a7"
+    },
+    "stdout_summary": "61 passed, 1 deselected, 17 subtests passed in 35.20s"
+  },
+  "final": {
+    "argv": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/python/test_research_program.py",
+      "tests/python/test_research_program_graph.py",
+      "tests/python/test_research_program_pool.py",
+      "tests/python/test_research_program_workers.py",
+      "-k",
+      "ProgramTests or GraphTests or test_two_routes_real_worktrees or test_running_attempt_premise or test_pool_defaults_limits or test_unopened_program_saved_worker or test_exact_assignment_prompt",
+      "--basetemp",
+      "/tmp/hp-sim5-task014-final",
+      "--junitxml",
+      "output/research/sessions/2026-10-24-worker-pool/pytest-final.xml"
+    ],
+    "exit_code": 0,
+    "transcript": "pytest-final.txt",
+    "junit": "pytest-final.xml",
+    "junit_summary": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "39",
+      "time": "10.026",
+      "timestamp": "2026-10-24T13:49:40.364008+00:00",
+      "hostname": "2df9bd87a6a7"
+    },
+    "stdout_summary": "22 passed, 20 deselected, 17 subtests passed in 10.02s"
+  },
+  "limits": {
+    "evidence": "Real CLI/process/Git worktrees, synthetic supervisor/world and reviewer judgements",
+    "numeric_budget_and_use": 0,
+    "live_release_proved": false,
+    "physics_gate_applicable": false,
+    "no_push": true,
+    "parent_read_only_review": true,
+    "reused": "Passing unchanged manager/review cases from affected run; task013 owned-launcher/deadline foundations"
+  }
+}

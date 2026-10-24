@@ -130,8 +130,9 @@ unchanged SDK. Stock SDK startup and a real coding-chat session remain unproved
 here. Existing nested Codex startup fails with read-only writable-state access;
 no new keys or environment overrides were introduced.
 
-Unavailable operations return `unavailable` with the owning task:
-parallel in 014 and integrate in 015. `run_within_allocation` executes the
+The `integrate` operation remains unavailable until task 015. Pool configuration
+and its limits are documented in [program-controller.md](program-controller.md).
+`run_within_allocation` executes the
 manager's finite selection of distinct assignments; it does not resume a prompt
 in a restart loop.
 Task 016 still requires the genuine client, worker, production-tool, review and

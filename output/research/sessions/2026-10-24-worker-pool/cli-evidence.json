@@ -1,0 +1,215 @@
+{
+  "scope": "Actual CLI/file-host, real Git worktrees, fake supervisor/world/client; no production science",
+  "pool": {
+    "default_program_worker_limit": 1,
+    "maximum_worker_limit": 4,
+    "reservation_holders": [
+      {
+        "assignment_id": "one",
+        "kind": "attempt",
+        "program_id": "p",
+        "record_id": "attempt-261f350ea2f14c09bfebf1ce3d069072",
+        "state": "running"
+      },
+      {
+        "assignment_id": "two",
+        "kind": "attempt",
+        "program_id": "p",
+        "record_id": "attempt-9a8c2247a15d4853a5d824a53eda6905",
+        "state": "running"
+      }
+    ],
+    "store_future_review_obligations": 2,
+    "store_review_backlog_limit": 2,
+    "store_reviewers_reserved": 0,
+    "store_worker_limit": 2,
+    "store_workers_reserved": 2,
+    "unknown_cleanup_ids": [],
+    "unknown_review_ids": [],
+    "unopened_programs": "Saved reservations count; no PID adoption or automatic replay"
+  },
+  "allocation": {
+    "created_at": "2026-10-24T13:49:42.967124+00:00",
+    "details": {
+      "cleanup_deadline": 1792850272.9670386,
+      "cleanup_seconds": 190,
+      "deadline": 1792850082.9670386,
+      "events": [],
+      "lease_until": 1792849797.9670386,
+      "owner": {
+        "id": "controller-7c8b8c7429034ea7889c7f9f94e31588",
+        "process": {
+          "birth": "7869816",
+          "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+          "group": 38736,
+          "host": "2df9bd87a6a7",
+          "pid": 38736,
+          "uid": 1000
+        }
+      },
+      "queue": [
+        {
+          "assignment_id": "three",
+          "settings": null
+        }
+      ],
+      "reservations": [
+        {
+          "assignment_id": "one",
+          "attempt_id": "attempt-261f350ea2f14c09bfebf1ce3d069072",
+          "charged_at": "2026-10-24T13:49:43.069740+00:00",
+          "retry_root": null,
+          "review_pending": false,
+          "review_seconds": 6.0,
+          "reviews": [],
+          "settings": {
+            "backend": "codex",
+            "client_args": [],
+            "dont_ask": false,
+            "goal_mode": true,
+            "machine": "hp4",
+            "physics_backend": "headless-js",
+            "record": true,
+            "shared_runtime_write": false,
+            "viewer": "headless",
+            "worktree": true
+          },
+          "state": "running",
+          "usage": {
+            "estimates": {
+              "fresh_fits": 0,
+              "wall_minutes": 1
+            },
+            "observed_worker_wall_seconds": 0,
+            "supervisor_observations": [],
+            "unmetered": [
+              "shell movement",
+              "shell compute",
+              "spend"
+            ],
+            "worker_reports": []
+          },
+          "worker_seconds": 60
+        },
+        {
+          "assignment_id": "two",
+          "attempt_id": "attempt-9a8c2247a15d4853a5d824a53eda6905",
+          "charged_at": "2026-10-24T13:49:43.076763+00:00",
+          "retry_root": null,
+          "review_pending": false,
+          "review_seconds": 6.0,
+          "reviews": [],
+          "settings": {
+            "backend": "codex",
+            "client_args": [],
+            "dont_ask": false,
+            "goal_mode": true,
+            "machine": "hp4",
+            "physics_backend": "headless-js",
+            "record": true,
+            "shared_runtime_write": false,
+            "viewer": "headless",
+            "worktree": true
+          },
+          "state": "running",
+          "usage": {
+            "estimates": {
+              "fresh_fits": 0,
+              "wall_minutes": 1
+            },
+            "observed_worker_wall_seconds": 0,
+            "supervisor_observations": [],
+            "unmetered": [
+              "shell movement",
+              "shell compute",
+              "spend"
+            ],
+            "worker_reports": []
+          },
+          "worker_seconds": 60
+        }
+      ],
+      "retry_limit": 1,
+      "review_backlog_limit": 2,
+      "review_seconds": 6.0,
+      "started_at": "2026-10-24T13:49:42.967041+00:00",
+      "state": "active",
+      "task_limit": 3,
+      "wall_reserved_seconds": 132.0,
+      "wall_seconds": 300,
+      "worker_limit": 2
+    },
+    "id": "runtime_allocation-6b5f6b57ce394a6dbc5249ade1ff52a8",
+    "kind": "runtime_allocation",
+    "program_id": "p",
+    "revision": 7,
+    "title": "Finite manager allocation",
+    "updated_at": "2026-10-24T13:49:43.083431+00:00"
+  },
+  "workers": [
+    {
+      "id": "attempt-261f350ea2f14c09bfebf1ce3d069072",
+      "assignment_id": "one",
+      "session_dir": "/tmp/hp-sim5-task014-final/test_two_routes_real_worktrees0/repo/output/research/sessions/attempt-261f350ea2f14c09bfebf1ce3d069072",
+      "attempt_dir": "/tmp/hp-sim5-task014-final/test_two_routes_real_worktrees0/memory/workers/attempt-261f350ea2f14c09bfebf1ce3d069072",
+      "synthetic_world_id": "synthetic-4179a7b514154e8ea41269ae2f6ba162",
+      "worktree": {
+        "branch": "research/attempt-261f350ea2f14c09bfebf1ce3d069072-4b9d61ba",
+        "repo": "/tmp/hp-sim5-task014-final/test_two_routes_real_worktrees0/worktrees/attempt-261f350ea2f14c09bfebf1ce3d069072-4b9d61ba",
+        "source_revision": "master"
+      },
+      "argv": [
+        "/tmp/hp-sim5-task014-final/test_two_routes_real_worktrees0/repo/hp-sim5-research-agent",
+        "--codex",
+        "--batch",
+        "--prompt-file",
+        "/tmp/hp-sim5-task014-final/test_two_routes_real_worktrees0/memory/workers/attempt-261f350ea2f14c09bfebf1ce3d069072/prompt.txt",
+        "--session-dir",
+        "/tmp/hp-sim5-task014-final/test_two_routes_real_worktrees0/repo/output/research/sessions/attempt-261f350ea2f14c09bfebf1ce3d069072",
+        "--physics-backend",
+        "headless-js",
+        "--machine",
+        "hp4",
+        "--viewer",
+        "headless",
+        "--wall-deadline",
+        "1792849843.0698617",
+        "--worktree"
+      ]
+    },
+    {
+      "id": "attempt-9a8c2247a15d4853a5d824a53eda6905",
+      "assignment_id": "two",
+      "session_dir": "/tmp/hp-sim5-task014-final/test_two_routes_real_worktrees0/repo/output/research/sessions/attempt-9a8c2247a15d4853a5d824a53eda6905",
+      "attempt_dir": "/tmp/hp-sim5-task014-final/test_two_routes_real_worktrees0/memory/workers/attempt-9a8c2247a15d4853a5d824a53eda6905",
+      "synthetic_world_id": "synthetic-14f9a6337aff45bb85dfa5a8b9cc344a",
+      "worktree": {
+        "branch": "research/attempt-9a8c2247a15d4853a5d824a53eda6905-39eee4d5",
+        "repo": "/tmp/hp-sim5-task014-final/test_two_routes_real_worktrees0/worktrees/attempt-9a8c2247a15d4853a5d824a53eda6905-39eee4d5",
+        "source_revision": "master"
+      },
+      "argv": [
+        "/tmp/hp-sim5-task014-final/test_two_routes_real_worktrees0/repo/hp-sim5-research-agent",
+        "--codex",
+        "--batch",
+        "--prompt-file",
+        "/tmp/hp-sim5-task014-final/test_two_routes_real_worktrees0/memory/workers/attempt-9a8c2247a15d4853a5d824a53eda6905/prompt.txt",
+        "--session-dir",
+        "/tmp/hp-sim5-task014-final/test_two_routes_real_worktrees0/repo/output/research/sessions/attempt-9a8c2247a15d4853a5d824a53eda6905",
+        "--physics-backend",
+        "headless-js",
+        "--machine",
+        "hp4",
+        "--viewer",
+        "headless",
+        "--wall-deadline",
+        "1792849843.0768664",
+        "--worktree"
+      ]
+    }
+  ],
+  "final_states": [
+    "cancelled",
+    "cancelled"
+  ]
+}

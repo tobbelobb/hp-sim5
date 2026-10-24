@@ -1,0 +1,162 @@
+{
+  "queue": "014 done; 015 eligible; 016 not release-ready",
+  "commands": [
+    {
+      "argv": [
+        ".venv/bin/python",
+        "-m",
+        "compileall",
+        "-q",
+        "src/python/hp_sim5_research/program.py",
+        "src/python/hp_sim5_research/program_controller.py",
+        "src/python/hp_sim5_research/program_entry.py",
+        "src/python/hp_sim5_research/program_graph.py",
+        "src/python/hp_sim5_research/program_host.py",
+        "src/python/hp_sim5_research/program_manager.py",
+        "src/python/hp_sim5_research/program_pool.py",
+        "src/python/hp_sim5_research/program_review.py",
+        "src/python/hp_sim5_research/program_strategy.py",
+        "src/python/hp_sim5_research/program_workers.py"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--cached",
+        "aea237e65d5589eb433a90c345fb7f2e364bf6a9",
+        "--check"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "link_count": 26,
+  "links": [
+    {
+      "document": "output/research/sessions/2026-10-24-worker-pool/abstract.md",
+      "target": "checks.json"
+    },
+    {
+      "document": "output/research/sessions/2026-10-24-worker-pool/abstract.md",
+      "target": "cli-evidence.json"
+    },
+    {
+      "document": "output/research/sessions/2026-10-24-worker-pool/abstract.md",
+      "target": "pytest-final.txt"
+    },
+    {
+      "document": "output/research/sessions/2026-10-24-worker-pool/abstract.md",
+      "target": "report.md"
+    },
+    {
+      "document": "output/research/sessions/2026-10-24-worker-pool/abstract.md",
+      "target": "report.md"
+    },
+    {
+      "document": "output/research/sessions/2026-10-24-worker-pool/abstract.md",
+      "target": "research.md"
+    },
+    {
+      "document": "output/research/sessions/2026-10-24-worker-pool/abstract.md",
+      "target": "../../../../research/program-controller.md"
+    },
+    {
+      "document": "output/research/sessions/2026-10-24-worker-pool/abstract.md",
+      "target": "../2026-10-24-bounded-controller/report.md"
+    },
+    {
+      "document": "output/research/sessions/2026-10-24-worker-pool/report.md",
+      "target": "cli-evidence.json"
+    },
+    {
+      "document": "output/research/sessions/2026-10-24-worker-pool/report.md",
+      "target": "checks.json"
+    },
+    {
+      "document": "output/research/sessions/2026-10-24-worker-pool/report.md",
+      "target": "../../../../research/program-controller.md"
+    },
+    {
+      "document": "output/research/sessions/2026-10-24-worker-pool/report.md",
+      "target": "../../../../research/program-tasks/014-parallel-approach-coordination.md"
+    },
+    {
+      "document": "output/research/sessions/2026-10-24-worker-pool/report.md",
+      "target": "../2026-10-24-bounded-controller/report.md"
+    },
+    {
+      "document": "output/research/sessions/2026-10-24-worker-pool/report.md",
+      "target": "checks.json"
+    },
+    {
+      "document": "output/research/sessions/2026-10-24-worker-pool/report.md",
+      "target": "cli-evidence.json"
+    },
+    {
+      "document": "output/research/sessions/2026-10-24-worker-pool/report.md",
+      "target": "source-hashes.json"
+    },
+    {
+      "document": "research/program-controller.md",
+      "target": "../output/research/sessions/2026-10-24-bounded-controller/cli-transcript.json"
+    },
+    {
+      "document": "research/program-controller.md",
+      "target": "../output/research/sessions/2026-10-24-bounded-controller/report.md"
+    },
+    {
+      "document": "research/program-manager.md",
+      "target": "program-controller.md"
+    },
+    {
+      "document": "research/program-manager.md",
+      "target": "program-strategy.md"
+    },
+    {
+      "document": "research/program-manager.md",
+      "target": "program-review.md"
+    },
+    {
+      "document": "research/program-manager.md",
+      "target": "program-graph/README.md"
+    },
+    {
+      "document": "research/program-manager.md",
+      "target": "prompts/research-program.txt"
+    },
+    {
+      "document": "research/program-manager.md",
+      "target": "program-controller.md"
+    },
+    {
+      "document": "research/program-tasks/014-parallel-approach-coordination.md",
+      "target": "../../output/research/sessions/2026-10-24-worker-pool/report.md"
+    },
+    {
+      "document": "research/program-tasks/014-parallel-approach-coordination.md",
+      "target": "../../output/research/sessions/2026-10-24-worker-pool/checks.json"
+    }
+  ],
+  "catalog": "Regenerated with scripts/research_index.py, then preserved all 105 published entries byte-for-byte and added only the task-owned section",
+  "task014_processes_remaining": [],
+  "source_files_hashed": 17,
+  "numeric_work": 0,
+  "physics_gate_applicable": false,
+  "reused_verification": "No broader test rerun after passing fixes/final checks; unchanged passing affected manager/review cases retained",
+  "raw_failure_logs": "Initial/affected stdout and JUnit are gzip-compressed; checks.json records exact decompressed SHA-256 values"
+}

@@ -323,7 +323,7 @@ class ReviewController:
                 'wall_minutes': wall_minutes, 'submission_id': submission_id,
                 'submission_sha256': submission['details']['sha256'], 'contract': CONTRACT}
 
-    def start(self, program_id, submission_id, **settings):
+    def start(self, program_id, submission_id, *, runtime_reservation=None, **settings):
         plan = self.plan(program_id, submission_id, **settings)
         directory = Path(plan['directory'])
         directory.mkdir(mode=0o700, parents=True)
@@ -334,7 +334,11 @@ class ReviewController:
         details.update(state='running', owner=self.owner, process=None, started_at=_now(),
                        prompt_sha256=digest(plan['prompt'].encode('utf-8')),
                        deadline=time.time() + plan['wall_minutes'] * 60, returncode=None, error=None, review_id=None)
+        if runtime_reservation:
+            details['runtime_reservation'] = list(runtime_reservation)
         with self.store.transaction():
+            from .program_pool import check_review
+            check_review(self.store, reservation=runtime_reservation)
             self.store._touch(program_id)
             self._insert(program_id, 'review_run', 'Separate saved-evidence review', details, plan['id'])
         environment = (coding_client.codex_environment(details['reviewer']['model_provider'], root=self.root,

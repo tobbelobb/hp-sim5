@@ -193,6 +193,8 @@ class WorkerTests(unittest.TestCase):
                 self.assertEqual(self.store.get_record('p', assignment)['details']['execution_state'], 'failed')
                 if mode == 'auth':
                     self.assertIn('Authentication unavailable', (Path(d['attempt_dir']) / 'stderr.log').read_text())
+                    d['handoff'] = {'reason': 'Fixture failed before starting any world', 'physical_shutdown': 'unknown'}
+                    dispatcher._save('p', record['id'], d)
                 if mode == 'missing':
                     self.assertIn('FileNotFoundError', d['diagnostics'][0])
                     self.assertTrue(any(a['path'].endswith('stderr.log') for a in d['artifacts']))
@@ -241,6 +243,8 @@ class WorkerTests(unittest.TestCase):
                 self.assertEqual(stopped['state'], 'cancelled')
                 self.assertIn('failed' if mode == 'reported-cleanup' else 'unverified', stopped['cleanup'])
                 self.assertTrue(Path(stopped['attempt_dir']).exists())
+                stopped['handoff'] = {'reason': 'Next isolated fixture starts no real world', 'physical_shutdown': 'unknown'}
+                dispatcher._save('p', record['id'], stopped)
 
     def test_partial_and_malformed_manifests_are_diagnostics(self):
         dispatcher = self.dispatcher('hold')

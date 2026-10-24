@@ -1,4 +1,4 @@
-"""Single-worker adapter for the existing launcher; no physics or client SDK imports.
+"""Bounded worker adapter for the existing launcher; no physics or client SDK imports.
 
 Keep this dispatcher alive and poll status after start/cancel. The retained host
 enforces deadlines; saved process identities alone never authorize signals.
@@ -14,6 +14,7 @@ import subprocess
 import time
 
 from .program import ProgramError, _allocation, _identity, _json, _now, _object, _text
+from . import program_pool as pool
 
 
 ACTIVE = ('starting', 'running', 'cancelling', 'ownership_lost')
@@ -79,10 +80,20 @@ def validate_attempts(records):
                 not all(isinstance(arg, str) for arg in details['argv']) or
                 not isinstance(details.get('observations'), list)):
             raise ProgramError('Invalid attempt argv/observations')
+        for field, kinds in (('premise_ids', ('claim', 'artifact')), ('premise_plan_ids', ('route_plan',)),
+                             ('premise_event_ids_at_start', ('review_event',))):
+            if field in details and (not isinstance(details[field], list) or any(
+                    i not in records or records[i]['kind'] not in kinds for i in details[field])):
+                raise ProgramError('Invalid attempt premise references')
+        for conflict in details.get('premise_conflicts', []):
+            if (conflict.get('attempt_id') != record['id'] or conflict.get('assignment_id') != assignment['id'] or
+                    conflict.get('event_id') not in records or records[conflict['event_id']]['kind'] != 'review_event' or
+                    not set(conflict.get('premise_ids', [])) <= set(details.get('premise_ids', []))):
+                raise ProgramError('Invalid attempt premise conflict')
 
 
 class WorkerDispatcher:
-    """Own only processes started by this instance; one reservation across a store.
+    """Own only processes started by this instance; capacity is shared across a store.
 
     A stale active reservation blocks new dispatch rather than adopting a PID.
     The caller must keep polling, including after cancellation. No background
@@ -104,19 +115,19 @@ class WorkerDispatcher:
         options = dict(_object({} if settings is None else settings, 'worker settings'))
         allowed = {'backend', 'model_provider', 'model', 'worktree', 'worktree_dir',
                    'physics_backend', 'machine', 'viewer', 'record', 'client_args',
-                   'dont_ask', 'goal_mode', 'sidebar_section'}
+                   'dont_ask', 'goal_mode', 'sidebar_section', 'shared_runtime_write'}
         if set(options) - allowed:
             raise ProgramError(f'Unknown worker settings: {sorted(set(options) - allowed)}')
         result = dict(backend='codex', physics_backend='headless-js', machine='hp4',
                       viewer='headless', record=True, worktree=False, client_args=[],
-                      dont_ask=False, goal_mode=True)
+                      dont_ask=False, goal_mode=True, shared_runtime_write=False)
         result.update(options)
         for name, choices in (('backend', ('codex', 'claude')),
                               ('physics_backend', ('headless-js', 'native-python', 'native-warp', 'native-warp-cuda')),
                               ('machine', ('hp3', 'hp4')), ('viewer', ('none', 'headless', 'window'))):
             if result[name] not in choices:
                 raise ProgramError(f'Unsupported {name}: {result[name]}')
-        for name in ('record', 'worktree', 'dont_ask', 'goal_mode'):
+        for name in ('record', 'worktree', 'dont_ask', 'goal_mode', 'shared_runtime_write'):
             if type(result[name]) is not bool:
                 raise ProgramError(f'{name} must be boolean')
         if result.get('worktree_dir') and not result['worktree']:
@@ -158,17 +169,19 @@ class WorkerDispatcher:
             if (program['state'] != 'active' or approach['details']['state'] not in ('live', 'promising') or
                     assignment['details']['execution_state'] != 'ready'):
                 raise ProgramError('Dispatch requires an active program/approach and ready assignment')
-            for row in self.store.connection.execute("SELECT details_json FROM records WHERE kind='attempt'"):
-                if json.loads(row[0])['state'] in ACTIVE:
-                    raise ProgramError('A worker is already reserved; poll/cancel its owning dispatcher first')
+            pool.check_worker(self.store, program_id, assignment_id, exclusive=options['shared_runtime_write'])
+            if pool.limit(self.store) > 1 and not options['worktree']:
+                raise ProgramError('A parallel worker pool requires separate launcher worktrees')
             _allocation(assignment['details']['allocation'])
             directory.mkdir(mode=0o700, parents=True)
             contract = {'program_id': program_id, 'assignment': assignment,
                         'constraints': program['constraints'], 'attempt_id': attempt_id,
-                        'source_revision': revision, 'session_dir': str(session)}
+                        'source_revision': revision, 'session_dir': str(session),
+                        'shared_filesystem': pool.SHARED_BOUNDARY,
+                        'shared_runtime_write': options['shared_runtime_write']}
             prompt = ('# Bounded research assignment\n\n' + json.dumps(contract, indent=2, ensure_ascii=False) +
                       '\n\nRespect the recorded allocation. Preserve unsuccessful and partial evidence. '
-                      'Execution success does not accept a scientific claim.\n\n' + instructions)
+                      'Execution success does not accept a scientific claim.\n\n' + pool.SHARED_BOUNDARY + '\n\n' + instructions)
             prompt_path = directory / 'prompt.txt'
             prompt_path.write_bytes(prompt.encode('utf-8'))
             (directory / 'assignment.json').write_text(json.dumps(contract, indent=2, ensure_ascii=False) + '\n')
@@ -203,6 +216,17 @@ class WorkerDispatcher:
                        'started_at': None, 'exited_at': None, 'returncode': None,
                        'cleanup': 'not_requested', 'diagnostics': []}
             details['runtime'] = dict(runtime or {}, wall_deadline=wall_deadline)
+            saved = self.store.snapshot(program_id)['records']
+            plans = [r for r in saved if r['kind'] == 'route_plan' and
+                     r['details']['approach_id'] == approach['id']]
+            pinned = {i for r in saved if r['kind'] == 'investigation' and
+                      r['details']['assignment_id'] == assignment_id for i in r['details']['route_plan_ids']}
+            pinned.update(r['id'] for r in plans[-1:])
+            details['premise_plan_ids'] = sorted(pinned)
+            details['premise_ids'] = sorted({i for r in saved if r['id'] in pinned for i in r['details']['dependency_ids']})
+            details['premise_event_ids_at_start'] = sorted({e for i in details['premise_ids'] for e in
+                self.store.graph().query(program_id, 'support', i)['states'][i]['review_event_ids']})
+            details['premise_conflicts'] = []
             if runtime:
                 details['runtime']['wall_deadline'] = min(details['runtime']['wall_deadline'], runtime['wall_deadline'])
             self.deadlines[attempt_id] = time.monotonic() + max(0, details['runtime']['wall_deadline'] - time.time())
