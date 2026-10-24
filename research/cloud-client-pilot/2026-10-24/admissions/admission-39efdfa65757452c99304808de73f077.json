@@ -1,0 +1,25 @@
+{
+  "created_at": "2026-10-24T20:52:19.144019+00:00",
+  "details": {
+    "actor": "controller",
+    "claim_id": "cloud-evidence-limits",
+    "code_readiness": "report_only",
+    "contract": "hp-sim5-evidence-review-v2",
+    "decision": "keep",
+    "engineering_reasons": [],
+    "finding": "supported",
+    "guard_reasons": [],
+    "knowledge_state": "reviewed",
+    "practical_value": "Preserves bounded runtime feasibility evidence while preventing it from being used as calibration accuracy or unattended lifecycle validation.",
+    "required_checks": [],
+    "review_id": "review-050a2f53c75d40a18f7f1f435abd3089",
+    "submission_id": "submission-1c6ba33c21764fc9a7d74004d4cbaa48",
+    "submission_sha256": "9d6e8ccea6fe7e1f486a749107f4f1321a83fe29662a8b61f29e77e4654e412a"
+  },
+  "id": "admission-39efdfa65757452c99304808de73f077",
+  "kind": "admission",
+  "program_id": "program-387d94c6067647b6964aa267122d7989",
+  "revision": 1,
+  "title": "The two historical 100-step runtime records and separate 100-step managed record support the stated narrow scope. The report correctly treats calibration improvement and full unattended operation as untested by these records. The candidate diff is empty and no source delivery is proposed.",
+  "updated_at": "2026-10-24T20:52:19.144019+00:00"
+}

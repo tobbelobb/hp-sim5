@@ -1,0 +1,34 @@
+{
+  "checks": [
+    {
+      "asset_ids": [
+        "report.md",
+        "abstract.md"
+      ],
+      "description": "Inspected the frozen report and abstract for the exact evidence-limit claim and separation of runtime feasibility from calibration and unattended lifecycle claims.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": [
+        "validation.json",
+        "original-production-validation.json",
+        "managed-production-validation.json"
+      ],
+      "description": "Compared saved step counts, recording metadata, run identities, zero-fit scope and reported artifact hashes. Independently verified all five frozen asset hashes against the manifest; inspected the empty candidate diff. No numerical reproduction or underlying recording inspection.",
+      "kind": "inspected"
+    }
+  ],
+  "code_readiness": "report_only",
+  "discrepancy": null,
+  "finding": "supported",
+  "limitations": [
+    "The frozen validation records report producer checks; this review did not decode RRD files, inspect underlying experimental artifacts or reproduce numerical results.",
+    "The frozen assets contain no calibration comparison or full lifecycle acceptance evidence. Their absence supports an evidence-limit finding, not a failed calibration result or a release-status determination."
+  ],
+  "practical_value": "Preserves bounded runtime feasibility evidence while preventing it from being used as calibration accuracy or unattended lifecycle validation.",
+  "reason": "The two historical 100-step runtime records and separate 100-step managed record support the stated narrow scope. The report correctly treats calibration improvement and full unattended operation as untested by these records. The candidate diff is empty and no source delivery is proposed.",
+  "required_checks": [],
+  "submission_id": "submission-1c6ba33c21764fc9a7d74004d4cbaa48",
+  "submission_sha256": "9d6e8ccea6fe7e1f486a749107f4f1321a83fe29662a8b61f29e77e4654e412a",
+  "verdict": "keep"
+}

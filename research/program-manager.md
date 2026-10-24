@@ -1,5 +1,11 @@
 # Operate a research program from chat
 
+For an authenticated cloud chat that must use its existing login, the opt-in
+[cloud research client](../scripts/cloud/RESEARCH.md) uses real cloud subagents
+for batch workers and reviewers. It requires an active parent chat with subagent
+tools. Its scoped live pilot and limitations are documented there; it does not
+complete task 016 or enable an unattended model daemon.
+
 An existing repository-connected Codex or Claude Code chat can manage a program
 with its shell tool. Give it your question and this prompt:
 

@@ -1,0 +1,53 @@
+{
+  "checks": [
+    {
+      "asset_ids": [
+        "report.md",
+        "abstract.md",
+        "validation.json",
+        "experiment-manifest.json"
+      ],
+      "description": "Inspected the report-only claim at source revision 8acde0c21d5b9db8893115e3e79d82d9e41f98ca, empty candidate diff, producer validation and completed experiment manifest. Manifest records rust-native physics, 100 steps, dt 0.002 s and native artifact build identity.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": [
+        "report.md",
+        "abstract.md",
+        "validation.json",
+        "cloud-client-bridge.py",
+        "experiment-manifest.json",
+        "scene.usda",
+        "commands.json",
+        "telemetry.jsonl",
+        "final.json",
+        "recording.rrd"
+      ],
+      "description": "Verified every frozen asset SHA-256 against manifest.json. Parsed saved telemetry and independently checked exactly 101 rows with consecutive steps 0 through 100, ending at 0.2 s. Confirmed empty commands and RRD size 1494557 bytes. These are saved-artifact checks, not numerical reproduction.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": [
+        "cloud-client-bridge.py"
+      ],
+      "description": "Inspected adapter dispatch, actor binding, completion hash checks and explicit permission limitation. Parent chat owns authenticated cloud sessions; the adapter does not enforce requested CLI sandbox flags or provide unattended dispatch.",
+      "kind": "inspected"
+    }
+  ],
+  "code_readiness": "report_only",
+  "discrepancy": null,
+  "finding": "supported",
+  "limitations": [
+    "Support is confined to one reported launcher-attached HP3 idle experiment and its consistent saved artifacts. No fresh physics, fitting or numerical reproduction was performed.",
+    "The frozen submission does not include the report-linked MCP transcript, reproducible probe or production-result.json. Direct protocol execution and absence of additional credentials therefore remain producer-reported rather than independently established by those frozen assets.",
+    "RRD file identity and size were independently checked. RRD sample coverage and blueprint readability remain producer-reported because rerun.dataframe was unavailable in the reviewer interpreter.",
+    "The cloud platform permission profile applies. Read-only review was an instruction, not an additional enforced filesystem sandbox. The adapter explicitly disclaims enforcement of CLI sandbox flags.",
+    "This does not establish calibration accuracy, hardware performance, interruption/recovery, unattended broker operation, nested CLI management or full manager release readiness."
+  ],
+  "practical_value": "Keep the bounded engineering feasibility record as evidence that the parent-chat-mediated cloud transport can produce a completed native experiment with traceable saved outputs.",
+  "reason": "The frozen report, manifest, telemetry and artifact identities consistently support the narrow report-only feasibility claim. Empty candidate.diff and changed_paths establish no proposed source delivery requiring physics gates. Authentication and protocol provenance have the stated inspection limits.",
+  "required_checks": [],
+  "submission_id": "submission-6281d33e9f7e4bb4b5f973c02e48f47f",
+  "submission_sha256": "cae07c16ac690f05fdaff3413d2e872fabe409413fab5e60d8ae08c2349ed21f",
+  "verdict": "keep"
+}

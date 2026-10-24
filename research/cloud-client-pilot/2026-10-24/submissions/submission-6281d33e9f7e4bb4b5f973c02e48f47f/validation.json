@@ -1,0 +1,25 @@
+{
+  "run_id": "8f977de942c64d7391f63c3198ba0c9d",
+  "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca",
+  "engine": "rust-native",
+  "steps": 100,
+  "dt_s": 0.002,
+  "telemetry_samples": 101,
+  "rrd_samples": 101,
+  "rrd_bytes": 1494557,
+  "blueprint_readable": true,
+  "commands_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "scene_sha256": "3b0171abad47934f926bcf1cf72b6bfcc89b4a9c110bb749556d381f489b6e47",
+  "python_source_sha256": "d2ed374f1634fae5f721c4e4e8162e49d566d6b3ac015212f40df18d3a3fbf22",
+  "artifact_sha256": {
+    "manifest": "8da63f1b922f940442879f81c2b84d631a973f8aad73d91eb8615db8b63c7531",
+    "scene": "3b0171abad47934f926bcf1cf72b6bfcc89b4a9c110bb749556d381f489b6e47",
+    "commands": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "telemetry": "3eafb7a1b6bf42504b0fc6b5724a252acd138f3c9bc606b8912974dd0d9b861b",
+    "snapshot": "219f5e19b97428a1e0f62a99c953231b3535c62e59d0b40d1a1cf4e521006a3c",
+    "rrd": "3b0c341ac5a229d591092d1d4b36717cf38cda4e6498114966f9113d918fd489"
+  },
+  "additional_credentials": false,
+  "new_fits": 0,
+  "new_collections": 0
+}

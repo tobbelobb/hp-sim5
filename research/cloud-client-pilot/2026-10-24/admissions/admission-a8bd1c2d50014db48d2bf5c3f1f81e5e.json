@@ -1,0 +1,25 @@
+{
+  "created_at": "2026-10-24T20:48:27.670999+00:00",
+  "details": {
+    "actor": "controller",
+    "claim_id": "keyless-cloud-operation",
+    "code_readiness": "report_only",
+    "contract": "hp-sim5-evidence-review-v2",
+    "decision": "keep",
+    "engineering_reasons": [],
+    "finding": "supported",
+    "guard_reasons": [],
+    "knowledge_state": "reviewed",
+    "practical_value": "Keep the bounded engineering feasibility record as evidence that the parent-chat-mediated cloud transport can produce a completed native experiment with traceable saved outputs.",
+    "required_checks": [],
+    "review_id": "review-c41d4c4e498443a4a74fe55dd0e15f76",
+    "submission_id": "submission-6281d33e9f7e4bb4b5f973c02e48f47f",
+    "submission_sha256": "cae07c16ac690f05fdaff3413d2e872fabe409413fab5e60d8ae08c2349ed21f"
+  },
+  "id": "admission-a8bd1c2d50014db48d2bf5c3f1f81e5e",
+  "kind": "admission",
+  "program_id": "program-387d94c6067647b6964aa267122d7989",
+  "revision": 1,
+  "title": "The frozen report, manifest, telemetry and artifact identities consistently support the narrow report-only feasibility claim. Empty candidate.diff and changed_paths establish no proposed source delivery requiring physics gates. Authentication and protocol provenance have the stated inspection limits.",
+  "updated_at": "2026-10-24T20:48:27.670999+00:00"
+}
