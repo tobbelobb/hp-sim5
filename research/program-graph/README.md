@@ -3,7 +3,7 @@
 Task 008 extends the [program store](../program-store.md) with scoped claim
 versions, typed relations, derivations, reported assessments and dated review
 events. No graph service or optional Python package is required. The manager
-release still needs tasks 011–016. Task 010 adds
+release still needs tasks 013–016. Task 010 adds
 [fixed submissions and reviewed admission](../program-review.md) on this store.
 
 ## Commands
@@ -71,7 +71,9 @@ store preserves the old record, dates the event and records the affected claims
 and derivations. Queries reevaluate support and review requirements, including
 new dependencies added after the event. A valid alternative can preserve
 structural support while the conclusion remains queued for review. Unrelated
-claims remain unchanged. No automatic route decision follows from withdrawal.
+claims remain unchanged. Graph queries alone make no route decision. The
+[manager strategy tools](../program-strategy.md) reconcile affected dependencies,
+retain surviving derivations and require a cited route review before new funding.
 
 For a new simulator/input configuration use `applicability` with the exact new
 revision/settings in `--context`. Affected results expose that new applicability

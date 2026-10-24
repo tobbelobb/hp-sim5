@@ -1,0 +1,16 @@
+{
+  "src/python/hp_sim5_research/program.py": "8ad7bc5350b45487ec8f578be62be6142ae60fc804bb4822def8ecbc3963e1c2",
+  "src/python/hp_sim5_research/program_graph.py": "7666e97321ed6cd0de87cf285857452b6b51c2b94c49b86d0e10d82b3d1c303d",
+  "src/python/hp_sim5_research/program_manager.py": "76aebc8e1ac48b2d57b45514cec1b667dfc72d1d6de411d80f0e7bf73829919b",
+  "src/python/hp_sim5_research/program_strategy.py": "d39dd4ebe3c2163b210eb1283b64ab8c9f90350fe1bceca73ee44ed69914eb4d",
+  "tests/python/test_research_program_strategy.py": "a89dd8f4d4b62afd19d3a5e2546983910720252cf4034cacd026b1002aa9275a",
+  "tests/python/test_research_program_manager.py": "e024e65937b331c383d64cb27659e6d6bd44b134dea3da72eff834ee6437bfab",
+  "research/program-graph/strategy_cases.py": "a78cc1fbb638e1b5e2c83a78ed1d1d7d6899fafbee7e94137d9ecca88ec20799",
+  "research/program-graph/README.md": "9e72dd4a096c6d51e787081ade2bab99454ccfd6a7cbcd70119b8977daeef825",
+  "research/program-strategy.md": "eb0ff299b12d10b83618f61a4f3fa264c1e34af8bebdea9d0503b60caab078bd",
+  "research/program-manager.md": "80da65f7cf017410c92b3e1dd2ef2030b11dc876b0575ecd1c9a679283853c23",
+  "research/prompts/research-manager.txt": "5ab937d33209287f48496ef38af75bce2e0ce9d181e9626eb8291af7c50431c9",
+  "research/program-tasks/README.md": "66fe51d04816615fac2f31e987af4af7672b53a2da760907b22d1d105ce80dc6",
+  "research/program-tasks/tasks.json": "052fb5fbbeca4428e1646cabed7643d2ab5c7a3c21be3a904b7d03deb887daae",
+  "research/program-tasks/progress.txt": "740b3d91208037096bed52bc57b5ce2e65c99120e2934fe68477f88944fd2931"
+}

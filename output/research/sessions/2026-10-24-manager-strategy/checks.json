@@ -1,0 +1,149 @@
+{
+  "affected_final": {
+    "argv": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/python/test_research_program_review.py",
+      "tests/python/test_research_program.py",
+      "tests/python/test_research_program_graph.py",
+      "tests/python/test_research_program_workers.py",
+      "tests/python/test_research_program_manager.py",
+      "tests/python/test_research_agent.py",
+      "tests/python/test_research_program_strategy.py",
+      "-k",
+      "WorkerTests or ProgramTests or GraphTests or test_report_only or test_known_overclaim or test_actual_candidate or test_changed_bytes or test_new_submission or test_corruption_before or test_original_turnover or test_failed_or_mismatched or test_codex_claude_plans or test_api_and_database or test_control_credentials or launcher_native_build_recovery or launcher_dry_run or launcher_selects_model_provider or launcher_worktree_dry_run or create_worktree_links or launcher_loads_provider_key or launcher_named_session or launcher_clarification or launcher_goal_mode or sidebar_hook or launcher_preserves_written_report or launcher_refuses_existing_session or launcher_requires_exactly_one_backend or claude_dry_run or claude_launcher_lifecycle or interrupted or worktree_reexec or test_research_program_manager or test_research_program_strategy",
+      "-m",
+      "not slow",
+      "--basetemp",
+      "/tmp/hp-sim5-task012-final",
+      "--junitxml",
+      "output/research/sessions/2026-10-24-manager-strategy/pytest.xml"
+    ],
+    "exit_code": 0,
+    "seconds": 21.44796910200239,
+    "transcript": "pytest-final.txt",
+    "passed": 125,
+    "deselected": 18,
+    "subtests_passed": 34
+  },
+  "framing_followup": {
+    "argv": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/python/test_research_program_strategy.py"
+    ],
+    "exit_code": 0,
+    "seconds": 1.8470532560022548,
+    "transcript": "pytest-framing-followup.txt",
+    "passed": 18
+  },
+  "saved_source_exercise": {
+    "argv": [
+      ".venv/bin/python",
+      "research/program-graph/strategy_cases.py"
+    ],
+    "exit_code": 0,
+    "seconds": 0.12400783199700527,
+    "transcript": "saved_source_exercise.txt"
+  },
+  "brief_followup": {
+    "argv": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/python/test_research_program_strategy.py",
+      "-k",
+      "manager_tools"
+    ],
+    "exit_code": 0,
+    "seconds": 0.39125778999732574,
+    "transcript": "brief_followup.txt",
+    "passed": 1,
+    "deselected": 17
+  },
+  "catalog": {
+    "argv": [
+      ".venv/bin/python",
+      "scripts/research_index.py"
+    ],
+    "exit_code": 0,
+    "merge_policy": "Regenerated catalog, then preserved published catalog unchanged and appended only this task-owned section",
+    "preserved_prior_sessions": 103,
+    "added_session": "2026-10-24-manager-strategy"
+  },
+  "boundary": "Actual store/graph/CLI/file-host/git and fixture worker/reviewer processes. Source reports inspected without numerical replay. No real coding-client conversation, live independent review or release proof.",
+  "numerical_use": {
+    "fits": 0,
+    "predictions": 0,
+    "replays": 0,
+    "physics_runs": 0,
+    "physics_steps": 0,
+    "movements": 0,
+    "collections": 0
+  },
+  "tool_provenance": [
+    "/tmp/hp-sim5-test-deps/SOURCE-PROVENANCE.json",
+    "/tmp/hp-sim5-runtime-deps/SOURCE-PROVENANCE.json"
+  ],
+  "preliminary_checks": [
+    {
+      "failed": 2,
+      "passed": 5,
+      "reason": "Duplicate internal citations and incomplete dispatcher test helper; corrected"
+    },
+    {
+      "collection_errors": 1,
+      "reason": "Test helper import needed a relative package path; corrected"
+    },
+    {
+      "failed": 1,
+      "passed": 6,
+      "reason": "Reverse review/submission citation closure missing; corrected"
+    },
+    {
+      "passed": 7
+    },
+    {
+      "passed": 27,
+      "seconds": 13.53
+    }
+  ],
+  "live_release": false,
+  "next_task": "013; not started",
+  "compilation": {
+    "argv": [
+      ".venv/bin/python",
+      "-m",
+      "compileall",
+      "-q",
+      "src/python/hp_sim5_research/program.py",
+      "src/python/hp_sim5_research/program_graph.py",
+      "src/python/hp_sim5_research/program_manager.py",
+      "src/python/hp_sim5_research/program_strategy.py",
+      "tests/python/test_research_program_strategy.py",
+      "tests/python/test_research_program_manager.py",
+      "research/program-graph/strategy_cases.py"
+    ],
+    "exit_code": 0
+  },
+  "cleanup": {
+    "active_test_hosts": 0,
+    "active_fixture_workers": 0,
+    "active_sdk_test_wrappers": 0,
+    "method": "Read exact /proc argv paths after fixture shutdown; no processes signalled"
+  },
+  "final_integrity": {
+    "queue": "012 done; 013 through 016 ready and not started",
+    "source_hashes": 14,
+    "git_diff_check": 0,
+    "initial_script_errors": [
+      "Standalone integrity helper omitted src/python from sys.path; corrected without changing product source or test results",
+      "Catalog append left a blank line at EOF; corrected before the final diff check"
+    ]
+  }
+}

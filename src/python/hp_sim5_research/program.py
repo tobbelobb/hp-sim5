@@ -14,7 +14,8 @@ import uuid
 SCHEMA_VERSION = 1
 KINDS = ('question', 'approach', 'assignment', 'artifact', 'decision', 'steering',
          'claim', 'derivation', 'relation', 'assessment', 'review_event', 'attempt',
-         'submission', 'submission_event', 'review_run', 'review', 'admission')
+         'submission', 'submission_event', 'review_run', 'review', 'admission',
+         'route_plan', 'investigation', 'strategy_event', 'human_input')
 TRANSITIONS = {
     'program': {'active': {'paused', 'stopped'}, 'paused': {'active', 'stopped'}, 'stopped': set()},
     'approach': {'live': {'promising', 'parked', 'retired'},
@@ -160,6 +161,10 @@ class ProgramStore:
                         f'CREATE TRIGGER IF NOT EXISTS immutable_review_{action.lower()} BEFORE {action} ON records '
                         "WHEN OLD.kind IN ('submission', 'submission_event', 'review', 'admission') "
                         "BEGIN SELECT RAISE(ABORT, 'Review history is append-only'); END")
+                    connection.execute(
+                        f'CREATE TRIGGER IF NOT EXISTS immutable_strategy_{action.lower()} BEFORE {action} ON records '
+                        "WHEN OLD.kind IN ('route_plan', 'investigation', 'strategy_event', 'human_input') "
+                        "BEGIN SELECT RAISE(ABORT, 'Strategy history is append-only'); END")
         except BaseException:
             self.close()
             raise
@@ -331,15 +336,19 @@ class ProgramStore:
 
     def snapshot(self, program_id):
         # A single read transaction avoids mixing revisions during concurrent updates.
-        self.connection.execute('BEGIN')
+        owns_transaction = not self.connection.in_transaction
+        if owns_transaction:
+            self.connection.execute('BEGIN')
         try:
             result = {'format_version': SCHEMA_VERSION, 'program': self.get_program(program_id),
                       'records': [self._decode(row) for row in self.connection.execute(
                           'SELECT * FROM records WHERE program_id=? ORDER BY rowid', (program_id,))]}
-            self.connection.execute('COMMIT')
+            if owns_transaction:
+                self.connection.execute('COMMIT')
             return result
         except BaseException:
-            self.connection.execute('ROLLBACK')
+            if owns_transaction:
+                self.connection.execute('ROLLBACK')
             raise
 
     def overview(self, program_id):
@@ -443,6 +452,8 @@ class ProgramStore:
         validate_attempts(by_id)
         from .program_review import validate_reviews
         validate_reviews(by_id)
+        from .program_strategy import validate_strategy
+        validate_strategy(by_id)
         with self.transaction():
             self.connection.execute('INSERT INTO programs VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                                     (identity, program['question_id'], program['goal'], _json(program['constraints']),

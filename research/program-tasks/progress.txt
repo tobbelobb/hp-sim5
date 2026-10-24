@@ -394,3 +394,50 @@ Freshness: parent confirmed main/HEAD/origin at 7840797b5a81d265ebb0c5091d3e0b63
 no shell fetch/push attempted. Task011 complete, full manager incomplete. Next
 eligible task012 uses these tools for strategy;013 owns independent budgets and
 restart reconciliation,016 retains the genuine live release gate. No012 started.
+
+2026-10-24 task 012: durable evidence-based strategy and accepted steering
+Added ProgramStrategy behind the existing ProgramManager/CLI/MCP tools with
+append-only route plans, fixed rival investigations, cited decisions and human
+inputs. The board records hypotheses, scope, priority reasons, practical tradeoffs,
+objections, cost, uncertainty, novelty, decision value and reopening conditions.
+Funding requires two credible recorded rivals and observation-dependent decisions;
+scouting/literature/tooling reuse worker_start with the actual strategy contract.
+Runtime allocations remain positive finite wall contracts with explicit counters,
+including targeted fits/physics/collection when needed and speedup 25/events guidance
+for funded simulated collection. No hidden development/zero/30-minute policy.
+
+Automatic scientific outcomes require a current effective keep admission bound
+to the same funded assignment. Unrelated/withheld/invalidated/withdrawn findings
+cannot retire/promote routes. Reviewed scoped partial evidence from a failed
+attempt remains useful. Supported surprises can promote rivals, while tool
+failures neither reject ideas nor consume scientific retries. Repeated reviewed
+inconclusive trials hit a durable futility limit. Old narrow outcomes cannot
+retire newly reframed broader routes. Graph withdrawal/applicability and later
+review changes queue affected route review; surviving derivations remain cited,
+unsupported required dependencies park routes, and unrelated work retains state.
+Human hunches keep provenance. Explicit instructions replace/select pending
+allocations without cancelling unrelated active workers or rewriting evidence.
+
+Verification: affected integration passed 125 tests, 18 deselected and 34 subtests
+in 20.86s. After adding the old-framing guard, all 18 strategy cases passed in 1.48s;
+a brief-format-only follow-up passed its one affected case, with 17 deselected.
+Fresh-process CLI/host dispatch carried the funded rival/scouting contract and
+steering while fixture work continued. Saved-source cases inspected five exact
+CM-E1/historical sources, recorded a scoped practical retirement on unreviewed
+reports, funded a rival scout, exercised illustrative human direction and a
+counterfactual withdrawal, retained keep-via-history and reconstructed the same
+board/brief in a second manager. No worker/reviewer or science replay started in
+that source exercise; fixture reviews are not live scientific review. Initial
+citation/helper/import/closure issues were fixed before the passing checks.
+
+Guide/prompt: research/program-strategy.md, research/program-manager.md and
+research/prompts/research-manager.txt. Exact argv/stdout/JUnit, restored program,
+source hashes, worked citations, checks and limits are retained in
+output/research/sessions/2026-10-24-manager-strategy/. Compilation, source/queue/docs
+integrity, catalog regeneration preserving published historical entries and diff
+check passed. All test hosts drained. Numerical budget/use: zero fits, predictions,
+replays, physics runs/steps, movements or collections. No dynamics changed, so no
+physics delivery gate applies. Parent confirmed HEAD/origin/main at
+9d17afd6c4aea8cb5cc019c6a58fe32310b8c34f; no shell fetch/push or network install.
+Task 012 complete, not manager readiness. Next 013 owns enforced runtime allocations,
+finite continuation and restart recovery; 014/015 and live 016 remain unstarted.

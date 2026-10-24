@@ -11,7 +11,8 @@ Can encoder-only HP3 calibration improve from the same measurements?
 The agent runs `./hp-sim5-research-program --question 'Your question'`. This
 creates durable memory and starts a local tool host automatically. The JSON
 result includes the program ID, program-bound connection path, manager session,
-overview paths and next allocation. A new question starts unallocated. The
+overview paths and next allocation. The overview includes a cited strategy brief,
+also written to brief.md beside the full overview. A new question starts unallocated. The
 manager chooses and records an assignment before dispatching it. No scientific
 result exists merely because the program opened.
 
@@ -54,13 +55,16 @@ operations are implemented:
 | Program and graph | overview/status, capabilities, query, question, approach, assignment, artifact, claim, derive, relate, assess, review_event, transition |
 | Worker | worker_start, worker_status, worker_cancel, worker_sessions |
 | Fixed separate review | submit, submission_verify, submission_invalidate, review_plan, review_start, review_status, review_cancel, review_apply |
+| Strategy | strategy, route_plan, route_decide, commission, strategy_result |
 | Human direction | steering, decision |
 | Lifecycle | pause, resume, stop, shutdown |
 
-For example, `steering` takes `text`, `subject_id`, `evidence_ids`, `actor`,
-`record_id` and `expected_revision` as in the [store guide](program-store.md).
-The manager records steering, reads it and explicitly changes assignments.
-Automatic strategy application belongs to task 012. `review_start` accepts the
+The [strategy guide](program-strategy.md) describes route plans, rival
+discriminators, automatic reviewed outcomes, withdrawal review, futility and
+accepted steering. `steering` also accepts `intent`, `links`, `provenance`,
+`next_assignment_id` and `allocation`. Notes and hunches preserve provenance; an
+explicit instruction can replace the next pending allocation without stopping
+unrelated active work. `review_start` accepts the
 same settings as `review_plan`; see [review contracts](program-review.md).
 `query` retains scoped evidence and source links, as in the [graph guide](program-graph/README.md).
 
@@ -123,8 +127,8 @@ unchanged SDK. Stock SDK startup and a real coding-chat session remain unproved
 here. Existing nested Codex startup fails with read-only writable-state access;
 no new keys or environment overrides were introduced.
 
-Unavailable operations return `unavailable` with the owning task: strategy in
-012, autonomous_continue/recover in 013, parallel in 014 and integrate in 015.
+Unavailable operations return `unavailable` with the owning task:
+autonomous_continue/recover in 013, parallel in 014 and integrate in 015.
 Task 016 still requires the genuine client, worker, production-tool, review and
 replanning pilot. The full manager remains incomplete until the remaining
 implementation tasks and that live proof pass.

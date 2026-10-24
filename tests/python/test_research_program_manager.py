@@ -204,7 +204,6 @@ def test_program_bound_identity_graph_review_and_structured_errors(manager):
         ('does_not_exist', {}, 'unknown_operation'),
         ('recover', {}, 'unavailable'),
         ('autonomous_continue', {}, 'unavailable'),
-        ('strategy', {}, 'unavailable'),
         ('parallel', {}, 'unavailable'),
         ('integrate', {}, 'unavailable'),
         ('_open', {'program_id': 'other'}, 'invalid_request'),
@@ -221,6 +220,7 @@ def test_program_bound_identity_graph_review_and_structured_errors(manager):
     assert bad.returncode == 2
     assert json.loads(bad.stdout)['error']['code'] == 'invalid_request'
     assert 'Traceback' not in bad.stderr
+    assert tool(first, 'strategy')['routes'] == []
     available = tool(first, 'capabilities')
     assert available['physics_world'] is False
     assert {'submit', 'review_start', 'worker_start', 'stop', 'query'} <= available['operations'].keys()
@@ -441,3 +441,41 @@ anyio.run(main)
         errors.close()
         transcript['exit_code'] = process.returncode
         (tmp_path / 'manager-protocol.json').write_text(json.dumps(transcript, indent=2) + '\n')
+
+
+def test_strategy_funding_steering_and_worker_contract_through_fresh_cli(manager):
+    a = attach(manager)
+    for identity, priority in [('saved', 10), ('model', 20)]:
+        tool(a, 'approach', {'question_id': 'q', 'title': identity, 'reason': 'Compare credible routes', 'record_id': identity})
+        tool(a, 'route_plan', dict(approach_id=identity, hypothesis='A fair common fold distinguishes ' + identity,
+             scope={'method': identity, 'evidence': 'simulated'}, priority=priority,
+             estimated_cost={'wall_minutes': 17, 'fresh_fits': 2}, uncertainty='Fair fold availability',
+             decision_value='Decide collection versus model work', novelty='Applied model comparison',
+             observation='Count truly common unseen sweeps', reopening_condition='Changed folds or model',
+             reason='Resolve the cheapest uncertainty', tradeoffs=['Scouting is cheaper than collection'],
+             objections=['Prediction is not physical accuracy']))
+    params = dict(approach_id='saved', objective='Scout four saved sources for fair folds',
+                  allocation={'wall_minutes': 8, 'fresh_fits': 0, 'collections': 0}, kind='scouting',
+                  execution={'source_limit': 4},
+                  explanations=[{'approach_id': 'saved', 'explanation': 'Membership selection is the issue'},
+                                {'approach_id': 'model', 'explanation': 'Model inadequacy dominates'}],
+                  outcomes={'gap': {'observation': 'No shared fair fold found', 'finding': 'inconclusive', 'actions': []}})
+    first = tool(a, 'commission', params)
+    worker = tool(a, 'worker_start', {'assignment_id': first['assignment']['id']})
+    until(lambda: Path(worker['details']['session_dir'], 'ready').exists())
+    prompt = Path(worker['details']['attempt_dir'], 'prompt.txt').read_text()
+    assert 'source_limit' in prompt and 'Model inadequacy dominates' in prompt
+    params.update(approach_id='model', kind='tooling', objective='Build a bounded fold-inspection helper')
+    second = tool(a, 'commission', params)
+    note = tool(a, 'steering', {'text': 'Radius bias might matter', 'intent': 'hunch',
+                               'links': ['https://example.org/hunch'], 'provenance': {'channel': 'chat'}})
+    assert note['accepted_input']['details']['intent'] == 'hunch'
+    instruction = tool(a, 'steering', {'text': 'Fund the tooling route next with three fresh fits', 'intent': 'instruction',
+         'next_assignment_id': second['assignment']['id'], 'allocation': {'wall_minutes': 41, 'fresh_fits': 3}})
+    overview = tool(a, 'overview')
+    assert overview['next_allocation']['assignment_id'] == instruction['accepted_input']['details']['next_assignment_id']
+    assert overview['next_allocation']['allocation']['fresh_fits'] == 3
+    assert overview['brief'] and len(overview['strategy']['routes']) == 2
+    assert tool(a, 'worker_status', {'attempt_id': worker['id']})['details']['state'] == 'running'
+    tool(a, 'worker_cancel', {'attempt_id': worker['id']})
+    until(lambda: tool(a, 'worker_status', {'attempt_id': worker['id']})['details']['state'] == 'cancelled')

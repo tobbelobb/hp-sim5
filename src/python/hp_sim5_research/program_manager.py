@@ -7,12 +7,12 @@ import traceback
 
 from .program import ProgramError, _json, _object, render_markdown
 from .program_workers import ACTIVE
+from .program_strategy import ProgramStrategy
 
 
 UNAVAILABLE = {
     'autonomous_continue': 'Task 013: autonomous dispatch, runtime reservations and worker wall deadlines',
     'recover': 'Task 013: restart reconciliation/adoption of unfinished children',
-    'strategy': 'Task 012: evidence-based strategy selection and automatic steering application',
     'parallel': 'Task 014: coordinated worker pool',
     'integrate': 'Task 015: combined candidate integration and delivery checks',
 }
@@ -36,6 +36,7 @@ class ProgramManager:
         self.session.mkdir(mode=0o700, parents=True, exist_ok=True)
         self.workers = workers or store.workers(self.root)
         self.reviews = reviews or store.reviews(self.root)
+        self.strategy = ProgramStrategy(store)
         self.stopping = False
         self.operations = {
             'overview': self.overview, 'status': self.overview, 'capabilities': self.capabilities,
@@ -45,7 +46,10 @@ class ProgramManager:
             'relate': store.graph().add_relation, 'assess': store.graph().add_assessment,
             'review_event': store.graph().review_event, 'transition': self.transition,
             'steering': self.steering, 'decision': self.decision,
-            'worker_start': self.workers.start, 'worker_status': self.workers.status,
+            'strategy': self.strategy.reconcile, 'route_plan': self.strategy.route,
+            'route_decide': self.strategy.decide, 'commission': self.strategy.commission,
+            'strategy_result': self.strategy.result,
+            'worker_start': self.worker_start, 'worker_status': self.workers.status,
             'worker_cancel': self.workers.cancel, 'worker_sessions': self.workers.sessions,
             'submit': self.reviews.submit, 'submission_verify': self.reviews.verify,
             'submission_invalidate': self.reviews.invalidate, 'review_plan': self.reviews.plan,
@@ -104,14 +108,11 @@ class ProgramManager:
 
     def overview(self, program_id):
         self.poll()
+        board = self.strategy.reconcile(program_id)
         result = self.store.overview(program_id)
-        pending = [r for r in result['records'] if r['kind'] == 'assignment'
-                   and r['details']['execution_state'] in ('planned', 'ready')]
-        result['next_allocation'] = ({'assignment_id': pending[0]['id'],
-                                      'state': pending[0]['details']['execution_state'],
-                                      'allocation': pending[0]['details']['allocation']}
-                                     if pending else {'state': 'unallocated', 'allocation': None,
-                                                      'reason': 'Manager must select a bounded assignment from the question and evidence'})
+        result['strategy'] = board
+        result['next_allocation'] = self.strategy.next_allocation(program_id, board)
+        result['brief'] = self.strategy.brief(board, result['next_allocation'])
         result['manager'] = {'program_id': program_id, 'controller_id': self.controller_id,
                              'stopping': self.stopping, 'physics_world': False,
                              'links': {'store': str(self.store.path), 'session': str(self.session),
@@ -122,6 +123,7 @@ class ProgramManager:
                              'unavailable': UNAVAILABLE}
         (self.session / 'overview.json').write_text(_json(result) + '\n')
         (self.session / 'overview.md').write_text(render_markdown(result))
+        (self.session / 'brief.md').write_text(result['brief'] + '\n')
         return result
 
     def transition(self, program_id, record_id, target, reason, *, expected_revision=None):
@@ -129,11 +131,30 @@ class ProgramManager:
             raise ProgramError('Use pause, resume or stop for program lifecycle controls')
         return self.store.transition(program_id, record_id, target, reason, expected_revision=expected_revision)
 
+    def worker_start(self, program_id, assignment_id, *, settings=None, instructions=''):
+        """Dispatch the existing worker with its funded strategy and accepted human direction."""
+        board = self.strategy.reconcile(program_id)
+        assignment = self.store.get_record(program_id, assignment_id, 'assignment')
+        route = next(r for r in board['routes'] if r['id'] == assignment['details']['approach_id'])
+        if route['review_required'] or route['futile']:
+            raise ProgramError('Review dependencies or reframe the exhausted route before dispatch')
+        records = self.strategy.records(program_id)
+        investigation = [r for r in records.values() if r['kind'] == 'investigation' and r['details']['assignment_id'] == assignment_id]
+        contract = {'investigations': investigation, 'route_plan': route['plan'],
+                    'human_inputs': board['human_inputs']}
+        if not isinstance(instructions, str):
+            raise ProgramError('instructions must be a string')
+        return self.workers.start(program_id, assignment_id, settings=settings,
+                                  instructions='Recorded strategy contract:\n' + _json(contract) + '\n\n' + instructions)
+
     def steering(self, program_id, text, *, subject_id=None, evidence_ids=None, actor='human',
-                 record_id=None, expected_revision=None):
-        """Record human steering; manager reads it and explicitly changes assignments."""
-        return self.store.record_note(program_id, 'steering', text, subject_id=subject_id, evidence_ids=evidence_ids,
-                                      actor=actor, record_id=record_id, expected_revision=expected_revision)
+                 record_id=None, expected_revision=None, intent='note', links=None, provenance=None,
+                 next_assignment_id=None, allocation=None):
+        """Capture human provenance; explicit instructions change the next pending allocation."""
+        return self.strategy.steering(program_id, text, subject_id=subject_id, evidence_ids=evidence_ids,
+                                     actor=actor, record_id=record_id, expected_revision=expected_revision,
+                                     intent=intent, links=links, provenance=provenance,
+                                     next_assignment_id=next_assignment_id, allocation=allocation)
 
     def decision(self, program_id, text, *, subject_id=None, evidence_ids=None, actor='manager',
                  record_id=None, expected_revision=None):

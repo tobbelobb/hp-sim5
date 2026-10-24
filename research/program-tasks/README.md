@@ -23,7 +23,7 @@ next task inside the same invocation.
 
 Tasks 001–006 are completed foundations. Tasks 007–016 are required manager
 implementation, not optional proposals. Tasks 007–011 now supply storage, graph,
-dispatch, review and [manager chat entry](../program-manager.md). Task 012 is next;
+dispatch, review and [manager chat entry](../program-manager.md). Task 012 adds [strategy and steering](../program-strategy.md);
 only cards with completed dependencies are eligible. Always use tasks.json for
 current eligibility. The full manager remains incomplete until task 016 passes.
 There is no separate proposal/promotion barrier between the implementation cards.

@@ -299,6 +299,9 @@ class EvidenceGraph:
             before = set(selected)
             for i, r in records.items():
                 d = r['details']
+                if r['kind'] in ('route_plan', 'strategy_event') and (
+                        d.get('approach_id') in selected or set(d.get('decision_ids', [])) & selected):
+                    selected.add(i)
                 if (r['kind'] == 'derivation' and d['conclusion_id'] in selected or
                         r['kind'] == 'assessment' and d['subject_id'] in selected or
                         r['kind'] == 'review_event' and (d['subject_id'] in selected or
@@ -314,6 +317,13 @@ class EvidenceGraph:
                     selected.add(d['manifest']['claim']['id'])
                 if i in selected:
                     selected.update(d.get('evidence_ids', []))
+                    selected.update(d.get('citation_ids', []))
+                    if r['kind'] == 'investigation':
+                        selected.update(d['route_plan_ids'])
+                    if r['kind'] == 'route_plan':
+                        selected.update(d['dependency_ids'])
+                    if r['kind'] in ('submission_event', 'review_run', 'review', 'admission'):
+                        selected.add(d['submission_id'])
                     if r['kind'] in ('assessment', 'review_event'):
                         selected.add(d['subject_id'])
                     if r['kind'] == 'relation' and d['relation'] == 'provenance':

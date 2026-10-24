@@ -1,0 +1,371 @@
+{
+  "inspected_sources": [
+    {
+      "id": "cm-report",
+      "path": "output/research/sessions/2026-10-23-consensus-membership/report.md",
+      "sha256": "2e47bc589aea727b2e76387ff8fc3339b664134145f15d61df7fbbc7f46ef96a"
+    },
+    {
+      "id": "cm-results",
+      "path": "output/research/sessions/2026-10-23-consensus-membership/results.json",
+      "sha256": "bdd85e0f758ce3a4f0ef4f5be3c0fe094fb830dfa6f3c059d39d7a2d804ab1cd"
+    },
+    {
+      "id": "cm-inputs",
+      "path": "output/research/sessions/2026-10-23-consensus-membership/inputs.json",
+      "sha256": "f58ef95d783a265b7153cefc07d2d8785f77896846bb07d58317b8a009634b44"
+    },
+    {
+      "id": "ranking-report",
+      "path": "output/research/sessions/b7deb1bcc9cb418388273e2b7b9adc8c/report.md",
+      "sha256": "c31b3b62c35678dd5e2a81ef7cbc54d5d69527a53435f5d7366b4451c25b203f"
+    },
+    {
+      "id": "refresh-report",
+      "path": "output/research/reference-refresh-october-7-2026/report.md",
+      "sha256": "95898f1c0c39806904d3c34f600b3831007063a66edb2d48647caef9be3eae61"
+    }
+  ],
+  "reused_summary": {
+    "datasets": 8,
+    "improved": 1,
+    "worsened": 2,
+    "unchanged": 5,
+    "baseline_sum_anchor_error_mm": 401.10027562823973,
+    "variant_sum_anchor_error_mm": 400.7970309548157,
+    "delta_sum_anchor_error_mm": -0.303244673424079
+  },
+  "negative_decision": "strategy_event-acaef64dabf34647ae1eca25186a93ac",
+  "alternative_decision": "strategy_event-fbbb6500518c4b3aa74fddc10fe5d07d",
+  "funded_assignment": "saved-scout",
+  "steered_assignment": "assignment-7bb5e899edd442c1b300a933df87995f",
+  "counterfactual_event": "counterfactual-withdrawal",
+  "surviving_derivations": [
+    "derive-cm-holdout-gap",
+    "derive-cm-regressions",
+    "derive-earlier-gains",
+    "derive-incomparable-folds",
+    "derive-ranking-selector-mixed",
+    "derive-refresh-mixed",
+    "keep-via-history"
+  ],
+  "fresh_manager_reconstructed": true,
+  "operations": [
+    {
+      "operation": "route_plan",
+      "parameters": {
+        "approach_id": "finite-membership",
+        "hypothesis": "Unconditional finite-only membership improves final applied geometry without worsening another dataset",
+        "scope": {
+          "method": "unconditional finite-only final consensus",
+          "evidence": "saved simulated histories",
+          "producer": "72523b9d"
+        },
+        "priority": 90,
+        "estimated_cost": {
+          "wall_minutes": 12,
+          "fresh_fits": 0,
+          "collections": 0
+        },
+        "uncertainty": "Changed CM-E1 models have no common unseen fold; old study raw summaries are partly absent",
+        "decision_value": "Choose a fair saved-data discriminator before funding a fit-on-prefix replay",
+        "novelty": "Evaluate the actual applied anchor-plus-spool model on comparable folds",
+        "observation": "Find a common whole sweep unseen by every applied consensus member and spool fit",
+        "reopening_condition": "New compatible unseen data, a changed model, or a narrower truth-free selection hypothesis",
+        "reason": "CM-E1 has one improvement and two regressions; current defaults stay until fair validation exists",
+        "tradeoffs": [
+          "Saved scouting is cheap; a new terminal holdout costs fitting or collection",
+          "A physically better saved fit need not have the lower prediction score"
+        ],
+        "objections": [
+          "Shared fixture families are correlated",
+          "Frozen selection does not establish hardware accuracy"
+        ],
+        "dependency_ids": [
+          "blanket-retired"
+        ],
+        "citation_ids": [
+          "cm-report",
+          "cm-results",
+          "refresh-report"
+        ],
+        "record_id": "plan-finite-membership"
+      },
+      "result_id": "plan-finite-membership"
+    },
+    {
+      "operation": "route_plan",
+      "parameters": {
+        "approach_id": "unseen-sweeps",
+        "hypothesis": "Compatible saved sweeps can distinguish selection effects from training overlap",
+        "scope": {
+          "method": "search compatible unseen whole sweeps",
+          "evidence": "saved simulated histories"
+        },
+        "priority": 10,
+        "estimated_cost": {
+          "wall_minutes": 12,
+          "fresh_fits": 0,
+          "collections": 0
+        },
+        "uncertainty": "Changed CM-E1 models have no common unseen fold; old study raw summaries are partly absent",
+        "decision_value": "Choose a fair saved-data discriminator before funding a fit-on-prefix replay",
+        "novelty": "Evaluate the actual applied anchor-plus-spool model on comparable folds",
+        "observation": "Find a common whole sweep unseen by every applied consensus member and spool fit",
+        "reopening_condition": "New compatible unseen data, a changed model, or a narrower truth-free selection hypothesis",
+        "reason": "CM-E1 has one improvement and two regressions; current defaults stay until fair validation exists",
+        "tradeoffs": [
+          "Saved scouting is cheap; a new terminal holdout costs fitting or collection",
+          "A physically better saved fit need not have the lower prediction score"
+        ],
+        "objections": [
+          "Shared fixture families are correlated",
+          "Frozen selection does not establish hardware accuracy"
+        ],
+        "dependency_ids": [
+          "keep-defaults"
+        ],
+        "citation_ids": [
+          "cm-report",
+          "cm-results",
+          "refresh-report"
+        ],
+        "record_id": "plan-unseen-sweeps"
+      },
+      "result_id": "plan-unseen-sweeps"
+    },
+    {
+      "operation": "route_plan",
+      "parameters": {
+        "approach_id": "model-adequacy",
+        "hypothesis": "Model inadequacy or identifiability can explain prediction and physical-error disagreement",
+        "scope": {
+          "method": "diagnose model adequacy before selector changes",
+          "evidence": "saved simulated reports"
+        },
+        "priority": 20,
+        "estimated_cost": {
+          "wall_minutes": 12,
+          "fresh_fits": 0,
+          "collections": 0
+        },
+        "uncertainty": "Changed CM-E1 models have no common unseen fold; old study raw summaries are partly absent",
+        "decision_value": "Choose a fair saved-data discriminator before funding a fit-on-prefix replay",
+        "novelty": "Evaluate the actual applied anchor-plus-spool model on comparable folds",
+        "observation": "Find a common whole sweep unseen by every applied consensus member and spool fit",
+        "reopening_condition": "New compatible unseen data, a changed model, or a narrower truth-free selection hypothesis",
+        "reason": "CM-E1 has one improvement and two regressions; current defaults stay until fair validation exists",
+        "tradeoffs": [
+          "Saved scouting is cheap; a new terminal holdout costs fitting or collection",
+          "A physically better saved fit need not have the lower prediction score"
+        ],
+        "objections": [
+          "Shared fixture families are correlated",
+          "Frozen selection does not establish hardware accuracy"
+        ],
+        "dependency_ids": [
+          "ranking-selector-mixed"
+        ],
+        "citation_ids": [
+          "cm-report",
+          "cm-results",
+          "refresh-report"
+        ],
+        "record_id": "plan-model-adequacy"
+      },
+      "result_id": "plan-model-adequacy"
+    },
+    {
+      "operation": "route_decide",
+      "parameters": {
+        "approach_id": "finite-membership",
+        "target": "retired",
+        "scope": {
+          "method": "unconditional finite-only final consensus",
+          "evidence": "saved simulated histories",
+          "producer": "72523b9d"
+        },
+        "reason": "Inspected CM-E1 rejects the nonworsening default-change proposal in its frozen scope; broader selector research remains open",
+        "reopening_condition": "Common unseen-sweep evidence on the regressions or a narrower method",
+        "citation_ids": [
+          "cm-mixed",
+          "cm-regressions",
+          "cm-holdout-gap",
+          "cm-report",
+          "assess-blanket-retired"
+        ]
+      },
+      "result_id": "strategy_event-acaef64dabf34647ae1eca25186a93ac"
+    },
+    {
+      "operation": "route_decide",
+      "parameters": {
+        "approach_id": "model-adequacy",
+        "target": "promising",
+        "scope": {
+          "method": "diagnose model adequacy before selector changes",
+          "evidence": "saved simulated reports"
+        },
+        "reason": "Inspected mixed historical selectors justify keeping model adequacy as a rival; this is a practical judgment on unreviewed reports",
+        "reopening_condition": "Comparable validation showing the current model adequate",
+        "citation_ids": [
+          "ranking-selector-mixed",
+          "refresh-mixed",
+          "incomparable-folds",
+          "refresh-report"
+        ]
+      },
+      "result_id": "strategy_event-fbbb6500518c4b3aa74fddc10fe5d07d"
+    },
+    {
+      "operation": "commission",
+      "parameters": {
+        "approach_id": "unseen-sweeps",
+        "objective": "Scout four named saved sources for compatible common unseen sweeps",
+        "allocation": {
+          "wall_minutes": 12,
+          "fresh_fits": 0,
+          "collections": 0
+        },
+        "kind": "scouting",
+        "explanations": [
+          {
+            "approach_id": "unseen-sweeps",
+            "explanation": "Training overlap hides a useful selector difference"
+          },
+          {
+            "approach_id": "model-adequacy",
+            "explanation": "Model inadequacy dominates, even with a fair fold"
+          }
+        ],
+        "outcomes": {
+          "found": {
+            "observation": "A compatible sweep unused by all applied members exists",
+            "finding": "supported",
+            "actions": []
+          },
+          "absent": {
+            "observation": "No compatible common sweep exists in the named saved sources",
+            "finding": "inconclusive",
+            "actions": []
+          },
+          "failed": {
+            "observation": "A reader or missing file prevents inspection",
+            "finding": "tool_failure",
+            "actions": []
+          }
+        },
+        "execution": {
+          "source_limit": 4,
+          "sources": [
+            "cm-inputs",
+            "cm-results",
+            "ranking-report",
+            "refresh-report"
+          ]
+        },
+        "citation_ids": [
+          "cm-holdout-gap",
+          "cm-inputs",
+          "cm-results"
+        ],
+        "record_id": "saved-scout"
+      },
+      "result_id": null
+    },
+    {
+      "operation": "steering",
+      "parameters": {
+        "text": "I suspect radius-model bias, but first check saved fold compatibility",
+        "intent": "hunch",
+        "provenance": {
+          "source": "worked manager case",
+          "author": "task-012",
+          "human_role": "illustrative fixture, not a real human instruction"
+        },
+        "links": [
+          "research/program-graph/README.md"
+        ]
+      },
+      "result_id": "steering-45351fbd075a4ef29ae8dfd910d58fa6"
+    },
+    {
+      "operation": "steering",
+      "parameters": {
+        "text": "Illustrative accepted instruction: allow sixteen minutes for the four-source scout",
+        "intent": "instruction",
+        "next_assignment_id": "saved-scout",
+        "allocation": {
+          "wall_minutes": 16,
+          "fresh_fits": 0,
+          "collections": 0
+        },
+        "provenance": {
+          "source": "worked manager case",
+          "human_role": "illustrative fixture, not actual new steering"
+        }
+      },
+      "result_id": "steering-13b907efaf454185bead94db2dcf99f2"
+    },
+    {
+      "operation": "overview",
+      "parameters": {},
+      "result_id": null
+    },
+    {
+      "operation": "review_event",
+      "parameters": {
+        "subject_id": "cm-regressions",
+        "event": "withdrawal",
+        "reason": "COUNTERFACTUAL exercise only: inspect consequences if CM-E1 regressions were withdrawn",
+        "record_id": "counterfactual-withdrawal"
+      },
+      "result_id": "counterfactual-withdrawal"
+    },
+    {
+      "operation": "strategy",
+      "parameters": {},
+      "result_id": null
+    },
+    {
+      "operation": "route_decide",
+      "parameters": {
+        "approach_id": "unseen-sweeps",
+        "target": "live",
+        "scope": {
+          "method": "search compatible unseen whole sweeps",
+          "evidence": "saved simulated histories"
+        },
+        "reason": "Counterfactual review retains conservative priority through surviving keep-via-history; it does not reproduce CM-E1",
+        "reopening_condition": "Comparable validation or contrary model evidence",
+        "citation_ids": [
+          "counterfactual-withdrawal",
+          "keep-via-history",
+          "ranking-selector-mixed",
+          "refresh-mixed"
+        ]
+      },
+      "result_id": "strategy_event-0d988a3fa448489288b83d0e2d660e91"
+    },
+    {
+      "operation": "overview",
+      "parameters": {},
+      "result_id": null
+    },
+    {
+      "operation": "query",
+      "parameters": {
+        "query": "rationale",
+        "subject_id": "unseen-sweeps"
+      },
+      "result_id": null
+    }
+  ],
+  "boundary": "Source reports and structured results inspected; no independent numerical reproduction or live separate review. Withdrawal and steering are illustrative cases only.",
+  "numerical_use": {
+    "fits": 0,
+    "physics_steps": 0,
+    "collections": 0,
+    "replays": 0
+  }
+}
