@@ -1,0 +1,34 @@
+{
+  "kind": "counterfactual graph exercise on unreviewed imported records",
+  "subject_id": "keep-defaults",
+  "withdrawn_subject_id": "cm-regressions",
+  "before": {
+    "availability": "recorded",
+    "structural_support": true,
+    "assessment_state": "unassessed",
+    "review_event_ids": [],
+    "review_required": false,
+    "new_applicability": [],
+    "submission_ids": [],
+    "admission_ids": [],
+    "review_history": [],
+    "reviewed_findings": [],
+    "pending_submission_ids": []
+  },
+  "after": {
+    "availability": "recorded",
+    "structural_support": true,
+    "assessment_state": "unassessed",
+    "review_event_ids": [
+      "review_event-e9de618e3ab94b528b16f8d51f3af081"
+    ],
+    "review_required": true,
+    "new_applicability": [],
+    "submission_ids": [],
+    "admission_ids": [],
+    "review_history": [],
+    "reviewed_findings": [],
+    "pending_submission_ids": []
+  },
+  "interpretation": "Required review queued; alternative structural support survives. No new scientific admission or real measurement retraction."
+}

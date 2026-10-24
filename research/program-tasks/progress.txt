@@ -547,3 +547,38 @@ and collections. No production dynamics changed; physics delivery gate not appli
 to this implementation. Base/upstream supplied 03ecf6322797a8eb80162ca59be98b0185906fcf.
 No shell fetch/push, network installs/approval, new keys or HOME/CODEX_HOME changes.
 Task 015 done; task 016 remains required for real manager release. No second task started.
+
+2026-10-24 task 016: actual live gate attempted, compatibility fixed, release BLOCKED
+Ordinary CLI created program-bbcc825bf93241c3a002bebe76f106bc with two approaches,
+finite assignments and a real hp-sim5-research-agent worktree attempt. Native build
+failed at missing Node-API headers before physics/tool/client execution; observed
+worker wall3.90s, exit1, launcher_finally_completed. No scientific hypothesis tested.
+Dedicated Codex and genuine separate review failed read-only app-server startup;
+stock unmodified MCP initialize timed out8s. No completed managed investigations,
+production numerical calls or scientific admissions. Startup-only manager evidence
+is retained as partial engineering evidence, not worker-authored science.
+
+Confirmed and fixed a real Codex compatibility defect: disabled legacy MCP servers
+need valid transports and entire-table replacement to avoid inherited HTTP URLs.
+Shared helper serves manager/reviewer argv and emitted attachment TOML. Installed
+client parser accepts synthetic absent/HTTP configs. Affected entry/review33 passed
+in13.92s with2 new unsupported-option failures retained; corrected selection8 passed
+in1.69s. Counts overlap. Unchanged task015 checks reused. Parent compiled3 changed
+modules and verified3 documented CLI commands; no broad passing-suite rerun.
+Actual graph query/counterfactual withdrawal retained alternative structural support
+and queued review. Steering, pause/resume/recover/stop/export/fresh-host reconstruction
+worked, but no live-world stop or fresh coding-chat scientific continuation is proved.
+
+Updated question-only guide, root/research README, execution architecture, manager/
+worker prompts and queue. Exact safe commands, compressed redacted transcript,
+stdout/JUnit, source/artifact hashes, final program export, budgets/report/notebook:
+output/research/sessions/2026-10-24-live-manager-release/. Graph memory and code
+readiness boundaries, supported speedup/targeted fits/physics/collection and actual
+prerequisites remain explicit. No keys, HOME/CODEX_HOME overrides, installs or new
+network approval waits. Numerical use zero; no dynamics changed, physics delivery
+gate not applicable. After usage-limit/chat pause the parent resumed authorized
+work directly, rechecked current missing prerequisites and read-only client failure.
+Original outer-driver deadline expired during pause; no runtime allocation replay
+or extension. Keep016 blocked until native runtime, writable authenticated client
+and stock MCP can complete the card's two reviewed investigations, production-tool
+use, replanning and live interruption/recovery proof. No MANAGER_RELEASE_COMPLETE.

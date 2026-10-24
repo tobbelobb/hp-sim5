@@ -16,6 +16,26 @@ also written to brief.md beside the full overview. A new question starts unalloc
 manager chooses and records an assignment before dispatching it. No scientific
 result exists merely because the program opened.
 
+Tasks 007 through 015 are implemented. The full manager release remains blocked
+at [task 016](program-tasks/016-live-manager-release.md). The actual
+[live pilot](../output/research/sessions/2026-10-24-live-manager-release/report.md)
+verified CLI dispatch, graph/lifecycle commands and a fresh host, but could not
+complete production science or coding-client review in this environment.
+
+You can then prompt the agent naturally:
+
+| Say | Manager action |
+| --- | --- |
+| Continue within the current allocation. | Inspect results and reservations, then select bounded work. |
+| What do we know, and what is unknown? | Query scoped support and open questions, with citations. |
+| Why pursue that approach? | Explain the route rationale, rivals, cost and discriminating observation. |
+| Try this idea using the same measurements. | Record steering and revise pending work while retaining evidence. |
+| Pause new work. | Hold dispatch while running work keeps its deadlines. |
+| Stop that worker, or stop the program. | Cancel owned work and report observed or unknown cleanup. |
+| Resume program PROGRAM_ID. | Reopen durable state and reconcile ownership before dispatch. |
+
+The agent handles tool arguments. Keep the program ID when moving to another chat.
+
 Open the same program in another chat with
 `./hp-sim5-research-program --program PROGRAM_ID`. Both chats receive the same
 controller identity while it is alive. Opening a program dispatches no workers.
@@ -127,9 +147,13 @@ client argv and actual MCP SDK initialize/list/call handling. These are interfac
 checks, not live scientific or release evidence. In this command sandbox the
 SDK's stock stdio loop cannot wake after thread work because its internal socket
 send is denied. The recorded protocol check uses a diagnostic timer around the
-unchanged SDK. Stock SDK startup and a real coding-chat session remain unproved
-here. Existing nested Codex startup fails with read-only writable-state access;
-no new keys or environment overrides were introduced.
+unchanged SDK. The task 016 stock initialize attempt also timed out after eight
+seconds. Actual dedicated Codex and separate reviewer startup reach a read-only
+app-server error. The pilot fixed a configuration bug: Codex validates disabled
+MCP transports, so manager/reviewer settings now replace entire legacy server
+tables with valid disabled stdio entries. This avoids inherited HTTP conflicts.
+Installed-client parser checks and focused tests passed. No new keys or
+HOME/CODEX_HOME overrides were introduced.
 
 [Combined candidate preparation and checks](program-integration.md) consume sealed
 reviewed submissions at an explicit base. Their separate worktrees and polled
@@ -140,5 +164,4 @@ documented in [program-controller.md](program-controller.md).
 manager's finite selection of distinct assignments; it does not resume a prompt
 in a restart loop.
 Task 016 still requires the genuine client, worker, production-tool, review and
-replanning pilot. The full manager remains incomplete until the remaining
-implementation tasks and that live proof pass.
+replanning pilot. The full manager remains incomplete until that live proof passes.

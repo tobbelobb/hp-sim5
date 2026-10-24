@@ -348,11 +348,33 @@ def test_codex_claude_plans_reuse_auth_no_physics_and_claude_receipt(context, mo
         assert not (Path(plan['directory'])).exists()  # dry-run does not mutate
         if backend == 'codex':
             assert plan['argv'][plan['argv'].index('--sandbox')+1] == 'read-only'
-            assert 'mcp_servers.hp_sim5.enabled=false' in plan['argv']
-            assert not any('research_attach.py' in a or 'hp_sim5_mcp.py' in a for a in plan['argv'])
+            import tomllib
+            disabled = next(a for a in plan['argv'] if a.startswith('mcp_servers.hp_sim5='))
+            assert tomllib.loads(disabled)['mcp_servers']['hp_sim5']['enabled'] is False
+            assert not any('research_attach.py' in a for a in plan['argv'])
     run = reviewer(c, submission, backend='claude')
     assert run['details']['state'] == 'completed'
     assert c['controller'].apply('p', run['details']['review_id'])['details']['decision'] == 'keep'
+
+
+@pytest.mark.parametrize('inherited', [{}, {'hp_sim5': {'url': 'https://example.invalid/mcp'}}])
+def test_installed_codex_accepts_disabled_reviewer_transports(context, inherited):
+    import shutil
+    if shutil.which('codex') is None:
+        pytest.skip('Installed Codex config validation is optional')
+    c = context
+    submission = submit(c)
+    plan = c['controller'].plan('p', submission['id'], backend='codex')
+    from hp_sim5_research.coding_client import toml_literal
+    command = ['codex', '-c', 'mcp_servers=' + toml_literal(inherited)]
+    for i, arg in enumerate(plan['argv']):
+        if arg == '-c' and plan['argv'][i+1].startswith('mcp_servers.'):
+            command += ['-c', plan['argv'][i+1]]
+    checked = subprocess.run(command + ['mcp', 'list', '--json'], capture_output=True, text=True, timeout=10)
+    assert checked.returncode == 0, checked.stderr
+    servers = {s['name']: s for s in json.loads(checked.stdout)}
+    assert not servers['hp_sim5']['enabled'] and not servers['rerun']['enabled']
+    assert servers['hp_sim5']['transport']['type'] == servers['rerun']['transport']['type'] == 'stdio'
 
 
 def test_api_and_database_boundary_is_cooperative_not_same_uid_isolation(context):

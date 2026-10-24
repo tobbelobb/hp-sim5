@@ -1,0 +1,37 @@
+{
+  "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+  "assignment": {
+    "id": "fit-assignment",
+    "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+    "kind": "assignment",
+    "title": "Run one production fit on at most 30 points of autocal/data/references/five_points_bigger_deltas.json, with one restart and max_iterations 25. Record selected-input hash, actual points, cost, nfev and termination. This is bounded integration evidence; do not claim calibration accuracy or improvement without a fair comparator.",
+    "revision": 2,
+    "created_at": "2026-10-24T14:43:38.657789+00:00",
+    "updated_at": "2026-10-24T14:43:38.764416+00:00",
+    "details": {
+      "allocation": {
+        "collections": 0,
+        "fresh_fits": 1,
+        "max_fit_evaluations": 25,
+        "physics_steps": 0,
+        "points": 30,
+        "wall_minutes": 2
+      },
+      "approach_id": "fit-route",
+      "execution_state": "ready",
+      "knowledge_state": "unassessed",
+      "question_id": "question-b7028a1a6fdd45b59315cfb7ea696e66",
+      "review_state": "unreviewed"
+    }
+  },
+  "constraints": {
+    "automatic_stopping": true,
+    "hardware_claims": false,
+    "same_measurements": true
+  },
+  "attempt_id": "attempt-c4f103629fb948949279aa671a03b84d",
+  "source_revision": "b15697fb50edd4ac2c358051c77ddce57abeacea",
+  "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-c4f103629fb948949279aa671a03b84d",
+  "shared_filesystem": "Workers own separate worktrees, worlds and session artifacts. Output, RRF/build, dependencies and the starting native addon are shared. Treat shared paths and datasets as immutable; use only your session directory for new artifacts. Shared builds, dependency changes and combined evaluation require an exclusive shared_runtime_write reservation. Same-UID cooperation is not adversarial isolation.",
+  "shared_runtime_write": false
+}

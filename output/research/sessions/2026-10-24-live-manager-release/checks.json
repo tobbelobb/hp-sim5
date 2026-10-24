@@ -1,0 +1,93 @@
+{
+  "entry-review-checks": {
+    "suite": {
+      "tests": "35",
+      "failures": "2",
+      "errors": "0",
+      "time": "13.921"
+    },
+    "test_ids": [
+      "tests.python.test_research_program_manager::test_question_only_actual_cli_creates_owned_host_and_second_chat_opens_it",
+      "tests.python.test_research_program_manager::test_concurrent_chats_open_one_host_one_program_identity",
+      "tests.python.test_research_program_manager::test_fresh_cli_calls_retain_owned_worker_share_attachment_pause_then_cancel",
+      "tests.python.test_research_program_manager::test_program_bound_identity_graph_review_and_structured_errors",
+      "tests.python.test_research_program_manager::test_stop_cancels_owned_children_and_prevents_more_dispatch",
+      "tests.python.test_research_program_manager::test_fixed_submission_review_cancel_and_admission_through_fresh_cli",
+      "tests.python.test_research_program_manager::test_dead_and_zombie_hosts_are_not_reused_on_open",
+      "tests.python.test_research_program_manager::test_manager_client_commands_only_attach_orchestration_and_dry_run_is_inert[codex]",
+      "tests.python.test_research_program_manager::test_manager_client_commands_only_attach_orchestration_and_dry_run_is_inert[claude]",
+      "tests.python.test_research_program_manager::test_installed_codex_accepts_disabled_manager_transports",
+      "tests.python.test_research_program_manager::test_manager_forwarded_provider_and_model_share_existing_helpers",
+      "tests.python.test_research_program_manager::test_strategy_funding_steering_and_worker_contract_through_fresh_cli",
+      "tests.python.test_research_program_review::test_report_only_negative_closes_work_after_separate_review",
+      "tests.python.test_research_program_review::test_known_overclaim_and_missing_evidence[lower_fit_overclaim-revise-mixed]",
+      "tests.python.test_research_program_review::test_known_overclaim_and_missing_evidence[missing_evidence-block-not_tested]",
+      "tests.python.test_research_program_review::test_actual_candidate_diff_enforces_matching_inspected_physics_gate[absent]",
+      "tests.python.test_research_program_review::test_actual_candidate_diff_enforces_matching_inspected_physics_gate[wrong-candidate]",
+      "tests.python.test_research_program_review::test_actual_candidate_diff_enforces_matching_inspected_physics_gate[uninspected]",
+      "tests.python.test_research_program_review::test_actual_candidate_diff_enforces_matching_inspected_physics_gate[passed]",
+      "tests.python.test_research_program_review::test_legacy_review_contract_retains_original_admission_semantics",
+      "tests.python.test_research_program_review::test_changed_bytes_cannot_reuse_favorable_review_and_invalidation_is_historical",
+      "tests.python.test_research_program_review::test_new_submission_needs_own_review_and_later_review_supersedes_favorable_history",
+      "tests.python.test_research_program_review::test_corruption_before_reviewer_receipt_and_malformed_restore_are_rejected",
+      "tests.python.test_research_program_review::test_original_turnover_does_not_change_frozen_review_scope_and_withdrawal_history",
+      "tests.python.test_research_program_review::test_failed_or_mismatched_review_never_supplies_admission[invalid]",
+      "tests.python.test_research_program_review::test_failed_or_mismatched_review_never_supplies_admission[wrong-target]",
+      "tests.python.test_research_program_review::test_failed_or_mismatched_review_never_supplies_admission[nonzero]",
+      "tests.python.test_research_program_review::test_failed_or_mismatched_review_never_supplies_admission[hold]",
+      "tests.python.test_research_program_review::test_failed_or_mismatched_review_never_supplies_admission[tamper]",
+      "tests.python.test_research_program_review::test_codex_claude_plans_reuse_auth_no_physics_and_claude_receipt",
+      "tests.python.test_research_program_review::test_installed_codex_accepts_disabled_reviewer_transports",
+      "tests.python.test_research_program_review::test_api_and_database_boundary_is_cooperative_not_same_uid_isolation",
+      "tests.python.test_research_program_review::test_control_credentials_are_never_selected_for_submission[connection.json]",
+      "tests.python.test_research_program_review::test_control_credentials_are_never_selected_for_submission[manager-connection.json]",
+      "tests.python.test_research_program_review::test_control_credentials_are_never_selected_for_submission[control-token.json]"
+    ],
+    "argv_provenance": "Producer retained JUnit/stdout and selected test IDs; original shell argv was not retained.",
+    "stdout": "entry-review-checks.log.gz",
+    "junit": "entry-review-checks.xml.gz"
+  },
+  "client-config-checks": {
+    "suite": {
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "time": "1.693"
+    },
+    "test_ids": [
+      "tests.python.test_research_program_manager::test_question_only_actual_cli_creates_owned_host_and_second_chat_opens_it",
+      "tests.python.test_research_program_manager::test_manager_client_commands_only_attach_orchestration_and_dry_run_is_inert[codex]",
+      "tests.python.test_research_program_manager::test_manager_client_commands_only_attach_orchestration_and_dry_run_is_inert[claude]",
+      "tests.python.test_research_program_manager::test_installed_codex_accepts_disabled_manager_transports[inherited0]",
+      "tests.python.test_research_program_manager::test_installed_codex_accepts_disabled_manager_transports[inherited1]",
+      "tests.python.test_research_program_review::test_codex_claude_plans_reuse_auth_no_physics_and_claude_receipt",
+      "tests.python.test_research_program_review::test_installed_codex_accepts_disabled_reviewer_transports[inherited0]",
+      "tests.python.test_research_program_review::test_installed_codex_accepts_disabled_reviewer_transports[inherited1]"
+    ],
+    "argv_provenance": "Producer retained JUnit/stdout and selected test IDs; original shell argv was not retained.",
+    "stdout": "client-config-checks.log",
+    "junit": "client-config-checks.xml"
+  },
+  "interpretation": "33 affected entry/review cases passed in 13.92s; two newly added cases initially used an unsupported flag. Corrected installed-client/config/entry/reviewer selection passed 8 cases in 1.69s. Overlapping cases are not summed.",
+  "reused_code_checks": "../2026-10-24-tested-integration/affected-fix-command.json",
+  "parent_followup": {
+    "documented_cli_checks": [
+      "documented-overview",
+      "documented-open-questions",
+      "documented-markdown-export"
+    ],
+    "compiled": [
+      "coding_client.py",
+      "program_entry.py",
+      "program_review.py"
+    ],
+    "unchanged_passing_suites_rerun": false
+  },
+  "live_gate": {
+    "status": "BLOCKED",
+    "production_numerical_operations": 0,
+    "completed_managed_investigations": 0,
+    "scientific_admissions": 0,
+    "release_complete": false
+  }
+}

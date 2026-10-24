@@ -5,9 +5,11 @@ import os
 from pathlib import Path
 import select
 import signal
+import shutil
 import subprocess
 import sys
 import time
+import tomllib
 
 import pytest
 
@@ -128,6 +130,10 @@ def test_question_only_actual_cli_creates_owned_host_and_second_chat_opens_it(tm
         assert served['attachment'] == attachment
         assert Path(attachment['session'], 'attachment.json').is_file()
         assert Path(attachment['session'], 'attachment.toml').is_file()
+        config = tomllib.loads(Path(attachment['session'], 'attachment.toml').read_text())
+        for name in ('hp_sim5', 'rerun'):
+            assert config['mcp_servers'][name]['enabled'] is False
+            assert config['mcp_servers'][name]['command']
     finally:
         retire([attachment])
 
@@ -349,17 +355,41 @@ def test_manager_client_commands_only_attach_orchestration_and_dry_run_is_inert(
     assert set(plan['attachment']['mcpServers']) == {'hp_sim5_program'}
     command = ' '.join(plan['argv'])
     assert 'research_program_mcp.py' in json.dumps(plan)
-    assert 'hp_sim5_mcp.py' not in command
     assert 'research_attach.py' not in command
-    assert 'viewer-mcp' not in command
     if backend == 'codex':
-        assert 'mcp_servers.hp_sim5.enabled=false' in plan['argv']
-        assert 'mcp_servers.rerun.enabled=false' in plan['argv']
+        for name in ('hp_sim5', 'rerun'):
+            option = next(a for a in plan['argv'] if a.startswith(f'mcp_servers.{name}='))
+            assert tomllib.loads(option)['mcp_servers'][name]['enabled'] is False
         assert 'mcp_servers.hp_sim5_program.default_tools_approval_mode="approve"' in plan['argv']
     else:
         assert '--strict-mcp-config' in plan['argv']
         assert 'mcp__hp_sim5_program' in command
         assert set(plan['attachment']['mcpServers']['hp_sim5_program']) == {'command', 'args'}
+
+
+@pytest.mark.skipif(shutil.which('codex') is None, reason='Installed Codex config validation is optional')
+@pytest.mark.parametrize('inherited', [{}, {'hp_sim5': {'url': 'https://example.invalid/mcp'}}])
+def test_installed_codex_accepts_disabled_manager_transports(tmp_path, inherited):
+    opened = cli('--store', tmp_path / 'store', '--question', 'Validate manager attachment only')
+    a = opened['attachment']
+    try:
+        plan = client_plan(ROOT, a, 'codex')
+        configs = [plan['argv'][i+1] for i, arg in enumerate(plan['argv'])
+                   if arg == '-c' and plan['argv'][i+1].startswith('mcp_servers.')]
+        attachment = tomllib.loads(Path(a['session'], 'attachment.toml').read_text())
+        from hp_sim5_research.coding_client import toml_literal
+        for overrides in (configs, ['mcp_servers=' + toml_literal(attachment['mcp_servers'])]):
+            command = ['codex', '-c', 'mcp_servers=' + toml_literal(inherited)]
+            for override in overrides:
+                command += ['-c', override]
+            checked = subprocess.run(command + ['mcp', 'list', '--json'], capture_output=True, text=True, timeout=10)
+            assert checked.returncode == 0, checked.stderr
+            servers = {s['name']: s for s in json.loads(checked.stdout)}
+            assert not servers['hp_sim5']['enabled'] and not servers['rerun']['enabled']
+            assert servers['hp_sim5']['transport']['type'] == servers['rerun']['transport']['type'] == 'stdio'
+            assert servers['hp_sim5_program']['enabled']
+    finally:
+        retire([a])
 
 
 def test_manager_forwarded_provider_and_model_share_existing_helpers(tmp_path):

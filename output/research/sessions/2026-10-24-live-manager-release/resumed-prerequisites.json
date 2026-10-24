@@ -1,0 +1,12 @@
+{
+  "time": "2026-10-24T19:10:21.106784+00:00",
+  "cargo_available": false,
+  "node_modules_present": false,
+  "native_addon_present": false,
+  "node_api_header_present": false,
+  "pxr_available": false,
+  "rerun_available": false,
+  "claude_available": false,
+  "science_runs": 0,
+  "note": "Read-only prerequisite recheck after chat pause; no runtime installation or environment override."
+}

@@ -1,19 +1,121 @@
 # Start a research program from a question
 
-Use the [manager chat quickstart](program-manager.md) to create/open a durable
-program, query its evidence graph and delegate bounded investigations through
-the existing `hp-sim5-research-agent`. The CLI works in an existing chat without
-manual service setup; dedicated Codex/Claude entry and MCP attachment are also
-available. Strategy automation and recovery are still tracked in
-[tasks 012–016](program-tasks/README.md). The complete manager release requires
-the live gate in [MANAGER.md](program-tasks/MANAGER.md).
+The manager implementation is available above the existing
+`hp-sim5-research-agent`. Tasks 007 through 015 implement durable graph memory,
+approach selection, bounded workers, separate review, recovery and combined patch
+checks. The full release is not yet verified: [task 016](program-tasks/016-live-manager-release.md)
+is blocked on native build and coding-client prerequisites. See the
+[actual pilot and limits](../output/research/sessions/2026-10-24-live-manager-release/report.md).
 
-Use `./hp-sim5-research-program create 'Your question'` to record a durable
-program without starting a world. See the [store guide](program-store.md) for
-questions, approaches, bounded assignments, decisions and exports. To start the
-manager from only a question, use `--question 'Your question'` and
-[research-manager.txt](prompts/research-manager.txt). The workflow below remains
-available for ordinary single-agent research.
+## Give the manager only a question
+
+In a repository-connected coding chat, send:
+
+```text
+Read research/prompts/research-manager.txt and manage this question:
+Can encoder-only HP3 calibration improve from the same measurements?
+```
+
+Replace the question with yours. Optional constraints can follow it. The agent
+creates or resumes a program, inspects useful prior evidence, develops competing
+approaches and chooses finite assignments. It delegates through the existing
+worker and incorporates separately reviewed results into the graph. The agent
+handles the tool calls; you do not need to prepare worker prompts or a work board.
+Plain chat without repository/tool access cannot execute these operations.
+
+Then say "continue", "what do we know?", "why this approach?", "what supports
+that claim?", "try this idea using the same measurements", "pause", "stop that
+worker" or "stop the program". Pause holds new dispatch while existing work keeps
+running within its deadlines. Stop requests owned cleanup and reports its actual
+boundary. To move chats, say:
+
+```text
+Read research/prompts/research-manager.txt. Resume program PROGRAM_ID.
+Inspect the overview and reconcile ownership before continuing.
+```
+
+Keep the returned program ID. Reopening does not replay old assignments or restore
+a physics checkpoint. An unknown old process requires an explicit bounded handoff.
+The [manager tool guide](program-manager.md) explains each operation.
+
+Dedicated manager chats use the existing installed client and authentication:
+
+```bash
+./hp-sim5-research-program --codex --question 'Your question'
+./hp-sim5-research-program --claude --program PROGRAM_ID
+./hp-sim5-research-program --serve --program PROGRAM_ID
+```
+
+An existing coding chat uses the same tools through CLI calls, with automatic
+file-host startup and no manual terminal/server setup. `--serve` writes MCP
+attachment configuration for a client supporting it. The manager itself starts
+no physics world or Viewer.
+
+## Memory, evidence and code
+
+The default store is `.research-programs/programs.sqlite3`. It contains program
+goals, questions, approaches, assignments, attempts, graph relations, dated route
+decisions, steering and review/integration history. Large artifacts remain in
+research session directories and are referenced by identity/hash. This is a typed
+queryable graph in SQLite; no graph service or model API is required.
+
+Ask the agent for scoped support, challenges, unknowns or the consequences of
+withdrawing evidence. Alternative derivations and shared source identities remain
+visible. A new simulator revision does not retroactively establish applicability.
+The [graph guide](program-graph/README.md) describes these rules.
+
+You or the agent can inspect readable exports without starting a world:
+
+```bash
+./hp-sim5-research-program overview PROGRAM_ID
+./hp-sim5-research-program query PROGRAM_ID open_questions
+./hp-sim5-research-program query PROGRAM_ID support CLAIM_ID
+./hp-sim5-research-program export PROGRAM_ID --format markdown
+./hp-sim5-research-program export PROGRAM_ID --format json
+```
+
+Place `--store PATH` before the operation for another store. JSON exports preserve
+history; artifacts still need the [portable evidence handoff](handoffs.md).
+Execution success does not admit a claim. Separate review fixes evidence versions
+before admission, and [strategy](program-strategy.md) uses effective reviewed
+results to revise routes. [Patch integration](program-integration.md) has separate
+readiness records. Failed checks or conflicts preserve useful scientific findings.
+Research patches are prepared in separate worktrees and are never auto-merged or
+pushed by these tools.
+
+Fresh fits, headless/native physics and simulated collection remain allowed.
+The manager chooses targeted finite budgets from workload costs and uses supported
+`--speedup 25` for simulated autocal CLI when appropriate. Read the
+[recording-cost guidance](autocal-recording-performance.md). The
+[controller](program-controller.md) enforces reservations, slots, review backlog
+and owned wall deadlines. Tool limits apply to supported calls. Numerical estimates,
+worker reports and measured observations stay distinct; arbitrary shell movement
+and spend are not hard aggregate quotas. The pool defaults to one worker and
+supports up to four with explicit store/allocation capacity.
+
+## Prerequisites and current release block
+
+Ordinary program CLI and graph operations need the local `.venv/bin/python` and
+standard library. Dedicated chat needs an installed supported coding client with
+working existing authentication and writable client state. MCP needs the repository's
+supported SDK and working stdio/event-loop facilities. Workers need the normal
+[research runtime setup](README.md#setup-and-interactive-use), including native
+build tools and Node development headers. The current launcher starts a supervisor
+even for a saved-data fitting assignment.
+
+The 2026-10-24 actual pilot created a program, launched that worker in an isolated
+worktree, queried the graph, exercised steering/lifecycle commands and reopened
+durable state. Native build stopped at missing Node-API headers. Dedicated Codex
+and separate review stopped at read-only app-server initialization; stock MCP
+initialization timed out. No numerical investigation or scientific admission
+completed. Two reviewed investigations, production-tool use, observed live stop
+and fresh-chat continuation remain required for release. The report lists exact
+unmet criteria and the configuration bug fixed during these attempts.
+
+## Single-agent alternative
+
+The original one-investigation workflow remains available. It uses ordinary
+research notes and an agenda in the same agent conversation:
 
 Give an agent at this repository's root your question and the saved entry prompt:
 
@@ -82,11 +184,10 @@ summary, decision and next observation) in its session directory. The
 The [entry prompt](prompts/research-program.txt) connects the existing
 [assignment](prompts/next-assignment.txt), [review](prompts/reviewer.txt),
 [abstract](abstract-template.md) and [portable handoff](handoffs.md) conventions.
-Tasks 001–006 completed these foundations. Tasks 007–016 now build the full
-manager. Use `research/program-tasks/PROMPT.md` to implement one of those tasks;
-use the question-first prompt above to conduct research with the single-agent
-workflow. Task 011 supplies the manager entry, and task 016 verifies the
-complete chat-to-worker path before the release is declared ready.
+Tasks 001 through 006 completed these foundations. Tasks 007 through 015 implement
+the manager described above; task 016 retains the live release gate. Use
+`research/program-tasks/PROMPT.md` for development backlog work and the appropriate
+question-first prompt for scientific research.
 
 See the [worked question-to-decision examples](../output/research/sessions/2026-10-23-research-program-smoke/desk-cases.md)
 and [smoke-test record](../output/research/sessions/2026-10-23-research-program-smoke/report.md)

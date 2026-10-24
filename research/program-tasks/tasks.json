@@ -179,7 +179,7 @@
       "id": "016",
       "priority": 160,
       "title": "Prove and document the complete chat-driven research manager",
-      "status": "ready",
+      "status": "blocked",
       "depends_on": [
         "008",
         "011",
@@ -191,7 +191,9 @@
       "file": "016-live-manager-release.md",
       "budget": {
         "wall_minutes": 120
-      }
+      },
+      "blocker": "Actual pilot: native worker build lacks Node-API headers; Codex manager/reviewer cannot initialize app-server on read-only filesystem; stock MCP initialize times out. Required managed science/review/live-stop proof not complete.",
+      "evidence": "output/research/sessions/2026-10-24-live-manager-release/report.md"
     }
   ],
   "completion_task": "016"

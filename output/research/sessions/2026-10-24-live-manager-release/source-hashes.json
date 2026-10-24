@@ -1,0 +1,18 @@
+{
+  "README.md": "9ad4ba9a36b6e70b603cc6efd1108b0c6a8d9262485c2a00f940a9954cdafeaa",
+  "research/README.md": "7a7f31567a43758df432f407bed78cdb1051b98e81cb551f723860dc73c477e0",
+  "research/architecture.md": "a16736e7d9693ff21a858dcfde0a057f96fa66a52c0f89c5df1ec30b950cf8a8",
+  "research/program-manager.md": "b81e92f89aab34b64ecffc5d4a5844c803c58ed7c9bea76d248c28de67726916",
+  "research/program-tasks/016-live-manager-release.md": "be2afcf8d608c65f445c0fbe765984751350721142f92c497fed14e886c48fa2",
+  "research/program-tasks/README.md": "5e5becd1579fb01ec8fff7cc660a4745286dbc38f8241c942ba399f0fc888722",
+  "research/program-tasks/progress.txt": "f1f89e4bcde48be81c926ba64fe185e19e12595a8e08e21aec5eb75ca386ef32",
+  "research/program-tasks/tasks.json": "707ab24229a168a8c8a79df1bbb8b784442c92055a5dab85993682d599bf5597",
+  "research/program.md": "2d727fdd3effeb79a4cd0c3e1faef2840fccab43da80064962de812078e2a566",
+  "research/prompts/research-manager.txt": "3e22bb926d01f10c469e963fa25326496fefa39b9febc3f6172bee6f3fc3f561",
+  "research/prompts/research-program.txt": "93359f8c5d6a1e2722f9ab30e7d3066010ad70dbc57f81f639b42c575b4f7e4e",
+  "src/python/hp_sim5_research/coding_client.py": "56e9029be070647ce53f67ea422309358c89aec22f88672700b3fc8dc17fb9cc",
+  "src/python/hp_sim5_research/program_entry.py": "16090a6ae69296f49de57219ecd4ff0a157c16fec48e1bab55ae504cbaae8124",
+  "src/python/hp_sim5_research/program_review.py": "e778e8f84e0b9bd19edabe43748b3665533cca1c78fc02dfd90a1b6a5fc91d1d",
+  "tests/python/test_research_program_manager.py": "bb30fab6c1fb145961ff5ddfadbebb28e3fbfc176e226cdff0323b888fa49d22",
+  "tests/python/test_research_program_review.py": "0c150d11d7ace358a0de93d9c0acc5cb5c5376e40e5812bb4d5ff50dea5787aa"
+}

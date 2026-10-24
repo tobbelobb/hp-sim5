@@ -100,6 +100,15 @@ def toml_literal(value):
     return json.dumps(value)
 
 
+def disabled_research_mcp_settings(root):
+    # Codex validates transport even for disabled servers, including with no user config.
+    # Replace each whole table so an inherited HTTP URL cannot conflict with stdio.
+    return {'mcp_servers.hp_sim5': {'enabled': False, 'command': str(root / '.venv/bin/python'),
+                                     'args': [str(root / 'scripts/hp_sim5_mcp.py')]},
+            'mcp_servers.rerun': {'enabled': False, 'command': str(root / '.venv/bin/rerun'),
+                                  'args': ['viewer-mcp']}}
+
+
 def codex_command(root, session, *, batch=False, dont_ask=False, goal_mode=False,
                   codex_args=(), instructions='', model_provider=CHATGPT_SIGN_IN,
                   model=None, settings=None, sandbox='workspace-write'):

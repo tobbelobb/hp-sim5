@@ -16,6 +16,12 @@ configured providers, such as OpenCode Go with DeepSeek, are selected with
 The [research architecture map](research/architecture.md) explains which tools
 own each world, how configuration reaches physics and what gets recorded.
 
+To give a research question to a manager that remembers approaches and delegates
+to that same worker, use the [question-only program guide](research/program.md).
+The manager implements graph memory, strategy, bounded workers and reviewed patch
+checks. Its [live release gate](research/program-tasks/016-live-manager-release.md)
+is blocked on runtime/client prerequisites; the full release is not yet verified.
+
 Example usecases:
  - **Automate and Validate Hardware Design**
  - **Digital Twin**

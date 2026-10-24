@@ -1,0 +1,1057 @@
+[
+  {
+    "label": "ordinary-question",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "--store",
+      "/workspace/hp-sim5/.research-programs/task016-private/store",
+      "--question",
+      "Can fixed saved HP3 measurements distinguish a useful calibration-fit improvement from selection-only consensus changes?",
+      "--constraints",
+      "{\"same_measurements\": true, \"hardware_claims\": false, \"automatic_stopping\": true}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.24886059761047363,
+    "timed_out": false,
+    "raw_private_sha256": "781dd30688be7784fc041e1abbada52dc83aab2a0d1d1757f781e61e139f9898"
+  },
+  {
+    "label": "capabilities",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "capabilities",
+      "--params",
+      "{}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.10017180442810059,
+    "timed_out": false,
+    "raw_private_sha256": "14973c43d4186e7b3fff9e7d29c176dca1d37b334bfaac41a71c7b5fa426c437"
+  },
+  {
+    "label": "fit-route",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "approach",
+      "--params",
+      "{\"question_id\": \"question-b7028a1a6fdd45b59315cfb7ea696e66\", \"title\": \"one production bounded fit on a fixed saved HP3 dataset\", \"reason\": \"exercise managed worker and production fitting without new measurements\", \"record_id\": \"fit-route\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.09440469741821289,
+    "timed_out": false,
+    "raw_private_sha256": "14ef4a7f6f7c2e16270a4387b99e73d4b6cffd81e5a115b3c119cc3a65226c28"
+  },
+  {
+    "label": "fit-route-plan",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "route_plan",
+      "--params",
+      "{\"approach_id\": \"fit-route\", \"hypothesis\": \"exercise managed worker and production fitting without new measurements\", \"scope\": {\"machine\": \"HP3\", \"same_measurements\": true}, \"priority\": 10, \"estimated_cost\": {\"wall_minutes\": 2}, \"uncertainty\": \"No new managed scientific result yet\", \"decision_value\": \"Separate fit behavior from membership effects\", \"novelty\": \"Integration pilot on saved evidence\", \"observation\": \"one production bounded fit on a fixed saved HP3 dataset\", \"reopening_condition\": \"Real launcher and separate client review work within the saved-data scope\", \"reason\": \"exercise managed worker and production fitting without new measurements\", \"retry_limit\": 1, \"record_id\": \"fit-route-plan\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.10431051254272461,
+    "timed_out": false,
+    "raw_private_sha256": "4fbfe6b752ef1c68223b57529a64269a9667f679d52fc0fc47b926bf1a640317"
+  },
+  {
+    "label": "membership-route",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "approach",
+      "--params",
+      "{\"question_id\": \"question-b7028a1a6fdd45b59315cfb7ea696e66\", \"title\": \"inspect frozen selection-only consensus evidence and original baselines\", \"reason\": \"review a useful scoped negative decision using saved CM-E1 evidence\", \"record_id\": \"membership-route\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.10083198547363281,
+    "timed_out": false,
+    "raw_private_sha256": "1a86807a880626ca744e38a6c04eb9e032ee190d58d512fd8e7daa2417ce3c00"
+  },
+  {
+    "label": "membership-route-plan",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "route_plan",
+      "--params",
+      "{\"approach_id\": \"membership-route\", \"hypothesis\": \"review a useful scoped negative decision using saved CM-E1 evidence\", \"scope\": {\"machine\": \"HP3\", \"same_measurements\": true}, \"priority\": 20, \"estimated_cost\": {\"wall_minutes\": 2}, \"uncertainty\": \"No new managed scientific result yet\", \"decision_value\": \"Separate fit behavior from membership effects\", \"novelty\": \"Integration pilot on saved evidence\", \"observation\": \"inspect frozen selection-only consensus evidence and original baselines\", \"reopening_condition\": \"Real launcher and separate client review work within the saved-data scope\", \"reason\": \"review a useful scoped negative decision using saved CM-E1 evidence\", \"retry_limit\": 1, \"record_id\": \"membership-route-plan\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.09387397766113281,
+    "timed_out": false,
+    "raw_private_sha256": "1d914c6c587b590cc75ab1385e19b52f5cde6b196407e4643ac1a6dec188d951"
+  },
+  {
+    "label": "fit-assignment",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "assignment",
+      "--params",
+      "{\"approach_id\": \"fit-route\", \"objective\": \"Run one production fit on at most 30 points of autocal/data/references/five_points_bigger_deltas.json, with one restart and max_iterations 25. Record selected-input hash, actual points, cost, nfev and termination. This is bounded integration evidence; do not claim calibration accuracy or improvement without a fair comparator.\", \"allocation\": {\"wall_minutes\": 2, \"fresh_fits\": 1, \"max_fit_evaluations\": 25, \"points\": 30, \"physics_steps\": 0, \"collections\": 0}, \"record_id\": \"fit-assignment\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.11324191093444824,
+    "timed_out": false,
+    "raw_private_sha256": "0eabc80ba5ecb3ec7f055a472f0280dd33872f49b92d4436c5d50c4b15bfa240"
+  },
+  {
+    "label": "fit-ready",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "transition",
+      "--params",
+      "{\"record_id\": \"fit-assignment\", \"target\": \"ready\", \"reason\": \"One bounded saved-data production fit\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.0946955680847168,
+    "timed_out": false,
+    "raw_private_sha256": "1326a7c541dcda0f8fbae30eaf651a5cec14b8224bfe00945b769b04be541ed3"
+  },
+  {
+    "label": "saved-assignment",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "assignment",
+      "--params",
+      "{\"approach_id\": \"membership-route\", \"objective\": \"Inspect CM-E1 results.json and report.md, verify saved inputs and scoped negative membership-default decision. Preserve original scope and do not rerun science.\", \"allocation\": {\"wall_minutes\": 2, \"fresh_fits\": 0, \"physics_steps\": 0, \"collections\": 0}, \"record_id\": \"saved-assignment\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.11579418182373047,
+    "timed_out": false,
+    "raw_private_sha256": "ccb649cbc4f9dfb8c26d264fcfe16c2340bcaab0931d39f9aeddde1655b2f3d0"
+  },
+  {
+    "label": "saved-ready",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "transition",
+      "--params",
+      "{\"record_id\": \"saved-assignment\", \"target\": \"ready\", \"reason\": \"Saved-evidence route prepared, not dispatched\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.10117554664611816,
+    "timed_out": false,
+    "raw_private_sha256": "2a614d42b50d82d74b96c509cb994caa6c9d9e524223b28a720fefc4cf0b7c6c"
+  },
+  {
+    "label": "allocate",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "allocate",
+      "--params",
+      "{\"task_limit\": 2, \"wall_minutes\": 8, \"review_minutes\": 1, \"cleanup_seconds\": 20}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.0968027114868164,
+    "timed_out": false,
+    "raw_private_sha256": "dabab0b2ec8dc995972818c8506e98b02fa9182f68f427b18bce508cd3840252"
+  },
+  {
+    "label": "worker-start",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "worker_start",
+      "--params",
+      "{\"assignment_id\": \"fit-assignment\", \"allocation_id\": \"runtime_allocation-ee9c9909f4d440a780350145176173b8\", \"settings\": {\"backend\": \"codex\", \"viewer\": \"none\", \"record\": false, \"machine\": \"hp3\", \"worktree\": true}, \"instructions\": \"Call research_preflight on attached supervisor before production work. Keep the saved-data point/evaluation caps. Stop at bounds; retain errors. No alternate auth, standalone substitute or numerical accuracy overclaim.\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.14107632637023926,
+    "timed_out": false,
+    "raw_private_sha256": "a3746dfc333d870a58d4457af3be98cfdfb9430c7fb50db385fb0c3692831cc7"
+  },
+  {
+    "label": "worker-status-1792853019238666811",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "worker_status",
+      "--params",
+      "{\"attempt_id\": \"attempt-c4f103629fb948949279aa671a03b84d\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.11800050735473633,
+    "timed_out": false,
+    "raw_private_sha256": "a3746dfc333d870a58d4457af3be98cfdfb9430c7fb50db385fb0c3692831cc7"
+  },
+  {
+    "label": "worker-status-1792853019558631523",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "worker_status",
+      "--params",
+      "{\"attempt_id\": \"attempt-c4f103629fb948949279aa671a03b84d\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.10011982917785645,
+    "timed_out": false,
+    "raw_private_sha256": "a3746dfc333d870a58d4457af3be98cfdfb9430c7fb50db385fb0c3692831cc7"
+  },
+  {
+    "label": "worker-status-1792853019860846472",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "worker_status",
+      "--params",
+      "{\"attempt_id\": \"attempt-c4f103629fb948949279aa671a03b84d\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.0991663932800293,
+    "timed_out": false,
+    "raw_private_sha256": "a3746dfc333d870a58d4457af3be98cfdfb9430c7fb50db385fb0c3692831cc7"
+  },
+  {
+    "label": "worker-status-1792853020162328031",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "worker_status",
+      "--params",
+      "{\"attempt_id\": \"attempt-c4f103629fb948949279aa671a03b84d\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.1048126220703125,
+    "timed_out": false,
+    "raw_private_sha256": "a3746dfc333d870a58d4457af3be98cfdfb9430c7fb50db385fb0c3692831cc7"
+  },
+  {
+    "label": "worker-status-1792853020469676074",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "worker_status",
+      "--params",
+      "{\"attempt_id\": \"attempt-c4f103629fb948949279aa671a03b84d\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.11788606643676758,
+    "timed_out": false,
+    "raw_private_sha256": "a3746dfc333d870a58d4457af3be98cfdfb9430c7fb50db385fb0c3692831cc7"
+  },
+  {
+    "label": "worker-status-1792853020789833880",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "worker_status",
+      "--params",
+      "{\"attempt_id\": \"attempt-c4f103629fb948949279aa671a03b84d\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.09599637985229492,
+    "timed_out": false,
+    "raw_private_sha256": "a3746dfc333d870a58d4457af3be98cfdfb9430c7fb50db385fb0c3692831cc7"
+  },
+  {
+    "label": "worker-status-1792853021088197438",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "worker_status",
+      "--params",
+      "{\"attempt_id\": \"attempt-c4f103629fb948949279aa671a03b84d\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.11673617362976074,
+    "timed_out": false,
+    "raw_private_sha256": "a3746dfc333d870a58d4457af3be98cfdfb9430c7fb50db385fb0c3692831cc7"
+  },
+  {
+    "label": "worker-status-1792853021407116074",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "worker_status",
+      "--params",
+      "{\"attempt_id\": \"attempt-c4f103629fb948949279aa671a03b84d\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.10002017021179199,
+    "timed_out": false,
+    "raw_private_sha256": "a3746dfc333d870a58d4457af3be98cfdfb9430c7fb50db385fb0c3692831cc7"
+  },
+  {
+    "label": "worker-status-1792853021709843464",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "worker_status",
+      "--params",
+      "{\"attempt_id\": \"attempt-c4f103629fb948949279aa671a03b84d\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.10290098190307617,
+    "timed_out": false,
+    "raw_private_sha256": "a3746dfc333d870a58d4457af3be98cfdfb9430c7fb50db385fb0c3692831cc7"
+  },
+  {
+    "label": "worker-status-1792853022015774379",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "worker_status",
+      "--params",
+      "{\"attempt_id\": \"attempt-c4f103629fb948949279aa671a03b84d\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.11564946174621582,
+    "timed_out": false,
+    "raw_private_sha256": "a3746dfc333d870a58d4457af3be98cfdfb9430c7fb50db385fb0c3692831cc7"
+  },
+  {
+    "label": "worker-status-1792853022334695466",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "worker_status",
+      "--params",
+      "{\"attempt_id\": \"attempt-c4f103629fb948949279aa671a03b84d\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.10299229621887207,
+    "timed_out": false,
+    "raw_private_sha256": "a3746dfc333d870a58d4457af3be98cfdfb9430c7fb50db385fb0c3692831cc7"
+  },
+  {
+    "label": "worker-status-1792853022640707348",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "worker_status",
+      "--params",
+      "{\"attempt_id\": \"attempt-c4f103629fb948949279aa671a03b84d\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.11193561553955078,
+    "timed_out": false,
+    "raw_private_sha256": "699bff90067ac662c20b8a1cd676ea11a516f782c74543baf50c85cc5734ca9e"
+  },
+  {
+    "label": "worker-status-1792853022955846813",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "worker_status",
+      "--params",
+      "{\"attempt_id\": \"attempt-c4f103629fb948949279aa671a03b84d\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.1171114444732666,
+    "timed_out": false,
+    "raw_private_sha256": "c48b7aba2b5698296772fea6385e306d4260ba01443f18d47543389818f0bc36"
+  },
+  {
+    "label": "worker-status-1792853023276198466",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "worker_status",
+      "--params",
+      "{\"attempt_id\": \"attempt-c4f103629fb948949279aa671a03b84d\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.11910581588745117,
+    "timed_out": false,
+    "raw_private_sha256": "5967a585ff0638c447da7f935c2f04a900fdf06afff69f70adc64cfafbb0d046"
+  },
+  {
+    "label": "overview-after-worker",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "overview",
+      "--params",
+      "{}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.0943605899810791,
+    "timed_out": false,
+    "raw_private_sha256": "c6d8608050b99b6b235af98a6af819507ff40f73cf611db300c108d36643ecd8"
+  },
+  {
+    "label": "dedicated-codex",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "--store",
+      "/workspace/hp-sim5/.research-programs/task016-private/store",
+      "--codex",
+      "--program",
+      "program-bbcc825bf93241c3a002bebe76f106bc",
+      "--",
+      "exec",
+      "--json"
+    ],
+    "returncode": 1,
+    "wall_seconds": 0.14254212379455566,
+    "timed_out": false,
+    "raw_private_sha256": "719f67bc472b49dc9a8eea99a917b8b7dbdc39d8840e1cd6d68f9a24ba641a82"
+  },
+  {
+    "label": "serve-attachment",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "--store",
+      "/workspace/hp-sim5/.research-programs/task016-private/store",
+      "--serve",
+      "--program",
+      "program-bbcc825bf93241c3a002bebe76f106bc"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.1261427402496338,
+    "timed_out": false,
+    "raw_private_sha256": "bf1d5ee5806d7f9be4df2ad0762d9c0e112656389216d2c3bd1799855bb2c716"
+  },
+  {
+    "label": "dedicated-codex-ignore-user-config",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "--store",
+      "/workspace/hp-sim5/.research-programs/task016-private/store",
+      "--codex",
+      "--program",
+      "program-bbcc825bf93241c3a002bebe76f106bc",
+      "--",
+      "exec",
+      "--ignore-user-config",
+      "--json"
+    ],
+    "returncode": 1,
+    "wall_seconds": 0.14482378959655762,
+    "timed_out": false,
+    "raw_private_sha256": "75f625f5e5365c54f7c07fbd726aad526cfdbe35fb89fe08839c1ca46d303bf5"
+  },
+  {
+    "label": "startup-claim",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "claim",
+      "--params",
+      "{\"title\": \"The pilot worker stopped at native build before science; both hypotheses are not tested\", \"scope\": {\"type\": \"engineering-startup-only\", \"attempt_id\": \"attempt-c4f103629fb948949279aa671a03b84d\"}, \"record_id\": \"startup-only\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.11676621437072754,
+    "timed_out": false,
+    "raw_private_sha256": "b91630a1cac1305c57306490a361e06f0e72b2d2efedab281ffd91237b4b75f2"
+  },
+  {
+    "label": "startup-submit",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "submit",
+      "--params",
+      "{\"attempt_id\": \"attempt-c4f103629fb948949279aa671a03b84d\", \"claim_id\": \"startup-only\", \"base_revision\": \"b15697fb50edd4ac2c358051c77ddce57abeacea\", \"config\": {\"scope\": \"startup-only\", \"science\": \"not-tested\"}, \"input_identities\": [\"git:b15697fb50edd4ac2c358051c77ddce57abeacea\"], \"producer_checks\": [], \"selected\": [{\"id\": \"report\", \"role\": \"report\", \"path\": \"/workspace/hp-sim5/output/research/sessions/2026-10-24-live-manager-release/startup-partial.md\"}, {\"id\": \"abstract\", \"role\": \"abstract\", \"path\": \"/workspace/hp-sim5/output/research/sessions/2026-10-24-live-manager-release/startup-abstract.md\"}, {\"id\": \"stderr\", \"role\": \"evidence\", \"path\": \"/workspace/hp-sim5/output/research/sessions/2026-10-24-live-manager-release/worker-stderr.log\"}]}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.11811256408691406,
+    "timed_out": false,
+    "raw_private_sha256": "253742425b0fc3f568b623fb244880f2147e6c37fccd4ebb3fa8555d1a2a657f"
+  },
+  {
+    "label": "fund-startup-review",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "fund_review",
+      "--params",
+      "{\"submission_id\": \"submission-eb9a518f42004aaa8b335cf3f741df85\", \"wall_minutes\": 0.25, \"cleanup_seconds\": 5}"
+    ],
+    "returncode": 2,
+    "wall_seconds": 0.09401154518127441,
+    "timed_out": false,
+    "raw_private_sha256": "914af737f3d89ee5b052a9c53de566d658665b054d2157ce4c5a2f0b005bbd30"
+  },
+  {
+    "label": "codex-ignored-baseline",
+    "argv": [
+      "codex",
+      "exec",
+      "--ignore-user-config",
+      "--json",
+      "Reply with READY only. Do not run tools."
+    ],
+    "returncode": 1,
+    "wall_seconds": 0.0662527084350586,
+    "timed_out": false,
+    "raw_private_sha256": "9d082c50ae43712bce43cc2bf3cee8d604634c17faef8151f7300b3740dc15d0"
+  },
+  {
+    "label": "codex-disabled-table",
+    "argv": [
+      "codex",
+      "exec",
+      "--ignore-user-config",
+      "-c",
+      "mcp_servers.hp_sim5.enabled=false",
+      "--json",
+      "Reply with READY only. Do not run tools."
+    ],
+    "returncode": 1,
+    "wall_seconds": 0.018075227737426758,
+    "timed_out": false,
+    "raw_private_sha256": "bef8ce6be55ba1d255c94cace906139a580541c3c02e3f5c79e2c1d7366abb78"
+  },
+  {
+    "label": "dedicated-codex-fixed",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "--store",
+      "/workspace/hp-sim5/.research-programs/task016-private/store",
+      "--codex",
+      "--program",
+      "program-bbcc825bf93241c3a002bebe76f106bc",
+      "--",
+      "exec",
+      "--ignore-user-config",
+      "--json"
+    ],
+    "returncode": 1,
+    "wall_seconds": 0.12670016288757324,
+    "timed_out": false,
+    "raw_private_sha256": "53f1f61f7fa2220231668e05142eaf9863705068c95a88e452f6e838a38421c3"
+  },
+  {
+    "label": "codex-inherited-http-disabled",
+    "argv": [
+      "codex",
+      "--ignore-user-config",
+      "-c",
+      "mcp_servers.hp_sim5.url=\"https://example.invalid/mcp\"",
+      "-c",
+      "mcp_servers.hp_sim5.enabled=false",
+      "-c",
+      "mcp_servers.hp_sim5.command=\"/workspace/hp-sim5/.venv/bin/python\"",
+      "-c",
+      "mcp_servers.hp_sim5.args=[\"/workspace/hp-sim5/scripts/hp_sim5_mcp.py\"]",
+      "-c",
+      "mcp_servers.rerun.enabled=false",
+      "-c",
+      "mcp_servers.rerun.command=\"/workspace/hp-sim5/.venv/bin/rerun\"",
+      "-c",
+      "mcp_servers.rerun.args=[\"viewer-mcp\"]",
+      "mcp",
+      "list",
+      "--json"
+    ],
+    "returncode": 2,
+    "wall_seconds": 0.007482290267944336,
+    "timed_out": false,
+    "raw_private_sha256": "e768b790b53a9f4ec898b4f274a4434008c21c95ac80ed2d06aee14b52fc46a4"
+  },
+  {
+    "label": "codex-inherited-http-disabled-exec",
+    "argv": [
+      "codex",
+      "exec",
+      "--ignore-user-config",
+      "-c",
+      "mcp_servers.hp_sim5.url=\"https://example.invalid/mcp\"",
+      "-c",
+      "mcp_servers.hp_sim5.enabled=false",
+      "-c",
+      "mcp_servers.hp_sim5.command=\"/workspace/hp-sim5/.venv/bin/python\"",
+      "-c",
+      "mcp_servers.hp_sim5.args=[\"/workspace/hp-sim5/scripts/hp_sim5_mcp.py\"]",
+      "-c",
+      "mcp_servers.rerun.enabled=false",
+      "-c",
+      "mcp_servers.rerun.command=\"/workspace/hp-sim5/.venv/bin/rerun\"",
+      "-c",
+      "mcp_servers.rerun.args=[\"viewer-mcp\"]",
+      "--json",
+      "Reply with READY only. Do not run tools."
+    ],
+    "returncode": 1,
+    "wall_seconds": 0.019829273223876953,
+    "timed_out": false,
+    "raw_private_sha256": "258145f2785c6c3432058535f288c2440afc357fafc3df5689671ea2ad88504a"
+  },
+  {
+    "label": "codex-inherited-http-table-replaced",
+    "argv": [
+      "codex",
+      "exec",
+      "--ignore-user-config",
+      "-c",
+      "mcp_servers.hp_sim5.url=\"https://example.invalid/mcp\"",
+      "-c",
+      "mcp_servers.hp_sim5={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/python\", \"args\" = [\"/workspace/hp-sim5/scripts/hp_sim5_mcp.py\"] }",
+      "-c",
+      "mcp_servers.rerun={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/rerun\", \"args\" = [\"viewer-mcp\"] }",
+      "--json",
+      "Reply with READY only. Do not run tools."
+    ],
+    "returncode": 1,
+    "wall_seconds": 0.046840667724609375,
+    "timed_out": false,
+    "raw_private_sha256": "9d082c50ae43712bce43cc2bf3cee8d604634c17faef8151f7300b3740dc15d0"
+  },
+  {
+    "label": "codex-inherited-http-table-mcp-list",
+    "argv": [
+      "codex",
+      "-c",
+      "mcp_servers={hp_sim5 = {url=\"https://example.invalid/mcp\"}}",
+      "-c",
+      "mcp_servers.hp_sim5={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/python\", \"args\" = [\"/workspace/hp-sim5/scripts/hp_sim5_mcp.py\"] }",
+      "-c",
+      "mcp_servers.rerun={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/rerun\", \"args\" = [\"viewer-mcp\"] }",
+      "mcp",
+      "list",
+      "--json"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.04522228240966797,
+    "timed_out": false,
+    "raw_private_sha256": "c86914a22a921216a04790c523a91b41744752eeea75a10f0e0f4e906d8d4a08"
+  },
+  {
+    "label": "reload-fixed-host-shutdown",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "shutdown",
+      "--params",
+      "{}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.0770263671875,
+    "timed_out": false,
+    "raw_private_sha256": "ec640228f36e28614ec0157a34aeb2937698f04a5f25c907c2e1c850a58978b3"
+  },
+  {
+    "label": "reload-fixed-host-open",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "--store",
+      "/workspace/hp-sim5/.research-programs/task016-private/store",
+      "--program",
+      "program-bbcc825bf93241c3a002bebe76f106bc"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.1683652400970459,
+    "timed_out": false,
+    "raw_private_sha256": "fecc0fe575db4f100377b93cb0d34ab958d342a46525ff6aed084a80aa8f332a"
+  },
+  {
+    "label": "dedicated-codex-final",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "--store",
+      "/workspace/hp-sim5/.research-programs/task016-private/store",
+      "--codex",
+      "--program",
+      "program-bbcc825bf93241c3a002bebe76f106bc",
+      "--",
+      "exec",
+      "--ignore-user-config",
+      "--json"
+    ],
+    "returncode": 1,
+    "wall_seconds": 0.13289690017700195,
+    "timed_out": false,
+    "raw_private_sha256": "9555aeed7fd6b80ee80f1d553cf55153c00bf41648d7497c2b6b08cc8fcee393"
+  },
+  {
+    "label": "fund-startup-review-after-host-reload",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "fund_review",
+      "--params",
+      "{\"submission_id\": \"submission-eb9a518f42004aaa8b335cf3f741df85\", \"wall_minutes\": 0.25, \"cleanup_seconds\": 5}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.09495234489440918,
+    "timed_out": false,
+    "raw_private_sha256": "9f49ef69397f8559d24af7734aa2f53e961ef5530b899e7818d0cf546bb69cdb"
+  },
+  {
+    "label": "startup-review-start",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "review_start",
+      "--params",
+      "{\"submission_id\": \"submission-eb9a518f42004aaa8b335cf3f741df85\", \"backend\": \"codex\", \"wall_minutes\": 0.25}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.12523794174194336,
+    "timed_out": false,
+    "raw_private_sha256": "9876b5b45a4124270b7ed2297aa54ce8be70d098c145f251db473f566a69c8b3"
+  },
+  {
+    "label": "review-status-1792853382597969924",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "review_status",
+      "--params",
+      "{\"run_id\": \"review-run-ac0d1abde2d54aa093b6cbcea8879c6e\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.13280940055847168,
+    "timed_out": false,
+    "raw_private_sha256": "5b06d70aa8c0a24317e11cea86b6e67031a5c3bbe64552c282df7edadbba968d"
+  },
+  {
+    "label": "stock-mcp-initialize",
+    "argv": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_program_mcp.py",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json"
+    ],
+    "returncode": -15,
+    "wall_seconds": 8.011789798736572,
+    "timed_out": true,
+    "raw_private_sha256": "a272df39879a637078952730002957e09aef980bf50b9203423f44255eab4086"
+  },
+  {
+    "label": "graph-import",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "--store",
+      "/workspace/hp-sim5/.research-programs/task016-private/graph-store",
+      "import",
+      "research/program-graph/autocal-seed.json"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.05326962471008301,
+    "timed_out": false,
+    "raw_private_sha256": "e0e7f51896e89593e7cbc65a261fc32836f1074b3b4381fee13dd304cc7f03b1"
+  },
+  {
+    "label": "graph-support-before",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "--store",
+      "/workspace/hp-sim5/.research-programs/task016-private/graph-store",
+      "query",
+      "autocal-evidence",
+      "support",
+      "keep-defaults"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.03545737266540527,
+    "timed_out": false,
+    "raw_private_sha256": "af1ab671129a9ff5fe87a26112d08f2f63b4a89ac8d811616954d8096e2579be"
+  },
+  {
+    "label": "graph-withdraw-counterfactual",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "--store",
+      "/workspace/hp-sim5/.research-programs/task016-private/graph-store",
+      "review-event",
+      "autocal-evidence",
+      "Task016 counterfactual only; no real measurement retraction",
+      "--subject",
+      "cm-regressions",
+      "--event",
+      "withdrawal"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.034178733825683594,
+    "timed_out": false,
+    "raw_private_sha256": "80bb73d73ae491e3bee3fe103ec383ade866cf28baef6a2ef993791e1b187afc"
+  },
+  {
+    "label": "graph-support-after",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "--store",
+      "/workspace/hp-sim5/.research-programs/task016-private/graph-store",
+      "query",
+      "autocal-evidence",
+      "support",
+      "keep-defaults"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.03433942794799805,
+    "timed_out": false,
+    "raw_private_sha256": "22fa38422d58c11d5d697c40004cd6dd798660913f00093982913179cc1b81a8"
+  },
+  {
+    "label": "graph-export",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "--store",
+      "/workspace/hp-sim5/.research-programs/task016-private/graph-store",
+      "export",
+      "autocal-evidence",
+      "--format",
+      "markdown"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.03766322135925293,
+    "timed_out": false,
+    "raw_private_sha256": "9b0080f020c588d6cefe4492579ed3c7e14856dd2bfa47116099e03f7e29d18f"
+  },
+  {
+    "label": "knowledge-query",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "query",
+      "--params",
+      "{\"query\": \"support\", \"subject_id\": \"startup-only\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.07495403289794922,
+    "timed_out": false,
+    "raw_private_sha256": "2d710e8bde766b440d3b4008eeda797b40d8b786086d822e454431f419d9390b"
+  },
+  {
+    "label": "record-direction",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "steering",
+      "--params",
+      "{\"text\": \"Preserve startup failure and suspend numerical dispatch until the documented prerequisites work\", \"intent\": \"instruction\", \"provenance\": {\"source\": \"task016 release-gate constraints\", \"actor\": \"manager recording existing direction\"}}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.09324097633361816,
+    "timed_out": false,
+    "raw_private_sha256": "cd29bfff849ce2d208e36d7af946fdc89eb140e0ff0fb90acb5d8a7f7802368f"
+  },
+  {
+    "label": "pause",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "pause",
+      "--params",
+      "{\"reason\": \"Actual worker and client prerequisites prevent the pilot\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.09743165969848633,
+    "timed_out": false,
+    "raw_private_sha256": "77f15f82183dfcadf1ab2c7135ae49f123e55f1a4de944bf9e5a258b44356ec7"
+  },
+  {
+    "label": "resume",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "resume",
+      "--params",
+      "{\"reason\": \"Inspect durable state and stop this finite pilot without scientific admission\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.09560251235961914,
+    "timed_out": false,
+    "raw_private_sha256": "e867c8dafacbca16d74d116854f3e59c305f7f2d816655f14e25703cff122abe"
+  },
+  {
+    "label": "recover",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "recover",
+      "--params",
+      "{}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.07477450370788574,
+    "timed_out": false,
+    "raw_private_sha256": "b13c0a7efe374634e5d30b84aed324c849bdc5cdec4753166c80a1e9cd3ef582"
+  },
+  {
+    "label": "stop",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "stop",
+      "--params",
+      "{\"reason\": \"Live release blocked; preserve partial evidence and stop owned work\"}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.09544062614440918,
+    "timed_out": false,
+    "raw_private_sha256": "81bba5182558e289f7c9ba003c6a015d0a107856f09486289de1b563bb9d749a"
+  },
+  {
+    "label": "shutdown",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "shutdown",
+      "--params",
+      "{}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.094085693359375,
+    "timed_out": false,
+    "raw_private_sha256": "118d48950f5268cae88b8a09a66162a04aad5863855c86b9ea2787505f46e1af"
+  },
+  {
+    "label": "fresh-cli-reopen",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "--store",
+      "/workspace/hp-sim5/.research-programs/task016-private/store",
+      "--program",
+      "program-bbcc825bf93241c3a002bebe76f106bc"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.16210675239562988,
+    "timed_out": false,
+    "raw_private_sha256": "25103acdafd9465f28c4c76b3b5bf76837201b74959590738681dfa13ef102b5"
+  },
+  {
+    "label": "fresh-cli-overview",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "overview",
+      "--params",
+      "{}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.09652233123779297,
+    "timed_out": false,
+    "raw_private_sha256": "a1717e266c0add6d42704864589e9b0245ffb68740839dddf80f56cbc5b4a507"
+  },
+  {
+    "label": "fresh-cli-shutdown",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "tool",
+      "/workspace/hp-sim5/.research-programs/task016-private/store/managers/program-bbcc825bf93241c3a002bebe76f106bc/connection.json",
+      "shutdown",
+      "--params",
+      "{}"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.07566571235656738,
+    "timed_out": false,
+    "raw_private_sha256": "fc5b6289ff480dbef21ca3a24ac251b4df8713fde267d1dd10457fa4e2d389d6"
+  },
+  {
+    "label": "program-export",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "--store",
+      "/workspace/hp-sim5/.research-programs/task016-private/store",
+      "export",
+      "program-bbcc825bf93241c3a002bebe76f106bc"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.03536844253540039,
+    "timed_out": false,
+    "raw_private_sha256": "9b1e4973db819ba132015f96106f772ea29e324d5d4201f3937a566649afd970"
+  },
+  {
+    "label": "resumed-client-prerequisite",
+    "argv": [
+      "codex",
+      "exec",
+      "--ignore-user-config",
+      "--json",
+      "Return only OK; do not call tools."
+    ],
+    "returncode": 1,
+    "wall_seconds": 0.0529322624206543,
+    "timed_out": false,
+    "raw_private_sha256": "9d082c50ae43712bce43cc2bf3cee8d604634c17faef8151f7300b3740dc15d0"
+  },
+  {
+    "label": "documented-overview",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "--store",
+      "/workspace/hp-sim5/.research-programs/task016-private/store",
+      "overview",
+      "program-bbcc825bf93241c3a002bebe76f106bc"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.038152217864990234,
+    "timed_out": false,
+    "raw_private_sha256": "4e559a48d43d817199a7ca483d26ef1c1fa3b79a829517d531c2e68046b3a850"
+  },
+  {
+    "label": "documented-open-questions",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "--store",
+      "/workspace/hp-sim5/.research-programs/task016-private/store",
+      "query",
+      "program-bbcc825bf93241c3a002bebe76f106bc",
+      "open_questions"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.05168890953063965,
+    "timed_out": false,
+    "raw_private_sha256": "12e19e21a05c0b78e578f2d6041a43b8f193b1633d0202b33f3aa229ed963108"
+  },
+  {
+    "label": "documented-markdown-export",
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-program",
+      "--store",
+      "/workspace/hp-sim5/.research-programs/task016-private/store",
+      "export",
+      "program-bbcc825bf93241c3a002bebe76f106bc",
+      "--format",
+      "markdown"
+    ],
+    "returncode": 0,
+    "wall_seconds": 0.03478527069091797,
+    "timed_out": false,
+    "raw_private_sha256": "b783fafe9cc939730c7ac70a4c2c319930ab659179effdd615d012c94e6182ee"
+  }
+]

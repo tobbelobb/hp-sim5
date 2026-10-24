@@ -10,21 +10,23 @@ Start with the [execution architecture map](architecture.md) for ownership,
 configuration flow and recording scope across the five research workflows.
 This README contains the operating instructions and tool arguments.
 
-To start today's single-agent workflow with only a question, use the
-[research program quickstart](program.md).
-Ask your agent to read `research/prompts/research-program.txt` and investigate
-your question. It connects evidence discovery, one bounded assignment, execution,
-review and a durable decision handoff in the same conversation.
+For a manager above this worker, give a repository-connected chat your question
+and ask it to read `research/prompts/research-manager.txt`. The
+[question-only guide](program.md) explains continue, steering, graph queries and
+recovery. The [manager tools](program-manager.md) implement durable graph memory,
+strategy, bounded worker pools, separate review and combined patch checks.
+Dedicated entry is `./hp-sim5-research-program --codex --question 'Your question'`
+or `--claude`. The manager starts no physics world; assignments use this existing
+launcher. Tasks 007 through 015 are implemented. The
+[task 016 live gate](program-tasks/016-live-manager-release.md) remains blocked:
+the actual pilot reached missing native build headers and read-only coding-client
+startup, and stock MCP initialization timed out. See the
+[retained evidence](../output/research/sessions/2026-10-24-live-manager-release/report.md).
+The complete manager release is not yet verified.
 
-The [manager chat entry](program-manager.md) adds durable graph tools, delegation
-and separate evidence review through CLI or MCP. An existing repository-connected
-chat can use `research/prompts/research-manager.txt` and only a question. Dedicated
-entry is `./hp-sim5-research-program --codex --question 'Your question'` or
-`--claude`. It starts no physics world for the manager. The existing
-[worker dispatcher](program-workers.md) starts this launcher for assignments.
-Strategy automation, recovery and the full live release gate remain in
-[tasks 012–016](program-tasks/README.md). Fixture checks do not establish the
-complete release defined by the [manager contract](program-tasks/MANAGER.md).
+The single-agent workflow remains available through
+`research/prompts/research-program.txt`. It connects evidence discovery, one
+bounded investigation, review and a durable handoff in one conversation.
 
 ## Setup and interactive use
 

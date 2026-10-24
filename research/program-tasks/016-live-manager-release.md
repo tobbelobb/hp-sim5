@@ -50,3 +50,25 @@ with retained partial evidence; do not declare success from mocks or fabricate
 a research result. When all criteria pass, mark the manager release complete
 and leave future scientific investigations as program work, not missing product
 implementation. Make one task-owned commit and do not start another task.
+
+## Blocked attempt, 2026-10-24
+
+The [actual pilot](../../output/research/sessions/2026-10-24-live-manager-release/report.md)
+created a durable question, two approaches and a finite allocation through the
+ordinary CLI/file host. It dispatched the real existing worker in an isolated
+worktree. Native build failed at missing Node-API headers before tool/client or
+science execution. Dedicated Codex and genuine separate review reached read-only
+app-server initialization failures. Stock unmodified MCP initialization timed out.
+
+The attempt fixed a genuine compatibility defect: disabled legacy MCP server
+tables need valid transports, and whole-table replacement avoids inherited HTTP
+URL conflicts. Actual installed-client parser checks and focused tests pass.
+Graph query/withdrawal with alternative support, steering, pause/resume, recovery,
+stop, export and a fresh CLI host were exercised. These are partial interface
+results, not two completed scientific investigations or live-world stop proof.
+
+The gate stays blocked until a working native runtime, writable/authenticated
+coding client and stock MCP transport can complete the required production-tool,
+separate-review, replanning and live interruption/recovery demonstration. Scientific
+hypotheses remain not tested. No `MANAGER_RELEASE_COMPLETE` was issued. Existing
+fixture checks from tasks 014/015 are retained; no duplicate physics is requested.

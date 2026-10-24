@@ -1,0 +1,21 @@
+{
+  "status": "BLOCKED",
+  "time": "2026-10-24T19:21:17.896124+00:00",
+  "source_hashes": 16,
+  "artifact_hashes": 26,
+  "documented_relative_links_checked": 101,
+  "missing_links": [],
+  "compressed_transcript_valid": true,
+  "sensitive_structured_fields_redacted": true,
+  "program_stopped": true,
+  "scientific_admissions": 0,
+  "recorded_children_live": [],
+  "last_pilot_host_stopped": true,
+  "catalog_old_entries": 107,
+  "catalog_new_entries": 108,
+  "historical_catalog_prefix_unchanged": true,
+  "compiled_changed_modules": 3,
+  "documented_cli_checks_passed": 3,
+  "physics_gate_applicable": false,
+  "no_broad_passing_suite_rerun": true
+}

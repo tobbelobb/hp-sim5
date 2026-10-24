@@ -32,7 +32,7 @@ def client_plan(root, attachment, backend, *, model=None, model_provider='openai
     config = attachment_config(root, connection)
     if backend == 'codex':
         forwarded, forwarded_model = coding_client.forwarded_settings(client_args)
-        settings = {'mcp_servers.hp_sim5.enabled': False, 'mcp_servers.rerun.enabled': False,
+        settings = {**coding_client.disabled_research_mcp_settings(root),
                     'mcp_servers.hp_sim5_program.command': sys.executable,
                     'mcp_servers.hp_sim5_program.args': config['mcpServers']['hp_sim5_program']['args'],
                     'mcp_servers.hp_sim5_program.cwd': str(root),
@@ -117,8 +117,13 @@ def main(argv, root):
             config = attachment_config(root, attachment['connection'])
             (session / 'attachment.json').write_text(_json(config) + '\n')
             server = config['mcpServers']['hp_sim5_program']
+            disabled = coding_client.disabled_research_mcp_settings(root)
+            preamble = ''.join(f'[mcp_servers.{name}]\n' + '\n'.join(
+                f'{key} = {coding_client.toml_literal(value)}'
+                for key, value in disabled[f'mcp_servers.{name}'].items()) + '\n'
+                for name in ('hp_sim5', 'rerun'))
             (session / 'attachment.toml').write_text(
-                '[mcp_servers.hp_sim5]\nenabled = false\n[mcp_servers.rerun]\nenabled = false\n'
+                preamble +
                 '[mcp_servers.hp_sim5_program]\n' + '\n'.join(
                     f'{key} = {coding_client.toml_literal(value)}' for key, value in dict(server, cwd=str(root)).items()) +
                 '\nrequired = true\nstartup_timeout_sec = 30\ntool_timeout_sec = 30\ndefault_tools_approval_mode = "approve"\n')

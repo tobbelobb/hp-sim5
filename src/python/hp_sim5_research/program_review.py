@@ -335,8 +335,7 @@ class ReviewController:
         if backend == 'codex':
             argv = coding_client.codex_command(self.root, directory, batch=True, dont_ask=True, model=model,
                                                model_provider=model_provider, sandbox='read-only',
-                                               settings={'mcp_servers.hp_sim5.enabled': False,
-                                                         'mcp_servers.rerun.enabled': False})
+                                               settings=coding_client.disabled_research_mcp_settings(self.root))
         else:
             argv = coding_client.claude_command(directory, batch=True, dont_ask=True, model=model,
                                                 allowed_tools='Read,Glob,Grep,Bash')

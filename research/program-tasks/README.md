@@ -29,6 +29,10 @@ The [integration controller](../program-integration.md) prepares and checks
 combined reviewed patches without changing the human checkout or scientific admissions.
 Only cards with completed dependencies are eligible. Always use tasks.json for
 current eligibility. The full manager remains incomplete until task 016 passes.
+Task 016 was attempted on 2026-10-24 and is blocked on actual runtime/client
+prerequisites. Its [live evidence record](../../output/research/sessions/2026-10-24-live-manager-release/report.md)
+also documents a fixed Codex transport-configuration bug. Resume that card after
+its prerequisites work; do not redo tasks 007 through 015 or declare an empty backlog.
 There is no separate proposal/promotion barrier between the implementation cards.
 Implementation choices can evolve, but graph, manager/worker separation and chat
 entry cannot be replaced by prompt-only equivalents and marked complete.
@@ -55,8 +59,9 @@ entry cannot be replaced by prompt-only equivalents and marked complete.
 The final gate must demonstrate actual coding-client interaction and production
 worker tools. Fake children and graph fixtures are useful earlier verification,
 not proof that the manager release is complete. Missing live prerequisites block
-016 honestly. Until it passes, call the existing layer foundations/single-agent
-workflow. After it passes, report `MANAGER_RELEASE_COMPLETE` with evidence.
+016 honestly. Until it passes, call the implemented manager unverified for full
+live release. The original single-agent workflow remains available. After the
+gate passes, report `MANAGER_RELEASE_COMPLETE` with evidence.
 
 ## Cost and evidence rules
 

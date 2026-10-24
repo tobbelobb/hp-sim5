@@ -1,0 +1,50 @@
+{
+  "started_at": "2026-10-24T14:42:27.057506+00:00",
+  "source_revision": "b15697fb50edd4ac2c358051c77ddce57abeacea",
+  "development_wall_minutes": 60,
+  "development_ceiling_minutes": 120,
+  "question": "Can fixed saved HP3 measurements distinguish a useful calibration-fit improvement from selection-only consensus changes?",
+  "constraints": {
+    "same_measurements": true,
+    "hardware_claims": false,
+    "automatic_stopping": true
+  },
+  "runtime_plan": {
+    "investigations": 2,
+    "worker_limit": 1,
+    "per_worker_wall_minutes": 2,
+    "per_review_wall_minutes": 1,
+    "cleanup_seconds": 20,
+    "fresh_fits": 1,
+    "max_fit_evaluations": 25,
+    "max_points": 30,
+    "datasets": 1,
+    "physics_runs": 0,
+    "physics_steps": 0,
+    "simulated_seconds": 0,
+    "collections": 0,
+    "movements": 0,
+    "simulated_autocal_speedup_if_needed": 25,
+    "recording": "none for saved-data fitting; events if collection becomes necessary"
+  },
+  "routes": [
+    {
+      "id": "fit-route",
+      "method": "one production bounded fit on a fixed saved HP3 dataset",
+      "purpose": "exercise managed worker and production fitting without new measurements"
+    },
+    {
+      "id": "membership-route",
+      "method": "inspect frozen selection-only consensus evidence and original baselines",
+      "purpose": "review a useful scoped negative decision using saved CM-E1 evidence"
+    }
+  ],
+  "live_route_limits": {
+    "ordinary_cli_seconds": 35,
+    "dedicated_client_seconds": 15,
+    "worker_startup_seconds": 30,
+    "separate_review_seconds": 15,
+    "mcp_stdio_seconds": 8
+  },
+  "policy": "No fake children, modified SDK timer, standalone fitter or dry-run counts as managed live proof. Missing startup prerequisites leave science not tested."
+}

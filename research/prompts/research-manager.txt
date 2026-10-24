@@ -92,4 +92,8 @@ evaluation blocks workers/reviewers until checks and observed cleanup finish.
 Release discarded prepared candidates explicitly. After host loss use
 integration_recover; unknown startup or live historical groups retain the lease.
 Never emulate conversation continuation with a prompt-restart loop. The
-full live manager release remains task 016.
+full live manager release remains blocked at task 016. Read its latest report
+under output/research/sessions/2026-10-24-live-manager-release before claiming
+end-to-end readiness. Runtime/client startup failures are engineering blockers,
+not negative scientific observations. Keep the program ID for a fresh chat and
+explain the prerequisites if the requested execution is unavailable.

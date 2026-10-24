@@ -1,0 +1,48 @@
+# Bounded research assignment
+
+{
+  "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+  "assignment": {
+    "id": "fit-assignment",
+    "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+    "kind": "assignment",
+    "title": "Run one production fit on at most 30 points of autocal/data/references/five_points_bigger_deltas.json, with one restart and max_iterations 25. Record selected-input hash, actual points, cost, nfev and termination. This is bounded integration evidence; do not claim calibration accuracy or improvement without a fair comparator.",
+    "revision": 2,
+    "created_at": "2026-10-24T14:43:38.657789+00:00",
+    "updated_at": "2026-10-24T14:43:38.764416+00:00",
+    "details": {
+      "allocation": {
+        "collections": 0,
+        "fresh_fits": 1,
+        "max_fit_evaluations": 25,
+        "physics_steps": 0,
+        "points": 30,
+        "wall_minutes": 2
+      },
+      "approach_id": "fit-route",
+      "execution_state": "ready",
+      "knowledge_state": "unassessed",
+      "question_id": "question-b7028a1a6fdd45b59315cfb7ea696e66",
+      "review_state": "unreviewed"
+    }
+  },
+  "constraints": {
+    "automatic_stopping": true,
+    "hardware_claims": false,
+    "same_measurements": true
+  },
+  "attempt_id": "attempt-c4f103629fb948949279aa671a03b84d",
+  "source_revision": "b15697fb50edd4ac2c358051c77ddce57abeacea",
+  "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-c4f103629fb948949279aa671a03b84d",
+  "shared_filesystem": "Workers own separate worktrees, worlds and session artifacts. Output, RRF/build, dependencies and the starting native addon are shared. Treat shared paths and datasets as immutable; use only your session directory for new artifacts. Shared builds, dependency changes and combined evaluation require an exclusive shared_runtime_write reservation. Same-UID cooperation is not adversarial isolation.",
+  "shared_runtime_write": false
+}
+
+Respect the recorded allocation. Preserve unsuccessful and partial evidence. Execution success does not accept a scientific claim.
+
+Workers own separate worktrees, worlds and session artifacts. Output, RRF/build, dependencies and the starting native addon are shared. Treat shared paths and datasets as immutable; use only your session directory for new artifacts. Shared builds, dependency changes and combined evaluation require an exclusive shared_runtime_write reservation. Same-UID cooperation is not adversarial isolation.
+
+Recorded strategy contract:
+{"human_inputs": [], "investigations": [], "route_plan": {"created_at": "2026-10-24T14:43:38.347695+00:00", "details": {"approach_id": "fit-route", "citation_ids": [], "decision_value": "Separate fit behavior from membership effects", "dependency_ids": [], "estimated_cost": {"wall_minutes": 2}, "hypothesis": "exercise managed worker and production fitting without new measurements", "novelty": "Integration pilot on saved evidence", "objections": [], "observation": "one production bounded fit on a fixed saved HP3 dataset", "priority": 10, "reason": "exercise managed worker and production fitting without new measurements", "reopening_condition": "Real launcher and separate client review work within the saved-data scope", "retry_key": "27a565be2e7005bf68d67bac4a5192a69dfd56eed8204555b7af4b6e60a61eb3", "retry_limit": 1, "scope": {"machine": "HP3", "same_measurements": true}, "tradeoffs": [], "uncertainty": "No new managed scientific result yet"}, "id": "fit-route-plan", "kind": "route_plan", "program_id": "program-bbcc825bf93241c3a002bebe76f106bc", "revision": 1, "title": "exercise managed worker and production fitting without new measurements", "updated_at": "2026-10-24T14:43:38.347695+00:00"}}
+
+Call research_preflight on attached supervisor before production work. Keep the saved-data point/evaluation caps. Stop at bounds; retain errors. No alternate auth, standalone substitute or numerical accuracy overclaim.

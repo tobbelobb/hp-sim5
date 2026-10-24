@@ -5,13 +5,22 @@ ownership, configuration and recording contracts. Update it when those contracts
 change. The [research README](README.md) contains commands and tool arguments;
 [research instructions](AGENTS.md) describe how to conduct and report experiments.
 
-The chat-driven manager above this execution layer follows
-[tasks 007–016](program-tasks/README.md) and the
-[manager contract](program-tasks/MANAGER.md). Its durable store, typed graph and
-[worker dispatcher API](program-workers.md) are implemented foundations. Dispatch
-uses the launcher and worker/supervisor paths documented here. Reviewed admission,
-chat entry and orchestration remain subsequent tasks; task 016 requires live proof
-before release completion.
+The chat-driven manager above this execution layer implements the store, typed
+graph, strategy, reviewed admission, chat tools, bounded pool and combined patch
+checks from tasks 007 through 015. Its [entry guide](program.md) and
+[manager contract](program-tasks/MANAGER.md) describe the interface. The
+[task 016 pilot](../output/research/sessions/2026-10-24-live-manager-release/report.md)
+exercised actual CLI dispatch and exposed runtime/client blockers. Full live
+release proof remains incomplete. The worker execution map below retains its
+2026-10-12 verification scope; manager additions were checked on 2026-10-24.
+
+The manager conversation chooses approaches and assignments. The per-store file
+host owns transactional reservations, deadlines and owned-process lifecycle;
+SQLite stores questions, graph relations, reviews, steering and decisions.
+The existing worker launcher still owns each supervisor/world. Separate review
+does not start physics merely to inspect evidence. Integration uses a separate
+candidate worktree and an exclusive lease. See [controller limits](program-controller.md)
+and [integration cleanup boundaries](program-integration.md).
 
 ## Who owns execution
 
@@ -23,7 +32,15 @@ come from experiment telemetry and backend observations.
 
 ```mermaid
 flowchart TD
-    chat[Codex conversation] --> tools[hp-sim5 MCP tools]
+    human[Human question and steering] --> manager[Manager coding chat]
+    manager --> controller[Program CLI or MCP and retained host]
+    controller --> memory[SQLite program and evidence graph]
+    controller --> launcher[Existing hp-sim5-research-agent]
+    launcher --> chat[Worker Codex or Claude conversation]
+    controller --> review[Separate fixed-evidence reviewer]
+    review --> controller
+    controller --> integration[Combined candidate and relevant checks]
+    chat --> tools[hp-sim5 MCP tools]
     tools --> fresh[Fresh trial with native Rust worker]
     tools --> supervisor[Launcher-owned supervisor]
     supervisor --> continuing[Continuing physics, RRF and collector]

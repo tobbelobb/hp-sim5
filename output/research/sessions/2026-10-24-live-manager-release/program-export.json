@@ -1,0 +1,803 @@
+{
+  "format_version": 1,
+  "program": {
+    "id": "program-bbcc825bf93241c3a002bebe76f106bc",
+    "question_id": "question-b7028a1a6fdd45b59315cfb7ea696e66",
+    "goal": "Can fixed saved HP3 measurements distinguish a useful calibration-fit improvement from selection-only consensus changes?",
+    "state": "stopped",
+    "revision": 38,
+    "created_at": "2026-10-24T14:43:37.907932+00:00",
+    "updated_at": "2026-10-24T14:49:51.576819+00:00",
+    "constraints": {
+      "automatic_stopping": true,
+      "hardware_claims": false,
+      "same_measurements": true
+    }
+  },
+  "records": [
+    {
+      "id": "question-b7028a1a6fdd45b59315cfb7ea696e66",
+      "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+      "kind": "question",
+      "title": "Can fixed saved HP3 measurements distinguish a useful calibration-fit improvement from selection-only consensus changes?",
+      "revision": 1,
+      "created_at": "2026-10-24T14:43:37.908590+00:00",
+      "updated_at": "2026-10-24T14:43:37.908590+00:00",
+      "details": {
+        "knowledge_state": "unassessed",
+        "scope": {}
+      }
+    },
+    {
+      "id": "fit-route",
+      "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+      "kind": "approach",
+      "title": "one production bounded fit on a fixed saved HP3 dataset",
+      "revision": 1,
+      "created_at": "2026-10-24T14:43:38.244682+00:00",
+      "updated_at": "2026-10-24T14:43:38.244682+00:00",
+      "details": {
+        "question_id": "question-b7028a1a6fdd45b59315cfb7ea696e66",
+        "reason": "exercise managed worker and production fitting without new measurements",
+        "state": "live"
+      }
+    },
+    {
+      "id": "fit-route-plan",
+      "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+      "kind": "route_plan",
+      "title": "exercise managed worker and production fitting without new measurements",
+      "revision": 1,
+      "created_at": "2026-10-24T14:43:38.347695+00:00",
+      "updated_at": "2026-10-24T14:43:38.347695+00:00",
+      "details": {
+        "approach_id": "fit-route",
+        "citation_ids": [],
+        "decision_value": "Separate fit behavior from membership effects",
+        "dependency_ids": [],
+        "estimated_cost": {
+          "wall_minutes": 2
+        },
+        "hypothesis": "exercise managed worker and production fitting without new measurements",
+        "novelty": "Integration pilot on saved evidence",
+        "objections": [],
+        "observation": "one production bounded fit on a fixed saved HP3 dataset",
+        "priority": 10,
+        "reason": "exercise managed worker and production fitting without new measurements",
+        "reopening_condition": "Real launcher and separate client review work within the saved-data scope",
+        "retry_key": "27a565be2e7005bf68d67bac4a5192a69dfd56eed8204555b7af4b6e60a61eb3",
+        "retry_limit": 1,
+        "scope": {
+          "machine": "HP3",
+          "same_measurements": true
+        },
+        "tradeoffs": [],
+        "uncertainty": "No new managed scientific result yet"
+      }
+    },
+    {
+      "id": "membership-route",
+      "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+      "kind": "approach",
+      "title": "inspect frozen selection-only consensus evidence and original baselines",
+      "revision": 1,
+      "created_at": "2026-10-24T14:43:38.450777+00:00",
+      "updated_at": "2026-10-24T14:43:38.450777+00:00",
+      "details": {
+        "question_id": "question-b7028a1a6fdd45b59315cfb7ea696e66",
+        "reason": "review a useful scoped negative decision using saved CM-E1 evidence",
+        "state": "live"
+      }
+    },
+    {
+      "id": "membership-route-plan",
+      "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+      "kind": "route_plan",
+      "title": "review a useful scoped negative decision using saved CM-E1 evidence",
+      "revision": 1,
+      "created_at": "2026-10-24T14:43:38.554059+00:00",
+      "updated_at": "2026-10-24T14:43:38.554059+00:00",
+      "details": {
+        "approach_id": "membership-route",
+        "citation_ids": [],
+        "decision_value": "Separate fit behavior from membership effects",
+        "dependency_ids": [],
+        "estimated_cost": {
+          "wall_minutes": 2
+        },
+        "hypothesis": "review a useful scoped negative decision using saved CM-E1 evidence",
+        "novelty": "Integration pilot on saved evidence",
+        "objections": [],
+        "observation": "inspect frozen selection-only consensus evidence and original baselines",
+        "priority": 20,
+        "reason": "review a useful scoped negative decision using saved CM-E1 evidence",
+        "reopening_condition": "Real launcher and separate client review work within the saved-data scope",
+        "retry_key": "4f5892f42880df2216b358ced0736b3172c5b2b48c4cd06213c1088335e40780",
+        "retry_limit": 1,
+        "scope": {
+          "machine": "HP3",
+          "same_measurements": true
+        },
+        "tradeoffs": [],
+        "uncertainty": "No new managed scientific result yet"
+      }
+    },
+    {
+      "id": "fit-assignment",
+      "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+      "kind": "assignment",
+      "title": "Run one production fit on at most 30 points of autocal/data/references/five_points_bigger_deltas.json, with one restart and max_iterations 25. Record selected-input hash, actual points, cost, nfev and termination. This is bounded integration evidence; do not claim calibration accuracy or improvement without a fair comparator.",
+      "revision": 4,
+      "created_at": "2026-10-24T14:43:38.657789+00:00",
+      "updated_at": "2026-10-24T14:43:43.107717+00:00",
+      "details": {
+        "allocation": {
+          "collections": 0,
+          "fresh_fits": 1,
+          "max_fit_evaluations": 25,
+          "physics_steps": 0,
+          "points": 30,
+          "wall_minutes": 2
+        },
+        "approach_id": "fit-route",
+        "execution_state": "failed",
+        "knowledge_state": "unassessed",
+        "question_id": "question-b7028a1a6fdd45b59315cfb7ea696e66",
+        "review_state": "unreviewed"
+      }
+    },
+    {
+      "id": "decision-fa47178778c543c09616f9a34bf68100",
+      "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+      "kind": "decision",
+      "title": "One bounded saved-data production fit",
+      "revision": 1,
+      "created_at": "2026-10-24T14:43:38.764591+00:00",
+      "updated_at": "2026-10-24T14:43:38.764591+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "fit-assignment"
+      }
+    },
+    {
+      "id": "saved-assignment",
+      "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+      "kind": "assignment",
+      "title": "Inspect CM-E1 results.json and report.md, verify saved inputs and scoped negative membership-default decision. Preserve original scope and do not rerun science.",
+      "revision": 2,
+      "created_at": "2026-10-24T14:43:38.867868+00:00",
+      "updated_at": "2026-10-24T14:43:38.971055+00:00",
+      "details": {
+        "allocation": {
+          "collections": 0,
+          "fresh_fits": 0,
+          "physics_steps": 0,
+          "wall_minutes": 2
+        },
+        "approach_id": "membership-route",
+        "execution_state": "ready",
+        "knowledge_state": "unassessed",
+        "question_id": "question-b7028a1a6fdd45b59315cfb7ea696e66",
+        "review_state": "unreviewed"
+      }
+    },
+    {
+      "id": "decision-c8f90e0c091b470a8d86f0e5ac3115d2",
+      "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+      "kind": "decision",
+      "title": "Saved-evidence route prepared, not dispatched",
+      "revision": 1,
+      "created_at": "2026-10-24T14:43:38.971132+00:00",
+      "updated_at": "2026-10-24T14:43:38.971132+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "saved-assignment"
+      }
+    },
+    {
+      "id": "runtime_allocation-ee9c9909f4d440a780350145176173b8",
+      "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+      "kind": "runtime_allocation",
+      "title": "Finite manager allocation",
+      "revision": 7,
+      "created_at": "2026-10-24T14:43:39.074513+00:00",
+      "updated_at": "2026-10-24T14:49:42.431928+00:00",
+      "details": {
+        "cleanup_deadline": 1792853519.0743117,
+        "cleanup_seconds": 20,
+        "deadline": 1792853499.0743117,
+        "events": [],
+        "lease_until": 1792853391.0100899,
+        "owner": {
+          "id": "controller-ba62fca36c4d4e98aac80345b53373aa",
+          "process": {
+            "birth": "8193432",
+            "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+            "group": 52966,
+            "host": "2df9bd87a6a7",
+            "pid": 52966,
+            "uid": 1000
+          }
+        },
+        "queue": [],
+        "reservations": [
+          {
+            "assignment_id": "fit-assignment",
+            "attempt_id": "attempt-c4f103629fb948949279aa671a03b84d",
+            "charged_at": "2026-10-24T14:43:39.181419+00:00",
+            "retry_root": null,
+            "review_pending": false,
+            "review_seconds": 60,
+            "reviews": [],
+            "settings": {
+              "backend": "codex",
+              "client_args": [],
+              "dont_ask": false,
+              "goal_mode": true,
+              "machine": "hp3",
+              "physics_backend": "headless-js",
+              "record": false,
+              "shared_runtime_write": false,
+              "viewer": "none",
+              "worktree": true
+            },
+            "state": "failed",
+            "superseded_by": "runtime_allocation-c82c4837c8274b37a82a659d7723c896",
+            "usage": {
+              "estimates": {
+                "collections": 0,
+                "fresh_fits": 1,
+                "max_fit_evaluations": 25,
+                "physics_steps": 0,
+                "points": 30,
+                "wall_minutes": 2
+              },
+              "observed_worker_wall_seconds": 3.896246910095215,
+              "supervisor_observations": [],
+              "unmetered": [
+                "shell movement",
+                "shell compute",
+                "spend"
+              ],
+              "worker_reports": []
+            },
+            "worker_seconds": 120
+          }
+        ],
+        "retry_limit": 1,
+        "review_backlog_limit": 1,
+        "review_seconds": 60,
+        "started_at": "2026-10-24T14:43:39.074394+00:00",
+        "state": "stopped",
+        "task_limit": 2,
+        "wall_reserved_seconds": 180,
+        "wall_seconds": 480,
+        "worker_limit": 1
+      }
+    },
+    {
+      "id": "attempt-c4f103629fb948949279aa671a03b84d",
+      "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+      "kind": "attempt",
+      "title": "Run one production fit on at most 30 points of autocal/data/references/five_points_bigger_deltas.json, with one restart and max_iterations 25. Record selected-input hash, actual points, cost, nfev and termination. This is bounded integration evidence; do not claim calibration accuracy or improvement without a fair comparator.",
+      "revision": 8,
+      "created_at": "2026-10-24T14:43:39.208455+00:00",
+      "updated_at": "2026-10-24T14:43:43.107635+00:00",
+      "details": {
+        "allocation": {
+          "collections": 0,
+          "fresh_fits": 1,
+          "max_fit_evaluations": 25,
+          "physics_steps": 0,
+          "points": 30,
+          "wall_minutes": 2
+        },
+        "argv": [
+          "/workspace/hp-sim5/hp-sim5-research-agent",
+          "--codex",
+          "--batch",
+          "--prompt-file",
+          "/workspace/hp-sim5/.research-programs/task016-private/store/workers/attempt-c4f103629fb948949279aa671a03b84d/prompt.txt",
+          "--session-dir",
+          "/workspace/hp-sim5/output/research/sessions/attempt-c4f103629fb948949279aa671a03b84d",
+          "--physics-backend",
+          "headless-js",
+          "--machine",
+          "hp3",
+          "--viewer",
+          "none",
+          "--wall-deadline",
+          "1792853139.1831996",
+          "--worktree",
+          "--no-record"
+        ],
+        "artifacts": [
+          {
+            "bytes": 432,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-c4f103629fb948949279aa671a03b84d/session.json"
+          },
+          {
+            "bytes": 78,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-c4f103629fb948949279aa671a03b84d/exit.json"
+          },
+          {
+            "bytes": 3918,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-c4f103629fb948949279aa671a03b84d/prompt.txt"
+          },
+          {
+            "bytes": 4131,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-c4f103629fb948949279aa671a03b84d/research.md"
+          },
+          {
+            "bytes": 522,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-c4f103629fb948949279aa671a03b84d/abstract.md"
+          },
+          {
+            "bytes": 76,
+            "partial": true,
+            "path": "/workspace/hp-sim5/.research-programs/task016-private/store/workers/attempt-c4f103629fb948949279aa671a03b84d/stdout.log"
+          },
+          {
+            "bytes": 975,
+            "partial": true,
+            "path": "/workspace/hp-sim5/.research-programs/task016-private/store/workers/attempt-c4f103629fb948949279aa671a03b84d/stderr.log"
+          },
+          {
+            "bytes": 3918,
+            "partial": true,
+            "path": "/workspace/hp-sim5/.research-programs/task016-private/store/workers/attempt-c4f103629fb948949279aa671a03b84d/prompt.txt"
+          },
+          {
+            "bytes": 1899,
+            "partial": true,
+            "path": "/workspace/hp-sim5/.research-programs/task016-private/store/workers/attempt-c4f103629fb948949279aa671a03b84d/assignment.json"
+          }
+        ],
+        "assignment_id": "fit-assignment",
+        "attempt_dir": "/workspace/hp-sim5/.research-programs/task016-private/store/workers/attempt-c4f103629fb948949279aa671a03b84d",
+        "cleanup": "launcher_finally_completed",
+        "diagnostics": [],
+        "exited_at": "2026-10-24T14:43:43.106941+00:00",
+        "launcher_exit": {
+          "returncode": 1,
+          "wall_deadline": 1792853139.1831996,
+          "wall_expired": false
+        },
+        "launcher_session_id": "adf6c170784649e29c1c984484bcb1c8",
+        "observations": [
+          {
+            "at": "2026-10-24T14:43:39.208198+00:00",
+            "event": "reserved"
+          },
+          {
+            "at": "2026-10-24T14:43:39.210699+00:00",
+            "event": "spawned",
+            "pid": 53010
+          },
+          {
+            "at": "2026-10-24T14:43:43.106959+00:00",
+            "event": "exited",
+            "returncode": 1
+          }
+        ],
+        "observed_wall_seconds": 3.896246910095215,
+        "owner": {
+          "id": "dispatcher-e730d6ebcba14f36a50e006ffa578373",
+          "process": {
+            "birth": "8193432",
+            "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+            "group": 52966,
+            "host": "2df9bd87a6a7",
+            "pid": 52966,
+            "uid": 1000
+          }
+        },
+        "premise_conflicts": [],
+        "premise_event_ids_at_start": [],
+        "premise_ids": [],
+        "premise_plan_ids": [
+          "fit-route-plan"
+        ],
+        "process": {
+          "birth": "8193562",
+          "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+          "group": 53010,
+          "host": "2df9bd87a6a7",
+          "pid": 53010,
+          "uid": 1000
+        },
+        "prompt_sha256": "1fb85215d4f0b60562a845d3569a0acc63c388e3515fb09887c6efd2de9e15e3",
+        "returncode": 1,
+        "runtime": {
+          "allocation_id": "runtime_allocation-ee9c9909f4d440a780350145176173b8",
+          "assignment_id": "fit-assignment",
+          "cleanup_seconds": 20,
+          "wall_deadline": 1792853139.1831996
+        },
+        "scientific_state": "unassessed",
+        "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-c4f103629fb948949279aa671a03b84d",
+        "settings": {
+          "backend": "codex",
+          "client_args": [],
+          "dont_ask": false,
+          "goal_mode": true,
+          "machine": "hp3",
+          "physics_backend": "headless-js",
+          "record": false,
+          "shared_runtime_write": false,
+          "viewer": "none",
+          "worktree": true
+        },
+        "source_dirty": true,
+        "source_revision": "b15697fb50edd4ac2c358051c77ddce57abeacea",
+        "started_at": "2026-10-24T14:43:39.210694+00:00",
+        "state": "failed",
+        "worktree": {
+          "branch": "research/bounded-research-assignment-bbf1fbc5",
+          "repo": "/workspace/hp-sim5-worktrees/bounded-research-assignment-bbf1fbc5",
+          "source_revision": "b15697fb50edd4ac2c358051c77ddce57abeacea"
+        },
+        "worktree_id": "/workspace/hp-sim5-worktrees/bounded-research-assignment-bbf1fbc5"
+      }
+    },
+    {
+      "id": "startup-only",
+      "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+      "kind": "claim",
+      "title": "The pilot worker stopped at native build before science; both hypotheses are not tested",
+      "revision": 1,
+      "created_at": "2026-10-24T14:45:17.789221+00:00",
+      "updated_at": "2026-10-24T14:45:17.789221+00:00",
+      "details": {
+        "claim_key": "startup-only",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "attempt_id": "attempt-c4f103629fb948949279aa671a03b84d",
+          "type": "engineering-startup-only"
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "submission-eb9a518f42004aaa8b335cf3f741df85",
+      "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+      "kind": "submission",
+      "title": "The pilot worker stopped at native build before science; both hypotheses are not tested",
+      "revision": 1,
+      "created_at": "2026-10-24T14:45:17.904800+00:00",
+      "updated_at": "2026-10-24T14:45:17.904800+00:00",
+      "details": {
+        "manifest": {
+          "assets": [
+            {
+              "artifact_id": null,
+              "id": "report",
+              "missing": false,
+              "role": "report",
+              "sha256": "dc06c5a2a667430833fd13e010d7e3d17595093336e9d28edc3ac0a1dce398e7",
+              "source": "/workspace/hp-sim5/output/research/sessions/2026-10-24-live-manager-release/startup-partial.md"
+            },
+            {
+              "artifact_id": null,
+              "id": "abstract",
+              "missing": false,
+              "role": "abstract",
+              "sha256": "a9004e544b437af05079224b0255ca148cefe79d92833c2000afb8f7b5218644",
+              "source": "/workspace/hp-sim5/output/research/sessions/2026-10-24-live-manager-release/startup-abstract.md"
+            },
+            {
+              "artifact_id": null,
+              "id": "stderr",
+              "missing": false,
+              "role": "evidence",
+              "sha256": "28016387b85c81295102cd8f8982b6cd5471c9bc9934d263e9782bb0cd31646b",
+              "source": "/workspace/hp-sim5/output/research/sessions/2026-10-24-live-manager-release/worker-stderr.log"
+            }
+          ],
+          "assignment_id": "fit-assignment",
+          "attempt_id": "attempt-c4f103629fb948949279aa671a03b84d",
+          "base_revision": "b15697fb50edd4ac2c358051c77ddce57abeacea",
+          "candidate_revision": null,
+          "changed_paths": [],
+          "claim": {
+            "created_at": "2026-10-24T14:45:17.789221+00:00",
+            "details": {
+              "claim_key": "startup-only",
+              "knowledge_state": "unassessed",
+              "scope": {
+                "attempt_id": "attempt-c4f103629fb948949279aa671a03b84d",
+                "type": "engineering-startup-only"
+              },
+              "version": 1
+            },
+            "id": "startup-only",
+            "kind": "claim",
+            "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+            "revision": 1,
+            "title": "The pilot worker stopped at native build before science; both hypotheses are not tested",
+            "updated_at": "2026-10-24T14:45:17.789221+00:00"
+          },
+          "config": {
+            "science": "not-tested",
+            "scope": "startup-only"
+          },
+          "contract": "hp-sim5-evidence-review-v2",
+          "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_state": "failed",
+          "input_identities": [
+            "git:b15697fb50edd4ac2c358051c77ddce57abeacea"
+          ],
+          "physics_gate_required": false,
+          "producer_checks": [],
+          "source_dirty": true,
+          "source_revision": "b15697fb50edd4ac2c358051c77ddce57abeacea"
+        },
+        "sha256": "3df8d82605d0b9e8be715dd042287b2ea528baf377ef662a1f7a8334d439ea6e"
+      }
+    },
+    {
+      "id": "runtime_allocation-c82c4837c8274b37a82a659d7723c896",
+      "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+      "kind": "runtime_allocation",
+      "title": "Reserved saved-evidence review",
+      "revision": 6,
+      "created_at": "2026-10-24T14:49:42.431623+00:00",
+      "updated_at": "2026-10-24T14:49:51.576879+00:00",
+      "details": {
+        "cleanup_deadline": 1792853403.0313945,
+        "cleanup_seconds": 5,
+        "deadline": 1792853398.0313945,
+        "events": [],
+        "lease_until": 1792853402.4376562,
+        "owner": {
+          "id": "controller-88951be64dc047c0bb6cde77e558706b",
+          "process": {
+            "birth": "8229306",
+            "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+            "group": 54281,
+            "host": "2df9bd87a6a7",
+            "pid": 54281,
+            "uid": 1000
+          }
+        },
+        "queue": [],
+        "reservations": [
+          {
+            "assignment_id": "fit-assignment",
+            "attempt_id": "attempt-c4f103629fb948949279aa671a03b84d",
+            "charged_at": "2026-10-24T14:49:42.431423+00:00",
+            "review_pending": true,
+            "review_seconds": 15.0,
+            "reviews": [
+              {
+                "charge_id": "651edc0a30634357ae507f4b6875ec50",
+                "reserved_seconds": 15.0,
+                "run_id": "review-run-ac0d1abde2d54aa093b6cbcea8879c6e",
+                "state": "failed"
+              }
+            ],
+            "state": "failed",
+            "usage": {
+              "estimates": {},
+              "observed_worker_wall_seconds": 3.896246910095215,
+              "supervisor_observations": [],
+              "unmetered": [
+                "shell movement",
+                "shell compute",
+                "spend"
+              ],
+              "worker_reports": []
+            },
+            "worker_seconds": 0
+          }
+        ],
+        "retry_limit": 1,
+        "review_backlog_limit": 1,
+        "review_seconds": 15.0,
+        "started_at": "2026-10-24T14:49:42.431405+00:00",
+        "state": "stopped",
+        "task_limit": 1,
+        "wall_reserved_seconds": 15.0,
+        "wall_seconds": 15.600000000000001
+      }
+    },
+    {
+      "id": "review-run-ac0d1abde2d54aa093b6cbcea8879c6e",
+      "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+      "kind": "review_run",
+      "title": "Separate saved-evidence review",
+      "revision": 3,
+      "created_at": "2026-10-24T14:49:42.541243+00:00",
+      "updated_at": "2026-10-24T14:49:42.648459+00:00",
+      "details": {
+        "argv": [
+          "codex",
+          "exec",
+          "--cd",
+          "/workspace/hp-sim5",
+          "--sandbox",
+          "read-only",
+          "-c",
+          "approval_policy=\"never\"",
+          "--json",
+          "--output-last-message",
+          "/workspace/hp-sim5/.research-programs/task016-private/store/reviews/review-run-ac0d1abde2d54aa093b6cbcea8879c6e/final-message.md",
+          "-c",
+          "sandbox_workspace_write.network_access=true",
+          "-c",
+          "sandbox_workspace_write.writable_roots=[\"/workspace/hp-sim5/output\"]",
+          "-c",
+          "features.default_mode_request_user_input=false",
+          "-c",
+          "features.goals=false",
+          "-c",
+          "mcp_servers.hp_sim5={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/python\", \"args\" = [\"/workspace/hp-sim5/scripts/hp_sim5_mcp.py\"] }",
+          "-c",
+          "mcp_servers.rerun={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/rerun\", \"args\" = [\"viewer-mcp\"] }",
+          "-c",
+          "model_provider=\"openai\"",
+          "-"
+        ],
+        "contract": "hp-sim5-evidence-review-v2",
+        "deadline": 1792853397.5408888,
+        "directory": "/workspace/hp-sim5/.research-programs/task016-private/store/reviews/review-run-ac0d1abde2d54aa093b6cbcea8879c6e",
+        "error": "Reviewer exited 1; no assessment admitted",
+        "guard_argv": [
+          "/workspace/hp-sim5/.venv/bin/python",
+          "/workspace/hp-sim5/scripts/research_program_review_guard.py",
+          "1792853397.5408888",
+          "/workspace/hp-sim5/.research-programs/task016-private/store/reviews/review-run-ac0d1abde2d54aa093b6cbcea8879c6e/wall-expired",
+          "codex",
+          "exec",
+          "--cd",
+          "/workspace/hp-sim5",
+          "--sandbox",
+          "read-only",
+          "-c",
+          "approval_policy=\"never\"",
+          "--json",
+          "--output-last-message",
+          "/workspace/hp-sim5/.research-programs/task016-private/store/reviews/review-run-ac0d1abde2d54aa093b6cbcea8879c6e/final-message.md",
+          "-c",
+          "sandbox_workspace_write.network_access=true",
+          "-c",
+          "sandbox_workspace_write.writable_roots=[\"/workspace/hp-sim5/output\"]",
+          "-c",
+          "features.default_mode_request_user_input=false",
+          "-c",
+          "features.goals=false",
+          "-c",
+          "mcp_servers.hp_sim5={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/python\", \"args\" = [\"/workspace/hp-sim5/scripts/hp_sim5_mcp.py\"] }",
+          "-c",
+          "mcp_servers.rerun={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/rerun\", \"args\" = [\"viewer-mcp\"] }",
+          "-c",
+          "model_provider=\"openai\"",
+          "-"
+        ],
+        "owner": {
+          "id": "review-controller-77876c352572434abcb64d48cab06ae4",
+          "process": {
+            "birth": "8229306",
+            "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+            "group": 54281,
+            "host": "2df9bd87a6a7",
+            "pid": 54281,
+            "uid": 1000
+          }
+        },
+        "process": {
+          "birth": "8229895",
+          "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+          "group": 54320,
+          "host": "2df9bd87a6a7",
+          "pid": 54320,
+          "uid": 1000
+        },
+        "prompt_sha256": "791ba40239b2599cdc92ef2d2385e7374d1d0cc6f1d27ac26490da514efaa001",
+        "returncode": 1,
+        "review_id": null,
+        "reviewer": {
+          "backend": "codex",
+          "context_id": "review-run-ac0d1abde2d54aa093b6cbcea8879c6e",
+          "model": null,
+          "model_provider": "openai"
+        },
+        "runtime_reservation": [
+          "runtime_allocation-c82c4837c8274b37a82a659d7723c896",
+          "fit-assignment",
+          "651edc0a30634357ae507f4b6875ec50"
+        ],
+        "started_at": "2026-10-24T14:49:42.540867+00:00",
+        "state": "failed",
+        "submission_id": "submission-eb9a518f42004aaa8b335cf3f741df85",
+        "submission_sha256": "3df8d82605d0b9e8be715dd042287b2ea528baf377ef662a1f7a8334d439ea6e",
+        "wall_minutes": 0.25
+      }
+    },
+    {
+      "id": "steering-64e3b21464f94744b08a6cceec68887c",
+      "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+      "kind": "steering",
+      "title": "Preserve startup failure and suspend numerical dispatch until the documented prerequisites work",
+      "revision": 1,
+      "created_at": "2026-10-24T14:49:51.153489+00:00",
+      "updated_at": "2026-10-24T14:49:51.153489+00:00",
+      "details": {
+        "actor": "human",
+        "evidence_ids": [],
+        "subject_id": null
+      }
+    },
+    {
+      "id": "human_input-4d08b980a44744398e674199c019cac2",
+      "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+      "kind": "human_input",
+      "title": "Preserve startup failure and suspend numerical dispatch until the documented prerequisites work",
+      "revision": 1,
+      "created_at": "2026-10-24T14:49:51.153549+00:00",
+      "updated_at": "2026-10-24T14:49:51.153549+00:00",
+      "details": {
+        "citation_ids": [
+          "steering-64e3b21464f94744b08a6cceec68887c"
+        ],
+        "intent": "instruction",
+        "links": [],
+        "next_assignment_id": null,
+        "provenance": {
+          "actor": "manager recording existing direction",
+          "source": "task016 release-gate constraints"
+        },
+        "steering_id": "steering-64e3b21464f94744b08a6cceec68887c"
+      }
+    },
+    {
+      "id": "decision-ff13cb786901402b93b1b4c3348699ad",
+      "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+      "kind": "decision",
+      "title": "Actual worker and client prerequisites prevent the pilot",
+      "revision": 1,
+      "created_at": "2026-10-24T14:49:51.257626+00:00",
+      "updated_at": "2026-10-24T14:49:51.257626+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "program-bbcc825bf93241c3a002bebe76f106bc"
+      }
+    },
+    {
+      "id": "decision-5e263141f847402782abc3cbaa4a4006",
+      "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+      "kind": "decision",
+      "title": "Inspect durable state and stop this finite pilot without scientific admission",
+      "revision": 1,
+      "created_at": "2026-10-24T14:49:51.365274+00:00",
+      "updated_at": "2026-10-24T14:49:51.365274+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "program-bbcc825bf93241c3a002bebe76f106bc"
+      }
+    },
+    {
+      "id": "decision-a7073a4ee0054f1889e30c9b4ce516f8",
+      "program_id": "program-bbcc825bf93241c3a002bebe76f106bc",
+      "kind": "decision",
+      "title": "Live release blocked; preserve partial evidence and stop owned work",
+      "revision": 1,
+      "created_at": "2026-10-24T14:49:51.575184+00:00",
+      "updated_at": "2026-10-24T14:49:51.575184+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "program-bbcc825bf93241c3a002bebe76f106bc"
+      }
+    }
+  ]
+}

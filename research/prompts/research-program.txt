@@ -8,6 +8,13 @@ durable graph tools and worker delegation, use research/prompts/research-manager
 and research/program-manager.md. That implementation uses the existing
 hp-sim5-research-agent as its worker and has a separate live release gate.
 
+When dispatched with a bounded manager assignment, preserve its program,
+assignment and attempt identities. Keep research.md, report.md and abstract.md
+current in the supplied session. Record actual source/input/configuration and
+usage; preserve partial failures. Return candidate/evidence paths for fixed
+separate review. Do not admit claims, rewrite the manager's route decisions or
+merge/push candidate code merely because execution completed.
+
 Start with research/program.md, research/catalog.md and a targeted search of the
 local research catalog. Read only the abstracts, evidence and current code that
 can change the decision. Use an existing relevant agenda, such as
