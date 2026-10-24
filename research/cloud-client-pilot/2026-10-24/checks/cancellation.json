@@ -1,0 +1,8 @@
+{
+  "attempt_id": "attempt-e7bb4a742d144b1eaf33c223c8428d23",
+  "execution_state": "cancelled",
+  "cleanup_observation": "launcher_finally_completed",
+  "returncode": 130,
+  "actual_cloud_actor_state": "interrupted",
+  "numerical_steps": 0
+}

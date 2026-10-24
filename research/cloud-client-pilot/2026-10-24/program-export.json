@@ -1,0 +1,2216 @@
+{
+  "format_version": 1,
+  "program": {
+    "id": "program-387d94c6067647b6964aa267122d7989",
+    "question_id": "question-f91d3c10cc09467e9911f8c0e543eab7",
+    "goal": "Can cloud agents execute and independently review a bounded HP3 simulation?",
+    "state": "active",
+    "revision": 98,
+    "created_at": "2026-10-24T20:09:39.050096+00:00",
+    "updated_at": "2026-10-24T20:58:29.231063+00:00",
+    "constraints": {
+      "fresh_fits": 0,
+      "hardware_claims": false,
+      "physics_steps": 200,
+      "simulated_seconds": 0.4
+    }
+  },
+  "records": [
+    {
+      "id": "question-f91d3c10cc09467e9911f8c0e543eab7",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "question",
+      "title": "Can cloud agents execute and independently review a bounded HP3 simulation?",
+      "revision": 1,
+      "created_at": "2026-10-24T20:09:39.051569+00:00",
+      "updated_at": "2026-10-24T20:09:39.051569+00:00",
+      "details": {
+        "knowledge_state": "unassessed",
+        "scope": {}
+      }
+    },
+    {
+      "id": "cloud-native-agents",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "approach",
+      "title": "Cloud-authenticated workers and reviewers",
+      "revision": 2,
+      "created_at": "2026-10-24T20:33:46.113224+00:00",
+      "updated_at": "2026-10-24T20:52:42.558463+00:00",
+      "details": {
+        "question_id": "question-f91d3c10cc09467e9911f8c0e543eab7",
+        "reason": "Two actual authenticated cloud workers and separate fixed reviews completed without extra credentials; retain active-parent and isolation limits",
+        "state": "promising"
+      }
+    },
+    {
+      "id": "nested-cli",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "approach",
+      "title": "Nested Codex CLI",
+      "revision": 2,
+      "created_at": "2026-10-24T20:33:46.168214+00:00",
+      "updated_at": "2026-10-24T20:52:42.686260+00:00",
+      "details": {
+        "question_id": "question-f91d3c10cc09467e9911f8c0e543eab7",
+        "reason": "Inherited CLI authentication failed and additional credentials violate the explicit user constraint; this is not a calibration hypothesis result",
+        "state": "parked"
+      }
+    },
+    {
+      "id": "existing-login-only",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "steering",
+      "title": "No additional login and no API key. Research must use the login already made for the cloud chat.",
+      "revision": 1,
+      "created_at": "2026-10-24T20:33:46.221434+00:00",
+      "updated_at": "2026-10-24T20:33:46.221434+00:00",
+      "details": {
+        "actor": "human",
+        "evidence_ids": [],
+        "subject_id": null
+      }
+    },
+    {
+      "id": "human_input-81cfe5be01ef48e69f85274d07137e39",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "human_input",
+      "title": "No additional login and no API key. Research must use the login already made for the cloud chat.",
+      "revision": 1,
+      "created_at": "2026-10-24T20:33:46.221508+00:00",
+      "updated_at": "2026-10-24T20:33:46.221508+00:00",
+      "details": {
+        "citation_ids": [
+          "existing-login-only"
+        ],
+        "intent": "note",
+        "links": [],
+        "next_assignment_id": null,
+        "provenance": {
+          "source": "current user message"
+        },
+        "steering_id": "existing-login-only"
+      }
+    },
+    {
+      "id": "decision-b702cd8d92c244b395440dfeb5143453",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "decision",
+      "title": "Retain native/MCP validation. Test cloud-native delegation with saved production evidence. No nested CLI authentication workaround is acceptable.",
+      "revision": 1,
+      "created_at": "2026-10-24T20:33:46.276411+00:00",
+      "updated_at": "2026-10-24T20:33:46.276411+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "cloud-native-agents"
+      }
+    },
+    {
+      "id": "cloud-native-operation",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "assignment",
+      "title": "Use the launcher-attached real physics MCP to run at most 100 fresh HP3 native steps, verify telemetry/recording readback, and report exact source/input/engine identities. This is cloud tool feasibility, not calibration accuracy.",
+      "revision": 4,
+      "created_at": "2026-10-24T20:39:38.416910+00:00",
+      "updated_at": "2026-10-24T20:42:35.489078+00:00",
+      "details": {
+        "allocation": {
+          "collections": 0,
+          "fresh_fits": 0,
+          "physics_steps": 100,
+          "wall_minutes": 3
+        },
+        "approach_id": "cloud-native-agents",
+        "execution_state": "completed",
+        "knowledge_state": "unassessed",
+        "question_id": "question-f91d3c10cc09467e9911f8c0e543eab7",
+        "review_state": "unreviewed"
+      }
+    },
+    {
+      "id": "decision-c1edde9c267541c3852227b9f4c64311",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "decision",
+      "title": "Explicit keyless cloud-session assignment with finite numerical and wall caps",
+      "revision": 1,
+      "created_at": "2026-10-24T20:39:38.472264+00:00",
+      "updated_at": "2026-10-24T20:39:38.472264+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "cloud-native-operation"
+      }
+    },
+    {
+      "id": "cloud-saved-evidence",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "assignment",
+      "title": "Inspect the fixed saved cloud-native production artifacts and determine what they do and do not establish about full autonomous cloud research. No new simulation or fitting. Report an explicitly scoped limitation and a route recommendation.",
+      "revision": 4,
+      "created_at": "2026-10-24T20:39:38.526250+00:00",
+      "updated_at": "2026-10-24T20:50:34.157071+00:00",
+      "details": {
+        "allocation": {
+          "collections": 0,
+          "fresh_fits": 0,
+          "physics_steps": 0,
+          "wall_minutes": 3
+        },
+        "approach_id": "cloud-native-agents",
+        "execution_state": "completed",
+        "knowledge_state": "unassessed",
+        "question_id": "question-f91d3c10cc09467e9911f8c0e543eab7",
+        "review_state": "unreviewed"
+      }
+    },
+    {
+      "id": "decision-f60c9856424a4a888b3f812727a1f93b",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "decision",
+      "title": "Explicit keyless cloud-session assignment with finite numerical and wall caps",
+      "revision": 1,
+      "created_at": "2026-10-24T20:39:38.581358+00:00",
+      "updated_at": "2026-10-24T20:39:38.581358+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "cloud-saved-evidence"
+      }
+    },
+    {
+      "id": "runtime_allocation-96215bd76d86407f9cfcefa2590f2bce",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "runtime_allocation",
+      "title": "Finite manager allocation",
+      "revision": 10,
+      "created_at": "2026-10-24T20:39:38.637063+00:00",
+      "updated_at": "2026-10-24T20:47:33.330969+00:00",
+      "details": {
+        "cleanup_deadline": 1792875308.6369336,
+        "cleanup_seconds": 30,
+        "deadline": 1792875278.6369336,
+        "events": [
+          {
+            "at": "2026-10-24T20:47:33.266956+00:00",
+            "event": "allocation_stopped",
+            "reason": "Preserve the failed invalid-asset-citation review. Retry and funding guards conflicted on the old allocation; end it before an explicit bounded review handoff."
+          }
+        ],
+        "lease_until": 1792874867.3990636,
+        "owner": {
+          "id": "controller-f04b15f291f1484d97fd97cda6d9b04b",
+          "process": {
+            "birth": "47455444",
+            "boot_id": "9b241de8-e25e-4ea0-8a92-fac368ee5eb2",
+            "group": 513102,
+            "host": "f3095127ea1c",
+            "pid": 513102,
+            "uid": 1000
+          }
+        },
+        "queue": [],
+        "reservations": [
+          {
+            "assignment_id": "cloud-native-operation",
+            "attempt_id": "attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f",
+            "charged_at": "2026-10-24T20:39:38.693476+00:00",
+            "retry_root": null,
+            "review_pending": true,
+            "review_seconds": 120,
+            "reviews": [
+              {
+                "charge_id": "cca5049cac7c48579a1a710db3c4abf4",
+                "reserved_seconds": 120,
+                "run_id": "review-run-428751c978a24397ba9e5d7449176c2f",
+                "state": "failed"
+              }
+            ],
+            "settings": {
+              "backend": "codex",
+              "client_args": [],
+              "dont_ask": false,
+              "goal_mode": false,
+              "machine": "hp3",
+              "physics_backend": "headless-js",
+              "record": false,
+              "shared_runtime_write": false,
+              "viewer": "none",
+              "worktree": false
+            },
+            "state": "submitted",
+            "superseded_by": "runtime_allocation-8420c106f33741b1ad594a52a3f2ec1a",
+            "usage": {
+              "estimates": {
+                "collections": 0,
+                "fresh_fits": 0,
+                "physics_steps": 100,
+                "wall_minutes": 3
+              },
+              "observed_worker_wall_seconds": 176.70734095573425,
+              "supervisor_observations": [],
+              "unmetered": [
+                "shell movement",
+                "shell compute",
+                "spend"
+              ],
+              "worker_reports": []
+            },
+            "worker_seconds": 180
+          }
+        ],
+        "retry_limit": 1,
+        "review_backlog_limit": 1,
+        "review_seconds": 120,
+        "started_at": "2026-10-24T20:39:38.636937+00:00",
+        "state": "stopped",
+        "task_limit": 2,
+        "wall_reserved_seconds": 300,
+        "wall_seconds": 900,
+        "worker_limit": 1
+      }
+    },
+    {
+      "id": "attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "attempt",
+      "title": "Use the launcher-attached real physics MCP to run at most 100 fresh HP3 native steps, verify telemetry/recording readback, and report exact source/input/engine identities. This is cloud tool feasibility, not calibration accuracy.",
+      "revision": 12,
+      "created_at": "2026-10-24T20:39:38.776690+00:00",
+      "updated_at": "2026-10-24T20:42:35.488644+00:00",
+      "details": {
+        "allocation": {
+          "collections": 0,
+          "fresh_fits": 0,
+          "physics_steps": 100,
+          "wall_minutes": 3
+        },
+        "argv": [
+          "/workspace/hp-sim5/hp-sim5-research-agent",
+          "--codex",
+          "--batch",
+          "--prompt-file",
+          "/workspace/hp-sim5/output/cloud-research/program-store/workers/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/prompt.txt",
+          "--session-dir",
+          "/workspace/hp-sim5/output/research/sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f",
+          "--physics-backend",
+          "headless-js",
+          "--machine",
+          "hp3",
+          "--viewer",
+          "none",
+          "--wall-deadline",
+          "1792874558.6968937",
+          "--no-record",
+          "--no-goal-mode"
+        ],
+        "artifacts": [
+          {
+            "bytes": 369,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/session.json"
+          },
+          {
+            "bytes": 21872,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/launch.json"
+          },
+          {
+            "bytes": 78,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/exit.json"
+          },
+          {
+            "bytes": 3517,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/prompt.txt"
+          },
+          {
+            "bytes": 227,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/events.jsonl"
+          },
+          {
+            "bytes": 1013,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/final-message.md"
+          },
+          {
+            "bytes": 1099,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/research.md"
+          },
+          {
+            "bytes": 3466,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/report.md"
+          },
+          {
+            "bytes": 663,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/abstract.md"
+          },
+          {
+            "bytes": 6691,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/instructions.md"
+          },
+          {
+            "bytes": 420,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/attachment.toml"
+          },
+          {
+            "bytes": 297,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/attachment.json"
+          },
+          {
+            "bytes": 237,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/connection.json"
+          },
+          {
+            "bytes": 0,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/native/runtime.log"
+          },
+          {
+            "bytes": 0,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/cloud-research/program-store/workers/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/stdout.log"
+          },
+          {
+            "bytes": 103,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/cloud-research/program-store/workers/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/stderr.log"
+          },
+          {
+            "bytes": 3517,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/cloud-research/program-store/workers/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/prompt.txt"
+          },
+          {
+            "bytes": 1778,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/cloud-research/program-store/workers/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/assignment.json"
+          }
+        ],
+        "assignment_id": "cloud-native-operation",
+        "attempt_dir": "/workspace/hp-sim5/output/cloud-research/program-store/workers/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f",
+        "cleanup": "launcher_finally_completed",
+        "diagnostics": [],
+        "exited_at": "2026-10-24T20:42:35.487499+00:00",
+        "launcher_exit": {
+          "returncode": 0,
+          "wall_deadline": 1792874558.6968937,
+          "wall_expired": false
+        },
+        "launcher_session_id": "05633df96322451aa8e92f85e4e1e39e",
+        "observations": [
+          {
+            "at": "2026-10-24T20:39:38.776470+00:00",
+            "event": "reserved"
+          },
+          {
+            "at": "2026-10-24T20:39:38.780168+00:00",
+            "event": "spawned",
+            "pid": 513120
+          },
+          {
+            "at": "2026-10-24T20:42:35.487525+00:00",
+            "event": "exited",
+            "returncode": 0
+          }
+        ],
+        "observed_wall_seconds": 176.70734095573425,
+        "owner": {
+          "id": "dispatcher-75215ab0c5c241b3a6e8fbda729598d3",
+          "process": {
+            "birth": "47455444",
+            "boot_id": "9b241de8-e25e-4ea0-8a92-fac368ee5eb2",
+            "group": 513102,
+            "host": "f3095127ea1c",
+            "pid": 513102,
+            "uid": 1000
+          }
+        },
+        "premise_conflicts": [],
+        "premise_event_ids_at_start": [],
+        "premise_ids": [],
+        "premise_plan_ids": [],
+        "process": {
+          "birth": "47455516",
+          "boot_id": "9b241de8-e25e-4ea0-8a92-fac368ee5eb2",
+          "group": 513120,
+          "host": "f3095127ea1c",
+          "pid": 513120,
+          "uid": 1000
+        },
+        "prompt_sha256": "77454bf75aa05e9b681a747490d961ccc0102da5dd2a55c7b5956e0c3a18c95a",
+        "returncode": 0,
+        "runtime": {
+          "allocation_id": "runtime_allocation-96215bd76d86407f9cfcefa2590f2bce",
+          "assignment_id": "cloud-native-operation",
+          "cleanup_seconds": 30,
+          "wall_deadline": 1792874558.6968937
+        },
+        "runtime_session_id": "93c07d0a533a41df8b26f15a235ab839",
+        "scientific_state": "unassessed",
+        "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f",
+        "settings": {
+          "backend": "codex",
+          "client_args": [],
+          "dont_ask": false,
+          "goal_mode": false,
+          "machine": "hp3",
+          "physics_backend": "headless-js",
+          "record": false,
+          "shared_runtime_write": false,
+          "viewer": "none",
+          "worktree": false
+        },
+        "source_dirty": false,
+        "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca",
+        "started_at": "2026-10-24T20:39:38.780158+00:00",
+        "state": "submitted",
+        "worktree": {
+          "branch": "codex/cloud-research-runtime",
+          "repo": "/workspace/hp-sim5",
+          "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+        },
+        "worktree_id": "/workspace/hp-sim5"
+      }
+    },
+    {
+      "id": "keyless-cloud-operation",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "claim",
+      "title": "One authenticated cloud agent ran and verified a 100-step HP3 native experiment through the existing launcher without an additional login or API key",
+      "revision": 1,
+      "created_at": "2026-10-24T20:43:20.506247+00:00",
+      "updated_at": "2026-10-24T20:43:20.506247+00:00",
+      "details": {
+        "claim_key": "keyless-cloud-operation",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "kind": "engineering_tool_feasibility",
+          "machine": "hp3",
+          "not_established": [
+            "calibration accuracy",
+            "unattended broker outside an active cloud chat",
+            "dedicated nested CLI manager",
+            "hard read-only reviewer filesystem isolation"
+          ],
+          "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca",
+          "steps": 100,
+          "transport": "parent-chat-mediated cloud-session adapter"
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "submission-6281d33e9f7e4bb4b5f973c02e48f47f",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "submission",
+      "title": "One authenticated cloud agent ran and verified a 100-step HP3 native experiment through the existing launcher without an additional login or API key",
+      "revision": 1,
+      "created_at": "2026-10-24T20:43:48.631380+00:00",
+      "updated_at": "2026-10-24T20:43:48.631380+00:00",
+      "details": {
+        "manifest": {
+          "assets": [
+            {
+              "artifact_id": null,
+              "id": "report.md",
+              "missing": false,
+              "role": "report",
+              "sha256": "724c6b480566118febfcd326d4231e1a39f66e273d2ae7b43cec94db9ffedf48",
+              "source": "/workspace/hp-sim5/output/research/sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/report.md"
+            },
+            {
+              "artifact_id": null,
+              "id": "abstract.md",
+              "missing": false,
+              "role": "abstract",
+              "sha256": "17c2bc1258415b8e7e96d6ed48098ff7c364d8115e7b588a8ffbc4a2c877b590",
+              "source": "/workspace/hp-sim5/output/research/sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/abstract.md"
+            },
+            {
+              "artifact_id": null,
+              "id": "validation.json",
+              "missing": false,
+              "role": "check",
+              "sha256": "816c1306e72d9cfe1543d8f0da6f2e9c929943af3db52f5c858fcd72b2941bae",
+              "source": "/workspace/hp-sim5/output/research/sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/validation.json"
+            },
+            {
+              "artifact_id": null,
+              "id": "cloud-client-bridge.py",
+              "missing": false,
+              "role": "evidence",
+              "sha256": "9b7bf0b31027fcaac291b0a6fb90641c0fe0c3851c25d6c326abe21be976b022",
+              "source": "/workspace/hp-sim5/output/cloud-research/cloud_client_bridge.py"
+            },
+            {
+              "artifact_id": null,
+              "id": "experiment-manifest.json",
+              "missing": false,
+              "role": "evidence",
+              "sha256": "8da63f1b922f940442879f81c2b84d631a973f8aad73d91eb8615db8b63c7531",
+              "source": "/workspace/hp-sim5/output/research/experiments/8f977de942c64d7391f63c3198ba0c9d/manifest.json"
+            },
+            {
+              "artifact_id": null,
+              "id": "scene.usda",
+              "missing": false,
+              "role": "evidence",
+              "sha256": "3b0171abad47934f926bcf1cf72b6bfcc89b4a9c110bb749556d381f489b6e47",
+              "source": "/workspace/hp-sim5/output/research/experiments/8f977de942c64d7391f63c3198ba0c9d/scene.usda"
+            },
+            {
+              "artifact_id": null,
+              "id": "commands.json",
+              "missing": false,
+              "role": "evidence",
+              "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+              "source": "/workspace/hp-sim5/output/research/experiments/8f977de942c64d7391f63c3198ba0c9d/commands.json"
+            },
+            {
+              "artifact_id": null,
+              "id": "telemetry.jsonl",
+              "missing": false,
+              "role": "evidence",
+              "sha256": "3eafb7a1b6bf42504b0fc6b5724a252acd138f3c9bc606b8912974dd0d9b861b",
+              "source": "/workspace/hp-sim5/output/research/experiments/8f977de942c64d7391f63c3198ba0c9d/telemetry.jsonl"
+            },
+            {
+              "artifact_id": null,
+              "id": "final.json",
+              "missing": false,
+              "role": "evidence",
+              "sha256": "219f5e19b97428a1e0f62a99c953231b3535c62e59d0b40d1a1cf4e521006a3c",
+              "source": "/workspace/hp-sim5/output/research/experiments/8f977de942c64d7391f63c3198ba0c9d/final.json"
+            },
+            {
+              "artifact_id": null,
+              "id": "recording.rrd",
+              "missing": false,
+              "role": "evidence",
+              "sha256": "3b0c341ac5a229d591092d1d4b36717cf38cda4e6498114966f9113d918fd489",
+              "source": "/workspace/hp-sim5/output/research/experiments/8f977de942c64d7391f63c3198ba0c9d/recording.rrd"
+            }
+          ],
+          "assignment_id": "cloud-native-operation",
+          "attempt_id": "attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f",
+          "base_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca",
+          "candidate_revision": null,
+          "changed_paths": [],
+          "claim": {
+            "created_at": "2026-10-24T20:43:20.506247+00:00",
+            "details": {
+              "claim_key": "keyless-cloud-operation",
+              "knowledge_state": "unassessed",
+              "scope": {
+                "kind": "engineering_tool_feasibility",
+                "machine": "hp3",
+                "not_established": [
+                  "calibration accuracy",
+                  "unattended broker outside an active cloud chat",
+                  "dedicated nested CLI manager",
+                  "hard read-only reviewer filesystem isolation"
+                ],
+                "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca",
+                "steps": 100,
+                "transport": "parent-chat-mediated cloud-session adapter"
+              },
+              "version": 1
+            },
+            "id": "keyless-cloud-operation",
+            "kind": "claim",
+            "program_id": "program-387d94c6067647b6964aa267122d7989",
+            "revision": 1,
+            "title": "One authenticated cloud agent ran and verified a 100-step HP3 native experiment through the existing launcher without an additional login or API key",
+            "updated_at": "2026-10-24T20:43:20.506247+00:00"
+          },
+          "config": {
+            "broker_required": true,
+            "candidate_scope": "report-only runtime integration proof",
+            "machine": "hp3",
+            "physics_backend": "headless-js",
+            "transport": "actual Codex cloud agent mediated by parent chat"
+          },
+          "contract": "hp-sim5-evidence-review-v2",
+          "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_state": "submitted",
+          "input_identities": [
+            "3b0171abad47934f926bcf1cf72b6bfcc89b4a9c110bb749556d381f489b6e47",
+            "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "9b7bf0b31027fcaac291b0a6fb90641c0fe0c3851c25d6c326abe21be976b022"
+          ],
+          "physics_gate_required": false,
+          "producer_checks": [
+            {
+              "asset_id": "validation.json",
+              "candidate_revision": null,
+              "command": "launcher-attached MCP run_experiment steps=100 and telemetry/RRD readback",
+              "outcome": "passed"
+            }
+          ],
+          "source_dirty": false,
+          "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+        },
+        "sha256": "cae07c16ac690f05fdaff3413d2e872fabe409413fab5e60d8ae08c2349ed21f"
+      }
+    },
+    {
+      "id": "review-run-428751c978a24397ba9e5d7449176c2f",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "review_run",
+      "title": "Separate saved-evidence review",
+      "revision": 3,
+      "created_at": "2026-10-24T20:43:48.711422+00:00",
+      "updated_at": "2026-10-24T20:45:22.625469+00:00",
+      "details": {
+        "argv": [
+          "codex",
+          "exec",
+          "--cd",
+          "/workspace/hp-sim5",
+          "--sandbox",
+          "read-only",
+          "-c",
+          "approval_policy=\"never\"",
+          "--json",
+          "--output-last-message",
+          "/workspace/hp-sim5/output/cloud-research/program-store/reviews/review-run-428751c978a24397ba9e5d7449176c2f/final-message.md",
+          "-c",
+          "sandbox_workspace_write.network_access=true",
+          "-c",
+          "sandbox_workspace_write.writable_roots=[\"/workspace/hp-sim5/output\"]",
+          "-c",
+          "features.default_mode_request_user_input=false",
+          "-c",
+          "features.goals=false",
+          "-c",
+          "mcp_servers.hp_sim5={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/python\", \"args\" = [\"/workspace/hp-sim5/scripts/hp_sim5_mcp.py\"] }",
+          "-c",
+          "mcp_servers.rerun={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/rerun\", \"args\" = [\"viewer-mcp\"] }",
+          "-c",
+          "model_provider=\"openai\"",
+          "-"
+        ],
+        "contract": "hp-sim5-evidence-review-v2",
+        "deadline": 1792874748.7102923,
+        "directory": "/workspace/hp-sim5/output/cloud-research/program-store/reviews/review-run-428751c978a24397ba9e5d7449176c2f",
+        "error": "Check cites evidence outside fixed submission",
+        "guard_argv": [
+          "/workspace/hp-sim5/.venv/bin/python",
+          "/workspace/hp-sim5/scripts/research_program_review_guard.py",
+          "1792874748.7102923",
+          "/workspace/hp-sim5/output/cloud-research/program-store/reviews/review-run-428751c978a24397ba9e5d7449176c2f/wall-expired",
+          "codex",
+          "exec",
+          "--cd",
+          "/workspace/hp-sim5",
+          "--sandbox",
+          "read-only",
+          "-c",
+          "approval_policy=\"never\"",
+          "--json",
+          "--output-last-message",
+          "/workspace/hp-sim5/output/cloud-research/program-store/reviews/review-run-428751c978a24397ba9e5d7449176c2f/final-message.md",
+          "-c",
+          "sandbox_workspace_write.network_access=true",
+          "-c",
+          "sandbox_workspace_write.writable_roots=[\"/workspace/hp-sim5/output\"]",
+          "-c",
+          "features.default_mode_request_user_input=false",
+          "-c",
+          "features.goals=false",
+          "-c",
+          "mcp_servers.hp_sim5={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/python\", \"args\" = [\"/workspace/hp-sim5/scripts/hp_sim5_mcp.py\"] }",
+          "-c",
+          "mcp_servers.rerun={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/rerun\", \"args\" = [\"viewer-mcp\"] }",
+          "-c",
+          "model_provider=\"openai\"",
+          "-"
+        ],
+        "owner": {
+          "id": "review-controller-b97e114f6cd24b61a67e1b51ef89238e",
+          "process": {
+            "birth": "47455444",
+            "boot_id": "9b241de8-e25e-4ea0-8a92-fac368ee5eb2",
+            "group": 513102,
+            "host": "f3095127ea1c",
+            "pid": 513102,
+            "uid": 1000
+          }
+        },
+        "process": {
+          "birth": "47480510",
+          "boot_id": "9b241de8-e25e-4ea0-8a92-fac368ee5eb2",
+          "group": 513418,
+          "host": "f3095127ea1c",
+          "pid": 513418,
+          "uid": 1000
+        },
+        "prompt_sha256": "a902b11c2ef70f3899031f4bb118d0dcc2a1e6c701d35edf1f5adec1ca5e465a",
+        "returncode": 0,
+        "review_id": null,
+        "reviewer": {
+          "backend": "codex",
+          "context_id": "review-run-428751c978a24397ba9e5d7449176c2f",
+          "model": null,
+          "model_provider": "openai"
+        },
+        "runtime_reservation": [
+          "runtime_allocation-96215bd76d86407f9cfcefa2590f2bce",
+          "cloud-native-operation",
+          "cca5049cac7c48579a1a710db3c4abf4"
+        ],
+        "started_at": "2026-10-24T20:43:48.710271+00:00",
+        "state": "failed",
+        "submission_id": "submission-6281d33e9f7e4bb4b5f973c02e48f47f",
+        "submission_sha256": "cae07c16ac690f05fdaff3413d2e872fabe409413fab5e60d8ae08c2349ed21f",
+        "wall_minutes": 2
+      }
+    },
+    {
+      "id": "runtime_allocation-8420c106f33741b1ad594a52a3f2ec1a",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "runtime_allocation",
+      "title": "Reserved saved-evidence review",
+      "revision": 7,
+      "created_at": "2026-10-24T20:47:33.330506+00:00",
+      "updated_at": "2026-10-24T20:49:03.345473+00:00",
+      "details": {
+        "cleanup_deadline": 1792874963.930111,
+        "cleanup_seconds": 20,
+        "deadline": 1792874943.930111,
+        "events": [],
+        "lease_until": 1792874953.8596306,
+        "owner": {
+          "id": "controller-f04b15f291f1484d97fd97cda6d9b04b",
+          "process": {
+            "birth": "47455444",
+            "boot_id": "9b241de8-e25e-4ea0-8a92-fac368ee5eb2",
+            "group": 513102,
+            "host": "f3095127ea1c",
+            "pid": 513102,
+            "uid": 1000
+          }
+        },
+        "queue": [],
+        "reservations": [
+          {
+            "admission_id": "admission-a8bd1c2d50014db48d2bf5c3f1f81e5e",
+            "assignment_id": "cloud-native-operation",
+            "attempt_id": "attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f",
+            "charged_at": "2026-10-24T20:47:33.330135+00:00",
+            "review_pending": false,
+            "review_seconds": 90.0,
+            "reviews": [
+              {
+                "charge_id": "a4a632b8657a4ea1804f5dba90386f65",
+                "reserved_seconds": 90.0,
+                "run_id": "review-run-94bad221d70b45e5be5be2a57b78e18a",
+                "state": "completed"
+              }
+            ],
+            "state": "submitted",
+            "usage": {
+              "estimates": {},
+              "observed_worker_wall_seconds": 176.70734095573425,
+              "supervisor_observations": [],
+              "unmetered": [
+                "shell movement",
+                "shell compute",
+                "spend"
+              ],
+              "worker_reports": []
+            },
+            "worker_seconds": 0
+          }
+        ],
+        "retry_limit": 1,
+        "review_backlog_limit": 1,
+        "review_seconds": 90.0,
+        "started_at": "2026-10-24T20:47:33.330115+00:00",
+        "state": "expired",
+        "task_limit": 1,
+        "wall_reserved_seconds": 90.0,
+        "wall_seconds": 90.6
+      }
+    },
+    {
+      "id": "review-run-94bad221d70b45e5be5be2a57b78e18a",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "review_run",
+      "title": "Separate saved-evidence review",
+      "revision": 3,
+      "created_at": "2026-10-24T20:47:33.407043+00:00",
+      "updated_at": "2026-10-24T20:48:27.550814+00:00",
+      "details": {
+        "argv": [
+          "codex",
+          "exec",
+          "--cd",
+          "/workspace/hp-sim5",
+          "--sandbox",
+          "read-only",
+          "-c",
+          "approval_policy=\"never\"",
+          "--json",
+          "--output-last-message",
+          "/workspace/hp-sim5/output/cloud-research/program-store/reviews/review-run-94bad221d70b45e5be5be2a57b78e18a/final-message.md",
+          "-c",
+          "sandbox_workspace_write.network_access=true",
+          "-c",
+          "sandbox_workspace_write.writable_roots=[\"/workspace/hp-sim5/output\"]",
+          "-c",
+          "features.default_mode_request_user_input=false",
+          "-c",
+          "features.goals=false",
+          "-c",
+          "mcp_servers.hp_sim5={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/python\", \"args\" = [\"/workspace/hp-sim5/scripts/hp_sim5_mcp.py\"] }",
+          "-c",
+          "mcp_servers.rerun={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/rerun\", \"args\" = [\"viewer-mcp\"] }",
+          "-c",
+          "model_provider=\"openai\"",
+          "-"
+        ],
+        "contract": "hp-sim5-evidence-review-v2",
+        "deadline": 1792874943.4061258,
+        "directory": "/workspace/hp-sim5/output/cloud-research/program-store/reviews/review-run-94bad221d70b45e5be5be2a57b78e18a",
+        "error": null,
+        "guard_argv": [
+          "/workspace/hp-sim5/.venv/bin/python",
+          "/workspace/hp-sim5/scripts/research_program_review_guard.py",
+          "1792874943.4061258",
+          "/workspace/hp-sim5/output/cloud-research/program-store/reviews/review-run-94bad221d70b45e5be5be2a57b78e18a/wall-expired",
+          "codex",
+          "exec",
+          "--cd",
+          "/workspace/hp-sim5",
+          "--sandbox",
+          "read-only",
+          "-c",
+          "approval_policy=\"never\"",
+          "--json",
+          "--output-last-message",
+          "/workspace/hp-sim5/output/cloud-research/program-store/reviews/review-run-94bad221d70b45e5be5be2a57b78e18a/final-message.md",
+          "-c",
+          "sandbox_workspace_write.network_access=true",
+          "-c",
+          "sandbox_workspace_write.writable_roots=[\"/workspace/hp-sim5/output\"]",
+          "-c",
+          "features.default_mode_request_user_input=false",
+          "-c",
+          "features.goals=false",
+          "-c",
+          "mcp_servers.hp_sim5={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/python\", \"args\" = [\"/workspace/hp-sim5/scripts/hp_sim5_mcp.py\"] }",
+          "-c",
+          "mcp_servers.rerun={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/rerun\", \"args\" = [\"viewer-mcp\"] }",
+          "-c",
+          "model_provider=\"openai\"",
+          "-"
+        ],
+        "owner": {
+          "id": "review-controller-b97e114f6cd24b61a67e1b51ef89238e",
+          "process": {
+            "birth": "47455444",
+            "boot_id": "9b241de8-e25e-4ea0-8a92-fac368ee5eb2",
+            "group": 513102,
+            "host": "f3095127ea1c",
+            "pid": 513102,
+            "uid": 1000
+          }
+        },
+        "process": {
+          "birth": "47502979",
+          "boot_id": "9b241de8-e25e-4ea0-8a92-fac368ee5eb2",
+          "group": 514014,
+          "host": "f3095127ea1c",
+          "pid": 514014,
+          "uid": 1000
+        },
+        "prompt_sha256": "ffea467fd3f9130e62239d3c7105c2b69acba0f9bf6287c6d925328af8319db7",
+        "returncode": 0,
+        "review_id": "review-c41d4c4e498443a4a74fe55dd0e15f76",
+        "reviewer": {
+          "backend": "codex",
+          "context_id": "review-run-94bad221d70b45e5be5be2a57b78e18a",
+          "model": null,
+          "model_provider": "openai"
+        },
+        "runtime_reservation": [
+          "runtime_allocation-8420c106f33741b1ad594a52a3f2ec1a",
+          "cloud-native-operation",
+          "a4a632b8657a4ea1804f5dba90386f65"
+        ],
+        "started_at": "2026-10-24T20:47:33.406105+00:00",
+        "state": "completed",
+        "submission_id": "submission-6281d33e9f7e4bb4b5f973c02e48f47f",
+        "submission_sha256": "cae07c16ac690f05fdaff3413d2e872fabe409413fab5e60d8ae08c2349ed21f",
+        "wall_minutes": 1.5
+      }
+    },
+    {
+      "id": "review-c41d4c4e498443a4a74fe55dd0e15f76",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "review",
+      "title": "The frozen report, manifest, telemetry and artifact identities consistently support the narrow report-only feasibility claim. Empty candidate.diff and changed_paths establish no proposed source delivery requiring physics gates. Authentication and protocol provenance have the stated inspection limits.",
+      "revision": 1,
+      "created_at": "2026-10-24T20:48:27.551542+00:00",
+      "updated_at": "2026-10-24T20:48:27.551542+00:00",
+      "details": {
+        "contract": "hp-sim5-evidence-review-v2",
+        "response": {
+          "checks": [
+            {
+              "asset_ids": [
+                "report.md",
+                "abstract.md",
+                "validation.json",
+                "experiment-manifest.json"
+              ],
+              "description": "Inspected the report-only claim at source revision 8acde0c21d5b9db8893115e3e79d82d9e41f98ca, empty candidate diff, producer validation and completed experiment manifest. Manifest records rust-native physics, 100 steps, dt 0.002 s and native artifact build identity.",
+              "kind": "inspected"
+            },
+            {
+              "asset_ids": [
+                "report.md",
+                "abstract.md",
+                "validation.json",
+                "cloud-client-bridge.py",
+                "experiment-manifest.json",
+                "scene.usda",
+                "commands.json",
+                "telemetry.jsonl",
+                "final.json",
+                "recording.rrd"
+              ],
+              "description": "Verified every frozen asset SHA-256 against manifest.json. Parsed saved telemetry and independently checked exactly 101 rows with consecutive steps 0 through 100, ending at 0.2 s. Confirmed empty commands and RRD size 1494557 bytes. These are saved-artifact checks, not numerical reproduction.",
+              "kind": "inspected"
+            },
+            {
+              "asset_ids": [
+                "cloud-client-bridge.py"
+              ],
+              "description": "Inspected adapter dispatch, actor binding, completion hash checks and explicit permission limitation. Parent chat owns authenticated cloud sessions; the adapter does not enforce requested CLI sandbox flags or provide unattended dispatch.",
+              "kind": "inspected"
+            }
+          ],
+          "code_readiness": "report_only",
+          "discrepancy": null,
+          "finding": "supported",
+          "limitations": [
+            "Support is confined to one reported launcher-attached HP3 idle experiment and its consistent saved artifacts. No fresh physics, fitting or numerical reproduction was performed.",
+            "The frozen submission does not include the report-linked MCP transcript, reproducible probe or production-result.json. Direct protocol execution and absence of additional credentials therefore remain producer-reported rather than independently established by those frozen assets.",
+            "RRD file identity and size were independently checked. RRD sample coverage and blueprint readability remain producer-reported because rerun.dataframe was unavailable in the reviewer interpreter.",
+            "The cloud platform permission profile applies. Read-only review was an instruction, not an additional enforced filesystem sandbox. The adapter explicitly disclaims enforcement of CLI sandbox flags.",
+            "This does not establish calibration accuracy, hardware performance, interruption/recovery, unattended broker operation, nested CLI management or full manager release readiness."
+          ],
+          "practical_value": "Keep the bounded engineering feasibility record as evidence that the parent-chat-mediated cloud transport can produce a completed native experiment with traceable saved outputs.",
+          "reason": "The frozen report, manifest, telemetry and artifact identities consistently support the narrow report-only feasibility claim. Empty candidate.diff and changed_paths establish no proposed source delivery requiring physics gates. Authentication and protocol provenance have the stated inspection limits.",
+          "required_checks": [],
+          "submission_id": "submission-6281d33e9f7e4bb4b5f973c02e48f47f",
+          "submission_sha256": "cae07c16ac690f05fdaff3413d2e872fabe409413fab5e60d8ae08c2349ed21f",
+          "verdict": "keep"
+        },
+        "response_sha256": "3aa7da18bc49cb64141d973df86f024717550087083114d838524d1a57df0d43",
+        "reviewer": {
+          "backend": "codex",
+          "context_id": "review-run-94bad221d70b45e5be5be2a57b78e18a",
+          "model": null,
+          "model_provider": "openai"
+        },
+        "run_id": "review-run-94bad221d70b45e5be5be2a57b78e18a",
+        "submission_id": "submission-6281d33e9f7e4bb4b5f973c02e48f47f"
+      }
+    },
+    {
+      "id": "admission-a8bd1c2d50014db48d2bf5c3f1f81e5e",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "admission",
+      "title": "The frozen report, manifest, telemetry and artifact identities consistently support the narrow report-only feasibility claim. Empty candidate.diff and changed_paths establish no proposed source delivery requiring physics gates. Authentication and protocol provenance have the stated inspection limits.",
+      "revision": 1,
+      "created_at": "2026-10-24T20:48:27.670999+00:00",
+      "updated_at": "2026-10-24T20:48:27.670999+00:00",
+      "details": {
+        "actor": "controller",
+        "claim_id": "keyless-cloud-operation",
+        "code_readiness": "report_only",
+        "contract": "hp-sim5-evidence-review-v2",
+        "decision": "keep",
+        "engineering_reasons": [],
+        "finding": "supported",
+        "guard_reasons": [],
+        "knowledge_state": "reviewed",
+        "practical_value": "Keep the bounded engineering feasibility record as evidence that the parent-chat-mediated cloud transport can produce a completed native experiment with traceable saved outputs.",
+        "required_checks": [],
+        "review_id": "review-c41d4c4e498443a4a74fe55dd0e15f76",
+        "submission_id": "submission-6281d33e9f7e4bb4b5f973c02e48f47f",
+        "submission_sha256": "cae07c16ac690f05fdaff3413d2e872fabe409413fab5e60d8ae08c2349ed21f"
+      }
+    },
+    {
+      "id": "runtime_allocation-af5ddcc8e05644f0ab92a5230044c1aa",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "runtime_allocation",
+      "title": "Finite manager allocation",
+      "revision": 10,
+      "created_at": "2026-10-24T20:48:27.731803+00:00",
+      "updated_at": "2026-10-24T20:56:27.743614+00:00",
+      "details": {
+        "cleanup_deadline": 1792875417.731436,
+        "cleanup_seconds": 30,
+        "deadline": 1792875387.731436,
+        "events": [],
+        "lease_until": 1792875401.6616046,
+        "owner": {
+          "id": "controller-f04b15f291f1484d97fd97cda6d9b04b",
+          "process": {
+            "birth": "47455444",
+            "boot_id": "9b241de8-e25e-4ea0-8a92-fac368ee5eb2",
+            "group": 513102,
+            "host": "f3095127ea1c",
+            "pid": 513102,
+            "uid": 1000
+          }
+        },
+        "queue": [],
+        "reservations": [
+          {
+            "admission_id": "admission-39efdfa65757452c99304808de73f077",
+            "assignment_id": "cloud-saved-evidence",
+            "attempt_id": "attempt-6aabde30a2df4f20a0e259cc25c52b4b",
+            "charged_at": "2026-10-24T20:48:27.792184+00:00",
+            "retry_root": null,
+            "review_pending": false,
+            "review_seconds": 120,
+            "reviews": [
+              {
+                "charge_id": "bcecb05d828a4820be0409499e1ab380",
+                "reserved_seconds": 120,
+                "run_id": "review-run-782ba53b35b343709252a23628f7b72b",
+                "state": "completed"
+              }
+            ],
+            "settings": {
+              "backend": "codex",
+              "client_args": [],
+              "dont_ask": false,
+              "goal_mode": false,
+              "machine": "hp3",
+              "physics_backend": "headless-js",
+              "record": false,
+              "shared_runtime_write": false,
+              "viewer": "none",
+              "worktree": false
+            },
+            "state": "submitted",
+            "usage": {
+              "estimates": {
+                "collections": 0,
+                "fresh_fits": 0,
+                "physics_steps": 0,
+                "wall_minutes": 3
+              },
+              "observed_worker_wall_seconds": 126.28224897384644,
+              "supervisor_observations": [],
+              "unmetered": [
+                "shell movement",
+                "shell compute",
+                "spend"
+              ],
+              "worker_reports": []
+            },
+            "worker_seconds": 180
+          }
+        ],
+        "retry_limit": 1,
+        "review_backlog_limit": 1,
+        "review_seconds": 120,
+        "started_at": "2026-10-24T20:48:27.731440+00:00",
+        "state": "expired",
+        "task_limit": 1,
+        "wall_reserved_seconds": 300,
+        "wall_seconds": 480,
+        "worker_limit": 1
+      }
+    },
+    {
+      "id": "attempt-6aabde30a2df4f20a0e259cc25c52b4b",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "attempt",
+      "title": "Inspect the fixed saved cloud-native production artifacts and determine what they do and do not establish about full autonomous cloud research. No new simulation or fitting. Report an explicitly scoped limitation and a route recommendation.",
+      "revision": 11,
+      "created_at": "2026-10-24T20:48:27.868850+00:00",
+      "updated_at": "2026-10-24T20:50:34.156969+00:00",
+      "details": {
+        "allocation": {
+          "collections": 0,
+          "fresh_fits": 0,
+          "physics_steps": 0,
+          "wall_minutes": 3
+        },
+        "argv": [
+          "/workspace/hp-sim5/hp-sim5-research-agent",
+          "--codex",
+          "--batch",
+          "--prompt-file",
+          "/workspace/hp-sim5/output/cloud-research/program-store/workers/attempt-6aabde30a2df4f20a0e259cc25c52b4b/prompt.txt",
+          "--session-dir",
+          "/workspace/hp-sim5/output/research/sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b",
+          "--physics-backend",
+          "headless-js",
+          "--machine",
+          "hp3",
+          "--viewer",
+          "none",
+          "--wall-deadline",
+          "1792875087.7950907",
+          "--no-record",
+          "--no-goal-mode"
+        ],
+        "artifacts": [
+          {
+            "bytes": 369,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/session.json"
+          },
+          {
+            "bytes": 21872,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/launch.json"
+          },
+          {
+            "bytes": 78,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/exit.json"
+          },
+          {
+            "bytes": 3658,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/prompt.txt"
+          },
+          {
+            "bytes": 226,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/events.jsonl"
+          },
+          {
+            "bytes": 374,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/final-message.md"
+          },
+          {
+            "bytes": 1600,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/research.md"
+          },
+          {
+            "bytes": 5701,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/report.md"
+          },
+          {
+            "bytes": 3167,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/abstract.md"
+          },
+          {
+            "bytes": 6691,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/instructions.md"
+          },
+          {
+            "bytes": 420,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/attachment.toml"
+          },
+          {
+            "bytes": 297,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/attachment.json"
+          },
+          {
+            "bytes": 237,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/connection.json"
+          },
+          {
+            "bytes": 0,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/native/runtime.log"
+          },
+          {
+            "bytes": 0,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/cloud-research/program-store/workers/attempt-6aabde30a2df4f20a0e259cc25c52b4b/stdout.log"
+          },
+          {
+            "bytes": 103,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/cloud-research/program-store/workers/attempt-6aabde30a2df4f20a0e259cc25c52b4b/stderr.log"
+          },
+          {
+            "bytes": 3658,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/cloud-research/program-store/workers/attempt-6aabde30a2df4f20a0e259cc25c52b4b/prompt.txt"
+          },
+          {
+            "bytes": 1785,
+            "partial": false,
+            "path": "/workspace/hp-sim5/output/cloud-research/program-store/workers/attempt-6aabde30a2df4f20a0e259cc25c52b4b/assignment.json"
+          }
+        ],
+        "assignment_id": "cloud-saved-evidence",
+        "attempt_dir": "/workspace/hp-sim5/output/cloud-research/program-store/workers/attempt-6aabde30a2df4f20a0e259cc25c52b4b",
+        "cleanup": "launcher_finally_completed",
+        "diagnostics": [],
+        "exited_at": "2026-10-24T20:50:34.155384+00:00",
+        "launcher_exit": {
+          "returncode": 0,
+          "wall_deadline": 1792875087.7950907,
+          "wall_expired": false
+        },
+        "launcher_session_id": "f39bdb5da6fa478c9e3765178fca6e96",
+        "observations": [
+          {
+            "at": "2026-10-24T20:48:27.868316+00:00",
+            "event": "reserved"
+          },
+          {
+            "at": "2026-10-24T20:48:27.873146+00:00",
+            "event": "spawned",
+            "pid": 514127
+          },
+          {
+            "at": "2026-10-24T20:50:34.155398+00:00",
+            "event": "exited",
+            "returncode": 0
+          }
+        ],
+        "observed_wall_seconds": 126.28224897384644,
+        "owner": {
+          "id": "dispatcher-75215ab0c5c241b3a6e8fbda729598d3",
+          "process": {
+            "birth": "47455444",
+            "boot_id": "9b241de8-e25e-4ea0-8a92-fac368ee5eb2",
+            "group": 513102,
+            "host": "f3095127ea1c",
+            "pid": 513102,
+            "uid": 1000
+          }
+        },
+        "premise_conflicts": [],
+        "premise_event_ids_at_start": [],
+        "premise_ids": [],
+        "premise_plan_ids": [],
+        "process": {
+          "birth": "47508425",
+          "boot_id": "9b241de8-e25e-4ea0-8a92-fac368ee5eb2",
+          "group": 514127,
+          "host": "f3095127ea1c",
+          "pid": 514127,
+          "uid": 1000
+        },
+        "prompt_sha256": "254b26e885b379c8b271539a0edcbb9203311e1245176e7437942da89144a563",
+        "returncode": 0,
+        "runtime": {
+          "allocation_id": "runtime_allocation-af5ddcc8e05644f0ab92a5230044c1aa",
+          "assignment_id": "cloud-saved-evidence",
+          "cleanup_seconds": 30,
+          "wall_deadline": 1792875087.7950907
+        },
+        "runtime_session_id": "496fb702a244434cb860ff553e6f55bb",
+        "scientific_state": "unassessed",
+        "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b",
+        "settings": {
+          "backend": "codex",
+          "client_args": [],
+          "dont_ask": false,
+          "goal_mode": false,
+          "machine": "hp3",
+          "physics_backend": "headless-js",
+          "record": false,
+          "shared_runtime_write": false,
+          "viewer": "none",
+          "worktree": false
+        },
+        "source_dirty": true,
+        "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca",
+        "started_at": "2026-10-24T20:48:27.873135+00:00",
+        "state": "submitted",
+        "worktree": {
+          "branch": "codex/cloud-research-runtime",
+          "repo": "/workspace/hp-sim5",
+          "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+        },
+        "worktree_id": "/workspace/hp-sim5"
+      }
+    },
+    {
+      "id": "cloud-evidence-limits",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "claim",
+      "title": "The bounded cloud-native tool trials do not establish calibration improvement or a full unattended research manager release",
+      "revision": 1,
+      "created_at": "2026-10-24T20:50:34.326669+00:00",
+      "updated_at": "2026-10-24T20:50:34.326669+00:00",
+      "details": {
+        "claim_key": "cloud-evidence-limits",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "evidence": "existing HP3 runtime trials and explicitly parent-mediated transport",
+          "kind": "saved_evidence_limit",
+          "not_a_rejected_calibration_hypothesis": true,
+          "physics_new_steps": 0,
+          "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "submission-1c6ba33c21764fc9a7d74004d4cbaa48",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "submission",
+      "title": "The bounded cloud-native tool trials do not establish calibration improvement or a full unattended research manager release",
+      "revision": 1,
+      "created_at": "2026-10-24T20:50:34.400053+00:00",
+      "updated_at": "2026-10-24T20:50:34.400053+00:00",
+      "details": {
+        "manifest": {
+          "assets": [
+            {
+              "artifact_id": null,
+              "id": "report.md",
+              "missing": false,
+              "role": "report",
+              "sha256": "b8e0e7bb0104730a25a49df929da672a56e90a08a85b730c5841cff4f0f6b412",
+              "source": "/workspace/hp-sim5/output/research/sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/report.md"
+            },
+            {
+              "artifact_id": null,
+              "id": "abstract.md",
+              "missing": false,
+              "role": "abstract",
+              "sha256": "28ef4e5c69867a4b5768f18766beb44208a801713f1ec51b897442cd587d5225",
+              "source": "/workspace/hp-sim5/output/research/sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/abstract.md"
+            },
+            {
+              "artifact_id": null,
+              "id": "validation.json",
+              "missing": false,
+              "role": "check",
+              "sha256": "12f0018e12c85c2570d52e6c9e17c0e6af4e5d06934e9fed008e298e1b4c4250",
+              "source": "/workspace/hp-sim5/output/research/sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/validation.json"
+            },
+            {
+              "artifact_id": null,
+              "id": "original-production-validation.json",
+              "missing": false,
+              "role": "evidence",
+              "sha256": "b1aadf135f6d7190e21a0b6998094b75f21f719b6bac646f86a9906312fb5e06",
+              "source": "/workspace/hp-sim5/output/research/sessions/2026-10-24-cloud-research-runtime/production-validation.json"
+            },
+            {
+              "artifact_id": null,
+              "id": "managed-production-validation.json",
+              "missing": false,
+              "role": "evidence",
+              "sha256": "816c1306e72d9cfe1543d8f0da6f2e9c929943af3db52f5c858fcd72b2941bae",
+              "source": "/workspace/hp-sim5/output/research/sessions/attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/validation.json"
+            }
+          ],
+          "assignment_id": "cloud-saved-evidence",
+          "attempt_id": "attempt-6aabde30a2df4f20a0e259cc25c52b4b",
+          "base_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca",
+          "candidate_revision": null,
+          "changed_paths": [],
+          "claim": {
+            "created_at": "2026-10-24T20:50:34.326669+00:00",
+            "details": {
+              "claim_key": "cloud-evidence-limits",
+              "knowledge_state": "unassessed",
+              "scope": {
+                "evidence": "existing HP3 runtime trials and explicitly parent-mediated transport",
+                "kind": "saved_evidence_limit",
+                "not_a_rejected_calibration_hypothesis": true,
+                "physics_new_steps": 0,
+                "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+              },
+              "version": 1
+            },
+            "id": "cloud-evidence-limits",
+            "kind": "claim",
+            "program_id": "program-387d94c6067647b6964aa267122d7989",
+            "revision": 1,
+            "title": "The bounded cloud-native tool trials do not establish calibration improvement or a full unattended research manager release",
+            "updated_at": "2026-10-24T20:50:34.326669+00:00"
+          },
+          "config": {
+            "new_simulation_steps": 0,
+            "scope": "saved evidence only",
+            "transport": "authenticated cloud agent"
+          },
+          "contract": "hp-sim5-evidence-review-v2",
+          "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_state": "submitted",
+          "input_identities": [
+            "12f0018e12c85c2570d52e6c9e17c0e6af4e5d06934e9fed008e298e1b4c4250",
+            "8f977de942c64d7391f63c3198ba0c9d"
+          ],
+          "physics_gate_required": false,
+          "producer_checks": [
+            {
+              "asset_id": "validation.json",
+              "candidate_revision": null,
+              "command": "Hash and scope inspection of frozen production artifacts; no new numerical work",
+              "outcome": "passed"
+            }
+          ],
+          "source_dirty": true,
+          "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+        },
+        "sha256": "9d6e8ccea6fe7e1f486a749107f4f1321a83fe29662a8b61f29e77e4654e412a"
+      }
+    },
+    {
+      "id": "review-run-782ba53b35b343709252a23628f7b72b",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "review_run",
+      "title": "Separate saved-evidence review",
+      "revision": 3,
+      "created_at": "2026-10-24T20:50:34.470749+00:00",
+      "updated_at": "2026-10-24T20:52:18.965913+00:00",
+      "details": {
+        "argv": [
+          "codex",
+          "exec",
+          "--cd",
+          "/workspace/hp-sim5",
+          "--sandbox",
+          "read-only",
+          "-c",
+          "approval_policy=\"never\"",
+          "--json",
+          "--output-last-message",
+          "/workspace/hp-sim5/output/cloud-research/program-store/reviews/review-run-782ba53b35b343709252a23628f7b72b/final-message.md",
+          "-c",
+          "sandbox_workspace_write.network_access=true",
+          "-c",
+          "sandbox_workspace_write.writable_roots=[\"/workspace/hp-sim5/output\"]",
+          "-c",
+          "features.default_mode_request_user_input=false",
+          "-c",
+          "features.goals=false",
+          "-c",
+          "mcp_servers.hp_sim5={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/python\", \"args\" = [\"/workspace/hp-sim5/scripts/hp_sim5_mcp.py\"] }",
+          "-c",
+          "mcp_servers.rerun={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/rerun\", \"args\" = [\"viewer-mcp\"] }",
+          "-c",
+          "model_provider=\"openai\"",
+          "-"
+        ],
+        "contract": "hp-sim5-evidence-review-v2",
+        "deadline": 1792875154.4691043,
+        "directory": "/workspace/hp-sim5/output/cloud-research/program-store/reviews/review-run-782ba53b35b343709252a23628f7b72b",
+        "error": null,
+        "guard_argv": [
+          "/workspace/hp-sim5/.venv/bin/python",
+          "/workspace/hp-sim5/scripts/research_program_review_guard.py",
+          "1792875154.4691043",
+          "/workspace/hp-sim5/output/cloud-research/program-store/reviews/review-run-782ba53b35b343709252a23628f7b72b/wall-expired",
+          "codex",
+          "exec",
+          "--cd",
+          "/workspace/hp-sim5",
+          "--sandbox",
+          "read-only",
+          "-c",
+          "approval_policy=\"never\"",
+          "--json",
+          "--output-last-message",
+          "/workspace/hp-sim5/output/cloud-research/program-store/reviews/review-run-782ba53b35b343709252a23628f7b72b/final-message.md",
+          "-c",
+          "sandbox_workspace_write.network_access=true",
+          "-c",
+          "sandbox_workspace_write.writable_roots=[\"/workspace/hp-sim5/output\"]",
+          "-c",
+          "features.default_mode_request_user_input=false",
+          "-c",
+          "features.goals=false",
+          "-c",
+          "mcp_servers.hp_sim5={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/python\", \"args\" = [\"/workspace/hp-sim5/scripts/hp_sim5_mcp.py\"] }",
+          "-c",
+          "mcp_servers.rerun={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/rerun\", \"args\" = [\"viewer-mcp\"] }",
+          "-c",
+          "model_provider=\"openai\"",
+          "-"
+        ],
+        "owner": {
+          "id": "review-controller-b97e114f6cd24b61a67e1b51ef89238e",
+          "process": {
+            "birth": "47455444",
+            "boot_id": "9b241de8-e25e-4ea0-8a92-fac368ee5eb2",
+            "group": 513102,
+            "host": "f3095127ea1c",
+            "pid": 513102,
+            "uid": 1000
+          }
+        },
+        "process": {
+          "birth": "47521085",
+          "boot_id": "9b241de8-e25e-4ea0-8a92-fac368ee5eb2",
+          "group": 514372,
+          "host": "f3095127ea1c",
+          "pid": 514372,
+          "uid": 1000
+        },
+        "prompt_sha256": "2a52b77f7fc5f3c543b71fc039b9edc5dcfc7b105681d1aecb10ff515b62e7cb",
+        "returncode": 0,
+        "review_id": "review-050a2f53c75d40a18f7f1f435abd3089",
+        "reviewer": {
+          "backend": "codex",
+          "context_id": "review-run-782ba53b35b343709252a23628f7b72b",
+          "model": null,
+          "model_provider": "openai"
+        },
+        "runtime_reservation": [
+          "runtime_allocation-af5ddcc8e05644f0ab92a5230044c1aa",
+          "cloud-saved-evidence",
+          "bcecb05d828a4820be0409499e1ab380"
+        ],
+        "started_at": "2026-10-24T20:50:34.469087+00:00",
+        "state": "completed",
+        "submission_id": "submission-1c6ba33c21764fc9a7d74004d4cbaa48",
+        "submission_sha256": "9d6e8ccea6fe7e1f486a749107f4f1321a83fe29662a8b61f29e77e4654e412a",
+        "wall_minutes": 2
+      }
+    },
+    {
+      "id": "review-050a2f53c75d40a18f7f1f435abd3089",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "review",
+      "title": "The two historical 100-step runtime records and separate 100-step managed record support the stated narrow scope. The report correctly treats calibration improvement and full unattended operation as untested by these records. The candidate diff is empty and no source delivery is proposed.",
+      "revision": 1,
+      "created_at": "2026-10-24T20:52:18.973127+00:00",
+      "updated_at": "2026-10-24T20:52:18.973127+00:00",
+      "details": {
+        "contract": "hp-sim5-evidence-review-v2",
+        "response": {
+          "checks": [
+            {
+              "asset_ids": [
+                "report.md",
+                "abstract.md"
+              ],
+              "description": "Inspected the frozen report and abstract for the exact evidence-limit claim and separation of runtime feasibility from calibration and unattended lifecycle claims.",
+              "kind": "inspected"
+            },
+            {
+              "asset_ids": [
+                "validation.json",
+                "original-production-validation.json",
+                "managed-production-validation.json"
+              ],
+              "description": "Compared saved step counts, recording metadata, run identities, zero-fit scope and reported artifact hashes. Independently verified all five frozen asset hashes against the manifest; inspected the empty candidate diff. No numerical reproduction or underlying recording inspection.",
+              "kind": "inspected"
+            }
+          ],
+          "code_readiness": "report_only",
+          "discrepancy": null,
+          "finding": "supported",
+          "limitations": [
+            "The frozen validation records report producer checks; this review did not decode RRD files, inspect underlying experimental artifacts or reproduce numerical results.",
+            "The frozen assets contain no calibration comparison or full lifecycle acceptance evidence. Their absence supports an evidence-limit finding, not a failed calibration result or a release-status determination."
+          ],
+          "practical_value": "Preserves bounded runtime feasibility evidence while preventing it from being used as calibration accuracy or unattended lifecycle validation.",
+          "reason": "The two historical 100-step runtime records and separate 100-step managed record support the stated narrow scope. The report correctly treats calibration improvement and full unattended operation as untested by these records. The candidate diff is empty and no source delivery is proposed.",
+          "required_checks": [],
+          "submission_id": "submission-1c6ba33c21764fc9a7d74004d4cbaa48",
+          "submission_sha256": "9d6e8ccea6fe7e1f486a749107f4f1321a83fe29662a8b61f29e77e4654e412a",
+          "verdict": "keep"
+        },
+        "response_sha256": "3b1197596e03e8d7215718485ac4c2e2e88b97447848358a3f942636c57c43df",
+        "reviewer": {
+          "backend": "codex",
+          "context_id": "review-run-782ba53b35b343709252a23628f7b72b",
+          "model": null,
+          "model_provider": "openai"
+        },
+        "run_id": "review-run-782ba53b35b343709252a23628f7b72b",
+        "submission_id": "submission-1c6ba33c21764fc9a7d74004d4cbaa48"
+      }
+    },
+    {
+      "id": "admission-39efdfa65757452c99304808de73f077",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "admission",
+      "title": "The two historical 100-step runtime records and separate 100-step managed record support the stated narrow scope. The report correctly treats calibration improvement and full unattended operation as untested by these records. The candidate diff is empty and no source delivery is proposed.",
+      "revision": 1,
+      "created_at": "2026-10-24T20:52:19.144019+00:00",
+      "updated_at": "2026-10-24T20:52:19.144019+00:00",
+      "details": {
+        "actor": "controller",
+        "claim_id": "cloud-evidence-limits",
+        "code_readiness": "report_only",
+        "contract": "hp-sim5-evidence-review-v2",
+        "decision": "keep",
+        "engineering_reasons": [],
+        "finding": "supported",
+        "guard_reasons": [],
+        "knowledge_state": "reviewed",
+        "practical_value": "Preserves bounded runtime feasibility evidence while preventing it from being used as calibration accuracy or unattended lifecycle validation.",
+        "required_checks": [],
+        "review_id": "review-050a2f53c75d40a18f7f1f435abd3089",
+        "submission_id": "submission-1c6ba33c21764fc9a7d74004d4cbaa48",
+        "submission_sha256": "9d6e8ccea6fe7e1f486a749107f4f1321a83fe29662a8b61f29e77e4654e412a"
+      }
+    },
+    {
+      "id": "route_plan-46a9f86a2849459ab05cadd19397bffa",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "route_plan",
+      "title": "Real bounded cloud actors completed and independently reviewed the evidence",
+      "revision": 1,
+      "created_at": "2026-10-24T20:52:19.330024+00:00",
+      "updated_at": "2026-10-24T20:52:19.330024+00:00",
+      "details": {
+        "approach_id": "cloud-native-agents",
+        "citation_ids": [],
+        "decision_value": "Choose the keyless cloud client transport",
+        "dependency_ids": [],
+        "estimated_cost": {
+          "fresh_fits": 0,
+          "wall_minutes": 5
+        },
+        "hypothesis": "Authenticated cloud sessions can execute bounded existing-launcher assignments and independent fixed reviews without another credential",
+        "novelty": "Existing cloud session as research worker/reviewer",
+        "objections": [],
+        "observation": "Actual managed worker, native MCP, separate reviewed admission and clean stop",
+        "priority": 1,
+        "reason": "Real bounded cloud actors completed and independently reviewed the evidence",
+        "reopening_condition": "Cloud tools or runtime sources change",
+        "retry_key": "8c6d73fbe08de54ef2770f3f64ad5a43e334c498bfa134671df671cfcbba175a",
+        "retry_limit": 2,
+        "scope": {
+          "kind": "cloud runtime feasibility",
+          "source": "8acde0c2"
+        },
+        "tradeoffs": [],
+        "uncertainty": "Lifecycle reliability beyond this bounded pilot"
+      }
+    },
+    {
+      "id": "decision-b1aa6dfdab9345be9a7b586829bfc503",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "decision",
+      "title": "Two actual authenticated cloud workers and separate fixed reviews completed without extra credentials; retain active-parent and isolation limits",
+      "revision": 1,
+      "created_at": "2026-10-24T20:52:42.558586+00:00",
+      "updated_at": "2026-10-24T20:52:42.558586+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "cloud-native-agents"
+      }
+    },
+    {
+      "id": "relation-28a2e63912f045c58025fc30d09a0513",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "relation",
+      "title": "Two actual authenticated cloud workers and separate fixed reviews completed without extra credentials; retain active-parent and isolation limits",
+      "revision": 1,
+      "created_at": "2026-10-24T20:52:42.559619+00:00",
+      "updated_at": "2026-10-24T20:52:42.559619+00:00",
+      "details": {
+        "reason": "Two actual authenticated cloud workers and separate fixed reviews completed without extra credentials; retain active-parent and isolation limits",
+        "relation": "decision",
+        "source_id": "decision-b1aa6dfdab9345be9a7b586829bfc503",
+        "target_id": "cloud-native-agents"
+      }
+    },
+    {
+      "id": "strategy_event-af839ef334e8406f9aad7933b06563bd",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "strategy_event",
+      "title": "Two actual authenticated cloud workers and separate fixed reviews completed without extra credentials; retain active-parent and isolation limits",
+      "revision": 1,
+      "created_at": "2026-10-24T20:52:42.559726+00:00",
+      "updated_at": "2026-10-24T20:52:42.559726+00:00",
+      "details": {
+        "approach_ids": [
+          "cloud-native-agents"
+        ],
+        "basis": "Manager decision; scientific admission is separate",
+        "citation_ids": [
+          "route_plan-46a9f86a2849459ab05cadd19397bffa",
+          "keyless-cloud-operation",
+          "cloud-evidence-limits"
+        ],
+        "decision_ids": [
+          "decision-b1aa6dfdab9345be9a7b586829bfc503"
+        ],
+        "event": "decision",
+        "reason": "Two actual authenticated cloud workers and separate fixed reviews completed without extra credentials; retain active-parent and isolation limits",
+        "reopening_condition": "Transport or permission semantics change",
+        "review_event_ids": [],
+        "scope": {
+          "kind": "cloud runtime feasibility",
+          "source": "8acde0c2"
+        },
+        "target": "promising"
+      }
+    },
+    {
+      "id": "route_plan-7bc084bf429e4fe180934f996f6ea9e4",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "route_plan",
+      "title": "The inherited login returned HTTP 401 and the user rejects new credentials",
+      "revision": 1,
+      "created_at": "2026-10-24T20:52:42.622506+00:00",
+      "updated_at": "2026-10-24T20:52:42.622506+00:00",
+      "details": {
+        "approach_id": "nested-cli",
+        "citation_ids": [],
+        "decision_value": "Determine whether a separate client can preserve the existing-login-only workflow",
+        "dependency_ids": [],
+        "estimated_cost": {
+          "fresh_fits": 0,
+          "wall_minutes": 1
+        },
+        "hypothesis": "The inherited cloud login can authenticate an independently started Codex CLI",
+        "novelty": "Nested standalone client on this cloud host",
+        "objections": [],
+        "observation": "Actual client startup and authentication response",
+        "priority": 10,
+        "reason": "The inherited login returned HTTP 401 and the user rejects new credentials",
+        "reopening_condition": "Platform supplies same-login nested authentication",
+        "retry_key": "358d3d3fc6c3ac85aca809eb8f734428d90653193ed6ea12db1dad522a043648",
+        "retry_limit": 2,
+        "scope": {
+          "kind": "runtime auth compatibility",
+          "source": "8acde0c2"
+        },
+        "tradeoffs": [],
+        "uncertainty": "Platform credential portability"
+      }
+    },
+    {
+      "id": "decision-53dd2fc616aa46febf94f5b24c477029",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "decision",
+      "title": "Inherited CLI authentication failed and additional credentials violate the explicit user constraint; this is not a calibration hypothesis result",
+      "revision": 1,
+      "created_at": "2026-10-24T20:52:42.686363+00:00",
+      "updated_at": "2026-10-24T20:52:42.686363+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "nested-cli"
+      }
+    },
+    {
+      "id": "relation-08df4884027f4f968d150de617a36262",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "relation",
+      "title": "Inherited CLI authentication failed and additional credentials violate the explicit user constraint; this is not a calibration hypothesis result",
+      "revision": 1,
+      "created_at": "2026-10-24T20:52:42.687161+00:00",
+      "updated_at": "2026-10-24T20:52:42.687161+00:00",
+      "details": {
+        "reason": "Inherited CLI authentication failed and additional credentials violate the explicit user constraint; this is not a calibration hypothesis result",
+        "relation": "decision",
+        "source_id": "decision-53dd2fc616aa46febf94f5b24c477029",
+        "target_id": "nested-cli"
+      }
+    },
+    {
+      "id": "strategy_event-295dfa8579b64967a1fe3c969856f4ad",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "strategy_event",
+      "title": "Inherited CLI authentication failed and additional credentials violate the explicit user constraint; this is not a calibration hypothesis result",
+      "revision": 1,
+      "created_at": "2026-10-24T20:52:42.687267+00:00",
+      "updated_at": "2026-10-24T20:52:42.687267+00:00",
+      "details": {
+        "approach_ids": [
+          "nested-cli"
+        ],
+        "basis": "Manager decision; scientific admission is separate",
+        "citation_ids": [
+          "route_plan-7bc084bf429e4fe180934f996f6ea9e4",
+          "existing-login-only"
+        ],
+        "decision_ids": [
+          "decision-53dd2fc616aa46febf94f5b24c477029"
+        ],
+        "event": "decision",
+        "reason": "Inherited CLI authentication failed and additional credentials violate the explicit user constraint; this is not a calibration hypothesis result",
+        "reopening_condition": "Platform supplies nested-client authentication from the existing login",
+        "review_event_ids": [],
+        "scope": {
+          "kind": "runtime auth compatibility",
+          "source": "8acde0c2"
+        },
+        "target": "parked"
+      }
+    },
+    {
+      "id": "cloud-cancel-check",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "assignment",
+      "title": "Controlled cloud-worker cancellation check. Zero physics, fits or collection. Write ready-for-cancel and wait for cancellation. Preserve partial evidence.",
+      "revision": 4,
+      "created_at": "2026-10-24T20:52:42.753298+00:00",
+      "updated_at": "2026-10-24T20:54:07.138287+00:00",
+      "details": {
+        "allocation": {
+          "collections": 0,
+          "fresh_fits": 0,
+          "physics_steps": 0,
+          "wall_minutes": 2
+        },
+        "approach_id": "cloud-native-agents",
+        "execution_state": "cancelled",
+        "knowledge_state": "unassessed",
+        "question_id": "question-f91d3c10cc09467e9911f8c0e543eab7",
+        "review_state": "unreviewed"
+      }
+    },
+    {
+      "id": "decision-266c04b3be014103a2751a3d3d35c577",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "decision",
+      "title": "Explicit bounded lifecycle validation",
+      "revision": 1,
+      "created_at": "2026-10-24T20:52:42.817050+00:00",
+      "updated_at": "2026-10-24T20:52:42.817050+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "cloud-cancel-check"
+      }
+    },
+    {
+      "id": "runtime_allocation-a8766b09367e4f9f8269015c5e77bf91",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "runtime_allocation",
+      "title": "Finite manager allocation",
+      "revision": 7,
+      "created_at": "2026-10-24T20:52:42.882352+00:00",
+      "updated_at": "2026-10-24T20:57:44.621855+00:00",
+      "details": {
+        "cleanup_deadline": 1792875492.882203,
+        "cleanup_seconds": 30,
+        "deadline": 1792875462.882203,
+        "events": [],
+        "lease_until": 1792875471.2300305,
+        "owner": {
+          "id": "controller-f04b15f291f1484d97fd97cda6d9b04b",
+          "process": {
+            "birth": "47455444",
+            "boot_id": "9b241de8-e25e-4ea0-8a92-fac368ee5eb2",
+            "group": 513102,
+            "host": "f3095127ea1c",
+            "pid": 513102,
+            "uid": 1000
+          }
+        },
+        "queue": [],
+        "reservations": [
+          {
+            "assignment_id": "cloud-cancel-check",
+            "attempt_id": "attempt-e7bb4a742d144b1eaf33c223c8428d23",
+            "charged_at": "2026-10-24T20:52:42.950289+00:00",
+            "retry_root": null,
+            "review_pending": false,
+            "review_seconds": 60,
+            "reviews": [],
+            "settings": {
+              "backend": "codex",
+              "client_args": [],
+              "dont_ask": false,
+              "goal_mode": false,
+              "machine": "hp3",
+              "physics_backend": "headless-js",
+              "record": false,
+              "shared_runtime_write": false,
+              "viewer": "none",
+              "worktree": false
+            },
+            "state": "cancelled",
+            "usage": {
+              "estimates": {
+                "collections": 0,
+                "fresh_fits": 0,
+                "physics_steps": 0,
+                "wall_minutes": 2
+              },
+              "observed_worker_wall_seconds": 84.10001707077026,
+              "supervisor_observations": [],
+              "unmetered": [
+                "shell movement",
+                "shell compute",
+                "spend"
+              ],
+              "worker_reports": []
+            },
+            "worker_seconds": 120
+          }
+        ],
+        "retry_limit": 1,
+        "review_backlog_limit": 1,
+        "review_seconds": 60,
+        "started_at": "2026-10-24T20:52:42.882206+00:00",
+        "state": "expired",
+        "task_limit": 1,
+        "wall_reserved_seconds": 180,
+        "wall_seconds": 300,
+        "worker_limit": 1
+      }
+    },
+    {
+      "id": "attempt-e7bb4a742d144b1eaf33c223c8428d23",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "attempt",
+      "title": "Controlled cloud-worker cancellation check. Zero physics, fits or collection. Write ready-for-cancel and wait for cancellation. Preserve partial evidence.",
+      "revision": 10,
+      "created_at": "2026-10-24T20:52:43.024072+00:00",
+      "updated_at": "2026-10-24T20:54:07.136024+00:00",
+      "details": {
+        "allocation": {
+          "collections": 0,
+          "fresh_fits": 0,
+          "physics_steps": 0,
+          "wall_minutes": 2
+        },
+        "argv": [
+          "/workspace/hp-sim5/hp-sim5-research-agent",
+          "--codex",
+          "--batch",
+          "--prompt-file",
+          "/workspace/hp-sim5/output/cloud-research/program-store/workers/attempt-e7bb4a742d144b1eaf33c223c8428d23/prompt.txt",
+          "--session-dir",
+          "/workspace/hp-sim5/output/research/sessions/attempt-e7bb4a742d144b1eaf33c223c8428d23",
+          "--physics-backend",
+          "headless-js",
+          "--machine",
+          "hp3",
+          "--viewer",
+          "none",
+          "--wall-deadline",
+          "1792875282.953537",
+          "--no-record",
+          "--no-goal-mode"
+        ],
+        "artifacts": [
+          {
+            "bytes": 369,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-e7bb4a742d144b1eaf33c223c8428d23/session.json"
+          },
+          {
+            "bytes": 21872,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-e7bb4a742d144b1eaf33c223c8428d23/launch.json"
+          },
+          {
+            "bytes": 79,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-e7bb4a742d144b1eaf33c223c8428d23/exit.json"
+          },
+          {
+            "bytes": 4440,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-e7bb4a742d144b1eaf33c223c8428d23/prompt.txt"
+          },
+          {
+            "bytes": 84,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-e7bb4a742d144b1eaf33c223c8428d23/events.jsonl"
+          },
+          {
+            "bytes": 4653,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-e7bb4a742d144b1eaf33c223c8428d23/research.md"
+          },
+          {
+            "bytes": 522,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-e7bb4a742d144b1eaf33c223c8428d23/abstract.md"
+          },
+          {
+            "bytes": 6691,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-e7bb4a742d144b1eaf33c223c8428d23/instructions.md"
+          },
+          {
+            "bytes": 420,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-e7bb4a742d144b1eaf33c223c8428d23/attachment.toml"
+          },
+          {
+            "bytes": 297,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-e7bb4a742d144b1eaf33c223c8428d23/attachment.json"
+          },
+          {
+            "bytes": 237,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-e7bb4a742d144b1eaf33c223c8428d23/connection.json"
+          },
+          {
+            "bytes": 0,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-e7bb4a742d144b1eaf33c223c8428d23/native/runtime.log"
+          },
+          {
+            "bytes": 0,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/cloud-research/program-store/workers/attempt-e7bb4a742d144b1eaf33c223c8428d23/stdout.log"
+          },
+          {
+            "bytes": 103,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/cloud-research/program-store/workers/attempt-e7bb4a742d144b1eaf33c223c8428d23/stderr.log"
+          },
+          {
+            "bytes": 4440,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/cloud-research/program-store/workers/attempt-e7bb4a742d144b1eaf33c223c8428d23/prompt.txt"
+          },
+          {
+            "bytes": 1697,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/cloud-research/program-store/workers/attempt-e7bb4a742d144b1eaf33c223c8428d23/assignment.json"
+          }
+        ],
+        "assignment_id": "cloud-cancel-check",
+        "attempt_dir": "/workspace/hp-sim5/output/cloud-research/program-store/workers/attempt-e7bb4a742d144b1eaf33c223c8428d23",
+        "cancel_deadline": 1792875271.481504,
+        "cleanup": "launcher_finally_completed",
+        "diagnostics": [],
+        "exited_at": "2026-10-24T20:54:07.131547+00:00",
+        "launcher_exit": {
+          "returncode": 130,
+          "wall_deadline": 1792875282.953537,
+          "wall_expired": false
+        },
+        "launcher_session_id": "e55fb0adcff04377985b208bab08a0a6",
+        "observations": [
+          {
+            "at": "2026-10-24T20:52:43.022314+00:00",
+            "event": "reserved"
+          },
+          {
+            "at": "2026-10-24T20:52:43.031539+00:00",
+            "event": "spawned",
+            "pid": 514637
+          },
+          {
+            "at": "2026-10-24T20:54:01.481509+00:00",
+            "event": "cancel_requested"
+          },
+          {
+            "at": "2026-10-24T20:54:07.131562+00:00",
+            "event": "exited",
+            "returncode": 130
+          }
+        ],
+        "observed_wall_seconds": 84.10001707077026,
+        "owner": {
+          "id": "dispatcher-75215ab0c5c241b3a6e8fbda729598d3",
+          "process": {
+            "birth": "47455444",
+            "boot_id": "9b241de8-e25e-4ea0-8a92-fac368ee5eb2",
+            "group": 513102,
+            "host": "f3095127ea1c",
+            "pid": 513102,
+            "uid": 1000
+          }
+        },
+        "premise_conflicts": [],
+        "premise_event_ids_at_start": [],
+        "premise_ids": [],
+        "premise_plan_ids": [
+          "route_plan-46a9f86a2849459ab05cadd19397bffa"
+        ],
+        "process": {
+          "birth": "47533941",
+          "boot_id": "9b241de8-e25e-4ea0-8a92-fac368ee5eb2",
+          "group": 514637,
+          "host": "f3095127ea1c",
+          "pid": 514637,
+          "uid": 1000
+        },
+        "prompt_sha256": "7646287eebd6d69f55043223be9c2a84cdcf1295a3843315fadbc79d8b6c2227",
+        "returncode": 130,
+        "runtime": {
+          "allocation_id": "runtime_allocation-a8766b09367e4f9f8269015c5e77bf91",
+          "assignment_id": "cloud-cancel-check",
+          "cleanup_seconds": 30,
+          "wall_deadline": 1792875282.953537
+        },
+        "runtime_session_id": "de321c31e432409cb3ec47e47df45fcc",
+        "scientific_state": "unassessed",
+        "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-e7bb4a742d144b1eaf33c223c8428d23",
+        "settings": {
+          "backend": "codex",
+          "client_args": [],
+          "dont_ask": false,
+          "goal_mode": false,
+          "machine": "hp3",
+          "physics_backend": "headless-js",
+          "record": false,
+          "shared_runtime_write": false,
+          "viewer": "none",
+          "worktree": false
+        },
+        "source_dirty": true,
+        "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca",
+        "started_at": "2026-10-24T20:52:43.031530+00:00",
+        "state": "cancelled",
+        "worktree": {
+          "branch": "codex/cloud-research-runtime",
+          "repo": "/workspace/hp-sim5",
+          "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+        },
+        "worktree_id": "/workspace/hp-sim5"
+      }
+    },
+    {
+      "id": "decision-b120536a55c94463b37b54ac83e4f64e",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "decision",
+      "title": "Controlled fresh-host reconstruction check; no new dispatch",
+      "revision": 1,
+      "created_at": "2026-10-24T20:58:29.153162+00:00",
+      "updated_at": "2026-10-24T20:58:29.153162+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "program-387d94c6067647b6964aa267122d7989"
+      }
+    },
+    {
+      "id": "decision-11f5a714c2e44741a317da7409877cbf",
+      "program_id": "program-387d94c6067647b6964aa267122d7989",
+      "kind": "decision",
+      "title": "Resume the same durable program after verifying no duplicate workers or restored world claim",
+      "revision": 1,
+      "created_at": "2026-10-24T20:58:29.231194+00:00",
+      "updated_at": "2026-10-24T20:58:29.231194+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "program-387d94c6067647b6964aa267122d7989"
+      }
+    }
+  ]
+}

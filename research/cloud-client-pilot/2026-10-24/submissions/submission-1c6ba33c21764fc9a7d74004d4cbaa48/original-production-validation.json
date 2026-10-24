@@ -1,0 +1,19 @@
+[
+  {
+    "run_id": "8fd9086bb97e40df815b9236ece792e5",
+    "steps": 100,
+    "samples": 101,
+    "engine": "rust-native",
+    "simulated_seconds": 0.2
+  },
+  {
+    "run_id": "a5a83009ee5a4079a1da693294ddd8aa",
+    "steps": 100,
+    "samples": 101,
+    "engine": "rust-native",
+    "simulated_seconds": 0.2,
+    "rrd_bytes": 1493639,
+    "rrd_samples": 101,
+    "has_blueprint": true
+  }
+]
