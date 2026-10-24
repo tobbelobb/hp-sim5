@@ -1,0 +1,130 @@
+# Operate a research program from chat
+
+An existing repository-connected Codex or Claude Code chat can manage a program
+with its shell tool. Give it your question and this prompt:
+
+```text
+Read research/prompts/research-manager.txt and manage this question:
+Can encoder-only HP3 calibration improve from the same measurements?
+```
+
+The agent runs `./hp-sim5-research-program --question 'Your question'`. This
+creates durable memory and starts a local tool host automatically. The JSON
+result includes the program ID, program-bound connection path, manager session,
+overview paths and next allocation. A new question starts unallocated. The
+manager chooses and records an assignment before dispatching it. No scientific
+result exists merely because the program opened.
+
+Open the same program in another chat with
+`./hp-sim5-research-program --program PROGRAM_ID`. Both chats receive the same
+controller identity while it is alive. Opening a program dispatches no workers.
+The default dispatcher allows one active worker across the store. A separate
+program gets its own controller identity. Use `--store PATH` before the command
+to choose another local store.
+
+## Use the CLI tools
+
+Replace `CONNECTION` with the returned attachment.connection path. CLI requests
+and responses are JSON. A failed call has `ok: false` and an error code/message,
+and exits with code 2. Invalid calls do not silently succeed.
+
+```bash
+./hp-sim5-research-program tool CONNECTION capabilities
+./hp-sim5-research-program tool CONNECTION overview
+./hp-sim5-research-program tool CONNECTION query --params '{"query":"open_questions"}'
+./hp-sim5-research-program tool CONNECTION approach --params '{"question_id":"QUESTION_ID","title":"Inspect saved candidates","reason":"Resolve membership before new fitting","record_id":"saved-route"}'
+./hp-sim5-research-program tool CONNECTION assignment --params '{"approach_id":"saved-route","objective":"Compare frozen memberships with their original baselines","allocation":{"wall_minutes":5,"fresh_fits":0},"record_id":"compare-membership"}'
+./hp-sim5-research-program tool CONNECTION transition --params '{"record_id":"compare-membership","target":"ready","reason":"Bounded saved-evidence comparison"}'
+./hp-sim5-research-program tool CONNECTION worker_start --params '{"assignment_id":"compare-membership","settings":{"backend":"codex","viewer":"none","worktree":true}}'
+./hp-sim5-research-program tool CONNECTION worker_status --params '{"attempt_id":"RETURNED_ATTEMPT_ID"}'
+```
+
+The example's zero fresh fits is specific to inspecting saved evidence. Choose
+finite workload limits for the actual question. Runtime allocations are recorded
+worker contracts at this stage; independent worker wall enforcement is task 013.
+The CLI never waits for the worker investigation to finish. Later calls reach
+the same host, which retains the actual dispatcher/reviewer child processes and
+polls their exits. Worker session links point to the existing launcher artifacts.
+
+`capabilities` lists the actual Python parameter names for every operation. These
+operations are implemented:
+
+| Work | Operations |
+| --- | --- |
+| Program and graph | overview/status, capabilities, query, question, approach, assignment, artifact, claim, derive, relate, assess, review_event, transition |
+| Worker | worker_start, worker_status, worker_cancel, worker_sessions |
+| Fixed separate review | submit, submission_verify, submission_invalidate, review_plan, review_start, review_status, review_cancel, review_apply |
+| Human direction | steering, decision |
+| Lifecycle | pause, resume, stop, shutdown |
+
+For example, `steering` takes `text`, `subject_id`, `evidence_ids`, `actor`,
+`record_id` and `expected_revision` as in the [store guide](program-store.md).
+The manager records steering, reads it and explicitly changes assignments.
+Automatic strategy application belongs to task 012. `review_start` accepts the
+same settings as `review_plan`; see [review contracts](program-review.md).
+`query` retains scoped evidence and source links, as in the [graph guide](program-graph/README.md).
+
+Pause prevents new worker/reviewer dispatch. Running work continues. Use
+worker_cancel or review_cancel for an explicit cancellation. Stop prevents new
+dispatch and requests cancellation of this controller's owned children. Poll
+worker_status/review_status until cleanup completes. Shutdown also cancels owned
+children and retires the program's tool controller after they exit; it does not
+erase records. The per-store host exits after all opened program controllers
+have shut down. Closing a chat alone leaves the host and workers available to
+another chat. Cancellation of a production worker allows the existing launcher's
+cleanup grace, currently 190 seconds by default.
+
+## Open a dedicated manager chat or attach MCP
+
+Use the existing installed client and its authentication:
+
+```bash
+./hp-sim5-research-program --codex --question 'Your question'
+./hp-sim5-research-program --claude --program PROGRAM_ID
+./hp-sim5-research-program --serve --program PROGRAM_ID
+./hp-sim5-research-program --codex --question 'Your question' --dry-run
+```
+
+The dedicated entry shares command/auth helpers with the existing worker and
+reviewer. It starts no continuing physics world or Viewer. Codex defaults to its
+existing ChatGPT sign-in; no new model API or credentials are required. Client
+arguments after `--` use the supported client's normal options. `--dry-run`
+creates no store, files or processes. Ordinary single-agent investigation still
+uses [research-program.txt](prompts/research-program.txt) or
+`hp-sim5-research-agent` as before.
+
+`--serve` prints attachment/session paths and leaves the file host running.
+The manager session contains attachment.toml for Codex and attachment.json for
+Claude Code, pointing to `scripts/research_program_mcp.py CONNECTION` over stdio.
+The adapter offers program_overview, program_capabilities and program_call.
+It proxies the same host used by CLI calls. Physics MCP remains a separate worker
+service. The ordinary-chat CLI needs only Python's standard library; MCP needs
+the repository's supported MCP SDK.
+
+## Current boundaries and verification
+
+The private file queue needs no socket. One host lock prevents duplicate hosts.
+Every request checks the host generation, bound program and controller identity.
+A stale attachment fails explicitly; reopen the program to obtain its current
+attachment. Reopening after host loss does not adopt or signal old worker PIDs.
+Stale active reservations block further dispatch until task 013 supplies restart
+reconciliation. Request timeout means the outcome may be unknown. Inspect durable
+status before retrying a mutation. Same-UID callers can edit local files or use
+the store APIs directly. This is a cooperative tool boundary, not adversarial
+isolation.
+
+Task 011 verifies fresh-process CLI calls, retained fake-worker ownership,
+program-bound attachment sharing, graph/review errors, pause/cancel/stop behavior,
+client argv and actual MCP SDK initialize/list/call handling. These are interface
+checks, not live scientific or release evidence. In this command sandbox the
+SDK's stock stdio loop cannot wake after thread work because its internal socket
+send is denied. The recorded protocol check uses a diagnostic timer around the
+unchanged SDK. Stock SDK startup and a real coding-chat session remain unproved
+here. Existing nested Codex startup fails with read-only writable-state access;
+no new keys or environment overrides were introduced.
+
+Unavailable operations return `unavailable` with the owning task: strategy in
+012, autonomous_continue/recover in 013, parallel in 014 and integrate in 015.
+Task 016 still requires the genuine client, worker, production-tool, review and
+replanning pilot. The full manager remains incomplete until the remaining
+implementation tasks and that live proof pass.

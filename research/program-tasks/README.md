@@ -22,9 +22,10 @@ only its own changes. Push only when authorized by the human. Do not run the
 next task inside the same invocation.
 
 Tasks 001–006 are completed foundations. Tasks 007–016 are required manager
-implementation, not optional proposals. All ten new cards are `ready`; only
-cards with completed dependencies are eligible. Initially **007 is next**; always
-use tasks.json for current eligibility.
+implementation, not optional proposals. Tasks 007–011 now supply storage, graph,
+dispatch, review and [manager chat entry](../program-manager.md). Task 012 is next;
+only cards with completed dependencies are eligible. Always use tasks.json for
+current eligibility. The full manager remains incomplete until task 016 passes.
 There is no separate proposal/promotion barrier between the implementation cards.
 Implementation choices can evolve, but graph, manager/worker separation and chat
 entry cannot be replaced by prompt-only equivalents and marked complete.

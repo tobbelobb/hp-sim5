@@ -1,0 +1,24 @@
+{
+  "source_parent_revision": "7840797b5a81d265ebb0c5091d3e0b6322ef9a6d",
+  "source_dirty": true,
+  "hashes": {
+    "src/python/hp_sim5_research/program_manager.py": "2e7734914cab3eda94f16216d772804b24aceece4ac8c7ab20348d9517644f59",
+    "src/python/hp_sim5_research/program_host.py": "90add52fdae30c9460ca9eec2db38d09d3074295bfcf7374cb9c2e4bd828f180",
+    "src/python/hp_sim5_research/program_entry.py": "035d968c7ee9566a0cab23d0036826efdcc2958e141193d4a4f8abeab3a2655e",
+    "src/python/hp_sim5_research/program_review.py": "f938165be1b01afbb0d9548827fb7155599742c66803f059bab19291908e69c5",
+    "src/python/hp_sim5_research/coding_client.py": "d3fcc97131d54e34b9864b2196f1eee442b80896a3546846b396ba85974b1289",
+    "scripts/research_agent.py": "f47f2003456aa6f51820ba300fa03911b96155e10ed07ad3781dfbba4941cab8",
+    "scripts/research_program.py": "00fe2e06db77094f205e79f5a035e327934dcc5e13cf6316afe484c9f956dc46",
+    "scripts/research_program_host.py": "7e0fa27075749e1b46c247c4b1cbc914e109c8c112864f4daffd0c6a9a63f92d",
+    "scripts/research_program_mcp.py": "3059fd220e56a9c0d08613809e9be8a94e260abcede08995ad43ac959e6e49e7",
+    "tests/python/test_research_program_manager.py": "e951fcbdaf3d53f057a1cb6eb30020b57049d25553c06b6d2a2da49e446aead4",
+    "research/README.md": "c1995189dd0479b637c87d5c00045a1b2e45ccb93e1c3656bc6635f295ef1cd0",
+    "research/program.md": "c1f49631e8630fe0318a732c0d54b50fefabba01fd4359da8dc3827f05d33eda",
+    "research/program-manager.md": "8a9af4d52dc898d6d0f97565e4b775716f879aa6ad878a20e93bf4cb9cbfa0f8",
+    "research/prompts/research-program.txt": "5c0636077020fc8cf0cc5bd6556f06b6e1c8ed558ad6a10deec3f5b8b5178b11",
+    "research/prompts/research-manager.txt": "cb7c456a27a2896dc67e05e0431f8882f946f8cbe106f40079aa4cc6518c9cf9",
+    "research/program-tasks/README.md": "3f70471cd140ae6838da7f1b51a7f9c66941fc63d0e239a711343e9389bbe6a3",
+    "research/program-tasks/tasks.json": "a638b82a4ee7415e516aeb24746a46c46bacb9cc611d51509978c5edd41a2422",
+    "research/program-tasks/progress.txt": "bf565fc88895237f358d30e8dbf6cf6ea1c98431634df71a14f4c663bd5c7f27"
+  }
+}

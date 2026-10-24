@@ -1,0 +1,39 @@
+{
+  "observed_at": "2026-10-23 21:53:01 UTC",
+  "kind": "parent-observed runtime prerequisites",
+  "repository": "/workspace/hp-sim5",
+  "test_tools": {
+    "pytest": "9.0.2 (released sources staged locally)",
+    "pytest_asyncio": "1.3.0",
+    "provenance": "/tmp/hp-sim5-test-deps/SOURCE-PROVENANCE.json",
+    "command": ".venv/bin/python -m pytest --version",
+    "exit_code": 0,
+    "stdout": "pytest 9.0.2"
+  },
+  "available": [
+    "numpy",
+    "scipy",
+    "websockets",
+    "mcp 1.29.0",
+    "node24",
+    "codex0.159.2"
+  ],
+  "unavailable": [
+    "pxr/USD",
+    "rerun",
+    "cargo",
+    "native physics build",
+    "node_modules"
+  ],
+  "coding_client_probe": {
+    "command": "timeout 15 codex exec --ephemeral --ignore-user-config --disable plugins --sandbox read-only -c 'sqlite_home=\"/tmp/hp-sim5-codex-state\"' -c 'log_dir=\"/tmp/hp-sim5-codex-logs\"' --color never --json 'Reply with READY only. Do not read files or run tools.'",
+    "exit_code": 1,
+    "error": "failed to initialize in-process app-server client: Read-only file system (os error 30)",
+    "note": "codex login status reports existing ChatGPT login. No HOME/CODEX_HOME changes or credentials provisioned."
+  },
+  "network": {
+    "configured": "Managed environment reports enforced unrestricted HTTP via proxy; shell proxy access fails, while GitHub connector works.",
+    "prior_install": "A network-permission dependency install waited ~41 minutes and was cancelled by the user. Do not repeat the permission wait."
+  },
+  "limitations": "These are prerequisite observations, not a live worker, production numerical result, independent review, or task016 release proof."
+}

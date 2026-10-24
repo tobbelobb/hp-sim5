@@ -356,3 +356,41 @@ Freshness: parent confirmed canonical origin/main at 639661050c0ddd66c9cf3be9c5c
 no shell fetch/push or network install attempted. This completes 010, not manager
 readiness. Next eligible task 011 starts only in a new invocation; deadline polling/
 restart orchestration and combined integration remain 013/015, live release 016.
+
+2026-10-24 task 011: program-bound manager chat entry and retained CLI/MCP tools
+Resumed the unfinished partial manager/reviewer edits after the overnight pause.
+Added a per-store file-queue tool host that retains actual dispatcher/reviewer
+children across fresh CLI processes, locked automatic startup, program-bound
+attachments and zombie/dead-host liveness rejection. Question-only --question,
+existing --program, tool operations, dedicated --codex/--claude and --serve MCP
+configuration all start no manager physics/Viewer. Shared coding-client/auth and
+forwarded settings preserve the existing worker entry. Tools expose graph/store,
+worker dispatch/status/cancel, fixed separate reviews/admission, explicit steering
+and lifecycle. Pause blocks new dispatch while running children continue; cancel,
+stop and shutdown retain their explicit meanings. Missing later operations return
+structured unavailable errors with owning tasks. The prompt/quickstart preserve
+ordinary single-agent research and the incomplete full-manager readiness notice.
+
+Verification: affected integration passed 107 tests, 18 deselected and 34 subtests
+in 17.69s, including eleven new manager cases. Positive fresh-process CLI review
+capture/cancel/admission, worker ownership, three concurrent openers, cross-program
+identity rejection and no duplicate dispatch passed. After matching supported
+Claude config and Codex approval/startup conventions, four affected client/entry
+checks passed in 0.67s; unaffected passing tests were reused. An initial Path.open
+opener error caused seven startup failures and was corrected before final passes.
+The actual MCP SDK initialized/listed/called/cleanly exited through the adapter
+with an explicitly test-only timer around the sandbox's denied asyncio self-pipe.
+Stock stdio startup and a genuine coding-chat smoke remain unproved; prior nested
+Codex writable-state/runtime failures are retained rather than relabeled as live
+proof. No SDK changes, new keys, environment overrides or network installs.
+
+Checks/transcripts, SDK wire/wrapper, historical question and fixed-review fixture
+snapshots, client plans and limits: output/research/sessions/2026-10-24-manager-chat-entry/.
+Guide: research/program-manager.md; saved prompt: research/prompts/research-manager.txt.
+Compilation, catalog regeneration preserving historical entries, source/queue/docs
+integrity and diff checks are recorded there. Fits/replays/physics/steps/movements/
+collections: zero. No dynamics changes, so no physics delivery gate applies.
+Freshness: parent confirmed main/HEAD/origin at 7840797b5a81d265ebb0c5091d3e0b6322ef9a6d;
+no shell fetch/push attempted. Task011 complete, full manager incomplete. Next
+eligible task012 uses these tools for strategy;013 owns independent budgets and
+restart reconciliation,016 retains the genuine live release gate. No012 started.

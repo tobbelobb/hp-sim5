@@ -16,14 +16,15 @@ Ask your agent to read `research/prompts/research-program.txt` and investigate
 your question. It connects evidence discovery, one bounded assignment, execution,
 review and a durable decision handoff in the same conversation.
 
-The full chat-driven **research manager**, with graph memory and delegation to
-`hp-sim5-research-agent`, is now specified in the
-[manager contract](program-tasks/MANAGER.md) and queued as
-[tasks 007–016](program-tasks/README.md). It is not shipped yet. Repeatedly ask a
-coding agent to read `research/program-tasks/PROMPT.md` and do one task to build it;
-task 016 requires a real end-to-end demonstration before release completion.
-The implemented [worker dispatcher API](program-workers.md) reuses this launcher
-and records its attempts; its fixture/dry-run checks are not a live manager release.
+The [manager chat entry](program-manager.md) adds durable graph tools, delegation
+and separate evidence review through CLI or MCP. An existing repository-connected
+chat can use `research/prompts/research-manager.txt` and only a question. Dedicated
+entry is `./hp-sim5-research-program --codex --question 'Your question'` or
+`--claude`. It starts no physics world for the manager. The existing
+[worker dispatcher](program-workers.md) starts this launcher for assignments.
+Strategy automation, recovery and the full live release gate remain in
+[tasks 012–016](program-tasks/README.md). Fixture checks do not establish the
+complete release defined by the [manager contract](program-tasks/MANAGER.md).
 
 ## Setup and interactive use
 

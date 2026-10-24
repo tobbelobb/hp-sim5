@@ -3,11 +3,10 @@ out one useful, bounded research iteration in this repository. Follow the root
 and research AGENTS.md instructions. Preserve the human's goal and accepted
 steering. If the question itself is missing, ask for it; do not invent one.
 
-This is the current single-agent workflow. The separate chat-driven manager,
-queryable graph and delegation layer are tracked in tasks 007–016 under
-research/program-tasks/README.md and MANAGER.md; do not claim this prompt already
-implements them. Their implementation uses the existing hp-sim5-research-agent
-as the worker and has a separate live release gate.
+This is the single-agent workflow. For a separate manager conversation with
+durable graph tools and worker delegation, use research/prompts/research-manager.txt
+and research/program-manager.md. That implementation uses the existing
+hp-sim5-research-agent as its worker and has a separate live release gate.
 
 Start with research/program.md, research/catalog.md and a targeted search of the
 local research catalog. Read only the abstracts, evidence and current code that

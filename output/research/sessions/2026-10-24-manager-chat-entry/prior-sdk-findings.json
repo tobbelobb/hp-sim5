@@ -1,0 +1,62 @@
+{
+  "kind": "SDK stdio prerequisite diagnosis; not live manager release proof",
+  "retained_at": "2026-10-23T22:21:03.861733+00:00",
+  "source_provenance": "/tmp/hp-sim5-runtime-deps/SOURCE-PROVENANCE.json",
+  "findings": [
+    "Ordinary MCPServer.run() stdio initialization times out in this command sandbox.",
+    "Transport reads and validates the exact initialize request. Task stacks preserve the resulting SessionMessage.",
+    "Plain AnyIO memory and context-aware channels pass without worker-thread work. The same channel stalls after to_thread work until an unrelated timer wakes the event loop.",
+    "Asyncio debug identifies the failed worker-thread wakeup: selector_events.py::_write_to_self -> csock.send(b\"\\0\") raises PermissionError(EPERM).",
+    "One genuine SDK stdio roundtrip succeeds using the unmodified SDK run_stdio_async API alongside an independent 10 ms timer. This diagnostic timer is an explicit environment accommodation; it does not establish the stock SDK launcher works."
+  ],
+  "wake_diagnostic": {
+    "command": ".venv/bin/python - <<PY [exact source retained in wake-diagnostic.py] PY",
+    "exit_code": 0,
+    "source_and_output_retention": "Captured from the prior exec diagnostic; not rerun to retain artifacts. stdout/stderr separated by their known print/logging destinations; exec returned a combined stream.",
+    "observed_worker_return_s": 0.5021390439978859,
+    "scheduled_timer_s": 0.5
+  },
+  "roundtrip": {
+    "command": ".venv/bin/python /tmp/hp-sim5-sdk-timer-probe.py",
+    "outcome": "passed_with_timer_accommodation",
+    "server_exit_code": 0,
+    "wall_s": 0.6934619150015351,
+    "transcript": "timer-roundtrip.json",
+    "stderr": "timer-server-stderr.log"
+  },
+  "unchanged": [
+    "Third-party SDK sources",
+    "Tracked repository code",
+    "Git state and task queue",
+    "Global environment settings",
+    "Credentials"
+  ],
+  "not_attempted": [
+    "Dependency installs",
+    "Approvals or escalation",
+    "Network/socket probes",
+    "Physics operations",
+    "Further coding-client or fitting probes"
+  ],
+  "file_sha256": {
+    "timer-probe.py": "9e83d75a32eebd977b0930bca7a9a40df16eff175e3af4001bebdd1915a2c002",
+    "timer-server-stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "debug-server.py": "8cd96ed436a72d2d94bcea36635a4417b30b3471dfa8b38a35350a70bfb9ce59",
+    "task-stack-observation.json": "c0c876db5471990419ea4a10754f0e440b6534de9cbfccf0f66312abffc414e8",
+    "initial-protocol-probe.py": "083ca70828f9c236740dee6d85cd41215b086a178765e7964b14196c3a30bb09",
+    "debug-server-stderr.log": "c2940f01b1569fd5bc75abc7174b36f3dfc70446221064e1bd5f72d8a8b7eb4a",
+    "timer-roundtrip.json": "952afad1a1f4b33bd78bce5b48c06252ec6e70e215b3232ba6153539994fd6a1",
+    "wake-diagnostic.py": "406e17cff8a9bc3243f9eb7f18baab4b1f46a42417d2d4da5bddbbefb5c98b12",
+    "task-stack-stderr.log": "5456570ca4738927b9bc0a0706eb231f568bb7eeea99b30b781eb2d563abe05c",
+    "initial-stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "initial-failure.json": "f10a84d6b57f4c40b0d3c4e5c06ccb52ce0794fecc2e593e959ded72ec053fda",
+    "timer-server.py": "3fcd11ce48b87361a69b0303e10a282e8588268ba3ba4544a19b19cfaf3ee9c7",
+    "wake-diagnostic-stdout.txt": "595c05aef82942ea72f739636b009f0ea819cae6e52aa2b95f3f115289cacaa9",
+    "debug-observation.json": "db61427b0753916c4bcc5ddaaee7a5babfa6b01cde456828b6b4cbc786f7f80c",
+    "initial-echo-server.py": "04e864388ca684824900c85dd6070672efd2ab3dc2ac552ca688350b1aae0d77",
+    "parsed-request-stderr.log": "885a21fa1bf0f432cece52490e66d789920652e5d1c14989242261f747935dfd",
+    "parsed-request-observation.json": "9283c35f9e15e24a128826c0e2e64d4ec39e20816f8fe93f19972ee8c2dd7e76",
+    "wake-diagnostic-stderr.txt": "708c80da41c180c4507cf7b10ac3dbfb364a6236b5daee586e990f2bb1c784b6",
+    "debug-probe.py": "7e781cbff6c5e035519d64bf26e2129a5851d375de41c0f73c52f7b0787a3405"
+  }
+}

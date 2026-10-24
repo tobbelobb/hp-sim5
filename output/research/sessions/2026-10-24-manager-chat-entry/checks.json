@@ -1,0 +1,131 @@
+{
+  "focused_final": {
+    "argv": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/python/test_research_program_review.py",
+      "tests/python/test_research_program.py",
+      "tests/python/test_research_program_graph.py",
+      "tests/python/test_research_program_workers.py",
+      "tests/python/test_research_program_manager.py",
+      "tests/python/test_research_agent.py",
+      "-k",
+      "WorkerTests or ProgramTests or GraphTests or test_report_only or test_known_overclaim or test_actual_candidate or test_changed_bytes or test_new_submission or test_corruption_before or test_original_turnover or test_failed_or_mismatched or test_codex_claude_plans or test_api_and_database or test_control_credentials or launcher_native_build_recovery or launcher_dry_run or launcher_selects_model_provider or launcher_worktree_dry_run or create_worktree_links or launcher_loads_provider_key or launcher_named_session or launcher_clarification or launcher_goal_mode or sidebar_hook or launcher_preserves_written_report or launcher_refuses_existing_session or launcher_requires_exactly_one_backend or claude_dry_run or claude_launcher_lifecycle or interrupted or worktree_reexec or test_research_program_manager",
+      "-m",
+      "not slow",
+      "--basetemp",
+      "/tmp/hp-sim5-task011-final",
+      "--junitxml",
+      "output/research/sessions/2026-10-24-manager-chat-entry/pytest.xml"
+    ],
+    "exit_code": 0,
+    "seconds": 18.27460054599942,
+    "transcript": "pytest-final.txt",
+    "passed": 107,
+    "deselected": 18,
+    "subtests_passed": 34,
+    "new_manager_cases": 11
+  },
+  "initial_failure": {
+    "failed": 7,
+    "passed": 3,
+    "reason": "Path.open does not accept opener; fixed to built-in open before final passing suite"
+  },
+  "focused_preliminary": [
+    {
+      "passed": 10,
+      "seconds": 7.96
+    },
+    {
+      "passed": 11,
+      "seconds": 10.45
+    }
+  ],
+  "boundary": "Real CLI/store/host/git/child protocols, fixture workers and reviewer judgements. No genuine coding-client conversation or numerical work.",
+  "sdk_accommodation": "Actual MCP SDK stdio protocol under an independent test-only 10ms timer. Stock run() startup remains blocked by sandbox asyncio self-pipe EPERM; no SDK or production workaround.",
+  "reused_prerequisites": [
+    "../../program-task-loop-2026-10-23/prerequisites.json",
+    "../../program-task-loop-2026-10-23/sdk-protocol-followup/findings.json"
+  ],
+  "tool_provenance": [
+    "/tmp/hp-sim5-test-deps/SOURCE-PROVENANCE.json",
+    "/tmp/hp-sim5-runtime-deps/SOURCE-PROVENANCE.json"
+  ],
+  "numerical_use": {
+    "fits": 0,
+    "replays": 0,
+    "physics_runs": 0,
+    "physics_steps": 0,
+    "movements": 0,
+    "collections": 0
+  },
+  "client_config_followup": {
+    "argv": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/python/test_research_program_manager.py",
+      "-k",
+      "manager_client_commands or manager_forwarded or question_only"
+    ],
+    "exit_code": 0,
+    "seconds": 1.0027816290021292,
+    "transcript": "pytest-client-final.txt",
+    "reason": "Use supported Claude command/args schema and match existing Codex tool-approval/startup settings"
+  },
+  "sdk_protocol": {
+    "transcript": "manager-protocol.json",
+    "wrapper": "sdk-timer-test.py",
+    "exit_code": 0,
+    "actual_sdk": true,
+    "stock_startup_proved": false,
+    "live_release_proof": false
+  },
+  "saved_examples": [
+    "question-example.json",
+    "cli-review-fixture.json",
+    "client-plans.json"
+  ],
+  "compilation": {
+    "argv": [
+      ".venv/bin/python",
+      "-m",
+      "compileall",
+      "-q",
+      "src/python/hp_sim5_research/program_manager.py",
+      "src/python/hp_sim5_research/program_host.py",
+      "src/python/hp_sim5_research/program_entry.py",
+      "src/python/hp_sim5_research/program_review.py",
+      "src/python/hp_sim5_research/coding_client.py",
+      "scripts/research_agent.py",
+      "scripts/research_program.py",
+      "scripts/research_program_host.py",
+      "scripts/research_program_mcp.py",
+      "tests/python/test_research_program_manager.py"
+    ],
+    "exit_code": 0
+  },
+  "catalog": {
+    "argv": [
+      ".venv/bin/python",
+      "scripts/research_index.py"
+    ],
+    "exit_code": 0,
+    "merge_policy": "Regenerated catalog, then retained published catalog unchanged and appended only this task-owned session section",
+    "preserved_prior_sessions": 102,
+    "added_session": "2026-10-24-manager-chat-entry"
+  },
+  "final_integrity": {
+    "queue": "011 done;012 ready and not started",
+    "source_hashes": 18,
+    "git_diff_check": 0
+  },
+  "cleanup": {
+    "active_test_hosts": 0,
+    "active_sdk_test_wrappers": 0,
+    "method": "Read /proc cmdline/state after fixture shutdown; no processes signalled by this check"
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "kind": "Historical actual question-only CLI result after orderly host shutdown; no scientific result",
+  "attachment": {
+    "connection": "/tmp/hp-sim5-task011-final/test_question_only_actual_cli_0/memory/managers/program-8b8b7c01e60e4d4f92a4944ef1bd6c7a/connection.json",
+    "controller_id": "controller-f84a7c9450aa4194b513eb86d95878ba",
+    "host_id": "host-b891c272ac94472b8e4c06da279e4c5d",
+    "process": {
+      "birth": "5260573",
+      "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+      "group": 17366,
+      "host": "2df9bd87a6a7",
+      "pid": 17366,
+      "uid": 1000
+    },
+    "program_id": "program-8b8b7c01e60e4d4f92a4944ef1bd6c7a",
+    "root": "/workspace/hp-sim5",
+    "session": "/workspace/hp-sim5/output/research/managers/program-8b8b7c01e60e4d4f92a4944ef1bd6c7a/controller-f84a7c9450aa4194b513eb86d95878ba",
+    "store": "/tmp/hp-sim5-task011-final/test_question_only_actual_cli_0/memory",
+    "version": 1
+  },
+  "overview": {
+    "assignments": [],
+    "format_version": 1,
+    "live_alternatives": [],
+    "manager": {
+      "controller_id": "controller-f84a7c9450aa4194b513eb86d95878ba",
+      "links": {
+        "overview": "/workspace/hp-sim5/output/research/managers/program-8b8b7c01e60e4d4f92a4944ef1bd6c7a/controller-f84a7c9450aa4194b513eb86d95878ba/overview.md",
+        "session": "/workspace/hp-sim5/output/research/managers/program-8b8b7c01e60e4d4f92a4944ef1bd6c7a/controller-f84a7c9450aa4194b513eb86d95878ba",
+        "snapshot": "/workspace/hp-sim5/output/research/managers/program-8b8b7c01e60e4d4f92a4944ef1bd6c7a/controller-f84a7c9450aa4194b513eb86d95878ba/overview.json",
+        "store": "/tmp/hp-sim5-task011-final/test_question_only_actual_cli_0/memory/programs.sqlite3",
+        "worker_sessions": []
+      },
+      "physics_world": false,
+      "program_id": "program-8b8b7c01e60e4d4f92a4944ef1bd6c7a",
+      "stopping": true,
+      "unavailable": {
+        "autonomous_continue": "Task 013: autonomous dispatch, runtime reservations and worker wall deadlines",
+        "integrate": "Task 015: combined candidate integration and delivery checks",
+        "parallel": "Task 014: coordinated worker pool",
+        "recover": "Task 013: restart reconciliation/adoption of unfinished children",
+        "strategy": "Task 012: evidence-based strategy selection and automatic steering application"
+      }
+    },
+    "next_allocation": {
+      "allocation": null,
+      "reason": "Manager must select a bounded assignment from the question and evidence",
+      "state": "unallocated"
+    },
+    "program": {
+      "constraints": {},
+      "created_at": "2026-10-24T06:34:49.325020+00:00",
+      "goal": "Question without prepared state",
+      "id": "program-8b8b7c01e60e4d4f92a4944ef1bd6c7a",
+      "question_id": "question-16879d5d2f2349b0a56ef562ec2586c8",
+      "revision": 1,
+      "state": "active",
+      "updated_at": "2026-10-24T06:34:49.325020+00:00"
+    },
+    "records": [
+      {
+        "created_at": "2026-10-24T06:34:49.325140+00:00",
+        "details": {
+          "knowledge_state": "unassessed",
+          "scope": {}
+        },
+        "id": "question-16879d5d2f2349b0a56ef562ec2586c8",
+        "kind": "question",
+        "program_id": "program-8b8b7c01e60e4d4f92a4944ef1bd6c7a",
+        "revision": 1,
+        "title": "Question without prepared state",
+        "updated_at": "2026-10-24T06:34:49.325140+00:00"
+      }
+    ],
+    "scientific_result": "No scientific result is available yet; evidence has not been admitted by review."
+  }
+}

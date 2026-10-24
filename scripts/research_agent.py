@@ -61,25 +61,7 @@ def codex_environment(provider=CHATGPT_SIGN_IN):
 
 
 def forwarded_settings(codex_args):
-    # Effective `-c` overrides and `--model` from arguments forwarded to Codex; later wins.
-    settings = {}
-    model = None
-    arguments = iter(codex_args)
-    for argument in arguments:
-        if argument in ('-c', '--config'):
-            override = next(arguments, None)
-        elif argument.startswith('--config='):
-            override = argument.split('=', 1)[1]
-        else:
-            override = None
-        if override and '=' in override:
-            key, value = override.split('=', 1)
-            settings[key.strip()] = value.strip().strip('"')
-        elif argument in ('-m', '--model'):
-            model = next(arguments, None)
-        elif argument.startswith('--model='):
-            model = argument.split('=', 1)[1].strip().strip('"')
-    return settings, model
+    return coding_client.forwarded_settings(codex_args)
 
 
 def worktree_parent(directory=None):

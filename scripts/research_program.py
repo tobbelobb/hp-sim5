@@ -12,7 +12,17 @@ from hp_sim5_research.program_graph import EVENTS, RELATIONS
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
+    argv = list(sys.argv[1:] if argv is None else argv)
+    probe = argparse.ArgumentParser(add_help=False)
+    probe.add_argument('--store')
+    _, remainder = probe.parse_known_args(argv[:argv.index('--')] if '--' in argv else argv)
+    if remainder and (remainder[0] == 'tool' or remainder[0].startswith('--') and remainder[0] != '--help'):
+        from hp_sim5_research.program_entry import main as manager_main
+        return manager_main(argv, ROOT)
+    parser = argparse.ArgumentParser(description=__doc__, epilog=(
+        'Manager chat/tools: --question TEXT or --program ID; add --codex/--claude '
+        'for a dedicated chat, --serve for MCP configuration. Use tool CONNECTION '
+        'OPERATION --params JSON for existing-chat calls. See research/program-manager.md.'))
     parser.add_argument('--store', type=Path, default=ROOT / '.research-programs', help='Manager-owned store directory')
     commands = parser.add_subparsers(dest='command', required=True)
     create = commands.add_parser('create', help='Create a program from one question')

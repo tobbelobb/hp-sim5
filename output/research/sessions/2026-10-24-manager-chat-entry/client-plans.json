@@ -1,0 +1,90 @@
+{
+  "kind": "Actual supported command plans only; no client conversation",
+  "plans": {
+    "codex": {
+      "argv": [
+        "codex",
+        "--cd",
+        "/workspace/hp-sim5",
+        "--sandbox",
+        "workspace-write",
+        "-c",
+        "approval_policy=\"never\"",
+        "-c",
+        "sandbox_workspace_write.network_access=true",
+        "-c",
+        "sandbox_workspace_write.writable_roots=[\"/workspace/hp-sim5/output\"]",
+        "-c",
+        "features.default_mode_request_user_input=true",
+        "-c",
+        "features.goals=false",
+        "-c",
+        "mcp_servers.hp_sim5.enabled=false",
+        "-c",
+        "mcp_servers.rerun.enabled=false",
+        "-c",
+        "mcp_servers.hp_sim5_program.command=\"/workspace/hp-sim5/.venv/bin/python\"",
+        "-c",
+        "mcp_servers.hp_sim5_program.args=[\"/workspace/hp-sim5/scripts/research_program_mcp.py\", \"/tmp/hp-sim5-task011-final/test_question_only_actual_cli_0/memory/managers/program-8b8b7c01e60e4d4f92a4944ef1bd6c7a/connection.json\"]",
+        "-c",
+        "mcp_servers.hp_sim5_program.cwd=\"/workspace/hp-sim5\"",
+        "-c",
+        "mcp_servers.hp_sim5_program.required=true",
+        "-c",
+        "mcp_servers.hp_sim5_program.startup_timeout_sec=30",
+        "-c",
+        "mcp_servers.hp_sim5_program.default_tools_approval_mode=\"approve\"",
+        "-c",
+        "mcp_servers.hp_sim5_program.tool_timeout_sec=30",
+        "-c",
+        "model_provider=\"openai\"",
+        "-c",
+        "developer_instructions=\"Manage the research question supplied in this conversation through the durable\\nprogram tools. Read AGENTS.md, research/AGENTS.md and research/program-manager.md.\\nKeep this conversation in the manager role. Delegate bounded investigations to\\nthe existing hp-sim5-research-agent through worker_start.\\n\\nIf this conversation has a bound manager attachment, call overview first. In an\\nexisting repository-connected chat without MCP, run this command with the human's\\nquestion as one properly quoted argument:\\n\\n./hp-sim5-research-program --question 'the research question'\\n\\nTo resume a known program use --program PROGRAM_ID instead. Save the returned\\nattachment.connection path and program ID in the conversation. Each later CLI\\ntool call is a separate process and uses that same connection:\\n\\n./hp-sim5-research-program tool CONNECTION capabilities\\n./hp-sim5-research-program tool CONNECTION overview\\n./hp-sim5-research-program tool CONNECTION OPERATION --params 'JSON object'\\n\\nThe CLI starts and retains the controller when needed. No manual terminal,\\nserver setup or dynamic MCP registration is required. MCP clients expose\\nprogram_overview, program_capabilities and program_call with the same operations.\\nNever substitute another program's attachment or edit controller identity files.\\n\\nReport the actual program ID, manager overview path, worker session paths when\\npresent and next allocation. A new program has no allocated investigation yet.\\nSearch relevant saved evidence and graph records before choosing an assignment.\\nUse capabilities for actual parameter names. Record approaches with their reasons,\\nthen choose a finite allocation for the smallest investigation that changes a\\ndecision. Fresh fits, bounded headless physics and simulated collection are\\nallowed within the human's constraints. Read the recording-cost guidance before\\nchoosing numerical budgets. For simulated autocal CLI use supported --speedup 25\\nunless the workload calls for another supported setting. Prefer headless native\\nRust and preserve simulation-time waits, timestep and substeps. Mark the assignment ready before worker_start.\\nPoll worker_status in later calls and preserve partial and unsuccessful evidence.\\n\\nUse graph queries and artifact citations to explain what supports a claim or\\napproach. An exited worker produces an unreviewed result. Submit fixed evidence,\\nstart a separate review, poll review_status and use review_apply only after a\\nvalid review. Producer claims and successful command exits do not admit knowledge.\\n\\nRecord human instructions with steering, then explicitly update the relevant\\napproach or assignment and record the reason. Pause blocks new dispatch while\\nrunning experiments continue. To stop a worker use worker_cancel; to stop the\\nprogram use stop, then poll cleanup. Shutdown retires this tool host's program\\ncontroller after cancelling its owned children. It preserves durable history.\\n\\nStrategy automation, autonomous continuation, independent worker deadlines,\\nrestart adoption, parallel coordination and patch integration are unavailable\\nuntil their owning tasks ship. State the limitation if requested. Make explicit\\nbounded tool calls for current work; never emulate a continuing conversation with\\na prompt-restart loop. The full live manager release remains task 016.\\n\\n\\nBound manager attachment: /tmp/hp-sim5-task011-final/test_question_only_actual_cli_0/memory/managers/program-8b8b7c01e60e4d4f92a4944ef1bd6c7a/connection.json\\nProgram ID: program-8b8b7c01e60e4d4f92a4944ef1bd6c7a\\nManager artifacts: /workspace/hp-sim5/output/research/managers/program-8b8b7c01e60e4d4f92a4944ef1bd6c7a/controller-f84a7c9450aa4194b513eb86d95878ba\\n\""
+      ],
+      "instructions": "Manage the research question supplied in this conversation through the durable\nprogram tools. Read AGENTS.md, research/AGENTS.md and research/program-manager.md.\nKeep this conversation in the manager role. Delegate bounded investigations to\nthe existing hp-sim5-research-agent through worker_start.\n\nIf this conversation has a bound manager attachment, call overview first. In an\nexisting repository-connected chat without MCP, run this command with the human's\nquestion as one properly quoted argument:\n\n./hp-sim5-research-program --question 'the research question'\n\nTo resume a known program use --program PROGRAM_ID instead. Save the returned\nattachment.connection path and program ID in the conversation. Each later CLI\ntool call is a separate process and uses that same connection:\n\n./hp-sim5-research-program tool CONNECTION capabilities\n./hp-sim5-research-program tool CONNECTION overview\n./hp-sim5-research-program tool CONNECTION OPERATION --params 'JSON object'\n\nThe CLI starts and retains the controller when needed. No manual terminal,\nserver setup or dynamic MCP registration is required. MCP clients expose\nprogram_overview, program_capabilities and program_call with the same operations.\nNever substitute another program's attachment or edit controller identity files.\n\nReport the actual program ID, manager overview path, worker session paths when\npresent and next allocation. A new program has no allocated investigation yet.\nSearch relevant saved evidence and graph records before choosing an assignment.\nUse capabilities for actual parameter names. Record approaches with their reasons,\nthen choose a finite allocation for the smallest investigation that changes a\ndecision. Fresh fits, bounded headless physics and simulated collection are\nallowed within the human's constraints. Read the recording-cost guidance before\nchoosing numerical budgets. For simulated autocal CLI use supported --speedup 25\nunless the workload calls for another supported setting. Prefer headless native\nRust and preserve simulation-time waits, timestep and substeps. Mark the assignment ready before worker_start.\nPoll worker_status in later calls and preserve partial and unsuccessful evidence.\n\nUse graph queries and artifact citations to explain what supports a claim or\napproach. An exited worker produces an unreviewed result. Submit fixed evidence,\nstart a separate review, poll review_status and use review_apply only after a\nvalid review. Producer claims and successful command exits do not admit knowledge.\n\nRecord human instructions with steering, then explicitly update the relevant\napproach or assignment and record the reason. Pause blocks new dispatch while\nrunning experiments continue. To stop a worker use worker_cancel; to stop the\nprogram use stop, then poll cleanup. Shutdown retires this tool host's program\ncontroller after cancelling its owned children. It preserves durable history.\n\nStrategy automation, autonomous continuation, independent worker deadlines,\nrestart adoption, parallel coordination and patch integration are unavailable\nuntil their owning tasks ship. State the limitation if requested. Make explicit\nbounded tool calls for current work; never emulate a continuing conversation with\na prompt-restart loop. The full live manager release remains task 016.\n\n\nBound manager attachment: /tmp/hp-sim5-task011-final/test_question_only_actual_cli_0/memory/managers/program-8b8b7c01e60e4d4f92a4944ef1bd6c7a/connection.json\nProgram ID: program-8b8b7c01e60e4d4f92a4944ef1bd6c7a\nManager artifacts: /workspace/hp-sim5/output/research/managers/program-8b8b7c01e60e4d4f92a4944ef1bd6c7a/controller-f84a7c9450aa4194b513eb86d95878ba\n",
+      "attachment": {
+        "mcpServers": {
+          "hp_sim5_program": {
+            "command": "/workspace/hp-sim5/.venv/bin/python",
+            "args": [
+              "/workspace/hp-sim5/scripts/research_program_mcp.py",
+              "/tmp/hp-sim5-task011-final/test_question_only_actual_cli_0/memory/managers/program-8b8b7c01e60e4d4f92a4944ef1bd6c7a/connection.json"
+            ]
+          }
+        }
+      },
+      "backend": "codex",
+      "model_provider": "openai",
+      "physics_world": false
+    },
+    "claude": {
+      "argv": [
+        "claude",
+        "--mcp-config",
+        "/workspace/hp-sim5/output/research/managers/program-8b8b7c01e60e4d4f92a4944ef1bd6c7a/controller-f84a7c9450aa4194b513eb86d95878ba/attachment.json",
+        "--strict-mcp-config",
+        "--append-system-prompt-file",
+        "/workspace/hp-sim5/output/research/managers/program-8b8b7c01e60e4d4f92a4944ef1bd6c7a/controller-f84a7c9450aa4194b513eb86d95878ba/instructions.md",
+        "--allowedTools",
+        "mcp__hp_sim5_program,Read,Glob,Grep,Bash",
+        "--settings",
+        "{\"modelProposedGoals\": \"disabled\"}"
+      ],
+      "instructions": "Manage the research question supplied in this conversation through the durable\nprogram tools. Read AGENTS.md, research/AGENTS.md and research/program-manager.md.\nKeep this conversation in the manager role. Delegate bounded investigations to\nthe existing hp-sim5-research-agent through worker_start.\n\nIf this conversation has a bound manager attachment, call overview first. In an\nexisting repository-connected chat without MCP, run this command with the human's\nquestion as one properly quoted argument:\n\n./hp-sim5-research-program --question 'the research question'\n\nTo resume a known program use --program PROGRAM_ID instead. Save the returned\nattachment.connection path and program ID in the conversation. Each later CLI\ntool call is a separate process and uses that same connection:\n\n./hp-sim5-research-program tool CONNECTION capabilities\n./hp-sim5-research-program tool CONNECTION overview\n./hp-sim5-research-program tool CONNECTION OPERATION --params 'JSON object'\n\nThe CLI starts and retains the controller when needed. No manual terminal,\nserver setup or dynamic MCP registration is required. MCP clients expose\nprogram_overview, program_capabilities and program_call with the same operations.\nNever substitute another program's attachment or edit controller identity files.\n\nReport the actual program ID, manager overview path, worker session paths when\npresent and next allocation. A new program has no allocated investigation yet.\nSearch relevant saved evidence and graph records before choosing an assignment.\nUse capabilities for actual parameter names. Record approaches with their reasons,\nthen choose a finite allocation for the smallest investigation that changes a\ndecision. Fresh fits, bounded headless physics and simulated collection are\nallowed within the human's constraints. Read the recording-cost guidance before\nchoosing numerical budgets. For simulated autocal CLI use supported --speedup 25\nunless the workload calls for another supported setting. Prefer headless native\nRust and preserve simulation-time waits, timestep and substeps. Mark the assignment ready before worker_start.\nPoll worker_status in later calls and preserve partial and unsuccessful evidence.\n\nUse graph queries and artifact citations to explain what supports a claim or\napproach. An exited worker produces an unreviewed result. Submit fixed evidence,\nstart a separate review, poll review_status and use review_apply only after a\nvalid review. Producer claims and successful command exits do not admit knowledge.\n\nRecord human instructions with steering, then explicitly update the relevant\napproach or assignment and record the reason. Pause blocks new dispatch while\nrunning experiments continue. To stop a worker use worker_cancel; to stop the\nprogram use stop, then poll cleanup. Shutdown retires this tool host's program\ncontroller after cancelling its owned children. It preserves durable history.\n\nStrategy automation, autonomous continuation, independent worker deadlines,\nrestart adoption, parallel coordination and patch integration are unavailable\nuntil their owning tasks ship. State the limitation if requested. Make explicit\nbounded tool calls for current work; never emulate a continuing conversation with\na prompt-restart loop. The full live manager release remains task 016.\n\n\nBound manager attachment: /tmp/hp-sim5-task011-final/test_question_only_actual_cli_0/memory/managers/program-8b8b7c01e60e4d4f92a4944ef1bd6c7a/connection.json\nProgram ID: program-8b8b7c01e60e4d4f92a4944ef1bd6c7a\nManager artifacts: /workspace/hp-sim5/output/research/managers/program-8b8b7c01e60e4d4f92a4944ef1bd6c7a/controller-f84a7c9450aa4194b513eb86d95878ba\n",
+      "attachment": {
+        "mcpServers": {
+          "hp_sim5_program": {
+            "command": "/workspace/hp-sim5/.venv/bin/python",
+            "args": [
+              "/workspace/hp-sim5/scripts/research_program_mcp.py",
+              "/tmp/hp-sim5-task011-final/test_question_only_actual_cli_0/memory/managers/program-8b8b7c01e60e4d4f92a4944ef1bd6c7a/connection.json"
+            ]
+          }
+        }
+      },
+      "backend": "claude",
+      "model_provider": null,
+      "physics_world": false
+    }
+  }
+}

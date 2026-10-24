@@ -120,7 +120,7 @@
       "id": "011",
       "priority": 110,
       "title": "Launch and operate the manager from chat",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "007",
         "009",

@@ -116,7 +116,7 @@ def validate_reviews(records):
             submission = require(d.get('submission_id'), 'submission')
             if d.get('submission_sha256') != submission['details']['sha256'] or d.get('contract') != CONTRACT:
                 raise ProgramError('Review run target/contract mismatch')
-            if d.get('state') not in ('running', 'completed', 'failed', 'timed_out'):
+            if d.get('state') not in ('running', 'completed', 'failed', 'timed_out', 'cancelling', 'cancelled'):
                 raise ProgramError('Invalid review execution state')
             if d.get('reviewer', {}).get('context_id') != record['id']:
                 raise ProgramError('Reviewer must identify its separate context')
@@ -361,9 +361,14 @@ class ReviewController:
         record = self.store.get_record(program_id, run_id, 'review_run')
         d = record['details']
         process = self.children.get(run_id)
-        if process is None or d['state'] != 'running':
+        if process is None or d['state'] not in ('running', 'cancelling'):
             return record
         code = process.poll()
+        if d['state'] == 'cancelling':
+            if code is not None:
+                d.update(state='cancelled', returncode=code, error='Review cancelled; no assessment admitted')
+                self._save(program_id, run_id, d)
+            return self.store.get_record(program_id, run_id)
         if code is None and time.time() >= d['deadline']:
             if d['owner'] != self.owner or d['process'] != process_identity(process.pid):
                 raise ProgramError('Refusing to stop unverified review process')
@@ -402,6 +407,25 @@ class ReviewController:
                 d.update(state='failed', error=str(error), review_id=None)
         self._save(program_id, run_id, d)
         return self.store.get_record(program_id, run_id)
+
+    def cancel(self, program_id, run_id):
+        """Stop only this controller's birth-verified reviewer; status never admits its output."""
+        record = self.store.get_record(program_id, run_id, 'review_run')
+        d = record['details']
+        if d['state'] not in ('running', 'cancelling'):
+            return record
+        process = self.children.get(run_id)
+        if (process is None or d['owner'] != self.owner or
+                (process.poll() is None and d['process'] != process_identity(process.pid))):
+            raise ProgramError('Refusing to signal historical or unverified reviewer')
+        d['state'] = 'cancelling'
+        self._save(program_id, run_id, d)
+        if process.poll() is None:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        return self.status(program_id, run_id)
 
     def apply(self, program_id, review_id):
         """Only admission write path; all inputs come from the fixed separate review."""

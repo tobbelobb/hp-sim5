@@ -11,6 +11,27 @@ CHATGPT_SIGN_IN = 'openai'
 STRIPPED_KEYS = ('OPENAI_API_KEY', 'CODEX_API_KEY')
 
 
+def forwarded_settings(codex_args):
+    # Effective overrides and model from forwarded argv; later wins.
+    settings, model = {}, None
+    arguments = iter(codex_args)
+    for argument in arguments:
+        if argument in ('-c', '--config'):
+            override = next(arguments, None)
+        elif argument.startswith('--config='):
+            override = argument.split('=', 1)[1]
+        else:
+            override = None
+        if override and '=' in override:
+            key, value = override.split('=', 1)
+            settings[key.strip()] = value.strip().strip('"')
+        elif argument in ('-m', '--model'):
+            model = next(arguments, None)
+        elif argument.startswith('--model='):
+            model = argument.split('=', 1)[1].strip().strip('"')
+    return settings, model
+
+
 def provider_env_key(provider, *, root):
     # A configured provider names the environment variable holding its credential.
     if not provider:

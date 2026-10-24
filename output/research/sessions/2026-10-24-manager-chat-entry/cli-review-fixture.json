@@ -1,0 +1,557 @@
+{
+  "format_version": 1,
+  "program": {
+    "id": "p",
+    "question_id": "q",
+    "goal": "Which saved evidence changes the next decision?",
+    "state": "active",
+    "revision": 22,
+    "created_at": "2026-10-24T06:34:55.569219+00:00",
+    "updated_at": "2026-10-24T06:34:58.034865+00:00",
+    "constraints": {}
+  },
+  "records": [
+    {
+      "id": "q",
+      "program_id": "p",
+      "kind": "question",
+      "title": "Which saved evidence changes the next decision?",
+      "revision": 1,
+      "created_at": "2026-10-24T06:34:55.569671+00:00",
+      "updated_at": "2026-10-24T06:34:55.569671+00:00",
+      "details": {
+        "knowledge_state": "unassessed",
+        "scope": {}
+      }
+    },
+    {
+      "id": "approach-90c8476db9d645b8abf2557c7bd23fef",
+      "program_id": "p",
+      "kind": "approach",
+      "title": "Inspect saved data",
+      "revision": 1,
+      "created_at": "2026-10-24T06:34:55.763438+00:00",
+      "updated_at": "2026-10-24T06:34:55.763438+00:00",
+      "details": {
+        "question_id": "q",
+        "reason": "Cheapest discriminator",
+        "state": "live"
+      }
+    },
+    {
+      "id": "work",
+      "program_id": "p",
+      "kind": "assignment",
+      "title": "Compare frozen baselines",
+      "revision": 4,
+      "created_at": "2026-10-24T06:34:55.868069+00:00",
+      "updated_at": "2026-10-24T06:34:56.130048+00:00",
+      "details": {
+        "allocation": {
+          "fresh_fits": 0,
+          "wall_minutes": 1
+        },
+        "approach_id": "approach-90c8476db9d645b8abf2557c7bd23fef",
+        "execution_state": "completed",
+        "knowledge_state": "unassessed",
+        "question_id": "q",
+        "review_state": "unreviewed"
+      }
+    },
+    {
+      "id": "decision-75431d67bdd3479f97f4d2f4fbe2a578",
+      "program_id": "p",
+      "kind": "decision",
+      "title": "Explicit bounded assignment",
+      "revision": 1,
+      "created_at": "2026-10-24T06:34:55.969146+00:00",
+      "updated_at": "2026-10-24T06:34:55.969146+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "work"
+      }
+    },
+    {
+      "id": "attempt-930e9099e1584704b0225543470dd602",
+      "program_id": "p",
+      "kind": "attempt",
+      "title": "Compare frozen baselines",
+      "revision": 4,
+      "created_at": "2026-10-24T06:34:56.074141+00:00",
+      "updated_at": "2026-10-24T06:34:56.129996+00:00",
+      "details": {
+        "allocation": {
+          "fresh_fits": 0,
+          "wall_minutes": 1
+        },
+        "argv": [
+          "/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/repo/hp-sim5-research-agent",
+          "--codex",
+          "--batch",
+          "--prompt-file",
+          "/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/memory/workers/attempt-930e9099e1584704b0225543470dd602/prompt.txt",
+          "--session-dir",
+          "/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/repo/output/research/sessions/attempt-930e9099e1584704b0225543470dd602",
+          "--physics-backend",
+          "headless-js",
+          "--machine",
+          "hp4",
+          "--viewer",
+          "headless"
+        ],
+        "artifacts": [
+          {
+            "bytes": 0,
+            "partial": false,
+            "path": "/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/memory/workers/attempt-930e9099e1584704b0225543470dd602/stdout.log"
+          },
+          {
+            "bytes": 0,
+            "partial": false,
+            "path": "/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/memory/workers/attempt-930e9099e1584704b0225543470dd602/stderr.log"
+          },
+          {
+            "bytes": 1047,
+            "partial": false,
+            "path": "/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/memory/workers/attempt-930e9099e1584704b0225543470dd602/prompt.txt"
+          },
+          {
+            "bytes": 883,
+            "partial": false,
+            "path": "/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/memory/workers/attempt-930e9099e1584704b0225543470dd602/assignment.json"
+          }
+        ],
+        "assignment_id": "work",
+        "attempt_dir": "/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/memory/workers/attempt-930e9099e1584704b0225543470dd602",
+        "cleanup": "unverified; launcher exit manifest missing",
+        "diagnostics": [],
+        "exited_at": "2026-10-24T06:34:56.129615+00:00",
+        "observations": [
+          {
+            "at": "2026-10-24T06:34:56.074086+00:00",
+            "event": "reserved"
+          },
+          {
+            "at": "2026-10-24T06:34:56.074761+00:00",
+            "event": "spawned",
+            "pid": 17571
+          },
+          {
+            "at": "2026-10-24T06:34:56.129665+00:00",
+            "event": "exited",
+            "returncode": 0
+          }
+        ],
+        "owner": {
+          "id": "dispatcher-c4ff048ae85c442095187c5f91c1a298",
+          "process": {
+            "birth": "5261198",
+            "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+            "group": 17556,
+            "host": "2df9bd87a6a7",
+            "pid": 17556,
+            "uid": 1000
+          }
+        },
+        "process": {
+          "birth": "5261248",
+          "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+          "group": 17571,
+          "host": "2df9bd87a6a7",
+          "pid": 17571,
+          "uid": 1000
+        },
+        "prompt_sha256": "d4996b76f61d601ff7dc46559b984181090896182dc626d6c874aa3159f44c0d",
+        "returncode": 0,
+        "scientific_state": "unassessed",
+        "session_dir": "/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/repo/output/research/sessions/attempt-930e9099e1584704b0225543470dd602",
+        "settings": {
+          "backend": "codex",
+          "client_args": [],
+          "dont_ask": false,
+          "goal_mode": true,
+          "machine": "hp4",
+          "physics_backend": "headless-js",
+          "record": true,
+          "viewer": "headless",
+          "worktree": false
+        },
+        "source_dirty": true,
+        "source_revision": "adf350a29cfa89569d19cf5ad1a9e8b310c0839b",
+        "started_at": "2026-10-24T06:34:56.074756+00:00",
+        "state": "submitted"
+      }
+    },
+    {
+      "id": "claim-2efe5c64ed834181be5c4e93560afa0c",
+      "program_id": "p",
+      "kind": "claim",
+      "title": "On these eight simulated histories, the blanket screen does not reliably improve summed anchor error",
+      "revision": 1,
+      "created_at": "2026-10-24T06:34:56.282802+00:00",
+      "updated_at": "2026-10-24T06:34:56.282802+00:00",
+      "details": {
+        "claim_key": "claim-2efe5c64ed834181be5c4e93560afa0c",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "configuration": "fixture",
+          "evidence_type": "synthetic"
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "artifact-5db50702fb2b465ab59fc6aae77a8d10",
+      "program_id": "p",
+      "kind": "artifact",
+      "title": "/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/evidence.txt",
+      "revision": 1,
+      "created_at": "2026-10-24T06:34:56.388493+00:00",
+      "updated_at": "2026-10-24T06:34:56.388493+00:00",
+      "details": {
+        "evidence_type": "synthetic",
+        "provenance": {},
+        "reference": "/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/evidence.txt",
+        "sha256": "763924e67f1cae27ef575579a567f773c3a1409a609e98b30fac2e0a796bcb54",
+        "source_revision": "adf350a29cfa89569d19cf5ad1a9e8b310c0839b"
+      }
+    },
+    {
+      "id": "submission-9d43f933db2748b3a069c1198720d9a7",
+      "program_id": "p",
+      "kind": "submission",
+      "title": "On these eight simulated histories, the blanket screen does not reliably improve summed anchor error",
+      "revision": 1,
+      "created_at": "2026-10-24T06:34:56.493866+00:00",
+      "updated_at": "2026-10-24T06:34:56.493866+00:00",
+      "details": {
+        "manifest": {
+          "assets": [
+            {
+              "artifact_id": null,
+              "id": "report",
+              "missing": false,
+              "role": "report",
+              "sha256": "b18a2e7eedafa76635c7c9e15f522ace19ccacefa3d0eb55b623adfe86c3c043",
+              "source": "/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/report.txt"
+            },
+            {
+              "artifact_id": null,
+              "id": "abstract",
+              "missing": false,
+              "role": "abstract",
+              "sha256": "38f856e1d9d4fd32b02d678cc54311f12346f2ecdea29b9b278206008854d736",
+              "source": "/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/abstract.txt"
+            },
+            {
+              "artifact_id": "artifact-5db50702fb2b465ab59fc6aae77a8d10",
+              "id": "evidence",
+              "missing": false,
+              "role": "evidence",
+              "sha256": "763924e67f1cae27ef575579a567f773c3a1409a609e98b30fac2e0a796bcb54",
+              "source": "/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/evidence.txt"
+            }
+          ],
+          "assignment_id": "work",
+          "attempt_id": "attempt-930e9099e1584704b0225543470dd602",
+          "base_revision": "adf350a29cfa89569d19cf5ad1a9e8b310c0839b",
+          "candidate_revision": null,
+          "changed_paths": [],
+          "claim": {
+            "created_at": "2026-10-24T06:34:56.282802+00:00",
+            "details": {
+              "claim_key": "claim-2efe5c64ed834181be5c4e93560afa0c",
+              "knowledge_state": "unassessed",
+              "scope": {
+                "configuration": "fixture",
+                "evidence_type": "synthetic"
+              },
+              "version": 1
+            },
+            "id": "claim-2efe5c64ed834181be5c4e93560afa0c",
+            "kind": "claim",
+            "program_id": "p",
+            "revision": 1,
+            "title": "On these eight simulated histories, the blanket screen does not reliably improve summed anchor error",
+            "updated_at": "2026-10-24T06:34:56.282802+00:00"
+          },
+          "config": {
+            "fixture": true
+          },
+          "contract": "hp-sim5-evidence-review-v1",
+          "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_state": "submitted",
+          "input_identities": [
+            "fixture-input"
+          ],
+          "physics_gate_required": false,
+          "producer_checks": [],
+          "source_dirty": true,
+          "source_revision": "adf350a29cfa89569d19cf5ad1a9e8b310c0839b"
+        },
+        "sha256": "7298255a7cde984d3ed70556d7f346c3993ef2a5bcc34cceca77a41e0c0d7614"
+      }
+    },
+    {
+      "id": "review-run-d5f441d2dbfa46dd8e1efbac4a16980d",
+      "program_id": "p",
+      "kind": "review_run",
+      "title": "Separate saved-evidence review",
+      "revision": 4,
+      "created_at": "2026-10-24T06:34:56.800168+00:00",
+      "updated_at": "2026-10-24T06:34:57.107792+00:00",
+      "details": {
+        "argv": [
+          "codex",
+          "exec",
+          "--cd",
+          "/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/repo",
+          "--sandbox",
+          "read-only",
+          "-c",
+          "approval_policy=\"never\"",
+          "--json",
+          "--output-last-message",
+          "/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/memory/reviews/review-run-d5f441d2dbfa46dd8e1efbac4a16980d/final-message.md",
+          "-c",
+          "sandbox_workspace_write.network_access=true",
+          "-c",
+          "sandbox_workspace_write.writable_roots=[\"/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/repo/output\"]",
+          "-c",
+          "features.default_mode_request_user_input=false",
+          "-c",
+          "features.goals=false",
+          "-c",
+          "mcp_servers.hp_sim5.enabled=false",
+          "-c",
+          "mcp_servers.rerun.enabled=false",
+          "-c",
+          "model_provider=\"openai\"",
+          "-"
+        ],
+        "contract": "hp-sim5-evidence-review-v1",
+        "deadline": 1792823996.7999825,
+        "directory": "/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/memory/reviews/review-run-d5f441d2dbfa46dd8e1efbac4a16980d",
+        "error": "Review cancelled; no assessment admitted",
+        "owner": {
+          "id": "review-controller-a748ac27f4494082a2d5c068a71340f4",
+          "process": {
+            "birth": "5261198",
+            "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+            "group": 17556,
+            "host": "2df9bd87a6a7",
+            "pid": 17556,
+            "uid": 1000
+          }
+        },
+        "process": {
+          "birth": "5261321",
+          "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+          "group": 17595,
+          "host": "2df9bd87a6a7",
+          "pid": 17595,
+          "uid": 1000
+        },
+        "prompt_sha256": "388b3e351e6e053dbba79b3d9ccc18ec535b294cfc9175ee5a7d780e2df0f4b3",
+        "returncode": -9,
+        "review_id": null,
+        "reviewer": {
+          "backend": "codex",
+          "context_id": "review-run-d5f441d2dbfa46dd8e1efbac4a16980d",
+          "model": null,
+          "model_provider": "openai"
+        },
+        "started_at": "2026-10-24T06:34:56.799956+00:00",
+        "state": "cancelled",
+        "submission_id": "submission-9d43f933db2748b3a069c1198720d9a7",
+        "submission_sha256": "7298255a7cde984d3ed70556d7f346c3993ef2a5bcc34cceca77a41e0c0d7614",
+        "wall_minutes": 5
+      }
+    },
+    {
+      "id": "decision-03794a6b8f894e759d7eaed1775e23de",
+      "program_id": "p",
+      "kind": "decision",
+      "title": "Pause only new dispatch",
+      "revision": 1,
+      "created_at": "2026-10-24T06:34:56.902691+00:00",
+      "updated_at": "2026-10-24T06:34:56.902691+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "p"
+      }
+    },
+    {
+      "id": "decision-a8b80353ed7e40fe9238c721c41b31df",
+      "program_id": "p",
+      "kind": "decision",
+      "title": "Review the fixed evidence",
+      "revision": 1,
+      "created_at": "2026-10-24T06:34:57.413143+00:00",
+      "updated_at": "2026-10-24T06:34:57.413143+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "p"
+      }
+    },
+    {
+      "id": "review-run-2e6769c55d644cbc88d2f91a599d9269",
+      "program_id": "p",
+      "kind": "review_run",
+      "title": "Separate saved-evidence review",
+      "revision": 3,
+      "created_at": "2026-10-24T06:34:57.516798+00:00",
+      "updated_at": "2026-10-24T06:34:57.575282+00:00",
+      "details": {
+        "argv": [
+          "codex",
+          "exec",
+          "--cd",
+          "/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/repo",
+          "--sandbox",
+          "read-only",
+          "-c",
+          "approval_policy=\"never\"",
+          "--json",
+          "--output-last-message",
+          "/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/memory/reviews/review-run-2e6769c55d644cbc88d2f91a599d9269/final-message.md",
+          "-c",
+          "sandbox_workspace_write.network_access=true",
+          "-c",
+          "sandbox_workspace_write.writable_roots=[\"/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/repo/output\"]",
+          "-c",
+          "features.default_mode_request_user_input=false",
+          "-c",
+          "features.goals=false",
+          "-c",
+          "mcp_servers.hp_sim5.enabled=false",
+          "-c",
+          "mcp_servers.rerun.enabled=false",
+          "-c",
+          "model_provider=\"openai\"",
+          "-"
+        ],
+        "contract": "hp-sim5-evidence-review-v1",
+        "deadline": 1792823997.5165985,
+        "directory": "/tmp/hp-sim5-task011-final/test_fixed_submission_review_c0/memory/reviews/review-run-2e6769c55d644cbc88d2f91a599d9269",
+        "error": null,
+        "owner": {
+          "id": "review-controller-a748ac27f4494082a2d5c068a71340f4",
+          "process": {
+            "birth": "5261198",
+            "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+            "group": 17556,
+            "host": "2df9bd87a6a7",
+            "pid": 17556,
+            "uid": 1000
+          }
+        },
+        "process": {
+          "birth": "5261392",
+          "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+          "group": 17617,
+          "host": "2df9bd87a6a7",
+          "pid": 17617,
+          "uid": 1000
+        },
+        "prompt_sha256": "388b3e351e6e053dbba79b3d9ccc18ec535b294cfc9175ee5a7d780e2df0f4b3",
+        "returncode": 0,
+        "review_id": "review-ddccdaabc3d34c6cb966e3e5990ca4d4",
+        "reviewer": {
+          "backend": "codex",
+          "context_id": "review-run-2e6769c55d644cbc88d2f91a599d9269",
+          "model": null,
+          "model_provider": "openai"
+        },
+        "started_at": "2026-10-24T06:34:57.516578+00:00",
+        "state": "completed",
+        "submission_id": "submission-9d43f933db2748b3a069c1198720d9a7",
+        "submission_sha256": "7298255a7cde984d3ed70556d7f346c3993ef2a5bcc34cceca77a41e0c0d7614",
+        "wall_minutes": 5
+      }
+    },
+    {
+      "id": "review-ddccdaabc3d34c6cb966e3e5990ca4d4",
+      "program_id": "p",
+      "kind": "review",
+      "title": "Keep the scoped negative report and retire this blanket default change; no patch is needed.",
+      "revision": 1,
+      "created_at": "2026-10-24T06:34:57.575618+00:00",
+      "updated_at": "2026-10-24T06:34:57.575618+00:00",
+      "details": {
+        "contract": "hp-sim5-evidence-review-v1",
+        "response": {
+          "checks": [
+            {
+              "asset_ids": [
+                "report",
+                "abstract",
+                "evidence"
+              ],
+              "description": "Read frozen fixture bytes, no reproduction",
+              "kind": "inspected"
+            }
+          ],
+          "code_readiness": "report_only",
+          "discrepancy": null,
+          "finding": "supported",
+          "limitations": [
+            "Eight frozen simulated histories; no hardware claim"
+          ],
+          "practical_value": "Closes a route without further fits",
+          "reason": "Keep the scoped negative report and retire this blanket default change; no patch is needed.",
+          "submission_id": "submission-9d43f933db2748b3a069c1198720d9a7",
+          "submission_sha256": "7298255a7cde984d3ed70556d7f346c3993ef2a5bcc34cceca77a41e0c0d7614",
+          "verdict": "keep"
+        },
+        "response_sha256": "b4a7210e265aeec9cb1ac93a24960584a91f2cc5eb78a8926dd056fdd055b6dc",
+        "reviewer": {
+          "backend": "codex",
+          "context_id": "review-run-2e6769c55d644cbc88d2f91a599d9269",
+          "model": null,
+          "model_provider": "openai"
+        },
+        "run_id": "review-run-2e6769c55d644cbc88d2f91a599d9269",
+        "submission_id": "submission-9d43f933db2748b3a069c1198720d9a7"
+      }
+    },
+    {
+      "id": "admission-8f9e78b16c8c4074955e951d325f6276",
+      "program_id": "p",
+      "kind": "admission",
+      "title": "Keep the scoped negative report and retire this blanket default change; no patch is needed.",
+      "revision": 1,
+      "created_at": "2026-10-24T06:34:57.830722+00:00",
+      "updated_at": "2026-10-24T06:34:57.830722+00:00",
+      "details": {
+        "actor": "controller",
+        "claim_id": "claim-2efe5c64ed834181be5c4e93560afa0c",
+        "code_readiness": "report_only",
+        "decision": "keep",
+        "finding": "supported",
+        "guard_reasons": [],
+        "knowledge_state": "reviewed",
+        "practical_value": "Closes a route without further fits",
+        "review_id": "review-ddccdaabc3d34c6cb966e3e5990ca4d4",
+        "submission_id": "submission-9d43f933db2748b3a069c1198720d9a7",
+        "submission_sha256": "7298255a7cde984d3ed70556d7f346c3993ef2a5bcc34cceca77a41e0c0d7614"
+      }
+    },
+    {
+      "id": "submission_event-b04211b2b65e4817aba176db904bb7fe",
+      "program_id": "p",
+      "kind": "submission_event",
+      "title": "Fixture withdrawal",
+      "revision": 1,
+      "created_at": "2026-10-24T06:34:58.035192+00:00",
+      "updated_at": "2026-10-24T06:34:58.035192+00:00",
+      "details": {
+        "reason": "Fixture withdrawal",
+        "submission_id": "submission-9d43f933db2748b3a069c1198720d9a7"
+      }
+    }
+  ]
+}

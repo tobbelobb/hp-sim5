@@ -1,0 +1,168 @@
+{
+  "kind": "Actual SDK manager protocol with test-only timer, not stock startup or live release proof",
+  "observations": [
+    {
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+          "protocolVersion": "2025-11-25",
+          "capabilities": {},
+          "clientInfo": {
+            "name": "manager-check",
+            "version": "1"
+          }
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "capabilities": {
+            "prompts": {
+              "listChanged": false
+            },
+            "resources": {
+              "listChanged": false,
+              "subscribe": false
+            },
+            "tools": {
+              "listChanged": false
+            }
+          },
+          "instructions": "Manager orchestration for one bound program. Start with program_overview and program_capabilities. Use program_call for the documented operations. No physics world is started.",
+          "protocolVersion": "2025-11-25",
+          "serverInfo": {
+            "name": "hp-sim5-program",
+            "version": ""
+          }
+        }
+      }
+    },
+    {
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "tools/list",
+        "params": {}
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "result": {
+          "tools": [
+            {
+              "annotations": {
+                "openWorldHint": false,
+                "readOnlyHint": true
+              },
+              "description": "Get durable program, evidence/worker paths, next allocation and current ownership.",
+              "inputSchema": {
+                "properties": {},
+                "type": "object",
+                "title": "program_overviewArguments"
+              },
+              "name": "program_overview"
+            },
+            {
+              "annotations": {
+                "openWorldHint": false,
+                "readOnlyHint": true
+              },
+              "description": "List actual operation parameters and explicit later-task limitations.",
+              "inputSchema": {
+                "properties": {},
+                "type": "object",
+                "title": "program_capabilitiesArguments"
+              },
+              "name": "program_capabilities"
+            },
+            {
+              "annotations": {
+                "destructiveHint": true,
+                "openWorldHint": false,
+                "readOnlyHint": false
+              },
+              "description": "Call one manager operation. program_id cannot override the bound attachment.",
+              "inputSchema": {
+                "properties": {
+                  "operation": {
+                    "title": "Operation",
+                    "type": "string"
+                  },
+                  "parameters": {
+                    "additionalProperties": true,
+                    "title": "Parameters",
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "operation",
+                  "parameters"
+                ],
+                "type": "object",
+                "title": "program_callArguments"
+              },
+              "name": "program_call"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "method": "tools/call",
+        "params": {
+          "name": "program_overview",
+          "arguments": {}
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "result": {
+          "content": [
+            {
+              "text": "{\n  \"ok\": true,\n  \"result\": {\n    \"assignments\": [],\n    \"format_version\": 1,\n    \"live_alternatives\": [],\n    \"manager\": {\n      \"controller_id\": \"controller-bbcd624da6ea4dd3a36aaf503c3ecd6e\",\n      \"links\": {\n        \"overview\": \"/tmp/hp-sim5-task011-final/test_real_mcp_sdk_protocol_wit0/repo/output/research/managers/p/controller-bbcd624da6ea4dd3a36aaf503c3ecd6e/overview.md\",\n        \"session\": \"/tmp/hp-sim5-task011-final/test_real_mcp_sdk_protocol_wit0/repo/output/research/managers/p/controller-bbcd624da6ea4dd3a36aaf503c3ecd6e\",\n        \"snapshot\": \"/tmp/hp-sim5-task011-final/test_real_mcp_sdk_protocol_wit0/repo/output/research/managers/p/controller-bbcd624da6ea4dd3a36aaf503c3ecd6e/overview.json\",\n        \"store\": \"/tmp/hp-sim5-task011-final/test_real_mcp_sdk_protocol_wit0/memory/programs.sqlite3\",\n        \"worker_sessions\": []\n      },\n      \"physics_world\": false,\n      \"program_id\": \"p\",\n      \"stopping\": false,\n      \"unavailable\": {\n        \"autonomous_continue\": \"Task 013: autonomous dispatch, runtime reservations and worker wall deadlines\",\n        \"integrate\": \"Task 015: combined candidate integration and delivery checks\",\n        \"parallel\": \"Task 014: coordinated worker pool\",\n        \"recover\": \"Task 013: restart reconciliation/adoption of unfinished children\",\n        \"strategy\": \"Task 012: evidence-based strategy selection and automatic steering application\"\n      }\n    },\n    \"next_allocation\": {\n      \"allocation\": null,\n      \"reason\": \"Manager must select a bounded assignment from the question and evidence\",\n      \"state\": \"unallocated\"\n    },\n    \"program\": {\n      \"constraints\": {},\n      \"created_at\": \"2026-10-24T06:34:58.499577+00:00\",\n      \"goal\": \"Which saved evidence changes the next decision?\",\n      \"id\": \"p\",\n      \"question_id\": \"q\",\n      \"revision\": 1,\n      \"state\": \"active\",\n      \"updated_at\": \"2026-10-24T06:34:58.499577+00:00\"\n    },\n    \"records\": [\n      {\n        \"created_at\": \"2026-10-24T06:34:58.499657+00:00\",\n        \"details\": {\n          \"knowledge_state\": \"unassessed\",\n          \"scope\": {}\n        },\n        \"id\": \"q\",\n        \"kind\": \"question\",\n        \"program_id\": \"p\",\n        \"revision\": 1,\n        \"title\": \"Which saved evidence changes the next decision?\",\n        \"updated_at\": \"2026-10-24T06:34:58.499657+00:00\"\n      }\n    ],\n    \"scientific_result\": \"No scientific result is available yet; evidence has not been admitted by review.\"\n  }\n}",
+              "type": "text"
+            }
+          ],
+          "isError": false
+        }
+      }
+    },
+    {
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 4,
+        "method": "tools/call",
+        "params": {
+          "name": "program_call",
+          "arguments": {
+            "operation": "overview",
+            "parameters": {
+              "program_id": "other"
+            }
+          }
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 4,
+        "result": {
+          "content": [
+            {
+              "text": "{\n  \"error\": {\n    \"code\": \"invalid_request\",\n    \"message\": \"Program identity is bound by the attachment; it cannot be overridden\"\n  },\n  \"ok\": false\n}",
+              "type": "text"
+            }
+          ],
+          "isError": false
+        }
+      }
+    }
+  ],
+  "exit_code": 0
+}
