@@ -1,0 +1,1 @@
+[{"check": {"argv": ["/workspace/hp-sim5/.venv/bin/python", "-c", "from pathlib import Path; assert Path('a.txt').read_text() == 'first\\n'; assert Path('b.bin').read_bytes() == bytes([0,1,2])"], "name": "meaningful fixture"}, "returncode": 0}]

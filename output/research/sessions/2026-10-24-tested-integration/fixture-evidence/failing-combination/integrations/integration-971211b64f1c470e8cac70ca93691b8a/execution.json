@@ -1,0 +1,1 @@
+[{"check": {"argv": ["/workspace/hp-sim5/.venv/bin/python", "-c", "from pathlib import Path; assert not (Path('a.txt').exists() and Path('b.txt').exists()), 'incompatible routes'"], "name": "meaningful fixture"}, "returncode": 1}]

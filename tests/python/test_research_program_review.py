@@ -18,6 +18,7 @@ import pytest
 
 from hp_sim5_research.program import ProgramError, ProgramStore
 from hp_sim5_research.program_review import CONTRACT, digest
+from hp_sim5_research import program_review
 
 ROOT = Path(__file__).resolve().parents[2]
 CASES = json.loads((ROOT / 'tests/fixtures/program-review/cases.json').read_text())
@@ -208,8 +209,32 @@ def test_actual_candidate_diff_enforces_matching_inspected_physics_gate(context,
     assert '+// Synthetic patch' in (c['store'].directory / 'submissions' / submission['id'] / 'candidate.diff').read_text()
     run = reviewer(c, submission, 'physics_patch', mode='omit-check' if gate == 'uninspected' else 'normal')
     admission = c['controller'].apply('p', run['details']['review_id'])
-    assert admission['details']['decision'] == ('keep' if gate == 'passed' else 'block')
+    assert admission['details']['decision'] == 'keep'  # v2 preserves scoped science despite a missing delivery gate
     assert admission['details']['code_readiness'] == ('ready' if gate == 'passed' else 'blocked')
+    assert bool(admission['details']['engineering_reasons']) == (gate != 'passed')
+
+
+def test_legacy_review_contract_retains_original_admission_semantics(context, monkeypatch):
+    c = context
+    path = c['root'] / 'physics_legacy.txt'
+    path.write_text('Synthetic legacy candidate, no actual physics operation\n')
+    subprocess.run(['git', '-C', str(c['root']), 'add', '.'], check=True)
+    subprocess.run(['git', '-C', str(c['root']), '-c', 'user.name=fixture', '-c', 'user.email=f@f',
+                    'commit', '-qm', 'legacy fixture'], check=True)
+    candidate = subprocess.check_output(['git', '-C', str(c['root']), 'rev-parse', 'HEAD'], text=True).strip()
+    with monkeypatch.context() as historical:
+        historical.setattr(program_review, 'CONTRACT', program_review.LEGACY_CONTRACT)
+        submission = submit(c, 'physics_patch', candidate)
+    assert submission['details']['manifest']['contract'] == program_review.LEGACY_CONTRACT
+    run = reviewer(c, submission, 'physics_patch')
+    assert run['details']['contract'] == program_review.LEGACY_CONTRACT
+    admission = c['controller'].apply('p', run['details']['review_id'])
+    assert admission['details']['decision'] == 'block'
+    assert admission['details']['knowledge_state'] == 'withheld'
+    assert 'engineering_reasons' not in admission['details']
+    with ProgramStore(c['tmp'] / 'legacy-restore', create=True) as restored:
+        restored.import_snapshot(c['store'].snapshot('p'))
+        assert restored.get_record('p', admission['id']) == admission
 
 
 def test_changed_bytes_cannot_reuse_favorable_review_and_invalidation_is_historical(context):

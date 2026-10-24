@@ -1,0 +1,24 @@
+{
+  "compilation": "passed",
+  "queue_015": "done",
+  "queue_016": "ready, not started",
+  "source_hashes": "verified",
+  "fixture_files_verified": 187,
+  "fixture_receipts": 18,
+  "git_bundles_verified": 9,
+  "catalog": "regenerated; prior published entries preserved",
+  "staged_diff_check": "passed",
+  "live_fixture_hosts_or_runners": [],
+  "scientific_evidence": "synthetic judgements only",
+  "actual_physics_gate": "not run; implementation changes no dynamics",
+  "numerical_use": {
+    "fits": 0,
+    "predictions": 0,
+    "replays": 0,
+    "physics_runs": 0,
+    "physics_steps": 0,
+    "movements": 0,
+    "collections": 0
+  },
+  "manager_release_complete": false
+}

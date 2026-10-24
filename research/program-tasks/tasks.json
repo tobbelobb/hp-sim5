@@ -167,7 +167,7 @@
       "id": "015",
       "priority": 150,
       "title": "Keep research acceptance separate from tested code integration",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "010",
         "013",

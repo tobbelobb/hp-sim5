@@ -1,0 +1,723 @@
+[
+  {
+    "id": "q",
+    "program_id": "p",
+    "kind": "question",
+    "title": "Which scoped result changes our route?",
+    "revision": 1,
+    "created_at": "2026-10-24T14:31:25.007217+00:00",
+    "updated_at": "2026-10-24T14:31:25.007217+00:00",
+    "details": {
+      "knowledge_state": "unassessed",
+      "scope": {}
+    }
+  },
+  {
+    "id": "route",
+    "program_id": "p",
+    "kind": "approach",
+    "title": "Saved evidence",
+    "revision": 1,
+    "created_at": "2026-10-24T14:31:25.007393+00:00",
+    "updated_at": "2026-10-24T14:31:25.007393+00:00",
+    "details": {
+      "question_id": "q",
+      "reason": "No new physics needed",
+      "state": "live"
+    }
+  },
+  {
+    "id": "work",
+    "program_id": "p",
+    "kind": "assignment",
+    "title": "Inspect saved inputs",
+    "revision": 4,
+    "created_at": "2026-10-24T14:31:25.007477+00:00",
+    "updated_at": "2026-10-24T14:31:25.028683+00:00",
+    "details": {
+      "allocation": {
+        "wall_minutes": 1
+      },
+      "approach_id": "route",
+      "execution_state": "completed",
+      "knowledge_state": "unassessed",
+      "question_id": "q",
+      "review_state": "unreviewed"
+    }
+  },
+  {
+    "id": "decision-56184c53a34b4645ae38ca79c37d077c",
+    "program_id": "p",
+    "kind": "decision",
+    "title": "Fixture dispatch",
+    "revision": 1,
+    "created_at": "2026-10-24T14:31:25.007632+00:00",
+    "updated_at": "2026-10-24T14:31:25.007632+00:00",
+    "details": {
+      "actor": "manager",
+      "evidence_ids": [],
+      "subject_id": "work"
+    }
+  },
+  {
+    "id": "attempt-bd8fcdf28d704fbc952cdb223bd8590d",
+    "program_id": "p",
+    "kind": "attempt",
+    "title": "Inspect saved inputs",
+    "revision": 5,
+    "created_at": "2026-10-24T14:31:25.011188+00:00",
+    "updated_at": "2026-10-24T14:31:25.029862+00:00",
+    "details": {
+      "allocation": {
+        "wall_minutes": 1
+      },
+      "argv": [
+        "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/worker",
+        "--codex",
+        "--batch",
+        "--prompt-file",
+        "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/memory/workers/attempt-bd8fcdf28d704fbc952cdb223bd8590d/prompt.txt",
+        "--session-dir",
+        "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/repo/output/research/sessions/attempt-bd8fcdf28d704fbc952cdb223bd8590d",
+        "--physics-backend",
+        "headless-js",
+        "--machine",
+        "hp4",
+        "--viewer",
+        "headless",
+        "--wall-deadline",
+        "1792852345.011079"
+      ],
+      "artifacts": [
+        {
+          "bytes": 0,
+          "partial": false,
+          "path": "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/memory/workers/attempt-bd8fcdf28d704fbc952cdb223bd8590d/stdout.log"
+        },
+        {
+          "bytes": 0,
+          "partial": false,
+          "path": "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/memory/workers/attempt-bd8fcdf28d704fbc952cdb223bd8590d/stderr.log"
+        },
+        {
+          "bytes": 1840,
+          "partial": false,
+          "path": "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/memory/workers/attempt-bd8fcdf28d704fbc952cdb223bd8590d/prompt.txt"
+        },
+        {
+          "bytes": 1278,
+          "partial": false,
+          "path": "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/memory/workers/attempt-bd8fcdf28d704fbc952cdb223bd8590d/assignment.json"
+        }
+      ],
+      "assignment_id": "work",
+      "attempt_dir": "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/memory/workers/attempt-bd8fcdf28d704fbc952cdb223bd8590d",
+      "cleanup": "unverified; launcher exit manifest missing",
+      "diagnostics": [],
+      "exited_at": "2026-10-24T14:31:25.028227+00:00",
+      "handoff": {
+        "at": "2026-10-24T14:31:25.029792+00:00",
+        "instruction": "Use a new distinct bounded assignment; no world checkpoint or conversation was resumed",
+        "physical_shutdown": "unknown",
+        "reason": "Fixture worker had no world; missing exit manifest retained"
+      },
+      "observations": [
+        {
+          "at": "2026-10-24T14:31:25.011091+00:00",
+          "event": "reserved"
+        },
+        {
+          "at": "2026-10-24T14:31:25.011749+00:00",
+          "event": "spawned",
+          "pid": 48900
+        },
+        {
+          "at": "2026-10-24T14:31:25.028235+00:00",
+          "event": "exited",
+          "returncode": 0
+        }
+      ],
+      "observed_wall_seconds": 0.016486167907714844,
+      "owner": {
+        "id": "dispatcher-1df05b7512ac40c18125040a8600de07",
+        "process": {
+          "birth": "8119568",
+          "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+          "group": 47927,
+          "host": "2df9bd87a6a7",
+          "pid": 47932,
+          "uid": 1000
+        }
+      },
+      "premise_conflicts": [],
+      "premise_event_ids_at_start": [],
+      "premise_ids": [],
+      "premise_plan_ids": [],
+      "process": {
+        "birth": "8120142",
+        "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+        "group": 48900,
+        "host": "2df9bd87a6a7",
+        "pid": 48900,
+        "uid": 1000
+      },
+      "prompt_sha256": "d7974ee9e2adf5d96b45626b6e481bd12dae888581c4659d74e5a72a67bdd36d",
+      "returncode": 0,
+      "runtime": {
+        "wall_deadline": 1792852345.011079
+      },
+      "scientific_state": "unassessed",
+      "session_dir": "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/repo/output/research/sessions/attempt-bd8fcdf28d704fbc952cdb223bd8590d",
+      "settings": {
+        "backend": "codex",
+        "client_args": [],
+        "dont_ask": false,
+        "goal_mode": true,
+        "machine": "hp4",
+        "physics_backend": "headless-js",
+        "record": true,
+        "shared_runtime_write": false,
+        "viewer": "headless",
+        "worktree": false
+      },
+      "source_dirty": false,
+      "source_revision": "d1697571b284424e10410b07b3121a2f60410261",
+      "started_at": "2026-10-24T14:31:25.011741+00:00",
+      "state": "submitted"
+    }
+  },
+  {
+    "id": "physics-claim",
+    "program_id": "p",
+    "kind": "claim",
+    "title": "On these eight simulated histories, the blanket screen does not reliably improve summed anchor error",
+    "revision": 1,
+    "created_at": "2026-10-24T14:31:25.040194+00:00",
+    "updated_at": "2026-10-24T14:31:25.040194+00:00",
+    "details": {
+      "claim_key": "physics-claim",
+      "knowledge_state": "unassessed",
+      "scope": {
+        "configuration": "fixture",
+        "evidence_type": "synthetic"
+      },
+      "version": 1
+    }
+  },
+  {
+    "id": "physics-claim-evidence",
+    "program_id": "p",
+    "kind": "artifact",
+    "title": "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/physics-claim-evidence.txt",
+    "revision": 1,
+    "created_at": "2026-10-24T14:31:25.040476+00:00",
+    "updated_at": "2026-10-24T14:31:25.040476+00:00",
+    "details": {
+      "evidence_type": "synthetic",
+      "provenance": {
+        "config": {
+          "machine": "fixture"
+        },
+        "input_identities": [
+          "frozen-input"
+        ]
+      },
+      "reference": "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/physics-claim-evidence.txt",
+      "sha256": "763924e67f1cae27ef575579a567f773c3a1409a609e98b30fac2e0a796bcb54",
+      "source_revision": "d1697571b284424e10410b07b3121a2f60410261"
+    }
+  },
+  {
+    "id": "submission-097d900a41e54546a8cd53d9122bd07d",
+    "program_id": "p",
+    "kind": "submission",
+    "title": "On these eight simulated histories, the blanket screen does not reliably improve summed anchor error",
+    "revision": 1,
+    "created_at": "2026-10-24T14:31:25.048274+00:00",
+    "updated_at": "2026-10-24T14:31:25.048274+00:00",
+    "details": {
+      "manifest": {
+        "assets": [
+          {
+            "artifact_id": null,
+            "id": "report",
+            "missing": false,
+            "role": "report",
+            "sha256": "b18a2e7eedafa76635c7c9e15f522ace19ccacefa3d0eb55b623adfe86c3c043",
+            "source": "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/physics-claim-report.txt"
+          },
+          {
+            "artifact_id": null,
+            "id": "abstract",
+            "missing": false,
+            "role": "abstract",
+            "sha256": "38f856e1d9d4fd32b02d678cc54311f12346f2ecdea29b9b278206008854d736",
+            "source": "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/physics-claim-abstract.txt"
+          },
+          {
+            "artifact_id": "physics-claim-evidence",
+            "id": "evidence",
+            "missing": false,
+            "role": "evidence",
+            "sha256": "763924e67f1cae27ef575579a567f773c3a1409a609e98b30fac2e0a796bcb54",
+            "source": "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/physics-claim-evidence.txt"
+          },
+          {
+            "artifact_id": null,
+            "id": "check",
+            "missing": false,
+            "role": "check",
+            "sha256": "254e0ae8bedae4d13f3694cbe3e18ceac8cf23f8caba3f09477bc90222ee9753",
+            "source": "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/physics-claim-check.txt"
+          }
+        ],
+        "assignment_id": "work",
+        "attempt_id": "attempt-bd8fcdf28d704fbc952cdb223bd8590d",
+        "base_revision": "d1697571b284424e10410b07b3121a2f60410261",
+        "candidate_revision": "d52d838b7294351e5bec35f96bbf3cb46987ba1c",
+        "changed_paths": [
+          "src/physics/synthetic.txt"
+        ],
+        "claim": {
+          "created_at": "2026-10-24T14:31:25.040194+00:00",
+          "details": {
+            "claim_key": "physics-claim",
+            "knowledge_state": "unassessed",
+            "scope": {
+              "configuration": "fixture",
+              "evidence_type": "synthetic"
+            },
+            "version": 1
+          },
+          "id": "physics-claim",
+          "kind": "claim",
+          "program_id": "p",
+          "revision": 1,
+          "title": "On these eight simulated histories, the blanket screen does not reliably improve summed anchor error",
+          "updated_at": "2026-10-24T14:31:25.040194+00:00"
+        },
+        "config": {
+          "machine": "fixture"
+        },
+        "contract": "hp-sim5-evidence-review-v2",
+        "diff_sha256": "c9ac59bd2d23a32dcb7f511b583d8561649cbf54caca790f7ec8689e0f0be94b",
+        "execution_state": "submitted",
+        "input_identities": [
+          "frozen-input"
+        ],
+        "physics_gate_required": true,
+        "producer_checks": [],
+        "source_dirty": false,
+        "source_revision": "d1697571b284424e10410b07b3121a2f60410261"
+      },
+      "sha256": "27614d3439cb73c9b53fdb8ad208cea84cd9821a7e8ea6d9cb16baa99fb40cae"
+    }
+  },
+  {
+    "id": "review-run-4d4b3e7785d54a4fb972ab44698324d9",
+    "program_id": "p",
+    "kind": "review_run",
+    "title": "Separate saved-evidence review",
+    "revision": 3,
+    "created_at": "2026-10-24T14:31:25.050941+00:00",
+    "updated_at": "2026-10-24T14:31:25.118624+00:00",
+    "details": {
+      "argv": [
+        "codex",
+        "exec",
+        "--cd",
+        "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/repo",
+        "--sandbox",
+        "read-only",
+        "-c",
+        "approval_policy=\"never\"",
+        "--json",
+        "--output-last-message",
+        "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/memory/reviews/review-run-4d4b3e7785d54a4fb972ab44698324d9/final-message.md",
+        "-c",
+        "sandbox_workspace_write.network_access=true",
+        "-c",
+        "sandbox_workspace_write.writable_roots=[\"/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/repo/output\"]",
+        "-c",
+        "features.default_mode_request_user_input=false",
+        "-c",
+        "features.goals=false",
+        "-c",
+        "mcp_servers.hp_sim5.enabled=false",
+        "-c",
+        "mcp_servers.rerun.enabled=false",
+        "-c",
+        "model_provider=\"openai\"",
+        "-"
+      ],
+      "contract": "hp-sim5-evidence-review-v2",
+      "deadline": 1792852345.0507276,
+      "directory": "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/memory/reviews/review-run-4d4b3e7785d54a4fb972ab44698324d9",
+      "error": null,
+      "guard_argv": [
+        "/workspace/hp-sim5/.venv/bin/python",
+        "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/repo/scripts/research_program_review_guard.py",
+        "1792852345.0507276",
+        "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/memory/reviews/review-run-4d4b3e7785d54a4fb972ab44698324d9/wall-expired",
+        "codex",
+        "exec",
+        "--cd",
+        "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/repo",
+        "--sandbox",
+        "read-only",
+        "-c",
+        "approval_policy=\"never\"",
+        "--json",
+        "--output-last-message",
+        "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/memory/reviews/review-run-4d4b3e7785d54a4fb972ab44698324d9/final-message.md",
+        "-c",
+        "sandbox_workspace_write.network_access=true",
+        "-c",
+        "sandbox_workspace_write.writable_roots=[\"/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/repo/output\"]",
+        "-c",
+        "features.default_mode_request_user_input=false",
+        "-c",
+        "features.goals=false",
+        "-c",
+        "mcp_servers.hp_sim5.enabled=false",
+        "-c",
+        "mcp_servers.rerun.enabled=false",
+        "-c",
+        "model_provider=\"openai\"",
+        "-"
+      ],
+      "owner": {
+        "id": "review-controller-f6f77ca6300744f7beddd51b74b872b7",
+        "process": {
+          "birth": "8119568",
+          "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+          "group": 47927,
+          "host": "2df9bd87a6a7",
+          "pid": 47932,
+          "uid": 1000
+        }
+      },
+      "process": {
+        "birth": "8120146",
+        "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+        "group": 48914,
+        "host": "2df9bd87a6a7",
+        "pid": 48914,
+        "uid": 1000
+      },
+      "prompt_sha256": "80c2aba1637c9c8602ed932f9752a326fe59dd67d222a620a13a73542637b1db",
+      "returncode": 0,
+      "review_id": "review-dd3ab86a1660455eb3fdfad3db5f43e9",
+      "reviewer": {
+        "backend": "codex",
+        "context_id": "review-run-4d4b3e7785d54a4fb972ab44698324d9",
+        "model": null,
+        "model_provider": "openai"
+      },
+      "started_at": "2026-10-24T14:31:25.050717+00:00",
+      "state": "completed",
+      "submission_id": "submission-097d900a41e54546a8cd53d9122bd07d",
+      "submission_sha256": "27614d3439cb73c9b53fdb8ad208cea84cd9821a7e8ea6d9cb16baa99fb40cae",
+      "wall_minutes": 1
+    }
+  },
+  {
+    "id": "review-dd3ab86a1660455eb3fdfad3db5f43e9",
+    "program_id": "p",
+    "kind": "review",
+    "title": "Keep the scoped negative report and retire this blanket default change; no patch is needed.",
+    "revision": 1,
+    "created_at": "2026-10-24T14:31:25.118833+00:00",
+    "updated_at": "2026-10-24T14:31:25.118833+00:00",
+    "details": {
+      "contract": "hp-sim5-evidence-review-v2",
+      "response": {
+        "checks": [
+          {
+            "asset_ids": [
+              "report",
+              "abstract",
+              "evidence",
+              "check"
+            ],
+            "description": "Read selected frozen files; no independent numerical reproduction",
+            "kind": "inspected"
+          }
+        ],
+        "code_readiness": "ready",
+        "discrepancy": null,
+        "finding": "supported",
+        "limitations": [
+          "Eight frozen simulated histories; no hardware claim"
+        ],
+        "practical_value": "Closes a route without further fits",
+        "reason": "Keep the scoped negative report and retire this blanket default change; no patch is needed.",
+        "submission_id": "submission-097d900a41e54546a8cd53d9122bd07d",
+        "submission_sha256": "27614d3439cb73c9b53fdb8ad208cea84cd9821a7e8ea6d9cb16baa99fb40cae",
+        "verdict": "keep"
+      },
+      "response_sha256": "8d43d0afeccab5316bfbe46f8432bda2fcdff20411cd47d9c795d99d66af5f07",
+      "reviewer": {
+        "backend": "codex",
+        "context_id": "review-run-4d4b3e7785d54a4fb972ab44698324d9",
+        "model": null,
+        "model_provider": "openai"
+      },
+      "run_id": "review-run-4d4b3e7785d54a4fb972ab44698324d9",
+      "submission_id": "submission-097d900a41e54546a8cd53d9122bd07d"
+    }
+  },
+  {
+    "id": "admission-5513e554d6364aa5be0ab364f677c736",
+    "program_id": "p",
+    "kind": "admission",
+    "title": "Keep the scoped negative report and retire this blanket default change; no patch is needed.",
+    "revision": 1,
+    "created_at": "2026-10-24T14:31:25.121609+00:00",
+    "updated_at": "2026-10-24T14:31:25.121609+00:00",
+    "details": {
+      "actor": "controller",
+      "claim_id": "physics-claim",
+      "code_readiness": "blocked",
+      "contract": "hp-sim5-evidence-review-v2",
+      "decision": "keep",
+      "engineering_reasons": [
+        "Candidate physics/motor/cable/dynamics patch lacks inspected passing npm run test:physics gate"
+      ],
+      "finding": "supported",
+      "guard_reasons": [],
+      "knowledge_state": "reviewed",
+      "practical_value": "Closes a route without further fits",
+      "required_checks": [],
+      "review_id": "review-dd3ab86a1660455eb3fdfad3db5f43e9",
+      "submission_id": "submission-097d900a41e54546a8cd53d9122bd07d",
+      "submission_sha256": "27614d3439cb73c9b53fdb8ad208cea84cd9821a7e8ea6d9cb16baa99fb40cae"
+    }
+  },
+  {
+    "id": "integration-280e9ceeea14437f8ff9adaa191469e3",
+    "program_id": "p",
+    "kind": "integration_job",
+    "title": "Combined candidate lease",
+    "revision": 3,
+    "created_at": "2026-10-24T14:31:25.123366+00:00",
+    "updated_at": "2026-10-24T14:31:25.161161+00:00",
+    "details": {
+      "branch": "research-integration/integration-280e9ceeea14437f8ff9adaa191469e3",
+      "check_id": "integration_check-654235b0654448cd894e6ceeeed284f8",
+      "check_plan": {
+        "checks": [
+          {
+            "argv": [
+              "/workspace/hp-sim5/.venv/bin/python",
+              "-c",
+              "pass"
+            ],
+            "name": "meaningful fixture"
+          }
+        ],
+        "cleanup_boundary": "Observed cleanup covers the owned Linux process group. Supported checks keep descendants in that group and finish external services before exit. Detected detached children hold the lease; external or escaped services after abrupt runner loss remain unobserved.",
+        "config": {
+          "mode": "combined-fixture"
+        },
+        "configuration_boundary": "Configuration and input IDs are supplied declarations; Git identities and command outcomes are observed",
+        "deadline": 1792852345.150767,
+        "evaluator": {
+          "contract": "hp-sim5-combined-integration-v1",
+          "controller_sha256": "77989ec269ed20df35355eff3123a80ce63c4b86b63ba593404c1dd168d5f599",
+          "runner_sha256": "86174b52229af2d96ab82ef2ca6db00dfb4e7c2a18973df00b37b092afb4a081",
+          "source_revision": "d1697571b284424e10410b07b3121a2f60410261"
+        },
+        "input_identities": [
+          "frozen-input"
+        ],
+        "started_at": "2026-10-24T14:31:25.150768+00:00"
+      },
+      "contract": "hp-sim5-combined-integration-v1",
+      "directory": "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/memory/integrations/integration-280e9ceeea14437f8ff9adaa191469e3",
+      "owner": {
+        "id": "integration-controller-a17db8a3710c4f3b84d18c0a9fdd65fe",
+        "process": {
+          "birth": "8119568",
+          "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+          "group": 47927,
+          "host": "2df9bd87a6a7",
+          "pid": 47932,
+          "uid": 1000
+        }
+      },
+      "pre_identity": {
+        "index_tree": "5a352cc5210e1e9df86a55fca021ec356513968f",
+        "revision": "f07bc89a075a81dcbb0454b0eb2956f7fa2d06ff",
+        "status": "",
+        "tree": "5a352cc5210e1e9df86a55fca021ec356513968f"
+      },
+      "preparation_id": "integration_preparation-62cf1c5b04234229b7949d3748a5ae3c",
+      "process": null,
+      "state": "finished",
+      "worktree": "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/memory/integrations/integration-280e9ceeea14437f8ff9adaa191469e3/worktree"
+    }
+  },
+  {
+    "id": "integration_preparation-62cf1c5b04234229b7949d3748a5ae3c",
+    "program_id": "p",
+    "kind": "integration_preparation",
+    "title": "prepared",
+    "revision": 1,
+    "created_at": "2026-10-24T14:31:25.150465+00:00",
+    "updated_at": "2026-10-24T14:31:25.150465+00:00",
+    "details": {
+      "file_sha256": "be10606dac926eace8eef7ddbd449255246d33e7c9ca4cadf4144bccd618bf4e",
+      "manifest": {
+        "at": "2026-10-24T14:31:25.123481+00:00",
+        "branch": "research-integration/integration-280e9ceeea14437f8ff9adaa191469e3",
+        "changed_paths": [
+          "src/physics/synthetic.txt"
+        ],
+        "combined_revision": "f07bc89a075a81dcbb0454b0eb2956f7fa2d06ff",
+        "combined_tree": "5a352cc5210e1e9df86a55fca021ec356513968f",
+        "config": {
+          "mode": "combined-fixture"
+        },
+        "config_sha256": "2f5c9307c33e3acfcd85b30297cf4e62d31c60cc6d6e8746350fedee8b9103b8",
+        "contract": "hp-sim5-combined-integration-v1",
+        "diff_sha256": "c9ac59bd2d23a32dcb7f511b583d8561649cbf54caca790f7ec8689e0f0be94b",
+        "input_identities": [
+          "frozen-input"
+        ],
+        "input_identities_sha256": "ed7a1f2e4f26d260548a691b81874b7a21c04af04fc9c3c22a85e18774a3ae59",
+        "job_id": "integration-280e9ceeea14437f8ff9adaa191469e3",
+        "outcome": "prepared",
+        "physics_gate_required": true,
+        "reason": null,
+        "required_checks": [],
+        "reviewer_blockers": [],
+        "sources": [
+          {
+            "admission_id": "admission-5513e554d6364aa5be0ab364f677c736",
+            "base_revision": "d1697571b284424e10410b07b3121a2f60410261",
+            "candidate_revision": "d52d838b7294351e5bec35f96bbf3cb46987ba1c",
+            "code_readiness": "blocked",
+            "config": {
+              "machine": "fixture"
+            },
+            "diff_sha256": "c9ac59bd2d23a32dcb7f511b583d8561649cbf54caca790f7ec8689e0f0be94b",
+            "engineering_reasons": [
+              "Candidate physics/motor/cable/dynamics patch lacks inspected passing npm run test:physics gate"
+            ],
+            "input_identities": [
+              "frozen-input"
+            ],
+            "physics_gate_required": true,
+            "required_checks": [],
+            "review_code_readiness": "ready",
+            "review_id": "review-dd3ab86a1660455eb3fdfad3db5f43e9",
+            "submission_id": "submission-097d900a41e54546a8cd53d9122bd07d",
+            "submission_sha256": "27614d3439cb73c9b53fdb8ad208cea84cd9821a7e8ea6d9cb16baa99fb40cae"
+          }
+        ],
+        "submission_ids": [
+          "submission-097d900a41e54546a8cd53d9122bd07d"
+        ],
+        "target_base": "d1697571b284424e10410b07b3121a2f60410261",
+        "worktree": "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/memory/integrations/integration-280e9ceeea14437f8ff9adaa191469e3/worktree"
+      },
+      "path": "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/memory/integrations/integration-280e9ceeea14437f8ff9adaa191469e3/integration_preparation-62cf1c5b04234229b7949d3748a5ae3c.json",
+      "sha256": "1a6d171b265f74c5aeeffedf7e8561db699e3b56dcb143bd9532b5983b3f9a33"
+    }
+  },
+  {
+    "id": "integration_check-654235b0654448cd894e6ceeeed284f8",
+    "program_id": "p",
+    "kind": "integration_check",
+    "title": "missing_physics_gate",
+    "revision": 1,
+    "created_at": "2026-10-24T14:31:25.161070+00:00",
+    "updated_at": "2026-10-24T14:31:25.161070+00:00",
+    "details": {
+      "file_sha256": "fe274fb45282d20e576e23527a41de064b89d4fb23b5982f3f6a0f036617ea45",
+      "manifest": {
+        "at": "2026-10-24T14:31:25.160905+00:00",
+        "combined_revision": "f07bc89a075a81dcbb0454b0eb2956f7fa2d06ff",
+        "combined_tree": "5a352cc5210e1e9df86a55fca021ec356513968f",
+        "config": {
+          "mode": "combined-fixture"
+        },
+        "config_sha256": "2f5c9307c33e3acfcd85b30297cf4e62d31c60cc6d6e8746350fedee8b9103b8",
+        "contract": "hp-sim5-combined-integration-v1",
+        "execution": null,
+        "input_identities": [
+          "frozen-input"
+        ],
+        "input_identities_sha256": "ed7a1f2e4f26d260548a691b81874b7a21c04af04fc9c3c22a85e18774a3ae59",
+        "job_id": "integration-280e9ceeea14437f8ff9adaa191469e3",
+        "logs": [],
+        "outcome": "missing_physics_gate",
+        "plan": {
+          "checks": [
+            {
+              "argv": [
+                "/workspace/hp-sim5/.venv/bin/python",
+                "-c",
+                "pass"
+              ],
+              "name": "meaningful fixture"
+            }
+          ],
+          "cleanup_boundary": "Observed cleanup covers the owned Linux process group. Supported checks keep descendants in that group and finish external services before exit. Detected detached children hold the lease; external or escaped services after abrupt runner loss remain unobserved.",
+          "config": {
+            "mode": "combined-fixture"
+          },
+          "configuration_boundary": "Configuration and input IDs are supplied declarations; Git identities and command outcomes are observed",
+          "deadline": 1792852345.150767,
+          "evaluator": {
+            "contract": "hp-sim5-combined-integration-v1",
+            "controller_sha256": "77989ec269ed20df35355eff3123a80ce63c4b86b63ba593404c1dd168d5f599",
+            "runner_sha256": "86174b52229af2d96ab82ef2ca6db00dfb4e7c2a18973df00b37b092afb4a081",
+            "source_revision": "d1697571b284424e10410b07b3121a2f60410261"
+          },
+          "input_identities": [
+            "frozen-input"
+          ],
+          "started_at": "2026-10-24T14:31:25.150768+00:00"
+        },
+        "post_identity": null,
+        "pre_identity": {
+          "index_tree": "5a352cc5210e1e9df86a55fca021ec356513968f",
+          "revision": "f07bc89a075a81dcbb0454b0eb2956f7fa2d06ff",
+          "status": "",
+          "tree": "5a352cc5210e1e9df86a55fca021ec356513968f"
+        },
+        "preparation_id": "integration_preparation-62cf1c5b04234229b7949d3748a5ae3c",
+        "preparation_sha256": "1a6d171b265f74c5aeeffedf7e8561db699e3b56dcb143bd9532b5983b3f9a33",
+        "reason": "Final combined revision requires real npm run test:physics",
+        "sources": [
+          {
+            "admission_id": "admission-5513e554d6364aa5be0ab364f677c736",
+            "base_revision": "d1697571b284424e10410b07b3121a2f60410261",
+            "candidate_revision": "d52d838b7294351e5bec35f96bbf3cb46987ba1c",
+            "code_readiness": "blocked",
+            "config": {
+              "machine": "fixture"
+            },
+            "diff_sha256": "c9ac59bd2d23a32dcb7f511b583d8561649cbf54caca790f7ec8689e0f0be94b",
+            "engineering_reasons": [
+              "Candidate physics/motor/cable/dynamics patch lacks inspected passing npm run test:physics gate"
+            ],
+            "input_identities": [
+              "frozen-input"
+            ],
+            "physics_gate_required": true,
+            "required_checks": [],
+            "review_code_readiness": "ready",
+            "review_id": "review-dd3ab86a1660455eb3fdfad3db5f43e9",
+            "submission_id": "submission-097d900a41e54546a8cd53d9122bd07d",
+            "submission_sha256": "27614d3439cb73c9b53fdb8ad208cea84cd9821a7e8ea6d9cb16baa99fb40cae"
+          }
+        ]
+      },
+      "path": "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0/memory/integrations/integration-280e9ceeea14437f8ff9adaa191469e3/integration_check-654235b0654448cd894e6ceeeed284f8.json",
+      "sha256": "269c108647bfacc6ed27a20afda2a22cac4d941c71fe3d27174f2184dc114fca"
+    }
+  }
+]

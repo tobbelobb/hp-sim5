@@ -1,0 +1,1 @@
+[{"check": {"argv": ["/workspace/hp-sim5/.venv/bin/python", "-c", "import time; time.sleep(.3); assert 2 + 2 == 4"], "name": "fresh process"}, "returncode": 0}]

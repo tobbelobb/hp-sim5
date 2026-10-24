@@ -204,7 +204,9 @@ def test_program_bound_identity_graph_review_and_structured_errors(manager):
         ('does_not_exist', {}, 'unknown_operation'),
         ('autonomous_continue', {}, 'unknown_operation'),
         ('parallel', {}, 'unknown_operation'),
-        ('integrate', {}, 'unavailable'),
+        ('integration_prepare', {}, 'invalid_request'),
+        ('integration_check', {}, 'invalid_request'),
+        ('integration_status', {'integration_id': 'absent'}, 'invalid_request'),
         ('_open', {'program_id': 'other'}, 'invalid_request'),
     ]:
         assert tool(first, operation, parameters, ok=False)['code'] == code

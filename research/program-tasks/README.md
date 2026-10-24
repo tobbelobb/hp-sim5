@@ -22,9 +22,11 @@ only its own changes. Push only when authorized by the human. Do not run the
 next task inside the same invocation.
 
 Tasks 001–006 are completed foundations. Tasks 007–016 are required manager
-implementation, not optional proposals. Tasks 007–014 now supply storage, graph,
+implementation, not optional proposals. Tasks 007–015 now supply storage, graph,
 dispatch, review and [manager chat entry](../program-manager.md). Task 012 adds [strategy and steering](../program-strategy.md).
 The [bounded controller and pool](../program-controller.md) enforce finite dispatch and review capacity.
+The [integration controller](../program-integration.md) prepares and checks
+combined reviewed patches without changing the human checkout or scientific admissions.
 Only cards with completed dependencies are eligible. Always use tasks.json for
 current eligibility. The full manager remains incomplete until task 016 passes.
 There is no separate proposal/promotion barrier between the implementation cards.

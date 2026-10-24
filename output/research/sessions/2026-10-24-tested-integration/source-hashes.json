@@ -1,0 +1,23 @@
+{
+  "base_revision": "03ecf6322797a8eb80162ca59be98b0185906fcf",
+  "files": {
+    "src/python/hp_sim5_research/program.py": "517ccbddf2f54587a1a105778f3fe7deb8daac6664209d7df28bb27ec8a3ff9b",
+    "src/python/hp_sim5_research/program_graph.py": "7c4be005389e3751de3037925ed34a4699e3bae89887574cab7f956aa59cfc24",
+    "src/python/hp_sim5_research/program_manager.py": "ddd7223d0fa8d6242a2f46f98fec922ad194279aa78c3806f0bc58b39bb17d9b",
+    "src/python/hp_sim5_research/program_pool.py": "d4083a28849de26abd4a52b51c8ca850b3a6edbc9a3fa360ebe6a501d2c7055a",
+    "src/python/hp_sim5_research/program_review.py": "1c3f5b1f905ae11206eec8b9a326f03982d240f29e4483212c68b3b2ec215ce1",
+    "src/python/hp_sim5_research/program_integration.py": "77989ec269ed20df35355eff3123a80ce63c4b86b63ba593404c1dd168d5f599",
+    "scripts/research_program_check_runner.py": "86174b52229af2d96ab82ef2ca6db00dfb4e7c2a18973df00b37b092afb4a081",
+    "tests/python/test_research_program_manager.py": "3e8eca3fc0f712c113200d548684f1203e05b96324e0f175d80e823deb9bc56c",
+    "tests/python/test_research_program_review.py": "bb016839bf65f061b7db29960c6aad08703b1f8f720b4863f6f14fcb9e636b68",
+    "tests/python/test_research_program_integration.py": "17e94eae7da7ba858846294d96617b2e9193edfe79eaec778a8d5881b4286e5c",
+    "research/program-manager.md": "b580ec2f52910f0e671cde87a0753e2b37974b0acd665d85216e25bb5e9427a9",
+    "research/program-review.md": "29c921921006a48fa33b618e29a16020968acdea133ae7b88cc5f47f9e27d4b0",
+    "research/program-integration.md": "fdb9f2de061025a06ced65ba946e5b5f12bbaa995b15ff1bd77ba8ffee970072",
+    "research/prompts/research-manager.txt": "2ee99ba7d39dc1cc9897511df8e892130c5ed212d02c35e15a7d60e126909110",
+    "research/program-tasks/015-tested-patch-integration.md": "0f2b0cf9d1c8daf24df06b1333bef802c7675e4228d4d141521168b6bf588098",
+    "research/program-tasks/tasks.json": "d133c2125587f547b5f05895b1831a27ec8de6a0a5ef4e03fa971ab8e0cea29f",
+    "research/program-tasks/progress.txt": "4cf6c4729135ad9262a227613bd0fe595a584165263be51759866bc6bcb15211",
+    "research/program-tasks/README.md": "46cbc53c1a8fe306b6c75cad2df8d60727663a98be6ad491ea1fe8570dd937ec"
+  }
+}

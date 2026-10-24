@@ -76,6 +76,7 @@ def occupancy(store, *, exclude=None):
 
 
 def check_worker(store, program_id, assignment_id, *, program_limit=None, exclusive=False):
+    check_integration(store)
     workers, reviews, uncertain = occupancy(store, exclude=(program_id, assignment_id))
     if uncertain:
         raise ProgramError('Interrupted ownership or unknown cleanup needs an explicit bounded handoff, including unopened programs')
@@ -89,6 +90,7 @@ def check_worker(store, program_id, assignment_id, *, program_limit=None, exclus
 
 
 def check_review(store, *, reservation=None):
+    check_integration(store)
     workers, reviews, _ = occupancy(store)
     if reservation:
         reviews = [r for r in reviews if not (r['id'] == reservation[0] and
@@ -97,3 +99,22 @@ def check_review(store, *, reservation=None):
         raise ProgramError('The separate review concurrency slot is occupied across this store')
     if any(r.get('reservation', r['details']).get('settings', {}).get('shared_runtime_write') for r in workers):
         raise ProgramError('Shared runtime write reservation blocks separate evaluation')
+
+
+def integrations(store):
+    return [store._decode(r) for r in store.connection.execute(
+        "SELECT * FROM records WHERE kind='integration_job'")
+        if store._decode(r)['details']['state'] in ('preparing', 'prepared', 'checking', 'ownership_lost')]
+
+
+def check_integration(store):
+    if integrations(store):
+        raise ProgramError('Exclusive integration/evaluation lease blocks workers and reviewers across this store')
+
+
+def check_exclusive(store):
+    """Caller holds BEGIN IMMEDIATE; keep this charge from startup through checks."""
+    check_integration(store)
+    workers, reviews, uncertain = occupancy(store)
+    if workers or reviews or uncertain:
+        raise ProgramError('Integration requires exclusive worker and reviewer capacity, including unknown cleanup')

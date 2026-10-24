@@ -1,0 +1,248 @@
+{
+  "compatible": {
+    "source": "/tmp/pytest-of-agent/pytest-31/test_compatible_binary_candida0",
+    "git_bundle": "fixture-evidence/compatible/fixture.bundle",
+    "preparations": [
+      {
+        "id": "integration_preparation-67030064e1f74f798c13f659c1d20eae",
+        "outcome": "prepared",
+        "sha256": "ff95e1f5ea159ad08f2baae741de7b008eaa052d23b824f17ed78627b765c7b7"
+      }
+    ],
+    "checks": [
+      {
+        "id": "integration_check-c13a933b11684be6919c4cef46d7281c",
+        "outcome": "passed",
+        "sha256": "a350345650711bf44ba2aba1a8bdd806efb2292c4b3f7d5025b94e935229dcdb"
+      }
+    ],
+    "admissions": [
+      {
+        "id": "admission-a07315bad86f464e99eb0afad73ec0cb",
+        "finding": "supported",
+        "knowledge_state": "reviewed"
+      },
+      {
+        "id": "admission-7b692a9a3a034d07b3ed9982cb129ad7",
+        "finding": "supported",
+        "knowledge_state": "reviewed"
+      }
+    ]
+  },
+  "failing-combination": {
+    "source": "/tmp/pytest-of-agent/pytest-31/test_individual_passing_candid0",
+    "git_bundle": "fixture-evidence/failing-combination/fixture.bundle",
+    "preparations": [
+      {
+        "id": "integration_preparation-4407424010034e43856d2671f016506c",
+        "outcome": "prepared",
+        "sha256": "6c4354d620cfa44225cd8da9155f25cb8ad42f54986558693c323741b3a59ac0"
+      },
+      {
+        "id": "integration_preparation-bae85af029844bf09da5b831b0f1d9d6",
+        "outcome": "prepared",
+        "sha256": "1ef79d3435abc99db75c4f22ba189f0133efe8d8ae225ee119a0c662f163d327"
+      },
+      {
+        "id": "integration_preparation-b405d82b23ca4d63840792dbea54301e",
+        "outcome": "prepared",
+        "sha256": "be31d0c87026fdbaec42e33fb68359e1abde265a53e8dab714d89d9129fbaa5e"
+      }
+    ],
+    "checks": [
+      {
+        "id": "integration_check-923cdcd338a54e41b87c284eac80115d",
+        "outcome": "passed",
+        "sha256": "726d79c9ec9abf25bd9a6d0d42bd6ad83229caf42dcbf3c96e4ab8c5f382faea"
+      },
+      {
+        "id": "integration_check-112b9daf455345f2a7e2a75c0fcefa67",
+        "outcome": "passed",
+        "sha256": "d1af725e4db27c920c63da67dbbf2e721b18efac20771fa3fd7326d3040bdaed"
+      },
+      {
+        "id": "integration_check-ac5ed854bdfa459faf39489ff9c6effe",
+        "outcome": "check_failed",
+        "sha256": "ce8c8e375400935dd49cedffdaa856a850fc21811d47b6a35d5795abc6d5818a"
+      }
+    ],
+    "admissions": [
+      {
+        "id": "admission-d0d0482fff6a4fb38510d43c061a1722",
+        "finding": "supported",
+        "knowledge_state": "reviewed"
+      },
+      {
+        "id": "admission-01cd0944c2a247a4a20d482eb7946313",
+        "finding": "supported",
+        "knowledge_state": "reviewed"
+      }
+    ]
+  },
+  "conflict": {
+    "source": "/tmp/pytest-of-agent/pytest-31/test_rejected_preparations_pre0",
+    "git_bundle": "fixture-evidence/conflict/fixture.bundle",
+    "preparations": [
+      {
+        "id": "integration_preparation-b1f9691ab6734fecb968cc79de8e8c05",
+        "outcome": "conflict",
+        "sha256": "a86c78aad72d634c9b526e5515c53bf2603a8ae741722d4475b29efe3dff05e0"
+      }
+    ],
+    "checks": [],
+    "admissions": [
+      {
+        "id": "admission-d648e010ab774039bd4b6b955f127953",
+        "finding": "supported",
+        "knowledge_state": "reviewed"
+      },
+      {
+        "id": "admission-c826710b903d4955a28c49f2c55cd5c4",
+        "finding": "supported",
+        "knowledge_state": "reviewed"
+      }
+    ]
+  },
+  "stale-base": {
+    "source": "/tmp/pytest-of-agent/pytest-31/test_rejected_preparations_pre1",
+    "git_bundle": "fixture-evidence/stale-base/fixture.bundle",
+    "preparations": [
+      {
+        "id": "integration_preparation-1feaa53f82524bf7903300d345dcc194",
+        "outcome": "stale_base",
+        "sha256": "a7ed28291f8365d60938fa37f954290f3f22407009cff984afe4bc782c92cd22"
+      }
+    ],
+    "checks": [],
+    "admissions": [
+      {
+        "id": "admission-33a4cb2377834cb6957bd44fb02bc401",
+        "finding": "supported",
+        "knowledge_state": "reviewed"
+      },
+      {
+        "id": "admission-3eac305362934c25854f83c1bcac80a1",
+        "finding": "supported",
+        "knowledge_state": "reviewed"
+      }
+    ]
+  },
+  "mutated-source": {
+    "source": "/tmp/pytest-of-agent/pytest-31/test_rejected_preparations_pre2",
+    "git_bundle": "fixture-evidence/mutated-source/fixture.bundle",
+    "preparations": [
+      {
+        "id": "integration_preparation-2dca699fe6e044e1bc267281d8771e4c",
+        "outcome": "changed_or_unreviewed",
+        "sha256": "cb36a5f964e05081f56628ae6f68478729645b4701793273674d29559abda30d"
+      }
+    ],
+    "checks": [],
+    "admissions": [
+      {
+        "id": "admission-e2abe5ff99224a71a3958dae7e779052",
+        "finding": "supported",
+        "knowledge_state": "reviewed"
+      },
+      {
+        "id": "admission-3c59b5bbe46a44589a983d862fff927f",
+        "finding": "supported",
+        "knowledge_state": "reviewed"
+      }
+    ]
+  },
+  "missing-physics-gate": {
+    "source": "/tmp/pytest-of-agent/pytest-31/test_required_physics_gate_is_0",
+    "git_bundle": "fixture-evidence/missing-physics-gate/fixture.bundle",
+    "preparations": [
+      {
+        "id": "integration_preparation-62cf1c5b04234229b7949d3748a5ae3c",
+        "outcome": "prepared",
+        "sha256": "1a6d171b265f74c5aeeffedf7e8561db699e3b56dcb143bd9532b5983b3f9a33"
+      }
+    ],
+    "checks": [
+      {
+        "id": "integration_check-654235b0654448cd894e6ceeeed284f8",
+        "outcome": "missing_physics_gate",
+        "sha256": "269c108647bfacc6ed27a20afda2a22cac4d941c71fe3d27174f2184dc114fca"
+      }
+    ],
+    "admissions": [
+      {
+        "id": "admission-5513e554d6364aa5be0ab364f677c736",
+        "finding": "supported",
+        "knowledge_state": "reviewed"
+      }
+    ]
+  },
+  "runner-loss": {
+    "source": "/tmp/pytest-of-agent/pytest-31/test_runner_loss_cannot_releas0",
+    "git_bundle": "fixture-evidence/runner-loss/fixture.bundle",
+    "preparations": [
+      {
+        "id": "integration_preparation-067b07b043be4fa1a2dae3ba562f14d2",
+        "outcome": "prepared",
+        "sha256": "492d21e667ee03a8e2dda1e81b5d4a0d4b043736fe4b3649759b9b8a9265e7c7"
+      }
+    ],
+    "checks": [
+      {
+        "id": "integration_check-c4116e3398684e82adec8499d34a639a",
+        "outcome": "check_failed",
+        "sha256": "f906f9d84784e2f1389733a74dd339c9d08d87e6aef882716f508dc3e8481cd4"
+      }
+    ],
+    "admissions": [
+      {
+        "id": "admission-35be86ecb40b43d1bce5e9edec7a7f4b",
+        "finding": "supported",
+        "knowledge_state": "reviewed"
+      }
+    ]
+  },
+  "detached-child": {
+    "source": "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0",
+    "git_bundle": "fixture-evidence/detached-child/fixture.bundle",
+    "preparations": [
+      {
+        "id": "integration_preparation-3c0c53e5e2c04d6dae0461791d1b6a3d",
+        "outcome": "prepared",
+        "sha256": "6106d2573844197e2c11ee784897608543e50292543cc4f9d05cf31cce87b937"
+      }
+    ],
+    "checks": [],
+    "admissions": [
+      {
+        "id": "admission-af9e8b91b4c7417b910c821f313a8d5b",
+        "finding": "supported",
+        "knowledge_state": "reviewed"
+      }
+    ]
+  },
+  "file-host": {
+    "source": "/tmp/pytest-of-agent/pytest-31/test_actual_file_host_returns_0",
+    "git_bundle": "fixture-evidence/file-host/fixture.bundle",
+    "preparations": [
+      {
+        "id": "integration_preparation-dbe9e7ab87744b43a217657784319ec0",
+        "outcome": "prepared",
+        "sha256": "4f50c5f8c5e0a6428f6ab9dbe8964ccf300bc92d52d09fb982c876b94ef09ee4"
+      }
+    ],
+    "checks": [
+      {
+        "id": "integration_check-441b255244d04889b7f4bfdc38e9f69e",
+        "outcome": "passed",
+        "sha256": "a1d1f766e5b7af014d8b12304faee5a4f8cf71b807e16ba9455f1e2ab540613f"
+      }
+    ],
+    "admissions": [
+      {
+        "id": "admission-c5300147b8984d7bb1e840566ee82dfc",
+        "finding": "supported",
+        "knowledge_state": "reviewed"
+      }
+    ]
+  }
+}

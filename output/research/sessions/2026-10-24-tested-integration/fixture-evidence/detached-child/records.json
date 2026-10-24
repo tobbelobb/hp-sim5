@@ -1,0 +1,644 @@
+[
+  {
+    "id": "q",
+    "program_id": "p",
+    "kind": "question",
+    "title": "Which scoped result changes our route?",
+    "revision": 1,
+    "created_at": "2026-10-24T14:31:28.650848+00:00",
+    "updated_at": "2026-10-24T14:31:28.650848+00:00",
+    "details": {
+      "knowledge_state": "unassessed",
+      "scope": {}
+    }
+  },
+  {
+    "id": "route",
+    "program_id": "p",
+    "kind": "approach",
+    "title": "Saved evidence",
+    "revision": 1,
+    "created_at": "2026-10-24T14:31:28.651003+00:00",
+    "updated_at": "2026-10-24T14:31:28.651003+00:00",
+    "details": {
+      "question_id": "q",
+      "reason": "No new physics needed",
+      "state": "live"
+    }
+  },
+  {
+    "id": "work",
+    "program_id": "p",
+    "kind": "assignment",
+    "title": "Inspect saved inputs",
+    "revision": 4,
+    "created_at": "2026-10-24T14:31:28.651091+00:00",
+    "updated_at": "2026-10-24T14:31:28.673266+00:00",
+    "details": {
+      "allocation": {
+        "wall_minutes": 1
+      },
+      "approach_id": "route",
+      "execution_state": "completed",
+      "knowledge_state": "unassessed",
+      "question_id": "q",
+      "review_state": "unreviewed"
+    }
+  },
+  {
+    "id": "decision-c67998c180e84d549729488829c21b39",
+    "program_id": "p",
+    "kind": "decision",
+    "title": "Fixture dispatch",
+    "revision": 1,
+    "created_at": "2026-10-24T14:31:28.651266+00:00",
+    "updated_at": "2026-10-24T14:31:28.651266+00:00",
+    "details": {
+      "actor": "manager",
+      "evidence_ids": [],
+      "subject_id": "work"
+    }
+  },
+  {
+    "id": "attempt-5c8a04e4af4d48a6983cd752f08f14f8",
+    "program_id": "p",
+    "kind": "attempt",
+    "title": "Inspect saved inputs",
+    "revision": 5,
+    "created_at": "2026-10-24T14:31:28.655232+00:00",
+    "updated_at": "2026-10-24T14:31:28.674926+00:00",
+    "details": {
+      "allocation": {
+        "wall_minutes": 1
+      },
+      "argv": [
+        "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/worker",
+        "--codex",
+        "--batch",
+        "--prompt-file",
+        "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/memory/workers/attempt-5c8a04e4af4d48a6983cd752f08f14f8/prompt.txt",
+        "--session-dir",
+        "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/repo/output/research/sessions/attempt-5c8a04e4af4d48a6983cd752f08f14f8",
+        "--physics-backend",
+        "headless-js",
+        "--machine",
+        "hp4",
+        "--viewer",
+        "headless",
+        "--wall-deadline",
+        "1792852348.6551025"
+      ],
+      "artifacts": [
+        {
+          "bytes": 0,
+          "partial": false,
+          "path": "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/memory/workers/attempt-5c8a04e4af4d48a6983cd752f08f14f8/stdout.log"
+        },
+        {
+          "bytes": 0,
+          "partial": false,
+          "path": "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/memory/workers/attempt-5c8a04e4af4d48a6983cd752f08f14f8/stderr.log"
+        },
+        {
+          "bytes": 1840,
+          "partial": false,
+          "path": "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/memory/workers/attempt-5c8a04e4af4d48a6983cd752f08f14f8/prompt.txt"
+        },
+        {
+          "bytes": 1278,
+          "partial": false,
+          "path": "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/memory/workers/attempt-5c8a04e4af4d48a6983cd752f08f14f8/assignment.json"
+        }
+      ],
+      "assignment_id": "work",
+      "attempt_dir": "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/memory/workers/attempt-5c8a04e4af4d48a6983cd752f08f14f8",
+      "cleanup": "unverified; launcher exit manifest missing",
+      "diagnostics": [],
+      "exited_at": "2026-10-24T14:31:28.672703+00:00",
+      "handoff": {
+        "at": "2026-10-24T14:31:28.674844+00:00",
+        "instruction": "Use a new distinct bounded assignment; no world checkpoint or conversation was resumed",
+        "physical_shutdown": "unknown",
+        "reason": "Fixture worker had no world; missing exit manifest retained"
+      },
+      "observations": [
+        {
+          "at": "2026-10-24T14:31:28.655119+00:00",
+          "event": "reserved"
+        },
+        {
+          "at": "2026-10-24T14:31:28.655993+00:00",
+          "event": "spawned",
+          "pid": 49544
+        },
+        {
+          "at": "2026-10-24T14:31:28.672720+00:00",
+          "event": "exited",
+          "returncode": 0
+        }
+      ],
+      "observed_wall_seconds": 0.016717910766601562,
+      "owner": {
+        "id": "dispatcher-3c749a587b104dbea764eca1ec9da583",
+        "process": {
+          "birth": "8119568",
+          "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+          "group": 47927,
+          "host": "2df9bd87a6a7",
+          "pid": 47932,
+          "uid": 1000
+        }
+      },
+      "premise_conflicts": [],
+      "premise_event_ids_at_start": [],
+      "premise_ids": [],
+      "premise_plan_ids": [],
+      "process": {
+        "birth": "8120506",
+        "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+        "group": 49544,
+        "host": "2df9bd87a6a7",
+        "pid": 49544,
+        "uid": 1000
+      },
+      "prompt_sha256": "8742d214831bbbb73bab618729a50ed10027efbde282e1b83258a269285468e6",
+      "returncode": 0,
+      "runtime": {
+        "wall_deadline": 1792852348.6551025
+      },
+      "scientific_state": "unassessed",
+      "session_dir": "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/repo/output/research/sessions/attempt-5c8a04e4af4d48a6983cd752f08f14f8",
+      "settings": {
+        "backend": "codex",
+        "client_args": [],
+        "dont_ask": false,
+        "goal_mode": true,
+        "machine": "hp4",
+        "physics_backend": "headless-js",
+        "record": true,
+        "shared_runtime_write": false,
+        "viewer": "headless",
+        "worktree": false
+      },
+      "source_dirty": false,
+      "source_revision": "bc903e0fd1c58f9282558935f9e6f98241318362",
+      "started_at": "2026-10-24T14:31:28.655985+00:00",
+      "state": "submitted"
+    }
+  },
+  {
+    "id": "a",
+    "program_id": "p",
+    "kind": "claim",
+    "title": "On these eight simulated histories, the blanket screen does not reliably improve summed anchor error",
+    "revision": 1,
+    "created_at": "2026-10-24T14:31:28.686490+00:00",
+    "updated_at": "2026-10-24T14:31:28.686490+00:00",
+    "details": {
+      "claim_key": "a",
+      "knowledge_state": "unassessed",
+      "scope": {
+        "configuration": "fixture",
+        "evidence_type": "synthetic"
+      },
+      "version": 1
+    }
+  },
+  {
+    "id": "a-evidence",
+    "program_id": "p",
+    "kind": "artifact",
+    "title": "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/a-evidence.txt",
+    "revision": 1,
+    "created_at": "2026-10-24T14:31:28.686733+00:00",
+    "updated_at": "2026-10-24T14:31:28.686733+00:00",
+    "details": {
+      "evidence_type": "synthetic",
+      "provenance": {
+        "config": {
+          "machine": "fixture"
+        },
+        "input_identities": [
+          "frozen-input"
+        ]
+      },
+      "reference": "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/a-evidence.txt",
+      "sha256": "763924e67f1cae27ef575579a567f773c3a1409a609e98b30fac2e0a796bcb54",
+      "source_revision": "bc903e0fd1c58f9282558935f9e6f98241318362"
+    }
+  },
+  {
+    "id": "submission-41ae868835e148d0962de06fb68ed2f7",
+    "program_id": "p",
+    "kind": "submission",
+    "title": "On these eight simulated histories, the blanket screen does not reliably improve summed anchor error",
+    "revision": 1,
+    "created_at": "2026-10-24T14:31:28.694472+00:00",
+    "updated_at": "2026-10-24T14:31:28.694472+00:00",
+    "details": {
+      "manifest": {
+        "assets": [
+          {
+            "artifact_id": null,
+            "id": "report",
+            "missing": false,
+            "role": "report",
+            "sha256": "b18a2e7eedafa76635c7c9e15f522ace19ccacefa3d0eb55b623adfe86c3c043",
+            "source": "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/a-report.txt"
+          },
+          {
+            "artifact_id": null,
+            "id": "abstract",
+            "missing": false,
+            "role": "abstract",
+            "sha256": "38f856e1d9d4fd32b02d678cc54311f12346f2ecdea29b9b278206008854d736",
+            "source": "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/a-abstract.txt"
+          },
+          {
+            "artifact_id": "a-evidence",
+            "id": "evidence",
+            "missing": false,
+            "role": "evidence",
+            "sha256": "763924e67f1cae27ef575579a567f773c3a1409a609e98b30fac2e0a796bcb54",
+            "source": "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/a-evidence.txt"
+          },
+          {
+            "artifact_id": null,
+            "id": "check",
+            "missing": false,
+            "role": "check",
+            "sha256": "254e0ae8bedae4d13f3694cbe3e18ceac8cf23f8caba3f09477bc90222ee9753",
+            "source": "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/a-check.txt"
+          }
+        ],
+        "assignment_id": "work",
+        "attempt_id": "attempt-5c8a04e4af4d48a6983cd752f08f14f8",
+        "base_revision": "bc903e0fd1c58f9282558935f9e6f98241318362",
+        "candidate_revision": "292f9da315e8ee3b26836e5f0c1cc1b96128dcd7",
+        "changed_paths": [
+          "a.txt"
+        ],
+        "claim": {
+          "created_at": "2026-10-24T14:31:28.686490+00:00",
+          "details": {
+            "claim_key": "a",
+            "knowledge_state": "unassessed",
+            "scope": {
+              "configuration": "fixture",
+              "evidence_type": "synthetic"
+            },
+            "version": 1
+          },
+          "id": "a",
+          "kind": "claim",
+          "program_id": "p",
+          "revision": 1,
+          "title": "On these eight simulated histories, the blanket screen does not reliably improve summed anchor error",
+          "updated_at": "2026-10-24T14:31:28.686490+00:00"
+        },
+        "config": {
+          "machine": "fixture"
+        },
+        "contract": "hp-sim5-evidence-review-v2",
+        "diff_sha256": "49293d6479c7795638c2026615d5104557026be7d10adcd411a4a556766f9620",
+        "execution_state": "submitted",
+        "input_identities": [
+          "frozen-input"
+        ],
+        "physics_gate_required": false,
+        "producer_checks": [],
+        "source_dirty": false,
+        "source_revision": "bc903e0fd1c58f9282558935f9e6f98241318362"
+      },
+      "sha256": "da189f0ac93755910cc0d43f97c0e2ba29314ca616ac76132b5daa24f5771fca"
+    }
+  },
+  {
+    "id": "review-run-b5acb8c241694d42bff5983d30e8ef3c",
+    "program_id": "p",
+    "kind": "review_run",
+    "title": "Separate saved-evidence review",
+    "revision": 3,
+    "created_at": "2026-10-24T14:31:28.697192+00:00",
+    "updated_at": "2026-10-24T14:31:28.764321+00:00",
+    "details": {
+      "argv": [
+        "codex",
+        "exec",
+        "--cd",
+        "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/repo",
+        "--sandbox",
+        "read-only",
+        "-c",
+        "approval_policy=\"never\"",
+        "--json",
+        "--output-last-message",
+        "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/memory/reviews/review-run-b5acb8c241694d42bff5983d30e8ef3c/final-message.md",
+        "-c",
+        "sandbox_workspace_write.network_access=true",
+        "-c",
+        "sandbox_workspace_write.writable_roots=[\"/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/repo/output\"]",
+        "-c",
+        "features.default_mode_request_user_input=false",
+        "-c",
+        "features.goals=false",
+        "-c",
+        "mcp_servers.hp_sim5.enabled=false",
+        "-c",
+        "mcp_servers.rerun.enabled=false",
+        "-c",
+        "model_provider=\"openai\"",
+        "-"
+      ],
+      "contract": "hp-sim5-evidence-review-v2",
+      "deadline": 1792852348.696965,
+      "directory": "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/memory/reviews/review-run-b5acb8c241694d42bff5983d30e8ef3c",
+      "error": null,
+      "guard_argv": [
+        "/workspace/hp-sim5/.venv/bin/python",
+        "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/repo/scripts/research_program_review_guard.py",
+        "1792852348.696965",
+        "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/memory/reviews/review-run-b5acb8c241694d42bff5983d30e8ef3c/wall-expired",
+        "codex",
+        "exec",
+        "--cd",
+        "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/repo",
+        "--sandbox",
+        "read-only",
+        "-c",
+        "approval_policy=\"never\"",
+        "--json",
+        "--output-last-message",
+        "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/memory/reviews/review-run-b5acb8c241694d42bff5983d30e8ef3c/final-message.md",
+        "-c",
+        "sandbox_workspace_write.network_access=true",
+        "-c",
+        "sandbox_workspace_write.writable_roots=[\"/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/repo/output\"]",
+        "-c",
+        "features.default_mode_request_user_input=false",
+        "-c",
+        "features.goals=false",
+        "-c",
+        "mcp_servers.hp_sim5.enabled=false",
+        "-c",
+        "mcp_servers.rerun.enabled=false",
+        "-c",
+        "model_provider=\"openai\"",
+        "-"
+      ],
+      "owner": {
+        "id": "review-controller-84f34da8d5e5429a88cec2fa5a8acfa8",
+        "process": {
+          "birth": "8119568",
+          "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+          "group": 47927,
+          "host": "2df9bd87a6a7",
+          "pid": 47932,
+          "uid": 1000
+        }
+      },
+      "process": {
+        "birth": "8120510",
+        "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+        "group": 49558,
+        "host": "2df9bd87a6a7",
+        "pid": 49558,
+        "uid": 1000
+      },
+      "prompt_sha256": "eb18dc347bf7f34db6d8c96906c294278f2c7f045579737b3f0084643bfe5720",
+      "returncode": 0,
+      "review_id": "review-e09eb413cc254469863515c646777657",
+      "reviewer": {
+        "backend": "codex",
+        "context_id": "review-run-b5acb8c241694d42bff5983d30e8ef3c",
+        "model": null,
+        "model_provider": "openai"
+      },
+      "started_at": "2026-10-24T14:31:28.696953+00:00",
+      "state": "completed",
+      "submission_id": "submission-41ae868835e148d0962de06fb68ed2f7",
+      "submission_sha256": "da189f0ac93755910cc0d43f97c0e2ba29314ca616ac76132b5daa24f5771fca",
+      "wall_minutes": 1
+    }
+  },
+  {
+    "id": "review-e09eb413cc254469863515c646777657",
+    "program_id": "p",
+    "kind": "review",
+    "title": "Keep the scoped negative report and retire this blanket default change; no patch is needed.",
+    "revision": 1,
+    "created_at": "2026-10-24T14:31:28.764535+00:00",
+    "updated_at": "2026-10-24T14:31:28.764535+00:00",
+    "details": {
+      "contract": "hp-sim5-evidence-review-v2",
+      "response": {
+        "checks": [
+          {
+            "asset_ids": [
+              "report",
+              "abstract",
+              "evidence",
+              "check"
+            ],
+            "description": "Read selected frozen files; no independent numerical reproduction",
+            "kind": "inspected"
+          }
+        ],
+        "code_readiness": "ready",
+        "discrepancy": null,
+        "finding": "supported",
+        "limitations": [
+          "Eight frozen simulated histories; no hardware claim"
+        ],
+        "practical_value": "Closes a route without further fits",
+        "reason": "Keep the scoped negative report and retire this blanket default change; no patch is needed.",
+        "submission_id": "submission-41ae868835e148d0962de06fb68ed2f7",
+        "submission_sha256": "da189f0ac93755910cc0d43f97c0e2ba29314ca616ac76132b5daa24f5771fca",
+        "verdict": "keep"
+      },
+      "response_sha256": "f6ed7855b9c10a8ef1ca77907937f80e53012b69bef2b37e86b6348542d6ddbb",
+      "reviewer": {
+        "backend": "codex",
+        "context_id": "review-run-b5acb8c241694d42bff5983d30e8ef3c",
+        "model": null,
+        "model_provider": "openai"
+      },
+      "run_id": "review-run-b5acb8c241694d42bff5983d30e8ef3c",
+      "submission_id": "submission-41ae868835e148d0962de06fb68ed2f7"
+    }
+  },
+  {
+    "id": "admission-af9e8b91b4c7417b910c821f313a8d5b",
+    "program_id": "p",
+    "kind": "admission",
+    "title": "Keep the scoped negative report and retire this blanket default change; no patch is needed.",
+    "revision": 1,
+    "created_at": "2026-10-24T14:31:28.768108+00:00",
+    "updated_at": "2026-10-24T14:31:28.768108+00:00",
+    "details": {
+      "actor": "controller",
+      "claim_id": "a",
+      "code_readiness": "ready",
+      "contract": "hp-sim5-evidence-review-v2",
+      "decision": "keep",
+      "engineering_reasons": [],
+      "finding": "supported",
+      "guard_reasons": [],
+      "knowledge_state": "reviewed",
+      "practical_value": "Closes a route without further fits",
+      "required_checks": [],
+      "review_id": "review-e09eb413cc254469863515c646777657",
+      "submission_id": "submission-41ae868835e148d0962de06fb68ed2f7",
+      "submission_sha256": "da189f0ac93755910cc0d43f97c0e2ba29314ca616ac76132b5daa24f5771fca"
+    }
+  },
+  {
+    "id": "integration-e136c22bc5824c189f428bb754e9dd2b",
+    "program_id": "p",
+    "kind": "integration_job",
+    "title": "Combined candidate lease",
+    "revision": 6,
+    "created_at": "2026-10-24T14:31:28.769969+00:00",
+    "updated_at": "2026-10-24T14:31:28.931054+00:00",
+    "details": {
+      "branch": "research-integration/integration-e136c22bc5824c189f428bb754e9dd2b",
+      "check_id": null,
+      "check_plan": {
+        "checks": [
+          {
+            "argv": [
+              "/workspace/hp-sim5/.venv/bin/python",
+              "-c",
+              "import subprocess,sys,json; from pathlib import Path; child=subprocess.Popen([sys.executable,\"-c\",\"import time; time.sleep(30)\"],start_new_session=True); Path('/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/detached-pid.json').write_text(json.dumps({\"pid\":child.pid}))"
+            ],
+            "name": "meaningful fixture"
+          }
+        ],
+        "cleanup_boundary": "Observed cleanup covers the owned Linux process group. Supported checks keep descendants in that group and finish external services before exit. Detected detached children hold the lease; external or escaped services after abrupt runner loss remain unobserved.",
+        "config": {
+          "mode": "combined-fixture"
+        },
+        "configuration_boundary": "Configuration and input IDs are supplied declarations; Git identities and command outcomes are observed",
+        "deadline": 1792852348.7920613,
+        "evaluator": {
+          "contract": "hp-sim5-combined-integration-v1",
+          "controller_sha256": "77989ec269ed20df35355eff3123a80ce63c4b86b63ba593404c1dd168d5f599",
+          "runner_sha256": "86174b52229af2d96ab82ef2ca6db00dfb4e7c2a18973df00b37b092afb4a081",
+          "source_revision": "bc903e0fd1c58f9282558935f9e6f98241318362"
+        },
+        "input_identities": [
+          "frozen-input"
+        ],
+        "started_at": "2026-10-24T14:31:28.792062+00:00"
+      },
+      "cleanup": "unsupported detached work; exclusive lease retained",
+      "contract": "hp-sim5-combined-integration-v1",
+      "detached_observation": {
+        "path": "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/memory/integrations/integration-e136c22bc5824c189f428bb754e9dd2b/detached-observation.json",
+        "sha256": "a9bdf9e360296f4a643124a4a5cd92819a60311b30111ee1c1acf6038d960cd0"
+      },
+      "directory": "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/memory/integrations/integration-e136c22bc5824c189f428bb754e9dd2b",
+      "owner": {
+        "id": "integration-controller-96d4ee3c0d934196ba4d175382b215e2",
+        "process": {
+          "birth": "8119568",
+          "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+          "group": 47927,
+          "host": "2df9bd87a6a7",
+          "pid": 47932,
+          "uid": 1000
+        }
+      },
+      "pre_identity": {
+        "index_tree": "4c77c3cc08bfb0fb13e89c4cdc85796e647e8d15",
+        "revision": "c657f1174de53fe60ad8b0b67198d6f62664490d",
+        "status": "",
+        "tree": "4c77c3cc08bfb0fb13e89c4cdc85796e647e8d15"
+      },
+      "preparation_id": "integration_preparation-3c0c53e5e2c04d6dae0461791d1b6a3d",
+      "process": {
+        "birth": "8120521",
+        "boot_id": "f128c9c7-03d3-4aa0-be31-5f53c4c90e45",
+        "group": 49583,
+        "host": "2df9bd87a6a7",
+        "pid": 49583,
+        "uid": 1000
+      },
+      "release": {
+        "adopted": false,
+        "at": "2026-10-24T14:31:28.930933+00:00",
+        "checks_admitted": false,
+        "reason": "Fixture explicitly stopped detected detached child",
+        "signalled": false
+      },
+      "state": "released",
+      "worktree": "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/memory/integrations/integration-e136c22bc5824c189f428bb754e9dd2b/worktree"
+    }
+  },
+  {
+    "id": "integration_preparation-3c0c53e5e2c04d6dae0461791d1b6a3d",
+    "program_id": "p",
+    "kind": "integration_preparation",
+    "title": "prepared",
+    "revision": 1,
+    "created_at": "2026-10-24T14:31:28.791644+00:00",
+    "updated_at": "2026-10-24T14:31:28.791644+00:00",
+    "details": {
+      "file_sha256": "9c6a4c22635505f1e412a5af378a6c419d846230d514689a81f2a8b52d91d8bf",
+      "manifest": {
+        "at": "2026-10-24T14:31:28.770081+00:00",
+        "branch": "research-integration/integration-e136c22bc5824c189f428bb754e9dd2b",
+        "changed_paths": [
+          "a.txt"
+        ],
+        "combined_revision": "c657f1174de53fe60ad8b0b67198d6f62664490d",
+        "combined_tree": "4c77c3cc08bfb0fb13e89c4cdc85796e647e8d15",
+        "config": {
+          "mode": "combined-fixture"
+        },
+        "config_sha256": "2f5c9307c33e3acfcd85b30297cf4e62d31c60cc6d6e8746350fedee8b9103b8",
+        "contract": "hp-sim5-combined-integration-v1",
+        "diff_sha256": "49293d6479c7795638c2026615d5104557026be7d10adcd411a4a556766f9620",
+        "input_identities": [
+          "frozen-input"
+        ],
+        "input_identities_sha256": "ed7a1f2e4f26d260548a691b81874b7a21c04af04fc9c3c22a85e18774a3ae59",
+        "job_id": "integration-e136c22bc5824c189f428bb754e9dd2b",
+        "outcome": "prepared",
+        "physics_gate_required": false,
+        "reason": null,
+        "required_checks": [],
+        "reviewer_blockers": [],
+        "sources": [
+          {
+            "admission_id": "admission-af9e8b91b4c7417b910c821f313a8d5b",
+            "base_revision": "bc903e0fd1c58f9282558935f9e6f98241318362",
+            "candidate_revision": "292f9da315e8ee3b26836e5f0c1cc1b96128dcd7",
+            "code_readiness": "ready",
+            "config": {
+              "machine": "fixture"
+            },
+            "diff_sha256": "49293d6479c7795638c2026615d5104557026be7d10adcd411a4a556766f9620",
+            "engineering_reasons": [],
+            "input_identities": [
+              "frozen-input"
+            ],
+            "physics_gate_required": false,
+            "required_checks": [],
+            "review_code_readiness": "ready",
+            "review_id": "review-e09eb413cc254469863515c646777657",
+            "submission_id": "submission-41ae868835e148d0962de06fb68ed2f7",
+            "submission_sha256": "da189f0ac93755910cc0d43f97c0e2ba29314ca616ac76132b5daa24f5771fca"
+          }
+        ],
+        "submission_ids": [
+          "submission-41ae868835e148d0962de06fb68ed2f7"
+        ],
+        "target_base": "bc903e0fd1c58f9282558935f9e6f98241318362",
+        "worktree": "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/memory/integrations/integration-e136c22bc5824c189f428bb754e9dd2b/worktree"
+      },
+      "path": "/tmp/pytest-of-agent/pytest-31/test_detected_detached_child_h0/memory/integrations/integration-e136c22bc5824c189f428bb754e9dd2b/integration_preparation-3c0c53e5e2c04d6dae0461791d1b6a3d.json",
+      "sha256": "6106d2573844197e2c11ee784897608543e50292543cc4f9d05cf31cce87b937"
+    }
+  }
+]

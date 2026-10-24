@@ -29,3 +29,19 @@ Done when:
 
 Implement the path through candidate preparation and checks, not a full hosting
 or release service. Preserve all unrelated human work and failed candidates.
+
+Implemented 2026-10-24. The [integration guide](../program-integration.md) documents
+manager prepare/check/status/release/recovery operations, exact sealed sources,
+isolated explicit-base worktrees, polled checks and durable exclusive capacity.
+Version-2 review keeps scientific admission separate from engineering blockers;
+historical version-1 semantics remain unchanged. Reviewer requirements and actual
+combined physics delivery gates cannot be cleared by unrelated checks.
+
+Verification uses real Git/binary worktrees and finite child-process fixtures.
+The [retained record](../../output/research/sessions/2026-10-24-tested-integration/report.md)
+contains exact commands, passing/failing outputs, immutable receipts, fixture Git
+bundles, hashes and limits. Affected fixes passed 61 cases in 11.47 seconds;
+unchanged passing cases and 34 subtests from the broader run are reused, without
+summing duplicates. No actual physics gate or live coding-client review is claimed.
+Development allocation was 90 minutes with zero numerical work. Task 016 remains
+the actual manager release gate.

@@ -1,0 +1,27 @@
+{
+  "argv": [
+    "/workspace/hp-sim5/.venv/bin/python",
+    "-m",
+    "pytest",
+    "tests/python/test_research_program_review.py",
+    "tests/python/test_research_program_integration.py",
+    "tests/python/test_research_program_controller.py::test_stale_lease_cancelled_popen_and_restart_never_replay_assignment",
+    "tests/python/test_research_program_controller.py::test_reused_pid_and_live_snapshot_do_not_authorize_adoption_or_signals",
+    "tests/python/test_research_program_controller.py::test_review_retry_limit_historical_funding_roundtrip_and_stop_during_review",
+    "tests/python/test_research_program_controller.py::test_stop_during_review_and_late_completed_review_cannot_admit",
+    "tests/python/test_research_program_controller.py::test_recovered_review_transfers_backlog_and_recovers_admission_cache",
+    "tests/python/test_research_program_controller.py::test_empty_allocation_roundtrip_and_failed_review_transfer_are_atomic",
+    "tests/python/test_research_program_controller.py::test_invalid_worker_options_do_not_spend_or_strand_a_startup_reservation",
+    "tests/python/test_research_program_controller.py::test_recovery_reads_current_supervisor_and_does_not_adopt_final_snapshot[True]",
+    "tests/python/test_research_program_controller.py::test_recovery_reads_current_supervisor_and_does_not_adopt_final_snapshot[False]",
+    "tests/python/test_research_program_controller.py::test_stop_preserves_unverified_review_boundary_without_signalling_reused_identity",
+    "tests/python/test_research_program_pool.py::test_review_capacity_is_global_and_stop_leaves_other_program_reviewer",
+    "tests/python/test_research_program_pool.py::test_startup_gap_excludes_workers_reviewers_and_preserves_queued_exclusive_item",
+    "tests/python/test_research_program_pool.py::test_review_startup_gap_recovery_requires_explicit_unknown_handoff[False]",
+    "tests/python/test_research_program_pool.py::test_review_startup_gap_recovery_requires_explicit_unknown_handoff[True]",
+    "tests/python/test_research_program_strategy.py::test_manager_tools_write_cited_brief_and_real_worker_contract",
+    "-q",
+    "--junitxml=output/research/sessions/2026-10-24-tested-integration/affected-fix.xml"
+  ],
+  "reuses": "Unchanged passing final-affected cases"
+}

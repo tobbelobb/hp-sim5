@@ -1,0 +1,8 @@
+{
+  "prior_errored_fixture": "test_invalid_worker_options_do_not_spend_or_strand_a_startup_reservation",
+  "worker_pid_observed": "gone",
+  "stale_attachment": "explicitly rejected",
+  "fresh_attachment_shutdown": true,
+  "host_live_after_shutdown": false,
+  "historical_pid_signalled": false
+}

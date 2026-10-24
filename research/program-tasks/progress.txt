@@ -509,3 +509,41 @@ changed; physics delivery gate not applicable. Parent supplied base/upstream
 main aea237e65d5589eb433a90c345fb7f2e364bf6a9. No shell fetch/push, network approval,
 installs, API key provisioning or HOME/CODEX_HOME overrides. Task 014 done; task 015 is
 next and actual live task 016 remains required for manager release.
+
+2026-10-24 task 015: reviewed findings and tested combined candidates
+Added manager integration_prepare/check/status/release/recover using ordered sealed
+submission IDs, explicit target bases, binary patches and isolated branch/worktree
+creation. Immutable preparation/check receipts bind combined commit/tree/diff,
+clean pre/post Git identities, supplied configuration/input IDs, actual argv/output
+hashes and evaluator source/contract. Stale/conflicting/mutated/failing combinations
+preserve scientific admissions. Review v2 separates engineering blockers and carries
+explicit required checks; historical v1 keeps its original semantics. Real combined
+physics gate is required for physics candidates, without fixture substitution.
+
+Exclusive store capacity spans preparation, Popen startup, waiting/checks and unknown
+recovery, blocking racing workers/reviewers. Birth handshake, finite runner deadline,
+whole owned process-group observation and stop/shutdown/drained cover check children.
+A small subreaper detects ordinary detached orphans on clean completion and holds
+unsupported work. Escaped/external services after abrupt runner loss remain unobserved;
+receipts/status/docs state that cooperative boundary. No research patch merge/push.
+
+Verification: focused integration 21 passed in 6.13s, contract/provenance 3 passed in 0.90s,
+detached 1 passed in 0.37s. Broad affected run 118 passed, 19 failed and 1 teardown error,
+plus 34 passing subtests; fixed shared legacy fixture pollution and untracked bytecode.
+Final affected fix 61 passed in 11.47s, including every failed/error case and complete
+integration/review contexts. Unchanged passes/subtests reused; overlapping counts
+are not summed. Parent read-only audit inspected changes and outputs. Actual Git/
+binary worktrees, finite check children and file-host polling were exercised.
+Scientific judgements remain synthetic; no actual physics stability/live-client/
+calibration or manager-release proof. Unchanged SDK timer diagnostic excluded.
+
+Guide research/program-integration.md. Exact commands, raw failing outputs in gzip,
+passing stdout/JUnit, nine selected immutable fixture records/Git bundles, source and
+evidence hashes, report/abstract/notebook retained in
+output/research/sessions/2026-10-24-tested-integration/. Compilation, final integrity,
+catalog regeneration preserving published history and diff check recorded there.
+Budget/use zero numerical fits, predictions, replays, physics runs/steps, movements
+and collections. No production dynamics changed; physics delivery gate not applicable
+to this implementation. Base/upstream supplied 03ecf6322797a8eb80162ca59be98b0185906fcf.
+No shell fetch/push, network installs/approval, new keys or HOME/CODEX_HOME changes.
+Task 015 done; task 016 remains required for real manager release. No second task started.

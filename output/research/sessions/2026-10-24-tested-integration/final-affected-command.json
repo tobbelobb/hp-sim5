@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "/workspace/hp-sim5/.venv/bin/python",
+    "-m",
+    "pytest",
+    "tests/python/test_research_program.py",
+    "tests/python/test_research_program_controller.py",
+    "tests/python/test_research_program_graph.py",
+    "tests/python/test_research_program_integration.py",
+    "tests/python/test_research_program_manager.py",
+    "tests/python/test_research_program_pool.py",
+    "tests/python/test_research_program_review.py",
+    "tests/python/test_research_program_strategy.py",
+    "tests/python/test_research_program_workers.py",
+    "-q",
+    "-k",
+    "not real_mcp_sdk_protocol_with_explicit_sandbox_timer",
+    "--junitxml=output/research/sessions/2026-10-24-tested-integration/final-affected.xml"
+  ],
+  "excluded": "Unchanged SDK timer diagnostic; prior protocol evidence retained in manager session",
+  "started_unix": 1792852131.6656334
+}

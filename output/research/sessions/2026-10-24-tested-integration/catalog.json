@@ -1,0 +1,11 @@
+{
+  "command": [
+    ".venv/bin/python",
+    "scripts/research_index.py"
+  ],
+  "returncode": 0,
+  "stdout": "/workspace/hp-sim5/output/research/index.md\n",
+  "preserved_prior_sections": 106,
+  "new_section": "2026-10-24-tested-integration",
+  "reason": "Keep published historical entries absent from local artifact directories"
+}

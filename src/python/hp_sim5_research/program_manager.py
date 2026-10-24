@@ -9,11 +9,10 @@ from .program import ProgramError, _json, _object, render_markdown
 from .program_workers import ACTIVE
 from .program_strategy import ProgramStrategy
 from .program_controller import ProgramController
+from .program_integration import IntegrationController
 
 
-UNAVAILABLE = {
-    'integrate': 'Task 015: combined candidate integration and delivery checks',
-}
+UNAVAILABLE = {}
 
 
 def failure(code, message):
@@ -34,6 +33,7 @@ class ProgramManager:
         self.session.mkdir(mode=0o700, parents=True, exist_ok=True)
         self.workers = workers or store.workers(self.root)
         self.reviews = reviews or store.reviews(self.root)
+        self.integrations = IntegrationController(store, self.root, self.reviews)
         self.strategy = ProgramStrategy(store)
         self.stopping = False
         self.cleanup_errors = []
@@ -65,6 +65,9 @@ class ProgramManager:
             'fund_review': self.controller.fund_review, 'worker_usage': self.controller.usage,
             'stop_allocation': self.controller.stop_allocation,
             'stop_program': self.stop,
+            'integration_prepare': self.integrations.prepare, 'integration_check': self.integrations.check,
+            'integration_status': self.integrations.status, 'integration_release': self.integrations.release,
+            'integration_recover': self.integrations.recover,
         }
 
     def capabilities(self, program_id):
@@ -93,7 +96,8 @@ class ProgramManager:
             if 'program_id' in parameters:
                 raise ProgramError('Program identity is bound by the attachment; it cannot be overridden')
             if self.stopping and operation not in ('overview', 'status', 'capabilities', 'worker_status',
-                                                   'worker_sessions', 'review_status', 'shutdown'):
+                                                   'worker_sessions', 'review_status', 'integration_status',
+                                                   'integration_recover', 'integration_release', 'shutdown'):
                 raise ProgramError('Controller is shutting down; inspect status until cleanup completes')
             method = self.operations[operation]
             inspect.signature(method).bind(self.program_id, **parameters)
@@ -113,6 +117,8 @@ class ProgramManager:
             self.workers.status(self.program_id, identity)
         for identity in self.child_ids(self.reviews, 'review_run'):
             self.reviews.status(self.program_id, identity)
+        for identity in self.child_ids(self.integrations, 'integration_job'):
+            self.integrations.status(self.program_id, identity)
         self.controller.poll()
 
     def child_ids(self, dispatcher, kind):
@@ -128,6 +134,8 @@ class ProgramManager:
         result['next_allocation'] = self.strategy.next_allocation(program_id, board)
         result['brief'] = self.strategy.brief(board, result['next_allocation'])
         result['brief'] += '\n\nWorker pool: ' + str(result['runtime']['pool']) + '\n' + result['runtime']['shared_filesystem']
+        result['integrations'] = [self.integrations.status(program_id, r['id']) for r in result['records']
+                                  if r['kind'] == 'integration_job']
         result['manager'] = {'program_id': program_id, 'controller_id': self.controller_id,
                              'stopping': self.stopping, 'physics_world': False,
                              'cleanup_errors': self.cleanup_errors,
@@ -202,6 +210,12 @@ class ProgramManager:
                 self.reviews.cancel(self.program_id, identity)
             except ProgramError as error:
                 self.cleanup_errors.append({'review_id': identity, 'error': str(error), 'reviewer_shutdown': 'unknown'})
+        for r in self.store.snapshot(self.program_id)['records']:
+            if r['kind'] == 'integration_job' and r['details']['owner'] == self.integrations.owner:
+                try:
+                    self.integrations.release(self.program_id, r['id'], 'Manager stop/shutdown')
+                except ProgramError as error:
+                    self.cleanup_errors.append({'integration_id': r['id'], 'error': str(error), 'check_shutdown': 'unknown'})
 
     def pause(self, program_id, reason):
         """Pause new dispatch. Running workers and reviewers continue until explicitly stopped."""
@@ -230,5 +244,9 @@ class ProgramManager:
         return self.overview(program_id)
 
     def drained(self):
-        return all(dispatcher.children[i].poll() is not None for dispatcher, kind in
-                   ((self.workers, 'attempt'), (self.reviews, 'review_run')) for i in self.child_ids(dispatcher, kind))
+        return all(r['details']['state'] not in ('preparing', 'prepared', 'checking', 'ownership_lost')
+                   for r in self.store.snapshot(self.program_id)['records']
+                   if r['kind'] == 'integration_job' and r['details']['owner'] == self.integrations.owner) and all(
+                   dispatcher.children[i].poll() is not None for dispatcher, kind in
+                   ((self.workers, 'attempt'), (self.reviews, 'review_run'),
+                    (self.integrations, 'integration_job')) for i in self.child_ids(dispatcher, kind))

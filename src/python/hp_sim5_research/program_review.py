@@ -19,7 +19,9 @@ from .program import ProgramError, _identity, _json, _now, _object, _text
 from .program_graph import identities
 from .program_workers import process_identity, TERMINAL
 
-CONTRACT = 'hp-sim5-evidence-review-v1'
+LEGACY_CONTRACT = 'hp-sim5-evidence-review-v1'
+CONTRACT = 'hp-sim5-evidence-review-v2'
+CONTRACTS = (LEGACY_CONTRACT, CONTRACT)
 KINDS = ('submission', 'submission_event', 'review_run', 'review', 'admission')
 FINDINGS = ('supported', 'rejected', 'mixed', 'inconclusive', 'not_tested')
 VERDICTS = ('keep', 'revise', 'block')
@@ -49,15 +51,21 @@ def commit(root, revision):
 
 def physics_changed(paths):
     # Conservative gate coverage; actual review may require it for additional paths.
-    return any(any(word in path.lower() for word in ('physics', 'motor', 'cable', 'usd_scenes', 'scene_dynamics'))
+    return any(any(word in path.lower() for word in ('physics', 'motor', 'cable', 'usd_scenes', 'scene_dynamics',
+                                                    'headlessworld', 'simulationsystems'))
                for path in paths)
 
 
 def validate_response(value, submission):
     required = {'submission_id', 'submission_sha256', 'finding', 'verdict', 'reason',
                 'practical_value', 'code_readiness', 'checks', 'limitations', 'discrepancy'}
-    if not isinstance(value, dict) or set(value) != required:
+    allowed = required | ({'required_checks'} if submission['details']['manifest']['contract'] == CONTRACT else set())
+    if not isinstance(value, dict) or not required <= set(value) or set(value) - allowed:
         raise ProgramError('Review response fields do not match the review contract')
+    requirements = value.get('required_checks', [])
+    if (not isinstance(requirements, list) or any(not isinstance(argv, list) or not argv or
+            not all(isinstance(arg, str) and arg and '\0' not in arg for arg in argv) for argv in requirements)):
+        raise ProgramError('Review required_checks must be explicit argv lists')
     if (value['submission_id'] != submission['id'] or
             value['submission_sha256'] != submission['details']['sha256']):
         raise ProgramError('Review target differs from fixed submission')
@@ -93,7 +101,7 @@ def validate_reviews(records):
         kind, d = record['kind'], record['details']
         if kind == 'submission':
             manifest = _object(d.get('manifest'), 'submission manifest')
-            if d.get('sha256') != json_digest(manifest) or manifest.get('contract') != CONTRACT:
+            if d.get('sha256') != json_digest(manifest) or manifest.get('contract') not in CONTRACTS:
                 raise ProgramError('Submission manifest hash/contract mismatch')
             claim = require(manifest.get('claim', {}).get('id'), 'claim')
             if manifest['claim'] != claim:
@@ -115,7 +123,8 @@ def validate_reviews(records):
             _text(d.get('reason'), 'invalidation reason')
         elif kind == 'review_run':
             submission = require(d.get('submission_id'), 'submission')
-            if d.get('submission_sha256') != submission['details']['sha256'] or d.get('contract') != CONTRACT:
+            if (d.get('submission_sha256') != submission['details']['sha256'] or
+                    d.get('contract') != submission['details']['manifest']['contract']):
                 raise ProgramError('Review run target/contract mismatch')
             if d.get('state') not in ('running', 'completed', 'failed', 'timed_out', 'cancelling', 'cancelled', 'interrupted'):
                 raise ProgramError('Invalid review execution state')
@@ -126,7 +135,7 @@ def validate_reviews(records):
             submission = require(d.get('submission_id'), 'submission')
             if run['details']['state'] != 'completed' or run['details']['submission_id'] != submission['id']:
                 raise ProgramError('Review requires its own completed separate review run')
-            if d.get('reviewer') != run['details']['reviewer'] or d.get('contract') != CONTRACT:
+            if d.get('reviewer') != run['details']['reviewer'] or d.get('contract') != run['details']['contract']:
                 raise ProgramError('Review identity/contract differs from dispatch')
             validate_response(d.get('response'), submission)
         elif kind == 'admission':
@@ -148,6 +157,11 @@ def validate_reviews(records):
                 raise ProgramError('Admission decision differs from its review/guard result')
             if d.get('actor') != 'controller':
                 raise ProgramError('Only controller admissions are recorded')
+            if submission['details']['manifest']['contract'] == CONTRACT:
+                if (d.get('contract') != CONTRACT or not isinstance(d.get('engineering_reasons'), list) or
+                        d.get('required_checks') != response.get('required_checks', []) or
+                        (d['engineering_reasons'] and d['code_readiness'] != 'blocked')):
+                    raise ProgramError('Version-2 admission must separate engineering readiness')
 
 
 class ReviewController:
@@ -287,6 +301,7 @@ class ReviewController:
     def plan(self, program_id, submission_id, *, backend='codex', model=None, model_provider='openai', wall_minutes=5):
         """Real supported client argv, without starting it or any physics service."""
         submission, gaps = self.verify(program_id, submission_id)
+        contract = submission['details']['manifest']['contract']
         if (isinstance(wall_minutes, bool) or not isinstance(wall_minutes, (int, float)) or
                 not math.isfinite(wall_minutes) or wall_minutes <= 0):
             raise ProgramError('Review requires positive finite wall_minutes')
@@ -302,13 +317,20 @@ class ReviewController:
                     'code_readiness': 'report_only|ready|needs_changes|blocked',
                     'checks': [{'kind': 'inspected', 'description': 'actual evidence inspected', 'asset_ids': ['ID']}],
                     'limitations': [], 'discrepancy': None}
-        prompt = (f'{instructions}\n\n# Fixed separate review assignment\nContract: {CONTRACT}\n'
+        if contract == CONTRACT:
+            response['required_checks'] = []
+        prompt = (f'{instructions}\n\n# Fixed separate review assignment\nContract: {contract}\n'
                   f'Target directory: {target}\nSubmission: {submission_id}\n'
                   f'SHA-256: {submission["details"]["sha256"]}\nWall allocation: {wall_minutes} minutes.\n'
                   f'Known gaps: {_json(gaps)}\n'
                   'Read manifest.json, candidate.diff and selected asset files by their IDs. '
                   'Do not edit the submission or program store. Do not start physics or duplicate numerical work '
                   'unless a named gap requires an additional bounded assignment. Reading producer results is inspection. '
+                  'For v2, scientific finding/verdict is separate from code_readiness. Missing engineering gates '
+                  'block code readiness without erasing an otherwise supported scoped finding. '
+                  'Use required_checks argv lists for delivery requirements beyond path detection. '
+                  'For a sound candidate awaiting checks, ready plus required_checks permits combined evaluation. '
+                  'Use blocked or needs_changes for unresolved code defects that require a new fixed review. '
                   'Return ONLY one JSON object with exactly these fields and valid enum values:\n' + _json(response))
         if backend == 'codex':
             argv = coding_client.codex_command(self.root, directory, batch=True, dont_ask=True, model=model,
@@ -321,7 +343,7 @@ class ReviewController:
         return {'id': identity, 'directory': str(directory), 'argv': argv, 'prompt': prompt,
                 'reviewer': {'context_id': identity, 'backend': backend, 'model': model, 'model_provider': model_provider},
                 'wall_minutes': wall_minutes, 'submission_id': submission_id,
-                'submission_sha256': submission['details']['sha256'], 'contract': CONTRACT}
+                'submission_sha256': submission['details']['sha256'], 'contract': contract}
 
     def start(self, program_id, submission_id, *, runtime_reservation=None, **settings):
         plan = self.plan(program_id, submission_id, **settings)
@@ -412,7 +434,7 @@ class ReviewController:
                     self.store.connection.execute('UPDATE records SET details_json=?, revision=revision+1, updated_at=? WHERE id=?',
                                                   (_json(d), _now(), run_id))
                     self._insert(program_id, 'review', response['reason'],
-                                 {'run_id': run_id, 'submission_id': d['submission_id'], 'contract': CONTRACT,
+                                 {'run_id': run_id, 'submission_id': d['submission_id'], 'contract': d['contract'],
                                   'reviewer': d['reviewer'], 'response_sha256': digest(raw), 'response': response}, d['review_id'])
                 return self.store.get_record(program_id, run_id)
             except (OSError, ValueError, KeyError, StopIteration) as error:
@@ -450,6 +472,7 @@ class ReviewController:
             if any(r['kind'] == 'admission' and r['details']['review_id'] == review_id for r in records.values()):
                 raise ProgramError('Review already applied; retain its historical decision')
             manifest, response = submission['details']['manifest'], d['response']
+            engineering = []
             assets = {a['id']: a for a in manifest['assets']}
             evidence = {manifest['claim']['id'], *(a['artifact_id'] for a in assets.values() if a['artifact_id'])}
             for event in records.values():
@@ -463,9 +486,11 @@ class ReviewController:
                     assets[c['asset_id']]['role'] == 'check' and not assets[c['asset_id']]['missing'] and
                     any(c['asset_id'] in check['asset_ids'] and check['kind'] == 'inspected' for check in response['checks'])
                     for c in manifest['producer_checks']):
-                gaps.append('Candidate physics/motor/cable/dynamics patch lacks inspected passing npm run test:physics gate')
+                (gaps if manifest['contract'] == LEGACY_CONTRACT else engineering).append(
+                    'Candidate physics/motor/cable/dynamics patch lacks inspected passing npm run test:physics gate')
             if manifest['candidate_revision'] is None and response['code_readiness'] == 'ready':
-                gaps.append('Report-only submission has no code candidate to mark ready')
+                (gaps if manifest['contract'] == LEGACY_CONTRACT else engineering).append(
+                    'Report-only submission has no code candidate to mark ready')
             if response['discrepancy'] and response['verdict'] == 'keep':
                 gaps.append('Unresolved reviewer discrepancy requires revision')
             decision = 'block' if gaps else response['verdict']
@@ -475,6 +500,9 @@ class ReviewController:
                                  'claim_id': manifest['claim']['id'], 'submission_sha256': submission['details']['sha256'],
                                  'finding': response['finding'], 'decision': decision,
                                  'knowledge_state': 'reviewed' if decision == 'keep' else 'withheld',
-                                 'code_readiness': 'blocked' if gaps else response['code_readiness'],
+                                 'code_readiness': 'blocked' if gaps or engineering else response['code_readiness'],
                                  'practical_value': response['practical_value'], 'guard_reasons': gaps,
+                                 **({'contract': CONTRACT, 'engineering_reasons': engineering,
+                                     'required_checks': response.get('required_checks', [])}
+                                    if manifest['contract'] == CONTRACT else {}),
                                  'actor': 'controller'})

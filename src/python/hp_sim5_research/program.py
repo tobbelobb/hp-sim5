@@ -15,7 +15,8 @@ SCHEMA_VERSION = 1
 KINDS = ('question', 'approach', 'assignment', 'artifact', 'decision', 'steering',
          'claim', 'derivation', 'relation', 'assessment', 'review_event', 'attempt',
          'submission', 'submission_event', 'review_run', 'review', 'admission',
-         'route_plan', 'investigation', 'strategy_event', 'human_input', 'runtime_allocation')
+         'route_plan', 'investigation', 'strategy_event', 'human_input', 'runtime_allocation',
+         'integration_job', 'integration_preparation', 'integration_check')
 TRANSITIONS = {
     'program': {'active': {'paused', 'stopped'}, 'paused': {'active', 'stopped'}, 'stopped': set()},
     'approach': {'live': {'promising', 'parked', 'retired'},
@@ -157,6 +158,10 @@ class ProgramStore:
                                    'review_backlog_limit INTEGER NOT NULL)')
                 connection.execute('INSERT OR IGNORE INTO worker_pool VALUES (1, 1, 1)')
                 for action in ('UPDATE', 'DELETE'):
+                    connection.execute(
+                        f'CREATE TRIGGER IF NOT EXISTS immutable_integration_{action.lower()} BEFORE {action} ON records '
+                        "WHEN OLD.kind IN ('integration_preparation', 'integration_check') "
+                        "BEGIN SELECT RAISE(ABORT, 'Integration receipts are append-only'); END")
                     connection.execute(
                         f'CREATE TRIGGER IF NOT EXISTS immutable_graph_{action.lower()} BEFORE {action} ON records '
                         "WHEN OLD.kind IN ('claim', 'artifact', 'derivation', 'relation', 'assessment', 'review_event') "
@@ -460,6 +465,8 @@ class ProgramStore:
         validate_strategy(by_id)
         from .program_controller import validate_allocations
         validate_allocations(by_id)
+        from .program_integration import validate_integrations
+        validate_integrations(by_id)
         with self.transaction():
             self.connection.execute('INSERT INTO programs VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                                     (identity, program['question_id'], program['goal'], _json(program['constraints']),

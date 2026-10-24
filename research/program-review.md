@@ -70,7 +70,8 @@ disabled. Claude uses its existing authentication, an empty strict MCP attachmen
 and saved-evidence reading/shell tools. There is no new model API or credential
 provisioning. Provider/model metadata and argv are retained, never environment
 values. `research/prompts/reviewer.txt` supplies the evidence-first instructions;
-the dispatched prompt hash and contract `hp-sim5-evidence-review-v1` are recorded.
+the dispatched prompt hash and contract `hp-sim5-evidence-review-v2` are recorded.
+Historical version-1 submissions retain their original contract and semantics.
 
 The reviewer returns a strict JSON assessment naming the submission ID/hash. It
 records finding (`supported`, `rejected`, `mixed`, `inconclusive`, `not_tested`),
@@ -90,7 +91,7 @@ owning controller; durable autonomous recovery/stop orchestration is task 013.
 
 `apply` rechecks integrity and writes one append-only controller decision. Missing
 selected evidence, withdrawn evidence, or an unresolved discrepancy cannot become
-a favorable admission. A physics/motor/cable/dynamics candidate requires a passing
+a favorable scientific admission. A physics/motor/cable/dynamics candidate requires a passing
 `npm run test:physics` producer check for the exact candidate plus the selected
 check output explicitly inspected by the reviewer. Changed-path detection is
 conservative (physics/motor/cable/scene paths); the reviewer must identify relevant
@@ -98,13 +99,19 @@ dynamics changes in other paths too. A check record contains exactly `command`,
 `outcome`, `candidate_revision` and `asset_id`; no startup/parity/higher-substep
 substitution qualifies. Producer check records are inspected receipts, not new
 controller reproductions. The fixtures use synthetic receipts and do not claim
-that the actual physics gate ran. Task 015 still owns combined patch integration.
+that the actual physics gate ran. In version 2, a missing producer gate records
+blocked code readiness and engineering reasons while preserving an otherwise
+accepted scoped finding. Version 1 retains its historical admission block.
+Reviewers can add `required_checks` as explicit argv arrays. The
+[integration controller](program-integration.md) retains these requirements and
+unresolved reviewer code blockers through checks on the final combined revision.
 
 The finding, execution state, practical value and code readiness remain separate.
 A sound report-only negative result can receive `keep` and close an investigation
 without a patch. A lower fit-cost measurement can survive while a physical-accuracy
-overclaim receives `revise`. Missing evidence or a missing stability gate yields
-`block`, retaining the original reviewer response and controller guard reasons.
+overclaim receives `revise`. Missing scientific evidence yields `block`, retaining
+the original reviewer response and controller guard reasons. Missing delivery
+checks block code readiness separately under version 2.
 Worker assignment records retain their execution/unreviewed observations; graph
 admission history is the authoritative knowledge view.
 

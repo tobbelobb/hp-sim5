@@ -59,6 +59,7 @@ operations are implemented:
 | Strategy | strategy, route_plan, route_decide, commission, strategy_result |
 | Human direction | steering, decision |
 | Runtime | allocate, run_once, run_within_allocation, runtime_status, worker_usage, fund_review, recover |
+| Combined candidates | integration_prepare, integration_check, integration_status, integration_release, integration_recover |
 | Lifecycle | pause, resume, cancel_attempt, stop_allocation, stop_program, stop, shutdown |
 
 The [strategy guide](program-strategy.md) describes route plans, rival
@@ -130,8 +131,11 @@ unchanged SDK. Stock SDK startup and a real coding-chat session remain unproved
 here. Existing nested Codex startup fails with read-only writable-state access;
 no new keys or environment overrides were introduced.
 
-The `integrate` operation remains unavailable until task 015. Pool configuration
-and its limits are documented in [program-controller.md](program-controller.md).
+[Combined candidate preparation and checks](program-integration.md) consume sealed
+reviewed submissions at an explicit base. Their separate worktrees and polled
+checks preserve the human checkout and scientific admissions. No research patch
+is automatically merged or pushed. Pool configuration and its limits are
+documented in [program-controller.md](program-controller.md).
 `run_within_allocation` executes the
 manager's finite selection of distinct assignments; it does not resume a prompt
 in a restart loop.

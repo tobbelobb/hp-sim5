@@ -81,6 +81,15 @@ unverified work stays interrupted and no historical PID authorizes signals.
 Record an explicit bounded handoff acknowledging unknown physical state before
 starting a new assignment. Keep measured supervisor observations, estimates and
 worker reports separate. Arbitrary shell movement and spend are unmetered.
-Parallel coordination and patch integration remain unavailable until their tasks
-ship. Never emulate conversation continuation with a prompt-restart loop. The
+Use configure_pool for the bounded store-wide pool. For reviewed patches read
+research/program-integration.md, then integration_prepare with ordered sealed
+submission IDs and an explicit target base. Use integration_check and poll
+integration_status for the final combined revision/configuration/input IDs.
+Keep accepted findings separate from patch readiness. Preserve reviewer blockers
+and required checks; real physics changes require npm run test:physics. Preparation
+needs no extra approval and never merges or pushes research patches. Exclusive
+evaluation blocks workers/reviewers until checks and observed cleanup finish.
+Release discarded prepared candidates explicitly. After host loss use
+integration_recover; unknown startup or live historical groups retain the lease.
+Never emulate conversation continuation with a prompt-restart loop. The
 full live manager release remains task 016.

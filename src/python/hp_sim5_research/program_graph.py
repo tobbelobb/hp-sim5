@@ -313,6 +313,13 @@ class EvidenceGraph:
                     selected.update(a['artifact_id'] for a in d['manifest']['assets'] if a['artifact_id'])
                 if r['kind'] in ('submission_event', 'review_run', 'review', 'admission') and d['submission_id'] in selected:
                     selected.add(i)
+                if r['kind'] in ('integration_preparation', 'integration_check'):
+                    sources = d['manifest'].get('sources', [])
+                    if any(s['submission_id'] in selected for s in sources):
+                        selected.add(i)
+                    if i in selected:
+                        selected.add(d['manifest']['job_id'])
+                        selected.update(s['submission_id'] for s in sources)
                 if r['kind'] == 'submission' and i in selected:
                     selected.add(d['manifest']['claim']['id'])
                 if i in selected:
@@ -408,6 +415,9 @@ class EvidenceGraph:
                          'admission_state': ('invalidated' if invalid else 'withdrawn' if withdrawn_submission else
                                              admissions[-1]['details']['knowledge_state'] if admissions else 'pending'),
                          'candidate_revision': manifest['candidate_revision'], 'submission_sha256': r['details']['sha256']}
+            states[i]['integration_ids'] = [v['id'] for v in records.values()
+                                           if v['kind'] in ('integration_preparation', 'integration_check') and
+                                           any(s['submission_id'] == i for s in v['details']['manifest'].get('sources', []))]
         artifacts = [records[i] for i in sorted(selected) if records[i]['kind'] == 'artifact']
         groups = {}
         for r in artifacts:
