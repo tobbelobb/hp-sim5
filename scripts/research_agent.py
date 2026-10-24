@@ -4,6 +4,7 @@ import signal
 from importlib import import_module
 from importlib.metadata import version
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -191,6 +192,10 @@ def worktree_launch(args, launcher_args, codex_args, provider, model):
     # Run the worktree's own launcher so ROOT, MCP cwd, sandbox and artifacts all follow it.
     python = worktree['path'] / '.venv/bin/python'
     script = worktree['path'] / 'scripts/research_agent.py'
+    if getattr(args, 'wall_deadline', None) is not None:
+        # exec resets signal handlers. The child re-arms the same absolute
+        # deadline, rather than inheriting an alarm with its default action.
+        signal.setitimer(signal.ITIMER_REAL, 0)
     os.execv(str(python), [str(python), str(script), *remaining])
 
 
@@ -388,6 +393,7 @@ def main():
     parser.add_argument('--physics-backend', choices=['headless-js', 'native-python', 'native-warp', 'native-warp-cuda'], default='headless-js',
                         help='Continuing physics: native Rust by default; native-warp compiles the Python cable solver (CUDA experimental)')
     parser.add_argument('--no-record', action='store_true', help='Keep numerical collection evidence without Rerun logging')
+    parser.add_argument('--wall-deadline', type=float, help='Finite Unix wall deadline; expiration enters normal launcher cleanup')
     parser.add_argument('--machine', choices=['hp3', 'hp4'], default='hp4', help='Matched scene and RRF configuration')
     parser.add_argument('--model-provider', default=CHATGPT_SIGN_IN,
                         help='Codex model provider; opencode_go reads OPENCODE_GO_API_KEY, falling back to the .env file')
@@ -409,6 +415,8 @@ def main():
     argv = sys.argv[1:]
     split = argv.index('--') if '--' in argv else len(argv)
     args = parser.parse_args(argv[:split])
+    if args.wall_deadline is not None and (not math.isfinite(args.wall_deadline) or args.wall_deadline <= 0):
+        parser.error('--wall-deadline must be a positive finite Unix timestamp')
     codex_args = argv[split + 1:]
     # Forwarded `-c model_provider=...` and `--model` win, matching Codex's own last-wins order.
     forwarded, forwarded_model = forwarded_settings(codex_args)
@@ -432,10 +440,22 @@ def main():
     if args.worktree_dir and not args.worktree:
         parser.error('--worktree-dir requires --worktree')
     previous_sigterm = signal.signal(signal.SIGTERM, interrupted)
+    previous_alarm = None
+    wall_expired = False
+    def deadline_interrupt(*_):
+        nonlocal wall_expired
+        wall_expired = True
+        raise KeyboardInterrupt
     viewer = agent = session = runtime = None
     session_created = False
     returncode = 1
     try:
+        if args.wall_deadline is not None and not args.dry_run:
+            previous_alarm = signal.signal(signal.SIGALRM, deadline_interrupt)
+            if args.wall_deadline <= time.time():
+                wall_expired = True
+                raise KeyboardInterrupt
+            signal.setitimer(signal.ITIMER_REAL, args.wall_deadline - time.time())
         if args.worktree:
             return worktree_launch(args, argv[:split], codex_args, provider, model)
         if args.doctor:
@@ -581,25 +601,35 @@ def main():
     except (OSError, ValueError, RuntimeError, ImportError, subprocess.TimeoutExpired) as error:
         parser.exit(1, f'hp-sim5-research-agent: {error}\n')
     finally:
-        signal.signal(signal.SIGTERM, previous_sigterm)
-        cleanup_errors = []
-        for name, close in (('agent', lambda: stop_process(agent)),
-                            ('runtime', lambda: runtime.close() if runtime is not None else None),
-                            ('viewer', lambda: stop_process(viewer))):
-            try:
-                close()
-            except Exception as error:
-                cleanup_errors.append(f'{name}: {error}')
-                print(f'Research cleanup failed: {name}: {error}', file=sys.stderr, flush=True)
-        if session_created:
-            exit_observation = {'returncode': returncode}
-            if cleanup_errors:
-                exit_observation['cleanup_errors'] = cleanup_errors
-            (session / 'exit.json').write_text(json.dumps(exit_observation) + '\n')
-            try:
-                write_index(catalog_root)
-            except OSError as error:
-                print(f'Research catalog refresh failed: {error}; run scripts/research_index.py.', file=sys.stderr)
+        if previous_alarm is not None:
+            signal.setitimer(signal.ITIMER_REAL, 0)
+            signal.signal(signal.SIGALRM, previous_alarm)
+        # A deadline and controller cancel can arrive together. Cleanup owns the
+        # shutdown until it has recorded its boundary; a second SIGTERM must wait.
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        try:
+            cleanup_errors = []
+            for name, close in (('agent', lambda: stop_process(agent)),
+                                ('runtime', lambda: runtime.close() if runtime is not None else None),
+                                ('viewer', lambda: stop_process(viewer))):
+                try:
+                    close()
+                except Exception as error:
+                    cleanup_errors.append(f'{name}: {error}')
+                    print(f'Research cleanup failed: {name}: {error}', file=sys.stderr, flush=True)
+            if session_created:
+                exit_observation = {'returncode': returncode}
+                if args.wall_deadline is not None:
+                    exit_observation.update(wall_deadline=args.wall_deadline, wall_expired=wall_expired)
+                if cleanup_errors:
+                    exit_observation['cleanup_errors'] = cleanup_errors
+                (session / 'exit.json').write_text(json.dumps(exit_observation) + '\n')
+                try:
+                    write_index(catalog_root)
+                except OSError as error:
+                    print(f'Research catalog refresh failed: {error}; run scripts/research_index.py.', file=sys.stderr)
+        finally:
+            signal.signal(signal.SIGTERM, previous_sigterm)
 
 
 if __name__ == '__main__':

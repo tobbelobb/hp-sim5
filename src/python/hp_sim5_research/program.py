@@ -15,7 +15,7 @@ SCHEMA_VERSION = 1
 KINDS = ('question', 'approach', 'assignment', 'artifact', 'decision', 'steering',
          'claim', 'derivation', 'relation', 'assessment', 'review_event', 'attempt',
          'submission', 'submission_event', 'review_run', 'review', 'admission',
-         'route_plan', 'investigation', 'strategy_event', 'human_input')
+         'route_plan', 'investigation', 'strategy_event', 'human_input', 'runtime_allocation')
 TRANSITIONS = {
     'program': {'active': {'paused', 'stopped'}, 'paused': {'active', 'stopped'}, 'stopped': set()},
     'approach': {'live': {'promising', 'parked', 'retired'},
@@ -454,6 +454,8 @@ class ProgramStore:
         validate_reviews(by_id)
         from .program_strategy import validate_strategy
         validate_strategy(by_id)
+        from .program_controller import validate_allocations
+        validate_allocations(by_id)
         with self.transaction():
             self.connection.execute('INSERT INTO programs VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                                     (identity, program['question_id'], program['goal'], _json(program['constraints']),

@@ -202,8 +202,7 @@ def test_program_bound_identity_graph_review_and_structured_errors(manager):
         ('review_apply', {'review_id': 'absent'}, 'invalid_request'),
         ('review_cancel', {'run_id': 'absent'}, 'invalid_request'),
         ('does_not_exist', {}, 'unknown_operation'),
-        ('recover', {}, 'unavailable'),
-        ('autonomous_continue', {}, 'unavailable'),
+        ('autonomous_continue', {}, 'unknown_operation'),
         ('parallel', {}, 'unavailable'),
         ('integrate', {}, 'unavailable'),
         ('_open', {'program_id': 'other'}, 'invalid_request'),
@@ -273,6 +272,7 @@ Path(sys.argv[sys.argv.index('--output-last-message') + 1]).write_text(json.dump
     monkeypatch.setenv('PATH', str(binaries) + os.pathsep + os.environ['PATH'])
     a = attach(manager)
     work = assignment(a)
+    tool(a, 'allocate', {'task_limit': 1, 'wall_minutes': 12, 'review_minutes': 10, 'retry_limit': 2})
     attempt = tool(a, 'worker_start', {'assignment_id': work['id']})
     until(lambda: tool(a, 'worker_status', {'attempt_id': attempt['id']})['details']['state'] == 'submitted')
     claim = tool(a, 'claim', {'title': fixture['claim'], 'scope': {'evidence_type': 'synthetic', 'configuration': 'fixture'}})

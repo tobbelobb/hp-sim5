@@ -441,3 +441,38 @@ physics delivery gate applies. Parent confirmed HEAD/origin/main at
 9d17afd6c4aea8cb5cc019c6a58fe32310b8c34f; no shell fetch/push or network install.
 Task 012 complete, not manager readiness. Next 013 owns enforced runtime allocations,
 finite continuation and restart recovery; 014/015 and live 016 remain unstarted.
+
+2026-10-24 task 013: finite controller continuation and honest recovery
+Added ProgramController behind retained manager tools: finite task/wall grants,
+review/cleanup reservations, ordered distinct assignments, leases, retry/backlog
+limits, pause/stop/cancel and explicit interrupted handoffs. Existing launcher
+owns cleanup and now carries an independent absolute wall deadline through
+worktree re-exec; separate review guard enforces reviewer wall limits after host
+loss. Cleanup tolerates a second SIGTERM. No second physics lifecycle or prompt
+restart loop. Historical PIDs never confer adoption/signalling authority. Recovery
+checks current authenticated supervisor identity and preserves unknown physical/
+recording boundaries. New dispatch waits for an explicit bounded handoff after
+unverified cleanup. Numerical usage reports remain distinct from supported tool
+limits and actual observations. Explicit steering holds queued future selections.
+
+Audit fixes include stable unchanged polling revisions, funded historical reviews,
+atomic obligation transfer, admission-cache recovery and invalid-option validation
+before funding. Affected integration passed 140 tests, 18 deselected and 34
+subtests in 38.97s. Follow-ups passed 35 controller/manager cases in 21.35s, two
+supervisor cases in 0.16s and five final boundary cases in 0.63s. Real local CLI/
+file-host transcript completed three distinct synthetic assignments with separate
+fixture reviews and two host generations. Fresh host retained prior admissions.
+No actual coding-client judgement or live production science is claimed. An early
+broad selector hit three missing-pxr imports after 69 passing cases; failure log
+retained and supported affected selection passed. Passing checks reused at handoff.
+
+Guide: research/program-controller.md. Exact affected argv, stdout/JUnit, CLI
+transcript, source hashes, report/abstract/notebook and limits are retained in
+output/research/sessions/2026-10-24-bounded-controller/. Compilation, final integrity,
+catalog regeneration preserving published entries and diff check passed. Numerical
+budget/use zero fits, predictions, replays, physics runs/steps, movements and
+collections. No dynamics math changed, so no physics delivery gate applies.
+Freshness: parent verified upstream main/base 891aef26a82d5b2096c9f1b3e93a419effc58b36.
+No shell push/fetch, network installs, key provisioning or HOME/CODEX_HOME overrides.
+Task 013 done, full manager incomplete. Next eligible task 014 adds the small
+bounded pool; 015 integration and actual live release gate 016 remain unstarted.

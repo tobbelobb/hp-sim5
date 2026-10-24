@@ -1,0 +1,121 @@
+....................................................... [ 43%]
+..............FFF
+=================================== FAILURES ===================================
+____ test_movement_and_torque_changes_are_visible_and_comparison_is_honest _____
+
+experiment_root = PosixPath('/tmp/pytest-of-agent/pytest-21/test_movement_and_torque_chang0')
+
+    def test_movement_and_torque_changes_are_visible_and_comparison_is_honest(experiment_root):
+>       from hp_sim5_research.experiments import compare_runs, read_run, run_experiment
+
+tests/python/test_research_agent.py:95:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/python/hp_sim5_research/experiments.py:14: in <module>
+    from cable_joints_3d.__main__ import _blueprint
+src/python/cable_joints_3d/__main__.py:9: in <module>
+    from .machine_simulation import load_machine_world, register_machine_systems
+src/python/cable_joints_3d/machine_simulation.py:2: in <module>
+    from usd.cable_scene_loader import open_cable_scene
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Resolve authored cable initialization natively on a pxr.Usd stage.
+
+    Reuses the native tangent, arc and layer helpers. Like the JS load-time baker,
+    this is separate from timestep attachment rebuilding and respects manual values.
+    """
+    import math
+    from types import SimpleNamespace
+
+    import numpy as np
+>   from pxr import Sdf, Tf, Usd
+E   ModuleNotFoundError: No module named 'pxr'
+
+src/python/usd/cable_scene_loader.py:10: ModuleNotFoundError
+_ test_invalid_experiments_do_not_write_success_artifacts[options0-steps must] _
+
+experiment_root = PosixPath('/tmp/pytest-of-agent/pytest-21/test_invalid_experiments_do_no0')
+options = {'steps': 0}, message = 'steps must'
+
+    @pytest.mark.parametrize('options, message', [
+        ({'steps': 0}, 'steps must'), ({'steps': True}, 'steps must'),
+        ({'steps': 10_001}, 'steps must'), ({'dt': float('nan')}, 'dt must'),
+        ({'commands': [{'type': 'Move', 'Q': 1}]}, 'Unknown command'),
+        ({'commands': [{'type': 'Move', 'A': float('inf')}]}, 'finite'),
+        ({'commands': [{'type': 'SetTorqueMode', 'axis': 'Q'}]}, 'known axis'),
+        ({'commands': [{'A': .1}]}, 'require type'),
+        ({'commands': [{'type': 'G1', 'A': .1}]}, 'Unsupported command'),
+        ({'commands': [None]}, 'must be an object'),
+    ])
+    def test_invalid_experiments_do_not_write_success_artifacts(experiment_root, options, message):
+>       from hp_sim5_research.experiments import run_experiment
+
+tests/python/test_research_agent.py:124:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/python/hp_sim5_research/experiments.py:14: in <module>
+    from cable_joints_3d.__main__ import _blueprint
+src/python/cable_joints_3d/__main__.py:9: in <module>
+    from .machine_simulation import load_machine_world, register_machine_systems
+src/python/cable_joints_3d/machine_simulation.py:2: in <module>
+    from usd.cable_scene_loader import open_cable_scene
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Resolve authored cable initialization natively on a pxr.Usd stage.
+
+    Reuses the native tangent, arc and layer helpers. Like the JS load-time baker,
+    this is separate from timestep attachment rebuilding and respects manual values.
+    """
+    import math
+    from types import SimpleNamespace
+
+    import numpy as np
+>   from pxr import Sdf, Tf, Usd
+E   ModuleNotFoundError: No module named 'pxr'
+
+src/python/usd/cable_scene_loader.py:10: ModuleNotFoundError
+_ test_invalid_experiments_do_not_write_success_artifacts[options1-steps must] _
+
+experiment_root = PosixPath('/tmp/pytest-of-agent/pytest-21/test_invalid_experiments_do_no1')
+options = {'steps': True}, message = 'steps must'
+
+    @pytest.mark.parametrize('options, message', [
+        ({'steps': 0}, 'steps must'), ({'steps': True}, 'steps must'),
+        ({'steps': 10_001}, 'steps must'), ({'dt': float('nan')}, 'dt must'),
+        ({'commands': [{'type': 'Move', 'Q': 1}]}, 'Unknown command'),
+        ({'commands': [{'type': 'Move', 'A': float('inf')}]}, 'finite'),
+        ({'commands': [{'type': 'SetTorqueMode', 'axis': 'Q'}]}, 'known axis'),
+        ({'commands': [{'A': .1}]}, 'require type'),
+        ({'commands': [{'type': 'G1', 'A': .1}]}, 'Unsupported command'),
+        ({'commands': [None]}, 'must be an object'),
+    ])
+    def test_invalid_experiments_do_not_write_success_artifacts(experiment_root, options, message):
+>       from hp_sim5_research.experiments import run_experiment
+
+tests/python/test_research_agent.py:124:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/python/hp_sim5_research/experiments.py:14: in <module>
+    from cable_joints_3d.__main__ import _blueprint
+src/python/cable_joints_3d/__main__.py:9: in <module>
+    from .machine_simulation import load_machine_world, register_machine_systems
+src/python/cable_joints_3d/machine_simulation.py:2: in <module>
+    from usd.cable_scene_loader import open_cable_scene
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    """Resolve authored cable initialization natively on a pxr.Usd stage.
+
+    Reuses the native tangent, arc and layer helpers. Like the JS load-time baker,
+    this is separate from timestep attachment rebuilding and respects manual values.
+    """
+    import math
+    from types import SimpleNamespace
+
+    import numpy as np
+>   from pxr import Sdf, Tf, Usd
+E   ModuleNotFoundError: No module named 'pxr'
+
+src/python/usd/cable_scene_loader.py:10: ModuleNotFoundError
+=========================== short test summary info ============================
+FAILED tests/python/test_research_agent.py::test_movement_and_torque_changes_are_visible_and_comparison_is_honest
+FAILED tests/python/test_research_agent.py::test_invalid_experiments_do_not_write_success_artifacts[options0-steps must]
+FAILED tests/python/test_research_agent.py::test_invalid_experiments_do_not_write_success_artifacts[options1-steps must]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 3 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+3 failed, 69 passed, 15 deselected, 17 subtests passed in 32.06s

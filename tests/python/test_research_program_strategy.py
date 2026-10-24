@@ -227,12 +227,14 @@ def test_manager_tools_write_cited_brief_and_real_worker_contract(strategy, tmp_
         def sessions(self, program_id):
             return []
         def start(self, program_id, assignment_id, **kwargs):
-            return dict(program_id=program_id, assignment_id=assignment_id, **kwargs)
+            return dict(id='fixture-attempt', details={'state': 'failed'}, program_id=program_id, assignment_id=assignment_id, **kwargs)
     manager = ProgramManager(store, ROOT, 'p', 'test-controller', tmp_path / 'manager', workers=Workers())
     assert 'strategy' not in manager.capabilities('p')['unavailable']
     assert {'route_plan', 'commission', 'strategy_result', 'route_decide'} <= manager.operations.keys()
     work = fund(controller, kind='literature', allocation={'wall_minutes': 9, 'fresh_fits': 0, 'collections': 0},
                 execution={'source_limit': 4, 'search_question': 'Do comparable applied models have an unbiased common fold?'})
+    manager.controller.recover('p', handoff_attempt_id=controller.test_context['attempt']['id'],
+                               reason='Fixture worker started no physics; acknowledge its missing exit manifest')
     response = manager.call('worker_start', {'assignment_id': work['assignment']['id']})
     contract = response['result']['instructions']
     assert 'literature' in contract and 'source_limit' in contract and 'explanations' in contract

@@ -61,8 +61,9 @@ collection remain available. Choose workload-specific limits using the
 development queue's caps. A funded collection defaults its execution guidance
 to simulated autocal speedup 25 and event recording. Override guidance only with
 settings supported by the actual workload. Headless physics already runs at full
-speed. Allocations remain recorded worker contracts here; task 013 owns runtime
-enforcement and recovery.
+speed. The [finite controller](program-controller.md) enforces task, wall, concurrency
+and review reservations. Numerical counters remain worker contracts unless a
+supported production tool enforces them; shell movement and spend are unmetered.
 
 ## Interpret results without converting execution into science
 

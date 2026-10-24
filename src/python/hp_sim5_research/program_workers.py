@@ -1,7 +1,7 @@
 """Single-worker adapter for the existing launcher; no physics or client SDK imports.
 
-Keep this controller alive and poll status after start/cancel. Restart adoption,
-independent wall deadlines and parallel pools belong to the later controller.
+Keep this dispatcher alive and poll status after start/cancel. The retained host
+enforces deadlines; saved process identities alone never authorize signals.
 """
 import hashlib
 import json
@@ -17,7 +17,7 @@ from .program import ProgramError, _allocation, _identity, _json, _now, _object,
 
 
 ACTIVE = ('starting', 'running', 'cancelling', 'ownership_lost')
-TERMINAL = ('submitted', 'failed', 'cancelled', 'launch_failed')
+TERMINAL = ('submitted', 'failed', 'cancelled', 'launch_failed', 'interrupted')
 FILES = ('session.json', 'launch.json', 'exit.json', 'prompt.txt', 'events.jsonl',
          'final-message.md', 'research.md', 'report.md', 'abstract.md',
          'instructions.md', 'attachment.toml', 'attachment.json', 'connection.json',
@@ -34,6 +34,15 @@ def process_identity(pid):
                 'uid': proc.stat().st_uid, 'host': socket.gethostname()}
     except (OSError, ValueError, IndexError):
         return None
+
+
+def process_live(identity):
+    if not isinstance(identity, dict) or identity != process_identity(identity.get('pid')):
+        return False
+    try:
+        return Path(f'/proc/{identity["pid"]}/stat').read_text().rsplit(') ', 1)[1].split()[0] not in ('Z', 'X')
+    except OSError:
+        return False
 
 
 def validate_attempts(records):
@@ -88,6 +97,7 @@ class WorkerDispatcher:
         if self.owner['process'] is None:
             raise ProgramError('Worker dispatch requires Linux process birth identity')
         self.children = {}
+        self.deadlines = {}
 
     @staticmethod
     def _settings(settings):
@@ -121,12 +131,13 @@ class WorkerDispatcher:
                 _text(result[name], name)
         return result
 
-    def start(self, program_id, assignment_id, *, settings=None, instructions=''):
+    def start(self, program_id, assignment_id, *, settings=None, instructions='', runtime=None):
         """Reserve and spawn once; return without waiting for services or a client.
 
         The assignment snapshot and unchanged additional instructions become one
         UTF-8 prompt file, passed by absolute argv path through worktree re-exec.
-        The allocation is a worker contract; hard runtime budgets are task 013.
+        Wall expiration requests the existing launcher's cleanup. Numerical
+        counters remain contracts unless a production tool enforces that limit.
         """
         options = self._settings(settings)
         if not isinstance(instructions, str):
@@ -164,6 +175,10 @@ class WorkerDispatcher:
             argv = [self.executable, '--' + options['backend'], '--batch', '--prompt-file', str(prompt_path),
                     '--session-dir', str(session), '--physics-backend', options['physics_backend'],
                     '--machine', options['machine'], '--viewer', options['viewer']]
+            wall_deadline = time.time() + assignment['details']['allocation']['wall_minutes'] * 60
+            if runtime:
+                wall_deadline = min(wall_deadline, runtime['wall_deadline'])
+            argv += ['--wall-deadline', str(wall_deadline)]
             for name in ('model_provider', 'model', 'worktree_dir', 'sidebar_section'):
                 if name in options:
                     value = options[name]
@@ -187,6 +202,10 @@ class WorkerDispatcher:
                        'observations': [{'at': _now(), 'event': 'reserved'}], 'artifacts': [],
                        'started_at': None, 'exited_at': None, 'returncode': None,
                        'cleanup': 'not_requested', 'diagnostics': []}
+            details['runtime'] = dict(runtime or {}, wall_deadline=wall_deadline)
+            if runtime:
+                details['runtime']['wall_deadline'] = min(details['runtime']['wall_deadline'], runtime['wall_deadline'])
+            self.deadlines[attempt_id] = time.monotonic() + max(0, details['runtime']['wall_deadline'] - time.time())
             self.store._touch(program_id)
             self.store._insert(program_id, 'attempt', assignment['title'], details, attempt_id)
             assignment['details']['execution_state'] = 'running'
@@ -306,11 +325,22 @@ class WorkerDispatcher:
                     details['cancel_deadline'] = float('1e100')
                 except OSError as error:
                     details['cleanup'] = f'failed: {error}'
+            elif (details['state'] in ('starting', 'running') and not details.get('runtime', {}).get('expired') and
+                  (time.time() >= details.get('runtime', {}).get('wall_deadline', float('inf')) or
+                   time.monotonic() >= self.deadlines.get(attempt_id, float('inf')))):
+                details['observations'].append({'at': _now(), 'event': 'wall_expired'})
+                details['runtime']['expired'] = True
+                self._save(program_id, attempt_id, details)
+                return self.cancel(program_id, attempt_id, grace_seconds=details.get('runtime', {}).get('cleanup_seconds', 190))
         self._inventory(details)
         if details['state'] in TERMINAL and details['cleanup'] != 'no_process_started':
             if not details['cleanup'].startswith('failed'):
                 details['cleanup'] = ('launcher_finally_completed' if 'launcher_exit' in details else
                                       'unverified; launcher exit manifest missing')
+        if details['started_at'] and details['state'] in TERMINAL:
+            from datetime import datetime
+            end = datetime.fromisoformat(details['exited_at']).timestamp() if details['exited_at'] else time.time()
+            details['observed_wall_seconds'] = max(0, end - datetime.fromisoformat(details['started_at']).timestamp())
         if _json(details) != before:
             self._save(program_id, attempt_id, details, assignment_state=assignment_state)
             record = self.store.get_record(program_id, attempt_id, 'attempt')

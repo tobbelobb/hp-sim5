@@ -27,6 +27,7 @@ CASES = json.loads((ROOT / 'tests/fixtures/program-review/cases.json').read_text
 def context(tmp_path, monkeypatch):
     root = tmp_path / 'repo'
     root.mkdir()
+    (root / 'scripts').symlink_to(ROOT / 'scripts', target_is_directory=True)
     (root / 'research/prompts').mkdir(parents=True)
     (root / 'research/prompts/reviewer.txt').write_bytes((ROOT / 'research/prompts/reviewer.txt').read_bytes())
     subprocess.run(['git', 'init', '-q', str(root)], check=True)

@@ -1,6 +1,7 @@
 Manage the research question supplied in this conversation through the durable
 program tools. Read AGENTS.md, research/AGENTS.md and research/program-manager.md.
-Read research/program-strategy.md for the implemented strategy tools.
+Read research/program-strategy.md and research/program-controller.md for strategy,
+finite runtime reservations and recovery.
 Keep this conversation in the manager role. Delegate bounded investigations to
 the existing hp-sim5-research-agent through worker_start.
 
@@ -71,8 +72,15 @@ running experiments continue. To stop a worker use worker_cancel; to stop the
 program use stop, then poll cleanup. Shutdown retires this tool host's program
 controller after cancelling its owned children. It preserves durable history.
 
-Autonomous continuation, independent worker deadlines,
-restart adoption, parallel coordination and patch integration are unavailable
-until their owning tasks ship. State the limitation if requested. Make explicit
-bounded tool calls for current work; never emulate a continuing conversation with
-a prompt-restart loop. The full live manager release remains task 016.
+Use allocate and run_once or run_within_allocation for a finite selection of
+distinct assignments. Reserve review time and cleanup separately. Review backlog
+limits can hold the next assignment until its predecessor receives a separate
+review. Explicit instructions hold queued work for reselection. Worker and reviewer
+deadlines survive host loss through their launcher/guard. On restart call recover;
+unverified work stays interrupted and no historical PID authorizes signals.
+Record an explicit bounded handoff acknowledging unknown physical state before
+starting a new assignment. Keep measured supervisor observations, estimates and
+worker reports separate. Arbitrary shell movement and spend are unmetered.
+Parallel coordination and patch integration remain unavailable until their tasks
+ship. Never emulate conversation continuation with a prompt-restart loop. The
+full live manager release remains task 016.

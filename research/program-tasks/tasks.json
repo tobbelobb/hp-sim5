@@ -144,7 +144,7 @@
       "id": "013",
       "priority": 130,
       "title": "Continue a managed program across turns and interruptions",
-      "status": "ready",
+      "status": "done",
       "depends_on": [
         "009",
         "010",

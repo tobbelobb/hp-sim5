@@ -1,0 +1,172 @@
+{
+  "affected_final": {
+    "argv": [
+      ".venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/python/test_research_program_review.py",
+      "tests/python/test_research_program.py",
+      "tests/python/test_research_program_graph.py",
+      "tests/python/test_research_program_workers.py",
+      "tests/python/test_research_program_manager.py",
+      "tests/python/test_research_agent.py",
+      "tests/python/test_research_program_strategy.py",
+      "tests/python/test_research_program_controller.py",
+      "-k",
+      "WorkerTests or ProgramTests or GraphTests or test_report_only or test_known_overclaim or test_actual_candidate or test_changed_bytes or test_new_submission or test_corruption_before or test_original_turnover or test_failed_or_mismatched or test_codex_claude_plans or test_api_and_database or test_control_credentials or launcher_native_build_recovery or launcher_dry_run or launcher_selects_model_provider or launcher_worktree_dry_run or create_worktree_links or launcher_loads_provider_key or launcher_named_session or launcher_clarification or launcher_goal_mode or sidebar_hook or launcher_preserves_written_report or launcher_refuses_existing_session or launcher_requires_exactly_one_backend or claude_dry_run or claude_launcher_lifecycle or interrupted or worktree_reexec or test_research_program_manager or test_research_program_strategy or test_research_program_controller",
+      "-m",
+      "not slow",
+      "--basetemp",
+      "/tmp/hp-sim5-task013-final",
+      "--junitxml",
+      "output/research/sessions/2026-10-24-bounded-controller/pytest.xml"
+    ],
+    "exit_code": 0,
+    "seconds": 39.48401320599805,
+    "transcript": "pytest-final.txt",
+    "passed": 140,
+    "deselected": 18,
+    "subtests_passed": 34
+  },
+  "followup": {
+    "exit_code": 0,
+    "passed": 35,
+    "deselected": 0,
+    "seconds": 21.349,
+    "transcript": "pytest-followup.txt",
+    "junit": "pytest-followup.xml",
+    "test_cases": [
+      "test_finite_reservations_concurrency_backlog_pause_and_poll_revision",
+      "test_wall_expiry_reaches_existing_cleanup_and_keeps_separate_allowance",
+      "test_crash_and_cancelled_start_keep_task_charge_and_partial_evidence[sys.exit(19)-unverified]",
+      "test_crash_and_cancelled_start_keep_task_charge_and_partial_evidence[time.sleep(30)-launcher_finally_completed]",
+      "test_stale_lease_cancelled_popen_and_restart_never_replay_assignment",
+      "test_reused_pid_and_live_snapshot_do_not_authorize_adoption_or_signals",
+      "test_review_retry_limit_historical_funding_roundtrip_and_stop_during_review",
+      "test_stop_during_review_and_late_completed_review_cannot_admit",
+      "test_recovered_review_transfers_backlog_and_recovers_admission_cache",
+      "test_launcher_deadline_survives_absent_host_and_second_cancel_during_cleanup",
+      "test_review_guard_deadline_survives_absent_host_polling",
+      "test_worker_retry_limit_requires_distinct_bounded_assignments",
+      "test_several_assignments_real_cli_transcript_and_fresh_host_continuation",
+      "test_explicit_steering_holds_finite_queue_without_cancelling_running_worker",
+      "test_actual_host_crash_reconciles_orphan_without_adoption_or_duplicate_dispatch",
+      "test_empty_allocation_roundtrip_and_failed_review_transfer_are_atomic",
+      "test_invalid_worker_options_do_not_spend_or_strand_a_startup_reservation",
+      "test_broad_question_two_routes_funded_rival_and_scoped_negative",
+      "test_unexpected_promotes_rival_and_tool_failure_is_not_science",
+      "test_repeated_inconclusive_parks_and_same_plan_cannot_reset_limit",
+      "test_withdrawal_traverses_surviving_derivations_and_requires_review",
+      "test_hunch_preserved_instruction_reallocates_only_pending_work",
+      "test_invalid_actions_atomic_and_strategy_history_immutable",
+      "test_manager_tools_write_cited_brief_and_real_worker_contract",
+      "test_automatic_outcomes_require_current_admission_for_exact_assignment[withheld]",
+      "test_automatic_outcomes_require_current_admission_for_exact_assignment[invalidated]",
+      "test_automatic_outcomes_require_current_admission_for_exact_assignment[withdrawn]",
+      "test_automatic_outcomes_require_current_admission_for_exact_assignment[unrelated]",
+      "test_automatic_outcomes_require_current_admission_for_exact_assignment[reported_only]",
+      "test_failed_attempt_can_supply_scoped_reviewed_partial_result",
+      "test_latest_plan_uses_append_order_even_with_clock_rollback",
+      "test_funding_reads_dependencies_inside_its_write_transaction",
+      "test_review_id_citation_reaches_submission_scope_and_effective_admission",
+      "test_later_withheld_review_requeues_route_with_full_history",
+      "test_old_outcome_cannot_retire_a_reframed_broader_route"
+    ],
+    "argv_note": "Exact follow-up argv was not retained; JUnit names and stdout identify the executed cases"
+  },
+  "supervisor": {
+    "exit_code": 0,
+    "passed": 2,
+    "deselected": 17,
+    "seconds": 0.164,
+    "transcript": "pytest-supervisor.txt",
+    "junit": "pytest-supervisor.xml",
+    "test_cases": [
+      "test_recovery_reads_current_supervisor_and_does_not_adopt_final_snapshot[True]",
+      "test_recovery_reads_current_supervisor_and_does_not_adopt_final_snapshot[False]"
+    ],
+    "argv_note": "Exact follow-up argv was not retained; JUnit names and stdout identify the executed cases"
+  },
+  "final_boundaries": {
+    "exit_code": 0,
+    "passed": 5,
+    "deselected": 15,
+    "seconds": 0.628,
+    "transcript": "pytest-final-boundaries.txt",
+    "junit": "pytest-final-boundaries.xml",
+    "test_cases": [
+      "test_review_retry_limit_historical_funding_roundtrip_and_stop_during_review",
+      "test_stop_during_review_and_late_completed_review_cannot_admit",
+      "test_recovery_reads_current_supervisor_and_does_not_adopt_final_snapshot[True]",
+      "test_recovery_reads_current_supervisor_and_does_not_adopt_final_snapshot[False]",
+      "test_stop_preserves_unverified_review_boundary_without_signalling_reused_identity"
+    ],
+    "argv_note": "Exact follow-up argv was not retained; JUnit names and stdout identify the executed cases"
+  },
+  "boundary": "Actual store/CLI/file-host and fixture worker/reviewer subprocesses. Existing launcher tested with fixture runtime/client. No actual coding-client review, production numerical work or live release proof.",
+  "live_release": false,
+  "numerical_use": {
+    "fits": 0,
+    "predictions": 0,
+    "replays": 0,
+    "physics_runs": 0,
+    "physics_steps": 0,
+    "movements": 0,
+    "collections": 0
+  },
+  "preliminary_checks": {
+    "failed": 3,
+    "passed": 69,
+    "reason": "Broad selector imported physics-dependent experiments without pxr; retained affected-tests.txt. Corrected supported affected selection passed.",
+    "transcript_normalization": "Only trailing whitespace trimmed from pytest failure text so git diff --check passes; test content and outcomes retained"
+  },
+  "next_task": "014; not started",
+  "upstream_base": "891aef26a82d5b2096c9f1b3e93a419effc58b36",
+  "tool_provenance": [
+    "/tmp/hp-sim5-test-deps/SOURCE-PROVENANCE.json",
+    "/tmp/hp-sim5-runtime-deps/SOURCE-PROVENANCE.json"
+  ],
+  "compilation": {
+    "argv": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "-m",
+      "compileall",
+      "-q",
+      "scripts/research_agent.py",
+      "src/python/hp_sim5_research/program.py",
+      "src/python/hp_sim5_research/program_manager.py",
+      "src/python/hp_sim5_research/program_review.py",
+      "src/python/hp_sim5_research/program_workers.py",
+      "tests/python/test_research_program_manager.py",
+      "tests/python/test_research_program_review.py",
+      "tests/python/test_research_program_strategy.py",
+      "src/python/hp_sim5_research/program_controller.py",
+      "scripts/research_program_review_guard.py",
+      "tests/python/test_research_program_controller.py"
+    ],
+    "exit_code": 0
+  },
+  "catalog": {
+    "argv": [
+      ".venv/bin/python",
+      "scripts/research_index.py"
+    ],
+    "exit_code": 0,
+    "merge_policy": "Regenerated; preserved published entries and appended task-owned section",
+    "preserved_prior_sessions": 104,
+    "added_session": "2026-10-24-bounded-controller"
+  },
+  "final_integrity": {
+    "queue": "013 done; 014/015/016 ready with dependencies retained",
+    "source_hashes": 17,
+    "git_diff_check": 0,
+    "initial_script_errors": [
+      "Staged pytest failure log contained trailing whitespace; trimmed log whitespace before final diff check"
+    ]
+  },
+  "cleanup": {
+    "active_task_fixture_processes": 0,
+    "method": "Inspected /proc argv for exact task/test fixture paths; no signals sent"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "research/program-controller.md": "d8aa48b2e1d14612676a4d8bc0a4d4acecfca0c80c92041759b52d480b924d25",
+  "research/program-manager.md": "d3db4dfbf4813727274cde7875698caece540f8b178c597dc98a3d8fe2eb9a1c",
+  "research/program-strategy.md": "a716bc08f4c624a463ae47e8b8ef603031fbb2b05fd726969e701267433d9a8f",
+  "research/program-tasks/progress.txt": "9617967c8fb470a1e581667b8d9f23fd6298cab23e64f019b2be18dbfaaef17f",
+  "research/program-tasks/tasks.json": "d6dba44c484ed85440a4cc9ad15dd4e96622383e252dd83535b28caf3c6bda54",
+  "research/prompts/research-manager.txt": "3829a29af85011fe889944863b9c6da6a4f39bd7d1239992d61299f9861457ca",
+  "scripts/research_agent.py": "c1fe819d7cbd8109bfbf2011655375528adcf470084107da7e4093bfffcdaed4",
+  "scripts/research_program_review_guard.py": "7dce29a1929f05c09c50b1de1b2efefae867d51eadb87db22d83b10a116fa35e",
+  "src/python/hp_sim5_research/program.py": "b65ef2205689834b145893dcfa9b2c98220cdd32f84efcdff95a118daa9f6f91",
+  "src/python/hp_sim5_research/program_controller.py": "b4dbc23a0d420ae64f09a850c7a2f6997402d2fa94970ca19b13a0f0a419312f",
+  "src/python/hp_sim5_research/program_manager.py": "7b54b387c5a8c1d2a3cab062068a6f10cc8ee9f150e5e0008f985ca68ae6d0ea",
+  "src/python/hp_sim5_research/program_review.py": "5f1860706b553e78e9f9af65a9e01e63d9171e6a011af1f8b676a274aab28957",
+  "src/python/hp_sim5_research/program_workers.py": "cad04c89be70ffb4d6ad8110ffa3351ad4b75a25ead9f192cc18db8f9fabf03b",
+  "tests/python/test_research_program_controller.py": "5092af251c0b29483c04a27c557fcfa688f455562e24707a66842d595f6a898a",
+  "tests/python/test_research_program_manager.py": "70d7b19229ecaa159cc5719a8f69fd5df9e7d90a51ff768970f63522ff7a29f5",
+  "tests/python/test_research_program_review.py": "6cc58f4c3d499f115e84dfba5ee1557e9b4fa0814bc942b8ec8eb6dae7bf74f5",
+  "tests/python/test_research_program_strategy.py": "3745d911d14831b8e150ba7db2fc774ba8c57cb28f3ffa767d0f33aa3280cb7c"
+}

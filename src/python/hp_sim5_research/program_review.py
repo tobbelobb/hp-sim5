@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import signal
 import subprocess
+import sys
 import time
 
 from . import coding_client
@@ -116,7 +117,7 @@ def validate_reviews(records):
             submission = require(d.get('submission_id'), 'submission')
             if d.get('submission_sha256') != submission['details']['sha256'] or d.get('contract') != CONTRACT:
                 raise ProgramError('Review run target/contract mismatch')
-            if d.get('state') not in ('running', 'completed', 'failed', 'timed_out', 'cancelling', 'cancelled'):
+            if d.get('state') not in ('running', 'completed', 'failed', 'timed_out', 'cancelling', 'cancelled', 'interrupted'):
                 raise ProgramError('Invalid review execution state')
             if d.get('reviewer', {}).get('context_id') != record['id']:
                 raise ProgramError('Reviewer must identify its separate context')
@@ -342,7 +343,10 @@ class ReviewController:
                        coding_client.claude_environment(env_file=self.root / '.env'))
         try:
             with (directory / 'prompt.txt').open('rb') as stdin, (directory / 'events.jsonl').open('wb') as stdout, (directory / 'stderr.log').open('wb') as stderr:
-                process = subprocess.Popen(plan['argv'], cwd=self.root, env=environment, stdin=stdin,
+                guard = [sys.executable, str(self.root / 'scripts/research_program_review_guard.py'),
+                         str(details['deadline']), str(directory / 'wall-expired'), *plan['argv']]
+                details['guard_argv'] = guard
+                process = subprocess.Popen(guard, cwd=self.root, env=environment, stdin=stdin,
                                            stdout=stdout, stderr=stderr, start_new_session=True)
             self.children[plan['id']] = process
             details['process'] = process_identity(process.pid)
@@ -379,6 +383,10 @@ class ReviewController:
             return record
         else:
             d['returncode'] = code
+            if (Path(d['directory']) / 'wall-expired').exists():
+                d.update(state='timed_out', error='Review wall allocation expired')
+                self._save(program_id, run_id, d)
+                return self.store.get_record(program_id, run_id)
             try:
                 if code:
                     raise ProgramError(f'Reviewer exited {code}; no assessment admitted')

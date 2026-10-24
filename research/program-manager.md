@@ -41,8 +41,9 @@ and exits with code 2. Invalid calls do not silently succeed.
 ```
 
 The example's zero fresh fits is specific to inspecting saved evidence. Choose
-finite workload limits for the actual question. Runtime allocations are recorded
-worker contracts at this stage; independent worker wall enforcement is task 013.
+finite workload limits for the actual question. The [finite controller](program-controller.md) reserves tasks, worker wall time,
+separate review capacity and cleanup before dispatch. Numerical counters remain
+contracts unless the supported production tool enforces them.
 The CLI never waits for the worker investigation to finish. Later calls reach
 the same host, which retains the actual dispatcher/reviewer child processes and
 polls their exits. Worker session links point to the existing launcher artifacts.
@@ -57,7 +58,8 @@ operations are implemented:
 | Fixed separate review | submit, submission_verify, submission_invalidate, review_plan, review_start, review_status, review_cancel, review_apply |
 | Strategy | strategy, route_plan, route_decide, commission, strategy_result |
 | Human direction | steering, decision |
-| Lifecycle | pause, resume, stop, shutdown |
+| Runtime | allocate, run_once, run_within_allocation, runtime_status, worker_usage, fund_review, recover |
+| Lifecycle | pause, resume, cancel_attempt, stop_allocation, stop_program, stop, shutdown |
 
 The [strategy guide](program-strategy.md) describes route plans, rival
 discriminators, automatic reviewed outcomes, withdrawal review, futility and
@@ -111,8 +113,9 @@ The private file queue needs no socket. One host lock prevents duplicate hosts.
 Every request checks the host generation, bound program and controller identity.
 A stale attachment fails explicitly; reopen the program to obtain its current
 attachment. Reopening after host loss does not adopt or signal old worker PIDs.
-Stale active reservations block further dispatch until task 013 supplies restart
-reconciliation. Request timeout means the outcome may be unknown. Inspect durable
+A fresh host reconciles leases, process birth identities and session/connection
+records. Unverified work stays interrupted; a new bounded handoff must acknowledge
+unknown physical state before dispatch resumes. No saved PID authorizes signals. Request timeout means the outcome may be unknown. Inspect durable
 status before retrying a mutation. Same-UID callers can edit local files or use
 the store APIs directly. This is a cooperative tool boundary, not adversarial
 isolation.
@@ -128,7 +131,9 @@ here. Existing nested Codex startup fails with read-only writable-state access;
 no new keys or environment overrides were introduced.
 
 Unavailable operations return `unavailable` with the owning task:
-autonomous_continue/recover in 013, parallel in 014 and integrate in 015.
+parallel in 014 and integrate in 015. `run_within_allocation` executes the
+manager's finite selection of distinct assignments; it does not resume a prompt
+in a restart loop.
 Task 016 still requires the genuine client, worker, production-tool, review and
 replanning pilot. The full manager remains incomplete until the remaining
 implementation tasks and that live proof pass.

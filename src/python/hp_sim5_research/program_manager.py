@@ -8,11 +8,10 @@ import traceback
 from .program import ProgramError, _json, _object, render_markdown
 from .program_workers import ACTIVE
 from .program_strategy import ProgramStrategy
+from .program_controller import ProgramController
 
 
 UNAVAILABLE = {
-    'autonomous_continue': 'Task 013: autonomous dispatch, runtime reservations and worker wall deadlines',
-    'recover': 'Task 013: restart reconciliation/adoption of unfinished children',
     'parallel': 'Task 014: coordinated worker pool',
     'integrate': 'Task 015: combined candidate integration and delivery checks',
 }
@@ -25,7 +24,7 @@ def failure(code, message):
 class ProgramManager:
     """Retained dispatcher and separate reviewer for exactly one program.
 
-    This is a tool owner, not the autonomous allocation/recovery controller. All
+    This retains a finite allocation/recovery controller. All
     calls run on its host thread; SQLite connections never cross threads.
     """
 
@@ -38,6 +37,8 @@ class ProgramManager:
         self.reviews = reviews or store.reviews(self.root)
         self.strategy = ProgramStrategy(store)
         self.stopping = False
+        self.cleanup_errors = []
+        self.controller = ProgramController(self)
         self.operations = {
             'overview': self.overview, 'status': self.overview, 'capabilities': self.capabilities,
             'query': store.graph().query, 'question': store.add_question, 'approach': store.add_approach,
@@ -50,13 +51,20 @@ class ProgramManager:
             'route_decide': self.strategy.decide, 'commission': self.strategy.commission,
             'strategy_result': self.strategy.result,
             'worker_start': self.worker_start, 'worker_status': self.workers.status,
-            'worker_cancel': self.workers.cancel, 'worker_sessions': self.workers.sessions,
+            'worker_cancel': self.controller.cancel_attempt, 'cancel_attempt': self.controller.cancel_attempt,
+            'worker_sessions': self.workers.sessions,
             'submit': self.reviews.submit, 'submission_verify': self.reviews.verify,
             'submission_invalidate': self.reviews.invalidate, 'review_plan': self.reviews.plan,
-            'review_start': self.reviews.start, 'review_status': self.reviews.status,
-            'review_cancel': self.reviews.cancel, 'review_apply': self.reviews.apply,
+            'review_start': self.controller.review_start, 'review_status': self.reviews.status,
+            'review_cancel': self.reviews.cancel, 'review_apply': self.controller.review_apply,
             'pause': self.pause, 'resume': self.resume, 'stop': self.stop,
             'shutdown': self.shutdown,
+            'allocate': self.controller.allocate, 'run_once': self.controller.run_once,
+            'run_within_allocation': self.controller.run_within_allocation,
+            'runtime_status': self.controller.status, 'recover': self.controller.recover,
+            'fund_review': self.controller.fund_review, 'worker_usage': self.controller.usage,
+            'stop_allocation': self.controller.stop_allocation,
+            'stop_program': self.stop,
         }
 
     def capabilities(self, program_id):
@@ -70,8 +78,8 @@ class ProgramManager:
         return {'operations': operations, 'unavailable': UNAVAILABLE,
                 'physics_world': False, 'default_worker_concurrency': 1,
                 'boundary': 'Cooperative same-UID local tools; private files are not adversarial isolation',
-                'worker_allocation': 'Recorded contract only; independent worker wall enforcement is task 013',
-                'restart': 'Ended history is readable; stale active workers are never adopted or signalled'}
+                'worker_allocation': 'Finite task/wall/review reservations; numerical counters remain explicit contracts',
+                'restart': 'Leases and birth identities reconcile to interrupted handoffs; historical PIDs never authorize signals'}
 
     def call(self, operation, parameters=None):
         """One structured result for CLI and MCP, including invalid API arguments."""
@@ -105,16 +113,19 @@ class ProgramManager:
             self.workers.status(self.program_id, identity)
         for identity in tuple(self.reviews.children):
             self.reviews.status(self.program_id, identity)
+        self.controller.poll()
 
     def overview(self, program_id):
         self.poll()
         board = self.strategy.reconcile(program_id)
         result = self.store.overview(program_id)
         result['strategy'] = board
+        result['runtime'] = self.controller.status(program_id)
         result['next_allocation'] = self.strategy.next_allocation(program_id, board)
         result['brief'] = self.strategy.brief(board, result['next_allocation'])
         result['manager'] = {'program_id': program_id, 'controller_id': self.controller_id,
                              'stopping': self.stopping, 'physics_world': False,
+                             'cleanup_errors': self.cleanup_errors,
                              'links': {'store': str(self.store.path), 'session': str(self.session),
                                        'overview': str(self.session / 'overview.md'),
                                        'snapshot': str(self.session / 'overview.json'),
@@ -131,8 +142,12 @@ class ProgramManager:
             raise ProgramError('Use pause, resume or stop for program lifecycle controls')
         return self.store.transition(program_id, record_id, target, reason, expected_revision=expected_revision)
 
-    def worker_start(self, program_id, assignment_id, *, settings=None, instructions=''):
+    def worker_start(self, program_id, assignment_id, *, settings=None, instructions='', allocation_id=None, retry_of=None):
         """Dispatch the existing worker with its funded strategy and accepted human direction."""
+        return self.controller.run_once(program_id, assignment_id, allocation_id=allocation_id,
+                                        settings=settings, instructions=instructions, retry_of=retry_of)
+
+    def _worker_contract(self, program_id, assignment_id, instructions):
         board = self.strategy.reconcile(program_id)
         assignment = self.store.get_record(program_id, assignment_id, 'assignment')
         route = next(r for r in board['routes'] if r['id'] == assignment['details']['approach_id'])
@@ -144,17 +159,25 @@ class ProgramManager:
                     'human_inputs': board['human_inputs']}
         if not isinstance(instructions, str):
             raise ProgramError('instructions must be a string')
-        return self.workers.start(program_id, assignment_id, settings=settings,
-                                  instructions='Recorded strategy contract:\n' + _json(contract) + '\n\n' + instructions)
+        if assignment['details']['execution_state'] != 'ready':
+            raise ProgramError('Dispatch requires a ready assignment')
+        return 'Recorded strategy contract:\n' + _json(contract) + '\n\n' + instructions
+
+    def _launch_worker(self, program_id, assignment_id, *, settings=None, instructions='', runtime=None):
+        instructions = self._worker_contract(program_id, assignment_id, instructions)
+        return self.workers.start(program_id, assignment_id, settings=settings, instructions=instructions, runtime=runtime)
 
     def steering(self, program_id, text, *, subject_id=None, evidence_ids=None, actor='human',
                  record_id=None, expected_revision=None, intent='note', links=None, provenance=None,
                  next_assignment_id=None, allocation=None):
         """Capture human provenance; explicit instructions change the next pending allocation."""
-        return self.strategy.steering(program_id, text, subject_id=subject_id, evidence_ids=evidence_ids,
+        result = self.strategy.steering(program_id, text, subject_id=subject_id, evidence_ids=evidence_ids,
                                      actor=actor, record_id=record_id, expected_revision=expected_revision,
                                      intent=intent, links=links, provenance=provenance,
                                      next_assignment_id=next_assignment_id, allocation=allocation)
+        if intent == 'instruction':
+            self.controller.steered(result['accepted_input']['id'])
+        return result
 
     def decision(self, program_id, text, *, subject_id=None, evidence_ids=None, actor='manager',
                  record_id=None, expected_revision=None):
@@ -165,9 +188,15 @@ class ProgramManager:
         for identity in tuple(self.workers.children):
             record = self.workers.status(self.program_id, identity)
             if record['details']['state'] in ACTIVE:
-                self.workers.cancel(self.program_id, identity)
+                try:
+                    self.controller.cancel_attempt(self.program_id, identity)
+                except ProgramError as error:
+                    self.cleanup_errors.append({'attempt_id': identity, 'error': str(error), 'physical_shutdown': 'unknown'})
         for identity in tuple(self.reviews.children):
-            self.reviews.cancel(self.program_id, identity)
+            try:
+                self.reviews.cancel(self.program_id, identity)
+            except ProgramError as error:
+                self.cleanup_errors.append({'review_id': identity, 'error': str(error), 'reviewer_shutdown': 'unknown'})
 
     def pause(self, program_id, reason):
         """Pause new dispatch. Running workers and reviewers continue until explicitly stopped."""
@@ -184,12 +213,14 @@ class ProgramManager:
         """Stop new dispatch and cancel owned children; retain evidence and poll cleanup."""
         if self.store.get_program(program_id)['state'] != 'stopped':
             self.store.transition(program_id, program_id, 'stopped', reason)
+        self.controller.stop()
         self._cancel_owned()
         return self.overview(program_id)
 
     def shutdown(self, program_id):
         """Retire this tool host after owned children exit; program history remains."""
         self.stopping = True
+        self.controller.stop()
         self._cancel_owned()
         return self.overview(program_id)
 
