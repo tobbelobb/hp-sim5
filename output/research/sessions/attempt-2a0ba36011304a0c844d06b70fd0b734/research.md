@@ -1,0 +1,57 @@
+# Research record
+
+Objective: # Bounded research assignment
+
+{
+  "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+  "assignment": {
+    "id": "assignment-holdout-scout",
+    "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+    "kind": "assignment",
+    "title": "Inspect the three CM-E1 changed-case input manifests and at most twelve extra dataset/manifest files for compatible later unused whole sweeps. Verify content, training/selection union, encoder origin, spool/layering, units and source lineage. Return eligible or missing identities and a bounded decision; no prediction scoring, fitting, code edits, simulation or movement. Also state which conclusion the scout cannot support. Write research.md, report.md, abstract.md and an input hash manifest in the assigned session.",
+    "revision": 1,
+    "created_at": "2026-10-25T06:21:11.559404+00:00",
+    "updated_at": "2026-10-25T06:21:11.559404+00:00",
+    "details": {
+      "allocation": {
+        "additional_files": 12,
+        "collections": 0,
+        "fresh_fits": 0,
+        "physics_steps": 0,
+        "prediction_evaluations": 0,
+        "wall_minutes": 12
+      },
+      "approach_id": "fair-validation",
+      "execution_state": "ready",
+      "knowledge_state": "unassessed",
+      "question_id": "question-26b3307df81340198c2c9402a39c798e",
+      "review_state": "unreviewed"
+    }
+  },
+  "constraints": {},
+  "attempt_id": "attempt-2a0ba36011304a0c844d06b70fd0b734",
+  "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca",
+  "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734",
+  "shared_filesystem": "Workers own separate worktrees, worlds and session artifacts. Output, RRF/build, dependencies and the starting native addon are shared. Treat shared paths and datasets as immutable; use only your session directory for new artifacts. Shared builds, dependency changes and combined evaluation require an exclusive shared_runtime_write reservation. Same-UID cooperation is not adversarial isolation.",
+  "shared_runtime_write": true
+}
+
+Respect the recorded allocation. Preserve unsuccessful and partial evidence. Execution success does not accept a scientific claim.
+
+Workers own separate worktrees, worlds and session artifacts. Output, RRF/build, dependencies and the starting native addon are shared. Treat shared paths and datasets as immutable; use only your session directory for new artifacts. Shared builds, dependency changes and combined evaluation require an exclusive shared_runtime_write reservation. Same-UID cooperation is not adversarial isolation.
+
+Recorded strategy contract:
+{"human_inputs": [{"created_at": "2026-10-25T06:21:10.091327+00:00", "details": {"citation_ids": ["human-question"], "intent": "instruction", "links": [], "next_assignment_id": null, "provenance": {"date": "2026-10-25", "source": "current conversation"}, "steering_id": "human-question"}, "id": "human_input-4d26155598464a26bda4c2c7d9ad85f9", "kind": "human_input", "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564", "revision": 1, "title": "Read research/prompts/research-manager.txt and manage this question: What important things about Hangprinter do we still not understand, and what is the cheapest experiment that could change our understanding? Continue.", "updated_at": "2026-10-25T06:21:10.091327+00:00"}], "investigations": [{"created_at": "2026-10-25T06:21:11.559488+00:00", "details": {"assignment_id": "assignment-holdout-scout", "citation_ids": ["evidence-cm-e1", "evidence-agenda", "evidence-live-gate"], "execution": {"recording_mode": "none", "source_limit": 15}, "explanations": [{"approach_id": "fair-validation", "explanation": "Incomparable or overlapping folds conceal a usable prediction signal."}, {"approach_id": "model-sensitivity", "explanation": "Measurement-model bias or weak identifiability can make prediction poorly track physical geometry even with fair folds."}], "kind": "scouting", "outcomes": {"absent": {"actions": [{"approach_id": "fair-validation", "reason": "Only the named saved-data feasibility method is exhausted; broader independent validation remains open.", "reopening_condition": "New compatible data or a newly scoped discriminating observation.", "scope": {"cases": ["flexible_lines_2000", "ten_points_w_buildup", "ten_points_w_buildup2"], "fresh_fits": 0, "max_extra_files": 12, "method": "saved-data feasibility scout", "physics_steps": 0}, "target": "parked"}, {"approach_id": "model-sensitivity", "reason": "Scope the current-model controlled sensitivity test before new collection.", "reopening_condition": "New compatible data or a newly scoped discriminating observation.", "scope": {"fresh_fits": 0, "implementation": "diagnosis only", "machine": "HP3", "max_cases": 4, "method": "controlled synthetic per-point fixed-angle sensitivity and NumPy/JAX parity", "physics_steps": 0}, "target": "promising"}], "finding": "inconclusive", "observation": "All at most twelve named candidates are absent, incompatible or have unknown/overlapping lineage."}, "eligible": {"actions": [{"approach_id": "fair-validation", "reason": "Fund at most six frozen model scores on the eligible common folds in a separate assignment.", "reopening_condition": "New compatible data or a newly scoped discriminating observation.", "scope": {"cases": ["flexible_lines_2000", "ten_points_w_buildup", "ten_points_w_buildup2"], "fresh_fits": 0, "max_extra_files": 12, "method": "saved-data feasibility scout", "physics_steps": 0}, "target": "promising"}], "finding": "supported", "observation": "At least one later whole sweep has exact verified compatible identity and no training or selection overlap for either applied model."}, "failed": {"actions": [], "finding": "tool_failure", "observation": "Launcher, client, dependency or data-reader failure prevents the scoped inspection."}}, "route_plan_ids": ["plan-fair-validation", "plan-model-sensitivity"]}, "id": "investigation-f4d42a18cecb48b3835e98368dea66bd", "kind": "investigation", "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564", "revision": 1, "title": "Inspect the three CM-E1 changed-case input manifests and at most twelve extra dataset/manifest files for compatible later unused whole sweeps. Verify content, training/selection union, encoder origin, spool/layering, units and source lineage. Return eligible or missing identities and a bounded decision; no prediction scoring, fitting, code edits, simulation or movement. Also state which conclusion the scout cannot support. Write research.md, report.md, abstract.md and an input hash manifest in the assigned session.", "updated_at": "2026-10-25T06:21:11.559488+00:00"}], "route_plan": {"created_at": "2026-10-25T06:21:10.822738+00:00", "details": {"approach_id": "fair-validation", "citation_ids": ["evidence-cm-e1", "evidence-agenda"], "decision_value": "Either enables a fair frozen-model comparison or stops another uninformative selector change.", "dependency_ids": ["evidence-cm-e1", "evidence-agenda"], "estimated_cost": {"collections": 0, "fresh_fits": 0, "physics_steps": 0, "prediction_evaluations": 0, "wall_minutes": 12}, "hypothesis": "Training overlap and differing folds can obscure whether the applied calibration model predicts better.", "novelty": "Search later compatible data not used by the existing CM-E1 comparison. Do not repeat its membership replay.", "objections": ["Twelve files can miss other saved data.", "Good prediction may still coexist with wrong geometry."], "observation": "An exact-content and settings-matched later whole sweep is outside the union of both applied models training and selection data, or every inspected candidate fails a named eligibility test.", "priority": 1, "reason": "This resolves a documented data gap before spending on fitting, motion or another ranking heuristic.", "reopening_condition": "New compatible independently held-out measurements or restored missing lineage.", "retry_key": "9df7b335adb80172f38505529a3e48ae39fda573ad6ff5296fed83c898f2fb1c", "retry_limit": 1, "scope": {"cases": ["flexible_lines_2000", "ten_points_w_buildup", "ten_points_w_buildup2"], "fresh_fits": 0, "max_extra_files": 12, "method": "saved-data feasibility scout", "physics_steps": 0}, "tradeoffs": ["No movement and no fresh optimization.", "Only a bounded feasibility finding; prediction scores require a separately scoped follow-up."], "uncertainty": "Compatible unused observations may not exist. A feasibility scout cannot establish physical accuracy."}, "id": "plan-fair-validation", "kind": "route_plan", "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564", "revision": 1, "title": "This resolves a documented data gap before spending on fitting, motion or another ranking heuristic.", "updated_at": "2026-10-25T06:21:10.822738+00:00"}}
+
+Saved-data feasibility only. Use existing session artifacts without modification. Do not install dependencies, alter production source, fit, move, collect, score models, or broaden the twelve-file scout. If startup cannot run, preserve engineering failure and report no scientific observation.
+
+Current hypothesis: pending.
+Constraints and budgets: set before experiments.
+Experiment IDs: none yet.
+Accepted steering: none yet.
+Next decision: establish a measurable baseline.
+
+
+## Manager handoff after startup failure
+
+The launcher failed before the coding-client investigation at missing Node-API headers. No scientific observation is available. See report.md and startup-evidence.json. The manager wrote the report and replaced the pending abstract with this explicit blocked outcome. Original assignment and launcher notebook text above remain intact.

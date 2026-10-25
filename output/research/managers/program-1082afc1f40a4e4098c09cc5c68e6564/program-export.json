@@ -1,0 +1,3285 @@
+{
+  "format_version": 1,
+  "program": {
+    "id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+    "question_id": "question-26b3307df81340198c2c9402a39c798e",
+    "goal": "What important things about Hangprinter do we still not understand, and what is the cheapest experiment that could change our understanding?",
+    "state": "active",
+    "revision": 119,
+    "created_at": "2026-10-25T06:19:08.876885+00:00",
+    "updated_at": "2026-10-25T08:03:10.949821+00:00",
+    "constraints": {}
+  },
+  "records": [
+    {
+      "id": "question-26b3307df81340198c2c9402a39c798e",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "question",
+      "title": "What important things about Hangprinter do we still not understand, and what is the cheapest experiment that could change our understanding?",
+      "revision": 1,
+      "created_at": "2026-10-25T06:19:08.877998+00:00",
+      "updated_at": "2026-10-25T06:19:08.877998+00:00",
+      "details": {
+        "knowledge_state": "unassessed",
+        "scope": {}
+      }
+    },
+    {
+      "id": "evidence-cm-e1",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "artifact",
+      "title": "/workspace/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/report.md",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:09.466468+00:00",
+      "updated_at": "2026-10-25T06:21:09.466468+00:00",
+      "details": {
+        "evidence_type": "imported",
+        "provenance": {
+          "config": {
+            "inspection": "manager read saved bytes"
+          },
+          "input_identities": [
+            "sha256:2e47bc589aea727b2e76387ff8fc3339b664134145f15d61df7fbbc7f46ef96a"
+          ]
+        },
+        "reference": "/workspace/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/report.md",
+        "sha256": "2e47bc589aea727b2e76387ff8fc3339b664134145f15d61df7fbbc7f46ef96a",
+        "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+      }
+    },
+    {
+      "id": "evidence-agenda",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "artifact",
+      "title": "/workspace/hp-sim5/research/autocal-agenda.md",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:09.570795+00:00",
+      "updated_at": "2026-10-25T06:21:09.570795+00:00",
+      "details": {
+        "evidence_type": "imported",
+        "provenance": {
+          "config": {
+            "inspection": "manager read saved bytes"
+          },
+          "input_identities": [
+            "sha256:1cdd8d6673f1311456d0c61fd579b30bfe8e433409a78072c0342253379aff49"
+          ]
+        },
+        "reference": "/workspace/hp-sim5/research/autocal-agenda.md",
+        "sha256": "1cdd8d6673f1311456d0c61fd579b30bfe8e433409a78072c0342253379aff49",
+        "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+      }
+    },
+    {
+      "id": "evidence-fixed-angles",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "artifact",
+      "title": "/workspace/hp-sim5/output/research/2026-10-09-slip-recovery-and-encoder-model/report.md",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:09.674877+00:00",
+      "updated_at": "2026-10-25T06:21:09.674877+00:00",
+      "details": {
+        "evidence_type": "imported",
+        "provenance": {
+          "config": {
+            "inspection": "manager read saved bytes"
+          },
+          "input_identities": [
+            "sha256:5b9dc1138d77d12ee687bd5de9eaccfaf78bae80401e3e19914e6b4e8faecbb1"
+          ]
+        },
+        "reference": "/workspace/hp-sim5/output/research/2026-10-09-slip-recovery-and-encoder-model/report.md",
+        "sha256": "5b9dc1138d77d12ee687bd5de9eaccfaf78bae80401e3e19914e6b4e8faecbb1",
+        "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+      }
+    },
+    {
+      "id": "evidence-dynamics",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "artifact",
+      "title": "/workspace/hp-sim5/research/hp4-squares-substeps.md",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:09.778975+00:00",
+      "updated_at": "2026-10-25T06:21:09.778975+00:00",
+      "details": {
+        "evidence_type": "imported",
+        "provenance": {
+          "config": {
+            "inspection": "manager read saved bytes"
+          },
+          "input_identities": [
+            "sha256:014c21a43bd4b50040c5b4694f374bd80c57d55d7e2c5bb3a51478c387c7f8f4"
+          ]
+        },
+        "reference": "/workspace/hp-sim5/research/hp4-squares-substeps.md",
+        "sha256": "014c21a43bd4b50040c5b4694f374bd80c57d55d7e2c5bb3a51478c387c7f8f4",
+        "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+      }
+    },
+    {
+      "id": "evidence-live-gate",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "artifact",
+      "title": "/workspace/hp-sim5/output/research/sessions/2026-10-24-live-manager-release/report.md",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:09.882710+00:00",
+      "updated_at": "2026-10-25T06:21:09.882710+00:00",
+      "details": {
+        "evidence_type": "imported",
+        "provenance": {
+          "config": {
+            "inspection": "manager read saved bytes"
+          },
+          "input_identities": [
+            "sha256:c7803e7519ef52989435e31eecd9cbb89e21257ce26406daeaa2e9e7b570631c"
+          ]
+        },
+        "reference": "/workspace/hp-sim5/output/research/sessions/2026-10-24-live-manager-release/report.md",
+        "sha256": "c7803e7519ef52989435e31eecd9cbb89e21257ce26406daeaa2e9e7b570631c",
+        "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+      }
+    },
+    {
+      "id": "evidence-graph-seed",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "artifact",
+      "title": "/workspace/hp-sim5/research/program-graph/autocal-seed.json",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:09.986865+00:00",
+      "updated_at": "2026-10-25T06:21:09.986865+00:00",
+      "details": {
+        "evidence_type": "imported",
+        "provenance": {
+          "config": {
+            "inspection": "manager read saved bytes"
+          },
+          "input_identities": [
+            "sha256:3309d675bb2d5b0a41d346207cdc529d2e71962f007716de866c229dab656557"
+          ]
+        },
+        "reference": "/workspace/hp-sim5/research/program-graph/autocal-seed.json",
+        "sha256": "3309d675bb2d5b0a41d346207cdc529d2e71962f007716de866c229dab656557",
+        "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+      }
+    },
+    {
+      "id": "human-question",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "steering",
+      "title": "Read research/prompts/research-manager.txt and manage this question: What important things about Hangprinter do we still not understand, and what is the cheapest experiment that could change our understanding? Continue.",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:10.091256+00:00",
+      "updated_at": "2026-10-25T06:21:10.091256+00:00",
+      "details": {
+        "actor": "human",
+        "evidence_ids": [],
+        "subject_id": null
+      }
+    },
+    {
+      "id": "human_input-4d26155598464a26bda4c2c7d9ad85f9",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "human_input",
+      "title": "Read research/prompts/research-manager.txt and manage this question: What important things about Hangprinter do we still not understand, and what is the cheapest experiment that could change our understanding? Continue.",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:10.091327+00:00",
+      "updated_at": "2026-10-25T06:21:10.091327+00:00",
+      "details": {
+        "citation_ids": [
+          "human-question"
+        ],
+        "intent": "instruction",
+        "links": [],
+        "next_assignment_id": null,
+        "provenance": {
+          "date": "2026-10-25",
+          "source": "current conversation"
+        },
+        "steering_id": "human-question"
+      }
+    },
+    {
+      "id": "unknown-geometry",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "question",
+      "title": "When do encoder-only measurements identify physically correct geometry rather than compensating spool or cable errors?",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:10.195620+00:00",
+      "updated_at": "2026-10-25T06:21:10.195620+00:00",
+      "details": {
+        "knowledge_state": "unassessed",
+        "scope": {
+          "evidence": "saved simulation",
+          "machine": "HP3 and Slideprinter"
+        }
+      }
+    },
+    {
+      "id": "unknown-validation",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "question",
+      "title": "Can the actual applied averaged anchors plus selected spool parameters predict common unused whole sweeps?",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:10.299787+00:00",
+      "updated_at": "2026-10-25T06:21:10.299787+00:00",
+      "details": {
+        "knowledge_state": "unassessed",
+        "scope": {
+          "cases": [
+            "flexible_lines_2000",
+            "ten_points_w_buildup",
+            "ten_points_w_buildup2"
+          ]
+        }
+      }
+    },
+    {
+      "id": "unknown-dynamics",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "question",
+      "title": "Which HP4 missed-step and damping predictions converge with timestep and match real motor behavior?",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:10.404021+00:00",
+      "updated_at": "2026-10-25T06:21:10.404021+00:00",
+      "details": {
+        "knowledge_state": "unassessed",
+        "scope": {
+          "evidence": "simulation only",
+          "machine": "HP4"
+        }
+      }
+    },
+    {
+      "id": "unknown-hardware",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "question",
+      "title": "How much calibration and print-path accuracy survives real cable stretch, friction, winding history and controller torque limits?",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:10.508339+00:00",
+      "updated_at": "2026-10-25T06:21:10.508339+00:00",
+      "details": {
+        "knowledge_state": "unassessed",
+        "scope": {
+          "machine": "hardware",
+          "measurements": "not established by inspected corpus"
+        }
+      }
+    },
+    {
+      "id": "unknown-collection",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "question",
+      "title": "Which small collection motions add independent geometric information without poor settling or rank loss?",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:10.612566+00:00",
+      "updated_at": "2026-10-25T06:21:10.612566+00:00",
+      "details": {
+        "knowledge_state": "unassessed",
+        "scope": {
+          "evidence": "simulation and saved sweeps",
+          "machine": "HP3 and HP4"
+        }
+      }
+    },
+    {
+      "id": "fair-validation",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "approach",
+      "title": "Find a fair unused whole-sweep comparison",
+      "revision": 4,
+      "created_at": "2026-10-25T06:21:10.717322+00:00",
+      "updated_at": "2026-10-25T08:03:10.331822+00:00",
+      "details": {
+        "question_id": "question-26b3307df81340198c2c9402a39c798e",
+        "reason": "Retain the inspected-evidence priority and exact saved-data scout scope. Native build, runtime dependencies and all six nonmoving launcher checks now pass. Actual worker client initialization remains blocked by read-only runtime state, so no scientific result has been obtained and no broader route is rejected.",
+        "state": "promising"
+      }
+    },
+    {
+      "id": "plan-fair-validation",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "route_plan",
+      "title": "This resolves a documented data gap before spending on fitting, motion or another ranking heuristic.",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:10.822738+00:00",
+      "updated_at": "2026-10-25T06:21:10.822738+00:00",
+      "details": {
+        "approach_id": "fair-validation",
+        "citation_ids": [
+          "evidence-cm-e1",
+          "evidence-agenda"
+        ],
+        "decision_value": "Either enables a fair frozen-model comparison or stops another uninformative selector change.",
+        "dependency_ids": [
+          "evidence-cm-e1",
+          "evidence-agenda"
+        ],
+        "estimated_cost": {
+          "collections": 0,
+          "fresh_fits": 0,
+          "physics_steps": 0,
+          "prediction_evaluations": 0,
+          "wall_minutes": 12
+        },
+        "hypothesis": "Training overlap and differing folds can obscure whether the applied calibration model predicts better.",
+        "novelty": "Search later compatible data not used by the existing CM-E1 comparison. Do not repeat its membership replay.",
+        "objections": [
+          "Twelve files can miss other saved data.",
+          "Good prediction may still coexist with wrong geometry."
+        ],
+        "observation": "An exact-content and settings-matched later whole sweep is outside the union of both applied models training and selection data, or every inspected candidate fails a named eligibility test.",
+        "priority": 1,
+        "reason": "This resolves a documented data gap before spending on fitting, motion or another ranking heuristic.",
+        "reopening_condition": "New compatible independently held-out measurements or restored missing lineage.",
+        "retry_key": "9df7b335adb80172f38505529a3e48ae39fda573ad6ff5296fed83c898f2fb1c",
+        "retry_limit": 1,
+        "scope": {
+          "cases": [
+            "flexible_lines_2000",
+            "ten_points_w_buildup",
+            "ten_points_w_buildup2"
+          ],
+          "fresh_fits": 0,
+          "max_extra_files": 12,
+          "method": "saved-data feasibility scout",
+          "physics_steps": 0
+        },
+        "tradeoffs": [
+          "No movement and no fresh optimization.",
+          "Only a bounded feasibility finding; prediction scores require a separately scoped follow-up."
+        ],
+        "uncertainty": "Compatible unused observations may not exist. A feasibility scout cannot establish physical accuracy."
+      }
+    },
+    {
+      "id": "model-sensitivity",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "approach",
+      "title": "Separate measurement-model bias from weak identifiability",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:10.927592+00:00",
+      "updated_at": "2026-10-25T06:21:10.927592+00:00",
+      "details": {
+        "question_id": "question-26b3307df81340198c2c9402a39c798e",
+        "reason": "Preserves a mechanistic rival when fair prediction evidence is absent or disagrees with physical geometry.",
+        "state": "live"
+      }
+    },
+    {
+      "id": "plan-model-sensitivity",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "route_plan",
+      "title": "Preserves a mechanistic rival when fair prediction evidence is absent or disagrees with physical geometry.",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:11.032314+00:00",
+      "updated_at": "2026-10-25T06:21:11.032314+00:00",
+      "details": {
+        "approach_id": "model-sensitivity",
+        "citation_ids": [
+          "evidence-fixed-angles",
+          "evidence-agenda"
+        ],
+        "decision_value": "Decides whether to model already observed angles or design a more informative motion before tuning selection.",
+        "dependency_ids": [
+          "evidence-fixed-angles",
+          "evidence-agenda"
+        ],
+        "estimated_cost": {
+          "collections": 0,
+          "fresh_fits": 0,
+          "physics_steps": 0,
+          "residual_evaluations": 16,
+          "wall_minutes": 15
+        },
+        "hypothesis": "The final objective may ignore measured per-point fixed-axis variation or allow wrong geometry to compensate through spool parameters.",
+        "novelty": "Use a current-revision zero-drift control and known physical per-point length changes; compare current and oracle residuals, not a repeat of the old perturbation alone.",
+        "objections": [
+          "Sensitivity alone does not prove an accuracy benefit.",
+          "The historical failure with fixed encoders constant to 0.01 degree shows drift is not the only explanation."
+        ],
+        "observation": "At known geometry, correct per-point fixed lengths change oracle predictions while current residuals remain unchanged, with NumPy/JAX values and derivative behavior checked.",
+        "priority": 2,
+        "reason": "Preserves a mechanistic rival when fair prediction evidence is absent or disagrees with physical geometry.",
+        "reopening_condition": "Current objective changes, controlled sensitivity result, or evidence that fixed-angle variation has material size.",
+        "retry_key": "206e776951b02fc8002fa425b3b5f393eae6a955aece8f103b24b3bb517bffdf",
+        "retry_limit": 1,
+        "scope": {
+          "fresh_fits": 0,
+          "implementation": "diagnosis only",
+          "machine": "HP3",
+          "max_cases": 4,
+          "method": "controlled synthetic per-point fixed-angle sensitivity and NumPy/JAX parity",
+          "physics_steps": 0
+        },
+        "tradeoffs": [
+          "No new collection.",
+          "Synthetic diagnosis does not establish hardware accuracy or justify extra free nuisance parameters."
+        ],
+        "uncertainty": "The historical fixed-angle invariance is reported; current behavior, practical error size and conditioning remain unmeasured."
+      }
+    },
+    {
+      "id": "dynamic-fidelity",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "approach",
+      "title": "Check whether motor conclusions survive finer timesteps",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:11.137237+00:00",
+      "updated_at": "2026-10-25T06:21:11.137237+00:00",
+      "details": {
+        "question_id": "question-26b3307df81340198c2c9402a39c798e",
+        "reason": "Important for motor and control decisions, but higher setup cost than saved-data and residual diagnostics.",
+        "state": "live"
+      }
+    },
+    {
+      "id": "plan-dynamic-fidelity",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "route_plan",
+      "title": "Important for motor and control decisions, but higher setup cost than saved-data and residual diagnostics.",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:11.241845+00:00",
+      "updated_at": "2026-10-25T06:21:11.241845+00:00",
+      "details": {
+        "approach_id": "dynamic-fidelity",
+        "citation_ids": [
+          "evidence-dynamics"
+        ],
+        "decision_value": "Determines whether to trust a simulated failure boundary before optimizing control or workspace.",
+        "dependency_ids": [
+          "evidence-dynamics"
+        ],
+        "estimated_cost": {
+          "collections": 0,
+          "fresh_fits": 0,
+          "physics_runs": 3,
+          "physics_steps": 112000,
+          "wall_minutes": 15
+        },
+        "hypothesis": "Coarse integration can suppress pullout and distort damping, changing which simulated motions appear feasible.",
+        "novelty": "A convergence follow-up would hold commands and scene fixed beyond the already tested substeps; hardware transfer needs separate measurements.",
+        "objections": [
+          "Do not rerun the existing 1 through 16 substep result as new evidence.",
+          "A full new convergence protocol needs explicit timestep and comparison tolerances."
+        ],
+        "observation": "Two finer refinements agree within a preregistered encoder and path tolerance, or shifts remain large relative to the physical step period.",
+        "priority": 3,
+        "reason": "Important for motor and control decisions, but higher setup cost than saved-data and residual diagnostics.",
+        "reopening_condition": "Working native build plus a new, bounded convergence or hardware torque measurement contract.",
+        "retry_key": "4dcf36d63f862c0500f14df27f5e6d718923f2f651103c41c70ba1f3fb277ab1",
+        "retry_limit": 1,
+        "scope": {
+          "implementation": "no production change",
+          "machine": "HP4",
+          "max_cases": 3,
+          "method": "matched native HP4 short motion timestep convergence",
+          "seconds_per_case": 2
+        },
+        "tradeoffs": [
+          "Short headless native trials.",
+          "Convergence tests integration rather than hardware realism."
+        ],
+        "uncertainty": "Published 1 through 16 substeps do not establish a converged hardware model."
+      }
+    },
+    {
+      "id": "decision-eec06997d23844a4ab0b46f80bbab5b1",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "decision",
+      "title": "Inspected saved evidence identifies a missing common unused fold; fund feasibility only. Reports have not received a new independent review.",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:11.452228+00:00",
+      "updated_at": "2026-10-25T06:21:11.452228+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "fair-validation"
+      }
+    },
+    {
+      "id": "relation-9ec425a66f034e9d901ee88946788156",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "relation",
+      "title": "Inspected saved evidence identifies a missing common unused fold; fund feasibility only. Reports have not received a new independent review.",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:11.452481+00:00",
+      "updated_at": "2026-10-25T06:21:11.452481+00:00",
+      "details": {
+        "reason": "Inspected saved evidence identifies a missing common unused fold; fund feasibility only. Reports have not received a new independent review.",
+        "relation": "decision",
+        "source_id": "decision-eec06997d23844a4ab0b46f80bbab5b1",
+        "target_id": "fair-validation"
+      }
+    },
+    {
+      "id": "strategy_event-5444c68c71d24f33b9b8cda9d35dd6b4",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "strategy_event",
+      "title": "Inspected saved evidence identifies a missing common unused fold; fund feasibility only. Reports have not received a new independent review.",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:11.452533+00:00",
+      "updated_at": "2026-10-25T06:21:11.452533+00:00",
+      "details": {
+        "approach_ids": [
+          "fair-validation"
+        ],
+        "basis": "Manager decision; scientific admission is separate",
+        "citation_ids": [
+          "plan-fair-validation",
+          "evidence-cm-e1",
+          "evidence-agenda",
+          "evidence-graph-seed"
+        ],
+        "decision_ids": [
+          "decision-eec06997d23844a4ab0b46f80bbab5b1"
+        ],
+        "event": "decision",
+        "reason": "Inspected saved evidence identifies a missing common unused fold; fund feasibility only. Reports have not received a new independent review.",
+        "reopening_condition": "Reassess after the bounded scout or changed data lineage.",
+        "review_event_ids": [],
+        "scope": {
+          "cases": [
+            "flexible_lines_2000",
+            "ten_points_w_buildup",
+            "ten_points_w_buildup2"
+          ],
+          "fresh_fits": 0,
+          "max_extra_files": 12,
+          "method": "saved-data feasibility scout",
+          "physics_steps": 0
+        },
+        "target": "promising"
+      }
+    },
+    {
+      "id": "assignment-holdout-scout",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "assignment",
+      "title": "Inspect the three CM-E1 changed-case input manifests and at most twelve extra dataset/manifest files for compatible later unused whole sweeps. Verify content, training/selection union, encoder origin, spool/layering, units and source lineage. Return eligible or missing identities and a bounded decision; no prediction scoring, fitting, code edits, simulation or movement. Also state which conclusion the scout cannot support. Write research.md, report.md, abstract.md and an input hash manifest in the assigned session.",
+      "revision": 3,
+      "created_at": "2026-10-25T06:21:11.559404+00:00",
+      "updated_at": "2026-10-25T06:21:24.342432+00:00",
+      "details": {
+        "allocation": {
+          "additional_files": 12,
+          "collections": 0,
+          "fresh_fits": 0,
+          "physics_steps": 0,
+          "prediction_evaluations": 0,
+          "wall_minutes": 12
+        },
+        "approach_id": "fair-validation",
+        "execution_state": "failed",
+        "knowledge_state": "unassessed",
+        "question_id": "question-26b3307df81340198c2c9402a39c798e",
+        "review_state": "unreviewed"
+      }
+    },
+    {
+      "id": "investigation-f4d42a18cecb48b3835e98368dea66bd",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "investigation",
+      "title": "Inspect the three CM-E1 changed-case input manifests and at most twelve extra dataset/manifest files for compatible later unused whole sweeps. Verify content, training/selection union, encoder origin, spool/layering, units and source lineage. Return eligible or missing identities and a bounded decision; no prediction scoring, fitting, code edits, simulation or movement. Also state which conclusion the scout cannot support. Write research.md, report.md, abstract.md and an input hash manifest in the assigned session.",
+      "revision": 1,
+      "created_at": "2026-10-25T06:21:11.559488+00:00",
+      "updated_at": "2026-10-25T06:21:11.559488+00:00",
+      "details": {
+        "assignment_id": "assignment-holdout-scout",
+        "citation_ids": [
+          "evidence-cm-e1",
+          "evidence-agenda",
+          "evidence-live-gate"
+        ],
+        "execution": {
+          "recording_mode": "none",
+          "source_limit": 15
+        },
+        "explanations": [
+          {
+            "approach_id": "fair-validation",
+            "explanation": "Incomparable or overlapping folds conceal a usable prediction signal."
+          },
+          {
+            "approach_id": "model-sensitivity",
+            "explanation": "Measurement-model bias or weak identifiability can make prediction poorly track physical geometry even with fair folds."
+          }
+        ],
+        "kind": "scouting",
+        "outcomes": {
+          "absent": {
+            "actions": [
+              {
+                "approach_id": "fair-validation",
+                "reason": "Only the named saved-data feasibility method is exhausted; broader independent validation remains open.",
+                "reopening_condition": "New compatible data or a newly scoped discriminating observation.",
+                "scope": {
+                  "cases": [
+                    "flexible_lines_2000",
+                    "ten_points_w_buildup",
+                    "ten_points_w_buildup2"
+                  ],
+                  "fresh_fits": 0,
+                  "max_extra_files": 12,
+                  "method": "saved-data feasibility scout",
+                  "physics_steps": 0
+                },
+                "target": "parked"
+              },
+              {
+                "approach_id": "model-sensitivity",
+                "reason": "Scope the current-model controlled sensitivity test before new collection.",
+                "reopening_condition": "New compatible data or a newly scoped discriminating observation.",
+                "scope": {
+                  "fresh_fits": 0,
+                  "implementation": "diagnosis only",
+                  "machine": "HP3",
+                  "max_cases": 4,
+                  "method": "controlled synthetic per-point fixed-angle sensitivity and NumPy/JAX parity",
+                  "physics_steps": 0
+                },
+                "target": "promising"
+              }
+            ],
+            "finding": "inconclusive",
+            "observation": "All at most twelve named candidates are absent, incompatible or have unknown/overlapping lineage."
+          },
+          "eligible": {
+            "actions": [
+              {
+                "approach_id": "fair-validation",
+                "reason": "Fund at most six frozen model scores on the eligible common folds in a separate assignment.",
+                "reopening_condition": "New compatible data or a newly scoped discriminating observation.",
+                "scope": {
+                  "cases": [
+                    "flexible_lines_2000",
+                    "ten_points_w_buildup",
+                    "ten_points_w_buildup2"
+                  ],
+                  "fresh_fits": 0,
+                  "max_extra_files": 12,
+                  "method": "saved-data feasibility scout",
+                  "physics_steps": 0
+                },
+                "target": "promising"
+              }
+            ],
+            "finding": "supported",
+            "observation": "At least one later whole sweep has exact verified compatible identity and no training or selection overlap for either applied model."
+          },
+          "failed": {
+            "actions": [],
+            "finding": "tool_failure",
+            "observation": "Launcher, client, dependency or data-reader failure prevents the scoped inspection."
+          }
+        },
+        "route_plan_ids": [
+          "plan-fair-validation",
+          "plan-model-sensitivity"
+        ]
+      }
+    },
+    {
+      "id": "runtime_allocation-aa4de4b84e44473dbd28b5a384d85592",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "runtime_allocation",
+      "title": "Finite manager allocation",
+      "revision": 9,
+      "created_at": "2026-10-25T06:21:11.665322+00:00",
+      "updated_at": "2026-10-25T06:25:23.268399+00:00",
+      "details": {
+        "cleanup_deadline": 1792910781.6652179,
+        "cleanup_seconds": 190,
+        "deadline": 1792910591.6652179,
+        "events": [
+          {
+            "at": "2026-10-25T06:25:23.268254+00:00",
+            "event": "allocation_stopped",
+            "reason": "Worker and separate reviewer reached observed terminal failures; close unused capacity without another launch."
+          }
+        ],
+        "lease_until": 1792909537.564108,
+        "owner": {
+          "id": "controller-6664a6157d2e451a8ec92f9b1efd67af",
+          "process": {
+            "birth": "3433",
+            "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+            "group": 590,
+            "host": "3cccfe76ab54",
+            "pid": 590,
+            "uid": 1000
+          }
+        },
+        "queue": [],
+        "reservations": [
+          {
+            "assignment_id": "assignment-holdout-scout",
+            "attempt_id": "attempt-2a0ba36011304a0c844d06b70fd0b734",
+            "charged_at": "2026-10-25T06:21:18.750726+00:00",
+            "retry_root": null,
+            "review_pending": true,
+            "review_seconds": 300,
+            "reviews": [
+              {
+                "charge_id": "52e4ee34bf5a4a8898882230d6d649bc",
+                "reserved_seconds": 300,
+                "run_id": "review-run-e2f622e5447b400b956df399f29965ea",
+                "state": "failed"
+              }
+            ],
+            "settings": {
+              "backend": "codex",
+              "client_args": [],
+              "dont_ask": false,
+              "goal_mode": true,
+              "machine": "hp3",
+              "physics_backend": "headless-js",
+              "record": false,
+              "shared_runtime_write": true,
+              "viewer": "none",
+              "worktree": true
+            },
+            "state": "failed",
+            "usage": {
+              "estimates": {
+                "additional_files": 12,
+                "collections": 0,
+                "fresh_fits": 0,
+                "physics_steps": 0,
+                "prediction_evaluations": 0,
+                "wall_minutes": 12
+              },
+              "observed_worker_wall_seconds": 5.56591796875,
+              "supervisor_observations": [],
+              "unmetered": [
+                "shell movement",
+                "shell compute",
+                "spend"
+              ],
+              "worker_reports": []
+            },
+            "worker_seconds": 720
+          }
+        ],
+        "retry_limit": 1,
+        "review_backlog_limit": 1,
+        "review_seconds": 300,
+        "started_at": "2026-10-25T06:21:11.665220+00:00",
+        "state": "stopped",
+        "task_limit": 1,
+        "wall_reserved_seconds": 1020,
+        "wall_seconds": 1320,
+        "worker_limit": 1
+      }
+    },
+    {
+      "id": "attempt-2a0ba36011304a0c844d06b70fd0b734",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "attempt",
+      "title": "Inspect the three CM-E1 changed-case input manifests and at most twelve extra dataset/manifest files for compatible later unused whole sweeps. Verify content, training/selection union, encoder origin, spool/layering, units and source lineage. Return eligible or missing identities and a bounded decision; no prediction scoring, fitting, code edits, simulation or movement. Also state which conclusion the scout cannot support. Write research.md, report.md, abstract.md and an input hash manifest in the assigned session.",
+      "revision": 10,
+      "created_at": "2026-10-25T06:21:18.772249+00:00",
+      "updated_at": "2026-10-25T06:24:25.170916+00:00",
+      "details": {
+        "allocation": {
+          "additional_files": 12,
+          "collections": 0,
+          "fresh_fits": 0,
+          "physics_steps": 0,
+          "prediction_evaluations": 0,
+          "wall_minutes": 12
+        },
+        "argv": [
+          "/workspace/hp-sim5/hp-sim5-research-agent",
+          "--codex",
+          "--batch",
+          "--prompt-file",
+          "/workspace/hp-sim5/.research-programs/workers/attempt-2a0ba36011304a0c844d06b70fd0b734/prompt.txt",
+          "--session-dir",
+          "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734",
+          "--physics-backend",
+          "headless-js",
+          "--machine",
+          "hp3",
+          "--viewer",
+          "none",
+          "--wall-deadline",
+          "1792909998.7541018",
+          "--worktree",
+          "--no-record"
+        ],
+        "artifacts": [
+          {
+            "bytes": 430,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/session.json"
+          },
+          {
+            "bytes": 78,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/exit.json"
+          },
+          {
+            "bytes": 9070,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/prompt.txt"
+          },
+          {
+            "bytes": 9663,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/research.md"
+          },
+          {
+            "bytes": 2696,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/report.md"
+          },
+          {
+            "bytes": 1846,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/abstract.md"
+          },
+          {
+            "bytes": 76,
+            "partial": true,
+            "path": "/workspace/hp-sim5/.research-programs/workers/attempt-2a0ba36011304a0c844d06b70fd0b734/stdout.log"
+          },
+          {
+            "bytes": 975,
+            "partial": true,
+            "path": "/workspace/hp-sim5/.research-programs/workers/attempt-2a0ba36011304a0c844d06b70fd0b734/stderr.log"
+          },
+          {
+            "bytes": 9070,
+            "partial": true,
+            "path": "/workspace/hp-sim5/.research-programs/workers/attempt-2a0ba36011304a0c844d06b70fd0b734/prompt.txt"
+          },
+          {
+            "bytes": 2025,
+            "partial": true,
+            "path": "/workspace/hp-sim5/.research-programs/workers/attempt-2a0ba36011304a0c844d06b70fd0b734/assignment.json"
+          }
+        ],
+        "assignment_id": "assignment-holdout-scout",
+        "attempt_dir": "/workspace/hp-sim5/.research-programs/workers/attempt-2a0ba36011304a0c844d06b70fd0b734",
+        "cleanup": "launcher_finally_completed",
+        "diagnostics": [],
+        "exited_at": "2026-10-25T06:21:24.341631+00:00",
+        "launcher_exit": {
+          "returncode": 1,
+          "wall_deadline": 1792909998.7541018,
+          "wall_expired": false
+        },
+        "launcher_session_id": "c7bc602dc88741e7963292977c806c42",
+        "observations": [
+          {
+            "at": "2026-10-25T06:21:18.771148+00:00",
+            "event": "reserved"
+          },
+          {
+            "at": "2026-10-25T06:21:18.775718+00:00",
+            "event": "spawned",
+            "pid": 798
+          },
+          {
+            "at": "2026-10-25T06:21:24.341641+00:00",
+            "event": "exited",
+            "returncode": 1
+          }
+        ],
+        "observed_wall_seconds": 5.56591796875,
+        "owner": {
+          "id": "dispatcher-6505f2047e6045719a491df5b20e6d4f",
+          "process": {
+            "birth": "3433",
+            "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+            "group": 590,
+            "host": "3cccfe76ab54",
+            "pid": 590,
+            "uid": 1000
+          }
+        },
+        "premise_conflicts": [],
+        "premise_event_ids_at_start": [],
+        "premise_ids": [
+          "evidence-agenda",
+          "evidence-cm-e1",
+          "evidence-fixed-angles"
+        ],
+        "premise_plan_ids": [
+          "plan-fair-validation",
+          "plan-model-sensitivity"
+        ],
+        "process": {
+          "birth": "16423",
+          "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+          "group": 798,
+          "host": "3cccfe76ab54",
+          "pid": 798,
+          "uid": 1000
+        },
+        "prompt_sha256": "f71f1236a6d5d07707bec25ed65112ff328a16adf370ebd72ecedf7018179f9e",
+        "returncode": 1,
+        "runtime": {
+          "allocation_id": "runtime_allocation-aa4de4b84e44473dbd28b5a384d85592",
+          "assignment_id": "assignment-holdout-scout",
+          "cleanup_seconds": 190,
+          "wall_deadline": 1792909998.7541018
+        },
+        "scientific_state": "unassessed",
+        "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734",
+        "settings": {
+          "backend": "codex",
+          "client_args": [],
+          "dont_ask": false,
+          "goal_mode": true,
+          "machine": "hp3",
+          "physics_backend": "headless-js",
+          "record": false,
+          "shared_runtime_write": true,
+          "viewer": "none",
+          "worktree": true
+        },
+        "source_dirty": false,
+        "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca",
+        "started_at": "2026-10-25T06:21:18.775713+00:00",
+        "state": "failed",
+        "worktree": {
+          "branch": "research/bounded-research-assignment-47495c22",
+          "repo": "/workspace/hp-sim5-worktrees/bounded-research-assignment-47495c22",
+          "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+        },
+        "worktree_id": "/workspace/hp-sim5-worktrees/bounded-research-assignment-47495c22"
+      }
+    },
+    {
+      "id": "startup-observation",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "artifact",
+      "title": "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/startup-evidence.json",
+      "revision": 1,
+      "created_at": "2026-10-25T06:24:25.226453+00:00",
+      "updated_at": "2026-10-25T06:24:25.226453+00:00",
+      "details": {
+        "evidence_type": "imported",
+        "provenance": {
+          "config": {
+            "scope": "controller-observed startup only"
+          },
+          "input_identities": [
+            "sha256:b55401fac8d47c0be224cf496ad9899deefbd2fd57ad281ba68ccd6cac3be733"
+          ]
+        },
+        "reference": "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/startup-evidence.json",
+        "sha256": "b55401fac8d47c0be224cf496ad9899deefbd2fd57ad281ba68ccd6cac3be733",
+        "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+      }
+    },
+    {
+      "id": "claim-scout-not-tested",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "claim",
+      "title": "The saved-data feasibility scout did not run because the existing launcher failed at missing Node-API headers before client execution.",
+      "revision": 1,
+      "created_at": "2026-10-25T06:24:25.337929+00:00",
+      "updated_at": "2026-10-25T06:24:25.337929+00:00",
+      "details": {
+        "claim_key": "claim-scout-not-tested",
+        "knowledge_state": "unassessed",
+        "scope": {
+          "assignment_id": "assignment-holdout-scout",
+          "attempt_id": "attempt-2a0ba36011304a0c844d06b70fd0b734",
+          "boundary": "engineering startup only; no scientific observation"
+        },
+        "version": 1
+      }
+    },
+    {
+      "id": "derivation-01f4ecd8bbe740be8ef99524d80babfb",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "derivation",
+      "title": "Controller status and retained launcher log record the failed startup, rather than a scientific result.",
+      "revision": 1,
+      "created_at": "2026-10-25T06:24:25.446708+00:00",
+      "updated_at": "2026-10-25T06:24:25.446708+00:00",
+      "details": {
+        "conclusion_id": "claim-scout-not-tested",
+        "evidence_ids": [
+          "startup-observation"
+        ],
+        "premise_ids": [],
+        "reason": "Controller status and retained launcher log record the failed startup, rather than a scientific result."
+      }
+    },
+    {
+      "id": "submission-8dcfa72e3f48459abdf6b894c2932a5d",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "submission",
+      "title": "The saved-data feasibility scout did not run because the existing launcher failed at missing Node-API headers before client execution.",
+      "revision": 1,
+      "created_at": "2026-10-25T06:24:25.566129+00:00",
+      "updated_at": "2026-10-25T06:24:25.566129+00:00",
+      "details": {
+        "manifest": {
+          "assets": [
+            {
+              "artifact_id": null,
+              "id": "report",
+              "missing": false,
+              "role": "report",
+              "sha256": "fdc18c4ca1d71f933259d26ceafa4efcafc0d7aceeecade7856b7ee872ce0158",
+              "source": "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/report.md"
+            },
+            {
+              "artifact_id": null,
+              "id": "abstract",
+              "missing": false,
+              "role": "abstract",
+              "sha256": "1583f87b802d487cdd27cbde0edda4a965b189c02317297eaa1ebec6c1ef95ab",
+              "source": "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/abstract.md"
+            },
+            {
+              "artifact_id": "startup-observation",
+              "id": "status",
+              "missing": false,
+              "role": "evidence",
+              "sha256": "b55401fac8d47c0be224cf496ad9899deefbd2fd57ad281ba68ccd6cac3be733",
+              "source": "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/startup-evidence.json"
+            },
+            {
+              "artifact_id": null,
+              "id": "launcher-error",
+              "missing": false,
+              "role": "evidence",
+              "sha256": "793c7732224894059d0773fb4ad2e06db27278fdccfe0b47ccc68edeffb6a5eb",
+              "source": "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/launcher-stderr.log"
+            }
+          ],
+          "assignment_id": "assignment-holdout-scout",
+          "attempt_id": "attempt-2a0ba36011304a0c844d06b70fd0b734",
+          "base_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca",
+          "candidate_revision": null,
+          "changed_paths": [],
+          "claim": {
+            "created_at": "2026-10-25T06:24:25.337929+00:00",
+            "details": {
+              "claim_key": "claim-scout-not-tested",
+              "knowledge_state": "unassessed",
+              "scope": {
+                "assignment_id": "assignment-holdout-scout",
+                "attempt_id": "attempt-2a0ba36011304a0c844d06b70fd0b734",
+                "boundary": "engineering startup only; no scientific observation"
+              },
+              "version": 1
+            },
+            "id": "claim-scout-not-tested",
+            "kind": "claim",
+            "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+            "revision": 1,
+            "title": "The saved-data feasibility scout did not run because the existing launcher failed at missing Node-API headers before client execution.",
+            "updated_at": "2026-10-25T06:24:25.337929+00:00"
+          },
+          "config": {
+            "fresh_fits": 0,
+            "machine": "HP3",
+            "physics_steps": 0,
+            "scope": "manager-authored engineering startup report; scientific finding not_tested"
+          },
+          "contract": "hp-sim5-evidence-review-v2",
+          "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "execution_state": "failed",
+          "input_identities": [
+            "sha256:b55401fac8d47c0be224cf496ad9899deefbd2fd57ad281ba68ccd6cac3be733"
+          ],
+          "physics_gate_required": false,
+          "producer_checks": [],
+          "source_dirty": false,
+          "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+        },
+        "sha256": "24f423b921ae53c20c0d93418e17c7d7ec908e7cca304dfb64e9857776cd874d"
+      }
+    },
+    {
+      "id": "decision-e1816699c5034a46a10272aafb2bda13",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "decision",
+      "title": "Observed launcher build failure prevented the inspection. Apply no scientific route actions.",
+      "revision": 1,
+      "created_at": "2026-10-25T06:24:25.677692+00:00",
+      "updated_at": "2026-10-25T06:24:25.677692+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "fair-validation"
+      }
+    },
+    {
+      "id": "relation-d03fad11d0a64f4ea2f3f8423d68bf4a",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "relation",
+      "title": "Observed launcher build failure prevented the inspection. Apply no scientific route actions.",
+      "revision": 1,
+      "created_at": "2026-10-25T06:24:25.678181+00:00",
+      "updated_at": "2026-10-25T06:24:25.678181+00:00",
+      "details": {
+        "reason": "Observed launcher build failure prevented the inspection. Apply no scientific route actions.",
+        "relation": "decision",
+        "source_id": "decision-e1816699c5034a46a10272aafb2bda13",
+        "target_id": "fair-validation"
+      }
+    },
+    {
+      "id": "strategy_event-31949640e67540f1bf66aa9f62875271",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "strategy_event",
+      "title": "Observed launcher build failure prevented the inspection. Apply no scientific route actions.",
+      "revision": 1,
+      "created_at": "2026-10-25T06:24:25.678246+00:00",
+      "updated_at": "2026-10-25T06:24:25.678246+00:00",
+      "details": {
+        "actions": [],
+        "approach_ids": [
+          "fair-validation"
+        ],
+        "basis": "Execution failure; no scientific finding",
+        "citation_ids": [
+          "investigation-f4d42a18cecb48b3835e98368dea66bd",
+          "attempt-2a0ba36011304a0c844d06b70fd0b734",
+          "startup-observation"
+        ],
+        "decision_ids": [
+          "decision-e1816699c5034a46a10272aafb2bda13"
+        ],
+        "event": "result",
+        "finding": "tool_failure",
+        "investigation_id": "investigation-f4d42a18cecb48b3835e98368dea66bd",
+        "outcome": "failed",
+        "reason": "Observed launcher build failure prevented the inspection. Apply no scientific route actions.",
+        "review_event_ids": []
+      }
+    },
+    {
+      "id": "review-run-e2f622e5447b400b956df399f29965ea",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "review_run",
+      "title": "Separate saved-evidence review",
+      "revision": 3,
+      "created_at": "2026-10-25T06:24:25.795930+00:00",
+      "updated_at": "2026-10-25T06:24:26.073048+00:00",
+      "details": {
+        "argv": [
+          "codex",
+          "exec",
+          "--cd",
+          "/workspace/hp-sim5",
+          "--sandbox",
+          "read-only",
+          "-c",
+          "approval_policy=\"never\"",
+          "--json",
+          "--output-last-message",
+          "/workspace/hp-sim5/.research-programs/reviews/review-run-e2f622e5447b400b956df399f29965ea/final-message.md",
+          "-c",
+          "sandbox_workspace_write.network_access=true",
+          "-c",
+          "sandbox_workspace_write.writable_roots=[\"/workspace/hp-sim5/output\"]",
+          "-c",
+          "features.default_mode_request_user_input=false",
+          "-c",
+          "features.goals=false",
+          "-c",
+          "mcp_servers.hp_sim5={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/python\", \"args\" = [\"/workspace/hp-sim5/scripts/hp_sim5_mcp.py\"] }",
+          "-c",
+          "mcp_servers.rerun={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/rerun\", \"args\" = [\"viewer-mcp\"] }",
+          "-c",
+          "model_provider=\"openai\"",
+          "-"
+        ],
+        "contract": "hp-sim5-evidence-review-v2",
+        "deadline": 1792909765.7953553,
+        "directory": "/workspace/hp-sim5/.research-programs/reviews/review-run-e2f622e5447b400b956df399f29965ea",
+        "error": "Reviewer exited 1; no assessment admitted",
+        "guard_argv": [
+          "/workspace/hp-sim5/.venv/bin/python",
+          "/workspace/hp-sim5/scripts/research_program_review_guard.py",
+          "1792909765.7953553",
+          "/workspace/hp-sim5/.research-programs/reviews/review-run-e2f622e5447b400b956df399f29965ea/wall-expired",
+          "codex",
+          "exec",
+          "--cd",
+          "/workspace/hp-sim5",
+          "--sandbox",
+          "read-only",
+          "-c",
+          "approval_policy=\"never\"",
+          "--json",
+          "--output-last-message",
+          "/workspace/hp-sim5/.research-programs/reviews/review-run-e2f622e5447b400b956df399f29965ea/final-message.md",
+          "-c",
+          "sandbox_workspace_write.network_access=true",
+          "-c",
+          "sandbox_workspace_write.writable_roots=[\"/workspace/hp-sim5/output\"]",
+          "-c",
+          "features.default_mode_request_user_input=false",
+          "-c",
+          "features.goals=false",
+          "-c",
+          "mcp_servers.hp_sim5={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/python\", \"args\" = [\"/workspace/hp-sim5/scripts/hp_sim5_mcp.py\"] }",
+          "-c",
+          "mcp_servers.rerun={ \"enabled\" = false, \"command\" = \"/workspace/hp-sim5/.venv/bin/rerun\", \"args\" = [\"viewer-mcp\"] }",
+          "-c",
+          "model_provider=\"openai\"",
+          "-"
+        ],
+        "owner": {
+          "id": "review-controller-942421376bca46c597fe125823af8350",
+          "process": {
+            "birth": "3433",
+            "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+            "group": 590,
+            "host": "3cccfe76ab54",
+            "pid": 590,
+            "uid": 1000
+          }
+        },
+        "process": {
+          "birth": "35125",
+          "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+          "group": 910,
+          "host": "3cccfe76ab54",
+          "pid": 910,
+          "uid": 1000
+        },
+        "prompt_sha256": "e4f4342679ec239255154188166a22004213838b86d2213a61065f2367218c68",
+        "returncode": 1,
+        "review_id": null,
+        "reviewer": {
+          "backend": "codex",
+          "context_id": "review-run-e2f622e5447b400b956df399f29965ea",
+          "model": null,
+          "model_provider": "openai"
+        },
+        "runtime_reservation": [
+          "runtime_allocation-aa4de4b84e44473dbd28b5a384d85592",
+          "assignment-holdout-scout",
+          "52e4ee34bf5a4a8898882230d6d649bc"
+        ],
+        "started_at": "2026-10-25T06:24:25.795342+00:00",
+        "state": "failed",
+        "submission_id": "submission-8dcfa72e3f48459abdf6b894c2932a5d",
+        "submission_sha256": "24f423b921ae53c20c0d93418e17c7d7ec908e7cca304dfb64e9857776cd874d",
+        "wall_minutes": 5
+      }
+    },
+    {
+      "id": "decision-c394f15b453f4bc4ad1b3ba4e721c834",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "decision",
+      "title": "Keep the narrow saved-data scout as the next candidate on inspected reports. The actual launch and separate review failed at engineering startup; neither supplies a data result or changes the scientific route. New dispatch must wait for changed prerequisites.",
+      "revision": 1,
+      "created_at": "2026-10-25T06:25:23.047191+00:00",
+      "updated_at": "2026-10-25T06:25:23.047191+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "fair-validation"
+      }
+    },
+    {
+      "id": "relation-63d382a53a2343258aa13f99682e1781",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "relation",
+      "title": "Keep the narrow saved-data scout as the next candidate on inspected reports. The actual launch and separate review failed at engineering startup; neither supplies a data result or changes the scientific route. New dispatch must wait for changed prerequisites.",
+      "revision": 1,
+      "created_at": "2026-10-25T06:25:23.047619+00:00",
+      "updated_at": "2026-10-25T06:25:23.047619+00:00",
+      "details": {
+        "reason": "Keep the narrow saved-data scout as the next candidate on inspected reports. The actual launch and separate review failed at engineering startup; neither supplies a data result or changes the scientific route. New dispatch must wait for changed prerequisites.",
+        "relation": "decision",
+        "source_id": "decision-c394f15b453f4bc4ad1b3ba4e721c834",
+        "target_id": "fair-validation"
+      }
+    },
+    {
+      "id": "strategy_event-073b6e16018e42dcaed498c636073424",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "strategy_event",
+      "title": "Keep the narrow saved-data scout as the next candidate on inspected reports. The actual launch and separate review failed at engineering startup; neither supplies a data result or changes the scientific route. New dispatch must wait for changed prerequisites.",
+      "revision": 1,
+      "created_at": "2026-10-25T06:25:23.047701+00:00",
+      "updated_at": "2026-10-25T06:25:23.047701+00:00",
+      "details": {
+        "approach_ids": [
+          "fair-validation"
+        ],
+        "basis": "Manager decision; scientific admission is separate",
+        "citation_ids": [
+          "plan-fair-validation",
+          "evidence-cm-e1",
+          "evidence-agenda",
+          "startup-observation",
+          "attempt-2a0ba36011304a0c844d06b70fd0b734",
+          "review-run-e2f622e5447b400b956df399f29965ea"
+        ],
+        "decision_ids": [
+          "decision-c394f15b453f4bc4ad1b3ba4e721c834"
+        ],
+        "event": "decision",
+        "reason": "Keep the narrow saved-data scout as the next candidate on inspected reports. The actual launch and separate review failed at engineering startup; neither supplies a data result or changes the scientific route. New dispatch must wait for changed prerequisites.",
+        "reopening_condition": "Normal native build plus writable authenticated coding client verified; then a new finite twelve-minute assignment and separate review reservation.",
+        "review_event_ids": [],
+        "scope": {
+          "cases": [
+            "flexible_lines_2000",
+            "ten_points_w_buildup",
+            "ten_points_w_buildup2"
+          ],
+          "fresh_fits": 0,
+          "max_extra_files": 12,
+          "method": "saved-data feasibility scout",
+          "physics_steps": 0
+        },
+        "target": "promising"
+      }
+    },
+    {
+      "id": "decision-e9683f729e20428ab3e71f8dff0d5a69",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "decision",
+      "title": "Next allocation is conditional, not currently funded: after native headers/toolchain/dependencies and writable authenticated coding-client state are verified, commission a distinct twelve-minute saved-data scout with at most twelve extra files, zero fits, scoring, collection or movement, and a separate five-minute review. No retry under unchanged startup blockers. Preserve model sensitivity and dynamics as rivals.",
+      "revision": 1,
+      "created_at": "2026-10-25T06:25:23.158755+00:00",
+      "updated_at": "2026-10-25T06:25:23.158755+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [
+          "evidence-agenda",
+          "startup-observation"
+        ],
+        "subject_id": "fair-validation"
+      }
+    },
+    {
+      "id": "decision-1284c2077a7e4e4faab9a822154727aa",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "decision",
+      "title": "No new dispatch until native build prerequisites and writable authenticated coding-client state are verified. All scientific routes remain open.",
+      "revision": 1,
+      "created_at": "2026-10-25T06:25:23.381164+00:00",
+      "updated_at": "2026-10-25T06:25:23.381164+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "program-1082afc1f40a4e4098c09cc5c68e6564"
+      }
+    },
+    {
+      "id": "decision-20605ec9a9574acb830e07b9dd64bb39",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "decision",
+      "title": "Final runtime inspection retains one future review obligation for sealed submission submission-8dcfa72e3f48459abdf6b894c2932a5d, with no active workers or reviewers. First conditional allocation is five minutes of separate review through fund_review after writable authenticated client startup works. Apply only a valid assessment before dispatching another worker under the default backlog limit. Then, after native build prerequisites work, fund the distinct twelve-minute saved-data scout. Keep dispatch paused until prerequisites change.",
+      "revision": 1,
+      "created_at": "2026-10-25T06:26:28.265260+00:00",
+      "updated_at": "2026-10-25T06:26:28.265260+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [
+          "startup-observation"
+        ],
+        "subject_id": "fair-validation"
+      }
+    },
+    {
+      "id": "human-cloud-continuation",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "steering",
+      "title": "Continue the existing program and history. Source scripts/cloud/env.sh before every build or worker shell; use the installed Node 23, Node-API headers and Rust toolchain. Verify npm run build:native -- --no-pgo. Patch rustc captured stdio only if EPERM occurs. Read scripts/cloud/RESEARCH.md for existing-login worker and reviewer workflow. Treat standalone reviewer initialization as a separate issue. Reconcile ownership and resume while preserving failed attempts.",
+      "revision": 1,
+      "created_at": "2026-10-25T07:41:34.970452+00:00",
+      "updated_at": "2026-10-25T07:41:34.970452+00:00",
+      "details": {
+        "actor": "human",
+        "evidence_ids": [],
+        "subject_id": null
+      }
+    },
+    {
+      "id": "human_input-78f0ea5b542e4153a4a7be9bc4529622",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "human_input",
+      "title": "Continue the existing program and history. Source scripts/cloud/env.sh before every build or worker shell; use the installed Node 23, Node-API headers and Rust toolchain. Verify npm run build:native -- --no-pgo. Patch rustc captured stdio only if EPERM occurs. Read scripts/cloud/RESEARCH.md for existing-login worker and reviewer workflow. Treat standalone reviewer initialization as a separate issue. Reconcile ownership and resume while preserving failed attempts.",
+      "revision": 1,
+      "created_at": "2026-10-25T07:41:34.970651+00:00",
+      "updated_at": "2026-10-25T07:41:34.970651+00:00",
+      "details": {
+        "citation_ids": [
+          "human-cloud-continuation"
+        ],
+        "intent": "instruction",
+        "links": [],
+        "next_assignment_id": null,
+        "provenance": {
+          "date": "2026-10-25",
+          "source": "current conversation continuation"
+        },
+        "steering_id": "human-cloud-continuation"
+      }
+    },
+    {
+      "id": "decision-599762960a8549948a60de9cf207f56b",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "decision",
+      "title": "Human explicitly requests continuation. Native --no-pgo build succeeded under sourced cloud environment; ownership reconciled with no active or unknown children. Existing-login client execution remains separately unresolved, and failed attempts remain preserved.",
+      "revision": 1,
+      "created_at": "2026-10-25T07:41:35.081870+00:00",
+      "updated_at": "2026-10-25T07:41:35.081870+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "program-1082afc1f40a4e4098c09cc5c68e6564"
+      }
+    },
+    {
+      "id": "cloud-native-build",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "artifact",
+      "title": "/workspace/hp-sim5/output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/native-build-verification.json",
+      "revision": 1,
+      "created_at": "2026-10-25T07:45:21.570061+00:00",
+      "updated_at": "2026-10-25T07:45:21.570061+00:00",
+      "details": {
+        "evidence_type": "imported",
+        "provenance": {
+          "config": {
+            "scope": "engineering setup only, no scientific observation"
+          },
+          "input_identities": [
+            "sha256:8a823a0d426d221f83690f0f8076f13ee3e4bf458414bdd76c830ca359433605"
+          ]
+        },
+        "reference": "/workspace/hp-sim5/output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/native-build-verification.json",
+        "sha256": "8a823a0d426d221f83690f0f8076f13ee3e4bf458414bdd76c830ca359433605",
+        "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+      }
+    },
+    {
+      "id": "cloud-existing-login-probe",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "artifact",
+      "title": "/workspace/hp-sim5/output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/existing-login-probe/result.json",
+      "revision": 1,
+      "created_at": "2026-10-25T07:45:21.683041+00:00",
+      "updated_at": "2026-10-25T07:45:21.683041+00:00",
+      "details": {
+        "evidence_type": "imported",
+        "provenance": {
+          "config": {
+            "scope": "engineering setup only, no scientific observation"
+          },
+          "input_identities": [
+            "sha256:ee9544383bc26d5a3e5da5f0d797a928651f01535e088d53171476924c9a5c93"
+          ]
+        },
+        "reference": "/workspace/hp-sim5/output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/existing-login-probe/result.json",
+        "sha256": "ee9544383bc26d5a3e5da5f0d797a928651f01535e088d53171476924c9a5c93",
+        "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+      }
+    },
+    {
+      "id": "cloud-client-filesystem-trace",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "artifact",
+      "title": "/workspace/hp-sim5/output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/existing-login-probe/file-access.strace",
+      "revision": 1,
+      "created_at": "2026-10-25T07:45:21.792629+00:00",
+      "updated_at": "2026-10-25T07:45:21.792629+00:00",
+      "details": {
+        "evidence_type": "imported",
+        "provenance": {
+          "config": {
+            "scope": "engineering setup only, no scientific observation"
+          },
+          "input_identities": [
+            "sha256:b0db617197838fc6ad5053a7a370acc166b2d70a73c4f675d1eaef34315abf5f"
+          ]
+        },
+        "reference": "/workspace/hp-sim5/output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/existing-login-probe/file-access.strace",
+        "sha256": "b0db617197838fc6ad5053a7a370acc166b2d70a73c4f675d1eaef34315abf5f",
+        "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+      }
+    },
+    {
+      "id": "assignment-holdout-scout-cloud",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "assignment",
+      "title": "Continue the original twelve-minute saved-data feasibility scout after verified cloud startup. Inspect the same three CM-E1 changed-case manifests and at most twelve extra dataset/manifest files. Verify observation content, training/selection union, encoder origin, spool/layering, units and lineage. No prediction scoring, fitting, code edits, simulation experiment, collection or movement. Use the sourced scripts/cloud/env.sh environment before each build or worker shell. Preserve all original failed attempts. Write research.md, report.md, abstract.md and input hashes in the newly assigned session. The manager must establish the existing-login child workflow and retain or resolve the previous startup review obligation before dispatch.",
+      "revision": 3,
+      "created_at": "2026-10-25T07:45:22.028318+00:00",
+      "updated_at": "2026-10-25T07:49:12.500672+00:00",
+      "details": {
+        "allocation": {
+          "additional_files": 12,
+          "collections": 0,
+          "fresh_fits": 0,
+          "physics_steps": 0,
+          "prediction_evaluations": 0,
+          "wall_minutes": 12
+        },
+        "approach_id": "fair-validation",
+        "execution_state": "failed",
+        "knowledge_state": "unassessed",
+        "question_id": "question-26b3307df81340198c2c9402a39c798e",
+        "review_state": "unreviewed"
+      }
+    },
+    {
+      "id": "investigation-bbadbadb36444960899d9238093ecbe2",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "investigation",
+      "title": "Continue the original twelve-minute saved-data feasibility scout after verified cloud startup. Inspect the same three CM-E1 changed-case manifests and at most twelve extra dataset/manifest files. Verify observation content, training/selection union, encoder origin, spool/layering, units and lineage. No prediction scoring, fitting, code edits, simulation experiment, collection or movement. Use the sourced scripts/cloud/env.sh environment before each build or worker shell. Preserve all original failed attempts. Write research.md, report.md, abstract.md and input hashes in the newly assigned session. The manager must establish the existing-login child workflow and retain or resolve the previous startup review obligation before dispatch.",
+      "revision": 1,
+      "created_at": "2026-10-25T07:45:22.028403+00:00",
+      "updated_at": "2026-10-25T07:45:22.028403+00:00",
+      "details": {
+        "assignment_id": "assignment-holdout-scout-cloud",
+        "citation_ids": [
+          "evidence-cm-e1",
+          "evidence-agenda",
+          "evidence-live-gate",
+          "cloud-native-build",
+          "cloud-existing-login-probe"
+        ],
+        "execution": {
+          "recording_mode": "none",
+          "source_limit": 15
+        },
+        "explanations": [
+          {
+            "approach_id": "fair-validation",
+            "explanation": "Incomparable or overlapping folds conceal a usable prediction signal."
+          },
+          {
+            "approach_id": "model-sensitivity",
+            "explanation": "Measurement-model bias or weak identifiability can make prediction poorly track physical geometry even with fair folds."
+          }
+        ],
+        "kind": "scouting",
+        "outcomes": {
+          "absent": {
+            "actions": [
+              {
+                "approach_id": "fair-validation",
+                "reason": "Only the named saved-data feasibility method is exhausted; broader independent validation remains open.",
+                "reopening_condition": "New compatible data or a newly scoped discriminating observation.",
+                "scope": {
+                  "cases": [
+                    "flexible_lines_2000",
+                    "ten_points_w_buildup",
+                    "ten_points_w_buildup2"
+                  ],
+                  "fresh_fits": 0,
+                  "max_extra_files": 12,
+                  "method": "saved-data feasibility scout",
+                  "physics_steps": 0
+                },
+                "target": "parked"
+              },
+              {
+                "approach_id": "model-sensitivity",
+                "reason": "Scope the current-model controlled sensitivity test before new collection.",
+                "reopening_condition": "New compatible data or a newly scoped discriminating observation.",
+                "scope": {
+                  "fresh_fits": 0,
+                  "implementation": "diagnosis only",
+                  "machine": "HP3",
+                  "max_cases": 4,
+                  "method": "controlled synthetic per-point fixed-angle sensitivity and NumPy/JAX parity",
+                  "physics_steps": 0
+                },
+                "target": "promising"
+              }
+            ],
+            "finding": "inconclusive",
+            "observation": "All at most twelve named candidates are absent, incompatible or have unknown/overlapping lineage."
+          },
+          "eligible": {
+            "actions": [
+              {
+                "approach_id": "fair-validation",
+                "reason": "Fund at most six frozen model scores on the eligible common folds in a separate assignment.",
+                "reopening_condition": "New compatible data or a newly scoped discriminating observation.",
+                "scope": {
+                  "cases": [
+                    "flexible_lines_2000",
+                    "ten_points_w_buildup",
+                    "ten_points_w_buildup2"
+                  ],
+                  "fresh_fits": 0,
+                  "max_extra_files": 12,
+                  "method": "saved-data feasibility scout",
+                  "physics_steps": 0
+                },
+                "target": "promising"
+              }
+            ],
+            "finding": "supported",
+            "observation": "At least one later whole sweep has exact verified compatible identity and no training or selection overlap for either applied model."
+          },
+          "failed": {
+            "actions": [],
+            "finding": "tool_failure",
+            "observation": "Launcher, client, dependency or data-reader failure prevents the scoped inspection."
+          }
+        },
+        "route_plan_ids": [
+          "plan-fair-validation",
+          "plan-model-sensitivity"
+        ]
+      }
+    },
+    {
+      "id": "decision-80418fcd03f440ef8403d4aa71513f2f",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "decision",
+      "title": "The native build and addon freshness/load check now pass under scripts/cloud/env.sh, with Node 23.11.1 and Rust 1.99.1. No rustc stdio patch was needed. Program ownership was reconciled and the idle host restarted through shutdown/reopen to inherit that environment. Program resumed active. Original failed attempts and sealed startup submission remain intact. New assignment assignment-holdout-scout-cloud is ready but has no runtime allocation or worker. Existing ChatGPT login is present, but a bounded workspace-write ephemeral client probe still fails before model execution. The requested scripts/cloud/RESEARCH.md is absent from both checkouts. Obtain the prescribed existing-login workflow before another worker launch; do not retry the unchanged standalone reviewer or erase its obligation.",
+      "revision": 1,
+      "created_at": "2026-10-25T07:45:22.141546+00:00",
+      "updated_at": "2026-10-25T07:45:22.141546+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [
+          "cloud-native-build",
+          "cloud-existing-login-probe",
+          "cloud-client-filesystem-trace"
+        ],
+        "subject_id": "fair-validation"
+      }
+    },
+    {
+      "id": "native-prerequisite-fixed",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "artifact",
+      "title": "/workspace/hp-sim5/output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/native-prerequisite-retry/verification.json",
+      "revision": 1,
+      "created_at": "2026-10-25T07:49:11.763926+00:00",
+      "updated_at": "2026-10-25T07:49:11.763926+00:00",
+      "details": {
+        "evidence_type": "imported",
+        "provenance": {
+          "config": {
+            "change": "all three captured rustc probes use stdin ignore, stdout pipe and stderr inherit",
+            "source_dirty": true
+          },
+          "input_identities": [
+            "sha256:d70840c2533e356dbac146237e03a322a4facd85a6877ca5b26e9ea39a8a17b9"
+          ]
+        },
+        "reference": "/workspace/hp-sim5/output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/native-prerequisite-retry/verification.json",
+        "sha256": "d70840c2533e356dbac146237e03a322a4facd85a6877ca5b26e9ea39a8a17b9",
+        "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+      }
+    },
+    {
+      "id": "human-native-prerequisite-retry",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "steering",
+      "title": "The missing scripts/cloud/RESEARCH.md came from another environment and is no longer a prerequisite. Use installed Node 23, Rust and Node-API headers with the supplied explicit environment exports in each build/worker shell. Make all captured rustc execFileSync probes use encoding utf8 and stdio ignore/pipe/inherit. Rebuild without PGO and verify addon loading, then retry the worker. Handle reviewer initialization separately and preserve the existing store/history.",
+      "revision": 1,
+      "created_at": "2026-10-25T07:49:11.873799+00:00",
+      "updated_at": "2026-10-25T07:49:11.873799+00:00",
+      "details": {
+        "actor": "human",
+        "evidence_ids": [
+          "native-prerequisite-fixed"
+        ],
+        "subject_id": null
+      }
+    },
+    {
+      "id": "human_input-014b04327dfa4d069e4c14ecfdb65fa1",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "human_input",
+      "title": "The missing scripts/cloud/RESEARCH.md came from another environment and is no longer a prerequisite. Use installed Node 23, Rust and Node-API headers with the supplied explicit environment exports in each build/worker shell. Make all captured rustc execFileSync probes use encoding utf8 and stdio ignore/pipe/inherit. Rebuild without PGO and verify addon loading, then retry the worker. Handle reviewer initialization separately and preserve the existing store/history.",
+      "revision": 1,
+      "created_at": "2026-10-25T07:49:11.873890+00:00",
+      "updated_at": "2026-10-25T07:49:11.873890+00:00",
+      "details": {
+        "citation_ids": [
+          "human-native-prerequisite-retry",
+          "native-prerequisite-fixed"
+        ],
+        "intent": "instruction",
+        "links": [],
+        "next_assignment_id": "assignment-holdout-scout-cloud",
+        "provenance": {
+          "date": "2026-10-25",
+          "source": "latest current-conversation instruction"
+        },
+        "steering_id": "human-native-prerequisite-retry"
+      }
+    },
+    {
+      "id": "decision-2d98f062b77b4d039aeb4dcd7a5d2f3c",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "decision",
+      "title": "The missing scripts/cloud/RESEARCH.md came from another environment and is no longer a prerequisite. Use installed Node 23, Rust and Node-API headers with the supplied explicit environment exports in each build/worker shell. Make all captured rustc execFileSync probes use encoding utf8 and stdio ignore/pipe/inherit. Rebuild without PGO and verify addon loading, then retry the worker. Handle reviewer initialization separately and preserve the existing store/history.",
+      "revision": 1,
+      "created_at": "2026-10-25T07:49:11.874031+00:00",
+      "updated_at": "2026-10-25T07:49:11.874031+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "fair-validation"
+      }
+    },
+    {
+      "id": "relation-8c1fc1b65f3a4e0088d1152dedbb4226",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "relation",
+      "title": "The missing scripts/cloud/RESEARCH.md came from another environment and is no longer a prerequisite. Use installed Node 23, Rust and Node-API headers with the supplied explicit environment exports in each build/worker shell. Make all captured rustc execFileSync probes use encoding utf8 and stdio ignore/pipe/inherit. Rebuild without PGO and verify addon loading, then retry the worker. Handle reviewer initialization separately and preserve the existing store/history.",
+      "revision": 1,
+      "created_at": "2026-10-25T07:49:11.874729+00:00",
+      "updated_at": "2026-10-25T07:49:11.874729+00:00",
+      "details": {
+        "reason": "The missing scripts/cloud/RESEARCH.md came from another environment and is no longer a prerequisite. Use installed Node 23, Rust and Node-API headers with the supplied explicit environment exports in each build/worker shell. Make all captured rustc execFileSync probes use encoding utf8 and stdio ignore/pipe/inherit. Rebuild without PGO and verify addon loading, then retry the worker. Handle reviewer initialization separately and preserve the existing store/history.",
+        "relation": "decision",
+        "source_id": "decision-2d98f062b77b4d039aeb4dcd7a5d2f3c",
+        "target_id": "fair-validation"
+      }
+    },
+    {
+      "id": "strategy_event-8b666dacd2c84ae9bb89dff68200a7dd",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "strategy_event",
+      "title": "The missing scripts/cloud/RESEARCH.md came from another environment and is no longer a prerequisite. Use installed Node 23, Rust and Node-API headers with the supplied explicit environment exports in each build/worker shell. Make all captured rustc execFileSync probes use encoding utf8 and stdio ignore/pipe/inherit. Rebuild without PGO and verify addon loading, then retry the worker. Handle reviewer initialization separately and preserve the existing store/history.",
+      "revision": 1,
+      "created_at": "2026-10-25T07:49:11.874812+00:00",
+      "updated_at": "2026-10-25T07:49:11.874812+00:00",
+      "details": {
+        "approach_ids": [
+          "fair-validation"
+        ],
+        "basis": "Accepted explicit human instruction",
+        "citation_ids": [
+          "human_input-014b04327dfa4d069e4c14ecfdb65fa1",
+          "human-native-prerequisite-retry"
+        ],
+        "decision_ids": [
+          "decision-2d98f062b77b4d039aeb4dcd7a5d2f3c"
+        ],
+        "event": "steering",
+        "next_assignment_id": "assignment-holdout-scout-cloud",
+        "reason": "The missing scripts/cloud/RESEARCH.md came from another environment and is no longer a prerequisite. Use installed Node 23, Rust and Node-API headers with the supplied explicit environment exports in each build/worker shell. Make all captured rustc execFileSync probes use encoding utf8 and stdio ignore/pipe/inherit. Rebuild without PGO and verify addon loading, then retry the worker. Handle reviewer initialization separately and preserve the existing store/history.",
+        "review_event_ids": []
+      }
+    },
+    {
+      "id": "decision-75ca2bf863b84a299a8833ff51e87c38",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "decision",
+      "title": "Human requests a worker retry after native verification while handling the old startup reviewer separately. Retain its one unresolved review obligation and permit exactly one additional bounded worker obligation; accept no unreviewed scientific claim.",
+      "revision": 1,
+      "created_at": "2026-10-25T07:49:11.989818+00:00",
+      "updated_at": "2026-10-25T07:49:11.989818+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "program-1082afc1f40a4e4098c09cc5c68e6564"
+      }
+    },
+    {
+      "id": "runtime_allocation-f538e385b30e44cb80f7a32d9e9bea87",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "runtime_allocation",
+      "title": "Finite manager allocation",
+      "revision": 6,
+      "created_at": "2026-10-25T07:49:12.102443+00:00",
+      "updated_at": "2026-10-25T07:53:55.422851+00:00",
+      "details": {
+        "cleanup_deadline": 1792916062.1023211,
+        "cleanup_seconds": 190,
+        "deadline": 1792915872.1023211,
+        "events": [
+          {
+            "at": "2026-10-25T07:53:55.422711+00:00",
+            "event": "allocation_stopped",
+            "reason": "Single funded retry ended with observed launcher cleanup. Preserve the failure while repairing declared runtime dependencies separately."
+          }
+        ],
+        "lease_until": 1792914848.4930615,
+        "owner": {
+          "id": "controller-90337cd2d31244748eeac36b3cb7a83b",
+          "process": {
+            "birth": "489815",
+            "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+            "group": 1467,
+            "host": "3cccfe76ab54",
+            "pid": 1467,
+            "uid": 1000
+          }
+        },
+        "queue": [],
+        "reservations": [
+          {
+            "assignment_id": "assignment-holdout-scout-cloud",
+            "attempt_id": "attempt-fad71bf317c2489d9d3a58523e701efc",
+            "charged_at": "2026-10-25T07:49:12.222301+00:00",
+            "retry_root": "attempt-2a0ba36011304a0c844d06b70fd0b734",
+            "review_pending": false,
+            "review_seconds": 300,
+            "reviews": [],
+            "settings": {
+              "backend": "codex",
+              "client_args": [],
+              "dont_ask": false,
+              "goal_mode": false,
+              "machine": "hp3",
+              "physics_backend": "headless-js",
+              "record": false,
+              "shared_runtime_write": true,
+              "sidebar_section": "none",
+              "viewer": "none",
+              "worktree": false
+            },
+            "state": "failed",
+            "usage": {
+              "estimates": {
+                "additional_files": 12,
+                "collections": 0,
+                "fresh_fits": 0,
+                "physics_steps": 0,
+                "prediction_evaluations": 0,
+                "wall_minutes": 12
+              },
+              "observed_worker_wall_seconds": 0.24646902084350586,
+              "supervisor_observations": [],
+              "unmetered": [
+                "shell movement",
+                "shell compute",
+                "spend"
+              ],
+              "worker_reports": []
+            },
+            "worker_seconds": 720
+          }
+        ],
+        "retry_limit": 2,
+        "review_backlog_limit": 2,
+        "review_seconds": 300,
+        "started_at": "2026-10-25T07:49:12.102325+00:00",
+        "state": "stopped",
+        "task_limit": 1,
+        "wall_reserved_seconds": 1020,
+        "wall_seconds": 1320,
+        "worker_limit": 1
+      }
+    },
+    {
+      "id": "attempt-fad71bf317c2489d9d3a58523e701efc",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "attempt",
+      "title": "Continue the original twelve-minute saved-data feasibility scout after verified cloud startup. Inspect the same three CM-E1 changed-case manifests and at most twelve extra dataset/manifest files. Verify observation content, training/selection union, encoder origin, spool/layering, units and lineage. No prediction scoring, fitting, code edits, simulation experiment, collection or movement. Use the sourced scripts/cloud/env.sh environment before each build or worker shell. Preserve all original failed attempts. Write research.md, report.md, abstract.md and input hashes in the newly assigned session. The manager must establish the existing-login child workflow and retain or resolve the previous startup review obligation before dispatch.",
+      "revision": 7,
+      "created_at": "2026-10-25T07:49:12.250133+00:00",
+      "updated_at": "2026-10-25T08:03:10.671718+00:00",
+      "details": {
+        "allocation": {
+          "additional_files": 12,
+          "collections": 0,
+          "fresh_fits": 0,
+          "physics_steps": 0,
+          "prediction_evaluations": 0,
+          "wall_minutes": 12
+        },
+        "argv": [
+          "/workspace/hp-sim5/hp-sim5-research-agent",
+          "--codex",
+          "--batch",
+          "--prompt-file",
+          "/workspace/hp-sim5/.research-programs/workers/attempt-fad71bf317c2489d9d3a58523e701efc/prompt.txt",
+          "--session-dir",
+          "/workspace/hp-sim5/output/research/sessions/attempt-fad71bf317c2489d9d3a58523e701efc",
+          "--physics-backend",
+          "headless-js",
+          "--machine",
+          "hp3",
+          "--viewer",
+          "none",
+          "--wall-deadline",
+          "1792915272.2249043",
+          "--sidebar-section",
+          "none",
+          "--no-record",
+          "--no-goal-mode"
+        ],
+        "artifacts": [
+          {
+            "bytes": 343,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-fad71bf317c2489d9d3a58523e701efc/session.json"
+          },
+          {
+            "bytes": 78,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-fad71bf317c2489d9d3a58523e701efc/exit.json"
+          },
+          {
+            "bytes": 12116,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-fad71bf317c2489d9d3a58523e701efc/prompt.txt"
+          },
+          {
+            "bytes": 12563,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-fad71bf317c2489d9d3a58523e701efc/research.md"
+          },
+          {
+            "bytes": 1965,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-fad71bf317c2489d9d3a58523e701efc/report.md"
+          },
+          {
+            "bytes": 1718,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-fad71bf317c2489d9d3a58523e701efc/abstract.md"
+          },
+          {
+            "bytes": 0,
+            "partial": true,
+            "path": "/workspace/hp-sim5/.research-programs/workers/attempt-fad71bf317c2489d9d3a58523e701efc/stdout.log"
+          },
+          {
+            "bytes": 48,
+            "partial": true,
+            "path": "/workspace/hp-sim5/.research-programs/workers/attempt-fad71bf317c2489d9d3a58523e701efc/stderr.log"
+          },
+          {
+            "bytes": 12116,
+            "partial": true,
+            "path": "/workspace/hp-sim5/.research-programs/workers/attempt-fad71bf317c2489d9d3a58523e701efc/prompt.txt"
+          },
+          {
+            "bytes": 2254,
+            "partial": true,
+            "path": "/workspace/hp-sim5/.research-programs/workers/attempt-fad71bf317c2489d9d3a58523e701efc/assignment.json"
+          }
+        ],
+        "assignment_id": "assignment-holdout-scout-cloud",
+        "attempt_dir": "/workspace/hp-sim5/.research-programs/workers/attempt-fad71bf317c2489d9d3a58523e701efc",
+        "cleanup": "launcher_finally_completed",
+        "diagnostics": [],
+        "exited_at": "2026-10-25T07:49:12.499707+00:00",
+        "launcher_exit": {
+          "returncode": 1,
+          "wall_deadline": 1792915272.2249043,
+          "wall_expired": false
+        },
+        "launcher_session_id": "161fc93bb05c4a548ba5e762ccb0a3c5",
+        "observations": [
+          {
+            "at": "2026-10-25T07:49:12.247556+00:00",
+            "event": "reserved"
+          },
+          {
+            "at": "2026-10-25T07:49:12.253244+00:00",
+            "event": "spawned",
+            "pid": 1918
+          },
+          {
+            "at": "2026-10-25T07:49:12.499724+00:00",
+            "event": "exited",
+            "returncode": 1
+          }
+        ],
+        "observed_wall_seconds": 0.24646902084350586,
+        "owner": {
+          "id": "dispatcher-fbd25e4dc59f4b898d9e834fd1644b5a",
+          "process": {
+            "birth": "489815",
+            "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+            "group": 1467,
+            "host": "3cccfe76ab54",
+            "pid": 1467,
+            "uid": 1000
+          }
+        },
+        "premise_conflicts": [],
+        "premise_event_ids_at_start": [],
+        "premise_ids": [
+          "evidence-agenda",
+          "evidence-cm-e1",
+          "evidence-fixed-angles"
+        ],
+        "premise_plan_ids": [
+          "plan-fair-validation",
+          "plan-model-sensitivity"
+        ],
+        "process": {
+          "birth": "543770",
+          "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+          "group": 1918,
+          "host": "3cccfe76ab54",
+          "pid": 1918,
+          "uid": 1000
+        },
+        "prompt_sha256": "a21be4d4c90ff5c2139578c963faa92795e46712a99e0e19d1991ba9a9b7995c",
+        "returncode": 1,
+        "runtime": {
+          "allocation_id": "runtime_allocation-f538e385b30e44cb80f7a32d9e9bea87",
+          "assignment_id": "assignment-holdout-scout-cloud",
+          "cleanup_seconds": 190,
+          "wall_deadline": 1792915272.2249043
+        },
+        "scientific_state": "unassessed",
+        "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-fad71bf317c2489d9d3a58523e701efc",
+        "settings": {
+          "backend": "codex",
+          "client_args": [],
+          "dont_ask": false,
+          "goal_mode": false,
+          "machine": "hp3",
+          "physics_backend": "headless-js",
+          "record": false,
+          "shared_runtime_write": true,
+          "sidebar_section": "none",
+          "viewer": "none",
+          "worktree": false
+        },
+        "source_dirty": true,
+        "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca",
+        "started_at": "2026-10-25T07:49:12.253238+00:00",
+        "state": "failed",
+        "worktree": {
+          "branch": "work",
+          "repo": "/workspace/hp-sim5",
+          "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+        },
+        "worktree_id": "/workspace/hp-sim5"
+      }
+    },
+    {
+      "id": "decision-3d70779a6f3e47c6866526de84d23803",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "decision",
+      "title": "Verified native addon passed; the next startup stage failed at missing NumPy in the empty local virtualenv. No saved-data inspection ran and no scientific route action follows.",
+      "revision": 1,
+      "created_at": "2026-10-25T07:53:55.300864+00:00",
+      "updated_at": "2026-10-25T07:53:55.300864+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "fair-validation"
+      }
+    },
+    {
+      "id": "relation-f76be36bd71d4fbe82c1931096cfef02",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "relation",
+      "title": "Verified native addon passed; the next startup stage failed at missing NumPy in the empty local virtualenv. No saved-data inspection ran and no scientific route action follows.",
+      "revision": 1,
+      "created_at": "2026-10-25T07:53:55.301594+00:00",
+      "updated_at": "2026-10-25T07:53:55.301594+00:00",
+      "details": {
+        "reason": "Verified native addon passed; the next startup stage failed at missing NumPy in the empty local virtualenv. No saved-data inspection ran and no scientific route action follows.",
+        "relation": "decision",
+        "source_id": "decision-3d70779a6f3e47c6866526de84d23803",
+        "target_id": "fair-validation"
+      }
+    },
+    {
+      "id": "strategy_event-ea20a5a96cf046cc876d7c0a0626a490",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "strategy_event",
+      "title": "Verified native addon passed; the next startup stage failed at missing NumPy in the empty local virtualenv. No saved-data inspection ran and no scientific route action follows.",
+      "revision": 1,
+      "created_at": "2026-10-25T07:53:55.301683+00:00",
+      "updated_at": "2026-10-25T07:53:55.301683+00:00",
+      "details": {
+        "actions": [],
+        "approach_ids": [
+          "fair-validation"
+        ],
+        "basis": "Execution failure; no scientific finding",
+        "citation_ids": [
+          "investigation-bbadbadb36444960899d9238093ecbe2",
+          "attempt-fad71bf317c2489d9d3a58523e701efc",
+          "native-prerequisite-fixed"
+        ],
+        "decision_ids": [
+          "decision-3d70779a6f3e47c6866526de84d23803"
+        ],
+        "event": "result",
+        "finding": "tool_failure",
+        "investigation_id": "investigation-bbadbadb36444960899d9238093ecbe2",
+        "outcome": "failed",
+        "reason": "Verified native addon passed; the next startup stage failed at missing NumPy in the empty local virtualenv. No saved-data inspection ran and no scientific route action follows.",
+        "review_event_ids": []
+      }
+    },
+    {
+      "id": "runtime-dependencies-restored",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "artifact",
+      "title": "/workspace/hp-sim5/output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/native-prerequisite-retry/runtime-dependencies.json",
+      "revision": 1,
+      "created_at": "2026-10-25T07:55:41.134897+00:00",
+      "updated_at": "2026-10-25T07:55:41.134897+00:00",
+      "details": {
+        "evidence_type": "imported",
+        "provenance": {
+          "config": {
+            "scope": "engineering prerequisites only; captured rustc stdio patch uncommitted"
+          },
+          "input_identities": [
+            "sha256:b95523837789f5ff8ef6f3994fbe8946999defad08ef3e858f511d4dfecbb23d"
+          ]
+        },
+        "reference": "/workspace/hp-sim5/output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/native-prerequisite-retry/runtime-dependencies.json",
+        "sha256": "b95523837789f5ff8ef6f3994fbe8946999defad08ef3e858f511d4dfecbb23d",
+        "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+      }
+    },
+    {
+      "id": "rrf-simulator-built",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "artifact",
+      "title": "/workspace/hp-sim5/output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/native-prerequisite-retry/rrf-build.json",
+      "revision": 1,
+      "created_at": "2026-10-25T07:55:41.252098+00:00",
+      "updated_at": "2026-10-25T07:55:41.252098+00:00",
+      "details": {
+        "evidence_type": "imported",
+        "provenance": {
+          "config": {
+            "scope": "engineering prerequisites only; captured rustc stdio patch uncommitted"
+          },
+          "input_identities": [
+            "sha256:9e0e91a5961ce90f70019de746cddc7525de0c20fa3c5cd4f5d0a2eb0d6dce3f"
+          ]
+        },
+        "reference": "/workspace/hp-sim5/output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/native-prerequisite-retry/rrf-build.json",
+        "sha256": "9e0e91a5961ce90f70019de746cddc7525de0c20fa3c5cd4f5d0a2eb0d6dce3f",
+        "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+      }
+    },
+    {
+      "id": "assignment-holdout-scout-runtime-ready",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "assignment",
+      "title": "Inspect the same three changed CM-E1 cases for compatible later unused whole sweeps: flexible_lines_2000, ten_points_w_buildup and ten_points_w_buildup2. Start from CM-E1 inputs.json and its three compressed histories. Search at most twelve extra dataset or manifest files. Verify content hashes, all training/selection use, machine, units/frame, encoder origin, spool/layering and collection settings. Return eligible identities or explicit missing/incompatible lineage. No fitting, prediction scoring, production edits, physics experiments, collection or movement. Write research.md, report.md, abstract.md and input hashes in the assigned session. The native build, declared Python dependencies, production JS packages and pinned RRF simulator have now been verified; scripts/cloud/RESEARCH.md is explicitly not a prerequisite.",
+      "revision": 3,
+      "created_at": "2026-10-25T07:55:41.518672+00:00",
+      "updated_at": "2026-10-25T07:55:43.837860+00:00",
+      "details": {
+        "allocation": {
+          "additional_files": 12,
+          "collections": 0,
+          "fresh_fits": 0,
+          "physics_steps": 0,
+          "prediction_evaluations": 0,
+          "wall_minutes": 12
+        },
+        "approach_id": "fair-validation",
+        "execution_state": "failed",
+        "knowledge_state": "unassessed",
+        "question_id": "question-26b3307df81340198c2c9402a39c798e",
+        "review_state": "unreviewed"
+      }
+    },
+    {
+      "id": "investigation-2f439a82dc504def8ffa3ddc6fd592b3",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "investigation",
+      "title": "Inspect the same three changed CM-E1 cases for compatible later unused whole sweeps: flexible_lines_2000, ten_points_w_buildup and ten_points_w_buildup2. Start from CM-E1 inputs.json and its three compressed histories. Search at most twelve extra dataset or manifest files. Verify content hashes, all training/selection use, machine, units/frame, encoder origin, spool/layering and collection settings. Return eligible identities or explicit missing/incompatible lineage. No fitting, prediction scoring, production edits, physics experiments, collection or movement. Write research.md, report.md, abstract.md and input hashes in the assigned session. The native build, declared Python dependencies, production JS packages and pinned RRF simulator have now been verified; scripts/cloud/RESEARCH.md is explicitly not a prerequisite.",
+      "revision": 1,
+      "created_at": "2026-10-25T07:55:41.518764+00:00",
+      "updated_at": "2026-10-25T07:55:41.518764+00:00",
+      "details": {
+        "assignment_id": "assignment-holdout-scout-runtime-ready",
+        "citation_ids": [
+          "evidence-cm-e1",
+          "evidence-agenda",
+          "evidence-live-gate",
+          "native-prerequisite-fixed",
+          "runtime-dependencies-restored",
+          "rrf-simulator-built"
+        ],
+        "execution": {
+          "recording_mode": "none",
+          "source_limit": 15
+        },
+        "explanations": [
+          {
+            "approach_id": "fair-validation",
+            "explanation": "Incomparable or overlapping folds conceal a usable prediction signal."
+          },
+          {
+            "approach_id": "model-sensitivity",
+            "explanation": "Measurement-model bias or weak identifiability can make prediction poorly track physical geometry even with fair folds."
+          }
+        ],
+        "kind": "scouting",
+        "outcomes": {
+          "absent": {
+            "actions": [
+              {
+                "approach_id": "fair-validation",
+                "reason": "Only the named saved-data feasibility method is exhausted; broader independent validation remains open.",
+                "reopening_condition": "New compatible data or a newly scoped discriminating observation.",
+                "scope": {
+                  "cases": [
+                    "flexible_lines_2000",
+                    "ten_points_w_buildup",
+                    "ten_points_w_buildup2"
+                  ],
+                  "fresh_fits": 0,
+                  "max_extra_files": 12,
+                  "method": "saved-data feasibility scout",
+                  "physics_steps": 0
+                },
+                "target": "parked"
+              },
+              {
+                "approach_id": "model-sensitivity",
+                "reason": "Scope the current-model controlled sensitivity test before new collection.",
+                "reopening_condition": "New compatible data or a newly scoped discriminating observation.",
+                "scope": {
+                  "fresh_fits": 0,
+                  "implementation": "diagnosis only",
+                  "machine": "HP3",
+                  "max_cases": 4,
+                  "method": "controlled synthetic per-point fixed-angle sensitivity and NumPy/JAX parity",
+                  "physics_steps": 0
+                },
+                "target": "promising"
+              }
+            ],
+            "finding": "inconclusive",
+            "observation": "All at most twelve named candidates are absent, incompatible or have unknown/overlapping lineage."
+          },
+          "eligible": {
+            "actions": [
+              {
+                "approach_id": "fair-validation",
+                "reason": "Fund at most six frozen model scores on the eligible common folds in a separate assignment.",
+                "reopening_condition": "New compatible data or a newly scoped discriminating observation.",
+                "scope": {
+                  "cases": [
+                    "flexible_lines_2000",
+                    "ten_points_w_buildup",
+                    "ten_points_w_buildup2"
+                  ],
+                  "fresh_fits": 0,
+                  "max_extra_files": 12,
+                  "method": "saved-data feasibility scout",
+                  "physics_steps": 0
+                },
+                "target": "promising"
+              }
+            ],
+            "finding": "supported",
+            "observation": "At least one later whole sweep has exact verified compatible identity and no training or selection overlap for either applied model."
+          },
+          "failed": {
+            "actions": [],
+            "finding": "tool_failure",
+            "observation": "Launcher, client, dependency or data-reader failure prevents the scoped inspection."
+          }
+        },
+        "route_plan_ids": [
+          "plan-fair-validation",
+          "plan-model-sensitivity"
+        ]
+      }
+    },
+    {
+      "id": "decision-a658324c0d9d458e9d2629ea0f449695",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "decision",
+      "title": "Fund exactly one further startup retry after a material prerequisite change. The previous retry passed native loading but failed at missing NumPy. Declared Python dependencies, production-only locked JS dependencies, three pinned RRF submodules and the firmware simulator are now installed/verified. Keep every failed attempt. The new runtime grant explicitly permits at most three total launches in the original retry chain. Preserve the old standalone review obligation separately; no unreviewed science is admitted.",
+      "revision": 1,
+      "created_at": "2026-10-25T07:55:41.642376+00:00",
+      "updated_at": "2026-10-25T07:55:41.642376+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [
+          "native-prerequisite-fixed",
+          "runtime-dependencies-restored",
+          "rrf-simulator-built"
+        ],
+        "subject_id": "fair-validation"
+      }
+    },
+    {
+      "id": "runtime_allocation-629d36e9cf1e4d1ab0541b04a5c5852d",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "runtime_allocation",
+      "title": "Finite manager allocation",
+      "revision": 6,
+      "created_at": "2026-10-25T07:55:41.766521+00:00",
+      "updated_at": "2026-10-25T07:59:21.279577+00:00",
+      "details": {
+        "cleanup_deadline": 1792916451.7663815,
+        "cleanup_seconds": 190,
+        "deadline": 1792916261.7663815,
+        "events": [
+          {
+            "at": "2026-10-25T07:59:21.279409+00:00",
+            "event": "allocation_stopped",
+            "reason": "The one funded attempt exited with observed launcher cleanup; preserve its collector-startup failure and close remaining capacity."
+          }
+        ],
+        "lease_until": 1792915173.05483,
+        "owner": {
+          "id": "controller-90337cd2d31244748eeac36b3cb7a83b",
+          "process": {
+            "birth": "489815",
+            "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+            "group": 1467,
+            "host": "3cccfe76ab54",
+            "pid": 1467,
+            "uid": 1000
+          }
+        },
+        "queue": [],
+        "reservations": [
+          {
+            "assignment_id": "assignment-holdout-scout-runtime-ready",
+            "attempt_id": "attempt-02ca2a76af6a4866b86c8fe1feb55881",
+            "charged_at": "2026-10-25T07:55:41.896699+00:00",
+            "retry_root": "attempt-2a0ba36011304a0c844d06b70fd0b734",
+            "review_pending": false,
+            "review_seconds": 300,
+            "reviews": [],
+            "settings": {
+              "backend": "codex",
+              "client_args": [],
+              "dont_ask": false,
+              "goal_mode": false,
+              "machine": "hp3",
+              "physics_backend": "headless-js",
+              "record": false,
+              "shared_runtime_write": true,
+              "sidebar_section": "none",
+              "viewer": "none",
+              "worktree": false
+            },
+            "state": "failed",
+            "usage": {
+              "estimates": {
+                "additional_files": 12,
+                "collections": 0,
+                "fresh_fits": 0,
+                "physics_steps": 0,
+                "prediction_evaluations": 0,
+                "wall_minutes": 12
+              },
+              "observed_worker_wall_seconds": 1.5850999355316162,
+              "supervisor_observations": [],
+              "unmetered": [
+                "shell movement",
+                "shell compute",
+                "spend"
+              ],
+              "worker_reports": []
+            },
+            "worker_seconds": 720
+          }
+        ],
+        "retry_limit": 3,
+        "review_backlog_limit": 2,
+        "review_seconds": 300,
+        "started_at": "2026-10-25T07:55:41.766385+00:00",
+        "state": "stopped",
+        "task_limit": 1,
+        "wall_reserved_seconds": 1020,
+        "wall_seconds": 1320,
+        "worker_limit": 1
+      }
+    },
+    {
+      "id": "attempt-02ca2a76af6a4866b86c8fe1feb55881",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "attempt",
+      "title": "Inspect the same three changed CM-E1 cases for compatible later unused whole sweeps: flexible_lines_2000, ten_points_w_buildup and ten_points_w_buildup2. Start from CM-E1 inputs.json and its three compressed histories. Search at most twelve extra dataset or manifest files. Verify content hashes, all training/selection use, machine, units/frame, encoder origin, spool/layering and collection settings. Return eligible identities or explicit missing/incompatible lineage. No fitting, prediction scoring, production edits, physics experiments, collection or movement. Write research.md, report.md, abstract.md and input hashes in the assigned session. The native build, declared Python dependencies, production JS packages and pinned RRF simulator have now been verified; scripts/cloud/RESEARCH.md is explicitly not a prerequisite.",
+      "revision": 9,
+      "created_at": "2026-10-25T07:55:42.247985+00:00",
+      "updated_at": "2026-10-25T08:03:10.809328+00:00",
+      "details": {
+        "allocation": {
+          "additional_files": 12,
+          "collections": 0,
+          "fresh_fits": 0,
+          "physics_steps": 0,
+          "prediction_evaluations": 0,
+          "wall_minutes": 12
+        },
+        "argv": [
+          "/workspace/hp-sim5/hp-sim5-research-agent",
+          "--codex",
+          "--batch",
+          "--prompt-file",
+          "/workspace/hp-sim5/.research-programs/workers/attempt-02ca2a76af6a4866b86c8fe1feb55881/prompt.txt",
+          "--session-dir",
+          "/workspace/hp-sim5/output/research/sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881",
+          "--physics-backend",
+          "headless-js",
+          "--machine",
+          "hp3",
+          "--viewer",
+          "none",
+          "--wall-deadline",
+          "1792915661.8996484",
+          "--sidebar-section",
+          "none",
+          "--no-record",
+          "--no-goal-mode"
+        ],
+        "artifacts": [
+          {
+            "bytes": 343,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/session.json"
+          },
+          {
+            "bytes": 78,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/exit.json"
+          },
+          {
+            "bytes": 12243,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/prompt.txt"
+          },
+          {
+            "bytes": 12697,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/research.md"
+          },
+          {
+            "bytes": 1980,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/report.md"
+          },
+          {
+            "bytes": 1733,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/abstract.md"
+          },
+          {
+            "bytes": 1356,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/native/runtime.log"
+          },
+          {
+            "bytes": 0,
+            "partial": true,
+            "path": "/workspace/hp-sim5/.research-programs/workers/attempt-02ca2a76af6a4866b86c8fe1feb55881/stdout.log"
+          },
+          {
+            "bytes": 216,
+            "partial": true,
+            "path": "/workspace/hp-sim5/.research-programs/workers/attempt-02ca2a76af6a4866b86c8fe1feb55881/stderr.log"
+          },
+          {
+            "bytes": 12243,
+            "partial": true,
+            "path": "/workspace/hp-sim5/.research-programs/workers/attempt-02ca2a76af6a4866b86c8fe1feb55881/prompt.txt"
+          },
+          {
+            "bytes": 2349,
+            "partial": true,
+            "path": "/workspace/hp-sim5/.research-programs/workers/attempt-02ca2a76af6a4866b86c8fe1feb55881/assignment.json"
+          }
+        ],
+        "assignment_id": "assignment-holdout-scout-runtime-ready",
+        "attempt_dir": "/workspace/hp-sim5/.research-programs/workers/attempt-02ca2a76af6a4866b86c8fe1feb55881",
+        "cleanup": "launcher_finally_completed",
+        "diagnostics": [],
+        "exited_at": "2026-10-25T07:55:43.837079+00:00",
+        "launcher_exit": {
+          "returncode": 1,
+          "wall_deadline": 1792915661.8996484,
+          "wall_expired": false
+        },
+        "launcher_session_id": "4b23f26e82d543c1a86d8658e28b5382",
+        "observations": [
+          {
+            "at": "2026-10-25T07:55:42.244486+00:00",
+            "event": "reserved"
+          },
+          {
+            "at": "2026-10-25T07:55:42.251985+00:00",
+            "event": "spawned",
+            "pid": 4111
+          },
+          {
+            "at": "2026-10-25T07:55:43.837092+00:00",
+            "event": "exited",
+            "returncode": 1
+          }
+        ],
+        "observed_wall_seconds": 1.5850999355316162,
+        "owner": {
+          "id": "dispatcher-fbd25e4dc59f4b898d9e834fd1644b5a",
+          "process": {
+            "birth": "489815",
+            "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+            "group": 1467,
+            "host": "3cccfe76ab54",
+            "pid": 1467,
+            "uid": 1000
+          }
+        },
+        "premise_conflicts": [],
+        "premise_event_ids_at_start": [],
+        "premise_ids": [
+          "evidence-agenda",
+          "evidence-cm-e1",
+          "evidence-fixed-angles"
+        ],
+        "premise_plan_ids": [
+          "plan-fair-validation",
+          "plan-model-sensitivity"
+        ],
+        "process": {
+          "birth": "582770",
+          "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+          "group": 4111,
+          "host": "3cccfe76ab54",
+          "pid": 4111,
+          "uid": 1000
+        },
+        "prompt_sha256": "822beb587d451465c2d31ff3e87cf4ac1276db9fab1b8df95bc2113f44bad497",
+        "returncode": 1,
+        "runtime": {
+          "allocation_id": "runtime_allocation-629d36e9cf1e4d1ab0541b04a5c5852d",
+          "assignment_id": "assignment-holdout-scout-runtime-ready",
+          "cleanup_seconds": 190,
+          "wall_deadline": 1792915661.8996484
+        },
+        "scientific_state": "unassessed",
+        "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881",
+        "settings": {
+          "backend": "codex",
+          "client_args": [],
+          "dont_ask": false,
+          "goal_mode": false,
+          "machine": "hp3",
+          "physics_backend": "headless-js",
+          "record": false,
+          "shared_runtime_write": true,
+          "sidebar_section": "none",
+          "viewer": "none",
+          "worktree": false
+        },
+        "source_dirty": true,
+        "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca",
+        "started_at": "2026-10-25T07:55:42.251979+00:00",
+        "state": "failed",
+        "worktree": {
+          "branch": "work",
+          "repo": "/workspace/hp-sim5",
+          "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+        },
+        "worktree_id": "/workspace/hp-sim5"
+      }
+    },
+    {
+      "id": "decision-dabf416771f6473c9f0cd183feb86945",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "decision",
+      "title": "The repaired runtime imported Python modules, baked the world, loaded native physics and booted matching RRF firmware. Collector startup then failed at the absent transitive ws JS package after production-only npm installation. No scientific inspection ran. Full locked JS installation now restores that package; no route action applies.",
+      "revision": 1,
+      "created_at": "2026-10-25T07:59:21.150815+00:00",
+      "updated_at": "2026-10-25T07:59:21.150815+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "fair-validation"
+      }
+    },
+    {
+      "id": "relation-333864625e1446efbfd02856d5eb26b5",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "relation",
+      "title": "The repaired runtime imported Python modules, baked the world, loaded native physics and booted matching RRF firmware. Collector startup then failed at the absent transitive ws JS package after production-only npm installation. No scientific inspection ran. Full locked JS installation now restores that package; no route action applies.",
+      "revision": 1,
+      "created_at": "2026-10-25T07:59:21.152118+00:00",
+      "updated_at": "2026-10-25T07:59:21.152118+00:00",
+      "details": {
+        "reason": "The repaired runtime imported Python modules, baked the world, loaded native physics and booted matching RRF firmware. Collector startup then failed at the absent transitive ws JS package after production-only npm installation. No scientific inspection ran. Full locked JS installation now restores that package; no route action applies.",
+        "relation": "decision",
+        "source_id": "decision-dabf416771f6473c9f0cd183feb86945",
+        "target_id": "fair-validation"
+      }
+    },
+    {
+      "id": "strategy_event-6676b4ffbac64ac99041903fbe207930",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "strategy_event",
+      "title": "The repaired runtime imported Python modules, baked the world, loaded native physics and booted matching RRF firmware. Collector startup then failed at the absent transitive ws JS package after production-only npm installation. No scientific inspection ran. Full locked JS installation now restores that package; no route action applies.",
+      "revision": 1,
+      "created_at": "2026-10-25T07:59:21.152221+00:00",
+      "updated_at": "2026-10-25T07:59:21.152221+00:00",
+      "details": {
+        "actions": [],
+        "approach_ids": [
+          "fair-validation"
+        ],
+        "basis": "Execution failure; no scientific finding",
+        "citation_ids": [
+          "investigation-2f439a82dc504def8ffa3ddc6fd592b3",
+          "attempt-02ca2a76af6a4866b86c8fe1feb55881",
+          "rrf-simulator-built"
+        ],
+        "decision_ids": [
+          "decision-dabf416771f6473c9f0cd183feb86945"
+        ],
+        "event": "result",
+        "finding": "tool_failure",
+        "investigation_id": "investigation-2f439a82dc504def8ffa3ddc6fd592b3",
+        "outcome": "failed",
+        "reason": "The repaired runtime imported Python modules, baked the world, loaded native physics and booted matching RRF firmware. Collector startup then failed at the absent transitive ws JS package after production-only npm installation. No scientific inspection ran. Full locked JS installation now restores that package; no route action applies.",
+        "review_event_ids": []
+      }
+    },
+    {
+      "id": "launcher-preflight-passed",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "artifact",
+      "title": "/workspace/hp-sim5/output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/native-prerequisite-retry/launcher-preflight-result.json",
+      "revision": 1,
+      "created_at": "2026-10-25T08:00:00.089206+00:00",
+      "updated_at": "2026-10-25T08:00:00.089206+00:00",
+      "details": {
+        "evidence_type": "imported",
+        "provenance": {
+          "config": {
+            "checks": "six nonmoving supervisor checks",
+            "source_dirty": true,
+            "world_step": 0
+          },
+          "input_identities": [
+            "sha256:61555ddbfc657643a0935b7cee016c5d66667add01848a124a2e8279cf8bd036"
+          ]
+        },
+        "reference": "/workspace/hp-sim5/output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/native-prerequisite-retry/launcher-preflight-result.json",
+        "sha256": "61555ddbfc657643a0935b7cee016c5d66667add01848a124a2e8279cf8bd036",
+        "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+      }
+    },
+    {
+      "id": "assignment-holdout-scout-bootstrap-verified",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "assignment",
+      "title": "Perform the original bounded saved-data feasibility scout now that the native addon, Python/JS dependencies and RRF simulator are installed and all six launcher preflight checks passed at world step zero. Inspect the three changed CM-E1 case manifests and compressed histories, plus at most twelve extra dataset/manifest files, for compatible later unused whole sweeps. Verify observation content, training and selection union, encoder origin, spool/layering, units and lineage. No fits, scoring, production/shared edits, physics experiments, collection or movement. Preserve report.md, research.md, abstract.md and hashes. The absent cloud guide is not a prerequisite. If the coding client fails before investigation, retain the engineering failure without scientific inference.",
+      "revision": 3,
+      "created_at": "2026-10-25T08:00:00.371563+00:00",
+      "updated_at": "2026-10-25T08:00:02.821710+00:00",
+      "details": {
+        "allocation": {
+          "additional_files": 12,
+          "collections": 0,
+          "fresh_fits": 0,
+          "physics_steps": 0,
+          "prediction_evaluations": 0,
+          "wall_minutes": 12
+        },
+        "approach_id": "fair-validation",
+        "execution_state": "failed",
+        "knowledge_state": "unassessed",
+        "question_id": "question-26b3307df81340198c2c9402a39c798e",
+        "review_state": "unreviewed"
+      }
+    },
+    {
+      "id": "investigation-34eba31d52dc48e09edf53014acdb208",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "investigation",
+      "title": "Perform the original bounded saved-data feasibility scout now that the native addon, Python/JS dependencies and RRF simulator are installed and all six launcher preflight checks passed at world step zero. Inspect the three changed CM-E1 case manifests and compressed histories, plus at most twelve extra dataset/manifest files, for compatible later unused whole sweeps. Verify observation content, training and selection union, encoder origin, spool/layering, units and lineage. No fits, scoring, production/shared edits, physics experiments, collection or movement. Preserve report.md, research.md, abstract.md and hashes. The absent cloud guide is not a prerequisite. If the coding client fails before investigation, retain the engineering failure without scientific inference.",
+      "revision": 1,
+      "created_at": "2026-10-25T08:00:00.371654+00:00",
+      "updated_at": "2026-10-25T08:00:00.371654+00:00",
+      "details": {
+        "assignment_id": "assignment-holdout-scout-bootstrap-verified",
+        "citation_ids": [
+          "evidence-cm-e1",
+          "evidence-agenda",
+          "evidence-live-gate",
+          "launcher-preflight-passed"
+        ],
+        "execution": {
+          "recording_mode": "none",
+          "source_limit": 15
+        },
+        "explanations": [
+          {
+            "approach_id": "fair-validation",
+            "explanation": "Incomparable or overlapping folds conceal a usable prediction signal."
+          },
+          {
+            "approach_id": "model-sensitivity",
+            "explanation": "Measurement-model bias or weak identifiability can make prediction poorly track physical geometry even with fair folds."
+          }
+        ],
+        "kind": "scouting",
+        "outcomes": {
+          "absent": {
+            "actions": [
+              {
+                "approach_id": "fair-validation",
+                "reason": "Only the named saved-data feasibility method is exhausted; broader independent validation remains open.",
+                "reopening_condition": "New compatible data or a newly scoped discriminating observation.",
+                "scope": {
+                  "cases": [
+                    "flexible_lines_2000",
+                    "ten_points_w_buildup",
+                    "ten_points_w_buildup2"
+                  ],
+                  "fresh_fits": 0,
+                  "max_extra_files": 12,
+                  "method": "saved-data feasibility scout",
+                  "physics_steps": 0
+                },
+                "target": "parked"
+              },
+              {
+                "approach_id": "model-sensitivity",
+                "reason": "Scope the current-model controlled sensitivity test before new collection.",
+                "reopening_condition": "New compatible data or a newly scoped discriminating observation.",
+                "scope": {
+                  "fresh_fits": 0,
+                  "implementation": "diagnosis only",
+                  "machine": "HP3",
+                  "max_cases": 4,
+                  "method": "controlled synthetic per-point fixed-angle sensitivity and NumPy/JAX parity",
+                  "physics_steps": 0
+                },
+                "target": "promising"
+              }
+            ],
+            "finding": "inconclusive",
+            "observation": "All at most twelve named candidates are absent, incompatible or have unknown/overlapping lineage."
+          },
+          "eligible": {
+            "actions": [
+              {
+                "approach_id": "fair-validation",
+                "reason": "Fund at most six frozen model scores on the eligible common folds in a separate assignment.",
+                "reopening_condition": "New compatible data or a newly scoped discriminating observation.",
+                "scope": {
+                  "cases": [
+                    "flexible_lines_2000",
+                    "ten_points_w_buildup",
+                    "ten_points_w_buildup2"
+                  ],
+                  "fresh_fits": 0,
+                  "max_extra_files": 12,
+                  "method": "saved-data feasibility scout",
+                  "physics_steps": 0
+                },
+                "target": "promising"
+              }
+            ],
+            "finding": "supported",
+            "observation": "At least one later whole sweep has exact verified compatible identity and no training or selection overlap for either applied model."
+          },
+          "failed": {
+            "actions": [],
+            "finding": "tool_failure",
+            "observation": "Launcher, client, dependency or data-reader failure prevents the scoped inspection."
+          }
+        },
+        "route_plan_ids": [
+          "plan-fair-validation",
+          "plan-model-sensitivity"
+        ]
+      }
+    },
+    {
+      "id": "decision-3d7567efc1254b069d9a29691d387538",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "decision",
+      "title": "Allow one final bounded managed launch after all six actual nonmoving launcher checks passed at step zero and the missing ws dependency was restored by full npm ci. This is the fourth and final launch in the original startup retry chain for this turn. Preserve each prior failure, accept no scientific finding without separate review, and stop further launches if the unchanged client-state write error occurs.",
+      "revision": 1,
+      "created_at": "2026-10-25T08:00:00.499178+00:00",
+      "updated_at": "2026-10-25T08:00:00.499178+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [
+          "launcher-preflight-passed"
+        ],
+        "subject_id": "fair-validation"
+      }
+    },
+    {
+      "id": "runtime_allocation-87fb8e36d0f74b1291680d68eacb8ab0",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "runtime_allocation",
+      "title": "Finite manager allocation",
+      "revision": 6,
+      "created_at": "2026-10-25T08:00:00.630788+00:00",
+      "updated_at": "2026-10-25T08:03:09.941639+00:00",
+      "details": {
+        "cleanup_deadline": 1792916710.6306546,
+        "cleanup_seconds": 190,
+        "deadline": 1792916520.6306546,
+        "events": [
+          {
+            "at": "2026-10-25T08:03:09.941487+00:00",
+            "event": "allocation_stopped",
+            "reason": "The final bounded retry exited and launcher cleanup returned. Close unused capacity and do not repeat the unchanged client-state failure."
+          }
+        ],
+        "lease_until": 1792915401.8701797,
+        "owner": {
+          "id": "controller-90337cd2d31244748eeac36b3cb7a83b",
+          "process": {
+            "birth": "489815",
+            "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+            "group": 1467,
+            "host": "3cccfe76ab54",
+            "pid": 1467,
+            "uid": 1000
+          }
+        },
+        "queue": [],
+        "reservations": [
+          {
+            "assignment_id": "assignment-holdout-scout-bootstrap-verified",
+            "attempt_id": "attempt-4c96256b324647d3baf8eaf0ac653b6e",
+            "charged_at": "2026-10-25T08:00:00.711774+00:00",
+            "retry_root": "attempt-2a0ba36011304a0c844d06b70fd0b734",
+            "review_pending": false,
+            "review_seconds": 300,
+            "reviews": [],
+            "settings": {
+              "backend": "codex",
+              "client_args": [],
+              "dont_ask": false,
+              "goal_mode": false,
+              "machine": "hp3",
+              "physics_backend": "headless-js",
+              "record": false,
+              "shared_runtime_write": true,
+              "sidebar_section": "none",
+              "viewer": "none",
+              "worktree": false
+            },
+            "state": "failed",
+            "usage": {
+              "estimates": {
+                "additional_files": 12,
+                "collections": 0,
+                "fresh_fits": 0,
+                "physics_steps": 0,
+                "prediction_evaluations": 0,
+                "wall_minutes": 12
+              },
+              "observed_worker_wall_seconds": 2.0619101524353027,
+              "supervisor_observations": [],
+              "unmetered": [
+                "shell movement",
+                "shell compute",
+                "spend"
+              ],
+              "worker_reports": []
+            },
+            "worker_seconds": 720
+          }
+        ],
+        "retry_limit": 4,
+        "review_backlog_limit": 2,
+        "review_seconds": 300,
+        "started_at": "2026-10-25T08:00:00.630657+00:00",
+        "state": "stopped",
+        "task_limit": 1,
+        "wall_reserved_seconds": 1020,
+        "wall_seconds": 1320,
+        "worker_limit": 1
+      }
+    },
+    {
+      "id": "attempt-4c96256b324647d3baf8eaf0ac653b6e",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "attempt",
+      "title": "Perform the original bounded saved-data feasibility scout now that the native addon, Python/JS dependencies and RRF simulator are installed and all six launcher preflight checks passed at world step zero. Inspect the three changed CM-E1 case manifests and compressed histories, plus at most twelve extra dataset/manifest files, for compatible later unused whole sweeps. Verify observation content, training and selection union, encoder origin, spool/layering, units and lineage. No fits, scoring, production/shared edits, physics experiments, collection or movement. Preserve report.md, research.md, abstract.md and hashes. The absent cloud guide is not a prerequisite. If the coding client fails before investigation, retain the engineering failure without scientific inference.",
+      "revision": 10,
+      "created_at": "2026-10-25T08:00:00.755030+00:00",
+      "updated_at": "2026-10-25T08:03:10.949927+00:00",
+      "details": {
+        "allocation": {
+          "additional_files": 12,
+          "collections": 0,
+          "fresh_fits": 0,
+          "physics_steps": 0,
+          "prediction_evaluations": 0,
+          "wall_minutes": 12
+        },
+        "argv": [
+          "/workspace/hp-sim5/hp-sim5-research-agent",
+          "--codex",
+          "--batch",
+          "--prompt-file",
+          "/workspace/hp-sim5/.research-programs/workers/attempt-4c96256b324647d3baf8eaf0ac653b6e/prompt.txt",
+          "--session-dir",
+          "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e",
+          "--physics-backend",
+          "headless-js",
+          "--machine",
+          "hp3",
+          "--viewer",
+          "none",
+          "--wall-deadline",
+          "1792915920.7148106",
+          "--sidebar-section",
+          "none",
+          "--no-record",
+          "--no-goal-mode"
+        ],
+        "artifacts": [
+          {
+            "bytes": 343,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/session.json"
+          },
+          {
+            "bytes": 21866,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/launch.json"
+          },
+          {
+            "bytes": 78,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/exit.json"
+          },
+          {
+            "bytes": 12023,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/prompt.txt"
+          },
+          {
+            "bytes": 0,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/events.jsonl"
+          },
+          {
+            "bytes": 12500,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/research.md"
+          },
+          {
+            "bytes": 2008,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/report.md"
+          },
+          {
+            "bytes": 1761,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/abstract.md"
+          },
+          {
+            "bytes": 6691,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/instructions.md"
+          },
+          {
+            "bytes": 420,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/attachment.toml"
+          },
+          {
+            "bytes": 297,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/attachment.json"
+          },
+          {
+            "bytes": 237,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/connection.json"
+          },
+          {
+            "bytes": 0,
+            "partial": true,
+            "path": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/native/runtime.log"
+          },
+          {
+            "bytes": 0,
+            "partial": true,
+            "path": "/workspace/hp-sim5/.research-programs/workers/attempt-4c96256b324647d3baf8eaf0ac653b6e/stdout.log"
+          },
+          {
+            "bytes": 300,
+            "partial": true,
+            "path": "/workspace/hp-sim5/.research-programs/workers/attempt-4c96256b324647d3baf8eaf0ac653b6e/stderr.log"
+          },
+          {
+            "bytes": 12023,
+            "partial": true,
+            "path": "/workspace/hp-sim5/.research-programs/workers/attempt-4c96256b324647d3baf8eaf0ac653b6e/prompt.txt"
+          },
+          {
+            "bytes": 2303,
+            "partial": true,
+            "path": "/workspace/hp-sim5/.research-programs/workers/attempt-4c96256b324647d3baf8eaf0ac653b6e/assignment.json"
+          }
+        ],
+        "assignment_id": "assignment-holdout-scout-bootstrap-verified",
+        "attempt_dir": "/workspace/hp-sim5/.research-programs/workers/attempt-4c96256b324647d3baf8eaf0ac653b6e",
+        "cleanup": "launcher_finally_completed",
+        "diagnostics": [],
+        "exited_at": "2026-10-25T08:00:02.820563+00:00",
+        "launcher_exit": {
+          "returncode": 1,
+          "wall_deadline": 1792915920.7148106,
+          "wall_expired": false
+        },
+        "launcher_session_id": "a5f36f2d19014d328969549af67e1efd",
+        "observations": [
+          {
+            "at": "2026-10-25T08:00:00.751176+00:00",
+            "event": "reserved"
+          },
+          {
+            "at": "2026-10-25T08:00:00.758659+00:00",
+            "event": "spawned",
+            "pid": 4443
+          },
+          {
+            "at": "2026-10-25T08:00:02.820574+00:00",
+            "event": "exited",
+            "returncode": 1
+          }
+        ],
+        "observed_wall_seconds": 2.0619101524353027,
+        "owner": {
+          "id": "dispatcher-fbd25e4dc59f4b898d9e834fd1644b5a",
+          "process": {
+            "birth": "489815",
+            "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+            "group": 1467,
+            "host": "3cccfe76ab54",
+            "pid": 1467,
+            "uid": 1000
+          }
+        },
+        "premise_conflicts": [],
+        "premise_event_ids_at_start": [],
+        "premise_ids": [
+          "evidence-agenda",
+          "evidence-cm-e1",
+          "evidence-fixed-angles"
+        ],
+        "premise_plan_ids": [
+          "plan-fair-validation",
+          "plan-model-sensitivity"
+        ],
+        "process": {
+          "birth": "608621",
+          "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+          "group": 4443,
+          "host": "3cccfe76ab54",
+          "pid": 4443,
+          "uid": 1000
+        },
+        "prompt_sha256": "898004fa161ca937f0412591ee5ee2e15c28e123749b4ce277e9d7771a6df339",
+        "returncode": 1,
+        "runtime": {
+          "allocation_id": "runtime_allocation-87fb8e36d0f74b1291680d68eacb8ab0",
+          "assignment_id": "assignment-holdout-scout-bootstrap-verified",
+          "cleanup_seconds": 190,
+          "wall_deadline": 1792915920.7148106
+        },
+        "runtime_session_id": "85c99235125841c49d3a55d70fa46371",
+        "scientific_state": "unassessed",
+        "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e",
+        "settings": {
+          "backend": "codex",
+          "client_args": [],
+          "dont_ask": false,
+          "goal_mode": false,
+          "machine": "hp3",
+          "physics_backend": "headless-js",
+          "record": false,
+          "shared_runtime_write": true,
+          "sidebar_section": "none",
+          "viewer": "none",
+          "worktree": false
+        },
+        "source_dirty": true,
+        "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca",
+        "started_at": "2026-10-25T08:00:00.758653+00:00",
+        "state": "failed",
+        "worktree": {
+          "branch": "work",
+          "repo": "/workspace/hp-sim5",
+          "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+        },
+        "worktree_id": "/workspace/hp-sim5"
+      }
+    },
+    {
+      "id": "decision-4cb95f6b91ed49e2aa053d2b9a28c686",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "decision",
+      "title": "Native addon and supervised services now start successfully. The actual coding-client worker then fails at read-only in-process app-server initialization before any model or saved-data investigation. This is an engineering blocker, with no scientific route actions.",
+      "revision": 1,
+      "created_at": "2026-10-25T08:03:09.804831+00:00",
+      "updated_at": "2026-10-25T08:03:09.804831+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "fair-validation"
+      }
+    },
+    {
+      "id": "relation-9a786b7e6d314360b05968ff88ea9b15",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "relation",
+      "title": "Native addon and supervised services now start successfully. The actual coding-client worker then fails at read-only in-process app-server initialization before any model or saved-data investigation. This is an engineering blocker, with no scientific route actions.",
+      "revision": 1,
+      "created_at": "2026-10-25T08:03:09.805814+00:00",
+      "updated_at": "2026-10-25T08:03:09.805814+00:00",
+      "details": {
+        "reason": "Native addon and supervised services now start successfully. The actual coding-client worker then fails at read-only in-process app-server initialization before any model or saved-data investigation. This is an engineering blocker, with no scientific route actions.",
+        "relation": "decision",
+        "source_id": "decision-4cb95f6b91ed49e2aa053d2b9a28c686",
+        "target_id": "fair-validation"
+      }
+    },
+    {
+      "id": "strategy_event-16466b6842624cfa8c97061c41ef8001",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "strategy_event",
+      "title": "Native addon and supervised services now start successfully. The actual coding-client worker then fails at read-only in-process app-server initialization before any model or saved-data investigation. This is an engineering blocker, with no scientific route actions.",
+      "revision": 1,
+      "created_at": "2026-10-25T08:03:09.805931+00:00",
+      "updated_at": "2026-10-25T08:03:09.805931+00:00",
+      "details": {
+        "actions": [],
+        "approach_ids": [
+          "fair-validation"
+        ],
+        "basis": "Execution failure; no scientific finding",
+        "citation_ids": [
+          "investigation-34eba31d52dc48e09edf53014acdb208",
+          "attempt-4c96256b324647d3baf8eaf0ac653b6e",
+          "launcher-preflight-passed"
+        ],
+        "decision_ids": [
+          "decision-4cb95f6b91ed49e2aa053d2b9a28c686"
+        ],
+        "event": "result",
+        "finding": "tool_failure",
+        "investigation_id": "investigation-34eba31d52dc48e09edf53014acdb208",
+        "outcome": "failed",
+        "reason": "Native addon and supervised services now start successfully. The actual coding-client worker then fails at read-only in-process app-server initialization before any model or saved-data investigation. This is an engineering blocker, with no scientific route actions.",
+        "review_event_ids": []
+      }
+    },
+    {
+      "id": "decision-f4308a0de8f047df81f6bb768720de87",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "decision",
+      "title": "All three newly funded worker attempts ended without scientific output. Restore the original capacity after retaining the one historical startup review obligation.",
+      "revision": 1,
+      "created_at": "2026-10-25T08:03:10.091924+00:00",
+      "updated_at": "2026-10-25T08:03:10.091924+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "program-1082afc1f40a4e4098c09cc5c68e6564"
+      }
+    },
+    {
+      "id": "decision-af5e8624e843476c8c9f9f7d1bc9c1be",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "decision",
+      "title": "Retain the inspected-evidence priority and exact saved-data scout scope. Native build, runtime dependencies and all six nonmoving launcher checks now pass. Actual worker client initialization remains blocked by read-only runtime state, so no scientific result has been obtained and no broader route is rejected.",
+      "revision": 1,
+      "created_at": "2026-10-25T08:03:10.331910+00:00",
+      "updated_at": "2026-10-25T08:03:10.331910+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [],
+        "subject_id": "fair-validation"
+      }
+    },
+    {
+      "id": "relation-974ca39c4fea4d9fa384d4373e528d3f",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "relation",
+      "title": "Retain the inspected-evidence priority and exact saved-data scout scope. Native build, runtime dependencies and all six nonmoving launcher checks now pass. Actual worker client initialization remains blocked by read-only runtime state, so no scientific result has been obtained and no broader route is rejected.",
+      "revision": 1,
+      "created_at": "2026-10-25T08:03:10.332843+00:00",
+      "updated_at": "2026-10-25T08:03:10.332843+00:00",
+      "details": {
+        "reason": "Retain the inspected-evidence priority and exact saved-data scout scope. Native build, runtime dependencies and all six nonmoving launcher checks now pass. Actual worker client initialization remains blocked by read-only runtime state, so no scientific result has been obtained and no broader route is rejected.",
+        "relation": "decision",
+        "source_id": "decision-af5e8624e843476c8c9f9f7d1bc9c1be",
+        "target_id": "fair-validation"
+      }
+    },
+    {
+      "id": "strategy_event-493dbfe0cfe642f3859829fa72dccd19",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "strategy_event",
+      "title": "Retain the inspected-evidence priority and exact saved-data scout scope. Native build, runtime dependencies and all six nonmoving launcher checks now pass. Actual worker client initialization remains blocked by read-only runtime state, so no scientific result has been obtained and no broader route is rejected.",
+      "revision": 1,
+      "created_at": "2026-10-25T08:03:10.332991+00:00",
+      "updated_at": "2026-10-25T08:03:10.332991+00:00",
+      "details": {
+        "approach_ids": [
+          "fair-validation"
+        ],
+        "basis": "Manager decision; scientific admission is separate",
+        "citation_ids": [
+          "plan-fair-validation",
+          "evidence-cm-e1",
+          "evidence-agenda",
+          "native-prerequisite-fixed",
+          "runtime-dependencies-restored",
+          "rrf-simulator-built",
+          "launcher-preflight-passed",
+          "attempt-4c96256b324647d3baf8eaf0ac653b6e"
+        ],
+        "decision_ids": [
+          "decision-af5e8624e843476c8c9f9f7d1bc9c1be"
+        ],
+        "event": "decision",
+        "reason": "Retain the inspected-evidence priority and exact saved-data scout scope. Native build, runtime dependencies and all six nonmoving launcher checks now pass. Actual worker client initialization remains blocked by read-only runtime state, so no scientific result has been obtained and no broader route is rejected.",
+        "reopening_condition": "A supported existing-login coding-client launch with writable runtime state, plus retained separate review capacity; then fund a distinct finite assignment rather than replaying an ended attempt.",
+        "review_event_ids": [],
+        "scope": {
+          "cases": [
+            "flexible_lines_2000",
+            "ten_points_w_buildup",
+            "ten_points_w_buildup2"
+          ],
+          "fresh_fits": 0,
+          "max_extra_files": 12,
+          "method": "saved-data feasibility scout",
+          "physics_steps": 0
+        },
+        "target": "promising"
+      }
+    },
+    {
+      "id": "decision-6ff88441216846448d111ee81f6e27a0",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "kind": "decision",
+      "title": "Native-build prerequisite is repaired and verified, including all three captured rustc stdio probes. Python requirements, full locked JS dependencies and pinned RRF simulator are installed. A nonmoving launcher preflight passed all six checks at step zero. The actual worker now reaches the coding client and fails at the same read-only app-server initialization boundary as the old reviewer. No further native rebuilds or unchanged worker launches are allocated. Keep the program active with no running work. Next work is a separately bounded existing-login client/runtime-state repair; after that, review the retained sealed startup submission through supported tools before normal scientific dispatch. No client homes or credentials were modified, no new API key is required by the workflow, and no scientific result is admitted.",
+      "revision": 1,
+      "created_at": "2026-10-25T08:03:10.469916+00:00",
+      "updated_at": "2026-10-25T08:03:10.469916+00:00",
+      "details": {
+        "actor": "manager",
+        "evidence_ids": [
+          "native-prerequisite-fixed",
+          "launcher-preflight-passed"
+        ],
+        "subject_id": "fair-validation"
+      }
+    }
+  ]
+}

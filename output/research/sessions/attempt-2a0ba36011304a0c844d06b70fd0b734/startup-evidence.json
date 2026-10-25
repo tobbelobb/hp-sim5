@@ -1,0 +1,177 @@
+{
+  "created_at": "2026-10-25T06:21:18.772249+00:00",
+  "details": {
+    "allocation": {
+      "additional_files": 12,
+      "collections": 0,
+      "fresh_fits": 0,
+      "physics_steps": 0,
+      "prediction_evaluations": 0,
+      "wall_minutes": 12
+    },
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-agent",
+      "--codex",
+      "--batch",
+      "--prompt-file",
+      "/workspace/hp-sim5/.research-programs/workers/attempt-2a0ba36011304a0c844d06b70fd0b734/prompt.txt",
+      "--session-dir",
+      "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734",
+      "--physics-backend",
+      "headless-js",
+      "--machine",
+      "hp3",
+      "--viewer",
+      "none",
+      "--wall-deadline",
+      "1792909998.7541018",
+      "--worktree",
+      "--no-record"
+    ],
+    "artifacts": [
+      {
+        "bytes": 430,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/session.json"
+      },
+      {
+        "bytes": 78,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/exit.json"
+      },
+      {
+        "bytes": 9070,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/prompt.txt"
+      },
+      {
+        "bytes": 9283,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/research.md"
+      },
+      {
+        "bytes": 522,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/abstract.md"
+      },
+      {
+        "bytes": 76,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-2a0ba36011304a0c844d06b70fd0b734/stdout.log"
+      },
+      {
+        "bytes": 975,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-2a0ba36011304a0c844d06b70fd0b734/stderr.log"
+      },
+      {
+        "bytes": 9070,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-2a0ba36011304a0c844d06b70fd0b734/prompt.txt"
+      },
+      {
+        "bytes": 2025,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-2a0ba36011304a0c844d06b70fd0b734/assignment.json"
+      }
+    ],
+    "assignment_id": "assignment-holdout-scout",
+    "attempt_dir": "/workspace/hp-sim5/.research-programs/workers/attempt-2a0ba36011304a0c844d06b70fd0b734",
+    "cleanup": "launcher_finally_completed",
+    "diagnostics": [],
+    "exited_at": "2026-10-25T06:21:24.341631+00:00",
+    "launcher_exit": {
+      "returncode": 1,
+      "wall_deadline": 1792909998.7541018,
+      "wall_expired": false
+    },
+    "launcher_session_id": "c7bc602dc88741e7963292977c806c42",
+    "observations": [
+      {
+        "at": "2026-10-25T06:21:18.771148+00:00",
+        "event": "reserved"
+      },
+      {
+        "at": "2026-10-25T06:21:18.775718+00:00",
+        "event": "spawned",
+        "pid": 798
+      },
+      {
+        "at": "2026-10-25T06:21:24.341641+00:00",
+        "event": "exited",
+        "returncode": 1
+      }
+    ],
+    "observed_wall_seconds": 5.56591796875,
+    "owner": {
+      "id": "dispatcher-6505f2047e6045719a491df5b20e6d4f",
+      "process": {
+        "birth": "3433",
+        "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+        "group": 590,
+        "host": "3cccfe76ab54",
+        "pid": 590,
+        "uid": 1000
+      }
+    },
+    "premise_conflicts": [],
+    "premise_event_ids_at_start": [],
+    "premise_ids": [
+      "evidence-agenda",
+      "evidence-cm-e1",
+      "evidence-fixed-angles"
+    ],
+    "premise_plan_ids": [
+      "plan-fair-validation",
+      "plan-model-sensitivity"
+    ],
+    "process": {
+      "birth": "16423",
+      "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+      "group": 798,
+      "host": "3cccfe76ab54",
+      "pid": 798,
+      "uid": 1000
+    },
+    "prompt_sha256": "f71f1236a6d5d07707bec25ed65112ff328a16adf370ebd72ecedf7018179f9e",
+    "returncode": 1,
+    "runtime": {
+      "allocation_id": "runtime_allocation-aa4de4b84e44473dbd28b5a384d85592",
+      "assignment_id": "assignment-holdout-scout",
+      "cleanup_seconds": 190,
+      "wall_deadline": 1792909998.7541018
+    },
+    "scientific_state": "unassessed",
+    "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734",
+    "settings": {
+      "backend": "codex",
+      "client_args": [],
+      "dont_ask": false,
+      "goal_mode": true,
+      "machine": "hp3",
+      "physics_backend": "headless-js",
+      "record": false,
+      "shared_runtime_write": true,
+      "viewer": "none",
+      "worktree": true
+    },
+    "source_dirty": false,
+    "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca",
+    "started_at": "2026-10-25T06:21:18.775713+00:00",
+    "state": "failed",
+    "worktree": {
+      "branch": "research/bounded-research-assignment-47495c22",
+      "repo": "/workspace/hp-sim5-worktrees/bounded-research-assignment-47495c22",
+      "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+    },
+    "worktree_id": "/workspace/hp-sim5-worktrees/bounded-research-assignment-47495c22"
+  },
+  "id": "attempt-2a0ba36011304a0c844d06b70fd0b734",
+  "kind": "attempt",
+  "observation": "observed child",
+  "owned": false,
+  "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+  "revision": 9,
+  "title": "Inspect the three CM-E1 changed-case input manifests and at most twelve extra dataset/manifest files for compatible later unused whole sweeps. Verify content, training/selection union, encoder origin, spool/layering, units and source lineage. Return eligible or missing identities and a bounded decision; no prediction scoring, fitting, code edits, simulation or movement. Also state which conclusion the scout cannot support. Write research.md, report.md, abstract.md and an input hash manifest in the assigned session.",
+  "updated_at": "2026-10-25T06:21:24.342349+00:00"
+}

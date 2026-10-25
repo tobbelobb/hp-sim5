@@ -4236,3 +4236,69 @@ durable graph, startup failure, recovery, bounded research
 - [Report](sessions/2026-10-24-live-manager-release/report.md), [notebook](sessions/2026-10-24-live-manager-release/research.md), [checks](sessions/2026-10-24-live-manager-release/checks.json): outcomes and limits.
 - [Source hashes](sessions/2026-10-24-live-manager-release/source-hashes.json), [program export](sessions/2026-10-24-live-manager-release/program-export.json): fixed source and durable history.
 - [Task 015 checks](sessions/2026-10-24-live-manager-release/../2026-10-24-tested-integration/affected-fix-command.json): reused pool/integration foundations.
+
+## [Hangprinter uncertainty program](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-6664a6157d2e451a8ec92f9b1efd67af/)
+
+[abstract.md](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-6664a6157d2e451a8ec92f9b1efd67af/abstract.md) · [report.md](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-6664a6157d2e451a8ec92f9b1efd67af/report.md) · [research.md](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-6664a6157d2e451a8ec92f9b1efd67af/research.md) · [Program archive](managers/program-1082afc1f40a4e4098c09cc5c68e6564/README.md)
+
+### Hangprinter's unresolved questions and the cheapest useful test
+
+Status: saved evidence assessed; delegated investigation and separate reviewer blocked at startup. No new scientific admission.
+
+#### Abstract
+
+Which uncertainties about Hangprinter should receive the next small experiment? This manager inspected saved calibration, measurement-model and motor-dynamics reports, searched the research catalog and inspected the existing evidence graph. The most immediate calibration gap is a fair prediction comparison of the actual applied anchors and spool model. In the saved CM-E1 comparison, all three changed model pairs have zero common unused whole sweeps. A twelve-minute saved-data feasibility scout was commissioned through the existing research worker, with no fitting, scoring, collection or motion. Its launcher failed at missing Node-API headers before the coding client or investigation ran. The manager therefore recommends the scout and a conditional six-score comparison, while preserving model sensitivity and dynamic fidelity as competing routes. No new scientific result, hardware measurement or accuracy improvement is claimed. The priorities are practical judgments based on inspected reports that have not received a new independent scientific review.
+
+#### Topics
+
+Hangprinter, research priorities, encoder-only calibration, identifiability, held-out validation, cable winding, motor dynamics, timestep convergence, hardware accuracy
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment ID | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Compatible unused sweeps exist in the bounded search | assignment-holdout-scout | Not tested; startup blocked | [Report](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-6664a6157d2e451a8ec92f9b1efd67af/report.md) |
+
+#### Decision handoff
+
+- Scope: inspected saved simulation reports and one native-build failure, no hardware result.
+- Review: manager assessment; separate startup reviewer failed at read-only client initialization. No assessment or admission exists.
+- Decision: preserve current defaults and credible rival routes.
+- Next: new dispatch paused and unused allocation closed. Clear the retained separate review obligation after client startup works, then fund a distinct bounded scout after native-build prerequisites work. Conditional paired scoring remains unfunded.
+
+#### References
+
+- [Report](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-6664a6157d2e451a8ec92f9b1efd67af/report.md), [notebook](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-6664a6157d2e451a8ec92f9b1efd67af/research.md), [overview](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-6664a6157d2e451a8ec92f9b1efd67af/overview.md), [operation transcript](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-6664a6157d2e451a8ec92f9b1efd67af/manager-operations.jsonl).
+
+## [attempt-2a0ba36011304a0c844d06b70fd0b734](sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/)
+
+[abstract.md](sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/abstract.md) · [report.md](sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/report.md) · [research.md](sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/research.md)
+
+### Common unused calibration sweeps: scout blocked before inspection
+
+Status: blocked at launcher startup. Manager-authored handoff; no worker scientific result.
+
+#### Abstract
+
+Could compatible later saved sweeps provide a fair test of three changed CM-E1 applied model pairs? The assigned scout had twelve minutes, at most twelve extra files and no fitting, scoring, collection or motion. The existing launcher created an isolated worktree but its native build failed because Node-API headers were missing. The controller observed exit 1 after about 5.57 seconds and the launcher's finally cleanup returned. The coding-client investigation never ran. No dataset eligibility, prediction difference or physical accuracy was tested. The practical next step is to restore normal launcher prerequisites before a distinct bounded retry. The failure rejects no scientific route.
+
+#### Topics
+
+Hangprinter, calibration, common holdout, research manager, native build, startup blocker
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment ID | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Compatible unused whole sweeps exist within the named search | assignment-holdout-scout | Not tested | [Startup evidence](sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/startup-evidence.json), [launcher error](sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/launcher-stderr.log) |
+
+#### Decision handoff
+
+- Scope: existing launcher at revision `8acde0c21d5b9db8893115e3e79d82d9e41f98ca`; no scientific worker execution.
+- Review: fixed manager-authored startup evidence submitted for separate review; no admission implied.
+- Decision: retain all scientific routes. Do not interpret this failure as absent data.
+- Next: verify normal native-build and authenticated client prerequisites before funding a distinct retry.
+
+#### References
+
+- [Report](sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/report.md), [notebook](sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/research.md), [startup evidence](sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/startup-evidence.json) and [launcher error](sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/launcher-stderr.log).

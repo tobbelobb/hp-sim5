@@ -1,0 +1,124 @@
+{
+  "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+  "scope": "Research assessment, original failed startup, fixed submission and complete durable program history. No scientific admission. Historical controller paths and PIDs are observations only.",
+  "source_base": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca",
+  "publication_base": "f3de3dd7ae60f01040b1d08fcece236564dffc0d",
+  "restore_check": "Imported into isolated temporary store; four failed attempts and zero admissions retained; sealed submission byte integrity verified.",
+  "files": [
+    {
+      "path": "output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-6664a6157d2e451a8ec92f9b1efd67af/abstract.md",
+      "sha256": "f64eca4e2c4cb35bc1237b1d1aa3ea33571ae35ef0ef895a14330fe93294b240",
+      "bytes": 2398
+    },
+    {
+      "path": "output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-6664a6157d2e451a8ec92f9b1efd67af/brief.md",
+      "sha256": "d45b27bbf33a869f9d9f035239e2b35b131ed76ae60bc1c65f135a67154f748d",
+      "bytes": 4117
+    },
+    {
+      "path": "output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-6664a6157d2e451a8ec92f9b1efd67af/manager-operations.jsonl",
+      "sha256": "86c1a708c08c88bdbe7e26ff4ed22bae56e49f468f76c0f31912ebc0cca69161",
+      "bytes": 577719
+    },
+    {
+      "path": "output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-6664a6157d2e451a8ec92f9b1efd67af/overview.md",
+      "sha256": "dc443c564d84648b3cf164972550621b600b4d8ee39cc383edb719fe3e6a7d8d",
+      "bytes": 62089
+    },
+    {
+      "path": "output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-6664a6157d2e451a8ec92f9b1efd67af/report.md",
+      "sha256": "a3d620f6e40b75c8dae1a88ac3a72389c2c379b40605ab7bd2809c10c4bd3f48",
+      "bytes": 14078
+    },
+    {
+      "path": "output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-6664a6157d2e451a8ec92f9b1efd67af/research.md",
+      "sha256": "2a728e8ab314d3012db4fdc3aac66438e6aa196c9e49c3222d8461d427f20364",
+      "bytes": 4646
+    },
+    {
+      "path": "output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-6664a6157d2e451a8ec92f9b1efd67af/review-status.json",
+      "sha256": "996618cc899adcb6f72a40fec1db639f1182a3811975b7d63f3a42c8ccce1c16",
+      "bytes": 4039
+    },
+    {
+      "path": "output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-6664a6157d2e451a8ec92f9b1efd67af/reviewer-stderr.log",
+      "sha256": "8e3330eeb312ddb37b9da73c3ece4a8aa7e2ade4b7bb255573aa487bc89f0f58",
+      "bytes": 197
+    },
+    {
+      "path": "output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/program-export.json",
+      "sha256": "eccb7a1c18358e88cf0b2bea93846e134a58f80a83597e820a75c01d5491d7b6",
+      "bytes": 148883
+    },
+    {
+      "path": "output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/sealed-submission/submission-8dcfa72e3f48459abdf6b894c2932a5d/abstract",
+      "sha256": "1583f87b802d487cdd27cbde0edda4a965b189c02317297eaa1ebec6c1ef95ab",
+      "bytes": 1846
+    },
+    {
+      "path": "output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/sealed-submission/submission-8dcfa72e3f48459abdf6b894c2932a5d/candidate.diff",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/sealed-submission/submission-8dcfa72e3f48459abdf6b894c2932a5d/launcher-error",
+      "sha256": "793c7732224894059d0773fb4ad2e06db27278fdccfe0b47ccc68edeffb6a5eb",
+      "bytes": 975
+    },
+    {
+      "path": "output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/sealed-submission/submission-8dcfa72e3f48459abdf6b894c2932a5d/manifest.json",
+      "sha256": "24f423b921ae53c20c0d93418e17c7d7ec908e7cca304dfb64e9857776cd874d",
+      "bytes": 2532
+    },
+    {
+      "path": "output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/sealed-submission/submission-8dcfa72e3f48459abdf6b894c2932a5d/report",
+      "sha256": "fdc18c4ca1d71f933259d26ceafa4efcafc0d7aceeecade7856b7ee872ce0158",
+      "bytes": 2696
+    },
+    {
+      "path": "output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/sealed-submission/submission-8dcfa72e3f48459abdf6b894c2932a5d/status",
+      "sha256": "b55401fac8d47c0be224cf496ad9899deefbd2fd57ad281ba68ccd6cac3be733",
+      "bytes": 6143
+    },
+    {
+      "path": "output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/abstract.md",
+      "sha256": "1583f87b802d487cdd27cbde0edda4a965b189c02317297eaa1ebec6c1ef95ab",
+      "bytes": 1846
+    },
+    {
+      "path": "output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/exit.json",
+      "sha256": "f6eb628e45adfa5a3c9220abe75a97cdc4d2e143b059da0758f62fa1ce4ac913",
+      "bytes": 78
+    },
+    {
+      "path": "output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/launcher-stderr.log",
+      "sha256": "793c7732224894059d0773fb4ad2e06db27278fdccfe0b47ccc68edeffb6a5eb",
+      "bytes": 975
+    },
+    {
+      "path": "output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/prompt.txt",
+      "sha256": "f71f1236a6d5d07707bec25ed65112ff328a16adf370ebd72ecedf7018179f9e",
+      "bytes": 9070
+    },
+    {
+      "path": "output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/report.md",
+      "sha256": "fdc18c4ca1d71f933259d26ceafa4efcafc0d7aceeecade7856b7ee872ce0158",
+      "bytes": 2696
+    },
+    {
+      "path": "output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/research.md",
+      "sha256": "26cf1c93d96fb7b8b7c5697a52a73028329d0bc7d23778f5c888ea3fd6bd51dc",
+      "bytes": 9663
+    },
+    {
+      "path": "output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/session.json",
+      "sha256": "7084af805bc8a698284d8b8f92f1ea33a7d3c2c22b857aa5d7037a4f31a59984",
+      "bytes": 430
+    },
+    {
+      "path": "output/research/sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/startup-evidence.json",
+      "sha256": "b55401fac8d47c0be224cf496ad9899deefbd2fd57ad281ba68ccd6cac3be733",
+      "bytes": 6143
+    }
+  ]
+}
