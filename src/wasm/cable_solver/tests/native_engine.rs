@@ -1,4 +1,7 @@
-use hp_sim5_cable_solver::{engine::PhysicsWorld, Entity};
+use hp_sim5_cable_solver::{
+    engine::{PhysicsWorld, HEADER, LINK, SEGMENT},
+    Entity,
+};
 
 fn entity(id: f64, x: f64) -> Entity {
     let mut e = [0.0; 160];
@@ -52,28 +55,18 @@ fn native_cable_solve_retains_lengths_and_forces() {
         e[75] = 128.0;
         e[124] = 1.0;
     }
-    let mut path = vec![
-        1.0,
-        3.0,
-        f64::INFINITY,
-        0.0,
-        0.0,
-        1.0,
-        0.0,
-        1.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        f64::NAN,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        f64::NAN,
-        0.0,
-    ];
-    path.extend_from_slice(&[
+    // One segment and two attachment links, using the current packed ABI.
+    let segment = HEADER + 2 * LINK;
+    let mut path = vec![0.0; segment + SEGMENT];
+    path[0] = 1.0;
+    path[1] = 3.0;
+    path[2] = f64::INFINITY;
+    path[5] = 1.0;
+    path[7] = 1.0;
+    for link in 0..2 {
+        path[HEADER + link * LINK + 3] = f64::NAN;
+    }
+    path[segment..].copy_from_slice(&[
         2.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     ]);
     let mut w = world(vec![a, b], vec![path]);
@@ -81,8 +74,8 @@ fn native_cable_solve_retains_lengths_and_forces() {
     assert_eq!(w.entities[0][0], 1.0);
     assert_eq!(w.entities[1][0], 2.0);
     let data = w.path_data(0);
-    assert_eq!(data[19 + 3], 1.0);
-    assert_eq!(data[19 + 11], 1.0);
+    assert_eq!(data[segment + 3], 1.0);
+    assert_eq!(data[segment + 11], 1.0);
     assert_eq!(data[7], 1.0);
     for _ in 0..10 {
         w.step(1.0);
