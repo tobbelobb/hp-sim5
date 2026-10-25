@@ -1,0 +1,411 @@
+[".venv/bin/cmake", "-S", "RRF", "-B", "RRF/build"]
+-- The CXX compiler identification is GNU 14.2.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Sandbox for sources will be at: /workspace/hp-sim5/RRF/build/generated_sources
+-- Configuring done (0.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /workspace/hp-sim5/RRF/build
+[".venv/bin/cmake", "--build", "RRF/build", "--target", "rrf_simulator", "-j", "4"]
+[  1%] Copying real ReprapFirmware source ObjectModel/Variable.cpp
+[  1%] Copying real ReprapFirmware source Platform/OutputMemory.cpp
+[  1%] Copying real ReprapFirmware source Platform/StringHandle.cpp
+[  1%] Copying real ReprapFirmware source Platform/ArrayHandle.cpp
+[  1%] Copying real ReprapFirmware source ObjectModel/ObjectModel.cpp
+[  1%] Copying real ReprapFirmware source ObjectModel/GlobalVariables.cpp
+[  2%] Copying real ReprapFirmware source Tools/Filament.cpp
+[  2%] Copying real ReprapFirmware source Tools/Tool.cpp
+[  2%] Copying real ReprapFirmware source Movement/Kinematics/CoreKinematics.cpp
+[  3%] Copying real ReprapFirmware source Movement/Kinematics/ZLeadscrewKinematics.cpp
+[  3%] Copying real ReprapFirmware source Movement/Kinematics/Kinematics.cpp
+[  3%] Copying real ReprapFirmware source Movement/Kinematics/RoundBedKinematics.cpp
+[  3%] Copying real ReprapFirmware source Movement/Kinematics/RotaryDeltaKinematics.cpp
+[  3%] Copying real ReprapFirmware source Movement/Kinematics/HangprinterKinematics.cpp
+[  3%] Copying real ReprapFirmware source Movement/Kinematics/LinearDeltaKinematics.cpp
+[  3%] Copying real ReprapFirmware source Movement/Kinematics/ScaraKinematics.cpp
+[  3%] Copying real ReprapFirmware source Movement/Kinematics/PolarKinematics.cpp
+[  4%] Copying real ReprapFirmware source Movement/Kinematics/FiveBarScaraKinematics.cpp
+[  4%] Copying real ReprapFirmware source Movement/DriveMovement.cpp
+[  4%] Copying real ReprapFirmware source Movement/DDA.cpp
+[  5%] Copying real ReprapFirmware source Movement/DDARing.cpp
+[  5%] Copying real ReprapFirmware source Movement/Move.cpp
+[  5%] Copying real ReprapFirmware source Movement/Move2.cpp
+[  6%] Copying real ReprapFirmware source Movement/Move3.cpp
+[  6%] Copying real ReprapFirmware source Movement/MoveSegment.cpp
+[  6%] Copying real ReprapFirmware source Movement/RawMove.cpp
+[  6%] Copying real ReprapFirmware source Movement/AxisShaper.cpp
+[  6%] Copying real ReprapFirmware source Movement/ExtruderShaper.cpp
+[  6%] Copying real ReprapFirmware source Movement/MovementProfile.cpp
+[  7%] Copying real ReprapFirmware source Movement/MovementError.cpp
+[  8%] Copying real ReprapFirmware source Movement/BedProbing/Grid.cpp
+[  8%] Copying real ReprapFirmware source Movement/BedProbing/RandomProbePointSet.cpp
+[  8%] Copying real ReprapFirmware source Movement/StepperDrivers/DriverData.cpp
+[  8%] Copying real ReprapFirmware source GCodes/StraightProbeSettings.cpp
+[  8%] Copying real ReprapFirmware source GCodes/TriggerItem.cpp
+[  8%] Copying real ReprapFirmware source Networking/NetworkInterface.cpp
+[  8%] Copying real ReprapFirmware source Networking/NetworkBuffer.cpp
+[  8%] Copying real ReprapFirmware source Networking/NetworkResponder.cpp
+[  8%] Copying real ReprapFirmware source Networking/UploadingNetworkResponder.cpp
+[  8%] Copying real ReprapFirmware source Networking/NetworkClient.cpp
+[  9%] Copying real ReprapFirmware source Networking/HttpResponder.cpp
+[  9%] Copying real ReprapFirmware source Networking/Network.cpp
+[ 10%] Copying real ReprapFirmware source GCodes/GCodeBuffer/GCodeBuffer.cpp
+[ 10%] Copying real ReprapFirmware source GCodes/GCodeBuffer/ExpressionParser.cpp
+[ 10%] Copying real ReprapFirmware source GCodes/GCodeBuffer/StringParser.cpp
+[ 11%] Copying real ReprapFirmware source GCodes/GCodeMachineState.cpp
+[ 11%] Copying real ReprapFirmware source GCodes/GCodeInput.cpp
+[ 11%] Copying real ReprapFirmware source GCodes/GCodeQueue.cpp
+[ 11%] Copying real ReprapFirmware source GCodes/GCodes.cpp
+[ 11%] Copying real ReprapFirmware source GCodes/GCodes2.cpp
+[ 11%] Copying real ReprapFirmware source GCodes/GCodes3.cpp
+[ 11%] Copying real ReprapFirmware source GCodes/GCodes5.cpp
+[ 11%] Copying real ReprapFirmware source GCodes/GCodes4.cpp
+[ 12%] Copying real ReprapFirmware source GCodes/GCodes6.cpp
+[ 12%] Copying real ReprapFirmware source GCodes/GCodes7.cpp
+[ 13%] Copying real ReprapFirmware source GCodes/GCodeException.cpp
+[ 13%] Copying real ReprapFirmware source GCodes/ObjectTracker.cpp
+[ 13%] Copying real ReprapFirmware source GCodes/KeepoutZone.cpp
+[ 13%] Copying real ReprapFirmware source GCodes/RestorePoint.cpp
+[ 13%] Copying real ReprapFirmware source PrintMonitor/PrintMonitor.cpp
+[ 13%] Copying real ReprapFirmware source Platform/RepRap.cpp
+[ 13%] Copying real ReprapFirmware source Storage/CRC32.cpp
+[ 13%] Copying real ReprapFirmware source Storage/CRC16.cpp
+[ 13%] Copying real ReprapFirmware source RepRapFirmware.cpp
+[ 14%] Copying real ReprapFirmware source libc/strptime.cpp
+[ 14%] Copying real ReprapFirmware source Version.cpp
+[ 15%] Copying real ReprapFirmware source CAN/CanDriversData.cpp
+[ 15%] Copying real ReprapFirmware source CAN/ExpansionManager.cpp
+[ 16%] Copying real ReprapFirmware source GCodes/CollisionAvoider.cpp
+[ 16%] Copying real ReprapFirmware source Platform/Logger.cpp
+[ 17%] Copying real ReprapFirmware source Platform/PortControl.cpp
+[ 18%] Copying real ReprapFirmware source CAN/CanMotion.cpp
+[ 18%] Copying real ReprapFirmware source ClosedLoop/ClosedLoop.cpp
+[ 18%] Copying real RRFLibraries source General/NamedEnum.cpp
+[ 19%] Copying real RRFLibraries source General/StringRef.cpp
+[ 19%] Copying real RRFLibraries source General/Strnlen.cpp
+[ 19%] Copying real RRFLibraries source General/StringFunctions.cpp
+[ 19%] Copying real RRFLibraries source General/SafeStrtod.cpp
+[ 19%] Copying real RRFLibraries source General/SafeVsnprintf.cpp
+[ 19%] Copying real RRFLibraries source General/IPAddress.cpp
+[ 19%] Copying real RRFLibraries source General/IP4String.cpp
+[ 19%] Copying real RRFLibraries source General/NumericConverter.cpp
+[ 20%] Copying real RRFLibraries source Math/Isqrt.cpp
+[ 20%] Copying real RRFLibraries source Math/Deviation.cpp
+[ 20%] Copying real RRFLibraries source Math/DeviationAccumulator.cpp
+[ 21%] Copying real RRFLibraries header ecv_duet3d.h
+[ 21%] Copying real RRFLibraries header ecv_original.h
+[ 21%] Copying real RRFLibraries header General/NamedEnum.h
+[ 21%] Copying real RRFLibraries header General/String.h
+[ 21%] Copying real RRFLibraries header General/StringRef.h
+[ 21%] Copying real RRFLibraries header General/StringFunctions.h
+[ 21%] Copying real RRFLibraries header General/Strnlen.h
+[ 22%] Copying real RRFLibraries header General/Bitmap.h
+[ 22%] Copying real RRFLibraries header General/function_ref.h
+[ 22%] Copying real RRFLibraries header General/gcc_builtins.h
+[ 22%] Copying real RRFLibraries header General/SafeStrtod.h
+[ 23%] Copying real RRFLibraries header General/SafeVsnprintf.h
+[ 23%] Copying real RRFLibraries header General/SimpleMath.h
+[ 23%] Copying real RRFLibraries header General/IPAddress.h
+[ 23%] Copying real RRFLibraries header General/IsoDate.h
+[ 23%] Copying real RRFLibraries header General/Portability.h
+[ 23%] Copying real RRFLibraries header General/FreelistManager.h
+[ 24%] Copying real RRFLibraries header General/IapInfo.h
+[ 24%] Copying real RRFLibraries header Math/Deviation.h
+[ 24%] Copying real RRFLibraries header Math/DeviationAccumulator.h
+[ 24%] Copying real RRFLibraries header RTOSIface/RTOSNotifyIndices.h
+[ 24%] Copying real RRFLibraries header General/IP4String.h
+[ 24%] Copying real RRFLibraries header Math/Matrix.h
+[ 25%] Copying real RRFLibraries header General/NumericConverter.h
+[ 25%] Copying real RRFLibraries header Math/Isqrt.h
+[ 25%] Copying real CANlib source RRF3Common.cpp
+[ 25%] Copying real CANlib source CanSettings.cpp
+[ 25%] Copying real CANlib header RRF3Common.h
+[ 25%] Copying real CANlib source CanMessageFormats.cpp
+[ 25%] Copying real CANlib source CanMessageBuffer.cpp
+[ 25%] Copying real CANlib header GCodeResult.h
+[ 25%] Copying real CANlib header Duet3Common.h
+[ 25%] Copying real CANlib header CanMessageBuffer.h
+[ 25%] Copying real CANlib header CanId.h
+[ 26%] Copying real CANlib header CanMessageFormats.h
+[ 26%] Copying real CANlib header CanSettings.h
+[ 26%] Copying real CANlib header RemoteInputHandle.h
+[ 26%] Copying real CANlib header TemperatureError.h
+[ 26%] Copying real CANlib header CANlibNotifyIndices.h
+[ 26%] Copying real CANlib header CanMessageGenericTableFormat.h
+[ 26%] Copying real CANlib header HeaterModel.h
+[ 26%] Copying real ReprapFirmware header Platform/ArrayHandle.h
+[ 27%] Copying real ReprapFirmware header Platform/StringHandle.h
+[ 27%] Copying real ReprapFirmware header ObjectModel/Variable.h
+[ 27%] Copying real ReprapFirmware header Platform/OutputMemory.h
+[ 27%] Copying real ReprapFirmware header ObjectModel/ObjectModel.h
+[ 27%] Copying real ReprapFirmware header ObjectModel/TypeCode.h
+[ 27%] Copying real ReprapFirmware header ObjectModel/GlobalVariables.h
+[ 27%] Copying real ReprapFirmware header Platform/PrintPausedReason.h
+[ 27%] Copying real ReprapFirmware header Platform/MessageType.h
+[ 27%] Copying real ReprapFirmware header Tools/Filament.h
+[ 27%] Copying real ReprapFirmware header Tools/Tool.h
+[ 28%] Copying real ReprapFirmware header Movement/Kinematics/CoreKinematics.h
+[ 28%] Copying real ReprapFirmware header Movement/Kinematics/Kinematics.h
+[ 28%] Copying real ReprapFirmware header Movement/Kinematics/HangprinterKinematics.h
+[ 28%] Copying real ReprapFirmware header Movement/DriveMovement.h
+[ 28%] Copying real ReprapFirmware header Movement/DDARing.h
+[ 28%] Copying real ReprapFirmware header Movement/DDA.h
+[ 28%] Copying real ReprapFirmware header Movement/Move.h
+[ 28%] Copying real ReprapFirmware header Movement/RawMove.h
+[ 28%] Copying real ReprapFirmware header RepRapFirmware.h
+[ 28%] Copying real ReprapFirmware header Platform/RepRap.h
+[ 28%] Copying real ReprapFirmware header GCodes/GCodeMachineState.h
+[ 28%] Copying real ReprapFirmware header GCodes/GCodeException.h
+[ 29%] Copying real ReprapFirmware header GCodes/ObjectTracker.h
+[ 29%] Copying real ReprapFirmware header GCodes/RestorePoint.h
+[ 29%] Copying real ReprapFirmware header GCodes/GCodeChannel.h
+[ 29%] Copying real ReprapFirmware header GCodes/GCodeInput.h
+[ 29%] Copying real ReprapFirmware header GCodes/CollisionAvoider.h
+[ 29%] Copying real ReprapFirmware header GCodes/KeepoutZone.h
+[ 29%] Copying real ReprapFirmware header GCodes/TriggerItem.h
+[ 29%] Copying real ReprapFirmware header GCodes/SimulationMode.h
+[ 30%] Copying real ReprapFirmware header GCodes/StraightProbeSettings.h
+[ 30%] Copying real ReprapFirmware header GCodes/GCodeBuffer/GCodeBuffer.h
+[ 30%] Copying real ReprapFirmware header GCodes/GCodeBuffer/BinaryParser.h
+[ 30%] Copying real ReprapFirmware header GCodes/GCodeBuffer/ExpressionParser.h
+[ 30%] Copying real ReprapFirmware header GCodes/GCodeFileInfo.h
+[ 30%] Copying real ReprapFirmware header GCodes/GCodeBuffer/StringParser.h
+[ 30%] Copying real ReprapFirmware header Config/Configuration.h
+[ 30%] Copying real ReprapFirmware header Networking/NetworkDefs.h
+[ 30%] Copying real ReprapFirmware header Networking/Network.h
+[ 31%] Copying real ReprapFirmware header Networking/NetworkInterface.h
+[ 31%] Copying real ReprapFirmware header Networking/NetworkResponder.h
+[ 31%] Copying real ReprapFirmware header Networking/NetworkClient.h
+[ 32%] Copying real ReprapFirmware header Networking/NetworkBuffer.h
+[ 33%] Copying real ReprapFirmware header Networking/UploadingNetworkResponder.h
+[ 33%] Copying real ReprapFirmware header Networking/HttpResponder.h
+[ 33%] Copying real ReprapFirmware header Storage/FileData.h
+[ 33%] Copying real ReprapFirmware header Storage/CRC32.h
+[ 33%] Copying real ReprapFirmware header Networking/Socket.h
+[ 33%] Copying real ReprapFirmware header Storage/CRC16.h
+[ 34%] Copying real ReprapFirmware header Endstops/ZProbe.h
+[ 34%] Copying real ReprapFirmware header Endstops/EndstopDefs.h
+[ 34%] Copying real ReprapFirmware header Endstops/Endstop.h
+[ 35%] Copying real ReprapFirmware header Platform/MessageBox.h
+[ 35%] Copying real ReprapFirmware header CAN/ExpansionManager.h
+[ 36%] Copying real ReprapFirmware header Platform/Event.h
+[ 36%] Copying real ReprapFirmware header Movement/BedProbing/Grid.h
+[ 36%] Copying real ReprapFirmware header Movement/HomingMode.h
+[ 36%] Copying real ReprapFirmware header Movement/MovementError.h
+[ 36%] Copying real ReprapFirmware header Movement/StepperDrivers/DriverData.h
+[ 36%] Copying real ReprapFirmware header Movement/MoveTiming.h
+[ 36%] Copying real ReprapFirmware header Movement/AxisShaper.h
+[ 37%] Copying real ReprapFirmware header Movement/ExtruderShaper.h
+[ 37%] Copying real ReprapFirmware header Movement/MoveSegment.h
+[ 37%] Copying real ReprapFirmware header Movement/MoveDebugFlags.h
+[ 37%] Copying real ReprapFirmware header Movement/MovementProfile.h
+[ 37%] Copying real ReprapFirmware header Movement/BedProbing/RandomProbePointSet.h
+[ 38%] Copying real ReprapFirmware header Hardware/ExceptionHandlers.h
+[ 38%] Copying real ReprapFirmware header Hardware/SoftwareReset.h
+[ 38%] Copying real ReprapFirmware header AppNotifyIndices.h
+[ 38%] Copying real ReprapFirmware header CAN/CanMotion.h
+[ 38%] Copying real ReprapFirmware header CAN/CanDriversData.h
+[ 38%] Copying real ReprapFirmware header Movement/Kinematics/ZLeadscrewKinematics.h
+[ 38%] Copying real ReprapFirmware header Movement/Kinematics/RoundBedKinematics.h
+[ 38%] Copying real ReprapFirmware header Movement/Kinematics/LinearDeltaKinematics.h
+[ 39%] Copying real ReprapFirmware header Movement/Kinematics/RotaryDeltaKinematics.h
+[ 39%] Copying real ReprapFirmware header Movement/Kinematics/ScaraKinematics.h
+[ 39%] Copying real ReprapFirmware header Movement/Kinematics/PolarKinematics.h
+[ 39%] Copying real ReprapFirmware header Movement/Kinematics/FiveBarScaraKinematics.h
+[ 39%] Copying real ReprapFirmware header Platform/PortControl.h
+[ 39%] Copying real ReprapFirmware header PrintMonitor/PrintMonitor.h
+[ 39%] Copying real ReprapFirmware header GCodes/GCodeQueue.h
+[ 39%] Copying real ReprapFirmware header Movement/StepperDrivers/DriverMode.h
+[ 39%] Copying real ReprapFirmware header Version.h
+[ 39%] Copying real ReprapFirmware header Platform/Logger.h
+[ 39%] Copying real ReprapFirmware header GPIO/GpOutPort.h
+[ 39%] Copying real ReprapFirmware header GPIO/GpInPort.h
+[ 39%] Copying real ReprapFirmware header Hardware/I2C.h
+[ 39%] Copying real ReprapFirmware header ClosedLoop/ClosedLoop.h
+[ 40%] Copying real ReprapFirmware header Comms/FirmwareUpdater.h
+[ 40%] Copying real ReprapFirmware header Heating/Sensors/TemperatureSensor.h
+[ 40%] Copying real ReprapFirmware header CAN/CanMessageGenericConstructor.h
+[ 40%] Copying real header Platform/Heap.h into Platform/Heap.h.orig
+[ 40%] Copying real ReprapFirmware header Movement/HeightControl/HeightController.h
+[ 40%] Copying real header CAN/CanInterface.h into CAN/CanInterface.h.orig
+[ 40%] Copying real header Platform/Tasks.h into Platform/Tasks.h.orig
+[ 40%] Copying real header GCodes/GCodes.h into GCodes/GCodes.h.orig
+[ 40%] Copying real header Platform/TaskPriorities.h into Platform/TaskPriorities.h.orig
+[ 40%] Copying FAKE header FreeRTOS.h
+[ 40%] Copying FAKE header FreeRTOSConfig.h
+[ 40%] Copying FAKE header task.h
+[ 40%] Copying FAKE header queue.h
+[ 41%] Copying FAKE header semphr.h
+[ 42%] Copying FAKE header RTOSIface/RTOSIface.h
+[ 42%] Copying FAKE header Platform/Heap.h
+[ 42%] Copying FAKE header Platform/Platform.h
+[ 42%] Copying FAKE header Platform/Tasks.h
+[ 43%] Copying FAKE header Platform/UniqueId.h
+[ 43%] Copying FAKE header Config/Pins.h
+[ 43%] Copying FAKE header Config/Pins_Host.h
+[ 43%] Copying FAKE header PinDescription.h
+[ 44%] Copying FAKE header Interrupts.h
+[ 45%] Copying FAKE header Movement/StepTimer.h
+[ 45%] Copying FAKE header Movement/StepperDrivers/SmartDrivers.h
+[ 45%] Copying FAKE header Endstops/EndstopsManager.h
+[ 46%] Copying FAKE header Heating/Heat.h
+[ 46%] Copying FAKE header Fans/FansManager.h
+[ 46%] Copying FAKE header Accelerometers/Accelerometers.h
+[ 46%] Copying FAKE header Storage/MassStorage.h
+[ 46%] Copying FAKE header CAN/CanInterface.h
+[ 47%] Copying FAKE header SerialCDC.h
+[ 48%] Copying FAKE header USARTClass.h
+[ 48%] Copying FAKE header Config/Features_Host.h
+[ 48%] Copying FAKE header CoreIO.h
+[ 48%] Copying FAKE header CoreTypes.h
+[ 49%] Copying FAKE header Core.h
+[ 49%] Copying FAKE header Tools/Spindle.h
+[ 49%] Copying FAKE header UniqueIdBase.h
+[ 49%] Copying FAKE header Stream.h
+[ 49%] Copying FAKE header Hardware/IoPorts.h
+[ 49%] Copying FAKE header AnalogOut.h
+[ 49%] Copying FAKE header FilamentMonitors/FilamentMonitor.h
+[ 49%] Copying FAKE header AnalogIn.h
+[ 50%] Copying FAKE header GCodes/GCodes.h
+[ 50%] Copying FAKE header AsyncSerial.h
+[ 50%] Copying FAKE header Platform/TaskPriorities.h
+[ 50%] Copying FAKE header CoreNotifyIndices.h
+[ 50%] Copying FAKE header Devices.h
+[ 51%] Copying FAKE header Cache.h
+[ 52%] Copying FAKE header DmacManager.h
+[ 52%] Copying FAKE header Storage/FileWriteBuffer.h
+[ 53%] Copying FAKE header Storage/FileStore.h
+[ 53%] Copying FAKE header HostTiming.h
+[ 53%] Copying FAKE header HostIdle.h
+[ 53%] Copying FAKE header HostTorqueMode.h
+[ 53%] Copying FAKE header include/HostTiming.h
+[ 53%] Copying FAKE header include/HostIdle.h
+[ 53%] Copying FAKE header include/HostTorqueMode.h
+[ 53%] Copying FAKE header src/GCodeInjector.h
+[ 53%] Copying FAKE header networking/HostNetworkConfig.h
+[ 53%] Copying FAKE header rtos/host_rtos.h
+[ 53%] Copying FAKE header can/CanCapture.h
+[ 53%] Copying FAKE header networking/NetworkInterfaceHost.h
+[ 53%] Copying FAKE header networking/SocketHost.h
+[ 53%] Built target prepare_sources
+[ 53%] Building CXX object CMakeFiles/rrf_simulator.dir/host/src/main.cpp.o
+[ 54%] Building CXX object CMakeFiles/rrf_simulator.dir/host/src/HostTiming.cpp.o
+[ 54%] Building CXX object CMakeFiles/rrf_simulator.dir/host/src/HostTorqueMode.cpp.o
+[ 54%] Building CXX object CMakeFiles/rrf_simulator.dir/host/platform/Heap.cpp.o
+[ 54%] Building CXX object CMakeFiles/rrf_simulator.dir/host/platform/PlatformHost.cpp.o
+[ 54%] Building CXX object CMakeFiles/rrf_simulator.dir/host/platform/FirmwareUpdateHost.cpp.o
+[ 54%] Building CXX object CMakeFiles/rrf_simulator.dir/host/can/CanCapture.cpp.o
+[ 55%] Building CXX object CMakeFiles/rrf_simulator.dir/host/can/CanInterfaceHost.cpp.o
+[ 55%] Building CXX object CMakeFiles/rrf_simulator.dir/host/storage/MassStorageHost.cpp.o
+[ 55%] Building CXX object CMakeFiles/rrf_simulator.dir/host/storage/FileStoreHost.cpp.o
+[ 55%] Building CXX object CMakeFiles/rrf_simulator.dir/host/src/HostIdle.cpp.o
+[ 55%] Building CXX object CMakeFiles/rrf_simulator.dir/host/networking/HostNetworkConfig.cpp.o
+[ 56%] Building CXX object CMakeFiles/rrf_simulator.dir/host/networking/NetworkInterfaceHost.cpp.o
+[ 56%] Building CXX object CMakeFiles/rrf_simulator.dir/host/networking/SocketHost.cpp.o
+[ 56%] Building CXX object CMakeFiles/rrf_simulator.dir/host/movement/StepTimer.cpp.o
+[ 56%] Building CXX object CMakeFiles/rrf_simulator.dir/host/movement/HeightControllerHost.cpp.o
+[ 56%] Building CXX object CMakeFiles/rrf_simulator.dir/host/gcodes/GCodeFileInfoHost.cpp.o
+[ 57%] Building CXX object CMakeFiles/rrf_simulator.dir/host/endstops/ZProbeHost.cpp.o
+[ 57%] Building CXX object CMakeFiles/rrf_simulator.dir/host/src/GCodeInjector.cpp.o
+[ 57%] Building CXX object CMakeFiles/rrf_simulator.dir/host/platform/SoftwareReset.cpp.o
+[ 57%] Building CXX object CMakeFiles/rrf_simulator.dir/host/platform/TasksHost.cpp.o
+[ 57%] Building CXX object CMakeFiles/rrf_simulator.dir/host/platform/EventHost.cpp.o
+[ 58%] Building CXX object CMakeFiles/rrf_simulator.dir/host/platform/MessageBoxHost.cpp.o
+[ 58%] Building CXX object CMakeFiles/rrf_simulator.dir/host/rtos/freertos_shim.cpp.o
+[ 58%] Building CXX object CMakeFiles/rrf_simulator.dir/host/GPIO/GpOutPortHost.cpp.o
+[ 58%] Building CXX object CMakeFiles/rrf_simulator.dir/host/GPIO/GpInPortHost.cpp.o
+[ 58%] Building CXX object CMakeFiles/rrf_simulator.dir/host/tools/SpindleHost.cpp.o
+[ 58%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Platform/ArrayHandle.cpp.o
+[ 59%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Platform/StringHandle.cpp.o
+[ 59%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Platform/OutputMemory.cpp.o
+[ 59%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/ObjectModel/Variable.cpp.o
+[ 59%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/ObjectModel/ObjectModel.cpp.o
+[ 59%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/ObjectModel/GlobalVariables.cpp.o
+[ 60%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Tools/Filament.cpp.o
+[ 60%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Tools/Tool.cpp.o
+[ 60%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/Kinematics/Kinematics.cpp.o
+[ 60%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/Kinematics/CoreKinematics.cpp.o
+[ 60%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/Kinematics/ZLeadscrewKinematics.cpp.o
+[ 61%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/Kinematics/RoundBedKinematics.cpp.o
+[ 61%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/Kinematics/RotaryDeltaKinematics.cpp.o
+[ 61%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/Kinematics/HangprinterKinematics.cpp.o
+[ 61%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/Kinematics/LinearDeltaKinematics.cpp.o
+[ 61%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/Kinematics/ScaraKinematics.cpp.o
+[ 62%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/Kinematics/PolarKinematics.cpp.o
+[ 62%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/Kinematics/FiveBarScaraKinematics.cpp.o
+[ 62%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/DriveMovement.cpp.o
+[ 62%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/DDA.cpp.o
+[ 62%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/DDARing.cpp.o
+[ 62%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/Move.cpp.o
+[ 63%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/Move2.cpp.o
+[ 63%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/Move3.cpp.o
+[ 63%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/MoveSegment.cpp.o
+[ 63%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/RawMove.cpp.o
+[ 63%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/AxisShaper.cpp.o
+[ 64%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/ExtruderShaper.cpp.o
+[ 64%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/MovementProfile.cpp.o
+[ 64%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/MovementError.cpp.o
+[ 64%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/StepperDrivers/DriverData.cpp.o
+[ 64%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/BedProbing/Grid.cpp.o
+[ 65%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Movement/BedProbing/RandomProbePointSet.cpp.o
+[ 65%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/GCodes/StraightProbeSettings.cpp.o
+[ 65%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/GCodes/TriggerItem.cpp.o
+[ 65%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Networking/NetworkBuffer.cpp.o
+[ 65%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Networking/NetworkInterface.cpp.o
+[ 66%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Networking/NetworkResponder.cpp.o
+[ 66%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Networking/NetworkClient.cpp.o
+[ 66%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Networking/UploadingNetworkResponder.cpp.o
+[ 66%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Networking/HttpResponder.cpp.o
+[ 66%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Networking/Network.cpp.o
+[ 67%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/GCodes/GCodeBuffer/GCodeBuffer.cpp.o
+[ 67%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/GCodes/GCodeBuffer/ExpressionParser.cpp.o
+[ 67%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/GCodes/GCodeBuffer/StringParser.cpp.o
+[ 67%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/GCodes/GCodeMachineState.cpp.o
+[ 67%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/GCodes/GCodeInput.cpp.o
+[ 67%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/GCodes/GCodeQueue.cpp.o
+[ 68%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/GCodes/GCodes.cpp.o
+[ 68%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/GCodes/GCodes2.cpp.o
+[ 68%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/GCodes/GCodes3.cpp.o
+[ 68%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/GCodes/GCodes4.cpp.o
+[ 68%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/GCodes/GCodes5.cpp.o
+[ 69%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/GCodes/GCodes6.cpp.o
+[ 69%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/GCodes/GCodes7.cpp.o
+[ 69%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/GCodes/GCodeException.cpp.o
+[ 69%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/GCodes/ObjectTracker.cpp.o
+[ 69%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/GCodes/KeepoutZone.cpp.o
+[ 70%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/GCodes/RestorePoint.cpp.o
+[ 70%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/PrintMonitor/PrintMonitor.cpp.o
+[ 70%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Platform/RepRap.cpp.o
+[ 70%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/RepRapFirmware.cpp.o
+[ 70%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Storage/CRC16.cpp.o
+[ 71%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Storage/CRC32.cpp.o
+[ 71%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/CAN/CanDriversData.cpp.o
+[ 71%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/libc/strptime.cpp.o
+[ 71%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Version.cpp.o
+[ 71%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/CAN/ExpansionManager.cpp.o
+[ 71%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Platform/Logger.cpp.o
+[ 72%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/GCodes/CollisionAvoider.cpp.o
+[ 72%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Platform/PortControl.cpp.o
+[ 72%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/ClosedLoop/ClosedLoop.cpp.o
+[ 72%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/CAN/CanMotion.cpp.o
+[ 72%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/General/NamedEnum.cpp.o
+[ 73%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/General/StringRef.cpp.o
+[ 73%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/General/Strnlen.cpp.o
+[ 73%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/General/StringFunctions.cpp.o
+[ 73%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/General/SafeStrtod.cpp.o
+[ 73%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/General/SafeVsnprintf.cpp.o
+[ 74%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/General/IPAddress.cpp.o
+[ 74%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/General/IP4String.cpp.o
+[ 74%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/General/NumericConverter.cpp.o
+[ 74%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Math/Isqrt.cpp.o
+[ 74%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Math/Deviation.cpp.o
+[ 75%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/Math/DeviationAccumulator.cpp.o
+[ 75%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/RRF3Common.cpp.o
+[ 75%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/CanSettings.cpp.o
+[ 75%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/CanMessageFormats.cpp.o
+[ 75%] Building CXX object CMakeFiles/rrf_simulator.dir/generated_sources/src/CanMessageBuffer.cpp.o
+[ 76%] Linking CXX executable rrf_simulator
+[100%] Built target rrf_simulator

@@ -1,0 +1,24 @@
+["node", "--version"]
+v23.11.1
+
+["rustc", "--version"]
+rustc 1.99.1 (58cf8f9c3 2026-10-13)
+
+["node", "--check", "scripts/build_native_physics.mjs"]
+
+["npm", "run", "build:native", "--", "--no-pgo"]
+
+> cable_joints@1.0.0 build:native
+> node scripts/build_native_physics.mjs --no-pgo
+
+    Finished `release` profile [optimized] target(s) in 0.01s
+Built native Rust physics (release): /workspace/hp-sim5/src/wasm/cable_solver/target/native/physics.node
+npm notice
+npm notice New major version of npm available! 10.9.2 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+["node", "--input-type=module", "-e", "import { loadNativePhysicsAddon } from './src/js/cable_joints_3d/native_physics_engine.js'; loadNativePhysicsAddon(); console.log('NATIVE_ADDON_LOAD_OK');"]
+NATIVE_ADDON_LOAD_OK
+

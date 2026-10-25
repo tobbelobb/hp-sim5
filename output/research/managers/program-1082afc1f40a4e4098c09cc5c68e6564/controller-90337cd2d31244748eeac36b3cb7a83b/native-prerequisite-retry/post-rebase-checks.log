@@ -1,0 +1,26 @@
+["node", "--test", "tests/benchmark/native_build_headers.test.mjs"]
+✔ native build uses the complete bundled SDK without header environment settings (481.028105ms)
+✔ NODE_INCLUDE_DIR remains an explicit override and supports paths with spaces (328.134421ms)
+✔ an incomplete explicit SDK fails before compilation with the missing filenames (36.361384ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 930.174967
+["npm", "run", "build:native", "--", "--no-pgo"]
+
+> cable_joints@1.0.0 build:native
+> node scripts/build_native_physics.mjs --no-pgo
+
+    Finished `release` profile [optimized] target(s) in 0.01s
+Built native Rust physics (release): /workspace/hp-sim5/src/wasm/cable_solver/target/native/physics.node
+npm notice
+npm notice New major version of npm available! 10.9.2 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+["node", "--input-type=module", "-e", "import { loadNativePhysicsAddon } from './src/js/cable_joints_3d/native_physics_engine.js'; loadNativePhysicsAddon(); console.log('NATIVE_ADDON_LOAD_OK');"]
+NATIVE_ADDON_LOAD_OK

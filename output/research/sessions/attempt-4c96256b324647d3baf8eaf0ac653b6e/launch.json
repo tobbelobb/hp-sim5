@@ -1,0 +1,332 @@
+{
+  "argv": [
+    "codex",
+    "exec",
+    "--cd",
+    "/workspace/hp-sim5",
+    "--sandbox",
+    "workspace-write",
+    "-c",
+    "approval_policy=\"never\"",
+    "--json",
+    "--output-last-message",
+    "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/final-message.md",
+    "-c",
+    "sandbox_workspace_write.network_access=true",
+    "-c",
+    "sandbox_workspace_write.writable_roots=[\"/workspace/hp-sim5/output\"]",
+    "-c",
+    "features.default_mode_request_user_input=false",
+    "-c",
+    "features.goals=false",
+    "-c",
+    "mcp_servers.hp_sim5.command=\"/workspace/hp-sim5/.venv/bin/python\"",
+    "-c",
+    "mcp_servers.hp_sim5.args=[\"/workspace/hp-sim5/scripts/research_attach.py\", \"/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/connection.json\"]",
+    "-c",
+    "mcp_servers.hp_sim5.cwd=\"/workspace/hp-sim5\"",
+    "-c",
+    "mcp_servers.hp_sim5.required=true",
+    "-c",
+    "mcp_servers.hp_sim5.startup_timeout_sec=30",
+    "-c",
+    "mcp_servers.hp_sim5.tool_timeout_sec=14500",
+    "-c",
+    "mcp_servers.hp_sim5.default_tools_approval_mode=\"approve\"",
+    "-c",
+    "mcp_servers.rerun.enabled=false",
+    "-c",
+    "mcp_servers.rerun.command=\"/workspace/hp-sim5/.venv/bin/rerun\"",
+    "-c",
+    "mcp_servers.rerun.args=[\"viewer-mcp\"]",
+    "-c",
+    "model_provider=\"openai\"",
+    "-c",
+    "developer_instructions=\"Use `.venv/bin/python` and keep source changes small. Read `research/README.md`\\nfor the tools and `research/investigation.md` for the integration rationale.\\n\\nBefore delivering physics, motor, cable transport or scene dynamics changes,\\nrun `npm run test:physics` and resolve every failure. This bounded headless gate\\nrebuilds native/Wasm physics, runs the real HP4 Print Logo prefix at the default\\none substep and checks loaded-state settling. Do not dismiss a stability failure\\nas a legacy fixture or substitute an idle run, parity checks or extra substeps.\\nPreserve failing evidence. Use headless production backends for experiments;\\nbrowser experiments should be rare and preferably performed by a human.\\n\\nBefore choosing autocal recording and compute budgets, read\\n`research/autocal-recording-performance.md`. Its matched HP3 replay measured\\nabout 4.8/5.0/5.5/15.2 seconds and 0/3.4/11/54 MB RRD for\\n`none`/`events`/`sampled`/`full` over 200,000 physics steps. Prefer `none` for\\nlarge numerical sweeps, `events` for routine trials, and sampled/full evidence\\nwhen the hypothesis needs physics inspection. These are recording-workload\\ncosts, not full-autocal speedups. Later simulations/backends can differ: verify\\nactual workloads and numerical evidence before making performance comparisons.\\n\\nBefore long live collection, call `research_preflight` on the attached supervisor.\\nIt is a bounded tool check: it never advances/resets the world or runs doctor.\\nCheck the expected complete world configuration when the experiment requires one.\\nRun `.venv/bin/python scripts/research_socket_probe.py` in the agent command\\ncontext separately; supervised connectivity cannot establish command networking.\\nUse `start_test`, `test_status` and `cancel_test` for the named socket/recorder\\nintegration suites when command networking is denied. These tests use isolated\\nworlds/artifacts and exclude slow movement/full-auto smoke tests. Doctor and\\nphysical smoke tests remain explicit experiment choices. Successful tool checks\\ndo not establish calibration accuracy.\\n\\nYou are a CDPR and Hangprinter researcher living inside the hp-sim5 repo.\\nYou should form hypotheses and perform experiments yourself.\\nYou know when to look for incremental improvement of an existing approach, in a structured way, and when to change the approach completely.\\n\\nThe hp-sim5 contains simulation code and other relevant research tools for CDPR researchers.\\nYou are encouraged to explore the repo for yourself and learn how things work in order to design rational and efficient experiments.\\nPrefer many, quick and cheap experiments over a few huge long ones. Use the headless Native Rust engine and Rerun recording options provided to you. Make sure to use the speedup options when available to save time.\\nCreate your own workflows to be able to test your hypotheses in simulation or in other ways.\\n\\n# Tool Examples\\nThe hp-sim5 repo has specialized tools for simulation Hangprinter research.\\nSee eg `More_on_hp-sim5_MCP.md` for headless simulation and Rerun (recorded simulation run) capabilities.\\nThere's a document called `More_on_browser_based_work.md` if more interactive simulation becomes relevant to you.\\nThere's also a description of and advanced workflow for autocalibration work in `Advanced_research_example_autocal.md`.\\nThe repo is full of other tools as well, which you are encouraged to explore to find out what suits your task and research instincts.\\n\\n# Take Advantage of Research Notebooks and Agent Capabilities\\nResearch runs in an ordinary conversation in the selected coding agent.\\nUse the capabilities available in that client, such as Goal mode.\\nKeep continuation of an unfinished investigation inside that conversation; do\\nnot build a prompt-restart loop for it. The research manager implementation in\\n`research/program-tasks/MANAGER.md` may orchestrate distinct bounded assignments\\nand separate reviews through the existing `hp-sim5-research-agent`, including a\\nsmall worker pool. Its controller owns dispatch, budgets and lifecycle; the\\nexisting worker supervisors continue owning physics and collection.\\nKeep `research.md` in the supplied session directory current with objective, hypothesis, constraints, movement/experiment/compute budgets, experiment IDs, accepted steering and the next decision.\\nUpdate it when steering changes the experiment choice.\\nPreserve the conversation and prior evidence across turns.\\n\\n# Make research discoverable\\n\\nKeep `abstract.md` beside `research.md` and `report.md`, using\\n`research/abstract-template.md`. Update it when experiments finish or steering\\nchanges the topic. Use a descriptive title and topic keywords. Write a short\\nabstract with the question, method, measured result and main limitation.\\nStart `report.md` with this abstract too.\\n\\nList each actually tested hypothesis with experiment IDs, its outcome\\n(supported, rejected, mixed or inconclusive) and a link to evidence. Mark\\nproposed experiments as not tested; a planned or blocked experiment is not a\\nnegative research result. Preserve failed trials. Distinguish simulated or\\nsynthetic evidence from hardware measurements and successful tool checks from\\ncalibration accuracy. Pending sessions must say that no result is available yet.\\n\\nAdd references to the reports, datasets, manifests, code revisions and external\\npapers or documentation actually used. Give each source a useful label and link;\\ninclude authors/year and DOI or URL for papers, and experiment IDs or revisions\\nfor local evidence. Do not invent citations. Explain which claim each reference\\nsupports. Prefer relative links for artifacts within the session. Link preceding\\nsessions when continuing their research.\\n\\nBefore ending a research turn, regenerate the catalog with\\n`.venv/bin/python scripts/research_index.py`. Keep the assigned session path\\nstable while services are running; filenames do not determine world identity.\\n\\nReserachers before you have made their research discoverable.\\nUse your the search skills you already have to search through and discover their results if relevant.\\nAlso use the research index tooling when relevant.\\n\\nSession artifacts: /workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e\\nWrite the research record to /workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/research.md and final report to /workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/report.md.\\nKeep the searchable abstract at /workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/abstract.md current too.\\nThis launcher started a fresh native world. Conversation resume does not restore physics checkpoints.\\n\"",
+    "-"
+  ],
+  "runtime_status": {
+    "accepted_settings": {
+      "backend": "headless-js",
+      "base_radii_mm": [
+        30.0,
+        30.0,
+        30.0,
+        30.0
+      ],
+      "buildup_factor": 0.6366197723675814,
+      "firmware_config": "sys/config_hp3_w_line_layers.g",
+      "layering": true,
+      "machine": "hp3",
+      "scene": "public/usd_scenes/hp3_rigid_body.usda"
+    },
+    "active_autocal_job": null,
+    "active_job": null,
+    "active_test_job": null,
+    "artifacts": {
+      "authored_scene": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/native/85c99235125841c49d3a55d70fa46371/authored-scene.usda",
+      "events": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/native/85c99235125841c49d3a55d70fa46371/events.jsonl",
+      "rrd": null,
+      "scene": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/native/85c99235125841c49d3a55d70fa46371/scene.usda",
+      "world_manifest": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/native/85c99235125841c49d3a55d70fa46371/manifest.json"
+    },
+    "backend": "headless-js",
+    "browser_url": null,
+    "busy": false,
+    "cable_half_widths_m": [
+      0.001
+    ],
+    "clock": "fixed-step; collector delays advance simulation time",
+    "collector_time_s": 0.0,
+    "connected": true,
+    "dt_s": 0.002,
+    "epoch": 0,
+    "error": null,
+    "generation": 1,
+    "last_world_attempt": {
+      "authored_scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+      "baked_scene_sha256": "9e5ef288d617fdba1691e7486b399b7fc116756e936055e009c3662fa9ce1916",
+      "bridge_source_sha256": "e2f48a3e584648a9f59ecee99ea6f94c2b88de9c46999f002f8c8fae15bc5f77",
+      "design_scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+      "effective_settings": {
+        "backend": "headless-js",
+        "base_radii_mm": [
+          30.0,
+          30.0,
+          30.0,
+          30.0
+        ],
+        "buildup_factor": 0.6366197723675814,
+        "firmware_config": "sys/config_hp3_w_line_layers.g",
+        "layering": true,
+        "machine": "hp3",
+        "scene": "public/usd_scenes/hp3_rigid_body.usda"
+      },
+      "firmware_config_sha256": "9823d5748fd261982a75f31d953ba22f3d2fe78cce64e681df5a0c68d599555e",
+      "firmware_configuration": {
+        "buildup_factor": 0.6366197723675814,
+        "radii_mm": [
+          39.1845,
+          39.1845,
+          39.1845,
+          39.1845
+        ],
+        "source": "sys/config_hp3_w_line_layers.g"
+      },
+      "firmware_initial": {
+        "M115": "FIRMWARE_NAME: RepRapFirmware for x86_64 (host) FIRMWARE_VERSION: 3.7.0-alpha.5 ELECTRONICS: RRF_Host FIRMWARE_DATE: 2026-10-25 07:54:59",
+        "M666": "M666 A1 Q0.6366\nR39.18:39.18:39.18:39.18\nU1:1:1:1\nO1:1:1:1\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI3.0:3.0:3.0:3.0\nX170.0:170.0:170.0:170.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0",
+        "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1900.00, -280.00\nB:1645.45, 950.00, -280.00\nC:-1645.45, 950.00, -280.00\nD:0.00, 0.00, 1900.00\nP:Print radius: 1500.0"
+      },
+      "firmware_source_sha256": "9823d5748fd261982a75f31d953ba22f3d2fe78cce64e681df5a0c68d599555e",
+      "generation": 1,
+      "geometry": {
+        "cable_half_widths_m": [
+          0.001
+        ],
+        "layering_flags": {
+          "enableLayering": true,
+          "layeringFrictionEffectiveRadius": true,
+          "layeringRenderWraps": true
+        }
+      },
+      "js_physics_source_sha256": "b0b5ed391268facd05be5bd7acc10a33365c90a562ce5f6e1c0988cc22a1205c",
+      "physics_artifact": {
+        "build": {
+          "arch": "x64",
+          "artifactSha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+          "buildScriptSha256": "448f946068a09038b43ce58484e785d77612dda25f9e761ed096febdb98f1a77",
+          "compiler": "cc",
+          "nodeApi": 8,
+          "platform": "linux",
+          "profile": "release",
+          "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+          "rustflags": null,
+          "sources": {
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "native/node_bridge.c": "3616cb499eb950b83f17364eb8049a12c537acee6d7178eeaf9c3ecaa0dc5dc2",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "00a100c9628fd28d01ea8332d5409a23c9b1d73ff7342d6c8a47e176111d0a18",
+            "src/lib.rs": "71e042bf89c89a5826460d7b7bc44c63078ad99ca4e7f0c28976123e851b1a70"
+          },
+          "target": "x86_64-unknown-linux-gnu"
+        },
+        "path": "/workspace/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8"
+      },
+      "physics_engine": "rust-native",
+      "previous_world_id": null,
+      "python_source_sha256": "890e0d6500cee56f5302d9e6e06366bdce16995d6254ad01983746fa5de4ff73",
+      "requested_settings": {
+        "machine": "hp3"
+      },
+      "reset_required": false,
+      "rrf_sha256": "9535684286412f55496d22b52c22fba5afaab11d3221bff7540621830bd0aa92",
+      "rust_physics_sha256": "ddf79e240259c72cc4546198c382bb670ffbe530f02ec7e6cd6c588803c9c67d",
+      "schema_version": 2,
+      "session_id": "85c99235125841c49d3a55d70fa46371",
+      "status": "ready",
+      "world_id": "85c99235125841c49d3a55d70fa46371"
+    },
+    "layering_flags": {
+      "enableLayering": true,
+      "layeringFrictionEffectiveRadius": true,
+      "layeringRenderWraps": true
+    },
+    "machine_design": "hp3",
+    "observation_wall_s": 0.0008319270000356482,
+    "physics_artifact": {
+      "build": {
+        "arch": "x64",
+        "artifactSha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+        "buildScriptSha256": "448f946068a09038b43ce58484e785d77612dda25f9e761ed096febdb98f1a77",
+        "compiler": "cc",
+        "nodeApi": 8,
+        "platform": "linux",
+        "profile": "release",
+        "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+        "rustflags": null,
+        "sources": {
+          "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+          "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+          "native/node_bridge.c": "3616cb499eb950b83f17364eb8049a12c537acee6d7178eeaf9c3ecaa0dc5dc2",
+          "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+          "src/engine.rs": "00a100c9628fd28d01ea8332d5409a23c9b1d73ff7342d6c8a47e176111d0a18",
+          "src/lib.rs": "71e042bf89c89a5826460d7b7bc44c63078ad99ca4e7f0c28976123e851b1a70"
+        },
+        "target": "x86_64-unknown-linux-gnu"
+      },
+      "path": "/workspace/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+      "sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8"
+    },
+    "physics_engine": "rust-native",
+    "physics_wall_s": 0.0,
+    "queue_length": 0,
+    "reset_required": false,
+    "services": {
+      "collector": {
+        "exit_code": null,
+        "log": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/native/collector.log",
+        "pid": 4489
+      },
+      "physics-js": {
+        "exit_code": null,
+        "log": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/native/85c99235125841c49d3a55d70fa46371/physics-js.log",
+        "pid": 4477
+      },
+      "rrf": {
+        "exit_code": null,
+        "log": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/native/rrf.log",
+        "pid": 4488
+      }
+    },
+    "session_directory": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/native",
+    "session_id": "85c99235125841c49d3a55d70fa46371",
+    "sim_time_s": 0.0,
+    "source_changed": {
+      "bridge_requires_session_reset": false,
+      "firmware_requires_session_reset": false,
+      "js_physics_requires_session_reset": false,
+      "python_requires_launcher_restart": false,
+      "rrf_requires_session_reset": false,
+      "rust_physics_requires_session_reset": false,
+      "scene_requires_session_reset": false
+    },
+    "speed_scale": 1.0,
+    "step": 0,
+    "worker_wall_s": 0.0,
+    "world_configuration": {
+      "authored_scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+      "baked_scene_sha256": "9e5ef288d617fdba1691e7486b399b7fc116756e936055e009c3662fa9ce1916",
+      "bridge_source_sha256": "e2f48a3e584648a9f59ecee99ea6f94c2b88de9c46999f002f8c8fae15bc5f77",
+      "design_scene_sha256": "094661906be2ce0332eed90ac4cbebcc399e7028acbf138cf3766db543e5cacb",
+      "effective_settings": {
+        "backend": "headless-js",
+        "base_radii_mm": [
+          30.0,
+          30.0,
+          30.0,
+          30.0
+        ],
+        "buildup_factor": 0.6366197723675814,
+        "firmware_config": "sys/config_hp3_w_line_layers.g",
+        "layering": true,
+        "machine": "hp3",
+        "scene": "public/usd_scenes/hp3_rigid_body.usda"
+      },
+      "firmware_config_sha256": "9823d5748fd261982a75f31d953ba22f3d2fe78cce64e681df5a0c68d599555e",
+      "firmware_configuration": {
+        "buildup_factor": 0.6366197723675814,
+        "radii_mm": [
+          39.1845,
+          39.1845,
+          39.1845,
+          39.1845
+        ],
+        "source": "sys/config_hp3_w_line_layers.g"
+      },
+      "firmware_initial": {
+        "M115": "FIRMWARE_NAME: RepRapFirmware for x86_64 (host) FIRMWARE_VERSION: 3.7.0-alpha.5 ELECTRONICS: RRF_Host FIRMWARE_DATE: 2026-10-25 07:54:59",
+        "M666": "M666 A1 Q0.6366\nR39.18:39.18:39.18:39.18\nU1:1:1:1\nO1:1:1:1\nL20:20:20:20\nH20:20:20:20\nJ200:200:200:200\nW0.08\nS20000.00\nI3.0:3.0:3.0:3.0\nX170.0:170.0:170.0:170.0\nY528.3:528.3:528.3:398.9\nC0.0000:0.0000:0.0000:0.0000\nF0 B0 P0",
+        "M669": "Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm\nA:0.00, -1900.00, -280.00\nB:1645.45, 950.00, -280.00\nC:-1645.45, 950.00, -280.00\nD:0.00, 0.00, 1900.00\nP:Print radius: 1500.0"
+      },
+      "firmware_source_sha256": "9823d5748fd261982a75f31d953ba22f3d2fe78cce64e681df5a0c68d599555e",
+      "generation": 1,
+      "geometry": {
+        "cable_half_widths_m": [
+          0.001
+        ],
+        "layering_flags": {
+          "enableLayering": true,
+          "layeringFrictionEffectiveRadius": true,
+          "layeringRenderWraps": true
+        }
+      },
+      "js_physics_source_sha256": "b0b5ed391268facd05be5bd7acc10a33365c90a562ce5f6e1c0988cc22a1205c",
+      "physics_artifact": {
+        "build": {
+          "arch": "x64",
+          "artifactSha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+          "buildScriptSha256": "448f946068a09038b43ce58484e785d77612dda25f9e761ed096febdb98f1a77",
+          "compiler": "cc",
+          "nodeApi": 8,
+          "platform": "linux",
+          "profile": "release",
+          "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+          "rustflags": null,
+          "sources": {
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "native/node_bridge.c": "3616cb499eb950b83f17364eb8049a12c537acee6d7178eeaf9c3ecaa0dc5dc2",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "00a100c9628fd28d01ea8332d5409a23c9b1d73ff7342d6c8a47e176111d0a18",
+            "src/lib.rs": "71e042bf89c89a5826460d7b7bc44c63078ad99ca4e7f0c28976123e851b1a70"
+          },
+          "target": "x86_64-unknown-linux-gnu"
+        },
+        "path": "/workspace/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8"
+      },
+      "physics_engine": "rust-native",
+      "previous_world_id": null,
+      "python_source_sha256": "890e0d6500cee56f5302d9e6e06366bdce16995d6254ad01983746fa5de4ff73",
+      "requested_settings": {
+        "machine": "hp3"
+      },
+      "reset_required": false,
+      "rrf_sha256": "9535684286412f55496d22b52c22fba5afaab11d3221bff7540621830bd0aa92",
+      "rust_physics_sha256": "ddf79e240259c72cc4546198c382bb670ffbe530f02ec7e6cd6c588803c9c67d",
+      "schema_version": 2,
+      "session_id": "85c99235125841c49d3a55d70fa46371",
+      "status": "ready",
+      "world_id": "85c99235125841c49d3a55d70fa46371"
+    },
+    "world_id": "85c99235125841c49d3a55d70fa46371"
+  },
+  "backend": "codex",
+  "model_provider": "openai",
+  "model": null,
+  "viewer_endpoint": null,
+  "runtime_endpoint": "http://127.0.0.1:50167"
+}

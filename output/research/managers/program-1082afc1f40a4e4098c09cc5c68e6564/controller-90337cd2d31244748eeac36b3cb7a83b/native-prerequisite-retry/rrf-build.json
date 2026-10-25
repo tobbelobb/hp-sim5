@@ -1,0 +1,24 @@
+[
+  {
+    "argv": [
+      ".venv/bin/cmake",
+      "-S",
+      "RRF",
+      "-B",
+      "RRF/build"
+    ],
+    "exit_code": 0
+  },
+  {
+    "argv": [
+      ".venv/bin/cmake",
+      "--build",
+      "RRF/build",
+      "--target",
+      "rrf_simulator",
+      "-j",
+      "4"
+    ],
+    "exit_code": 0
+  }
+]

@@ -1,0 +1,14 @@
+{
+  "runtime_imports": "passed",
+  "localhost_bind": true,
+  "versions": {
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "usd-core": "26.11",
+    "rerun-sdk": "0.38.1",
+    "mcp": "2.3.0",
+    "cmake": "4.4.4"
+  },
+  "js_dependencies": "npm ci --omit=dev passed with writable npm cache",
+  "rrf_submodules": "three pinned submodules fetched; see rrf-submodules.log"
+}

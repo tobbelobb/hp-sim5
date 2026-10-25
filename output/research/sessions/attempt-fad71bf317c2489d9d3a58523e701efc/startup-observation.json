@@ -1,0 +1,180 @@
+{
+  "created_at": "2026-10-25T07:49:12.250133+00:00",
+  "details": {
+    "allocation": {
+      "additional_files": 12,
+      "collections": 0,
+      "fresh_fits": 0,
+      "physics_steps": 0,
+      "prediction_evaluations": 0,
+      "wall_minutes": 12
+    },
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-agent",
+      "--codex",
+      "--batch",
+      "--prompt-file",
+      "/workspace/hp-sim5/.research-programs/workers/attempt-fad71bf317c2489d9d3a58523e701efc/prompt.txt",
+      "--session-dir",
+      "/workspace/hp-sim5/output/research/sessions/attempt-fad71bf317c2489d9d3a58523e701efc",
+      "--physics-backend",
+      "headless-js",
+      "--machine",
+      "hp3",
+      "--viewer",
+      "none",
+      "--wall-deadline",
+      "1792915272.2249043",
+      "--sidebar-section",
+      "none",
+      "--no-record",
+      "--no-goal-mode"
+    ],
+    "artifacts": [
+      {
+        "bytes": 343,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-fad71bf317c2489d9d3a58523e701efc/session.json"
+      },
+      {
+        "bytes": 78,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-fad71bf317c2489d9d3a58523e701efc/exit.json"
+      },
+      {
+        "bytes": 12116,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-fad71bf317c2489d9d3a58523e701efc/prompt.txt"
+      },
+      {
+        "bytes": 12329,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-fad71bf317c2489d9d3a58523e701efc/research.md"
+      },
+      {
+        "bytes": 522,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-fad71bf317c2489d9d3a58523e701efc/abstract.md"
+      },
+      {
+        "bytes": 0,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-fad71bf317c2489d9d3a58523e701efc/stdout.log"
+      },
+      {
+        "bytes": 48,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-fad71bf317c2489d9d3a58523e701efc/stderr.log"
+      },
+      {
+        "bytes": 12116,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-fad71bf317c2489d9d3a58523e701efc/prompt.txt"
+      },
+      {
+        "bytes": 2254,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-fad71bf317c2489d9d3a58523e701efc/assignment.json"
+      }
+    ],
+    "assignment_id": "assignment-holdout-scout-cloud",
+    "attempt_dir": "/workspace/hp-sim5/.research-programs/workers/attempt-fad71bf317c2489d9d3a58523e701efc",
+    "cleanup": "launcher_finally_completed",
+    "diagnostics": [],
+    "exited_at": "2026-10-25T07:49:12.499707+00:00",
+    "launcher_exit": {
+      "returncode": 1,
+      "wall_deadline": 1792915272.2249043,
+      "wall_expired": false
+    },
+    "launcher_session_id": "161fc93bb05c4a548ba5e762ccb0a3c5",
+    "observations": [
+      {
+        "at": "2026-10-25T07:49:12.247556+00:00",
+        "event": "reserved"
+      },
+      {
+        "at": "2026-10-25T07:49:12.253244+00:00",
+        "event": "spawned",
+        "pid": 1918
+      },
+      {
+        "at": "2026-10-25T07:49:12.499724+00:00",
+        "event": "exited",
+        "returncode": 1
+      }
+    ],
+    "observed_wall_seconds": 0.24646902084350586,
+    "owner": {
+      "id": "dispatcher-fbd25e4dc59f4b898d9e834fd1644b5a",
+      "process": {
+        "birth": "489815",
+        "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+        "group": 1467,
+        "host": "3cccfe76ab54",
+        "pid": 1467,
+        "uid": 1000
+      }
+    },
+    "premise_conflicts": [],
+    "premise_event_ids_at_start": [],
+    "premise_ids": [
+      "evidence-agenda",
+      "evidence-cm-e1",
+      "evidence-fixed-angles"
+    ],
+    "premise_plan_ids": [
+      "plan-fair-validation",
+      "plan-model-sensitivity"
+    ],
+    "process": {
+      "birth": "543770",
+      "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+      "group": 1918,
+      "host": "3cccfe76ab54",
+      "pid": 1918,
+      "uid": 1000
+    },
+    "prompt_sha256": "a21be4d4c90ff5c2139578c963faa92795e46712a99e0e19d1991ba9a9b7995c",
+    "returncode": 1,
+    "runtime": {
+      "allocation_id": "runtime_allocation-f538e385b30e44cb80f7a32d9e9bea87",
+      "assignment_id": "assignment-holdout-scout-cloud",
+      "cleanup_seconds": 190,
+      "wall_deadline": 1792915272.2249043
+    },
+    "scientific_state": "unassessed",
+    "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-fad71bf317c2489d9d3a58523e701efc",
+    "settings": {
+      "backend": "codex",
+      "client_args": [],
+      "dont_ask": false,
+      "goal_mode": false,
+      "machine": "hp3",
+      "physics_backend": "headless-js",
+      "record": false,
+      "shared_runtime_write": true,
+      "sidebar_section": "none",
+      "viewer": "none",
+      "worktree": false
+    },
+    "source_dirty": true,
+    "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca",
+    "started_at": "2026-10-25T07:49:12.253238+00:00",
+    "state": "failed",
+    "worktree": {
+      "branch": "work",
+      "repo": "/workspace/hp-sim5",
+      "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+    },
+    "worktree_id": "/workspace/hp-sim5"
+  },
+  "id": "attempt-fad71bf317c2489d9d3a58523e701efc",
+  "kind": "attempt",
+  "observation": "observed child",
+  "owned": false,
+  "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+  "revision": 6,
+  "title": "Continue the original twelve-minute saved-data feasibility scout after verified cloud startup. Inspect the same three CM-E1 changed-case manifests and at most twelve extra dataset/manifest files. Verify observation content, training/selection union, encoder origin, spool/layering, units and lineage. No prediction scoring, fitting, code edits, simulation experiment, collection or movement. Use the sourced scripts/cloud/env.sh environment before each build or worker shell. Preserve all original failed attempts. Write research.md, report.md, abstract.md and input hashes in the newly assigned session. The manager must establish the existing-login child workflow and retain or resolve the previous startup review obligation before dispatch.",
+  "updated_at": "2026-10-25T07:49:12.500584+00:00"
+}

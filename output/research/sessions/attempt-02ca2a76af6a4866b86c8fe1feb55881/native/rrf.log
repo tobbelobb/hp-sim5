@@ -1,0 +1,10 @@
+Output buffers: size=1024 count=400 reserved=16
+Using configuration file: /tmp/hp-sim5-vsd-g5h0kpod/sys/research.g
+Host Platform Initialized.
+RepRapFirmware for x86_64 (host) version 3.7.0-alpha.5
+Executing config.g... 
+G10 P0 S0 R0
+Done!
+RepRapFirmware for x86_64 (host) is up and running.
+HTTP server listening on port 37357
+Host Platform Shutdown.

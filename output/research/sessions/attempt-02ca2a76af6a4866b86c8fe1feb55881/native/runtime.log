@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/workspace/hp-sim5/scripts/research_runtime.py", line 633, in <module>
+    asyncio.run(main())
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5/scripts/research_runtime.py", line 614, in main
+    await starting
+  File "/workspace/hp-sim5/scripts/research_runtime.py", line 164, in start
+    raise RuntimeError(f'{error}; world evidence: {directory / "manifest.json"}') from None
+RuntimeError: Service failed readiness (<urlopen error [Errno 111] Connection refused>); exit=1; read /workspace/hp-sim5/output/research/sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/native/collector.log; world evidence: /workspace/hp-sim5/output/research/sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/native/e1d918577be845839fb6bccddb7e65c5/manifest.json

@@ -1,0 +1,33 @@
+{
+  "base_revision": "f3de3dd7ae60f01040b1d08fcece236564dffc0d",
+  "commands": [
+    {
+      "argv": [
+        "node",
+        "--test",
+        "tests/benchmark/native_build_headers.test.mjs"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "npm",
+        "run",
+        "build:native",
+        "--",
+        "--no-pgo"
+      ],
+      "exit_code": 0
+    },
+    {
+      "argv": [
+        "node",
+        "--input-type=module",
+        "-e",
+        "import { loadNativePhysicsAddon } from './src/js/cable_joints_3d/native_physics_engine.js'; loadNativePhysicsAddon(); console.log('NATIVE_ADDON_LOAD_OK');"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "scope": "post-rebase native harness verification only; historical science and client outcomes not rerun"
+}

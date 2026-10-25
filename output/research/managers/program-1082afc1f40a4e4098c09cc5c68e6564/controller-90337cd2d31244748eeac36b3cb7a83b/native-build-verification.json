@@ -1,0 +1,29 @@
+{
+  "command": "source scripts/cloud/env.sh\nnpm run build:native -- --no-pgo",
+  "exit_code": 0,
+  "node": "v23.11.1",
+  "rust": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+  "elapsed_cargo_seconds": 3.5,
+  "probe_patch_required": false,
+  "artifact_metadata": {
+    "profile": "release",
+    "platform": "linux",
+    "arch": "x64",
+    "nodeApi": 8,
+    "artifactSha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+    "sources": {
+      "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+      "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+      "native/node_bridge.c": "3616cb499eb950b83f17364eb8049a12c537acee6d7178eeaf9c3ecaa0dc5dc2",
+      "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+      "src/engine.rs": "00a100c9628fd28d01ea8332d5409a23c9b1d73ff7342d6c8a47e176111d0a18",
+      "src/lib.rs": "71e042bf89c89a5826460d7b7bc44c63078ad99ca4e7f0c28976123e851b1a70"
+    },
+    "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+    "target": "x86_64-unknown-linux-gnu",
+    "rustflags": null,
+    "compiler": "cc",
+    "buildScriptSha256": "c810abe7feb293029384535690395e24f4f9d9f9ca6a854029bf24c59d1d866a"
+  },
+  "evidence_type": "engineering build verification; no scientific result"
+}

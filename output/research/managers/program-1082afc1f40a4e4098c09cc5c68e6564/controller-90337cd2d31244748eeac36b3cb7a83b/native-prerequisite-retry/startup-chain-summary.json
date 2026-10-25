@@ -1,0 +1,26 @@
+[
+  {
+    "attempt_id": "attempt-fad71bf317c2489d9d3a58523e701efc",
+    "cause": "missing NumPy in the previously empty local virtualenv",
+    "observed_wall_seconds": 0.24646902084350586,
+    "state": "failed",
+    "cleanup": "launcher_finally_completed",
+    "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-fad71bf317c2489d9d3a58523e701efc"
+  },
+  {
+    "attempt_id": "attempt-02ca2a76af6a4866b86c8fe1feb55881",
+    "cause": "collector import of ws after production-only npm installation",
+    "observed_wall_seconds": 1.5850999355316162,
+    "state": "failed",
+    "cleanup": "launcher_finally_completed",
+    "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881"
+  },
+  {
+    "attempt_id": "attempt-4c96256b324647d3baf8eaf0ac653b6e",
+    "cause": "read-only Codex app-server initialization after native and runtime startup succeeded",
+    "observed_wall_seconds": 2.0619101524353027,
+    "state": "failed",
+    "cleanup": "launcher_finally_completed",
+    "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e"
+  }
+]

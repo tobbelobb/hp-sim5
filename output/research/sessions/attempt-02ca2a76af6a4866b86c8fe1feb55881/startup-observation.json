@@ -1,0 +1,185 @@
+{
+  "created_at": "2026-10-25T07:55:42.247985+00:00",
+  "details": {
+    "allocation": {
+      "additional_files": 12,
+      "collections": 0,
+      "fresh_fits": 0,
+      "physics_steps": 0,
+      "prediction_evaluations": 0,
+      "wall_minutes": 12
+    },
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-agent",
+      "--codex",
+      "--batch",
+      "--prompt-file",
+      "/workspace/hp-sim5/.research-programs/workers/attempt-02ca2a76af6a4866b86c8fe1feb55881/prompt.txt",
+      "--session-dir",
+      "/workspace/hp-sim5/output/research/sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881",
+      "--physics-backend",
+      "headless-js",
+      "--machine",
+      "hp3",
+      "--viewer",
+      "none",
+      "--wall-deadline",
+      "1792915661.8996484",
+      "--sidebar-section",
+      "none",
+      "--no-record",
+      "--no-goal-mode"
+    ],
+    "artifacts": [
+      {
+        "bytes": 343,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/session.json"
+      },
+      {
+        "bytes": 78,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/exit.json"
+      },
+      {
+        "bytes": 12243,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/prompt.txt"
+      },
+      {
+        "bytes": 12456,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/research.md"
+      },
+      {
+        "bytes": 522,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/abstract.md"
+      },
+      {
+        "bytes": 1356,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/native/runtime.log"
+      },
+      {
+        "bytes": 0,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-02ca2a76af6a4866b86c8fe1feb55881/stdout.log"
+      },
+      {
+        "bytes": 216,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-02ca2a76af6a4866b86c8fe1feb55881/stderr.log"
+      },
+      {
+        "bytes": 12243,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-02ca2a76af6a4866b86c8fe1feb55881/prompt.txt"
+      },
+      {
+        "bytes": 2349,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-02ca2a76af6a4866b86c8fe1feb55881/assignment.json"
+      }
+    ],
+    "assignment_id": "assignment-holdout-scout-runtime-ready",
+    "attempt_dir": "/workspace/hp-sim5/.research-programs/workers/attempt-02ca2a76af6a4866b86c8fe1feb55881",
+    "cleanup": "launcher_finally_completed",
+    "diagnostics": [],
+    "exited_at": "2026-10-25T07:55:43.837079+00:00",
+    "launcher_exit": {
+      "returncode": 1,
+      "wall_deadline": 1792915661.8996484,
+      "wall_expired": false
+    },
+    "launcher_session_id": "4b23f26e82d543c1a86d8658e28b5382",
+    "observations": [
+      {
+        "at": "2026-10-25T07:55:42.244486+00:00",
+        "event": "reserved"
+      },
+      {
+        "at": "2026-10-25T07:55:42.251985+00:00",
+        "event": "spawned",
+        "pid": 4111
+      },
+      {
+        "at": "2026-10-25T07:55:43.837092+00:00",
+        "event": "exited",
+        "returncode": 1
+      }
+    ],
+    "observed_wall_seconds": 1.5850999355316162,
+    "owner": {
+      "id": "dispatcher-fbd25e4dc59f4b898d9e834fd1644b5a",
+      "process": {
+        "birth": "489815",
+        "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+        "group": 1467,
+        "host": "3cccfe76ab54",
+        "pid": 1467,
+        "uid": 1000
+      }
+    },
+    "premise_conflicts": [],
+    "premise_event_ids_at_start": [],
+    "premise_ids": [
+      "evidence-agenda",
+      "evidence-cm-e1",
+      "evidence-fixed-angles"
+    ],
+    "premise_plan_ids": [
+      "plan-fair-validation",
+      "plan-model-sensitivity"
+    ],
+    "process": {
+      "birth": "582770",
+      "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+      "group": 4111,
+      "host": "3cccfe76ab54",
+      "pid": 4111,
+      "uid": 1000
+    },
+    "prompt_sha256": "822beb587d451465c2d31ff3e87cf4ac1276db9fab1b8df95bc2113f44bad497",
+    "returncode": 1,
+    "runtime": {
+      "allocation_id": "runtime_allocation-629d36e9cf1e4d1ab0541b04a5c5852d",
+      "assignment_id": "assignment-holdout-scout-runtime-ready",
+      "cleanup_seconds": 190,
+      "wall_deadline": 1792915661.8996484
+    },
+    "scientific_state": "unassessed",
+    "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881",
+    "settings": {
+      "backend": "codex",
+      "client_args": [],
+      "dont_ask": false,
+      "goal_mode": false,
+      "machine": "hp3",
+      "physics_backend": "headless-js",
+      "record": false,
+      "shared_runtime_write": true,
+      "sidebar_section": "none",
+      "viewer": "none",
+      "worktree": false
+    },
+    "source_dirty": true,
+    "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca",
+    "started_at": "2026-10-25T07:55:42.251979+00:00",
+    "state": "failed",
+    "worktree": {
+      "branch": "work",
+      "repo": "/workspace/hp-sim5",
+      "source_revision": "8acde0c21d5b9db8893115e3e79d82d9e41f98ca"
+    },
+    "worktree_id": "/workspace/hp-sim5"
+  },
+  "id": "attempt-02ca2a76af6a4866b86c8fe1feb55881",
+  "kind": "attempt",
+  "observation": "observed child",
+  "owned": false,
+  "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+  "revision": 8,
+  "title": "Inspect the same three changed CM-E1 cases for compatible later unused whole sweeps: flexible_lines_2000, ten_points_w_buildup and ten_points_w_buildup2. Start from CM-E1 inputs.json and its three compressed histories. Search at most twelve extra dataset or manifest files. Verify content hashes, all training/selection use, machine, units/frame, encoder origin, spool/layering and collection settings. Return eligible identities or explicit missing/incompatible lineage. No fitting, prediction scoring, production edits, physics experiments, collection or movement. Write research.md, report.md, abstract.md and input hashes in the assigned session. The native build, declared Python dependencies, production JS packages and pinned RRF simulator have now been verified; scripts/cloud/RESEARCH.md is explicitly not a prerequisite.",
+  "updated_at": "2026-10-25T07:55:43.837782+00:00"
+}

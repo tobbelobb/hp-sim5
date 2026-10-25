@@ -1,0 +1,32 @@
+Output buffers: size=1024 count=400 reserved=16
+Using configuration file: /tmp/hp-sim5-vsd-05tvdylq/sys/research.g
+Host Platform Initialized.
+RepRapFirmware for x86_64 (host) version 3.7.0-alpha.5
+Executing config.g... 
+G10 P0 S0 R0
+Done!
+RepRapFirmware for x86_64 (host) is up and running.
+HTTP server listening on port 48079
+FIRMWARE_NAME: RepRapFirmware for x86_64 (host) FIRMWARE_VERSION: 3.7.0-alpha.5 ELECTRONICS: RRF_Host FIRMWARE_DATE: 2026-10-25 07:54:59
+FIRMWARE_NAME: RepRapFirmware for x86_64 (host) FIRMWARE_VERSION: 3.7.0-alpha.5 ELECTRONICS: RRF_Host FIRMWARE_DATE: 2026-10-25 07:54:59
+Kinematics is Hangprinter, 130 segments/sec, min. segment length 0.50mm
+A:0.00, -1900.00, -280.00
+B:1645.45, 950.00, -280.00
+C:-1645.45, 950.00, -280.00
+D:0.00, 0.00, 1900.00
+P:Print radius: 1500.0
+M666 A1 Q0.6366
+R39.18:39.18:39.18:39.18
+U1:1:1:1
+O1:1:1:1
+L20:20:20:20
+H20:20:20:20
+J200:200:200:200
+W0.08
+S20000.00
+I3.0:3.0:3.0:3.0
+X170.0:170.0:170.0:170.0
+Y528.3:528.3:528.3:398.9
+C0.0000:0.0000:0.0000:0.0000
+F0 B0 P0
+Host Platform Shutdown.

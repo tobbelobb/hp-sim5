@@ -1,0 +1,131 @@
+{
+  "assignment": {
+    "created_at": "2026-10-25T07:45:22.028318+00:00",
+    "details": {
+      "allocation": {
+        "additional_files": 12,
+        "collections": 0,
+        "fresh_fits": 0,
+        "physics_steps": 0,
+        "prediction_evaluations": 0,
+        "wall_minutes": 12
+      },
+      "approach_id": "fair-validation",
+      "execution_state": "ready",
+      "knowledge_state": "unassessed",
+      "question_id": "question-26b3307df81340198c2c9402a39c798e",
+      "review_state": "unreviewed"
+    },
+    "id": "assignment-holdout-scout-cloud",
+    "kind": "assignment",
+    "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+    "revision": 1,
+    "title": "Continue the original twelve-minute saved-data feasibility scout after verified cloud startup. Inspect the same three CM-E1 changed-case manifests and at most twelve extra dataset/manifest files. Verify observation content, training/selection union, encoder origin, spool/layering, units and lineage. No prediction scoring, fitting, code edits, simulation experiment, collection or movement. Use the sourced scripts/cloud/env.sh environment before each build or worker shell. Preserve all original failed attempts. Write research.md, report.md, abstract.md and input hashes in the newly assigned session. The manager must establish the existing-login child workflow and retain or resolve the previous startup review obligation before dispatch.",
+    "updated_at": "2026-10-25T07:45:22.028318+00:00"
+  },
+  "investigation": {
+    "created_at": "2026-10-25T07:45:22.028403+00:00",
+    "details": {
+      "assignment_id": "assignment-holdout-scout-cloud",
+      "citation_ids": [
+        "evidence-cm-e1",
+        "evidence-agenda",
+        "evidence-live-gate",
+        "cloud-native-build",
+        "cloud-existing-login-probe"
+      ],
+      "execution": {
+        "recording_mode": "none",
+        "source_limit": 15
+      },
+      "explanations": [
+        {
+          "approach_id": "fair-validation",
+          "explanation": "Incomparable or overlapping folds conceal a usable prediction signal."
+        },
+        {
+          "approach_id": "model-sensitivity",
+          "explanation": "Measurement-model bias or weak identifiability can make prediction poorly track physical geometry even with fair folds."
+        }
+      ],
+      "kind": "scouting",
+      "outcomes": {
+        "absent": {
+          "actions": [
+            {
+              "approach_id": "fair-validation",
+              "reason": "Only the named saved-data feasibility method is exhausted; broader independent validation remains open.",
+              "reopening_condition": "New compatible data or a newly scoped discriminating observation.",
+              "scope": {
+                "cases": [
+                  "flexible_lines_2000",
+                  "ten_points_w_buildup",
+                  "ten_points_w_buildup2"
+                ],
+                "fresh_fits": 0,
+                "max_extra_files": 12,
+                "method": "saved-data feasibility scout",
+                "physics_steps": 0
+              },
+              "target": "parked"
+            },
+            {
+              "approach_id": "model-sensitivity",
+              "reason": "Scope the current-model controlled sensitivity test before new collection.",
+              "reopening_condition": "New compatible data or a newly scoped discriminating observation.",
+              "scope": {
+                "fresh_fits": 0,
+                "implementation": "diagnosis only",
+                "machine": "HP3",
+                "max_cases": 4,
+                "method": "controlled synthetic per-point fixed-angle sensitivity and NumPy/JAX parity",
+                "physics_steps": 0
+              },
+              "target": "promising"
+            }
+          ],
+          "finding": "inconclusive",
+          "observation": "All at most twelve named candidates are absent, incompatible or have unknown/overlapping lineage."
+        },
+        "eligible": {
+          "actions": [
+            {
+              "approach_id": "fair-validation",
+              "reason": "Fund at most six frozen model scores on the eligible common folds in a separate assignment.",
+              "reopening_condition": "New compatible data or a newly scoped discriminating observation.",
+              "scope": {
+                "cases": [
+                  "flexible_lines_2000",
+                  "ten_points_w_buildup",
+                  "ten_points_w_buildup2"
+                ],
+                "fresh_fits": 0,
+                "max_extra_files": 12,
+                "method": "saved-data feasibility scout",
+                "physics_steps": 0
+              },
+              "target": "promising"
+            }
+          ],
+          "finding": "supported",
+          "observation": "At least one later whole sweep has exact verified compatible identity and no training or selection overlap for either applied model."
+        },
+        "failed": {
+          "actions": [],
+          "finding": "tool_failure",
+          "observation": "Launcher, client, dependency or data-reader failure prevents the scoped inspection."
+        }
+      },
+      "route_plan_ids": [
+        "plan-fair-validation",
+        "plan-model-sensitivity"
+      ]
+    },
+    "id": "investigation-bbadbadb36444960899d9238093ecbe2",
+    "kind": "investigation",
+    "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+    "revision": 1,
+    "title": "Continue the original twelve-minute saved-data feasibility scout after verified cloud startup. Inspect the same three CM-E1 changed-case manifests and at most twelve extra dataset/manifest files. Verify observation content, training/selection union, encoder origin, spool/layering, units and lineage. No prediction scoring, fitting, code edits, simulation experiment, collection or movement. Use the sourced scripts/cloud/env.sh environment before each build or worker shell. Preserve all original failed attempts. Write research.md, report.md, abstract.md and input hashes in the newly assigned session. The manager must establish the existing-login child workflow and retain or resolve the previous startup review obligation before dispatch.",
+    "updated_at": "2026-10-25T07:45:22.028403+00:00"
+  }
+}

@@ -1,0 +1,4 @@
+Flight recorder: ws://127.0.0.1:54653
+Connect the simulator recorder, then start collection or playback. Ctrl-C stops recording.
+Recording: /workspace/hp-sim5/output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/native-prerequisite-retry/launcher-preflight/native/preflight/ddd6389c4c7e4c9c898c2d2ea4ed092f/hangprinter-20261025T075832.597234Z-ed4dae44.rrd
+Recording finalized: /workspace/hp-sim5/output/research/managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/native-prerequisite-retry/launcher-preflight/native/preflight/ddd6389c4c7e4c9c898c2d2ea4ed092f/hangprinter-20261025T075832.597234Z-ed4dae44.rrd (last timestep 0)

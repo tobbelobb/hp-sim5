@@ -1,0 +1,9 @@
+Submodule 'RRF/CANlib' (git@github.com:tobbelobb/CANlib.git) registered for path 'RRF/CANlib'
+Submodule 'RRF/RRFLibraries' (git@github.com:tobbelobb/RRFLibraries.git) registered for path 'RRF/RRFLibraries'
+Submodule 'RRF/ReprapFirmware' (git@github.com:tobbelobb/ReprapFirmware) registered for path 'RRF/ReprapFirmware'
+Cloning into '/workspace/hp-sim5/RRF/CANlib'...
+Cloning into '/workspace/hp-sim5/RRF/RRFLibraries'...
+Cloning into '/workspace/hp-sim5/RRF/ReprapFirmware'...
+Submodule path 'RRF/CANlib': checked out '09743131ccb0e9f82f536dbdd052bb3e38e73eb1'
+Submodule path 'RRF/RRFLibraries': checked out '7a81a6be863c5958596de05a3b646e4e3197e084'
+Submodule path 'RRF/ReprapFirmware': checked out 'e82fd5bd327d0364f5a7a7e5ac938137002594c0'

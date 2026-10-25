@@ -4302,3 +4302,140 @@ Hangprinter, calibration, common holdout, research manager, native build, startu
 #### References
 
 - [Report](sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/report.md), [notebook](sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/research.md), [startup evidence](sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/startup-evidence.json) and [launcher error](sessions/attempt-2a0ba36011304a0c844d06b70fd0b734/launcher-stderr.log).
+
+## [Hangprinter native prerequisites and worker startup](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/)
+
+[abstract.md](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/abstract.md) · [report.md](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/report.md) · [research.md](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/research.md)
+
+### Hangprinter native prerequisites repaired; worker reaches client initialization
+
+Status: native and supervised-runtime setup verified. Existing program active without allocated work. Scientific investigation remains blocked at coding-client initialization.
+
+#### Abstract
+
+Can the existing Hangprinter research program get past its native-build prerequisite without replacing its store or history? All three captured rustc probes now use ignored stdin, piped stdout and inherited stderr. The installed Node 23.11.1, Rust 1.99.1 and Node-API headers were verified; the no-PGO native build and addon load passed. Actual worker retries exposed an empty local Python environment and a missing collector JS dependency. Declared Python requirements, full locked JS dependencies and the pinned RRF simulator were restored. A nonmoving launcher preflight then passed all six checks at world step zero. The final managed worker successfully started its native and supervised runtime, then failed at read-only Codex app-server initialization before model execution. Three new failed startup attempts are retained alongside the original failure and sealed review history. No saved-data scout, calibration measurement or scientific admission completed. The next necessary work concerns writable client runtime state, separately from the repaired native build.
+
+#### Topics
+
+Hangprinter, native build, Node-API, Rust probes, runtime prerequisites, RRF, launcher preflight, research manager, existing login, client initialization
+
+#### Tested hypotheses
+
+| Check or question | Experiment ID | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Installed native prerequisites build and load the addon | NATIVE-PREREQ-01 | Passed engineering verification | [Build/load receipt](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/native-prerequisite-retry/verification.json) |
+| Launcher runtime services and tools are ready | RUNTIME-PREFLIGHT-01 | Six checks passed at step zero | [Preflight result](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/native-prerequisite-retry/launcher-preflight-result.json) |
+| Existing-login research worker reaches model execution | Fourth managed startup in original chain | Blocked at read-only app-server initialization | [Final worker status](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/native-prerequisite-retry/bootstrap-verified-worker-status.json) |
+| Common unused whole sweeps exist for changed CM-E1 models | Three new scout assignments | Not tested; startup prevented inspection | [Startup chain](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/native-prerequisite-retry/startup-chain-summary.json) |
+
+#### Decision handoff
+
+- Scope: native/runtime engineering verification at source base `8acde0c21d5b9db8893115e3e79d82d9e41f98ca`, with the three-line build-script change uncommitted. No physics equations or calibration defaults changed.
+- Review: checks and startup logs inspected by manager. The original standalone reviewer failure and sealed submission remain unchanged and unreviewed.
+- Decision: retain the native probe fix and working prerequisites. Stop rebuilding or repeating the unchanged client failure. Preserve scientific alternatives and all prior attempts.
+- Next: establish supported writable runtime state for the existing-login coding client. Then separately review the retained startup submission before a new bounded scientific assignment under the restored default backlog limit.
+
+#### References
+
+- [Full report](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/report.md), [notebook](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/research.md), [overview](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/overview.md), [operation transcript](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/manager-operations.jsonl).
+- [Previous continuation](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/prior-continuation-report.md) records the earlier state before this prerequisite repair.
+- [Original research assessment](managers/program-1082afc1f40a4e4098c09cc5c68e6564/controller-90337cd2d31244748eeac36b3cb7a83b/../controller-6664a6157d2e451a8ec92f9b1efd67af/report.md) preserves the uncertainty map and experiment rationale.
+
+## [attempt-fad71bf317c2489d9d3a58523e701efc](sessions/attempt-fad71bf317c2489d9d3a58523e701efc/)
+
+[abstract.md](sessions/attempt-fad71bf317c2489d9d3a58523e701efc/abstract.md) · [report.md](sessions/attempt-fad71bf317c2489d9d3a58523e701efc/report.md) · [research.md](sessions/attempt-fad71bf317c2489d9d3a58523e701efc/research.md)
+
+### Saved-data scout blocked at engineering startup
+
+Status: blocked before investigation. Manager-authored handoff after launcher exit.
+
+#### Abstract
+
+The bounded assignment was to inspect saved CM-E1 data for common unused whole sweeps, with no fitting, scoring, collection or movement. Attempt `attempt-fad71bf317c2489d9d3a58523e701efc` failed at missing NumPy in the previously empty local virtualenv. The coding-client investigation did not produce a scientific result. The controller observed exit 1 after 0.246 seconds and reports `launcher_finally_completed`. The launcher notebook and raw startup evidence remain preserved. This failure neither establishes missing data nor rejects a scientific explanation. The native prerequisite repair and subsequent launcher verification are documented in the manager's report.
+
+#### Topics
+
+Hangprinter, saved-data scout, native prerequisites, runtime dependencies, startup failure
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment ID | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Compatible unused common whole sweeps exist | assignment-holdout-scout-cloud | Not tested | [Startup status](sessions/attempt-fad71bf317c2489d9d3a58523e701efc/startup-observation.json), [launcher error](sessions/attempt-fad71bf317c2489d9d3a58523e701efc/launcher-stderr.log) |
+
+#### Decision handoff
+
+- Scope: engineering startup only, no calibration result.
+- Review: manager-inspected status and logs; no independent scientific review or admission.
+- Decision: preserve this failure and all scientific alternatives.
+- Next: use the latest manager handoff to identify the remaining prerequisite before another distinct bounded assignment.
+
+#### References
+
+- [Report](sessions/attempt-fad71bf317c2489d9d3a58523e701efc/report.md), [notebook](sessions/attempt-fad71bf317c2489d9d3a58523e701efc/research.md), [startup observation](sessions/attempt-fad71bf317c2489d9d3a58523e701efc/startup-observation.json), [launcher stderr](sessions/attempt-fad71bf317c2489d9d3a58523e701efc/launcher-stderr.log).
+
+## [attempt-02ca2a76af6a4866b86c8fe1feb55881](sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/)
+
+[abstract.md](sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/abstract.md) · [report.md](sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/report.md) · [research.md](sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/research.md)
+
+### Saved-data scout blocked at engineering startup
+
+Status: blocked before investigation. Manager-authored handoff after launcher exit.
+
+#### Abstract
+
+The bounded assignment was to inspect saved CM-E1 data for common unused whole sweeps, with no fitting, scoring, collection or movement. Attempt `attempt-02ca2a76af6a4866b86c8fe1feb55881` failed at collector import of ws after production-only npm installation. The coding-client investigation did not produce a scientific result. The controller observed exit 1 after 1.585 seconds and reports `launcher_finally_completed`. The launcher notebook and raw startup evidence remain preserved. This failure neither establishes missing data nor rejects a scientific explanation. The native prerequisite repair and subsequent launcher verification are documented in the manager's report.
+
+#### Topics
+
+Hangprinter, saved-data scout, native prerequisites, runtime dependencies, startup failure
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment ID | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Compatible unused common whole sweeps exist | assignment-holdout-scout-runtime-ready | Not tested | [Startup status](sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/startup-observation.json), [launcher error](sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/launcher-stderr.log) |
+
+#### Decision handoff
+
+- Scope: engineering startup only, no calibration result.
+- Review: manager-inspected status and logs; no independent scientific review or admission.
+- Decision: preserve this failure and all scientific alternatives.
+- Next: use the latest manager handoff to identify the remaining prerequisite before another distinct bounded assignment.
+
+#### References
+
+- [Report](sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/report.md), [notebook](sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/research.md), [startup observation](sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/startup-observation.json), [launcher stderr](sessions/attempt-02ca2a76af6a4866b86c8fe1feb55881/launcher-stderr.log).
+
+## [attempt-4c96256b324647d3baf8eaf0ac653b6e](sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/)
+
+[abstract.md](sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/abstract.md) · [report.md](sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/report.md) · [research.md](sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/research.md)
+
+### Saved-data scout blocked at engineering startup
+
+Status: blocked before investigation. Manager-authored handoff after launcher exit.
+
+#### Abstract
+
+The bounded assignment was to inspect saved CM-E1 data for common unused whole sweeps, with no fitting, scoring, collection or movement. Attempt `attempt-4c96256b324647d3baf8eaf0ac653b6e` failed at read-only Codex app-server initialization after native and runtime startup succeeded. The coding-client investigation did not produce a scientific result. The controller observed exit 1 after 2.062 seconds and reports `launcher_finally_completed`. The launcher notebook and raw startup evidence remain preserved. This failure neither establishes missing data nor rejects a scientific explanation. The native prerequisite repair and subsequent launcher verification are documented in the manager's report.
+
+#### Topics
+
+Hangprinter, saved-data scout, native prerequisites, runtime dependencies, startup failure
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment ID | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Compatible unused common whole sweeps exist | assignment-holdout-scout-bootstrap-verified | Not tested | [Startup status](sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/startup-observation.json), [launcher error](sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/launcher-stderr.log) |
+
+#### Decision handoff
+
+- Scope: engineering startup only, no calibration result.
+- Review: manager-inspected status and logs; no independent scientific review or admission.
+- Decision: preserve this failure and all scientific alternatives.
+- Next: use the latest manager handoff to identify the remaining prerequisite before another distinct bounded assignment.
+
+#### References
+
+- [Report](sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/report.md), [notebook](sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/research.md), [startup observation](sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/startup-observation.json), [launcher stderr](sessions/attempt-4c96256b324647d3baf8eaf0ac653b6e/launcher-stderr.log).

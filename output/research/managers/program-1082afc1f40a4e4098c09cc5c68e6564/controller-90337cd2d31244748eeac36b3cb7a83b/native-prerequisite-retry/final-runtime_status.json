@@ -1,0 +1,383 @@
+{
+  "allocations": [
+    {
+      "created_at": "2026-10-25T06:21:11.665322+00:00",
+      "details": {
+        "cleanup_deadline": 1792910781.6652179,
+        "cleanup_seconds": 190,
+        "deadline": 1792910591.6652179,
+        "events": [
+          {
+            "at": "2026-10-25T06:25:23.268254+00:00",
+            "event": "allocation_stopped",
+            "reason": "Worker and separate reviewer reached observed terminal failures; close unused capacity without another launch."
+          }
+        ],
+        "lease_until": 1792909537.564108,
+        "owner": {
+          "id": "controller-6664a6157d2e451a8ec92f9b1efd67af",
+          "process": {
+            "birth": "3433",
+            "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+            "group": 590,
+            "host": "3cccfe76ab54",
+            "pid": 590,
+            "uid": 1000
+          }
+        },
+        "queue": [],
+        "reservations": [
+          {
+            "assignment_id": "assignment-holdout-scout",
+            "attempt_id": "attempt-2a0ba36011304a0c844d06b70fd0b734",
+            "charged_at": "2026-10-25T06:21:18.750726+00:00",
+            "retry_root": null,
+            "review_pending": true,
+            "review_seconds": 300,
+            "reviews": [
+              {
+                "charge_id": "52e4ee34bf5a4a8898882230d6d649bc",
+                "reserved_seconds": 300,
+                "run_id": "review-run-e2f622e5447b400b956df399f29965ea",
+                "state": "failed"
+              }
+            ],
+            "settings": {
+              "backend": "codex",
+              "client_args": [],
+              "dont_ask": false,
+              "goal_mode": true,
+              "machine": "hp3",
+              "physics_backend": "headless-js",
+              "record": false,
+              "shared_runtime_write": true,
+              "viewer": "none",
+              "worktree": true
+            },
+            "state": "failed",
+            "usage": {
+              "estimates": {
+                "additional_files": 12,
+                "collections": 0,
+                "fresh_fits": 0,
+                "physics_steps": 0,
+                "prediction_evaluations": 0,
+                "wall_minutes": 12
+              },
+              "observed_worker_wall_seconds": 5.56591796875,
+              "supervisor_observations": [],
+              "unmetered": [
+                "shell movement",
+                "shell compute",
+                "spend"
+              ],
+              "worker_reports": []
+            },
+            "worker_seconds": 720
+          }
+        ],
+        "retry_limit": 1,
+        "review_backlog_limit": 1,
+        "review_seconds": 300,
+        "started_at": "2026-10-25T06:21:11.665220+00:00",
+        "state": "stopped",
+        "task_limit": 1,
+        "wall_reserved_seconds": 1020,
+        "wall_seconds": 1320,
+        "worker_limit": 1
+      },
+      "id": "runtime_allocation-aa4de4b84e44473dbd28b5a384d85592",
+      "kind": "runtime_allocation",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "revision": 9,
+      "title": "Finite manager allocation",
+      "updated_at": "2026-10-25T06:25:23.268399+00:00"
+    },
+    {
+      "created_at": "2026-10-25T07:49:12.102443+00:00",
+      "details": {
+        "cleanup_deadline": 1792916062.1023211,
+        "cleanup_seconds": 190,
+        "deadline": 1792915872.1023211,
+        "events": [
+          {
+            "at": "2026-10-25T07:53:55.422711+00:00",
+            "event": "allocation_stopped",
+            "reason": "Single funded retry ended with observed launcher cleanup. Preserve the failure while repairing declared runtime dependencies separately."
+          }
+        ],
+        "lease_until": 1792914848.4930615,
+        "owner": {
+          "id": "controller-90337cd2d31244748eeac36b3cb7a83b",
+          "process": {
+            "birth": "489815",
+            "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+            "group": 1467,
+            "host": "3cccfe76ab54",
+            "pid": 1467,
+            "uid": 1000
+          }
+        },
+        "queue": [],
+        "reservations": [
+          {
+            "assignment_id": "assignment-holdout-scout-cloud",
+            "attempt_id": "attempt-fad71bf317c2489d9d3a58523e701efc",
+            "charged_at": "2026-10-25T07:49:12.222301+00:00",
+            "retry_root": "attempt-2a0ba36011304a0c844d06b70fd0b734",
+            "review_pending": false,
+            "review_seconds": 300,
+            "reviews": [],
+            "settings": {
+              "backend": "codex",
+              "client_args": [],
+              "dont_ask": false,
+              "goal_mode": false,
+              "machine": "hp3",
+              "physics_backend": "headless-js",
+              "record": false,
+              "shared_runtime_write": true,
+              "sidebar_section": "none",
+              "viewer": "none",
+              "worktree": false
+            },
+            "state": "failed",
+            "usage": {
+              "estimates": {
+                "additional_files": 12,
+                "collections": 0,
+                "fresh_fits": 0,
+                "physics_steps": 0,
+                "prediction_evaluations": 0,
+                "wall_minutes": 12
+              },
+              "observed_worker_wall_seconds": 0.24646902084350586,
+              "supervisor_observations": [],
+              "unmetered": [
+                "shell movement",
+                "shell compute",
+                "spend"
+              ],
+              "worker_reports": []
+            },
+            "worker_seconds": 720
+          }
+        ],
+        "retry_limit": 2,
+        "review_backlog_limit": 2,
+        "review_seconds": 300,
+        "started_at": "2026-10-25T07:49:12.102325+00:00",
+        "state": "stopped",
+        "task_limit": 1,
+        "wall_reserved_seconds": 1020,
+        "wall_seconds": 1320,
+        "worker_limit": 1
+      },
+      "id": "runtime_allocation-f538e385b30e44cb80f7a32d9e9bea87",
+      "kind": "runtime_allocation",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "revision": 6,
+      "title": "Finite manager allocation",
+      "updated_at": "2026-10-25T07:53:55.422851+00:00"
+    },
+    {
+      "created_at": "2026-10-25T07:55:41.766521+00:00",
+      "details": {
+        "cleanup_deadline": 1792916451.7663815,
+        "cleanup_seconds": 190,
+        "deadline": 1792916261.7663815,
+        "events": [
+          {
+            "at": "2026-10-25T07:59:21.279409+00:00",
+            "event": "allocation_stopped",
+            "reason": "The one funded attempt exited with observed launcher cleanup; preserve its collector-startup failure and close remaining capacity."
+          }
+        ],
+        "lease_until": 1792915173.05483,
+        "owner": {
+          "id": "controller-90337cd2d31244748eeac36b3cb7a83b",
+          "process": {
+            "birth": "489815",
+            "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+            "group": 1467,
+            "host": "3cccfe76ab54",
+            "pid": 1467,
+            "uid": 1000
+          }
+        },
+        "queue": [],
+        "reservations": [
+          {
+            "assignment_id": "assignment-holdout-scout-runtime-ready",
+            "attempt_id": "attempt-02ca2a76af6a4866b86c8fe1feb55881",
+            "charged_at": "2026-10-25T07:55:41.896699+00:00",
+            "retry_root": "attempt-2a0ba36011304a0c844d06b70fd0b734",
+            "review_pending": false,
+            "review_seconds": 300,
+            "reviews": [],
+            "settings": {
+              "backend": "codex",
+              "client_args": [],
+              "dont_ask": false,
+              "goal_mode": false,
+              "machine": "hp3",
+              "physics_backend": "headless-js",
+              "record": false,
+              "shared_runtime_write": true,
+              "sidebar_section": "none",
+              "viewer": "none",
+              "worktree": false
+            },
+            "state": "failed",
+            "usage": {
+              "estimates": {
+                "additional_files": 12,
+                "collections": 0,
+                "fresh_fits": 0,
+                "physics_steps": 0,
+                "prediction_evaluations": 0,
+                "wall_minutes": 12
+              },
+              "observed_worker_wall_seconds": 1.5850999355316162,
+              "supervisor_observations": [],
+              "unmetered": [
+                "shell movement",
+                "shell compute",
+                "spend"
+              ],
+              "worker_reports": []
+            },
+            "worker_seconds": 720
+          }
+        ],
+        "retry_limit": 3,
+        "review_backlog_limit": 2,
+        "review_seconds": 300,
+        "started_at": "2026-10-25T07:55:41.766385+00:00",
+        "state": "stopped",
+        "task_limit": 1,
+        "wall_reserved_seconds": 1020,
+        "wall_seconds": 1320,
+        "worker_limit": 1
+      },
+      "id": "runtime_allocation-629d36e9cf1e4d1ab0541b04a5c5852d",
+      "kind": "runtime_allocation",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "revision": 6,
+      "title": "Finite manager allocation",
+      "updated_at": "2026-10-25T07:59:21.279577+00:00"
+    },
+    {
+      "created_at": "2026-10-25T08:00:00.630788+00:00",
+      "details": {
+        "cleanup_deadline": 1792916710.6306546,
+        "cleanup_seconds": 190,
+        "deadline": 1792916520.6306546,
+        "events": [
+          {
+            "at": "2026-10-25T08:03:09.941487+00:00",
+            "event": "allocation_stopped",
+            "reason": "The final bounded retry exited and launcher cleanup returned. Close unused capacity and do not repeat the unchanged client-state failure."
+          }
+        ],
+        "lease_until": 1792915401.8701797,
+        "owner": {
+          "id": "controller-90337cd2d31244748eeac36b3cb7a83b",
+          "process": {
+            "birth": "489815",
+            "boot_id": "be1bfa90-367c-4034-8a7c-c147700afce0",
+            "group": 1467,
+            "host": "3cccfe76ab54",
+            "pid": 1467,
+            "uid": 1000
+          }
+        },
+        "queue": [],
+        "reservations": [
+          {
+            "assignment_id": "assignment-holdout-scout-bootstrap-verified",
+            "attempt_id": "attempt-4c96256b324647d3baf8eaf0ac653b6e",
+            "charged_at": "2026-10-25T08:00:00.711774+00:00",
+            "retry_root": "attempt-2a0ba36011304a0c844d06b70fd0b734",
+            "review_pending": false,
+            "review_seconds": 300,
+            "reviews": [],
+            "settings": {
+              "backend": "codex",
+              "client_args": [],
+              "dont_ask": false,
+              "goal_mode": false,
+              "machine": "hp3",
+              "physics_backend": "headless-js",
+              "record": false,
+              "shared_runtime_write": true,
+              "sidebar_section": "none",
+              "viewer": "none",
+              "worktree": false
+            },
+            "state": "failed",
+            "usage": {
+              "estimates": {
+                "additional_files": 12,
+                "collections": 0,
+                "fresh_fits": 0,
+                "physics_steps": 0,
+                "prediction_evaluations": 0,
+                "wall_minutes": 12
+              },
+              "observed_worker_wall_seconds": 2.0619101524353027,
+              "supervisor_observations": [],
+              "unmetered": [
+                "shell movement",
+                "shell compute",
+                "spend"
+              ],
+              "worker_reports": []
+            },
+            "worker_seconds": 720
+          }
+        ],
+        "retry_limit": 4,
+        "review_backlog_limit": 2,
+        "review_seconds": 300,
+        "started_at": "2026-10-25T08:00:00.630657+00:00",
+        "state": "stopped",
+        "task_limit": 1,
+        "wall_reserved_seconds": 1020,
+        "wall_seconds": 1320,
+        "worker_limit": 1
+      },
+      "id": "runtime_allocation-87fb8e36d0f74b1291680d68eacb8ab0",
+      "kind": "runtime_allocation",
+      "program_id": "program-1082afc1f40a4e4098c09cc5c68e6564",
+      "revision": 6,
+      "title": "Finite manager allocation",
+      "updated_at": "2026-10-25T08:03:09.941639+00:00"
+    }
+  ],
+  "cleanup": "Launcher cleanup grace is separate; forced exit or missing manifest leaves physical/recording shutdown unverified",
+  "enforced": [
+    "finite dispatch/task reservations",
+    "store-wide and per-program worker limits",
+    "store-wide review concurrency 1",
+    "review backlog",
+    "owned launcher/reviewer wall deadlines independent of host polling"
+  ],
+  "pool": {
+    "default_program_worker_limit": 1,
+    "maximum_worker_limit": 4,
+    "reservation_holders": [],
+    "store_future_review_obligations": 1,
+    "store_review_backlog_limit": 1,
+    "store_reviewers_reserved": 0,
+    "store_worker_limit": 1,
+    "store_workers_reserved": 0,
+    "unknown_cleanup_ids": [],
+    "unknown_review_ids": [],
+    "unopened_programs": "Saved reservations count; no PID adoption or automatic replay"
+  },
+  "premise_reviews": [],
+  "restart": "No PID adoption. Unverified work is interrupted and requires an explicit new bounded handoff",
+  "shared_filesystem": "Workers own separate worktrees, worlds and session artifacts. Output, RRF/build, dependencies and the starting native addon are shared. Treat shared paths and datasets as immutable; use only your session directory for new artifacts. Shared builds, dependency changes and combined evaluation require an exclusive shared_runtime_write reservation. Same-UID cooperation is not adversarial isolation.",
+  "workload_limits": "Production tool per-job limits apply only to supported tool calls. Allocation counters are estimates/contracts, not hard aggregate movement or spend caps"
+}
