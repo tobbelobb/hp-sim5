@@ -100,8 +100,8 @@ standard library. Dedicated chat needs an installed supported coding client with
 working existing authentication and writable client state. MCP needs the repository's
 supported SDK and working stdio/event-loop facilities. Workers need the normal
 [research runtime setup](README.md#setup-and-interactive-use), including native
-build tools and Node development headers. The current launcher starts a supervisor
-even for a saved-data fitting assignment.
+build tools. Node-API C headers are included in the checkout. The current launcher
+starts a supervisor even for a saved-data fitting assignment.
 
 The 2026-10-24 actual pilot created a program, launched that worker in an isolated
 worktree, queried the graph, exercised steering/lifecycle commands and reopened

@@ -10,9 +10,10 @@ same Rust `PhysicsWorld` that runs in the browser as Wasm. No physics equations
 were duplicated. JavaScript still prepares scenes, dispatches commands, exposes
 observations and owns browser rendering, interactive edits and connections.
 
-Build with `npm run build:native`. The Linux/macOS recipe needs Rust, a C compiler,
-Node development headers (`NODE_INCLUDE_DIR` overrides their location) and
-`rustup component add llvm-tools-preview` for the default PGO build.
+Build with `npm run build:native`. The Linux/macOS recipe needs Rust, a C compiler
+and `rustup component add llvm-tools-preview` for the default PGO build.
+The Node-API C headers are bundled with the bridge; `NODE_INCLUDE_DIR` explicitly
+overrides them when a different SDK is needed.
 Optimized builds train for 40,000 fixed HP3/HP4 updates with layering on/off,
 position/torque motors and closed-loop transitions, then compile with that profile.
 They target the local CPU unless `RUSTFLAGS` specifies `target-cpu`.

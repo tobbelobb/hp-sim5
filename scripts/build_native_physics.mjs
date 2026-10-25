@@ -13,17 +13,22 @@ const { values: args } = parseArgs({ options: {
 if (!['release', 'profiling', 'dev'].includes(args.profile)) throw new Error('Expected --profile release, profiling or dev');
 if (!['linux', 'darwin'].includes(process.platform)) throw new Error('Native addon build currently supports Linux and macOS');
 const crate = path.join(root, 'src/wasm/cable_solver');
-const headers = [process.env.NODE_INCLUDE_DIR, '/usr/include/node', '/usr/local/include/node',
-  path.resolve(process.execPath, '../../include/node')].filter(Boolean).find(dir => fs.existsSync(path.join(dir, 'node_api.h')));
-if (!headers) throw new Error('Node-API headers are missing; install Node development headers or set NODE_INCLUDE_DIR');
-const rustc = execFileSync('rustc', ['--version', '--verbose'], { encoding: 'utf8' }).trim();
+const headerFiles = ['node_api.h', 'node_api_types.h', 'js_native_api.h', 'js_native_api_types.h'];
+// Node-API is ABI-stable. Keep its small C SDK with the bridge so a runtime-only
+// Node installation can build offline, without shell setup or system headers.
+const headers = path.resolve(process.env.NODE_INCLUDE_DIR || path.join(crate, 'native/node-api'));
+const missingHeaders = headerFiles.filter(file => !fs.existsSync(path.join(headers, file)));
+if (missingHeaders.length) throw new Error(`Node-API headers are incomplete in ${headers}: ${missingHeaders.join(', ')}`);
+// Compiler probes never read stdin. Piping it can fail with EPERM in the cloud sandbox.
+const capture = { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] };
+const rustc = execFileSync('rustc', ['--version', '--verbose'], capture).trim();
 const target = rustc.match(/^host: (.+)$/m)?.[1];
 if (!target) throw new Error('Cannot determine the native Rust host target');
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 const rustflags = process.env.CARGO_ENCODED_RUSTFLAGS ?? process.env.RUSTFLAGS ?? process.env.CARGO_BUILD_RUSTFLAGS ?? null;
 if (args.pgo ?? (args.profile !== 'dev')) {
   if (/profile-(generate|use)/.test(rustflags ?? '')) throw new Error('Use --no-pgo with explicit profile-generate/profile-use flags');
-  const libdir = execFileSync('rustc', ['--print', 'target-libdir'], { encoding: 'utf8' }).trim();
+  const libdir = execFileSync('rustc', ['--print', 'target-libdir'], capture).trim();
   const profdata = path.resolve(libdir, '../bin', process.platform === 'win32' ? 'llvm-profdata.exe' : 'llvm-profdata');
   if (!fs.existsSync(profdata)) throw new Error('PGO needs rustup component add llvm-tools-preview; use --no-pgo for an untrained build');
   const parent = path.join(crate, 'target/native');
@@ -63,7 +68,7 @@ const temporary = `${destination}.${process.pid}.tmp`;
 // writer into the Node addon so profile-generate actually produces usable data.
 const instrumentation = [];
 if (/profile-generate/.test(rustflags ?? '')) {
-  const libdir = execFileSync('rustc', ['--print', 'target-libdir'], { encoding: 'utf8' }).trim();
+  const libdir = execFileSync('rustc', ['--print', 'target-libdir'], capture).trim();
   const library = fs.readdirSync(libdir).find(name => /^libprofiler_builtins-.*\.rlib$/.test(name));
   if (!library) throw new Error('Rust profiler_builtins runtime is missing');
   instrumentation.push(`-Wl,-u,${process.platform === 'darwin' ? '_' : ''}__llvm_profile_runtime`, path.join(libdir, library));
@@ -74,9 +79,11 @@ execFileSync(process.env.CC ?? 'cc', ['-std=c11', '-Wall', '-Wextra', '-Werror',
   ...(process.platform === 'darwin' ? ['-undefined', 'dynamic_lookup'] : ['-ldl', '-lpthread']), '-lm', '-o', temporary],
   { cwd: root, stdio: 'inherit' });
 fs.renameSync(temporary, destination);
-const files = ['Cargo.toml', 'Cargo.lock', 'native/node_bridge.c', ...fs.readdirSync(path.join(crate, 'src')).filter(f => f.endsWith('.rs')).map(f => `src/${f}`)];
+const files = ['Cargo.toml', 'Cargo.lock', 'native/node_bridge.c', ...headerFiles.map(file => `native/node-api/${file}`),
+  ...fs.readdirSync(path.join(crate, 'src')).filter(f => f.endsWith('.rs')).map(f => `src/${f}`)];
 fs.writeFileSync(`${destination}.json`, JSON.stringify({ profile: args.profile, platform: process.platform, arch: process.arch,
   nodeApi: 8, artifactSha256: sha(fs.readFileSync(destination)),
+  nodeApiHeaders: { directory: headers, sha256: Object.fromEntries(headerFiles.map(file => [file, sha(fs.readFileSync(path.join(headers, file)))])) },
   sources: Object.fromEntries(files.map(file => [file, sha(fs.readFileSync(path.join(crate, file)))])),
   rustc, target, rustflags,
   compiler: process.env.CC ?? 'cc', buildScriptSha256: sha(fs.readFileSync(fileURLToPath(import.meta.url))),

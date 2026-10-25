@@ -55,6 +55,8 @@ Node 23 matches the CI major version used during onboarding. The supplied and
 official Node 24.19.0 binaries both aborted in `napi_detach_arraybuffer` with the
 native addon on October 16. Keep the explicit Node pin until compatibility is
 rechecked; the main README's Node 24 quick start has a different assumption.
+The native build includes its Node-API C headers in the checkout, so new shells
+do not need `NODE_INCLUDE_DIR` or a system Node development package.
 GPU/CUDA support, firmware flashing and optional Klipper setup are outside this
 installer's scope. The pinned Klipper commit could not be fetched during the
 original onboarding; retry separately if that workflow is needed.

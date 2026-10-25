@@ -6,6 +6,9 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 echo "== Build shared Rust physics for native and Wasm =="
 (cd "$ROOT" && npm run build:native -- --no-pgo && npm run build:wasm)
 
+echo "== Native build without system Node headers =="
+(cd "$ROOT" && node --test tests/benchmark/native_build_headers.test.mjs)
+
 echo "== Native Rust smoke tests =="
 (cd "$ROOT" && cargo test --manifest-path src/wasm/cable_solver/Cargo.toml --locked)
 

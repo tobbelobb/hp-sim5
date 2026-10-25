@@ -36,7 +36,7 @@ jobs:
       - name: Install Python, pytest, numpy, scipy, matplotlib, warp-lang[extras], websockets, pytest-asyncio, and usd-core
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3 python3-pip python3-venv build-essential libnode-dev
+          sudo apt-get install -y python3 python3-pip python3-venv build-essential
           python3 -m venv .venv
           source .venv/bin/activate
           python -m pip install --upgrade pip
