@@ -49,7 +49,7 @@ From the repository root:
 
 ```bash
 .venv/bin/python -m pip install -r requirements.txt
-npm run build:native               # Rust, C compiler and Node headers
+npm run build:native               # Rust and C compiler; Node-API headers are bundled
 codex login                       # choose ChatGPT
 ./hp-sim5-research-agent --codex
 ./hp-sim5-research-agent --codex --prompt "Compare HP4 settling with a small A-axis movement. Run both experiments, inspect their recordings and explain the measured difference."
