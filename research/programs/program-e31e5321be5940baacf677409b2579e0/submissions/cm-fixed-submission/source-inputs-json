@@ -1,0 +1,324 @@
+[
+  {
+    "fixture": "23_april_2026",
+    "cohort": "additional_dataset",
+    "original_path": "output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-35233092/artifacts/stage-sweep2/23_april_2026/stages/history-006.json",
+    "input": "inputs/23_april_2026.history.json.gz",
+    "sha256": "16dbb3c48e81be80d5ba03756b4c33886ddbcaa61e1230fab19fe4c32ffd1319",
+    "gzip_sha256": "abb6e0a51379f37b42177c797a5b3fe5a5d3f5416ed0f32cfab5ce5a75662c61",
+    "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+    "machine": "hangprinter_4",
+    "truth_anchors_mm": [
+      [
+        0.0,
+        -1900.0,
+        -280.0
+      ],
+      [
+        1645.45,
+        950.0,
+        -280.0
+      ],
+      [
+        -1645.45,
+        950.0,
+        -280.0
+      ],
+      [
+        0.0,
+        0.0,
+        1900.0
+      ]
+    ]
+  },
+  {
+    "fixture": "fifth_hp3_dataset",
+    "cohort": "additional_dataset",
+    "original_path": "output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-35233092/artifacts/stage-sweep2/fifth_hp3_dataset/stages/history-007.json",
+    "input": "inputs/fifth_hp3_dataset.history.json.gz",
+    "sha256": "160ad70188471623eaf82eea82d73f8140e966d250697fc296982d67a845358e",
+    "gzip_sha256": "732f557d2be1162a60f0aee9402fdce0575cdbd2649fb36c3c35485d8f01e3e4",
+    "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+    "machine": "hangprinter_4",
+    "truth_anchors_mm": [
+      [
+        0.0,
+        -1900.0,
+        -280.0
+      ],
+      [
+        1645.45,
+        950.0,
+        -280.0
+      ],
+      [
+        -1645.45,
+        950.0,
+        -280.0
+      ],
+      [
+        0.0,
+        0.0,
+        1900.0
+      ]
+    ]
+  },
+  {
+    "fixture": "nineteenth_hp3_dataset_even_more_pressure",
+    "cohort": "additional_dataset",
+    "original_path": "output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-35233092/artifacts/stage-sweep2/nineteenth_hp3_dataset_even_more_pressure/stages/history-005.json",
+    "input": "inputs/nineteenth_hp3_dataset_even_more_pressure.history.json.gz",
+    "sha256": "a0acbe7f0d520821b238d74a99428f4154f06b281fb453d4b96ae5943459f84f",
+    "gzip_sha256": "3d1376ad2204a2a5a9c0f47b867f42b067c74161d9f1b2d33a7b2e27eb8eca83",
+    "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+    "machine": "hangprinter_4",
+    "truth_anchors_mm": [
+      [
+        0.0,
+        -1900.0,
+        -280.0
+      ],
+      [
+        1645.45,
+        950.0,
+        -280.0
+      ],
+      [
+        -1645.45,
+        950.0,
+        -280.0
+      ],
+      [
+        0.0,
+        0.0,
+        1900.0
+      ]
+    ]
+  },
+  {
+    "fixture": "seventh_hp3_dataset",
+    "cohort": "motivating_dataset_overlap",
+    "original_path": "output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-35233092/artifacts/stage-sweep2/seventh_hp3_dataset/stages/history-005.json",
+    "input": "inputs/seventh_hp3_dataset.history.json.gz",
+    "sha256": "083c6394c13dd1f66823a8c224bf22fef1e167d99a3457438c151f6a47034a96",
+    "gzip_sha256": "a8439bb40e0f050d4d973d620b93fffafb7f6dbc0162878b1109236cad087eba",
+    "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+    "machine": "hangprinter_4",
+    "truth_anchors_mm": [
+      [
+        0.0,
+        -1900.0,
+        -280.0
+      ],
+      [
+        1645.45,
+        950.0,
+        -280.0
+      ],
+      [
+        -1645.45,
+        950.0,
+        -280.0
+      ],
+      [
+        0.0,
+        0.0,
+        1900.0
+      ]
+    ]
+  },
+  {
+    "fixture": "sixteenth_hp3_dataset_even_more_pressure",
+    "cohort": "additional_dataset",
+    "original_path": "output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-35233092/artifacts/stage-sweep2/sixteenth_hp3_dataset_even_more_pressure/stages/history-006.json",
+    "input": "inputs/sixteenth_hp3_dataset_even_more_pressure.history.json.gz",
+    "sha256": "7b9a325002a7d4859267f0dff9e093990adf066378a88fdffcc0e00076f6f092",
+    "gzip_sha256": "2af9531ca8e6616099b9d5e39c4c3ce9cc4ba115f9374d581a677892d9e495bb",
+    "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+    "machine": "hangprinter_4",
+    "truth_anchors_mm": [
+      [
+        0.0,
+        -1900.0,
+        -280.0
+      ],
+      [
+        1645.45,
+        950.0,
+        -280.0
+      ],
+      [
+        -1645.45,
+        950.0,
+        -280.0
+      ],
+      [
+        0.0,
+        0.0,
+        1900.0
+      ]
+    ]
+  },
+  {
+    "fixture": "five_points_bigger_deltas",
+    "cohort": "motivating_dataset_overlap",
+    "original_path": "output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-35233092/artifacts/stage-sweep-slide/five_points_bigger_deltas/stages/history-006.json",
+    "input": "inputs/five_points_bigger_deltas.history.json.gz",
+    "sha256": "2c5eb13f18083ac720e64ea4ae86df16ca3209d50515904a21eff66f93333242",
+    "gzip_sha256": "3e37811c2cd94c94d4a595d83e19230f8a12c9a6d91f17d420e41bc557ef4b3d",
+    "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+    "machine": "slideprinter",
+    "truth_anchors_mm": [
+      [
+        0.0,
+        -1900.0,
+        0.0
+      ],
+      [
+        1645.44826719,
+        950.0,
+        0.0
+      ],
+      [
+        -1645.44826719,
+        950.0,
+        0.0
+      ]
+    ]
+  },
+  {
+    "fixture": "flexible_lines_2000",
+    "cohort": "additional_dataset",
+    "original_path": "output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-35233092/artifacts/stage-sweep-slide/flexible_lines_2000/stages/history-004.json",
+    "input": "inputs/flexible_lines_2000.history.json.gz",
+    "sha256": "22a1a0c433e9cb7bd58cec75db6d7f371308b710a5799f67f1a18096d6399f2d",
+    "gzip_sha256": "1daa60b472b8b96cb29e4790cc21cae71493ff90505f3a0a53ec48fca4a33ed2",
+    "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+    "machine": "slideprinter",
+    "truth_anchors_mm": [
+      [
+        0.0,
+        -1900.0,
+        0.0
+      ],
+      [
+        1645.44826719,
+        950.0,
+        0.0
+      ],
+      [
+        -1645.44826719,
+        950.0,
+        0.0
+      ]
+    ]
+  },
+  {
+    "fixture": "layered_manual_some_bad_points",
+    "cohort": "motivating_dataset_overlap",
+    "original_path": "output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-35233092/artifacts/stage-sweep-slide/layered_manual_some_bad_points/stages/history-007.json",
+    "input": "inputs/layered_manual_some_bad_points.history.json.gz",
+    "sha256": "9058c37ec4eca9b7b3d2977624fce6e5044acecd0c5ec499c739eabbdb121d2b",
+    "gzip_sha256": "507096999fefce30bc34f755a8d1c9a4102b8839028786e9bec38228e334dda1",
+    "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+    "machine": "slideprinter",
+    "truth_anchors_mm": [
+      [
+        0.0,
+        -1900.0,
+        0.0
+      ],
+      [
+        1645.44826719,
+        950.0,
+        0.0
+      ],
+      [
+        -1645.44826719,
+        950.0,
+        0.0
+      ]
+    ]
+  },
+  {
+    "fixture": "ten_points_bigger_deltas",
+    "cohort": "additional_dataset",
+    "original_path": "output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-35233092/artifacts/stage-sweep-slide/ten_points_bigger_deltas/stages/history-006.json",
+    "input": "inputs/ten_points_bigger_deltas.history.json.gz",
+    "sha256": "5cc2716becb70a26561642790506fe65e58fc113287751c7dae78c6ea7e95b02",
+    "gzip_sha256": "90a5533a6870bea68a36e74ff272a2b029e32e0a7a16934ece1227a05c041b17",
+    "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+    "machine": "slideprinter",
+    "truth_anchors_mm": [
+      [
+        0.0,
+        -1900.0,
+        0.0
+      ],
+      [
+        1645.44826719,
+        950.0,
+        0.0
+      ],
+      [
+        -1645.44826719,
+        950.0,
+        0.0
+      ]
+    ]
+  },
+  {
+    "fixture": "ten_points_w_buildup",
+    "cohort": "additional_dataset",
+    "original_path": "output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-35233092/artifacts/stage-sweep-slide/ten_points_w_buildup/stages/history-005.json",
+    "input": "inputs/ten_points_w_buildup.history.json.gz",
+    "sha256": "cb8f21af363b3d86383a3b05a12b91cf0a8248f32d6832f3b57b0171f04c86c3",
+    "gzip_sha256": "e3fb86aad19f952d0dda7afb2d91db9924a2cb1041a095fd55b8afd07b26af30",
+    "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+    "machine": "slideprinter",
+    "truth_anchors_mm": [
+      [
+        0.0,
+        -1900.0,
+        0.0
+      ],
+      [
+        1645.44826719,
+        950.0,
+        0.0
+      ],
+      [
+        -1645.44826719,
+        950.0,
+        0.0
+      ]
+    ]
+  },
+  {
+    "fixture": "ten_points_w_buildup2",
+    "cohort": "additional_dataset",
+    "original_path": "output/research/sessions/2026-10-15-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-35233092/artifacts/stage-sweep-slide/ten_points_w_buildup2/stages/history-007.json",
+    "input": "inputs/ten_points_w_buildup2.history.json.gz",
+    "sha256": "5ca2dcf76e6a8e8daadb59517b73d430d58b7a8bde102c7018371046cebaba57",
+    "gzip_sha256": "5b6927c73ba453e4b55ffc1be6f4cf9d36b5c5c355c3b4ec89d3f4dd0073958f",
+    "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+    "machine": "slideprinter",
+    "truth_anchors_mm": [
+      [
+        0.0,
+        -1900.0,
+        0.0
+      ],
+      [
+        1645.44826719,
+        950.0,
+        0.0
+      ],
+      [
+        -1645.44826719,
+        950.0,
+        0.0
+      ]
+    ]
+  }
+]

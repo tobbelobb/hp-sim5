@@ -1,0 +1,66 @@
+{
+  "checks": [
+    {
+      "asset_ids": [
+        "report",
+        "abstract",
+        "notebook",
+        "evidence",
+        "extractor",
+        "source-report-md",
+        "source-results-json",
+        "source-audit-json",
+        "source-inputs-json"
+      ],
+      "description": "Verified manifest.json SHA-256 against the assigned submission identity, all nine asset hashes, and the empty candidate.diff digest. Manifest records no changed paths or candidate revision.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": [
+        "report",
+        "abstract",
+        "notebook",
+        "source-report-md",
+        "source-results-json",
+        "source-inputs-json"
+      ],
+      "description": "Inspected CM-SAVED-A1's scoped claim and CM-E1 provenance: recorded probe.py/audit.py commands, input hashes, settings, fit revision 72523b9dc64155bf58fc1b8f0ea7241266ff73d4 and evaluation revision 5400cefc0238007406f5cd572d21ef5a72d2958d. Comparisons concern final applied consensus geometry using summed per-anchor distances, separately from single-fit diagnostics.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": [
+        "source-results-json",
+        "source-audit-json",
+        "source-inputs-json",
+        "evidence"
+      ],
+      "description": "Read-only structural, arithmetic and set checks passed: eight additional names contain one improvement, two regressions and five unchanged outcomes; stored errors sum to 401.10027562823973 versus 400.7970309548157 mm. Regressions are +0.5029977549565103 and +0.09415630167794076 mm.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": [
+        "source-results-json",
+        "source-audit-json",
+        "evidence",
+        "extractor"
+      ],
+      "description": "Confirmed saved training-set unions leave no common unseen fold for changed rows 6, 9 and 10; each variant-only unseen terminal sweep trained a baseline member. Applied spool payloads match between arms, and eight unchanged anchor/spool payloads are identical. Inspected the standard-library extractor and its 91 recorded passing checks; performed no selection, prediction, fitting, geometry-error or physics replay.",
+      "kind": "inspected"
+    }
+  ],
+  "code_readiness": "report_only",
+  "discrepancy": null,
+  "finding": "supported",
+  "limitations": [
+    "Numerical measurements remain historical producer evidence. Raw envelopes, producer scripts and numerical implementation were outside the selected evidence; hashes and internal agreement do not establish numerical correctness.",
+    "Twenty source files reportedly changed between fit production and evaluation. Recorded single-fit diagnostic agreement supports limited compatibility, not complete ranking, fresh-fit or current-code equivalence.",
+    "Changed selections lack common unseen prediction evidence. Dataset names and distinct recorded hashes do not establish independent physical worlds; hp3-named inputs retain the manifest's hangprinter_4 labels.",
+    "No stopping-trajectory, hardware or broader model-adequacy conclusion follows from this archived final-selection comparison."
+  ],
+  "practical_value": "Preserves a useful negative finding: a small aggregate geometry gain does not satisfy per-dataset nonworsening or establish predictive superiority.",
+  "reason": "Keep the CM-SAVED-A1 report and claim cm-reviewed-scope-claim revision 1 at base a1b4e559887550da6cac6a4c67819a618a766f65. The inspected CM-E1 records support withholding unconditional finite-prediction-only final-consensus adoption within the stated archived scope. The target is unambiguous, the diff is empty, and no engineering delivery gate or additional numerical check is needed for this report-only finding.",
+  "required_checks": [],
+  "submission_id": "cm-fixed-submission",
+  "submission_sha256": "8ebeaa970620b7decadd4262353064e90011d9047f57d449647f63485917b3bc",
+  "verdict": "keep"
+}

@@ -1,0 +1,4978 @@
+{
+  "source_revision": "5400cefc0238007406f5cd572d21ef5a72d2958d",
+  "command": ".venv/bin/python output/research/sessions/2026-10-23-consensus-membership/probe.py",
+  "script_sha256": "13e49658a5dcabcea59dde72454c1e16ef3dc9e8cff9d46382172110823a966c",
+  "inputs_manifest_sha256": "f58ef95d783a265b7153cefc07d2d8785f77896846bb07d58317b8a009634b44",
+  "current_source_sha256": {
+    "autocal/__init__.py": "6b683bd7aeb340c22ebb4407e331438f4897b5485b11a95726b8a101d74feec5",
+    "autocal/_autocal_common.py": "00b2e49ed44eadce4bb6010936edc7632165a09e3807663d944f5f72942f3631",
+    "autocal/active_learning.py": "73ccf3bd12e906d56942f3b1bd93540b203756724b99cf5dfe30b2596f01f203",
+    "autocal/alternating_refinement.py": "cf546017e6d7679780f06508af1a4f49c01940146c9596aeb145765047603ae7",
+    "autocal/autocal.py": "c360119fa34159cd34365a646f669bbefcb6c455c6e7b48f7a39f48cb98903b5",
+    "autocal/calibrate.py": "a6ac09d29f13427851403154b23cdc0666cdafe2815d54db0e2cf0345db2321a",
+    "autocal/dataset_roles.py": "dd3a45b4e529a343655b1b464e1a348eb3d27bd4d805651b7eface9b03d048ef",
+    "autocal/ellipse_active.py": "777248b7556c1c7c9ebdf63eb076160640679efde5d13a36e1fa2c1da1802938",
+    "autocal/ellipse_cost.py": "591a0e610d65baf9a0ba8b3d8e5c1e8541e97123d7396b1e240c3c8e30c32ccf",
+    "autocal/ellipse_fitting.py": "3ee525409e34576c96680804c2eb7fd96ad1eca91819b1b1272961dd0e16efe3",
+    "autocal/ellipse_objective_jax.py": "c4cb1951e3c29428858a659dcd8b3ecb05ffe1a1ec7876c71e4d03683a5e9b77",
+    "autocal/ellipse_solver.py": "16b4795fb7f2236635ecd90326ecc64d04b8a5d2a31ee8f3af17c5295de8793a",
+    "autocal/ellipse_visualization.py": "1cdcb6e9c5e6768713601cf96da04274b32585c9eb0a9ac291d605238984ec81",
+    "autocal/extended_reference.py": "3e536df18b54c335e1a0711f4d0e91979f7ed03fd3b7e745fd43bdbd807a0087",
+    "autocal/filter_pass.py": "e3b5d7a45ec0cfd74fa8550aa02e1cb259e53b73abfa49bb24d89263b926356e",
+    "autocal/fit_stage.py": "4e95a69a018023b3470d3f12024899b640dc6a5d8c9d7a3aa8b6159689c90bd8",
+    "autocal/flex.py": "a94029be97c27543e53655ae5cc7cb0d9626bfe111c6b9f650a3be86ef23e265",
+    "autocal/headless_sim.py": "8229a0d3a55eaaf0a1e4cf4c9fd95ae5a30c399460e547a6db976f3380cf92ea",
+    "autocal/history_selection.py": "c4f45578510f41f9f6f8b6b7d8bec03aecd1daefd45ea08bc847adfa72ec8f2e",
+    "autocal/initialize_pass.py": "ce766376d2533b9812e8838bd1d17ce63de459d232feb259bece079d84abde60",
+    "autocal/json_schema.py": "ce7b2a65af16d763ab27d978bd876287e110172c3d1e8f1d61e891c60f78a1a2",
+    "autocal/merge_sweep_datasets.py": "69d9c4e5f54cee3b340a06182ebec0dc1d1bc36ccc5e9a9fbb3e902a8826b51a",
+    "autocal/planning_pass.py": "2d1914a19cb5a1115497d76ff79f360a8aa28c93509dae5bd9e0d7096a7afca7",
+    "autocal/plot_residual_hist.py": "54fec4ec843d288c87e42879c6eee646e658b57daa807465e95235598cb12063",
+    "autocal/predictive_validation.py": "930d9759226f38aaf7bb7666f511e1297d41faf9462d2fb806df1123754351d6",
+    "autocal/scale_polish.py": "b18ec713c6c06c7a676a1b73096244c3857ed7d19eea23925dd81b04d34cc231",
+    "autocal/spool_model.py": "48a9b30a633fe8c5f6b439cb29560683380f47342ce46320e904063a9e20a910",
+    "autocal/stage_artifacts.py": "2e653decc2cc1c6d8ab31030c381baa5ccd0ad3e55f845ad4dc51d5d98d7b673",
+    "autocal/sweep_config_generator.py": "22f933f89ab85063dcf2200b36a68c7bfe5daab9dc705ad8f421910d13d04f35",
+    "autocal/sweep_io.py": "887029381a0f6f7219abb171bb65dd607366ac0343db820b02d1bb484b6b42e9",
+    "autocal/sweep_types.py": "3505e4ee4293444f9aa3d7e17c3f6664cbef66488a8fb09a56c39cb1832a2733",
+    "autocal/theoretical_ellipse.py": "1f8ab68ae913b73b9959c8480893594b34ed0dcf246f61ef95889cabea86e3ce",
+    "autocal/tools/replay_stage.py": "a5ee73bcd57b894a34bfd02b22741db29984f5199847ccf25fcbefbcd0189cdd"
+  },
+  "budget_used": {
+    "histories": 11,
+    "selection_evaluations": 22,
+    "prediction_evaluations": 49,
+    "fresh_fits": 0,
+    "physics_steps": 0,
+    "collections": 0
+  },
+  "metric": "sum of per-anchor Euclidean distances to fixture simulation truth, mm",
+  "scope": "Frozen final selection from saved simulated fits, no stopping/fitting/collection or hardware claim",
+  "summary": {
+    "additional_dataset": {
+      "datasets": 8,
+      "improved": 1,
+      "worsened": 2,
+      "unchanged": 5,
+      "baseline_sum_anchor_error_mm": 401.10027562823973,
+      "variant_sum_anchor_error_mm": 400.7970309548157,
+      "delta_sum_anchor_error_mm": -0.303244673424079
+    },
+    "motivating_dataset_overlap": {
+      "datasets": 3,
+      "improved": 0,
+      "worsened": 0,
+      "unchanged": 3,
+      "baseline_sum_anchor_error_mm": 214.76568608926382,
+      "variant_sum_anchor_error_mm": 214.76568608926382,
+      "delta_sum_anchor_error_mm": 0.0
+    }
+  },
+  "rows": [
+    {
+      "fixture": "23_april_2026",
+      "cohort": "additional_dataset",
+      "input": "inputs/23_april_2026.history.json.gz",
+      "input_sha256": "16dbb3c48e81be80d5ba03756b4c33886ddbcaa61e1230fab19fe4c32ffd1319",
+      "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+      "producer_source_sha256": {
+        "autocal/__init__.py": "6b683bd7aeb340c22ebb4407e331438f4897b5485b11a95726b8a101d74feec5",
+        "autocal/_autocal_common.py": "e0c5efab2bb30d629f4d1f5dd49e10bc990c7d3732db313f153d18a76751dbbd",
+        "autocal/active_learning.py": "73ccf3bd12e906d56942f3b1bd93540b203756724b99cf5dfe30b2596f01f203",
+        "autocal/alternating_refinement.py": "0809131a4399ed2be1069655fdfebb89f02676eea6bb73366fd82167d6e2ba3f",
+        "autocal/autocal.py": "2f91784fc77aecf7e7aae6e1049cb16af83accedd6d2f3e042a6d899b895b43d",
+        "autocal/calibrate.py": "ad4ff4fd3c2e7d299d86cdae97499da09837251705f65d2ea5389b88fac1302a",
+        "autocal/dataset_roles.py": "dd3a45b4e529a343655b1b464e1a348eb3d27bd4d805651b7eface9b03d048ef",
+        "autocal/ellipse_active.py": "def349e1c2d122efd1541e8653203124c13e64f225926a92b9704bb01d89ecca",
+        "autocal/ellipse_cost.py": "4c118c9ddabc3b971f70cda30b202a5669b23b80ac5d24c479374f635c5eb541",
+        "autocal/ellipse_fitting.py": "3ee525409e34576c96680804c2eb7fd96ad1eca91819b1b1272961dd0e16efe3",
+        "autocal/ellipse_objective_jax.py": "e43c811f0104c54f5ff8c7ec9178408dc8accb85fef302971903eaf823a3a672",
+        "autocal/ellipse_solver.py": "1e926f091bc66f63990660bbbd41d18517cdfa9f81a900488fd5de4f77f47709",
+        "autocal/ellipse_visualization.py": "1cdcb6e9c5e6768713601cf96da04274b32585c9eb0a9ac291d605238984ec81",
+        "autocal/extended_reference.py": "3e536df18b54c335e1a0711f4d0e91979f7ed03fd3b7e745fd43bdbd807a0087",
+        "autocal/filter_pass.py": "69a17b664cbca9666b984495eac6c153e3d44fbb0530e97d090b52c61bc5b33d",
+        "autocal/fit_stage.py": "087462db8f7d4ab8d5e4426a05773ee65ed6bb4644e8a2cbae1f5d678919d151",
+        "autocal/flex.py": "a94029be97c27543e53655ae5cc7cb0d9626bfe111c6b9f650a3be86ef23e265",
+        "autocal/headless_sim.py": "1ee8b8897daee5bf0b8801ed3121359e2bc20273a0e99d0062cb3b689a2358c7",
+        "autocal/history_selection.py": "12507a7beb1010dfb5c1147e6ab990c8f87846202bd88873155b8ddbe6ab7219",
+        "autocal/initialize_pass.py": "bddb0f958c720dea52642c8923658a21bb60a48781e43ce903175ea199cbe82d",
+        "autocal/json_schema.py": "ce7b2a65af16d763ab27d978bd876287e110172c3d1e8f1d61e891c60f78a1a2",
+        "autocal/merge_sweep_datasets.py": "69d9c4e5f54cee3b340a06182ebec0dc1d1bc36ccc5e9a9fbb3e902a8826b51a",
+        "autocal/planning_pass.py": "317232933861f8f8e32b6ed26d0fc53bad3275f8a2a2d0c4d04c0eb236a4c203",
+        "autocal/plot_residual_hist.py": "54fec4ec843d288c87e42879c6eee646e658b57daa807465e95235598cb12063",
+        "autocal/predictive_validation.py": "ce684ad519c9d32282f05713421beb8759b9d1ae7be1e6db68156138044265fd",
+        "autocal/scale_polish.py": "ab732e7ec5c48d095aa4cb1b6b3bed94cff629a4eca557709f597660eff88154",
+        "autocal/spool_model.py": "f21e2cd4640e0a5d5fac5546faf309a85225887b6f98f5dc02055fb7d56c1972",
+        "autocal/stage_artifacts.py": "2e653decc2cc1c6d8ab31030c381baa5ccd0ad3e55f845ad4dc51d5d98d7b673",
+        "autocal/sweep_config_generator.py": "22f933f89ab85063dcf2200b36a68c7bfe5daab9dc705ad8f421910d13d04f35",
+        "autocal/sweep_io.py": "887029381a0f6f7219abb171bb65dd607366ac0343db820b02d1bb484b6b42e9",
+        "autocal/sweep_types.py": "60f63ababc703b6c9ce081aec09533976fed47145bf2d9aca535d8b99610773b",
+        "autocal/theoretical_ellipse.py": "ded6db280bf3569c71e4a87e0621500f379d0ae8e6a9166ad2892ee591b26d20",
+        "autocal/tools/replay_stage.py": "b4c4d5616ae1a2fa4adfff2605cef2c89b40f374f7149483b316974230724dd6"
+      },
+      "changed_source_files": [
+        "autocal/_autocal_common.py",
+        "autocal/alternating_refinement.py",
+        "autocal/autocal.py",
+        "autocal/calibrate.py",
+        "autocal/ellipse_active.py",
+        "autocal/ellipse_cost.py",
+        "autocal/ellipse_objective_jax.py",
+        "autocal/ellipse_solver.py",
+        "autocal/filter_pass.py",
+        "autocal/fit_stage.py",
+        "autocal/headless_sim.py",
+        "autocal/history_selection.py",
+        "autocal/initialize_pass.py",
+        "autocal/planning_pass.py",
+        "autocal/predictive_validation.py",
+        "autocal/scale_polish.py",
+        "autocal/spool_model.py",
+        "autocal/sweep_types.py",
+        "autocal/theoretical_ellipse.py",
+        "autocal/tools/replay_stage.py"
+      ],
+      "single_fit_iteration": 2,
+      "single_fit_sum_anchor_error_mm": 230.15574137131065,
+      "single_fit_saved_prediction": 159.4280631938024,
+      "single_fit_recomputed_prediction": {
+        "status": "finite",
+        "score": 159.4280631938024,
+        "sweeps": 4
+      },
+      "single_fit_prediction_matches_saved": true,
+      "validation_options": {
+        "collector_args": [
+          "--firmware",
+          "rrf",
+          "--sim",
+          "--no-spawn-rrf-simulator",
+          "--force-base-radii",
+          "30",
+          "--force-buildup-factor",
+          "0.636619"
+        ],
+        "use_flex": false,
+        "spring_k_multiplier": 1.0,
+        "use_noise_mean": true,
+        "pointwise_residual_mode": "sampson",
+        "sigma_source": "auto"
+      },
+      "chosen_settings": {
+        "solve_restarts": 4,
+        "solve_iterations": 400,
+        "solve_optimizer": "lbfgsb",
+        "optimizer_mode": "fast",
+        "residual_threshold": 250.0,
+        "spring_k_multiplier": 1.0,
+        "use_flex": false,
+        "pointwise_residual_mode": "sampson",
+        "pointwise_filtering": true,
+        "pointwise_global_mad": true,
+        "sweep_wise_filtering": true,
+        "sweep_metric": "outlier_ratio",
+        "use_noise_mean": true,
+        "sigma_source": "auto",
+        "robust_debug": true,
+        "generate_report": false,
+        "find_radii": "global",
+        "find_buildup_factor": "off",
+        "base_radii": [
+          30.0
+        ],
+        "buildup_factor": 0.636619,
+        "r0_bounds": [
+          39.0,
+          40.0
+        ],
+        "b_bounds": null,
+        "r0_prior_sigma_mm": null,
+        "b_prior_sigma": null,
+        "spool_outer_iters": 3,
+        "spool_inner_iters": 30,
+        "theta0_mode": "zero",
+        "filter_schedule": [
+          "warmup",
+          "warmup",
+          "warmup",
+          "dynamic"
+        ],
+        "objective_schedule": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "scale_fix": [
+          3
+        ],
+        "fit_structure": [
+          3
+        ],
+        "line_width": 1.0,
+        "sigma_floor_mm": null,
+        "sigma_used_mm": null,
+        "low_anchor_z": null
+      },
+      "candidate_iterations": [
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "eligible_iterations": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "failed_prediction_iterations": [],
+      "chosen_fit_future_fold_ids": [
+        "sweep_005",
+        "sweep_006",
+        "sweep_007",
+        "sweep_008"
+      ],
+      "common_unseen_fold_ids": [
+        "sweep_008"
+      ],
+      "all_candidates": {
+        "members": [
+          4,
+          5
+        ],
+        "spread_mm": 0.3769275788409267,
+        "sum_anchor_error_mm": 99.57973307731417,
+        "anchors_mm": [
+          [
+            0.0,
+            -1932.107881900783,
+            -267.2041234663336
+          ],
+          [
+            1612.1006104405083,
+            936.8900077455905,
+            -267.2041234663336
+          ],
+          [
+            -1640.6395606833335,
+            955.1816978241659,
+            -267.2041234663336
+          ],
+          [
+            4.419347330135457,
+            -9.179241729815194,
+            1893.0245977832694
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.00449447866846,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.3505895364785,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.00449447866846,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.3505895364785,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.00449447866846,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.3505895364785,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.00449447866846,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.3505895364785,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 158.35592803538907,
+          "sweeps": 4
+        },
+        "future_fold_training_overlap_ids": [
+          "sweep_005",
+          "sweep_006",
+          "sweep_007"
+        ],
+        "common_unseen_fold": {
+          "status": "finite",
+          "score": 576.1547607772607,
+          "sweeps": 1
+        }
+      },
+      "finite_prediction_only": {
+        "members": [
+          4,
+          5
+        ],
+        "spread_mm": 0.3769275788409267,
+        "sum_anchor_error_mm": 99.57973307731417,
+        "anchors_mm": [
+          [
+            0.0,
+            -1932.107881900783,
+            -267.2041234663336
+          ],
+          [
+            1612.1006104405083,
+            936.8900077455905,
+            -267.2041234663336
+          ],
+          [
+            -1640.6395606833335,
+            955.1816978241659,
+            -267.2041234663336
+          ],
+          [
+            4.419347330135457,
+            -9.179241729815194,
+            1893.0245977832694
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.00449447866846,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.3505895364785,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.00449447866846,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.3505895364785,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.00449447866846,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.3505895364785,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.00449447866846,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.3505895364785,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 158.35592803538907,
+          "sweeps": 4
+        },
+        "future_fold_training_overlap_ids": [
+          "sweep_005",
+          "sweep_006",
+          "sweep_007"
+        ],
+        "common_unseen_fold": {
+          "status": "finite",
+          "score": 576.1547607772607,
+          "sweeps": 1
+        }
+      },
+      "delta_sum_anchor_error_mm": 0.0
+    },
+    {
+      "fixture": "fifth_hp3_dataset",
+      "cohort": "additional_dataset",
+      "input": "inputs/fifth_hp3_dataset.history.json.gz",
+      "input_sha256": "160ad70188471623eaf82eea82d73f8140e966d250697fc296982d67a845358e",
+      "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+      "producer_source_sha256": {
+        "autocal/__init__.py": "6b683bd7aeb340c22ebb4407e331438f4897b5485b11a95726b8a101d74feec5",
+        "autocal/_autocal_common.py": "e0c5efab2bb30d629f4d1f5dd49e10bc990c7d3732db313f153d18a76751dbbd",
+        "autocal/active_learning.py": "73ccf3bd12e906d56942f3b1bd93540b203756724b99cf5dfe30b2596f01f203",
+        "autocal/alternating_refinement.py": "0809131a4399ed2be1069655fdfebb89f02676eea6bb73366fd82167d6e2ba3f",
+        "autocal/autocal.py": "2f91784fc77aecf7e7aae6e1049cb16af83accedd6d2f3e042a6d899b895b43d",
+        "autocal/calibrate.py": "ad4ff4fd3c2e7d299d86cdae97499da09837251705f65d2ea5389b88fac1302a",
+        "autocal/dataset_roles.py": "dd3a45b4e529a343655b1b464e1a348eb3d27bd4d805651b7eface9b03d048ef",
+        "autocal/ellipse_active.py": "def349e1c2d122efd1541e8653203124c13e64f225926a92b9704bb01d89ecca",
+        "autocal/ellipse_cost.py": "4c118c9ddabc3b971f70cda30b202a5669b23b80ac5d24c479374f635c5eb541",
+        "autocal/ellipse_fitting.py": "3ee525409e34576c96680804c2eb7fd96ad1eca91819b1b1272961dd0e16efe3",
+        "autocal/ellipse_objective_jax.py": "e43c811f0104c54f5ff8c7ec9178408dc8accb85fef302971903eaf823a3a672",
+        "autocal/ellipse_solver.py": "1e926f091bc66f63990660bbbd41d18517cdfa9f81a900488fd5de4f77f47709",
+        "autocal/ellipse_visualization.py": "1cdcb6e9c5e6768713601cf96da04274b32585c9eb0a9ac291d605238984ec81",
+        "autocal/extended_reference.py": "3e536df18b54c335e1a0711f4d0e91979f7ed03fd3b7e745fd43bdbd807a0087",
+        "autocal/filter_pass.py": "69a17b664cbca9666b984495eac6c153e3d44fbb0530e97d090b52c61bc5b33d",
+        "autocal/fit_stage.py": "087462db8f7d4ab8d5e4426a05773ee65ed6bb4644e8a2cbae1f5d678919d151",
+        "autocal/flex.py": "a94029be97c27543e53655ae5cc7cb0d9626bfe111c6b9f650a3be86ef23e265",
+        "autocal/headless_sim.py": "1ee8b8897daee5bf0b8801ed3121359e2bc20273a0e99d0062cb3b689a2358c7",
+        "autocal/history_selection.py": "12507a7beb1010dfb5c1147e6ab990c8f87846202bd88873155b8ddbe6ab7219",
+        "autocal/initialize_pass.py": "bddb0f958c720dea52642c8923658a21bb60a48781e43ce903175ea199cbe82d",
+        "autocal/json_schema.py": "ce7b2a65af16d763ab27d978bd876287e110172c3d1e8f1d61e891c60f78a1a2",
+        "autocal/merge_sweep_datasets.py": "69d9c4e5f54cee3b340a06182ebec0dc1d1bc36ccc5e9a9fbb3e902a8826b51a",
+        "autocal/planning_pass.py": "317232933861f8f8e32b6ed26d0fc53bad3275f8a2a2d0c4d04c0eb236a4c203",
+        "autocal/plot_residual_hist.py": "54fec4ec843d288c87e42879c6eee646e658b57daa807465e95235598cb12063",
+        "autocal/predictive_validation.py": "ce684ad519c9d32282f05713421beb8759b9d1ae7be1e6db68156138044265fd",
+        "autocal/scale_polish.py": "ab732e7ec5c48d095aa4cb1b6b3bed94cff629a4eca557709f597660eff88154",
+        "autocal/spool_model.py": "f21e2cd4640e0a5d5fac5546faf309a85225887b6f98f5dc02055fb7d56c1972",
+        "autocal/stage_artifacts.py": "2e653decc2cc1c6d8ab31030c381baa5ccd0ad3e55f845ad4dc51d5d98d7b673",
+        "autocal/sweep_config_generator.py": "22f933f89ab85063dcf2200b36a68c7bfe5daab9dc705ad8f421910d13d04f35",
+        "autocal/sweep_io.py": "887029381a0f6f7219abb171bb65dd607366ac0343db820b02d1bb484b6b42e9",
+        "autocal/sweep_types.py": "60f63ababc703b6c9ce081aec09533976fed47145bf2d9aca535d8b99610773b",
+        "autocal/theoretical_ellipse.py": "ded6db280bf3569c71e4a87e0621500f379d0ae8e6a9166ad2892ee591b26d20",
+        "autocal/tools/replay_stage.py": "b4c4d5616ae1a2fa4adfff2605cef2c89b40f374f7149483b316974230724dd6"
+      },
+      "changed_source_files": [
+        "autocal/_autocal_common.py",
+        "autocal/alternating_refinement.py",
+        "autocal/autocal.py",
+        "autocal/calibrate.py",
+        "autocal/ellipse_active.py",
+        "autocal/ellipse_cost.py",
+        "autocal/ellipse_objective_jax.py",
+        "autocal/ellipse_solver.py",
+        "autocal/filter_pass.py",
+        "autocal/fit_stage.py",
+        "autocal/headless_sim.py",
+        "autocal/history_selection.py",
+        "autocal/initialize_pass.py",
+        "autocal/planning_pass.py",
+        "autocal/predictive_validation.py",
+        "autocal/scale_polish.py",
+        "autocal/spool_model.py",
+        "autocal/sweep_types.py",
+        "autocal/theoretical_ellipse.py",
+        "autocal/tools/replay_stage.py"
+      ],
+      "single_fit_iteration": 2,
+      "single_fit_sum_anchor_error_mm": 66.14549181614632,
+      "single_fit_saved_prediction": 240.25585551203645,
+      "single_fit_recomputed_prediction": {
+        "status": "finite",
+        "score": 240.25585551203645,
+        "sweeps": 4
+      },
+      "single_fit_prediction_matches_saved": true,
+      "validation_options": {
+        "collector_args": [
+          "--firmware",
+          "rrf",
+          "--sim",
+          "--no-spawn-rrf-simulator",
+          "--force-base-radii",
+          "30",
+          "--force-buildup-factor",
+          "0.636619"
+        ],
+        "use_flex": false,
+        "spring_k_multiplier": 1.0,
+        "use_noise_mean": true,
+        "pointwise_residual_mode": "sampson",
+        "sigma_source": "auto"
+      },
+      "chosen_settings": {
+        "solve_restarts": 4,
+        "solve_iterations": 400,
+        "solve_optimizer": "lbfgsb",
+        "optimizer_mode": "fast",
+        "residual_threshold": 250.0,
+        "spring_k_multiplier": 1.0,
+        "use_flex": false,
+        "pointwise_residual_mode": "sampson",
+        "pointwise_filtering": true,
+        "pointwise_global_mad": true,
+        "sweep_wise_filtering": true,
+        "sweep_metric": "outlier_ratio",
+        "use_noise_mean": true,
+        "sigma_source": "auto",
+        "robust_debug": true,
+        "generate_report": false,
+        "find_radii": "global",
+        "find_buildup_factor": "off",
+        "base_radii": [
+          30.0
+        ],
+        "buildup_factor": 0.636619,
+        "r0_bounds": [
+          39.0,
+          40.0
+        ],
+        "b_bounds": null,
+        "r0_prior_sigma_mm": null,
+        "b_prior_sigma": null,
+        "spool_outer_iters": 3,
+        "spool_inner_iters": 30,
+        "theta0_mode": "zero",
+        "filter_schedule": [
+          "warmup",
+          "warmup",
+          "warmup",
+          "dynamic"
+        ],
+        "objective_schedule": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "scale_fix": [
+          3
+        ],
+        "fit_structure": [
+          3
+        ],
+        "line_width": 1.0,
+        "sigma_floor_mm": null,
+        "sigma_used_mm": null,
+        "low_anchor_z": null
+      },
+      "candidate_iterations": [
+        1,
+        2,
+        3,
+        6
+      ],
+      "eligible_iterations": [
+        1,
+        2,
+        3
+      ],
+      "failed_prediction_iterations": [],
+      "chosen_fit_future_fold_ids": [
+        "sweep_005",
+        "sweep_006",
+        "sweep_007",
+        "sweep_008"
+      ],
+      "common_unseen_fold_ids": [
+        "sweep_006",
+        "sweep_007",
+        "sweep_008"
+      ],
+      "all_candidates": {
+        "members": [
+          2,
+          3
+        ],
+        "spread_mm": 0.3310678475904519,
+        "sum_anchor_error_mm": 65.9082877826481,
+        "anchors_mm": [
+          [
+            0.0,
+            -1906.6050490610348,
+            -288.8731870883056
+          ],
+          [
+            1650.779866260363,
+            953.8213211265993,
+            -288.8731870883056
+          ],
+          [
+            -1653.7852141817382,
+            954.9168557688445,
+            -288.8731870883056
+          ],
+          [
+            -0.2567306212909871,
+            -0.7415050696308585,
+            1930.6733253911957
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.00351779229956,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.2744001742285,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.00351779229956,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.2744001742285,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.00351779229956,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.2744001742285,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.00351779229956,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.2744001742285,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 239.9427313437611,
+          "sweeps": 4
+        },
+        "future_fold_training_overlap_ids": [
+          "sweep_005"
+        ],
+        "common_unseen_fold": {
+          "status": "finite",
+          "score": 270.51435432964035,
+          "sweeps": 3
+        }
+      },
+      "finite_prediction_only": {
+        "members": [
+          2,
+          3
+        ],
+        "spread_mm": 0.3310678475904519,
+        "sum_anchor_error_mm": 65.9082877826481,
+        "anchors_mm": [
+          [
+            0.0,
+            -1906.6050490610348,
+            -288.8731870883056
+          ],
+          [
+            1650.779866260363,
+            953.8213211265993,
+            -288.8731870883056
+          ],
+          [
+            -1653.7852141817382,
+            954.9168557688445,
+            -288.8731870883056
+          ],
+          [
+            -0.2567306212909871,
+            -0.7415050696308585,
+            1930.6733253911957
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.00351779229956,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.2744001742285,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.00351779229956,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.2744001742285,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.00351779229956,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.2744001742285,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.00351779229956,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.2744001742285,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 239.9427313437611,
+          "sweeps": 4
+        },
+        "future_fold_training_overlap_ids": [
+          "sweep_005"
+        ],
+        "common_unseen_fold": {
+          "status": "finite",
+          "score": 270.51435432964035,
+          "sweeps": 3
+        }
+      },
+      "delta_sum_anchor_error_mm": 0.0
+    },
+    {
+      "fixture": "nineteenth_hp3_dataset_even_more_pressure",
+      "cohort": "additional_dataset",
+      "input": "inputs/nineteenth_hp3_dataset_even_more_pressure.history.json.gz",
+      "input_sha256": "a0acbe7f0d520821b238d74a99428f4154f06b281fb453d4b96ae5943459f84f",
+      "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+      "producer_source_sha256": {
+        "autocal/__init__.py": "6b683bd7aeb340c22ebb4407e331438f4897b5485b11a95726b8a101d74feec5",
+        "autocal/_autocal_common.py": "e0c5efab2bb30d629f4d1f5dd49e10bc990c7d3732db313f153d18a76751dbbd",
+        "autocal/active_learning.py": "73ccf3bd12e906d56942f3b1bd93540b203756724b99cf5dfe30b2596f01f203",
+        "autocal/alternating_refinement.py": "0809131a4399ed2be1069655fdfebb89f02676eea6bb73366fd82167d6e2ba3f",
+        "autocal/autocal.py": "2f91784fc77aecf7e7aae6e1049cb16af83accedd6d2f3e042a6d899b895b43d",
+        "autocal/calibrate.py": "ad4ff4fd3c2e7d299d86cdae97499da09837251705f65d2ea5389b88fac1302a",
+        "autocal/dataset_roles.py": "dd3a45b4e529a343655b1b464e1a348eb3d27bd4d805651b7eface9b03d048ef",
+        "autocal/ellipse_active.py": "def349e1c2d122efd1541e8653203124c13e64f225926a92b9704bb01d89ecca",
+        "autocal/ellipse_cost.py": "4c118c9ddabc3b971f70cda30b202a5669b23b80ac5d24c479374f635c5eb541",
+        "autocal/ellipse_fitting.py": "3ee525409e34576c96680804c2eb7fd96ad1eca91819b1b1272961dd0e16efe3",
+        "autocal/ellipse_objective_jax.py": "e43c811f0104c54f5ff8c7ec9178408dc8accb85fef302971903eaf823a3a672",
+        "autocal/ellipse_solver.py": "1e926f091bc66f63990660bbbd41d18517cdfa9f81a900488fd5de4f77f47709",
+        "autocal/ellipse_visualization.py": "1cdcb6e9c5e6768713601cf96da04274b32585c9eb0a9ac291d605238984ec81",
+        "autocal/extended_reference.py": "3e536df18b54c335e1a0711f4d0e91979f7ed03fd3b7e745fd43bdbd807a0087",
+        "autocal/filter_pass.py": "69a17b664cbca9666b984495eac6c153e3d44fbb0530e97d090b52c61bc5b33d",
+        "autocal/fit_stage.py": "087462db8f7d4ab8d5e4426a05773ee65ed6bb4644e8a2cbae1f5d678919d151",
+        "autocal/flex.py": "a94029be97c27543e53655ae5cc7cb0d9626bfe111c6b9f650a3be86ef23e265",
+        "autocal/headless_sim.py": "1ee8b8897daee5bf0b8801ed3121359e2bc20273a0e99d0062cb3b689a2358c7",
+        "autocal/history_selection.py": "12507a7beb1010dfb5c1147e6ab990c8f87846202bd88873155b8ddbe6ab7219",
+        "autocal/initialize_pass.py": "bddb0f958c720dea52642c8923658a21bb60a48781e43ce903175ea199cbe82d",
+        "autocal/json_schema.py": "ce7b2a65af16d763ab27d978bd876287e110172c3d1e8f1d61e891c60f78a1a2",
+        "autocal/merge_sweep_datasets.py": "69d9c4e5f54cee3b340a06182ebec0dc1d1bc36ccc5e9a9fbb3e902a8826b51a",
+        "autocal/planning_pass.py": "317232933861f8f8e32b6ed26d0fc53bad3275f8a2a2d0c4d04c0eb236a4c203",
+        "autocal/plot_residual_hist.py": "54fec4ec843d288c87e42879c6eee646e658b57daa807465e95235598cb12063",
+        "autocal/predictive_validation.py": "ce684ad519c9d32282f05713421beb8759b9d1ae7be1e6db68156138044265fd",
+        "autocal/scale_polish.py": "ab732e7ec5c48d095aa4cb1b6b3bed94cff629a4eca557709f597660eff88154",
+        "autocal/spool_model.py": "f21e2cd4640e0a5d5fac5546faf309a85225887b6f98f5dc02055fb7d56c1972",
+        "autocal/stage_artifacts.py": "2e653decc2cc1c6d8ab31030c381baa5ccd0ad3e55f845ad4dc51d5d98d7b673",
+        "autocal/sweep_config_generator.py": "22f933f89ab85063dcf2200b36a68c7bfe5daab9dc705ad8f421910d13d04f35",
+        "autocal/sweep_io.py": "887029381a0f6f7219abb171bb65dd607366ac0343db820b02d1bb484b6b42e9",
+        "autocal/sweep_types.py": "60f63ababc703b6c9ce081aec09533976fed47145bf2d9aca535d8b99610773b",
+        "autocal/theoretical_ellipse.py": "ded6db280bf3569c71e4a87e0621500f379d0ae8e6a9166ad2892ee591b26d20",
+        "autocal/tools/replay_stage.py": "b4c4d5616ae1a2fa4adfff2605cef2c89b40f374f7149483b316974230724dd6"
+      },
+      "changed_source_files": [
+        "autocal/_autocal_common.py",
+        "autocal/alternating_refinement.py",
+        "autocal/autocal.py",
+        "autocal/calibrate.py",
+        "autocal/ellipse_active.py",
+        "autocal/ellipse_cost.py",
+        "autocal/ellipse_objective_jax.py",
+        "autocal/ellipse_solver.py",
+        "autocal/filter_pass.py",
+        "autocal/fit_stage.py",
+        "autocal/headless_sim.py",
+        "autocal/history_selection.py",
+        "autocal/initialize_pass.py",
+        "autocal/planning_pass.py",
+        "autocal/predictive_validation.py",
+        "autocal/scale_polish.py",
+        "autocal/spool_model.py",
+        "autocal/sweep_types.py",
+        "autocal/theoretical_ellipse.py",
+        "autocal/tools/replay_stage.py"
+      ],
+      "single_fit_iteration": 2,
+      "single_fit_sum_anchor_error_mm": 165.00583869601297,
+      "single_fit_saved_prediction": 140.35038152826831,
+      "single_fit_recomputed_prediction": {
+        "status": "finite",
+        "score": 140.35038152826831,
+        "sweeps": 3
+      },
+      "single_fit_prediction_matches_saved": true,
+      "validation_options": {
+        "collector_args": [
+          "--firmware",
+          "rrf",
+          "--sim",
+          "--no-spawn-rrf-simulator",
+          "--force-base-radii",
+          "30",
+          "--force-buildup-factor",
+          "0.636619"
+        ],
+        "use_flex": false,
+        "spring_k_multiplier": 1.0,
+        "use_noise_mean": true,
+        "pointwise_residual_mode": "sampson",
+        "sigma_source": "auto"
+      },
+      "chosen_settings": {
+        "solve_restarts": 4,
+        "solve_iterations": 400,
+        "solve_optimizer": "lbfgsb",
+        "optimizer_mode": "fast",
+        "residual_threshold": 250.0,
+        "spring_k_multiplier": 1.0,
+        "use_flex": false,
+        "pointwise_residual_mode": "sampson",
+        "pointwise_filtering": true,
+        "pointwise_global_mad": true,
+        "sweep_wise_filtering": true,
+        "sweep_metric": "outlier_ratio",
+        "use_noise_mean": true,
+        "sigma_source": "auto",
+        "robust_debug": true,
+        "generate_report": false,
+        "find_radii": "global",
+        "find_buildup_factor": "off",
+        "base_radii": [
+          30.0
+        ],
+        "buildup_factor": 0.636619,
+        "r0_bounds": [
+          39.0,
+          40.0
+        ],
+        "b_bounds": null,
+        "r0_prior_sigma_mm": null,
+        "b_prior_sigma": null,
+        "spool_outer_iters": 3,
+        "spool_inner_iters": 30,
+        "theta0_mode": "zero",
+        "filter_schedule": [
+          "warmup",
+          "warmup",
+          "warmup",
+          "dynamic"
+        ],
+        "objective_schedule": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "scale_fix": [
+          3
+        ],
+        "fit_structure": [
+          3
+        ],
+        "line_width": 1.0,
+        "sigma_floor_mm": null,
+        "sigma_used_mm": null,
+        "low_anchor_z": null
+      },
+      "candidate_iterations": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "eligible_iterations": [
+        2,
+        3,
+        4
+      ],
+      "failed_prediction_iterations": [],
+      "chosen_fit_future_fold_ids": [
+        "sweep_005",
+        "sweep_006",
+        "sweep_007"
+      ],
+      "common_unseen_fold_ids": [
+        "sweep_005",
+        "sweep_006",
+        "sweep_007"
+      ],
+      "all_candidates": {
+        "members": [],
+        "spread_mm": 7.049636315030031,
+        "sum_anchor_error_mm": 165.00583869601297,
+        "anchors_mm": [
+          [
+            0.0,
+            -1913.9962781605925,
+            -312.1909745694295
+          ],
+          [
+            1661.8142543498948,
+            967.7397932115094,
+            -312.1909745694295
+          ],
+          [
+            -1656.7130053700314,
+            951.67707091049,
+            -312.1909745694295
+          ],
+          [
+            -7.045250330748427,
+            3.596824900450715,
+            1954.958084492821
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.0,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.0,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.0,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.0,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 140.35038152826831,
+          "sweeps": 3
+        },
+        "future_fold_training_overlap_ids": [],
+        "common_unseen_fold": {
+          "status": "finite",
+          "score": 140.35038152826831,
+          "sweeps": 3
+        }
+      },
+      "finite_prediction_only": {
+        "members": [],
+        "spread_mm": 7.049636315030031,
+        "sum_anchor_error_mm": 165.00583869601297,
+        "anchors_mm": [
+          [
+            0.0,
+            -1913.9962781605925,
+            -312.1909745694295
+          ],
+          [
+            1661.8142543498948,
+            967.7397932115094,
+            -312.1909745694295
+          ],
+          [
+            -1656.7130053700314,
+            951.67707091049,
+            -312.1909745694295
+          ],
+          [
+            -7.045250330748427,
+            3.596824900450715,
+            1954.958084492821
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.0,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.0,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.0,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.0,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 140.35038152826831,
+          "sweeps": 3
+        },
+        "future_fold_training_overlap_ids": [],
+        "common_unseen_fold": {
+          "status": "finite",
+          "score": 140.35038152826831,
+          "sweeps": 3
+        }
+      },
+      "delta_sum_anchor_error_mm": 0.0
+    },
+    {
+      "fixture": "seventh_hp3_dataset",
+      "cohort": "motivating_dataset_overlap",
+      "input": "inputs/seventh_hp3_dataset.history.json.gz",
+      "input_sha256": "083c6394c13dd1f66823a8c224bf22fef1e167d99a3457438c151f6a47034a96",
+      "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+      "producer_source_sha256": {
+        "autocal/__init__.py": "6b683bd7aeb340c22ebb4407e331438f4897b5485b11a95726b8a101d74feec5",
+        "autocal/_autocal_common.py": "e0c5efab2bb30d629f4d1f5dd49e10bc990c7d3732db313f153d18a76751dbbd",
+        "autocal/active_learning.py": "73ccf3bd12e906d56942f3b1bd93540b203756724b99cf5dfe30b2596f01f203",
+        "autocal/alternating_refinement.py": "0809131a4399ed2be1069655fdfebb89f02676eea6bb73366fd82167d6e2ba3f",
+        "autocal/autocal.py": "2f91784fc77aecf7e7aae6e1049cb16af83accedd6d2f3e042a6d899b895b43d",
+        "autocal/calibrate.py": "ad4ff4fd3c2e7d299d86cdae97499da09837251705f65d2ea5389b88fac1302a",
+        "autocal/dataset_roles.py": "dd3a45b4e529a343655b1b464e1a348eb3d27bd4d805651b7eface9b03d048ef",
+        "autocal/ellipse_active.py": "def349e1c2d122efd1541e8653203124c13e64f225926a92b9704bb01d89ecca",
+        "autocal/ellipse_cost.py": "4c118c9ddabc3b971f70cda30b202a5669b23b80ac5d24c479374f635c5eb541",
+        "autocal/ellipse_fitting.py": "3ee525409e34576c96680804c2eb7fd96ad1eca91819b1b1272961dd0e16efe3",
+        "autocal/ellipse_objective_jax.py": "e43c811f0104c54f5ff8c7ec9178408dc8accb85fef302971903eaf823a3a672",
+        "autocal/ellipse_solver.py": "1e926f091bc66f63990660bbbd41d18517cdfa9f81a900488fd5de4f77f47709",
+        "autocal/ellipse_visualization.py": "1cdcb6e9c5e6768713601cf96da04274b32585c9eb0a9ac291d605238984ec81",
+        "autocal/extended_reference.py": "3e536df18b54c335e1a0711f4d0e91979f7ed03fd3b7e745fd43bdbd807a0087",
+        "autocal/filter_pass.py": "69a17b664cbca9666b984495eac6c153e3d44fbb0530e97d090b52c61bc5b33d",
+        "autocal/fit_stage.py": "087462db8f7d4ab8d5e4426a05773ee65ed6bb4644e8a2cbae1f5d678919d151",
+        "autocal/flex.py": "a94029be97c27543e53655ae5cc7cb0d9626bfe111c6b9f650a3be86ef23e265",
+        "autocal/headless_sim.py": "1ee8b8897daee5bf0b8801ed3121359e2bc20273a0e99d0062cb3b689a2358c7",
+        "autocal/history_selection.py": "12507a7beb1010dfb5c1147e6ab990c8f87846202bd88873155b8ddbe6ab7219",
+        "autocal/initialize_pass.py": "bddb0f958c720dea52642c8923658a21bb60a48781e43ce903175ea199cbe82d",
+        "autocal/json_schema.py": "ce7b2a65af16d763ab27d978bd876287e110172c3d1e8f1d61e891c60f78a1a2",
+        "autocal/merge_sweep_datasets.py": "69d9c4e5f54cee3b340a06182ebec0dc1d1bc36ccc5e9a9fbb3e902a8826b51a",
+        "autocal/planning_pass.py": "317232933861f8f8e32b6ed26d0fc53bad3275f8a2a2d0c4d04c0eb236a4c203",
+        "autocal/plot_residual_hist.py": "54fec4ec843d288c87e42879c6eee646e658b57daa807465e95235598cb12063",
+        "autocal/predictive_validation.py": "ce684ad519c9d32282f05713421beb8759b9d1ae7be1e6db68156138044265fd",
+        "autocal/scale_polish.py": "ab732e7ec5c48d095aa4cb1b6b3bed94cff629a4eca557709f597660eff88154",
+        "autocal/spool_model.py": "f21e2cd4640e0a5d5fac5546faf309a85225887b6f98f5dc02055fb7d56c1972",
+        "autocal/stage_artifacts.py": "2e653decc2cc1c6d8ab31030c381baa5ccd0ad3e55f845ad4dc51d5d98d7b673",
+        "autocal/sweep_config_generator.py": "22f933f89ab85063dcf2200b36a68c7bfe5daab9dc705ad8f421910d13d04f35",
+        "autocal/sweep_io.py": "887029381a0f6f7219abb171bb65dd607366ac0343db820b02d1bb484b6b42e9",
+        "autocal/sweep_types.py": "60f63ababc703b6c9ce081aec09533976fed47145bf2d9aca535d8b99610773b",
+        "autocal/theoretical_ellipse.py": "ded6db280bf3569c71e4a87e0621500f379d0ae8e6a9166ad2892ee591b26d20",
+        "autocal/tools/replay_stage.py": "b4c4d5616ae1a2fa4adfff2605cef2c89b40f374f7149483b316974230724dd6"
+      },
+      "changed_source_files": [
+        "autocal/_autocal_common.py",
+        "autocal/alternating_refinement.py",
+        "autocal/autocal.py",
+        "autocal/calibrate.py",
+        "autocal/ellipse_active.py",
+        "autocal/ellipse_cost.py",
+        "autocal/ellipse_objective_jax.py",
+        "autocal/ellipse_solver.py",
+        "autocal/filter_pass.py",
+        "autocal/fit_stage.py",
+        "autocal/headless_sim.py",
+        "autocal/history_selection.py",
+        "autocal/initialize_pass.py",
+        "autocal/planning_pass.py",
+        "autocal/predictive_validation.py",
+        "autocal/scale_polish.py",
+        "autocal/spool_model.py",
+        "autocal/sweep_types.py",
+        "autocal/theoretical_ellipse.py",
+        "autocal/tools/replay_stage.py"
+      ],
+      "single_fit_iteration": 4,
+      "single_fit_sum_anchor_error_mm": 198.5923123537059,
+      "single_fit_saved_prediction": 17.374105918988665,
+      "single_fit_recomputed_prediction": {
+        "status": "finite",
+        "score": 17.374105918988665,
+        "sweeps": 1
+      },
+      "single_fit_prediction_matches_saved": true,
+      "validation_options": {
+        "collector_args": [
+          "--firmware",
+          "rrf",
+          "--sim",
+          "--no-spawn-rrf-simulator",
+          "--force-base-radii",
+          "30",
+          "--force-buildup-factor",
+          "0.636619"
+        ],
+        "use_flex": false,
+        "spring_k_multiplier": 1.0,
+        "use_noise_mean": true,
+        "pointwise_residual_mode": "sampson",
+        "sigma_source": "auto"
+      },
+      "chosen_settings": {
+        "solve_restarts": 4,
+        "solve_iterations": 400,
+        "solve_optimizer": "lbfgsb",
+        "optimizer_mode": "fast",
+        "residual_threshold": 250.0,
+        "spring_k_multiplier": 1.0,
+        "use_flex": false,
+        "pointwise_residual_mode": "sampson",
+        "pointwise_filtering": true,
+        "pointwise_global_mad": true,
+        "sweep_wise_filtering": true,
+        "sweep_metric": "outlier_ratio",
+        "use_noise_mean": true,
+        "sigma_source": "auto",
+        "robust_debug": true,
+        "generate_report": false,
+        "find_radii": "global",
+        "find_buildup_factor": "off",
+        "base_radii": [
+          30.0
+        ],
+        "buildup_factor": 0.636619,
+        "r0_bounds": [
+          39.0,
+          40.0
+        ],
+        "b_bounds": null,
+        "r0_prior_sigma_mm": null,
+        "b_prior_sigma": null,
+        "spool_outer_iters": 3,
+        "spool_inner_iters": 30,
+        "theta0_mode": "zero",
+        "filter_schedule": [
+          "warmup",
+          "warmup",
+          "warmup",
+          "dynamic"
+        ],
+        "objective_schedule": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "scale_fix": [
+          3
+        ],
+        "fit_structure": [
+          3
+        ],
+        "line_width": 1.0,
+        "sigma_floor_mm": null,
+        "sigma_used_mm": null,
+        "low_anchor_z": null
+      },
+      "candidate_iterations": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "eligible_iterations": [
+        2,
+        3,
+        4
+      ],
+      "failed_prediction_iterations": [],
+      "chosen_fit_future_fold_ids": [
+        "sweep_007"
+      ],
+      "common_unseen_fold_ids": [
+        "sweep_007"
+      ],
+      "all_candidates": {
+        "members": [],
+        "spread_mm": 26.842825790859447,
+        "sum_anchor_error_mm": 198.5923123537059,
+        "anchors_mm": [
+          [
+            0.0,
+            -1917.7840078328525,
+            -302.96791191423375
+          ],
+          [
+            1699.8746408832262,
+            1005.5013223600284,
+            -302.96791191423375
+          ],
+          [
+            -1598.779826965054,
+            906.1526362060494,
+            -302.96791191423375
+          ],
+          [
+            -8.1086843883116,
+            4.5064491977279415,
+            1918.2335658917393
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.01215920811902,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.9485660796258,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.01215920811902,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.9485660796258,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.01215920811902,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.9485660796258,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.01215920811902,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.9485660796258,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 17.374105918988665,
+          "sweeps": 1
+        },
+        "future_fold_training_overlap_ids": [],
+        "common_unseen_fold": {
+          "status": "finite",
+          "score": 17.374105918988665,
+          "sweeps": 1
+        }
+      },
+      "finite_prediction_only": {
+        "members": [],
+        "spread_mm": 55.11989985208599,
+        "sum_anchor_error_mm": 198.5923123537059,
+        "anchors_mm": [
+          [
+            0.0,
+            -1917.7840078328525,
+            -302.96791191423375
+          ],
+          [
+            1699.8746408832262,
+            1005.5013223600284,
+            -302.96791191423375
+          ],
+          [
+            -1598.779826965054,
+            906.1526362060494,
+            -302.96791191423375
+          ],
+          [
+            -8.1086843883116,
+            4.5064491977279415,
+            1918.2335658917393
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.01215920811902,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.9485660796258,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.01215920811902,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.9485660796258,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.01215920811902,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.9485660796258,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.01215920811902,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.9485660796258,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 17.374105918988665,
+          "sweeps": 1
+        },
+        "future_fold_training_overlap_ids": [],
+        "common_unseen_fold": {
+          "status": "finite",
+          "score": 17.374105918988665,
+          "sweeps": 1
+        }
+      },
+      "delta_sum_anchor_error_mm": 0.0
+    },
+    {
+      "fixture": "sixteenth_hp3_dataset_even_more_pressure",
+      "cohort": "additional_dataset",
+      "input": "inputs/sixteenth_hp3_dataset_even_more_pressure.history.json.gz",
+      "input_sha256": "7b9a325002a7d4859267f0dff9e093990adf066378a88fdffcc0e00076f6f092",
+      "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+      "producer_source_sha256": {
+        "autocal/__init__.py": "6b683bd7aeb340c22ebb4407e331438f4897b5485b11a95726b8a101d74feec5",
+        "autocal/_autocal_common.py": "e0c5efab2bb30d629f4d1f5dd49e10bc990c7d3732db313f153d18a76751dbbd",
+        "autocal/active_learning.py": "73ccf3bd12e906d56942f3b1bd93540b203756724b99cf5dfe30b2596f01f203",
+        "autocal/alternating_refinement.py": "0809131a4399ed2be1069655fdfebb89f02676eea6bb73366fd82167d6e2ba3f",
+        "autocal/autocal.py": "2f91784fc77aecf7e7aae6e1049cb16af83accedd6d2f3e042a6d899b895b43d",
+        "autocal/calibrate.py": "ad4ff4fd3c2e7d299d86cdae97499da09837251705f65d2ea5389b88fac1302a",
+        "autocal/dataset_roles.py": "dd3a45b4e529a343655b1b464e1a348eb3d27bd4d805651b7eface9b03d048ef",
+        "autocal/ellipse_active.py": "def349e1c2d122efd1541e8653203124c13e64f225926a92b9704bb01d89ecca",
+        "autocal/ellipse_cost.py": "4c118c9ddabc3b971f70cda30b202a5669b23b80ac5d24c479374f635c5eb541",
+        "autocal/ellipse_fitting.py": "3ee525409e34576c96680804c2eb7fd96ad1eca91819b1b1272961dd0e16efe3",
+        "autocal/ellipse_objective_jax.py": "e43c811f0104c54f5ff8c7ec9178408dc8accb85fef302971903eaf823a3a672",
+        "autocal/ellipse_solver.py": "1e926f091bc66f63990660bbbd41d18517cdfa9f81a900488fd5de4f77f47709",
+        "autocal/ellipse_visualization.py": "1cdcb6e9c5e6768713601cf96da04274b32585c9eb0a9ac291d605238984ec81",
+        "autocal/extended_reference.py": "3e536df18b54c335e1a0711f4d0e91979f7ed03fd3b7e745fd43bdbd807a0087",
+        "autocal/filter_pass.py": "69a17b664cbca9666b984495eac6c153e3d44fbb0530e97d090b52c61bc5b33d",
+        "autocal/fit_stage.py": "087462db8f7d4ab8d5e4426a05773ee65ed6bb4644e8a2cbae1f5d678919d151",
+        "autocal/flex.py": "a94029be97c27543e53655ae5cc7cb0d9626bfe111c6b9f650a3be86ef23e265",
+        "autocal/headless_sim.py": "1ee8b8897daee5bf0b8801ed3121359e2bc20273a0e99d0062cb3b689a2358c7",
+        "autocal/history_selection.py": "12507a7beb1010dfb5c1147e6ab990c8f87846202bd88873155b8ddbe6ab7219",
+        "autocal/initialize_pass.py": "bddb0f958c720dea52642c8923658a21bb60a48781e43ce903175ea199cbe82d",
+        "autocal/json_schema.py": "ce7b2a65af16d763ab27d978bd876287e110172c3d1e8f1d61e891c60f78a1a2",
+        "autocal/merge_sweep_datasets.py": "69d9c4e5f54cee3b340a06182ebec0dc1d1bc36ccc5e9a9fbb3e902a8826b51a",
+        "autocal/planning_pass.py": "317232933861f8f8e32b6ed26d0fc53bad3275f8a2a2d0c4d04c0eb236a4c203",
+        "autocal/plot_residual_hist.py": "54fec4ec843d288c87e42879c6eee646e658b57daa807465e95235598cb12063",
+        "autocal/predictive_validation.py": "ce684ad519c9d32282f05713421beb8759b9d1ae7be1e6db68156138044265fd",
+        "autocal/scale_polish.py": "ab732e7ec5c48d095aa4cb1b6b3bed94cff629a4eca557709f597660eff88154",
+        "autocal/spool_model.py": "f21e2cd4640e0a5d5fac5546faf309a85225887b6f98f5dc02055fb7d56c1972",
+        "autocal/stage_artifacts.py": "2e653decc2cc1c6d8ab31030c381baa5ccd0ad3e55f845ad4dc51d5d98d7b673",
+        "autocal/sweep_config_generator.py": "22f933f89ab85063dcf2200b36a68c7bfe5daab9dc705ad8f421910d13d04f35",
+        "autocal/sweep_io.py": "887029381a0f6f7219abb171bb65dd607366ac0343db820b02d1bb484b6b42e9",
+        "autocal/sweep_types.py": "60f63ababc703b6c9ce081aec09533976fed47145bf2d9aca535d8b99610773b",
+        "autocal/theoretical_ellipse.py": "ded6db280bf3569c71e4a87e0621500f379d0ae8e6a9166ad2892ee591b26d20",
+        "autocal/tools/replay_stage.py": "b4c4d5616ae1a2fa4adfff2605cef2c89b40f374f7149483b316974230724dd6"
+      },
+      "changed_source_files": [
+        "autocal/_autocal_common.py",
+        "autocal/alternating_refinement.py",
+        "autocal/autocal.py",
+        "autocal/calibrate.py",
+        "autocal/ellipse_active.py",
+        "autocal/ellipse_cost.py",
+        "autocal/ellipse_objective_jax.py",
+        "autocal/ellipse_solver.py",
+        "autocal/filter_pass.py",
+        "autocal/fit_stage.py",
+        "autocal/headless_sim.py",
+        "autocal/history_selection.py",
+        "autocal/initialize_pass.py",
+        "autocal/planning_pass.py",
+        "autocal/predictive_validation.py",
+        "autocal/scale_polish.py",
+        "autocal/spool_model.py",
+        "autocal/sweep_types.py",
+        "autocal/theoretical_ellipse.py",
+        "autocal/tools/replay_stage.py"
+      ],
+      "single_fit_iteration": 3,
+      "single_fit_sum_anchor_error_mm": 47.37586506303008,
+      "single_fit_saved_prediction": 17.013104290107712,
+      "single_fit_recomputed_prediction": {
+        "status": "finite",
+        "score": 17.013104290107712,
+        "sweeps": 3
+      },
+      "single_fit_prediction_matches_saved": true,
+      "validation_options": {
+        "collector_args": [
+          "--firmware",
+          "rrf",
+          "--sim",
+          "--no-spawn-rrf-simulator",
+          "--force-base-radii",
+          "30",
+          "--force-buildup-factor",
+          "0.636619"
+        ],
+        "use_flex": false,
+        "spring_k_multiplier": 1.0,
+        "use_noise_mean": true,
+        "pointwise_residual_mode": "sampson",
+        "sigma_source": "auto"
+      },
+      "chosen_settings": {
+        "solve_restarts": 4,
+        "solve_iterations": 400,
+        "solve_optimizer": "lbfgsb",
+        "optimizer_mode": "fast",
+        "residual_threshold": 250.0,
+        "spring_k_multiplier": 1.0,
+        "use_flex": false,
+        "pointwise_residual_mode": "sampson",
+        "pointwise_filtering": true,
+        "pointwise_global_mad": true,
+        "sweep_wise_filtering": true,
+        "sweep_metric": "outlier_ratio",
+        "use_noise_mean": true,
+        "sigma_source": "auto",
+        "robust_debug": true,
+        "generate_report": false,
+        "find_radii": "global",
+        "find_buildup_factor": "off",
+        "base_radii": [
+          30.0
+        ],
+        "buildup_factor": 0.636619,
+        "r0_bounds": [
+          39.0,
+          40.0
+        ],
+        "b_bounds": null,
+        "r0_prior_sigma_mm": null,
+        "b_prior_sigma": null,
+        "spool_outer_iters": 3,
+        "spool_inner_iters": 30,
+        "theta0_mode": "zero",
+        "filter_schedule": [
+          "warmup",
+          "warmup",
+          "warmup",
+          "dynamic"
+        ],
+        "objective_schedule": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "scale_fix": [
+          3
+        ],
+        "fit_structure": [
+          3
+        ],
+        "line_width": 1.0,
+        "sigma_floor_mm": null,
+        "sigma_used_mm": null,
+        "low_anchor_z": null
+      },
+      "candidate_iterations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "eligible_iterations": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "failed_prediction_iterations": [],
+      "chosen_fit_future_fold_ids": [
+        "sweep_006",
+        "sweep_007",
+        "sweep_008"
+      ],
+      "common_unseen_fold_ids": [
+        "sweep_008"
+      ],
+      "all_candidates": {
+        "members": [
+          4,
+          5
+        ],
+        "spread_mm": 1.50153575255038,
+        "sum_anchor_error_mm": 37.93486164469747,
+        "anchors_mm": [
+          [
+            0.0,
+            -1921.3307010155343,
+            -279.8189736332474
+          ],
+          [
+            1650.6918778543695,
+            955.5934572479975,
+            -279.8189736332474
+          ],
+          [
+            -1639.6181128748367,
+            946.5460542557789,
+            -279.8189736332474
+          ],
+          [
+            -1.08370083994315,
+            1.7381544566002347,
+            1900.670020950628
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.0,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.0,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.0,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.0,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 15.065320426863883,
+          "sweeps": 3
+        },
+        "future_fold_training_overlap_ids": [
+          "sweep_006",
+          "sweep_007"
+        ],
+        "common_unseen_fold": {
+          "status": "finite",
+          "score": 19.934082179507893,
+          "sweeps": 1
+        }
+      },
+      "finite_prediction_only": {
+        "members": [
+          4,
+          5
+        ],
+        "spread_mm": 1.50153575255038,
+        "sum_anchor_error_mm": 37.93486164469747,
+        "anchors_mm": [
+          [
+            0.0,
+            -1921.3307010155343,
+            -279.8189736332474
+          ],
+          [
+            1650.6918778543695,
+            955.5934572479975,
+            -279.8189736332474
+          ],
+          [
+            -1639.6181128748367,
+            946.5460542557789,
+            -279.8189736332474
+          ],
+          [
+            -1.08370083994315,
+            1.7381544566002347,
+            1900.670020950628
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.0,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.0,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.0,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1521.0,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 15.065320426863883,
+          "sweeps": 3
+        },
+        "future_fold_training_overlap_ids": [
+          "sweep_006",
+          "sweep_007"
+        ],
+        "common_unseen_fold": {
+          "status": "finite",
+          "score": 19.934082179507893,
+          "sweeps": 1
+        }
+      },
+      "delta_sum_anchor_error_mm": 0.0
+    },
+    {
+      "fixture": "five_points_bigger_deltas",
+      "cohort": "motivating_dataset_overlap",
+      "input": "inputs/five_points_bigger_deltas.history.json.gz",
+      "input_sha256": "2c5eb13f18083ac720e64ea4ae86df16ca3209d50515904a21eff66f93333242",
+      "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+      "producer_source_sha256": {
+        "autocal/__init__.py": "6b683bd7aeb340c22ebb4407e331438f4897b5485b11a95726b8a101d74feec5",
+        "autocal/_autocal_common.py": "e0c5efab2bb30d629f4d1f5dd49e10bc990c7d3732db313f153d18a76751dbbd",
+        "autocal/active_learning.py": "73ccf3bd12e906d56942f3b1bd93540b203756724b99cf5dfe30b2596f01f203",
+        "autocal/alternating_refinement.py": "0809131a4399ed2be1069655fdfebb89f02676eea6bb73366fd82167d6e2ba3f",
+        "autocal/autocal.py": "2f91784fc77aecf7e7aae6e1049cb16af83accedd6d2f3e042a6d899b895b43d",
+        "autocal/calibrate.py": "ad4ff4fd3c2e7d299d86cdae97499da09837251705f65d2ea5389b88fac1302a",
+        "autocal/dataset_roles.py": "dd3a45b4e529a343655b1b464e1a348eb3d27bd4d805651b7eface9b03d048ef",
+        "autocal/ellipse_active.py": "def349e1c2d122efd1541e8653203124c13e64f225926a92b9704bb01d89ecca",
+        "autocal/ellipse_cost.py": "4c118c9ddabc3b971f70cda30b202a5669b23b80ac5d24c479374f635c5eb541",
+        "autocal/ellipse_fitting.py": "3ee525409e34576c96680804c2eb7fd96ad1eca91819b1b1272961dd0e16efe3",
+        "autocal/ellipse_objective_jax.py": "e43c811f0104c54f5ff8c7ec9178408dc8accb85fef302971903eaf823a3a672",
+        "autocal/ellipse_solver.py": "1e926f091bc66f63990660bbbd41d18517cdfa9f81a900488fd5de4f77f47709",
+        "autocal/ellipse_visualization.py": "1cdcb6e9c5e6768713601cf96da04274b32585c9eb0a9ac291d605238984ec81",
+        "autocal/extended_reference.py": "3e536df18b54c335e1a0711f4d0e91979f7ed03fd3b7e745fd43bdbd807a0087",
+        "autocal/filter_pass.py": "69a17b664cbca9666b984495eac6c153e3d44fbb0530e97d090b52c61bc5b33d",
+        "autocal/fit_stage.py": "087462db8f7d4ab8d5e4426a05773ee65ed6bb4644e8a2cbae1f5d678919d151",
+        "autocal/flex.py": "a94029be97c27543e53655ae5cc7cb0d9626bfe111c6b9f650a3be86ef23e265",
+        "autocal/headless_sim.py": "1ee8b8897daee5bf0b8801ed3121359e2bc20273a0e99d0062cb3b689a2358c7",
+        "autocal/history_selection.py": "12507a7beb1010dfb5c1147e6ab990c8f87846202bd88873155b8ddbe6ab7219",
+        "autocal/initialize_pass.py": "bddb0f958c720dea52642c8923658a21bb60a48781e43ce903175ea199cbe82d",
+        "autocal/json_schema.py": "ce7b2a65af16d763ab27d978bd876287e110172c3d1e8f1d61e891c60f78a1a2",
+        "autocal/merge_sweep_datasets.py": "69d9c4e5f54cee3b340a06182ebec0dc1d1bc36ccc5e9a9fbb3e902a8826b51a",
+        "autocal/planning_pass.py": "317232933861f8f8e32b6ed26d0fc53bad3275f8a2a2d0c4d04c0eb236a4c203",
+        "autocal/plot_residual_hist.py": "54fec4ec843d288c87e42879c6eee646e658b57daa807465e95235598cb12063",
+        "autocal/predictive_validation.py": "ce684ad519c9d32282f05713421beb8759b9d1ae7be1e6db68156138044265fd",
+        "autocal/scale_polish.py": "ab732e7ec5c48d095aa4cb1b6b3bed94cff629a4eca557709f597660eff88154",
+        "autocal/spool_model.py": "f21e2cd4640e0a5d5fac5546faf309a85225887b6f98f5dc02055fb7d56c1972",
+        "autocal/stage_artifacts.py": "2e653decc2cc1c6d8ab31030c381baa5ccd0ad3e55f845ad4dc51d5d98d7b673",
+        "autocal/sweep_config_generator.py": "22f933f89ab85063dcf2200b36a68c7bfe5daab9dc705ad8f421910d13d04f35",
+        "autocal/sweep_io.py": "887029381a0f6f7219abb171bb65dd607366ac0343db820b02d1bb484b6b42e9",
+        "autocal/sweep_types.py": "60f63ababc703b6c9ce081aec09533976fed47145bf2d9aca535d8b99610773b",
+        "autocal/theoretical_ellipse.py": "ded6db280bf3569c71e4a87e0621500f379d0ae8e6a9166ad2892ee591b26d20",
+        "autocal/tools/replay_stage.py": "b4c4d5616ae1a2fa4adfff2605cef2c89b40f374f7149483b316974230724dd6"
+      },
+      "changed_source_files": [
+        "autocal/_autocal_common.py",
+        "autocal/alternating_refinement.py",
+        "autocal/autocal.py",
+        "autocal/calibrate.py",
+        "autocal/ellipse_active.py",
+        "autocal/ellipse_cost.py",
+        "autocal/ellipse_objective_jax.py",
+        "autocal/ellipse_solver.py",
+        "autocal/filter_pass.py",
+        "autocal/fit_stage.py",
+        "autocal/headless_sim.py",
+        "autocal/history_selection.py",
+        "autocal/initialize_pass.py",
+        "autocal/planning_pass.py",
+        "autocal/predictive_validation.py",
+        "autocal/scale_polish.py",
+        "autocal/spool_model.py",
+        "autocal/sweep_types.py",
+        "autocal/theoretical_ellipse.py",
+        "autocal/tools/replay_stage.py"
+      ],
+      "single_fit_iteration": 1,
+      "single_fit_sum_anchor_error_mm": 6.545860774533146,
+      "single_fit_saved_prediction": 28.838152102590605,
+      "single_fit_recomputed_prediction": {
+        "status": "finite",
+        "score": 28.838152102590605,
+        "sweeps": 5
+      },
+      "single_fit_prediction_matches_saved": true,
+      "validation_options": {
+        "collector_args": [
+          "--firmware",
+          "rrf",
+          "--sim",
+          "--no-spawn-rrf-simulator",
+          "--force-base-radii",
+          "30",
+          "--force-buildup-factor",
+          "0.636619"
+        ],
+        "use_flex": false,
+        "spring_k_multiplier": 1.0,
+        "use_noise_mean": true,
+        "pointwise_residual_mode": "sampson",
+        "sigma_source": "auto"
+      },
+      "chosen_settings": {
+        "solve_restarts": 4,
+        "solve_iterations": 400,
+        "solve_optimizer": "lbfgsb",
+        "optimizer_mode": "fast",
+        "residual_threshold": 250.0,
+        "spring_k_multiplier": 1.0,
+        "use_flex": false,
+        "pointwise_residual_mode": "sampson",
+        "pointwise_filtering": true,
+        "pointwise_global_mad": true,
+        "sweep_wise_filtering": false,
+        "sweep_metric": "outlier_ratio",
+        "use_noise_mean": true,
+        "sigma_source": "auto",
+        "robust_debug": true,
+        "generate_report": false,
+        "find_radii": "global",
+        "find_buildup_factor": "off",
+        "base_radii": [
+          30.0
+        ],
+        "buildup_factor": 0.636619,
+        "r0_bounds": null,
+        "b_bounds": null,
+        "r0_prior_sigma_mm": null,
+        "b_prior_sigma": null,
+        "spool_outer_iters": 3,
+        "spool_inner_iters": 30,
+        "theta0_mode": "zero",
+        "filter_schedule": [
+          "warmup",
+          "warmup",
+          "warmup",
+          "dynamic"
+        ],
+        "objective_schedule": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "scale_fix": [
+          3
+        ],
+        "fit_structure": [
+          3
+        ],
+        "line_width": 1.0,
+        "sigma_floor_mm": null,
+        "sigma_used_mm": null,
+        "low_anchor_z": null
+      },
+      "candidate_iterations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "eligible_iterations": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "failed_prediction_iterations": [],
+      "chosen_fit_future_fold_ids": [
+        "sweep_004",
+        "sweep_005",
+        "sweep_006",
+        "sweep_007",
+        "sweep_008"
+      ],
+      "common_unseen_fold_ids": [
+        "sweep_008"
+      ],
+      "all_candidates": {
+        "members": [
+          4,
+          5
+        ],
+        "spread_mm": 0.9754216335297556,
+        "sum_anchor_error_mm": 10.893581079279492,
+        "anchors_mm": [
+          [
+            0.0,
+            -1902.4270848455988
+          ],
+          [
+            1650.1951232546783,
+            954.1360291924657
+          ],
+          [
+            -1647.4897362446443,
+            950.7372512230963
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.17293156769396,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1534.5185676072338,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.17293156769396,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1534.5185676072338,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.17293156769396,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1534.5185676072338,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 26.858493474288835,
+          "sweeps": 5
+        },
+        "future_fold_training_overlap_ids": [
+          "sweep_004",
+          "sweep_005",
+          "sweep_006",
+          "sweep_007"
+        ],
+        "common_unseen_fold": {
+          "status": "finite",
+          "score": 39.210219003829124,
+          "sweeps": 1
+        }
+      },
+      "finite_prediction_only": {
+        "members": [
+          4,
+          5
+        ],
+        "spread_mm": 0.9754216335297556,
+        "sum_anchor_error_mm": 10.893581079279492,
+        "anchors_mm": [
+          [
+            0.0,
+            -1902.4270848455988
+          ],
+          [
+            1650.1951232546783,
+            954.1360291924657
+          ],
+          [
+            -1647.4897362446443,
+            950.7372512230963
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.17293156769396,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1534.5185676072338,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.17293156769396,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1534.5185676072338,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.17293156769396,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1534.5185676072338,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 26.858493474288835,
+          "sweeps": 5
+        },
+        "future_fold_training_overlap_ids": [
+          "sweep_004",
+          "sweep_005",
+          "sweep_006",
+          "sweep_007"
+        ],
+        "common_unseen_fold": {
+          "status": "finite",
+          "score": 39.210219003829124,
+          "sweeps": 1
+        }
+      },
+      "delta_sum_anchor_error_mm": 0.0
+    },
+    {
+      "fixture": "flexible_lines_2000",
+      "cohort": "additional_dataset",
+      "input": "inputs/flexible_lines_2000.history.json.gz",
+      "input_sha256": "22a1a0c433e9cb7bd58cec75db6d7f371308b710a5799f67f1a18096d6399f2d",
+      "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+      "producer_source_sha256": {
+        "autocal/__init__.py": "6b683bd7aeb340c22ebb4407e331438f4897b5485b11a95726b8a101d74feec5",
+        "autocal/_autocal_common.py": "e0c5efab2bb30d629f4d1f5dd49e10bc990c7d3732db313f153d18a76751dbbd",
+        "autocal/active_learning.py": "73ccf3bd12e906d56942f3b1bd93540b203756724b99cf5dfe30b2596f01f203",
+        "autocal/alternating_refinement.py": "0809131a4399ed2be1069655fdfebb89f02676eea6bb73366fd82167d6e2ba3f",
+        "autocal/autocal.py": "2f91784fc77aecf7e7aae6e1049cb16af83accedd6d2f3e042a6d899b895b43d",
+        "autocal/calibrate.py": "ad4ff4fd3c2e7d299d86cdae97499da09837251705f65d2ea5389b88fac1302a",
+        "autocal/dataset_roles.py": "dd3a45b4e529a343655b1b464e1a348eb3d27bd4d805651b7eface9b03d048ef",
+        "autocal/ellipse_active.py": "def349e1c2d122efd1541e8653203124c13e64f225926a92b9704bb01d89ecca",
+        "autocal/ellipse_cost.py": "4c118c9ddabc3b971f70cda30b202a5669b23b80ac5d24c479374f635c5eb541",
+        "autocal/ellipse_fitting.py": "3ee525409e34576c96680804c2eb7fd96ad1eca91819b1b1272961dd0e16efe3",
+        "autocal/ellipse_objective_jax.py": "e43c811f0104c54f5ff8c7ec9178408dc8accb85fef302971903eaf823a3a672",
+        "autocal/ellipse_solver.py": "1e926f091bc66f63990660bbbd41d18517cdfa9f81a900488fd5de4f77f47709",
+        "autocal/ellipse_visualization.py": "1cdcb6e9c5e6768713601cf96da04274b32585c9eb0a9ac291d605238984ec81",
+        "autocal/extended_reference.py": "3e536df18b54c335e1a0711f4d0e91979f7ed03fd3b7e745fd43bdbd807a0087",
+        "autocal/filter_pass.py": "69a17b664cbca9666b984495eac6c153e3d44fbb0530e97d090b52c61bc5b33d",
+        "autocal/fit_stage.py": "087462db8f7d4ab8d5e4426a05773ee65ed6bb4644e8a2cbae1f5d678919d151",
+        "autocal/flex.py": "a94029be97c27543e53655ae5cc7cb0d9626bfe111c6b9f650a3be86ef23e265",
+        "autocal/headless_sim.py": "1ee8b8897daee5bf0b8801ed3121359e2bc20273a0e99d0062cb3b689a2358c7",
+        "autocal/history_selection.py": "12507a7beb1010dfb5c1147e6ab990c8f87846202bd88873155b8ddbe6ab7219",
+        "autocal/initialize_pass.py": "bddb0f958c720dea52642c8923658a21bb60a48781e43ce903175ea199cbe82d",
+        "autocal/json_schema.py": "ce7b2a65af16d763ab27d978bd876287e110172c3d1e8f1d61e891c60f78a1a2",
+        "autocal/merge_sweep_datasets.py": "69d9c4e5f54cee3b340a06182ebec0dc1d1bc36ccc5e9a9fbb3e902a8826b51a",
+        "autocal/planning_pass.py": "317232933861f8f8e32b6ed26d0fc53bad3275f8a2a2d0c4d04c0eb236a4c203",
+        "autocal/plot_residual_hist.py": "54fec4ec843d288c87e42879c6eee646e658b57daa807465e95235598cb12063",
+        "autocal/predictive_validation.py": "ce684ad519c9d32282f05713421beb8759b9d1ae7be1e6db68156138044265fd",
+        "autocal/scale_polish.py": "ab732e7ec5c48d095aa4cb1b6b3bed94cff629a4eca557709f597660eff88154",
+        "autocal/spool_model.py": "f21e2cd4640e0a5d5fac5546faf309a85225887b6f98f5dc02055fb7d56c1972",
+        "autocal/stage_artifacts.py": "2e653decc2cc1c6d8ab31030c381baa5ccd0ad3e55f845ad4dc51d5d98d7b673",
+        "autocal/sweep_config_generator.py": "22f933f89ab85063dcf2200b36a68c7bfe5daab9dc705ad8f421910d13d04f35",
+        "autocal/sweep_io.py": "887029381a0f6f7219abb171bb65dd607366ac0343db820b02d1bb484b6b42e9",
+        "autocal/sweep_types.py": "60f63ababc703b6c9ce081aec09533976fed47145bf2d9aca535d8b99610773b",
+        "autocal/theoretical_ellipse.py": "ded6db280bf3569c71e4a87e0621500f379d0ae8e6a9166ad2892ee591b26d20",
+        "autocal/tools/replay_stage.py": "b4c4d5616ae1a2fa4adfff2605cef2c89b40f374f7149483b316974230724dd6"
+      },
+      "changed_source_files": [
+        "autocal/_autocal_common.py",
+        "autocal/alternating_refinement.py",
+        "autocal/autocal.py",
+        "autocal/calibrate.py",
+        "autocal/ellipse_active.py",
+        "autocal/ellipse_cost.py",
+        "autocal/ellipse_objective_jax.py",
+        "autocal/ellipse_solver.py",
+        "autocal/filter_pass.py",
+        "autocal/fit_stage.py",
+        "autocal/headless_sim.py",
+        "autocal/history_selection.py",
+        "autocal/initialize_pass.py",
+        "autocal/planning_pass.py",
+        "autocal/predictive_validation.py",
+        "autocal/scale_polish.py",
+        "autocal/spool_model.py",
+        "autocal/sweep_types.py",
+        "autocal/theoretical_ellipse.py",
+        "autocal/tools/replay_stage.py"
+      ],
+      "single_fit_iteration": 2,
+      "single_fit_sum_anchor_error_mm": 26.83436700468511,
+      "single_fit_saved_prediction": 21.037359701356355,
+      "single_fit_recomputed_prediction": {
+        "status": "finite",
+        "score": 21.037359701356355,
+        "sweeps": 2
+      },
+      "single_fit_prediction_matches_saved": true,
+      "validation_options": {
+        "collector_args": [
+          "--firmware",
+          "rrf",
+          "--sim",
+          "--no-spawn-rrf-simulator",
+          "--force-base-radii",
+          "30",
+          "--force-buildup-factor",
+          "0.636619"
+        ],
+        "use_flex": false,
+        "spring_k_multiplier": 1.0,
+        "use_noise_mean": true,
+        "pointwise_residual_mode": "sampson",
+        "sigma_source": "auto"
+      },
+      "chosen_settings": {
+        "solve_restarts": 4,
+        "solve_iterations": 400,
+        "solve_optimizer": "lbfgsb",
+        "optimizer_mode": "fast",
+        "residual_threshold": 250.0,
+        "spring_k_multiplier": 1.0,
+        "use_flex": false,
+        "pointwise_residual_mode": "sampson",
+        "pointwise_filtering": true,
+        "pointwise_global_mad": true,
+        "sweep_wise_filtering": true,
+        "sweep_metric": "outlier_ratio",
+        "use_noise_mean": true,
+        "sigma_source": "auto",
+        "robust_debug": true,
+        "generate_report": false,
+        "find_radii": "global",
+        "find_buildup_factor": "off",
+        "base_radii": [
+          30.0
+        ],
+        "buildup_factor": 0.636619,
+        "r0_bounds": null,
+        "b_bounds": null,
+        "r0_prior_sigma_mm": null,
+        "b_prior_sigma": null,
+        "spool_outer_iters": 3,
+        "spool_inner_iters": 30,
+        "theta0_mode": "zero",
+        "filter_schedule": [
+          "warmup",
+          "warmup",
+          "warmup",
+          "dynamic"
+        ],
+        "objective_schedule": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "scale_fix": [
+          3
+        ],
+        "fit_structure": [
+          3
+        ],
+        "line_width": 1.0,
+        "sigma_floor_mm": null,
+        "sigma_used_mm": null,
+        "low_anchor_z": null
+      },
+      "candidate_iterations": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "eligible_iterations": [
+        1,
+        2,
+        3
+      ],
+      "failed_prediction_iterations": [],
+      "chosen_fit_future_fold_ids": [
+        "sweep_005",
+        "sweep_006"
+      ],
+      "common_unseen_fold_ids": [],
+      "all_candidates": {
+        "members": [
+          3,
+          4
+        ],
+        "spread_mm": 3.493477073116443,
+        "sum_anchor_error_mm": 23.53338912038023,
+        "anchors_mm": [
+          [
+            0.0,
+            -1910.2315361938795
+          ],
+          [
+            1651.9222964266123,
+            954.1296908325551
+          ],
+          [
+            -1650.3291496083702,
+            952.7916300432701
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.13635628025434,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1531.6543828950032,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.13635628025434,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1531.6543828950032,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.13635628025434,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1531.6543828950032,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 21.72321317762027,
+          "sweeps": 2
+        },
+        "future_fold_training_overlap_ids": [
+          "sweep_005",
+          "sweep_006"
+        ],
+        "common_unseen_fold": {
+          "status": "no_unseen_sweeps",
+          "score": null,
+          "sweeps": 0
+        }
+      },
+      "finite_prediction_only": {
+        "members": [
+          2,
+          3
+        ],
+        "spread_mm": 4.712545002409309,
+        "sum_anchor_error_mm": 24.036386875336742,
+        "anchors_mm": [
+          [
+            0.0,
+            -1911.9980144659703
+          ],
+          [
+            1651.267884419031,
+            953.9864270092773
+          ],
+          [
+            -1649.7103613827799,
+            952.5841975471756
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.13635628025434,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1531.6543828950032,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.13635628025434,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1531.6543828950032,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.13635628025434,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1531.6543828950032,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 21.977461365662236,
+          "sweeps": 2
+        },
+        "future_fold_training_overlap_ids": [
+          "sweep_005"
+        ],
+        "common_unseen_fold": {
+          "status": "no_unseen_sweeps",
+          "score": null,
+          "sweeps": 0
+        }
+      },
+      "delta_sum_anchor_error_mm": 0.5029977549565103
+    },
+    {
+      "fixture": "layered_manual_some_bad_points",
+      "cohort": "motivating_dataset_overlap",
+      "input": "inputs/layered_manual_some_bad_points.history.json.gz",
+      "input_sha256": "9058c37ec4eca9b7b3d2977624fce6e5044acecd0c5ec499c739eabbdb121d2b",
+      "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+      "producer_source_sha256": {
+        "autocal/__init__.py": "6b683bd7aeb340c22ebb4407e331438f4897b5485b11a95726b8a101d74feec5",
+        "autocal/_autocal_common.py": "e0c5efab2bb30d629f4d1f5dd49e10bc990c7d3732db313f153d18a76751dbbd",
+        "autocal/active_learning.py": "73ccf3bd12e906d56942f3b1bd93540b203756724b99cf5dfe30b2596f01f203",
+        "autocal/alternating_refinement.py": "0809131a4399ed2be1069655fdfebb89f02676eea6bb73366fd82167d6e2ba3f",
+        "autocal/autocal.py": "2f91784fc77aecf7e7aae6e1049cb16af83accedd6d2f3e042a6d899b895b43d",
+        "autocal/calibrate.py": "ad4ff4fd3c2e7d299d86cdae97499da09837251705f65d2ea5389b88fac1302a",
+        "autocal/dataset_roles.py": "dd3a45b4e529a343655b1b464e1a348eb3d27bd4d805651b7eface9b03d048ef",
+        "autocal/ellipse_active.py": "def349e1c2d122efd1541e8653203124c13e64f225926a92b9704bb01d89ecca",
+        "autocal/ellipse_cost.py": "4c118c9ddabc3b971f70cda30b202a5669b23b80ac5d24c479374f635c5eb541",
+        "autocal/ellipse_fitting.py": "3ee525409e34576c96680804c2eb7fd96ad1eca91819b1b1272961dd0e16efe3",
+        "autocal/ellipse_objective_jax.py": "e43c811f0104c54f5ff8c7ec9178408dc8accb85fef302971903eaf823a3a672",
+        "autocal/ellipse_solver.py": "1e926f091bc66f63990660bbbd41d18517cdfa9f81a900488fd5de4f77f47709",
+        "autocal/ellipse_visualization.py": "1cdcb6e9c5e6768713601cf96da04274b32585c9eb0a9ac291d605238984ec81",
+        "autocal/extended_reference.py": "3e536df18b54c335e1a0711f4d0e91979f7ed03fd3b7e745fd43bdbd807a0087",
+        "autocal/filter_pass.py": "69a17b664cbca9666b984495eac6c153e3d44fbb0530e97d090b52c61bc5b33d",
+        "autocal/fit_stage.py": "087462db8f7d4ab8d5e4426a05773ee65ed6bb4644e8a2cbae1f5d678919d151",
+        "autocal/flex.py": "a94029be97c27543e53655ae5cc7cb0d9626bfe111c6b9f650a3be86ef23e265",
+        "autocal/headless_sim.py": "1ee8b8897daee5bf0b8801ed3121359e2bc20273a0e99d0062cb3b689a2358c7",
+        "autocal/history_selection.py": "12507a7beb1010dfb5c1147e6ab990c8f87846202bd88873155b8ddbe6ab7219",
+        "autocal/initialize_pass.py": "bddb0f958c720dea52642c8923658a21bb60a48781e43ce903175ea199cbe82d",
+        "autocal/json_schema.py": "ce7b2a65af16d763ab27d978bd876287e110172c3d1e8f1d61e891c60f78a1a2",
+        "autocal/merge_sweep_datasets.py": "69d9c4e5f54cee3b340a06182ebec0dc1d1bc36ccc5e9a9fbb3e902a8826b51a",
+        "autocal/planning_pass.py": "317232933861f8f8e32b6ed26d0fc53bad3275f8a2a2d0c4d04c0eb236a4c203",
+        "autocal/plot_residual_hist.py": "54fec4ec843d288c87e42879c6eee646e658b57daa807465e95235598cb12063",
+        "autocal/predictive_validation.py": "ce684ad519c9d32282f05713421beb8759b9d1ae7be1e6db68156138044265fd",
+        "autocal/scale_polish.py": "ab732e7ec5c48d095aa4cb1b6b3bed94cff629a4eca557709f597660eff88154",
+        "autocal/spool_model.py": "f21e2cd4640e0a5d5fac5546faf309a85225887b6f98f5dc02055fb7d56c1972",
+        "autocal/stage_artifacts.py": "2e653decc2cc1c6d8ab31030c381baa5ccd0ad3e55f845ad4dc51d5d98d7b673",
+        "autocal/sweep_config_generator.py": "22f933f89ab85063dcf2200b36a68c7bfe5daab9dc705ad8f421910d13d04f35",
+        "autocal/sweep_io.py": "887029381a0f6f7219abb171bb65dd607366ac0343db820b02d1bb484b6b42e9",
+        "autocal/sweep_types.py": "60f63ababc703b6c9ce081aec09533976fed47145bf2d9aca535d8b99610773b",
+        "autocal/theoretical_ellipse.py": "ded6db280bf3569c71e4a87e0621500f379d0ae8e6a9166ad2892ee591b26d20",
+        "autocal/tools/replay_stage.py": "b4c4d5616ae1a2fa4adfff2605cef2c89b40f374f7149483b316974230724dd6"
+      },
+      "changed_source_files": [
+        "autocal/_autocal_common.py",
+        "autocal/alternating_refinement.py",
+        "autocal/autocal.py",
+        "autocal/calibrate.py",
+        "autocal/ellipse_active.py",
+        "autocal/ellipse_cost.py",
+        "autocal/ellipse_objective_jax.py",
+        "autocal/ellipse_solver.py",
+        "autocal/filter_pass.py",
+        "autocal/fit_stage.py",
+        "autocal/headless_sim.py",
+        "autocal/history_selection.py",
+        "autocal/initialize_pass.py",
+        "autocal/planning_pass.py",
+        "autocal/predictive_validation.py",
+        "autocal/scale_polish.py",
+        "autocal/spool_model.py",
+        "autocal/sweep_types.py",
+        "autocal/theoretical_ellipse.py",
+        "autocal/tools/replay_stage.py"
+      ],
+      "single_fit_iteration": 1,
+      "single_fit_sum_anchor_error_mm": 18.538606430252607,
+      "single_fit_saved_prediction": 28.155500417990403,
+      "single_fit_recomputed_prediction": {
+        "status": "finite",
+        "score": 28.155500417990403,
+        "sweeps": 6
+      },
+      "single_fit_prediction_matches_saved": true,
+      "validation_options": {
+        "collector_args": [
+          "--firmware",
+          "rrf",
+          "--sim",
+          "--no-spawn-rrf-simulator",
+          "--force-base-radii",
+          "30",
+          "--force-buildup-factor",
+          "0.636619"
+        ],
+        "use_flex": false,
+        "spring_k_multiplier": 1.0,
+        "use_noise_mean": true,
+        "pointwise_residual_mode": "sampson",
+        "sigma_source": "auto"
+      },
+      "chosen_settings": {
+        "solve_restarts": 4,
+        "solve_iterations": 400,
+        "solve_optimizer": "lbfgsb",
+        "optimizer_mode": "fast",
+        "residual_threshold": 250.0,
+        "spring_k_multiplier": 1.0,
+        "use_flex": false,
+        "pointwise_residual_mode": "sampson",
+        "pointwise_filtering": true,
+        "pointwise_global_mad": true,
+        "sweep_wise_filtering": true,
+        "sweep_metric": "outlier_ratio",
+        "use_noise_mean": true,
+        "sigma_source": "auto",
+        "robust_debug": true,
+        "generate_report": false,
+        "find_radii": "global",
+        "find_buildup_factor": "off",
+        "base_radii": [
+          30.0
+        ],
+        "buildup_factor": 0.636619,
+        "r0_bounds": null,
+        "b_bounds": null,
+        "r0_prior_sigma_mm": null,
+        "b_prior_sigma": null,
+        "spool_outer_iters": 3,
+        "spool_inner_iters": 30,
+        "theta0_mode": "zero",
+        "filter_schedule": [
+          "warmup",
+          "warmup",
+          "warmup",
+          "dynamic"
+        ],
+        "objective_schedule": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "scale_fix": [
+          3
+        ],
+        "fit_structure": [
+          3
+        ],
+        "line_width": 1.0,
+        "sigma_floor_mm": null,
+        "sigma_used_mm": null,
+        "low_anchor_z": null
+      },
+      "candidate_iterations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "eligible_iterations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "failed_prediction_iterations": [],
+      "chosen_fit_future_fold_ids": [
+        "sweep_004",
+        "sweep_005",
+        "sweep_006",
+        "sweep_007",
+        "sweep_008",
+        "sweep_009"
+      ],
+      "common_unseen_fold_ids": [
+        "sweep_009"
+      ],
+      "all_candidates": {
+        "members": [
+          4,
+          6
+        ],
+        "spread_mm": 1.6390919424906016,
+        "sum_anchor_error_mm": 5.27979265627845,
+        "anchors_mm": [
+          [
+            0.0,
+            -1901.8345433425197
+          ],
+          [
+            1646.8197743853088,
+            951.0183985255487
+          ],
+          [
+            -1647.0244143195982,
+            950.7299839233881
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.25849101790561,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1541.2291170029757,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.25849101790561,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1541.2291170029757,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.25849101790561,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1541.2291170029757,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 36.3089423957565,
+          "sweeps": 6
+        },
+        "future_fold_training_overlap_ids": [
+          "sweep_004",
+          "sweep_005",
+          "sweep_006",
+          "sweep_007",
+          "sweep_008"
+        ],
+        "common_unseen_fold": {
+          "status": "finite",
+          "score": 57.98632298951837,
+          "sweeps": 1
+        }
+      },
+      "finite_prediction_only": {
+        "members": [
+          4,
+          6
+        ],
+        "spread_mm": 1.6390919424906016,
+        "sum_anchor_error_mm": 5.27979265627845,
+        "anchors_mm": [
+          [
+            0.0,
+            -1901.8345433425197
+          ],
+          [
+            1646.8197743853088,
+            951.0183985255487
+          ],
+          [
+            -1647.0244143195982,
+            950.7299839233881
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.25849101790561,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1541.2291170029757,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.25849101790561,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1541.2291170029757,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.25849101790561,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1541.2291170029757,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 36.3089423957565,
+          "sweeps": 6
+        },
+        "future_fold_training_overlap_ids": [
+          "sweep_004",
+          "sweep_005",
+          "sweep_006",
+          "sweep_007",
+          "sweep_008"
+        ],
+        "common_unseen_fold": {
+          "status": "finite",
+          "score": 57.98632298951837,
+          "sweeps": 1
+        }
+      },
+      "delta_sum_anchor_error_mm": 0.0
+    },
+    {
+      "fixture": "ten_points_bigger_deltas",
+      "cohort": "additional_dataset",
+      "input": "inputs/ten_points_bigger_deltas.history.json.gz",
+      "input_sha256": "5cc2716becb70a26561642790506fe65e58fc113287751c7dae78c6ea7e95b02",
+      "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+      "producer_source_sha256": {
+        "autocal/__init__.py": "6b683bd7aeb340c22ebb4407e331438f4897b5485b11a95726b8a101d74feec5",
+        "autocal/_autocal_common.py": "e0c5efab2bb30d629f4d1f5dd49e10bc990c7d3732db313f153d18a76751dbbd",
+        "autocal/active_learning.py": "73ccf3bd12e906d56942f3b1bd93540b203756724b99cf5dfe30b2596f01f203",
+        "autocal/alternating_refinement.py": "0809131a4399ed2be1069655fdfebb89f02676eea6bb73366fd82167d6e2ba3f",
+        "autocal/autocal.py": "2f91784fc77aecf7e7aae6e1049cb16af83accedd6d2f3e042a6d899b895b43d",
+        "autocal/calibrate.py": "ad4ff4fd3c2e7d299d86cdae97499da09837251705f65d2ea5389b88fac1302a",
+        "autocal/dataset_roles.py": "dd3a45b4e529a343655b1b464e1a348eb3d27bd4d805651b7eface9b03d048ef",
+        "autocal/ellipse_active.py": "def349e1c2d122efd1541e8653203124c13e64f225926a92b9704bb01d89ecca",
+        "autocal/ellipse_cost.py": "4c118c9ddabc3b971f70cda30b202a5669b23b80ac5d24c479374f635c5eb541",
+        "autocal/ellipse_fitting.py": "3ee525409e34576c96680804c2eb7fd96ad1eca91819b1b1272961dd0e16efe3",
+        "autocal/ellipse_objective_jax.py": "e43c811f0104c54f5ff8c7ec9178408dc8accb85fef302971903eaf823a3a672",
+        "autocal/ellipse_solver.py": "1e926f091bc66f63990660bbbd41d18517cdfa9f81a900488fd5de4f77f47709",
+        "autocal/ellipse_visualization.py": "1cdcb6e9c5e6768713601cf96da04274b32585c9eb0a9ac291d605238984ec81",
+        "autocal/extended_reference.py": "3e536df18b54c335e1a0711f4d0e91979f7ed03fd3b7e745fd43bdbd807a0087",
+        "autocal/filter_pass.py": "69a17b664cbca9666b984495eac6c153e3d44fbb0530e97d090b52c61bc5b33d",
+        "autocal/fit_stage.py": "087462db8f7d4ab8d5e4426a05773ee65ed6bb4644e8a2cbae1f5d678919d151",
+        "autocal/flex.py": "a94029be97c27543e53655ae5cc7cb0d9626bfe111c6b9f650a3be86ef23e265",
+        "autocal/headless_sim.py": "1ee8b8897daee5bf0b8801ed3121359e2bc20273a0e99d0062cb3b689a2358c7",
+        "autocal/history_selection.py": "12507a7beb1010dfb5c1147e6ab990c8f87846202bd88873155b8ddbe6ab7219",
+        "autocal/initialize_pass.py": "bddb0f958c720dea52642c8923658a21bb60a48781e43ce903175ea199cbe82d",
+        "autocal/json_schema.py": "ce7b2a65af16d763ab27d978bd876287e110172c3d1e8f1d61e891c60f78a1a2",
+        "autocal/merge_sweep_datasets.py": "69d9c4e5f54cee3b340a06182ebec0dc1d1bc36ccc5e9a9fbb3e902a8826b51a",
+        "autocal/planning_pass.py": "317232933861f8f8e32b6ed26d0fc53bad3275f8a2a2d0c4d04c0eb236a4c203",
+        "autocal/plot_residual_hist.py": "54fec4ec843d288c87e42879c6eee646e658b57daa807465e95235598cb12063",
+        "autocal/predictive_validation.py": "ce684ad519c9d32282f05713421beb8759b9d1ae7be1e6db68156138044265fd",
+        "autocal/scale_polish.py": "ab732e7ec5c48d095aa4cb1b6b3bed94cff629a4eca557709f597660eff88154",
+        "autocal/spool_model.py": "f21e2cd4640e0a5d5fac5546faf309a85225887b6f98f5dc02055fb7d56c1972",
+        "autocal/stage_artifacts.py": "2e653decc2cc1c6d8ab31030c381baa5ccd0ad3e55f845ad4dc51d5d98d7b673",
+        "autocal/sweep_config_generator.py": "22f933f89ab85063dcf2200b36a68c7bfe5daab9dc705ad8f421910d13d04f35",
+        "autocal/sweep_io.py": "887029381a0f6f7219abb171bb65dd607366ac0343db820b02d1bb484b6b42e9",
+        "autocal/sweep_types.py": "60f63ababc703b6c9ce081aec09533976fed47145bf2d9aca535d8b99610773b",
+        "autocal/theoretical_ellipse.py": "ded6db280bf3569c71e4a87e0621500f379d0ae8e6a9166ad2892ee591b26d20",
+        "autocal/tools/replay_stage.py": "b4c4d5616ae1a2fa4adfff2605cef2c89b40f374f7149483b316974230724dd6"
+      },
+      "changed_source_files": [
+        "autocal/_autocal_common.py",
+        "autocal/alternating_refinement.py",
+        "autocal/autocal.py",
+        "autocal/calibrate.py",
+        "autocal/ellipse_active.py",
+        "autocal/ellipse_cost.py",
+        "autocal/ellipse_objective_jax.py",
+        "autocal/ellipse_solver.py",
+        "autocal/filter_pass.py",
+        "autocal/fit_stage.py",
+        "autocal/headless_sim.py",
+        "autocal/history_selection.py",
+        "autocal/initialize_pass.py",
+        "autocal/planning_pass.py",
+        "autocal/predictive_validation.py",
+        "autocal/scale_polish.py",
+        "autocal/spool_model.py",
+        "autocal/sweep_types.py",
+        "autocal/theoretical_ellipse.py",
+        "autocal/tools/replay_stage.py"
+      ],
+      "single_fit_iteration": 3,
+      "single_fit_sum_anchor_error_mm": 17.53297287459009,
+      "single_fit_saved_prediction": 34.25469919550126,
+      "single_fit_recomputed_prediction": {
+        "status": "finite",
+        "score": 34.25469919550126,
+        "sweeps": 3
+      },
+      "single_fit_prediction_matches_saved": true,
+      "validation_options": {
+        "collector_args": [
+          "--firmware",
+          "rrf",
+          "--sim",
+          "--no-spawn-rrf-simulator",
+          "--force-base-radii",
+          "30",
+          "--force-buildup-factor",
+          "0.636619"
+        ],
+        "use_flex": false,
+        "spring_k_multiplier": 1.0,
+        "use_noise_mean": true,
+        "pointwise_residual_mode": "sampson",
+        "sigma_source": "auto"
+      },
+      "chosen_settings": {
+        "solve_restarts": 4,
+        "solve_iterations": 400,
+        "solve_optimizer": "lbfgsb",
+        "optimizer_mode": "fast",
+        "residual_threshold": 250.0,
+        "spring_k_multiplier": 1.0,
+        "use_flex": false,
+        "pointwise_residual_mode": "sampson",
+        "pointwise_filtering": true,
+        "pointwise_global_mad": true,
+        "sweep_wise_filtering": true,
+        "sweep_metric": "outlier_ratio",
+        "use_noise_mean": true,
+        "sigma_source": "auto",
+        "robust_debug": true,
+        "generate_report": false,
+        "find_radii": "global",
+        "find_buildup_factor": "off",
+        "base_radii": [
+          30.0
+        ],
+        "buildup_factor": 0.636619,
+        "r0_bounds": null,
+        "b_bounds": null,
+        "r0_prior_sigma_mm": null,
+        "b_prior_sigma": null,
+        "spool_outer_iters": 3,
+        "spool_inner_iters": 30,
+        "theta0_mode": "zero",
+        "filter_schedule": [
+          "warmup",
+          "warmup",
+          "warmup",
+          "dynamic"
+        ],
+        "objective_schedule": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "scale_fix": [
+          3
+        ],
+        "fit_structure": [
+          3
+        ],
+        "line_width": 1.0,
+        "sigma_floor_mm": null,
+        "sigma_used_mm": null,
+        "low_anchor_z": null
+      },
+      "candidate_iterations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "eligible_iterations": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "failed_prediction_iterations": [],
+      "chosen_fit_future_fold_ids": [
+        "sweep_006",
+        "sweep_007",
+        "sweep_008"
+      ],
+      "common_unseen_fold_ids": [
+        "sweep_007",
+        "sweep_008"
+      ],
+      "all_candidates": {
+        "members": [
+          1,
+          4
+        ],
+        "spread_mm": 3.956804130472941,
+        "sum_anchor_error_mm": 2.51333957253011,
+        "anchors_mm": [
+          [
+            0.0,
+            -1900.6614358217237
+          ],
+          [
+            1645.9933524053808,
+            950.410210242404
+          ],
+          [
+            -1646.4116655810838,
+            950.6633864320872
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.22189748593618,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1538.357242397287,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.22189748593618,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1538.357242397287,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.22189748593618,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1538.357242397287,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 40.44029651786535,
+          "sweeps": 3
+        },
+        "future_fold_training_overlap_ids": [
+          "sweep_006"
+        ],
+        "common_unseen_fold": {
+          "status": "finite",
+          "score": 43.64243208340706,
+          "sweeps": 2
+        }
+      },
+      "finite_prediction_only": {
+        "members": [
+          1,
+          4
+        ],
+        "spread_mm": 3.956804130472941,
+        "sum_anchor_error_mm": 2.51333957253011,
+        "anchors_mm": [
+          [
+            0.0,
+            -1900.6614358217237
+          ],
+          [
+            1645.9933524053808,
+            950.410210242404
+          ],
+          [
+            -1646.4116655810838,
+            950.6633864320872
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.22189748593618,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1538.357242397287,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.22189748593618,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1538.357242397287,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.22189748593618,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1538.357242397287,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 40.44029651786535,
+          "sweeps": 3
+        },
+        "future_fold_training_overlap_ids": [
+          "sweep_006"
+        ],
+        "common_unseen_fold": {
+          "status": "finite",
+          "score": 43.64243208340706,
+          "sweeps": 2
+        }
+      },
+      "delta_sum_anchor_error_mm": 0.0
+    },
+    {
+      "fixture": "ten_points_w_buildup",
+      "cohort": "additional_dataset",
+      "input": "inputs/ten_points_w_buildup.history.json.gz",
+      "input_sha256": "cb8f21af363b3d86383a3b05a12b91cf0a8248f32d6832f3b57b0171f04c86c3",
+      "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+      "producer_source_sha256": {
+        "autocal/__init__.py": "6b683bd7aeb340c22ebb4407e331438f4897b5485b11a95726b8a101d74feec5",
+        "autocal/_autocal_common.py": "e0c5efab2bb30d629f4d1f5dd49e10bc990c7d3732db313f153d18a76751dbbd",
+        "autocal/active_learning.py": "73ccf3bd12e906d56942f3b1bd93540b203756724b99cf5dfe30b2596f01f203",
+        "autocal/alternating_refinement.py": "0809131a4399ed2be1069655fdfebb89f02676eea6bb73366fd82167d6e2ba3f",
+        "autocal/autocal.py": "2f91784fc77aecf7e7aae6e1049cb16af83accedd6d2f3e042a6d899b895b43d",
+        "autocal/calibrate.py": "ad4ff4fd3c2e7d299d86cdae97499da09837251705f65d2ea5389b88fac1302a",
+        "autocal/dataset_roles.py": "dd3a45b4e529a343655b1b464e1a348eb3d27bd4d805651b7eface9b03d048ef",
+        "autocal/ellipse_active.py": "def349e1c2d122efd1541e8653203124c13e64f225926a92b9704bb01d89ecca",
+        "autocal/ellipse_cost.py": "4c118c9ddabc3b971f70cda30b202a5669b23b80ac5d24c479374f635c5eb541",
+        "autocal/ellipse_fitting.py": "3ee525409e34576c96680804c2eb7fd96ad1eca91819b1b1272961dd0e16efe3",
+        "autocal/ellipse_objective_jax.py": "e43c811f0104c54f5ff8c7ec9178408dc8accb85fef302971903eaf823a3a672",
+        "autocal/ellipse_solver.py": "1e926f091bc66f63990660bbbd41d18517cdfa9f81a900488fd5de4f77f47709",
+        "autocal/ellipse_visualization.py": "1cdcb6e9c5e6768713601cf96da04274b32585c9eb0a9ac291d605238984ec81",
+        "autocal/extended_reference.py": "3e536df18b54c335e1a0711f4d0e91979f7ed03fd3b7e745fd43bdbd807a0087",
+        "autocal/filter_pass.py": "69a17b664cbca9666b984495eac6c153e3d44fbb0530e97d090b52c61bc5b33d",
+        "autocal/fit_stage.py": "087462db8f7d4ab8d5e4426a05773ee65ed6bb4644e8a2cbae1f5d678919d151",
+        "autocal/flex.py": "a94029be97c27543e53655ae5cc7cb0d9626bfe111c6b9f650a3be86ef23e265",
+        "autocal/headless_sim.py": "1ee8b8897daee5bf0b8801ed3121359e2bc20273a0e99d0062cb3b689a2358c7",
+        "autocal/history_selection.py": "12507a7beb1010dfb5c1147e6ab990c8f87846202bd88873155b8ddbe6ab7219",
+        "autocal/initialize_pass.py": "bddb0f958c720dea52642c8923658a21bb60a48781e43ce903175ea199cbe82d",
+        "autocal/json_schema.py": "ce7b2a65af16d763ab27d978bd876287e110172c3d1e8f1d61e891c60f78a1a2",
+        "autocal/merge_sweep_datasets.py": "69d9c4e5f54cee3b340a06182ebec0dc1d1bc36ccc5e9a9fbb3e902a8826b51a",
+        "autocal/planning_pass.py": "317232933861f8f8e32b6ed26d0fc53bad3275f8a2a2d0c4d04c0eb236a4c203",
+        "autocal/plot_residual_hist.py": "54fec4ec843d288c87e42879c6eee646e658b57daa807465e95235598cb12063",
+        "autocal/predictive_validation.py": "ce684ad519c9d32282f05713421beb8759b9d1ae7be1e6db68156138044265fd",
+        "autocal/scale_polish.py": "ab732e7ec5c48d095aa4cb1b6b3bed94cff629a4eca557709f597660eff88154",
+        "autocal/spool_model.py": "f21e2cd4640e0a5d5fac5546faf309a85225887b6f98f5dc02055fb7d56c1972",
+        "autocal/stage_artifacts.py": "2e653decc2cc1c6d8ab31030c381baa5ccd0ad3e55f845ad4dc51d5d98d7b673",
+        "autocal/sweep_config_generator.py": "22f933f89ab85063dcf2200b36a68c7bfe5daab9dc705ad8f421910d13d04f35",
+        "autocal/sweep_io.py": "887029381a0f6f7219abb171bb65dd607366ac0343db820b02d1bb484b6b42e9",
+        "autocal/sweep_types.py": "60f63ababc703b6c9ce081aec09533976fed47145bf2d9aca535d8b99610773b",
+        "autocal/theoretical_ellipse.py": "ded6db280bf3569c71e4a87e0621500f379d0ae8e6a9166ad2892ee591b26d20",
+        "autocal/tools/replay_stage.py": "b4c4d5616ae1a2fa4adfff2605cef2c89b40f374f7149483b316974230724dd6"
+      },
+      "changed_source_files": [
+        "autocal/_autocal_common.py",
+        "autocal/alternating_refinement.py",
+        "autocal/autocal.py",
+        "autocal/calibrate.py",
+        "autocal/ellipse_active.py",
+        "autocal/ellipse_cost.py",
+        "autocal/ellipse_objective_jax.py",
+        "autocal/ellipse_solver.py",
+        "autocal/filter_pass.py",
+        "autocal/fit_stage.py",
+        "autocal/headless_sim.py",
+        "autocal/history_selection.py",
+        "autocal/initialize_pass.py",
+        "autocal/planning_pass.py",
+        "autocal/predictive_validation.py",
+        "autocal/scale_polish.py",
+        "autocal/spool_model.py",
+        "autocal/sweep_types.py",
+        "autocal/theoretical_ellipse.py",
+        "autocal/tools/replay_stage.py"
+      ],
+      "single_fit_iteration": 2,
+      "single_fit_sum_anchor_error_mm": 6.506352445677611,
+      "single_fit_saved_prediction": 22.802863023895913,
+      "single_fit_recomputed_prediction": {
+        "status": "finite",
+        "score": 22.802863023895913,
+        "sweeps": 3
+      },
+      "single_fit_prediction_matches_saved": true,
+      "validation_options": {
+        "collector_args": [
+          "--firmware",
+          "rrf",
+          "--sim",
+          "--no-spawn-rrf-simulator",
+          "--force-base-radii",
+          "30",
+          "--force-buildup-factor",
+          "0.636619"
+        ],
+        "use_flex": false,
+        "spring_k_multiplier": 1.0,
+        "use_noise_mean": true,
+        "pointwise_residual_mode": "sampson",
+        "sigma_source": "auto"
+      },
+      "chosen_settings": {
+        "solve_restarts": 4,
+        "solve_iterations": 400,
+        "solve_optimizer": "lbfgsb",
+        "optimizer_mode": "fast",
+        "residual_threshold": 250.0,
+        "spring_k_multiplier": 1.0,
+        "use_flex": false,
+        "pointwise_residual_mode": "sampson",
+        "pointwise_filtering": true,
+        "pointwise_global_mad": true,
+        "sweep_wise_filtering": true,
+        "sweep_metric": "outlier_ratio",
+        "use_noise_mean": true,
+        "sigma_source": "auto",
+        "robust_debug": true,
+        "generate_report": false,
+        "find_radii": "global",
+        "find_buildup_factor": "off",
+        "base_radii": [
+          30.0
+        ],
+        "buildup_factor": 0.636619,
+        "r0_bounds": null,
+        "b_bounds": null,
+        "r0_prior_sigma_mm": null,
+        "b_prior_sigma": null,
+        "spool_outer_iters": 3,
+        "spool_inner_iters": 30,
+        "theta0_mode": "zero",
+        "filter_schedule": [
+          "warmup",
+          "warmup",
+          "warmup",
+          "dynamic"
+        ],
+        "objective_schedule": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "scale_fix": [
+          3
+        ],
+        "fit_structure": [
+          3
+        ],
+        "line_width": 1.0,
+        "sigma_floor_mm": null,
+        "sigma_used_mm": null,
+        "low_anchor_z": null
+      },
+      "candidate_iterations": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "eligible_iterations": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "failed_prediction_iterations": [],
+      "chosen_fit_future_fold_ids": [
+        "sweep_005",
+        "sweep_006",
+        "sweep_007"
+      ],
+      "common_unseen_fold_ids": [],
+      "all_candidates": {
+        "members": [
+          3,
+          5
+        ],
+        "spread_mm": 2.6312663087301655,
+        "sum_anchor_error_mm": 2.3806982818538986,
+        "anchors_mm": [
+          [
+            0.0,
+            -1899.6301714998717
+          ],
+          [
+            1645.666651006566,
+            949.9388790202745
+          ],
+          [
+            -1646.950415405011,
+            950.9625705479391
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.092026612917806,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1528.186544705074,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.092026612917806,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1528.186544705074,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.092026612917806,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1528.186544705074,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 22.188338680710814,
+          "sweeps": 3
+        },
+        "future_fold_training_overlap_ids": [
+          "sweep_005",
+          "sweep_006",
+          "sweep_007"
+        ],
+        "common_unseen_fold": {
+          "status": "no_unseen_sweeps",
+          "score": null,
+          "sweeps": 0
+        }
+      },
+      "finite_prediction_only": {
+        "members": [
+          3,
+          4
+        ],
+        "spread_mm": 2.8669328275740815,
+        "sum_anchor_error_mm": 2.4748545835318394,
+        "anchors_mm": [
+          [
+            0.0,
+            -1900.6137422017255
+          ],
+          [
+            1646.2924415394543,
+            950.697834108016
+          ],
+          [
+            -1646.1483779779574,
+            950.3104334819732
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.092026612917806,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1528.186544705074,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.092026612917806,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1528.186544705074,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.092026612917806,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1528.186544705074,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 22.534494176891833,
+          "sweeps": 3
+        },
+        "future_fold_training_overlap_ids": [
+          "sweep_005",
+          "sweep_006"
+        ],
+        "common_unseen_fold": {
+          "status": "no_unseen_sweeps",
+          "score": null,
+          "sweeps": 0
+        }
+      },
+      "delta_sum_anchor_error_mm": 0.09415630167794076
+    },
+    {
+      "fixture": "ten_points_w_buildup2",
+      "cohort": "additional_dataset",
+      "input": "inputs/ten_points_w_buildup2.history.json.gz",
+      "input_sha256": "5ca2dcf76e6a8e8daadb59517b73d430d58b7a8bde102c7018371046cebaba57",
+      "producer_source_revision": "72523b9dc64155bf58fc1b8f0ea7241266ff73d4",
+      "producer_source_sha256": {
+        "autocal/__init__.py": "6b683bd7aeb340c22ebb4407e331438f4897b5485b11a95726b8a101d74feec5",
+        "autocal/_autocal_common.py": "e0c5efab2bb30d629f4d1f5dd49e10bc990c7d3732db313f153d18a76751dbbd",
+        "autocal/active_learning.py": "73ccf3bd12e906d56942f3b1bd93540b203756724b99cf5dfe30b2596f01f203",
+        "autocal/alternating_refinement.py": "0809131a4399ed2be1069655fdfebb89f02676eea6bb73366fd82167d6e2ba3f",
+        "autocal/autocal.py": "2f91784fc77aecf7e7aae6e1049cb16af83accedd6d2f3e042a6d899b895b43d",
+        "autocal/calibrate.py": "ad4ff4fd3c2e7d299d86cdae97499da09837251705f65d2ea5389b88fac1302a",
+        "autocal/dataset_roles.py": "dd3a45b4e529a343655b1b464e1a348eb3d27bd4d805651b7eface9b03d048ef",
+        "autocal/ellipse_active.py": "def349e1c2d122efd1541e8653203124c13e64f225926a92b9704bb01d89ecca",
+        "autocal/ellipse_cost.py": "4c118c9ddabc3b971f70cda30b202a5669b23b80ac5d24c479374f635c5eb541",
+        "autocal/ellipse_fitting.py": "3ee525409e34576c96680804c2eb7fd96ad1eca91819b1b1272961dd0e16efe3",
+        "autocal/ellipse_objective_jax.py": "e43c811f0104c54f5ff8c7ec9178408dc8accb85fef302971903eaf823a3a672",
+        "autocal/ellipse_solver.py": "1e926f091bc66f63990660bbbd41d18517cdfa9f81a900488fd5de4f77f47709",
+        "autocal/ellipse_visualization.py": "1cdcb6e9c5e6768713601cf96da04274b32585c9eb0a9ac291d605238984ec81",
+        "autocal/extended_reference.py": "3e536df18b54c335e1a0711f4d0e91979f7ed03fd3b7e745fd43bdbd807a0087",
+        "autocal/filter_pass.py": "69a17b664cbca9666b984495eac6c153e3d44fbb0530e97d090b52c61bc5b33d",
+        "autocal/fit_stage.py": "087462db8f7d4ab8d5e4426a05773ee65ed6bb4644e8a2cbae1f5d678919d151",
+        "autocal/flex.py": "a94029be97c27543e53655ae5cc7cb0d9626bfe111c6b9f650a3be86ef23e265",
+        "autocal/headless_sim.py": "1ee8b8897daee5bf0b8801ed3121359e2bc20273a0e99d0062cb3b689a2358c7",
+        "autocal/history_selection.py": "12507a7beb1010dfb5c1147e6ab990c8f87846202bd88873155b8ddbe6ab7219",
+        "autocal/initialize_pass.py": "bddb0f958c720dea52642c8923658a21bb60a48781e43ce903175ea199cbe82d",
+        "autocal/json_schema.py": "ce7b2a65af16d763ab27d978bd876287e110172c3d1e8f1d61e891c60f78a1a2",
+        "autocal/merge_sweep_datasets.py": "69d9c4e5f54cee3b340a06182ebec0dc1d1bc36ccc5e9a9fbb3e902a8826b51a",
+        "autocal/planning_pass.py": "317232933861f8f8e32b6ed26d0fc53bad3275f8a2a2d0c4d04c0eb236a4c203",
+        "autocal/plot_residual_hist.py": "54fec4ec843d288c87e42879c6eee646e658b57daa807465e95235598cb12063",
+        "autocal/predictive_validation.py": "ce684ad519c9d32282f05713421beb8759b9d1ae7be1e6db68156138044265fd",
+        "autocal/scale_polish.py": "ab732e7ec5c48d095aa4cb1b6b3bed94cff629a4eca557709f597660eff88154",
+        "autocal/spool_model.py": "f21e2cd4640e0a5d5fac5546faf309a85225887b6f98f5dc02055fb7d56c1972",
+        "autocal/stage_artifacts.py": "2e653decc2cc1c6d8ab31030c381baa5ccd0ad3e55f845ad4dc51d5d98d7b673",
+        "autocal/sweep_config_generator.py": "22f933f89ab85063dcf2200b36a68c7bfe5daab9dc705ad8f421910d13d04f35",
+        "autocal/sweep_io.py": "887029381a0f6f7219abb171bb65dd607366ac0343db820b02d1bb484b6b42e9",
+        "autocal/sweep_types.py": "60f63ababc703b6c9ce081aec09533976fed47145bf2d9aca535d8b99610773b",
+        "autocal/theoretical_ellipse.py": "ded6db280bf3569c71e4a87e0621500f379d0ae8e6a9166ad2892ee591b26d20",
+        "autocal/tools/replay_stage.py": "b4c4d5616ae1a2fa4adfff2605cef2c89b40f374f7149483b316974230724dd6"
+      },
+      "changed_source_files": [
+        "autocal/_autocal_common.py",
+        "autocal/alternating_refinement.py",
+        "autocal/autocal.py",
+        "autocal/calibrate.py",
+        "autocal/ellipse_active.py",
+        "autocal/ellipse_cost.py",
+        "autocal/ellipse_objective_jax.py",
+        "autocal/ellipse_solver.py",
+        "autocal/filter_pass.py",
+        "autocal/fit_stage.py",
+        "autocal/headless_sim.py",
+        "autocal/history_selection.py",
+        "autocal/initialize_pass.py",
+        "autocal/planning_pass.py",
+        "autocal/predictive_validation.py",
+        "autocal/scale_polish.py",
+        "autocal/spool_model.py",
+        "autocal/sweep_types.py",
+        "autocal/theoretical_ellipse.py",
+        "autocal/tools/replay_stage.py"
+      ],
+      "single_fit_iteration": 1,
+      "single_fit_sum_anchor_error_mm": 5.3471106899861685,
+      "single_fit_saved_prediction": 21.3181307384983,
+      "single_fit_recomputed_prediction": {
+        "status": "finite",
+        "score": 21.3181307384983,
+        "sweeps": 6
+      },
+      "single_fit_prediction_matches_saved": true,
+      "validation_options": {
+        "collector_args": [
+          "--firmware",
+          "rrf",
+          "--sim",
+          "--no-spawn-rrf-simulator",
+          "--force-base-radii",
+          "30",
+          "--force-buildup-factor",
+          "0.636619"
+        ],
+        "use_flex": false,
+        "spring_k_multiplier": 1.0,
+        "use_noise_mean": true,
+        "pointwise_residual_mode": "sampson",
+        "sigma_source": "auto"
+      },
+      "chosen_settings": {
+        "solve_restarts": 4,
+        "solve_iterations": 400,
+        "solve_optimizer": "lbfgsb",
+        "optimizer_mode": "fast",
+        "residual_threshold": 250.0,
+        "spring_k_multiplier": 1.0,
+        "use_flex": false,
+        "pointwise_residual_mode": "sampson",
+        "pointwise_filtering": true,
+        "pointwise_global_mad": true,
+        "sweep_wise_filtering": true,
+        "sweep_metric": "outlier_ratio",
+        "use_noise_mean": true,
+        "sigma_source": "auto",
+        "robust_debug": true,
+        "generate_report": false,
+        "find_radii": "global",
+        "find_buildup_factor": "off",
+        "base_radii": [
+          30.0
+        ],
+        "buildup_factor": 0.636619,
+        "r0_bounds": null,
+        "b_bounds": null,
+        "r0_prior_sigma_mm": null,
+        "b_prior_sigma": null,
+        "spool_outer_iters": 3,
+        "spool_inner_iters": 30,
+        "theta0_mode": "zero",
+        "filter_schedule": [
+          "warmup",
+          "warmup",
+          "warmup",
+          "dynamic"
+        ],
+        "objective_schedule": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "scale_fix": [
+          3
+        ],
+        "fit_structure": [
+          3
+        ],
+        "line_width": 1.0,
+        "sigma_floor_mm": null,
+        "sigma_used_mm": null,
+        "low_anchor_z": null
+      },
+      "candidate_iterations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "eligible_iterations": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "failed_prediction_iterations": [],
+      "chosen_fit_future_fold_ids": [
+        "sweep_004",
+        "sweep_005",
+        "sweep_006",
+        "sweep_007",
+        "sweep_008",
+        "sweep_009"
+      ],
+      "common_unseen_fold_ids": [],
+      "all_candidates": {
+        "members": [
+          4,
+          7
+        ],
+        "spread_mm": 0.9466857381368737,
+        "sum_anchor_error_mm": 4.244127452802778,
+        "anchors_mm": [
+          [
+            0.0,
+            -1901.775440381549
+          ],
+          [
+            1646.3495055895705,
+            950.7498088860782
+          ],
+          [
+            -1646.5744048154195,
+            950.6420749009592
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.1552207569248,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1533.1313125235147,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.1552207569248,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1533.1313125235147,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.1552207569248,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1533.1313125235147,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 21.495200525122375,
+          "sweeps": 6
+        },
+        "future_fold_training_overlap_ids": [
+          "sweep_004",
+          "sweep_005",
+          "sweep_006",
+          "sweep_007",
+          "sweep_008",
+          "sweep_009"
+        ],
+        "common_unseen_fold": {
+          "status": "no_unseen_sweeps",
+          "score": null,
+          "sweeps": 0
+        }
+      },
+      "finite_prediction_only": {
+        "members": [
+          3,
+          6
+        ],
+        "spread_mm": 1.4156108364756443,
+        "sum_anchor_error_mm": 3.343728722744248,
+        "anchors_mm": [
+          [
+            0.0,
+            -1899.821990005351
+          ],
+          [
+            1646.70369096899,
+            950.6524689663581
+          ],
+          [
+            -1647.0669774187609,
+            950.6673180887085
+          ]
+        ],
+        "applied_spool_model": {
+          "$type": "SpoolModelParams",
+          "value": {
+            "base_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 30.0,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": 0.0,
+                    "k1": 900.0,
+                    "k2": 0.0,
+                    "use_constant_model": true
+                  }
+                }
+              ]
+            },
+            "modeled_models": {
+              "$type": "tuple",
+              "value": [
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.1552207569248,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1533.1313125235147,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.1552207569248,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1533.1313125235147,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                },
+                {
+                  "$type": "WinchSpoolModel",
+                  "value": {
+                    "base_radius": 39.1552207569248,
+                    "degrees_per_unit_times_r": 57.29577951308232,
+                    "k0": -180.0002183820537,
+                    "k1": 1533.1313125235147,
+                    "k2": -0.636619,
+                    "use_constant_model": false
+                  }
+                }
+              ]
+            },
+            "theta0_deg": {
+              "$type": "tuple",
+              "value": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          }
+        },
+        "chosen_fit_future_fold": {
+          "status": "finite",
+          "score": 21.845175051544803,
+          "sweeps": 6
+        },
+        "future_fold_training_overlap_ids": [
+          "sweep_004",
+          "sweep_005",
+          "sweep_006",
+          "sweep_007",
+          "sweep_008"
+        ],
+        "common_unseen_fold": {
+          "status": "no_unseen_sweeps",
+          "score": null,
+          "sweeps": 0
+        }
+      },
+      "delta_sum_anchor_error_mm": -0.9003987300585301
+    }
+  ],
+  "wall_s": 2.2590267429986852
+}

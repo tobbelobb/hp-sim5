@@ -1,0 +1,775 @@
+{
+  "command": ".venv/bin/python output/research/sessions/2026-10-23-consensus-membership/audit.py",
+  "unique_observation_datasets": 11,
+  "archived_inputs_and_script_match_results": true,
+  "selection_or_prediction_evaluations": 0,
+  "rows": [
+    {
+      "fixture": "23_april_2026",
+      "sweeps_sha256": "d38dacca97a87ddd36a903e3a89793ff6bd875a352b6b5f7fa0f60aefea0e6a3",
+      "sweeps": 8,
+      "points": 160,
+      "settings_sha256": "c857da134d6610eb9046709e6c48b5237dff4c59af68c35b511ea1099860cce1",
+      "candidates": [
+        {
+          "iteration": 2,
+          "sum_anchor_error_mm": 230.15574137131065,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004"
+          ]
+        },
+        {
+          "iteration": 3,
+          "sum_anchor_error_mm": 256.9830156737773,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005"
+          ]
+        },
+        {
+          "iteration": 4,
+          "sum_anchor_error_mm": 99.66208622105682,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006"
+          ]
+        },
+        {
+          "iteration": 5,
+          "sum_anchor_error_mm": 99.4983696430419,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006",
+            "sweep_007"
+          ]
+        },
+        {
+          "iteration": 6,
+          "sum_anchor_error_mm": 96.42076723315947,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006",
+            "sweep_007",
+            "sweep_008"
+          ]
+        }
+      ]
+    },
+    {
+      "fixture": "fifth_hp3_dataset",
+      "sweeps_sha256": "5526840059f577ec7fc20f79665bad471f63c8ca843616c34ff5d54f798783d6",
+      "sweeps": 8,
+      "points": 160,
+      "settings_sha256": "5a86661bbbe6ef31305d560bc624ef142cf6dddf4e72bdf6754a14733b12e389",
+      "candidates": [
+        {
+          "iteration": 1,
+          "sum_anchor_error_mm": 270.85860894073835,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003"
+          ]
+        },
+        {
+          "iteration": 2,
+          "sum_anchor_error_mm": 66.14549181614632,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004"
+          ]
+        },
+        {
+          "iteration": 3,
+          "sum_anchor_error_mm": 65.67209442116206,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005"
+          ]
+        },
+        {
+          "iteration": 6,
+          "sum_anchor_error_mm": 367.34646724632194,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006",
+            "sweep_007",
+            "sweep_008"
+          ]
+        }
+      ]
+    },
+    {
+      "fixture": "nineteenth_hp3_dataset_even_more_pressure",
+      "sweeps_sha256": "c2e9a0e5fd2409a4b275ad86ec1b9e5b6881126b8fb32e40452d8b21fa26d6f2",
+      "sweeps": 7,
+      "points": 140,
+      "settings_sha256": "5a86661bbbe6ef31305d560bc624ef142cf6dddf4e72bdf6754a14733b12e389",
+      "candidates": [
+        {
+          "iteration": 2,
+          "sum_anchor_error_mm": 165.00583869601297,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004"
+          ]
+        },
+        {
+          "iteration": 3,
+          "sum_anchor_error_mm": 173.18192928481093,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005"
+          ]
+        },
+        {
+          "iteration": 4,
+          "sum_anchor_error_mm": 168.4793629651435,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006"
+          ]
+        },
+        {
+          "iteration": 5,
+          "sum_anchor_error_mm": 359.035233043035,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006",
+            "sweep_007"
+          ]
+        }
+      ]
+    },
+    {
+      "fixture": "seventh_hp3_dataset",
+      "sweeps_sha256": "047dc17a871e18e658707ddc00b299e9dce345e2a1c8521a06cb748a4348a3ba",
+      "sweeps": 7,
+      "points": 140,
+      "settings_sha256": "5a86661bbbe6ef31305d560bc624ef142cf6dddf4e72bdf6754a14733b12e389",
+      "candidates": [
+        {
+          "iteration": 2,
+          "sum_anchor_error_mm": 257.58652206996044,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004"
+          ]
+        },
+        {
+          "iteration": 3,
+          "sum_anchor_error_mm": 156.86365371811894,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005"
+          ]
+        },
+        {
+          "iteration": 4,
+          "sum_anchor_error_mm": 198.5923123537059,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006"
+          ]
+        },
+        {
+          "iteration": 5,
+          "sum_anchor_error_mm": 216.91510619541208,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006",
+            "sweep_007"
+          ]
+        }
+      ]
+    },
+    {
+      "fixture": "sixteenth_hp3_dataset_even_more_pressure",
+      "sweeps_sha256": "b2f0600d94bd7207593ba79c040045695f9fa8d18843247a8b9ee655b9bf4def",
+      "sweeps": 8,
+      "points": 160,
+      "settings_sha256": "bf3b4ed81ddc9a955faa6e9120e625319a7348b849e3e7b41932ce14b05fcc24",
+      "candidates": [
+        {
+          "iteration": 1,
+          "sum_anchor_error_mm": 240.3081242835617,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003"
+          ]
+        },
+        {
+          "iteration": 2,
+          "sum_anchor_error_mm": 6543.31667955195,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004"
+          ]
+        },
+        {
+          "iteration": 3,
+          "sum_anchor_error_mm": 47.37586506303008,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005"
+          ]
+        },
+        {
+          "iteration": 4,
+          "sum_anchor_error_mm": 38.407944567030256,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006"
+          ]
+        },
+        {
+          "iteration": 5,
+          "sum_anchor_error_mm": 37.47510913032048,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006",
+            "sweep_007"
+          ]
+        },
+        {
+          "iteration": 6,
+          "sum_anchor_error_mm": 43.631980662683276,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006",
+            "sweep_007",
+            "sweep_008"
+          ]
+        }
+      ]
+    },
+    {
+      "fixture": "five_points_bigger_deltas",
+      "sweeps_sha256": "4e85c7466a20d774b63e7928b40216ce30fdf1f876b9a33143e72708dc185581",
+      "sweeps": 8,
+      "points": 80,
+      "settings_sha256": "53bc04228929fe9deef8542e44b43e25a93848b8ae45d7842cdc11f089ea3aa9",
+      "candidates": [
+        {
+          "iteration": 1,
+          "sum_anchor_error_mm": 6.545860774533146,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003"
+          ]
+        },
+        {
+          "iteration": 2,
+          "sum_anchor_error_mm": 5.1240127484729925,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004"
+          ]
+        },
+        {
+          "iteration": 3,
+          "sum_anchor_error_mm": 5.598830058780765,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005"
+          ]
+        },
+        {
+          "iteration": 4,
+          "sum_anchor_error_mm": 11.137157111909564,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006"
+          ]
+        },
+        {
+          "iteration": 5,
+          "sum_anchor_error_mm": 10.67557651252396,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006",
+            "sweep_007"
+          ]
+        },
+        {
+          "iteration": 6,
+          "sum_anchor_error_mm": 12.334959958775137,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006",
+            "sweep_007",
+            "sweep_008"
+          ]
+        }
+      ]
+    },
+    {
+      "fixture": "flexible_lines_2000",
+      "sweeps_sha256": "ebada32dceac49aae47ee0c023f0b390903b78af443df5734733df83009389e2",
+      "sweeps": 6,
+      "points": 120,
+      "settings_sha256": "d1b94ae1fff6b38ede228cca3cbbccef7397ba8d9a796c182697d91f18bbc1d4",
+      "candidates": [
+        {
+          "iteration": 1,
+          "sum_anchor_error_mm": 96.3781065644963,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003"
+          ]
+        },
+        {
+          "iteration": 2,
+          "sum_anchor_error_mm": 26.83436700468511,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004"
+          ]
+        },
+        {
+          "iteration": 3,
+          "sum_anchor_error_mm": 21.248144406303403,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005"
+          ]
+        },
+        {
+          "iteration": 4,
+          "sum_anchor_error_mm": 25.827876006577718,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006"
+          ]
+        }
+      ]
+    },
+    {
+      "fixture": "layered_manual_some_bad_points",
+      "sweeps_sha256": "337c6241a0b9fe069db948bda237929e98f88c1fe00500a16f7fb73596a3708d",
+      "sweeps": 9,
+      "points": 180,
+      "settings_sha256": "93851f954ed29b023e2435fa6b9e76eda8821a2bc1e573b0cc9ebb627bdb5b5f",
+      "candidates": [
+        {
+          "iteration": 1,
+          "sum_anchor_error_mm": 18.538606430252607,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003"
+          ]
+        },
+        {
+          "iteration": 2,
+          "sum_anchor_error_mm": 8.9826891091678,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004"
+          ]
+        },
+        {
+          "iteration": 3,
+          "sum_anchor_error_mm": 3.1474219203517593,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005"
+          ]
+        },
+        {
+          "iteration": 4,
+          "sum_anchor_error_mm": 5.30406749326192,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006"
+          ]
+        },
+        {
+          "iteration": 5,
+          "sum_anchor_error_mm": 22.837996468167606,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006",
+            "sweep_007"
+          ]
+        },
+        {
+          "iteration": 6,
+          "sum_anchor_error_mm": 5.269581731854838,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006",
+            "sweep_007",
+            "sweep_008"
+          ]
+        },
+        {
+          "iteration": 7,
+          "sum_anchor_error_mm": 12.2946062852626,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006",
+            "sweep_007",
+            "sweep_008",
+            "sweep_009"
+          ]
+        }
+      ]
+    },
+    {
+      "fixture": "ten_points_bigger_deltas",
+      "sweeps_sha256": "3254a6647f6d557be4684c9e067e2123b5d6840acc6ce7224a4faf4767a2a891",
+      "sweeps": 8,
+      "points": 160,
+      "settings_sha256": "d0da06a394432422ce2b6d6522acb8ec4a8575140fb03dafce503dd7c55f2e5d",
+      "candidates": [
+        {
+          "iteration": 1,
+          "sum_anchor_error_mm": 1.5322397610347078,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003"
+          ]
+        },
+        {
+          "iteration": 2,
+          "sum_anchor_error_mm": 10.186222172277112,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004"
+          ]
+        },
+        {
+          "iteration": 3,
+          "sum_anchor_error_mm": 17.53297287459009,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005"
+          ]
+        },
+        {
+          "iteration": 4,
+          "sum_anchor_error_mm": 5.828177088378372,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006"
+          ]
+        },
+        {
+          "iteration": 5,
+          "sum_anchor_error_mm": 27.331213493239026,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006",
+            "sweep_007"
+          ]
+        },
+        {
+          "iteration": 6,
+          "sum_anchor_error_mm": 23.24820716364885,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006",
+            "sweep_007",
+            "sweep_008"
+          ]
+        }
+      ]
+    },
+    {
+      "fixture": "ten_points_w_buildup",
+      "sweeps_sha256": "22e54f20432c8f7e6b8a4f3ba696f0611d0f56101ebecdc74d3039bed78e9b79",
+      "sweeps": 7,
+      "points": 140,
+      "settings_sha256": "f36ee667b254356959b5d909eca51e11443450eb3c49cf27475232401fa792b5",
+      "candidates": [
+        {
+          "iteration": 1,
+          "sum_anchor_error_mm": 42.43261797862442,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003"
+          ]
+        },
+        {
+          "iteration": 2,
+          "sum_anchor_error_mm": 6.506352445677611,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004"
+          ]
+        },
+        {
+          "iteration": 3,
+          "sum_anchor_error_mm": 3.0591303818350513,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005"
+          ]
+        },
+        {
+          "iteration": 4,
+          "sum_anchor_error_mm": 3.4437908485275557,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006"
+          ]
+        },
+        {
+          "iteration": 5,
+          "sum_anchor_error_mm": 3.4224530024622974,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006",
+            "sweep_007"
+          ]
+        }
+      ]
+    },
+    {
+      "fixture": "ten_points_w_buildup2",
+      "sweeps_sha256": "2f26e6ed7a471e8874d6c9b2aad17257ebb702bdc32a66cb2b2657e9ce91a592",
+      "sweeps": 9,
+      "points": 180,
+      "settings_sha256": "93851f954ed29b023e2435fa6b9e76eda8821a2bc1e573b0cc9ebb627bdb5b5f",
+      "candidates": [
+        {
+          "iteration": 1,
+          "sum_anchor_error_mm": 5.3471106899861685,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003"
+          ]
+        },
+        {
+          "iteration": 2,
+          "sum_anchor_error_mm": 7.5752634441046025,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004"
+          ]
+        },
+        {
+          "iteration": 3,
+          "sum_anchor_error_mm": 2.914123056392617,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005"
+          ]
+        },
+        {
+          "iteration": 4,
+          "sum_anchor_error_mm": 3.5675906372076054,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006"
+          ]
+        },
+        {
+          "iteration": 5,
+          "sum_anchor_error_mm": 7.01695040761846,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006",
+            "sweep_007"
+          ]
+        },
+        {
+          "iteration": 6,
+          "sum_anchor_error_mm": 4.205354536239334,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006",
+            "sweep_007",
+            "sweep_008"
+          ]
+        },
+        {
+          "iteration": 7,
+          "sum_anchor_error_mm": 4.929545780938406,
+          "training_sweep_ids": [
+            "sweep_001",
+            "sweep_002",
+            "sweep_003",
+            "sweep_004",
+            "sweep_005",
+            "sweep_006",
+            "sweep_007",
+            "sweep_008",
+            "sweep_009"
+          ]
+        }
+      ]
+    }
+  ]
+}

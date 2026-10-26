@@ -1,0 +1,1456 @@
+# Inspect saved Hangprinter research. Complete one small saved-evidence investigation and a separate review, explain the next decision, then commit the small research results. Run no new numerical experiments.
+
+Program: program-e31e5321be5940baacf677409b2579e0 · revision 72 · active
+
+Reviewed findings are recorded in scoped admission history.
+
+## Program
+
+```json
+{
+  "id": "program-e31e5321be5940baacf677409b2579e0",
+  "question_id": "question-6393dbc8de91499e8ac6b8b4705c567b",
+  "goal": "Inspect saved Hangprinter research. Complete one small saved-evidence investigation and a separate review, explain the next decision, then commit the small research results. Run no new numerical experiments.",
+  "state": "active",
+  "revision": 72,
+  "created_at": "2026-10-26T11:56:14.670615+00:00",
+  "updated_at": "2026-10-26T12:10:34.266791+00:00",
+  "constraints": {}
+}
+```
+
+## question: Inspect saved Hangprinter research. Complete one small saved-evidence investigation and a separate review, explain the next decision, then commit the small research results. Run no new numerical experiments.
+
+```json
+{
+  "id": "question-6393dbc8de91499e8ac6b8b4705c567b",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "question",
+  "title": "Inspect saved Hangprinter research. Complete one small saved-evidence investigation and a separate review, explain the next decision, then commit the small research results. Run no new numerical experiments.",
+  "revision": 1,
+  "created_at": "2026-10-26T11:56:14.670716+00:00",
+  "updated_at": "2026-10-26T11:56:14.670716+00:00",
+  "details": {
+    "knowledge_state": "unassessed",
+    "scope": {}
+  }
+}
+```
+
+## artifact: /home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/report.md
+
+```json
+{
+  "id": "cm-source-report",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "artifact",
+  "title": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/report.md",
+  "revision": 1,
+  "created_at": "2026-10-26T11:59:23.461257+00:00",
+  "updated_at": "2026-10-26T11:59:23.461257+00:00",
+  "details": {
+    "evidence_type": "imported",
+    "provenance": {
+      "input_producer_revision": "72523b9d",
+      "origin": "archived simulated evidence",
+      "status": "historical producer evidence; not independently reproduced",
+      "study": "CM-E1"
+    },
+    "reference": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/report.md",
+    "sha256": "2e47bc589aea727b2e76387ff8fc3339b664134145f15d61df7fbbc7f46ef96a",
+    "source_revision": "5400cefc0238007406f5cd572d21ef5a72d2958d"
+  }
+}
+```
+
+## artifact: /home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/results.json
+
+```json
+{
+  "id": "cm-source-results",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "artifact",
+  "title": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/results.json",
+  "revision": 1,
+  "created_at": "2026-10-26T11:59:23.595028+00:00",
+  "updated_at": "2026-10-26T11:59:23.595028+00:00",
+  "details": {
+    "evidence_type": "imported",
+    "provenance": {
+      "input_producer_revision": "72523b9d",
+      "origin": "archived simulated evidence",
+      "status": "historical producer evidence; not independently reproduced",
+      "study": "CM-E1"
+    },
+    "reference": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/results.json",
+    "sha256": "bdd85e0f758ce3a4f0ef4f5be3c0fe094fb830dfa6f3c059d39d7a2d804ab1cd",
+    "source_revision": "5400cefc0238007406f5cd572d21ef5a72d2958d"
+  }
+}
+```
+
+## artifact: /home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/audit.json
+
+```json
+{
+  "id": "cm-source-audit",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "artifact",
+  "title": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/audit.json",
+  "revision": 1,
+  "created_at": "2026-10-26T11:59:23.714018+00:00",
+  "updated_at": "2026-10-26T11:59:23.714018+00:00",
+  "details": {
+    "evidence_type": "imported",
+    "provenance": {
+      "input_producer_revision": "72523b9d",
+      "origin": "archived simulated evidence",
+      "status": "historical producer evidence; not independently reproduced",
+      "study": "CM-E1"
+    },
+    "reference": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/audit.json",
+    "sha256": "6750c2ac25c1f99a90cc10dd3d98389422e95a726e725bfdd1b1e6c8aac9939e",
+    "source_revision": "5400cefc0238007406f5cd572d21ef5a72d2958d"
+  }
+}
+```
+
+## artifact: /home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/inputs.json
+
+```json
+{
+  "id": "cm-source-inputs",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "artifact",
+  "title": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/inputs.json",
+  "revision": 1,
+  "created_at": "2026-10-26T11:59:23.832211+00:00",
+  "updated_at": "2026-10-26T11:59:23.832211+00:00",
+  "details": {
+    "evidence_type": "imported",
+    "provenance": {
+      "input_producer_revision": "72523b9d",
+      "origin": "archived simulated evidence",
+      "status": "historical producer evidence; not independently reproduced",
+      "study": "CM-E1"
+    },
+    "reference": "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/inputs.json",
+    "sha256": "f58ef95d783a265b7153cefc07d2d8785f77896846bb07d58317b8a009634b44",
+    "source_revision": "5400cefc0238007406f5cd572d21ef5a72d2958d"
+  }
+}
+```
+
+## approach: Continue blanket finite-prediction membership proposal
+
+```json
+{
+  "id": "blanket-membership",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "approach",
+  "title": "Continue blanket finite-prediction membership proposal",
+  "revision": 2,
+  "created_at": "2026-10-26T11:59:23.950384+00:00",
+  "updated_at": "2026-10-26T12:10:16.946631+00:00",
+  "details": {
+    "question_id": "question-6393dbc8de91499e8ac6b8b4705c567b",
+    "reason": "Retire only the unconditional nonworsening default-change proposal within archived CM-E1 scope.",
+    "state": "retired"
+  }
+}
+```
+
+## route_plan: A small aggregate error improvement may justify consideration if saved per-dataset evidence does not defeat the declared nonworsening goal.
+
+```json
+{
+  "id": "plan-blanket-membership",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "route_plan",
+  "title": "A small aggregate error improvement may justify consideration if saved per-dataset evidence does not defeat the declared nonworsening goal.",
+  "revision": 1,
+  "created_at": "2026-10-26T11:59:24.068760+00:00",
+  "updated_at": "2026-10-26T11:59:24.068760+00:00",
+  "details": {
+    "approach_id": "blanket-membership",
+    "citation_ids": [
+      "cm-source-report",
+      "cm-source-results",
+      "cm-source-audit",
+      "cm-source-inputs"
+    ],
+    "decision_value": "Choose whether blanket adoption work or fair holdout evidence is the next prerequisite.",
+    "dependency_ids": [],
+    "estimated_cost": {
+      "collections": 0,
+      "fresh_fits": 0,
+      "physics_steps": 0,
+      "prediction_evaluations": 0,
+      "selection_evaluations": 0,
+      "wall_minutes": 8
+    },
+    "hypothesis": "Aggregate benefit supports continuing unconditional finite-only consensus",
+    "novelty": "Separate review of archived evidence; no new numerical result.",
+    "objections": [
+      "Fixture families are correlated.",
+      "Frozen final selection does not establish fresh-fit, stopping or hardware performance."
+    ],
+    "observation": "Read four saved sources; compare stored summary and rows, changed-case unseen folds and source identities.",
+    "priority": 20,
+    "reason": "A small aggregate error improvement may justify consideration if saved per-dataset evidence does not defeat the declared nonworsening goal.",
+    "reopening_condition": "A narrower truth-free rule or compatible common-unseen-sweep evidence on changed selections.",
+    "retry_key": "5f2486bb4b8dffe1e9e2e1edeb13f3b1864eef462f2d021bfbb7d5cfc19b1cd9",
+    "retry_limit": 1,
+    "scope": {
+      "corpus": "11 archived simulated histories, including 8 dataset names beyond initial screen",
+      "exclusions": [
+        "fresh fitting",
+        "stopping trajectories",
+        "hardware",
+        "current-code equivalence"
+      ],
+      "method": "unconditional finite-prediction-only final consensus",
+      "metric": "sum of per-anchor Euclidean distances in mm",
+      "study": "CM-E1"
+    },
+    "tradeoffs": [
+      "Evidence audit cannot validate producer numerical correctness.",
+      "Aggregate error can improve while per-dataset nonworsening fails."
+    ],
+    "uncertainty": "Historical consistency and exact scope lack a fresh separate review in this program."
+  }
+}
+```
+
+## approach: Withhold blanket adoption and identify fair validation prerequisite
+
+```json
+{
+  "id": "scoped-holdout",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "approach",
+  "title": "Withhold blanket adoption and identify fair validation prerequisite",
+  "revision": 2,
+  "created_at": "2026-10-26T11:59:24.192528+00:00",
+  "updated_at": "2026-10-26T12:10:16.946812+00:00",
+  "details": {
+    "question_id": "question-6393dbc8de91499e8ac6b8b4705c567b",
+    "reason": "Fair common-unseen-sweep evidence is the next prerequisite; numerical work is not funded.",
+    "state": "promising"
+  }
+}
+```
+
+## route_plan: Reported regressions and absent common unseen sweeps may defeat blanket adoption without resolving broader predictive/model questions.
+
+```json
+{
+  "id": "plan-scoped-holdout",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "route_plan",
+  "title": "Reported regressions and absent common unseen sweeps may defeat blanket adoption without resolving broader predictive/model questions.",
+  "revision": 1,
+  "created_at": "2026-10-26T11:59:24.311961+00:00",
+  "updated_at": "2026-10-26T11:59:24.311961+00:00",
+  "details": {
+    "approach_id": "scoped-holdout",
+    "citation_ids": [
+      "cm-source-report",
+      "cm-source-results",
+      "cm-source-audit",
+      "cm-source-inputs"
+    ],
+    "decision_value": "Choose whether blanket adoption work or fair holdout evidence is the next prerequisite.",
+    "dependency_ids": [],
+    "estimated_cost": {
+      "collections": 0,
+      "fresh_fits": 0,
+      "physics_steps": 0,
+      "prediction_evaluations": 0,
+      "selection_evaluations": 0,
+      "wall_minutes": 8
+    },
+    "hypothesis": "Per-dataset regressions warrant withholding unconditional adoption while common-unseen predictive superiority is unresolved",
+    "novelty": "Separate review of archived evidence; no new numerical result.",
+    "objections": [
+      "Fixture families are correlated.",
+      "Frozen final selection does not establish fresh-fit, stopping or hardware performance."
+    ],
+    "observation": "Read four saved sources; compare stored summary and rows, changed-case unseen folds and source identities.",
+    "priority": 10,
+    "reason": "Reported regressions and absent common unseen sweeps may defeat blanket adoption without resolving broader predictive/model questions.",
+    "reopening_condition": "A narrower truth-free rule or compatible common-unseen-sweep evidence on changed selections.",
+    "retry_key": "11f925462bf2b90df965ad0b2cc204bd1bc6bf3d3be8c0dba2974a33cf07d0ae",
+    "retry_limit": 1,
+    "scope": {
+      "corpus": "11 archived simulated histories, including 8 dataset names beyond initial screen",
+      "exclusions": [
+        "fresh fitting",
+        "stopping trajectories",
+        "hardware",
+        "current-code equivalence"
+      ],
+      "method": "unconditional finite-prediction-only final consensus",
+      "metric": "sum of per-anchor Euclidean distances in mm",
+      "study": "CM-E1"
+    },
+    "tradeoffs": [
+      "Evidence audit cannot validate producer numerical correctness.",
+      "Aggregate error can improve while per-dataset nonworsening fails."
+    ],
+    "uncertainty": "Historical consistency and exact scope lack a fresh separate review in this program."
+  }
+}
+```
+
+## decision: Fund one four-source saved-evidence audit and fresh separate review. The bound goal prohibits new numerical experiments. Historical measurements may be inspected and hashed, never rerun. No production code changes.
+
+```json
+{
+  "id": "audit-scope-decision",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "decision",
+  "title": "Fund one four-source saved-evidence audit and fresh separate review. The bound goal prohibits new numerical experiments. Historical measurements may be inspected and hashed, never rerun. No production code changes.",
+  "revision": 1,
+  "created_at": "2026-10-26T11:59:24.437203+00:00",
+  "updated_at": "2026-10-26T11:59:24.437203+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [
+      "cm-source-report",
+      "cm-source-results",
+      "cm-source-audit",
+      "cm-source-inputs"
+    ],
+    "subject_id": null
+  }
+}
+```
+
+## runtime_allocation: Finite manager allocation
+
+```json
+{
+  "id": "runtime_allocation-611209e2ca3f48b08ab2a87df4b625f2",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "runtime_allocation",
+  "title": "Finite manager allocation",
+  "revision": 10,
+  "created_at": "2026-10-26T11:59:24.555571+00:00",
+  "updated_at": "2026-10-26T12:10:34.267011+00:00",
+  "details": {
+    "cleanup_deadline": 1793017174.5554836,
+    "cleanup_seconds": 190,
+    "deadline": 1793016984.5554836,
+    "events": [
+      {
+        "at": "2026-10-26T12:10:34.266702+00:00",
+        "event": "allocation_stopped",
+        "reason": "The one authorized saved-evidence investigation and separate review are complete. Finish owned cleanup and leave the next decision unfunded; no numerical experiments permitted."
+      }
+    ],
+    "lease_until": 1793016648.0875366,
+    "owner": {
+      "id": "controller-38b77d44dc4746209eff34744c3cd990",
+      "process": {
+        "birth": "1446220",
+        "boot_id": "54bb5631-9747-454f-a41d-10cce7963cb6",
+        "group": 62188,
+        "host": "torbjorn-MS-7D25",
+        "pid": 62188,
+        "uid": 1000
+      }
+    },
+    "queue": [],
+    "reservations": [
+      {
+        "admission_id": "admission-971d34260a954e35bc0d41b183e2a5a9",
+        "assignment_id": "cm-saved-audit",
+        "attempt_id": "attempt-8cc3e522df934dafbc74a9639e34721e",
+        "charged_at": "2026-10-26T11:59:40.671776+00:00",
+        "retry_root": null,
+        "review_pending": false,
+        "review_seconds": 360,
+        "reviews": [
+          {
+            "charge_id": "6ecf30db0adc40869a33c22d993ee82a",
+            "reserved_seconds": 360,
+            "run_id": "review-run-beb299c90c6441278e176474b7f72fee",
+            "state": "completed"
+          }
+        ],
+        "settings": {
+          "backend": "codex",
+          "client_args": [],
+          "dont_ask": false,
+          "goal_mode": true,
+          "machine": "hp3",
+          "physics_backend": "headless-js",
+          "record": false,
+          "shared_runtime_write": false,
+          "viewer": "none",
+          "worktree": true
+        },
+        "state": "submitted",
+        "usage": {
+          "estimates": {
+            "collections": 0,
+            "fresh_fits": 0,
+            "physics_runs": 0,
+            "physics_steps": 0,
+            "prediction_evaluations": 0,
+            "selection_evaluations": 0,
+            "wall_minutes": 8
+          },
+          "observed_worker_wall_seconds": 383.0903079509735,
+          "supervisor_observations": [],
+          "unmetered": [
+            "shell movement",
+            "shell compute",
+            "spend"
+          ],
+          "worker_reports": []
+        },
+        "worker_seconds": 480
+      }
+    ],
+    "retry_limit": 1,
+    "review_backlog_limit": 1,
+    "review_seconds": 360,
+    "started_at": "2026-10-26T11:59:24.555486+00:00",
+    "state": "stopped",
+    "task_limit": 1,
+    "wall_reserved_seconds": 840,
+    "wall_seconds": 1020,
+    "worker_limit": 1
+  }
+}
+```
+
+## assignment: Audit four archived CM-E1 sources without numerical replay: determine whether saved measurements reject blanket finite-prediction-only final-consensus nonworsening, distinguish aggregate from per-dataset outcomes, and inspect the precise common-unseen-fold gap and provenance limits. Produce report.md, abstract.md, research.md and a small evidence extract with source hashes and JSON field paths.
+
+```json
+{
+  "id": "cm-saved-audit",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "assignment",
+  "title": "Audit four archived CM-E1 sources without numerical replay: determine whether saved measurements reject blanket finite-prediction-only final-consensus nonworsening, distinguish aggregate from per-dataset outcomes, and inspect the precise common-unseen-fold gap and provenance limits. Produce report.md, abstract.md, research.md and a small evidence extract with source hashes and JSON field paths.",
+  "revision": 3,
+  "created_at": "2026-10-26T11:59:24.673122+00:00",
+  "updated_at": "2026-10-26T12:06:03.993491+00:00",
+  "details": {
+    "allocation": {
+      "collections": 0,
+      "fresh_fits": 0,
+      "physics_runs": 0,
+      "physics_steps": 0,
+      "prediction_evaluations": 0,
+      "selection_evaluations": 0,
+      "wall_minutes": 8
+    },
+    "approach_id": "scoped-holdout",
+    "execution_state": "completed",
+    "knowledge_state": "unassessed",
+    "question_id": "question-6393dbc8de91499e8ac6b8b4705c567b",
+    "review_state": "unreviewed"
+  }
+}
+```
+
+## investigation: Audit four archived CM-E1 sources without numerical replay: determine whether saved measurements reject blanket finite-prediction-only final-consensus nonworsening, distinguish aggregate from per-dataset outcomes, and inspect the precise common-unseen-fold gap and provenance limits. Produce report.md, abstract.md, research.md and a small evidence extract with source hashes and JSON field paths.
+
+```json
+{
+  "id": "investigation-b474c61c3930414fa8e2f8db1ed47048",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "investigation",
+  "title": "Audit four archived CM-E1 sources without numerical replay: determine whether saved measurements reject blanket finite-prediction-only final-consensus nonworsening, distinguish aggregate from per-dataset outcomes, and inspect the precise common-unseen-fold gap and provenance limits. Produce report.md, abstract.md, research.md and a small evidence extract with source hashes and JSON field paths.",
+  "revision": 1,
+  "created_at": "2026-10-26T11:59:24.673250+00:00",
+  "updated_at": "2026-10-26T11:59:24.673250+00:00",
+  "details": {
+    "assignment_id": "cm-saved-audit",
+    "citation_ids": [
+      "cm-source-report",
+      "cm-source-results",
+      "cm-source-audit",
+      "cm-source-inputs"
+    ],
+    "execution": {
+      "numerical_replay": false,
+      "read_only_inputs": true,
+      "recording": "none",
+      "source_limit": 4,
+      "sources": [
+        "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/report.md",
+        "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/results.json",
+        "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/audit.json",
+        "/home/torbjorn/repos/hp-sim5/output/research/sessions/2026-10-23-consensus-membership/inputs.json"
+      ]
+    },
+    "explanations": [
+      {
+        "approach_id": "blanket-membership",
+        "explanation": "Small aggregate improvement could support the blanket rule if no per-dataset counterexample survives provenance checks."
+      },
+      {
+        "approach_id": "scoped-holdout",
+        "explanation": "Regressions defeat blanket nonworsening; overlapping finite diagnostics do not establish common-unseen prediction superiority."
+      }
+    ],
+    "kind": "scouting",
+    "outcomes": {
+      "contrary": {
+        "actions": [],
+        "finding": "rejected",
+        "observation": "Saved sources contradict the regressions or common-fold gap."
+      },
+      "failed": {
+        "actions": [],
+        "finding": "tool_failure",
+        "observation": "Execution or source-reading failure prevents inspection."
+      },
+      "inconsistent": {
+        "actions": [],
+        "finding": "inconclusive",
+        "observation": "Saved sources are incomplete or disagree enough to prevent a scoped decision."
+      },
+      "withhold": {
+        "actions": [
+          {
+            "approach_id": "blanket-membership",
+            "reason": "Retire only the unconditional nonworsening default-change proposal within archived CM-E1 scope.",
+            "reopening_condition": "Compatible common-unseen-sweep evidence on changed cases, or a narrower truth-free rule.",
+            "scope": {
+              "corpus": "11 archived simulated histories, including 8 dataset names beyond initial screen",
+              "exclusions": [
+                "fresh fitting",
+                "stopping trajectories",
+                "hardware",
+                "current-code equivalence"
+              ],
+              "method": "unconditional finite-prediction-only final consensus",
+              "metric": "sum of per-anchor Euclidean distances in mm",
+              "study": "CM-E1"
+            },
+            "target": "retired"
+          },
+          {
+            "approach_id": "scoped-holdout",
+            "reason": "Fair common-unseen-sweep evidence is the next prerequisite; numerical work is not funded.",
+            "reopening_condition": "Compatible common-unseen-sweep evidence on changed cases, or a narrower truth-free rule.",
+            "scope": {
+              "corpus": "11 archived simulated histories, including 8 dataset names beyond initial screen",
+              "exclusions": [
+                "fresh fitting",
+                "stopping trajectories",
+                "hardware",
+                "current-code equivalence"
+              ],
+              "method": "unconditional finite-prediction-only final consensus",
+              "metric": "sum of per-anchor Euclidean distances in mm",
+              "study": "CM-E1"
+            },
+            "target": "promising"
+          }
+        ],
+        "finding": "supported",
+        "observation": "Saved rows and summaries consistently show one improvement, two regressions, five unchanged among eight additional datasets; no common unseen fold for three changed selections."
+      }
+    },
+    "route_plan_ids": [
+      "plan-blanket-membership",
+      "plan-scoped-holdout"
+    ]
+  }
+}
+```
+
+## attempt: Audit four archived CM-E1 sources without numerical replay: determine whether saved measurements reject blanket finite-prediction-only final-consensus nonworsening, distinguish aggregate from per-dataset outcomes, and inspect the precise common-unseen-fold gap and provenance limits. Produce report.md, abstract.md, research.md and a small evidence extract with source hashes and JSON field paths.
+
+```json
+{
+  "id": "attempt-8cc3e522df934dafbc74a9639e34721e",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "attempt",
+  "title": "Audit four archived CM-E1 sources without numerical replay: determine whether saved measurements reject blanket finite-prediction-only final-consensus nonworsening, distinguish aggregate from per-dataset outcomes, and inspect the precise common-unseen-fold gap and provenance limits. Produce report.md, abstract.md, research.md and a small evidence extract with source hashes and JSON field paths.",
+  "revision": 41,
+  "created_at": "2026-10-26T11:59:40.868967+00:00",
+  "updated_at": "2026-10-26T12:06:03.993278+00:00",
+  "details": {
+    "allocation": {
+      "collections": 0,
+      "fresh_fits": 0,
+      "physics_runs": 0,
+      "physics_steps": 0,
+      "prediction_evaluations": 0,
+      "selection_evaluations": 0,
+      "wall_minutes": 8
+    },
+    "argv": [
+      "/home/torbjorn/repos/hp-sim5/hp-sim5-research-agent",
+      "--codex",
+      "--batch",
+      "--prompt-file",
+      "/home/torbjorn/repos/hp-sim5/.research-programs/workers/attempt-8cc3e522df934dafbc74a9639e34721e/prompt.txt",
+      "--session-dir",
+      "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e",
+      "--physics-backend",
+      "headless-js",
+      "--machine",
+      "hp3",
+      "--viewer",
+      "none",
+      "--wall-deadline",
+      "1793016460.696373",
+      "--worktree",
+      "--no-record"
+    ],
+    "artifacts": [
+      {
+        "bytes": 452,
+        "partial": false,
+        "path": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/session.json"
+      },
+      {
+        "bytes": 25577,
+        "partial": false,
+        "path": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/launch.json"
+      },
+      {
+        "bytes": 77,
+        "partial": false,
+        "path": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/exit.json"
+      },
+      {
+        "bytes": 9883,
+        "partial": false,
+        "path": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/prompt.txt"
+      },
+      {
+        "bytes": 609980,
+        "partial": false,
+        "path": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/events.jsonl"
+      },
+      {
+        "bytes": 513,
+        "partial": false,
+        "path": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/final-message.md"
+      },
+      {
+        "bytes": 7072,
+        "partial": false,
+        "path": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/research.md"
+      },
+      {
+        "bytes": 14480,
+        "partial": false,
+        "path": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/report.md"
+      },
+      {
+        "bytes": 3845,
+        "partial": false,
+        "path": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/abstract.md"
+      },
+      {
+        "bytes": 6731,
+        "partial": false,
+        "path": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/instructions.md"
+      },
+      {
+        "bytes": 554,
+        "partial": false,
+        "path": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/attachment.toml"
+      },
+      {
+        "bytes": 421,
+        "partial": false,
+        "path": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/attachment.json"
+      },
+      {
+        "bytes": 294,
+        "partial": false,
+        "path": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/connection.json"
+      },
+      {
+        "bytes": 0,
+        "partial": false,
+        "path": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/native/runtime.log"
+      },
+      {
+        "bytes": 1859,
+        "partial": false,
+        "path": "/home/torbjorn/repos/hp-sim5/.research-programs/workers/attempt-8cc3e522df934dafbc74a9639e34721e/stdout.log"
+      },
+      {
+        "bytes": 429,
+        "partial": false,
+        "path": "/home/torbjorn/repos/hp-sim5/.research-programs/workers/attempt-8cc3e522df934dafbc74a9639e34721e/stderr.log"
+      },
+      {
+        "bytes": 9883,
+        "partial": false,
+        "path": "/home/torbjorn/repos/hp-sim5/.research-programs/workers/attempt-8cc3e522df934dafbc74a9639e34721e/prompt.txt"
+      },
+      {
+        "bytes": 1932,
+        "partial": false,
+        "path": "/home/torbjorn/repos/hp-sim5/.research-programs/workers/attempt-8cc3e522df934dafbc74a9639e34721e/assignment.json"
+      }
+    ],
+    "assignment_id": "cm-saved-audit",
+    "attempt_dir": "/home/torbjorn/repos/hp-sim5/.research-programs/workers/attempt-8cc3e522df934dafbc74a9639e34721e",
+    "cleanup": "launcher_finally_completed",
+    "diagnostics": [],
+    "exited_at": "2026-10-26T12:06:03.990584+00:00",
+    "launcher_exit": {
+      "returncode": 0,
+      "wall_deadline": 1793016460.696373,
+      "wall_expired": false
+    },
+    "launcher_session_id": "e6891ccea3f443138350be055546c04e",
+    "observations": [
+      {
+        "at": "2026-10-26T11:59:40.868669+00:00",
+        "event": "reserved"
+      },
+      {
+        "at": "2026-10-26T11:59:40.900302+00:00",
+        "event": "spawned",
+        "pid": 63635
+      },
+      {
+        "at": "2026-10-26T12:06:03.990615+00:00",
+        "event": "exited",
+        "returncode": 0
+      }
+    ],
+    "observed_wall_seconds": 383.0903079509735,
+    "owner": {
+      "id": "dispatcher-db7fd1fc850b4b168dbd60e008ae314e",
+      "process": {
+        "birth": "1446220",
+        "boot_id": "54bb5631-9747-454f-a41d-10cce7963cb6",
+        "group": 62188,
+        "host": "torbjorn-MS-7D25",
+        "pid": 62188,
+        "uid": 1000
+      }
+    },
+    "premise_conflicts": [],
+    "premise_event_ids_at_start": [],
+    "premise_ids": [],
+    "premise_plan_ids": [
+      "plan-blanket-membership",
+      "plan-scoped-holdout"
+    ],
+    "process": {
+      "birth": "1466840",
+      "boot_id": "54bb5631-9747-454f-a41d-10cce7963cb6",
+      "group": 63635,
+      "host": "torbjorn-MS-7D25",
+      "pid": 63635,
+      "uid": 1000
+    },
+    "prompt_sha256": "39f541cebfab7ddcc61fb83271095b7ba40a8735cfad3404171b22c09f302072",
+    "returncode": 0,
+    "runtime": {
+      "allocation_id": "runtime_allocation-611209e2ca3f48b08ab2a87df4b625f2",
+      "assignment_id": "cm-saved-audit",
+      "cleanup_seconds": 190,
+      "wall_deadline": 1793016460.696373
+    },
+    "runtime_session_id": "60f94f7034a3442faba28b97d96e1df8",
+    "scientific_state": "unassessed",
+    "session_dir": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e",
+    "settings": {
+      "backend": "codex",
+      "client_args": [],
+      "dont_ask": false,
+      "goal_mode": true,
+      "machine": "hp3",
+      "physics_backend": "headless-js",
+      "record": false,
+      "shared_runtime_write": false,
+      "viewer": "none",
+      "worktree": true
+    },
+    "source_dirty": false,
+    "source_revision": "a1b4e559887550da6cac6a4c67819a618a766f65",
+    "started_at": "2026-10-26T11:59:40.900276+00:00",
+    "state": "submitted",
+    "worktree": {
+      "branch": "research/bounded-research-assignment-ed466c11",
+      "repo": "/home/torbjorn/repos/hp-sim5-worktrees/bounded-research-assignment-ed466c11",
+      "source_revision": "a1b4e559887550da6cac6a4c67819a618a766f65"
+    },
+    "worktree_id": "/home/torbjorn/repos/hp-sim5-worktrees/bounded-research-assignment-ed466c11"
+  }
+}
+```
+
+## claim: The inspected CM-E1 archive defeats blanket per-dataset nonworsening (one improvement, two regressions, five unchanged across eight additional dataset names), despite a small aggregate gain; all three changed selections lack a common unseen sweep, leaving predictive superiority unresolved. This supports withholding unconditional adoption only within the archived final-selection scope.
+
+```json
+{
+  "id": "cm-reviewed-scope-claim",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "claim",
+  "title": "The inspected CM-E1 archive defeats blanket per-dataset nonworsening (one improvement, two regressions, five unchanged across eight additional dataset names), despite a small aggregate gain; all three changed selections lack a common unseen sweep, leaving predictive superiority unresolved. This supports withholding unconditional adoption only within the archived final-selection scope.",
+  "revision": 1,
+  "created_at": "2026-10-26T12:07:09.855178+00:00",
+  "updated_at": "2026-10-26T12:07:09.855178+00:00",
+  "details": {
+    "claim_key": "cm-reviewed-scope-claim",
+    "knowledge_state": "unassessed",
+    "scope": {
+      "corpus": "11 archived simulated histories; 8 names beyond motivating screen",
+      "evidence": "four inspected historical producer files, no independent numerical reproduction",
+      "excluded": [
+        "fresh fitting",
+        "new prediction or selection evaluations",
+        "physics",
+        "collection",
+        "hardware",
+        "stopping trajectories",
+        "current-code equivalence",
+        "broad model inadequacy"
+      ],
+      "inspection": "CM-SAVED-A1",
+      "method": "unconditional finite-prediction-only final consensus",
+      "metric": "sum of per-anchor Euclidean distances to simulated fixture truth in mm",
+      "study": "CM-E1"
+    },
+    "version": 1
+  }
+}
+```
+
+## artifact: /home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/evidence.json
+
+```json
+{
+  "id": "cm-inspection-evidence",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "artifact",
+  "title": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/evidence.json",
+  "revision": 1,
+  "created_at": "2026-10-26T12:07:09.987909+00:00",
+  "updated_at": "2026-10-26T12:07:09.987909+00:00",
+  "details": {
+    "evidence_type": "analytic",
+    "provenance": {
+      "attempt_id": "attempt-8cc3e522df934dafbc74a9639e34721e",
+      "inspection": "CM-SAVED-A1",
+      "method": "standard-library saved-byte and structural inspection only",
+      "no_numerical_replay": true
+    },
+    "reference": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/evidence.json",
+    "sha256": "0b9391dcaf28417c162dd4e632f5a5f86058f2a9332932adaa28af8a896583f6",
+    "source_revision": "a1b4e559887550da6cac6a4c67819a618a766f65"
+  }
+}
+```
+
+## artifact: /home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/extract.py
+
+```json
+{
+  "id": "cm-inspection-extractor",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "artifact",
+  "title": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/extract.py",
+  "revision": 1,
+  "created_at": "2026-10-26T12:07:10.129766+00:00",
+  "updated_at": "2026-10-26T12:07:10.129766+00:00",
+  "details": {
+    "evidence_type": "analytic",
+    "provenance": {
+      "attempt_id": "attempt-8cc3e522df934dafbc74a9639e34721e",
+      "inspection": "CM-SAVED-A1",
+      "method": "standard-library saved-byte and structural inspection only",
+      "no_numerical_replay": true
+    },
+    "reference": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/extract.py",
+    "sha256": "cf8a31925662808a9fdb70c58837a7edb4091af09b41a1667f73daceabae5b4a",
+    "source_revision": "a1b4e559887550da6cac6a4c67819a618a766f65"
+  }
+}
+```
+
+## submission: The inspected CM-E1 archive defeats blanket per-dataset nonworsening (one improvement, two regressions, five unchanged across eight additional dataset names), despite a small aggregate gain; all three changed selections lack a common unseen sweep, leaving predictive superiority unresolved. This supports withholding unconditional adoption only within the archived final-selection scope.
+
+```json
+{
+  "id": "cm-fixed-submission",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "submission",
+  "title": "The inspected CM-E1 archive defeats blanket per-dataset nonworsening (one improvement, two regressions, five unchanged across eight additional dataset names), despite a small aggregate gain; all three changed selections lack a common unseen sweep, leaving predictive superiority unresolved. This supports withholding unconditional adoption only within the archived final-selection scope.",
+  "revision": 1,
+  "created_at": "2026-10-26T12:07:10.276391+00:00",
+  "updated_at": "2026-10-26T12:07:10.276391+00:00",
+  "details": {
+    "manifest": {
+      "assets": [
+        {
+          "artifact_id": null,
+          "id": "report",
+          "missing": false,
+          "role": "report",
+          "sha256": "4569ef1cc83738f64cf7b2be3e319ef7f4796067f920031b8b7dd3148aea5ea0",
+          "source": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/report.md"
+        },
+        {
+          "artifact_id": null,
+          "id": "abstract",
+          "missing": false,
+          "role": "abstract",
+          "sha256": "bc0a4ea051e7dc7717cc04048110fa142652389382880201a17c5a84511e3ba2",
+          "source": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/abstract.md"
+        },
+        {
+          "artifact_id": null,
+          "id": "notebook",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "865bab77dc212b72aeb3cae239322b5507599837e1136acdf825eddb3e89a864",
+          "source": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/research.md"
+        },
+        {
+          "artifact_id": "cm-inspection-evidence",
+          "id": "evidence",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "0b9391dcaf28417c162dd4e632f5a5f86058f2a9332932adaa28af8a896583f6",
+          "source": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/evidence.json"
+        },
+        {
+          "artifact_id": "cm-inspection-extractor",
+          "id": "extractor",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "cf8a31925662808a9fdb70c58837a7edb4091af09b41a1667f73daceabae5b4a",
+          "source": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/extract.py"
+        },
+        {
+          "artifact_id": "cm-source-report",
+          "id": "source-report-md",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "2e47bc589aea727b2e76387ff8fc3339b664134145f15d61df7fbbc7f46ef96a",
+          "source": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/sources/report.md"
+        },
+        {
+          "artifact_id": "cm-source-results",
+          "id": "source-results-json",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "bdd85e0f758ce3a4f0ef4f5be3c0fe094fb830dfa6f3c059d39d7a2d804ab1cd",
+          "source": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/sources/results.json"
+        },
+        {
+          "artifact_id": "cm-source-audit",
+          "id": "source-audit-json",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "6750c2ac25c1f99a90cc10dd3d98389422e95a726e725bfdd1b1e6c8aac9939e",
+          "source": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/sources/audit.json"
+        },
+        {
+          "artifact_id": "cm-source-inputs",
+          "id": "source-inputs-json",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "f58ef95d783a265b7153cefc07d2d8785f77896846bb07d58317b8a009634b44",
+          "source": "/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/sources/inputs.json"
+        }
+      ],
+      "assignment_id": "cm-saved-audit",
+      "attempt_id": "attempt-8cc3e522df934dafbc74a9639e34721e",
+      "base_revision": "a1b4e559887550da6cac6a4c67819a618a766f65",
+      "candidate_revision": null,
+      "changed_paths": [],
+      "claim": {
+        "created_at": "2026-10-26T12:07:09.855178+00:00",
+        "details": {
+          "claim_key": "cm-reviewed-scope-claim",
+          "knowledge_state": "unassessed",
+          "scope": {
+            "corpus": "11 archived simulated histories; 8 names beyond motivating screen",
+            "evidence": "four inspected historical producer files, no independent numerical reproduction",
+            "excluded": [
+              "fresh fitting",
+              "new prediction or selection evaluations",
+              "physics",
+              "collection",
+              "hardware",
+              "stopping trajectories",
+              "current-code equivalence",
+              "broad model inadequacy"
+            ],
+            "inspection": "CM-SAVED-A1",
+            "method": "unconditional finite-prediction-only final consensus",
+            "metric": "sum of per-anchor Euclidean distances to simulated fixture truth in mm",
+            "study": "CM-E1"
+          },
+          "version": 1
+        },
+        "id": "cm-reviewed-scope-claim",
+        "kind": "claim",
+        "program_id": "program-e31e5321be5940baacf677409b2579e0",
+        "revision": 1,
+        "title": "The inspected CM-E1 archive defeats blanket per-dataset nonworsening (one improvement, two regressions, five unchanged across eight additional dataset names), despite a small aggregate gain; all three changed selections lack a common unseen sweep, leaving predictive superiority unresolved. This supports withholding unconditional adoption only within the archived final-selection scope.",
+        "updated_at": "2026-10-26T12:07:09.855178+00:00"
+      },
+      "config": {
+        "historical_experiment": "CM-E1",
+        "inspection": "CM-SAVED-A1",
+        "new_numerical_budget": {
+          "collections": 0,
+          "fresh_fits": 0,
+          "physics_steps": 0,
+          "prediction_evaluations": 0,
+          "selection_evaluations": 0
+        },
+        "producer_evaluation_revision": "5400cefc0238007406f5cd572d21ef5a72d2958d",
+        "report_only": true,
+        "review_method": "Inspect frozen selected bytes first. Only reading, hashing, JSON structural/set/arithmetic checks are permitted. No numerical selection/prediction replay, fitting, physics, collection, preflight or doctor. Do not follow historical outgoing links as new scientific sources.",
+        "scientific_source_limit": 4
+      },
+      "contract": "hp-sim5-evidence-review-v2",
+      "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "execution_state": "submitted",
+      "input_identities": [
+        "sha256:2e47bc589aea727b2e76387ff8fc3339b664134145f15d61df7fbbc7f46ef96a",
+        "sha256:bdd85e0f758ce3a4f0ef4f5be3c0fe094fb830dfa6f3c059d39d7a2d804ab1cd",
+        "sha256:6750c2ac25c1f99a90cc10dd3d98389422e95a726e725bfdd1b1e6c8aac9939e",
+        "sha256:f58ef95d783a265b7153cefc07d2d8785f77896846bb07d58317b8a009634b44"
+      ],
+      "physics_gate_required": false,
+      "producer_checks": [],
+      "source_dirty": false,
+      "source_revision": "a1b4e559887550da6cac6a4c67819a618a766f65"
+    },
+    "sha256": "8ebeaa970620b7decadd4262353064e90011d9047f57d449647f63485917b3bc"
+  }
+}
+```
+
+## review_run: Separate saved-evidence review
+
+```json
+{
+  "id": "review-run-beb299c90c6441278e176474b7f72fee",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "review_run",
+  "title": "Separate saved-evidence review",
+  "revision": 3,
+  "created_at": "2026-10-26T12:07:10.445517+00:00",
+  "updated_at": "2026-10-26T12:08:35.610424+00:00",
+  "details": {
+    "argv": [
+      "codex",
+      "exec",
+      "--cd",
+      "/home/torbjorn/repos/hp-sim5",
+      "--sandbox",
+      "read-only",
+      "-c",
+      "approval_policy=\"never\"",
+      "--json",
+      "--output-last-message",
+      "/home/torbjorn/repos/hp-sim5/.research-programs/reviews/review-run-beb299c90c6441278e176474b7f72fee/final-message.md",
+      "-c",
+      "sandbox_workspace_write.network_access=true",
+      "-c",
+      "sandbox_workspace_write.writable_roots=[\"/home/torbjorn/repos/hp-sim5/output\"]",
+      "-c",
+      "features.default_mode_request_user_input=false",
+      "-c",
+      "features.goals=false",
+      "-c",
+      "mcp_servers.hp_sim5={ \"enabled\" = false, \"command\" = \"/home/torbjorn/repos/hp-sim5/.venv/bin/python\", \"args\" = [\"/home/torbjorn/repos/hp-sim5/scripts/hp_sim5_mcp.py\"] }",
+      "-c",
+      "mcp_servers.rerun={ \"enabled\" = false, \"command\" = \"/home/torbjorn/repos/hp-sim5/.venv/bin/rerun\", \"args\" = [\"viewer-mcp\"] }",
+      "-c",
+      "mcp_servers.hp_sim5_program={ \"enabled\" = false, \"command\" = \"/home/torbjorn/repos/hp-sim5/.venv/bin/python\", \"args\" = [\"/home/torbjorn/repos/hp-sim5/scripts/research_program.py\"] }",
+      "-c",
+      "model_provider=\"openai\"",
+      "-"
+    ],
+    "contract": "hp-sim5-evidence-review-v2",
+    "deadline": 1793016790.4435399,
+    "directory": "/home/torbjorn/repos/hp-sim5/.research-programs/reviews/review-run-beb299c90c6441278e176474b7f72fee",
+    "error": null,
+    "guard_argv": [
+      "/home/torbjorn/repos/hp-sim5/.venv/bin/python",
+      "/home/torbjorn/repos/hp-sim5/scripts/research_program_review_guard.py",
+      "1793016790.4435399",
+      "/home/torbjorn/repos/hp-sim5/.research-programs/reviews/review-run-beb299c90c6441278e176474b7f72fee/wall-expired",
+      "codex",
+      "exec",
+      "--cd",
+      "/home/torbjorn/repos/hp-sim5",
+      "--sandbox",
+      "read-only",
+      "-c",
+      "approval_policy=\"never\"",
+      "--json",
+      "--output-last-message",
+      "/home/torbjorn/repos/hp-sim5/.research-programs/reviews/review-run-beb299c90c6441278e176474b7f72fee/final-message.md",
+      "-c",
+      "sandbox_workspace_write.network_access=true",
+      "-c",
+      "sandbox_workspace_write.writable_roots=[\"/home/torbjorn/repos/hp-sim5/output\"]",
+      "-c",
+      "features.default_mode_request_user_input=false",
+      "-c",
+      "features.goals=false",
+      "-c",
+      "mcp_servers.hp_sim5={ \"enabled\" = false, \"command\" = \"/home/torbjorn/repos/hp-sim5/.venv/bin/python\", \"args\" = [\"/home/torbjorn/repos/hp-sim5/scripts/hp_sim5_mcp.py\"] }",
+      "-c",
+      "mcp_servers.rerun={ \"enabled\" = false, \"command\" = \"/home/torbjorn/repos/hp-sim5/.venv/bin/rerun\", \"args\" = [\"viewer-mcp\"] }",
+      "-c",
+      "mcp_servers.hp_sim5_program={ \"enabled\" = false, \"command\" = \"/home/torbjorn/repos/hp-sim5/.venv/bin/python\", \"args\" = [\"/home/torbjorn/repos/hp-sim5/scripts/research_program.py\"] }",
+      "-c",
+      "model_provider=\"openai\"",
+      "-"
+    ],
+    "owner": {
+      "id": "review-controller-e3586178f069411595de8cf0443375e2",
+      "process": {
+        "birth": "1446220",
+        "boot_id": "54bb5631-9747-454f-a41d-10cce7963cb6",
+        "group": 62188,
+        "host": "torbjorn-MS-7D25",
+        "pid": 62188,
+        "uid": 1000
+      }
+    },
+    "process": {
+      "birth": "1511797",
+      "boot_id": "54bb5631-9747-454f-a41d-10cce7963cb6",
+      "group": 65979,
+      "host": "torbjorn-MS-7D25",
+      "pid": 65979,
+      "uid": 1000
+    },
+    "prompt_sha256": "0ebeb4074f5090f5338c6750295d2351b7b183fc43755b40242149b716073ad2",
+    "returncode": 0,
+    "review_id": "review-532458fd3787470eaa29e459eee4fdcc",
+    "reviewer": {
+      "backend": "codex",
+      "context_id": "review-run-beb299c90c6441278e176474b7f72fee",
+      "model": null,
+      "model_provider": "openai"
+    },
+    "runtime_reservation": [
+      "runtime_allocation-611209e2ca3f48b08ab2a87df4b625f2",
+      "cm-saved-audit",
+      "6ecf30db0adc40869a33c22d993ee82a"
+    ],
+    "started_at": "2026-10-26T12:07:10.443481+00:00",
+    "state": "completed",
+    "submission_id": "cm-fixed-submission",
+    "submission_sha256": "8ebeaa970620b7decadd4262353064e90011d9047f57d449647f63485917b3bc",
+    "wall_minutes": 6
+  }
+}
+```
+
+## review: Keep the CM-SAVED-A1 report and claim cm-reviewed-scope-claim revision 1 at base a1b4e559887550da6cac6a4c67819a618a766f65. The inspected CM-E1 records support withholding unconditional finite-prediction-only final-consensus adoption within the stated archived scope. The target is unambiguous, the diff is empty, and no engineering delivery gate or additional numerical check is needed for this report-only finding.
+
+```json
+{
+  "id": "review-532458fd3787470eaa29e459eee4fdcc",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "review",
+  "title": "Keep the CM-SAVED-A1 report and claim cm-reviewed-scope-claim revision 1 at base a1b4e559887550da6cac6a4c67819a618a766f65. The inspected CM-E1 records support withholding unconditional finite-prediction-only final-consensus adoption within the stated archived scope. The target is unambiguous, the diff is empty, and no engineering delivery gate or additional numerical check is needed for this report-only finding.",
+  "revision": 1,
+  "created_at": "2026-10-26T12:08:35.610724+00:00",
+  "updated_at": "2026-10-26T12:08:35.610724+00:00",
+  "details": {
+    "contract": "hp-sim5-evidence-review-v2",
+    "response": {
+      "checks": [
+        {
+          "asset_ids": [
+            "report",
+            "abstract",
+            "notebook",
+            "evidence",
+            "extractor",
+            "source-report-md",
+            "source-results-json",
+            "source-audit-json",
+            "source-inputs-json"
+          ],
+          "description": "Verified manifest.json SHA-256 against the assigned submission identity, all nine asset hashes, and the empty candidate.diff digest. Manifest records no changed paths or candidate revision.",
+          "kind": "inspected"
+        },
+        {
+          "asset_ids": [
+            "report",
+            "abstract",
+            "notebook",
+            "source-report-md",
+            "source-results-json",
+            "source-inputs-json"
+          ],
+          "description": "Inspected CM-SAVED-A1's scoped claim and CM-E1 provenance: recorded probe.py/audit.py commands, input hashes, settings, fit revision 72523b9dc64155bf58fc1b8f0ea7241266ff73d4 and evaluation revision 5400cefc0238007406f5cd572d21ef5a72d2958d. Comparisons concern final applied consensus geometry using summed per-anchor distances, separately from single-fit diagnostics.",
+          "kind": "inspected"
+        },
+        {
+          "asset_ids": [
+            "source-results-json",
+            "source-audit-json",
+            "source-inputs-json",
+            "evidence"
+          ],
+          "description": "Read-only structural, arithmetic and set checks passed: eight additional names contain one improvement, two regressions and five unchanged outcomes; stored errors sum to 401.10027562823973 versus 400.7970309548157 mm. Regressions are +0.5029977549565103 and +0.09415630167794076 mm.",
+          "kind": "inspected"
+        },
+        {
+          "asset_ids": [
+            "source-results-json",
+            "source-audit-json",
+            "evidence",
+            "extractor"
+          ],
+          "description": "Confirmed saved training-set unions leave no common unseen fold for changed rows 6, 9 and 10; each variant-only unseen terminal sweep trained a baseline member. Applied spool payloads match between arms, and eight unchanged anchor/spool payloads are identical. Inspected the standard-library extractor and its 91 recorded passing checks; performed no selection, prediction, fitting, geometry-error or physics replay.",
+          "kind": "inspected"
+        }
+      ],
+      "code_readiness": "report_only",
+      "discrepancy": null,
+      "finding": "supported",
+      "limitations": [
+        "Numerical measurements remain historical producer evidence. Raw envelopes, producer scripts and numerical implementation were outside the selected evidence; hashes and internal agreement do not establish numerical correctness.",
+        "Twenty source files reportedly changed between fit production and evaluation. Recorded single-fit diagnostic agreement supports limited compatibility, not complete ranking, fresh-fit or current-code equivalence.",
+        "Changed selections lack common unseen prediction evidence. Dataset names and distinct recorded hashes do not establish independent physical worlds; hp3-named inputs retain the manifest's hangprinter_4 labels.",
+        "No stopping-trajectory, hardware or broader model-adequacy conclusion follows from this archived final-selection comparison."
+      ],
+      "practical_value": "Preserves a useful negative finding: a small aggregate geometry gain does not satisfy per-dataset nonworsening or establish predictive superiority.",
+      "reason": "Keep the CM-SAVED-A1 report and claim cm-reviewed-scope-claim revision 1 at base a1b4e559887550da6cac6a4c67819a618a766f65. The inspected CM-E1 records support withholding unconditional finite-prediction-only final-consensus adoption within the stated archived scope. The target is unambiguous, the diff is empty, and no engineering delivery gate or additional numerical check is needed for this report-only finding.",
+      "required_checks": [],
+      "submission_id": "cm-fixed-submission",
+      "submission_sha256": "8ebeaa970620b7decadd4262353064e90011d9047f57d449647f63485917b3bc",
+      "verdict": "keep"
+    },
+    "response_sha256": "89619234465d5a05edc597f40674a497d39f4465b3987d43cebae3afccd73778",
+    "reviewer": {
+      "backend": "codex",
+      "context_id": "review-run-beb299c90c6441278e176474b7f72fee",
+      "model": null,
+      "model_provider": "openai"
+    },
+    "run_id": "review-run-beb299c90c6441278e176474b7f72fee",
+    "submission_id": "cm-fixed-submission"
+  }
+}
+```
+
+## admission: Keep the CM-SAVED-A1 report and claim cm-reviewed-scope-claim revision 1 at base a1b4e559887550da6cac6a4c67819a618a766f65. The inspected CM-E1 records support withholding unconditional finite-prediction-only final-consensus adoption within the stated archived scope. The target is unambiguous, the diff is empty, and no engineering delivery gate or additional numerical check is needed for this report-only finding.
+
+```json
+{
+  "id": "admission-971d34260a954e35bc0d41b183e2a5a9",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "admission",
+  "title": "Keep the CM-SAVED-A1 report and claim cm-reviewed-scope-claim revision 1 at base a1b4e559887550da6cac6a4c67819a618a766f65. The inspected CM-E1 records support withholding unconditional finite-prediction-only final-consensus adoption within the stated archived scope. The target is unambiguous, the diff is empty, and no engineering delivery gate or additional numerical check is needed for this report-only finding.",
+  "revision": 1,
+  "created_at": "2026-10-26T12:10:16.784592+00:00",
+  "updated_at": "2026-10-26T12:10:16.784592+00:00",
+  "details": {
+    "actor": "controller",
+    "claim_id": "cm-reviewed-scope-claim",
+    "code_readiness": "report_only",
+    "contract": "hp-sim5-evidence-review-v2",
+    "decision": "keep",
+    "engineering_reasons": [],
+    "finding": "supported",
+    "guard_reasons": [],
+    "knowledge_state": "reviewed",
+    "practical_value": "Preserves a useful negative finding: a small aggregate geometry gain does not satisfy per-dataset nonworsening or establish predictive superiority.",
+    "required_checks": [],
+    "review_id": "review-532458fd3787470eaa29e459eee4fdcc",
+    "submission_id": "cm-fixed-submission",
+    "submission_sha256": "8ebeaa970620b7decadd4262353064e90011d9047f57d449647f63485917b3bc"
+  }
+}
+```
+
+## decision: The fresh reviewer supports the exact saved-evidence claim with keep/report_only and no unresolved discrepancy. Structural inspection confirms the archived regressions and common-unseen gap. Retire only the unconditional nonworsening proposal; retain fair saved-holdout provenance inspection as the prerequisite for any narrower rule. No new numerical experiments or production changes.
+
+```json
+{
+  "id": "decision-da3241b71f774a4b95a5097392e74017",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "decision",
+  "title": "The fresh reviewer supports the exact saved-evidence claim with keep/report_only and no unresolved discrepancy. Structural inspection confirms the archived regressions and common-unseen gap. Retire only the unconditional nonworsening proposal; retain fair saved-holdout provenance inspection as the prerequisite for any narrower rule. No new numerical experiments or production changes.",
+  "revision": 1,
+  "created_at": "2026-10-26T12:10:16.946975+00:00",
+  "updated_at": "2026-10-26T12:10:16.946975+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "blanket-membership"
+  }
+}
+```
+
+## relation: The fresh reviewer supports the exact saved-evidence claim with keep/report_only and no unresolved discrepancy. Structural inspection confirms the archived regressions and common-unseen gap. Retire only the unconditional nonworsening proposal; retain fair saved-holdout provenance inspection as the prerequisite for any narrower rule. No new numerical experiments or production changes.
+
+```json
+{
+  "id": "relation-6f08c1c9869a498388b6bdc384d0e402",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "relation",
+  "title": "The fresh reviewer supports the exact saved-evidence claim with keep/report_only and no unresolved discrepancy. Structural inspection confirms the archived regressions and common-unseen gap. Retire only the unconditional nonworsening proposal; retain fair saved-holdout provenance inspection as the prerequisite for any narrower rule. No new numerical experiments or production changes.",
+  "revision": 1,
+  "created_at": "2026-10-26T12:10:16.948003+00:00",
+  "updated_at": "2026-10-26T12:10:16.948003+00:00",
+  "details": {
+    "reason": "The fresh reviewer supports the exact saved-evidence claim with keep/report_only and no unresolved discrepancy. Structural inspection confirms the archived regressions and common-unseen gap. Retire only the unconditional nonworsening proposal; retain fair saved-holdout provenance inspection as the prerequisite for any narrower rule. No new numerical experiments or production changes.",
+    "relation": "decision",
+    "source_id": "decision-da3241b71f774a4b95a5097392e74017",
+    "target_id": "blanket-membership"
+  }
+}
+```
+
+## decision: The fresh reviewer supports the exact saved-evidence claim with keep/report_only and no unresolved discrepancy. Structural inspection confirms the archived regressions and common-unseen gap. Retire only the unconditional nonworsening proposal; retain fair saved-holdout provenance inspection as the prerequisite for any narrower rule. No new numerical experiments or production changes.
+
+```json
+{
+  "id": "decision-e524ed6d4647420aa7b44349f7de651b",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "decision",
+  "title": "The fresh reviewer supports the exact saved-evidence claim with keep/report_only and no unresolved discrepancy. Structural inspection confirms the archived regressions and common-unseen gap. Retire only the unconditional nonworsening proposal; retain fair saved-holdout provenance inspection as the prerequisite for any narrower rule. No new numerical experiments or production changes.",
+  "revision": 1,
+  "created_at": "2026-10-26T12:10:16.948239+00:00",
+  "updated_at": "2026-10-26T12:10:16.948239+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "scoped-holdout"
+  }
+}
+```
+
+## relation: The fresh reviewer supports the exact saved-evidence claim with keep/report_only and no unresolved discrepancy. Structural inspection confirms the archived regressions and common-unseen gap. Retire only the unconditional nonworsening proposal; retain fair saved-holdout provenance inspection as the prerequisite for any narrower rule. No new numerical experiments or production changes.
+
+```json
+{
+  "id": "relation-92d53d324b09404d9db7cfdf28c0a7bc",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "relation",
+  "title": "The fresh reviewer supports the exact saved-evidence claim with keep/report_only and no unresolved discrepancy. Structural inspection confirms the archived regressions and common-unseen gap. Retire only the unconditional nonworsening proposal; retain fair saved-holdout provenance inspection as the prerequisite for any narrower rule. No new numerical experiments or production changes.",
+  "revision": 1,
+  "created_at": "2026-10-26T12:10:16.949470+00:00",
+  "updated_at": "2026-10-26T12:10:16.949470+00:00",
+  "details": {
+    "reason": "The fresh reviewer supports the exact saved-evidence claim with keep/report_only and no unresolved discrepancy. Structural inspection confirms the archived regressions and common-unseen gap. Retire only the unconditional nonworsening proposal; retain fair saved-holdout provenance inspection as the prerequisite for any narrower rule. No new numerical experiments or production changes.",
+    "relation": "decision",
+    "source_id": "decision-e524ed6d4647420aa7b44349f7de651b",
+    "target_id": "scoped-holdout"
+  }
+}
+```
+
+## strategy_event: The fresh reviewer supports the exact saved-evidence claim with keep/report_only and no unresolved discrepancy. Structural inspection confirms the archived regressions and common-unseen gap. Retire only the unconditional nonworsening proposal; retain fair saved-holdout provenance inspection as the prerequisite for any narrower rule. No new numerical experiments or production changes.
+
+```json
+{
+  "id": "strategy_event-c5af4b33bf974730b01866e14376a970",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "strategy_event",
+  "title": "The fresh reviewer supports the exact saved-evidence claim with keep/report_only and no unresolved discrepancy. Structural inspection confirms the archived regressions and common-unseen gap. Retire only the unconditional nonworsening proposal; retain fair saved-holdout provenance inspection as the prerequisite for any narrower rule. No new numerical experiments or production changes.",
+  "revision": 1,
+  "created_at": "2026-10-26T12:10:16.950044+00:00",
+  "updated_at": "2026-10-26T12:10:16.950044+00:00",
+  "details": {
+    "actions": [
+      {
+        "approach_id": "blanket-membership",
+        "reason": "Retire only the unconditional nonworsening default-change proposal within archived CM-E1 scope.",
+        "reopening_condition": "Compatible common-unseen-sweep evidence on changed cases, or a narrower truth-free rule.",
+        "scope": {
+          "corpus": "11 archived simulated histories, including 8 dataset names beyond initial screen",
+          "exclusions": [
+            "fresh fitting",
+            "stopping trajectories",
+            "hardware",
+            "current-code equivalence"
+          ],
+          "method": "unconditional finite-prediction-only final consensus",
+          "metric": "sum of per-anchor Euclidean distances in mm",
+          "study": "CM-E1"
+        },
+        "target": "retired"
+      },
+      {
+        "approach_id": "scoped-holdout",
+        "reason": "Fair common-unseen-sweep evidence is the next prerequisite; numerical work is not funded.",
+        "reopening_condition": "Compatible common-unseen-sweep evidence on changed cases, or a narrower truth-free rule.",
+        "scope": {
+          "corpus": "11 archived simulated histories, including 8 dataset names beyond initial screen",
+          "exclusions": [
+            "fresh fitting",
+            "stopping trajectories",
+            "hardware",
+            "current-code equivalence"
+          ],
+          "method": "unconditional finite-prediction-only final consensus",
+          "metric": "sum of per-anchor Euclidean distances in mm",
+          "study": "CM-E1"
+        },
+        "target": "promising"
+      }
+    ],
+    "approach_ids": [
+      "blanket-membership",
+      "scoped-holdout"
+    ],
+    "basis": "Effective reviewed finding for this fixed assignment and submission scope",
+    "citation_ids": [
+      "investigation-b474c61c3930414fa8e2f8db1ed47048",
+      "admission-971d34260a954e35bc0d41b183e2a5a9",
+      "review-532458fd3787470eaa29e459eee4fdcc"
+    ],
+    "decision_ids": [
+      "decision-da3241b71f774a4b95a5097392e74017",
+      "decision-e524ed6d4647420aa7b44349f7de651b"
+    ],
+    "event": "result",
+    "finding": "supported",
+    "investigation_id": "investigation-b474c61c3930414fa8e2f8db1ed47048",
+    "outcome": "withhold",
+    "reason": "The fresh reviewer supports the exact saved-evidence claim with keep/report_only and no unresolved discrepancy. Structural inspection confirms the archived regressions and common-unseen gap. Retire only the unconditional nonworsening proposal; retain fair saved-holdout provenance inspection as the prerequisite for any narrower rule. No new numerical experiments or production changes.",
+    "review_event_ids": []
+  }
+}
+```
+
+## decision: Completed one saved-evidence investigation and a fresh separate local review. Admission admission-971d34260a954e35bc0d41b183e2a5a9 applied review-532458fd3787470eaa29e459eee4fdcc as supported/keep/report_only. Keep current production consensus defaults. Retire unconditional finite-only default adoption only within archived CM-E1 scope: aggregate improvement coexists with two dataset regressions. The next useful decision is whether a separately bounded saved-source search can identify compatible later whole sweeps unseen by all members and the chosen spool fit in both arms, prioritizing flexible_lines_2000 and ten_points_w_buildup. No further investigation or numerical work is commissioned in this iteration. If no compatible saved data exists, a later explicitly budgeted prefix/holdout study would be needed. No fresh-fit, hardware, current-code or broad model-adequacy result is established.
+
+```json
+{
+  "id": "reviewed-next-decision",
+  "program_id": "program-e31e5321be5940baacf677409b2579e0",
+  "kind": "decision",
+  "title": "Completed one saved-evidence investigation and a fresh separate local review. Admission admission-971d34260a954e35bc0d41b183e2a5a9 applied review-532458fd3787470eaa29e459eee4fdcc as supported/keep/report_only. Keep current production consensus defaults. Retire unconditional finite-only default adoption only within archived CM-E1 scope: aggregate improvement coexists with two dataset regressions. The next useful decision is whether a separately bounded saved-source search can identify compatible later whole sweeps unseen by all members and the chosen spool fit in both arms, prioritizing flexible_lines_2000 and ten_points_w_buildup. No further investigation or numerical work is commissioned in this iteration. If no compatible saved data exists, a later explicitly budgeted prefix/holdout study would be needed. No fresh-fit, hardware, current-code or broad model-adequacy result is established.",
+  "revision": 1,
+  "created_at": "2026-10-26T12:10:34.137696+00:00",
+  "updated_at": "2026-10-26T12:10:34.137696+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [
+      "cm-inspection-evidence",
+      "cm-source-results",
+      "cm-source-audit"
+    ],
+    "subject_id": "cm-reviewed-scope-claim"
+  }
+}
+```
