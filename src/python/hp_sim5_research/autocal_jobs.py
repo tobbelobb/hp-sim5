@@ -2,6 +2,7 @@
 import asyncio
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import signal
@@ -110,6 +111,26 @@ def read_json(path):
         return None
 
 
+def finite_status(value):
+    """Report optimizer sentinels explicitly while keeping strict JSON usable."""
+    nonfinite = {}
+
+    def visit(item, path):
+        if isinstance(item, float) and not math.isfinite(item):
+            nonfinite[path] = 'NaN' if math.isnan(item) else 'Infinity' if item > 0 else '-Infinity'
+            return None
+        if isinstance(item, dict):
+            return {key: visit(child, f'{path}.{key}' if path else str(key)) for key, child in item.items()}
+        if isinstance(item, list):
+            return [visit(child, f'{path}[{index}]') for index, child in enumerate(item)]
+        return item
+
+    result = visit(value, '')
+    if nonfinite:
+        result['nonfinite_values'] = nonfinite
+    return result
+
+
 class AutocalJobs:
     def __init__(self, root, directory):
         self.root, self.directory = Path(root), Path(directory).resolve()
@@ -174,7 +195,7 @@ class AutocalJobs:
         result['progress'] = progress
         result['artifacts'] = {str(path.relative_to(directory)): str(path) for path in sorted(directory.rglob('*'))
                                if path.is_file() and not path.is_symlink()}
-        return result
+        return finite_status(result)
 
     async def terminate(self, job):
         if 'terminate_task' not in job:
@@ -301,5 +322,5 @@ class AutocalJobs:
                 reason = reason or 'cli-failure'
             job.update(status=status, stop_reason=reason, ended_unix_s=time.time(),
                        wall_s=time.time() - job['started_unix_s'])
-            write_json(directory / 'job.json', self.status(job['job_id']))
             self.active = None
+            write_json(directory / 'job.json', self.status(job['job_id']))

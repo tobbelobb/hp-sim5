@@ -565,10 +565,11 @@ class Runtime:
                 raise ValueError('Request body too large')
             body = await reader.readexactly(size)
             result = await self.dispatch(lines[0].split()[1].strip('/'), json.loads(body or '{}'))
+            data = encode(result).encode()
             status = '200 OK'
         except Exception as error:
             result, status = {'error': str(error)}, '400 Bad Request'
-        data = encode(result).encode()
+            data = encode(result).encode()
         writer.write(f'HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {len(data)}\r\nConnection: close\r\n\r\n'.encode() + data)
         await writer.drain()
         writer.close()

@@ -15,6 +15,28 @@ from scripts.research_runtime import Runtime
 ROOT = Path(__file__).resolve().parents[2]
 
 
+@pytest.mark.asyncio
+async def test_non_json_runtime_result_returns_http_error_and_keeps_service_usable():
+    from hp_sim5_research.services import request
+    runtime = Runtime.__new__(Runtime)
+    runtime.token = 'fixture-token'
+    runtime.handlers = set()
+
+    async def dispatch(operation, args):
+        return {'score': float('inf')} if operation == 'broken' else {'ok': True}
+
+    runtime.dispatch = dispatch
+    server = await asyncio.start_server(runtime.connection, '127.0.0.1', 0)
+    endpoint = f'http://127.0.0.1:{server.sockets[0].getsockname()[1]}'
+    try:
+        with pytest.raises(RuntimeError, match='JSON compliant'):
+            await asyncio.to_thread(request, endpoint, 'broken', token=runtime.token, timeout=2)
+        assert await asyncio.to_thread(request, endpoint, 'healthy', token=runtime.token, timeout=2) == {'ok': True}
+    finally:
+        server.close()
+        await server.wait_closed()
+
+
 @pytest.fixture
 def runtime(tmp_path, monkeypatch):
     config = world_configuration(ROOT, {'machine': 'hp3', 'layering': False}, backend='headless-js')

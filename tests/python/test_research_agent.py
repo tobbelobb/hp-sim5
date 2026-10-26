@@ -169,6 +169,24 @@ def test_compiled_fresh_experiment_records_backend(experiment_root):
 
 
 @pytest.mark.asyncio
+async def test_browser_interventions_keep_a_valid_mcp_object_result(tmp_path):
+    from mcp import Client, StdioServerParameters
+    server = tmp_path / 'browser_mcp.py'
+    server.write_text('import importlib.util\n'
+                      f'spec=importlib.util.spec_from_file_location("browser_mcp",{str(ROOT / "scripts/hp_sim5_mcp.py")!r})\n'
+                      'module=importlib.util.module_from_spec(spec)\n'
+                      'spec.loader.exec_module(module)\n'
+                      'module.supervised_request=lambda operation, **args: [{"action":"pause"}] if args["action"]=="interventions" else {"backend":"browser-js"}\n'
+                      'module.mcp.run(transport="stdio")\n')
+    async with Client(StdioServerParameters(command=sys.executable, args=[str(server)])) as client:
+        result = await client.call_tool('browser_action', {'page_id': 'fixture-page', 'action': 'interventions'})
+        assert not result.is_error, result.content
+        assert result.structured_content == {'interventions': [{'action': 'pause'}]}
+        observed = await client.call_tool('browser_action', {'page_id': 'fixture-page', 'action': 'observe'})
+        assert not observed.is_error and observed.structured_content == {'backend': 'browser-js'}
+
+
+@pytest.mark.asyncio
 async def test_stdio_mcp_discovery_execution_readback_and_error():
     from mcp import Client, StdioServerParameters
     parameters = StdioServerParameters(command=sys.executable, args=[str(ROOT / 'scripts/hp_sim5_mcp.py')])
