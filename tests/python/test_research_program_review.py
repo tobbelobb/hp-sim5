@@ -103,6 +103,36 @@ def submit(c, case='scoped_negative', candidate=None, checks=None, claim='claim'
                                   selected=selected, producer_checks=checks or [])
 
 
+def test_cloud_review_completes_with_store_outside_output(context, monkeypatch):
+    c = context
+    monkeypatch.setenv('HP_SIM5_RESEARCH_CLIENT', 'cloud')
+    queue = c['tmp'] / 'cloud-queue'
+    monkeypatch.setenv('HP_SIM5_CLOUD_QUEUE', str(queue))
+    submission = submit(c)
+    run = c['controller'].start('p', submission['id'], wall_minutes=1)
+    deadline = time.monotonic() + 5
+    while not list(queue.glob('*/request.json')) and time.monotonic() < deadline:
+        time.sleep(.02)
+    requests = list(queue.glob('*/request.json'))
+    assert len(requests) == 1, c['controller'].status('p', run['id'])
+    request = json.loads(requests[0].read_text())
+    final = Path(request['final_output'])
+    assert final.is_relative_to(c['root'] / 'output')
+    response = copy.deepcopy(CASES['scoped_negative']['review'])
+    response.update(submission_id=submission['id'], submission_sha256=submission['details']['sha256'],
+                    required_checks=[], checks=[{'kind': 'inspected', 'description': 'Fixture evidence only',
+                    'asset_ids': ['report', 'abstract', 'evidence', 'check']}])
+    final.write_text(json.dumps(response))
+    bridge = ROOT / 'scripts/cloud/cloud_client_bridge.py'
+    for operation in ('bind', 'complete'):
+        subprocess.run([sys.executable, str(bridge), operation, request['request_id'],
+                        '--agent-id', 'fixture-reviewer'], check=True, capture_output=True)
+    c['controller'].children[run['id']].wait(timeout=5)
+    result = c['controller'].status('p', run['id'])
+    assert result['details']['state'] == 'completed', result
+    assert result['details']['review_id']
+
+
 def reviewer(c, submission, case='scoped_negative', backend='codex', response=None, mode='normal', wall_minutes=1):
     response = copy.deepcopy(response or CASES[case]['review'])
     if mode == 'hold':

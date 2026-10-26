@@ -67,6 +67,10 @@ names selected manifest.assets entries; manifest.json and candidate.diff are
 metadata. Execution completion is not scientific acceptance: retain submit,
 review and review_apply.
 
+Cloud reviewer runtime files live under `output/research/reviews/`, including
+when the program store is outside `output`. The bridge requires final responses
+inside `output`; fixed submissions and program memory remain in the store.
+
 For cancellation, request worker_cancel/review_cancel, interrupt the bound cloud
 actor, verify its stopped state, then acknowledge with the bridge's cancelled
 operation. Poll launcher cleanup separately. Keep partial evidence. The bridge
