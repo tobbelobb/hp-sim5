@@ -4,6 +4,16 @@ Short abstracts and tested hypotheses from local sessions. Missing or pending su
 
 Regenerate with `.venv/bin/python scripts/research_index.py`.
 
+## [Hangprinter unknowns and cheap experiments, 2026-10-26](../../research/hangprinter-unknowns-2026-10-26.md)
+
+Status: three experiments complete, separately reviewed within their stated scope.
+
+Fixed-encoder permutations leave finite NumPy/JAX residuals unchanged, while aggregate and drive controls respond. Joint scaling of geometry, radii and dimensionful buildup preserves clean synthetic consistency. Diverse sweeps improve the weakest observable local direction 7.51 times but leave rank 13 of 14; one assumed independent radius observation raises local rank to 14. The final numerical work took 2.97 seconds after imports. No hardware accuracy gain or production calibration change is established.
+
+[Decision map and proposed cable-displacement experiment](../../research/hangprinter-unknowns-2026-10-26.md), [portable program archive](../../research/programs/program-dcd0c57c6b084a818d5d41b672ca78e1/report.md). The archive retains inputs, raw arrays, scripts, failed controls and the separate reviewer assessment.
+
+The full regenerated local catalog is preserved with the program. Historical entries below are retained even where their local session directories are absent from this checkout.
+
 ## [2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-130caf5a](sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-130caf5a/)
 
 [abstract.md](sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-130caf5a/abstract.md) · [report.md](sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-130caf5a/report.md) · [research.md](sessions/2026-10-08-improve-encoder-based-cdpr-autocalibration-in-hp-sim5-the-curren-130caf5a/research.md)
