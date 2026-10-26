@@ -47,6 +47,10 @@ def main():
                    if rerun else [sys.executable, str(ROOT / 'scripts/hp_sim5_mcp.py')])
         if rerun and not config['viewer_endpoint']:
             raise ValueError('Session has no Viewer; start the supervisor with --viewer headless or window')
+        if rerun:
+            env.update(XDG_DATA_HOME=str(descriptor.parent / 'viewer-data'),
+                       XDG_CONFIG_HOME=str(descriptor.parent / 'viewer-config'),
+                       XDG_CACHE_HOME=str(descriptor.parent / 'viewer-cache'))
         child = subprocess.Popen(command, env=env)
         try:
             return child.wait()

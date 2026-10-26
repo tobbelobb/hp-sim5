@@ -132,6 +132,13 @@ For each worker or reviewer:
    inspect status before retrying. The launcher owns relay cleanup, including
    actor cancellation and bridge-owner loss.
    Never print bearer credentials. No nested coding CLI is allowed.
+
+The CPU cloud image uses Chromium's installed SwiftShader Vulkan driver for
+the headless Rerun Viewer when no GPU device or explicit Vulkan driver is
+configured. env.sh applies that default; direct Python launches reload it too.
+This is software rendering, not GPU compute. The relay uses the initialize
+handshake required by the pinned Rerun MCP server, while hp_sim5 keeps the SDK's
+normal negotiation. Both Viewer processes use session-owned settings/cache paths.
 4. Bind the actual returned actor ID, wait for the actual actor to finish, then
    acknowledge completion:
 

@@ -11,7 +11,7 @@ SETTINGS = (
     'HP_SIM5_NODE_VERSION', 'HP_SIM5_RUST_VERSION', 'CARGO_HOME', 'RUSTUP_HOME',
     'PATH', 'XDG_CACHE_HOME', 'MPLCONFIGDIR', 'WARP_CACHE_PATH', 'PIP_CACHE_DIR',
     'npm_config_cache', 'PUPPETEER_EXECUTABLE_PATH', 'PUPPETEER_SKIP_DOWNLOAD',
-    'PLAYWRIGHT_MCP_CONFIG', 'OPENBLAS_NUM_THREADS', 'OMP_NUM_THREADS',
+    'PLAYWRIGHT_MCP_CONFIG', 'OPENBLAS_NUM_THREADS', 'OMP_NUM_THREADS', 'VK_ICD_FILENAMES',
 )
 
 
@@ -27,4 +27,5 @@ def activate(root):
     fields = result.stdout.decode().split('\0')
     if fields[-1] != '' or fields[::2][:-1] != list(SETTINGS):
         raise RuntimeError('Unexpected cloud environment setup output')
-    os.environ.update(zip(fields[:-1:2], fields[1::2]))
+    os.environ.update((key, value) for key, value in zip(fields[:-1:2], fields[1::2])
+                      if value or key != 'VK_ICD_FILENAMES')

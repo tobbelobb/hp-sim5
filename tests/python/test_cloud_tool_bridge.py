@@ -140,3 +140,24 @@ def test_hard_bridge_owner_loss_closes_real_mcp_relay(relay, tmp_path):
         if process.poll() is None:
             process.kill()
         process.wait(timeout=5)
+
+
+@pytest.mark.skipif(not os.environ.get('HP_SIM5_TEST_RERUN_VIEWER'), reason='Requires an installed headless graphics driver')
+def test_real_rerun_mcp_uses_compatible_handshake(relay):
+    _, connection, _, _ = relay
+    session = Path(bridge.read(connection)['session'])
+    descriptor = session / 'connection.json'
+    spec = importlib.util.spec_from_file_location('viewer_test_launcher', ROOT / 'scripts/research_agent.py')
+    launcher = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(launcher)
+    viewer, endpoint = launcher.start_viewer('headless', session)
+    try:
+        settings = bridge.read(descriptor)
+        settings['viewer_endpoint'] = endpoint
+        bridge.write(descriptor, settings)
+        tools = bridge.call(connection, 'rerun', 'list_tools')
+        assert {'rerun_get_viewer_state', 'rerun_save_screenshot'}.issubset({t['name'] for t in tools})
+        result = bridge.call(connection, 'rerun', 'call_tool', tool='rerun_get_viewer_state')
+        assert not result.get('isError')
+    finally:
+        launcher.stop_process(viewer)

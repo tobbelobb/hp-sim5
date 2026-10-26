@@ -109,7 +109,10 @@ async def serve(connection_path):
                     args.append('--rerun')
                 parameters = StdioServerParameters(command=str(root / '.venv/bin/python'), args=args,
                                                    cwd=str(root), env=dict(os.environ))
-                clients[server] = await stack.enter_async_context(Client(parameters, read_timeout_seconds=14500))
+                # The pinned Rust Viewer MCP requires initialize and exits on
+                # the SDK's modern server/discover probe instead of rejecting it.
+                mode = 'legacy' if server == 'rerun' else 'auto'
+                clients[server] = await stack.enter_async_context(Client(parameters, read_timeout_seconds=14500, mode=mode))
             return clients[server]
 
         async def execute(path):
