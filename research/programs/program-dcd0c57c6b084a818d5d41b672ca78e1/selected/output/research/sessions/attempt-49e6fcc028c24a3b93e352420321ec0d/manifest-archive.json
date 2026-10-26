@@ -1,0 +1,134 @@
+{
+  "per_file_limit_bytes": 1048576,
+  "total_limit_bytes": 8388608,
+  "compression": "gzip level 9, mtime=0, empty original filename; originals retained",
+  "compressed_json": [
+    {
+      "raw": "E2-initial-floor-limited.json",
+      "raw_bytes": 1164879,
+      "raw_sha256": "65c9ffece5252a135a8245e1e2df134131c646863f1233a37de4bcf949811a1f",
+      "gzip": "E2-initial-floor-limited.json.gz",
+      "gzip_bytes": 274241,
+      "gzip_sha256": "b23c80e96f908ab1b347da1482a7c349d63fc333038cca11d517fd521e09d77a",
+      "gzip_mtime": 0,
+      "gzip_filename": "",
+      "decompression_verified": true
+    },
+    {
+      "raw": "E2.json",
+      "raw_bytes": 1402527,
+      "raw_sha256": "036c73869f0ce98a68fddc70b72e5aad2e84c019bd9b7776ec9efd3150d40b79",
+      "gzip": "E2.json.gz",
+      "gzip_bytes": 320137,
+      "gzip_sha256": "4a46dfde711c2468b8968ca5e872182257d6a840735a48a34b5b3874b1b65a1a",
+      "gzip_mtime": 0,
+      "gzip_filename": "",
+      "decompression_verified": true
+    }
+  ],
+  "recommended_assets": [
+    {
+      "path": "analysis.py",
+      "bytes": 22113,
+      "sha256": "2e74ef7c22f3aa1d2e740200eb8773753afc937e0d87a44f228bcc3b2478c6f9"
+    },
+    {
+      "path": "analysis-v1.py",
+      "bytes": 20962,
+      "sha256": "552d0f19b8c59e2a220710f8d6fd4089788729b560d0e28af7e71b10b0d4f299"
+    },
+    {
+      "path": "archive.py",
+      "bytes": 9195,
+      "sha256": "48b7bc24ef49b11e43b068acec3b9edb0bd7b9de67ef83c7ea04689c2de81e08"
+    },
+    {
+      "path": "inputs.json",
+      "bytes": 283865,
+      "sha256": "99755d9cb59f4b0cde636cd08caccb769cd4b76de0ad5973bebf58bf8e7df4ea"
+    },
+    {
+      "path": "summary.json",
+      "bytes": 34772,
+      "sha256": "9a53ff593a07ab8a9ad8207706659f10b61b8d98b7ee26e6e20b2908d2f620b9"
+    },
+    {
+      "path": "E1.json",
+      "bytes": 264512,
+      "sha256": "0c2c75e36409c9c00e8c9b94d70ef62bc7717535fb2d4ddedaa5974cde90395d"
+    },
+    {
+      "path": "E2.json.gz",
+      "bytes": 320137,
+      "sha256": "4a46dfde711c2468b8968ca5e872182257d6a840735a48a34b5b3874b1b65a1a"
+    },
+    {
+      "path": "E3.json",
+      "bytes": 690046,
+      "sha256": "4ef902daebaa58291e0fe1568b92d215ff955a67bcb09d65d5398cf50a1a05b9"
+    },
+    {
+      "path": "E2-initial-floor-limited.json.gz",
+      "bytes": 274241,
+      "sha256": "b23c80e96f908ab1b347da1482a7c349d63fc333038cca11d517fd521e09d77a"
+    },
+    {
+      "path": "manifest-all.json",
+      "bytes": 10988,
+      "sha256": "303b3f930a1087b89447be736a81bc84a4c9127f6e41dbef8c3c60989e1f866f"
+    },
+    {
+      "path": "manifest-E2-initial-floor-limited.json",
+      "bytes": 10828,
+      "sha256": "5baed6f400485074214dd314db6eeef52fa391670d0b99cbe2e9a1da88927f0c"
+    },
+    {
+      "path": "jax-probe-provenance.json",
+      "bytes": 350,
+      "sha256": "a09d699864d0c04621550088d8cdfdd86de99ed8b541db5ae9b50e46e612da08"
+    },
+    {
+      "path": "source-links.json",
+      "bytes": 5402,
+      "sha256": "125aa973a82997c7fe24d9709502e1304d6c1105cf9111c7ffaf58f450c3faac"
+    },
+    {
+      "path": "all.log",
+      "bytes": 501,
+      "sha256": "759eae1a367f88ffb109689e75c86f3f08b65bce026928f7075da9fb2cf0742f"
+    },
+    {
+      "path": "E2-initial-floor-limited.log",
+      "bytes": 167,
+      "sha256": "526aa07d61d02d86ac5ee6b2be58ab288a915234a6916a8f67da10547b807516"
+    },
+    {
+      "path": "prepare.log",
+      "bytes": 128,
+      "sha256": "7982affaa855892cd46d340d179758f098b9d9809ddc4fce22e970b09b6e7748"
+    },
+    {
+      "path": "abstract.md",
+      "bytes": 3784,
+      "sha256": "0f8ce7af2207ad735267f36b27fbb86bb32c9c66e135ff6f2d6882387da9b330"
+    },
+    {
+      "path": "research.md",
+      "bytes": 7074,
+      "sha256": "466c725cd7e7f014c7a17c3dcffb47d45f51ef0781ef9dd4fa22884cbb7d0637"
+    },
+    {
+      "path": "report.md",
+      "bytes": 19313,
+      "sha256": "7682258f11dde9e84cbdbce0abf356e5511df12da86eee0b28e5c24dc550d66c"
+    },
+    {
+      "path": "final-message.md",
+      "bytes": 1403,
+      "sha256": "6184effd3b36e0df074a97e05ba49b4563a8f7944d1f00ff5ac38f926eeff8c3"
+    }
+  ],
+  "recommended_assets_bytes_excluding_this_manifest": 1979781,
+  "also_select": "manifest-archive.json",
+  "no_numerical_rerun_for_archiving": true
+}

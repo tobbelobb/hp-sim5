@@ -1,0 +1,70 @@
+{
+  "checks": [
+    {
+      "asset_ids": [
+        "report",
+        "abstract",
+        "notebook"
+      ],
+      "description": "Inspected 'Fixed encoder associations and absolute scale in the current calibration model' and its E1-E3 claims at revision c0f111c310cc562b7122bf606a59c60de758adbb. Confirmed the fixed submission has an empty candidate diff and no changed paths.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": [
+        "analysis",
+        "inputs",
+        "source-links",
+        "jax-probe",
+        "archive-manifest",
+        "archive-script",
+        "runtime-log"
+      ],
+      "description": "Inspected experiment configuration, deterministic inputs, reproduction commands, JAX AST instrumentation and saved provenance. Independently verified the submission digest, all 19 selected asset hashes, compressed/raw evidence hashes and experiment input/script/revision identities. Saved source-reference hashes agree with run provenance. These are integrity checks, not numerical reproduction.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": [
+        "E1",
+        "summary",
+        "analysis"
+      ],
+      "description": "Inspected all four dataset/length-path cases and six conditions per case. Saved NumPy/JAX results retain all 75 synthetic or 60 frozen simulated points, show exactly zero permutation deltas, and show active positive controls with maximum residual changes of 0.162-1.126 mm. The script constructs fresh cost objects and evaluates the unmodified compiled JAX objective separately from instrumented residuals.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": [
+        "E2",
+        "initial-E2",
+        "initial-analysis",
+        "analysis",
+        "summary"
+      ],
+      "description": "Inspected joint-scale paths and fixed-buildup/known-radius controls, clean and noisy residuals, effective sigmas and objectives. Clean joint-scale RMS remains below 1e-12 mm; dimensional controls break invariance. The preserved initial normalization comparison is inactive under the 0.05 mm floor. The explicit 0.001 mm control activates sigma changes and supports the reported objective scaling distinction.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": [
+        "E3",
+        "analysis",
+        "summary"
+      ],
+      "description": "Inspected saved Jacobians, singular values, coordinate definitions, duplicate controls and radius controls at both finite-difference steps. Data rank remains 13/14, the smallest observable RMS-normalized singular value rises from 0.0906903 to 0.681158, and an assumed independent radius observation raises local rank to 14/14. No derivatives or fits were rerun.",
+      "kind": "inspected"
+    }
+  ],
+  "code_readiness": "report_only",
+  "discrepancy": null,
+  "finding": "supported",
+  "limitations": [
+    "Scientific results are producer measurements inspected from saved artifacts, not independently reproduced numerics. Review stayed within the fixed submission; source behavior relies on the supplied script and recorded source provenance.",
+    "E1 covers the explicitly unfiltered, nonrobust residual paths with noise-mean substitution disabled, not every production configuration.",
+    "E2-E3 concern synthetic geometry with free radii and common dimensionful buildup. Fixed dimensional parameters, priors, bounds and noise normalization can constrain or prefer scale separately.",
+    "The 7.51-fold sensitivity gain depends on the stated local coordinates and normalization. Radius uncertainty is assumed, and full local rank establishes neither global uniqueness nor calibration or hardware accuracy. No fit, collection, physics or implemented fix is evaluated."
+  ],
+  "practical_value": "Within the tested model, distinguishes discarded pointwise fixed information from missing absolute-scale information. Diverse sweeps improve other weak directions but do not supply an independent length standard, which helps avoid spending collection or fitting effort on the wrong remedy.",
+  "reason": "Keep the scoped scientific report. Saved controls and consistent provenance support fixed-association insensitivity, conditional common-scale symmetry and local removal of that ambiguity by an independent radius constraint. The report preserves the inactive discriminator and separates observation symmetry from production objective preferences. No material discrepancy or additional delivery check is required for this report-only submission.",
+  "required_checks": [],
+  "submission_id": "submission-47731e6acc4d406faee0c63befec2c42",
+  "submission_sha256": "c505968ae1d8e80c8e91941379bb7711097176d818c931eab80cdd9675065b44",
+  "verdict": "keep"
+}

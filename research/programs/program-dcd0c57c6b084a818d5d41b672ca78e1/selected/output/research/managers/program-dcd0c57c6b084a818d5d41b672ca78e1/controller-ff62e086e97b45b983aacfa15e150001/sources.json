@@ -1,0 +1,53 @@
+{
+  "source_revision": "c0f111c310cc562b7122bf606a59c60de758adbb",
+  "sources": [
+    {
+      "path": "research/autocal-agenda.md",
+      "sha256": "1cdd8d6673f1311456d0c61fd579b30bfe8e433409a78072c0342253379aff49",
+      "bytes": 13637,
+      "use": "Inspected prior report or experiment-budget guidance; not recomputed in this program."
+    },
+    {
+      "path": "research/hp4-logo-stability.md",
+      "sha256": "9adbd8dd4feaf7aa9a9bc38bded31b7bbc220f266b7c16339e81f2ae89375a13",
+      "bytes": 7092,
+      "use": "Inspected prior report or experiment-budget guidance; not recomputed in this program."
+    },
+    {
+      "path": "research/hp4-squares-substeps.md",
+      "sha256": "014c21a43bd4b50040c5b4694f374bd80c57d55d7e2c5bb3a51478c387c7f8f4",
+      "bytes": 8627,
+      "use": "Inspected prior report or experiment-budget guidance; not recomputed in this program."
+    },
+    {
+      "path": "research/native-collection-verification.md",
+      "sha256": "37866237f7977cd64419c51a261ac278d709fe4e6bdfc6a6fde772d8c2112c8d",
+      "bytes": 7830,
+      "use": "Inspected prior report or experiment-budget guidance; not recomputed in this program."
+    },
+    {
+      "path": "research/autocal-solver-lane01-integration.md",
+      "sha256": "0bbc5c6a8e3fa5d01f3fd2c4b67508e65c93daa11d6faa8e493ee816c3e89eba",
+      "bytes": 8796,
+      "use": "Inspected prior report or experiment-budget guidance; not recomputed in this program."
+    },
+    {
+      "path": "research/autocal-physical-model-cleanup/report.md",
+      "sha256": "16499973ea683712cfa38cefc6a52dc14a3e9dae885401c4d9537e5949abc33c",
+      "bytes": 10239,
+      "use": "Inspected prior report or experiment-budget guidance; not recomputed in this program."
+    },
+    {
+      "path": "output/research/2026-10-09-slip-recovery-and-encoder-model/report.md",
+      "sha256": "5b9dc1138d77d12ee687bd5de9eaccfaf78bae80401e3e19914e6b4e8faecbb1",
+      "bytes": 10994,
+      "use": "Inspected prior report or experiment-budget guidance; not recomputed in this program."
+    },
+    {
+      "path": "research/autocal-recording-performance.md",
+      "sha256": "1dea4cf817cb1d72895f9ca9c12e010cbb1851e4a5bfdb3b78782ff861029c07",
+      "bytes": 8322,
+      "use": "Inspected prior report or experiment-budget guidance; not recomputed in this program."
+    }
+  ]
+}

@@ -1,0 +1,100 @@
+{
+  "producer_revision": "c0f111c310cc562b7122bf606a59c60de758adbb",
+  "source_reference_revision": "7fc26ba491be99c5632e21839be4b3afca201d85",
+  "origin_host": "github.com",
+  "origin_repository": "tobbelobb/hp-sim5",
+  "autocal_diff_origin_main_to_producer": "",
+  "files": [
+    {
+      "path": "autocal/ellipse_cost.py",
+      "sha256": "591a0e610d65baf9a0ba8b3d8e5c1e8541e97123d7396b1e240c3c8e30c32ccf",
+      "tracked_at_origin_main": true,
+      "working_file_equals_reference_blob": true,
+      "github_url": "https://github.com/tobbelobb/hp-sim5/blob/7fc26ba491be99c5632e21839be4b3afca201d85/autocal/ellipse_cost.py"
+    },
+    {
+      "path": "autocal/ellipse_objective_jax.py",
+      "sha256": "c4cb1951e3c29428858a659dcd8b3ecb05ffe1a1ec7876c71e4d03683a5e9b77",
+      "tracked_at_origin_main": true,
+      "working_file_equals_reference_blob": true,
+      "github_url": "https://github.com/tobbelobb/hp-sim5/blob/7fc26ba491be99c5632e21839be4b3afca201d85/autocal/ellipse_objective_jax.py"
+    },
+    {
+      "path": "autocal/spool_model.py",
+      "sha256": "48a9b30a633fe8c5f6b439cb29560683380f47342ce46320e904063a9e20a910",
+      "tracked_at_origin_main": true,
+      "working_file_equals_reference_blob": true,
+      "github_url": "https://github.com/tobbelobb/hp-sim5/blob/7fc26ba491be99c5632e21839be4b3afca201d85/autocal/spool_model.py"
+    },
+    {
+      "path": "autocal/theoretical_ellipse.py",
+      "sha256": "1f8ab68ae913b73b9959c8480893594b34ed0dcf246f61ef95889cabea86e3ce",
+      "tracked_at_origin_main": true,
+      "working_file_equals_reference_blob": true,
+      "github_url": "https://github.com/tobbelobb/hp-sim5/blob/7fc26ba491be99c5632e21839be4b3afca201d85/autocal/theoretical_ellipse.py"
+    },
+    {
+      "path": "autocal/filter_pass.py",
+      "sha256": "e3b5d7a45ec0cfd74fa8550aa02e1cb259e53b73abfa49bb24d89263b926356e",
+      "tracked_at_origin_main": true,
+      "working_file_equals_reference_blob": true,
+      "github_url": "https://github.com/tobbelobb/hp-sim5/blob/7fc26ba491be99c5632e21839be4b3afca201d85/autocal/filter_pass.py"
+    },
+    {
+      "path": "autocal/_autocal_common.py",
+      "sha256": "00b2e49ed44eadce4bb6010936edc7632165a09e3807663d944f5f72942f3631",
+      "tracked_at_origin_main": true,
+      "working_file_equals_reference_blob": true,
+      "github_url": "https://github.com/tobbelobb/hp-sim5/blob/7fc26ba491be99c5632e21839be4b3afca201d85/autocal/_autocal_common.py"
+    },
+    {
+      "path": "autocal/scale_polish.py",
+      "sha256": "b18ec713c6c06c7a676a1b73096244c3857ed7d19eea23925dd81b04d34cc231",
+      "tracked_at_origin_main": true,
+      "working_file_equals_reference_blob": true,
+      "github_url": "https://github.com/tobbelobb/hp-sim5/blob/7fc26ba491be99c5632e21839be4b3afca201d85/autocal/scale_polish.py"
+    },
+    {
+      "path": "autocal/tools/regress_calibration_logs.py",
+      "sha256": "6ac2b989e0fa7486d74c250b68ace992328d3b7c46ec5da1640613669e80dca4",
+      "tracked_at_origin_main": true,
+      "working_file_equals_reference_blob": true,
+      "github_url": "https://github.com/tobbelobb/hp-sim5/blob/7fc26ba491be99c5632e21839be4b3afca201d85/autocal/tools/regress_calibration_logs.py"
+    },
+    {
+      "path": "autocal/data/references/fifth_hp3_dataset.json",
+      "sha256": "6d35e856277c96fef419db4933d950db1f9ae4ac75043c381c765b58cc8b0887",
+      "tracked_at_origin_main": true,
+      "working_file_equals_reference_blob": true,
+      "github_url": "https://github.com/tobbelobb/hp-sim5/blob/7fc26ba491be99c5632e21839be4b3afca201d85/autocal/data/references/fifth_hp3_dataset.json"
+    },
+    {
+      "path": "output/research/2026-10-09-slip-recovery-and-encoder-model/report.md",
+      "sha256": "5b9dc1138d77d12ee687bd5de9eaccfaf78bae80401e3e19914e6b4e8faecbb1",
+      "tracked_at_origin_main": true,
+      "working_file_equals_reference_blob": true,
+      "github_url": "https://github.com/tobbelobb/hp-sim5/blob/7fc26ba491be99c5632e21839be4b3afca201d85/output/research/2026-10-09-slip-recovery-and-encoder-model/report.md"
+    },
+    {
+      "path": "output/research/2026-10-09-slip-recovery-and-encoder-model/encoder-objective-audit.py",
+      "sha256": "79ac07a6c809401c93f417f60cab789e0d119a8129ad7798ba77f2f6b425382f",
+      "tracked_at_origin_main": true,
+      "working_file_equals_reference_blob": true,
+      "github_url": "https://github.com/tobbelobb/hp-sim5/blob/7fc26ba491be99c5632e21839be4b3afca201d85/output/research/2026-10-09-slip-recovery-and-encoder-model/encoder-objective-audit.py"
+    },
+    {
+      "path": "output/research/sessions/fdb616a454af4a6d9c1db074fbdc207d/report.md",
+      "sha256": "9a08b55681dae642878e431c1dc73bc386a2ccbd37996afadc6689d94781f858",
+      "tracked_at_origin_main": true,
+      "working_file_equals_reference_blob": true,
+      "github_url": "https://github.com/tobbelobb/hp-sim5/blob/7fc26ba491be99c5632e21839be4b3afca201d85/output/research/sessions/fdb616a454af4a6d9c1db074fbdc207d/report.md"
+    },
+    {
+      "path": "output/research/sessions/fdb616a454af4a6d9c1db074fbdc207d/audit.py",
+      "sha256": "a44a3baf013006bdb8fe4d23ba60dc00c79263d9d9b9d86a7c43a0ad5f3c0eff",
+      "tracked_at_origin_main": true,
+      "working_file_equals_reference_blob": true,
+      "github_url": "https://github.com/tobbelobb/hp-sim5/blob/7fc26ba491be99c5632e21839be4b3afca201d85/output/research/sessions/fdb616a454af4a6d9c1db074fbdc207d/audit.py"
+    }
+  ]
+}

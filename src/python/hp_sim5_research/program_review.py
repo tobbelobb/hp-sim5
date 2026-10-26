@@ -308,7 +308,9 @@ class ReviewController:
         if backend not in ('codex', 'claude') or (backend == 'claude' and model_provider != 'openai'):
             raise ProgramError('Unsupported reviewer backend/provider')
         identity = _identity('review-run')
-        directory = self.store.directory / 'reviews' / identity
+        review_root = (self.root / 'output/research/reviews' if coding_client.research_client() == 'cloud'
+                       else self.store.directory / 'reviews')
+        directory = review_root / identity
         target = self.store.directory / 'submissions' / submission_id
         instructions = (self.root / 'research/prompts/reviewer.txt').read_text()
         response = {'submission_id': submission_id, 'submission_sha256': submission['details']['sha256'],
