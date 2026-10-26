@@ -10,7 +10,8 @@ import time
 from urllib.parse import urlparse
 
 from .program import ProgramError, _json, _now, _text
-from .program_workers import ACTIVE, WorkerDispatcher, process_identity, process_live
+from .program_workers import ACTIVE, process_identity, process_live, runtime_check
+from .coding_client import research_client
 from . import program_pool as pool
 
 STATES = ('active', 'exhausted', 'expired', 'stopped', 'interrupted')
@@ -193,19 +194,32 @@ class ProgramController:
 
     def run_once(self, program_id, assignment_id, *, allocation_id=None, settings=None, instructions='', retry_of=None):
         """Dispatch one distinct assignment against finite task/wall/review reservations."""
-        settings = dict(WorkerDispatcher._settings(settings))
+        settings = self.manager.workers.assignment_settings(program_id, assignment_id, settings)
         if pool.limit(self.store) > 1:
             settings['worktree'] = True
         if not isinstance(instructions, str):
             raise ProgramError('instructions must be a string')
+        self.manager._worker_contract(program_id, assignment_id, '')
         if allocation_id is None:
             active = [r for r in self.records() if r['kind'] == 'runtime_allocation' and r['details']['state'] == 'active']
             if active:
                 allocation_id = active[-1]['id']
-            else:
-                minutes = self.store.get_record(program_id, assignment_id, 'assignment')['details']['allocation']['wall_minutes']
-                allocation_id = self.allocate(program_id, 1, minutes + 6)['id']
-        self.manager._worker_contract(program_id, assignment_id, '')
+        if research_client() == 'cloud':
+            if allocation_id:
+                self._ready(self.current(allocation_id), assignment_id, settings=settings)
+            checked = runtime_check(self.manager.root, physics_backend=settings['physics_backend'])
+            if not checked['ok']:
+                raise ProgramError('Cloud runtime is not ready; no worker attempt was charged. '
+                                   'Call runtime_check for diagnostics. ' + _json(checked))
+            if allocation_id:
+                # This host still holds the store lock. A slow dependency probe
+                # must not expire its heartbeat; wall/review limits still apply.
+                a = self.current(allocation_id)
+                a['details']['lease_until'] = time.time() + 15
+                self.store.connection.execute('UPDATE records SET details_json=? WHERE id=?', (_json(a['details']), a['id']))
+        if allocation_id is None:
+            minutes = self.store.get_record(program_id, assignment_id, 'assignment')['details']['allocation']['wall_minutes']
+            allocation_id = self.allocate(program_id, 1, minutes + 6)['id']
         with self.store.transaction():
             a = self.current(allocation_id)
             seconds = self._ready(a, assignment_id, settings=settings)
@@ -272,7 +286,8 @@ class ProgramController:
                         a['details']['review_seconds'] for i in assignment_ids)
             if a['details']['wall_reserved_seconds'] + total > a['details']['wall_seconds']:
                 raise ProgramError('Selected queue exceeds remaining wall/review allocation')
-            self.manager.workers._settings(settings)
+            for identity in assignment_ids:
+                self.manager.workers.assignment_settings(program_id, identity, settings)
             a['details']['queue'] = [{'assignment_id': i, 'settings': settings} for i in assignment_ids]
             self.store._touch(program_id)
             self.store.connection.execute('UPDATE records SET details_json=?, revision=revision+1, updated_at=? WHERE id=?',
@@ -469,7 +484,14 @@ class ProgramController:
                     break
                 # Charge and dequeue together in run_once. Backpressure keeps
                 # the queued selection intact; restart never replays a charge.
-                self.run_once(self.program_id, next_item['assignment_id'], allocation_id=a['id'], settings=next_item['settings'])
+                try:
+                    self.run_once(self.program_id, next_item['assignment_id'], allocation_id=a['id'], settings=next_item['settings'])
+                except ProgramError as error:
+                    a = self.current(a['id'])
+                    a['details']['queue'] = []
+                    a['details']['events'].append({'at': _now(), 'event': 'queue_dispatch_blocked', 'reason': str(error)})
+                    self.save(a)
+                    break
                 a = self.current(a['id'])
                 d = a['details']
         self.premise_conflicts()

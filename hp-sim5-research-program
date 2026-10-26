@@ -1,7 +1,21 @@
-#!/bin/sh
+#!/usr/bin/env bash
+set -e
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-if [ ! -x "$repo_dir/.venv/bin/python" ]; then
-    echo 'Create .venv first. This command needs only the Python standard library.' >&2
-    exit 1
+client=${HP_SIM5_RESEARCH_CLIENT:-local}
+for argument in "$@"; do
+    case "$argument" in
+        --) break ;;
+        --cloud) client=cloud ;;
+        --codex|--claude) client=local ;;
+    esac
+done
+if [[ "$client" == cloud ]]; then
+    source "$repo_dir/scripts/cloud/env.sh"
 fi
-exec "$repo_dir/.venv/bin/python" "$repo_dir/scripts/research_program.py" "$@"
+# Program bookkeeping uses only the standard library. Worker physics still
+# requires the fully installed project environment.
+python="$repo_dir/.venv/bin/python"
+if [[ ! -x "$python" ]]; then
+    python=python3
+fi
+exec "$python" "$repo_dir/scripts/research_program.py" "$@"

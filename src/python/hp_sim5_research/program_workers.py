@@ -11,6 +11,7 @@ from pathlib import Path
 import signal
 import socket
 import subprocess
+import sys
 import time
 
 from .program import ProgramError, _allocation, _identity, _json, _now, _object, _text
@@ -24,6 +25,19 @@ FILES = ('session.json', 'launch.json', 'exit.json', 'prompt.txt', 'events.jsonl
          'final-message.md', 'research.md', 'report.md', 'abstract.md',
          'instructions.md', 'attachment.toml', 'attachment.json', 'connection.json',
          'native/runtime.log', 'viewer.log')
+
+
+def runtime_check(root, *, physics_backend='headless-js'):
+    """Check in a launcher's environment, including when its host predates setup."""
+    argv = [sys.executable, str(Path(root) / 'scripts/cloud/check_research.py'),
+            '--physics-backend', physics_backend]
+    if research_client() == 'cloud':
+        argv = ['bash', '-c', 'source "$1/scripts/cloud/env.sh" && shift && exec "$@"',
+                'research-runtime-check', str(root), *argv]
+    result = subprocess.run(argv, cwd=root, capture_output=True, text=True, timeout=55)
+    if result.returncode not in (0, 1) or not result.stdout.strip():
+        raise ProgramError(f'Runtime setup check failed: {result.stderr[-2000:].strip()}')
+    return json.loads(result.stdout)
 
 
 def process_identity(pid):
@@ -146,6 +160,20 @@ class WorkerDispatcher:
             raise ProgramError('Cloud workers use parent-authenticated subagents; omit CLI model/provider arguments and use backend codex')
         return result
 
+    def assignment_settings(self, program_id, assignment_id, settings=None):
+        """Bind the commissioned machine to the actual launcher, not just prose."""
+        options = dict(_object({} if settings is None else settings, 'worker settings'))
+        investigations = [r for r in self.store.snapshot(program_id)['records'] if
+                          r['kind'] == 'investigation' and r['details']['assignment_id'] == assignment_id]
+        machine = investigations[-1]['details']['execution'].get('machine') if investigations else None
+        if machine is not None:
+            if 'machine' in options and options['machine'] != machine:
+                raise ProgramError('Worker machine conflicts with commissioned execution.machine')
+            options['machine'] = machine
+        if research_client() == 'cloud' and 'machine' not in options:
+            raise ProgramError('Cloud workers require execution.machine at commission or an explicit machine in worker settings (hp3/hp4)')
+        return self._settings(options)
+
     def start(self, program_id, assignment_id, *, settings=None, instructions='', runtime=None):
         """Reserve and spawn once; return without waiting for services or a client.
 
@@ -154,7 +182,7 @@ class WorkerDispatcher:
         Wall expiration requests the existing launcher's cleanup. Numerical
         counters remain contracts unless a production tool enforces that limit.
         """
-        options = self._settings(settings)
+        options = self.assignment_settings(program_id, assignment_id, settings)
         if not isinstance(instructions, str):
             raise ProgramError('instructions must be a string')
         attempt_id = _identity('attempt')
@@ -181,6 +209,7 @@ class WorkerDispatcher:
             contract = {'program_id': program_id, 'assignment': assignment,
                         'constraints': program['constraints'], 'attempt_id': attempt_id,
                         'source_revision': revision, 'session_dir': str(session),
+                        'execution': options,
                         'shared_filesystem': pool.SHARED_BOUNDARY,
                         'shared_runtime_write': options['shared_runtime_write']}
             prompt = ('# Bounded research assignment\n\n' + json.dumps(contract, indent=2, ensure_ascii=False) +

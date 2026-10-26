@@ -5,6 +5,9 @@ see [cloud research](RESEARCH.md). Prepare dependencies with
 `bash scripts/cloud/install_research.sh` when needed, then use
 `./hp-sim5-research-program --cloud --question 'Your question'` in the current
 authenticated chat. It uses actual subagents without a PATH wrapper or another CLI login.
+The explicit cloud entry and its workers load env.sh automatically. Check the
+complete research setup with `./hp-sim5-research-program runtime-check --cloud`
+before spending an experiment allocation.
 
 This directory preserves the setup and startup steps validated during Codex
 cloud onboarding. Use the existing checkout: cloud tasks are already isolated,
@@ -26,7 +29,7 @@ source scripts/cloud/env.sh
 
 The installer prepares:
 
-- Node **23.11.1**, Rust **1.99.1** and `wasm32-unknown-unknown`, outside the checkout.
+- Node **23.11.1**, Rust **1.99.1** with `llvm-tools-preview` for default PGO builds, and `wasm32-unknown-unknown`, outside the checkout.
 - Python dependencies in `.venv`, including the optional **CPU Warp and JAX**
   requirements, plus CMake **4.4.4** and PyYAML **6.0.3** (for skill helper scripts).
   Python requirements are ranges, not a lockfile.

@@ -63,7 +63,7 @@ def main(argv, root):
         args = parser.parse_args(argv)
         try:
             result = request(read_json(args.connection), args.operation, json.loads(args.params),
-                             timeout=60 if args.operation == 'save' else 10)
+                             timeout=60 if args.operation in ('save', 'runtime_check', 'worker_start', 'run_once') else 10)
         except (OSError, ValueError, TypeError, KeyError) as error:
             result = failure('invalid_request', str(error))
         print(_json(result))

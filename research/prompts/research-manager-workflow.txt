@@ -29,8 +29,12 @@ model timeout. Fresh fits, bounded native/headless physics and simulated collect
 are allowed within the human's constraints. Read the recording-cost guidance
 before numerical budgets; use supported --speedup 25 for simulated autocal CLI.
 
-Use commission or a ready assignment, then worker_start/run_once. Poll actual
-worker_status and preserve unsuccessful and partial evidence. In cloud, dispatch
+Use commission or a ready assignment, then worker_start/run_once.
+Set execution.machine in commission (hp3/hp4), or pass machine in
+worker settings; the structured setting must agree with the intended machine.
+In cloud, call runtime_check before allocating work and fix setup failures before
+dispatch; scripts/cloud/RESEARCH.md explains dependencies and socket permissions.
+Poll actual worker_status and preserve unsuccessful and partial evidence. In cloud, dispatch
 verified pending bridge requests according to scripts/cloud/RESEARCH.md; each
 actual actor must write its own final_output, and only actual completion or
 interruption permits a bridge acknowledgement. Never fabricate child output.

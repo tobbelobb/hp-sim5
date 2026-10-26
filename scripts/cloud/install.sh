@@ -43,6 +43,7 @@ if [[ ! -x "$CARGO_HOME/bin/rustup" ]]; then
 fi
 rustup toolchain install "$HP_SIM5_RUST_VERSION" --profile minimal
 rustup default "$HP_SIM5_RUST_VERSION"
+rustup component add llvm-tools-preview --toolchain "$HP_SIM5_RUST_VERSION"
 rustup target add wasm32-unknown-unknown
 
 # Scope SSH-to-HTTPS rewriting to this command; reuse platform Git authentication.

@@ -42,7 +42,7 @@ For example, a narrow saved-data scout can use:
     "absent": {"observation": "None exists in the named sources", "finding": "inconclusive", "actions": []},
     "failed": {"observation": "A reader failure prevents inspection", "finding": "tool_failure", "actions": []}
   },
-  "execution": {"source_limit": 4}
+  "execution": {"machine": "hp3", "source_limit": 4}
 }
 ```
 
@@ -52,6 +52,9 @@ outcomes, are in the [saved cases](program-graph/strategy_cases.py) and
 `experiment`, `literature` and `tooling`. All use `worker_start` and the existing
 `hp-sim5-research-agent`; the worker prompt receives the investigation, route
 plan and accepted human inputs. Funding itself starts no child.
+execution.machine sets the actual worker machine (hp3/hp4); conflicting worker
+settings are rejected. Cloud workers require it or an explicit machine in their
+worker settings. An HP3 mention in descriptive scope does not configure physics.
 
 Every allocation requires a positive finite `wall_minutes`; other explicit
 counters are finite and nonnegative. The zero numerical counters above belong

@@ -11,4 +11,10 @@ Run ./hp-sim5-research-program --cloud --question 'the human research question'.
 To reopen a known program use --cloud --program PROGRAM_ID instead. Save the
 returned program ID and attachment.connection in this conversation. Then follow
 research/prompts/research-manager-workflow.txt with that bound connection.
-The controller passes its explicit mode to workers and reviewers.
+The controller passes its explicit mode to workers and reviewers. The launcher
+loads scripts/cloud/env.sh automatically. Before funding experiments, call
+runtime_check and repair missing dependencies with the complete
+scripts/cloud/install_research.sh setup. Opening a program can use system Python
+and is not evidence of runtime readiness. If the launcher's own socket probe is
+blocked, report that permission boundary; supervised jobs require an already
+running, permitted supervisor. Do not spend research attempts on setup retries.
