@@ -13,15 +13,11 @@ STRIPPED_KEYS = ('OPENAI_API_KEY', 'CODEX_API_KEY')
 
 
 def research_client():
-    """Cloud chats use their subagents; local terminals use installed clients."""
-    selected = os.environ.get('HP_SIM5_RESEARCH_CLIENT', 'auto')
-    if selected not in ('auto', 'local', 'cloud'):
-        raise ValueError('HP_SIM5_RESEARCH_CLIENT must be local, cloud or auto')
-    cloud = (os.environ.get('CODEX_CLOUD') == '1' or
-             os.environ.get('CODEX_HOME', '').startswith('/run/codex-environment/'))
-    if cloud and selected == 'local':
-        raise ValueError('Standalone research clients are disabled in cloud chats; use the current chat and --cloud')
-    return 'cloud' if cloud or selected == 'cloud' else 'local'
+    """Read the entry route's explicit selection, inherited by its children."""
+    selected = os.environ.get('HP_SIM5_RESEARCH_CLIENT', 'local')
+    if selected not in ('local', 'cloud'):
+        raise ValueError('HP_SIM5_RESEARCH_CLIENT must be local or cloud')
+    return selected
 
 
 def cloud_command(root, session, sandbox):

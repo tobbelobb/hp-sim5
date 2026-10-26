@@ -148,13 +148,27 @@ def test_cloud_commands_do_not_invoke_a_standalone_client(tmp_path, monkeypatch)
         coding_client.codex_command(ROOT, tmp_path, batch=True, model='local-only-setting')
 
 
-def test_cloud_runtime_cannot_select_local_clients(monkeypatch):
+@pytest.mark.parametrize('markers', [False, True])
+@pytest.mark.parametrize('selected,expected', [(None, 'local'), ('local', 'local'), ('cloud', 'cloud')])
+def test_mode_depends_only_on_explicit_selection(monkeypatch, markers, selected, expected):
     from hp_sim5_research.coding_client import research_client
-    monkeypatch.setenv('CODEX_HOME', '/run/codex-environment/codex-home')
-    monkeypatch.delenv('HP_SIM5_RESEARCH_CLIENT', raising=False)
-    assert research_client() == 'cloud'
-    monkeypatch.setenv('HP_SIM5_RESEARCH_CLIENT', 'local')
-    with pytest.raises(ValueError, match='disabled in cloud'):
+    if markers:
+        monkeypatch.setenv('CODEX_CLOUD', '1')
+        monkeypatch.setenv('CODEX_HOME', '/run/codex-environment/codex-home')
+    else:
+        monkeypatch.delenv('CODEX_CLOUD', raising=False)
+        monkeypatch.delenv('CODEX_HOME', raising=False)
+    if selected is None:
+        monkeypatch.delenv('HP_SIM5_RESEARCH_CLIENT', raising=False)
+    else:
+        monkeypatch.setenv('HP_SIM5_RESEARCH_CLIENT', selected)
+    assert research_client() == expected
+
+
+def test_automatic_mode_is_no_longer_supported(monkeypatch):
+    from hp_sim5_research.coding_client import research_client
+    monkeypatch.setenv('HP_SIM5_RESEARCH_CLIENT', 'auto')
+    with pytest.raises(ValueError, match='must be local or cloud'):
         research_client()
 
 
@@ -164,7 +178,23 @@ def test_cloud_manager_rejects_nested_cli_before_creating_store(tmp_path):
                              '--cloud', '--codex', '--question', 'Must use current chat'],
                             capture_output=True, text=True, timeout=5)
     assert result.returncode == 2
-    assert 'current cloud chat is the manager' in result.stderr
+    assert 'not allowed with argument' in result.stderr
+    assert not store.exists()
+
+
+@pytest.mark.parametrize('backend', ['codex', 'claude'])
+def test_local_launcher_selects_local_despite_inherited_cloud_settings(tmp_path, backend):
+    store = tmp_path / 'never-created'
+    result = subprocess.run([str(ROOT / 'hp-sim5-research-program'), '--store', str(store),
+                             '--' + backend, '--question', 'A local manager', '--dry-run'],
+                            capture_output=True, text=True, timeout=5, check=True,
+                            env=dict(os.environ, HP_SIM5_RESEARCH_CLIENT='cloud', CODEX_CLOUD='1',
+                                     CODEX_HOME='/run/codex-environment/codex-home'))
+    plan = json.loads(result.stdout)['result']
+    assert plan['client_transport'] == 'local'
+    assert plan['client']['argv'][0] == backend
+    assert 'Bound execution mode: LOCAL' in plan['client']['instructions']
+    assert '--cloud --question' not in plan['client']['instructions']
     assert not store.exists()
 
 
@@ -186,9 +216,11 @@ def test_cloud_worker_and_service_plans_need_no_standalone_cli(tmp_path, mode):
 def test_cloud_mode_survives_fresh_cli_shells(tmp_path):
     from hp_sim5_research.program_host import live, request
     store = tmp_path / 'store'
+    environment = {k: v for k, v in os.environ.items()
+                   if k not in ('CODEX_CLOUD', 'CODEX_HOME', 'HP_SIM5_RESEARCH_CLIENT')}
     result = subprocess.run([str(ROOT / 'hp-sim5-research-program'), '--store', str(store),
                              '--cloud', '--question', 'Cloud mode without PATH wrappers'],
-                            capture_output=True, text=True, timeout=10, check=True)
+                            capture_output=True, text=True, timeout=10, check=True, env=environment)
     opened = json.loads(result.stdout)['result']
     attachment = opened['attachment']
     try:
@@ -199,7 +231,7 @@ def test_cloud_mode_survives_fresh_cli_shells(tmp_path):
         # An ordinary later shell cannot silently change an already live host.
         changed = subprocess.run([str(ROOT / 'hp-sim5-research-program'), '--store', str(store),
                                   '--program', attachment['program_id']], capture_output=True, text=True, timeout=5,
-                                 env=dict(os.environ, HP_SIM5_RESEARCH_CLIENT='local'))
+                                 env=dict(environment, HP_SIM5_RESEARCH_CLIENT='local'))
         assert changed.returncode == 2
         assert 'different client transport' in changed.stdout
     finally:

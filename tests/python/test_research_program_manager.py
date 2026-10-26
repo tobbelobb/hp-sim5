@@ -63,7 +63,7 @@ def manager(tmp_path):
     root.mkdir()
     (root / 'scripts').symlink_to(ROOT / 'scripts', target_is_directory=True)
     (root / 'research/prompts').mkdir(parents=True)
-    (root / 'research/prompts/research-manager.txt').write_bytes((ROOT / 'research/prompts/research-manager.txt').read_bytes())
+    (root / 'research/prompts/research-manager-workflow.txt').write_bytes((ROOT / 'research/prompts/research-manager-workflow.txt').read_bytes())
     (root / 'research/prompts/reviewer.txt').write_bytes((ROOT / 'research/prompts/reviewer.txt').read_bytes())
     worker = root / 'hp-sim5-research-agent'
     worker.write_text(f'#!{sys.executable}\n' + '''import json, signal, sys, time

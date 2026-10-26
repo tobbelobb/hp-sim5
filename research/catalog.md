@@ -4,9 +4,38 @@ For current priorities and the next bounded autocal assignment, use the
 [living research agenda](autocal-agenda.md). The historical summaries below
 remain evidence with their original scope.
 
-These summaries describe archived evidence, not new experiments or a statement about the current solver. They were compiled on 2026-10-08 from the reports and notebooks linked below. Raw session artifacts are ignored by Git and may be absent in another checkout. The [local catalog](../output/research/index.md) also lists integration checks, incomplete sessions and their status.
+These summaries describe archived evidence, not new experiments or a statement
+about the current solver. Each entry keeps the scope of its referenced reports
+and notebooks. Raw session artifacts are ignored by Git and may be absent in
+another checkout. The [local catalog](../output/research/index.md) also lists
+integration checks, incomplete sessions and their status.
+
+The local catalog is a generated snapshot of the session directories available on
+one machine. Its embedded abstracts remain useful when raw files are absent,
+but regenerating it in another checkout can produce a different inventory.
+Completed program archives under `research/programs/` preserve selected reports
+and evidence in Git; prefer those links when continuing in another environment.
 
 Four hash-named sessions contain substantive autocal work: three have final reports and one has an unfinished notebook. Missing research.md does not imply that no research happened.
+
+## Separately reviewed audit of saved consensus evidence
+
+Status: complete and separately reviewed, 2026-10-26. Topics: CM-E1, consensus
+membership, common unseen sweeps, evidence provenance, research programs.
+
+One local worker audited four saved CM-E1 sources, and a fresh reviewer accepted
+the scoped finding. Two per-dataset regressions defeat unconditional nonworsening
+despite a small aggregate improvement. The changed selections lack a common
+unseen validation sweep, so predictive superiority remains unresolved. Keep
+current defaults and investigate compatible unseen sweeps before reopening that
+proposal. The audit inspected historical simulation measurements and performed
+structural checks; it ran no new numerical experiments and did not independently
+reproduce those measurements. The worker, review, admission and result commit
+completed through the research program.
+
+[Reviewed report](programs/program-e31e5321be5940baacf677409b2579e0/workers/attempt-8cc3e522df934dafbc74a9639e34721e/report.md)
+and [program record and fixed evidence](programs/program-e31e5321be5940baacf677409b2579e0/report.md),
+committed in `9f8ff306`.
 
 ## Configurable continuing HP3/HP4 worlds through MCP
 

@@ -10,8 +10,13 @@ Prepare native dependencies with `bash scripts/cloud/install_research.sh` if
 needed. Source scripts/cloud/env.sh in each shell when those toolchain settings
 are needed. No research-client installation or PATH wrapper is required.
 
-Ask the cloud chat to read research/prompts/research-manager.txt and this guide,
-then give it the research question. It opens the controller with:
+Use the cloud entry prompt:
+
+```text
+Read research/prompts/research-manager.txt and manage this question: [question].
+```
+
+That prompt opens the controller with:
 
 ```bash
 ./hp-sim5-research-program --cloud --question 'Your research question'
@@ -20,10 +25,11 @@ then give it the research question. It opens the controller with:
 ```
 
 --cloud selects the client transport for the retained controller. Later tool
-calls need only its returned CONNECTION path. Recognizable managed cloud runtimes
-select cloud mode automatically; --cloud also works without those markers.
-Interactive --codex/--claude manager launches are refused in cloud mode before
-creating state. CLI model/provider options do not configure cloud subagents.
+calls need only its returned CONNECTION path. The controller passes the mode to
+its children through HP_SIM5_RESEARCH_CLIENT. There is no automatic cloud
+detection or dependency on Codex-home paths, platform environment markers,
+available skills or a particular sandbox. --cloud and local --codex/--claude
+are mutually exclusive. CLI model/provider options do not configure cloud actors.
 The original direct research-agent interface remains available locally.
 
 ## Dispatch a real actor
@@ -42,7 +48,8 @@ For each worker or reviewer:
    queued session belongs to a currently owned live attempt/review. Retained
    requests after host loss are historical; never redispatch them automatically.
 3. Read the exact prompt and instructions at the returned paths. Dispatch an
-   actual authenticated subagent with collaboration.spawn_agent. Include the
+   actual authenticated subagent using this chat's subagent mechanism
+   (collaboration.spawn_agent in Codex). Include the
    requested final_output path; the actor must write its real final response
    there. Workers use their private connection through scripts/research_attach.py.
    Never print bearer credentials. No nested coding CLI is allowed.

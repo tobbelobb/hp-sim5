@@ -8,9 +8,9 @@ chat's authenticated subagents and never opens another coding CLI.
 ## Open a program
 
 ```bash
-./hp-sim5-research-program --question 'Your question'
-./hp-sim5-research-program --program PROGRAM_ID
-# Select cloud subagents explicitly:
+./hp-sim5-research-program --codex --question 'Your question'
+./hp-sim5-research-program --claude --program PROGRAM_ID
+# The cloud entry prompt uses this internal command:
 ./hp-sim5-research-program --cloud --question 'Your question'
 ```
 
@@ -23,7 +23,9 @@ old host stops.
 
 The attachment, capabilities and overview.manager report client_transport.
 Keep the bound mode during recovery. Local command sandboxes and hidden PIDs
-do not imply cloud execution. Clients establish availability through the file
+do not imply cloud execution. The entry route selects the mode; it is never
+guessed from Codex-specific environment variables or available skills.
+Clients establish availability through the file
 protocol; an invisible host PID is not a dead controller. A held controller lock
 prevents replacement, while host-generation checks reject stale attachments.
 

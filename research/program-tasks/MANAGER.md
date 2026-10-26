@@ -23,6 +23,10 @@ what to try next. Human steering, explanations and continuation stay in that cha
 
 Use ordinary CLI calls from the manager. No manager MCP adapter, PATH disguise,
 extra login, API key or Codex-home permission changes are part of cloud research.
+Local users launch hp-sim5-research-program --codex/--claude; cloud users invoke
+research/prompts/research-manager.txt in the existing chat. That prompt selects
+--cloud. The controller inherits and forwards the explicit choice; no environment,
+skill or sandbox heuristic selects the mode.
 A long active cloud chat with many bounded subagent assignments and saved results
 is the intended use case. An independent background service is not a target.
 

@@ -31,7 +31,7 @@ def client_plan(root, attachment, backend, *, model=None, model_provider='openai
                     'Bound manager connection: ' + attachment['connection'] +
                     '\nProgram ID: ' + attachment['program_id'] + '\nManager artifacts: ' + str(session) +
                     '\nUse hp-sim5-research-program tool with this connection; no manager MCP attachment is needed.\n\n' +
-                    (root / 'research/prompts/research-manager.txt').read_text())
+                    (root / 'research/prompts/research-manager-workflow.txt').read_text())
     if backend == 'codex':
         forwarded, forwarded_model = coding_client.forwarded_settings(client_args)
         command = coding_client.codex_command(
@@ -71,7 +71,7 @@ def main(argv, root):
     backend = parser.add_mutually_exclusive_group()
     backend.add_argument('--codex', action='store_const', const='codex', dest='backend')
     backend.add_argument('--claude', action='store_const', const='claude', dest='backend')
-    parser.add_argument('--cloud', action='store_true', help='Current authenticated chat is the manager; workers/reviewers use cloud subagents')
+    backend.add_argument('--cloud', action='store_true', help='Cloud prompt entry: current chat manages authenticated subagents')
     entry = parser.add_mutually_exclusive_group(required=True)
     entry.add_argument('--question', help='Create a program from this question')
     entry.add_argument('--program', help='Open the existing program ID')
@@ -90,8 +90,10 @@ def main(argv, root):
     try:
         if args.cloud:
             os.environ['HP_SIM5_RESEARCH_CLIENT'] = 'cloud'
+        elif args.backend:
+            os.environ['HP_SIM5_RESEARCH_CLIENT'] = 'local'
         transport = coding_client.research_client()
-        if transport == 'cloud' and (args.backend or args.model or args.model_provider != 'openai'):
+        if transport == 'cloud' and (args.model or args.model_provider != 'openai'):
             parser.error('The current cloud chat is the manager. Use --cloud without a coding CLI, model or provider override')
         if args.dry_run:
             attachment = {'program_id': args.program or 'PROGRAM_ID',

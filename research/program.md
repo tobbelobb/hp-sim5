@@ -31,8 +31,7 @@ A later bounded production experiment can test physics-tool integration.
 Ask the authenticated cloud chat:
 
 ```text
-Read research/prompts/research-manager.txt and scripts/cloud/RESEARCH.md.
-Manage this question: [question]. Use cloud subagents for workers and reviewers.
+Read research/prompts/research-manager.txt and manage this question: [question].
 ```
 
 The chat runs:
@@ -49,9 +48,12 @@ is required. See the [cloud instructions](../scripts/cloud/RESEARCH.md).
 
 Keep the chat working through each bounded cycle. Background services manage
 owned processes and deadlines, but do not conduct research without the manager.
-CLI model/provider flags do not configure cloud actors. Cloud mode refuses
-nested interactive Codex/Claude manager launches. An explicit --cloud is useful
-on platforms that do not expose a recognizable cloud runtime marker.
+CLI model/provider flags do not configure cloud actors. The cloud entry prompt
+always selects --cloud; the local --codex/--claude launcher always selects local.
+The controller passes that selection to workers and reviewers. Environment
+markers, Codex-home paths, installed skills and sandbox behavior play no part in
+selecting the mode. The entry prompt and local launcher share
+research/prompts/research-manager-workflow.txt after opening the program.
 
 ## Continue and steer
 
