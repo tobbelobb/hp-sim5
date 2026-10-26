@@ -2562,6 +2562,60 @@ interactive research
 - [Original task](sessions/2026-10-22-interactive-research-d1d37c7f/prompt.txt)
 - [Research notebook](sessions/2026-10-22-interactive-research-d1d37c7f/research.md)
 
+## [2026-10-23-autocal-agenda](sessions/2026-10-23-autocal-agenda/)
+
+[abstract.md](sessions/2026-10-23-autocal-agenda/abstract.md) · [report.md](sessions/2026-10-23-autocal-agenda/report.md) · [research.md](sessions/2026-10-23-autocal-agenda/research.md)
+
+### Autocal research allocation after mixed consensus evidence
+
+Status: complete (desk exercise; next numerical assignment not tested).
+
+#### Abstract
+
+What should receive the next research allocation after broader replay rejects
+blanket finite-prediction consensus membership? This desk exercise compares saved
+consensus, ranking, solver-attribution and model-adequacy evidence with current
+selection code. CM-E1 reports one gain and two regressions across eight additional
+datasets; all three changed comparisons lack common unseen sweeps. The agenda
+therefore retains production defaults and proposes a bounded compatible-sweep
+search, with at most six later frozen prediction evaluations if eligible data
+exist. It compares four routes and demonstrates how withdrawing CM-E1 would
+replace that allocation with evidence recovery while preserving other findings.
+Direct claim links suffice; no graph infrastructure was added. Saved results
+were inspected, not independently reproduced. Some historical raw artifacts are
+unavailable here. No fits, selection/prediction experiments, physics, collection
+or hardware measurements were performed; improved calibration accuracy is not
+established by this workflow result.
+
+#### Topics
+
+autocalibration, research agenda, common unseen sweeps, consensus, model adequacy,
+evidence dependencies, negative results, withdrawal exercise, research allocation
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Direct evidence links suffice for a scoped allocation and next brief | AG-D1 | Supported for this four-route desk exercise | [Agenda](sessions/2026-10-23-autocal-agenda/../../../../research/autocal-agenda.md), [checks](sessions/2026-10-23-autocal-agenda/checks.json) |
+| Removing a supporting result changes the allocation while preserving other scope | AG-D2 | Supported for a counterfactual CM-E1 withdrawal | [Exercise](sessions/2026-10-23-autocal-agenda/../../../../research/autocal-agenda.md#withdrawal-exercise-what-if-cm-e1-is-unavailable) |
+| The proposed common-fold probe improves calibration | None | Not tested | [Proposed assignment](sessions/2026-10-23-autocal-agenda/../../../../research/autocal-agenda.md#next-assignment-common-unseen-sweeps-for-changed-applied-models) |
+
+#### Decision handoff
+
+- Scope: task 005, evidence/source inspection at fd10fd94; no runtime changes.
+- Review: this agent inspected saved reports, CM-E1 JSON and current consumers;
+  hashes/links/queue/catalog checked. No independent numerical reproduction.
+- Decision: keep defaults; use the linked agenda and defer graph tooling.
+- Next: commission the compatible-unseen-sweep assignment; absent eligible data,
+  scope model adequacy separately. The numerical assignment remains proposed.
+
+#### References
+
+- [Full report](sessions/2026-10-23-autocal-agenda/report.md), [notebook](sessions/2026-10-23-autocal-agenda/research.md), [verification](sessions/2026-10-23-autocal-agenda/checks.json): actual work and limitations.
+- [Working agenda](sessions/2026-10-23-autocal-agenda/../../../../research/autocal-agenda.md): route priorities, claim dependencies and bounded next assignment.
+- [Producer CM-E1](sessions/2026-10-23-autocal-agenda/../2026-10-23-consensus-membership/report.md), [saved measurements](sessions/2026-10-23-autocal-agenda/../2026-10-23-consensus-membership/results.json): reused scientific finding.
+- [Handoff procedure](sessions/2026-10-23-autocal-agenda/../../../../research/handoffs.md): durable evidence recovery.
+
 ## [2026-10-23-consensus-membership](sessions/2026-10-23-consensus-membership/)
 
 [abstract.md](sessions/2026-10-23-consensus-membership/abstract.md) · [report.md](sessions/2026-10-23-consensus-membership/report.md) · [research.md](sessions/2026-10-23-consensus-membership/research.md)
@@ -2768,6 +2822,113 @@ program agenda, artifact portability, task granularity, negative results.
 - [Producer checks](sessions/2026-10-23-program-task-sanity/../2026-10-22-autocal-lane04-cleanup/checks.json): hashes and recorded equivalence.
 - [Copied inputs](sessions/2026-10-23-program-task-sanity/inputs/): history inputs and producer policy results retained locally.
 
+## [2026-10-23-program-worker-dispatch](sessions/2026-10-23-program-worker-dispatch/)
+
+[abstract.md](sessions/2026-10-23-program-worker-dispatch/abstract.md) · [report.md](sessions/2026-10-23-program-worker-dispatch/report.md) · [research.md](sessions/2026-10-23-program-worker-dispatch/research.md)
+
+### Existing research worker dispatch with observed ownership and cleanup
+
+Status: complete task 009 tool implementation; live manager release not established.
+
+#### Abstract
+
+Can the manager dispatch a bounded assignment through the existing research
+launcher while retaining ownership and evidence? A standard-library adapter on
+ProgramStore now reserves one worker, writes an exact assignment/budget prompt,
+launches the existing batch route, and records process birth identity, source,
+returned session/worktree paths and partial artifacts. Start/status/cancel remain
+responsive. Zero exits remain unreviewed submissions. Fake child fixtures cover
+normal/failing/auth-blocked launches, cancellation, partial manifests and stale
+PID refusal. Actual launcher regressions with fake clients/services verify
+interrupted runtime/Viewer startup cleanup and cleanup-error reporting. The final
+adapter/launcher check passed 57 tests; a later import-validation change passed
+all 10 adapter tests. Seventeen earlier store/graph checks are reused. Four saved
+real launcher dry-runs cover Codex/Claude batch and worktree arguments. They start
+no client or physics world. Missing runtime dependencies and nested Codex writable
+state prevent inferring live readiness. No scientific experiments or admission
+occurred; live worker/review/graph proof remains task 016.
+
+#### Topics
+
+research manager, worker dispatch, ProgramStore, process ownership, cancellation,
+launcher, worktree, Codex, Claude, batch, partial artifacts
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| One bounded assignment can be dispatched and observed without accepting science | W009-FIXTURE | Supported tool check with fake launchers | [Checks](sessions/2026-10-23-program-worker-dispatch/checks.json) |
+| Cancellation reaches actual launcher cleanup even during startup | W009-LAUNCHER | Supported with fake services and a real signal | [Checks](sessions/2026-10-23-program-worker-dispatch/checks.json) |
+| Both supported client argument routes survive prompt/worktree handling | W009-DRY | Supported launcher dry-run only | [Four outputs](sessions/2026-10-23-program-worker-dispatch/dry-run-records.json) |
+| A live worker can complete production research and independent review here | None | Not tested; prerequisites unavailable | [Parent observations](sessions/2026-10-23-program-worker-dispatch/prerequisites.json) |
+
+#### Decision handoff
+
+- Scope: process/store/launcher behavior, fake clients/services and real argument dry-runs.
+- Review: implementation worker inspected and ran focused tests; no independent scientific review or numerical reproduction.
+- Decision: task 009 is complete; submitted worker output remains unreviewed and unassessed.
+- Next: task 010 adds fixed submissions and separate review; task 016 must supply actual live proof.
+
+#### References
+
+- [Report](sessions/2026-10-23-program-worker-dispatch/report.md): implementation, observations and limitations.
+- [Notebook](sessions/2026-10-23-program-worker-dispatch/research.md): objective, budget, steering and next decision.
+- [Adapter guide](sessions/2026-10-23-program-worker-dispatch/../../../../research/program-workers.md): actual API and lifecycle boundary.
+- [Test-tool provenance](sessions/2026-10-23-program-worker-dispatch/test-tool-provenance.json): parent-staged released pytest sources used for regression execution.
+
+## [2026-10-23-research-program-smoke](sessions/2026-10-23-research-program-smoke/)
+
+[abstract.md](sessions/2026-10-23-research-program-smoke/abstract.md) · [report.md](sessions/2026-10-23-research-program-smoke/report.md) · [research.md](sessions/2026-10-23-research-program-smoke/research.md)
+
+### Research program smoke checks and a question-only starting prompt
+
+Status: complete for offline workflow checks; live research runtime not exercised.
+
+#### Abstract
+
+Can a user start this research workflow with only a question? Four standard-library
+smoke tests made fourteen real CLI calls covering catalog generation/search,
+pending/legacy sessions, relocated handoffs, damaged/missing evidence, invalid
+export requests and saved job states. All passed. Two manual desk applications
+then checked an already answered consensus question and an unresolved HP4 mass
+question. The existing briefing prompt intentionally stopped at a proposal; a
+new entry prompt connects it to one bounded execution, labeled self-review and
+saved decision. A quickstart gives copyable question, continuation, resume and
+review prompts. These checks establish offline behavior and demonstrate prompt
+usage in this conversation. They do not evaluate independent agents, live
+supervisors, physics stability, new calibration accuracy or hardware behavior.
+No fresh fits, predictions, physics runs or collection were performed.
+
+#### Topics
+
+research program, question-only prompt, smoke tests, catalog, evidence handoff,
+historical job status, self-review, budgets, research quickstart
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| The catalog finds decision handoffs and distinguishes pending or missing summaries | RP-S1 | Supported for CLI fixtures and real CM-E1 lookup | [CLI results](sessions/2026-10-23-research-program-smoke/smoke-results.json), [commands](sessions/2026-10-23-research-program-smoke/cli-invocations.json) |
+| Selected evidence survives source removal and diagnoses damaged/missing files | RP-S2 | Supported for synthetic relocation and partial-export fixtures | [CLI results](sessions/2026-10-23-research-program-smoke/smoke-results.json), [harness](sessions/2026-10-23-research-program-smoke/smoke.py) |
+| Saved job outcomes imply neither liveness nor scientific success | RP-S3 | Supported for six states and a corrupt record | [CLI commands/results](sessions/2026-10-23-research-program-smoke/cli-invocations.json) |
+| One question reaches a scoped answer or bounded missing-evidence decision | RP-D1 | Supported in two manual cases in this conversation | [Cases and self-reviews](sessions/2026-10-23-research-program-smoke/desk-cases.md), [inspection](sessions/2026-10-23-research-program-smoke/desk-inspection.json) |
+
+#### Decision handoff
+
+- Scope: offline archive/catalog CLIs and two manual prompt applications, base 0606f031.
+- Review: current agent ran four CLI smoke tests and inspected saved evidence;
+  prompt review was a self-review, with no independent numerical reproduction.
+- Decision: use the question-first entry prompt and guide; retain existing runtime ownership and experiment-budget rules.
+- Next: give an agent a real research question and optional constraints/budget.
+  Live experiments need the existing launcher/supervisor and applicable checks.
+
+#### References
+
+- [Report](sessions/2026-10-23-research-program-smoke/report.md), [notebook](sessions/2026-10-23-research-program-smoke/research.md): scope, commands, limits and usability change.
+- [Quickstart](sessions/2026-10-23-research-program-smoke/../../../../research/program.md), [entry prompt](sessions/2026-10-23-research-program-smoke/../../../../research/prompts/research-program.txt): user entry points.
+- [Smoke harness](sessions/2026-10-23-research-program-smoke/smoke.py), [results](sessions/2026-10-23-research-program-smoke/smoke-results.json), [calls](sessions/2026-10-23-research-program-smoke/cli-invocations.json), [documentation checks](sessions/2026-10-23-research-program-smoke/documentation-checks.json): verification evidence.
+- [Desk cases](sessions/2026-10-23-research-program-smoke/desk-cases.md), [CM-E1 report](sessions/2026-10-23-research-program-smoke/../2026-10-23-consensus-membership/report.md): saved scientific evidence reused without numerical reruns.
+
 ## [2026-10-23-reviewed-claim-admission](sessions/2026-10-23-reviewed-claim-admission/)
 
 [abstract.md](sessions/2026-10-23-reviewed-claim-admission/abstract.md) · [report.md](sessions/2026-10-23-reviewed-claim-admission/report.md) · [research.md](sessions/2026-10-23-reviewed-claim-admission/research.md)
@@ -2819,6 +2980,345 @@ negative findings, candidate stability gate, Codex, Claude, same-UID boundary
 - [Fixture judgements](sessions/2026-10-23-reviewed-claim-admission/../../../../tests/fixtures/program-review/cases.json): negative/overclaim/missing/gate cases.
 - [Preceding dispatch implementation](sessions/2026-10-23-reviewed-claim-admission/../2026-10-23-program-worker-dispatch/report.md): existing-worker/auth integration.
 - [CM-E1 producer report](sessions/2026-10-23-reviewed-claim-admission/../2026-10-23-consensus-membership/report.md): source of copied saved evidence, not a new admitted result.
+
+## [2026-10-24-bounded-controller](sessions/2026-10-24-bounded-controller/)
+
+[abstract.md](sessions/2026-10-24-bounded-controller/abstract.md) · [report.md](sessions/2026-10-24-bounded-controller/report.md) · [research.md](sessions/2026-10-24-bounded-controller/research.md)
+
+### Finite research allocations and recovery across manager interruptions
+
+Status: complete for task 013; the full manager release remains incomplete.
+
+#### Abstract
+
+Can a manager continue distinct investigations within finite allocations and
+recover without duplicate dispatch or false physical-stop claims? Task 013 adds
+durable task, wall and review reservations, bounded queues, retry limits,
+pause/stop controls and explicit recovery handoffs. The affected suite passed
+140 tests and 34 subtests. Follow-up suites passed 35 controller/manager cases,
+two supervisor cases and five final boundary cases. The actual CLI/file-host
+transcript completed three distinct synthetic investigations with separate
+fixture review and reconstructed two prior admissions in a fresh host. Worker
+launcher and reviewer deadlines remained effective without host polling in
+process fixtures. Recovery checked process birth and current supervisor identity
+without adopting or signalling historical PIDs. Unknown cleanup blocks new work
+until an explicit bounded handoff. These checks use fixture children and saved
+synthetic evidence, not actual coding-client judgement or production science.
+No numerical work ran. Missing live dependencies and client startup remain
+limitations for the task 016 release gate.
+
+#### Topics
+
+research manager, finite allocations, wall deadlines, review reservations,
+recovery, process ownership, pause, cancellation, controller interruption
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Finite reservations, backlog and retry limits prevent duplicate or unfunded dispatch | CTRL-013 fixture suite | Supported within deterministic controller and local process tests | [Checks](sessions/2026-10-24-bounded-controller/checks.json), [affected tests](sessions/2026-10-24-bounded-controller/pytest-final.txt) |
+| Owned launcher/reviewer deadlines survive absent host polling and preserve honest cleanup limits | CTRL-013 deadline fixtures | Supported for fixture subprocesses and the existing launcher cleanup path | [Controller follow-up](sessions/2026-10-24-bounded-controller/pytest-followup.xml) |
+| A fresh manager can continue distinct investigations and retain reviewed results | CTRL-013 CLI transcript | Supported with actual CLI/file host and fixture worker/reviewer children | [Transcript](sessions/2026-10-24-bounded-controller/cli-transcript.json) |
+| The full chat-to-production-worker release works here | None | Not tested successfully; live prerequisites remain | [Report](sessions/2026-10-24-bounded-controller/report.md) |
+
+#### Decision handoff
+
+- Scope: SQLite/controller, actual CLI and file host, existing launcher code with fixture runtime/client, synthetic worker/reviewer subprocesses.
+- Review: retained test results and process/graph outcomes inspected by implementation and parent agents; no numerical reproduction or independent model review.
+- Decision: task 013 is complete. Keep numerical estimates separate from supported tool limits and retain unknown physical-stop boundaries.
+- Next: task 014 adds the bounded worker pool. Task 015 covers combined patch integration. Task 016 still requires actual release proof.
+
+#### References
+
+- [Full report](sessions/2026-10-24-bounded-controller/report.md): implementation, checks and remaining limits.
+- [Research notebook](sessions/2026-10-24-bounded-controller/research.md): budget and decisions.
+- [Controller guide](sessions/2026-10-24-bounded-controller/../../../../research/program-controller.md): current operations and recovery workflow.
+- [Source hashes](sessions/2026-10-24-bounded-controller/source-hashes.json): exact source and task documentation reviewed.
+
+## [2026-10-24-live-manager-release](sessions/2026-10-24-live-manager-release/)
+
+[abstract.md](sessions/2026-10-24-live-manager-release/abstract.md) · [report.md](sessions/2026-10-24-live-manager-release/report.md) · [research.md](sessions/2026-10-24-live-manager-release/research.md)
+
+### Chat-driven manager live gate blocked by runtime prerequisites
+
+Status: blocked. Tasks 007 through 015 are implemented; task 016 is not complete.
+
+#### Abstract
+
+Can the implemented manager carry a question through real workers, production
+tools, separate review and replanning? The actual CLI created durable memory,
+two approaches and finite assignments, then dispatched the existing research
+launcher in an isolated worktree. Native build failed at missing Node-API headers
+before numerical or worker-client execution. Dedicated Codex and separate review
+failed at read-only app-server initialization. Stock MCP initialization timed out
+after eight seconds. The attempt found and fixed invalid disabled-MCP transport
+configuration, including inherited HTTP conflicts. Corrected compatibility checks
+passed eight cases; 33 unchanged affected passes were reused. Actual graph queries,
+counterfactual withdrawal with surviving support, steering, lifecycle commands and
+fresh-host reconstruction worked. Neither proposed scientific investigation
+completed, and no scientific admission was made. Two reviewed investigations,
+production-tool use and observed live interruption/recovery remain required.
+
+#### Topics
+
+research manager, live release gate, Codex, MCP transport, native build,
+durable graph, startup failure, recovery, bounded research
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Ordinary CLI can retain a program and dispatch the existing launcher | LIVE-016 CLI | Supported for startup and durable lifecycle only | [Commands](sessions/2026-10-24-live-manager-release/cli-summary.json), [full transcript](sessions/2026-10-24-live-manager-release/cli-transcript.json.gz) |
+| Disabled manager/reviewer MCP entries parse for absent and existing HTTP servers | LIVE-016 compatibility | Supported by installed Codex parser and focused tests | [Checks](sessions/2026-10-24-live-manager-release/checks.json) |
+| Saved HP3 fitting improves calibration relative to selection-only changes | None | Not tested; startup prevented science | [Plan](sessions/2026-10-24-live-manager-release/plan.json), [worker failure](sessions/2026-10-24-live-manager-release/worker-stderr.log) |
+| Complete manager release criteria are satisfied | LIVE-016 | Blocked; required live outcomes absent | [Report](sessions/2026-10-24-live-manager-release/report.md) |
+
+#### Decision handoff
+
+- Scope: actual CLI, Git worktree/launcher, installed Codex parser and failed client/MCP startup. No hardware or calibration result.
+- Review: producer evidence and code inspected by parent; separate coding-client review did not complete.
+- Decision: retain the compatibility fix and documentation; keep task 016 blocked.
+- Next: provide working native build, writable authenticated client and stock MCP, then finish the required managed pilot without repeating unaffected pool/patch fixtures.
+
+#### References
+
+- [Report](sessions/2026-10-24-live-manager-release/report.md), [notebook](sessions/2026-10-24-live-manager-release/research.md), [checks](sessions/2026-10-24-live-manager-release/checks.json): outcomes and limits.
+- [Source hashes](sessions/2026-10-24-live-manager-release/source-hashes.json), [program export](sessions/2026-10-24-live-manager-release/program-export.json): fixed source and durable history.
+- [Task 015 checks](sessions/2026-10-24-live-manager-release/../2026-10-24-tested-integration/affected-fix-command.json): reused pool/integration foundations.
+
+## [2026-10-24-manager-chat-entry](sessions/2026-10-24-manager-chat-entry/)
+
+[abstract.md](sessions/2026-10-24-manager-chat-entry/abstract.md) · [report.md](sessions/2026-10-24-manager-chat-entry/report.md) · [research.md](sessions/2026-10-24-manager-chat-entry/research.md)
+
+### Program-bound manager tools for an existing research chat
+
+Status: complete for task 011. Full manager release remains incomplete.
+
+#### Abstract
+
+This session tested whether a repository-connected coding chat can create/open a
+research program and operate its durable graph, workers and separate reviews
+through structured tools without manual service setup or a manager physics world.
+A file-queue host retains the actual dispatcher/reviewer child ownership across
+fresh CLI processes. The affected integration passed 107 tests and 34 subtests;
+eighteen unrelated tests were deselected. Four later client/configuration checks
+also passed. Eleven manager cases cover question-only entry, concurrent opens,
+program-bound identities, responsive worker status, pause without cancellation,
+explicit cancellation/stop, fixed-review admission and zombie-host rejection.
+The actual MCP SDK completed initialize/list/call/exit using a diagnostic timer
+only in the test wrapper. Stock SDK startup and a genuine coding-chat session
+remain unproved because of recorded sandbox/runtime limitations. No numerical
+experiments or actual model reviews ran. Tasks 012-016 still own remaining manager
+implementation and live release proof.
+
+#### Topics
+
+research manager, chat entry, CLI, MCP, program attachment, worker ownership,
+file IPC, separate review, pause, cancellation, Codex, Claude, sandbox prerequisites
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Fresh chat/tool processes can share one program controller and retained worker ownership without duplicate dispatch or manager physics startup | QA-011-1 | Supported by real local protocols with fixture children | [Checks](sessions/2026-10-24-manager-chat-entry/checks.json), [test transcript](sessions/2026-10-24-manager-chat-entry/pytest-final.txt), [historical question example](sessions/2026-10-24-manager-chat-entry/question-example.json) |
+| Fixed separate-review cancellation and admission remain available through program-bound CLI tools | QA-011-1 | Supported with fixture reviewer judgements, not live-model review | [Fixture history](sessions/2026-10-24-manager-chat-entry/cli-review-fixture.json), [tests](sessions/2026-10-24-manager-chat-entry/../../../../tests/python/test_research_program_manager.py) |
+| The actual manager MCP adapter handles SDK initialize/list/call/exit | QA-011-2 | Supported with an explicit test-only timer accommodation | [Wire record](sessions/2026-10-24-manager-chat-entry/manager-protocol.json), [wrapper](sessions/2026-10-24-manager-chat-entry/sdk-timer-test.py), [prior SDK diagnosis](sessions/2026-10-24-manager-chat-entry/prior-sdk-findings.json) |
+| Stock SDK startup and the full chat-to-production-worker release work in this sandbox | None | Not tested successfully; prerequisites remain | [Prior runtime observation](sessions/2026-10-24-manager-chat-entry/prior-runtime-prerequisites.json), [manager release contract](sessions/2026-10-24-manager-chat-entry/../../../../research/program-tasks/MANAGER.md) |
+
+#### Decision handoff
+
+- Scope: actual local CLI/store/controller and SDK protocols, synthetic worker/reviewer fixtures and supported-client command planning.
+- Review: implementation author inspected the retained checks. No numerical reproduction, actual coding-chat conversation or independent model judgement occurred.
+- Decision: task 011 is complete as a manager interface capability. Keep the full manager readiness notice until remaining implementation and task 016 live proof pass.
+- Next: task 012 can use these tools for strategy and steering. Task 013 must add runtime deadlines, reservation/restart reconciliation and autonomous bounded continuation.
+
+#### References
+
+- [Full report](sessions/2026-10-24-manager-chat-entry/report.md): behavior and current limits.
+- [Notebook](sessions/2026-10-24-manager-chat-entry/research.md): budget, accepted steering and corrected startup failure.
+- [Manager guide](sessions/2026-10-24-manager-chat-entry/../../../../research/program-manager.md): current commands and question-only prompt.
+- [Client plans](sessions/2026-10-24-manager-chat-entry/client-plans.json): supported argv/configuration only; no client launched.
+- [Preceding review capability](sessions/2026-10-24-manager-chat-entry/../2026-10-23-reviewed-claim-admission/report.md): fixed submissions and admission contract reused here.
+
+## [2026-10-24-manager-strategy](sessions/2026-10-24-manager-strategy/)
+
+[abstract.md](sessions/2026-10-24-manager-strategy/abstract.md) · [report.md](sessions/2026-10-24-manager-strategy/report.md) · [research.md](sessions/2026-10-24-manager-strategy/research.md)
+
+### Evidence-based route decisions and human steering in the research manager
+
+Status: complete for task 012; the full manager release remains incomplete.
+
+#### Abstract
+
+Can the existing manager compare routes, fund a useful rival discriminator and
+change direction without confusing execution failure with scientific evidence?
+Task 012 adds durable route plans, funded investigations, reviewed outcome
+actions, graph-driven dependency review, retry limits and accepted human
+steering. The affected integration suite passed 125 tests, with 18 deselected
+and 34 passing subtests. A later framing check passed all 18 strategy cases.
+The saved-source exercise inspected CM-E1 and historical mixed reports without
+repeating numerical work. It recorded the narrow membership retirement,
+funded a common-fold scout, retained a model-adequacy rival and reconstructed
+its rationale in a fresh manager. Counterfactual withdrawal preserved a surviving
+historical derivation while requiring explicit review. Automatic scientific
+outcomes use current reviewed admissions bound to the funded assignment.
+Fixture reviewers test that boundary; they are not live independent reviews.
+No fits, physics, collection or hardware measurements ran. Runtime deadline
+and recovery enforcement remain task 013; real release proof remains task 016.
+
+#### Topics
+
+research manager, strategy, rival hypotheses, approach priority, human steering,
+CM-E1, negative evidence, evidence withdrawal, reviewed admission, retry limits
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Durable tools can fund rivals, prune scoped methods, preserve failed execution and reconstruct cited route decisions | STR-012 fixtures | Supported within deterministic controller and CLI fixtures | [Checks](sessions/2026-10-24-manager-strategy/checks.json), [test transcript](sessions/2026-10-24-manager-strategy/pytest-final.txt) |
+| Withdrawal can preserve a surviving derivation and queue affected routes without changing unrelated work | STR-012 saved-source counterfactual | Supported as an illustrative graph/controller case | [Worked cases](sessions/2026-10-24-manager-strategy/worked-cases.json), [rationale](sessions/2026-10-24-manager-strategy/rationale.json) |
+| A new numerical calibration method improves accuracy | None | Not tested | No numerical work commissioned or performed in this development session |
+
+#### Decision handoff
+
+- Scope: manager strategy code and saved simulated reports, with synthetic review fixtures.
+- Review: source text and structured CM-E1 fields inspected; no live coding-client review or numerical reproduction.
+- Decision: task 012 is complete. Keep its recorded allocations distinct from enforced runtime limits.
+- Next: task 013 owns deadline enforcement, finite continuation and recovery. Task 016 still requires real release evidence.
+
+#### References
+
+- [Full report](sessions/2026-10-24-manager-strategy/report.md): behavior, checks and evidence boundaries.
+- [Research notebook](sessions/2026-10-24-manager-strategy/research.md): budget, decisions and limitations.
+- [CM-E1 report](sessions/2026-10-24-manager-strategy/../2026-10-23-consensus-membership/report.md): scoped negative and unresolved common-fold evidence.
+- [Strategy guide](sessions/2026-10-24-manager-strategy/../../../../research/program-strategy.md): implemented manager operations.
+
+## [2026-10-24-tested-integration](sessions/2026-10-24-tested-integration/)
+
+[abstract.md](sessions/2026-10-24-tested-integration/abstract.md) · [report.md](sessions/2026-10-24-tested-integration/report.md) · [research.md](sessions/2026-10-24-tested-integration/research.md)
+
+### Reviewed findings survive combined patch failures
+
+Status: complete.
+
+#### Abstract
+
+This engineering task asks whether reviewed scientific findings can remain useful
+when candidate patches conflict, become stale, change after review or fail only
+in combination. Real Git branches and binary worktrees exercise manager candidate
+preparation, finite polled checks, exact revision receipts, exclusive capacity,
+stop and restart. Compatible patches pass; two individually passing patches fail
+their combined check without changing accepted findings. Version-2 review separates
+missing delivery gates from scientific admission while retaining version-1 history.
+The corrected affected selection passed 61 tests in 11.47 seconds, with unchanged
+passing cases reused from the wider run. Ordinary detached-child detection retains
+the lease until observed exit. These are synthetic scientific judgements and
+process/Git checks. They establish neither actual physics stability, calibration
+accuracy, protected evaluation nor the live manager release.
+
+#### Topics
+
+Research manager, combined candidates, Git worktrees, engineering readiness,
+reviewed findings, physics delivery gate, sealed submissions, process ownership
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Sealed compatible patches can be checked at one exact combined revision while preserving human work | I15-compatible | Supported fixture behavior | [Receipts](sessions/2026-10-24-tested-integration/fixture-evidence.json), [final checks](sessions/2026-10-24-tested-integration/affected-fix.log) |
+| Conflicts, stale/mutated sources and failing combinations preserve scientific admissions | I15-rejections, I15-combination | Supported fixture behavior | [Exact records and bundles](sessions/2026-10-24-tested-integration/fixture-evidence/), [checks](sessions/2026-10-24-tested-integration/affected-fix.xml) |
+| Startup, leader loss, stop and detected detached work retain exclusion until observed cleanup | I15-lifecycle | Supported within documented process boundary | [Runner loss](sessions/2026-10-24-tested-integration/fixture-evidence/runner-loss/records.json), [detached record](sessions/2026-10-24-tested-integration/fixture-evidence/detached-child/records.json) |
+| Actual production physics and coding-client release pilot pass | None | Not tested | [Limits](sessions/2026-10-24-tested-integration/report.md) |
+
+#### Decision handoff
+
+- Scope: cooperative same-UID manager engineering, synthetic findings and actual Git/process fixtures.
+- Review: parent read-only audit inspected lifecycle, exact-source and reviewer-requirement changes and retained results. No live scientific review occurred.
+- Decision: task 015 complete; reviewed knowledge and combined patch readiness remain separate.
+- Next: task 016 must use the real supported client and production worker/tools. Missing live prerequisites remain genuine blockers for that milestone.
+
+#### References
+
+- [Full report](sessions/2026-10-24-tested-integration/report.md): verification and concrete boundaries.
+- [Notebook](sessions/2026-10-24-tested-integration/research.md): allocation, steering and decisions.
+- [Source hashes](sessions/2026-10-24-tested-integration/source-hashes.json): exact delivered implementation and tests.
+- [Task 014 record](sessions/2026-10-24-tested-integration/../2026-10-24-worker-pool/report.md): store-wide reservation boundary reused here.
+
+## [2026-10-24-worker-pool](sessions/2026-10-24-worker-pool/)
+
+[abstract.md](sessions/2026-10-24-worker-pool/abstract.md) · [report.md](sessions/2026-10-24-worker-pool/report.md) · [research.md](sessions/2026-10-24-worker-pool/research.md)
+
+### Bounded research workers across competing approaches
+
+Status: complete for task 014. Manager release incomplete.
+
+#### Abstract
+
+The manager now coordinates a small local worker pool through the existing launcher. The store and each program allocation default to one worker and one future review obligation. Store capacity supports up to four workers and sixteen review obligations. Fixture checks exercised actual CLI/file-host requests, real child processes and Git worktrees, with synthetic supervisor/world identities. They verified atomic charges, separate sessions and branches, cross-program backpressure and cancellation, shared-build exclusion, recovery without PID adoption, and attempt-specific premise review while retaining partial evidence. The successful fix pass covered 61 tests and 17 subtests; the final store/metadata pass covered 22 tests and 17 subtests. These results establish the fixture-tested coordination boundary. They do not establish live coding-client review, production-world isolation or calibration accuracy. Task 016 still owns that release evidence.
+
+#### Topics
+
+research manager, worker pool, SQLite reservations, review backlog, worktree isolation, premise withdrawal, interrupted review
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| A small local pool can enforce owned worker/review capacity and preserve shared decisions | POOL-014 | Supported within fixture scope | [Checks](sessions/2026-10-24-worker-pool/checks.json), [CLI evidence](sessions/2026-10-24-worker-pool/cli-evidence.json) |
+| A changed premise remains linked to its running attempt and partial evidence | POOL-014 | Supported within synthetic graph scope | [Final tests](sessions/2026-10-24-worker-pool/pytest-final.txt), [Report](sessions/2026-10-24-worker-pool/report.md) |
+| This proves the live managed production research path | None | Not tested | Task 016 remains required |
+
+#### Decision handoff
+
+- Scope: local SQLite/file host, existing launcher worktree creation and fixture children; world IDs and reviewer judgements are synthetic.
+- Review: producer checks plus parent read-only audit. Passing unaffected cases were reused. Unknown orphan activity remains unknown after a recorded handoff.
+- Decision: complete task 014; keep default concurrency and backlog at one. Raise store and allocation capacity explicitly when parallel work is useful.
+- Next: task 015 must hold shared-build/evaluation exclusion while checking a combined patch candidate. Task 016 must supply actual client and production-tool evidence.
+
+#### References
+
+- [Full report](sessions/2026-10-24-worker-pool/report.md): implemented behavior and limits.
+- [Research notebook](sessions/2026-10-24-worker-pool/research.md): budget, corrections and next decision.
+- [Controller guide](sessions/2026-10-24-worker-pool/../../../../research/program-controller.md): commands and ownership boundaries.
+- [Preceding bounded-controller report](sessions/2026-10-24-worker-pool/../2026-10-24-bounded-controller/report.md): task 013 foundations reused here.
+
+## [2026-10-26-cm-saved-evidence-review](sessions/2026-10-26-cm-saved-evidence-review/)
+
+[abstract.md](sessions/2026-10-26-cm-saved-evidence-review/abstract.md) · [report.md](sessions/2026-10-26-cm-saved-evidence-review/report.md) · [research.md](sessions/2026-10-26-cm-saved-evidence-review/research.md)
+
+### Saved consensus evidence rejects blanket nonworsening adoption
+
+Status: complete; separately reviewed and admitted.
+
+#### Abstract
+
+This iteration asks whether saved CM-E1 evidence justifies unconditional finite-prediction-only final-consensus adoption. One bounded local worker inspected four archived sources; a fresh local reviewer checked the frozen claim, report and nine selected assets. The archived additional cohort contains one improvement, two regressions and five unchanged outcomes. Its summed per-anchor error falls from 401.100276 to 400.797031 mm, but individual datasets worsen by 0.502998 and 0.094156 mm. All three changed selections lack a common unseen validation sweep. The reviewer returned supported/keep, and the controller admitted the scoped finding. Retire the blanket nonworsening proposal in this archived scope and preserve current defaults. These are inspected producer simulation measurements, with 91 passing structural consistency checks and no new numerical experiments. The review does not establish numerical correctness, hardware accuracy, stopping behavior or current-code equivalence. The next useful observation is provenance of compatible later sweeps unseen by both applied models.
+
+#### Topics
+
+Hangprinter, CDPR, autocalibration, consensus membership, saved evidence, per-dataset regression, common unseen sweeps, separate review
+
+#### Tested hypotheses
+
+| Hypothesis | Investigation | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Saved CM-E1 records warrant withholding unconditional adoption while common-unseen predictive superiority remains unresolved | CM-SAVED-A1; historical CM-E1 | Supported by separate review | [Report](sessions/2026-10-26-cm-saved-evidence-review/report.md), [review](sessions/2026-10-26-cm-saved-evidence-review/review.json) |
+| Blanket finite-only final consensus never worsens an additional dataset | Historical CM-E1 inspected by CM-SAVED-A1 | Rejected within archived scope | [Frozen producer results](/home/torbjorn/repos/hp-sim5/research/programs/program-e31e5321be5940baacf677409b2579e0/submissions/cm-fixed-submission/source-results-json) |
+| Changed selections establish predictive superiority on common unseen data | Historical CM-E1 inspected by CM-SAVED-A1 | Inconclusive | [Frozen training coverage](/home/torbjorn/repos/hp-sim5/research/programs/program-e31e5321be5940baacf677409b2579e0/submissions/cm-fixed-submission/source-audit-json) |
+| A narrower rule improves fresh fits or hardware | None | Not tested | Outside this iteration |
+
+#### Decision handoff
+
+- Scope: eleven archived simulated final-selection histories, eight names beyond the motivating screen; summed per-anchor Euclidean distance in mm.
+- Review: fresh local Codex context `review-run-beb299c90c6441278e176474b7f72fee`; supported/keep/report_only. Evidence inspected, not numerically reproduced.
+- Decision: retire only the unconditional nonworsening proposal; preserve current defaults. No production change.
+- Next: separately scope a saved-source compatibility search for later whole sweeps unseen by every member and chosen spool fit in both arms, prioritizing the two regressions. No further work is funded.
+
+#### References
+
+- [Manager report](sessions/2026-10-26-cm-saved-evidence-review/report.md), [notebook](sessions/2026-10-26-cm-saved-evidence-review/research.md) and [review receipt](sessions/2026-10-26-cm-saved-evidence-review/review.json): scope, decisions, cleanup and reviewer limitations.
+- [Full worker report](/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/report.md) and [evidence extract](/home/torbjorn/repos/hp-sim5/output/research/sessions/attempt-8cc3e522df934dafbc74a9639e34721e/evidence.json): individual saved outcomes, sweep IDs, source hashes and structural checks.
+- [Frozen submission manifest](/home/torbjorn/repos/hp-sim5/research/programs/program-e31e5321be5940baacf677409b2579e0/submissions/cm-fixed-submission/manifest.json): exact reviewed bytes and source/base identities.
 
 ## [architecture-batch](architecture-batch/)
 
@@ -3055,6 +3555,48 @@ integration verification, partial session summary
 - [Original saved artifact](architecture-viewer-validation/research.md)
 - [Original saved artifact](architecture-viewer-validation/prompt.txt)
 - [Tracked account of route, resume and Viewer checks; consult this for outcomes](architecture-viewer-validation/../../../research/architecture-verification.md)
+
+## [attempt-8cc3e522df934dafbc74a9639e34721e](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/)
+
+[abstract.md](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/abstract.md) · [report.md](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/report.md) · [research.md](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/research.md)
+
+### CM-E1 saved-source audit: aggregate improvement fails per-dataset nonworsening
+
+Status: complete; inspection finished, fresh review pending.
+
+#### Abstract
+
+Do four archived CM-E1 sources support unconditional finite-prediction-only final-consensus nonworsening? This audit inspected their bytes and JSON, copied 219,323 bytes of immutable source evidence, and checked hashes, cross-file identities, stored summary arithmetic and saved training/fold sets. Among eight dataset names beyond the motivating screen, the inspected producer evidence records one improvement, two regressions and five unchanged outcomes. Summed anchor error decreases from 401.100276 to 400.797031 mm, while flexible_lines_2000 and ten_points_w_buildup worsen by 0.502998 and 0.094156 mm. Thus the aggregate gain does not satisfy per-dataset nonworsening. For all three changed selections, the baseline trained on every available sweep; each variant leaves one terminal sweep unseen, but none is unseen by both models. Predictive superiority remains unresolved. All 91 structural consistency checks pass. These are inspected historical simulation measurements, with no independent numerical replay, fresh fits, physics, collection or hardware validation. Source identities and internal agreement do not validate the producer's numerical implementation or current-code equivalence.
+
+#### Topics
+
+CM-E1, consensus membership, autocalibration, finite prediction, final selection, per-dataset nonworsening, aggregate error, common unseen sweeps, training overlap, simulated fixtures, provenance audit, scoped-holdout.
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Finite-only final consensus never worsens each additional archived dataset | CM-SAVED-A1; historical CM-E1 | Rejected within archived scope | [Rows 6 and 9](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/evidence.json) |
+| The additional cohort's aggregate error decreases | CM-SAVED-A1; historical CM-E1 | Supported as inspected producer evidence | [Saved summary](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/sources/results.json) |
+| Changed cases establish common-unseen predictive superiority | CM-SAVED-A1; historical CM-E1 | Inconclusive | [Empty folds and saved training coverage](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/evidence.json) |
+| Archived regressions warrant withholding unconditional adoption | CM-SAVED-A1 | Supported within archived scope | [Report](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/report.md) |
+| A narrower rule improves fresh fits, stopping or hardware | None | Not tested | Outside allocation |
+
+#### Decision handoff
+
+- Scope: CM-E1's eleven archived simulated histories, including eight additional dataset names; unconditional finite-prediction-only final consensus; sum of per-anchor distances in mm.
+- Review: this worker inspected four producer sources and 91 structural checks. Numerical correctness was not independently replayed; a fresh reviewer is pending.
+- Decision: retire only the unconditional nonworsening default-change proposal in this scope. Do not infer broader solver/model inadequacy or change production defaults.
+- Next: separately inspect whether compatible saved later whole sweeps exist outside training of all members and the chosen spool fit in both arms for rows 6, 9 and 10. No search or evaluation was performed here.
+
+#### References
+
+- [Report](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/report.md) and [notebook](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/research.md): reasoning, constraints and handoff.
+- [CM-E1 report, preceding session 2026-10-23-consensus-membership](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/sources/report.md): archived method and interpretation; outgoing sources not followed.
+- [CM-E1 results](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/sources/results.json): exact saved outcomes and fold IDs.
+- [CM-E1 audit](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/sources/audit.json): saved training coverage and observation identities.
+- [CM-E1 input manifest](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/sources/inputs.json): cohorts, simulation truth and producer provenance.
+- [Evidence extract](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/evidence.json) and [extractor](sessions/attempt-8cc3e522df934dafbc74a9639e34721e/extract.py): exact source hashes, JSON pointers and consistency checks.
 
 ## [autocal-candidate-model-validation-and-throughput-fdb616a4](sessions/autocal-candidate-model-validation-and-throughput-fdb616a4/)
 
@@ -3774,465 +4316,3 @@ incomplete archive, no summarized experiments
 #### References
 
 - [Original saved artifact](sessions/unsuccessful-launch-no-record-8225a40f/exit.json)
-
-## [2026-10-23-autocal-agenda](sessions/2026-10-23-autocal-agenda/)
-
-[abstract.md](sessions/2026-10-23-autocal-agenda/abstract.md) · [report.md](sessions/2026-10-23-autocal-agenda/report.md) · [research.md](sessions/2026-10-23-autocal-agenda/research.md)
-
-### Autocal research allocation after mixed consensus evidence
-
-Status: complete (desk exercise; next numerical assignment not tested).
-
-#### Abstract
-
-What should receive the next research allocation after broader replay rejects
-blanket finite-prediction consensus membership? This desk exercise compares saved
-consensus, ranking, solver-attribution and model-adequacy evidence with current
-selection code. CM-E1 reports one gain and two regressions across eight additional
-datasets; all three changed comparisons lack common unseen sweeps. The agenda
-therefore retains production defaults and proposes a bounded compatible-sweep
-search, with at most six later frozen prediction evaluations if eligible data
-exist. It compares four routes and demonstrates how withdrawing CM-E1 would
-replace that allocation with evidence recovery while preserving other findings.
-Direct claim links suffice; no graph infrastructure was added. Saved results
-were inspected, not independently reproduced. Some historical raw artifacts are
-unavailable here. No fits, selection/prediction experiments, physics, collection
-or hardware measurements were performed; improved calibration accuracy is not
-established by this workflow result.
-
-#### Topics
-
-autocalibration, research agenda, common unseen sweeps, consensus, model adequacy,
-evidence dependencies, negative results, withdrawal exercise, research allocation
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Direct evidence links suffice for a scoped allocation and next brief | AG-D1 | Supported for this four-route desk exercise | [Agenda](sessions/2026-10-23-autocal-agenda/../../../../research/autocal-agenda.md), [checks](sessions/2026-10-23-autocal-agenda/checks.json) |
-| Removing a supporting result changes the allocation while preserving other scope | AG-D2 | Supported for a counterfactual CM-E1 withdrawal | [Exercise](sessions/2026-10-23-autocal-agenda/../../../../research/autocal-agenda.md#withdrawal-exercise-what-if-cm-e1-is-unavailable) |
-| The proposed common-fold probe improves calibration | None | Not tested | [Proposed assignment](sessions/2026-10-23-autocal-agenda/../../../../research/autocal-agenda.md#next-assignment-common-unseen-sweeps-for-changed-applied-models) |
-
-#### Decision handoff
-
-- Scope: task 005, evidence/source inspection at fd10fd94; no runtime changes.
-- Review: this agent inspected saved reports, CM-E1 JSON and current consumers;
-  hashes/links/queue/catalog checked. No independent numerical reproduction.
-- Decision: keep defaults; use the linked agenda and defer graph tooling.
-- Next: commission the compatible-unseen-sweep assignment; absent eligible data,
-  scope model adequacy separately. The numerical assignment remains proposed.
-
-#### References
-
-- [Full report](sessions/2026-10-23-autocal-agenda/report.md), [notebook](sessions/2026-10-23-autocal-agenda/research.md), [verification](sessions/2026-10-23-autocal-agenda/checks.json): actual work and limitations.
-- [Working agenda](sessions/2026-10-23-autocal-agenda/../../../../research/autocal-agenda.md): route priorities, claim dependencies and bounded next assignment.
-- [Producer CM-E1](sessions/2026-10-23-autocal-agenda/../2026-10-23-consensus-membership/report.md), [saved measurements](sessions/2026-10-23-autocal-agenda/../2026-10-23-consensus-membership/results.json): reused scientific finding.
-- [Handoff procedure](sessions/2026-10-23-autocal-agenda/../../../../research/handoffs.md): durable evidence recovery.
-
-## [2026-10-23-research-program-smoke](sessions/2026-10-23-research-program-smoke/)
-
-[abstract.md](sessions/2026-10-23-research-program-smoke/abstract.md) · [report.md](sessions/2026-10-23-research-program-smoke/report.md) · [research.md](sessions/2026-10-23-research-program-smoke/research.md)
-
-### Research program smoke checks and a question-only starting prompt
-
-Status: complete for offline workflow checks; live research runtime not exercised.
-
-#### Abstract
-
-Can a user start this research workflow with only a question? Four standard-library
-smoke tests made fourteen real CLI calls covering catalog generation/search,
-pending/legacy sessions, relocated handoffs, damaged/missing evidence, invalid
-export requests and saved job states. All passed. Two manual desk applications
-then checked an already answered consensus question and an unresolved HP4 mass
-question. The existing briefing prompt intentionally stopped at a proposal; a
-new entry prompt connects it to one bounded execution, labeled self-review and
-saved decision. A quickstart gives copyable question, continuation, resume and
-review prompts. These checks establish offline behavior and demonstrate prompt
-usage in this conversation. They do not evaluate independent agents, live
-supervisors, physics stability, new calibration accuracy or hardware behavior.
-No fresh fits, predictions, physics runs or collection were performed.
-
-#### Topics
-
-research program, question-only prompt, smoke tests, catalog, evidence handoff,
-historical job status, self-review, budgets, research quickstart
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| The catalog finds decision handoffs and distinguishes pending or missing summaries | RP-S1 | Supported for CLI fixtures and real CM-E1 lookup | [CLI results](sessions/2026-10-23-research-program-smoke/smoke-results.json), [commands](sessions/2026-10-23-research-program-smoke/cli-invocations.json) |
-| Selected evidence survives source removal and diagnoses damaged/missing files | RP-S2 | Supported for synthetic relocation and partial-export fixtures | [CLI results](sessions/2026-10-23-research-program-smoke/smoke-results.json), [harness](sessions/2026-10-23-research-program-smoke/smoke.py) |
-| Saved job outcomes imply neither liveness nor scientific success | RP-S3 | Supported for six states and a corrupt record | [CLI commands/results](sessions/2026-10-23-research-program-smoke/cli-invocations.json) |
-| One question reaches a scoped answer or bounded missing-evidence decision | RP-D1 | Supported in two manual cases in this conversation | [Cases and self-reviews](sessions/2026-10-23-research-program-smoke/desk-cases.md), [inspection](sessions/2026-10-23-research-program-smoke/desk-inspection.json) |
-
-#### Decision handoff
-
-- Scope: offline archive/catalog CLIs and two manual prompt applications, base 0606f031.
-- Review: current agent ran four CLI smoke tests and inspected saved evidence;
-  prompt review was a self-review, with no independent numerical reproduction.
-- Decision: use the question-first entry prompt and guide; retain existing runtime ownership and experiment-budget rules.
-- Next: give an agent a real research question and optional constraints/budget.
-  Live experiments need the existing launcher/supervisor and applicable checks.
-
-#### References
-
-- [Report](sessions/2026-10-23-research-program-smoke/report.md), [notebook](sessions/2026-10-23-research-program-smoke/research.md): scope, commands, limits and usability change.
-- [Quickstart](sessions/2026-10-23-research-program-smoke/../../../../research/program.md), [entry prompt](sessions/2026-10-23-research-program-smoke/../../../../research/prompts/research-program.txt): user entry points.
-- [Smoke harness](sessions/2026-10-23-research-program-smoke/smoke.py), [results](sessions/2026-10-23-research-program-smoke/smoke-results.json), [calls](sessions/2026-10-23-research-program-smoke/cli-invocations.json), [documentation checks](sessions/2026-10-23-research-program-smoke/documentation-checks.json): verification evidence.
-- [Desk cases](sessions/2026-10-23-research-program-smoke/desk-cases.md), [CM-E1 report](sessions/2026-10-23-research-program-smoke/../2026-10-23-consensus-membership/report.md): saved scientific evidence reused without numerical reruns.
-
-## [2026-10-23-program-worker-dispatch](sessions/2026-10-23-program-worker-dispatch/)
-
-[abstract.md](sessions/2026-10-23-program-worker-dispatch/abstract.md) · [report.md](sessions/2026-10-23-program-worker-dispatch/report.md) · [research.md](sessions/2026-10-23-program-worker-dispatch/research.md)
-
-### Existing research worker dispatch with observed ownership and cleanup
-
-Status: complete task 009 tool implementation; live manager release not established.
-
-#### Abstract
-
-Can the manager dispatch a bounded assignment through the existing research
-launcher while retaining ownership and evidence? A standard-library adapter on
-ProgramStore now reserves one worker, writes an exact assignment/budget prompt,
-launches the existing batch route, and records process birth identity, source,
-returned session/worktree paths and partial artifacts. Start/status/cancel remain
-responsive. Zero exits remain unreviewed submissions. Fake child fixtures cover
-normal/failing/auth-blocked launches, cancellation, partial manifests and stale
-PID refusal. Actual launcher regressions with fake clients/services verify
-interrupted runtime/Viewer startup cleanup and cleanup-error reporting. The final
-adapter/launcher check passed 57 tests; a later import-validation change passed
-all 10 adapter tests. Seventeen earlier store/graph checks are reused. Four saved
-real launcher dry-runs cover Codex/Claude batch and worktree arguments. They start
-no client or physics world. Missing runtime dependencies and nested Codex writable
-state prevent inferring live readiness. No scientific experiments or admission
-occurred; live worker/review/graph proof remains task 016.
-
-#### Topics
-
-research manager, worker dispatch, ProgramStore, process ownership, cancellation,
-launcher, worktree, Codex, Claude, batch, partial artifacts
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| One bounded assignment can be dispatched and observed without accepting science | W009-FIXTURE | Supported tool check with fake launchers | [Checks](sessions/2026-10-23-program-worker-dispatch/checks.json) |
-| Cancellation reaches actual launcher cleanup even during startup | W009-LAUNCHER | Supported with fake services and a real signal | [Checks](sessions/2026-10-23-program-worker-dispatch/checks.json) |
-| Both supported client argument routes survive prompt/worktree handling | W009-DRY | Supported launcher dry-run only | [Four outputs](sessions/2026-10-23-program-worker-dispatch/dry-run-records.json) |
-| A live worker can complete production research and independent review here | None | Not tested; prerequisites unavailable | [Parent observations](sessions/2026-10-23-program-worker-dispatch/prerequisites.json) |
-
-#### Decision handoff
-
-- Scope: process/store/launcher behavior, fake clients/services and real argument dry-runs.
-- Review: implementation worker inspected and ran focused tests; no independent scientific review or numerical reproduction.
-- Decision: task 009 is complete; submitted worker output remains unreviewed and unassessed.
-- Next: task 010 adds fixed submissions and separate review; task 016 must supply actual live proof.
-
-#### References
-
-- [Report](sessions/2026-10-23-program-worker-dispatch/report.md): implementation, observations and limitations.
-- [Notebook](sessions/2026-10-23-program-worker-dispatch/research.md): objective, budget, steering and next decision.
-- [Adapter guide](sessions/2026-10-23-program-worker-dispatch/../../../../research/program-workers.md): actual API and lifecycle boundary.
-- [Test-tool provenance](sessions/2026-10-23-program-worker-dispatch/test-tool-provenance.json): parent-staged released pytest sources used for regression execution.
-
-## [2026-10-24-manager-chat-entry](sessions/2026-10-24-manager-chat-entry/)
-
-[abstract.md](sessions/2026-10-24-manager-chat-entry/abstract.md) · [report.md](sessions/2026-10-24-manager-chat-entry/report.md) · [research.md](sessions/2026-10-24-manager-chat-entry/research.md)
-
-### Program-bound manager tools for an existing research chat
-
-Status: complete for task 011. Full manager release remains incomplete.
-
-#### Abstract
-
-This session tested whether a repository-connected coding chat can create/open a
-research program and operate its durable graph, workers and separate reviews
-through structured tools without manual service setup or a manager physics world.
-A file-queue host retains the actual dispatcher/reviewer child ownership across
-fresh CLI processes. The affected integration passed 107 tests and 34 subtests;
-eighteen unrelated tests were deselected. Four later client/configuration checks
-also passed. Eleven manager cases cover question-only entry, concurrent opens,
-program-bound identities, responsive worker status, pause without cancellation,
-explicit cancellation/stop, fixed-review admission and zombie-host rejection.
-The actual MCP SDK completed initialize/list/call/exit using a diagnostic timer
-only in the test wrapper. Stock SDK startup and a genuine coding-chat session
-remain unproved because of recorded sandbox/runtime limitations. No numerical
-experiments or actual model reviews ran. Tasks 012-016 still own remaining manager
-implementation and live release proof.
-
-#### Topics
-
-research manager, chat entry, CLI, MCP, program attachment, worker ownership,
-file IPC, separate review, pause, cancellation, Codex, Claude, sandbox prerequisites
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Fresh chat/tool processes can share one program controller and retained worker ownership without duplicate dispatch or manager physics startup | QA-011-1 | Supported by real local protocols with fixture children | [Checks](sessions/2026-10-24-manager-chat-entry/checks.json), [test transcript](sessions/2026-10-24-manager-chat-entry/pytest-final.txt), [historical question example](sessions/2026-10-24-manager-chat-entry/question-example.json) |
-| Fixed separate-review cancellation and admission remain available through program-bound CLI tools | QA-011-1 | Supported with fixture reviewer judgements, not live-model review | [Fixture history](sessions/2026-10-24-manager-chat-entry/cli-review-fixture.json), [tests](sessions/2026-10-24-manager-chat-entry/../../../../tests/python/test_research_program_manager.py) |
-| The actual manager MCP adapter handles SDK initialize/list/call/exit | QA-011-2 | Supported with an explicit test-only timer accommodation | [Wire record](sessions/2026-10-24-manager-chat-entry/manager-protocol.json), [wrapper](sessions/2026-10-24-manager-chat-entry/sdk-timer-test.py), [prior SDK diagnosis](sessions/2026-10-24-manager-chat-entry/prior-sdk-findings.json) |
-| Stock SDK startup and the full chat-to-production-worker release work in this sandbox | None | Not tested successfully; prerequisites remain | [Prior runtime observation](sessions/2026-10-24-manager-chat-entry/prior-runtime-prerequisites.json), [manager release contract](sessions/2026-10-24-manager-chat-entry/../../../../research/program-tasks/MANAGER.md) |
-
-#### Decision handoff
-
-- Scope: actual local CLI/store/controller and SDK protocols, synthetic worker/reviewer fixtures and supported-client command planning.
-- Review: implementation author inspected the retained checks. No numerical reproduction, actual coding-chat conversation or independent model judgement occurred.
-- Decision: task 011 is complete as a manager interface capability. Keep the full manager readiness notice until remaining implementation and task 016 live proof pass.
-- Next: task 012 can use these tools for strategy and steering. Task 013 must add runtime deadlines, reservation/restart reconciliation and autonomous bounded continuation.
-
-#### References
-
-- [Full report](sessions/2026-10-24-manager-chat-entry/report.md): behavior and current limits.
-- [Notebook](sessions/2026-10-24-manager-chat-entry/research.md): budget, accepted steering and corrected startup failure.
-- [Manager guide](sessions/2026-10-24-manager-chat-entry/../../../../research/program-manager.md): current commands and question-only prompt.
-- [Client plans](sessions/2026-10-24-manager-chat-entry/client-plans.json): supported argv/configuration only; no client launched.
-- [Preceding review capability](sessions/2026-10-24-manager-chat-entry/../2026-10-23-reviewed-claim-admission/report.md): fixed submissions and admission contract reused here.
-
-## [2026-10-24-manager-strategy](sessions/2026-10-24-manager-strategy/)
-
-[abstract.md](sessions/2026-10-24-manager-strategy/abstract.md) · [report.md](sessions/2026-10-24-manager-strategy/report.md) · [research.md](sessions/2026-10-24-manager-strategy/research.md)
-
-### Evidence-based route decisions and human steering in the research manager
-
-Status: complete for task 012; the full manager release remains incomplete.
-
-#### Abstract
-
-Can the existing manager compare routes, fund a useful rival discriminator and
-change direction without confusing execution failure with scientific evidence?
-Task 012 adds durable route plans, funded investigations, reviewed outcome
-actions, graph-driven dependency review, retry limits and accepted human
-steering. The affected integration suite passed 125 tests, with 18 deselected
-and 34 passing subtests. A later framing check passed all 18 strategy cases.
-The saved-source exercise inspected CM-E1 and historical mixed reports without
-repeating numerical work. It recorded the narrow membership retirement,
-funded a common-fold scout, retained a model-adequacy rival and reconstructed
-its rationale in a fresh manager. Counterfactual withdrawal preserved a surviving
-historical derivation while requiring explicit review. Automatic scientific
-outcomes use current reviewed admissions bound to the funded assignment.
-Fixture reviewers test that boundary; they are not live independent reviews.
-No fits, physics, collection or hardware measurements ran. Runtime deadline
-and recovery enforcement remain task 013; real release proof remains task 016.
-
-#### Topics
-
-research manager, strategy, rival hypotheses, approach priority, human steering,
-CM-E1, negative evidence, evidence withdrawal, reviewed admission, retry limits
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Durable tools can fund rivals, prune scoped methods, preserve failed execution and reconstruct cited route decisions | STR-012 fixtures | Supported within deterministic controller and CLI fixtures | [Checks](sessions/2026-10-24-manager-strategy/checks.json), [test transcript](sessions/2026-10-24-manager-strategy/pytest-final.txt) |
-| Withdrawal can preserve a surviving derivation and queue affected routes without changing unrelated work | STR-012 saved-source counterfactual | Supported as an illustrative graph/controller case | [Worked cases](sessions/2026-10-24-manager-strategy/worked-cases.json), [rationale](sessions/2026-10-24-manager-strategy/rationale.json) |
-| A new numerical calibration method improves accuracy | None | Not tested | No numerical work commissioned or performed in this development session |
-
-#### Decision handoff
-
-- Scope: manager strategy code and saved simulated reports, with synthetic review fixtures.
-- Review: source text and structured CM-E1 fields inspected; no live coding-client review or numerical reproduction.
-- Decision: task 012 is complete. Keep its recorded allocations distinct from enforced runtime limits.
-- Next: task 013 owns deadline enforcement, finite continuation and recovery. Task 016 still requires real release evidence.
-
-#### References
-
-- [Full report](sessions/2026-10-24-manager-strategy/report.md): behavior, checks and evidence boundaries.
-- [Research notebook](sessions/2026-10-24-manager-strategy/research.md): budget, decisions and limitations.
-- [CM-E1 report](sessions/2026-10-24-manager-strategy/../2026-10-23-consensus-membership/report.md): scoped negative and unresolved common-fold evidence.
-- [Strategy guide](sessions/2026-10-24-manager-strategy/../../../../research/program-strategy.md): implemented manager operations.
-
-## [2026-10-24-bounded-controller](sessions/2026-10-24-bounded-controller/)
-
-[abstract.md](sessions/2026-10-24-bounded-controller/abstract.md) · [report.md](sessions/2026-10-24-bounded-controller/report.md) · [research.md](sessions/2026-10-24-bounded-controller/research.md)
-
-### Finite research allocations and recovery across manager interruptions
-
-Status: complete for task 013; the full manager release remains incomplete.
-
-#### Abstract
-
-Can a manager continue distinct investigations within finite allocations and
-recover without duplicate dispatch or false physical-stop claims? Task 013 adds
-durable task, wall and review reservations, bounded queues, retry limits,
-pause/stop controls and explicit recovery handoffs. The affected suite passed
-140 tests and 34 subtests. Follow-up suites passed 35 controller/manager cases,
-two supervisor cases and five final boundary cases. The actual CLI/file-host
-transcript completed three distinct synthetic investigations with separate
-fixture review and reconstructed two prior admissions in a fresh host. Worker
-launcher and reviewer deadlines remained effective without host polling in
-process fixtures. Recovery checked process birth and current supervisor identity
-without adopting or signalling historical PIDs. Unknown cleanup blocks new work
-until an explicit bounded handoff. These checks use fixture children and saved
-synthetic evidence, not actual coding-client judgement or production science.
-No numerical work ran. Missing live dependencies and client startup remain
-limitations for the task 016 release gate.
-
-#### Topics
-
-research manager, finite allocations, wall deadlines, review reservations,
-recovery, process ownership, pause, cancellation, controller interruption
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Finite reservations, backlog and retry limits prevent duplicate or unfunded dispatch | CTRL-013 fixture suite | Supported within deterministic controller and local process tests | [Checks](sessions/2026-10-24-bounded-controller/checks.json), [affected tests](sessions/2026-10-24-bounded-controller/pytest-final.txt) |
-| Owned launcher/reviewer deadlines survive absent host polling and preserve honest cleanup limits | CTRL-013 deadline fixtures | Supported for fixture subprocesses and the existing launcher cleanup path | [Controller follow-up](sessions/2026-10-24-bounded-controller/pytest-followup.xml) |
-| A fresh manager can continue distinct investigations and retain reviewed results | CTRL-013 CLI transcript | Supported with actual CLI/file host and fixture worker/reviewer children | [Transcript](sessions/2026-10-24-bounded-controller/cli-transcript.json) |
-| The full chat-to-production-worker release works here | None | Not tested successfully; live prerequisites remain | [Report](sessions/2026-10-24-bounded-controller/report.md) |
-
-#### Decision handoff
-
-- Scope: SQLite/controller, actual CLI and file host, existing launcher code with fixture runtime/client, synthetic worker/reviewer subprocesses.
-- Review: retained test results and process/graph outcomes inspected by implementation and parent agents; no numerical reproduction or independent model review.
-- Decision: task 013 is complete. Keep numerical estimates separate from supported tool limits and retain unknown physical-stop boundaries.
-- Next: task 014 adds the bounded worker pool. Task 015 covers combined patch integration. Task 016 still requires actual release proof.
-
-#### References
-
-- [Full report](sessions/2026-10-24-bounded-controller/report.md): implementation, checks and remaining limits.
-- [Research notebook](sessions/2026-10-24-bounded-controller/research.md): budget and decisions.
-- [Controller guide](sessions/2026-10-24-bounded-controller/../../../../research/program-controller.md): current operations and recovery workflow.
-- [Source hashes](sessions/2026-10-24-bounded-controller/source-hashes.json): exact source and task documentation reviewed.
-
-## [2026-10-24-worker-pool](sessions/2026-10-24-worker-pool/)
-
-[abstract.md](sessions/2026-10-24-worker-pool/abstract.md) · [report.md](sessions/2026-10-24-worker-pool/report.md) · [research.md](sessions/2026-10-24-worker-pool/research.md)
-
-### Bounded research workers across competing approaches
-
-Status: complete for task 014. Manager release incomplete.
-
-#### Abstract
-
-The manager now coordinates a small local worker pool through the existing launcher. The store and each program allocation default to one worker and one future review obligation. Store capacity supports up to four workers and sixteen review obligations. Fixture checks exercised actual CLI/file-host requests, real child processes and Git worktrees, with synthetic supervisor/world identities. They verified atomic charges, separate sessions and branches, cross-program backpressure and cancellation, shared-build exclusion, recovery without PID adoption, and attempt-specific premise review while retaining partial evidence. The successful fix pass covered 61 tests and 17 subtests; the final store/metadata pass covered 22 tests and 17 subtests. These results establish the fixture-tested coordination boundary. They do not establish live coding-client review, production-world isolation or calibration accuracy. Task 016 still owns that release evidence.
-
-#### Topics
-
-research manager, worker pool, SQLite reservations, review backlog, worktree isolation, premise withdrawal, interrupted review
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| A small local pool can enforce owned worker/review capacity and preserve shared decisions | POOL-014 | Supported within fixture scope | [Checks](sessions/2026-10-24-worker-pool/checks.json), [CLI evidence](sessions/2026-10-24-worker-pool/cli-evidence.json) |
-| A changed premise remains linked to its running attempt and partial evidence | POOL-014 | Supported within synthetic graph scope | [Final tests](sessions/2026-10-24-worker-pool/pytest-final.txt), [Report](sessions/2026-10-24-worker-pool/report.md) |
-| This proves the live managed production research path | None | Not tested | Task 016 remains required |
-
-#### Decision handoff
-
-- Scope: local SQLite/file host, existing launcher worktree creation and fixture children; world IDs and reviewer judgements are synthetic.
-- Review: producer checks plus parent read-only audit. Passing unaffected cases were reused. Unknown orphan activity remains unknown after a recorded handoff.
-- Decision: complete task 014; keep default concurrency and backlog at one. Raise store and allocation capacity explicitly when parallel work is useful.
-- Next: task 015 must hold shared-build/evaluation exclusion while checking a combined patch candidate. Task 016 must supply actual client and production-tool evidence.
-
-#### References
-
-- [Full report](sessions/2026-10-24-worker-pool/report.md): implemented behavior and limits.
-- [Research notebook](sessions/2026-10-24-worker-pool/research.md): budget, corrections and next decision.
-- [Controller guide](sessions/2026-10-24-worker-pool/../../../../research/program-controller.md): commands and ownership boundaries.
-- [Preceding bounded-controller report](sessions/2026-10-24-worker-pool/../2026-10-24-bounded-controller/report.md): task 013 foundations reused here.
-
-## [2026-10-24-tested-integration](sessions/2026-10-24-tested-integration/)
-
-[abstract.md](sessions/2026-10-24-tested-integration/abstract.md) · [report.md](sessions/2026-10-24-tested-integration/report.md) · [research.md](sessions/2026-10-24-tested-integration/research.md)
-
-### Reviewed findings survive combined patch failures
-
-Status: complete.
-
-#### Abstract
-
-This engineering task asks whether reviewed scientific findings can remain useful
-when candidate patches conflict, become stale, change after review or fail only
-in combination. Real Git branches and binary worktrees exercise manager candidate
-preparation, finite polled checks, exact revision receipts, exclusive capacity,
-stop and restart. Compatible patches pass; two individually passing patches fail
-their combined check without changing accepted findings. Version-2 review separates
-missing delivery gates from scientific admission while retaining version-1 history.
-The corrected affected selection passed 61 tests in 11.47 seconds, with unchanged
-passing cases reused from the wider run. Ordinary detached-child detection retains
-the lease until observed exit. These are synthetic scientific judgements and
-process/Git checks. They establish neither actual physics stability, calibration
-accuracy, protected evaluation nor the live manager release.
-
-#### Topics
-
-Research manager, combined candidates, Git worktrees, engineering readiness,
-reviewed findings, physics delivery gate, sealed submissions, process ownership
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment IDs | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Sealed compatible patches can be checked at one exact combined revision while preserving human work | I15-compatible | Supported fixture behavior | [Receipts](sessions/2026-10-24-tested-integration/fixture-evidence.json), [final checks](sessions/2026-10-24-tested-integration/affected-fix.log) |
-| Conflicts, stale/mutated sources and failing combinations preserve scientific admissions | I15-rejections, I15-combination | Supported fixture behavior | [Exact records and bundles](sessions/2026-10-24-tested-integration/fixture-evidence/), [checks](sessions/2026-10-24-tested-integration/affected-fix.xml) |
-| Startup, leader loss, stop and detected detached work retain exclusion until observed cleanup | I15-lifecycle | Supported within documented process boundary | [Runner loss](sessions/2026-10-24-tested-integration/fixture-evidence/runner-loss/records.json), [detached record](sessions/2026-10-24-tested-integration/fixture-evidence/detached-child/records.json) |
-| Actual production physics and coding-client release pilot pass | None | Not tested | [Limits](sessions/2026-10-24-tested-integration/report.md) |
-
-#### Decision handoff
-
-- Scope: cooperative same-UID manager engineering, synthetic findings and actual Git/process fixtures.
-- Review: parent read-only audit inspected lifecycle, exact-source and reviewer-requirement changes and retained results. No live scientific review occurred.
-- Decision: task 015 complete; reviewed knowledge and combined patch readiness remain separate.
-- Next: task 016 must use the real supported client and production worker/tools. Missing live prerequisites remain genuine blockers for that milestone.
-
-#### References
-
-- [Full report](sessions/2026-10-24-tested-integration/report.md): verification and concrete boundaries.
-- [Notebook](sessions/2026-10-24-tested-integration/research.md): allocation, steering and decisions.
-- [Source hashes](sessions/2026-10-24-tested-integration/source-hashes.json): exact delivered implementation and tests.
-- [Task 014 record](sessions/2026-10-24-tested-integration/../2026-10-24-worker-pool/report.md): store-wide reservation boundary reused here.
-
-## [2026-10-24-live-manager-release](sessions/2026-10-24-live-manager-release/)
-
-[abstract.md](sessions/2026-10-24-live-manager-release/abstract.md) · [report.md](sessions/2026-10-24-live-manager-release/report.md) · [research.md](sessions/2026-10-24-live-manager-release/research.md)
-
-### Chat-driven manager live gate blocked by runtime prerequisites
-
-Status: blocked. Tasks 007 through 015 are implemented; task 016 is not complete.
-
-#### Abstract
-
-Can the implemented manager carry a question through real workers, production
-tools, separate review and replanning? The actual CLI created durable memory,
-two approaches and finite assignments, then dispatched the existing research
-launcher in an isolated worktree. Native build failed at missing Node-API headers
-before numerical or worker-client execution. Dedicated Codex and separate review
-failed at read-only app-server initialization. Stock MCP initialization timed out
-after eight seconds. The attempt found and fixed invalid disabled-MCP transport
-configuration, including inherited HTTP conflicts. Corrected compatibility checks
-passed eight cases; 33 unchanged affected passes were reused. Actual graph queries,
-counterfactual withdrawal with surviving support, steering, lifecycle commands and
-fresh-host reconstruction worked. Neither proposed scientific investigation
-completed, and no scientific admission was made. Two reviewed investigations,
-production-tool use and observed live interruption/recovery remain required.
-
-#### Topics
-
-research manager, live release gate, Codex, MCP transport, native build,
-durable graph, startup failure, recovery, bounded research
-
-#### Tested hypotheses
-
-| Hypothesis | Experiment | Outcome | Evidence |
-| --- | --- | --- | --- |
-| Ordinary CLI can retain a program and dispatch the existing launcher | LIVE-016 CLI | Supported for startup and durable lifecycle only | [Commands](sessions/2026-10-24-live-manager-release/cli-summary.json), [full transcript](sessions/2026-10-24-live-manager-release/cli-transcript.json.gz) |
-| Disabled manager/reviewer MCP entries parse for absent and existing HTTP servers | LIVE-016 compatibility | Supported by installed Codex parser and focused tests | [Checks](sessions/2026-10-24-live-manager-release/checks.json) |
-| Saved HP3 fitting improves calibration relative to selection-only changes | None | Not tested; startup prevented science | [Plan](sessions/2026-10-24-live-manager-release/plan.json), [worker failure](sessions/2026-10-24-live-manager-release/worker-stderr.log) |
-| Complete manager release criteria are satisfied | LIVE-016 | Blocked; required live outcomes absent | [Report](sessions/2026-10-24-live-manager-release/report.md) |
-
-#### Decision handoff
-
-- Scope: actual CLI, Git worktree/launcher, installed Codex parser and failed client/MCP startup. No hardware or calibration result.
-- Review: producer evidence and code inspected by parent; separate coding-client review did not complete.
-- Decision: retain the compatibility fix and documentation; keep task 016 blocked.
-- Next: provide working native build, writable authenticated client and stock MCP, then finish the required managed pilot without repeating unaffected pool/patch fixtures.
-
-#### References
-
-- [Report](sessions/2026-10-24-live-manager-release/report.md), [notebook](sessions/2026-10-24-live-manager-release/research.md), [checks](sessions/2026-10-24-live-manager-release/checks.json): outcomes and limits.
-- [Source hashes](sessions/2026-10-24-live-manager-release/source-hashes.json), [program export](sessions/2026-10-24-live-manager-release/program-export.json): fixed source and durable history.
-- [Task 015 checks](sessions/2026-10-24-live-manager-release/../2026-10-24-tested-integration/affected-fix-command.json): reused pool/integration foundations.
