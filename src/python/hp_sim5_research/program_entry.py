@@ -92,6 +92,8 @@ def main(argv, root):
             os.environ['HP_SIM5_RESEARCH_CLIENT'] = 'cloud'
         elif args.backend:
             os.environ['HP_SIM5_RESEARCH_CLIENT'] = 'local'
+        from .cloud_environment import activate
+        activate(root)
         transport = coding_client.research_client()
         if transport == 'cloud' and (args.model or args.model_provider != 'openai'):
             parser.error('The current cloud chat is the manager. Use --cloud without a coding CLI, model or provider override')
