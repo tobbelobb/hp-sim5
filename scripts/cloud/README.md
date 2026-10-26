@@ -26,7 +26,7 @@ source scripts/cloud/env.sh
 
 The installer prepares:
 
-- Node **23.11.1**, Rust **1.99.1** and `wasm32-unknown-unknown`, outside the checkout.
+- Node **23.11.1**, Rust **1.99.1** with `llvm-tools-preview` for default PGO builds, and `wasm32-unknown-unknown`, outside the checkout.
 - Python dependencies in `.venv`, including the optional **CPU Warp and JAX**
   requirements, plus CMake **4.4.4** and PyYAML **6.0.3** (for skill helper scripts).
   Python requirements are ranges, not a lockfile.
