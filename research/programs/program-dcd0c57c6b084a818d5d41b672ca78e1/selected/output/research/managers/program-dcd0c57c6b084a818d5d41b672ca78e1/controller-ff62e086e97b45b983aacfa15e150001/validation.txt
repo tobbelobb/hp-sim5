@@ -1,0 +1,3 @@
+Command: .venv/bin/python -m pytest -q tests/python/test_research_program_review.py tests/python/test_cloud_research_client.py
+Observed command result: exit code 0, 44 passed in 4.46s.
+Recorded by manager from command-tool output. This includes a real bridge fixture with a program store outside output; fixture reviewer output is not scientific evidence.

@@ -1,0 +1,4 @@
+
+> cable_joints@1.0.0 build:native
+> node scripts/build_native_physics.mjs
+

@@ -1,0 +1,7 @@
+
+> cable_joints@1.0.0 build:native
+> node scripts/build_native_physics.mjs
+
+Built native Rust physics (release): /workspace/hp-sim5/src/wasm/cable_solver/target/native/pgo-vzbD8t/instrumented.node
+Built native Rust physics (release): /workspace/hp-sim5/src/wasm/cable_solver/target/native/physics.node
+Built PGO native Rust physics: /workspace/hp-sim5/src/wasm/cable_solver/target/native/physics.node

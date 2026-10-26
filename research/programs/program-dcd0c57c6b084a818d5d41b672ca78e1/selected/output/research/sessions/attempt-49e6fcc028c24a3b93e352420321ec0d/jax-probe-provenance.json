@@ -1,0 +1,6 @@
+{
+  "original_core_sha256": "75f6ef339f6a09b5088cf0014926f14c67f0b9560ced87133e5f62e3119de9c7",
+  "transformed_ast_sha256": "7270447681100010e7ee9d1159036402f1659e41e08139010f56277859de1876",
+  "operation": "truncate before noise_norm_available; return residuals, residuals/(drive_abs+sensor_abs), geom_valid, point_mask",
+  "source_edited": false
+}

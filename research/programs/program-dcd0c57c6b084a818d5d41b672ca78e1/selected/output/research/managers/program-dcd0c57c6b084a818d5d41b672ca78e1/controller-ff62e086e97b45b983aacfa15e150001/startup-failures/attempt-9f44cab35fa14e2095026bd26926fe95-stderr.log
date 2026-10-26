@@ -1,0 +1,6 @@
+Native Rust physics build is stale, recompiling
+   Compiling hp-sim5-cable-solver v0.1.0 (/workspace/hp-sim5/src/wasm/cable_solver)
+    Finished `release` profile [optimized] target(s) in 3.06s
+   Compiling hp-sim5-cable-solver v0.1.0 (/workspace/hp-sim5/src/wasm/cable_solver)
+    Finished `release` profile [optimized] target(s) in 2.72s
+hp-sim5-research-agent: [Errno 1] Operation not permitted
