@@ -5,6 +5,9 @@ see [cloud research](RESEARCH.md). Prepare dependencies with
 `bash scripts/cloud/install_research.sh` when needed, then use
 `./hp-sim5-research-program --cloud --question 'Your question'` in the current
 authenticated chat. It uses actual subagents without a PATH wrapper or another CLI login.
+The explicit cloud entry and its workers load env.sh automatically. Check the
+complete research setup with `./hp-sim5-research-program runtime-check --cloud`
+before spending an experiment allocation.
 
 This directory preserves the setup and startup steps validated during Codex
 cloud onboarding. Use the existing checkout: cloud tasks are already isolated,

@@ -101,6 +101,8 @@ def validate_strategy(records):
                     if action['scope'] != plan['scope']:
                         raise ProgramError('An outcome action must retain the exact funded route scope')
             execution = _object(d.get('execution'), 'execution guidance')
+            if 'machine' in execution and execution['machine'] not in ('hp3', 'hp4'):
+                raise ProgramError('execution.machine must be hp3 or hp4')
             if 'recording_mode' in execution and execution['recording_mode'] not in ('none', 'events', 'sampled', 'full'):
                 raise ProgramError('Unsupported recording_mode')
             for key in ('source_limit', 'simulated_autocal_speedup'):

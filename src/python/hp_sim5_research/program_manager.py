@@ -6,7 +6,7 @@ import subprocess
 import traceback
 
 from .program import ProgramError, _json, _object, render_markdown
-from .program_workers import ACTIVE
+from .program_workers import ACTIVE, runtime_check
 from .program_strategy import ProgramStrategy
 from .program_controller import ProgramController
 from .program_integration import IntegrationController
@@ -43,6 +43,7 @@ class ProgramManager:
         self.operations = {
             'overview': self.overview, 'status': self.overview, 'capabilities': self.capabilities,
             'save': self.save,
+            'runtime_check': self.runtime_check,
             'query': store.graph().query, 'question': store.add_question, 'approach': store.add_approach,
             'assignment': store.add_assignment, 'artifact': store.add_artifact,
             'claim': store.graph().add_claim, 'derive': store.graph().add_derivation,
@@ -72,6 +73,11 @@ class ProgramManager:
             'integration_status': self.integrations.status, 'integration_release': self.integrations.release,
             'integration_recover': self.integrations.recover,
         }
+
+    def runtime_check(self, program_id, *, physics_backend='headless-js'):
+        """Check dependencies and launcher socket permissions before funding work; no motion."""
+        self.workers._settings({'physics_backend': physics_backend})
+        return runtime_check(self.root, physics_backend=physics_backend)
 
     def capabilities(self, program_id):
         operations = {}

@@ -10,6 +10,7 @@ import pytest
 from hp_sim5_research.program import ProgramError, ProgramStore
 from hp_sim5_research.program_manager import ProgramManager
 from hp_sim5_research.program_strategy import ProgramStrategy
+from hp_sim5_research.program_workers import WorkerDispatcher
 from .test_research_program_review import context, submit, reviewer, CASES
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -57,6 +58,34 @@ def fund(controller, route='saved', record_id=None, **updates):
                   execution={'physics_backend': 'native-python', 'recording_mode': 'events', 'simulated_autocal_speedup': 25}, record_id=record_id)
     params.update(updates)
     return controller.commission('p', **params)
+
+
+def test_commissioned_machine_controls_launcher_and_rejects_conflicts(strategy, monkeypatch):
+    store, strategy_controller = strategy
+    work = fund(strategy_controller, execution={'machine': 'hp3'})
+    context = strategy_controller.test_context
+    workers = store.workers(context['root'], executable=context['tmp'] / 'worker')
+    manager = ProgramManager(store, context['root'], 'p', 'machine-fixture', context['tmp'] / 'manager',
+                             workers=workers, reviews=context['controller'])
+    manager.controller.recover('p', handoff_attempt_id=context['attempt']['id'],
+                              reason='Synthetic fixture started no world; retain missing exit manifest')
+    identity = work['assignment']['id']
+    monkeypatch.setenv('HP_SIM5_RESEARCH_CLIENT', 'cloud')
+    assert workers.assignment_settings('p', identity)['machine'] == 'hp3'
+    attempt = workers.start('p', identity)
+    workers.children[attempt['id']].wait(timeout=5)
+    argv = attempt['details']['argv']
+    assert argv[argv.index('--machine') + 1] == 'hp3'
+    contract = json.loads((Path(attempt['details']['attempt_dir']) / 'assignment.json').read_text())
+    assert contract['execution']['machine'] == 'hp3'
+    with pytest.raises(ProgramError, match='conflicts'):
+        workers.assignment_settings('p', identity, {'machine': 'hp4'})
+    without_machine = fund(strategy_controller)
+    with pytest.raises(ProgramError, match='explicit machine'):
+        workers.assignment_settings('p', without_machine['assignment']['id'])
+    assert workers.assignment_settings('p', without_machine['assignment']['id'], {'machine': 'hp4'})['machine'] == 'hp4'
+    with pytest.raises(ProgramError, match='execution.machine'):
+        fund(strategy_controller, execution={'machine': 'HP3'})
 
 
 def evidence(store, outcome, identity='assessment'):
@@ -226,7 +255,7 @@ def test_invalid_actions_atomic_and_strategy_history_immutable(strategy):
 
 def test_manager_tools_write_cited_brief_and_real_worker_contract(strategy, tmp_path):
     store, controller = strategy
-    class Workers:
+    class Workers(WorkerDispatcher):
         children = {}
         def status(self, program_id, attempt_id):
             return {}
@@ -235,7 +264,7 @@ def test_manager_tools_write_cited_brief_and_real_worker_contract(strategy, tmp_
             return []
         def start(self, program_id, assignment_id, **kwargs):
             return dict(id='fixture-attempt', details={'state': 'failed'}, program_id=program_id, assignment_id=assignment_id, **kwargs)
-    manager = ProgramManager(store, ROOT, 'p', 'test-controller', tmp_path / 'manager', workers=Workers())
+    manager = ProgramManager(store, ROOT, 'p', 'test-controller', tmp_path / 'manager', workers=Workers(store, ROOT))
     assert 'strategy' not in manager.capabilities('p')['unavailable']
     assert {'route_plan', 'commission', 'strategy_result', 'route_decide'} <= manager.operations.keys()
     work = fund(controller, kind='literature', allocation={'wall_minutes': 9, 'fresh_fits': 0, 'collections': 0},

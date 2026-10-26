@@ -6,9 +6,11 @@ second Codex/Claude CLI, request another login or require a model API key.
 
 ## Start
 
-Prepare native dependencies with `bash scripts/cloud/install_research.sh` if
-needed. Source scripts/cloud/env.sh in each shell when those toolchain settings
-are needed. No research-client installation or PATH wrapper is required.
+Prepare dependencies with `bash scripts/cloud/install_research.sh`. This installs
+Python packages (including usd-core), locked npm dependencies, Rust with LLVM
+tools, and the native/firmware builds. Saving these scripts in Git does not
+install them in an existing cloud environment; configure its setup step or run
+the installer there. No research-client installation or PATH wrapper is required.
 
 Use the cloud entry prompt:
 
@@ -31,6 +33,42 @@ detection or dependency on Codex-home paths, platform environment markers,
 available skills or a particular sandbox. --cloud and local --codex/--claude
 are mutually exclusive. CLI model/provider options do not configure cloud actors.
 The original direct research-agent interface remains available locally.
+
+The cloud program entry and each cloud worker automatically source
+scripts/cloud/env.sh. New workers reload it even when their controller predates
+installation. Ordinary development commands still need to source it themselves.
+The program helper uses system Python when .venv is absent; opening a durable
+program alone does not establish that physics dependencies are installed. This
+Python helper/controller is not a separate Codex manager session.
+
+Before allocating experiments, run:
+
+```bash
+./hp-sim5-research-program runtime-check --cloud
+# From an open program, the same check in its controller context:
+./hp-sim5-research-program tool CONNECTION runtime_check
+```
+
+The check imports dependencies, loads the native addon and probes local sockets
+without starting physics or moving a world. Cloud dispatch repeats it before
+charging an attempt. Repair setup failures before commissioning retries.
+For a stale native addon with dependencies already installed, source env.sh and
+run `npm run build:native -- --no-pgo`. headless-js still uses the Rust native
+engine; it is not a fallback that avoids the native build.
+
+Record `execution: {"machine":"hp3"}` (or hp4) in commission. It sets the actual
+launcher machine; conflicting worker settings are rejected. Alternatively pass
+`settings: {"machine":"hp3"}` to worker_start/run_once. Cloud workers require an
+explicit machine rather than silently defaulting to HP4.
+
+If launcher_sockets is blocked with EPERM, the launcher cannot start its own
+supervisor in that command context. Dependency installation, sourcing env.sh,
+and another child process cannot grant socket permission. Run the launcher in a
+context that allows local sockets or change the environment's command policy.
+Supervised start_autocal/start_collection helps when only the model's commands
+are restricted and its attached supervisor is already running in an allowed
+context. It cannot rescue a supervisor whose own socket creation is denied.
+Run research_preflight on that attached supervisor before collection.
 
 ## Dispatch a real actor
 

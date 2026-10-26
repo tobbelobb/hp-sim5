@@ -49,6 +49,7 @@ unknown outcome: inspect state before retrying it.
 | --- | --- |
 | Strategy and memory | overview, query, question, approach, route_plan, route_decide, commission, assignment, decision, steering |
 | Worker | worker_start, worker_status, worker_cancel, worker_sessions |
+| Runtime setup | runtime_check (dependencies and launcher socket permissions; no motion) |
 | Evidence and review | artifact, claim, derive, relate, submit, submission_verify, review_start, review_status, review_cancel, review_apply, strategy_result |
 | Budgets and stopping | allocate, run_once, run_within_allocation, runtime_status, worker_usage, fund_review, pause, resume, stop_program, recover, shutdown |
 | Save results | save (files list, commit boolean) |
@@ -59,15 +60,20 @@ Choose one finite investigation plus review and startup margin. Keep numerical
 workload, wall time and cleanup limits explicit. Arbitrary shell spend and
 movement are not hard aggregate quotas. The default is one worker.
 
-## Manager CLI, worker MCP
+## Program tools and worker MCP
 
 The manager uses a private file queue, so it needs no MCP SDK or local socket.
+These Python tools are bookkeeping, not another model session. They can open a
+program with system Python when .venv is absent. Cloud launchers load env.sh and
+check the complete runtime before charging worker attempts; see
+[cloud setup and socket permissions](../scripts/cloud/RESEARCH.md).
 Its former MCP attachment route and --serve option have been removed. Local
 manager clients disable inherited research MCP entries and use CLI tools.
 Workers retain the existing physics supervisor and its MCP attachment. Cloud
 workers can call scripts/research_attach.py through their command tools; they
-must use the private connection created for their own attempt. No new physics
-runtime is introduced.
+must use the private connection created for their own attempt. Socket restrictions
+in that command context can also block attachment; neither this helper nor MCP
+grants network permission. No new physics runtime is introduced.
 
 ## Results and lifecycle
 

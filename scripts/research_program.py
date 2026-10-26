@@ -1,6 +1,7 @@
 """Create and inspect durable research programs without starting a physics world."""
 import argparse
 import json
+import os
 from pathlib import Path
 import sqlite3
 import subprocess
@@ -26,6 +27,10 @@ def main(argv=None):
         'OPERATION --params JSON for existing-chat calls. See research/program-manager.md.'))
     parser.add_argument('--store', type=Path, default=ROOT / '.research-programs', help='Manager-owned store directory')
     commands = parser.add_subparsers(dest='command', required=True)
+    check = commands.add_parser('runtime-check', help='Check research runtime setup and launcher sockets without motion')
+    check.add_argument('--cloud', action='store_true', help='Load the explicit cloud toolchain environment')
+    check.add_argument('--physics-backend', default='headless-js',
+                       choices=('headless-js', 'native-python', 'native-warp', 'native-warp-cuda'))
     create = commands.add_parser('create', help='Create a program from one question')
     create.add_argument('question')
     create.add_argument('--constraints', type=json.loads, default={})
@@ -104,6 +109,13 @@ def main(argv=None):
             command.add_argument('--reason', required=True)
     args = parser.parse_args(argv)
     try:
+        if args.command == 'runtime-check':
+            from hp_sim5_research.program_workers import runtime_check
+            if args.cloud:
+                os.environ['HP_SIM5_RESEARCH_CLIENT'] = 'cloud'
+            result = runtime_check(ROOT, physics_backend=args.physics_backend)
+            print(json.dumps(result, indent=2))
+            return 0 if result['ok'] else 1
         with ProgramStore(args.store, create=args.command in ('create', 'import')) as store:
             command = args.command
             options = {'expected_revision': getattr(args, 'expected_revision', None)}
