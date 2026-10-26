@@ -82,12 +82,21 @@ update research.md, report.md and abstract.md. Then save the small results:
 ./hp-sim5-research-program save PROGRAM_ID --commit
 # Include additional relevant analysis scripts, inputs or configuration:
 ./hp-sim5-research-program save PROGRAM_ID --file path/to/analysis.py --commit
+# Inside a manager chat, use its bound connection directly:
+./hp-sim5-research-program tool CONNECTION save --params '{"commit":true,"files":["path/to/analysis.py"]}'
 ```
 
 This writes `research/programs/PROGRAM_ID/`: program memory, a readable overview,
 worker notes, referenced small evidence and fixed review submissions. It commits
 only that directory, preserving unrelated staged work. It never pushes. Code
-changes belong in their own explicitly selected commits.
+changes belong in their own explicitly selected commits. Both command forms ask
+the controller to perform the Git operation in its own execution context.
+
+Runtime stores matching `.research-programs*/` and generated `research/programs/`
+archives are ignored by default. An explicit save --commit stages just that
+program's archive with git add --force. This keeps abandoned trial archives out
+of broad commits while allowing deliberate research-result commits. Saving without
+--commit leaves the archive on disk and ignored.
 
 The default copying limits are 1 MiB per file and 8 MiB total evidence. Missing,
 large and private/runtime files are listed in files.json instead of copied.

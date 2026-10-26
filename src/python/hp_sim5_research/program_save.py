@@ -14,6 +14,8 @@ PRIVATE = {'.env', 'auth.json', 'credentials.json', 'connection.json', 'control-
 def save_program(store, root, program_id, *, files=(), commit=False):
     """Copy notes, selected evidence and memory; commit only this result directory."""
     root = Path(root).resolve()
+    if type(commit) is not bool or not isinstance(files, (list, tuple)) or not all(isinstance(p, str) for p in files):
+        raise ProgramError('save requires a boolean commit and a list of file paths')
     snapshot = store.snapshot(program_id)
     records = snapshot['records']
     for r in records:
@@ -72,12 +74,14 @@ def save_program(store, root, program_id, *, files=(), commit=False):
     revision = None
     if commit:
         relative = str(destination.relative_to(root))
-        def git(*args):
-            return subprocess.run(['git', '-C', str(root), *args], capture_output=True, text=True, check=True)
-        git('add', '--', relative)
-        changed = subprocess.run(['git', '-C', str(root), 'diff', '--cached', '--quiet', '--', relative])
-        if changed.returncode not in (0, 1):
-            raise ProgramError('Cannot inspect staged research results')
+        def git(*args, allowed=(0,)):
+            result = subprocess.run(['git', '-C', str(root), *args], capture_output=True, text=True)
+            if result.returncode not in allowed:
+                detail = result.stderr.strip() or result.stdout.strip() or 'no diagnostic output'
+                raise ProgramError(f'git {args[0]} failed ({result.returncode}): {detail}')
+            return result
+        git('add', '--force', '--', relative)
+        changed = git('diff', '--cached', '--quiet', '--', relative, allowed=(0, 1))
         if changed.returncode:
             git('commit', '--only', '-m', 'Save research results: ' + snapshot['program']['goal'].splitlines()[0][:100], '--', relative)
         revision = git('rev-parse', 'HEAD').stdout.strip()

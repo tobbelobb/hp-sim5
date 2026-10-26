@@ -16,6 +16,7 @@ from hp_sim5_research.program import ProgramStore
 from hp_sim5_research.program_entry import client_plan
 from hp_sim5_research.program_host import live, open_manager, read_json, request
 from hp_sim5_research.program_workers import process_identity
+from hp_sim5_research import program_host
 
 ROOT = Path(__file__).resolve().parents[2]
 CLI = ROOT / 'hp-sim5-research-program'
@@ -148,6 +149,106 @@ def test_concurrent_chats_open_one_host_one_program_identity(manager):
     manager['attachments'].extend(attachments)
     assert attachments[0] == attachments[1] == attachments[2]
     assert tool(attachments[0], 'worker_sessions') == []
+
+
+def test_client_with_invisible_host_pid_uses_protocol_and_does_not_spawn_replacement(manager, monkeypatch):
+    a = attach(manager)
+    monkeypatch.setattr(program_host, 'process_identity', lambda _: None)
+    assert not live(a)  # Diagnostic from another PID namespace cannot see it.
+    def no_process(*args, **kwargs):
+        pytest.fail('A live locked controller must not be replaced')
+    monkeypatch.setattr(program_host.subprocess, 'Popen', no_process)
+    assert request(a, 'capabilities')['result']['client_transport'] == 'local'
+    reopened = open_manager(manager['store'], manager['root'], 'p')
+    assert reopened['result']['attachment'] == a
+    assert request(dict(a, host_id='old-generation'), 'overview')['error']['code'] == 'stale_attachment'
+
+
+def test_unanswered_file_request_is_bounded_and_never_claims_a_pid_is_dead(tmp_path):
+    queue = tmp_path / 'controller-queue'
+    queue.mkdir()
+    descriptor = {'store': str(tmp_path), 'host_id': 'absent'}
+    result = request(descriptor, 'capabilities', timeout=.05)
+    assert result['error']['code'] == 'outcome_unknown'
+    assert not list(queue.iterdir())
+
+
+def test_recovery_cannot_change_local_store_to_cloud_after_host_stops(manager, monkeypatch):
+    a = attach(manager)
+    assert request(a, 'shutdown')['ok']
+    until(lambda: not live(a))
+    monkeypatch.setenv('HP_SIM5_RESEARCH_CLIENT', 'cloud')
+    with pytest.raises(ValueError, match='different client transport'):
+        open_manager(manager['store'], manager['root'], 'p')
+    assert read_json(manager['store'] / 'controller.json')['host_id'] == a['host_id']
+
+
+def test_result_commit_runs_in_host_even_when_client_cannot_run_git(manager, tmp_path):
+    root = manager['root']
+    for name, value in (('user.name', 'Fixture'), ('user.email', 'fixture@example.invalid')):
+        subprocess.run(['git', '-C', str(root), 'config', name, value], check=True)
+    (root / '.gitignore').write_text('/research/programs/\n')
+    (root / 'unrelated.txt').write_text('Unrelated staged work')
+    subprocess.run(['git', '-C', str(root), 'add', 'unrelated.txt'], check=True)
+    a = attach(manager)
+    # The client is a fresh process. Blocking Git there must not block the host.
+    code = '''import json, runpy, subprocess, sys
+from pathlib import Path
+a = json.loads(sys.argv[1])
+main = runpy.run_path(sys.argv[2])['main']
+main.__globals__['ROOT'] = Path(a['root'])
+def denied(*args, **kwargs):
+    raise AssertionError('Client must not run Git')
+subprocess.run = denied
+assert main(['--store', a['store'], 'save', a['program_id'], '--commit']) == 0
+'''
+    completed = subprocess.run([sys.executable, '-c', code, json.dumps(a), str(ROOT / 'scripts/research_program.py')], capture_output=True, text=True,
+                               env=dict(os.environ, PYTHONPATH=str(ROOT / 'src/python')), timeout=10, check=True)
+    saved = json.loads(completed.stdout)
+    assert saved['commit']
+    staged = subprocess.check_output(['git', '-C', str(root), 'diff', '--cached', '--name-only'], text=True)
+    assert staged.strip() == 'unrelated.txt'
+    committed = subprocess.check_output(['git', '-C', str(root), 'show', '--pretty=', '--name-only', 'HEAD'], text=True)
+    assert all(p.startswith('research/programs/p/') for p in committed.splitlines() if p)
+
+
+@pytest.mark.skipif(not os.environ.get('HP_SIM5_TEST_REAL_SANDBOX'),
+                    reason='Requires an installed Codex sandbox and a parent running outside that sandbox')
+def test_real_command_sandbox_reopens_host_and_commits_with_git_read_only(manager, tmp_path):
+    root = manager['root']
+    for name, value in (('user.name', 'Fixture'), ('user.email', 'fixture@example.invalid')):
+        subprocess.run(['git', '-C', str(root), 'config', name, value], check=True)
+    (root / '.gitignore').write_text('/research/programs/\n')
+    (root / 'unrelated.txt').write_text('Unrelated staged work')
+    subprocess.run(['git', '-C', str(root), 'add', 'unrelated.txt'], check=True)
+    a = attach(manager)
+    client = tmp_path / 'sandbox_client.py'
+    client.write_text('''import json, subprocess, sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+from hp_sim5_research.program_host import open_manager, request, live
+a = json.loads(sys.argv[2])
+assert not live(a), 'The controller must be invisible in this PID namespace'
+denied = subprocess.run(['git', '-C', a['root'], 'add', '--', 'unrelated.txt'], capture_output=True, text=True)
+assert denied.returncode != 0 and 'index.lock' in denied.stderr, denied.stderr
+opened = open_manager(a['store'], a['root'], a['program_id'])
+assert opened['ok'] and opened['result']['attachment'] == a, opened
+saved = request(a, 'save', {'commit': True})
+assert saved['ok'] and saved['result']['commit'], saved
+print(json.dumps({'isolated_pid_namespace': True, 'client_git_read_only': True, 'saved': saved['result']['commit']}))
+''')
+    profile = {'type': 'managed', 'file_system': {'type': 'restricted', 'entries': [
+        {'path': {'type': 'special', 'value': {'kind': 'root'}}, 'access': 'read'},
+        {'path': {'type': 'path', 'path': str(tmp_path)}, 'access': 'write'},
+        {'path': {'type': 'path', 'path': str(root / '.git')}, 'access': 'read'}]}, 'network': 'restricted'}
+    completed = subprocess.run([
+        'codex-linux-sandbox', '--sandbox-policy-cwd', str(root), '--command-cwd', str(root),
+        '--permission-profile', json.dumps(profile), '--', sys.executable, str(client),
+        str(ROOT / 'src/python'), json.dumps(a)], executable=os.environ['HP_SIM5_TEST_REAL_SANDBOX'],
+        capture_output=True, text=True, timeout=20)
+    assert completed.returncode == 0, completed.stderr + completed.stdout
+    assert json.loads(completed.stdout)['client_git_read_only']
+    assert subprocess.check_output(['git', '-C', str(root), 'diff', '--cached', '--name-only'], text=True).strip() == 'unrelated.txt'
 
 
 def test_fresh_cli_calls_retain_owned_worker_share_attachment_pause_then_cancel(manager):
@@ -349,6 +450,8 @@ def test_manager_client_commands_only_attach_orchestration_and_dry_run_is_inert(
     assert 'research_program_mcp.py' not in command
     assert 'research_attach.py' not in command
     assert 'hp-sim5-research-program tool' in plan['instructions']
+    assert plan['instructions'].startswith('Bound execution mode: LOCAL.')
+    assert 'Do not use --cloud or the cloud-research-client skill' in plan['instructions']
     if backend == 'codex':
         for name in ('hp_sim5', 'rerun', 'hp_sim5_program'):
             option = next(a for a in plan['argv'] if a.startswith(f'mcp_servers.{name}='))

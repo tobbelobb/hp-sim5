@@ -24,10 +24,14 @@ def client_plan(root, attachment, backend, *, model=None, model_provider='openai
     if coding_client.research_client() == 'cloud':
         raise ValueError('The current cloud chat is the manager. Use --cloud without --codex or --claude; read scripts/cloud/RESEARCH.md')
     session = Path(attachment['session'])
-    instructions = ((root / 'research/prompts/research-manager.txt').read_text() +
-                    '\n\nBound manager connection: ' + attachment['connection'] +
+    instructions = ('Bound execution mode: LOCAL. This is a local installed coding-client manager.\n'
+                    'Use local CLI workers and reviewers. Do not use --cloud or the cloud-research-client skill.\n'
+                    'Command sandboxing and invisible host PIDs do not make this a cloud run.\n'
+                    'Never switch transport to recover a controller error.\n'
+                    'Bound manager connection: ' + attachment['connection'] +
                     '\nProgram ID: ' + attachment['program_id'] + '\nManager artifacts: ' + str(session) +
-                    '\nUse hp-sim5-research-program tool with this connection; no manager MCP attachment is needed.\n')
+                    '\nUse hp-sim5-research-program tool with this connection; no manager MCP attachment is needed.\n\n' +
+                    (root / 'research/prompts/research-manager.txt').read_text())
     if backend == 'codex':
         forwarded, forwarded_model = coding_client.forwarded_settings(client_args)
         command = coding_client.codex_command(
@@ -58,7 +62,8 @@ def main(argv, root):
         parser.add_argument('--params', default='{}')
         args = parser.parse_args(argv)
         try:
-            result = request(read_json(args.connection), args.operation, json.loads(args.params))
+            result = request(read_json(args.connection), args.operation, json.loads(args.params),
+                             timeout=60 if args.operation == 'save' else 10)
         except (OSError, ValueError, TypeError, KeyError) as error:
             result = failure('invalid_request', str(error))
         print(_json(result))
@@ -118,6 +123,7 @@ def main(argv, root):
         print(_json(result), file=sys.stderr, flush=True)
         environment = (coding_client.codex_environment(plan['model_provider'], root=root, env_file=root / '.env')
                        if args.backend == 'codex' else coding_client.claude_environment(env_file=root / '.env'))
+        environment['HP_SIM5_RESEARCH_CLIENT'] = transport
         return subprocess.run(plan['argv'] + ['Open the bound program overview and manage this question.'],
                               cwd=root, env=environment).returncode
     except (OSError, ValueError, sqlite3.Error, subprocess.SubprocessError) as error:

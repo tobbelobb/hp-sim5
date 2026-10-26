@@ -20,7 +20,8 @@ def results(tmp_path):
     git(tmp_path, 'config', 'user.name', 'Research fixture')
     git(tmp_path, 'config', 'user.email', 'fixture@example.invalid')
     (tmp_path / 'code.py').write_text('original\n')
-    git(tmp_path, 'add', 'code.py')
+    (tmp_path / '.gitignore').write_text('/research/programs/\n')
+    git(tmp_path, 'add', 'code.py', '.gitignore')
     git(tmp_path, 'commit', '-qm', 'Initial fixture')
     with ProgramStore(tmp_path / '.research-programs', create=True) as store:
         store.create_program('A scoped research question', program_id='p')
@@ -49,6 +50,15 @@ def test_commit_saves_evidence_and_leaves_unrelated_staging_alone(results):
     assert git(root, 'diff', '--cached', '--name-only') == 'code.py'
     assert all(p.startswith('research/programs/p/') for p in git(root, 'show', '--pretty=', '--name-only', 'HEAD').splitlines())
     assert result['commit'] == git(root, 'rev-parse', 'HEAD')
+
+
+def test_commit_error_preserves_git_diagnostic(results, monkeypatch):
+    root, store = results
+    def denied(args, **kwargs):
+        return subprocess.CompletedProcess(args, 128, '', 'fatal: cannot create .git/index.lock: Read-only file system')
+    monkeypatch.setattr(subprocess, 'run', denied)
+    with pytest.raises(ProgramError, match=r'git add failed \(128\).*index.lock: Read-only'):
+        save_program(store, root, 'p', commit=True)
 
 
 def test_private_large_and_missing_artifacts_are_reported_and_not_copied(results):

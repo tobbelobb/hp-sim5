@@ -70,8 +70,11 @@ no acknowledgement means shutdown is unconfirmed.
 ## Save and continue
 
 Keep the manager chat active through each bounded cycle. Before ending, stop owned
-work, check cleanup, update reports and run `hp-sim5-research-program save PROGRAM_ID
---commit`. It saves small results in research/programs for Git; no push occurs.
+work, check cleanup, update reports and call `hp-sim5-research-program tool CONNECTION
+save --params '{"commit":true}'`. Include additional small files with a files list.
+The controller saves small results in research/programs and commits only that
+archive; no push occurs. The host still needs Git write permission. Any Git
+failure is reported with its diagnostic rather than treated as a saved commit.
 Continue in a long chat or start a later chat from those committed results.
 Moving an unfinished live program between environments is not a primary workflow.
 

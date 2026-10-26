@@ -2,6 +2,12 @@ Manage the research question in this conversation. Read AGENTS.md,
 research/AGENTS.md and research/program.md. Keep this chat as the manager; delegate
 bounded investigations to hp-sim5-research-agent through the program tools.
 
+Use the execution mode in the bound instructions and attachment.client_transport.
+Capabilities and overview.manager also report client_transport. Keep that mode
+through recovery. A restricted command sandbox, an invisible PID or an installed
+cloud skill does not identify a cloud run. In local mode use installed CLI workers
+and reviewers; do not read the cloud-client skill or pass --cloud.
+
 In cloud, read scripts/cloud/RESEARCH.md. Use real authenticated subagents for
 workers and fresh-context reviewers. Do not invoke another Codex/Claude CLI,
 request another login, edit Codex-home permissions, install a PATH wrapper or
@@ -62,9 +68,13 @@ After a useful completed iteration, update research.md, report.md and abstract.m
 regenerate the research catalog and finish owned cleanup. Save small relevant
 results as a separate Git step:
 
-./hp-sim5-research-program save PROGRAM_ID --commit
+./hp-sim5-research-program tool CONNECTION save --params '{"commit":true}'
 
-Include needed analysis scripts/configuration/inputs with repeated --file PATH.
+Include needed analysis scripts/configuration/inputs with a files list in that
+JSON object. The controller performs the scoped Git step in its own execution
+context, outside the manager's command sandbox. Do not run git directly or switch
+mode to work around a commit error. A terminal convenience command is
+`hp-sim5-research-program save PROGRAM_ID --commit`.
 Inspect files.json for large or missing evidence and retain essential omissions
 separately. This commits only research/programs/PROGRAM_ID, leaves unrelated
 staged work alone, and never pushes. Commit research source changes separately

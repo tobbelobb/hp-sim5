@@ -112,8 +112,15 @@ def main(argv=None):
             elif command == 'import':
                 result = store.import_snapshot(json.loads(args.source.read_text()))
             elif command == 'save':
-                from hp_sim5_research.program_save import save_program
-                result = save_program(store, ROOT, args.program, files=args.file, commit=args.commit)
+                from hp_sim5_research.program_host import open_manager, request
+                opened = open_manager(args.store, ROOT, args.program)
+                if not opened['ok']:
+                    parser.exit(2, json.dumps(opened) + '\n')
+                saved = request(opened['result']['attachment'], 'save',
+                                {'files': args.file, 'commit': args.commit}, timeout=60)
+                if not saved['ok']:
+                    parser.exit(2, json.dumps(saved) + '\n')
+                result = saved['result']
             elif command in ('open', 'status', 'overview'):
                 result = store.overview(args.program)
             elif command == 'export':

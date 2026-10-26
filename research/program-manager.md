@@ -18,7 +18,14 @@ The response includes program_id, attachment.connection and the overview. Openin
 dispatches no workers. A new program has no allocated investigation. The host
 starts automatically and retains child ownership across separate CLI calls.
 Each store has one host and one client transport. A different transport requires
-shutting down the old host or choosing another --store directory.
+another --store directory; recovery retains the recorded mode even after the
+old host stops.
+
+The attachment, capabilities and overview.manager report client_transport.
+Keep the bound mode during recovery. Local command sandboxes and hidden PIDs
+do not imply cloud execution. Clients establish availability through the file
+protocol; an invisible host PID is not a dead controller. A held controller lock
+prevents replacement, while host-generation checks reject stale attachments.
 
 ## Call tools
 
@@ -42,6 +49,7 @@ unknown outcome: inspect state before retrying it.
 | Worker | worker_start, worker_status, worker_cancel, worker_sessions |
 | Evidence and review | artifact, claim, derive, relate, submit, submission_verify, review_start, review_status, review_cancel, review_apply, strategy_result |
 | Budgets and stopping | allocate, run_once, run_within_allocation, runtime_status, worker_usage, fund_review, pause, resume, stop_program, recover, shutdown |
+| Save results | save (files list, commit boolean) |
 
 The manager normally handles these arguments. Read [strategy](program-strategy.md),
 [review](program-review.md) or [controller](program-controller.md) when needed.
@@ -72,8 +80,17 @@ controller. Closing a local manager client alone does not stop the host.
 Cloud cancellation additionally needs the parent to interrupt its actual cloud
 actor and acknowledge that interruption to the bridge.
 
-After cleanup, run `hp-sim5-research-program save PROGRAM_ID --commit` as a separate
-step. See the [save policy](program.md#save-research-in-git). Durable IDs and notes
+After cleanup, call the controller as a separate step:
+
+```bash
+./hp-sim5-research-program tool CONNECTION save --params '{"commit":true}'
+```
+
+The host performs the scoped Git operation in its own execution context, so a
+local manager's read-only .git mount does not prevent the commit. Host permissions
+still apply; Git errors retain their diagnostics. The terminal convenience command
+`hp-sim5-research-program save PROGRAM_ID --commit` uses the same host operation.
+See the [save policy](program.md#save-research-in-git). Durable IDs and notes
 help a later conversation in the same checkout; they do not restore physics or
 unowned processes. Historical PIDs never authorize signals.
 

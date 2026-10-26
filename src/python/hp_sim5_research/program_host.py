@@ -39,6 +39,7 @@ def read_json(path):
 
 
 def live(descriptor):
+    """Same-namespace process diagnostic; clients must use the file protocol."""
     identity = descriptor.get('process')
     if not isinstance(identity, dict) or identity != process_identity(identity.get('pid')):
         return False
@@ -50,26 +51,32 @@ def live(descriptor):
 
 def request(descriptor, operation, parameters=None, *, timeout=10):
     """Never retry a mutation. A timeout after pickup has an unknown outcome."""
-    if not live(descriptor):
-        return failure('controller_unavailable', 'Controller is not live; reopen this program. No process was adopted')
     directory = Path(descriptor['store']) / 'controller-queue'
     identity = uuid.uuid4().hex
     queued, response = directory / (identity + '.request'), directory / (identity + '.response')
-    deadline = time.time() + timeout
+    deadline = time.monotonic() + timeout
     write_json(queued, {'host_id': descriptor['host_id'], 'program_id': descriptor.get('program_id'),
                         'controller_id': descriptor.get('controller_id'), 'operation': operation,
-                        'parameters': parameters, 'expires': deadline})
+                        'parameters': parameters, 'expires': time.time() + timeout})
     try:
-        while time.time() < deadline:
+        while time.monotonic() < deadline:
             if response.exists():
                 return json.loads(response.read_text())
-            if not live(descriptor):
-                return failure('controller_lost', 'Controller exited during request; inspect durable status before retrying')
             time.sleep(.02)
         return failure('outcome_unknown', 'Controller response timed out; inspect status before retrying a mutation')
     finally:
         queued.unlink(missing_ok=True)
         response.unlink(missing_ok=True)
+
+
+def host_locked(directory):
+    """An advisory lock works across PID namespaces; a saved PID does not."""
+    with (directory / 'controller.lock').open('a') as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return True
+    return False
 
 
 def open_manager(store_path, root, program_id):
@@ -83,12 +90,15 @@ def open_manager(store_path, root, program_id):
         fcntl.flock(lock, fcntl.LOCK_EX)
         descriptor_path = directory / 'controller.json'
         descriptor = read_json(descriptor_path) if descriptor_path.exists() else {}
-        if live(descriptor):
+        if descriptor and descriptor.get('client_transport', 'local') != research_client():
+            raise ProgramError('Store controller uses a different client transport; use another --store directory instead of switching mode during recovery')
+        if host_locked(directory):
+            if not descriptor:
+                raise ProgramError('Controller lock is held but its descriptor is missing; inspect controller.log')
             if descriptor['root'] != str(root):
                 raise ProgramError('Store controller belongs to another repository')
-            if descriptor.get('client_transport', 'local') != research_client():
-                raise ProgramError('Store controller uses a different client transport; shut it down or use another --store directory')
         else:
+            previous_host = descriptor.get('host_id')
             with (directory / 'controller.log').open('ab') as output:
                 process = subprocess.Popen([sys.executable, str(root / 'scripts/research_program_host.py'),
                                             '--store', str(directory), '--root', str(root)],
@@ -97,7 +107,8 @@ def open_manager(store_path, root, program_id):
             deadline = time.monotonic() + 5
             while time.monotonic() < deadline:
                 descriptor = read_json(descriptor_path) if descriptor_path.exists() else {}
-                if live(descriptor) and descriptor['process']['pid'] == process.pid:
+                if (descriptor.get('host_id') != previous_host and
+                        (descriptor.get('process') or {}).get('pid') == process.pid and host_locked(directory)):
                     break
                 if process.poll() is not None:
                     raise ProgramError('Controller startup failed; inspect controller.log')

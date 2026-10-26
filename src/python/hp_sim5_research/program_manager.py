@@ -10,6 +10,8 @@ from .program_workers import ACTIVE
 from .program_strategy import ProgramStrategy
 from .program_controller import ProgramController
 from .program_integration import IntegrationController
+from .program_save import save_program
+from .coding_client import research_client
 
 
 UNAVAILABLE = {}
@@ -40,6 +42,7 @@ class ProgramManager:
         self.controller = ProgramController(self)
         self.operations = {
             'overview': self.overview, 'status': self.overview, 'capabilities': self.capabilities,
+            'save': self.save,
             'query': store.graph().query, 'question': store.add_question, 'approach': store.add_approach,
             'assignment': store.add_assignment, 'artifact': store.add_artifact,
             'claim': store.graph().add_claim, 'derive': store.graph().add_derivation,
@@ -78,7 +81,7 @@ class ProgramManager:
                 'parameters': [str(p) for k, p in signature.parameters.items() if k != 'program_id'],
                 'description': (inspect.getdoc(method) or '').split('\n')[0],
             }
-        return {'operations': operations, 'unavailable': UNAVAILABLE,
+        return {'operations': operations, 'unavailable': UNAVAILABLE, 'client_transport': research_client(),
                 'physics_world': False, 'default_worker_concurrency': 1,
                 'boundary': 'Cooperative same-UID local tools; private files are not adversarial isolation',
                 'worker_allocation': 'Finite task/wall/review reservations; numerical counters remain explicit contracts',
@@ -137,6 +140,7 @@ class ProgramManager:
         result['integrations'] = [self.integrations.status(program_id, r['id']) for r in result['records']
                                   if r['kind'] == 'integration_job']
         result['manager'] = {'program_id': program_id, 'controller_id': self.controller_id,
+                             'client_transport': research_client(),
                              'stopping': self.stopping, 'physics_world': False,
                              'cleanup_errors': self.cleanup_errors,
                              'links': {'store': str(self.store.path), 'session': str(self.session),
@@ -149,6 +153,11 @@ class ProgramManager:
         (self.session / 'overview.md').write_text(render_markdown(result))
         (self.session / 'brief.md').write_text(result['brief'] + '\n')
         return result
+
+    def save(self, program_id, *, files=(), commit=False):
+        """Save/commit only this program's results in the controller's execution context."""
+        self.poll()
+        return save_program(self.store, self.root, program_id, files=files, commit=commit)
 
     def transition(self, program_id, record_id, target, reason, *, expected_revision=None):
         if record_id == program_id:

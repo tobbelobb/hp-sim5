@@ -53,7 +53,9 @@ klipper_terminal_debug.log
 klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg.bak
 public/klipper/hp3/printer-hp3-linux-mcu-with-buildup.cfg.bak
 .codex
-.research-programs/
+/.research-programs*/
+# Generated archives enter Git only through an explicit research save --commit.
+/research/programs/
 experiments
 autocal/data/progressive_experiment/
 autocal/tests/test_progressive_fitting_experiment.py
