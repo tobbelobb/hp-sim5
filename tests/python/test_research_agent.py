@@ -135,6 +135,24 @@ def test_input_and_artifact_path_boundaries(experiment_root):
         read_run(experiment_root, '../outside')
 
 
+def test_fresh_experiment_and_readback_with_shared_worktree_output(experiment_root, tmp_path):
+    from hp_sim5_research.experiments import compare_runs, read_run, run_experiment
+    shared = tmp_path.parent / (tmp_path.name + '-shared-output')
+    shared.mkdir()
+    (experiment_root / 'output').symlink_to(shared, target_is_directory=True)
+    first = run_experiment(experiment_root, steps=3, record=False)
+    second = run_experiment(experiment_root, steps=3, record=False)
+    assert Path(first['artifacts']['manifest']).is_relative_to(shared)
+    assert read_run(experiment_root, first['run_id']) == first
+    assert len(read_run(experiment_root, first['run_id'], 0, 4)['samples']) == 4
+    assert all(value == 0 for value in compare_runs(experiment_root, first['run_id'], second['run_id'])[
+        'metric_delta_candidate_minus_baseline'].values())
+    escaped_id = 'f' * 32
+    (shared / 'research/experiments' / escaped_id).symlink_to(tmp_path.parent, target_is_directory=True)
+    with pytest.raises(ValueError, match='inside the experiment output'):
+        read_run(experiment_root, escaped_id)
+
+
 def test_compiled_fresh_experiment_records_backend(experiment_root):
     from hp_sim5_research.experiments import compare_runs, read_run, run_experiment
     pytest.importorskip('warp')

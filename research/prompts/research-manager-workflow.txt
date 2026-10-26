@@ -38,6 +38,9 @@ Poll actual worker_status and preserve unsuccessful and partial evidence. In clo
 verified pending bridge requests according to scripts/cloud/RESEARCH.md; each
 actual actor must write its own final_output, and only actual completion or
 interruption permits a bridge acknowledgement. Never fabricate child output.
+Pass a worker's returned tool_connection_path to its actor. Use
+scripts/cloud/cloud_tool_bridge.py for the real MCP tools when actor command
+sockets are denied; the existing launcher owns that file relay and supervisor.
 
 An exited worker is unreviewed. Use submit to freeze the claim, report and selected
 evidence, then a separate review_start, review_status and review_apply. Review

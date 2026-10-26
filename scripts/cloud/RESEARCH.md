@@ -80,6 +80,17 @@ are restricted and its attached supervisor is already running in an allowed
 context. It cannot rescue a supervisor whose own socket creation is denied.
 Run research_preflight on that attached supervisor before collection.
 
+The controller retains the command permissions of the process that opened it.
+If a socket probe passes with the platform's supported network permission but
+the controller's runtime_check still reports EPERM, a permission grant on the
+later tool-call command has not changed the existing controller. Finish or
+cancel its owned work, call `tool CONNECTION shutdown`, wait for cleanup, then
+reopen the same program with `--cloud --program PROGRAM_ID` in the permitted
+command context. Recheck runtime readiness there. Do not create another store
+or discard the program history. Worker worktrees and `save --commit` also need
+write permission for the checkout's Git metadata. Use the platform's supported
+permission mechanism when that access is denied.
+
 ## Dispatch a real actor
 
 The manager uses ordinary program CLI tools; there is no manager MCP server.
@@ -99,7 +110,27 @@ For each worker or reviewer:
    actual authenticated subagent using this chat's subagent mechanism
    (collaboration.spawn_agent in Codex). Include the
    requested final_output path; the actor must write its real final response
-   there. Workers use their private connection through scripts/research_attach.py.
+   there. For workers, include the returned tool_connection_path. The actor
+   calls the existing MCP tools through the launcher's private file relay:
+
+```bash
+.venv/bin/python scripts/cloud/cloud_tool_bridge.py list TOOL_CONNECTION
+.venv/bin/python scripts/cloud/cloud_tool_bridge.py call TOOL_CONNECTION runtime_status
+.venv/bin/python scripts/cloud/cloud_tool_bridge.py call TOOL_CONNECTION research_preflight
+# The assigned Viewer, when enabled:
+.venv/bin/python scripts/cloud/cloud_tool_bridge.py list TOOL_CONNECTION --server rerun
+```
+
+   `call` accepts `--params` with a JSON object and returns the real MCP result,
+   including isError and structuredContent. Use an argv list or a safely quoted
+   JSON file for larger requests. The relay supports only hp_sim5 and the
+   assigned rerun attachment. It runs in the permitted launcher context and
+   needs no sockets in actor commands. It exposes no shell runner, arbitrary
+   server or external endpoint. Reviewers receive no tool relay. Direct
+   scripts/research_attach.py remains available in command contexts that already
+   permit local sockets. A timeout may leave a mutation's outcome unknown;
+   inspect status before retrying. The launcher owns relay cleanup, including
+   actor cancellation and bridge-owner loss.
    Never print bearer credentials. No nested coding CLI is allowed.
 4. Bind the actual returned actor ID, wait for the actual actor to finish, then
    acknowledge completion:
