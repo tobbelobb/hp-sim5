@@ -1,10 +1,10 @@
 # Cloud development environment
 
 For research workers and reviewers using only the current cloud chat's login,
-see the opt-in [cloud research client](RESEARCH.md). Install it with
-`bash scripts/cloud/install_research.sh`, then source
-`scripts/cloud/research-env.sh`. It needs an active authenticated parent chat
-with subagent tools; it does not start an independently authenticated coding CLI.
+see [cloud research](RESEARCH.md). Prepare dependencies with
+`bash scripts/cloud/install_research.sh` when needed, then use
+`./hp-sim5-research-program --cloud --question 'Your question'` in the current
+authenticated chat. It uses actual subagents without a PATH wrapper or another CLI login.
 
 This directory preserves the setup and startup steps validated during Codex
 cloud onboarding. Use the existing checkout: cloud tasks are already isolated,

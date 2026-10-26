@@ -10,19 +10,17 @@ Start with the [execution architecture map](architecture.md) for ownership,
 configuration flow and recording scope across the five research workflows.
 This README contains the operating instructions and tool arguments.
 
-For a manager above this worker, give a repository-connected chat your question
-and ask it to read `research/prompts/research-manager.txt`. The
-[question-only guide](program.md) explains continue, steering, graph queries and
-recovery. The [manager tools](program-manager.md) implement durable graph memory,
-strategy, bounded worker pools, separate review and combined patch checks.
-Dedicated entry is `./hp-sim5-research-program --codex --question 'Your question'`
-or `--claude`. The manager starts no physics world; assignments use this existing
-launcher. Tasks 007 through 015 are implemented. The
-[task 016 live gate](program-tasks/016-live-manager-release.md) remains blocked:
-the actual pilot reached missing native build headers and read-only coding-client
-startup, and stock MCP initialization timed out. See the
-[retained evidence](../output/research/sessions/2026-10-24-live-manager-release/report.md).
-The complete manager release is not yet verified.
+For a manager above this worker, use
+`./hp-sim5-research-program --codex --question 'Your question'` locally. In cloud,
+the current authenticated chat is the manager and opens
+`./hp-sim5-research-program --cloud --question 'Your question'`. Read the
+[program guide](program.md) and [cloud instructions](../scripts/cloud/RESEARCH.md).
+The manager uses ordinary CLI tools, starts no physics world and needs no
+manager MCP server. Workers reuse this existing launcher. Small completed
+research results are saved with `hp-sim5-research-program save PROGRAM_ID --commit`.
+The [historical pilot](cloud-client-pilot/2026-10-24/README.md) records what the
+prototype actually demonstrated; the current local and cloud paths need their
+own live trials.
 
 The single-agent workflow remains available through
 `research/prompts/research-program.txt`. It connects evidence discovery, one

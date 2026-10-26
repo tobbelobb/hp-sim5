@@ -363,7 +363,7 @@ Path(sys.argv[sys.argv.index('--output-last-message') + 1]).write_text(json.dump
     assert all(x['details']['state'] != 'active' for x in final['runtime']['allocations'])
     invoke('stop_program', {'reason': 'Fixture transcript complete; scientific program remains unresolved'})
     transcript['final_snapshot'] = final
-    output = ROOT / 'output/research/sessions/2026-10-24-bounded-controller/cli-transcript.json'
+    output = manager['root'] / 'controller-transcript.json'
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(transcript, indent=2) + '\n')
 

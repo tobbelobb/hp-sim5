@@ -1,9 +1,8 @@
-"""Real CLI/host/SDK protocols with fixture worker children, never live release proof."""
+"""Real CLI/host protocols with fixture worker children, never live research proof."""
 import hashlib
 import json
 import os
 from pathlib import Path
-import select
 import signal
 import shutil
 import subprocess
@@ -126,14 +125,8 @@ def test_question_only_actual_cli_creates_owned_host_and_second_chat_opens_it(tm
         assert second['attachment'] == attachment
         assert tool(attachment, 'worker_sessions') == []
         assert not list(Path(attachment['session']).rglob('native'))
-        served = cli('--store', store_path, '--serve', '--program', attachment['program_id'])
-        assert served['attachment'] == attachment
-        assert Path(attachment['session'], 'attachment.json').is_file()
-        assert Path(attachment['session'], 'attachment.toml').is_file()
-        config = tomllib.loads(Path(attachment['session'], 'attachment.toml').read_text())
-        for name in ('hp_sim5', 'rerun'):
-            assert config['mcp_servers'][name]['enabled'] is False
-            assert config['mcp_servers'][name]['command']
+        assert first['client_transport'] == 'local'
+        assert not Path(attachment['session'], 'attachment.toml').exists()
     finally:
         retire([attachment])
 
@@ -352,19 +345,17 @@ def test_manager_client_commands_only_attach_orchestration_and_dry_run_is_inert(
     plan = planned['client']
     assert plan['physics_world'] is False
     assert 'chosen' in plan['argv']
-    assert set(plan['attachment']['mcpServers']) == {'hp_sim5_program'}
     command = ' '.join(plan['argv'])
-    assert 'research_program_mcp.py' in json.dumps(plan)
+    assert 'research_program_mcp.py' not in command
     assert 'research_attach.py' not in command
+    assert 'hp-sim5-research-program tool' in plan['instructions']
     if backend == 'codex':
-        for name in ('hp_sim5', 'rerun'):
+        for name in ('hp_sim5', 'rerun', 'hp_sim5_program'):
             option = next(a for a in plan['argv'] if a.startswith(f'mcp_servers.{name}='))
             assert tomllib.loads(option)['mcp_servers'][name]['enabled'] is False
-        assert 'mcp_servers.hp_sim5_program.default_tools_approval_mode="approve"' in plan['argv']
     else:
         assert '--strict-mcp-config' in plan['argv']
-        assert 'mcp__hp_sim5_program' in command
-        assert set(plan['attachment']['mcpServers']['hp_sim5_program']) == {'command', 'args'}
+        assert 'mcp__hp_sim5_program' not in command
 
 
 @pytest.mark.skipif(shutil.which('codex') is None, reason='Installed Codex config validation is optional')
@@ -376,9 +367,8 @@ def test_installed_codex_accepts_disabled_manager_transports(tmp_path, inherited
         plan = client_plan(ROOT, a, 'codex')
         configs = [plan['argv'][i+1] for i, arg in enumerate(plan['argv'])
                    if arg == '-c' and plan['argv'][i+1].startswith('mcp_servers.')]
-        attachment = tomllib.loads(Path(a['session'], 'attachment.toml').read_text())
         from hp_sim5_research.coding_client import toml_literal
-        for overrides in (configs, ['mcp_servers=' + toml_literal(attachment['mcp_servers'])]):
+        for overrides in (configs,):
             command = ['codex', '-c', 'mcp_servers=' + toml_literal(inherited)]
             for override in overrides:
                 command += ['-c', override]
@@ -387,7 +377,7 @@ def test_installed_codex_accepts_disabled_manager_transports(tmp_path, inherited
             servers = {s['name']: s for s in json.loads(checked.stdout)}
             assert not servers['hp_sim5']['enabled'] and not servers['rerun']['enabled']
             assert servers['hp_sim5']['transport']['type'] == servers['rerun']['transport']['type'] == 'stdio'
-            assert servers['hp_sim5_program']['enabled']
+            assert not servers['hp_sim5_program']['enabled']
     finally:
         retire([a])
 
@@ -400,79 +390,6 @@ def test_manager_forwarded_provider_and_model_share_existing_helpers(tmp_path):
     assert plan['argv'].count('--model') == 1
     assert 'base' not in plan['argv']
     assert 'model_provider="openai"' not in plan['argv']
-
-
-def test_real_mcp_sdk_protocol_with_explicit_sandbox_timer(manager, tmp_path):
-    """Actual SDK wire handling. Timer is test-only for denied asyncio self-pipe sends."""
-    pytest.importorskip('mcp.server')
-    a = attach(manager)
-    server = tmp_path / 'sdk_timer.py'
-    server.write_text('''import anyio, importlib.util, sys
-from pathlib import Path
-spec = importlib.util.spec_from_file_location('program_mcp', sys.argv[1])
-module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(module)
-server = module.build_server(Path(sys.argv[2]))
-async def timer():
-    while True:
-        await anyio.sleep(.01)
-async def main():
-    async with anyio.create_task_group() as group:
-        group.start_soon(timer)
-        await server.run_stdio_async()
-        group.cancel_scope.cancel()
-anyio.run(main)
-''')
-    errors = (tmp_path / 'mcp-stderr.log').open('wb')
-    process = subprocess.Popen([sys.executable, str(server), str(ROOT / 'scripts/research_program_mcp.py'), a['connection']],
-                                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=errors, bufsize=0)
-    pending = b''
-    transcript = {'kind': 'Actual SDK manager protocol with test-only timer, not stock startup or live release proof',
-                  'observations': []}
-
-    def wire(message):
-        nonlocal pending
-        process.stdin.write((json.dumps(message) + '\n').encode())
-        process.stdin.flush()
-        if 'id' not in message:
-            return
-        deadline = time.monotonic() + 5
-        while time.monotonic() < deadline:
-            while b'\n' in pending:
-                line, pending = pending.split(b'\n', 1)
-                response = json.loads(line)
-                if response.get('id') == message['id']:
-                    transcript['observations'].append({'request': message, 'response': response})
-                    assert 'error' not in response, response
-                    return response['result']
-            ready, _, _ = select.select([process.stdout], [], [], max(0, deadline - time.monotonic()))
-            assert ready, 'SDK response timeout; inspect the explicit sandbox accommodation'
-            chunk = os.read(process.stdout.fileno(), 65536)
-            assert chunk, (tmp_path / 'mcp-stderr.log').read_text()
-            pending += chunk
-        pytest.fail('SDK request timeout')
-
-    try:
-        wire({'jsonrpc': '2.0', 'id': 1, 'method': 'initialize', 'params': {
-            'protocolVersion': '2025-11-25', 'capabilities': {}, 'clientInfo': {'name': 'manager-check', 'version': '1'}}})
-        wire({'jsonrpc': '2.0', 'method': 'notifications/initialized'})
-        listed = wire({'jsonrpc': '2.0', 'id': 2, 'method': 'tools/list', 'params': {}})
-        assert {t['name'] for t in listed['tools']} == {'program_overview', 'program_capabilities', 'program_call'}
-        overview = wire({'jsonrpc': '2.0', 'id': 3, 'method': 'tools/call',
-                         'params': {'name': 'program_overview', 'arguments': {}}})
-        assert json.loads(overview['content'][0]['text'])['result']['program']['id'] == 'p'
-        error = wire({'jsonrpc': '2.0', 'id': 4, 'method': 'tools/call', 'params': {
-            'name': 'program_call', 'arguments': {'operation': 'overview', 'parameters': {'program_id': 'other'}}}})
-        assert json.loads(error['content'][0]['text'])['error']['code'] == 'invalid_request'
-        process.stdin.close()
-        assert process.wait(timeout=5) == 0
-    finally:
-        if process.poll() is None:
-            process.kill()
-            process.wait(timeout=5)
-        errors.close()
-        transcript['exit_code'] = process.returncode
-        (tmp_path / 'manager-protocol.json').write_text(json.dumps(transcript, indent=2) + '\n')
 
 
 def test_strategy_funding_steering_and_worker_contract_through_fresh_cli(manager):

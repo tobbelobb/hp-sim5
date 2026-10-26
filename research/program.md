@@ -1,212 +1,131 @@
-# Start a research program from a question
+# Research programs
 
-The manager implementation is available above the existing
-`hp-sim5-research-agent`. Tasks 007 through 015 implement durable graph memory,
-approach selection, bounded workers, separate review, recovery and combined patch
-checks. The full release is not yet verified: [task 016](program-tasks/016-live-manager-release.md)
-is blocked on native build and coding-client prerequisites. See the
-[actual pilot and limits](../output/research/sessions/2026-10-24-live-manager-release/report.md).
+A research program is a continuing question managed in a coding chat. The manager
+chooses useful investigations, delegates them to the existing research agent,
+asks a separate reviewer to inspect the evidence, and explains what to try next.
+The human supplies the question and steers the conversation.
 
-## Give the manager only a question
-
-In a repository-connected coding chat, send:
-
-```text
-Read research/prompts/research-manager.txt and manage this question:
-Can encoder-only HP3 calibration improve from the same measurements?
-```
-
-Replace the question with yours. Optional constraints can follow it. The agent
-creates or resumes a program, inspects useful prior evidence, develops competing
-approaches and chooses finite assignments. It delegates through the existing
-worker and incorporates separately reviewed results into the graph. The agent
-handles the tool calls; you do not need to prepare worker prompts or a work board.
-Plain chat without repository/tool access cannot execute these operations.
-
-Then say "continue", "what do we know?", "why this approach?", "what supports
-that claim?", "try this idea using the same measurements", "pause", "stop that
-worker" or "stop the program". Pause holds new dispatch while existing work keeps
-running within its deadlines. Stop requests owned cleanup and reports its actual
-boundary. To move chats, say:
-
-```text
-Read research/prompts/research-manager.txt. Resume program PROGRAM_ID.
-Inspect the overview and reconcile ownership before continuing.
-```
-
-Keep the returned program ID. Reopening does not replay old assignments or restore
-a physics checkpoint. An unknown old process requires an explicit bounded handoff.
-The [manager tool guide](program-manager.md) explains each operation.
-
-Dedicated manager chats use the existing installed client and authentication:
+## Start locally
 
 ```bash
-./hp-sim5-research-program --codex --question 'Your question'
-./hp-sim5-research-program --claude --program PROGRAM_ID
-./hp-sim5-research-program --serve --program PROGRAM_ID
+./hp-sim5-research-program --codex --question 'Your research question'
+# Or use the installed Claude client:
+./hp-sim5-research-program --claude --question 'Your research question'
 ```
 
-An existing coding chat uses the same tools through CLI calls, with automatic
-file-host startup and no manual terminal/server setup. `--serve` writes MCP
-attachment configuration for a client supporting it. The manager itself starts
-no physics world or Viewer.
+The manager uses ordinary CLI calls. It starts no physics world and needs no
+manager MCP server. Workers still use the existing launcher and physics tools.
+The original direct interface remains available:
 
-## Memory, evidence and code
+```bash
+./hp-sim5-research-agent --codex --name 'One investigation' --viewer none
+```
 
-The default store is `.research-programs/programs.sqlite3`. It contains program
-goals, questions, approaches, assignments, attempts, graph relations, dated route
-decisions, steering and review/integration history. Large artifacts remain in
-research session directories and are referenced by identity/hash. This is a typed
-queryable graph in SQLite; no graph service or model API is required.
+To try the complete management cycle cheaply, ask for one saved-evidence
+investigation, a separate review, and a decision, with no new numerical work.
+The worker currently starts its normal supervisor even for saved-evidence work.
+A later bounded production experiment can test physics-tool integration.
 
-Ask the agent for scoped support, challenges, unknowns or the consequences of
-withdrawing evidence. Alternative derivations and shared source identities remain
-visible. A new simulator revision does not retroactively establish applicability.
-The [graph guide](program-graph/README.md) describes these rules.
+## Use the current cloud chat
 
-You or the agent can inspect readable exports without starting a world:
+Ask the authenticated cloud chat:
+
+```text
+Read research/prompts/research-manager.txt and scripts/cloud/RESEARCH.md.
+Manage this question: [question]. Use cloud subagents for workers and reviewers.
+```
+
+The chat runs:
+
+```bash
+./hp-sim5-research-program --cloud --question 'Your research question'
+```
+
+This does not open another coding client. The current conversation is the
+manager. The controller starts the existing research launcher; its model request
+goes directly to a queue that the parent dispatches through authenticated
+subagent tools. No second login, API key, Codex-home write grant or PATH wrapper
+is required. See the [cloud instructions](../scripts/cloud/RESEARCH.md).
+
+Keep the chat working through each bounded cycle. Background services manage
+owned processes and deadlines, but do not conduct research without the manager.
+CLI model/provider flags do not configure cloud actors. Cloud mode refuses
+nested interactive Codex/Claude manager launches. An explicit --cloud is useful
+on platforms that do not expose a recognizable cloud runtime marker.
+
+## Continue and steer
+
+Say "continue", "what do we know?", "why this approach?", "try this idea",
+"pause new work", "stop that worker" or "stop the program". Pause holds new
+dispatch; running work continues to its deadline. Stop requests cancellation,
+and the manager checks actual cleanup before declaring the work stopped.
+
+Keep the returned program ID. In the same checkout, open it again with:
+
+```bash
+./hp-sim5-research-program --codex --program PROGRAM_ID
+# From an existing cloud manager chat:
+./hp-sim5-research-program --cloud --program PROGRAM_ID
+```
+
+Default live memory lives in `.research-programs/programs.sqlite3`. Worker notes
+and evidence live under `output/research/`. Reopening memory restores neither a
+model conversation nor a physics world. Moving a partly finished program between
+machines is not a primary workflow.
+
+## Save research in Git
+
+At a completed iteration or before ending the program, finish owned cleanup and
+update research.md, report.md and abstract.md. Then save the small results:
+
+```bash
+./hp-sim5-research-program save PROGRAM_ID --commit
+# Include additional relevant analysis scripts, inputs or configuration:
+./hp-sim5-research-program save PROGRAM_ID --file path/to/analysis.py --commit
+```
+
+This writes `research/programs/PROGRAM_ID/`: program memory, a readable overview,
+worker notes, referenced small evidence and fixed review submissions. It commits
+only that directory, preserving unrelated staged work. It never pushes. Code
+changes belong in their own explicitly selected commits.
+
+The default copying limits are 1 MiB per file and 8 MiB total evidence. Missing,
+large and private/runtime files are listed in files.json instead of copied.
+Inspect those omissions: deliberately retain any larger evidence needed to
+support the findings separately. Explicit --file selections fail if unsafe,
+missing or too large. Credentials, live connection files and dependency trees
+are not research results. These Git records preserve findings and provenance;
+they are not a portable running environment.
+
+## Inspect without starting agents
 
 ```bash
 ./hp-sim5-research-program overview PROGRAM_ID
 ./hp-sim5-research-program query PROGRAM_ID open_questions
 ./hp-sim5-research-program query PROGRAM_ID support CLAIM_ID
 ./hp-sim5-research-program export PROGRAM_ID --format markdown
-./hp-sim5-research-program export PROGRAM_ID --format json
 ```
 
-Place `--store PATH` before the operation for another store. JSON exports preserve
-history; artifacts still need the [portable evidence handoff](handoffs.md).
-Execution success does not admit a claim. Separate review fixes evidence versions
-before admission, and [strategy](program-strategy.md) uses effective reviewed
-results to revise routes. [Patch integration](program-integration.md) has separate
-readiness records. Failed checks or conflicts preserve useful scientific findings.
-Research patches are prepared in separate worktrees and are never auto-merged or
-pushed by these tools.
+Use `--store DIRECTORY` before an operation for a separate trial store.
+The [tool guide](program-manager.md) documents lower-level operations.
 
-Fresh fits, headless/native physics and simulated collection remain allowed.
-The manager chooses targeted finite budgets from workload costs and uses supported
-`--speedup 25` for simulated autocal CLI when appropriate. Read the
-[recording-cost guidance](autocal-recording-performance.md). The
-[controller](program-controller.md) enforces reservations, slots, review backlog
-and owned wall deadlines. Tool limits apply to supported calls. Numerical estimates,
-worker reports and measured observations stay distinct; arbitrary shell movement
-and spend are not hard aggregate quotas. The pool defaults to one worker and
-supports up to four with explicit store/allocation capacity.
+A fixed (historically called sealed) submission is a copy of a claim's report,
+abstract and selected evidence at review time. Its hashes establish exactly what
+was reviewed, not that the claim is true. Editing paths inside a manifest changes
+its identity too. Keep such records unchanged; resolve relocated files separately.
+There is no "ignore integrity and keep reviewed status" import option.
 
-## Prerequisites and current release block
+## What has been demonstrated
 
-Ordinary program CLI and graph operations need the local `.venv/bin/python` and
-standard library. Dedicated chat needs an installed supported coding client with
-working existing authentication and writable client state. MCP needs the repository's
-supported SDK and working stdio/event-loop facilities. Workers need the normal
-[research runtime setup](README.md#setup-and-interactive-use), including native
-build tools. Node-API C headers are included in the checkout. The current launcher
-starts a supervisor even for a saved-data fitting assignment.
+The [October 24 cloud pilot](cloud-client-pilot/2026-10-24/README.md) used a
+prototype transport: two investigations and separate reviews, one small native
+physics operation, interruption and fresh-manager reconstruction. It did not
+demonstrate scientific improvement. That prototype's PATH wrapper and independent
+ten-minute timeout have been removed. The current transport and local manager
+need live trials on their actual platforms; fixture tests alone cannot establish
+that authenticated model sessions work.
 
-The 2026-10-24 actual pilot created a program, launched that worker in an isolated
-worktree, queried the graph, exercised steering/lifecycle commands and reopened
-durable state. Native build stopped at missing Node-API headers. Dedicated Codex
-and separate review stopped at read-only app-server initialization; stock MCP
-initialization timed out. No numerical investigation or scientific admission
-completed. Two reviewed investigations, production-tool use, observed live stop
-and fresh-chat continuation remain required for release. The report lists exact
-unmet criteria and the configuration bug fixed during these attempts.
-
-## Single-agent alternative
-
-The original one-investigation workflow remains available. It uses ordinary
-research notes and an agenda in the same agent conversation:
-
-Give an agent at this repository's root your question and the saved entry prompt:
-
-```text
-Read research/prompts/research-program.txt and use that workflow to investigate:
-
-[My research question]
-```
-
-That is enough to start. One agent finds relevant prior work, chooses one
-economical investigation, carries it through within budget, checks its claim,
-and saves the evidence and next decision. A broad question can need several
-iterations. You receive what changed, what remains uncertain and which decision
-deserves attention next.
-
-Fresh fits, headless/native physics runs and simulated data collection are
-allowed by default. The agent starts from useful prior evidence and uses
-targeted experiments whenever they can resolve the question. If you supply no
-numerical limits, it chooses and records a finite budget for the smallest useful
-probe, then executes it. You can add your practical goal, constraints and limits:
-
-```text
-Read research/prompts/research-program.txt and investigate:
-Can encoder-only HP3 calibration become more accurate from the same measurements?
-
-Preserve one-click operation and automatic stopping. Reuse saved data when useful.
-Run targeted fresh fits, physics or simulated collection when necessary.
-Choose and record a finite experiment budget before numerical work.
-Use --speedup 25 for supported simulated autocal CLI runs and prefer headless
-native Rust; choose recording detail to suit the question.
-Complete one useful iteration and update the agenda with the result.
-```
-
-Prefer quick, cheap probes over large unfocused sweeps. Use a small pilot to
-estimate cost when necessary. Headless physics already runs as fast as possible;
-speedup settings must preserve simulation-time waits/deadlines and the intended
-timestep/substeps. Use the [recording-cost guidance](autocal-recording-performance.md)
-to avoid unnecessary capture overhead. The agent preserves negative and
-inconclusive results and stops at the recorded limits. Your explicit constraints
-always take precedence.
-
-## Choose how far to go
-
-| What you want | Prompt |
-| --- | --- |
-| Question to one completed iteration | “Read research/prompts/research-program.txt and investigate: [question].” |
-| Discuss a plan before experiments | “Use research/prompts/next-assignment.txt for [question]. Return the proposal only.” |
-| Continue in the same conversation | “Continue this program for one more iteration within [budget]. Reconsider the next assignment using the latest evidence.” |
-| Resume with a fresh agent | “Read research/prompts/research-program.txt. Resume [agenda path] using [session path]/abstract.md and its cited evidence. My latest steering is [constraints].” |
-| Review a particular result | “Use research/prompts/reviewer.txt to review [report], [revision/diff] and [evidence/checks]. Inspect saved evidence first.” |
-| Move to another checkout or machine | “Use research/handoffs.md to export [session] with the inputs needed for [claim], then verify it after relocation.” |
-
-Replace bracketed values. The same conversation can do the research and a
-labeled self-review. A separate reviewer is optional; its independence should
-not be confused with an independently reproduced experiment.
-
-## Where the program lives
-
-The [autocal agenda](autocal-agenda.md) records current autocal priorities and
-the evidence behind them. For a different topic the agent uses a relevant note
-or creates one concise agenda. Each investigation keeps research.md (decisions
-and budgets), report.md (evidence and limitations) and abstract.md (searchable
-summary, decision and next observation) in its session directory. The
-[catalog](../output/research/index.md) makes those summaries discoverable.
-
-The [entry prompt](prompts/research-program.txt) connects the existing
-[assignment](prompts/next-assignment.txt), [review](prompts/reviewer.txt),
-[abstract](abstract-template.md) and [portable handoff](handoffs.md) conventions.
-Tasks 001 through 006 completed these foundations. Tasks 007 through 015 implement
-the manager described above; task 016 retains the live release gate. Use
-`research/program-tasks/PROMPT.md` for development backlog work and the appropriate
-question-first prompt for scientific research.
-
-See the [worked question-to-decision examples](../output/research/sessions/2026-10-23-research-program-smoke/desk-cases.md)
-and [smoke-test record](../output/research/sessions/2026-10-23-research-program-smoke/report.md)
-for what was actually exercised. That historical smoke record used the original
-zero-experiment defaults; the policy in this guide supersedes that restriction.
-
-## When the question needs live simulation
-
-Use the existing launcher on a machine with the repository's research runtime
-installed, then give the same prompt in its conversation:
-
-```bash
-./hp-sim5-research-agent --codex --name "my research question" --viewer none
-```
-
-See [setup and execution instructions](README.md#setup-and-interactive-use) for
-dependencies, machine settings and the existing supervisor tools. The program
-layer organizes the research; live experiments need those tools and a recorded
-targeted budget, which the agent can choose. Ordinary coding agents can inspect
-code, analyze saved artifacts and maintain the program without starting a world.
-A resumed launcher conversation starts a fresh world; a saved report or final
-snapshot does not restore it.
+Parallel pools and combined-patch checks remain available as advanced tools.
+Start with one worker and a separate reviewer. The historical development cards
+record earlier implementation work and failures; they do not expand this workflow
+into an independent background research service.

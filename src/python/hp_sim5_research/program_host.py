@@ -15,6 +15,7 @@ import traceback
 import uuid
 
 from .program import ProgramError, ProgramStore, _identity, _json, _object
+from .coding_client import research_client
 from .program_manager import ProgramManager, failure
 from .program_workers import process_identity
 
@@ -85,6 +86,8 @@ def open_manager(store_path, root, program_id):
         if live(descriptor):
             if descriptor['root'] != str(root):
                 raise ProgramError('Store controller belongs to another repository')
+            if descriptor.get('client_transport', 'local') != research_client():
+                raise ProgramError('Store controller uses a different client transport; shut it down or use another --store directory')
         else:
             with (directory / 'controller.log').open('ab') as output:
                 process = subprocess.Popen([sys.executable, str(root / 'scripts/research_program_host.py'),
@@ -115,7 +118,7 @@ def serve(store_path, root):
         queue = store.directory / 'controller-queue'
         queue.mkdir(mode=0o700, exist_ok=True)
         host = {'version': 1, 'host_id': _identity('host'), 'store': str(store.directory),
-                'root': str(root), 'process': process_identity(os.getpid())}
+                'root': str(root), 'process': process_identity(os.getpid()), 'client_transport': research_client()}
         managers, attachments = {}, {}
         stopping = False
 

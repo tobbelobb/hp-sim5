@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Opt in to authenticated cloud subagents as research clients.
+# Select authenticated cloud subagents explicitly. Never shadow the Codex CLI.
 source "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 export HP_SIM5_CLOUD_QUEUE="${HP_SIM5_CLOUD_QUEUE:-$HP_SIM5_ROOT/output/cloud-research/client-queue}"
-export PATH="$HP_SIM5_CLOUD_TOOLS/cloud-research-client/bin:$PATH"
+export HP_SIM5_RESEARCH_CLIENT=cloud

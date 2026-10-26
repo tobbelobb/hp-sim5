@@ -1,13 +1,14 @@
-"""Existing-chat CLI tools and dedicated supported-client manager entry."""
+"""Use the current chat as manager, or open one local coding-client chat."""
 import argparse
 import json
+import os
 from pathlib import Path
 import sqlite3
 import subprocess
 import sys
 
 from . import coding_client
-from .program import ProgramError, ProgramStore, _json
+from .program import ProgramStore, _json
 from .program_host import open_manager, read_json, request
 from .program_manager import failure
 
@@ -17,40 +18,29 @@ class Parser(argparse.ArgumentParser):
         self.exit(2, _json(failure('invalid_request', message)) + '\n')
 
 
-def attachment_config(root, connection):
-    return {'mcpServers': {'hp_sim5_program': {
-        'command': sys.executable, 'args': [str(root / 'scripts/research_program_mcp.py'), str(connection)]}}}
-
-
 def client_plan(root, attachment, backend, *, model=None, model_provider='openai',
                 dont_ask=False, client_args=()):
-    """Reuse worker/reviewer command construction and existing authentication."""
-    session, connection = Path(attachment['session']), Path(attachment['connection'])
+    """Local managers use ordinary program CLI calls, without a manager MCP."""
+    if coding_client.research_client() == 'cloud':
+        raise ValueError('The current cloud chat is the manager. Use --cloud without --codex or --claude; read scripts/cloud/RESEARCH.md')
+    session = Path(attachment['session'])
     instructions = ((root / 'research/prompts/research-manager.txt').read_text() +
-                    '\n\nBound manager attachment: ' + str(connection) +
-                    '\nProgram ID: ' + attachment['program_id'] + '\nManager artifacts: ' + str(session) + '\n')
-    config = attachment_config(root, connection)
+                    '\n\nBound manager connection: ' + attachment['connection'] +
+                    '\nProgram ID: ' + attachment['program_id'] + '\nManager artifacts: ' + str(session) +
+                    '\nUse hp-sim5-research-program tool with this connection; no manager MCP attachment is needed.\n')
     if backend == 'codex':
         forwarded, forwarded_model = coding_client.forwarded_settings(client_args)
-        settings = {**coding_client.disabled_research_mcp_settings(root),
-                    'mcp_servers.hp_sim5_program.command': sys.executable,
-                    'mcp_servers.hp_sim5_program.args': config['mcpServers']['hp_sim5_program']['args'],
-                    'mcp_servers.hp_sim5_program.cwd': str(root),
-                    'mcp_servers.hp_sim5_program.required': True,
-                    'mcp_servers.hp_sim5_program.startup_timeout_sec': 30,
-                    'mcp_servers.hp_sim5_program.default_tools_approval_mode': 'approve',
-                    'mcp_servers.hp_sim5_program.tool_timeout_sec': 30}
         command = coding_client.codex_command(
-            root, session, instructions=instructions, dont_ask=dont_ask,
+            root, session, instructions=instructions, dont_ask=dont_ask, goal_mode=True,
             model_provider=None if 'model_provider' in forwarded else model_provider,
-            model=None if forwarded_model else model, settings=settings, codex_args=client_args)
+            model=None if forwarded_model else model,
+            settings=coding_client.disabled_research_mcp_settings(root), codex_args=client_args)
         provider = forwarded.get('model_provider', model_provider)
     else:
-        command = coding_client.claude_command(session, model=model, dont_ask=dont_ask,
-                                               allowed_tools='mcp__hp_sim5_program,Read,Glob,Grep,Bash',
-                                               codex_args=client_args)
+        command = coding_client.claude_command(session, model=model, dont_ask=dont_ask, goal_mode=True,
+                                               allowed_tools='Read,Glob,Grep,Bash', codex_args=client_args)
         provider = None
-    return {'argv': command, 'instructions': instructions, 'attachment': config,
+    return {'argv': command, 'instructions': instructions,
             'backend': backend, 'model_provider': provider, 'physics_world': False}
 
 
@@ -58,12 +48,10 @@ def main(argv, root):
     root = Path(root).resolve()
     parser = Parser(description=__doc__)
     parser.add_argument('--store', type=Path, default=root / '.research-programs')
-    # The legacy store CLI retains create/query/export and its existing outputs.
     probe = argparse.ArgumentParser(add_help=False)
     probe.add_argument('--store')
     _, remainder = probe.parse_known_args(argv[:argv.index('--')] if '--' in argv else argv)
-    command = remainder[0] if remainder else ''
-    if command == 'tool':
+    if remainder and remainder[0] == 'tool':
         parser.add_argument('command', choices=['tool'])
         parser.add_argument('connection', type=Path)
         parser.add_argument('operation')
@@ -78,11 +66,11 @@ def main(argv, root):
     backend = parser.add_mutually_exclusive_group()
     backend.add_argument('--codex', action='store_const', const='codex', dest='backend')
     backend.add_argument('--claude', action='store_const', const='claude', dest='backend')
+    parser.add_argument('--cloud', action='store_true', help='Current authenticated chat is the manager; workers/reviewers use cloud subagents')
     entry = parser.add_mutually_exclusive_group(required=True)
     entry.add_argument('--question', help='Create a program from this question')
     entry.add_argument('--program', help='Open the existing program ID')
     parser.add_argument('--constraints', type=json.loads, default={})
-    parser.add_argument('--serve', action='store_true', help='Print manager MCP attachment paths; leave the owned host running')
     parser.add_argument('--dry-run', action='store_true', help='Plan without creating files, host, clients or workers')
     parser.add_argument('--model')
     parser.add_argument('--model-provider', default='openai')
@@ -90,11 +78,16 @@ def main(argv, root):
     split = argv.index('--') if '--' in argv else len(argv)
     args = parser.parse_args(argv[:split])
     client_args = argv[split + 1:]
-    if (args.serve and args.backend) or (client_args and not args.backend):
-        parser.error('--serve prints attachment configuration; forwarded client arguments require --codex or --claude')
+    if client_args and not args.backend:
+        parser.error('Forwarded client arguments require a local --codex or --claude manager')
     if args.backend == 'claude' and any(a.startswith('--model-provider') for a in argv[:split]):
         parser.error('--model-provider requires --codex')
     try:
+        if args.cloud:
+            os.environ['HP_SIM5_RESEARCH_CLIENT'] = 'cloud'
+        transport = coding_client.research_client()
+        if transport == 'cloud' and (args.backend or args.model or args.model_provider != 'openai'):
+            parser.error('The current cloud chat is the manager. Use --cloud without a coding CLI, model or provider override')
         if args.dry_run:
             attachment = {'program_id': args.program or 'PROGRAM_ID',
                           'session': str(root / 'output/research/managers/dry-run'),
@@ -112,25 +105,13 @@ def main(argv, root):
             attachment = opened['attachment']
         plan = client_plan(root, attachment, args.backend, model=args.model, model_provider=args.model_provider,
                            dont_ask=args.dont_ask, client_args=client_args) if args.backend else None
-        if not args.dry_run:
+        if not args.dry_run and plan:
             session = Path(attachment['session'])
-            config = attachment_config(root, attachment['connection'])
-            (session / 'attachment.json').write_text(_json(config) + '\n')
-            server = config['mcpServers']['hp_sim5_program']
-            disabled = coding_client.disabled_research_mcp_settings(root)
-            preamble = ''.join(f'[mcp_servers.{name}]\n' + '\n'.join(
-                f'{key} = {coding_client.toml_literal(value)}'
-                for key, value in disabled[f'mcp_servers.{name}'].items()) + '\n'
-                for name in ('hp_sim5', 'rerun'))
-            (session / 'attachment.toml').write_text(
-                preamble +
-                '[mcp_servers.hp_sim5_program]\n' + '\n'.join(
-                    f'{key} = {coding_client.toml_literal(value)}' for key, value in dict(server, cwd=str(root)).items()) +
-                '\nrequired = true\nstartup_timeout_sec = 30\ntool_timeout_sec = 30\ndefault_tools_approval_mode = "approve"\n')
-            if plan:
-                (session / 'instructions.md').write_text(plan['instructions'])
-                (session / 'launch.json').write_text(_json(plan) + '\n')
-        result = {'ok': True, 'result': dict(opened, client=plan, dry_run=args.dry_run, physics_world=False)}
+            (session / 'attachment.json').write_text('{"mcpServers":{}}\n')
+            (session / 'instructions.md').write_text(plan['instructions'])
+            (session / 'launch.json').write_text(_json(plan) + '\n')
+        result = {'ok': True, 'result': dict(opened, client=plan, client_transport=transport,
+                                            dry_run=args.dry_run, physics_world=False)}
         if not args.backend or args.dry_run:
             print(_json(result))
             return 0

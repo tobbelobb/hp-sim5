@@ -102,7 +102,7 @@ def validate_reviews(records):
         if kind == 'submission':
             manifest = _object(d.get('manifest'), 'submission manifest')
             if d.get('sha256') != json_digest(manifest) or manifest.get('contract') not in CONTRACTS:
-                raise ProgramError('Submission manifest hash/contract mismatch')
+                raise ProgramError('Submission manifest hash/contract mismatch: fixed review evidence was edited (paths are hashed too). Keep the original export unchanged; relocate files separately, or start a new program')
             claim = require(manifest.get('claim', {}).get('id'), 'claim')
             if manifest['claim'] != claim:
                 raise ProgramError('Submission must bind the exact immutable claim')

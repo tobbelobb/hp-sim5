@@ -3,6 +3,7 @@ import argparse
 import json
 from pathlib import Path
 import sqlite3
+import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,7 +22,7 @@ def main(argv=None):
         return manager_main(argv, ROOT)
     parser = argparse.ArgumentParser(description=__doc__, epilog=(
         'Manager chat/tools: --question TEXT or --program ID; add --codex/--claude '
-        'for a dedicated chat, --serve for MCP configuration. Use tool CONNECTION '
+        'for a local manager chat, --cloud for the current cloud chat. Use tool CONNECTION '
         'OPERATION --params JSON for existing-chat calls. See research/program-manager.md.'))
     parser.add_argument('--store', type=Path, default=ROOT / '.research-programs', help='Manager-owned store directory')
     commands = parser.add_subparsers(dest='command', required=True)
@@ -36,6 +37,10 @@ def main(argv=None):
             command.add_argument('--format', choices=('json', 'markdown'), default='json')
     restore = commands.add_parser('import', help='Restore a version-1 JSON export; IDs must be new')
     restore.add_argument('source', type=Path)
+    save = commands.add_parser('save', help='Save small research results under research/programs; optionally commit them')
+    save.add_argument('program')
+    save.add_argument('--file', action='append', default=[], help='Additional relevant small file inside this checkout')
+    save.add_argument('--commit', action='store_true', help='Commit only the saved research result directory; never push')
     for name in ('claim', 'derive', 'relate', 'assess', 'review-event', 'query'):
         command = commands.add_parser(name)
         command.add_argument('program')
@@ -106,6 +111,9 @@ def main(argv=None):
                 result = store.create_program(args.question, args.constraints, program_id=args.id)
             elif command == 'import':
                 result = store.import_snapshot(json.loads(args.source.read_text()))
+            elif command == 'save':
+                from hp_sim5_research.program_save import save_program
+                result = save_program(store, ROOT, args.program, files=args.file, commit=args.commit)
             elif command in ('open', 'status', 'overview'):
                 result = store.overview(args.program)
             elif command == 'export':
@@ -143,7 +151,7 @@ def main(argv=None):
                 else:
                     result = store.record_note(args.program, command, args.text, subject_id=args.subject,
                                                evidence_ids=args.evidence, actor=args.actor, **options)
-    except (OSError, ValueError, sqlite3.Error) as error:
+    except (OSError, ValueError, sqlite3.Error, subprocess.SubprocessError) as error:
         parser.exit(2, f'{error}\n')
     print(json.dumps(result, indent=2, ensure_ascii=False, allow_nan=False))
     return 0

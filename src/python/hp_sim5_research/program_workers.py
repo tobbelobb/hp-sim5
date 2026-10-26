@@ -15,6 +15,7 @@ import time
 
 from .program import ProgramError, _allocation, _identity, _json, _now, _object, _text
 from . import program_pool as pool
+from .coding_client import research_client
 
 
 ACTIVE = ('starting', 'running', 'cancelling', 'ownership_lost')
@@ -140,6 +141,9 @@ class WorkerDispatcher:
         for name in ('model', 'model_provider', 'worktree_dir', 'sidebar_section'):
             if name in result:
                 _text(result[name], name)
+        if research_client() == 'cloud' and (result['backend'] != 'codex' or result.get('model') or
+                result.get('model_provider', 'openai') != 'openai' or result['client_args']):
+            raise ProgramError('Cloud workers use parent-authenticated subagents; omit CLI model/provider arguments and use backend codex')
         return result
 
     def start(self, program_id, assignment_id, *, settings=None, instructions='', runtime=None):

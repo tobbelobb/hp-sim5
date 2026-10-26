@@ -27,26 +27,12 @@ def read(path):
     return json.loads(path.read_text())
 
 def client(arguments):
-    if arguments == ['--version']:
-        print('Codex cloud-session transport, actual authenticated agents dispatched by parent chat')
-        return 0
-    if not arguments or arguments[0] != 'exec':
-        print('Cloud transport supports batch workers/reviewers. Operate the manager in the existing authenticated cloud chat.', file=sys.stderr)
-        return 2
-    def option(*names):
-        for index, argument in enumerate(arguments):
-            if argument in names and index + 1 < len(arguments):
-                return arguments[index + 1]
-            for name in names:
-                if argument.startswith(name + '='):
-                    return argument.split('=', 1)[1]
-        return None
-    root = Path(option('--cd', '-C') or os.getcwd()).resolve()
-    final = option('--output-last-message')
-    if not final:
-        print('Missing final-message destination', file=sys.stderr)
-        return 2
-    final = Path(final).resolve()
+    parser = argparse.ArgumentParser(description='Wait for a real subagent dispatched by the current cloud chat')
+    parser.add_argument('--cd', type=Path, required=True)
+    parser.add_argument('--output-last-message', type=Path, required=True)
+    parser.add_argument('--sandbox', choices=('read-only', 'workspace-write'), default='workspace-write')
+    args = parser.parse_args(arguments)
+    root, final = args.cd.resolve(), args.output_last_message.resolve()
     if not final.is_relative_to((root / 'output').resolve()):
         print('Final message must be inside repository output', file=sys.stderr)
         return 2
@@ -63,7 +49,7 @@ def client(arguments):
                'instructions_path': str(final.parent / 'instructions.md'),
                'connection_path': str(final.parent / 'connection.json'),
                'pid': os.getpid(), 'agent_id': None,
-               'requested_sandbox': option('--sandbox', '-s'),
+               'requested_sandbox': args.sandbox,
                'effective_permissions': 'Existing cloud agent permission profile; CLI sandbox flags are not enforced by this adapter',
                'boundary': 'Cooperative same-UID files; parent chat owns actual cloud model sessions'}
     write(directory / 'request.json', request)
@@ -73,7 +59,6 @@ def client(arguments):
         stopping.append(signum)
     signal.signal(signal.SIGTERM, cancel)
     signal.signal(signal.SIGINT, cancel)
-    deadline = time.monotonic() + 600
     cancel_deadline = None
     while True:
         response = directory / 'response.json'
@@ -91,7 +76,9 @@ def client(arguments):
             print(json.dumps({'type': 'cloud_agent.completed', 'request_id': identity,
                               'agent_id': result['agent_id'], 'returncode': result['returncode']}), flush=True)
             return int(result['returncode'])
-        if stopping or time.monotonic() >= deadline:
+        # The launcher/review guard owns the allocated deadline. There is no
+        # second, conflicting model timeout here.
+        if stopping:
             if cancel_deadline is None:
                 request = read(directory / 'request.json')
                 request.update(state='cancel_requested', cancel_requested_at=time.time())

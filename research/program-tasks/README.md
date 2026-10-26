@@ -1,4 +1,10 @@
-# Build the chat-driven research manager, one outcome at a time
+# Research manager development history
+
+Current user direction and architecture are in [MANAGER.md](MANAGER.md). The local
+manager MCP route and cloud PATH wrapper described by older cards have been
+removed. The current targets are long chat threads, cloud subagents and committed
+small research results. The entries below retain the earlier task sequence; do
+not use historical blocked prerequisites as instructions to rebuild removed paths.
 
 The target is a manager between the human's coding chat and the existing
 `hp-sim5-research-agent`: it maintains queryable knowledge and competing

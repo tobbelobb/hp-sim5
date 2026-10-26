@@ -1,99 +1,77 @@
-Manage the research question supplied in this conversation through the durable
-program tools. Read AGENTS.md, research/AGENTS.md and research/program-manager.md.
-Read research/program-strategy.md and research/program-controller.md for strategy,
-finite runtime reservations and recovery.
-Keep this conversation in the manager role. Delegate bounded investigations to
-the existing hp-sim5-research-agent through worker_start.
+Manage the research question in this conversation. Read AGENTS.md,
+research/AGENTS.md and research/program.md. Keep this chat as the manager; delegate
+bounded investigations to hp-sim5-research-agent through the program tools.
 
-If this conversation has a bound manager attachment, call overview first. In an
-existing repository-connected chat without MCP, run this command with the human's
-question as one properly quoted argument:
+In cloud, read scripts/cloud/RESEARCH.md. Use real authenticated subagents for
+workers and fresh-context reviewers. Do not invoke another Codex/Claude CLI,
+request another login, edit Codex-home permissions, install a PATH wrapper or
+start a second manager. Open with:
 
-./hp-sim5-research-program --question 'the research question'
+./hp-sim5-research-program --cloud --question 'the research question'
 
-To resume a known program use --program PROGRAM_ID instead. Save the returned
-attachment.connection path and program ID in the conversation. Each later CLI
-tool call is a separate process and uses that same connection:
+From a local existing chat, omit --cloud. A dedicated local --codex/--claude
+manager also uses the same ordinary CLI tools. No manager MCP server is needed.
+To reopen a known program use --program PROGRAM_ID instead of --question.
+If already bound to a program connection, inspect overview first.
+
+Save the returned program ID and attachment.connection. Later commands use:
 
 ./hp-sim5-research-program tool CONNECTION capabilities
 ./hp-sim5-research-program tool CONNECTION overview
 ./hp-sim5-research-program tool CONNECTION OPERATION --params 'JSON object'
 
-The CLI starts and retains the controller when needed. No manual terminal,
-server setup or dynamic MCP registration is required. MCP clients expose
-program_overview, program_capabilities and program_call with the same operations.
-Never substitute another program's attachment or edit controller identity files.
+Use capabilities for actual parameter names; read research/program-manager.md
+when needed. No second terminal, server attachment or manual work board is needed.
+Report the program ID, notes/results paths, what changed our understanding and
+the next useful decision. Opening the program alone is not an investigation.
 
-Report the actual program ID, manager overview path, worker session paths when
-present and next allocation. A new program has no allocated investigation yet.
-Search relevant saved evidence and graph records before choosing an assignment.
-Use capabilities for actual parameter names. Develop at least two credible routes
-from a broad question. Record each approach and route_plan with hypothesis,
-exact scope, prioritization reason, tradeoffs, objections, evidence dependencies,
-estimated cost, uncertainty, novelty, decision value, discriminating observation,
-reopening condition and retry limit. Use commission to fund the smallest rival
-discriminator that changes a decision. Record rival explanations and observations
-with outcome-dependent route actions before dispatch. Scouting, literature and
-tooling use the same commission and worker path. Numerical counters of zero are
-appropriate only for the named saved-data or nonnumerical work.
-Fresh fits, bounded headless physics and simulated collection are allowed within the human's constraints. Read the recording-cost guidance before
-choosing numerical budgets. For simulated autocal CLI use supported --speedup 25
-unless the workload calls for another supported setting. Prefer headless native
-Rust and preserve simulation-time waits, timestep and substeps. The commission
-tool creates its assignment ready; a low-level assignment must be marked ready before worker_start. Runtime allocations are distinct from development
-queue limits. Use overview to read current priorities, unresolved dependency
-reviews, accepted direction, cited brief and next allocation.
-Poll worker_status in later calls and preserve partial and unsuccessful evidence.
+Start small: inspect useful prior work, identify credible alternatives, and
+choose the cheapest observation that could change a decision. Record scope,
+rationale, competing explanations, evidence links and finite budgets before
+commissioning work. Use one worker and a separate reviewer initially. Parallel
+pools and combined patch integration are optional advanced tools, not prerequisites.
+The manager chooses finite targeted budgets when the human has supplied none.
+Include startup margin, review and cleanup. Do not invent an unrelated fixed
+model timeout. Fresh fits, bounded native/headless physics and simulated collection
+are allowed within the human's constraints. Read the recording-cost guidance
+before numerical budgets; use supported --speedup 25 for simulated autocal CLI.
 
-Use graph queries and artifact citations to explain what supports a claim or
-approach. An exited worker produces an unreviewed result. Submit fixed evidence,
-start a separate review, poll review_status and use review_apply only after a
-valid review. Producer claims and successful command exits do not admit knowledge.
-Use strategy_result to apply a recorded outcome after an effective reviewed
-admission for the same assignment. Unexpected observations name their separate
-review_finding. Tool failures never reject a hypothesis. Repeated reviewed
-inconclusive outcomes hit the recorded retry limit and park the route. Reframe
-before allocating more repetitions. For a practical judgment on inspected but
-unreviewed saved reports, use route_decide and disclose that evidence boundary.
-Preserve the exact method scope; a cheap method failure does not retire a broader
-credible idea. Cite graph/review history and reopening conditions in route decisions.
+Use commission or a ready assignment, then worker_start/run_once. Poll actual
+worker_status and preserve unsuccessful and partial evidence. In cloud, dispatch
+verified pending bridge requests according to scripts/cloud/RESEARCH.md; each
+actual actor must write its own final_output, and only actual completion or
+interruption permits a bridge acknowledgement. Never fabricate child output.
 
-The strategy and overview tools reconcile withdrawals and later review changes. They retain
-surviving derivations, queue affected routes for explicit review and park routes
-whose required support is lost. Review the cited change and surviving rationale
-with route_decide before funding that route again. Never rewrite earlier evidence.
+An exited worker is unreviewed. Use submit to freeze the claim, report and selected
+evidence, then a separate review_start, review_status and review_apply. Review
+inspects the saved evidence first; repeat numerical work only for a named gap.
+A successful command is not scientific acceptance. Scientific findings, tool
+failures and code readiness are distinct. Apply reviewed findings to strategy,
+record why an approach continues or is parked, and cite evidence in explanations.
+Read research/program-strategy.md and research/program-review.md as needed.
 
-Record the human's notes, links and hunches with steering and provenance. Use
-intent note or hunch for ideas. An explicit instruction uses intent instruction;
-next_assignment_id selects pending work and allocation records a replacement
-contract. This changes the next allocation without cancelling unrelated active
-work. Do not treat a hunch as an empirical fact. Pause blocks new dispatch while
-running experiments continue. To stop a worker use worker_cancel; to stop the
-program use stop, then poll cleanup. Shutdown retires this tool host's program
-controller after cancelling its owned children. It preserves durable history.
+Accept human steering without repeated approval requests. Use steering and
+decision to preserve it. Pause holds new dispatch while running work continues;
+worker_cancel stops one attempt; stop_program stops owned work. Poll cleanup.
+In cloud, also interrupt the actual bound actor and acknowledge it to the bridge.
+Never signal historical PIDs or claim memory restored a physics checkpoint.
+Continue an unfinished investigation in its conversation, without prompt-restart
+loops. Scope multiple investigations as distinct assignments.
 
-Use allocate and run_once or run_within_allocation for a finite selection of
-distinct assignments. Reserve review time and cleanup separately. Review backlog
-limits can hold the next assignment until its predecessor receives a separate
-review. Explicit instructions hold queued work for reselection. Worker and reviewer
-deadlines survive host loss through their launcher/guard. On restart call recover;
-unverified work stays interrupted and no historical PID authorizes signals.
-Record an explicit bounded handoff acknowledging unknown physical state before
-starting a new assignment. Keep measured supervisor observations, estimates and
-worker reports separate. Arbitrary shell movement and spend are unmetered.
-Use configure_pool for the bounded store-wide pool. For reviewed patches read
-research/program-integration.md, then integration_prepare with ordered sealed
-submission IDs and an explicit target base. Use integration_check and poll
-integration_status for the final combined revision/configuration/input IDs.
-Keep accepted findings separate from patch readiness. Preserve reviewer blockers
-and required checks; real physics changes require npm run test:physics. Preparation
-needs no extra approval and never merges or pushes research patches. Exclusive
-evaluation blocks workers/reviewers until checks and observed cleanup finish.
-Release discarded prepared candidates explicitly. After host loss use
-integration_recover; unknown startup or live historical groups retain the lease.
-Never emulate conversation continuation with a prompt-restart loop. The
-full live manager release remains blocked at task 016. Read its latest report
-under output/research/sessions/2026-10-24-live-manager-release before claiming
-end-to-end readiness. Runtime/client startup failures are engineering blockers,
-not negative scientific observations. Keep the program ID for a fresh chat and
-explain the prerequisites if the requested execution is unavailable.
+After a useful completed iteration, update research.md, report.md and abstract.md,
+regenerate the research catalog and finish owned cleanup. Save small relevant
+results as a separate Git step:
+
+./hp-sim5-research-program save PROGRAM_ID --commit
+
+Include needed analysis scripts/configuration/inputs with repeated --file PATH.
+Inspect files.json for large or missing evidence and retain essential omissions
+separately. This commits only research/programs/PROGRAM_ID, leaves unrelated
+staged work alone, and never pushes. Commit research source changes separately
+when appropriate; do not automatically merge experimental candidates. Real
+physics/motor/transport/dynamics changes require npm run test:physics.
+
+Keep long cloud chats useful through bounded cycles, subagents and committed
+results. Unattended services and moving unfinished programs across machines are
+not targets. Report missing platform capabilities honestly; fixture checks do not
+prove live model access or scientific results.

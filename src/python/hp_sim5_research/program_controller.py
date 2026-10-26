@@ -204,7 +204,7 @@ class ProgramController:
                 allocation_id = active[-1]['id']
             else:
                 minutes = self.store.get_record(program_id, assignment_id, 'assignment')['details']['allocation']['wall_minutes']
-                allocation_id = self.allocate(program_id, 1, minutes + 5 + .01)['id']
+                allocation_id = self.allocate(program_id, 1, minutes + 6)['id']
         self.manager._worker_contract(program_id, assignment_id, '')
         with self.store.transaction():
             a = self.current(allocation_id)

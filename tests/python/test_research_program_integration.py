@@ -31,6 +31,7 @@ def git(c, *args):
 
 
 def candidate(c, name, files):
+    original_branch = git(c, 'branch', '--show-current')
     git(c, 'checkout', '-qb', name, c['base'])
     for path, content in files.items():
         target = c['root'] / path
@@ -42,7 +43,7 @@ def candidate(c, name, files):
     git(c, 'add', '.')
     git(c, '-c', 'user.name=fixture', '-c', 'user.email=f@f', 'commit', '-qm', name)
     result = git(c, 'rev-parse', 'HEAD')
-    git(c, 'checkout', '-q', 'master')
+    git(c, 'checkout', '-q', original_branch)
     return result
 
 

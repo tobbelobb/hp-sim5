@@ -1,173 +1,83 @@
-# Operate a research program from chat
+# Research manager tools
 
-For an authenticated cloud chat that must use its existing login, the opt-in
-[cloud research client](../scripts/cloud/RESEARCH.md) uses real cloud subagents
-for batch workers and reviewers. It requires an active parent chat with subagent
-tools. Its scoped live pilot and limitations are documented there; it does not
-complete task 016 or enable an unattended model daemon.
+Start with the [question-first guide](program.md). The current coding chat is the
+manager; ordinary CLI tools connect it to a small persistent controller. Local
+`--codex` or `--claude` opens that manager chat. Cloud `--cloud` uses the existing
+chat's authenticated subagents and never opens another coding CLI.
 
-An existing repository-connected Codex or Claude Code chat can manage a program
-with its shell tool. Give it your question and this prompt:
+## Open a program
 
-```text
-Read research/prompts/research-manager.txt and manage this question:
-Can encoder-only HP3 calibration improve from the same measurements?
+```bash
+./hp-sim5-research-program --question 'Your question'
+./hp-sim5-research-program --program PROGRAM_ID
+# Select cloud subagents explicitly:
+./hp-sim5-research-program --cloud --question 'Your question'
 ```
 
-The agent runs `./hp-sim5-research-program --question 'Your question'`. This
-creates durable memory and starts a local tool host automatically. The JSON
-result includes the program ID, program-bound connection path, manager session,
-overview paths and next allocation. The overview includes a cited strategy brief,
-also written to brief.md beside the full overview. A new question starts unallocated. The
-manager chooses and records an assignment before dispatching it. No scientific
-result exists merely because the program opened.
+The response includes program_id, attachment.connection and the overview. Opening
+dispatches no workers. A new program has no allocated investigation. The host
+starts automatically and retains child ownership across separate CLI calls.
+Each store has one host and one client transport. A different transport requires
+shutting down the old host or choosing another --store directory.
 
-Tasks 007 through 015 are implemented. The full manager release remains blocked
-at [task 016](program-tasks/016-live-manager-release.md). The actual
-[live pilot](../output/research/sessions/2026-10-24-live-manager-release/report.md)
-verified CLI dispatch, graph/lifecycle commands and a fresh host, but could not
-complete production science or coding-client review in this environment.
+## Call tools
 
-You can then prompt the agent naturally:
-
-| Say | Manager action |
-| --- | --- |
-| Continue within the current allocation. | Inspect results and reservations, then select bounded work. |
-| What do we know, and what is unknown? | Query scoped support and open questions, with citations. |
-| Why pursue that approach? | Explain the route rationale, rivals, cost and discriminating observation. |
-| Try this idea using the same measurements. | Record steering and revise pending work while retaining evidence. |
-| Pause new work. | Hold dispatch while running work keeps its deadlines. |
-| Stop that worker, or stop the program. | Cancel owned work and report observed or unknown cleanup. |
-| Resume program PROGRAM_ID. | Reopen durable state and reconcile ownership before dispatch. |
-
-The agent handles tool arguments. Keep the program ID when moving to another chat.
-
-Open the same program in another chat with
-`./hp-sim5-research-program --program PROGRAM_ID`. Both chats receive the same
-controller identity while it is alive. Opening a program dispatches no workers.
-The default dispatcher allows one active worker across the store. A separate
-program gets its own controller identity. Use `--store PATH` before the command
-to choose another local store.
-
-## Use the CLI tools
-
-Replace `CONNECTION` with the returned attachment.connection path. CLI requests
-and responses are JSON. A failed call has `ok: false` and an error code/message,
-and exits with code 2. Invalid calls do not silently succeed.
+Use the returned attachment.connection path as CONNECTION:
 
 ```bash
 ./hp-sim5-research-program tool CONNECTION capabilities
 ./hp-sim5-research-program tool CONNECTION overview
 ./hp-sim5-research-program tool CONNECTION query --params '{"query":"open_questions"}'
-./hp-sim5-research-program tool CONNECTION approach --params '{"question_id":"QUESTION_ID","title":"Inspect saved candidates","reason":"Resolve membership before new fitting","record_id":"saved-route"}'
-./hp-sim5-research-program tool CONNECTION assignment --params '{"approach_id":"saved-route","objective":"Compare frozen memberships with their original baselines","allocation":{"wall_minutes":5,"fresh_fits":0},"record_id":"compare-membership"}'
-./hp-sim5-research-program tool CONNECTION transition --params '{"record_id":"compare-membership","target":"ready","reason":"Bounded saved-evidence comparison"}'
-./hp-sim5-research-program tool CONNECTION worker_start --params '{"assignment_id":"compare-membership","settings":{"backend":"codex","viewer":"none","worktree":true}}'
-./hp-sim5-research-program tool CONNECTION worker_status --params '{"attempt_id":"RETURNED_ATTEMPT_ID"}'
+./hp-sim5-research-program tool CONNECTION OPERATION --params 'JSON object'
 ```
 
-The example's zero fresh fits is specific to inspecting saved evidence. Choose
-finite workload limits for the actual question. The [finite controller](program-controller.md) reserves tasks, worker wall time,
-separate review capacity and cleanup before dispatch. Numerical counters remain
-contracts unless the supported production tool enforces them.
-The CLI never waits for the worker investigation to finish. Later calls reach
-the same host, which retains the actual dispatcher/reviewer child processes and
-polls their exits. Worker session links point to the existing launcher artifacts.
+Capabilities lists actual parameters. Successful calls return ok:true; failed
+calls return an error and exit 2. Tool calls do not wait for a worker to finish.
+Poll the returned attempt/review IDs in later calls. A timed-out mutation has an
+unknown outcome: inspect state before retrying it.
 
-`capabilities` lists the actual Python parameter names for every operation. These
-operations are implemented:
-
-| Work | Operations |
+| Purpose | Operations |
 | --- | --- |
-| Program and graph | overview/status, capabilities, query, question, approach, assignment, artifact, claim, derive, relate, assess, review_event, transition |
+| Strategy and memory | overview, query, question, approach, route_plan, route_decide, commission, assignment, decision, steering |
 | Worker | worker_start, worker_status, worker_cancel, worker_sessions |
-| Fixed separate review | submit, submission_verify, submission_invalidate, review_plan, review_start, review_status, review_cancel, review_apply |
-| Strategy | strategy, route_plan, route_decide, commission, strategy_result |
-| Human direction | steering, decision |
-| Runtime | allocate, run_once, run_within_allocation, runtime_status, worker_usage, fund_review, recover |
-| Combined candidates | integration_prepare, integration_check, integration_status, integration_release, integration_recover |
-| Lifecycle | pause, resume, cancel_attempt, stop_allocation, stop_program, stop, shutdown |
+| Evidence and review | artifact, claim, derive, relate, submit, submission_verify, review_start, review_status, review_cancel, review_apply, strategy_result |
+| Budgets and stopping | allocate, run_once, run_within_allocation, runtime_status, worker_usage, fund_review, pause, resume, stop_program, recover, shutdown |
 
-The [strategy guide](program-strategy.md) describes route plans, rival
-discriminators, automatic reviewed outcomes, withdrawal review, futility and
-accepted steering. `steering` also accepts `intent`, `links`, `provenance`,
-`next_assignment_id` and `allocation`. Notes and hunches preserve provenance; an
-explicit instruction can replace the next pending allocation without stopping
-unrelated active work. `review_start` accepts the
-same settings as `review_plan`; see [review contracts](program-review.md).
-`query` retains scoped evidence and source links, as in the [graph guide](program-graph/README.md).
+The manager normally handles these arguments. Read [strategy](program-strategy.md),
+[review](program-review.md) or [controller](program-controller.md) when needed.
+Choose one finite investigation plus review and startup margin. Keep numerical
+workload, wall time and cleanup limits explicit. Arbitrary shell spend and
+movement are not hard aggregate quotas. The default is one worker.
 
-Pause prevents new worker/reviewer dispatch. Running work continues. Use
-worker_cancel or review_cancel for an explicit cancellation. Stop prevents new
-dispatch and requests cancellation of this controller's owned children. Poll
-worker_status/review_status until cleanup completes. Shutdown also cancels owned
-children and retires the program's tool controller after they exit; it does not
-erase records. The per-store host exits after all opened program controllers
-have shut down. Closing a chat alone leaves the host and workers available to
-another chat. Cancellation of a production worker allows the existing launcher's
-cleanup grace, currently 190 seconds by default.
+## Manager CLI, worker MCP
 
-## Open a dedicated manager chat or attach MCP
+The manager uses a private file queue, so it needs no MCP SDK or local socket.
+Its former MCP attachment route and --serve option have been removed. Local
+manager clients disable inherited research MCP entries and use CLI tools.
+Workers retain the existing physics supervisor and its MCP attachment. Cloud
+workers can call scripts/research_attach.py through their command tools; they
+must use the private connection created for their own attempt. No new physics
+runtime is introduced.
 
-Use the existing installed client and its authentication:
+## Results and lifecycle
 
-```bash
-./hp-sim5-research-program --codex --question 'Your question'
-./hp-sim5-research-program --claude --program PROGRAM_ID
-./hp-sim5-research-program --serve --program PROGRAM_ID
-./hp-sim5-research-program --codex --question 'Your question' --dry-run
-```
+An exited worker is unreviewed. Submit a fixed claim and selected evidence, run
+a separate reviewer, and apply a valid review before treating the finding as
+reviewed. Review does not normally repeat expensive experiments. Physics changes
+still need npm run test:physics. Accepted findings and code readiness are distinct.
 
-The dedicated entry shares command/auth helpers with the existing worker and
-reviewer. It starts no continuing physics world or Viewer. Codex defaults to its
-existing ChatGPT sign-in; no new model API or credentials are required. Client
-arguments after `--` use the supported client's normal options. `--dry-run`
-creates no store, files or processes. Ordinary single-agent investigation still
-uses [research-program.txt](prompts/research-program.txt) or
-`hp-sim5-research-agent` as before.
+Pause holds new dispatch while existing work continues. Stop requests owned
+cleanup; poll status to observe completion. Shutdown also retires this program's
+controller. Closing a local manager client alone does not stop the host.
+Cloud cancellation additionally needs the parent to interrupt its actual cloud
+actor and acknowledge that interruption to the bridge.
 
-`--serve` prints attachment/session paths and leaves the file host running.
-The manager session contains attachment.toml for Codex and attachment.json for
-Claude Code, pointing to `scripts/research_program_mcp.py CONNECTION` over stdio.
-The adapter offers program_overview, program_capabilities and program_call.
-It proxies the same host used by CLI calls. Physics MCP remains a separate worker
-service. The ordinary-chat CLI needs only Python's standard library; MCP needs
-the repository's supported MCP SDK.
+After cleanup, run `hp-sim5-research-program save PROGRAM_ID --commit` as a separate
+step. See the [save policy](program.md#save-research-in-git). Durable IDs and notes
+help a later conversation in the same checkout; they do not restore physics or
+unowned processes. Historical PIDs never authorize signals.
 
-## Current boundaries and verification
-
-The private file queue needs no socket. One host lock prevents duplicate hosts.
-Every request checks the host generation, bound program and controller identity.
-A stale attachment fails explicitly; reopen the program to obtain its current
-attachment. Reopening after host loss does not adopt or signal old worker PIDs.
-A fresh host reconciles leases, process birth identities and session/connection
-records. Unverified work stays interrupted; a new bounded handoff must acknowledge
-unknown physical state before dispatch resumes. No saved PID authorizes signals. Request timeout means the outcome may be unknown. Inspect durable
-status before retrying a mutation. Same-UID callers can edit local files or use
-the store APIs directly. This is a cooperative tool boundary, not adversarial
-isolation.
-
-Task 011 verifies fresh-process CLI calls, retained fake-worker ownership,
-program-bound attachment sharing, graph/review errors, pause/cancel/stop behavior,
-client argv and actual MCP SDK initialize/list/call handling. These are interface
-checks, not live scientific or release evidence. In this command sandbox the
-SDK's stock stdio loop cannot wake after thread work because its internal socket
-send is denied. The recorded protocol check uses a diagnostic timer around the
-unchanged SDK. The task 016 stock initialize attempt also timed out after eight
-seconds. Actual dedicated Codex and separate reviewer startup reach a read-only
-app-server error. The pilot fixed a configuration bug: Codex validates disabled
-MCP transports, so manager/reviewer settings now replace entire legacy server
-tables with valid disabled stdio entries. This avoids inherited HTTP conflicts.
-Installed-client parser checks and focused tests passed. No new keys or
-HOME/CODEX_HOME overrides were introduced.
-
-[Combined candidate preparation and checks](program-integration.md) consume sealed
-reviewed submissions at an explicit base. Their separate worktrees and polled
-checks preserve the human checkout and scientific admissions. No research patch
-is automatically merged or pushed. Pool configuration and its limits are
-documented in [program-controller.md](program-controller.md).
-`run_within_allocation` executes the
-manager's finite selection of distinct assignments; it does not resume a prompt
-in a restart loop.
-Task 016 still requires the genuine client, worker, production-tool, review and
-replanning pilot. The full manager remains incomplete until that live proof passes.
+Parallel configuration and combined patch operations are advanced optional tools;
+see [pool/controller](program-controller.md) and [integration](program-integration.md).
+They are not required for the first useful program. No automatic merge or push
+is part of the research controller.

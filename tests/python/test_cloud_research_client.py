@@ -3,7 +3,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import runpy
 import signal
 import subprocess
 import sys
@@ -27,7 +26,7 @@ def wait_for(predicate):
 
 
 @pytest.fixture
-def client(tmp_path):
+def client(tmp_path, request):
     root = tmp_path / 'repo'
     final = root / 'output/session/final-message.md'
     final.parent.mkdir(parents=True)
@@ -35,10 +34,17 @@ def client(tmp_path):
     environment = dict(os.environ, HP_SIM5_CLOUD_QUEUE=str(queue))
     prompt = tmp_path / 'prompt.md'
     prompt.write_text('Transport fixture only, no scientific assignment.')
+    runner = BRIDGE
+    if getattr(request, 'param', None) == 'jump-clock':
+        runner = tmp_path / 'clock.py'
+        runner.write_text('import runpy, time\n'
+                          'clock = iter(range(0, 100000000, 3600))\n'
+                          'time.monotonic = lambda: next(clock)\n'
+                          f'runpy.run_path({str(BRIDGE)!r}, run_name="__main__")\n')
     with prompt.open('rb') as stdin:
         process = subprocess.Popen(
-            [sys.executable, str(BRIDGE), 'client', 'exec', '--cd', str(root),
-             '--output-last-message', str(final), '-c', 'private-config-marker'],
+            [sys.executable, str(runner), 'client', '--cd', str(root),
+             '--output-last-message', str(final)],
             stdin=stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             text=True, env=environment)
     request_path = wait_for(lambda: next(iter(queue.glob('*/request.json')), None))
@@ -115,22 +121,87 @@ def test_cancel_waits_for_actor_ack_and_keeps_partial_evidence(client):
     assert not final.exists()
 
 
-def test_wrapper_install_repeats_and_preserves_custom_content(tmp_path):
-    install = runpy.run_path(str(ROOT / 'scripts/cloud/install_research_client.py'))['install']
-    root = tmp_path / 'repo with spaces'
-    python = root / '.venv/bin/python'
-    python.parent.mkdir(parents=True)
-    python.symlink_to(sys.executable)
-    script = root / 'scripts/cloud/cloud_client_bridge.py'
-    script.parent.mkdir(parents=True)
-    script.write_text(BRIDGE.read_text())
-    tools = tmp_path / 'tools with spaces'
-    install(root, tools)
-    install(root, tools)
-    wrapper = tools / 'cloud-research-client/bin/codex'
-    result = subprocess.run([str(wrapper), '--version'], capture_output=True, text=True, check=True)
-    assert 'cloud-session transport' in result.stdout
-    wrapper.write_text('User-maintained wrapper\n')
-    with pytest.raises(SystemExit, match='Preserving modified'):
-        install(root, tools)
-    assert wrapper.read_text() == 'User-maintained wrapper\n'
+@pytest.mark.parametrize('client', ['jump-clock'], indirect=True)
+def test_transport_has_no_independent_ten_minute_deadline(client):
+    process, path, final, command = client
+    time.sleep(.15)
+    assert json.loads(path.read_text())['state'] == 'awaiting_agent'
+    assert process.poll() is None
+    command('bind')
+    final.write_text('Completed within the controller allocation')
+    command('complete')
+    process.communicate(timeout=5)
+    assert process.returncode == 0
+
+
+def test_cloud_commands_do_not_invoke_a_standalone_client(tmp_path, monkeypatch):
+    from hp_sim5_research import coding_client
+    monkeypatch.setenv('HP_SIM5_RESEARCH_CLIENT', 'cloud')
+    argv = coding_client.codex_command(ROOT, tmp_path, batch=True)
+    assert argv[:3] == [sys.executable, str(BRIDGE), 'client']
+    assert 'codex' not in argv and 'exec' not in argv
+    with pytest.raises(ValueError, match='current cloud chat'):
+        coding_client.codex_command(ROOT, tmp_path)
+    with pytest.raises(ValueError, match='another coding CLI'):
+        coding_client.claude_command(tmp_path, batch=True)
+    with pytest.raises(ValueError, match='inherit'):
+        coding_client.codex_command(ROOT, tmp_path, batch=True, model='local-only-setting')
+
+
+def test_cloud_runtime_cannot_select_local_clients(monkeypatch):
+    from hp_sim5_research.coding_client import research_client
+    monkeypatch.setenv('CODEX_HOME', '/run/codex-environment/codex-home')
+    monkeypatch.delenv('HP_SIM5_RESEARCH_CLIENT', raising=False)
+    assert research_client() == 'cloud'
+    monkeypatch.setenv('HP_SIM5_RESEARCH_CLIENT', 'local')
+    with pytest.raises(ValueError, match='disabled in cloud'):
+        research_client()
+
+
+def test_cloud_manager_rejects_nested_cli_before_creating_store(tmp_path):
+    store = tmp_path / 'never-created'
+    result = subprocess.run([str(ROOT / 'hp-sim5-research-program'), '--store', str(store),
+                             '--cloud', '--codex', '--question', 'Must use current chat'],
+                            capture_output=True, text=True, timeout=5)
+    assert result.returncode == 2
+    assert 'current cloud chat is the manager' in result.stderr
+    assert not store.exists()
+
+
+@pytest.mark.parametrize('mode', [['--serve'], ['--batch', '--prompt', 'A bounded worker']])
+def test_cloud_worker_and_service_plans_need_no_standalone_cli(tmp_path, mode):
+    session = tmp_path / 'never-created'
+    result = subprocess.run([str(ROOT / 'hp-sim5-research-agent'), '--codex', *mode,
+                             '--session-dir', str(session), '--dry-run'], capture_output=True, text=True,
+                            env=dict(os.environ, HP_SIM5_RESEARCH_CLIENT='cloud'), timeout=5, check=True)
+    argv = json.loads(result.stdout)['argv']
+    assert 'codex' not in argv
+    if '--serve' in mode:
+        assert argv == []
+    else:
+        assert str(BRIDGE) in argv
+    assert not session.exists()
+
+
+def test_cloud_mode_survives_fresh_cli_shells(tmp_path):
+    from hp_sim5_research.program_host import live, request
+    store = tmp_path / 'store'
+    result = subprocess.run([str(ROOT / 'hp-sim5-research-program'), '--store', str(store),
+                             '--cloud', '--question', 'Cloud mode without PATH wrappers'],
+                            capture_output=True, text=True, timeout=10, check=True)
+    opened = json.loads(result.stdout)['result']
+    attachment = opened['attachment']
+    try:
+        assert opened['client'] is None
+        assert opened['client_transport'] == attachment['client_transport'] == 'cloud'
+        state = request(attachment, 'capabilities')
+        assert state['ok']
+        # An ordinary later shell cannot silently change an already live host.
+        changed = subprocess.run([str(ROOT / 'hp-sim5-research-program'), '--store', str(store),
+                                  '--program', attachment['program_id']], capture_output=True, text=True, timeout=5,
+                                 env=dict(os.environ, HP_SIM5_RESEARCH_CLIENT='local'))
+        assert changed.returncode == 2
+        assert 'different client transport' in changed.stdout
+    finally:
+        request(attachment, 'shutdown')
+        wait_for(lambda: not live(attachment))

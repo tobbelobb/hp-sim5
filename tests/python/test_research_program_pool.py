@@ -108,7 +108,7 @@ def test_two_routes_real_worktrees_artifacts_worlds_atomic_queue_and_cancel(mana
                      'synthetic_world_id': r['details']['runtime_session_id'], 'worktree': r['details']['worktree'],
                      'argv': r['details']['argv']} for r in workers],
         'final_states': [r['details']['state'] for r in tool(a, 'worker_sessions')]}
-    (ROOT / 'output/research/sessions/2026-10-24-worker-pool/cli-evidence.json').write_text(json.dumps(transcript, indent=2) + '\n')
+    (manager['root'] / 'pool-evidence.json').write_text(json.dumps(transcript, indent=2) + '\n')
 
 
 def test_pool_alone_preserves_default_future_review_backpressure(manager):
