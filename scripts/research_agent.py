@@ -638,4 +638,6 @@ def main():
 
 
 if __name__ == '__main__':
+    from hp_sim5_research.cloud_environment import activate
+    activate(ROOT)
     sys.exit(main())
