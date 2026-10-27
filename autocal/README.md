@@ -509,3 +509,21 @@ finite positive value; the resulting covariance is not calibrated uncertainty.
 `HP_SIM5_AUTOCAL_SPREAD_STOP_FRAC` early-stop heuristic is documented in
 [the flag audit](../autocal-flags.md). Final history-selection logs identify the
 held-out-selected iteration/run separately from the running training-rank best.
+
+For a bounded native HP3 stiffness comparison, source the cloud environment and
+collect two production bootstrap datasets without fitting or applying parameters:
+
+```bash
+source scripts/cloud/env.sh
+.venv/bin/python -m autocal.tools.collect_native_parameter_pair --output output/research/new-native-pair
+```
+
+This helper uses stiffness 20000/8000 N, fixed 30 mm spools, zero cable width and
+buildup, no layering, three bootstrap sweeps and ten points per physical direction.
+It uses matched manual forces 0.01/0.05/0.5 N with 1 N sensor preload, speedup 25,
+and no RRD recording. Each world has a one-million-step limit and a 540-second
+collector timeout. Service startup and cleanup add wall time.
+It refuses existing output and unsupported Node versions before starting physics.
+It saves copied/baked scenes, native identity, command and partial-point journals,
+actual counts and timings. Failed worlds are retained without retries. Complete
+point counts do not establish geometric accuracy or automatic stopping.
