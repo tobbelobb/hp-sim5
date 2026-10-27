@@ -18,3 +18,7 @@ scripts/cloud/install_research.sh setup. Opening a program can use system Python
 and is not evidence of runtime readiness. If the launcher's own socket probe is
 blocked, report that permission boundary; supervised jobs require an already
 running, permitted supervisor. Do not spend research attempts on setup retries.
+Use the platform's supported command permission mechanism when available.
+A later permission grant does not change an existing controller: after owned
+cleanup, shut it down and reopen the same program in the permitted context,
+then repeat runtime_check. Follow scripts/cloud/RESEARCH.md for this recovery.

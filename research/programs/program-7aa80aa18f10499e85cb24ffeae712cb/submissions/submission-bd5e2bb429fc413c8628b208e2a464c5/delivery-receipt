@@ -1,0 +1,12 @@
+{
+  "runtime_source_revision": "7c0a353e9a4e3e42882d2c0fdf32b8d8d05b4c7b",
+  "tests": 333,
+  "skipped": 1,
+  "deselected": 8,
+  "deselection": "pytest.ini defaults to not slow",
+  "subtests": 34,
+  "wall_seconds": 125.7,
+  "rerun_viewer_enabled": true,
+  "source_changes_during_check": "documentation only",
+  "result": "passed"
+}

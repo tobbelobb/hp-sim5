@@ -1,0 +1,190 @@
+..................FF.................................................... [ 41%]
+..................................F..................................... [ 82%]
+...............................                                          [100%]
+=================================== FAILURES ===================================
+________________ test_compiled_fresh_experiment_records_backend ________________
+
+experiment_root = PosixPath('/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7/native/tests/ce13fb80cdbd4bbcac28f0fbd234768f/pytest-temp/test_compiled_fresh_experiment0')
+
+    def test_compiled_fresh_experiment_records_backend(experiment_root):
+        from hp_sim5_research.experiments import compare_runs, read_run, run_experiment
+        pytest.importorskip('warp')
+>       trial = run_experiment(experiment_root, steps=5, record=False, cable_solver_device='cpu')
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/python/test_research_agent.py:141: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/python/hp_sim5_research/experiments.py:144: in run_experiment
+    world = load_machine_world(frozen_scene, cable_solver_device=cable_solver_device)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/python/cable_joints_3d/machine_simulation.py:65: in load_machine_world
+    register_machine_systems(world, recording, cable_solver_device=cable_solver_device)
+src/python/cable_joints_3d/machine_simulation.py:30: in register_machine_systems
+    PBDCableConstraintSolver(device=cable_solver_device), PBDResolveCableOverCorrections(),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/python/cable_joints_3d/pbd_cable_constraint_solver.py:340: in __init__
+    self.compiled = WarpCableConstraintSolver(device)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/python/cable_joints_3d/warp_solver.py:694: in __init__
+    wp.init()
+.venv/lib/python3.12/site-packages/warp/_src/context.py:16199: in init
+    runtime = Runtime()
+              ^^^^^^^^^
+.venv/lib/python3.12/site-packages/warp/_src/context.py:8535: in __init__
+    warp._src.build.init_kernel_cache(warp.config.kernel_cache_dir)
+.venv/lib/python3.12/site-packages/warp/_src/build.py:257: in init_kernel_cache
+    os.makedirs(warp.config.kernel_cache_dir, exist_ok=True)
+<frozen os>:215: in makedirs
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = '/home/agent/.cache/warp', mode = 511, exist_ok = True
+
+>   ???
+E   OSError: [Errno 30] Read-only file system: '/home/agent/.cache/warp'
+
+<frozen os>:225: OSError
+----------------------------- Captured stderr call -----------------------------
+Warp CUDA warning: Could not find or load the NVIDIA CUDA driver. GPU execution will not be available.
+____________ test_stdio_mcp_discovery_execution_readback_and_error _____________
+  + Exception Group Traceback (most recent call last):
+  |   File "/workspace/hp-sim5-worktrees/bounded-research-assignment-0889b918/tests/python/test_research_agent.py", line 157, in test_stdio_mcp_discovery_execution_readback_and_error
+  |     async with Client(parameters, read_timeout_seconds=30) as client:
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/workspace/hp-sim5-worktrees/bounded-research-assignment-0889b918/.venv/lib/python3.12/site-packages/mcp/client/client.py", line 480, in __aexit__
+  |     await self._exit_stack.__aexit__(exc_type, exc_val, exc_tb)
+  |   File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/contextlib.py", line 754, in __aexit__
+  |     raise exc_details[1]
+  |   File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/contextlib.py", line 737, in __aexit__
+  |     cb_suppress = await cb(*exc_details)
+  |                   ^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/contextlib.py", line 231, in __aexit__
+  |     await self.gen.athrow(value)
+  |   File "/workspace/hp-sim5-worktrees/bounded-research-assignment-0889b918/.venv/lib/python3.12/site-packages/mcp/client/stdio.py", line 201, in stdio_client
+  |     async with anyio.create_task_group() as tg:
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  |   File "/workspace/hp-sim5/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+  |     raise BaseExceptionGroup(
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Exception Group Traceback (most recent call last):
+    |   File "/workspace/hp-sim5-worktrees/bounded-research-assignment-0889b918/.venv/lib/python3.12/site-packages/mcp/client/stdio.py", line 205, in stdio_client
+    |     yield read_stream, write_stream
+    |   File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/contextlib.py", line 737, in __aexit__
+    |     cb_suppress = await cb(*exc_details)
+    |                   ^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/workspace/hp-sim5-worktrees/bounded-research-assignment-0889b918/.venv/lib/python3.12/site-packages/mcp/client/session.py", line 514, in __aexit__
+    |     result = await self._task_group.__aexit__(exc_type, exc_val, exc_tb)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "/workspace/hp-sim5/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 847, in __aexit__
+    |     raise BaseExceptionGroup(
+    | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+    +-+---------------- 1 ----------------
+      | Traceback (most recent call last):
+      |   File "/workspace/hp-sim5-worktrees/bounded-research-assignment-0889b918/tests/python/test_research_agent.py", line 178, in test_stdio_mcp_discovery_execution_readback_and_error
+      |     assert not result.is_error, result.content
+      | AssertionError: [TextContent(type='text', text='Error executing tool run_experiment', annotations=None, meta=None)]
+      | assert not True
+      |  +  where True = CallToolResult(meta={'io.modelcontextprotocol/serverInfo': {'name': 'hp-sim5', 'version': ''}}, content=[TextContent(t...ng tool run_experiment', annotations=None, meta=None)], structured_content=None, is_error=True, result_type='complete').is_error
+      +------------------------------------
+----------------------------- Captured stderr call -----------------------------
+Tool 'run_experiment' raised an unexpected exception
+Traceback (most recent call last):
+  File "/workspace/hp-sim5-worktrees/bounded-research-assignment-0889b918/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/tools/base.py", line 179, in run
+    result = await self.fn_metadata.call_fn(self.fn, self.is_async, validated, pass_directly)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/bounded-research-assignment-0889b918/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/utilities/func_metadata.py", line 164, in call_fn
+    return await anyio.to_thread.run_sync(functools.partial(fn, **kwargs))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/bounded-research-assignment-0889b918/.venv/lib/python3.12/site-packages/anyio/to_thread.py", line 65, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/bounded-research-assignment-0889b918/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 2706, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/bounded-research-assignment-0889b918/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py", line 1100, in run
+    result = context.run(func, *args)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/bounded-research-assignment-0889b918/scripts/hp_sim5_mcp.py", line 325, in run_experiment
+    return run(ROOT, scene, steps=steps, dt=dt, commands=commands, label=label, record=record,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/bounded-research-assignment-0889b918/src/python/hp_sim5_research/experiments.py", line 156, in run_experiment
+    directory = run_directory(root, run_id)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/bounded-research-assignment-0889b918/src/python/hp_sim5_research/experiments.py", line 49, in run_directory
+    return repo_path(root, f'output/research/experiments/{run_id}')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/bounded-research-assignment-0889b918/src/python/hp_sim5_research/experiments.py", line 42, in repo_path
+    raise ValueError('Input paths must be inside the repository')
+ValueError: Input paths must be inside the repository
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/workspace/hp-sim5-worktrees/bounded-research-assignment-0889b918/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/server.py", line 442, in _handle_call_tool
+    return await self.call_tool(params.name, params.arguments or {}, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/bounded-research-assignment-0889b918/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/server.py", line 548, in call_tool
+    return await self._tool_manager.call_tool(name, arguments, context, convert_result=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/bounded-research-assignment-0889b918/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/tools/tool_manager.py", line 87, in call_tool
+    return await tool.run(arguments, context, convert_result=convert_result)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/bounded-research-assignment-0889b918/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/tools/base.py", line 213, in run
+    raise UnexpectedToolError(f"Error executing tool {self.name}") from exc
+mcp.server.mcpserver.exceptions.UnexpectedToolError: Error executing tool run_experiment
+____________ test_compiled_session_encoder_barrier_reset_and_cancel ____________
+
+tmp_path = PosixPath('/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7/native/tests/ce13fb80cdbd4bbcac28f0fbd234768f/pytest-temp/test_compiled_session_encoder_0')
+
+    @pytest.mark.asyncio
+    async def test_compiled_session_encoder_barrier_reset_and_cancel(tmp_path):
+        pytest.importorskip('warp')
+        from cable_joints_3d.pbd_cable_constraint_solver import PBDCableConstraintSolver
+>       session = NativeSession(ROOT, tmp_path, backend='native-warp', record=False)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/python/test_native_collector.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/python/hp_sim5_research/session.py:47: in __init__
+    self.world = self.create_world()
+                 ^^^^^^^^^^^^^^^^^^^
+src/python/hp_sim5_research/session.py:78: in create_world
+    world = load_machine_world(self.frozen_scene, cable_solver_device=self.cable_solver_device)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/python/cable_joints_3d/machine_simulation.py:65: in load_machine_world
+    register_machine_systems(world, recording, cable_solver_device=cable_solver_device)
+src/python/cable_joints_3d/machine_simulation.py:30: in register_machine_systems
+    PBDCableConstraintSolver(device=cable_solver_device), PBDResolveCableOverCorrections(),
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/python/cable_joints_3d/pbd_cable_constraint_solver.py:340: in __init__
+    self.compiled = WarpCableConstraintSolver(device)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/python/cable_joints_3d/warp_solver.py:694: in __init__
+    wp.init()
+.venv/lib/python3.12/site-packages/warp/_src/context.py:16199: in init
+    runtime = Runtime()
+              ^^^^^^^^^
+.venv/lib/python3.12/site-packages/warp/_src/context.py:8535: in __init__
+    warp._src.build.init_kernel_cache(warp.config.kernel_cache_dir)
+.venv/lib/python3.12/site-packages/warp/_src/build.py:257: in init_kernel_cache
+    os.makedirs(warp.config.kernel_cache_dir, exist_ok=True)
+<frozen os>:215: in makedirs
+    ???
+<frozen os>:215: in makedirs
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = '/home/agent/.cache/warp', mode = 511, exist_ok = True
+
+>   ???
+E   OSError: [Errno 30] Read-only file system: '/home/agent/.cache/warp'
+
+<frozen os>:225: OSError
+----------------------------- Captured stderr call -----------------------------
+Warp CUDA warning: Could not find or load the NVIDIA CUDA driver. GPU execution will not be available.
+=========================== short test summary info ============================
+FAILED tests/python/test_research_agent.py::test_compiled_fresh_experiment_records_backend
+FAILED tests/python/test_research_agent.py::test_stdio_mcp_discovery_execution_readback_and_error
+FAILED tests/python/test_native_collector.py::test_compiled_session_encoder_barrier_reset_and_cancel
+3 failed, 172 passed, 14 deselected in 68.70s (0:01:08)

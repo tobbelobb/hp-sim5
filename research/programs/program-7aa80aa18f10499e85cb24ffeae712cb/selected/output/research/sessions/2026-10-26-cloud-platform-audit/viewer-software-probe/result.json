@@ -1,0 +1,28 @@
+{
+  "outcome": "passed",
+  "viewer_endpoint": "http://127.0.0.1:46625",
+  "renderer": "Chromium SwiftShader Vulkan ICD",
+  "startup_and_discovery_s": 0.5494415639996078,
+  "tools": [
+    "rerun_connect",
+    "rerun_disconnect",
+    "rerun_close_recordings",
+    "rerun_get_viewer_logs",
+    "rerun_get_viewer_state",
+    "rerun_open_url",
+    "rerun_save_screenshot",
+    "rerun_set_time_cursor",
+    "batch",
+    "click",
+    "drag",
+    "get_node",
+    "hover",
+    "press_key",
+    "query_tree",
+    "resize",
+    "screenshot",
+    "scroll",
+    "type_text",
+    "wait_for"
+  ]
+}

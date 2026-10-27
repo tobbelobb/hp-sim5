@@ -1,0 +1,20 @@
+[
+  {
+    "source": "/workspace/hp-sim5/output/research/experiments/60d2127db7d443b7863d0add0272c51a/telemetry.jsonl",
+    "original_bytes": 2155845,
+    "original_sha256": "f9ca994cb413bf4a08398ff5a05ee61712e555c83be99a3439b0b58f2ffeaa4e",
+    "compressed": "/workspace/hp-sim5/output/research/sessions/2026-10-26-cloud-platform-audit/compact-evidence/native-telemetry.gz",
+    "compressed_bytes": 316693,
+    "compressed_sha256": "655191ca54e9a68f82e4e2e331f775988cfc6150f7928386ef482ea66e988c0d",
+    "byte_preserving_gzip": true
+  },
+  {
+    "source": "/workspace/hp-sim5/output/research/experiments/60d2127db7d443b7863d0add0272c51a/recording.rrd",
+    "original_bytes": 14776566,
+    "original_sha256": "6de6ec23f9e1c9c252010ffb488f985f311e68c74fc4f3c45a239abc48cdfbbc",
+    "compressed": "/workspace/hp-sim5/output/research/sessions/2026-10-26-cloud-platform-audit/compact-evidence/native-rrd.gz",
+    "compressed_bytes": 2411519,
+    "compressed_sha256": "7df637e37375ba8b25392dc7950003b520f58de27b693d4ac26f298b93268359",
+    "byte_preserving_gzip": true
+  }
+]

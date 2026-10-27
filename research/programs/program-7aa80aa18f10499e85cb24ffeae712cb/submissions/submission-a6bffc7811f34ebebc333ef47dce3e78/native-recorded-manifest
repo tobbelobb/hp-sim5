@@ -1,0 +1,101 @@
+{
+  "_meta": {
+    "io.modelcontextprotocol/serverInfo": {
+      "name": "hp-sim5",
+      "version": ""
+    }
+  },
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"schema_version\": 2,\n  \"backend\": \"headless-js\",\n  \"physics_engine\": \"rust-native\",\n  \"cable_solver_device\": null,\n  \"run_id\": \"60d2127db7d443b7863d0add0272c51a\",\n  \"label\": \"experiment-recorded\",\n  \"status\": \"complete\",\n  \"scene\": \"public/usd_scenes/hp4_rigid_body.usda\",\n  \"scene_generation\": 1,\n  \"steps\": 500,\n  \"dt_s\": 0.002,\n  \"commands_sha256\": \"ab1a7f63c4abcecdd078546cfde91c44385cf734ca166d6ada1109a70589a0d8\",\n  \"scene_sha256\": \"0ecdc14436b154d47aa8cee2c1a329b00ef17657fa4963426b0843a6d760009e\",\n  \"python_source_sha256\": \"58e11f7c2c7a0af3cea9f910b053a9e0d9234fc43c9da2131bd6ed69f7694bf9\",\n  \"git_revision\": \"379318b26773b8dc37c191b506da1c57b5886f6f\",\n  \"python\": \"3.12.14\",\n  \"platform\": \"Linux-6.18.55-x86_64-with-glibc2.41\",\n  \"packages\": {\n    \"numpy\": \"2.5.4\",\n    \"usd-core\": \"26.8\",\n    \"rerun-sdk\": \"0.38.1\"\n  },\n  \"construction_wall_s\": 0.31036383799983014,\n  \"record\": true,\n  \"artifacts\": {\n    \"manifest\": \"/workspace/hp-sim5/output/research/experiments/60d2127db7d443b7863d0add0272c51a/manifest.json\",\n    \"scene\": \"/workspace/hp-sim5/output/research/experiments/60d2127db7d443b7863d0add0272c51a/scene.usda\",\n    \"commands\": \"/workspace/hp-sim5/output/research/experiments/60d2127db7d443b7863d0add0272c51a/commands.json\",\n    \"telemetry\": \"/workspace/hp-sim5/output/research/experiments/60d2127db7d443b7863d0add0272c51a/telemetry.jsonl\",\n    \"snapshot\": \"/workspace/hp-sim5/output/research/experiments/60d2127db7d443b7863d0add0272c51a/final.json\",\n    \"rrd\": \"/workspace/hp-sim5/output/research/experiments/60d2127db7d443b7863d0add0272c51a/recording.rrd\"\n  },\n  \"physics_artifact\": {\n    \"path\": \"/workspace/hp-sim5-worktrees/bounded-research-assignment-c1f46479/src/wasm/cable_solver/target/native/physics.node\",\n    \"sha256\": \"66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8\",\n    \"build\": {\n      \"profile\": \"release\",\n      \"platform\": \"linux\",\n      \"arch\": \"x64\",\n      \"nodeApi\": 8,\n      \"artifactSha256\": \"66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8\",\n      \"nodeApiHeaders\": {\n        \"directory\": \"/workspace/hp-sim5/src/wasm/cable_solver/native/node-api\",\n        \"sha256\": {\n          \"node_api.h\": \"d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579\",\n          \"node_api_types.h\": \"8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61\",\n          \"js_native_api.h\": \"048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541\",\n          \"js_native_api_types.h\": \"0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034\"\n        }\n      },\n      \"sources\": {\n        \"Cargo.toml\": \"5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef\",\n        \"Cargo.lock\": \"a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9\",\n        \"native/node_bridge.c\": \"3616cb499eb950b83f17364eb8049a12c537acee6d7178eeaf9c3ecaa0dc5dc2\",\n        \"native/node-api/node_api.h\": \"d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579\",\n        \"native/node-api/node_api_types.h\": \"8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61\",\n        \"native/node-api/js_native_api.h\": \"048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541\",\n        \"native/node-api/js_native_api_types.h\": \"0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034\",\n        \"src/abi.rs\": \"8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8\",\n        \"src/engine.rs\": \"00a100c9628fd28d01ea8332d5409a23c9b1d73ff7342d6c8a47e176111d0a18\",\n        \"src/lib.rs\": \"71e042bf89c89a5826460d7b7bc44c63078ad99ca4e7f0c28976123e851b1a70\"\n      },\n      \"rustc\": \"rustc 1.99.1 (58cf8f9c3 2026-10-13)\\nbinary: rustc\\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\\ncommit-date: 2026-10-13\\nhost: x86_64-unknown-linux-gnu\\nrelease: 1.99.1\\nLLVM version: 23.1.1\",\n      \"target\": \"x86_64-unknown-linux-gnu\",\n      \"rustflags\": null,\n      \"compiler\": \"cc\",\n      \"buildScriptSha256\": \"bf719edb007491ef97bd763a428408e57a4e51856de76625d0603481197ab016\"\n    }\n  },\n  \"js_physics_source_sha256\": \"c4d4815acaabf5f621d4139b9218bd5e913234c50894fa1c435d8e77b31c5e0c\",\n  \"warnings\": [],\n  \"metrics\": {\n    \"effector_displacement_m\": {\n      \"world/machines/default/effector\": 0.00017207484794551383\n    },\n    \"peak_cable_force_n\": 0.11396887481380982,\n    \"peak_abs_length_error_m\": 0.00003110511650739056,\n    \"peak_abs_tracking_error_rad\": 0.0006618109895324963,\n    \"peak_total_missed_steps\": 0\n  },\n  \"simulation_wall_s\": 5.462782784999945\n}",
+      "annotations": null,
+      "_meta": null
+    }
+  ],
+  "structuredContent": {
+    "schema_version": 2,
+    "backend": "headless-js",
+    "physics_engine": "rust-native",
+    "cable_solver_device": null,
+    "run_id": "60d2127db7d443b7863d0add0272c51a",
+    "label": "experiment-recorded",
+    "status": "complete",
+    "scene": "public/usd_scenes/hp4_rigid_body.usda",
+    "scene_generation": 1,
+    "steps": 500,
+    "dt_s": 0.002,
+    "commands_sha256": "ab1a7f63c4abcecdd078546cfde91c44385cf734ca166d6ada1109a70589a0d8",
+    "scene_sha256": "0ecdc14436b154d47aa8cee2c1a329b00ef17657fa4963426b0843a6d760009e",
+    "python_source_sha256": "58e11f7c2c7a0af3cea9f910b053a9e0d9234fc43c9da2131bd6ed69f7694bf9",
+    "git_revision": "379318b26773b8dc37c191b506da1c57b5886f6f",
+    "python": "3.12.14",
+    "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
+    "packages": {
+      "numpy": "2.5.4",
+      "usd-core": "26.8",
+      "rerun-sdk": "0.38.1"
+    },
+    "construction_wall_s": 0.31036383799983014,
+    "record": true,
+    "artifacts": {
+      "manifest": "/workspace/hp-sim5/output/research/experiments/60d2127db7d443b7863d0add0272c51a/manifest.json",
+      "scene": "/workspace/hp-sim5/output/research/experiments/60d2127db7d443b7863d0add0272c51a/scene.usda",
+      "commands": "/workspace/hp-sim5/output/research/experiments/60d2127db7d443b7863d0add0272c51a/commands.json",
+      "telemetry": "/workspace/hp-sim5/output/research/experiments/60d2127db7d443b7863d0add0272c51a/telemetry.jsonl",
+      "snapshot": "/workspace/hp-sim5/output/research/experiments/60d2127db7d443b7863d0add0272c51a/final.json",
+      "rrd": "/workspace/hp-sim5/output/research/experiments/60d2127db7d443b7863d0add0272c51a/recording.rrd"
+    },
+    "physics_artifact": {
+      "path": "/workspace/hp-sim5-worktrees/bounded-research-assignment-c1f46479/src/wasm/cable_solver/target/native/physics.node",
+      "sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+      "build": {
+        "profile": "release",
+        "platform": "linux",
+        "arch": "x64",
+        "nodeApi": 8,
+        "artifactSha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+        "nodeApiHeaders": {
+          "directory": "/workspace/hp-sim5/src/wasm/cable_solver/native/node-api",
+          "sha256": {
+            "node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+            "node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+            "js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+            "js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034"
+          }
+        },
+        "sources": {
+          "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+          "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+          "native/node_bridge.c": "3616cb499eb950b83f17364eb8049a12c537acee6d7178eeaf9c3ecaa0dc5dc2",
+          "native/node-api/node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+          "native/node-api/node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+          "native/node-api/js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+          "native/node-api/js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034",
+          "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+          "src/engine.rs": "00a100c9628fd28d01ea8332d5409a23c9b1d73ff7342d6c8a47e176111d0a18",
+          "src/lib.rs": "71e042bf89c89a5826460d7b7bc44c63078ad99ca4e7f0c28976123e851b1a70"
+        },
+        "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+        "target": "x86_64-unknown-linux-gnu",
+        "rustflags": null,
+        "compiler": "cc",
+        "buildScriptSha256": "bf719edb007491ef97bd763a428408e57a4e51856de76625d0603481197ab016"
+      }
+    },
+    "js_physics_source_sha256": "c4d4815acaabf5f621d4139b9218bd5e913234c50894fa1c435d8e77b31c5e0c",
+    "warnings": [],
+    "metrics": {
+      "effector_displacement_m": {
+        "world/machines/default/effector": 0.00017207484794551383
+      },
+      "peak_cable_force_n": 0.11396887481380982,
+      "peak_abs_length_error_m": 3.110511650739056e-05,
+      "peak_abs_tracking_error_rad": 0.0006618109895324963,
+      "peak_total_missed_steps": 0
+    },
+    "simulation_wall_s": 5.462782784999945
+  },
+  "isError": false,
+  "resultType": "complete"
+}

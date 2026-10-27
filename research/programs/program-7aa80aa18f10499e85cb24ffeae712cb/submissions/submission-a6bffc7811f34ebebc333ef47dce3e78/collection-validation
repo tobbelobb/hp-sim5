@@ -1,0 +1,14 @@
+{
+  "schema": "2.0",
+  "point_count": 6,
+  "drive_span_mm": [
+    95.44158481605791
+  ],
+  "physical_sensor_span_mm": [
+    48.55855044898623,
+    48.61091032654606
+  ],
+  "autocal_residual_count": 6,
+  "firmware_anchor_residual_rms_mm": 0.2571678709631153,
+  "calibration_accuracy": "Short preflight proves measurement ingestion; anchor fitting requires multiple held-out sweeps"
+}

@@ -135,6 +135,24 @@ def test_input_and_artifact_path_boundaries(experiment_root):
         read_run(experiment_root, '../outside')
 
 
+def test_fresh_experiment_and_readback_with_shared_worktree_output(experiment_root, tmp_path):
+    from hp_sim5_research.experiments import compare_runs, read_run, run_experiment
+    shared = tmp_path.parent / (tmp_path.name + '-shared-output')
+    shared.mkdir()
+    (experiment_root / 'output').symlink_to(shared, target_is_directory=True)
+    first = run_experiment(experiment_root, steps=3, record=False)
+    second = run_experiment(experiment_root, steps=3, record=False)
+    assert Path(first['artifacts']['manifest']).is_relative_to(shared)
+    assert read_run(experiment_root, first['run_id']) == first
+    assert len(read_run(experiment_root, first['run_id'], 0, 4)['samples']) == 4
+    assert all(value == 0 for value in compare_runs(experiment_root, first['run_id'], second['run_id'])[
+        'metric_delta_candidate_minus_baseline'].values())
+    escaped_id = 'f' * 32
+    (shared / 'research/experiments' / escaped_id).symlink_to(tmp_path.parent, target_is_directory=True)
+    with pytest.raises(ValueError, match='inside the experiment output'):
+        read_run(experiment_root, escaped_id)
+
+
 def test_compiled_fresh_experiment_records_backend(experiment_root):
     from hp_sim5_research.experiments import compare_runs, read_run, run_experiment
     pytest.importorskip('warp')
@@ -148,6 +166,24 @@ def test_compiled_fresh_experiment_records_backend(experiment_root):
     assert comparison['changed_inputs'] == ['packages', 'backend', 'cable_solver_device', 'physics_engine']
     with pytest.raises(ValueError, match='cable_solver_device'):
         run_experiment(experiment_root, cable_solver_device='automatic')
+
+
+@pytest.mark.asyncio
+async def test_browser_interventions_keep_a_valid_mcp_object_result(tmp_path):
+    from mcp import Client, StdioServerParameters
+    server = tmp_path / 'browser_mcp.py'
+    server.write_text('import importlib.util\n'
+                      f'spec=importlib.util.spec_from_file_location("browser_mcp",{str(ROOT / "scripts/hp_sim5_mcp.py")!r})\n'
+                      'module=importlib.util.module_from_spec(spec)\n'
+                      'spec.loader.exec_module(module)\n'
+                      'module.supervised_request=lambda operation, **args: [{"action":"pause"}] if args["action"]=="interventions" else {"backend":"browser-js"}\n'
+                      'module.mcp.run(transport="stdio")\n')
+    async with Client(StdioServerParameters(command=sys.executable, args=[str(server)])) as client:
+        result = await client.call_tool('browser_action', {'page_id': 'fixture-page', 'action': 'interventions'})
+        assert not result.is_error, result.content
+        assert result.structured_content == {'interventions': [{'action': 'pause'}]}
+        observed = await client.call_tool('browser_action', {'page_id': 'fixture-page', 'action': 'observe'})
+        assert not observed.is_error and observed.structured_content == {'backend': 'browser-js'}
 
 
 @pytest.mark.asyncio

@@ -1,0 +1,93 @@
+# Cloud Research Program audit and repairs
+
+Status: complete within tested scope. Final production regression interrupted.
+
+## Abstract
+
+The managed CPU cloud could perform useful research, but its original setup and tools did not work smoothly. Actual authenticated workers and separate reviewers tested native experiments, telemetry, recordings, collection, autocalibration, Rerun, browser tools and cleanup. A production actor invoked all 23 supervisor tools through a launcher-owned MCP file relay while its command sockets were denied. A recorded/unrecorded 500-step native pair produced identical 501-row telemetry; six collection points validated; bounded full-auto produced 1,305,459 steps. Repairs address shared-output paths, test caches, review launch paths, CPU rendering/protocol setup and invalid status/history responses. The final delivery pass at the repaired runtime source passed 333 tests and 34 subtests. A fresh full-auto/browser regression reached its deadline during a stalled parent permission request, leaving final live verification incomplete. These results support the tested repairs, not optimal performance or calibration accuracy.
+
+## Scope and decision
+
+Program `program-7aa80aa18f10499e85cb24ffeae712cb` retained the same store through controller restarts and cloud runtime recreation. Source began at `67617705b7996ee3a84889e6723cab149b6e5884`. Runtime repairs are committed in `3c5cc88b`, `379318b2` and `7c0a353e`. Later documentation and archive commits do not change simulation algorithms.
+
+Deliver the tested repairs with the remaining verification gap explicit. The human's final steering was to wrap up, commit and push the fixes so later Research Programs avoid these failures. We stopped adding numerical experiments. No unrestricted optimality, hardware accuracy or complete final-source production validation is claimed.
+
+## Tested hypotheses
+
+| Hypothesis | Experiment IDs | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Original cloud setup is ready without repair | Initial runtime checks | Rejected | [Notebook](research.md), [post-repair runtime check](runtime-ready.json) |
+| Original suites and run creation work in launcher worktrees | `attempt-ca404fcaf323469eb35cc37b515ca3a7`; suites `ce13fb80cdbd4bbcac28f0fbd234768f`, `46d4d37e13c541a9bf8e8d403c121f66` | Mixed: 172 service passes, three failures; 49 headless-autocal passes | [Baseline report](../attempt-ca404fcaf323469eb35cc37b515ca3a7/report.md), [review](baseline-admission.json) |
+| File relay enables research tools from a socket-denied actor | `attempt-e13302e362f545e39608027dcb85f963` at `379318b2` | Supported for observed paths; all 23 tools invoked, two retained response defects | [Production report](../attempt-e13302e362f545e39608027dcb85f963/report.md), [coverage](../attempt-e13302e362f545e39608027dcb85f963/coverage.json), [review](production-admission.json) |
+| Recording preserves matched native telemetry | Run `60d2127db7d443b7863d0add0272c51a` and matched unrecorded run | Supported for 500 steps; 501 rows byte-identical | [Equality evidence](../attempt-e13302e362f545e39608027dcb85f963/experiment-equality.json), [lossless telemetry](compact-evidence/native-telemetry.gz) |
+| Collection, autocal and inspection complete all expected paths | Collection `d86b1e5ea7a84165bc21aadabba53470`, autocal `d5f69c419e474b54b098a2077715349d` | Mixed: useful physics, collection cancellation, Viewer/browser; terminal autocal status/ownership and browser history failed | [Production report](../attempt-e13302e362f545e39608027dcb85f963/report.md), [autocal artifact verification](../attempt-e13302e362f545e39608027dcb85f963/autocal-artifact-verification.json) |
+| Final status/history repairs handle the failing cases | Targeted tests and final combined pass at `7c0a353e` | Supported by regression tests | [125 targeted tests](status-browser-fix-tests.log), [333 delivery tests](final-delivery-tests.log), [delivery JUnit](final-delivery-tests.xml) |
+| Final source completes fresh full-auto, slot reuse/cancel and real browser history together | `attempt-7b5eec5ff1044841ae609b067012e7ec` | Inconclusive: initial preflight/browser startup only; wall deadline expired during parent permission wait | [Retained status](final-interrupted-status.json), [partial preflight](../attempt-7b5eec5ff1044841ae609b067012e7ec/preflight-initial.json), [exit](../attempt-7b5eec5ff1044841ae609b067012e7ec/exit.json) |
+
+## Repairs
+
+`3c5cc88b` permits the launcher's intentional shared experiment-output symlink while preserving input and run-ID containment checks. Supervisor tests receive isolated writable Warp/XDG caches without inherited service credentials. Passing the explicit session directory fixes reviewer launch from the default `.research-programs/reviews` store.
+
+That commit adds `scripts/cloud/cloud_tool_bridge.py`. The permitted launcher maintains actual MCP attachments and a private file queue for its actor. Only `hp_sim5` and the assigned `rerun` server are available. There is no new model client, shell runner, arbitrary endpoint or physics engine. Generation checks reject stale requests; expired requests do not run; timeouts retain unknown-outcome semantics; a birth-verified owner monitor retires attachments after owner loss. Same-UID cooperation remains the trust boundary.
+
+`379318b2` selects Chromium's installed SwiftShader Vulkan ICD when no GPU or explicit driver is configured, enabling the real headless Viewer on the CPU image. Explicit driver choices remain intact. The pinned Rust Viewer MCP requires the legacy initialize handshake, so its attachment uses that supported mode while the supervisor retains normal SDK negotiation. Viewer and Viewer MCP settings/cache stay inside the session.
+
+`7c0a353e` wraps browser intervention history in a dictionary matching its MCP schema. Autocal status reports nonfinite diagnostic floats as JSON null with explicit `nonfinite_values` markers, preserving raw optimizer files. Terminal ownership clears before persistence. HTTP encoding stays inside the error-response boundary so another invalid result produces a valid error response instead of a dropped connection.
+
+Entry and workflow documentation explain controller permission inheritance, reopening the same program after cleanup, actor relay calls and the measured audit scope. The launcher still needs a permitted command context; the relay does not grant sockets to actor commands.
+
+## Measurements and checks
+
+Baseline HP3 preflight `f2b3dcc8b52644d1a9cbd9bf3746df8d` passed in 0.8184 seconds, kept the attached world at step zero and produced a readable six-row RRD. The three service-suite failures were two read-only Warp cache failures and one shared-output containment failure. Both requested native experiments failed before run creation, contributing zero direct physics steps. Baseline MCP execution was parent-assisted after the actor's network-permission command stalled; this was not treated as smooth original actor access.
+
+At `379318b2`, research-services job `419ce7d0faf74c2abf76be2a9fb3018f` passed 176 tests. The actor ran matched 500-step native experiments plus a changed-command comparison, read telemetry and the real Viewer recording/blueprint, configured HP4 to HP3, exercised firmware/reset, collected six validated points in 20,243 steps, and cancelled another collection after 504 additional steps at a fixed clock boundary. Matched telemetry SHA-256 was `f9ca994cb413bf4a08398ff5a05ee61712e555c83be99a3439b0b58f2ffeaa4e`.
+
+Full-auto used HP3 without layering, 30 mm base radii, no buildup fit, fast/L-BFGS-B optimization, four solve iterations, one restart, one outer iteration, one maximum optimizer step, three sweep points, a 600-second wall bound, two million physics steps, one thread and events recording. It produced 1,305,459 steps, 2,610.918 simulated seconds, 24 point-journal entries, three fit-stage JSON files and a finalized 96,931,452-byte RRD. Headless execution took 157.785 seconds. This budget stop is not calibration acceptance. Raw Infinity diagnostics exposed strict status serialization failure and stale terminal ownership on that source. A rejected second dispatch launched no second physical trial.
+
+The actual browser page was connected through manager-owned headless Chromium in a permitted context. The actor performed browser tool calls through the relay. The helper observed title HP Simulation, one canvas and no page errors. A stale URL after reset failed and was preserved before the replacement generation connected. The [browser receipt](browser-after-reset/result.json) records normal closure. This is not final-source live browser-history validation.
+
+The checks below overlap and must not be summed as unique tests.
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Initial program tests | 184 passed, one skipped, 34 subtests | [Log](program-tests.log) |
+| Program tests after initial fixes | 190 passed, one skipped, 34 subtests | [Log](program-after-fixes.log) |
+| Output/cache regressions | 88 passed | [Log](fix-tests.log) |
+| Relay and hard-owner-loss checks | 35 passed | [Log](relay-owner-tests.log) |
+| Real Viewer/cloud checks | 34 passed | [Log](viewer-fix-tests.log) |
+| Status/history/HTTP targeted checks | 125 passed | [Log](status-browser-fix-tests.log) |
+| Native/Wasm/JS physics gate at `3c5cc88b` | All 11 passed | [Log](physics-gate.log), [build receipt](wasm-build-receipt.json) |
+| Final delivery pass at runtime source `7c0a353e`, real Viewer enabled | 333 passed, one skipped, eight deselected, 34 subtests in 125.70 seconds | [Log](final-delivery-tests.log), [JUnit](final-delivery-tests.xml) |
+
+The final command ran `tests/python/test_research_program*.py`, cloud client/relay/environment tests, autocal jobs, research-agent, preflight and test-job tests using local Python, session-owned writable caches and `HP_SIM5_TEST_RERUN_VIEWER=1`. The eight deselections come from the repository's configured test filter. The physics gate's actual source boundary is explicit. Later commits changed reporting/control/rendering setup, not physics algorithms. Gate-produced compiler-byte changes to tracked Wasm were recorded and restored rather than delivered.
+
+## Review and cleanup
+
+Baseline admission `admission-7cdcc17edfaf415a88e16e50bfbbf1ca` retained supported report-only defect evidence after a separate real reviewer. Its first launch failed before dispatch and is [preserved](baseline-review-first-status.json).
+
+Production admission `admission-beeac474c5744eefb47379deb1b01019` retained the scoped partial-readiness claim and required the terminal autocal/browser-history repairs. The reviewer inspected 22 selected assets and the fixed diff; inspecting numerical evidence was not claimed as independent physical reproduction. Final repaired-source review and admission receipts are retained separately.
+
+The broad production worker recorded `launcher_finally_completed`. All 27 observed descendant identities, including owned Chromium, were no longer live, as recorded in [cleanup evidence](production-owned-processes-after.json). The final regression also recorded `launcher_finally_completed`, return code 130 and `wall_expired: true`. No missing final actor response or bridge acknowledgement was fabricated.
+
+After cloud runtime recreation, reopening the same program retained attempts, allocation history and admissions, with zero reserved workers/reviewers and no unknown cleanup IDs. It started no physics world. Historical processes were not adopted or signalled. This is durable bookkeeping recovery, not physics or actor-conversation restoration.
+
+The original container used `tail` as PID 1 and retained 209 exited zombies after destructive fixtures. They were not live physics services; its PID cgroup had no limit. Repository cleanup cannot make PID 1 reap them. This remains an environment limitation.
+
+## Limits and next useful check
+
+There is no saved terminal full-auto, next-job cancellation or live browser-history result from the final fresh-source attempt. Do not infer execution from an agent's stated intention. Its initial preflight and browser-service startup are the only retained targeted results. The next useful production check is that bounded regression using a pre-permitted launcher/browser context, so a parent permission request cannot consume the worker deadline.
+
+GPU/CUDA, hardware calibration accuracy, advanced multi-worker pools and combined patch integration were not tested live. Fixtures do not establish those capabilities. Software Vulkan establishes rendering availability, not GPU throughput. Numerical counters are estimates/contracts, not complete arbitrary-shell compute metering. Unattended recovery and automatic redispatch after chat/host loss were not added.
+
+Large raw recordings and screenshots remain under local output paths and exceed the small program archive budget. The archive retains frozen submissions, reports, selected receipts, logs/JUnit and losslessly compressed native telemetry. `files.json` lists automatic omissions. [Compression receipts](compact-evidence/compression-receipts.json) identify the large native RRD even when its bytes are omitted. No service credentials, live connections or dependency trees are selected.
+
+## References
+
+- [Notebook](research.md) records budgets, hypotheses, source boundaries and steering.
+- [Baseline report](../attempt-ca404fcaf323469eb35cc37b515ca3a7/report.md) supports original output/cache defects and initial suites.
+- [Production report](../attempt-e13302e362f545e39608027dcb85f963/report.md) supports live tool coverage, numerical evidence and retained status/history failures.
+- [Baseline admission](baseline-admission.json) and [production admission](production-admission.json) record fixed-evidence review.
+- Source commits `3c5cc88b`, `379318b2`, `7c0a353e` identify repairs. The final submission seals their diff and selected checks.
+- No external papers or hardware datasets were used.
+
+Final independent review `review-95277ad5c83e42a9bcee4b5a0aa8499b` verified all 17 selected asset hashes, parsed the 333-test/34-subtest result and inspected the fixed source diff. Admission `admission-7338901984c24981a30b0280df87943d` is keep/supported with code readiness ready for the bounded repair scope. It explicitly retains the final production regression as inconclusive. [Review](final-review.json), [admission](final-admission.json). No new physics was run by the reviewer.

@@ -22,7 +22,8 @@ def research_client():
 
 def cloud_command(root, session, sandbox):
     return [sys.executable, str(root / 'scripts/cloud/cloud_client_bridge.py'), 'client',
-            '--cd', str(root), '--output-last-message', str(session / 'final-message.md'),
+            '--cd', str(root), '--session-dir', str(session),
+            '--output-last-message', str(session / 'final-message.md'),
             '--sandbox', sandbox]
 
 

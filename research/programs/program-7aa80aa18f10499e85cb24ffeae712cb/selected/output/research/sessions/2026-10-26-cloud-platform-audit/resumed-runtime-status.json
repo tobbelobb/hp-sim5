@@ -1,0 +1,481 @@
+{
+  "allocations": [
+    {
+      "created_at": "2026-10-26T21:55:53.231860+00:00",
+      "details": {
+        "cleanup_deadline": 1793057943.231768,
+        "cleanup_seconds": 190,
+        "deadline": 1793057753.231768,
+        "events": [
+          {
+            "at": "2026-10-26T22:29:59.739685+00:00",
+            "event": "allocation_stopped",
+            "reason": "End the initial grant after baseline cleanup so the controller can reload the reviewed-path/tool-transport fixes before a separately funded review correction."
+          }
+        ],
+        "lease_until": 1793053812.3410342,
+        "owner": {
+          "id": "controller-b0966e03c6954f72a93ec609dd58b69f",
+          "process": {
+            "birth": "497953",
+            "boot_id": "1b752a2b-0ef5-4357-ac84-b5187ff9f99e",
+            "group": 1121,
+            "host": "c9fccdc99234",
+            "pid": 1121,
+            "uid": 1000
+          }
+        },
+        "queue": [],
+        "reservations": [
+          {
+            "assignment_id": "cloud-tool-inventory",
+            "attempt_id": "attempt-ca404fcaf323469eb35cc37b515ca3a7",
+            "charged_at": "2026-10-26T21:55:54.716951+00:00",
+            "retry_root": null,
+            "review_pending": true,
+            "review_seconds": 600,
+            "reviews": [
+              {
+                "charge_id": "1f4d147f770e4183ace89a9fb3810efa",
+                "reserved_seconds": 600,
+                "run_id": "review-run-acddde7507fd4e729af4e94c8aaa5685",
+                "state": "failed"
+              }
+            ],
+            "settings": {
+              "backend": "codex",
+              "client_args": [],
+              "dont_ask": false,
+              "goal_mode": true,
+              "machine": "hp3",
+              "physics_backend": "headless-js",
+              "record": true,
+              "shared_runtime_write": false,
+              "viewer": "none",
+              "worktree": true
+            },
+            "state": "submitted",
+            "superseded_by": "runtime_allocation-d008b1ee7cd24b48828b323beadf1243",
+            "usage": {
+              "estimates": {
+                "collections": 0,
+                "fresh_fits": 0,
+                "physics_steps": 20000,
+                "wall_minutes": 22
+              },
+              "observed_worker_wall_seconds": 901.897136926651,
+              "supervisor_observations": [],
+              "unmetered": [
+                "shell movement",
+                "shell compute",
+                "spend"
+              ],
+              "worker_reports": []
+            },
+            "worker_seconds": 1320
+          }
+        ],
+        "retry_limit": 1,
+        "review_backlog_limit": 1,
+        "review_seconds": 600,
+        "started_at": "2026-10-26T21:55:53.231771+00:00",
+        "state": "stopped",
+        "task_limit": 4,
+        "wall_reserved_seconds": 1920,
+        "wall_seconds": 6000,
+        "worker_limit": 1
+      },
+      "id": "runtime_allocation-067978e39aa34185b4ecbdcae8b2e9d8",
+      "kind": "runtime_allocation",
+      "program_id": "program-7aa80aa18f10499e85cb24ffeae712cb",
+      "revision": 10,
+      "title": "Finite manager allocation",
+      "updated_at": "2026-10-26T22:30:47.666384+00:00"
+    },
+    {
+      "created_at": "2026-10-26T22:30:47.666044+00:00",
+      "details": {
+        "cleanup_deadline": 1793054638.2658284,
+        "cleanup_seconds": 190,
+        "deadline": 1793054448.2658284,
+        "events": [
+          {
+            "at": "2026-10-26T22:36:00.581192+00:00",
+            "event": "allocation_stopped",
+            "reason": "The corrected baseline review completed and was applied; fund the distinct patched production investigation."
+          }
+        ],
+        "lease_until": 1793054174.1450202,
+        "owner": {
+          "id": "controller-7a6789de7c00465dbabf5a7af11e5c1f",
+          "process": {
+            "birth": "717080",
+            "boot_id": "1b752a2b-0ef5-4357-ac84-b5187ff9f99e",
+            "group": 15622,
+            "host": "c9fccdc99234",
+            "pid": 15622,
+            "uid": 1000
+          }
+        },
+        "queue": [],
+        "reservations": [
+          {
+            "admission_id": "admission-7cdcc17edfaf415a88e16e50bfbbf1ca",
+            "assignment_id": "cloud-tool-inventory",
+            "attempt_id": "attempt-ca404fcaf323469eb35cc37b515ca3a7",
+            "charged_at": "2026-10-26T22:30:47.665852+00:00",
+            "review_pending": false,
+            "review_seconds": 600,
+            "reviews": [
+              {
+                "charge_id": "71b720d96ac84f0eab032ea2159bd735",
+                "reserved_seconds": 600,
+                "run_id": "review-run-fd8f205894ae4f4e92daac2cd0ca2022",
+                "state": "completed"
+              }
+            ],
+            "state": "submitted",
+            "usage": {
+              "estimates": {},
+              "observed_worker_wall_seconds": 901.897136926651,
+              "supervisor_observations": [],
+              "unmetered": [
+                "shell movement",
+                "shell compute",
+                "spend"
+              ],
+              "worker_reports": []
+            },
+            "worker_seconds": 0
+          }
+        ],
+        "retry_limit": 1,
+        "review_backlog_limit": 1,
+        "review_seconds": 600,
+        "started_at": "2026-10-26T22:30:47.665835+00:00",
+        "state": "stopped",
+        "task_limit": 1,
+        "wall_reserved_seconds": 600,
+        "wall_seconds": 600.6
+      },
+      "id": "runtime_allocation-d008b1ee7cd24b48828b323beadf1243",
+      "kind": "runtime_allocation",
+      "program_id": "program-7aa80aa18f10499e85cb24ffeae712cb",
+      "revision": 7,
+      "title": "Reserved saved-evidence review",
+      "updated_at": "2026-10-26T22:36:00.581318+00:00"
+    },
+    {
+      "created_at": "2026-10-26T22:36:00.635328+00:00",
+      "details": {
+        "cleanup_deadline": 1793058550.6351988,
+        "cleanup_seconds": 190,
+        "deadline": 1793058360.6351988,
+        "events": [
+          {
+            "at": "2026-10-26T23:02:16.295912+00:00",
+            "event": "allocation_stopped",
+            "reason": "Production mixed evidence is reviewed and cleanup is complete. Fund distinct status/history regression and controlled actor cancellation."
+          }
+        ],
+        "lease_until": 1793055748.249286,
+        "owner": {
+          "id": "controller-7a6789de7c00465dbabf5a7af11e5c1f",
+          "process": {
+            "birth": "717080",
+            "boot_id": "1b752a2b-0ef5-4357-ac84-b5187ff9f99e",
+            "group": 15622,
+            "host": "c9fccdc99234",
+            "pid": 15622,
+            "uid": 1000
+          }
+        },
+        "queue": [],
+        "reservations": [
+          {
+            "assignment_id": "cloud-production-validation",
+            "attempt_id": "attempt-ec6fcc17c6e247ee9bf04a236b5b2ff0",
+            "charged_at": "2026-10-26T22:36:02.209336+00:00",
+            "retry_root": null,
+            "review_pending": false,
+            "review_seconds": 480,
+            "reviews": [],
+            "settings": {
+              "backend": "codex",
+              "client_args": [],
+              "dont_ask": false,
+              "goal_mode": true,
+              "machine": "hp4",
+              "physics_backend": "headless-js",
+              "record": true,
+              "shared_runtime_write": false,
+              "viewer": "headless",
+              "worktree": true
+            },
+            "state": "failed",
+            "usage": {
+              "estimates": {
+                "autocal_jobs": 2,
+                "collections": 2,
+                "fresh_fits": 8,
+                "physics_steps": 20000,
+                "wall_minutes": 25
+              },
+              "observed_worker_wall_seconds": 4.70939302444458,
+              "supervisor_observations": [],
+              "unmetered": [
+                "shell movement",
+                "shell compute",
+                "spend"
+              ],
+              "worker_reports": []
+            },
+            "worker_seconds": 1500
+          },
+          {
+            "admission_id": "admission-beeac474c5744eefb47379deb1b01019",
+            "assignment_id": "cloud-production-after-viewer-fix",
+            "attempt_id": "attempt-e13302e362f545e39608027dcb85f963",
+            "charged_at": "2026-10-26T22:43:01.813837+00:00",
+            "retry_root": null,
+            "review_pending": false,
+            "review_seconds": 480,
+            "reviews": [
+              {
+                "charge_id": "ff03cf6c385847b9a478f4ebb878bd27",
+                "reserved_seconds": 480,
+                "run_id": "review-run-0fd736d0b6ea4408867c1e993d5e0c4a",
+                "state": "completed"
+              }
+            ],
+            "settings": {
+              "backend": "codex",
+              "client_args": [],
+              "dont_ask": false,
+              "goal_mode": true,
+              "machine": "hp4",
+              "physics_backend": "headless-js",
+              "record": true,
+              "shared_runtime_write": false,
+              "viewer": "headless",
+              "worktree": true
+            },
+            "state": "submitted",
+            "usage": {
+              "estimates": {
+                "autocal_jobs": 2,
+                "collections": 2,
+                "fresh_fits": 8,
+                "physics_steps": 20000,
+                "wall_minutes": 25
+              },
+              "observed_worker_wall_seconds": 752.6736538410187,
+              "supervisor_observations": [],
+              "unmetered": [
+                "shell movement",
+                "shell compute",
+                "spend"
+              ],
+              "worker_reports": []
+            },
+            "worker_seconds": 1500
+          }
+        ],
+        "retry_limit": 1,
+        "review_backlog_limit": 1,
+        "review_seconds": 480,
+        "started_at": "2026-10-26T22:36:00.635203+00:00",
+        "state": "stopped",
+        "task_limit": 3,
+        "wall_reserved_seconds": 3960,
+        "wall_seconds": 4200,
+        "worker_limit": 1
+      },
+      "id": "runtime_allocation-fe6a530ce35a4c57b74fb11d4f31b57c",
+      "kind": "runtime_allocation",
+      "program_id": "program-7aa80aa18f10499e85cb24ffeae712cb",
+      "revision": 14,
+      "title": "Finite manager allocation",
+      "updated_at": "2026-10-26T23:02:16.296040+00:00"
+    },
+    {
+      "created_at": "2026-10-26T23:02:16.352789+00:00",
+      "details": {
+        "cleanup_deadline": 1793058026.3526642,
+        "cleanup_seconds": 190,
+        "deadline": 1793057836.3526642,
+        "events": [],
+        "lease_until": 1793057849.6032314,
+        "owner": {
+          "id": "controller-7a6789de7c00465dbabf5a7af11e5c1f",
+          "process": {
+            "birth": "717080",
+            "boot_id": "1b752a2b-0ef5-4357-ac84-b5187ff9f99e",
+            "group": 15622,
+            "host": "c9fccdc99234",
+            "pid": 15622,
+            "uid": 1000
+          }
+        },
+        "queue": [],
+        "reservations": [
+          {
+            "assignment_id": "cloud-final-status-regression",
+            "attempt_id": "attempt-7b5eec5ff1044841ae609b067012e7ec",
+            "charged_at": "2026-10-26T23:02:17.988698+00:00",
+            "retry_root": null,
+            "review_pending": false,
+            "review_seconds": 300,
+            "reviews": [],
+            "settings": {
+              "backend": "codex",
+              "client_args": [],
+              "dont_ask": false,
+              "goal_mode": true,
+              "machine": "hp3",
+              "physics_backend": "headless-js",
+              "record": true,
+              "shared_runtime_write": false,
+              "viewer": "headless",
+              "worktree": true
+            },
+            "state": "cancelled",
+            "superseded_by": "runtime_allocation-8f7227de5d71423b9f55b2b8c27f7b94",
+            "usage": {
+              "estimates": {
+                "autocal_jobs": 2,
+                "collections": 0,
+                "fresh_fits": 8,
+                "physics_steps": 100,
+                "wall_minutes": 15
+              },
+              "observed_worker_wall_seconds": 905.6747591495514,
+              "supervisor_observations": [],
+              "unmetered": [
+                "shell movement",
+                "shell compute",
+                "spend"
+              ],
+              "worker_reports": []
+            },
+            "worker_seconds": 900
+          }
+        ],
+        "retry_limit": 1,
+        "review_backlog_limit": 1,
+        "review_seconds": 300,
+        "started_at": "2026-10-26T23:02:16.352667+00:00",
+        "state": "expired",
+        "task_limit": 2,
+        "wall_reserved_seconds": 1200,
+        "wall_seconds": 2100,
+        "worker_limit": 1
+      },
+      "id": "runtime_allocation-a750702cca594e0b97e9d20d1d00bdd4",
+      "kind": "runtime_allocation",
+      "program_id": "program-7aa80aa18f10499e85cb24ffeae712cb",
+      "revision": 8,
+      "title": "Finite manager allocation",
+      "updated_at": "2026-10-27T07:47:02.643558+00:00"
+    },
+    {
+      "created_at": "2026-10-27T07:47:02.642925+00:00",
+      "details": {
+        "cleanup_deadline": 1793087893.2425864,
+        "cleanup_seconds": 190,
+        "deadline": 1793087703.2425864,
+        "events": [],
+        "lease_until": 1793087348.0772288,
+        "owner": {
+          "id": "controller-2ba410071e9442009c8d32c205d0345b",
+          "process": {
+            "birth": "470165",
+            "boot_id": "c811096e-c5fb-4e4c-b11e-a092b1443cc5",
+            "group": 1634,
+            "host": "6f58981f0249",
+            "pid": 1634,
+            "uid": 1000
+          }
+        },
+        "queue": [],
+        "reservations": [
+          {
+            "assignment_id": "cloud-final-status-regression",
+            "attempt_id": "attempt-7b5eec5ff1044841ae609b067012e7ec",
+            "charged_at": "2026-10-27T07:47:02.642606+00:00",
+            "review_pending": true,
+            "review_seconds": 480,
+            "reviews": [
+              {
+                "charge_id": "cb6fa73c1a044781adaefc3bf369c37d",
+                "reserved_seconds": 480,
+                "run_id": "review-run-e96e4c2cd7084215a4d37c7d670f64b2",
+                "state": "running"
+              }
+            ],
+            "state": "cancelled",
+            "usage": {
+              "estimates": {},
+              "observed_worker_wall_seconds": 905.6747591495514,
+              "supervisor_observations": [],
+              "unmetered": [
+                "shell movement",
+                "shell compute",
+                "spend"
+              ],
+              "worker_reports": []
+            },
+            "worker_seconds": 0
+          }
+        ],
+        "retry_limit": 1,
+        "review_backlog_limit": 1,
+        "review_seconds": 480,
+        "started_at": "2026-10-27T07:47:02.642590+00:00",
+        "state": "exhausted",
+        "task_limit": 1,
+        "wall_reserved_seconds": 480,
+        "wall_seconds": 480.59999999999997
+      },
+      "id": "runtime_allocation-8f7227de5d71423b9f55b2b8c27f7b94",
+      "kind": "runtime_allocation",
+      "program_id": "program-7aa80aa18f10499e85cb24ffeae712cb",
+      "revision": 4,
+      "title": "Reserved saved-evidence review",
+      "updated_at": "2026-10-27T07:47:02.731933+00:00"
+    }
+  ],
+  "cleanup": "Launcher cleanup grace is separate; forced exit or missing manifest leaves physical/recording shutdown unverified",
+  "enforced": [
+    "finite dispatch/task reservations",
+    "store-wide and per-program worker limits",
+    "store-wide review concurrency 1",
+    "review backlog",
+    "owned launcher/reviewer wall deadlines independent of host polling"
+  ],
+  "pool": {
+    "default_program_worker_limit": 1,
+    "maximum_worker_limit": 4,
+    "reservation_holders": [
+      {
+        "assignment_id": null,
+        "kind": "review_run",
+        "program_id": "program-7aa80aa18f10499e85cb24ffeae712cb",
+        "record_id": "review-run-e96e4c2cd7084215a4d37c7d670f64b2",
+        "state": "running"
+      }
+    ],
+    "store_future_review_obligations": 1,
+    "store_review_backlog_limit": 1,
+    "store_reviewers_reserved": 1,
+    "store_worker_limit": 1,
+    "store_workers_reserved": 0,
+    "unknown_cleanup_ids": [],
+    "unknown_review_ids": [],
+    "unopened_programs": "Saved reservations count; no PID adoption or automatic replay"
+  },
+  "premise_reviews": [],
+  "restart": "No PID adoption. Unverified work is interrupted and requires an explicit new bounded handoff",
+  "shared_filesystem": "Workers own separate worktrees, worlds and session artifacts. Output, RRF/build, dependencies and the starting native addon are shared. Treat shared paths and datasets as immutable; use only your session directory for new artifacts. Shared builds, dependency changes and combined evaluation require an exclusive shared_runtime_write reservation. Same-UID cooperation is not adversarial isolation.",
+  "workload_limits": "Production tool per-job limits apply only to supported tool calls. Allocation counters are estimates/contracts, not hard aggregate movement or spend caps"
+}

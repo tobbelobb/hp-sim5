@@ -1,0 +1,25 @@
+{
+  "created_at": "2026-10-26T23:02:16.185361+00:00",
+  "details": {
+    "actor": "controller",
+    "claim_id": "claim-ebbd59925757486ab345dafb7985da44",
+    "code_readiness": "needs_changes",
+    "contract": "hp-sim5-evidence-review-v2",
+    "decision": "keep",
+    "engineering_reasons": [],
+    "finding": "supported",
+    "guard_reasons": [],
+    "knowledge_state": "reviewed",
+    "practical_value": "The evidence demonstrates useful production work through the launcher-owned relay despite actor socket restrictions, and identifies two specific defects preventing full lifecycle use. The negative autocal result gives a concrete recovery failure to fix without implying calibration progress.",
+    "required_checks": [],
+    "review_id": "review-cbf21518cfaf4089a167e9356cfe4fbd",
+    "submission_id": "submission-a6bffc7811f34ebebc333ef47dce3e78",
+    "submission_sha256": "ce3126281d5f6f53c6c50934af9457c66741a4474e737b21a5d43364aaf70edf"
+  },
+  "id": "admission-beeac474c5744eefb47379deb1b01019",
+  "kind": "admission",
+  "program_id": "program-7aa80aa18f10499e85cb24ffeae712cb",
+  "revision": 1,
+  "title": "Keep the report and retained failures for submission-a6bffc7811f34ebebc333ef47dce3e78 at candidate 379318b2. Its partial-readiness claim matches the inspected successful native, collection, recording, browser and Viewer paths and explicitly retained production failures. Code readiness needs changes because nonfinite autocal progress breaks terminal serialization and ownership release, while browser interventions violates its MCP result schema. Preserve those failures and review repairs at a new source boundary before declaring the full workflow ready.",
+  "updated_at": "2026-10-26T23:02:16.185361+00:00"
+}

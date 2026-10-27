@@ -1,0 +1,31 @@
+{
+  "allocation": "runtime_allocation-067978e39aa34185b4ecbdcae8b2e9d8",
+  "assignment": "cloud-tool-inventory",
+  "attempt": "attempt-ca404fcaf323469eb35cc37b515ca3a7",
+  "routes": [
+    "setup-route",
+    "tooling-route"
+  ],
+  "baseline_claim": "claim-7959c2782c9e4db5aeb39763cfd3fd83",
+  "baseline_submission": "submission-58568f992dd44dee892591afff9001b8",
+  "baseline_review_run": "review-run-fd8f205894ae4f4e92daac2cd0ca2022",
+  "baseline_review_allocation": "runtime_allocation-d008b1ee7cd24b48828b323beadf1243",
+  "production_allocation": "runtime_allocation-fe6a530ce35a4c57b74fb11d4f31b57c",
+  "production_assignment": "cloud-production-after-viewer-fix",
+  "production_attempt": "attempt-e13302e362f545e39608027dcb85f963",
+  "baseline_admission": "admission-7cdcc17edfaf415a88e16e50bfbbf1ca",
+  "candidate_revision": "2115eb5c",
+  "failed_viewer_attempt": "attempt-ec6fcc17c6e247ee9bf04a236b5b2ff0",
+  "production_claim": "claim-ebbd59925757486ab345dafb7985da44",
+  "production_submission": "submission-a6bffc7811f34ebebc333ef47dce3e78",
+  "production_review_run": "review-run-0fd736d0b6ea4408867c1e993d5e0c4a",
+  "production_admission": "admission-beeac474c5744eefb47379deb1b01019",
+  "final_allocation": "runtime_allocation-a750702cca594e0b97e9d20d1d00bdd4",
+  "final_assignment": "cloud-final-status-regression",
+  "final_attempt": "attempt-7b5eec5ff1044841ae609b067012e7ec",
+  "final_claim": "claim-bf0fa7f7da8b49a7afaa7cc025560bc5",
+  "final_submission": "submission-bd5e2bb429fc413c8628b208e2a464c5",
+  "final_review_allocation": "runtime_allocation-8f7227de5d71423b9f55b2b8c27f7b94",
+  "final_review_run": "review-run-e96e4c2cd7084215a4d37c7d670f64b2",
+  "final_admission": "admission-7338901984c24981a30b0280df87943d"
+}

@@ -28,7 +28,9 @@ def wait_for(predicate):
 @pytest.fixture
 def client(tmp_path, request):
     root = tmp_path / 'repo'
-    final = root / 'output/session/final-message.md'
+    explicit_session = getattr(request, 'param', None) == 'review-store'
+    final = (tmp_path / 'configured-review-store/reviews/review-1/final-message.md' if explicit_session
+             else root / 'output/session/final-message.md')
     final.parent.mkdir(parents=True)
     queue = tmp_path / 'queue'
     environment = dict(os.environ, HP_SIM5_CLOUD_QUEUE=str(queue))
@@ -42,9 +44,11 @@ def client(tmp_path, request):
                           'time.monotonic = lambda: next(clock)\n'
                           f'runpy.run_path({str(BRIDGE)!r}, run_name="__main__")\n')
     with prompt.open('rb') as stdin:
+        argv = [sys.executable, str(runner), 'client', '--cd', str(root), '--output-last-message', str(final)]
+        if explicit_session:
+            argv += ['--session-dir', str(final.parent), '--sandbox', 'read-only']
         process = subprocess.Popen(
-            [sys.executable, str(runner), 'client', '--cd', str(root),
-             '--output-last-message', str(final)],
+            argv,
             stdin=stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             text=True, env=environment)
     request_path = wait_for(lambda: next(iter(queue.glob('*/request.json')), None))
@@ -63,6 +67,7 @@ def client(tmp_path, request):
         process.wait(timeout=5)
 
 
+@pytest.mark.parametrize('client', [None, 'review-store'], indirect=True)
 def test_actor_completion_preserves_real_final_message_and_omits_private_flags(client):
     process, path, final, command = client
     assert 'private-config-marker' not in path.read_text()

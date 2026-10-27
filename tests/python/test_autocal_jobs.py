@@ -101,6 +101,32 @@ async def test_autocal_terminal_state_requires_acceptance_evidence(tmp_path, nor
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize('sentinel,label', [(float('inf'), 'Infinity'), (float('-inf'), '-Infinity'), (float('nan'), 'NaN')])
+async def test_nonfinite_progress_is_explicit_json_and_releases_terminal_slot(tmp_path, sentinel, label):
+    manager = AutocalJobs(ROOT, tmp_path)
+    job = manager.start({})
+    directory = Path(job['directory'])
+    headless = directory / 'sweeps.headless'
+    headless.mkdir()
+    raw = {'normal_completion': False, 'stop_reason': 'max-steps', 'status': 'complete',
+           'diagnostic': {'score': sentinel}}
+    (headless / 'manifest.json').write_text(json.dumps(raw))
+    row = json.dumps({'iteration': 1, 'decision': 'budget', 'best_score_ui': sentinel}) + '\n'
+    (directory / 'sweeps.full_auto_log.jsonl').write_text(row)
+    manager.jobs[job['job_id']]['command'] = [sys.executable, '-c', 'pass']
+    result = await finished(manager, job)
+    assert result['status'] == 'budget_exhausted' and manager.active is None
+    assert result['progress']['best_score_ui'] is None
+    assert result['nonfinite_values']['progress.best_score_ui'] == label
+    assert result['nonfinite_values']['headless.diagnostic.score'] == label
+    json.dumps(result, allow_nan=False)
+    assert json.loads((directory / 'job.json').read_text())['status'] == 'budget_exhausted'
+    assert (directory / 'sweeps.full_auto_log.jsonl').read_text() == row
+    following = manager.start({})
+    assert (await manager.cancel(following['job_id']))['status'] == 'cancelled'
+
+
+@pytest.mark.asyncio
 async def test_autocal_spawn_failure_preserves_manifest_and_releases_slot(tmp_path):
     manager = AutocalJobs(ROOT, tmp_path)
     job = manager.start({})

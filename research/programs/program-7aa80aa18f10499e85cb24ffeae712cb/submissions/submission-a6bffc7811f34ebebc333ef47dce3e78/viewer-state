@@ -1,0 +1,14 @@
+{
+  "_meta": null,
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"url\":\"rerun+http://127.0.0.1:40711/dataset/18E235C43BF83504086dc139a90329ca?segment_id=60d2127db7d443b7863d0add0272c51a\",\"active_store_id\":\"Recording:18E235C43BF83504086dc139a90329ca:60d2127db7d443b7863d0add0272c51a\",\"recordings\":[{\"store_id\":\"Recording:hp-sim5 collection:3e42109da6924ee0a5a46157600c80f5\",\"timelines\":[{\"timeline\":{\"name\":\"log_time\"},\"time_type\":\"TIME_TYPE_TIMESTAMP_NS\",\"time_range\":{\"start\":1793054586513852778,\"end\":1793054586560964982}},{\"timeline\":{\"name\":\"scene_generation\"},\"time_type\":\"TIME_TYPE_SEQUENCE\",\"time_range\":{\"start\":1,\"end\":1}},{\"timeline\":{\"name\":\"sim_step\"},\"time_type\":\"TIME_TYPE_SEQUENCE\",\"time_range\":{}},{\"timeline\":{\"name\":\"sim_time\"},\"time_type\":\"TIME_TYPE_DURATION_NS\",\"time_range\":{}}],\"current_time\":{\"timeline\":{\"name\":\"sim_time\"},\"time_type\":\"TIME_TYPE_DURATION_NS\",\"time\":{}}},{\"store_id\":\"Recording:18E235C43BF83504086dc139a90329ca:60d2127db7d443b7863d0add0272c51a\",\"current_time\":{\"timeline\":{\"name\":\"sim_time\"}}}],\"catalog_url\":\"rerun+http://127.0.0.1:40711\",\"views\":[{\"view_id\":\"48c20d0b-6a27-4324-840a-06acbbf52db2\",\"class\":\"TimeSeries\",\"name\":\"Encoder state\",\"origin\":\"/encoders\",\"visible\":true},{\"view_id\":\"709c63eb-f053-47f4-ae33-ae6a37c25146\",\"class\":\"TimeSeries\",\"name\":\"Motor state\",\"origin\":\"/motors\",\"visible\":true},{\"view_id\":\"833b705f-e89e-4cd3-981d-0d4d80e8e7a4\",\"class\":\"TimeSeries\",\"name\":\"Line lengths (m)\",\"origin\":\"/line_lengths\",\"visible\":true},{\"view_id\":\"9f4dd17d-ed78-4528-8ab5-58522cf15ffe\",\"class\":\"TimeSeries\",\"name\":\"Cable forces (N)\",\"origin\":\"/cable_forces\",\"visible\":true},{\"view_id\":\"ac36c02e-1ded-469f-8f08-2e75cb056908\",\"class\":\"3D\",\"name\":\"Hangprinter\",\"origin\":\"/world\",\"visible\":true},{\"view_id\":\"f6b91e46-40d4-482e-8b96-44003f69ef80\",\"class\":\"TimeSeries\",\"name\":\"Length error / stretch (m)\",\"origin\":\"/line_errors\",\"visible\":true}]}",
+      "annotations": null,
+      "_meta": null
+    }
+  ],
+  "structuredContent": null,
+  "isError": false,
+  "resultType": "complete"
+}

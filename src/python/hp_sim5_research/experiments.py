@@ -46,7 +46,13 @@ def repo_path(root, value):
 def run_directory(root, run_id):
     if not re.fullmatch(r'[0-9a-f]{32}', run_id):
         raise ValueError('Use the run_id returned by run_experiment')
-    return repo_path(root, f'output/research/experiments/{run_id}')
+    # Launcher worktrees deliberately share output with the original checkout.
+    # Inputs stay inside the worktree; run IDs stay inside its approved output.
+    output = (Path(root) / 'output/research/experiments').resolve()
+    directory = (output / run_id).resolve()
+    if not directory.is_relative_to(output):
+        raise ValueError('Experiment paths must stay inside the experiment output directory')
+    return directory
 
 
 def validate_commands(commands, axes, steps):

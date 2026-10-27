@@ -25,6 +25,7 @@ def test_activation_preserves_auth_and_local_mode(tmp_path, monkeypatch):
     monkeypatch.setenv('PATH', '/usr/bin:/bin')
     monkeypatch.setenv('OPENAI_API_KEY', 'fixture-value')
     monkeypatch.setenv('HTTPS_PROXY', 'http://fixture.invalid:1234')
+    monkeypatch.setenv('VK_ICD_FILENAMES', '/fixture/custom-vulkan.json')
     for key in ('CARGO_HOME', 'RUSTUP_HOME'):
         monkeypatch.delenv(key, raising=False)
     # Restore every changed export after this test.
@@ -38,6 +39,7 @@ def test_activation_preserves_auth_and_local_mode(tmp_path, monkeypatch):
     assert os.environ['CARGO_HOME'] == str(tmp_path / 'tools with spaces/cargo')
     assert os.environ['OPENAI_API_KEY'] == 'fixture-value'
     assert os.environ['HTTPS_PROXY'] == 'http://fixture.invalid:1234'
+    assert os.environ['VK_ICD_FILENAMES'] == '/fixture/custom-vulkan.json'
     assert os.environ['HP_SIM5_RESEARCH_CLIENT'] == 'cloud'
 
 

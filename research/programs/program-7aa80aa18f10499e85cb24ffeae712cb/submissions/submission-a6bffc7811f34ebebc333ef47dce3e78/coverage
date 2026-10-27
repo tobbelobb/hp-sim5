@@ -1,0 +1,334 @@
+{
+  "attempt_id": "attempt-e13302e362f545e39608027dcb85f963",
+  "source_revision": "379318b26773b8dc37c191b506da1c57b5886f6f",
+  "outcome": "mixed",
+  "advertised_tool_count": 23,
+  "tools_invoked_count": 23,
+  "tools": [
+    {
+      "name": "capabilities",
+      "status": "successful",
+      "note": "23 tools and production limits discovered; initial raw result retained",
+      "raw_observations": [
+        "capabilities.json"
+      ],
+      "logged_helper_calls": 0
+    },
+    {
+      "name": "runtime_status",
+      "status": "successful",
+      "note": "Initial HP4, configured/reset HP3, cancellation boundary and stale autocal ownership observed",
+      "raw_observations": [
+        "runtime_status.json",
+        "runtime-before-jobs.json",
+        "runtime-cancel-boundary.json",
+        "runtime-cancel-still-fixed.json",
+        "runtime-after-status-error.json",
+        "runtime-after-recovery-attempt.json"
+      ],
+      "logged_helper_calls": 5
+    },
+    {
+      "name": "research_preflight",
+      "status": "successful",
+      "note": "HP4 and complete expected HP3 configuration passed",
+      "raw_observations": [
+        "research_preflight.json",
+        "preflight-hp3.json"
+      ],
+      "logged_helper_calls": 1
+    },
+    {
+      "name": "start_test",
+      "status": "successful",
+      "note": "Named cancellation job and complete176-case research-services suite",
+      "raw_observations": [
+        "test-cancel-start.json",
+        "test-services-start.json"
+      ],
+      "logged_helper_calls": 2
+    },
+    {
+      "name": "test_status",
+      "status": "successful",
+      "note": "Running cancellation job, terminal cancel and176passed suite observed",
+      "raw_observations": [
+        "test-cancel-running.json",
+        "test-cancel-terminal.json",
+        "test-services-poll1.json",
+        "test-services-poll2.json",
+        "test-services-poll3.json"
+      ],
+      "logged_helper_calls": 5
+    },
+    {
+      "name": "cancel_test",
+      "status": "successful",
+      "note": "Running job cancelled and terminal cleanup polled",
+      "raw_observations": [
+        "test-cancel.json"
+      ],
+      "logged_helper_calls": 1
+    },
+    {
+      "name": "send_gcode",
+      "status": "successful",
+      "note": "Real RRF movement plus encoder drain",
+      "raw_observations": [
+        "gcode-move.json",
+        "gcode-encoders.json"
+      ],
+      "logged_helper_calls": 2
+    },
+    {
+      "name": "start_collection",
+      "status": "successful",
+      "note": "Two actual direct collections; tiny completion and controlled cancellation",
+      "raw_observations": [
+        "collection-tiny-start.json",
+        "collection-cancel-start.json"
+      ],
+      "logged_helper_calls": 2
+    },
+    {
+      "name": "collection_status",
+      "status": "successful",
+      "note": "Progress, six-point completion and terminal cancellation observed",
+      "raw_observations": [
+        "collection-tiny-poll1.json",
+        "collection-tiny-poll2.json",
+        "collection-cancel-startup0.json",
+        "collection-cancel-startup1.json",
+        "collection-cancel-startup2.json",
+        "collection-cancel-terminal.json"
+      ],
+      "logged_helper_calls": 6
+    },
+    {
+      "name": "cancel_collection",
+      "status": "successful",
+      "note": "Fixed20747boundary after504steps; finalized readable partial recording",
+      "raw_observations": [
+        "collection-cancel.json"
+      ],
+      "logged_helper_calls": 1
+    },
+    {
+      "name": "start_autocal",
+      "status": "mixed",
+      "note": "First production CLI launched and ran bounded workload; second start blocked by stale active state",
+      "raw_observations": [
+        "autocal-bounded-start.json",
+        "autocal-cancel-start-attempt.json"
+      ],
+      "logged_helper_calls": 2
+    },
+    {
+      "name": "autocal_status",
+      "status": "mixed",
+      "note": "Initial physical progress worked; terminal Infinity progress fails strict JSON",
+      "raw_observations": [
+        "autocal-bounded-poll1.json",
+        "autocal-bounded-poll2.json",
+        "autocal-bounded-poll3.json",
+        "autocal-bounded-poll4.json",
+        "autocal-bounded-poll5.json",
+        "autocal-terminal-probe.json"
+      ],
+      "logged_helper_calls": 6
+    },
+    {
+      "name": "cancel_autocal",
+      "status": "failed",
+      "note": "Existing nonfinite progress prevents usable cancellation/status result; second cancellation job never launched",
+      "raw_observations": [
+        "autocal-nonfinite-cancel-probe.json"
+      ],
+      "logged_helper_calls": 1
+    },
+    {
+      "name": "configure_session",
+      "status": "successful",
+      "note": "Complete HP3 unlayered30mm/zero-buildup world and matched firmware",
+      "raw_observations": [
+        "configure-hp3.json"
+      ],
+      "logged_helper_calls": 1
+    },
+    {
+      "name": "reset_session",
+      "status": "mixed",
+      "note": "Normal reset retained settings; later recovery blocked by stale autocal ownership",
+      "raw_observations": [
+        "reset-hp3.json",
+        "collection-recovery-reset-attempt.json"
+      ],
+      "logged_helper_calls": 2
+    },
+    {
+      "name": "step_physics",
+      "status": "successful",
+      "note": "100steps advanced; expected reset_required rejection after cancellation",
+      "raw_observations": [
+        "native-step.json",
+        "cancel-reset-required-probe.json"
+      ],
+      "logged_helper_calls": 2
+    },
+    {
+      "name": "start_browser_service",
+      "status": "successful",
+      "note": "Initial and replacement service URLs returned; native configure/reset retires prior service",
+      "raw_observations": [
+        "start_browser_service.json",
+        "browser-restart.json"
+      ],
+      "logged_helper_calls": 1
+    },
+    {
+      "name": "capture_native_context",
+      "status": "successful",
+      "note": "Exact native step250/0.5s captured",
+      "raw_observations": [
+        "native-context.json"
+      ],
+      "logged_helper_calls": 1
+    },
+    {
+      "name": "browser_status",
+      "status": "successful",
+      "note": "Actual connected page and finalized51sample recording/context observed",
+      "raw_observations": [
+        "browser-status-initial.json",
+        "browser-status-replacement.json",
+        "browser-status-poll2.json",
+        "browser-status-final.json",
+        "browser-status-finalized.json",
+        "browser-recording-finalization.json"
+      ],
+      "logged_helper_calls": 6
+    },
+    {
+      "name": "browser_action",
+      "status": "mixed",
+      "note": "Requested capabilities/pause/observe/50step/context/record paths passed; extra interventions list rejected by dictionary schema",
+      "raw_observations": [
+        "browser-capabilities.json",
+        "browser-pause.json",
+        "browser-observe-before.json",
+        "browser-step.json",
+        "browser-pause-after.json",
+        "browser-observe-after.json",
+        "browser-context.json",
+        "browser-interventions.json",
+        "browser-stop-recording.json"
+      ],
+      "logged_helper_calls": 9
+    },
+    {
+      "name": "run_experiment",
+      "status": "successful",
+      "note": "Three fresh native500-step runs in approved shared-output worktree",
+      "raw_observations": [
+        "experiment-recorded.json",
+        "experiment-numeric.json",
+        "experiment-changed.json"
+      ],
+      "logged_helper_calls": 3
+    },
+    {
+      "name": "read_experiment",
+      "status": "successful",
+      "note": "Actual numeric samples245to248 read",
+      "raw_observations": [
+        "experiment-numeric-page.json"
+      ],
+      "logged_helper_calls": 1
+    },
+    {
+      "name": "compare_experiments",
+      "status": "successful",
+      "note": "Record on/off equality and changed commands disclosed",
+      "raw_observations": [
+        "experiment-equality.json",
+        "experiment-difference.json"
+      ],
+      "logged_helper_calls": 2
+    }
+  ],
+  "transport": {
+    "actual_actor_file_relay": "successful",
+    "actor_command_sockets": "EPERM",
+    "network_permission_requested": false,
+    "manager_owned_chromium": true
+  },
+  "allocation": {
+    "wall_minutes": 25,
+    "start_utc": "2026-10-26T22:43:00Z",
+    "direct_physics_steps_max": 20000,
+    "collections_max": 2,
+    "autocal_jobs_max": 2,
+    "fresh_fits_max": 8
+  },
+  "observed_numerical_use": {
+    "fresh_experiments": 3,
+    "fresh_experiment_steps": 1500,
+    "explicit_native_step_steps": 100,
+    "gcode_drain_steps": 52,
+    "browser_step_steps": 50,
+    "all_direct_steps": 1702,
+    "direct_collection_jobs": 2,
+    "collection_steps": [
+      20243,
+      504
+    ],
+    "autocal_jobs_launched": 1,
+    "autocal_second_start_rejected_before_launch": true,
+    "autocal_physics_steps": 1305459,
+    "autocal_points": 24,
+    "fit_stage_json_artifacts": 3,
+    "total_observed_production_physics_steps": 1327908,
+    "named_suite_fixture_steps": "not measured; excluded"
+  },
+  "autocal_declared_limits": {
+    "max_steps": 1,
+    "sweep_points": 3,
+    "threads": 1,
+    "wall_timeout_s": 600,
+    "max_physics_steps": 2000000,
+    "solve_iterations": 4,
+    "solve_restarts": 1,
+    "spool_outer_iters": 1,
+    "recording_mode": "events"
+  },
+  "failed_paths": [
+    "browser_action.interventions result schema",
+    "autocal_status nonfinite terminal progress",
+    "cancel_autocal with nonfinite progress",
+    "second start_autocal blocked by stale ownership",
+    "collection recovery reset blocked by stale ownership"
+  ],
+  "blocked_or_untested": [
+    "second isolated autocal startup/cancel/final partial recording",
+    "post-autocal recovery and continued native movement",
+    "GPU/native-warp-cuda",
+    "hardware",
+    "calibration accuracy",
+    "global optimality"
+  ],
+  "expected_rejections": [
+    "step_physics after cancelled collection requires reset"
+  ],
+  "evidence": [
+    "report.md",
+    "research.md",
+    "abstract.md",
+    "tool-calls.jsonl",
+    "relay-calls.jsonl",
+    "autocal-artifact-verification.json",
+    "autocal-recorded-events.json",
+    "collection-evidence-verification.json",
+    "browser-recording-verification.json",
+    "numerical-recording-verification.json"
+  ]
+}

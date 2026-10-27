@@ -1,0 +1,384 @@
+{
+  "attempt_id": "attempt-ca404fcaf323469eb35cc37b515ca3a7",
+  "program_id": "program-7aa80aa18f10499e85cb24ffeae712cb",
+  "source_revision": "67617705b7996ee3a84889e6723cab149b6e5884",
+  "machine": "hp3",
+  "backend": "headless-js",
+  "physics_engine": "rust-native",
+  "native_sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+  "advertised_tool_count": 23,
+  "tools": [
+    {
+      "tool": "capabilities",
+      "category": "discovery",
+      "advertised": true,
+      "mcp_call_count": 1,
+      "mcp_error_count": 0,
+      "execution_context": "parent explicitly permitted command context",
+      "status": "exercised successfully",
+      "evidence": [
+        "tool-calls.jsonl"
+      ]
+    },
+    {
+      "tool": "runtime_status",
+      "category": "session and configuration",
+      "advertised": true,
+      "mcp_call_count": 3,
+      "mcp_error_count": 0,
+      "execution_context": "parent explicitly permitted command context",
+      "status": "exercised successfully",
+      "evidence": [
+        "tool-calls.jsonl"
+      ]
+    },
+    {
+      "tool": "research_preflight",
+      "category": "preflight and tests",
+      "advertised": true,
+      "mcp_call_count": 1,
+      "mcp_error_count": 0,
+      "execution_context": "parent explicitly permitted command context",
+      "status": "exercised successfully",
+      "evidence": [
+        "tool-calls.jsonl"
+      ]
+    },
+    {
+      "tool": "start_test",
+      "category": "preflight and tests",
+      "advertised": true,
+      "mcp_call_count": 2,
+      "mcp_error_count": 0,
+      "execution_context": "parent explicitly permitted command context",
+      "status": "exercised successfully",
+      "evidence": [
+        "tool-calls.jsonl"
+      ]
+    },
+    {
+      "tool": "test_status",
+      "category": "preflight and tests",
+      "advertised": true,
+      "mcp_call_count": 23,
+      "mcp_error_count": 0,
+      "execution_context": "parent explicitly permitted command context",
+      "status": "exercised successfully",
+      "evidence": [
+        "tool-calls.jsonl"
+      ]
+    },
+    {
+      "tool": "cancel_test",
+      "category": "preflight and tests",
+      "advertised": true,
+      "mcp_call_count": 0,
+      "mcp_error_count": 0,
+      "execution_context": null,
+      "status": "not exercised live",
+      "evidence": [
+        "tool-schemas.json"
+      ]
+    },
+    {
+      "tool": "send_gcode",
+      "category": "session and configuration",
+      "advertised": true,
+      "mcp_call_count": 0,
+      "mcp_error_count": 0,
+      "execution_context": null,
+      "status": "not exercised live",
+      "evidence": [
+        "tool-schemas.json"
+      ]
+    },
+    {
+      "tool": "start_collection",
+      "category": "collection",
+      "advertised": true,
+      "mcp_call_count": 0,
+      "mcp_error_count": 0,
+      "execution_context": null,
+      "status": "not exercised live",
+      "evidence": [
+        "tool-schemas.json"
+      ]
+    },
+    {
+      "tool": "collection_status",
+      "category": "collection",
+      "advertised": true,
+      "mcp_call_count": 0,
+      "mcp_error_count": 0,
+      "execution_context": null,
+      "status": "not exercised live",
+      "evidence": [
+        "tool-schemas.json"
+      ]
+    },
+    {
+      "tool": "cancel_collection",
+      "category": "collection",
+      "advertised": true,
+      "mcp_call_count": 0,
+      "mcp_error_count": 0,
+      "execution_context": null,
+      "status": "not exercised live",
+      "evidence": [
+        "tool-schemas.json"
+      ]
+    },
+    {
+      "tool": "start_autocal",
+      "category": "full autocal",
+      "advertised": true,
+      "mcp_call_count": 0,
+      "mcp_error_count": 0,
+      "execution_context": null,
+      "status": "not exercised live",
+      "evidence": [
+        "tool-schemas.json"
+      ]
+    },
+    {
+      "tool": "autocal_status",
+      "category": "full autocal",
+      "advertised": true,
+      "mcp_call_count": 0,
+      "mcp_error_count": 0,
+      "execution_context": null,
+      "status": "not exercised live",
+      "evidence": [
+        "tool-schemas.json"
+      ]
+    },
+    {
+      "tool": "cancel_autocal",
+      "category": "full autocal",
+      "advertised": true,
+      "mcp_call_count": 0,
+      "mcp_error_count": 0,
+      "execution_context": null,
+      "status": "not exercised live",
+      "evidence": [
+        "tool-schemas.json"
+      ]
+    },
+    {
+      "tool": "configure_session",
+      "category": "session and configuration",
+      "advertised": true,
+      "mcp_call_count": 0,
+      "mcp_error_count": 0,
+      "execution_context": null,
+      "status": "not exercised live",
+      "evidence": [
+        "tool-schemas.json"
+      ]
+    },
+    {
+      "tool": "reset_session",
+      "category": "session and configuration",
+      "advertised": true,
+      "mcp_call_count": 0,
+      "mcp_error_count": 0,
+      "execution_context": null,
+      "status": "not exercised live",
+      "evidence": [
+        "tool-schemas.json"
+      ]
+    },
+    {
+      "tool": "step_physics",
+      "category": "session and configuration",
+      "advertised": true,
+      "mcp_call_count": 0,
+      "mcp_error_count": 0,
+      "execution_context": null,
+      "status": "not exercised live",
+      "evidence": [
+        "tool-schemas.json"
+      ]
+    },
+    {
+      "tool": "start_browser_service",
+      "category": "browser",
+      "advertised": true,
+      "mcp_call_count": 0,
+      "mcp_error_count": 0,
+      "execution_context": null,
+      "status": "not exercised live",
+      "evidence": [
+        "tool-schemas.json"
+      ]
+    },
+    {
+      "tool": "capture_native_context",
+      "category": "fresh experiments",
+      "advertised": true,
+      "mcp_call_count": 0,
+      "mcp_error_count": 0,
+      "execution_context": null,
+      "status": "not exercised live",
+      "evidence": [
+        "tool-schemas.json"
+      ]
+    },
+    {
+      "tool": "browser_status",
+      "category": "browser",
+      "advertised": true,
+      "mcp_call_count": 0,
+      "mcp_error_count": 0,
+      "execution_context": null,
+      "status": "not exercised live",
+      "evidence": [
+        "tool-schemas.json"
+      ]
+    },
+    {
+      "tool": "browser_action",
+      "category": "browser",
+      "advertised": true,
+      "mcp_call_count": 0,
+      "mcp_error_count": 0,
+      "execution_context": null,
+      "status": "not exercised live",
+      "evidence": [
+        "tool-schemas.json"
+      ]
+    },
+    {
+      "tool": "run_experiment",
+      "category": "fresh experiments",
+      "advertised": true,
+      "mcp_call_count": 2,
+      "mcp_error_count": 2,
+      "execution_context": "parent explicitly permitted command context",
+      "status": "failed before physics",
+      "evidence": [
+        "tool-calls.jsonl"
+      ]
+    },
+    {
+      "tool": "read_experiment",
+      "category": "fresh experiments",
+      "advertised": true,
+      "mcp_call_count": 0,
+      "mcp_error_count": 0,
+      "execution_context": null,
+      "status": "not exercised live",
+      "evidence": [
+        "tool-schemas.json"
+      ]
+    },
+    {
+      "tool": "compare_experiments",
+      "category": "fresh experiments",
+      "advertised": true,
+      "mcp_call_count": 0,
+      "mcp_error_count": 0,
+      "execution_context": null,
+      "status": "not exercised live",
+      "evidence": [
+        "tool-schemas.json"
+      ]
+    }
+  ],
+  "suites": [
+    {
+      "suite": "research-services",
+      "job_id": "ce13fb80cdbd4bbcac28f0fbd234768f",
+      "status": "failed",
+      "exit_code": 1,
+      "wall_s": 70.48608552799942,
+      "junit": "/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7/native/tests/ce13fb80cdbd4bbcac28f0fbd234768f/junit.xml",
+      "junit_suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "3",
+          "skipped": "0",
+          "tests": "175",
+          "time": "68.694",
+          "timestamp": "2026-10-26T22:05:04.949670+00:00",
+          "hostname": "c9fccdc99234"
+        }
+      ]
+    },
+    {
+      "suite": "headless-autocal",
+      "job_id": "46d4d37e13c541a9bf8e8d403c121f66",
+      "status": "passed",
+      "exit_code": 0,
+      "wall_s": 33.554359437999665,
+      "junit": "/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7/native/tests/46d4d37e13c541a9bf8e8d403c121f66/junit.xml",
+      "junit_suites": [
+        {
+          "name": "pytest",
+          "errors": "0",
+          "failures": "0",
+          "skipped": "0",
+          "tests": "49",
+          "time": "32.834",
+          "timestamp": "2026-10-26T22:06:15.589403+00:00",
+          "hostname": "c9fccdc99234"
+        }
+      ]
+    }
+  ],
+  "preflight": {
+    "job_id": "f2b3dcc8b52644d1a9cbd9bf3746df8d",
+    "outcome": "passed",
+    "wall_s": 0.8184092609999425
+  },
+  "world_unchanged": true,
+  "world_id": "9fe8decd0a60434ca1e62a5da4971a73",
+  "direct_experiment_attempts": 2,
+  "direct_experiment_successes": 0,
+  "direct_physics_steps": 0,
+  "collections": 0,
+  "fresh_fits": 0,
+  "command_network": {
+    "kind": "tool_check",
+    "context": "agent_command",
+    "checks": {
+      "socket_creation": {
+        "outcome": "blocked",
+        "error": "[Errno 1] Operation not permitted",
+        "next_step": "Use supervised research_preflight/start_test; check the effective command network policy"
+      },
+      "loopback_binding": {
+        "outcome": "unknown",
+        "reason": "An earlier check was blocked"
+      },
+      "http_round_trip": {
+        "outcome": "unknown",
+        "reason": "An earlier check was blocked"
+      }
+    },
+    "outcome": "blocked",
+    "wall_s": 3.7245999919832684e-05
+  },
+  "context_boundary": "Worker-authored MCP scripts executed by parent in already-permitted command context after worker additional-network call stalled with unknown outcome. This does not establish worker command attachment readiness.",
+  "rrd_file_readback": {
+    "file": "/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7/native/preflight/f2b3dcc8b52644d1a9cbd9bf3746df8d/hangprinter-20261026T220410.622233Z-07a7375d.rrd",
+    "bytes": 67028,
+    "sha256": "abd108938bd1ed6120c828f232461503e5a202f48bfa7d5a03aa0bb9cb35bd2c",
+    "data_chunk_count": 6,
+    "rows": 6,
+    "readable": true,
+    "scope": "Independent full data-chunk read of isolated step-zero preflight RRD; not a physics experiment recording"
+  },
+  "untested": [
+    "Rerun Viewer MCP because viewer none",
+    "successful fresh production experiment in this worktree",
+    "live collection and full-autocal workflow",
+    "live configuration/reset/G-code/stepping/cancellation outside isolated tests",
+    "browser live page tools",
+    "native-python and native-warp standalone production workflows",
+    "GPU backend",
+    "manager reviewer/admission/save/recovery lifecycle, handled separately by parent"
+  ],
+  "conclusion": "Mixed tool-health result: preflight and headless-autocal suite pass, research-services exposes two concrete defects, and worker command permission friction persists."
+}

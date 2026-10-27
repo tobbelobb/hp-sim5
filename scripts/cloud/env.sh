@@ -19,3 +19,9 @@ export PUPPETEER_SKIP_DOWNLOAD=true
 export PLAYWRIGHT_MCP_CONFIG="$HP_SIM5_ROOT/output/cloud/playwright-cli.json"
 export OPENBLAS_NUM_THREADS="${OPENBLAS_NUM_THREADS:-1}"
 export OMP_NUM_THREADS="${OMP_NUM_THREADS:-1}"
+
+# The CPU cloud image includes Chromium's software Vulkan driver, but no system
+# ICD. Preserve explicit driver choices and hardware-equipped environments.
+if [[ -z "${VK_ICD_FILENAMES:-}${VK_DRIVER_FILES:-}" && ! -d /dev/dri && ! -e /dev/nvidia0 && -r /usr/lib/chromium/vk_swiftshader_icd.json ]]; then
+    export VK_ICD_FILENAMES=/usr/lib/chromium/vk_swiftshader_icd.json
+fi

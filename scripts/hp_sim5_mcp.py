@@ -300,8 +300,10 @@ def browser_action(page_id: str, action: str, args: dict | None = None) -> dict[
     Obtain page_id from browser_status. This is the browser JS world, independent of native Python.
     Bounded steps require a paused world with no active worker. record requires start_browser_service(record=True).
     capture_context freezes message, selected_entity, backend, page, scene generation, time and numerical observation.
+    interventions returns its history under the interventions key.
     """
-    return supervised_request('browser_action', page_id=page_id, action=action, args=args or {})
+    result = supervised_request('browser_action', page_id=page_id, action=action, args=args or {})
+    return {'interventions': result} if action == 'interventions' else result
 
 
 @mcp.tool(annotations=MUTATION)

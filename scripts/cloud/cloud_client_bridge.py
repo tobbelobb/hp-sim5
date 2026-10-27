@@ -30,11 +30,14 @@ def client(arguments):
     parser = argparse.ArgumentParser(description='Wait for a real subagent dispatched by the current cloud chat')
     parser.add_argument('--cd', type=Path, required=True)
     parser.add_argument('--output-last-message', type=Path, required=True)
+    parser.add_argument('--session-dir', type=Path)
     parser.add_argument('--sandbox', choices=('read-only', 'workspace-write'), default='workspace-write')
     args = parser.parse_args(arguments)
     root, final = args.cd.resolve(), args.output_last_message.resolve()
-    if not final.is_relative_to((root / 'output').resolve()):
-        print('Final message must be inside repository output', file=sys.stderr)
+    valid_final = (final == args.session_dir.resolve() / 'final-message.md' if args.session_dir is not None
+                   else final.is_relative_to((root / 'output').resolve()))
+    if not valid_final:
+        print('Final message must match the supplied session directory or be inside repository output', file=sys.stderr)
         return 2
     prompt = sys.stdin.read()
     identity = uuid.uuid4().hex
@@ -59,6 +62,24 @@ def client(arguments):
         stopping.append(signum)
     signal.signal(signal.SIGTERM, cancel)
     signal.signal(signal.SIGINT, cancel)
+    relay = None
+    # The launcher has the permitted supervisor context. Actors use a private
+    # file queue to call its real MCP attachments, without command sockets.
+    if args.sandbox == 'workspace-write' and (final.parent / 'connection.json').is_file():
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import cloud_tool_bridge
+        relay, tool_connection = cloud_tool_bridge.start(root, final.parent, directory / 'request.json')
+        request = read(directory / 'request.json')
+        request['tool_connection_path'] = str(tool_connection)
+        write(directory / 'request.json', request)
+    try:
+        return wait_for_actor(directory, identity, final, stopping)
+    finally:
+        if relay is not None:
+            cloud_tool_bridge.stop(relay)
+
+
+def wait_for_actor(directory, identity, final, stopping):
     cancel_deadline = None
     while True:
         response = directory / 'response.json'

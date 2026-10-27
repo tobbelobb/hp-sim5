@@ -66,7 +66,8 @@ async def test_spawn_failure_and_private_environment(tmp_path, monkeypatch):
     manager.jobs[job['job_id']]['command'] = ['/missing/interpreter']
     result = await finished(manager, job)
     assert result['status'] == 'blocked' and result['next_step']
-    for key in ('HP_SIM5_RUNTIME_TOKEN', 'OPENAI_API_KEY', 'AUTOCAL_REFERENCE_WS', 'PYTEST_ADDOPTS'):
+    for key in ('HP_SIM5_RUNTIME_TOKEN', 'OPENAI_API_KEY', 'AUTOCAL_REFERENCE_WS', 'PYTEST_ADDOPTS',
+                'WARP_CACHE_PATH', 'XDG_CACHE_HOME'):
         monkeypatch.setenv(key, 'private-sentinel')
     next_job = manager.start({'suite': 'research-services'})
     manager.jobs[next_job['job_id']]['command'] = [str(ROOT / '.venv/bin/python'), '-c',
@@ -74,6 +75,9 @@ async def test_spawn_failure_and_private_environment(tmp_path, monkeypatch):
     result = await finished(manager, next_job)
     assert result['status'] == 'passed'
     assert 'private-sentinel' not in json.dumps(result)
+    environment = json.loads(result['log_tail']['stdout.log'])
+    assert environment['WARP_CACHE_PATH'] == str(Path(next_job['directory']) / 'cache/warp')
+    assert environment['XDG_CACHE_HOME'] == str(Path(next_job['directory']) / 'cache')
     assert Path(job['directory']).exists()  # failed trial retained
 
 

@@ -1,0 +1,83 @@
+{
+  "created_at": "2026-10-27T07:47:02.728436+00:00",
+  "details": {
+    "argv": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/cloud/cloud_client_bridge.py",
+      "client",
+      "--cd",
+      "/workspace/hp-sim5",
+      "--session-dir",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-e96e4c2cd7084215a4d37c7d670f64b2",
+      "--output-last-message",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-e96e4c2cd7084215a4d37c7d670f64b2/final-message.md",
+      "--sandbox",
+      "read-only"
+    ],
+    "contract": "hp-sim5-evidence-review-v2",
+    "deadline": 1793087702.7272553,
+    "directory": "/workspace/hp-sim5/.research-programs/reviews/review-run-e96e4c2cd7084215a4d37c7d670f64b2",
+    "error": null,
+    "guard_argv": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_program_review_guard.py",
+      "1793087702.7272553",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-e96e4c2cd7084215a4d37c7d670f64b2/wall-expired",
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/cloud/cloud_client_bridge.py",
+      "client",
+      "--cd",
+      "/workspace/hp-sim5",
+      "--session-dir",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-e96e4c2cd7084215a4d37c7d670f64b2",
+      "--output-last-message",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-e96e4c2cd7084215a4d37c7d670f64b2/final-message.md",
+      "--sandbox",
+      "read-only"
+    ],
+    "owner": {
+      "id": "review-controller-e0112208ff904557a705a979384efc7e",
+      "process": {
+        "birth": "470165",
+        "boot_id": "c811096e-c5fb-4e4c-b11e-a092b1443cc5",
+        "group": 1634,
+        "host": "6f58981f0249",
+        "pid": 1634,
+        "uid": 1000
+      }
+    },
+    "process": {
+      "birth": "519280",
+      "boot_id": "c811096e-c5fb-4e4c-b11e-a092b1443cc5",
+      "group": 7505,
+      "host": "6f58981f0249",
+      "pid": 7505,
+      "uid": 1000
+    },
+    "prompt_sha256": "d13f043844098eaf34a24fca5a6b2294c6559c60b59107170c615fa9c64b733f",
+    "returncode": 0,
+    "review_id": "review-95277ad5c83e42a9bcee4b5a0aa8499b",
+    "reviewer": {
+      "backend": "codex",
+      "context_id": "review-run-e96e4c2cd7084215a4d37c7d670f64b2",
+      "model": null,
+      "model_provider": "openai"
+    },
+    "runtime_reservation": [
+      "runtime_allocation-8f7227de5d71423b9f55b2b8c27f7b94",
+      "cloud-final-status-regression",
+      "cb6fa73c1a044781adaefc3bf369c37d"
+    ],
+    "started_at": "2026-10-27T07:47:02.727241+00:00",
+    "state": "completed",
+    "submission_id": "submission-bd5e2bb429fc413c8628b208e2a464c5",
+    "submission_sha256": "ea2ab5aa0bce3755ac220bc752a50b2d4e26f2bee6411d14c98bdf348f16556e",
+    "wall_minutes": 8
+  },
+  "id": "review-run-e96e4c2cd7084215a4d37c7d670f64b2",
+  "kind": "review_run",
+  "program_id": "program-7aa80aa18f10499e85cb24ffeae712cb",
+  "revision": 3,
+  "title": "Separate saved-evidence review",
+  "updated_at": "2026-10-27T07:50:17.642221+00:00"
+}

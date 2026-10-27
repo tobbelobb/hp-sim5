@@ -1,0 +1,128 @@
+scripts/hp_sim5_mcp.py sha256=02ade15a202c27430d0390eb076cbf8f58348c245f6b6ac3df1211730518ad47
+290: @mcp.tool(annotations=READ_ONLY)
+291: def browser_status() -> dict[str, Any]:
+292:     """Discover the exact connected browser page identity and immutable user-submitted research contexts."""
+293:     return supervised_request('browser_status')
+294: 
+295: 
+296: @mcp.tool(annotations=MUTATION)
+297: def browser_action(page_id: str, action: str, args: dict | None = None) -> dict[str, Any]:
+298:     """Operate the selected existing browser page: observe, pause, resume, reset, step, commands, load_scene, record, capture_context.
+299: 
+300:     Obtain page_id from browser_status. This is the browser JS world, independent of native Python.
+301:     Bounded steps require a paused world with no active worker. record requires start_browser_service(record=True).
+302:     capture_context freezes message, selected_entity, backend, page, scene generation, time and numerical observation.
+303:     """
+304:     return supervised_request('browser_action', page_id=page_id, action=action, args=args or {})
+305: 
+306: 
+307: @mcp.tool(annotations=MUTATION)
+
+src/python/hp_sim5_research/autocal_jobs.py sha256=c5169f9634c42cd8bc60d697aa21b11a4b3beddb45b96ca0b4a4266b9885cf9c
+151:             result['headless'] = headless
+152:         clock = read_json(directory / 'sweeps.headless/clock.json') or {}
+153:         progress = {key: clock[key] for key in ('step', 'epoch', 'total_steps', 'simulated_s', 'queue_length') if key in clock}
+154:         log = directory / 'sweeps.full_auto_log.jsonl'
+155:         if log.exists():
+156:             # A row can be partially written while fitting/collection continues.
+157:             for line in reversed(log.read_text().splitlines()):
+158:                 try:
+159:                     row = json.loads(line)
+160:                 except ValueError:
+161:                     continue
+162:                 progress.update({key: row[key] for key in ('iteration', 'decision', 'selected_run', 'best_iteration', 'best_score_ui') if key in row})
+163:                 break
+164:         journals = list(directory.glob('*.partial-points.jsonl'))
+165:         if journals:
+166:             progress['collected_points'] = sum(len(path.read_text().splitlines()) for path in journals)
+167:         text_log = directory / 'sweeps.full_auto.log'
+168:         if text_log.exists():
+169:             with text_log.open('rb') as stream:
+170:                 stream.seek(max(0, text_log.stat().st_size - 4096))
+171:                 lines = stream.read().decode(errors='replace').splitlines()
+172:             if lines:
+173:                 progress['latest_log_line'] = lines[-1]
+174:         result['progress'] = progress
+175:         result['artifacts'] = {str(path.relative_to(directory)): str(path) for path in sorted(directory.rglob('*'))
+176:                                if path.is_file() and not path.is_symlink()}
+177:         return result
+178: 
+179:     async def terminate(self, job):
+180:         if 'terminate_task' not in job:
+181:             job['terminate_task'] = asyncio.create_task(self.stop_owner(job))
+182:         await asyncio.shield(job['terminate_task'])
+183: 
+184:     async def stop_owner(self, job):
+185:         process = job.get('process')
+186:         if process is not None and process.poll() is None:
+187:             # Signal only the owner first so it holds/stops collection and drains
+188:             # physics before retiring the recorder. All children share its group.
+290:             clock = read_json(directory / 'sweeps.headless/clock.json') or {}
+291:             if clock.get('error') == 'Physics step budget exhausted':
+292:                 reason = job['stop_reason'] or 'physics-step-budget'
+293:             if reason == 'cancelled':
+294:                 status = 'cancelled'
+295:             elif reason in ('wall-time-budget', 'physics-step-budget') or (reason == 'max-steps' and job['exit_code'] == 0 and headless.get('status') == 'complete'):
+296:                 status = 'budget_exhausted'
+297:             elif job['exit_code'] == 0 and headless.get('normal_completion') and not job.get('cleanup_error'):
+298:                 status = 'accepted'
+299:             else:
+300:                 status = 'failed'
+301:                 reason = reason or 'cli-failure'
+302:             job.update(status=status, stop_reason=reason, ended_unix_s=time.time(),
+303:                        wall_s=time.time() - job['started_unix_s'])
+304:             write_json(directory / 'job.json', self.status(job['job_id']))
+305:             self.active = None
+
+scripts/research_runtime.py sha256=2cf1101ee53370a7b9b9eaff0c5c9df8693a18cef7383a9265e0d0301c21a475
+558:             header = await asyncio.wait_for(reader.readuntil(b'\r\n\r\n'), timeout=5)
+559:             lines = header.decode().split('\r\n')
+560:             headers = {k.lower(): v for k, v in (line.split(': ', 1) for line in lines[1:] if ': ' in line)}
+561:             if headers.get('authorization') != f'Bearer {self.token}':
+562:                 raise ValueError('Unauthorized')
+563:             size = int(headers.get('content-length', 0))
+564:             if not 0 <= size <= 1_000_000:
+565:                 raise ValueError('Request body too large')
+566:             body = await reader.readexactly(size)
+567:             result = await self.dispatch(lines[0].split()[1].strip('/'), json.loads(body or '{}'))
+568:             status = '200 OK'
+569:         except Exception as error:
+570:             result, status = {'error': str(error)}, '400 Bad Request'
+571:         data = encode(result).encode()
+572:         writer.write(f'HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {len(data)}\r\nConnection: close\r\n\r\n'.encode() + data)
+573:         await writer.drain()
+574:         writer.close()
+575:         await writer.wait_closed()
+576: 
+
+src/python/hp_sim5_research/experiments.py sha256=8ef32266154a0b254db30a236ff04dea6082b7314faca807d32c277ece438314
+23: DEFAULT_SCENE = 'public/usd_scenes/hp4_rigid_body.usda'
+24: MAX_STEPS = 10_000
+25: 
+26: 
+27: def encode(value):
+28:     return json.dumps(value, allow_nan=False, sort_keys=True)
+29: 
+30: 
+31: def digest(data):
+32:     return hashlib.sha256(data).hexdigest()
+33: 
+34: 
+
+hp-sim-3d/app/researchControls.js sha256=86ca9a8b28c7ec70e6a087b8495f28f3157d2b871f0cf680c023037930905a24
+20:   function log(action, args) {
+21:     interventions.push({ action, args: structuredClone(args), context: context(), submitted_at: new Date().toISOString() });
+22:   }
+23:   async function execute(action, args = {}) {
+24:     if (action === 'capabilities') return { backend: 'browser-js', page_id: pageId,
+25:       actions: ['observe', 'pause', 'resume', 'step', 'reset', 'load_scene', 'commands', 'record', 'capture_context', 'interventions'],
+26:       scenes, limits: { steps: 10000, commands: 10000 }, command_units: 'motor radians; geometry metres; torque Nm' };
+27:     if (action === 'observe') return observe();
+28:     if (action === 'interventions') return structuredClone(interventions);
+29:     if (action === 'capture_context') {
+30:       if (typeof args.message !== 'string' || !args.message.trim()) throw new Error('Supply a research message');
+31:       const captured = { ...context(args.selected_entity ?? null), message: args.message,
+32:         capture_id: crypto.randomUUID(), submitted_at: new Date().toISOString(), observation: observe() };
+33:       interventions.push({ action, context: structuredClone(captured) });
+34:       return captured;
+35:     }

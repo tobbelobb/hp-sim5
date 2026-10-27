@@ -29,6 +29,7 @@ def job_environment(directory):
     # Never inherit service credentials or caller autocal/recorder overrides.
     env = {key: os.environ[key] for key in ('PATH', 'HOME', 'LANG', 'LD_LIBRARY_PATH') if key in os.environ}
     env.update(PYTHONUNBUFFERED='1', MPLCONFIGDIR=str(directory / 'matplotlib'),
+               XDG_CACHE_HOME=str(directory / 'cache'), WARP_CACHE_PATH=str(directory / 'cache/warp'),
                OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1',
                MKL_NUM_THREADS='1', NUMEXPR_NUM_THREADS='1')
     env['HP_SIM5_TEST_PROCESS_REGISTRY'] = str(directory / 'process-groups.jsonl')
