@@ -175,5 +175,11 @@ The platform's permissions apply to all actors. Read-only review is an instructi
 plus fixed-evidence integrity checks, not a new OS sandbox. This workflow makes no
 promise of an independent daemon after the chat stops. The
 [preserved pilot](../../research/cloud-client-pilot/2026-10-24/README.md) records
-actual bounded work with the earlier prototype; the current transport still
-needs a cloud trial. Historical failures remain evidence, not setup requirements.
+actual bounded work with the earlier prototype. The
+[October 2026 cloud audit](../../research/programs/program-7aa80aa18f10499e85cb24ffeae712cb/selected/output/research/sessions/2026-10-26-cloud-platform-audit/report.md)
+records an actual actor using the current file relay, native experiments,
+collection, Rerun, browser tools and independent fixed reviews. It also retains
+failed trials and the incomplete final full-auto regression. The final status
+and browser-history repairs have targeted regression coverage; that does not
+establish calibration accuracy or completion of every production path.
+Historical failures remain evidence, not setup requirements.

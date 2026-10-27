@@ -70,10 +70,13 @@ check the complete runtime before charging worker attempts; see
 Its former MCP attachment route and --serve option have been removed. Local
 manager clients disable inherited research MCP entries and use CLI tools.
 Workers retain the existing physics supervisor and its MCP attachment. Cloud
-workers can call scripts/research_attach.py through their command tools; they
-must use the private connection created for their own attempt. Socket restrictions
-in that command context can also block attachment; neither this helper nor MCP
-grants network permission. No new physics runtime is introduced.
+actors receive a launcher-owned tool_connection_path and use
+scripts/cloud/cloud_tool_bridge.py to call the real MCP tools even when their
+command context cannot create sockets. Direct scripts/research_attach.py remains
+available when command sockets are permitted. Both routes use the private
+connection for that attempt; neither grants networking to the actor's commands.
+See [the cloud workflow](../scripts/cloud/RESEARCH.md) for dispatch and cleanup.
+No new physics runtime is introduced.
 
 ## Results and lifecycle
 
