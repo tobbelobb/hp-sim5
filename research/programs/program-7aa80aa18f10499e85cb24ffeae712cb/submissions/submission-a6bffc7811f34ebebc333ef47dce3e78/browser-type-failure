@@ -1,0 +1,30 @@
+Tool 'browser_action' raised an unexpected exception
+Traceback (most recent call last):
+  File "/workspace/hp-sim5-worktrees/bounded-research-assignment-c1f46479/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/tools/base.py", line 192, in run
+    result = self.fn_metadata.convert_result(result)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/bounded-research-assignment-c1f46479/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/utilities/func_metadata.py", line 219, in convert_result
+    validated = adapter.validate_python(result, by_alias=True, by_name=True)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/bounded-research-assignment-c1f46479/.venv/lib/python3.12/site-packages/pydantic/type_adapter.py", line 410, in validate_python
+    return self.validator.validate_python(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pydantic_core._pydantic_core.ValidationError: 1 validation error for dict[str,any]
+  Input should be a valid dictionary [type=dict_type, input_value=[{'action': 'pause', 'arg...timeline': 'sim_step'}}], input_type=list]
+    For further information visit https://errors.pydantic.dev/2.14/v/dict_type
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/workspace/hp-sim5-worktrees/bounded-research-assignment-c1f46479/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/server.py", line 442, in _handle_call_tool
+    return await self.call_tool(params.name, params.arguments or {}, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/bounded-research-assignment-c1f46479/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/server.py", line 548, in call_tool
+    return await self._tool_manager.call_tool(name, arguments, context, convert_result=True)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/bounded-research-assignment-c1f46479/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/tools/tool_manager.py", line 87, in call_tool
+    return await tool.run(arguments, context, convert_result=convert_result)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/hp-sim5-worktrees/bounded-research-assignment-c1f46479/.venv/lib/python3.12/site-packages/mcp/server/mcpserver/tools/base.py", line 213, in run
+    raise UnexpectedToolError(f"Error executing tool {self.name}") from exc
+mcp.server.mcpserver.exceptions.UnexpectedToolError: Error executing tool browser_action

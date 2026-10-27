@@ -1,0 +1,25 @@
+{
+  "created_at": "2026-10-26T22:35:43.792977+00:00",
+  "details": {
+    "actor": "controller",
+    "claim_id": "claim-7959c2782c9e4db5aeb39763cfd3fd83",
+    "code_readiness": "report_only",
+    "contract": "hp-sim5-evidence-review-v2",
+    "decision": "keep",
+    "engineering_reasons": [],
+    "finding": "supported",
+    "guard_reasons": [],
+    "knowledge_state": "reviewed",
+    "practical_value": "Preserves reproducible failure evidence and identifies two narrow fixes before broader production workflow trials. Passing preflight and headless fixtures cannot justify blanket tool readiness.",
+    "required_checks": [],
+    "review_id": "review-302fad39e77d4b9e9475e86d7ab2b55f",
+    "submission_id": "submission-58568f992dd44dee892591afff9001b8",
+    "submission_sha256": "2ad50fa452aee5881aa0f265289b685fd20ab3f3301f962d2ad56d857e8e1ae6"
+  },
+  "id": "admission-7cdcc17edfaf415a88e16e50bfbbf1ca",
+  "kind": "admission",
+  "program_id": "program-7aa80aa18f10499e85cb24ffeae712cb",
+  "revision": 1,
+  "title": "Keep the scoped baseline report. The recorded commands, failure traces and matching source support shared-output containment and isolated Warp-cache defects alongside working preflight and headless components. The report distinguishes parent execution from worker networking and makes no calibration-accuracy claim. No additional run is needed to retain this finding.",
+  "updated_at": "2026-10-26T22:35:43.792977+00:00"
+}

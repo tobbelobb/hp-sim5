@@ -1,0 +1,15 @@
+{
+  "recording_ids": [
+    "StoreEntry(kind='recording', application_id='hp-sim5 research', recording_id='60d2127db7d443b7863d0add0272c51a')"
+  ],
+  "blueprint_count": 1,
+  "blueprints": [
+    "StoreEntry(kind='blueprint', application_id='hp-sim5 research', recording_id='rec_94ab7399c6a348e99f52e7c08f90351c')"
+  ],
+  "store_methods": [
+    "schema",
+    "stream",
+    "summary",
+    "write_rrd"
+  ]
+}

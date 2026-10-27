@@ -1,0 +1,35 @@
+{
+  "_meta": {
+    "io.modelcontextprotocol/serverInfo": {
+      "name": "hp-sim5",
+      "version": ""
+    }
+  },
+  "content": [
+    {
+      "type": "text",
+      "text": "{\n  \"baseline_id\": \"60d2127db7d443b7863d0add0272c51a\",\n  \"candidate_id\": \"a974fbcebaa645bdaf47abaf53f4a053\",\n  \"changed_inputs\": [\n    \"record\"\n  ],\n  \"metric_delta_candidate_minus_baseline\": {\n    \"peak_abs_length_error_m\": 0.0,\n    \"peak_abs_tracking_error_rad\": 0.0,\n    \"peak_cable_force_n\": 0.0,\n    \"peak_total_missed_steps\": 0\n  },\n  \"final_effector_distance_m\": {\n    \"world/machines/default/effector\": 0.0\n  },\n  \"interpretation\": \"Differences are observations. A smaller error/force is not automatically a better calibration.\"\n}",
+      "annotations": null,
+      "_meta": null
+    }
+  ],
+  "structuredContent": {
+    "baseline_id": "60d2127db7d443b7863d0add0272c51a",
+    "candidate_id": "a974fbcebaa645bdaf47abaf53f4a053",
+    "changed_inputs": [
+      "record"
+    ],
+    "metric_delta_candidate_minus_baseline": {
+      "peak_abs_length_error_m": 0.0,
+      "peak_abs_tracking_error_rad": 0.0,
+      "peak_cable_force_n": 0.0,
+      "peak_total_missed_steps": 0
+    },
+    "final_effector_distance_m": {
+      "world/machines/default/effector": 0.0
+    },
+    "interpretation": "Differences are observations. A smaller error/force is not automatically a better calibration."
+  },
+  "isError": false,
+  "resultType": "complete"
+}

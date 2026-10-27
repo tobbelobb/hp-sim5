@@ -1,0 +1,79 @@
+{
+  "created_at": "2026-10-26T22:11:18.408860+00:00",
+  "details": {
+    "argv": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/cloud/cloud_client_bridge.py",
+      "client",
+      "--cd",
+      "/workspace/hp-sim5",
+      "--output-last-message",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-acddde7507fd4e729af4e94c8aaa5685/final-message.md",
+      "--sandbox",
+      "read-only"
+    ],
+    "contract": "hp-sim5-evidence-review-v2",
+    "deadline": 1793053278.408472,
+    "directory": "/workspace/hp-sim5/.research-programs/reviews/review-run-acddde7507fd4e729af4e94c8aaa5685",
+    "error": "Reviewer exited 2; no assessment admitted",
+    "guard_argv": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_program_review_guard.py",
+      "1793053278.408472",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-acddde7507fd4e729af4e94c8aaa5685/wall-expired",
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/cloud/cloud_client_bridge.py",
+      "client",
+      "--cd",
+      "/workspace/hp-sim5",
+      "--output-last-message",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-acddde7507fd4e729af4e94c8aaa5685/final-message.md",
+      "--sandbox",
+      "read-only"
+    ],
+    "owner": {
+      "id": "review-controller-288d0fc0c7594afa8117f97c7a17ec47",
+      "process": {
+        "birth": "497953",
+        "boot_id": "1b752a2b-0ef5-4357-ac84-b5187ff9f99e",
+        "group": 1121,
+        "host": "c9fccdc99234",
+        "pid": 1121,
+        "uid": 1000
+      }
+    },
+    "process": {
+      "birth": "600271",
+      "boot_id": "1b752a2b-0ef5-4357-ac84-b5187ff9f99e",
+      "group": 11579,
+      "host": "c9fccdc99234",
+      "pid": 11579,
+      "uid": 1000
+    },
+    "prompt_sha256": "63b5a8d805370fc24cdbf12bcf316b91474b189282b6d0b85783b11671675037",
+    "returncode": 2,
+    "review_id": null,
+    "reviewer": {
+      "backend": "codex",
+      "context_id": "review-run-acddde7507fd4e729af4e94c8aaa5685",
+      "model": null,
+      "model_provider": "openai"
+    },
+    "runtime_reservation": [
+      "runtime_allocation-067978e39aa34185b4ecbdcae8b2e9d8",
+      "cloud-tool-inventory",
+      "1f4d147f770e4183ace89a9fb3810efa"
+    ],
+    "started_at": "2026-10-26T22:11:18.408461+00:00",
+    "state": "failed",
+    "submission_id": "submission-58568f992dd44dee892591afff9001b8",
+    "submission_sha256": "2ad50fa452aee5881aa0f265289b685fd20ab3f3301f962d2ad56d857e8e1ae6",
+    "wall_minutes": 10
+  },
+  "id": "review-run-acddde7507fd4e729af4e94c8aaa5685",
+  "kind": "review_run",
+  "program_id": "program-7aa80aa18f10499e85cb24ffeae712cb",
+  "revision": 3,
+  "title": "Separate saved-evidence review",
+  "updated_at": "2026-10-26T22:11:18.518999+00:00"
+}

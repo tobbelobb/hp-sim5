@@ -1,0 +1,16 @@
+{
+  "selected_entity": "/cable_forces/default/CablePathAL_110/JointAL_0_59",
+  "sim_step": 250,
+  "recorded_rows": [
+    {
+      "rerun.controls.RowId": "18e235bea4f934571fe9af70b913fd67",
+      "scene_generation": 1,
+      "sim_step": 250,
+      "sim_time": "0:00:00.500000",
+      "Scalars:scalars": [
+        0.0
+      ]
+    }
+  ],
+  "blueprint_count": 1
+}

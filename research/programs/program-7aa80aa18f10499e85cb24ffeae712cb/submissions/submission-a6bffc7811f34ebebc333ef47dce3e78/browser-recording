@@ -1,0 +1,20 @@
+[
+  {
+    "backend": "browser-js",
+    "browser_session": "5977bea6-b108-494e-99ed-353b2c01ad8d",
+    "end_step": 50,
+    "end_time_s": 0.10000000000000007,
+    "event_count": 0,
+    "geometry_detail": "full",
+    "physics_samples": 51,
+    "recording_id": "c535985934504eb48467a3baa2ea6085",
+    "rrd": "/workspace/hp-sim5/output/research/sessions/attempt-e13302e362f545e39608027dcb85f963/native/browser-recordings/hangprinter-20261026T224717.142966Z-14a826d4.rrd",
+    "sample_stride": 1,
+    "scene_generation": 3,
+    "start_step": 0,
+    "status": "finalized",
+    "rrd_bytes": 1636739,
+    "rrd_readable": true,
+    "blueprint_count": 1
+  }
+]

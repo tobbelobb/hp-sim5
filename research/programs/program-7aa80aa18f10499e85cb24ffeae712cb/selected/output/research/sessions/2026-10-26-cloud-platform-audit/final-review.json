@@ -1,0 +1,54 @@
+{
+  "checks": [
+    {
+      "asset_ids": ["audit-report", "audit-abstract", "delivery-tests", "delivery-junit", "delivery-receipt", "targeted-tests", "physics-gate", "production-admission", "baseline-admission", "final-interruption", "cleanup", "telemetry", "compression", "production-report", "coverage", "equality", "autocal-artifacts"],
+      "description": "Verified all 17 frozen asset SHA-256 values, the manifest hash ea2ab5aa0bce3755ac220bc752a50b2d4e26f2bee6411d14c98bdf348f16556e and candidate.diff hash 4b48bd9508da68e4d906515095530a78c095439f8bbb9b42b277034de4e01849. Confirmed candidate.diff is byte-identical to git diff from 67617705b7996ee3a84889e6723cab149b6e5884 to 2115eb5ce56df1363c2bed0be669fdc5bd3cad07.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": ["audit-report", "production-report", "baseline-admission", "production-admission"],
+      "description": "Read the scoped repair claim and retained production failures. Inspected the complete fixed diff and candidate autocal implementation. Changes address approved shared-output containment, private test caches, review session paths, the launcher-owned MCP relay and its lifecycle, software Viewer setup, finite status conversion, terminal slot release, browser history wrapping and HTTP error encoding. The diff changes no physics algorithms, motors, cable transport or scene dynamics. Git confirms only three documentation files changed between tested runtime 7c0a353e9a4e3e42882d2c0fdf32b8d8d05b4c7b and candidate 2115eb5c.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": ["delivery-tests", "delivery-junit", "delivery-receipt", "targeted-tests"],
+      "description": "Parsed saved JUnit and compared it with logs and the runtime-source receipt. JUnit has 368 cases, zero failures or errors and one skip, consistent with 333 passing tests plus 34 passing subtests. Confirmed passing cases for all three nonfinite sentinels and terminal slot reuse/cancel, valid browser-history MCP output, HTTP encoding recovery, shared-output readback, hard relay-owner loss and the actual Viewer handshake. Read the separate 125-test targeted pass. These are producer test results inspected here, not rerun tests.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": ["production-report", "coverage", "equality", "autocal-artifacts"],
+      "description": "Traced prior-source production observations to attempt e13302e362f545e39608027dcb85f963 at 379318b2, named native runs, collection and autocal job IDs and recorded budgets. Coverage distinguishes invocation of all 23 tools from failed terminal autocal and browser-history paths. The equality receipt changes only recording and reports zero metric deltas. Autocal evidence records max-steps, normal_completion false, 1,305,459 steps and Infinity diagnostics, not calibration acceptance.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": ["telemetry", "compression", "equality"],
+      "description": "Independently decompressed the frozen native telemetry and verified 2,155,845 bytes, 501 rows and SHA-256 f9ca994cb413bf4a08398ff5a05ee61712e555c83be99a3439b0b58f2ffeaa4e against the compression receipt and reported matched trajectory. This verifies the retained bytes; the second trajectory and omitted large recordings were not independently reproduced or compared here.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": ["physics-gate", "audit-report"],
+      "description": "Inspected the saved npm run test:physics command and its 11 passing native, Wasm and JavaScript stability/gate checks. The report identifies its source boundary as 3c5cc88b. Subsequent reviewed changes concern tool reporting, control, rendering setup and documentation, so this candidate introduces no new physics delivery gate.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": ["final-interruption", "cleanup", "audit-report"],
+      "description": "Read the final regression receipt at runtime source 7c0a353e. It records cancellation, return code 130, wall_expired true and launcher_finally_completed, with no completed final actor result. It does not establish terminal full-auto, subsequent cancellation or live browser history. Separately counted the production cleanup receipt's 27 observed process identities, all marked not live at the saved observation.",
+      "kind": "inspected"
+    }
+  ],
+  "code_readiness": "ready",
+  "discrepancy": null,
+  "finding": "supported",
+  "limitations": [
+    "The final fresh-source full-auto/browser lifecycle regression was interrupted. Terminal full-auto, next-job cancellation, recovery reset and live browser-history behavior together remain unverified on that source; startup and preflight do not establish their completion.",
+    "Production evidence at 379318b2 predates the status/history repairs. Final-source support for those repairs comes from inspected source and passing regression tests, including a stubbed browser application response, rather than a completed final production lifecycle.",
+    "This review inspected frozen artifacts and source, verified hashes and parsed saved results. It ran no tests, simulations or fresh numerical fits. Large raw recordings and the second matched trajectory were not included among the inspected frozen assets.",
+    "The supported scope is the managed CPU cloud and tested HP3/HP4 tooling paths. It establishes neither calibration accuracy nor hardware, GPU throughput, advanced live worker pools or optimal performance. The relay remains a cooperative same-UID transport requiring a permitted launcher."
+  ],
+  "practical_value": "The repairs remove observed blockers to later Research Programs: worktree experiment output, writable test caches, reviewer launch paths, socket-denied actor tool access, CPU Viewer attachment and strict status/history responses. Preserved failures and source boundaries let later programs use these repairs without mistaking partial lifecycle evidence for calibration progress.",
+  "reason": "Keep the bounded claim and tested repairs at candidate 2115eb5ce56df1363c2bed0be669fdc5bd3cad07, reviewed against base 67617705b7996ee3a84889e6723cab149b6e5884. The report's explicit claim that observed tooling defects are repaired within tested scope is supported by the fixed diff, prior production evidence and the final passing suite at unchanged runtime source 7c0a353e. The earlier review's two blocking defects have concrete fixes and matching regression coverage. No unresolved blocking code defect was found in this review, and the documentation-only delta does not invalidate those tests. Code is ready for delivery within this scope. The interrupted final production regression remains inconclusive and cannot support a broader full-workflow claim.",
+  "required_checks": [],
+  "submission_id": "submission-bd5e2bb429fc413c8628b208e2a464c5",
+  "submission_sha256": "ea2ab5aa0bce3755ac220bc752a50b2d4e26f2bee6411d14c98bdf348f16556e",
+  "verdict": "keep"
+}

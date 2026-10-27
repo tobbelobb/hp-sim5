@@ -1,0 +1,838 @@
+[
+  {
+    "created_at": "2026-10-26T21:55:54.744139+00:00",
+    "details": {
+      "allocation": {
+        "collections": 0,
+        "fresh_fits": 0,
+        "physics_steps": 20000,
+        "wall_minutes": 22
+      },
+      "argv": [
+        "/workspace/hp-sim5/hp-sim5-research-agent",
+        "--codex",
+        "--batch",
+        "--prompt-file",
+        "/workspace/hp-sim5/.research-programs/workers/attempt-ca404fcaf323469eb35cc37b515ca3a7/prompt.txt",
+        "--session-dir",
+        "/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7",
+        "--physics-backend",
+        "headless-js",
+        "--machine",
+        "hp3",
+        "--viewer",
+        "none",
+        "--wall-deadline",
+        "1793053074.7184103",
+        "--worktree"
+      ],
+      "artifacts": [
+        {
+          "bytes": 431,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7/session.json"
+        },
+        {
+          "bytes": 17382,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7/launch.json"
+        },
+        {
+          "bytes": 78,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7/exit.json"
+        },
+        {
+          "bytes": 8111,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7/prompt.txt"
+        },
+        {
+          "bytes": 222,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7/events.jsonl"
+        },
+        {
+          "bytes": 1411,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7/final-message.md"
+        },
+        {
+          "bytes": 10812,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7/research.md"
+        },
+        {
+          "bytes": 7807,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7/report.md"
+        },
+        {
+          "bytes": 3288,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7/abstract.md"
+        },
+        {
+          "bytes": 6691,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7/instructions.md"
+        },
+        {
+          "bytes": 514,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7/attachment.toml"
+        },
+        {
+          "bytes": 391,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7/attachment.json"
+        },
+        {
+          "bytes": 284,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7/connection.json"
+        },
+        {
+          "bytes": 0,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7/native/runtime.log"
+        },
+        {
+          "bytes": 0,
+          "partial": false,
+          "path": "/workspace/hp-sim5/.research-programs/workers/attempt-ca404fcaf323469eb35cc37b515ca3a7/stdout.log"
+        },
+        {
+          "bytes": 254,
+          "partial": false,
+          "path": "/workspace/hp-sim5/.research-programs/workers/attempt-ca404fcaf323469eb35cc37b515ca3a7/stderr.log"
+        },
+        {
+          "bytes": 8111,
+          "partial": false,
+          "path": "/workspace/hp-sim5/.research-programs/workers/attempt-ca404fcaf323469eb35cc37b515ca3a7/prompt.txt"
+        },
+        {
+          "bytes": 1932,
+          "partial": false,
+          "path": "/workspace/hp-sim5/.research-programs/workers/attempt-ca404fcaf323469eb35cc37b515ca3a7/assignment.json"
+        }
+      ],
+      "assignment_id": "cloud-tool-inventory",
+      "attempt_dir": "/workspace/hp-sim5/.research-programs/workers/attempt-ca404fcaf323469eb35cc37b515ca3a7",
+      "cleanup": "launcher_finally_completed",
+      "diagnostics": [],
+      "exited_at": "2026-10-26T22:10:56.643044+00:00",
+      "launcher_exit": {
+        "returncode": 0,
+        "wall_deadline": 1793053074.7184103,
+        "wall_expired": false
+      },
+      "launcher_session_id": "52715bd736d34d92b95e50a3a8804af7",
+      "observations": [
+        {
+          "at": "2026-10-26T21:55:54.743737+00:00",
+          "event": "reserved"
+        },
+        {
+          "at": "2026-10-26T21:55:54.745912+00:00",
+          "event": "spawned",
+          "pid": 1613
+        },
+        {
+          "at": "2026-10-26T22:10:56.643068+00:00",
+          "event": "exited",
+          "returncode": 0
+        }
+      ],
+      "observed_wall_seconds": 901.897136926651,
+      "owner": {
+        "id": "dispatcher-d9fc9304f38946feb22350a991e9651f",
+        "process": {
+          "birth": "497953",
+          "boot_id": "1b752a2b-0ef5-4357-ac84-b5187ff9f99e",
+          "group": 1121,
+          "host": "c9fccdc99234",
+          "pid": 1121,
+          "uid": 1000
+        }
+      },
+      "premise_conflicts": [],
+      "premise_event_ids_at_start": [],
+      "premise_ids": [],
+      "premise_plan_ids": [
+        "route_plan-51c94f2936764579b307877a5d6002b4",
+        "route_plan-be85393653e0459796df84b1503e805e"
+      ],
+      "process": {
+        "birth": "507904",
+        "boot_id": "1b752a2b-0ef5-4357-ac84-b5187ff9f99e",
+        "group": 1613,
+        "host": "c9fccdc99234",
+        "pid": 1613,
+        "uid": 1000
+      },
+      "prompt_sha256": "c5eeee293349479e4576de1aa3878917210c5c82df29745cf63fc396cb3b5a82",
+      "returncode": 0,
+      "runtime": {
+        "allocation_id": "runtime_allocation-067978e39aa34185b4ecbdcae8b2e9d8",
+        "assignment_id": "cloud-tool-inventory",
+        "cleanup_seconds": 190,
+        "wall_deadline": 1793053074.7184103
+      },
+      "runtime_session_id": "9fe8decd0a60434ca1e62a5da4971a73",
+      "scientific_state": "unassessed",
+      "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7",
+      "settings": {
+        "backend": "codex",
+        "client_args": [],
+        "dont_ask": false,
+        "goal_mode": true,
+        "machine": "hp3",
+        "physics_backend": "headless-js",
+        "record": true,
+        "shared_runtime_write": false,
+        "viewer": "none",
+        "worktree": true
+      },
+      "source_dirty": false,
+      "source_revision": "67617705b7996ee3a84889e6723cab149b6e5884",
+      "started_at": "2026-10-26T21:55:54.745907+00:00",
+      "state": "submitted",
+      "worktree": {
+        "branch": "research/bounded-research-assignment-0889b918",
+        "repo": "/workspace/hp-sim5-worktrees/bounded-research-assignment-0889b918",
+        "source_revision": "67617705b7996ee3a84889e6723cab149b6e5884"
+      },
+      "worktree_id": "/workspace/hp-sim5-worktrees/bounded-research-assignment-0889b918"
+    },
+    "id": "attempt-ca404fcaf323469eb35cc37b515ca3a7",
+    "kind": "attempt",
+    "observation": "historical; not adopted",
+    "owned": false,
+    "program_id": "program-7aa80aa18f10499e85cb24ffeae712cb",
+    "revision": 15,
+    "title": "Inventory and exercise the current cloud research tools through the real worker supervisor. Inspect prior evidence, run preflight and isolated integration suites, and retain a tool coverage matrix with exact live observations.",
+    "updated_at": "2026-10-26T22:10:56.643928+00:00"
+  },
+  {
+    "created_at": "2026-10-26T22:36:02.239995+00:00",
+    "details": {
+      "allocation": {
+        "autocal_jobs": 2,
+        "collections": 2,
+        "fresh_fits": 8,
+        "physics_steps": 20000,
+        "wall_minutes": 25
+      },
+      "argv": [
+        "/workspace/hp-sim5/hp-sim5-research-agent",
+        "--codex",
+        "--batch",
+        "--prompt-file",
+        "/workspace/hp-sim5/.research-programs/workers/attempt-ec6fcc17c6e247ee9bf04a236b5b2ff0/prompt.txt",
+        "--session-dir",
+        "/workspace/hp-sim5/output/research/sessions/attempt-ec6fcc17c6e247ee9bf04a236b5b2ff0",
+        "--physics-backend",
+        "headless-js",
+        "--machine",
+        "hp4",
+        "--viewer",
+        "headless",
+        "--wall-deadline",
+        "1793055662.210422",
+        "--worktree"
+      ],
+      "artifacts": [
+        {
+          "bytes": 432,
+          "partial": true,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-ec6fcc17c6e247ee9bf04a236b5b2ff0/session.json"
+        },
+        {
+          "bytes": 77,
+          "partial": true,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-ec6fcc17c6e247ee9bf04a236b5b2ff0/exit.json"
+        },
+        {
+          "bytes": 10723,
+          "partial": true,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-ec6fcc17c6e247ee9bf04a236b5b2ff0/prompt.txt"
+        },
+        {
+          "bytes": 10936,
+          "partial": true,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-ec6fcc17c6e247ee9bf04a236b5b2ff0/research.md"
+        },
+        {
+          "bytes": 522,
+          "partial": true,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-ec6fcc17c6e247ee9bf04a236b5b2ff0/abstract.md"
+        },
+        {
+          "bytes": 1677,
+          "partial": true,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-ec6fcc17c6e247ee9bf04a236b5b2ff0/viewer.log"
+        },
+        {
+          "bytes": 0,
+          "partial": true,
+          "path": "/workspace/hp-sim5/.research-programs/workers/attempt-ec6fcc17c6e247ee9bf04a236b5b2ff0/stdout.log"
+        },
+        {
+          "bytes": 348,
+          "partial": true,
+          "path": "/workspace/hp-sim5/.research-programs/workers/attempt-ec6fcc17c6e247ee9bf04a236b5b2ff0/stderr.log"
+        },
+        {
+          "bytes": 10723,
+          "partial": true,
+          "path": "/workspace/hp-sim5/.research-programs/workers/attempt-ec6fcc17c6e247ee9bf04a236b5b2ff0/prompt.txt"
+        },
+        {
+          "bytes": 2030,
+          "partial": true,
+          "path": "/workspace/hp-sim5/.research-programs/workers/attempt-ec6fcc17c6e247ee9bf04a236b5b2ff0/assignment.json"
+        }
+      ],
+      "assignment_id": "cloud-production-validation",
+      "attempt_dir": "/workspace/hp-sim5/.research-programs/workers/attempt-ec6fcc17c6e247ee9bf04a236b5b2ff0",
+      "cleanup": "launcher_finally_completed",
+      "diagnostics": [],
+      "exited_at": "2026-10-26T22:36:06.952012+00:00",
+      "launcher_exit": {
+        "returncode": 1,
+        "wall_deadline": 1793055662.210422,
+        "wall_expired": false
+      },
+      "launcher_session_id": "7ac0f9a53b0a46abb42d0ec651560f03",
+      "observations": [
+        {
+          "at": "2026-10-26T22:36:02.239608+00:00",
+          "event": "reserved"
+        },
+        {
+          "at": "2026-10-26T22:36:02.242625+00:00",
+          "event": "spawned",
+          "pid": 20782
+        },
+        {
+          "at": "2026-10-26T22:36:06.952028+00:00",
+          "event": "exited",
+          "returncode": 1
+        }
+      ],
+      "observed_wall_seconds": 4.70939302444458,
+      "owner": {
+        "id": "dispatcher-3098797d26814e6e94e3d09ca00b8f68",
+        "process": {
+          "birth": "717080",
+          "boot_id": "1b752a2b-0ef5-4357-ac84-b5187ff9f99e",
+          "group": 15622,
+          "host": "c9fccdc99234",
+          "pid": 15622,
+          "uid": 1000
+        }
+      },
+      "premise_conflicts": [],
+      "premise_event_ids_at_start": [],
+      "premise_ids": [],
+      "premise_plan_ids": [
+        "route_plan-51c94f2936764579b307877a5d6002b4",
+        "route_plan-be85393653e0459796df84b1503e805e"
+      ],
+      "process": {
+        "birth": "748654",
+        "boot_id": "1b752a2b-0ef5-4357-ac84-b5187ff9f99e",
+        "group": 20782,
+        "host": "c9fccdc99234",
+        "pid": 20782,
+        "uid": 1000
+      },
+      "prompt_sha256": "20c5063bfe9e800c751b83bf3c491071d90eca98f0794e133a6df2ac0ce894d8",
+      "returncode": 1,
+      "runtime": {
+        "allocation_id": "runtime_allocation-fe6a530ce35a4c57b74fb11d4f31b57c",
+        "assignment_id": "cloud-production-validation",
+        "cleanup_seconds": 190,
+        "wall_deadline": 1793055662.210422
+      },
+      "scientific_state": "unassessed",
+      "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-ec6fcc17c6e247ee9bf04a236b5b2ff0",
+      "settings": {
+        "backend": "codex",
+        "client_args": [],
+        "dont_ask": false,
+        "goal_mode": true,
+        "machine": "hp4",
+        "physics_backend": "headless-js",
+        "record": true,
+        "shared_runtime_write": false,
+        "viewer": "headless",
+        "worktree": true
+      },
+      "source_dirty": true,
+      "source_revision": "3c5cc88bc8d351729fe2cb27ce74e1123aaa6972",
+      "started_at": "2026-10-26T22:36:02.242619+00:00",
+      "state": "failed",
+      "worktree": {
+        "branch": "research/bounded-research-assignment-efe741e8",
+        "repo": "/workspace/hp-sim5-worktrees/bounded-research-assignment-efe741e8",
+        "source_revision": "3c5cc88bc8d351729fe2cb27ce74e1123aaa6972"
+      },
+      "worktree_id": "/workspace/hp-sim5-worktrees/bounded-research-assignment-efe741e8"
+    },
+    "id": "attempt-ec6fcc17c6e247ee9bf04a236b5b2ff0",
+    "kind": "attempt",
+    "observation": "historical; not adopted",
+    "owned": false,
+    "program_id": "program-7aa80aa18f10499e85cb24ffeae712cb",
+    "revision": 9,
+    "title": "Validate the patched cloud workflow with an actual actor using the launcher-owned file relay from a socket-denied command context. Exercise remaining production research tools, recording/Viewer, configuration, collection, full-autocal and job cancellation with bounded numerical work.",
+    "updated_at": "2026-10-26T22:36:06.952711+00:00"
+  },
+  {
+    "created_at": "2026-10-26T22:43:01.838755+00:00",
+    "details": {
+      "allocation": {
+        "autocal_jobs": 2,
+        "collections": 2,
+        "fresh_fits": 8,
+        "physics_steps": 20000,
+        "wall_minutes": 25
+      },
+      "argv": [
+        "/workspace/hp-sim5/hp-sim5-research-agent",
+        "--codex",
+        "--batch",
+        "--prompt-file",
+        "/workspace/hp-sim5/.research-programs/workers/attempt-e13302e362f545e39608027dcb85f963/prompt.txt",
+        "--session-dir",
+        "/workspace/hp-sim5/output/research/sessions/attempt-e13302e362f545e39608027dcb85f963",
+        "--physics-backend",
+        "headless-js",
+        "--machine",
+        "hp4",
+        "--viewer",
+        "headless",
+        "--wall-deadline",
+        "1793056081.8148408",
+        "--worktree"
+      ],
+      "artifacts": [
+        {
+          "bytes": 432,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-e13302e362f545e39608027dcb85f963/session.json"
+        },
+        {
+          "bytes": 17525,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-e13302e362f545e39608027dcb85f963/launch.json"
+        },
+        {
+          "bytes": 78,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-e13302e362f545e39608027dcb85f963/exit.json"
+        },
+        {
+          "bytes": 10698,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-e13302e362f545e39608027dcb85f963/prompt.txt"
+        },
+        {
+          "bytes": 228,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-e13302e362f545e39608027dcb85f963/events.jsonl"
+        },
+        {
+          "bytes": 917,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-e13302e362f545e39608027dcb85f963/final-message.md"
+        },
+        {
+          "bytes": 5248,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-e13302e362f545e39608027dcb85f963/research.md"
+        },
+        {
+          "bytes": 19853,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-e13302e362f545e39608027dcb85f963/report.md"
+        },
+        {
+          "bytes": 4867,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-e13302e362f545e39608027dcb85f963/abstract.md"
+        },
+        {
+          "bytes": 6691,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-e13302e362f545e39608027dcb85f963/instructions.md"
+        },
+        {
+          "bytes": 865,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-e13302e362f545e39608027dcb85f963/attachment.toml"
+        },
+        {
+          "bytes": 774,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-e13302e362f545e39608027dcb85f963/attachment.json"
+        },
+        {
+          "bytes": 304,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-e13302e362f545e39608027dcb85f963/connection.json"
+        },
+        {
+          "bytes": 7220,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-e13302e362f545e39608027dcb85f963/native/runtime.log"
+        },
+        {
+          "bytes": 813,
+          "partial": false,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-e13302e362f545e39608027dcb85f963/viewer.log"
+        },
+        {
+          "bytes": 0,
+          "partial": false,
+          "path": "/workspace/hp-sim5/.research-programs/workers/attempt-e13302e362f545e39608027dcb85f963/stdout.log"
+        },
+        {
+          "bytes": 254,
+          "partial": false,
+          "path": "/workspace/hp-sim5/.research-programs/workers/attempt-e13302e362f545e39608027dcb85f963/stderr.log"
+        },
+        {
+          "bytes": 10698,
+          "partial": false,
+          "path": "/workspace/hp-sim5/.research-programs/workers/attempt-e13302e362f545e39608027dcb85f963/prompt.txt"
+        },
+        {
+          "bytes": 1924,
+          "partial": false,
+          "path": "/workspace/hp-sim5/.research-programs/workers/attempt-e13302e362f545e39608027dcb85f963/assignment.json"
+        }
+      ],
+      "assignment_id": "cloud-production-after-viewer-fix",
+      "attempt_dir": "/workspace/hp-sim5/.research-programs/workers/attempt-e13302e362f545e39608027dcb85f963",
+      "cleanup": "launcher_finally_completed",
+      "diagnostics": [],
+      "exited_at": "2026-10-26T22:55:34.514016+00:00",
+      "launcher_exit": {
+        "returncode": 0,
+        "wall_deadline": 1793056081.8148408,
+        "wall_expired": false
+      },
+      "launcher_session_id": "c6a0fd2bd89040be9c490b252fa2db4f",
+      "observations": [
+        {
+          "at": "2026-10-26T22:43:01.838333+00:00",
+          "event": "reserved"
+        },
+        {
+          "at": "2026-10-26T22:43:01.840370+00:00",
+          "event": "spawned",
+          "pid": 22435
+        },
+        {
+          "at": "2026-10-26T22:55:34.514029+00:00",
+          "event": "exited",
+          "returncode": 0
+        }
+      ],
+      "observed_wall_seconds": 752.6736538410187,
+      "owner": {
+        "id": "dispatcher-3098797d26814e6e94e3d09ca00b8f68",
+        "process": {
+          "birth": "717080",
+          "boot_id": "1b752a2b-0ef5-4357-ac84-b5187ff9f99e",
+          "group": 15622,
+          "host": "c9fccdc99234",
+          "pid": 15622,
+          "uid": 1000
+        }
+      },
+      "premise_conflicts": [],
+      "premise_event_ids_at_start": [],
+      "premise_ids": [],
+      "premise_plan_ids": [
+        "route_plan-51c94f2936764579b307877a5d6002b4",
+        "route_plan-973e82563d6f44f283180f21950153ae"
+      ],
+      "process": {
+        "birth": "790614",
+        "boot_id": "1b752a2b-0ef5-4357-ac84-b5187ff9f99e",
+        "group": 22435,
+        "host": "c9fccdc99234",
+        "pid": 22435,
+        "uid": 1000
+      },
+      "prompt_sha256": "f53f039440a4890f7ff9311bc0696e28936789fc3ce43593b033fa84c7f85008",
+      "returncode": 0,
+      "runtime": {
+        "allocation_id": "runtime_allocation-fe6a530ce35a4c57b74fb11d4f31b57c",
+        "assignment_id": "cloud-production-after-viewer-fix",
+        "cleanup_seconds": 190,
+        "wall_deadline": 1793056081.8148408
+      },
+      "runtime_session_id": "dacb5d671c994bcc92e15af1f884d6d5",
+      "scientific_state": "unassessed",
+      "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-e13302e362f545e39608027dcb85f963",
+      "settings": {
+        "backend": "codex",
+        "client_args": [],
+        "dont_ask": false,
+        "goal_mode": true,
+        "machine": "hp4",
+        "physics_backend": "headless-js",
+        "record": true,
+        "shared_runtime_write": false,
+        "viewer": "headless",
+        "worktree": true
+      },
+      "source_dirty": true,
+      "source_revision": "379318b26773b8dc37c191b506da1c57b5886f6f",
+      "started_at": "2026-10-26T22:43:01.840362+00:00",
+      "state": "submitted",
+      "worktree": {
+        "branch": "research/bounded-research-assignment-c1f46479",
+        "repo": "/workspace/hp-sim5-worktrees/bounded-research-assignment-c1f46479",
+        "source_revision": "379318b26773b8dc37c191b506da1c57b5886f6f"
+      },
+      "worktree_id": "/workspace/hp-sim5-worktrees/bounded-research-assignment-c1f46479"
+    },
+    "id": "attempt-e13302e362f545e39608027dcb85f963",
+    "kind": "attempt",
+    "observation": "historical; not adopted",
+    "owned": false,
+    "program_id": "program-7aa80aa18f10499e85cb24ffeae712cb",
+    "revision": 21,
+    "title": "Validate repaired cloud production tools from an actual actor after the measured Viewer setup fix, using the launcher-owned MCP file relay without actor command networking.",
+    "updated_at": "2026-10-26T22:55:34.514835+00:00"
+  },
+  {
+    "created_at": "2026-10-26T23:02:18.016932+00:00",
+    "details": {
+      "allocation": {
+        "autocal_jobs": 2,
+        "collections": 0,
+        "fresh_fits": 8,
+        "physics_steps": 100,
+        "wall_minutes": 15
+      },
+      "argv": [
+        "/workspace/hp-sim5/hp-sim5-research-agent",
+        "--codex",
+        "--batch",
+        "--prompt-file",
+        "/workspace/hp-sim5/.research-programs/workers/attempt-7b5eec5ff1044841ae609b067012e7ec/prompt.txt",
+        "--session-dir",
+        "/workspace/hp-sim5/output/research/sessions/attempt-7b5eec5ff1044841ae609b067012e7ec",
+        "--physics-backend",
+        "headless-js",
+        "--machine",
+        "hp3",
+        "--viewer",
+        "headless",
+        "--wall-deadline",
+        "1793056637.989869",
+        "--worktree"
+      ],
+      "artifacts": [
+        {
+          "bytes": 432,
+          "partial": true,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b5eec5ff1044841ae609b067012e7ec/session.json"
+        },
+        {
+          "bytes": 17518,
+          "partial": true,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b5eec5ff1044841ae609b067012e7ec/launch.json"
+        },
+        {
+          "bytes": 78,
+          "partial": true,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b5eec5ff1044841ae609b067012e7ec/exit.json"
+        },
+        {
+          "bytes": 10233,
+          "partial": true,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b5eec5ff1044841ae609b067012e7ec/prompt.txt"
+        },
+        {
+          "bytes": 84,
+          "partial": true,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b5eec5ff1044841ae609b067012e7ec/events.jsonl"
+        },
+        {
+          "bytes": 10446,
+          "partial": true,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b5eec5ff1044841ae609b067012e7ec/research.md"
+        },
+        {
+          "bytes": 522,
+          "partial": true,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b5eec5ff1044841ae609b067012e7ec/abstract.md"
+        },
+        {
+          "bytes": 6691,
+          "partial": true,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b5eec5ff1044841ae609b067012e7ec/instructions.md"
+        },
+        {
+          "bytes": 865,
+          "partial": true,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b5eec5ff1044841ae609b067012e7ec/attachment.toml"
+        },
+        {
+          "bytes": 774,
+          "partial": true,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b5eec5ff1044841ae609b067012e7ec/attachment.json"
+        },
+        {
+          "bytes": 304,
+          "partial": true,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b5eec5ff1044841ae609b067012e7ec/connection.json"
+        },
+        {
+          "bytes": 0,
+          "partial": true,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b5eec5ff1044841ae609b067012e7ec/native/runtime.log"
+        },
+        {
+          "bytes": 813,
+          "partial": true,
+          "path": "/workspace/hp-sim5/output/research/sessions/attempt-7b5eec5ff1044841ae609b067012e7ec/viewer.log"
+        },
+        {
+          "bytes": 0,
+          "partial": true,
+          "path": "/workspace/hp-sim5/.research-programs/workers/attempt-7b5eec5ff1044841ae609b067012e7ec/stdout.log"
+        },
+        {
+          "bytes": 254,
+          "partial": true,
+          "path": "/workspace/hp-sim5/.research-programs/workers/attempt-7b5eec5ff1044841ae609b067012e7ec/stderr.log"
+        },
+        {
+          "bytes": 10233,
+          "partial": true,
+          "path": "/workspace/hp-sim5/.research-programs/workers/attempt-7b5eec5ff1044841ae609b067012e7ec/prompt.txt"
+        },
+        {
+          "bytes": 1944,
+          "partial": true,
+          "path": "/workspace/hp-sim5/.research-programs/workers/attempt-7b5eec5ff1044841ae609b067012e7ec/assignment.json"
+        }
+      ],
+      "assignment_id": "cloud-final-status-regression",
+      "attempt_dir": "/workspace/hp-sim5/.research-programs/workers/attempt-7b5eec5ff1044841ae609b067012e7ec",
+      "cancel_deadline": 1793056828.0138094,
+      "cleanup": "launcher_finally_completed",
+      "diagnostics": [],
+      "exited_at": "2026-10-26T23:17:23.693736+00:00",
+      "launcher_exit": {
+        "returncode": 130,
+        "wall_deadline": 1793056637.989869,
+        "wall_expired": true
+      },
+      "launcher_session_id": "d7e920252be8417db7d67d871f009a75",
+      "observations": [
+        {
+          "at": "2026-10-26T23:02:18.016314+00:00",
+          "event": "reserved"
+        },
+        {
+          "at": "2026-10-26T23:02:18.018982+00:00",
+          "event": "spawned",
+          "pid": 27522
+        },
+        {
+          "at": "2026-10-26T23:17:18.011703+00:00",
+          "event": "wall_expired"
+        },
+        {
+          "at": "2026-10-26T23:17:18.013812+00:00",
+          "event": "cancel_requested"
+        },
+        {
+          "at": "2026-10-26T23:17:23.693749+00:00",
+          "event": "exited",
+          "returncode": 130
+        }
+      ],
+      "observed_wall_seconds": 905.6747591495514,
+      "owner": {
+        "id": "dispatcher-3098797d26814e6e94e3d09ca00b8f68",
+        "process": {
+          "birth": "717080",
+          "boot_id": "1b752a2b-0ef5-4357-ac84-b5187ff9f99e",
+          "group": 15622,
+          "host": "c9fccdc99234",
+          "pid": 15622,
+          "uid": 1000
+        }
+      },
+      "premise_conflicts": [],
+      "premise_event_ids_at_start": [],
+      "premise_ids": [],
+      "premise_plan_ids": [
+        "route_plan-51c94f2936764579b307877a5d6002b4",
+        "route_plan-973e82563d6f44f283180f21950153ae"
+      ],
+      "process": {
+        "birth": "906232",
+        "boot_id": "1b752a2b-0ef5-4357-ac84-b5187ff9f99e",
+        "group": 27522,
+        "host": "c9fccdc99234",
+        "pid": 27522,
+        "uid": 1000
+      },
+      "prompt_sha256": "442b8e3c5ed6d89d1af6c48f97d9686401d9faf474743390b2614474661845d2",
+      "returncode": 130,
+      "runtime": {
+        "allocation_id": "runtime_allocation-a750702cca594e0b97e9d20d1d00bdd4",
+        "assignment_id": "cloud-final-status-regression",
+        "cleanup_seconds": 190,
+        "expired": true,
+        "wall_deadline": 1793056637.989869
+      },
+      "runtime_session_id": "a45ccbb66ad24a33931f4d6c922858d3",
+      "scientific_state": "unassessed",
+      "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-7b5eec5ff1044841ae609b067012e7ec",
+      "settings": {
+        "backend": "codex",
+        "client_args": [],
+        "dont_ask": false,
+        "goal_mode": true,
+        "machine": "hp3",
+        "physics_backend": "headless-js",
+        "record": true,
+        "shared_runtime_write": false,
+        "viewer": "headless",
+        "worktree": true
+      },
+      "source_dirty": true,
+      "source_revision": "7c0a353e9a4e3e42882d2c0fdf32b8d8d05b4c7b",
+      "started_at": "2026-10-26T23:02:18.018977+00:00",
+      "state": "cancelled",
+      "worktree": {
+        "branch": "research/bounded-research-assignment-9c6b6ae4",
+        "repo": "/workspace/hp-sim5-worktrees/bounded-research-assignment-9c6b6ae4",
+        "source_revision": "7c0a353e9a4e3e42882d2c0fdf32b8d8d05b4c7b"
+      },
+      "worktree_id": "/workspace/hp-sim5-worktrees/bounded-research-assignment-9c6b6ae4"
+    },
+    "id": "attempt-7b5eec5ff1044841ae609b067012e7ec",
+    "kind": "attempt",
+    "observation": "historical; not adopted",
+    "owned": false,
+    "program_id": "program-7aa80aa18f10499e85cb24ffeae712cb",
+    "revision": 13,
+    "title": "Validate the exact remaining autocal nonfinite-status/slot-release and browser-history MCP fixes on fresh source7c0a353e, retaining a compact real recording and confirming recovery and cancellation.",
+    "updated_at": "2026-10-26T23:17:23.694433+00:00"
+  }
+]

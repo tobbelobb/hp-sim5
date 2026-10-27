@@ -1,0 +1,9 @@
+{
+  "file": "/workspace/hp-sim5/output/research/sessions/attempt-ca404fcaf323469eb35cc37b515ca3a7/native/preflight/f2b3dcc8b52644d1a9cbd9bf3746df8d/hangprinter-20261026T220410.622233Z-07a7375d.rrd",
+  "bytes": 67028,
+  "sha256": "abd108938bd1ed6120c828f232461503e5a202f48bfa7d5a03aa0bb9cb35bd2c",
+  "data_chunk_count": 6,
+  "rows": 6,
+  "readable": true,
+  "scope": "Independent full data-chunk read of isolated step-zero preflight RRD; not a physics experiment recording"
+}

@@ -1,0 +1,25 @@
+{
+  "created_at": "2026-10-27T07:50:17.976307+00:00",
+  "details": {
+    "actor": "controller",
+    "claim_id": "claim-bf0fa7f7da8b49a7afaa7cc025560bc5",
+    "code_readiness": "ready",
+    "contract": "hp-sim5-evidence-review-v2",
+    "decision": "keep",
+    "engineering_reasons": [],
+    "finding": "supported",
+    "guard_reasons": [],
+    "knowledge_state": "reviewed",
+    "practical_value": "The repairs remove observed blockers to later Research Programs: worktree experiment output, writable test caches, reviewer launch paths, socket-denied actor tool access, CPU Viewer attachment and strict status/history responses. Preserved failures and source boundaries let later programs use these repairs without mistaking partial lifecycle evidence for calibration progress.",
+    "required_checks": [],
+    "review_id": "review-95277ad5c83e42a9bcee4b5a0aa8499b",
+    "submission_id": "submission-bd5e2bb429fc413c8628b208e2a464c5",
+    "submission_sha256": "ea2ab5aa0bce3755ac220bc752a50b2d4e26f2bee6411d14c98bdf348f16556e"
+  },
+  "id": "admission-7338901984c24981a30b0280df87943d",
+  "kind": "admission",
+  "program_id": "program-7aa80aa18f10499e85cb24ffeae712cb",
+  "revision": 1,
+  "title": "Keep the bounded claim and tested repairs at candidate 2115eb5ce56df1363c2bed0be669fdc5bd3cad07, reviewed against base 67617705b7996ee3a84889e6723cab149b6e5884. The report's explicit claim that observed tooling defects are repaired within tested scope is supported by the fixed diff, prior production evidence and the final passing suite at unchanged runtime source 7c0a353e. The earlier review's two blocking defects have concrete fixes and matching regression coverage. No unresolved blocking code defect was found in this review, and the documentation-only delta does not invalidate those tests. Code is ready for delivery within this scope. The interrupted final production regression remains inconclusive and cannot support a broader full-workflow claim.",
+  "updated_at": "2026-10-27T07:50:17.976307+00:00"
+}

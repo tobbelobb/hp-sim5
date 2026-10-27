@@ -1,0 +1,28 @@
+{
+  "collection-tiny-poll2": {
+    "status": "complete",
+    "start_step": 0,
+    "end_step": 20243,
+    "steps_executed": 20243,
+    "rrd_bytes": 52292812,
+    "rrd_readable": true,
+    "blueprints": 1,
+    "events_bytes": 3359087,
+    "partial_points_file_exists": true,
+    "partial_point_count": 6,
+    "reset_required": false
+  },
+  "collection-cancel-terminal": {
+    "status": "cancelled",
+    "start_step": 20243,
+    "end_step": 20747,
+    "steps_executed": 504,
+    "rrd_bytes": 2152231,
+    "rrd_readable": true,
+    "blueprints": 1,
+    "events_bytes": 3423083,
+    "partial_points_file_exists": false,
+    "partial_point_count": 0,
+    "reset_required": true
+  }
+}

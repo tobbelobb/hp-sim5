@@ -1,0 +1,21 @@
+{
+  "kind": "tool_check",
+  "context": "agent_command",
+  "checks": {
+    "socket_creation": {
+      "outcome": "blocked",
+      "error": "[Errno 1] Operation not permitted",
+      "next_step": "Use supervised research_preflight/start_test; check the effective command network policy"
+    },
+    "loopback_binding": {
+      "outcome": "unknown",
+      "reason": "An earlier check was blocked"
+    },
+    "http_round_trip": {
+      "outcome": "unknown",
+      "reason": "An earlier check was blocked"
+    }
+  },
+  "outcome": "blocked",
+  "wall_s": 3.463199936959427e-05
+}

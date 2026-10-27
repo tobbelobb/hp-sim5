@@ -1,0 +1,74 @@
+{
+  "job_id": "d5f69c419e474b54b098a2077715349d",
+  "headless_status": "complete",
+  "stop_reason": "max-steps",
+  "normal_completion": false,
+  "total_steps": 1305459,
+  "simulated_s": 2610.918,
+  "recording_drained": true,
+  "rrd_bytes": 96931452,
+  "rrd_readable": true,
+  "recording_metadata": [
+    {
+      "backend": "headless-js",
+      "scene_generation": null,
+      "recording_id": "da6381959fea4c5dafebe8ac1fbc8405",
+      "rrd": "/workspace/hp-sim5/output/research/sessions/attempt-e13302e362f545e39608027dcb85f963/native/autocal/d5f69c419e474b54b098a2077715349d/sweeps.headless/hangprinter-20261026T224527.808587Z-2bf259c5.rrd",
+      "status": "finalized",
+      "start_step": 0,
+      "format_version": 1,
+      "extended_reference": true,
+      "autocal_complete": true,
+      "rejected_messages": [],
+      "recording_mode": "events",
+      "end_step": null,
+      "end_time_s": null,
+      "physics_samples": 0,
+      "event_count": 350789
+    }
+  ],
+  "full_auto_log_rows": 2,
+  "nonfinite_log_values": [
+    {
+      "path": "[1].best_cost",
+      "value": "inf"
+    },
+    {
+      "path": "[1].best_score_ui",
+      "value": "inf"
+    }
+  ],
+  "stage_artifacts": [
+    "fit-001-default.json",
+    "fit-001-default.restore_points.json",
+    "fit-001-default.restore_sweeps.json"
+  ],
+  "partial_point_count": 24,
+  "owned_services": [
+    {
+      "name": "recorder",
+      "pid": 23781,
+      "observed_process_state": "absent"
+    },
+    {
+      "name": "rrf",
+      "pid": 23818,
+      "observed_process_state": "absent"
+    },
+    {
+      "name": "physics",
+      "pid": 23822,
+      "observed_process_state": "absent"
+    },
+    {
+      "name": "collector",
+      "pid": 23905,
+      "observed_process_state": "absent"
+    },
+    {
+      "name": "collector",
+      "pid": 25195,
+      "observed_process_state": "absent"
+    }
+  ]
+}

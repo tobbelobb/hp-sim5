@@ -1,0 +1,38 @@
+
+> cable_joints@1.0.0 test:physics
+> npm run build:native -- --no-pgo && npm run build:wasm && node --test tests/benchmark/pinhole_gate.test.mjs tests/benchmark/hp4_logo_stability.test.mjs tests/benchmark/hp4_stability.test.mjs
+
+
+> cable_joints@1.0.0 build:native
+> node scripts/build_native_physics.mjs --no-pgo
+
+    Finished `release` profile [optimized] target(s) in 0.00s
+Built native Rust physics (release): /workspace/hp-sim5/src/wasm/cable_solver/target/native/physics.node
+
+> cable_joints@1.0.0 build:wasm
+> node scripts/build_cable_wasm.mjs
+
+   Compiling hp-sim5-cable-solver v0.1.0 (/workspace/hp-sim5/src/wasm/cable_solver)
+    Finished `release` profile [optimized] target(s) in 2.22s
+Built 207738 byte cable solver: /workspace/hp-sim5/public/wasm/cable_solver.wasm
+worker: RrfCanPlayer ready
+✔ HP4 Print Logo remains stable at browser defaults: native (5718.122691ms)
+✔ HP4 Print Logo remains stable at browser defaults: browser Wasm (6322.085617ms)
+✔ HP4 Print Logo remains stable at browser defaults: JavaScript fallback (9456.744829ms)
+✔ HP4 loaded recording state settles at production firmware cadence: 1 substeps (6762.345897ms)
+✔ HP4 loaded recording state settles at production firmware cadence: 2 substeps (12616.101555ms)
+✔ HP4 loaded recording state settles at production firmware cadence: 4 substeps (25109.669325ms)
+worker: RrfCanPlayer ready
+✔ stateful gate flow has static friction, inertia, drag and unilateral stopping (1.248873ms)
+✔ HP4 gate scene has six condensed units and twelve visual cylinders (51.61676ms)
+✔ HP4 gate production prefix agrees across backends: Native (100.407252ms)
+✔ HP4 gate production prefix agrees across backends: Wasm (141.835457ms)
+✔ HP4 gate production prefix agrees across backends: JS (616.601488ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 70469.17655

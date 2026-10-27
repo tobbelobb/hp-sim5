@@ -1,0 +1,8 @@
+{
+  "source_revision": "3c5cc88bc8d351729fe2cb27ce74e1123aaa6972",
+  "built_sha256": "b2d1b4b9f246daf73651aee988c3cd2df48d2f9db2f320df86b6f5a2742fcf86",
+  "tracked_sha256": "d0228593dcaa4a8aa3de52c06e3a162ea39066ffaeb199c3b1e974ae7c53fcb2",
+  "command": "npm run test:physics",
+  "outcome": "11 passed",
+  "generated_artifact_restored_to_tracked_bytes": true
+}

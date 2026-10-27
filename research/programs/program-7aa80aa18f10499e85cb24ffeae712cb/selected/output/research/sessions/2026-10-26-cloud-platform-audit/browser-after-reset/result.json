@@ -1,0 +1,11 @@
+{
+  "kind": "parent-owned headless Chromium connection",
+  "process_id": 24950,
+  "started_at": "2026-10-26T22:47:13.846Z",
+  "errors": [],
+  "title": "HP Simulation",
+  "canvas_count": 1,
+  "connected_at": "2026-10-26T22:47:17.362Z",
+  "outcome": "closed",
+  "closed_at": "2026-10-26T22:51:54.903Z"
+}

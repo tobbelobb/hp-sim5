@@ -1,0 +1,22 @@
+{
+  "sample_count": [
+    501,
+    501
+  ],
+  "telemetry_exact_equal": true,
+  "telemetry_sha256": [
+    "f9ca994cb413bf4a08398ff5a05ee61712e555c83be99a3439b0b58f2ffeaa4e",
+    "f9ca994cb413bf4a08398ff5a05ee61712e555c83be99a3439b0b58f2ffeaa4e"
+  ],
+  "rrd_bytes": 14776566,
+  "rrd_store_readable": true,
+  "rrd_store_type": "LazyStore",
+  "reader_methods": [
+    "blueprints",
+    "path",
+    "recordings",
+    "store",
+    "stream"
+  ],
+  "nonfinite_native_telemetry_values": 0
+}
