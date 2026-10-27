@@ -1,0 +1,73 @@
+{
+  "checks": [
+    {
+      "asset_ids": [
+        "report",
+        "abstract",
+        "producer_final",
+        "provenance"
+      ],
+      "description": "Reviewed the force-checkpoint claim and report for candidate 25822cbbde6703d68b693f6e93bcfa23b2b78593 against 703e1a68936d6bad1a6de600b7d2d50e32f32344, including optional target commit 39510991. Verified every submitted asset hash and the diff hash. The fixed diff exactly matches git diff for those revisions.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": [
+        "js_checks",
+        "python_checks",
+        "regression_steps",
+        "report"
+      ],
+      "description": "Inspected candidate source and lifecycle tests. The temp-file rename precedes post-tuning positioning, stages distinguish successful tuning, fallback and manual selection, manual metadata replaces the old sidecar, no automatic reader was added, and final metadata updates recovered forces. Inspected producer receipts for 69 passing JS tests and 17 passing Python tests with five deselected. These suites were not rerun. Changes concern collection configuration and persistence, without physics, motor, cable-transport or scene-dynamics implementation changes.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": [
+        "coverage_evidence",
+        "force_evidence",
+        "force_replay_evidence",
+        "baseline_and_recovery",
+        "measured_sources",
+        "provenance"
+      ],
+      "description": "Opened all five ZIPs with Python zipfile and checked packed provenance hashes, commands, manifests, datasets, source snapshots and fit stages. Confirmed a common native physics artifact, four completed 60-point collections and failed million-step force trials containing 30 nominal and 40 soft points. Independently recomputed stored-anchor RMSE against the recorded conventional reference. Coverage changes were -58.85%, +3.69%, +15.13% and -48.42%, so none passed the 20% gate. Nominal ordinary LBFGSB remained invalid at 1867.09 mm; restore_sweeps failed and existing restore_points reached 3.29029 mm. Soft ordinary fits were 10.42757 and 11.64455 mm.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": [
+        "holdouts",
+        "holdout_nominal",
+        "holdout_soft",
+        "force_evidence",
+        "measured_sources"
+      ],
+      "description": "Inspected the frozen-prediction script and coverage enforcement. Independently reconstructed the saved holdout sweeps from the packed journals, including canonical reversal and observed fixed lengths; they match exactly. Counts are 20 nominal and 40 soft, with the incomplete ten-point nominal direction excluded. Producer prediction results report full candidate coverage and 0/40 for soft baseline TRF as a failure. Prediction residuals themselves were inspected, not independently reproduced.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": [
+        "usage",
+        "regression_steps",
+        "coverage_contract",
+        "force_contract",
+        "replay_contract"
+      ],
+      "description": "Inspected declared thresholds and replay authorization. Saved-file arithmetic confirms six collections, ten fit stages, 4166257 collection steps plus 627 regression steps, and 433.690965 seconds of world wall time. The nominal replay exceeds twice-baseline work, consistent with the report excluding a speedup claim.",
+      "kind": "inspected"
+    }
+  ],
+  "code_readiness": "ready",
+  "discrepancy": null,
+  "finding": "supported",
+  "limitations": [
+    "Review used source inspection and saved-file arithmetic only. No fitting, prediction evaluation, physics, collection or regression suite ran during review. Native measurements predate the checkpoint change; its failure lifecycle is supported by mocked JS tests.",
+    "Scene-home anchor RMSE lacks the settled encoder-zero pose and rotation. Frozen predictions use independent movements in the same two authored scenes, with different state histories and size-tuner outcomes. These results do not isolate a mechanical cause or establish absolute accuracy, generalization, hardware performance or full-loop acceptance.",
+    "The production force algorithm and recovery already existed. Original automatic collections were incomplete; fresh replays omit learning cost and history. Rank deficiency and broad covariance remain, and the evidence does not justify changing solver or acquisition defaults.",
+    "The producer wrote a report and final message before the launcher was cancelled after its model usage limit. The final message references an unavailable handoff.json; this review relies on the fixed report, source and evidence assets."
+  ],
+  "practical_value": "Preserves already selected forces when later collection fails. The saved datasets and failed coverage trial provide useful decisions within the two simulated scenes.",
+  "reason": "Keep the report and candidate 25822cbb. The narrow checkpoint implementation matches its stated behavior, with adequate scoped regression receipts and no unresolved code defect found. The optional per-config targets preserve anchor associations and existing defaults. The research supports rejecting the tested equal-point coverage variant and retaining useful data obtained with existing force selection and recovery. It supports no new force algorithm, full-loop or hardware accuracy gain, or speedup.",
+  "required_checks": [],
+  "submission_id": "submission-72b96ed174494e6286eba68667db11cf",
+  "submission_sha256": "a5cf0cf21dae2e432bb9d19239cc181bc0b3ed37b5f9fda9c3af398907c7a62e",
+  "verdict": "keep"
+}

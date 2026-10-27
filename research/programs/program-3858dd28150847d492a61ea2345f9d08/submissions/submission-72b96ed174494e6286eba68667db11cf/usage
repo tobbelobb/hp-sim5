@@ -1,0 +1,85 @@
+{
+  "collection_invocations": 6,
+  "fit_stages": 10,
+  "physics_steps": 4166884,
+  "world_wall_s": 433.6909648789988,
+  "rows": [
+    {
+      "group": "coverage",
+      "world": "nominal",
+      "world_wall_s": 33.8396935439996,
+      "manifest_wall_s": 33.790627283000504,
+      "service_wall_s": 33.482850655,
+      "physics_steps": 243641,
+      "complete": true,
+      "points": 60
+    },
+    {
+      "group": "coverage",
+      "world": "soft",
+      "world_wall_s": 77.0316630920006,
+      "manifest_wall_s": 76.90169278299982,
+      "service_wall_s": 76.38112685499999,
+      "physics_steps": 639730,
+      "complete": true,
+      "points": 60
+    },
+    {
+      "group": "force",
+      "world": "nominal",
+      "world_wall_s": 95.98746149399994,
+      "manifest_wall_s": 95.95501598999908,
+      "service_wall_s": 95.69201964,
+      "physics_steps": 1000000,
+      "complete": false,
+      "points": null
+    },
+    {
+      "group": "force",
+      "world": "soft",
+      "world_wall_s": 94.71537217600053,
+      "manifest_wall_s": 94.66737133800052,
+      "service_wall_s": 94.18553676500001,
+      "physics_steps": 1000000,
+      "complete": false,
+      "points": null
+    },
+    {
+      "group": "force-replay",
+      "world": "nominal",
+      "world_wall_s": 76.8682154579983,
+      "manifest_wall_s": 76.7380652009997,
+      "service_wall_s": 76.396531575,
+      "physics_steps": 741617,
+      "complete": true,
+      "points": 60
+    },
+    {
+      "group": "force-replay",
+      "world": "soft",
+      "world_wall_s": 55.24855911499981,
+      "manifest_wall_s": 55.16872011500163,
+      "service_wall_s": 54.658318593999994,
+      "physics_steps": 541269,
+      "complete": true,
+      "points": 60
+    }
+  ],
+  "deadline_utc": "2026-10-27T13:07:00Z",
+  "source_base": "703e1a68936d6bad1a6de600b7d2d50e32f32344",
+  "source_candidate": "25822cbbde6703d68b693f6e93bcfa23b2b78593",
+  "authorization": "decision-b044bb8844bb44fbb318395b8b877e4a",
+  "limits": {
+    "collections": 6,
+    "fit_stages": 24,
+    "physics_steps": 6000000
+  },
+  "force_tuning_phase": "Through first post-tuning global-mid-force command:551484/569073steps. Wall phase timing unavailable; total world times measured.",
+  "experiment_physics_steps": 4166257,
+  "regression_physics_steps": 627,
+  "regression_step_accounting": "regression-step-accounting.json",
+  "checks_wall_s": {
+    "js": 1.659,
+    "python": 27.01
+  }
+}

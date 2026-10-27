@@ -1,0 +1,13 @@
+{
+  "experiment": "CVF-E02",
+  "created_utc": "2026-10-27T12:29:00Z",
+  "change": "Use existing production automatic force tuning; original three configurations, ten points/direction, 60 total; explicit sensor preload1N matched to baseline.",
+  "settings": "Same HP3 native scenes/radii/buildup/feed/noise/recording/speed as baseline. No manual low/mid/max supplied. Size tuner remains production automatic.",
+  "thresholds": "At least20% conventional per-anchor RMSE gain on both scenes for continue signal; no geometry/rank/point-coverage regression. Unusable hundreds/mm errors cannot justify product defaults. At most2x wall/steps is practical work threshold.",
+  "budgets": {
+    "remaining_collections": 2,
+    "fit_stages_remaining": 20,
+    "max_steps_per_world": 1000000
+  },
+  "limitation": "Bootstrap-only comparison, not full automatic acceptance; settled reference pose unavailable."
+}

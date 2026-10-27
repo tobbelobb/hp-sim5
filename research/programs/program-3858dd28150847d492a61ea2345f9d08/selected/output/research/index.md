@@ -2736,37 +2736,35 @@ research manager, worker pool, SQLite reservations, review backlog, worktree iso
 
 [abstract.md](sessions/2026-10-27-autocal-parameter-variation-manager/abstract.md) · [report.md](sessions/2026-10-27-autocal-parameter-variation-manager/report.md) · [research.md](sessions/2026-10-27-autocal-parameter-variation-manager/research.md)
 
-### HP3 autocal robustness across parameter variation
+### HP3 calibration research: preserve force selection and cut weak routes
 
-Status: bounded investigation complete; program paused.
+Status: bounded cycle complete; program paused.
 
 #### Abstract
 
-This program investigated encoder-only HP3 calibration across varied parameter assumptions. A bounded analytical benchmark evaluated eight frozen worlds with 32 core fits in 118.24 seconds. Only six fits passed complete status and coverage checks. In one complete-coverage case, lower unseen residual accompanied anchor RMSE worsening from 5.89 to 40.20 mm after thinning. Two native stiffness worlds then each collected 60 bootstrap points, taking 75.02 measured world seconds together. Their poor conventional scene-home estimates and identical raw/geometry-metadata-stripped fits did not justify solver, point-count or stopping changes. Separate reviewers verified both scoped findings and marked both tools ready. A cloud review path bug was fixed; unsourced Node 24 crashes were corrected with pinned Node 23 and a pre-movement guard. Platform model limits interrupted one worker narrative, but saved measurements and deadline cleanup survived. No reliable fewer-point calibration gain or direct reference-003 win was established.
+The latest cycle tested a 60-point collection redesign, cut it after it failed the paired improvement gate, and investigated force adequacy instead. Existing encoder-based force selection and recovery produced a nominal fit with 3.29 mm conventional scene-reference error and soft-scene fits around 10 to 12 mm. These are limited simulation results, not demonstrated full-auto or hardware accuracy. Two force searches were interrupted after completing their expensive tuning stage, exposing a production data-retention gap. The retained fix atomically saves selected forces and diagnostics before sweep collection, distinguishes tuning, fallback and manual selection, and never automatically reuses a stale cache. It preserves later force changes in the final dataset. Independent review kept the fix and separate optional per-sweep target support. Sixty-nine JavaScript and seventeen Python checks passed. Earlier Node-runtime and cloud-review fixes remain published. The next unfunded question is reducing force-search cost without degrading collected data.
 
 #### Topics
 
-HP3, encoder-only autocalibration, parameter variation, candidate ranking, point thinning, native collection, stiffness, cloud environment
+HP3, encoder-only calibration, force tuning, failure recovery, force-selection checkpoint, fixed-target sweep coverage, native simulation, cloud runtime
 
 #### Tested hypotheses
 
 | Hypothesis | IDs | Outcome | Evidence |
 | --- | --- | --- | --- |
-| Lower unseen residual always means better geometry | PV-E02 | Rejected by complete-coverage counterexample | [Review](sessions/2026-10-27-autocal-parameter-variation-manager/review-first.json) |
-| Broad solver or thinning replacements pass the declared screen | PV-E02 | Rejected for the stated gates | [First report](sessions/2026-10-27-autocal-parameter-variation-manager/../attempt-3b2e360ec1834eee9bab4e06f6f880fd/report.md) |
-| Native stiffness affects encoder response | PV-E03 | Supported for short probes | [Review](sessions/2026-10-27-autocal-parameter-variation-manager/review-first.json) |
-| Two bounded native stiffness collections complete under pinned Node | NP-E02 | Supported | [Native review](sessions/2026-10-27-autocal-parameter-variation-manager/review-native.json) |
-| Removing stored geometry changes the native fits | NP-E03/NP-E04 | Rejected for these four pairs | [Native report](sessions/2026-10-27-autocal-parameter-variation-manager/native-report.md) |
-| These studies establish robust fewer-point automatic calibration | None | Not tested | [Limits](sessions/2026-10-27-autocal-parameter-variation-manager/report.md) |
+| Tested equal-point coverage allocation improves all native comparisons | CVF-E01 | Rejected for stated gate | [Latest report](sessions/2026-10-27-autocal-parameter-variation-manager/../attempt-902d9713dcbe436d8ddc1ba23fd82baa/report.md) |
+| Existing force selection and recovery produce useful same-scene data | CVF-E02/E03/E04 | Supported with reference/history limits | [Review](sessions/2026-10-27-autocal-parameter-variation-manager/review-force-checkpoint.json) |
+| A new solver policy is required for the nominal sentinel | CVF-E03-R | Rejected in this case; existing recovery succeeds | [Recovery evidence](sessions/2026-10-27-autocal-parameter-variation-manager/../attempt-902d9713dcbe436d8ddc1ba23fd82baa/recovery-results.json) |
+| Early force selection survives later failure | CVF-C01 | Supported by lifecycle regressions | [Review](sessions/2026-10-27-autocal-parameter-variation-manager/review-force-checkpoint.json) |
+| Faster force bracketing preserves quality | None | Not tested | [Ledger](sessions/2026-10-27-autocal-parameter-variation-manager/approaches.md) |
 
 #### Decision handoff
 
-Keep both reviewed tools and production defaults. No numerical work remains funded. Next, test automatic force tuning and additional independent sweeps in a new allocation. Both reviews verified scoped evidence; neither establishes hardware performance or full-loop native acceptance.
+Publish the reviewed checkpoint and optional per-sweep target support. Keep calibration defaults. No numerical work remains funded. Next compare force-search cost while preserving learned decisions and measured data quality.
 
 #### References
 
-- [Full report](sessions/2026-10-27-autocal-parameter-variation-manager/report.md), [notebook](sessions/2026-10-27-autocal-parameter-variation-manager/research.md), [first review](sessions/2026-10-27-autocal-parameter-variation-manager/review-first.json), [native review](sessions/2026-10-27-autocal-parameter-variation-manager/review-native.json).
-- [Cloud faults and remedies](sessions/2026-10-27-autocal-parameter-variation-manager/cloud-environment-issues.json), [literature](sessions/2026-10-27-autocal-parameter-variation-manager/literature.md).
+- [Report](sessions/2026-10-27-autocal-parameter-variation-manager/report.md), [ledger](sessions/2026-10-27-autocal-parameter-variation-manager/approaches.md), [notebook](sessions/2026-10-27-autocal-parameter-variation-manager/research.md), [exact final review](sessions/2026-10-27-autocal-parameter-variation-manager/review-force-checkpoint.json).
 
 ## [architecture-batch](architecture-batch/)
 
@@ -3097,6 +3095,44 @@ cloud agents, existing login, HP3, rust-native, MCP, Rerun, calibration evidence
 - [Research notebook](sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/research.md) records allocation and steering.
 - [Validation](sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/validation.json) records checked hashes and zero numerical work.
 - [Previous cloud worker](sessions/attempt-6aabde30a2df4f20a0e259cc25c52b4b/../attempt-d35a0ef8b1b54fc4a14bc9a1ba28aa9f/report.md) supports transport feasibility and identifies untested release behavior.
+
+## [attempt-902d9713dcbe436d8ddc1ba23fd82baa](sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/)
+
+[abstract.md](sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/abstract.md) · [report.md](sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/report.md) · [research.md](sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/research.md)
+
+### HP3 force excitation improves saved fits; preserve tuning before collection
+
+Status: complete.
+
+#### Abstract
+
+This bounded native HP3 study compared acquisition choices at 60 measured points in 20000 N and 8000 N stiffness scenes. Six independent ten-point sweeps did not pass the declared coverage criterion against saved three-sweep baselines. Two ordinary-fit comparisons worsened; the other improvements were 3.69% and 15.13%. Production automatic force tuning found movement thresholds near 0.23 to 0.25 N, but both collections exhausted their one-million-step caps. Fresh worlds replaying those learned forces completed 60 points each. Existing recovery produced a 3.29 mm nominal conventional anchor RMSE, and ordinary soft-scene fits gave 10.43 to 11.64 mm, compared with metre-scale baseline errors. Frozen models covered all 20 and 40 independently recorded holdout points. These are same-scene simulation findings with an unsettled-reference limitation, not full automatic acceptance or hardware accuracy. The production change preserves force selections and diagnostics before sweeps, including interrupted runs. It does not automatically reuse saved settings.
+
+#### Topics
+
+HP3, autocalibration, force excitation, independent sweeps, interrupted collection, native Rust, encoder data, recovery.
+
+#### Tested hypotheses
+
+| Hypothesis | Experiment | Outcome | Evidence |
+| --- | --- | --- | --- |
+| Additional fixed-target levels improve geometry at equal 60 points | CVF-E01 | Rejected in this tested scope | [Measured summary](sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/measured-summary.json) |
+| Encoder-derived forces improve the acquisition pipeline | CVF-E02, CVF-E03 | Supported for these fresh-world replays, original trials incomplete | [Force summary](sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/force-partial-summary.json), [measurements](sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/measured-summary.json) |
+| Existing recovery repairs the nominal sentinel fit | CVF-E03-R | Supported | [Recovery results](sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/recovery-results.json) |
+| Replayed-force models predict saved independent native sweeps | CVF-E04 | Supported within these two scenes | [Holdout results](sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/holdout-results.json) |
+| Early force selection survives later collection failure | CVF-C01 | Supported by lifecycle regression tests | [Checks](sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/js-regression.log) |
+
+#### Decision handoff
+
+Keep the force-selection checkpoint as a production robustness change. Optional per-config fixed-target syntax is a separate experiment-enabling commit. Keep acquisition and solver defaults. The next useful research question is reducing force-search work while preserving force decisions and measured data quality.
+
+Review: worker measured and recomputed these results; independent parent review is pending. Scope excludes a full automatic stopping comparison and hardware measurements.
+
+#### References
+
+- [Full report](sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/report.md) explains comparisons and limits.
+- [Research notebook](sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/research.md) records budget changes and decisions.
+- [Saved native baseline report](sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/../2026-10-27-autocal-parameter-variation-manager/native-report.md) supplies the fixed baseline.
 
 ## [attempt-982dc44e4c9b4e5da9b3232c26d54bf3](sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/)
 

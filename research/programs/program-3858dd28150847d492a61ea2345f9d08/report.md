@@ -61,7 +61,7 @@ Implement the best supported change.
 If data collection routines are kept similar or equivalent to your changed algorithm then you can run the relevant autocal regressions.
 Otherwise find ways compare your changed or new algorithm to the old one.
 
-Program: program-3858dd28150847d492a61ea2345f9d08 · revision 100 · paused
+Program: program-3858dd28150847d492a61ea2345f9d08 · revision 157 · paused
 
 Reviewed findings are recorded in scoped admission history.
 
@@ -73,9 +73,9 @@ Reviewed findings are recorded in scoped admission history.
   "question_id": "question-277e696829e247d4ac1626101fc84399",
   "goal": "Improve encoder-based CDPR autocalibration in hp-sim5. The current algorithm can\nbe slow, fragile, or choose worse anchors because its selection score disagrees\nwith actual geometrical accuracy. First reproduce and measure those cases.\n\nInvestigate ideas for improving the autocal speed, robustness, and/or user experience.\nI'm especially interested in changes that can produce robust results with fewer or in other ways faster to collect data points, since data collection currently takes a long time, and having to redo it would wreck user experience.\nPreserve the one-click user experience and automatic stopping when finished.\n\nYou don't need to take line buildup into account, ie autocal.py's `--buildup-factor` can be zero, and the simulator should also run with Line Layering disabled.\nNo need to search for the spool radii either.\nUse Hangprinter 3, not Hangprinter 4, since HP3 is lighter and faster to simulate.\nI created a reference run for you to beat in output/extended-autocal/no-buildup-reference-003\n\nNote that in a real auto calibration scenario, nobody has access to real ground truth anchor positions yet.\n\nHere are some ideas you could use as starting points:\n\n - An obvious way to save time would be to look at the .rrd file, and profile it in a way. See where it hangs, what takes time to help you prioritize where to start optimizing.\n - We know from experience that autocal accuracy, ie how geometrically close the found anchors end up being to reality, is super sensitive to which min, medium, and especially max forces were selected during force tuning. A too high force destroys the quality of the data, just as much as too low forces. Finding \"workable\" forces reliably, while taking the forces that's selected into account when optimizing somehow, is a promising direction of research.\n - All experiments so far has used a fixed set of simulated \"true\" parameters, like friction, cable stiffness, anchor placements etc. Since we want the autocal to be robust we should judge it by its ability to find parameters on a wider range of setups, not just one or two setups. Getting wider variety in reference datasets would help us identify those variations of autocal that is most robust and will more likely transfer successfully from sim to real. It will also work without issues for a wider range of real world users. Instead of trusting one highly detailed simulation, it would be much better to systematically train and test against many plausible physical worlds. The difficulty for us is that direct simulation of even a single plausible physical worlds is currently very slow and expensive. Simulating many of them is currently prohibitively expensive. Reducing the computatinonal overhead or cost is required in order to enable this idea, which might be crucial for the value of the autocal work's real world value.\n - Autocal's job is to search/find/optimize for many different calibration parameters. It currently doesn't split-and-conquer much at all. It only splits the experiment into two halves: First it searches for forces and sensor noise, then it searches for all the other parameters all at once using the initial force and noise information. It should be possible divide-and-conquer the calibration problem a lot more. To do that, we need to find ways to design sub-experiments in which some parameters are isolated. We want several experiments that build upon each other, each one searching for one or a limited number of parameters while managing to \"block out\" or \"isolate away from\" the others. We want autocal.py to reason a bit like a human researcher would reason: \"Ok, so now we have this limited but verified piece of knowledge. How can we use that to get yet another piece of knowledge?\" And so on, until the full picture eventually becomes clear. An example of a sequence of increasingly detailed questions:\n   * What forces currently make the effector move at all? (already asked by force tuning)\n   * What seems to be the highest safe force for this machine in one direction? (already asked by force tuning)\n   * ...\n   * Which anchors are above, and which are below the effector?\n   * Which anchors are to the right of (+x) and which are to the left of (-x) the effector (in normalized, rotated coordinates)?\n   * Which anchors seem closer, and which ones seem further away from the origin (or from the central point between the anchors)?\n   * Can we determine max/min ranges for the line lengths (L2 distances from the origin/center) of the various anchors?\n   * Can we determine max/min ranges for the various xyz coordinates of each anchor?\n   * Can we reason about or search for probably xyz positions of each datapoint?\n   * The global anchor length scale is a near-flat direction of the autocal objective. Can we design a sequence of measurements that would give us information about true anchor gauge? As in, can we tease out a scaling factor to improve our current anchor guess?\n   * There's currently two promising solvers: the established lbfgsb and the experimental trf solver. A promising research direction is using solver disagreement to choose an additional sweep, then checking both predictions against fresh measurements.\n   * ... and so on\n  A nice thing with this idea of gradually answering progressively harder questions is that experiments can be progressively more detailed and confident without causing the machine to do self-harm. The approach can also gradually be introduced into the current autocal, morphing it from \"one big thing\" to eventually a more and more fine grained sequence of smaller targetted experiments.\n\nSee autocal/data/references/extended-reference.md if you want to do full simulation runs with complete recordings yourself.\n\nGather ideas on how one could calibrate a CDPR based solely on encoder data first.\nUse every tool here, like web search and first principles thinking.\nOnce you've arrived at a list of ideas, it is good to grep through old research reports in output/research/sessions/ to see if earlier runs explored similar ideas, and what their findings were.\n\nThen learn about how the current autocal code works.\nIt is the state-of-the art that we're trying to improve upon.\nGood starting points for such learning are\n - autocal/README.md\n - autocal/optimization_algorithm_overview\n - autocal/objective_functions_overview\n - and maybe autocal/README_elliptical_feature_calibration.md\n\n\nYour favourite ideas might be better than those already researched or implemented.\nRecord the leading hypotheses and test the promising ones on\nrecorded and synthetic data, unless your improvement idea requires another way of collecting data.\nNote down your disproved hypotheses as well, with very short notes in the output report.\n\nUse simulated collection to test your ideas when warranted.\nCode for collecting simulated calibration data in the browser environment are available in the autocal part of the repo.\nInvent your own ways of collecting synthetic calibration data if required.\n\nImplement the best supported change.\nIf data collection routines are kept similar or equivalent to your changed algorithm then you can run the relevant autocal regressions.\nOtherwise find ways compare your changed or new algorithm to the old one.",
   "state": "paused",
-  "revision": 100,
+  "revision": 157,
   "created_at": "2026-10-27T08:03:17.214261+00:00",
-  "updated_at": "2026-10-27T12:10:44.524898+00:00",
+  "updated_at": "2026-10-27T17:18:23.748616+00:00",
   "constraints": {}
 }
 ```
@@ -282,13 +282,13 @@ Otherwise find ways compare your changed or new algorithm to the old one.
   "program_id": "program-3858dd28150847d492a61ea2345f9d08",
   "kind": "approach",
   "title": "Force-aware staged inference",
-  "revision": 1,
+  "revision": 2,
   "created_at": "2026-10-27T08:04:26.172814+00:00",
-  "updated_at": "2026-10-27T08:04:26.172814+00:00",
+  "updated_at": "2026-10-27T12:55:09.207022+00:00",
   "details": {
     "question_id": "question-277e696829e247d4ac1626101fc84399",
-    "reason": "Competing route from the supplied research question; choose a cheap observation before large collection",
-    "state": "live"
+    "reason": "Current controlled research reports practical force-adequate data and independent frozen prediction coverage, while existing restore_points recovers nominal3.29mm. Favor force selection/preservation work over a solver switch. This is a practical judgment on current unreviewed producer evidence; final scoped admission still requires separate review.",
+    "state": "promising"
   }
 }
 ```
@@ -350,13 +350,13 @@ Otherwise find ways compare your changed or new algorithm to the old one.
   "program_id": "program-3858dd28150847d492a61ea2345f9d08",
   "kind": "approach",
   "title": "Candidate ranking on unseen encoders",
-  "revision": 1,
+  "revision": 2,
   "created_at": "2026-10-27T08:04:26.380986+00:00",
-  "updated_at": "2026-10-27T08:04:26.380986+00:00",
+  "updated_at": "2026-10-27T12:21:58.271167+00:00",
   "details": {
     "question_id": "question-277e696829e247d4ac1626101fc84399",
-    "reason": "Competing route from the supplied research question; choose a cheap observation before large collection",
-    "state": "live"
+    "reason": "Seventeen common-unseen residual/geometry reversals and prior held-out failures make another residual-only selector a low-value next test. This parks the current route, not every possible validation design.",
+    "state": "parked"
   }
 }
 ```
@@ -3083,6 +3083,1868 @@ Otherwise find ways compare your changed or new algorithm to the old one.
   "revision": 1,
   "created_at": "2026-10-27T12:09:25.170858+00:00",
   "updated_at": "2026-10-27T12:09:25.170858+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "program-3858dd28150847d492a61ea2345f9d08"
+  }
+}
+```
+
+## decision: User explicitly requests continued improvement search and pushing reviewed work; start a new finite cycle, preserving all earlier evidence and numerical limits.
+
+```json
+{
+  "id": "decision-b080c9db64b340a893fea31fbd87e44b",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "decision",
+  "title": "User explicitly requests continued improvement search and pushing reviewed work; start a new finite cycle, preserving all earlier evidence and numerical limits.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:18:02.957864+00:00",
+  "updated_at": "2026-10-27T12:18:02.957864+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "program-3858dd28150847d492a61ea2345f9d08"
+  }
+}
+```
+
+## steering: Human requests pushing reviewed Node/runtime and other improvements, continuing the search, tracking competing approaches, cutting low-progress routes and pursuing effective routes. Use the next finite60-minute cycle for calibration behavior. Preserve earlier evidence and do not repeat broad literature/benchmark work.
+
+```json
+{
+  "id": "steering-46b41eeb65094d2091f45dd716c0984a",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "steering",
+  "title": "Human requests pushing reviewed Node/runtime and other improvements, continuing the search, tracking competing approaches, cutting low-progress routes and pursuing effective routes. Use the next finite60-minute cycle for calibration behavior. Preserve earlier evidence and do not repeat broad literature/benchmark work.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:21:58.151032+00:00",
+  "updated_at": "2026-10-27T12:21:58.151032+00:00",
+  "details": {
+    "actor": "human",
+    "evidence_ids": [],
+    "subject_id": null
+  }
+}
+```
+
+## human_input: Human requests pushing reviewed Node/runtime and other improvements, continuing the search, tracking competing approaches, cutting low-progress routes and pursuing effective routes. Use the next finite60-minute cycle for calibration behavior. Preserve earlier evidence and do not repeat broad literature/benchmark work.
+
+```json
+{
+  "id": "human_input-aea32fdf59ad4a18bb81446a9636b916",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "human_input",
+  "title": "Human requests pushing reviewed Node/runtime and other improvements, continuing the search, tracking competing approaches, cutting low-progress routes and pursuing effective routes. Use the next finite60-minute cycle for calibration behavior. Preserve earlier evidence and do not repeat broad literature/benchmark work.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:21:58.151096+00:00",
+  "updated_at": "2026-10-27T12:21:58.151096+00:00",
+  "details": {
+    "citation_ids": [
+      "steering-46b41eeb65094d2091f45dd716c0984a"
+    ],
+    "intent": "instruction",
+    "links": [],
+    "next_assignment_id": null,
+    "provenance": {
+      "budget_interpretation": "bounded continuation, not an unattended loop",
+      "finite_cycle_minutes": 60,
+      "prior_active_work_minutes_user_estimate": 48,
+      "source": "current user message"
+    },
+    "steering_id": "steering-46b41eeb65094d2091f45dd716c0984a"
+  }
+}
+```
+
+## decision: Seventeen common-unseen residual/geometry reversals and prior held-out failures make another residual-only selector a low-value next test. This parks the current route, not every possible validation design.
+
+```json
+{
+  "id": "decision-9b09f2725a7545718a80aa5d07b32961",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "decision",
+  "title": "Seventeen common-unseen residual/geometry reversals and prior held-out failures make another residual-only selector a low-value next test. This parks the current route, not every possible validation design.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:21:58.271537+00:00",
+  "updated_at": "2026-10-27T12:21:58.271537+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "ranking-only"
+  }
+}
+```
+
+## relation: Seventeen common-unseen residual/geometry reversals and prior held-out failures make another residual-only selector a low-value next test. This parks the current route, not every possible validation design.
+
+```json
+{
+  "id": "relation-fc57d732b7634106a16b3ef5a65a34d5",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "relation",
+  "title": "Seventeen common-unseen residual/geometry reversals and prior held-out failures make another residual-only selector a low-value next test. This parks the current route, not every possible validation design.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:21:58.272482+00:00",
+  "updated_at": "2026-10-27T12:21:58.272482+00:00",
+  "details": {
+    "reason": "Seventeen common-unseen residual/geometry reversals and prior held-out failures make another residual-only selector a low-value next test. This parks the current route, not every possible validation design.",
+    "relation": "decision",
+    "source_id": "decision-9b09f2725a7545718a80aa5d07b32961",
+    "target_id": "ranking-only"
+  }
+}
+```
+
+## strategy_event: Seventeen common-unseen residual/geometry reversals and prior held-out failures make another residual-only selector a low-value next test. This parks the current route, not every possible validation design.
+
+```json
+{
+  "id": "strategy_event-3c61616b03354df49ec76a102d3bf409",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "strategy_event",
+  "title": "Seventeen common-unseen residual/geometry reversals and prior held-out failures make another residual-only selector a low-value next test. This parks the current route, not every possible validation design.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:21:58.272589+00:00",
+  "updated_at": "2026-10-27T12:21:58.272589+00:00",
+  "details": {
+    "approach_ids": [
+      "ranking-only"
+    ],
+    "basis": "Manager decision; scientific admission is separate",
+    "citation_ids": [
+      "route_plan-c94bda61c0ed4f7cb715d3c0529ca30f",
+      "review-f674059afe874bdca72e7f4f5f8366ee"
+    ],
+    "decision_ids": [
+      "decision-9b09f2725a7545718a80aa5d07b32961"
+    ],
+    "event": "decision",
+    "reason": "Seventeen common-unseen residual/geometry reversals and prior held-out failures make another residual-only selector a low-value next test. This parks the current route, not every possible validation design.",
+    "reopening_condition": "A new predictive measurement or observability test separates known counterexamples without truth.",
+    "review_event_ids": [],
+    "scope": {
+      "buildup": 0,
+      "data": "recorded and explicitly labelled synthetic/native simulated",
+      "layering": false,
+      "machine": "hp3",
+      "radii": "fixed known"
+    },
+    "target": "parked"
+  }
+}
+```
+
+## approach: More independent sweeps at the same point budget
+
+```json
+{
+  "id": "coverage-allocation",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "approach",
+  "title": "More independent sweeps at the same point budget",
+  "revision": 2,
+  "created_at": "2026-10-27T12:21:58.380946+00:00",
+  "updated_at": "2026-10-27T12:32:05.421122+00:00",
+  "details": {
+    "question_id": "question-277e696829e247d4ac1626101fc84399",
+    "reason": "Early actual native comparison failed the paired20percent exploratory gate in all four solver/world rows, with two worsening. Stop refining this6x10,two-level variant now. Finding remains unreviewed until fixed submission; the broader independent-geometry idea stays reopenable after force adequacy is resolved.",
+    "state": "parked"
+  }
+}
+```
+
+## approach: Blanket point thinning
+
+```json
+{
+  "id": "uniform-thinning",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "approach",
+  "title": "Blanket point thinning",
+  "revision": 2,
+  "created_at": "2026-10-27T12:21:58.488789+00:00",
+  "updated_at": "2026-10-27T12:22:09.782132+00:00",
+  "details": {
+    "question_id": "question-277e696829e247d4ac1626101fc84399",
+    "reason": "Retire this unconditional policy within tested scope because it fails declared coverage/nonworsening gates. Conditional solver choice and alternative sweep allocation remain open.",
+    "state": "retired"
+  }
+}
+```
+
+## approach: Blanket TRF replacement
+
+```json
+{
+  "id": "blanket-trf",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "approach",
+  "title": "Blanket TRF replacement",
+  "revision": 2,
+  "created_at": "2026-10-27T12:21:58.596852+00:00",
+  "updated_at": "2026-10-27T12:22:10.006940+00:00",
+  "details": {
+    "question_id": "question-277e696829e247d4ac1626101fc84399",
+    "reason": "Retire this unconditional policy within tested scope because it fails declared coverage/nonworsening gates. Conditional solver choice and alternative sweep allocation remain open.",
+    "state": "retired"
+  }
+}
+```
+
+## route_plan: User requests explicit pruning of low-progress approaches
+
+```json
+{
+  "id": "route_plan-4d52795f8010493d862715450952b2bf",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "route_plan",
+  "title": "User requests explicit pruning of low-progress approaches",
+  "revision": 1,
+  "created_at": "2026-10-27T12:22:09.672167+00:00",
+  "updated_at": "2026-10-27T12:22:09.672167+00:00",
+  "details": {
+    "approach_id": "uniform-thinning",
+    "citation_ids": [
+      "review-f674059afe874bdca72e7f4f5f8366ee"
+    ],
+    "decision_value": "Stop repeating failed unconditional proposals",
+    "dependency_ids": [],
+    "estimated_cost": {
+      "collections": 0,
+      "fresh_fits": 0,
+      "wall_minutes": 1
+    },
+    "hypothesis": "Halving points on the same sweep set preserves geometric accuracy across varied worlds",
+    "novelty": "No new experiment planned",
+    "objections": [],
+    "observation": "Existing per-world regressions and prior legacy-fixture failures",
+    "priority": 90,
+    "reason": "User requests explicit pruning of low-progress approaches",
+    "reopening_condition": "A materially narrower policy with a truth-free trigger and nonworsening paired evidence",
+    "retry_key": "c8ea4e326dee8fc4033bdd0f5e2b48a3255ce3facd4609add54b40cc526cafae",
+    "retry_limit": 2,
+    "scope": {
+      "buildup": 0,
+      "data": "recorded and explicitly labelled synthetic/native simulated",
+      "layering": false,
+      "machine": "hp3",
+      "radii": "fixed known"
+    },
+    "tradeoffs": [],
+    "uncertainty": "Already-reviewed regressions; no new collection evidence repairs them"
+  }
+}
+```
+
+## decision: Retire this unconditional policy within tested scope because it fails declared coverage/nonworsening gates. Conditional solver choice and alternative sweep allocation remain open.
+
+```json
+{
+  "id": "decision-c09a2b5d7e9b4b7c96bff9102164c565",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "decision",
+  "title": "Retire this unconditional policy within tested scope because it fails declared coverage/nonworsening gates. Conditional solver choice and alternative sweep allocation remain open.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:22:09.782224+00:00",
+  "updated_at": "2026-10-27T12:22:09.782224+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "uniform-thinning"
+  }
+}
+```
+
+## relation: Retire this unconditional policy within tested scope because it fails declared coverage/nonworsening gates. Conditional solver choice and alternative sweep allocation remain open.
+
+```json
+{
+  "id": "relation-864a20c4203d420494b6048396122582",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "relation",
+  "title": "Retire this unconditional policy within tested scope because it fails declared coverage/nonworsening gates. Conditional solver choice and alternative sweep allocation remain open.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:22:09.783232+00:00",
+  "updated_at": "2026-10-27T12:22:09.783232+00:00",
+  "details": {
+    "reason": "Retire this unconditional policy within tested scope because it fails declared coverage/nonworsening gates. Conditional solver choice and alternative sweep allocation remain open.",
+    "relation": "decision",
+    "source_id": "decision-c09a2b5d7e9b4b7c96bff9102164c565",
+    "target_id": "uniform-thinning"
+  }
+}
+```
+
+## strategy_event: Retire this unconditional policy within tested scope because it fails declared coverage/nonworsening gates. Conditional solver choice and alternative sweep allocation remain open.
+
+```json
+{
+  "id": "strategy_event-a30a6d92eb8e41aa888135702f9770a9",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "strategy_event",
+  "title": "Retire this unconditional policy within tested scope because it fails declared coverage/nonworsening gates. Conditional solver choice and alternative sweep allocation remain open.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:22:09.783311+00:00",
+  "updated_at": "2026-10-27T12:22:09.783311+00:00",
+  "details": {
+    "approach_ids": [
+      "uniform-thinning"
+    ],
+    "basis": "Manager decision; scientific admission is separate",
+    "citation_ids": [
+      "route_plan-4d52795f8010493d862715450952b2bf",
+      "review-f674059afe874bdca72e7f4f5f8366ee"
+    ],
+    "decision_ids": [
+      "decision-c09a2b5d7e9b4b7c96bff9102164c565"
+    ],
+    "event": "decision",
+    "reason": "Retire this unconditional policy within tested scope because it fails declared coverage/nonworsening gates. Conditional solver choice and alternative sweep allocation remain open.",
+    "reopening_condition": "A different policy and new nonworsening evidence; do not reopen by renaming the same rule.",
+    "review_event_ids": [],
+    "scope": {
+      "buildup": 0,
+      "data": "recorded and explicitly labelled synthetic/native simulated",
+      "layering": false,
+      "machine": "hp3",
+      "radii": "fixed known"
+    },
+    "target": "retired"
+  }
+}
+```
+
+## route_plan: User requests explicit pruning of low-progress approaches
+
+```json
+{
+  "id": "route_plan-99c5e830445b46aebddf62ba64816b25",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "route_plan",
+  "title": "User requests explicit pruning of low-progress approaches",
+  "revision": 1,
+  "created_at": "2026-10-27T12:22:09.894545+00:00",
+  "updated_at": "2026-10-27T12:22:09.894545+00:00",
+  "details": {
+    "approach_id": "blanket-trf",
+    "citation_ids": [
+      "review-f674059afe874bdca72e7f4f5f8366ee"
+    ],
+    "decision_value": "Stop repeating failed unconditional proposals",
+    "dependency_ids": [],
+    "estimated_cost": {
+      "collections": 0,
+      "fresh_fits": 0,
+      "wall_minutes": 1
+    },
+    "hypothesis": "Replacing lbfgsb with trf unconditionally is safe across tested fixtures",
+    "novelty": "No new experiment planned",
+    "objections": [],
+    "observation": "Existing per-world regressions and prior legacy-fixture failures",
+    "priority": 90,
+    "reason": "User requests explicit pruning of low-progress approaches",
+    "reopening_condition": "A materially narrower policy with a truth-free trigger and nonworsening paired evidence",
+    "retry_key": "4501fc3eb3fc4a3ed38dd834de5bf53c2d8b3be2d8aa6a6f5e6c7ba190956b01",
+    "retry_limit": 2,
+    "scope": {
+      "buildup": 0,
+      "data": "recorded and explicitly labelled synthetic/native simulated",
+      "layering": false,
+      "machine": "hp3",
+      "radii": "fixed known"
+    },
+    "tradeoffs": [],
+    "uncertainty": "Already-reviewed regressions; no new collection evidence repairs them"
+  }
+}
+```
+
+## decision: Retire this unconditional policy within tested scope because it fails declared coverage/nonworsening gates. Conditional solver choice and alternative sweep allocation remain open.
+
+```json
+{
+  "id": "decision-bd4f194851bf400f9e608ce25571000e",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "decision",
+  "title": "Retire this unconditional policy within tested scope because it fails declared coverage/nonworsening gates. Conditional solver choice and alternative sweep allocation remain open.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:22:10.007035+00:00",
+  "updated_at": "2026-10-27T12:22:10.007035+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "blanket-trf"
+  }
+}
+```
+
+## relation: Retire this unconditional policy within tested scope because it fails declared coverage/nonworsening gates. Conditional solver choice and alternative sweep allocation remain open.
+
+```json
+{
+  "id": "relation-be3ebda467e8487f916cd691bc229277",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "relation",
+  "title": "Retire this unconditional policy within tested scope because it fails declared coverage/nonworsening gates. Conditional solver choice and alternative sweep allocation remain open.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:22:10.007901+00:00",
+  "updated_at": "2026-10-27T12:22:10.007901+00:00",
+  "details": {
+    "reason": "Retire this unconditional policy within tested scope because it fails declared coverage/nonworsening gates. Conditional solver choice and alternative sweep allocation remain open.",
+    "relation": "decision",
+    "source_id": "decision-bd4f194851bf400f9e608ce25571000e",
+    "target_id": "blanket-trf"
+  }
+}
+```
+
+## strategy_event: Retire this unconditional policy within tested scope because it fails declared coverage/nonworsening gates. Conditional solver choice and alternative sweep allocation remain open.
+
+```json
+{
+  "id": "strategy_event-773887a5418142a282d659c3c9286196",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "strategy_event",
+  "title": "Retire this unconditional policy within tested scope because it fails declared coverage/nonworsening gates. Conditional solver choice and alternative sweep allocation remain open.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:22:10.008008+00:00",
+  "updated_at": "2026-10-27T12:22:10.008008+00:00",
+  "details": {
+    "approach_ids": [
+      "blanket-trf"
+    ],
+    "basis": "Manager decision; scientific admission is separate",
+    "citation_ids": [
+      "route_plan-99c5e830445b46aebddf62ba64816b25",
+      "review-f674059afe874bdca72e7f4f5f8366ee"
+    ],
+    "decision_ids": [
+      "decision-bd4f194851bf400f9e608ce25571000e"
+    ],
+    "event": "decision",
+    "reason": "Retire this unconditional policy within tested scope because it fails declared coverage/nonworsening gates. Conditional solver choice and alternative sweep allocation remain open.",
+    "reopening_condition": "A different policy and new nonworsening evidence; do not reopen by renaming the same rule.",
+    "review_event_ids": [],
+    "scope": {
+      "buildup": 0,
+      "data": "recorded and explicitly labelled synthetic/native simulated",
+      "layering": false,
+      "machine": "hp3",
+      "radii": "fixed known"
+    },
+    "target": "retired"
+  }
+}
+```
+
+## route_plan: Current native3-sweep60-point fits are poor; earlier thinning tests did not test redistributing the same budget
+
+```json
+{
+  "id": "route_plan-e789572a848e41e0bb9fe96f095445fa",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "route_plan",
+  "title": "Current native3-sweep60-point fits are poor; earlier thinning tests did not test redistributing the same budget",
+  "revision": 1,
+  "created_at": "2026-10-27T12:22:10.122304+00:00",
+  "updated_at": "2026-10-27T12:22:10.122304+00:00",
+  "details": {
+    "approach_id": "coverage-allocation",
+    "citation_ids": [
+      "review-5f62ee3093f94f7a9af98157ecb24066",
+      "review-f674059afe874bdca72e7f4f5f8366ee"
+    ],
+    "decision_value": "Find a data-collection policy improvement with no extra points, or reject it promptly and investigate force adequacy",
+    "dependency_ids": [],
+    "estimated_cost": {
+      "collections": 4,
+      "fit_stages": 24,
+      "wall_minutes": 45
+    },
+    "hypothesis": "At60 total points, six independent10-point sweeps outperform three20-point sweeps because independent fixed-length constraints improve geometric observability",
+    "novelty": "Changes diversity of constraints instead of simply thinning existing curves",
+    "objections": [
+      "Must derive any fixed-target offset from encoder observations, not true anchors",
+      "Do not call bootstrap fits full-auto performance"
+    ],
+    "observation": "Paired native data in20000/8000N worlds, measured point counts/timings, truth-free fitting and offline conventional geometry; then held-out analytical/recorded checks before retaining a code change",
+    "priority": 1,
+    "reason": "Current native3-sweep60-point fits are poor; earlier thinning tests did not test redistributing the same budget",
+    "reopening_condition": "Changed safe sweep design or stronger force/observability evidence",
+    "retry_key": "4fb41e08d2c60434cc8760941aade13bd375f9411bb66d1f4f7ac0931c36540b",
+    "retry_limit": 2,
+    "scope": {
+      "buildup": 0,
+      "comparison": "same total60 points; independent fixed-target configurations vs repeated origin constraints",
+      "data": "two native stiffness worlds plus frozen analytical holdouts",
+      "layering": false,
+      "machine": "hp3",
+      "radii_mm": 30
+    },
+    "tradeoffs": [
+      "More configurations add reposition/pull-out overhead",
+      "A relative error gain is insufficient if absolute geometry remains unusable"
+    ],
+    "uncertainty": "Additional fixed-target movement may cost more time, sparse per-circle estimation can regress, and force/model mismatch may dominate"
+  }
+}
+```
+
+## runtime_allocation: Finite manager allocation
+
+```json
+{
+  "id": "runtime_allocation-acfdca734b854d67b48228eb35ed978c",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "runtime_allocation",
+  "title": "Finite manager allocation",
+  "revision": 9,
+  "created_at": "2026-10-27T12:22:10.231756+00:00",
+  "updated_at": "2026-10-27T17:10:16.151542+00:00",
+  "details": {
+    "cleanup_deadline": 1793107520.231612,
+    "cleanup_seconds": 190,
+    "deadline": 1793107330.231612,
+    "events": [],
+    "lease_until": 1793107342.9215715,
+    "owner": {
+      "id": "controller-a71306999fba47549e5f1d01e4449da9",
+      "process": {
+        "birth": "1517500",
+        "boot_id": "d31b8f0f-7059-4ebd-8df1-d4324ca094d3",
+        "group": 5254,
+        "host": "6ffb042648e4",
+        "pid": 5254,
+        "uid": 1000
+      }
+    },
+    "queue": [],
+    "reservations": [
+      {
+        "assignment_id": "coverage-vs-force",
+        "attempt_id": "attempt-902d9713dcbe436d8ddc1ba23fd82baa",
+        "charged_at": "2026-10-27T12:22:12.560105+00:00",
+        "retry_root": null,
+        "review_pending": false,
+        "review_seconds": 480,
+        "reviews": [],
+        "settings": {
+          "backend": "codex",
+          "client_args": [],
+          "dont_ask": true,
+          "goal_mode": true,
+          "machine": "hp3",
+          "physics_backend": "headless-js",
+          "record": false,
+          "shared_runtime_write": false,
+          "viewer": "none",
+          "worktree": false
+        },
+        "state": "cancelled",
+        "superseded_by": "runtime_allocation-5aa7af3ca3a24ba29a1fe01b3c819c6e",
+        "usage": {
+          "estimates": {
+            "collections": 4,
+            "fit_stages": 24,
+            "physics_steps": 4000000,
+            "wall_minutes": 45
+          },
+          "observed_worker_wall_seconds": 2705.3374450206757,
+          "supervisor_observations": [],
+          "unmetered": [
+            "shell movement",
+            "shell compute",
+            "spend"
+          ],
+          "worker_reports": [
+            {
+              "at": "2026-10-27T17:10:16.029568+00:00",
+              "report": {
+                "authorization": "decision-b044bb8844bb44fbb318395b8b877e4a",
+                "checks_wall_s": {
+                  "js": 1.659,
+                  "python": 27.01
+                },
+                "collection_invocations": 6,
+                "deadline_utc": "2026-10-27T13:07:00Z",
+                "experiment_physics_steps": 4166257,
+                "fit_stages": 10,
+                "force_tuning_phase": "Through first post-tuning global-mid-force command:551484/569073steps. Wall phase timing unavailable; total world times measured.",
+                "limits": {
+                  "collections": 6,
+                  "fit_stages": 24,
+                  "physics_steps": 6000000
+                },
+                "physics_steps": 4166884,
+                "regression_physics_steps": 627,
+                "regression_step_accounting": "regression-step-accounting.json",
+                "rows": [
+                  {
+                    "complete": true,
+                    "group": "coverage",
+                    "manifest_wall_s": 33.790627283000504,
+                    "physics_steps": 243641,
+                    "points": 60,
+                    "service_wall_s": 33.482850655,
+                    "world": "nominal",
+                    "world_wall_s": 33.8396935439996
+                  },
+                  {
+                    "complete": true,
+                    "group": "coverage",
+                    "manifest_wall_s": 76.90169278299982,
+                    "physics_steps": 639730,
+                    "points": 60,
+                    "service_wall_s": 76.38112685499999,
+                    "world": "soft",
+                    "world_wall_s": 77.0316630920006
+                  },
+                  {
+                    "complete": false,
+                    "group": "force",
+                    "manifest_wall_s": 95.95501598999908,
+                    "physics_steps": 1000000,
+                    "points": null,
+                    "service_wall_s": 95.69201964,
+                    "world": "nominal",
+                    "world_wall_s": 95.98746149399994
+                  },
+                  {
+                    "complete": false,
+                    "group": "force",
+                    "manifest_wall_s": 94.66737133800052,
+                    "physics_steps": 1000000,
+                    "points": null,
+                    "service_wall_s": 94.18553676500001,
+                    "world": "soft",
+                    "world_wall_s": 94.71537217600053
+                  },
+                  {
+                    "complete": true,
+                    "group": "force-replay",
+                    "manifest_wall_s": 76.7380652009997,
+                    "physics_steps": 741617,
+                    "points": 60,
+                    "service_wall_s": 76.396531575,
+                    "world": "nominal",
+                    "world_wall_s": 76.8682154579983
+                  },
+                  {
+                    "complete": true,
+                    "group": "force-replay",
+                    "manifest_wall_s": 55.16872011500163,
+                    "physics_steps": 541269,
+                    "points": 60,
+                    "service_wall_s": 54.658318593999994,
+                    "world": "soft",
+                    "world_wall_s": 55.24855911499981
+                  }
+                ],
+                "source_base": "703e1a68936d6bad1a6de600b7d2d50e32f32344",
+                "source_candidate": "25822cbbde6703d68b693f6e93bcfa23b2b78593",
+                "world_wall_s": 433.6909648789988
+              },
+              "source": "worker_report"
+            }
+          ]
+        },
+        "worker_seconds": 2700
+      }
+    ],
+    "retry_limit": 1,
+    "review_backlog_limit": 1,
+    "review_seconds": 480,
+    "started_at": "2026-10-27T12:22:10.231616+00:00",
+    "state": "expired",
+    "task_limit": 1,
+    "wall_reserved_seconds": 3180,
+    "wall_seconds": 3600,
+    "worker_limit": 1
+  }
+}
+```
+
+## assignment: Produce a calibration-behavior improvement within45minutes, using previous saved inputs immediately. Primary discriminator: keep60 total measured points but redistribute them from three20-point origin/bootstrap sweeps to six10-point sweeps with independent fixed-anchor offsets. Use production native Rust HP3 worlds with stiffness20000/8000, fixed30mm radii, zero buildup/no layering. Reuse the two saved baseline60-point datasets. Choose offsets from observed encoder travel or the actual existing automatic size tuner, never true anchors. Predeclare a feasible bounded offset and comparison thresholds before outcomes. Keep manual force/noise/feed settings initially matched to isolate layout effects. Confirm collection config semantics and actual point counts. Fit via ordinary stages with truth-free seeds and strip geometry metadata. Measure physical/quality limitations and actual wall/sim work. A promising result must reduce severe error on both native cases, avoid false-validity/coverage regressions and survive selected analytical holdouts or saved HP3 data. Do not mistake lower residual for geometric gain. A lower error of hundreds of mm is a useful clue, not a solved calibration. If coverage fails or has little progress by the first10-15minute checkpoint, stop it and use the force-model rival for a bounded automatic-force-tuning comparison on the same scenes, within4 total collections and24 fit stages. Inspect current restarts before any seed hypothesis: they already include uniform full-bound random starts, not merely small perturbations. Implement the best supported small calibration/collector change, preserving one-click automatic stopping, and run relevant actual regressions or a bounded full-auto comparison when justified. Do not add another generic benchmark as the main outcome. Existing helper/tooling may be used without redesign. Keep named rejected hypotheses and a short approach ledger. No shared builds/dependencies/physics-core changes. Final handoff must name exact claimed improvement, comparison stage, timing/point effects, code candidate and evidence, or a concrete scoped negative result with next decision.
+
+```json
+{
+  "id": "coverage-vs-force",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "assignment",
+  "title": "Produce a calibration-behavior improvement within45minutes, using previous saved inputs immediately. Primary discriminator: keep60 total measured points but redistribute them from three20-point origin/bootstrap sweeps to six10-point sweeps with independent fixed-anchor offsets. Use production native Rust HP3 worlds with stiffness20000/8000, fixed30mm radii, zero buildup/no layering. Reuse the two saved baseline60-point datasets. Choose offsets from observed encoder travel or the actual existing automatic size tuner, never true anchors. Predeclare a feasible bounded offset and comparison thresholds before outcomes. Keep manual force/noise/feed settings initially matched to isolate layout effects. Confirm collection config semantics and actual point counts. Fit via ordinary stages with truth-free seeds and strip geometry metadata. Measure physical/quality limitations and actual wall/sim work. A promising result must reduce severe error on both native cases, avoid false-validity/coverage regressions and survive selected analytical holdouts or saved HP3 data. Do not mistake lower residual for geometric gain. A lower error of hundreds of mm is a useful clue, not a solved calibration. If coverage fails or has little progress by the first10-15minute checkpoint, stop it and use the force-model rival for a bounded automatic-force-tuning comparison on the same scenes, within4 total collections and24 fit stages. Inspect current restarts before any seed hypothesis: they already include uniform full-bound random starts, not merely small perturbations. Implement the best supported small calibration/collector change, preserving one-click automatic stopping, and run relevant actual regressions or a bounded full-auto comparison when justified. Do not add another generic benchmark as the main outcome. Existing helper/tooling may be used without redesign. Keep named rejected hypotheses and a short approach ledger. No shared builds/dependencies/physics-core changes. Final handoff must name exact claimed improvement, comparison stage, timing/point effects, code candidate and evidence, or a concrete scoped negative result with next decision.",
+  "revision": 3,
+  "created_at": "2026-10-27T12:22:10.344188+00:00",
+  "updated_at": "2026-10-27T13:07:17.949294+00:00",
+  "details": {
+    "allocation": {
+      "collections": 4,
+      "fit_stages": 24,
+      "physics_steps": 4000000,
+      "wall_minutes": 45
+    },
+    "approach_id": "coverage-allocation",
+    "execution_state": "cancelled",
+    "knowledge_state": "unassessed",
+    "question_id": "question-277e696829e247d4ac1626101fc84399",
+    "review_state": "unreviewed"
+  }
+}
+```
+
+## investigation: Produce a calibration-behavior improvement within45minutes, using previous saved inputs immediately. Primary discriminator: keep60 total measured points but redistribute them from three20-point origin/bootstrap sweeps to six10-point sweeps with independent fixed-anchor offsets. Use production native Rust HP3 worlds with stiffness20000/8000, fixed30mm radii, zero buildup/no layering. Reuse the two saved baseline60-point datasets. Choose offsets from observed encoder travel or the actual existing automatic size tuner, never true anchors. Predeclare a feasible bounded offset and comparison thresholds before outcomes. Keep manual force/noise/feed settings initially matched to isolate layout effects. Confirm collection config semantics and actual point counts. Fit via ordinary stages with truth-free seeds and strip geometry metadata. Measure physical/quality limitations and actual wall/sim work. A promising result must reduce severe error on both native cases, avoid false-validity/coverage regressions and survive selected analytical holdouts or saved HP3 data. Do not mistake lower residual for geometric gain. A lower error of hundreds of mm is a useful clue, not a solved calibration. If coverage fails or has little progress by the first10-15minute checkpoint, stop it and use the force-model rival for a bounded automatic-force-tuning comparison on the same scenes, within4 total collections and24 fit stages. Inspect current restarts before any seed hypothesis: they already include uniform full-bound random starts, not merely small perturbations. Implement the best supported small calibration/collector change, preserving one-click automatic stopping, and run relevant actual regressions or a bounded full-auto comparison when justified. Do not add another generic benchmark as the main outcome. Existing helper/tooling may be used without redesign. Keep named rejected hypotheses and a short approach ledger. No shared builds/dependencies/physics-core changes. Final handoff must name exact claimed improvement, comparison stage, timing/point effects, code candidate and evidence, or a concrete scoped negative result with next decision.
+
+```json
+{
+  "id": "investigation-65107c95b46946b5b34387885ff5b719",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "investigation",
+  "title": "Produce a calibration-behavior improvement within45minutes, using previous saved inputs immediately. Primary discriminator: keep60 total measured points but redistribute them from three20-point origin/bootstrap sweeps to six10-point sweeps with independent fixed-anchor offsets. Use production native Rust HP3 worlds with stiffness20000/8000, fixed30mm radii, zero buildup/no layering. Reuse the two saved baseline60-point datasets. Choose offsets from observed encoder travel or the actual existing automatic size tuner, never true anchors. Predeclare a feasible bounded offset and comparison thresholds before outcomes. Keep manual force/noise/feed settings initially matched to isolate layout effects. Confirm collection config semantics and actual point counts. Fit via ordinary stages with truth-free seeds and strip geometry metadata. Measure physical/quality limitations and actual wall/sim work. A promising result must reduce severe error on both native cases, avoid false-validity/coverage regressions and survive selected analytical holdouts or saved HP3 data. Do not mistake lower residual for geometric gain. A lower error of hundreds of mm is a useful clue, not a solved calibration. If coverage fails or has little progress by the first10-15minute checkpoint, stop it and use the force-model rival for a bounded automatic-force-tuning comparison on the same scenes, within4 total collections and24 fit stages. Inspect current restarts before any seed hypothesis: they already include uniform full-bound random starts, not merely small perturbations. Implement the best supported small calibration/collector change, preserving one-click automatic stopping, and run relevant actual regressions or a bounded full-auto comparison when justified. Do not add another generic benchmark as the main outcome. Existing helper/tooling may be used without redesign. Keep named rejected hypotheses and a short approach ledger. No shared builds/dependencies/physics-core changes. Final handoff must name exact claimed improvement, comparison stage, timing/point effects, code candidate and evidence, or a concrete scoped negative result with next decision.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:22:10.344271+00:00",
+  "updated_at": "2026-10-27T12:22:10.344271+00:00",
+  "details": {
+    "assignment_id": "coverage-vs-force",
+    "citation_ids": [
+      "review-5f62ee3093f94f7a9af98157ecb24066"
+    ],
+    "execution": {
+      "machine": "hp3",
+      "recording_mode": "none",
+      "simulated_autocal_speedup": 25
+    },
+    "explanations": [
+      {
+        "approach_id": "coverage-allocation",
+        "explanation": "Too few independent fixed-length constraints, rather than too few samples, cause geometric ambiguity"
+      },
+      {
+        "approach_id": "force-model",
+        "explanation": "Force-dependent deformation/poor excitation dominates; changing circle count alone will not repair it"
+      }
+    ],
+    "kind": "experiment",
+    "outcomes": {
+      "blocked": {
+        "actions": [],
+        "finding": "inconclusive",
+        "observation": "Tool failure or incomplete paired data prevents comparison"
+      },
+      "coverage_only": {
+        "actions": [],
+        "finding": "mixed",
+        "observation": "Independent sweeps help but absolute accuracy, time, automatic stopping or generalization remains unresolved"
+      },
+      "failed": {
+        "actions": [],
+        "finding": "rejected",
+        "observation": "The tested fixed-budget redistribution fails declared robustness or time criteria"
+      },
+      "improvement": {
+        "actions": [],
+        "finding": "supported",
+        "observation": "A small truth-free collection/fitting policy gives robust geometric gains at equal or lower point/time cost and passes relevant checks"
+      }
+    },
+    "route_plan_ids": [
+      "route_plan-e789572a848e41e0bb9fe96f095445fa",
+      "route_plan-3571ed4782da454e9c2be55f10449029"
+    ]
+  }
+}
+```
+
+## attempt: Produce a calibration-behavior improvement within45minutes, using previous saved inputs immediately. Primary discriminator: keep60 total measured points but redistribute them from three20-point origin/bootstrap sweeps to six10-point sweeps with independent fixed-anchor offsets. Use production native Rust HP3 worlds with stiffness20000/8000, fixed30mm radii, zero buildup/no layering. Reuse the two saved baseline60-point datasets. Choose offsets from observed encoder travel or the actual existing automatic size tuner, never true anchors. Predeclare a feasible bounded offset and comparison thresholds before outcomes. Keep manual force/noise/feed settings initially matched to isolate layout effects. Confirm collection config semantics and actual point counts. Fit via ordinary stages with truth-free seeds and strip geometry metadata. Measure physical/quality limitations and actual wall/sim work. A promising result must reduce severe error on both native cases, avoid false-validity/coverage regressions and survive selected analytical holdouts or saved HP3 data. Do not mistake lower residual for geometric gain. A lower error of hundreds of mm is a useful clue, not a solved calibration. If coverage fails or has little progress by the first10-15minute checkpoint, stop it and use the force-model rival for a bounded automatic-force-tuning comparison on the same scenes, within4 total collections and24 fit stages. Inspect current restarts before any seed hypothesis: they already include uniform full-bound random starts, not merely small perturbations. Implement the best supported small calibration/collector change, preserving one-click automatic stopping, and run relevant actual regressions or a bounded full-auto comparison when justified. Do not add another generic benchmark as the main outcome. Existing helper/tooling may be used without redesign. Keep named rejected hypotheses and a short approach ledger. No shared builds/dependencies/physics-core changes. Final handoff must name exact claimed improvement, comparison stage, timing/point effects, code candidate and evidence, or a concrete scoped negative result with next decision.
+
+```json
+{
+  "id": "attempt-902d9713dcbe436d8ddc1ba23fd82baa",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "attempt",
+  "title": "Produce a calibration-behavior improvement within45minutes, using previous saved inputs immediately. Primary discriminator: keep60 total measured points but redistribute them from three20-point origin/bootstrap sweeps to six10-point sweeps with independent fixed-anchor offsets. Use production native Rust HP3 worlds with stiffness20000/8000, fixed30mm radii, zero buildup/no layering. Reuse the two saved baseline60-point datasets. Choose offsets from observed encoder travel or the actual existing automatic size tuner, never true anchors. Predeclare a feasible bounded offset and comparison thresholds before outcomes. Keep manual force/noise/feed settings initially matched to isolate layout effects. Confirm collection config semantics and actual point counts. Fit via ordinary stages with truth-free seeds and strip geometry metadata. Measure physical/quality limitations and actual wall/sim work. A promising result must reduce severe error on both native cases, avoid false-validity/coverage regressions and survive selected analytical holdouts or saved HP3 data. Do not mistake lower residual for geometric gain. A lower error of hundreds of mm is a useful clue, not a solved calibration. If coverage fails or has little progress by the first10-15minute checkpoint, stop it and use the force-model rival for a bounded automatic-force-tuning comparison on the same scenes, within4 total collections and24 fit stages. Inspect current restarts before any seed hypothesis: they already include uniform full-bound random starts, not merely small perturbations. Implement the best supported small calibration/collector change, preserving one-click automatic stopping, and run relevant actual regressions or a bounded full-auto comparison when justified. Do not add another generic benchmark as the main outcome. Existing helper/tooling may be used without redesign. Keep named rejected hypotheses and a short approach ledger. No shared builds/dependencies/physics-core changes. Final handoff must name exact claimed improvement, comparison stage, timing/point effects, code candidate and evidence, or a concrete scoped negative result with next decision.",
+  "revision": 17,
+  "created_at": "2026-10-27T12:22:12.607503+00:00",
+  "updated_at": "2026-10-27T13:07:17.949222+00:00",
+  "details": {
+    "allocation": {
+      "collections": 4,
+      "fit_stages": 24,
+      "physics_steps": 4000000,
+      "wall_minutes": 45
+    },
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-agent",
+      "--codex",
+      "--batch",
+      "--prompt-file",
+      "/workspace/hp-sim5/.research-programs/workers/attempt-902d9713dcbe436d8ddc1ba23fd82baa/prompt.txt",
+      "--session-dir",
+      "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa",
+      "--physics-backend",
+      "headless-js",
+      "--machine",
+      "hp3",
+      "--viewer",
+      "none",
+      "--wall-deadline",
+      "1793106432.5635498",
+      "--dont-ask",
+      "--no-record"
+    ],
+    "artifacts": [
+      {
+        "bytes": 343,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/session.json"
+      },
+      {
+        "bytes": 16965,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/launch.json"
+      },
+      {
+        "bytes": 79,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/exit.json"
+      },
+      {
+        "bytes": 14375,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/prompt.txt"
+      },
+      {
+        "bytes": 84,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/events.jsonl"
+      },
+      {
+        "bytes": 884,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/final-message.md"
+      },
+      {
+        "bytes": 4971,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/research.md"
+      },
+      {
+        "bytes": 13971,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/report.md"
+      },
+      {
+        "bytes": 3003,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/abstract.md"
+      },
+      {
+        "bytes": 6691,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/instructions.md"
+      },
+      {
+        "bytes": 420,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/attachment.toml"
+      },
+      {
+        "bytes": 297,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/attachment.json"
+      },
+      {
+        "bytes": 237,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/connection.json"
+      },
+      {
+        "bytes": 0,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/native/runtime.log"
+      },
+      {
+        "bytes": 0,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-902d9713dcbe436d8ddc1ba23fd82baa/stdout.log"
+      },
+      {
+        "bytes": 103,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-902d9713dcbe436d8ddc1ba23fd82baa/stderr.log"
+      },
+      {
+        "bytes": 14375,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-902d9713dcbe436d8ddc1ba23fd82baa/prompt.txt"
+      },
+      {
+        "bytes": 3872,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-902d9713dcbe436d8ddc1ba23fd82baa/assignment.json"
+      }
+    ],
+    "assignment_id": "coverage-vs-force",
+    "attempt_dir": "/workspace/hp-sim5/.research-programs/workers/attempt-902d9713dcbe436d8ddc1ba23fd82baa",
+    "cancel_deadline": 1793106622.5730155,
+    "cleanup": "launcher_finally_completed",
+    "diagnostics": [],
+    "exited_at": "2026-10-27T13:07:17.948169+00:00",
+    "launcher_exit": {
+      "returncode": 130,
+      "wall_deadline": 1793106432.5635498,
+      "wall_expired": true
+    },
+    "launcher_session_id": "65b7c7905b5447a5b2bbf334f2e0b05c",
+    "observations": [
+      {
+        "at": "2026-10-27T12:22:12.605926+00:00",
+        "event": "reserved"
+      },
+      {
+        "at": "2026-10-27T12:22:12.610736+00:00",
+        "event": "spawned",
+        "pid": 5384
+      },
+      {
+        "at": "2026-10-27T13:07:12.568001+00:00",
+        "event": "wall_expired"
+      },
+      {
+        "at": "2026-10-27T13:07:12.573020+00:00",
+        "event": "cancel_requested"
+      },
+      {
+        "at": "2026-10-27T13:07:17.948188+00:00",
+        "event": "exited",
+        "returncode": 130
+      }
+    ],
+    "observed_wall_seconds": 2705.3374450206757,
+    "owner": {
+      "id": "dispatcher-2b3f58cc1a4649a0ab070c8678bae3f0",
+      "process": {
+        "birth": "1517500",
+        "boot_id": "d31b8f0f-7059-4ebd-8df1-d4324ca094d3",
+        "group": 5254,
+        "host": "6ffb042648e4",
+        "pid": 5254,
+        "uid": 1000
+      }
+    },
+    "premise_conflicts": [],
+    "premise_event_ids_at_start": [],
+    "premise_ids": [],
+    "premise_plan_ids": [
+      "route_plan-3571ed4782da454e9c2be55f10449029",
+      "route_plan-e789572a848e41e0bb9fe96f095445fa"
+    ],
+    "process": {
+      "birth": "1556734",
+      "boot_id": "d31b8f0f-7059-4ebd-8df1-d4324ca094d3",
+      "group": 5384,
+      "host": "6ffb042648e4",
+      "pid": 5384,
+      "uid": 1000
+    },
+    "prompt_sha256": "f76474a41f850f0974fd3bb5509206124c5ac13b3165daac703beca26a104d48",
+    "returncode": 130,
+    "runtime": {
+      "allocation_id": "runtime_allocation-acfdca734b854d67b48228eb35ed978c",
+      "assignment_id": "coverage-vs-force",
+      "cleanup_seconds": 190,
+      "expired": true,
+      "wall_deadline": 1793106432.5635498
+    },
+    "runtime_session_id": "54450b1493e64cf8b7cd27f6b1bb58e7",
+    "scientific_state": "unassessed",
+    "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa",
+    "settings": {
+      "backend": "codex",
+      "client_args": [],
+      "dont_ask": true,
+      "goal_mode": true,
+      "machine": "hp3",
+      "physics_backend": "headless-js",
+      "record": false,
+      "shared_runtime_write": false,
+      "viewer": "none",
+      "worktree": false
+    },
+    "source_dirty": true,
+    "source_revision": "703e1a68936d6bad1a6de600b7d2d50e32f32344",
+    "started_at": "2026-10-27T12:22:12.610724+00:00",
+    "state": "cancelled",
+    "worktree": {
+      "branch": "work",
+      "repo": "/workspace/hp-sim5",
+      "source_revision": "703e1a68936d6bad1a6de600b7d2d50e32f32344"
+    },
+    "worktree_id": "/workspace/hp-sim5"
+  }
+}
+```
+
+## decision: Before new outcomes, source/data inspection corrects the baseline description: previous three sweeps use one observed nonzero fixed-target level per lower-anchor pair, not literal origin. The discriminator remains one versus two independent levels at the same60point budget. Worker plans symmetric levels around the measured tuner value with delta=min40mm,one-quarter minimum observed drive span. A20percent RMSE reduction is only an exploratory continue signal; product adoption requires practical absolute error and held-out/full-loop validation, not merely a smaller metre-scale failure.
+
+```json
+{
+  "id": "decision-ac78de49760f43d693bac3d6f00fe082",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "decision",
+  "title": "Before new outcomes, source/data inspection corrects the baseline description: previous three sweeps use one observed nonzero fixed-target level per lower-anchor pair, not literal origin. The discriminator remains one versus two independent levels at the same60point budget. Worker plans symmetric levels around the measured tuner value with delta=min40mm,one-quarter minimum observed drive span. A20percent RMSE reduction is only an exploratory continue signal; product adoption requires practical absolute error and held-out/full-loop validation, not merely a smaller metre-scale failure.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:27:53.634338+00:00",
+  "updated_at": "2026-10-27T12:27:53.634338+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "coverage-allocation"
+  }
+}
+```
+
+## decision: Early actual native comparison failed the paired20percent exploratory gate in all four solver/world rows, with two worsening. Stop refining this6x10,two-level variant now. Finding remains unreviewed until fixed submission; the broader independent-geometry idea stays reopenable after force adequacy is resolved.
+
+```json
+{
+  "id": "decision-4bdc949fbd4e48a8bb56eb5a8999c72d",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "decision",
+  "title": "Early actual native comparison failed the paired20percent exploratory gate in all four solver/world rows, with two worsening. Stop refining this6x10,two-level variant now. Finding remains unreviewed until fixed submission; the broader independent-geometry idea stays reopenable after force adequacy is resolved.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:32:05.421244+00:00",
+  "updated_at": "2026-10-27T12:32:05.421244+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "coverage-allocation"
+  }
+}
+```
+
+## relation: Early actual native comparison failed the paired20percent exploratory gate in all four solver/world rows, with two worsening. Stop refining this6x10,two-level variant now. Finding remains unreviewed until fixed submission; the broader independent-geometry idea stays reopenable after force adequacy is resolved.
+
+```json
+{
+  "id": "relation-63904aebd2444d6e8f8cb380a1c6d3af",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "relation",
+  "title": "Early actual native comparison failed the paired20percent exploratory gate in all four solver/world rows, with two worsening. Stop refining this6x10,two-level variant now. Finding remains unreviewed until fixed submission; the broader independent-geometry idea stays reopenable after force adequacy is resolved.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:32:05.422724+00:00",
+  "updated_at": "2026-10-27T12:32:05.422724+00:00",
+  "details": {
+    "reason": "Early actual native comparison failed the paired20percent exploratory gate in all four solver/world rows, with two worsening. Stop refining this6x10,two-level variant now. Finding remains unreviewed until fixed submission; the broader independent-geometry idea stays reopenable after force adequacy is resolved.",
+    "relation": "decision",
+    "source_id": "decision-4bdc949fbd4e48a8bb56eb5a8999c72d",
+    "target_id": "coverage-allocation"
+  }
+}
+```
+
+## strategy_event: Early actual native comparison failed the paired20percent exploratory gate in all four solver/world rows, with two worsening. Stop refining this6x10,two-level variant now. Finding remains unreviewed until fixed submission; the broader independent-geometry idea stays reopenable after force adequacy is resolved.
+
+```json
+{
+  "id": "strategy_event-c632fc5f21834fc18b0b81608f88e6ad",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "strategy_event",
+  "title": "Early actual native comparison failed the paired20percent exploratory gate in all four solver/world rows, with two worsening. Stop refining this6x10,two-level variant now. Finding remains unreviewed until fixed submission; the broader independent-geometry idea stays reopenable after force adequacy is resolved.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:32:05.422849+00:00",
+  "updated_at": "2026-10-27T12:32:05.422849+00:00",
+  "details": {
+    "approach_ids": [
+      "coverage-allocation"
+    ],
+    "basis": "Manager decision; scientific admission is separate",
+    "citation_ids": [
+      "route_plan-e789572a848e41e0bb9fe96f095445fa",
+      "coverage-vs-force",
+      "review-5f62ee3093f94f7a9af98157ecb24066"
+    ],
+    "decision_ids": [
+      "decision-4bdc949fbd4e48a8bb56eb5a8999c72d"
+    ],
+    "event": "decision",
+    "reason": "Early actual native comparison failed the paired20percent exploratory gate in all four solver/world rows, with two worsening. Stop refining this6x10,two-level variant now. Finding remains unreviewed until fixed submission; the broader independent-geometry idea stays reopenable after force adequacy is resolved.",
+    "reopening_condition": "Evidence that force-adequate data or a materially different design makes extra fixed-target levels informative without point/time regression.",
+    "review_event_ids": [],
+    "scope": {
+      "buildup": 0,
+      "comparison": "same total60 points; independent fixed-target configurations vs repeated origin constraints",
+      "data": "two native stiffness worlds plus frozen analytical holdouts",
+      "layering": false,
+      "machine": "hp3",
+      "radii_mm": 30
+    },
+    "target": "parked"
+  }
+}
+```
+
+## decision: Bounded force-route continuation, preserving original45minute worker deadline and60minute manager cycle: four initial collection invocations consumed2,883,371steps. Coverage failed its paired signal and is cut. Both existing automatic-force searches learned forces but hit1Mper-world cap before60points, so they are incomplete execution evidence rather than negative accuracy results. Permit exactly two additional fresh-world collections replaying each worlds already learned encoder-derived forces, without repeating autotuning or tuning by true-anchor error. At most six collection invocations total, six million actual cumulative steps,1.55Msteps per new world,24fit stages total, and original13:07UTC worker deadline unchanged. Preserve auto-force partial journals, exact learnedsettings, state-history confound and timings. No default change is justified unless new paired data reach practical quality and relevant checks pass. If new collections fail, stop rather than expanding again.
+
+```json
+{
+  "id": "decision-b044bb8844bb44fbb318395b8b877e4a",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "decision",
+  "title": "Bounded force-route continuation, preserving original45minute worker deadline and60minute manager cycle: four initial collection invocations consumed2,883,371steps. Coverage failed its paired signal and is cut. Both existing automatic-force searches learned forces but hit1Mper-world cap before60points, so they are incomplete execution evidence rather than negative accuracy results. Permit exactly two additional fresh-world collections replaying each worlds already learned encoder-derived forces, without repeating autotuning or tuning by true-anchor error. At most six collection invocations total, six million actual cumulative steps,1.55Msteps per new world,24fit stages total, and original13:07UTC worker deadline unchanged. Preserve auto-force partial journals, exact learnedsettings, state-history confound and timings. No default change is justified unless new paired data reach practical quality and relevant checks pass. If new collections fail, stop rather than expanding again.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:34:48.159748+00:00",
+  "updated_at": "2026-10-27T12:34:48.159748+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "coverage-vs-force"
+  }
+}
+```
+
+## decision: Current controlled research reports practical force-adequate data and independent frozen prediction coverage, while existing restore_points recovers nominal3.29mm. Favor force selection/preservation work over a solver switch. This is a practical judgment on current unreviewed producer evidence; final scoped admission still requires separate review.
+
+```json
+{
+  "id": "decision-0953cb5e1b5b4c4393b88bc585fa3e1c",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "decision",
+  "title": "Current controlled research reports practical force-adequate data and independent frozen prediction coverage, while existing restore_points recovers nominal3.29mm. Favor force selection/preservation work over a solver switch. This is a practical judgment on current unreviewed producer evidence; final scoped admission still requires separate review.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:55:09.207122+00:00",
+  "updated_at": "2026-10-27T12:55:09.207122+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "force-model"
+  }
+}
+```
+
+## relation: Current controlled research reports practical force-adequate data and independent frozen prediction coverage, while existing restore_points recovers nominal3.29mm. Favor force selection/preservation work over a solver switch. This is a practical judgment on current unreviewed producer evidence; final scoped admission still requires separate review.
+
+```json
+{
+  "id": "relation-f7c93c6e3b4243db871954526a27580e",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "relation",
+  "title": "Current controlled research reports practical force-adequate data and independent frozen prediction coverage, while existing restore_points recovers nominal3.29mm. Favor force selection/preservation work over a solver switch. This is a practical judgment on current unreviewed producer evidence; final scoped admission still requires separate review.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:55:09.208264+00:00",
+  "updated_at": "2026-10-27T12:55:09.208264+00:00",
+  "details": {
+    "reason": "Current controlled research reports practical force-adequate data and independent frozen prediction coverage, while existing restore_points recovers nominal3.29mm. Favor force selection/preservation work over a solver switch. This is a practical judgment on current unreviewed producer evidence; final scoped admission still requires separate review.",
+    "relation": "decision",
+    "source_id": "decision-0953cb5e1b5b4c4393b88bc585fa3e1c",
+    "target_id": "force-model"
+  }
+}
+```
+
+## strategy_event: Current controlled research reports practical force-adequate data and independent frozen prediction coverage, while existing restore_points recovers nominal3.29mm. Favor force selection/preservation work over a solver switch. This is a practical judgment on current unreviewed producer evidence; final scoped admission still requires separate review.
+
+```json
+{
+  "id": "strategy_event-2ee4d4d07a3e401dbea0653e536c6bc5",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "strategy_event",
+  "title": "Current controlled research reports practical force-adequate data and independent frozen prediction coverage, while existing restore_points recovers nominal3.29mm. Favor force selection/preservation work over a solver switch. This is a practical judgment on current unreviewed producer evidence; final scoped admission still requires separate review.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:55:09.208477+00:00",
+  "updated_at": "2026-10-27T12:55:09.208477+00:00",
+  "details": {
+    "approach_ids": [
+      "force-model"
+    ],
+    "basis": "Manager decision; scientific admission is separate",
+    "citation_ids": [
+      "route_plan-3571ed4782da454e9c2be55f10449029",
+      "coverage-vs-force",
+      "review-5f62ee3093f94f7a9af98157ecb24066"
+    ],
+    "decision_ids": [
+      "decision-0953cb5e1b5b4c4393b88bc585fa3e1c"
+    ],
+    "event": "decision",
+    "reason": "Current controlled research reports practical force-adequate data and independent frozen prediction coverage, while existing restore_points recovers nominal3.29mm. Favor force selection/preservation work over a solver switch. This is a practical judgment on current unreviewed producer evidence; final scoped admission still requires separate review.",
+    "reopening_condition": "New paired physical-world evidence, reference-aligned accuracy or full-loop timing changes this prioritization.",
+    "review_event_ids": [],
+    "scope": {
+      "buildup": 0,
+      "data": "recorded and explicitly labelled synthetic/native simulated",
+      "layering": false,
+      "machine": "hp3",
+      "radii": "fixed known"
+    },
+    "target": "promising"
+  }
+}
+```
+
+## claim: Force selections now survive later collection failure as an atomic, contextual checkpoint without automatic reuse. Equal-point coverage redistribution failed its stated gate; existing force selection and recovery yielded useful scoped native fits, without a new solver or stopping policy.
+
+```json
+{
+  "id": "force-checkpoint-claim",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "claim",
+  "title": "Force selections now survive later collection failure as an atomic, contextual checkpoint without automatic reuse. Equal-point coverage redistribution failed its stated gate; existing force selection and recovery yielded useful scoped native fits, without a new solver or stopping policy.",
+  "revision": 1,
+  "created_at": "2026-10-27T17:10:15.781208+00:00",
+  "updated_at": "2026-10-27T17:10:15.781208+00:00",
+  "details": {
+    "claim_key": "force-checkpoint-claim",
+    "knowledge_state": "unassessed",
+    "scope": {
+      "claims_excluded": "no new force algorithm, no full-auto/hardware accuracy, no calibration speedup or automatic stale-cache reuse",
+      "code": "checkpoint tuned/fallback/manual selections before sweeps; keep final recovered forces current; optional per-config targets separately scoped",
+      "interruption": "genuine producer report/final preserved; launcher cancelled after model usage limit, cleanup confirmed",
+      "machine": "hp3",
+      "physics": "nativeRust,20000/8000N stiffness,fixed30mm,buildup0,no layering",
+      "research": "six collection attempts,10 fit stages; same60point complete datasets; conventional scene-home error and frozen cross-run predictions with reference/state-history limitations"
+    },
+    "version": 1
+  }
+}
+```
+
+## submission: Force selections now survive later collection failure as an atomic, contextual checkpoint without automatic reuse. Equal-point coverage redistribution failed its stated gate; existing force selection and recovery yielded useful scoped native fits, without a new solver or stopping policy.
+
+```json
+{
+  "id": "submission-72b96ed174494e6286eba68667db11cf",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "submission",
+  "title": "Force selections now survive later collection failure as an atomic, contextual checkpoint without automatic reuse. Equal-point coverage redistribution failed its stated gate; existing force selection and recovery yielded useful scoped native fits, without a new solver or stopping policy.",
+  "revision": 1,
+  "created_at": "2026-10-27T17:10:15.910934+00:00",
+  "updated_at": "2026-10-27T17:10:15.910934+00:00",
+  "details": {
+    "manifest": {
+      "assets": [
+        {
+          "artifact_id": null,
+          "id": "report",
+          "missing": false,
+          "role": "report",
+          "sha256": "b22faff04694fc2f744700751f5f0f6ef53ca059c2aa8a0a368ab2a8b404de93",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/report.md"
+        },
+        {
+          "artifact_id": null,
+          "id": "abstract",
+          "missing": false,
+          "role": "abstract",
+          "sha256": "fc89356eca56a1598dba631993153d96f95fe187e9ddda4317d340d9be722a0f",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/abstract.md"
+        },
+        {
+          "artifact_id": null,
+          "id": "producer_final",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "2e784b5b5fecb4de0586b1589051c5553da212169c2a6a076659817f5fe2ca0e",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/final-message.md"
+        },
+        {
+          "artifact_id": null,
+          "id": "summary",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "ef019eff066e47fee7c6cd63fc88e527e0fa6f5d7ffce0d29c303dbbb1cde4c6",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/measured-summary.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "usage",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "dab6ee5474fab0a8364d94ebad86eefbfb00aa25ac4fa030638fd34e6c7fc5fe",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/usage.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "provenance",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "bc9eb45af2d69d643f5d8db047d434fe106e247c253dcaf2a7ab295eea082308",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/provenance.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "recovery",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "97dfaa70f935d1d42461e47580be1e8b3ed0dfc58d005a1187409d826b789243",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/recovery-results.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "holdouts",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "545f1874d093cc4ac7e33be3ef198ecdfae764656276712261577cd338f6c5ac",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/holdout-results.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "holdout_nominal",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "7d87cbbe2817a1de289d1c0675df22a66c7507ebaae5b96cf227c9bada943c0d",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/nominal-saved-force-holdout.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "holdout_soft",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "aadd031b084aeb6c603a553a1365087bd177facb79c069625d18b59bdd23d9a6",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/soft-saved-force-holdout.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "learned_forces",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "45e407a414fc0012a9c8d007a14ce81840837e571e6ce635e3c4d7fbfbcf5558",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/learned-force-values.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "force_partial",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "21eba7e4550caa46fac1932fca5c31f0b7acd1ebeb53c6b1085cca56b06e8397",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/force-partial-summary.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "coverage_contract",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "88feb102c68f03b99069172ee7ec4869115a21f1e88cf5c2972c50020b76fee1",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/coverage-contract.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "force_contract",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "14353fd8992742e4066adf86c781c720c72b4c02f566c8a1ff7b20232c4755bc",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/force-contract.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "replay_contract",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "a4cf72a5e00167a84632da9e7dcdc14a97cc9e1d30ab6b21d0d2b28d7e9d068c",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/force-replay-contract.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "js_checks",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "028b1f29dfe8d3e0e0a73c5d1a1f6af52cf28cfcb4e19dea822b8c948c84450d",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/js-regression.log"
+        },
+        {
+          "artifact_id": null,
+          "id": "python_checks",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "4ea7e2461c73afe3d15c5c8be3fafa826859dbac9761b6009077a76ff23dd3a2",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/python-regression.log"
+        },
+        {
+          "artifact_id": null,
+          "id": "regression_steps",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "698656369f6eeb68888b79b7ed7b0d80f05e375082fc7bcc345b875048ff6c4d",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/regression-step-accounting.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "coverage_evidence",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "2b42ccedbb88955842124d71cc841a36dc7ec1514b3ba8a4dfb3c58016e5d004",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/coverage-evidence.zip"
+        },
+        {
+          "artifact_id": null,
+          "id": "force_evidence",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "1c779f78c421284672cb9f6ec60dd2b88f621483524cf0576e363ed4b849fe5e",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/force-evidence.zip"
+        },
+        {
+          "artifact_id": null,
+          "id": "force_replay_evidence",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "fdafb48917240245fa3bc3bdb4e923d0977b1f4c0e0ce5a01220fde8349801e5",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/force-replay-evidence.zip"
+        },
+        {
+          "artifact_id": null,
+          "id": "baseline_and_recovery",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "3e277714d673f3ba6bdac4946a47191ff16b9ce2ab741f52a168c53c56f0c814",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/baseline-and-recovery.zip"
+        },
+        {
+          "artifact_id": null,
+          "id": "measured_sources",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "c976d46a5fe0191dbac0a38b1a930ac8d69262f1e3743882eb4f43b26e226c42",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/measured-sources.zip"
+        }
+      ],
+      "assignment_id": "coverage-vs-force",
+      "attempt_id": "attempt-902d9713dcbe436d8ddc1ba23fd82baa",
+      "base_revision": "703e1a68936d6bad1a6de600b7d2d50e32f32344",
+      "candidate_revision": "25822cbbde6703d68b693f6e93bcfa23b2b78593",
+      "changed_paths": [
+        "autocal/control/behaviors/sweep_data_collection.mjs",
+        "autocal/control/cli/collect_sweep_data.mjs",
+        "autocal/control/tests/behaviors/force_tuning_checkpoint.test.mjs",
+        "autocal/control/tests/cli/collect_sweep_data.cli.test.mjs",
+        "research/native-collection.md"
+      ],
+      "claim": {
+        "created_at": "2026-10-27T17:10:15.781208+00:00",
+        "details": {
+          "claim_key": "force-checkpoint-claim",
+          "knowledge_state": "unassessed",
+          "scope": {
+            "claims_excluded": "no new force algorithm, no full-auto/hardware accuracy, no calibration speedup or automatic stale-cache reuse",
+            "code": "checkpoint tuned/fallback/manual selections before sweeps; keep final recovered forces current; optional per-config targets separately scoped",
+            "interruption": "genuine producer report/final preserved; launcher cancelled after model usage limit, cleanup confirmed",
+            "machine": "hp3",
+            "physics": "nativeRust,20000/8000N stiffness,fixed30mm,buildup0,no layering",
+            "research": "six collection attempts,10 fit stages; same60point complete datasets; conventional scene-home error and frozen cross-run predictions with reference/state-history limitations"
+          },
+          "version": 1
+        },
+        "id": "force-checkpoint-claim",
+        "kind": "claim",
+        "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+        "revision": 1,
+        "title": "Force selections now survive later collection failure as an atomic, contextual checkpoint without automatic reuse. Equal-point coverage redistribution failed its stated gate; existing force selection and recovery yielded useful scoped native fits, without a new solver or stopping policy.",
+        "updated_at": "2026-10-27T17:10:15.781208+00:00"
+      },
+      "config": {
+        "claims_excluded": "no new force algorithm, no full-auto/hardware accuracy, no calibration speedup or automatic stale-cache reuse",
+        "code": "checkpoint tuned/fallback/manual selections before sweeps; keep final recovered forces current; optional per-config targets separately scoped",
+        "interruption": "genuine producer report/final preserved; launcher cancelled after model usage limit, cleanup confirmed",
+        "machine": "hp3",
+        "physics": "nativeRust,20000/8000N stiffness,fixed30mm,buildup0,no layering",
+        "research": "six collection attempts,10 fit stages; same60point complete datasets; conventional scene-home error and frozen cross-run predictions with reference/state-history limitations"
+      },
+      "contract": "hp-sim5-evidence-review-v2",
+      "diff_sha256": "5308d03ad6899e7c9129adab93f0713b3d8624c5a2666445cb38bebb29d7e459",
+      "execution_state": "cancelled",
+      "input_identities": [
+        "sha256:b22faff04694fc2f744700751f5f0f6ef53ca059c2aa8a0a368ab2a8b404de93",
+        "sha256:fc89356eca56a1598dba631993153d96f95fe187e9ddda4317d340d9be722a0f",
+        "sha256:2e784b5b5fecb4de0586b1589051c5553da212169c2a6a076659817f5fe2ca0e",
+        "sha256:ef019eff066e47fee7c6cd63fc88e527e0fa6f5d7ffce0d29c303dbbb1cde4c6",
+        "sha256:dab6ee5474fab0a8364d94ebad86eefbfb00aa25ac4fa030638fd34e6c7fc5fe",
+        "sha256:bc9eb45af2d69d643f5d8db047d434fe106e247c253dcaf2a7ab295eea082308",
+        "sha256:97dfaa70f935d1d42461e47580be1e8b3ed0dfc58d005a1187409d826b789243",
+        "sha256:545f1874d093cc4ac7e33be3ef198ecdfae764656276712261577cd338f6c5ac",
+        "sha256:7d87cbbe2817a1de289d1c0675df22a66c7507ebaae5b96cf227c9bada943c0d",
+        "sha256:aadd031b084aeb6c603a553a1365087bd177facb79c069625d18b59bdd23d9a6",
+        "sha256:45e407a414fc0012a9c8d007a14ce81840837e571e6ce635e3c4d7fbfbcf5558",
+        "sha256:21eba7e4550caa46fac1932fca5c31f0b7acd1ebeb53c6b1085cca56b06e8397",
+        "sha256:88feb102c68f03b99069172ee7ec4869115a21f1e88cf5c2972c50020b76fee1",
+        "sha256:14353fd8992742e4066adf86c781c720c72b4c02f566c8a1ff7b20232c4755bc",
+        "sha256:a4cf72a5e00167a84632da9e7dcdc14a97cc9e1d30ab6b21d0d2b28d7e9d068c",
+        "sha256:028b1f29dfe8d3e0e0a73c5d1a1f6af52cf28cfcb4e19dea822b8c948c84450d",
+        "sha256:4ea7e2461c73afe3d15c5c8be3fafa826859dbac9761b6009077a76ff23dd3a2",
+        "sha256:698656369f6eeb68888b79b7ed7b0d80f05e375082fc7bcc345b875048ff6c4d",
+        "sha256:2b42ccedbb88955842124d71cc841a36dc7ec1514b3ba8a4dfb3c58016e5d004",
+        "sha256:1c779f78c421284672cb9f6ec60dd2b88f621483524cf0576e363ed4b849fe5e",
+        "sha256:fdafb48917240245fa3bc3bdb4e923d0977b1f4c0e0ce5a01220fde8349801e5",
+        "sha256:3e277714d673f3ba6bdac4946a47191ff16b9ce2ab741f52a168c53c56f0c814",
+        "sha256:c976d46a5fe0191dbac0a38b1a930ac8d69262f1e3743882eb4f43b26e226c42"
+      ],
+      "physics_gate_required": false,
+      "producer_checks": [
+        {
+          "asset_id": "js_checks",
+          "candidate_revision": "25822cbbde6703d68b693f6e93bcfa23b2b78593",
+          "command": "source scripts/cloud/env.sh; npx jest autocal/control/tests/behaviors autocal/control/tests/cli --runInBand",
+          "outcome": "passed"
+        },
+        {
+          "asset_id": "python_checks",
+          "candidate_revision": "25822cbbde6703d68b693f6e93bcfa23b2b78593",
+          "command": ".venv/bin/python -m pytest -q autocal/tests/test_native_parameter_pair.py tests/python/test_native_collector.py",
+          "outcome": "passed"
+        }
+      ],
+      "source_dirty": true,
+      "source_revision": "703e1a68936d6bad1a6de600b7d2d50e32f32344"
+    },
+    "sha256": "a5cf0cf21dae2e432bb9d19239cc181bc0b3ed37b5f9fda9c3af398907c7a62e"
+  }
+}
+```
+
+## runtime_allocation: Reserved saved-evidence review
+
+```json
+{
+  "id": "runtime_allocation-5aa7af3ca3a24ba29a1fe01b3c819c6e",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "runtime_allocation",
+  "title": "Reserved saved-evidence review",
+  "revision": 7,
+  "created_at": "2026-10-27T17:10:16.150638+00:00",
+  "updated_at": "2026-10-27T17:16:31.620710+00:00",
+  "details": {
+    "cleanup_deadline": 1793121686.7502105,
+    "cleanup_seconds": 190,
+    "deadline": 1793121496.7502105,
+    "events": [
+      {
+        "at": "2026-10-27T17:16:31.620537+00:00",
+        "event": "allocation_stopped",
+        "reason": "Final saved-evidence review applied; no new numerical work remains funded."
+      }
+    ],
+    "lease_until": 1793121403.2969255,
+    "owner": {
+      "id": "controller-a71306999fba47549e5f1d01e4449da9",
+      "process": {
+        "birth": "1517500",
+        "boot_id": "d31b8f0f-7059-4ebd-8df1-d4324ca094d3",
+        "group": 5254,
+        "host": "6ffb042648e4",
+        "pid": 5254,
+        "uid": 1000
+      }
+    },
+    "queue": [],
+    "reservations": [
+      {
+        "admission_id": "admission-44964abf6b884000a838a6d017c7ae69",
+        "assignment_id": "coverage-vs-force",
+        "attempt_id": "attempt-902d9713dcbe436d8ddc1ba23fd82baa",
+        "charged_at": "2026-10-27T17:10:16.150232+00:00",
+        "review_pending": false,
+        "review_seconds": 480,
+        "reviews": [
+          {
+            "charge_id": "8e7287f462104c2181a49bbcb320d887",
+            "reserved_seconds": 480,
+            "run_id": "review-run-9219415c674d40ff9bf2659a64e4e520",
+            "state": "completed"
+          }
+        ],
+        "state": "cancelled",
+        "usage": {
+          "estimates": {},
+          "observed_worker_wall_seconds": 2705.3374450206757,
+          "supervisor_observations": [],
+          "unmetered": [
+            "shell movement",
+            "shell compute",
+            "spend"
+          ],
+          "worker_reports": []
+        },
+        "worker_seconds": 0
+      }
+    ],
+    "retry_limit": 1,
+    "review_backlog_limit": 1,
+    "review_seconds": 480,
+    "started_at": "2026-10-27T17:10:16.150215+00:00",
+    "state": "stopped",
+    "task_limit": 1,
+    "wall_reserved_seconds": 480,
+    "wall_seconds": 480.59999999999997
+  }
+}
+```
+
+## review_run: Separate saved-evidence review
+
+```json
+{
+  "id": "review-run-9219415c674d40ff9bf2659a64e4e520",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "review_run",
+  "title": "Separate saved-evidence review",
+  "revision": 3,
+  "created_at": "2026-10-27T17:10:16.286650+00:00",
+  "updated_at": "2026-10-27T17:16:31.372918+00:00",
+  "details": {
+    "argv": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/cloud/cloud_client_bridge.py",
+      "client",
+      "--cd",
+      "/workspace/hp-sim5",
+      "--output-last-message",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-9219415c674d40ff9bf2659a64e4e520/final-message.md",
+      "--sandbox",
+      "read-only"
+    ],
+    "contract": "hp-sim5-evidence-review-v2",
+    "deadline": 1793121496.284984,
+    "directory": "/workspace/hp-sim5/.research-programs/reviews/review-run-9219415c674d40ff9bf2659a64e4e520",
+    "error": null,
+    "guard_argv": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_program_review_guard.py",
+      "1793121496.284984",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-9219415c674d40ff9bf2659a64e4e520/wall-expired",
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/cloud/cloud_client_bridge.py",
+      "client",
+      "--cd",
+      "/workspace/hp-sim5",
+      "--output-last-message",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-9219415c674d40ff9bf2659a64e4e520/final-message.md",
+      "--sandbox",
+      "read-only"
+    ],
+    "owner": {
+      "id": "review-controller-982fe8433be54be8a392368da5c4f20b",
+      "process": {
+        "birth": "1517500",
+        "boot_id": "d31b8f0f-7059-4ebd-8df1-d4324ca094d3",
+        "group": 5254,
+        "host": "6ffb042648e4",
+        "pid": 5254,
+        "uid": 1000
+      }
+    },
+    "process": {
+      "birth": "3285102",
+      "boot_id": "d31b8f0f-7059-4ebd-8df1-d4324ca094d3",
+      "group": 8163,
+      "host": "6ffb042648e4",
+      "pid": 8163,
+      "uid": 1000
+    },
+    "prompt_sha256": "ab6eef50ec9a61a2a78ae5d1e575fa9b8f809086ae1b5b4532a2aa055b4c2675",
+    "returncode": 0,
+    "review_id": "review-8b7d4a844d274f31855086c3c4175d5d",
+    "reviewer": {
+      "backend": "codex",
+      "context_id": "review-run-9219415c674d40ff9bf2659a64e4e520",
+      "model": null,
+      "model_provider": "openai"
+    },
+    "runtime_reservation": [
+      "runtime_allocation-5aa7af3ca3a24ba29a1fe01b3c819c6e",
+      "coverage-vs-force",
+      "8e7287f462104c2181a49bbcb320d887"
+    ],
+    "started_at": "2026-10-27T17:10:16.284968+00:00",
+    "state": "completed",
+    "submission_id": "submission-72b96ed174494e6286eba68667db11cf",
+    "submission_sha256": "a5cf0cf21dae2e432bb9d19239cc181bc0b3ed37b5f9fda9c3af398907c7a62e",
+    "wall_minutes": 8
+  }
+}
+```
+
+## review: Keep the report and candidate 25822cbb. The narrow checkpoint implementation matches its stated behavior, with adequate scoped regression receipts and no unresolved code defect found. The optional per-config targets preserve anchor associations and existing defaults. The research supports rejecting the tested equal-point coverage variant and retaining useful data obtained with existing force selection and recovery. It supports no new force algorithm, full-loop or hardware accuracy gain, or speedup.
+
+```json
+{
+  "id": "review-8b7d4a844d274f31855086c3c4175d5d",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "review",
+  "title": "Keep the report and candidate 25822cbb. The narrow checkpoint implementation matches its stated behavior, with adequate scoped regression receipts and no unresolved code defect found. The optional per-config targets preserve anchor associations and existing defaults. The research supports rejecting the tested equal-point coverage variant and retaining useful data obtained with existing force selection and recovery. It supports no new force algorithm, full-loop or hardware accuracy gain, or speedup.",
+  "revision": 1,
+  "created_at": "2026-10-27T17:16:31.374285+00:00",
+  "updated_at": "2026-10-27T17:16:31.374285+00:00",
+  "details": {
+    "contract": "hp-sim5-evidence-review-v2",
+    "response": {
+      "checks": [
+        {
+          "asset_ids": [
+            "report",
+            "abstract",
+            "producer_final",
+            "provenance"
+          ],
+          "description": "Reviewed the force-checkpoint claim and report for candidate 25822cbbde6703d68b693f6e93bcfa23b2b78593 against 703e1a68936d6bad1a6de600b7d2d50e32f32344, including optional target commit 39510991. Verified every submitted asset hash and the diff hash. The fixed diff exactly matches git diff for those revisions.",
+          "kind": "inspected"
+        },
+        {
+          "asset_ids": [
+            "js_checks",
+            "python_checks",
+            "regression_steps",
+            "report"
+          ],
+          "description": "Inspected candidate source and lifecycle tests. The temp-file rename precedes post-tuning positioning, stages distinguish successful tuning, fallback and manual selection, manual metadata replaces the old sidecar, no automatic reader was added, and final metadata updates recovered forces. Inspected producer receipts for 69 passing JS tests and 17 passing Python tests with five deselected. These suites were not rerun. Changes concern collection configuration and persistence, without physics, motor, cable-transport or scene-dynamics implementation changes.",
+          "kind": "inspected"
+        },
+        {
+          "asset_ids": [
+            "coverage_evidence",
+            "force_evidence",
+            "force_replay_evidence",
+            "baseline_and_recovery",
+            "measured_sources",
+            "provenance"
+          ],
+          "description": "Opened all five ZIPs with Python zipfile and checked packed provenance hashes, commands, manifests, datasets, source snapshots and fit stages. Confirmed a common native physics artifact, four completed 60-point collections and failed million-step force trials containing 30 nominal and 40 soft points. Independently recomputed stored-anchor RMSE against the recorded conventional reference. Coverage changes were -58.85%, +3.69%, +15.13% and -48.42%, so none passed the 20% gate. Nominal ordinary LBFGSB remained invalid at 1867.09 mm; restore_sweeps failed and existing restore_points reached 3.29029 mm. Soft ordinary fits were 10.42757 and 11.64455 mm.",
+          "kind": "inspected"
+        },
+        {
+          "asset_ids": [
+            "holdouts",
+            "holdout_nominal",
+            "holdout_soft",
+            "force_evidence",
+            "measured_sources"
+          ],
+          "description": "Inspected the frozen-prediction script and coverage enforcement. Independently reconstructed the saved holdout sweeps from the packed journals, including canonical reversal and observed fixed lengths; they match exactly. Counts are 20 nominal and 40 soft, with the incomplete ten-point nominal direction excluded. Producer prediction results report full candidate coverage and 0/40 for soft baseline TRF as a failure. Prediction residuals themselves were inspected, not independently reproduced.",
+          "kind": "inspected"
+        },
+        {
+          "asset_ids": [
+            "usage",
+            "regression_steps",
+            "coverage_contract",
+            "force_contract",
+            "replay_contract"
+          ],
+          "description": "Inspected declared thresholds and replay authorization. Saved-file arithmetic confirms six collections, ten fit stages, 4166257 collection steps plus 627 regression steps, and 433.690965 seconds of world wall time. The nominal replay exceeds twice-baseline work, consistent with the report excluding a speedup claim.",
+          "kind": "inspected"
+        }
+      ],
+      "code_readiness": "ready",
+      "discrepancy": null,
+      "finding": "supported",
+      "limitations": [
+        "Review used source inspection and saved-file arithmetic only. No fitting, prediction evaluation, physics, collection or regression suite ran during review. Native measurements predate the checkpoint change; its failure lifecycle is supported by mocked JS tests.",
+        "Scene-home anchor RMSE lacks the settled encoder-zero pose and rotation. Frozen predictions use independent movements in the same two authored scenes, with different state histories and size-tuner outcomes. These results do not isolate a mechanical cause or establish absolute accuracy, generalization, hardware performance or full-loop acceptance.",
+        "The production force algorithm and recovery already existed. Original automatic collections were incomplete; fresh replays omit learning cost and history. Rank deficiency and broad covariance remain, and the evidence does not justify changing solver or acquisition defaults.",
+        "The producer wrote a report and final message before the launcher was cancelled after its model usage limit. The final message references an unavailable handoff.json; this review relies on the fixed report, source and evidence assets."
+      ],
+      "practical_value": "Preserves already selected forces when later collection fails. The saved datasets and failed coverage trial provide useful decisions within the two simulated scenes.",
+      "reason": "Keep the report and candidate 25822cbb. The narrow checkpoint implementation matches its stated behavior, with adequate scoped regression receipts and no unresolved code defect found. The optional per-config targets preserve anchor associations and existing defaults. The research supports rejecting the tested equal-point coverage variant and retaining useful data obtained with existing force selection and recovery. It supports no new force algorithm, full-loop or hardware accuracy gain, or speedup.",
+      "required_checks": [],
+      "submission_id": "submission-72b96ed174494e6286eba68667db11cf",
+      "submission_sha256": "a5cf0cf21dae2e432bb9d19239cc181bc0b3ed37b5f9fda9c3af398907c7a62e",
+      "verdict": "keep"
+    },
+    "response_sha256": "b4f4e083297503cb0758940de2e84fc2c5eda1c66addc4c53195be703daaf61c",
+    "reviewer": {
+      "backend": "codex",
+      "context_id": "review-run-9219415c674d40ff9bf2659a64e4e520",
+      "model": null,
+      "model_provider": "openai"
+    },
+    "run_id": "review-run-9219415c674d40ff9bf2659a64e4e520",
+    "submission_id": "submission-72b96ed174494e6286eba68667db11cf"
+  }
+}
+```
+
+## admission: Keep the report and candidate 25822cbb. The narrow checkpoint implementation matches its stated behavior, with adequate scoped regression receipts and no unresolved code defect found. The optional per-config targets preserve anchor associations and existing defaults. The research supports rejecting the tested equal-point coverage variant and retaining useful data obtained with existing force selection and recovery. It supports no new force algorithm, full-loop or hardware accuracy gain, or speedup.
+
+```json
+{
+  "id": "admission-44964abf6b884000a838a6d017c7ae69",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "admission",
+  "title": "Keep the report and candidate 25822cbb. The narrow checkpoint implementation matches its stated behavior, with adequate scoped regression receipts and no unresolved code defect found. The optional per-config targets preserve anchor associations and existing defaults. The research supports rejecting the tested equal-point coverage variant and retaining useful data obtained with existing force selection and recovery. It supports no new force algorithm, full-loop or hardware accuracy gain, or speedup.",
+  "revision": 1,
+  "created_at": "2026-10-27T17:16:31.506049+00:00",
+  "updated_at": "2026-10-27T17:16:31.506049+00:00",
+  "details": {
+    "actor": "controller",
+    "claim_id": "force-checkpoint-claim",
+    "code_readiness": "ready",
+    "contract": "hp-sim5-evidence-review-v2",
+    "decision": "keep",
+    "engineering_reasons": [],
+    "finding": "supported",
+    "guard_reasons": [],
+    "knowledge_state": "reviewed",
+    "practical_value": "Preserves already selected forces when later collection fails. The saved datasets and failed coverage trial provide useful decisions within the two simulated scenes.",
+    "required_checks": [],
+    "review_id": "review-8b7d4a844d274f31855086c3c4175d5d",
+    "submission_id": "submission-72b96ed174494e6286eba68667db11cf",
+    "submission_sha256": "a5cf0cf21dae2e432bb9d19239cc181bc0b3ed37b5f9fda9c3af398907c7a62e"
+  }
+}
+```
+
+## question: Can minimum-force search work be reduced while preserving learned force decisions and collected-data quality across physical worlds?
+
+```json
+{
+  "id": "next-force-search-cost",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "question",
+  "title": "Can minimum-force search work be reduced while preserving learned force decisions and collected-data quality across physical worlds?",
+  "revision": 1,
+  "created_at": "2026-10-27T17:18:23.522210+00:00",
+  "updated_at": "2026-10-27T17:18:23.522210+00:00",
+  "details": {
+    "knowledge_state": "unassessed",
+    "scope": {
+      "buildup": 0,
+      "machine": "hp3",
+      "motivation": "observed force-selection phases used551484/569073steps before collection",
+      "radii": "fixed known",
+      "status": "not tested and unfunded"
+    }
+  }
+}
+```
+
+## decision: Final review-8b7d4a844d274f31855086c3c4175d5d supports checkpoint claim and marks candidate25822cbb ready; admission-44964abf6b884000a838a6d017c7ae69 applies keep. Publish checkpoint and optional per-config capability, retain existing force/solver/stopping defaults. Coverage variant stays cut. Preserve current force adequacy result with reference/history/timing limits. No additional numerical work is funded.
+
+```json
+{
+  "id": "decision-3f755a861fb24d7db4414eefc1bacab3",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "decision",
+  "title": "Final review-8b7d4a844d274f31855086c3c4175d5d supports checkpoint claim and marks candidate25822cbb ready; admission-44964abf6b884000a838a6d017c7ae69 applies keep. Publish checkpoint and optional per-config capability, retain existing force/solver/stopping defaults. Coverage variant stays cut. Preserve current force adequacy result with reference/history/timing limits. No additional numerical work is funded.",
+  "revision": 1,
+  "created_at": "2026-10-27T17:18:23.638200+00:00",
+  "updated_at": "2026-10-27T17:18:23.638200+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "force-model"
+  }
+}
+```
+
+## decision: Finite user-directed improvement cycle complete; reviewed code pushed, approach ledger updated, no further numerical allocation.
+
+```json
+{
+  "id": "decision-90259328564d4eb090bc7e5c691189b6",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "decision",
+  "title": "Finite user-directed improvement cycle complete; reviewed code pushed, approach ledger updated, no further numerical allocation.",
+  "revision": 1,
+  "created_at": "2026-10-27T17:18:23.748762+00:00",
+  "updated_at": "2026-10-27T17:18:23.748762+00:00",
   "details": {
     "actor": "manager",
     "evidence_ids": [],

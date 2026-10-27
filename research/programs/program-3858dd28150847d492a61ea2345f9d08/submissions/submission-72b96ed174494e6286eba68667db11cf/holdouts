@@ -1,0 +1,135 @@
+{
+  "experiment": "CVF-E04",
+  "fit_stages": 0,
+  "scope": "Complete20point sweeps from earlier interrupted force-tuning worlds, never fitted by the replay models. Same two authored scenes, different physical state history and slightly different learned size travel. Incomplete10point nominal direction excluded. Frozen models, no truth or refitting.",
+  "results": [
+    {
+      "world": "nominal",
+      "candidate": "baseline-lbfgsb",
+      "stage": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/clean-nominal-lbfgsb-ordinary.stage.json",
+      "holdout": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/nominal-saved-force-holdout.json",
+      "whole_sweeps": 1,
+      "expected_points": 20,
+      "valid_points": 20,
+      "rms_sampson_mm": 31.168831420971028,
+      "production_prediction": {
+        "score": 1237.051258763195,
+        "failed": false,
+        "sweeps": 1
+      },
+      "wall_s": 0.007849647001421545
+    },
+    {
+      "world": "nominal",
+      "candidate": "baseline-trf",
+      "stage": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/clean-nominal-trf-ordinary.stage.json",
+      "holdout": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/nominal-saved-force-holdout.json",
+      "whole_sweeps": 1,
+      "expected_points": 20,
+      "valid_points": 20,
+      "rms_sampson_mm": 31.59842984000075,
+      "production_prediction": {
+        "score": 1309.2617672429044,
+        "failed": false,
+        "sweeps": 1
+      },
+      "wall_s": 0.0015159920003497973
+    },
+    {
+      "world": "nominal",
+      "candidate": "force-default-with-existing-recovery",
+      "stage": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/nominal-lbfgsb.restore_points.stage.json",
+      "holdout": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/nominal-saved-force-holdout.json",
+      "whole_sweeps": 1,
+      "expected_points": 20,
+      "valid_points": 20,
+      "rms_sampson_mm": 0.02045053961218999,
+      "production_prediction": {
+        "score": 0.19711894902410962,
+        "failed": false,
+        "sweeps": 1
+      },
+      "wall_s": 0.001467198999307584
+    },
+    {
+      "world": "nominal",
+      "candidate": "force-trf",
+      "stage": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/force-replay/clean-nominal-trf-ordinary.stage.json",
+      "holdout": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/nominal-saved-force-holdout.json",
+      "whole_sweeps": 1,
+      "expected_points": 20,
+      "valid_points": 20,
+      "rms_sampson_mm": 0.020450618203748345,
+      "production_prediction": {
+        "score": 0.1971235099929849,
+        "failed": false,
+        "sweeps": 1
+      },
+      "wall_s": 0.0014203089995135088
+    },
+    {
+      "world": "soft",
+      "candidate": "baseline-lbfgsb",
+      "stage": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/clean-soft-lbfgsb-ordinary.stage.json",
+      "holdout": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/soft-saved-force-holdout.json",
+      "whole_sweeps": 2,
+      "expected_points": 40,
+      "valid_points": 40,
+      "rms_sampson_mm": 31.91849621004481,
+      "production_prediction": {
+        "score": 1127.4078959602816,
+        "failed": false,
+        "sweeps": 2
+      },
+      "wall_s": 0.0024351860010938253
+    },
+    {
+      "world": "soft",
+      "candidate": "baseline-trf",
+      "stage": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/clean-soft-trf-ordinary.stage.json",
+      "holdout": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/soft-saved-force-holdout.json",
+      "whole_sweeps": 2,
+      "expected_points": 40,
+      "valid_points": 0,
+      "rms_sampson_mm": null,
+      "production_prediction": {
+        "score": null,
+        "failed": true,
+        "sweeps": 2
+      },
+      "wall_s": 0.0014780959972995333
+    },
+    {
+      "world": "soft",
+      "candidate": "force-default-with-existing-recovery",
+      "stage": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/force-replay/clean-soft-lbfgsb-ordinary.stage.json",
+      "holdout": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/soft-saved-force-holdout.json",
+      "whole_sweeps": 2,
+      "expected_points": 40,
+      "valid_points": 40,
+      "rms_sampson_mm": 0.10302265804735006,
+      "production_prediction": {
+        "score": 2.7029340566311877,
+        "failed": false,
+        "sweeps": 2
+      },
+      "wall_s": 0.002635724002175266
+    },
+    {
+      "world": "soft",
+      "candidate": "force-trf",
+      "stage": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/force-replay/clean-soft-trf-ordinary.stage.json",
+      "holdout": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/soft-saved-force-holdout.json",
+      "whole_sweeps": 2,
+      "expected_points": 40,
+      "valid_points": 40,
+      "rms_sampson_mm": 0.10802622138927782,
+      "production_prediction": {
+        "score": 3.0442943041146644,
+        "failed": false,
+        "sweeps": 2
+      },
+      "wall_s": 0.002373965002334444
+    }
+  ]
+}

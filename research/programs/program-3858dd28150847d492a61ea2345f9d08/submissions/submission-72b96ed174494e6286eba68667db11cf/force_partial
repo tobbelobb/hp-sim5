@@ -1,0 +1,166 @@
+[
+  {
+    "world": "nominal",
+    "partial_points": 30,
+    "physical_direction_counts": [
+      {
+        "fixed": [
+          0,
+          3
+        ],
+        "drive": 1,
+        "sensor": 2,
+        "points": 10
+      },
+      {
+        "fixed": [
+          0,
+          3
+        ],
+        "drive": 2,
+        "sensor": 1,
+        "points": 10
+      },
+      {
+        "fixed": [
+          1,
+          3
+        ],
+        "drive": 0,
+        "sensor": 2,
+        "points": 10
+      }
+    ],
+    "force_probe_lines": [
+      "; auto-tune force start",
+      "; auto-tune probe 1/120: test=0.0100 moved=no travel=0.010deg stalled=yes",
+      "; auto-tune probe 2/120: test=0.0140 moved=no travel=0.000deg stalled=yes",
+      "; auto-tune probe 3/120: test=0.0196 moved=no travel=0.000deg stalled=yes",
+      "; auto-tune probe 4/120: test=0.0274 moved=no travel=0.050deg stalled=yes",
+      "; auto-tune probe 5/120: test=0.0384 moved=no travel=0.000deg stalled=yes",
+      "; auto-tune probe 6/120: test=0.0538 moved=no travel=0.070deg stalled=yes",
+      "; auto-tune probe 7/120: test=0.0753 moved=no travel=0.180deg stalled=yes",
+      "; auto-tune probe 8/120: test=0.1054 moved=no travel=0.320deg stalled=yes",
+      "; auto-tune probe 9/120: test=0.1476 moved=no travel=0.530deg stalled=yes",
+      "; auto-tune probe 10/120: test=0.2066 moved=no travel=0.880deg stalled=yes",
+      "; auto-tune probe 11/120: test=0.2893 moved=yes travel=1.700deg stalled=yes",
+      "; auto-tune bisect-start 1/60: test=0.2479 moved=yes travel=1.190deg stalled=yes",
+      "; auto-tune bisect-start 2/60: test=0.2273 moved=no travel=1.030deg stalled=yes",
+      "; auto-tune edge-ramp 1/120: test=0.2479 moved=yes travel=1.330deg stalled=yes",
+      "; auto-tune edge-ramp 2/120: test=0.3471 moved=yes travel=44.310deg stalled=no",
+      "; auto-tune edge-ramp 3/120: test=0.4859 moved=yes travel=75.040deg stalled=no",
+      "; auto-tune edge-ramp 4/120: test=0.6803 moved=yes travel=186.240deg stalled=no",
+      "; auto-tune edge-ramp 5/120: test=0.9525 moved=yes travel=313.780deg stalled=no",
+      "; auto-tune edge-ramp 6/120: test=1.3334 moved=yes travel=471.230deg stalled=no",
+      "; auto-tune edge-ramp 7/120: test=1.8668 moved=yes travel=671.050deg stalled=no",
+      "; auto-tune edge-ramp 8/120: test=2.6135 moved=yes travel=920.970deg stalled=no",
+      "; auto-tune edge-ramp 9/120: test=3.6590 moved=yes travel=1216.750deg stalled=no",
+      "; auto-tune edge-ramp 10/120: test=5.1225 moved=yes travel=1516.220deg stalled=no",
+      "; auto-tune selected: idle=0.0124 start=0.2479 edge=2.6135 d_max=1516.220deg"
+    ],
+    "size_tune_lines": [
+      "; size-tune max travel raw=593.206mm scaled=474.565mm"
+    ],
+    "terminal": "Physics step budget exhausted at1Msteps, not completed paired accuracy",
+    "probe_counts": {
+      "minimum_force_probes": 11,
+      "minimum_force_bisections": 2,
+      "edge_ramp_probes": 10
+    },
+    "learned_forces": {
+      "force_low_n": 0.012396628070399991,
+      "force_mid_n": 0.24793256140799982,
+      "force_max_n": 2.613544005371242,
+      "tuning_end_step": 551484,
+      "tuning_end_simulated_s": 1102.968,
+      "source_events": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/force/nominal/sweeps.headless/events.jsonl",
+      "source_log": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/force/nominal/collector.log"
+    }
+  },
+  {
+    "world": "soft",
+    "partial_points": 40,
+    "physical_direction_counts": [
+      {
+        "fixed": [
+          0,
+          3
+        ],
+        "drive": 1,
+        "sensor": 2,
+        "points": 10
+      },
+      {
+        "fixed": [
+          0,
+          3
+        ],
+        "drive": 2,
+        "sensor": 1,
+        "points": 10
+      },
+      {
+        "fixed": [
+          1,
+          3
+        ],
+        "drive": 0,
+        "sensor": 2,
+        "points": 10
+      },
+      {
+        "fixed": [
+          1,
+          3
+        ],
+        "drive": 2,
+        "sensor": 0,
+        "points": 10
+      }
+    ],
+    "force_probe_lines": [
+      "; auto-tune force start",
+      "; auto-tune probe 1/120: test=0.0100 moved=no travel=0.000deg stalled=yes",
+      "; auto-tune probe 2/120: test=0.0140 moved=no travel=0.020deg stalled=yes",
+      "; auto-tune probe 3/120: test=0.0196 moved=no travel=0.050deg stalled=yes",
+      "; auto-tune probe 4/120: test=0.0274 moved=no travel=0.110deg stalled=yes",
+      "; auto-tune probe 5/120: test=0.0384 moved=no travel=0.170deg stalled=yes",
+      "; auto-tune probe 6/120: test=0.0538 moved=no travel=0.280deg stalled=yes",
+      "; auto-tune probe 7/120: test=0.0753 moved=no travel=0.380deg stalled=yes",
+      "; auto-tune probe 8/120: test=0.1054 moved=no travel=0.320deg stalled=yes",
+      "; auto-tune probe 9/120: test=0.1476 moved=no travel=0.750deg stalled=yes",
+      "; auto-tune probe 10/120: test=0.2066 moved=no travel=0.890deg stalled=yes",
+      "; auto-tune probe 11/120: test=0.2893 moved=yes travel=1.840deg stalled=yes",
+      "; auto-tune bisect-start 1/60: test=0.2479 moved=yes travel=1.420deg stalled=yes",
+      "; auto-tune bisect-start 2/60: test=0.2273 moved=yes travel=1.160deg stalled=yes",
+      "; auto-tune edge-ramp 1/120: test=0.2273 moved=yes travel=1.240deg stalled=yes",
+      "; auto-tune edge-ramp 2/120: test=0.3182 moved=yes travel=44.950deg stalled=no",
+      "; auto-tune edge-ramp 3/120: test=0.4455 moved=yes travel=103.220deg stalled=no",
+      "; auto-tune edge-ramp 4/120: test=0.6236 moved=yes travel=323.520deg stalled=no",
+      "; auto-tune edge-ramp 5/120: test=0.8731 moved=yes travel=591.850deg stalled=no",
+      "; auto-tune edge-ramp 6/120: test=1.2223 moved=yes travel=881.100deg stalled=no",
+      "; auto-tune edge-ramp 7/120: test=1.7112 moved=yes travel=1205.090deg stalled=no",
+      "; auto-tune edge-ramp 8/120: test=2.3957 moved=yes travel=1516.620deg stalled=no",
+      "; auto-tune edge-ramp 9/120: test=3.3540 moved=yes travel=1707.520deg stalled=no",
+      "; auto-tune selected: idle=0.0114 start=0.2273 edge=1.7112 d_max=1707.520deg"
+    ],
+    "size_tune_lines": [
+      "; size-tune max travel raw=543.553mm scaled=434.842mm"
+    ],
+    "terminal": "Physics step budget exhausted at1Msteps, not completed paired accuracy",
+    "probe_counts": {
+      "minimum_force_probes": 11,
+      "minimum_force_bisections": 2,
+      "edge_ramp_probes": 9
+    },
+    "learned_forces": {
+      "force_low_n": 0.011363575731199994,
+      "force_mid_n": 0.22727151462399986,
+      "force_max_n": 1.7112490511359328,
+      "tuning_end_step": 569073,
+      "tuning_end_simulated_s": 1138.146,
+      "source_events": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/force/soft/sweeps.headless/events.jsonl",
+      "source_log": "/workspace/hp-sim5/output/research/sessions/attempt-902d9713dcbe436d8ddc1ba23fd82baa/force/soft/collector.log"
+    }
+  }
+]

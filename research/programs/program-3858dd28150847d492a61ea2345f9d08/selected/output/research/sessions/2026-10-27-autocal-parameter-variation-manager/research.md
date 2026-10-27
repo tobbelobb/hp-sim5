@@ -2,7 +2,7 @@
 
 Program: program-3858dd28150847d492a61ea2345f9d08
 
-Status: in progress. No new scientific result yet.
+Status: three bounded cycles complete. Latest reviewed changes are published; chronology below preserves earlier decisions.
 
 Objective: improve encoder-only HP3 calibration speed and robustness across plausible physical setups, preserving one-click operation and automatic stopping. The user allows two hours of simulation/compute and requests cloud environment repairs without permission questions.
 
@@ -91,3 +91,42 @@ Manager arithmetic confirms602454 native steps,120 finite points and75.023 total
 ## Final decision
 
 Native review-5f62ee3093f94f7a9af98157ecb24066 supports/keeps the scoped claim and marks a4da0d73 ready. Admission-7d84479eb45c4688a07fd8c62f9f3cf0 applies it. No further checks are required. The numerical budget is closed and program paused. Keep both tools and runtime remedies; retain calibration defaults. All fixed evidence and failed/interrupted trials remain preserved.
+
+## User-directed improvement cycle
+
+The user requested pushing the reviewed changes and continuing with explicit approach pruning. Published HEAD703e1a68 to origin/codex/autocal-parameter-variation-guards, verified by ls-remote. Reopened the same program and resumed its memory rather than creating a new program.
+
+Current allocation runtime_allocation-acfdca734b854d67b48228eb35ed978c funds assignment coverage-vs-force, attempt-902d9713dcbe436d8ddc1ba23fd82baa. Worker deadline is approximately13:07UTC, with45 worker minutes from12:22UTC,4 collections,24 fit stages and4M steps. Separate review reserves8minutes within60 total manager minutes. This is the bounded continuation authorized by the new user message. It does not silently restart a cancelled old attempt.
+
+The [approach ledger](approaches.md) retires blanket point thinning and unconditional TRF replacement in their tested scope, parks residual-only ranking, and prioritizes redistributing60 points across more independent sweep geometries. Force adequacy is the funded rival. The worker must cut the main route if it has little progress at the10-15minute checkpoint and preserve the reason. No new generic tooling project is the main objective.
+
+A proposed initialization explanation was checked before funding: ellipse_solver.py already uses uniform full-bound random starts after the supplied data-derived guess. It is inaccurate to assume all starts are tiny perturbations. This untested broader idea is not being funded without a narrower discriminator.
+
+
+Before current outcomes, the worker inspected the actual baseline fixed_lengths: each pair has one nonzero tuner-derived fixed level, not literal origin. The test is now described precisely as one versus two levels at60points. Proposed per-world offset delta is min40mm,one-quarter minimum observed drive span, centered on the baseline tuner output. The20percent error gate is exploratory only; metre-scale errors are not an acceptable product result. Parent has independently confirmed nonzero baseline curvature, so matching drive/sensor spans must not be described as zero-curvature data.
+
+
+## Early route cut and force continuation
+
+The6x10,two-level coverage variant completed both60point datasets but failed the paired20percent exploratory gate. Nominal lbfgsb/trf conventional RMSE3214/1930mm versus2023/2003mm controls; soft3096/3972mm versus3648/2676mm. Two comparisons worsen; all four fail the20percent target. Stop refining this variant and park its broader route pending new force-adequate evidence. These producer outcomes await separate review.
+
+The next two automatic-force runs learned materially different forces, then both hit the preserved1M per-world step limit before completing60points. This does not reject force accuracy. Four collection invocations used2,883,371steps in total. Manager explicitly permits two fresh-world data collections with each worlds already learned encoder-derived forces, avoiding repeat search and avoiding outcome-based retuning. Cumulative limits become six invocations and6Msteps,1.55M per new world, with24fit stages and original13:07UTC worker deadline unchanged. No further expansion if they fail. Active-time budget remains bounded by the same60minute cycle authorized by the user.
+
+
+## Productive force route
+
+Two fresh force-replay datasets completed3x20points. Nominal741617steps/76.87s and soft541269steps/about55s. NominalTRF gives about3.29mm conventional anchor RMSE; softLBFGSB/TRF about10.43/11.64mm. Nominal ordinaryLBFGSB reaches sentinel100, but existing restore_sweeps then restore_points recovers the same3.29mm in0.46s. Thus no solver modification is justified by this case. Ten ordinary/recovery fit stages used.
+
+The supported code direction is early atomic force-selection persistence, addressing the observed interrupted searches that completed551484/569073steps of tuning before data collection failed. It preserves tuned/manual/fallback settings with context and timestamp, without automatically applying an old cache. A final dataset refresh keeps any force changes made during sweep recovery. Optional per-config targets remain separately scoped experiment-enabling capability, not an accuracy improvement. No new numerical experiment is planned before fixed evidence review.
+
+
+## Final review after continuation
+
+A second platform usage-limit interruption arrived after the worker wrote its genuine report.md and final-message.md and completed source commits39510991/25822cbb. It did not finish handoff.json. The original launcher deadline still cancelled the supervisor with confirmed cleanup. Parent preserved the genuine output, acknowledged actual cancellation, and prepared an explicitly manager-selected evidence packet rather than inventing a worker handoff. No new numerical experiment was run after the user continued.
+
+The fixed final submission is submission-72b96ed174494e6286eba68667db11cf, with23selected assets including explicit compressed measurement/source sets. An8minute saved-evidence review is funded separately. Candidate25822cbb retains optional per-config targets separately from early atomic force-selection persistence; production force/solver/stopping defaults are unchanged. Producer checks show69JS cases and17Python cases passing, with627 verification physics steps already included in the4,166,884step total. The final reviewer is prohibited from new physics/fitting.
+
+
+## Final publication
+
+Review-8b7d4a844d274f31855086c3c4175d5d supports/keeps checkpoint25822cbb and optional per-config targets39510991, code ready, no required checks. Admission-44964abf6b884000a838a6d017c7ae69 applies it. Source pushed to origin/codex/autocal-parameter-variation-guards. Numerical work is closed. Keep force adequacy and existing recovery, preserve force knowledge, cut the tested coverage variant and leave faster force search as an unfunded question.

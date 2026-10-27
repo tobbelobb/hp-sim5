@@ -1,0 +1,45 @@
+{
+  "experiment": "CVF-E01",
+  "created_utc": "2026-10-27T12:26:00Z",
+  "baseline": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned",
+  "levels": {
+    "nominal": {
+      "center_mm": 1.2692034320502763,
+      "delta_mm": 23.52660198457056,
+      "levels_mm": [
+        -22.257398552520286,
+        24.795805416620837
+      ],
+      "observed_min_drive_span_mm": 94.10640793828225
+    },
+    "soft": {
+      "center_mm": 57.84300393789527,
+      "delta_mm": 40.0,
+      "levels_mm": [
+        17.84300393789527,
+        97.84300393789528
+      ],
+      "observed_min_drive_span_mm": 234.91259067217678
+    }
+  },
+  "candidate": "six independent fixed-target configurations, five points in each physical direction",
+  "baseline_points": 60,
+  "candidate_points": 60,
+  "thresholds": {
+    "conventional_anchor_rmse_reduction_each_world": 0.2,
+    "no_geometry_rank_or_sweep_coverage_regression": true,
+    "max_wall_ratio": 2,
+    "max_step_ratio": 2
+  },
+  "offsets": "center on saved size-tuned max_travel_mm, delta=min40mm, quarter minimum observed drive span. Anchor3 fixed0. No true anchors used.",
+  "settings": "Native HP3 stiffness20000/8000, halfwidth0, radii30, buildup0, no layering, manual forces .01/.05/.5N, sensor1N, feed1400, noise16at40Hz, record none, speed25.",
+  "truth_caveat": "Offline conventional scene-home comparison lacks settled encoder-zero pose/rotation; not absolute calibration accuracy.",
+  "budget": {
+    "collections": 4,
+    "fit_stages": 24,
+    "physics_steps": 4000000,
+    "deadline_utc": "2026-10-27T13:07:00Z",
+    "checks_begin_utc": "2026-10-27T12:59:00Z"
+  },
+  "amendment_before_fit": "Source inspection/log showed HP3 lower fixed-target bound0; nominal requested negative level clamps to0. Effective levels nominal0/24.7958054, soft17.8430039/97.8430039. No fit outcomes observed. Preserve requested plan and actual physical targets."
+}

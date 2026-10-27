@@ -1,0 +1,145 @@
+{
+  "total_steps": 627,
+  "native_rust_steps": 356,
+  "independent_python_steps": 266,
+  "warp_steps": 5,
+  "rows": [
+    {
+      "path": "regression-step-evidence/test_bridge_encoder_order_unwr0__events.jsonl",
+      "source": "/tmp/pytest-of-agent/pytest-11/test_bridge_encoder_order_unwr0/events.jsonl",
+      "recorded_max_step_by_epoch": {
+        "0": 0
+      },
+      "unobserved_asserted_steps": 0,
+      "steps": 0,
+      "sha256": "8da9029eba9e9a1957014f1457c42a93ffe79df2770a4ae10c41b866c3417e8f"
+    },
+    {
+      "path": "regression-step-evidence/test_cancel_freezes_at_fixed_s0__events.jsonl",
+      "source": "/tmp/pytest-of-agent/pytest-11/test_cancel_freezes_at_fixed_s0/events.jsonl",
+      "recorded_max_step_by_epoch": {
+        "0": 50
+      },
+      "unobserved_asserted_steps": 0,
+      "steps": 50,
+      "sha256": "185dd0f0fce3bd4e37f1fe78c8068cb90e9128908b773ceb2ca9edad8bc88a67"
+    },
+    {
+      "path": "regression-step-evidence/test_collection_rrd_rotation_f0__events.jsonl",
+      "source": "/tmp/pytest-of-agent/pytest-11/test_collection_rrd_rotation_f0/events.jsonl",
+      "recorded_max_step_by_epoch": {
+        "0": 2
+      },
+      "unobserved_asserted_steps": 0,
+      "steps": 2,
+      "sha256": "87e298780de52cf0d8549217c4b78677e9eab52fa43777dd99631575cf621e9c"
+    },
+    {
+      "path": "regression-step-evidence/test_compiled_session_encoder_0__events.jsonl",
+      "source": "/tmp/pytest-of-agent/pytest-11/test_compiled_session_encoder_0/events.jsonl",
+      "recorded_max_step_by_epoch": {
+        "0": 3,
+        "1": 2
+      },
+      "unobserved_asserted_steps": 0,
+      "steps": 5,
+      "sha256": "fdce6b1273234060741bf1836c63005bb21ea0efbc7f9adf5462a9265e109395"
+    },
+    {
+      "path": "regression-step-evidence/test_failed_collection_finaliz0__events.jsonl",
+      "source": "/tmp/pytest-of-agent/pytest-11/test_failed_collection_finaliz0/events.jsonl",
+      "recorded_max_step_by_epoch": {
+        "0": 0,
+        "1": 0
+      },
+      "unobserved_asserted_steps": 0,
+      "steps": 0,
+      "sha256": "4df24c8c7a7952d2b2306c3d5f1f7c63697a380c239c38e0006eaf9da6434df1"
+    },
+    {
+      "path": "regression-step-evidence/test_failed_collection_finaliz1__events.jsonl",
+      "source": "/tmp/pytest-of-agent/pytest-11/test_failed_collection_finaliz1/events.jsonl",
+      "recorded_max_step_by_epoch": {
+        "0": 0,
+        "1": 0
+      },
+      "unobserved_asserted_steps": 0,
+      "steps": 0,
+      "sha256": "17bef637ca1b3a5ede48462910a1e0d81d07e5471e8652e48387130917bf6dfc"
+    },
+    {
+      "path": "regression-step-evidence/test_headless_js_cancellation_0__events.jsonl",
+      "source": "/tmp/pytest-of-agent/pytest-11/test_headless_js_cancellation_0/events.jsonl",
+      "recorded_max_step_by_epoch": {
+        "0": 50
+      },
+      "unobserved_asserted_steps": 0,
+      "steps": 50,
+      "sha256": "91940d1113f38692e1c122f6d584e907ede5aa5f025ee25ac83a952b992f3a6c"
+    },
+    {
+      "path": "regression-step-evidence/test_headless_js_encoder_motio0__headless-js__events.jsonl",
+      "source": "/tmp/pytest-of-agent/pytest-11/test_headless_js_encoder_motio0/headless-js/events.jsonl",
+      "recorded_max_step_by_epoch": {
+        "0": 102,
+        "1": 0
+      },
+      "unobserved_asserted_steps": 1,
+      "steps": 103,
+      "sha256": "3d116ea13636615307607d7663a50f17351649380b7ca51b131188126339a013"
+    },
+    {
+      "path": "regression-step-evidence/test_headless_js_encoder_motio0__native-python__events.jsonl",
+      "source": "/tmp/pytest-of-agent/pytest-11/test_headless_js_encoder_motio0/native-python/events.jsonl",
+      "recorded_max_step_by_epoch": {
+        "0": 102
+      },
+      "unobserved_asserted_steps": 0,
+      "steps": 102,
+      "sha256": "89a90990a01375935b89af67fddf5833ca291b563d0340c9bdd361f03af1560e"
+    },
+    {
+      "path": "regression-step-evidence/test_headless_js_encoder_motio1__headless-js__events.jsonl",
+      "source": "/tmp/pytest-of-agent/pytest-11/test_headless_js_encoder_motio1/headless-js/events.jsonl",
+      "recorded_max_step_by_epoch": {
+        "0": 102,
+        "1": 0
+      },
+      "unobserved_asserted_steps": 1,
+      "steps": 103,
+      "sha256": "957b5014d9217a25cfa8dddca91294c0ceafd52fcfd9df96bb122711e3e24323"
+    },
+    {
+      "path": "regression-step-evidence/test_headless_js_encoder_motio1__native-python__events.jsonl",
+      "source": "/tmp/pytest-of-agent/pytest-11/test_headless_js_encoder_motio1/native-python/events.jsonl",
+      "recorded_max_step_by_epoch": {
+        "0": 102
+      },
+      "unobserved_asserted_steps": 0,
+      "steps": 102,
+      "sha256": "9f274fcfcf1b90b88f0a75d4df4ec1cf33e96a19c8b3810848c1b36c783ddee9"
+    },
+    {
+      "path": "regression-step-evidence/test_numeric_only_retains_enco0__events.jsonl",
+      "source": "/tmp/pytest-of-agent/pytest-11/test_numeric_only_retains_enco0/events.jsonl",
+      "recorded_max_step_by_epoch": {
+        "0": 100
+      },
+      "unobserved_asserted_steps": 0,
+      "steps": 100,
+      "sha256": "280c08785ddb1a5e1bef07d97fcc8d64d9bd7a76251c46c3910eab3be731c5f3"
+    },
+    {
+      "path": "regression-step-evidence/test_persistent_world_batch_mo0__events.jsonl",
+      "source": "/tmp/pytest-of-agent/pytest-11/test_persistent_world_batch_mo0/events.jsonl",
+      "recorded_max_step_by_epoch": {
+        "0": 10,
+        "1": 0
+      },
+      "unobserved_asserted_steps": 0,
+      "steps": 10,
+      "sha256": "ace08d493c78ff8f2659ee445098a05622bd17f28628935b73db1d81103b4d19"
+    }
+  ],
+  "explanation": "Sum maximum recorded steps per epoch per independent test world. Two native reset tests each advance one additional asserted step after their final event. Includes regression physics, not new research collection or fit stages. Source tests/python/test_native_collector.py."
+}

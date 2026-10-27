@@ -1,0 +1,362 @@
+diff --git a/autocal/control/behaviors/sweep_data_collection.mjs b/autocal/control/behaviors/sweep_data_collection.mjs
+index 32eb006b..ce09cadc 100644
+--- a/autocal/control/behaviors/sweep_data_collection.mjs
++++ b/autocal/control/behaviors/sweep_data_collection.mjs
+@@ -1014,7 +1014,7 @@ export async function measureMaxTravelMm(sendFn, options = {}) {
+ }
+ 
+ function parseSweepConfigLine(line, lineNumber) {
+-  const trimmed = line.trim();
++  const trimmed = line.split('#', 1)[0].trim();
+   if (!trimmed || trimmed.startsWith('#')) {
+     return null;
+   }
+@@ -1031,7 +1031,11 @@ function parseSweepConfigLine(line, lineNumber) {
+   if (fixedAnchors.some((val) => !Number.isFinite(val)) || !Number.isFinite(driveAnchor) || !Number.isFinite(sensorAnchor)) {
+     throw new Error(`Invalid sweep config line ${lineNumber}: anchors must be integers`);
+   }
+-  return { fixedAnchors, driveAnchor, sensorAnchor };
++  const fixedTargets = parts.length > 3 ? parseFixedTargetsSpec(parts[3]) : null;
++  if (fixedTargets && fixedTargets.length !== fixedAnchors.length) {
++    throw new Error(`Invalid sweep config line ${lineNumber}: expected one target per fixed anchor`);
++  }
++  return { fixedAnchors, driveAnchor, sensorAnchor, ...(fixedTargets ? { fixedTargets } : {}) };
+ }
+ 
+ export async function loadSweepConfigFile(filePath, machineConfig) {
+@@ -1044,7 +1048,7 @@ export async function loadSweepConfigFile(filePath, machineConfig) {
+     const parsed = parseSweepConfigLine(line, i + 1);
+     if (parsed) {
+       const normalized = normalizeSweepConfig(parsed, machineConfig);
+-      const key = `${normalized.fixedAnchors.join(',')}|${normalized.driveAnchor}|${normalized.sensorAnchor}`;
++      const key = `${normalized.fixedAnchors.join(',')}|${normalized.driveAnchor}|${normalized.sensorAnchor}|${normalized.fixedTargets?.join(',') ?? ''}`;
+       if (seen.has(key)) {
+         // Skip duplicates after canonicalization to avoid repeated sweeps.
+         // eslint-disable-next-line no-continue
+@@ -1091,7 +1095,10 @@ function normalizeSweepConfig(config, machineConfig) {
+     ? [...config.fixedAnchors].sort((a, b) => a - b)
+     : [];
+   const [driveAnchor, sensorAnchor] = canonicalDriveSensorPair(config.driveAnchor, config.sensorAnchor);
+-  return { ...config, fixedAnchors, driveAnchor, sensorAnchor };
++  const fixedTargets = Array.isArray(config.fixedTargets)
++    ? fixedAnchors.map((anchor) => config.fixedTargets[config.fixedAnchors.indexOf(anchor)])
++    : undefined;
++  return { ...config, fixedAnchors, driveAnchor, sensorAnchor, ...(fixedTargets ? { fixedTargets } : {}) };
+ }
+ 
+ export async function performForceSweep(sendFn, sweepConfig, options) {
+@@ -1367,6 +1374,7 @@ export async function collectSweepData(send, context) {
+     forceBaseRadii,
+   } = options;
+   let { forceLow, forceMid, forceMax, sensorCollectionForce } = options;
++  const outputFile = outputFileOverride || `sweep_data_${machineType}_${Date.now()}.json`;
+ 
+   const sweepConfigs = await resolveSweepConfigs({
+     sweepConfigFile: options.sweepConfigFile,
+@@ -1470,6 +1478,37 @@ export async function collectSweepData(send, context) {
+     }
+   }
+ 
++  // Persist selected forces before sweep positioning, never as an auto-loaded cache.
++  const forceTuning = {
++    auto_tuned: autoTuneForce,
++    method: autoTuneForce ? 'force-thresholds' : 'manual',
++    tuned_at: autoTuneForce ? new Date().toISOString() : undefined,
++    force_low_n: forceLow,
++    force_mid_n: forceMid,
++    force_max_n: forceMax,
++    pullout_force_n: resolveCollectionForce({ forceMid, forceMax, preloadMultiplier: 20 }),
++    ...(forceTuningMeta ?? {}),
++  };
++  const checkpointFile = `${outputFile}.force-tuning.json`;
++  const checkpointStage = !autoTuneForce ? 'manual_force_selection_before_sweeps'
++    : forceTuningMeta?.tuning_failed ? 'force_tuning_failed_fallback_selected'
++      : 'force_tuning_complete_before_sweeps';
++  await fs.mkdir(path.dirname(checkpointFile), { recursive: true });
++  await fs.writeFile(`${checkpointFile}.tmp`, JSON.stringify({
++    version: '1.0',
++    stage: checkpointStage,
++    timestamp: new Date().toISOString(),
++    machine_type: machineType,
++    firmware,
++    m666: m666ForCollection,
++    mm_per_degree: mmPerDeg,
++    requested_sensor_collection_force_n: sensorCollectionForce,
++    sensor_collection_force_n: resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce }),
++    force_tuning: forceTuning,
++  }, null, 2));
++  await fs.rename(`${checkpointFile}.tmp`, checkpointFile);
++  console.log(`; force-tuning checkpoint saved to ${checkpointFile}`);
++
+   // A short tighten-release cycle before we set encoder reference points and set pos mode
+   const forbiddenForceAnchors = getForceForbiddenAnchors(machineConfig);
+   await applyForceModeState(send, {
+@@ -1494,7 +1533,8 @@ export async function collectSweepData(send, context) {
+   });
+   await waitForStableEncoders(send, motorIds, speedup);
+ 
+-  const useFixedTargets = fixedTargetsSpec !== null;
++  const useFixedTargets = fixedTargetsSpec !== null
++    || sweepConfigs.every((config) => Array.isArray(config.fixedTargets));
+   let maxTravelMm = Number.isFinite(maxTravelOverride) ? maxTravelOverride : null;
+   let sizeTunePair = null;
+   if (!useFixedTargets && maxTravelOverride === null) {
+@@ -1548,11 +1588,11 @@ export async function collectSweepData(send, context) {
+     sweepOrdinal += 1;
+     const fixedTargets = resolveFixedTargets(
+       sweepConfig.fixedAnchors,
+-      fixedTargetsSpec,
++      sweepConfig.fixedTargets ?? fixedTargetsSpec,
+       maxTravelMm,
+       machineConfig,
+     );
+-    const fixedDesc = useFixedTargets
++    const fixedDesc = Array.isArray(sweepConfig.fixedTargets) || fixedTargetsSpec !== null
+       ? fixedTargets.map((val) => val.toFixed(3)).join(', ')
+       : '';
+     const fixedInfo = fixedDesc.length > 0 ? `, fixed targets [${fixedDesc}]` : '';
+@@ -1694,16 +1734,13 @@ export async function collectSweepData(send, context) {
+     }
+   }
+ 
+-  const forceTuning = {
+-    auto_tuned: autoTuneForce,
+-    method: autoTuneForce ? 'force-thresholds' : 'manual',
+-    tuned_at: autoTuneForce ? new Date().toISOString() : undefined,
++  // Recovery may change collection forces after the initial tuning checkpoint.
++  Object.assign(forceTuning, {
+     force_low_n: forceLow,
+     force_mid_n: forceMid,
+     force_max_n: forceMax,
+     pullout_force_n: resolveCollectionForce({ forceMid, forceMax, preloadMultiplier: 20 }),
+-    ...(forceTuningMeta ?? {}),
+-  };
++  });
+   const noiseOriginDeg = Array.isArray(forceTuning?.noise_sigma_deg)
+     ? forceTuning.noise_sigma_deg.map((val) => (Number.isFinite(val) ? val : null))
+     : null;
+@@ -1753,7 +1790,6 @@ export async function collectSweepData(send, context) {
+     sweeps,
+   };
+ 
+-  const outputFile = outputFileOverride || `sweep_data_${machineType}_${Date.now()}.json`;
+   const outputDir = path.dirname(outputFile);
+   if (outputDir && outputDir !== '.') {
+     await fs.mkdir(outputDir, { recursive: true });
+diff --git a/autocal/control/cli/collect_sweep_data.mjs b/autocal/control/cli/collect_sweep_data.mjs
+index 90605f74..121f3c20 100644
+--- a/autocal/control/cli/collect_sweep_data.mjs
++++ b/autocal/control/cli/collect_sweep_data.mjs
+@@ -424,7 +424,7 @@ Options:
+   --force-base-radii <csv>   Force M666 R radii before collection (comma-separated, e.g. 30,30,30)
+   --auto-tune-force          auto-tune force-low/mid/max using a test sweep (default when no force args)
+   --no-auto-tune-force       skip auto-tuning and use provided/default forces
+-  --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor per line)
++  --sweep-config-file <file> Provide sweep configs ([fixed] drive sensor [targets_mm] per line)
+   --debug-sweep              Print planned sweep permutations before collecting
+   --trace                    Tell hp-sim to plot a trace of its movements (default: on)
+   --physics-substeps <count> Physics integrations per firmware tick, 1–16 (default: simulator setting, initially 1)
+diff --git a/autocal/control/tests/behaviors/force_tuning_checkpoint.test.mjs b/autocal/control/tests/behaviors/force_tuning_checkpoint.test.mjs
+new file mode 100644
+index 00000000..f43711a5
+--- /dev/null
++++ b/autocal/control/tests/behaviors/force_tuning_checkpoint.test.mjs
+@@ -0,0 +1,119 @@
++import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
++import os from 'node:os';
++import path from 'node:path';
++import { collectSweepData, MACHINE_CONFIGS } from '../../behaviors/sweep_data_collection.mjs';
++import { tuneForce } from '../../behaviors/force_tuning.mjs';
++import { collectWithSlipRecovery } from '../../behaviors/slip_recovery.mjs';
++
++jest.mock('../../behaviors/force_tuning.mjs', () => ({
++  ...jest.requireActual('../../behaviors/force_tuning.mjs'),
++  tuneForce: jest.fn(),
++}));
++jest.mock('../../behaviors/slip_recovery.mjs', () => ({
++  ...jest.requireActual('../../behaviors/slip_recovery.mjs'),
++  collectWithSlipRecovery: jest.fn(),
++}));
++jest.mock('../../primitives/uncalibrated_actions.mjs', () => ({
++  ...jest.requireActual('../../primitives/uncalibrated_actions.mjs'),
++  waitForStableEncoders: jest.fn().mockResolvedValue(undefined),
++  getCurrentLengths: jest.fn().mockResolvedValue([1, 2, 3, 0]),
++}));
++
++function interruptedCollection(outputFile, args = {}, interrupt = true) {
++  const send = async line => {
++    if (line.startsWith('M569.4') && interrupt) throw new Error('collection interrupted after tuning');
++    if (line === 'M666') return { reply: 'M666 R30:30:30:30 Q0 U1:1:1:1 O1:1:1:1' };
++    return { reply: '' };
++  };
++  return collectSweepData(send, {
++    args: { outputFile, maxSweeps: 1, sensorCollectionForce: 1, ...args },
++    machineType: 'hangprinter_3', machineConfig: MACHINE_CONFIGS.hangprinter_3,
++    motorIds: ['40.0', '41.0', '42.0', '43.0'], speedup: 1,
++  });
++}
++
++beforeEach(() => {
++  tuneForce.mockReset();
++  collectWithSlipRecovery.mockReset();
++});
++
++test.each([false, true])('preserves completed tuning before a later failure, tuning_failed=%s', async tuningFailed => {
++  const directory = mkdtempSync(path.join(os.tmpdir(), 'force-checkpoint-'));
++  const outputFile = path.join(directory, 'nested', 'sweeps.json');
++  tuneForce.mockResolvedValue({
++    forceLow: .0124, forceMid: .248, forceMax: 2.61,
++    tuningMeta: { method: 'incremental-compliance', tuning_failed: tuningFailed, noise_sigma_deg: [.02, .03, .02, 0] },
++  });
++  try {
++    await expect(interruptedCollection(outputFile, { sensorCollectionForce: null })).rejects.toThrow('collection interrupted after tuning');
++    const checkpoint = JSON.parse(readFileSync(`${outputFile}.force-tuning.json`, 'utf8'));
++    expect(checkpoint.stage).toBe(tuningFailed
++      ? 'force_tuning_failed_fallback_selected' : 'force_tuning_complete_before_sweeps');
++    expect(checkpoint.machine_type).toBe('hangprinter_3');
++    expect(checkpoint.m666.R).toEqual([30, 30, 30, 30]);
++    expect(checkpoint.requested_sensor_collection_force_n).toBeNull();
++    expect(checkpoint.sensor_collection_force_n).toBe(1.24);
++    expect(checkpoint.force_tuning).toMatchObject({
++      force_low_n: .0124, force_mid_n: .248, force_max_n: 2.61,
++      method: 'incremental-compliance', tuning_failed: tuningFailed,
++    });
++    expect(existsSync(outputFile)).toBe(false);
++    expect(existsSync(`${outputFile}.force-tuning.json.tmp`)).toBe(false);
++    expect(tuneForce).toHaveBeenCalledTimes(1);
++  } finally {
++    rmSync(directory, { recursive: true, force: true });
++  }
++});
++
++test('manual forces replace stale automatic metadata without running tuning', async () => {
++  const directory = mkdtempSync(path.join(os.tmpdir(), 'force-checkpoint-'));
++  const outputFile = path.join(directory, 'sweeps.json');
++  writeFileSync(`${outputFile}.force-tuning.json`, JSON.stringify({ force_tuning: { auto_tuned: true } }));
++  try {
++    await expect(interruptedCollection(outputFile, { forceLow: .01, forceMid: .05, forceMax: .5 }))
++      .rejects.toThrow('collection interrupted after tuning');
++    expect(tuneForce).not.toHaveBeenCalled();
++    const checkpoint = JSON.parse(readFileSync(`${outputFile}.force-tuning.json`, 'utf8'));
++    expect(checkpoint.stage).toBe('manual_force_selection_before_sweeps');
++    expect(checkpoint.force_tuning).toMatchObject({ auto_tuned: false, method: 'manual', force_low_n: .01, force_mid_n: .05, force_max_n: .5 });
++    expect(checkpoint.force_tuning.tuned_at).toBeUndefined();
++  } finally {
++    rmSync(directory, { recursive: true, force: true });
++  }
++});
++
++test('stops before collection when the checkpoint cannot be written', async () => {
++  const directory = mkdtempSync(path.join(os.tmpdir(), 'force-checkpoint-'));
++  const blocked = path.join(directory, 'blocked');
++  writeFileSync(blocked, 'existing file');
++  tuneForce.mockResolvedValue({ forceLow: .01, forceMid: .25, forceMax: 2 });
++  try {
++    await expect(interruptedCollection(path.join(blocked, 'sweeps.json'))).rejects.toMatchObject({ code: 'EEXIST' });
++    expect(tuneForce).toHaveBeenCalledTimes(1);
++  } finally {
++    rmSync(directory, { recursive: true, force: true });
++  }
++});
++
++test('final dataset records recovered forces while checkpoint retains the earlier selection', async () => {
++  const directory = mkdtempSync(path.join(os.tmpdir(), 'force-checkpoint-'));
++  const outputFile = path.join(directory, 'sweeps.json');
++  tuneForce.mockResolvedValue({ forceLow: .0124, forceMid: .248, forceMax: 2.61 });
++  collectWithSlipRecovery.mockResolvedValue({
++    forces: { forceLow: .0124, forceMid: .3, forceMax: 3, sensorCollectionForce: 1.5 },
++    dataPoints: [{ l_drive: 1, l_sensor: 2 }], recoveries: [],
++  });
++  try {
++    await interruptedCollection(outputFile, { fixedTargets: '0,0' }, false);
++    const checkpoint = JSON.parse(readFileSync(`${outputFile}.force-tuning.json`, 'utf8'));
++    const dataset = JSON.parse(readFileSync(outputFile, 'utf8'));
++    expect(checkpoint.force_tuning).toMatchObject({ force_mid_n: .248, force_max_n: 2.61, pullout_force_n: 2.61 });
++    expect(dataset.config.force_tuning).toMatchObject({ force_mid_n: .3, force_max_n: 3, pullout_force_n: 3 });
++    expect(dataset.config.force_tuning.tuned_at).toBe(checkpoint.force_tuning.tuned_at);
++    expect(dataset.sweeps[0].metadata.sensor_force_n).toBe(1.5);
++    expect(checkpoint.requested_sensor_collection_force_n).toBe(1);
++    expect(checkpoint.sensor_collection_force_n).toBe(1);
++  } finally {
++    rmSync(directory, { recursive: true, force: true });
++  }
++});
+diff --git a/autocal/control/tests/cli/collect_sweep_data.cli.test.mjs b/autocal/control/tests/cli/collect_sweep_data.cli.test.mjs
+index 177ee025..70eae828 100644
+--- a/autocal/control/tests/cli/collect_sweep_data.cli.test.mjs
++++ b/autocal/control/tests/cli/collect_sweep_data.cli.test.mjs
+@@ -12,6 +12,7 @@ import {
+   buildSymmetricPulloutModes,
+   combinations,
+   generateSweepConfigs,
++  loadSweepConfigFile,
+   MACHINE_CONFIGS,
+   resolveFixedTargets,
+   resolveForcedBaseRadii,
+@@ -23,6 +24,34 @@ import {
+ import { parseBridgeArgs } from '../../cli/collect_sweep_data.mjs';
+ 
+ describe('collect_sweep_data CLI helpers', () => {
++  test('sweep file keeps independent target levels and deduplicates matching constraints', async () => {
++    const directory = mkdtempSync(path.join(os.tmpdir(), 'sweep-targets-'));
++    const file = path.join(directory, 'sweeps.cfg');
++    try {
++      writeFileSync(file, '[3,0] 2 1 0,25\n[0,3] 1 2 25,0\n[0,3] 1 2 50,0\n');
++      const configs = await loadSweepConfigFile(file, MACHINE_CONFIGS.hangprinter_3);
++      expect(configs).toHaveLength(2);
++      expect(configs.map((config) => config.fixedTargets)).toEqual([[25, 0], [50, 0]]);
++      expect(configs[0].fixedAnchors).toEqual([0, 3]);
++    } finally {
++      rmSync(directory, { recursive: true, force: true });
++    }
++  });
++
++  test('sweep file preserves legacy lines and rejects incomplete target lists', async () => {
++    const directory = mkdtempSync(path.join(os.tmpdir(), 'sweep-targets-'));
++    const file = path.join(directory, 'sweeps.cfg');
++    try {
++      writeFileSync(file, '[0,3] 1 2\n');
++      const [config] = await loadSweepConfigFile(file, MACHINE_CONFIGS.hangprinter_3);
++      expect(config.fixedTargets).toBeUndefined();
++      writeFileSync(file, '[0,3] 1 2 25\n');
++      await expect(loadSweepConfigFile(file, MACHINE_CONFIGS.hangprinter_3)).rejects.toThrow('one target per fixed anchor');
++    } finally {
++      rmSync(directory, { recursive: true, force: true });
++    }
++  });
++
+   test('open-loop motors are opt-in', () => {
+     expect(parseBridgeArgs([]).openLoopMotors).toBe(false);
+     expect(parseBridgeArgs(['--sim', '--open-loop-motors']).openLoopMotors).toBe(true);
+diff --git a/research/native-collection.md b/research/native-collection.md
+index 0266e280..a708bccf 100644
+--- a/research/native-collection.md
++++ b/research/native-collection.md
+@@ -45,6 +45,13 @@ millimetres), `feed`, `forceLow`, `forceMid`, `forceMax`, `sensorCollectionForce
+ `noiseSamples`, `returnToOrigin`, `projectZeroTension` and `preserveBuildupFactor`.
+ `sweepPoints` accepts 3–100; 1–12 configurations can be collected together.
+ 
++Sweep config files accept an optional fourth column of comma-separated fixed
++targets in millimetres, in the order of the fixed anchors. For example,
++`[0,3] 1 2 25,0` and `[0,3] 1 2 50,0` collect the same free pair at two target
++levels. Per-config targets override `--fixed-targets`; the machine's existing
++target bounds still apply. Files with three columns retain the existing policy.
++When every config supplies targets, the unused automatic size tuner is skipped.
++
+ ## Clock and completion
+ 
+ Physics uses the RRF bridge's 0.002 s buckets. A world survives positioning,
+@@ -96,6 +103,13 @@ interrupting Codex is not cancellation; Rerun playback pause is only inspection.
+ The cancelled manifest and finalized RRD/events preserve partial observations.
+ Completed raw measurements also survive in `partial-points.jsonl` with their
+ actual physical drive/sensor roles, even if the full dataset was not completed.
++Before positioning and sweeps, the collector atomically writes
++`OUTPUT.force-tuning.json` with selected forces, tuning diagnostics and the
++machine/spool context. Its stage distinguishes successful tuning, failed-tuning
++fallback and manual selection. A manual rerun refreshes the file too. The file
++records a selection at that time; later slip recovery may adjust collection
++forces. Inspect its timestamp and context before any explicit reuse. The
++collector does not load it automatically.
+ `runtime_status` reports stale source changes: restart the launcher to load changed
+ Python physics; reset the session to reload changed JS bridge/collector code.
+ `start_browser_service` supervises Vite on a free loopback port. Its ordinary web

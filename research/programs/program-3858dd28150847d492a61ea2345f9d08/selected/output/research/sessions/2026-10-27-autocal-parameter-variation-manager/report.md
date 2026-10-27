@@ -1,48 +1,44 @@
-# HP3 autocal robustness across parameter variation
+# HP3 calibration research: preserve force selection and cut weak routes
 
-Status: bounded investigation complete; program paused.
+Status: bounded cycle complete; program paused.
 
 ## Abstract
 
-This program investigated encoder-only HP3 calibration across varied parameter assumptions. A bounded analytical benchmark evaluated eight frozen worlds with 32 core fits in 118.24 seconds. Only six fits passed complete status and coverage checks. In one complete-coverage case, lower unseen residual accompanied anchor RMSE worsening from 5.89 to 40.20 mm after thinning. Two native stiffness worlds then each collected 60 bootstrap points, taking 75.02 measured world seconds together. Their poor conventional scene-home estimates and identical raw/geometry-metadata-stripped fits did not justify solver, point-count or stopping changes. Separate reviewers verified both scoped findings and marked both tools ready. A cloud review path bug was fixed; unsourced Node 24 crashes were corrected with pinned Node 23 and a pre-movement guard. Platform model limits interrupted one worker narrative, but saved measurements and deadline cleanup survived. No reliable fewer-point calibration gain or direct reference-003 win was established.
+The latest cycle tested a 60-point collection redesign, cut it after it failed the paired improvement gate, and investigated force adequacy instead. Existing encoder-based force selection and recovery produced a nominal fit with 3.29 mm conventional scene-reference error and soft-scene fits around 10 to 12 mm. These are limited simulation results, not demonstrated full-auto or hardware accuracy. Two force searches were interrupted after completing their expensive tuning stage, exposing a production data-retention gap. The retained fix atomically saves selected forces and diagnostics before sweep collection, distinguishes tuning, fallback and manual selection, and never automatically reuses a stale cache. It preserves later force changes in the final dataset. Independent review kept the fix and separate optional per-sweep target support. Sixty-nine JavaScript and seventeen Python checks passed. Earlier Node-runtime and cloud-review fixes remain published. The next unfunded question is reducing force-search cost without degrading collected data.
 
-## Results and decisions
+## Shipped changes
 
-The retained changes are an analytical parameter benchmark, a bounded native HP3 stiffness collection helper and a cloud review path repair. All use existing production physics and fitting code. Production calibration defaults and one-click stopping are unchanged.
+- `25822cbb` preserves force selection before later positioning or collection can fail. `OUTPUT.force-tuning.json` contains selected forces, diagnostics and machine/spool context. Atomic replacement distinguishes tuned success, failed-tuning fallback and manual settings. The final dataset still records forces changed by later recovery. There is no automatic cache reuse.
+- `39510991` separately adds optional per-config fixed targets. It preserves anchor/target association and retains distinct levels through deduplication. Existing three-column configs and default acquisition policy are unchanged.
+- Earlier published changes include the pinned Node guard and native collection helper, analytical parameter screen, and cloud review-path repair.
 
-The analytical study compares lbfgsb/trf and full/half stored point density across eight predeclared worlds. Its common-unseen residual reverses the geometry ranking in 17 candidate pairs. A clean, complete-coverage TRF example improves residual from 0.02362 to 0.02234 mm while anchor RMSE rises from 5.885 to 40.203 mm. Half density also has large per-world regressions. The independent review recomputed all saved inputs, seeds, RMSEs and residuals, and kept candidate cc52307f with ready code. These are individual cold core fits, not complete-loop failures.
+The source and reviewed results are published on [codex/autocal-parameter-variation-guards](https://github.com/tobbelobb/hp-sim5/tree/codex/autocal-parameter-variation-guards).
 
-The native study collected three 20-point sweeps per world at stiffness 20000/8000 N, fixed 30 mm radii, zero buildup and no layering. Requested collector settings match; realized drive spans differ, 94.106 versus about 234.918 mm. Total work was 602454 steps and 75.023 measured world seconds, with no recording. These single-run totals are not an equivalent-work full-autocal speedup. Four raw fits and four geometry-metadata-stripped fits have exactly identical anchors, metrics and optimizer histories. Conventional scene-home RMSE is 2023/2003 mm nominal and 3648/2676 mm soft for lbfgsb/trf. Unknown encoder-zero pose/rotation and omitted full-loop stages limit physical interpretation. The reviewer kept the scoped findings and helper a4da0d73, ready with no required checks.
+## What the search changed
 
-![Analytical core-fit results](analytical-screen.png)
+The tested six-sweep, ten-point layout did not beat the saved three-sweep, twenty-point controls. All four fits failed the predeclared 20 percent exploratory signal; two worsened. That variant was cut early. More independent geometry remains reopenable under different force/data evidence, but it is not receiving more budget now.
 
-## Cloud faults and remedies
+Automatic force selection was more useful. Learned-force replay produced complete 60-point datasets. Nominal ordinary LBFGSB hit a sentinel, but the existing restore_points path reached about 3.29 mm conventional error. Soft ordinary fits reached about 10 to 12 mm. This ruled out a new solver policy for the demonstrated case. Saved cross-run prediction covered all 20 nominal and 40 soft points. Unknown encoder-zero pose, changed physical history and only two scenes limit that comparison. No speedup, new force algorithm or full-auto stopping gain is claimed.
 
-The default review store uses .research-programs/reviews, but the cloud bridge initially allowed final messages only under output. The first launch stopped before model dispatch. Commit ae0b20c4 adds a narrow repository-contained reviewer-path allowance. The failing regression and 51 passing transport/controller checks are retained. Two real separate reviews subsequently completed through this path.
+The actual production improvement follows directly from a failure. Both initial force searches completed tuning but exhausted their step caps later. Previously the learned configuration was assembled only at the end of all sweeps. The new checkpoint preserves that completed stage before later failures. The source change has lifecycle regression coverage; the native measurements predate it and were not rerun after model-limit interruptions.
 
-Two standalone native launches inherited Node 24.19.0 and aborted before completing a physics update. Their supervisor had correctly used pinned Node 23, which does not transfer to independent command shells. Sourcing scripts/cloud/env.sh and verifying Node 23.11.1 enabled both replacement collections. The retained helper rejects unsupported Node before creating output or moving physics. Both original failures remain evidence.
+## Checks and review
 
-A model-capacity interruption was recovered in the same first worker. A later usage limit prevented the second worker's final narrative. Its owner enforced the original 09:01 UTC deadline and confirmed cleanup. The manager explicitly authored the saved-data closure after the user's continue message, without fabricating a worker response or running further fitting/simulation. All actor cancellation and review acknowledgements used actual lifecycle observations.
+The latest candidate passed 69 behavior/CLI JavaScript checks and 17 Python helper/collector checks, with five slow cases deselected. The 627 regression physics steps are included in the 4,166,884-step cycle total. Research work used six collection invocations and ten fit stages. Measured world wall time totaled about 434 seconds. No physics or fitting was restarted after the final user continuation.
 
-## Implementation and checks
+Review `review-8b7d4a844d274f31855086c3c4175d5d` kept fixed submission `submission-72b96ed174494e6286eba68667db11cf`, with code ready and no required checks. Admission `admission-44964abf6b884000a838a6d017c7ae69` applies it. The reviewer inspected the code and selected evidence, independently checked saved arithmetic and holdout reconstruction, and ran no new simulation or fitting.
 
-- cc52307f adds the analytical benchmark and tests. 64 solver/stage/benchmark checks passed.
-- ae0b20c4 fixes cloud review response paths. 51 transport/review-controller checks passed, followed by real review completion.
-- a4da0d73 adds the native collector helper, runtime guard and tests. 19 focused tests passed. The reviewer repeated them and checked additional mocked failure/timeout/cleanup paths.
+## Approach decisions
 
-These counts overlap and should not be summed as a unique-test total. No engine, motor, cable-transport or production-scene implementation changed. The native delivery helper was checked against the measured driver and with mocks, without another native collection.
+[The approach ledger](approaches.md) distinguishes retired, parked, promising and retained routes. Blanket TRF replacement and uniform thinning are retired within tested scope. Residual-only ranking is parked. The tested equal-point coverage allocation is cut. Existing recovery is kept. Force adequacy and preserving its results are productive. Faster force-search bracketing remains untested and unfunded because a faster search must preserve decisions and data quality.
 
-## Review and remaining questions
+The original reference-003 raw data is missing, so no direct win over it is claimed. Earlier studies, failed startup trials, partial force collections and genuine worker outputs remain preserved. Platform usage limits interrupted final writing, while owner deadlines still stopped the workers. Manager-created selection manifests are explicitly attributed and do not fabricate actor responses.
 
-Both fixed submissions received supported/keep admissions and ready code, with no required follow-up checks. [First review](review-first.json) and [native review](review-native.json) preserve exact claim, submission and revision identities.
+## Evidence
 
-The requested reference-003 raw directory is absent. No direct win over it is claimed. Hardware transfer, robust fewer-point stopping, automatic force tuning across physical worlds and full-loop native calibration remain untested here. The next recorded question asks whether automatic force tuning and additional independent sweeps repair bootstrap estimation. No numerical allocation remains active.
+- [Latest full research report](../attempt-902d9713dcbe436d8ddc1ba23fd82baa/report.md), [measurements](../attempt-902d9713dcbe436d8ddc1ba23fd82baa/measured-summary.json), [usage](../attempt-902d9713dcbe436d8ddc1ba23fd82baa/usage.json).
+- [Exact final review](review-force-checkpoint.json), [approach ledger](approaches.md), [notebook](research.md).
+- [Earlier native study](native-report.md), [native review](review-native.json), [first review](review-first.json).
+- [Cloud issues and remedies](cloud-environment-issues.json), [literature context](literature.md).
 
-## Evidence and references
-
-- [First worker report](../attempt-3b2e360ec1834eee9bab4e06f6f880fd/report.md), [first exact review](review-first.json).
-- [Manager native report](native-report.md), [native summary](native-saved-summary.json), [exact native review](review-native.json).
-- [Cloud issue record](cloud-environment-issues.json), [cloud repair checks](cloud-review-path-after.log), [native helper checks](native-helper-checks.log).
-- [Notebook](research.md), [literature note](literature.md), [reference search](reference-search.json).
-
-Program: program-3858dd28150847d492a61ea2345f9d08. Its archive preserves fixed submissions and selected small evidence; files.json records omissions.
+Program: `program-3858dd28150847d492a61ea2345f9d08`. Fixed submissions contain explicit ZIPs of measured inputs/source and failed trials. The program archive records copied files and omissions.

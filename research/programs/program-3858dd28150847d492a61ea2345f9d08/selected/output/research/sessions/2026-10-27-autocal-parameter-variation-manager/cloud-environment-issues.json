@@ -32,5 +32,11 @@
     "actor_cancellation_acknowledged": true,
     "manager_closure": "Explicitly attributed saved-data report; no fabricated actor output",
     "new_simulation_or_fitting_after_continuation": false
+  },
+  "coverage_worker_usage_limit": {
+    "failure": "Platform model usage limit after source commits, report and genuine final message, before handoff manifest",
+    "deadline_cleanup": "Original launcher cancelled at13:07UTC with launcher_finally_completed cleanup",
+    "recovery": "Parent selected preserved evidence for fresh bounded review; no new physics or fits after user continuation",
+    "candidate": "25822cbbde6703d68b693f6e93bcfa23b2b78593"
   }
 }
