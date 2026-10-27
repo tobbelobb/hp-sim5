@@ -103,6 +103,13 @@ interrupting Codex is not cancellation; Rerun playback pause is only inspection.
 The cancelled manifest and finalized RRD/events preserve partial observations.
 Completed raw measurements also survive in `partial-points.jsonl` with their
 actual physical drive/sensor roles, even if the full dataset was not completed.
+Before positioning and sweeps, the collector atomically writes
+`OUTPUT.force-tuning.json` with selected forces, tuning diagnostics and the
+machine/spool context. Its stage distinguishes successful tuning, failed-tuning
+fallback and manual selection. A manual rerun refreshes the file too. The file
+records a selection at that time; later slip recovery may adjust collection
+forces. Inspect its timestamp and context before any explicit reuse. The
+collector does not load it automatically.
 `runtime_status` reports stale source changes: restart the launcher to load changed
 Python physics; reset the session to reload changed JS bridge/collector code.
 `start_browser_service` supervises Vite on a free loopback port. Its ordinary web

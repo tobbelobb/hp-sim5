@@ -1374,6 +1374,7 @@ export async function collectSweepData(send, context) {
     forceBaseRadii,
   } = options;
   let { forceLow, forceMid, forceMax, sensorCollectionForce } = options;
+  const outputFile = outputFileOverride || `sweep_data_${machineType}_${Date.now()}.json`;
 
   const sweepConfigs = await resolveSweepConfigs({
     sweepConfigFile: options.sweepConfigFile,
@@ -1476,6 +1477,37 @@ export async function collectSweepData(send, context) {
       forceTuningMeta = tuned.tuningMeta ?? null;
     }
   }
+
+  // Persist selected forces before sweep positioning, never as an auto-loaded cache.
+  const forceTuning = {
+    auto_tuned: autoTuneForce,
+    method: autoTuneForce ? 'force-thresholds' : 'manual',
+    tuned_at: autoTuneForce ? new Date().toISOString() : undefined,
+    force_low_n: forceLow,
+    force_mid_n: forceMid,
+    force_max_n: forceMax,
+    pullout_force_n: resolveCollectionForce({ forceMid, forceMax, preloadMultiplier: 20 }),
+    ...(forceTuningMeta ?? {}),
+  };
+  const checkpointFile = `${outputFile}.force-tuning.json`;
+  const checkpointStage = !autoTuneForce ? 'manual_force_selection_before_sweeps'
+    : forceTuningMeta?.tuning_failed ? 'force_tuning_failed_fallback_selected'
+      : 'force_tuning_complete_before_sweeps';
+  await fs.mkdir(path.dirname(checkpointFile), { recursive: true });
+  await fs.writeFile(`${checkpointFile}.tmp`, JSON.stringify({
+    version: '1.0',
+    stage: checkpointStage,
+    timestamp: new Date().toISOString(),
+    machine_type: machineType,
+    firmware,
+    m666: m666ForCollection,
+    mm_per_degree: mmPerDeg,
+    requested_sensor_collection_force_n: sensorCollectionForce,
+    sensor_collection_force_n: resolveCollectionForce({ forceMid, forceMax, sensorCollectionForce }),
+    force_tuning: forceTuning,
+  }, null, 2));
+  await fs.rename(`${checkpointFile}.tmp`, checkpointFile);
+  console.log(`; force-tuning checkpoint saved to ${checkpointFile}`);
 
   // A short tighten-release cycle before we set encoder reference points and set pos mode
   const forbiddenForceAnchors = getForceForbiddenAnchors(machineConfig);
@@ -1702,16 +1734,13 @@ export async function collectSweepData(send, context) {
     }
   }
 
-  const forceTuning = {
-    auto_tuned: autoTuneForce,
-    method: autoTuneForce ? 'force-thresholds' : 'manual',
-    tuned_at: autoTuneForce ? new Date().toISOString() : undefined,
+  // Recovery may change collection forces after the initial tuning checkpoint.
+  Object.assign(forceTuning, {
     force_low_n: forceLow,
     force_mid_n: forceMid,
     force_max_n: forceMax,
     pullout_force_n: resolveCollectionForce({ forceMid, forceMax, preloadMultiplier: 20 }),
-    ...(forceTuningMeta ?? {}),
-  };
+  });
   const noiseOriginDeg = Array.isArray(forceTuning?.noise_sigma_deg)
     ? forceTuning.noise_sigma_deg.map((val) => (Number.isFinite(val) ? val : null))
     : null;
@@ -1761,7 +1790,6 @@ export async function collectSweepData(send, context) {
     sweeps,
   };
 
-  const outputFile = outputFileOverride || `sweep_data_${machineType}_${Date.now()}.json`;
   const outputDir = path.dirname(outputFile);
   if (outputDir && outputDir !== '.') {
     await fs.mkdir(outputDir, { recursive: true });
