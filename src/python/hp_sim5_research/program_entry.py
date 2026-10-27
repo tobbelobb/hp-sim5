@@ -8,6 +8,7 @@ import subprocess
 import sys
 
 from . import coding_client
+from .client_transport import activate, client_adapter
 from .program import ProgramStore, _json
 from .program_host import open_manager, read_json, request
 from .program_manager import failure
@@ -21,12 +22,12 @@ class Parser(argparse.ArgumentParser):
 def client_plan(root, attachment, backend, *, model=None, model_provider='openai',
                 dont_ask=False, client_args=()):
     """Local managers use ordinary program CLI calls, without a manager MCP."""
-    if coding_client.research_client() == 'cloud':
-        raise ValueError('The current cloud chat is the manager. Use --cloud without --codex or --claude; read scripts/cloud/RESEARCH.md')
+    adapter = client_adapter()
+    if adapter:
+        adapter.validate_manager(local_client=True)
     session = Path(attachment['session'])
     instructions = ('Bound execution mode: LOCAL. This is a local installed coding-client manager.\n'
-                    'Use local CLI workers and reviewers. Do not use --cloud or the cloud-research-client skill.\n'
-                    'Command sandboxing and invisible host PIDs do not make this a cloud run.\n'
+                    'Use local CLI workers and reviewers.\n'
                     'Never switch transport to recover a controller error.\n'
                     'Bound manager connection: ' + attachment['connection'] +
                     '\nProgram ID: ' + attachment['program_id'] + '\nManager artifacts: ' + str(session) +
@@ -92,11 +93,14 @@ def main(argv, root):
             os.environ['HP_SIM5_RESEARCH_CLIENT'] = 'cloud'
         elif args.backend:
             os.environ['HP_SIM5_RESEARCH_CLIENT'] = 'local'
-        from .cloud_environment import activate
         activate(root)
         transport = coding_client.research_client()
-        if transport == 'cloud' and (args.model or args.model_provider != 'openai'):
-            parser.error('The current cloud chat is the manager. Use --cloud without a coding CLI, model or provider override')
+        adapter = client_adapter()
+        if adapter:
+            try:
+                adapter.validate_manager(model=args.model, model_provider=args.model_provider)
+            except ValueError as error:
+                parser.error(str(error))
         if args.dry_run:
             attachment = {'program_id': args.program or 'PROGRAM_ID',
                           'session': str(root / 'output/research/managers/dry-run'),

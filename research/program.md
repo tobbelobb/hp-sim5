@@ -5,6 +5,11 @@ chooses useful investigations, delegates them to the existing research agent,
 asks a separate reviewer to inspect the evidence, and explains what to try next.
 The human supplies the question and steers the conversation.
 
+For actors, prompts, tools and a measured cloud timeline, open the
+[visual report](reports/research-program-cloud.html). The
+[adapter boundary map](../scripts/cloud/BOUNDARY.md) separates platform code
+from the local core.
+
 ## Start locally
 
 ```bash
@@ -26,34 +31,13 @@ investigation, a separate review, and a decision, with no new numerical work.
 The worker currently starts its normal supervisor even for saved-evidence work.
 A later bounded production experiment can test physics-tool integration.
 
-## Use the current cloud chat
+## Codex Cloud adapter
 
-Ask the authenticated cloud chat:
-
-```text
-Read research/prompts/research-manager.txt and manage this question: [question].
-```
-
-The chat runs:
-
-```bash
-./hp-sim5-research-program --cloud --question 'Your research question'
-```
-
-This does not open another coding client. The current conversation is the
-manager. The controller starts the existing research launcher; its model request
-goes directly to a queue that the parent dispatches through authenticated
-subagent tools. No second login, API key, Codex-home write grant or PATH wrapper
-is required. See the [cloud instructions](../scripts/cloud/RESEARCH.md).
-
-Keep the chat working through each bounded cycle. Background services manage
-owned processes and deadlines, but do not conduct research without the manager.
-CLI model/provider flags do not configure cloud actors. The cloud entry prompt
-always selects --cloud; the local --codex/--claude launcher always selects local.
-The controller passes that selection to workers and reviewers. Environment
-markers, Codex-home paths, installed skills and sandbox behavior play no part in
-selecting the mode. The entry prompt and local launcher share
-research/prompts/research-manager-workflow.txt after opening the program.
+The optional [Codex Cloud adapter](../scripts/cloud/RESEARCH.md) uses the current
+authenticated conversation as manager. Its prompts, dispatch instructions,
+setup and permission workarounds live under `scripts/cloud/`; the
+[boundary map](../scripts/cloud/BOUNDARY.md) inventories the few core attachment
+points. Both routes use the shared `research/prompts/research-manager-workflow.txt`.
 
 ## Continue and steer
 
@@ -128,13 +112,16 @@ There is no "ignore integrity and keep reviewed status" import option.
 
 ## What has been demonstrated
 
-The [October 24 cloud pilot](cloud-client-pilot/2026-10-24/README.md) used a
-prototype transport: two investigations and separate reviews, one small native
-physics operation, interruption and fresh-manager reconstruction. It did not
-demonstrate scientific improvement. That prototype's PATH wrapper and independent
-ten-minute timeout have been removed. The current transport and local manager
-need live trials on their actual platforms; fixture tests alone cannot establish
-that authenticated model sessions work.
+The [October 26–27 audit](programs/program-7aa80aa18f10499e85cb24ffeae712cb/selected/output/research/sessions/2026-10-26-cloud-platform-audit/report.md)
+records actual workers, separate fixed-evidence reviews, native experiments,
+collection, Rerun and browser inspection through the current cloud relay. Its
+final repaired-source production regression was interrupted. Read its tested
+scope and remaining gap before treating the whole workflow as validated.
+The [HTML report](reports/research-program-cloud.html) presents that evidence as
+a timeline. Fixture tests do not establish authenticated model access.
+
+The [October 24 pilot](cloud-client-pilot/2026-10-24/README.md) and development
+cards retain earlier experiments and superseded transport designs.
 
 Parallel pools and combined-patch checks remain available as advanced tools.
 Start with one worker and a separate reviewer. The historical development cards

@@ -439,9 +439,8 @@ def main():
     injected_model = None if forwarded_model else args.model
     if args.worktree_dir and not args.worktree:
         parser.error('--worktree-dir requires --worktree')
-    if coding_client.research_client() == 'cloud' and not (args.batch or args.serve or args.preflight or args.doctor):
-        parser.error('Use the current cloud chat as manager with hp-sim5-research-program --cloud; standalone interactive clients are disabled here')
-    cloud_service = args.serve and coding_client.research_client() == 'cloud'
+    adapter = coding_client.client_adapter()
+    external_client = adapter.agent_uses_external_client(args, parser) if adapter else True
     previous_sigterm = signal.signal(signal.SIGTERM, interrupted)
     previous_alarm = None
     wall_expired = False
@@ -503,7 +502,7 @@ def main():
             print(json.dumps({'mode': 'serve' if args.serve else 'batch' if args.batch else 'interactive',
                               'backend': args.backend, 'model_provider': provider, 'model': model,
                               'mcp_config': claude_mcp_config(session, endpoint) if args.backend == 'claude' else None,
-                              'argv': ([] if cloud_service else command_builder(session, endpoint, batch=args.batch, dont_ask=args.dont_ask, goal_mode=args.goal_mode, codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section, model_provider=injected_provider, model=injected_model)) + ([] if args.batch or not prompt else [prompt]),
+                              'argv': (command_builder(session, endpoint, batch=args.batch, dont_ask=args.dont_ask, goal_mode=args.goal_mode, codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section, model_provider=injected_provider, model=injected_model) if external_client else []) + ([] if args.batch or not prompt else [prompt]),
                               'prompt': full_prompt}, indent=2))
             return 0
         session.mkdir(parents=True)
@@ -548,10 +547,10 @@ def main():
         (session / 'attachment.toml').write_text(attachment)
         (session / 'attachment.json').write_text(json.dumps(claude_mcp_config(session, endpoint), indent=2) + '\n')
         (session / 'instructions.md').write_text(instructions)
-        command = ([] if cloud_service else command_builder(
+        command = (command_builder(
             session, endpoint, runtime, batch=args.batch, dont_ask=args.dont_ask, goal_mode=args.goal_mode,
             codex_args=codex_args, instructions=instructions, sidebar_section=sidebar_section,
-            model_provider=injected_provider, model=injected_model))
+            model_provider=injected_provider, model=injected_model) if external_client else [])
         if not args.batch and prompt:
             command += [prompt]
         # Keep bearer credentials out of launch artifacts.
@@ -638,6 +637,6 @@ def main():
 
 
 if __name__ == '__main__':
-    from hp_sim5_research.cloud_environment import activate
+    from hp_sim5_research.client_transport import activate
     activate(ROOT)
     sys.exit(main())

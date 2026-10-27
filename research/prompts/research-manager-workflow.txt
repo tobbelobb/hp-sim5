@@ -2,10 +2,7 @@ Manage the research question in this conversation. Read AGENTS.md,
 research/AGENTS.md and research/program.md. Keep this chat as the manager; delegate
 bounded investigations to hp-sim5-research-agent through the program tools.
 
-The entry route selects local or cloud mode explicitly. Use the bound instructions
-and attachment.client_transport; capabilities and overview.manager also report it.
-Keep that choice through recovery. Do not infer mode from environment markers,
-Codex-home paths, available skills or sandbox restrictions.
+Use the bound execution mode and attachment.client_transport throughout recovery.
 
 Keep the program ID and attachment.connection supplied by the entry route. Later commands use:
 
@@ -32,15 +29,7 @@ before numerical budgets; use supported --speedup 25 for simulated autocal CLI.
 Use commission or a ready assignment, then worker_start/run_once.
 Set execution.machine in commission (hp3/hp4), or pass machine in
 worker settings; the structured setting must agree with the intended machine.
-In cloud, call runtime_check before allocating work and fix setup failures before
-dispatch; scripts/cloud/RESEARCH.md explains dependencies and socket permissions.
-Poll actual worker_status and preserve unsuccessful and partial evidence. In cloud, dispatch
-verified pending bridge requests according to scripts/cloud/RESEARCH.md; each
-actual actor must write its own final_output, and only actual completion or
-interruption permits a bridge acknowledgement. Never fabricate child output.
-Pass a worker's returned tool_connection_path to its actor. Use
-scripts/cloud/cloud_tool_bridge.py for the real MCP tools when actor command
-sockets are denied; the existing launcher owns that file relay and supervisor.
+Poll actual worker_status and preserve unsuccessful and partial evidence.
 
 An exited worker is unreviewed. Use submit to freeze the claim, report and selected
 evidence, then a separate review_start, review_status and review_apply. Review
@@ -53,7 +42,6 @@ Read research/program-strategy.md and research/program-review.md as needed.
 Accept human steering without repeated approval requests. Use steering and
 decision to preserve it. Pause holds new dispatch while running work continues;
 worker_cancel stops one attempt; stop_program stops owned work. Poll cleanup.
-In cloud, also interrupt the actual bound actor and acknowledge it to the bridge.
 Never signal historical PIDs or claim memory restored a physics checkpoint.
 Continue an unfinished investigation in its conversation, without prompt-restart
 loops. Scope multiple investigations as distinct assignments.

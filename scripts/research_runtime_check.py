@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 import sys
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'scripts'))
 from research_socket_probe import probe
 
@@ -56,8 +56,8 @@ def check(backend='headless-js'):
     ready = all(item['ok'] for item in checks.values())
     return {'ok': ready, 'kind': 'runtime_setup_check', 'physics_started': False, 'checks': checks,
             'next_step': None if ready else
-            'Repair blocked checks before dispatch. For missing dependencies/artifacts run '
-            'bash scripts/cloud/install_research.sh; socket permissions require a permitted launcher context.'}
+            'Repair blocked checks before dispatch. See research/README.md for runtime setup; '
+            'socket permissions require a permitted launcher context.'}
 
 
 if __name__ == '__main__':

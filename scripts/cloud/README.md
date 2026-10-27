@@ -1,5 +1,9 @@
 # Cloud development environment
 
+For the removable Research Program adapter's code/prompt inventory, see
+[the boundary map](BOUNDARY.md). For an illustrated explanation and saved-run
+timeline, open the [HTML report](../../research/reports/research-program-cloud.html).
+
 For research workers and reviewers using only the current cloud chat's login,
 see [cloud research](RESEARCH.md). Prepare dependencies with
 `bash scripts/cloud/install_research.sh` when needed, then use

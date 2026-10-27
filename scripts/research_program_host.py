@@ -11,6 +11,6 @@ if __name__ == '__main__':
     parser.add_argument('--store', required=True, type=Path)
     parser.add_argument('--root', required=True, type=Path)
     args = parser.parse_args()
-    from hp_sim5_research.cloud_environment import activate
+    from hp_sim5_research.client_transport import activate
     activate(args.root)
     raise SystemExit(serve(args.store, args.root))

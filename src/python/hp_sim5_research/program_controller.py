@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 
 from .program import ProgramError, _json, _now, _text
 from .program_workers import ACTIVE, process_identity, process_live, runtime_check
-from .coding_client import research_client
+from .client_transport import client_adapter
 from . import program_pool as pool
 
 STATES = ('active', 'exhausted', 'expired', 'stopped', 'interrupted')
@@ -204,13 +204,11 @@ class ProgramController:
             active = [r for r in self.records() if r['kind'] == 'runtime_allocation' and r['details']['state'] == 'active']
             if active:
                 allocation_id = active[-1]['id']
-        if research_client() == 'cloud':
+        adapter = client_adapter()
+        if adapter:
             if allocation_id:
                 self._ready(self.current(allocation_id), assignment_id, settings=settings)
-            checked = runtime_check(self.manager.root, physics_backend=settings['physics_backend'])
-            if not checked['ok']:
-                raise ProgramError('Cloud runtime is not ready; no worker attempt was charged. '
-                                   'Call runtime_check for diagnostics. ' + _json(checked))
+            adapter.ensure_runtime_ready(self.manager.root, settings, runtime_check)
             if allocation_id:
                 # This host still holds the store lock. A slow dependency probe
                 # must not expire its heartbeat; wall/review limits still apply.

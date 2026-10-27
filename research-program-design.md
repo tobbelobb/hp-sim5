@@ -1,5 +1,9 @@
 # A research program above hp-sim5-research-agent
 
+For the implemented feature, start with [research/program.md](research/program.md)
+and the [visual cloud report](research/reports/research-program-cloud.html).
+This document retains the original proposal.
+
 Design proposal, 23 October 2026. Based on checkout `b39fa16faec8`, the
 published "Hand Cranking the Development Engine" post, and the sources linked
 below. No new numerical experiments were run. Proposed commands and files in

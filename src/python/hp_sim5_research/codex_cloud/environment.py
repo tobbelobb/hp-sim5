@@ -16,8 +16,6 @@ SETTINGS = (
 
 
 def activate(root):
-    if os.environ.get('HP_SIM5_RESEARCH_CLIENT', 'local') != 'cloud':
-        return
     script = Path(root) / 'scripts/cloud/env.sh'
     result = subprocess.run(
         ['bash', '-c', 'set -e; source "$1"; shift; '

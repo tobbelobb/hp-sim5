@@ -451,7 +451,8 @@ def test_manager_client_commands_only_attach_orchestration_and_dry_run_is_inert(
     assert 'research_attach.py' not in command
     assert 'hp-sim5-research-program tool' in plan['instructions']
     assert plan['instructions'].startswith('Bound execution mode: LOCAL.')
-    assert 'Do not use --cloud or the cloud-research-client skill' in plan['instructions']
+    assert 'Use local CLI workers and reviewers.' in plan['instructions']
+    assert 'scripts/cloud/' not in plan['instructions']
     if backend == 'codex':
         for name in ('hp_sim5', 'rerun', 'hp_sim5_program'):
             option = next(a for a in plan['argv'] if a.startswith(f'mcp_servers.{name}='))

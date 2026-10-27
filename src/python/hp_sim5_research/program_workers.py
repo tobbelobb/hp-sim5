@@ -16,7 +16,7 @@ import time
 
 from .program import ProgramError, _allocation, _identity, _json, _now, _object, _text
 from . import program_pool as pool
-from .coding_client import research_client
+from .client_transport import client_adapter
 
 
 ACTIVE = ('starting', 'running', 'cancelling', 'ownership_lost')
@@ -29,15 +29,16 @@ FILES = ('session.json', 'launch.json', 'exit.json', 'prompt.txt', 'events.jsonl
 
 def runtime_check(root, *, physics_backend='headless-js'):
     """Check in a launcher's environment, including when its host predates setup."""
-    argv = [sys.executable, str(Path(root) / 'scripts/cloud/check_research.py'),
+    argv = [sys.executable, str(Path(root) / 'scripts/research_runtime_check.py'),
             '--physics-backend', physics_backend]
-    if research_client() == 'cloud':
-        argv = ['bash', '-c', 'source "$1/scripts/cloud/env.sh" && shift && exec "$@"',
-                'research-runtime-check', str(root), *argv]
+    adapter = client_adapter()
+    if adapter:
+        argv = adapter.runtime_check_command(root, argv)
     result = subprocess.run(argv, cwd=root, capture_output=True, text=True, timeout=55)
     if result.returncode not in (0, 1) or not result.stdout.strip():
         raise ProgramError(f'Runtime setup check failed: {result.stderr[-2000:].strip()}')
-    return json.loads(result.stdout)
+    checked = json.loads(result.stdout)
+    return adapter.runtime_check_result(checked) if adapter else checked
 
 
 def process_identity(pid):
@@ -155,9 +156,9 @@ class WorkerDispatcher:
         for name in ('model', 'model_provider', 'worktree_dir', 'sidebar_section'):
             if name in result:
                 _text(result[name], name)
-        if research_client() == 'cloud' and (result['backend'] != 'codex' or result.get('model') or
-                result.get('model_provider', 'openai') != 'openai' or result['client_args']):
-            raise ProgramError('Cloud workers use parent-authenticated subagents; omit CLI model/provider arguments and use backend codex')
+        adapter = client_adapter()
+        if adapter:
+            adapter.validate_worker_settings(result)
         return result
 
     def assignment_settings(self, program_id, assignment_id, settings=None):
@@ -170,8 +171,9 @@ class WorkerDispatcher:
             if 'machine' in options and options['machine'] != machine:
                 raise ProgramError('Worker machine conflicts with commissioned execution.machine')
             options['machine'] = machine
-        if research_client() == 'cloud' and 'machine' not in options:
-            raise ProgramError('Cloud workers require execution.machine at commission or an explicit machine in worker settings (hp3/hp4)')
+        adapter = client_adapter()
+        if adapter:
+            adapter.validate_machine(options)
         return self._settings(options)
 
     def start(self, program_id, assignment_id, *, settings=None, instructions='', runtime=None):

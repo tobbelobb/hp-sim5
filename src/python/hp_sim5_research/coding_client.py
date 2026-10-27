@@ -5,26 +5,12 @@ No model API, credential provisioning or physics runtime is introduced here.
 import json
 import os
 from pathlib import Path
-import sys
 import tomllib
+
+from .client_transport import client_adapter, research_client
 
 CHATGPT_SIGN_IN = 'openai'
 STRIPPED_KEYS = ('OPENAI_API_KEY', 'CODEX_API_KEY')
-
-
-def research_client():
-    """Read the entry route's explicit selection, inherited by its children."""
-    selected = os.environ.get('HP_SIM5_RESEARCH_CLIENT', 'local')
-    if selected not in ('local', 'cloud'):
-        raise ValueError('HP_SIM5_RESEARCH_CLIENT must be local or cloud')
-    return selected
-
-
-def cloud_command(root, session, sandbox):
-    return [sys.executable, str(root / 'scripts/cloud/cloud_client_bridge.py'), 'client',
-            '--cd', str(root), '--session-dir', str(session),
-            '--output-last-message', str(session / 'final-message.md'),
-            '--sandbox', sandbox]
 
 
 def forwarded_settings(codex_args):
@@ -88,9 +74,10 @@ def dotenv_values(path):
 def codex_environment(provider=CHATGPT_SIGN_IN, *, root, env_file):
     # ChatGPT sign-in needs no OpenAI key. A selected API provider gets its configured
     # env_key from the Git-ignored .env when the caller has not already exported it.
+    adapter = client_adapter()
+    if adapter:
+        return adapter.codex_environment(provider=provider, root=root, env_file=env_file)
     environment = {key: value for key, value in os.environ.items() if key not in STRIPPED_KEYS}
-    if research_client() == 'cloud':
-        return environment
     variable = provider_env_key(provider, root=root)
     if variable and not environment.get(variable):
         value = dotenv_values(env_file).get(variable)
@@ -132,12 +119,10 @@ def disabled_research_mcp_settings(root):
 def codex_command(root, session, *, batch=False, dont_ask=False, goal_mode=False,
                   codex_args=(), instructions='', model_provider=CHATGPT_SIGN_IN,
                   model=None, settings=None, sandbox='workspace-write'):
-    if research_client() == 'cloud':
-        if not batch:
-            raise ValueError('The current cloud chat is the manager. Use --cloud --question TEXT or --cloud --program ID, without --codex')
-        if model or model_provider not in (None, CHATGPT_SIGN_IN) or codex_args:
-            raise ValueError('Cloud subagents inherit the parent client configuration; do not supply CLI model/provider arguments')
-        return cloud_command(root, session, sandbox)
+    adapter = client_adapter()
+    if adapter:
+        return adapter.codex_command(root, session, batch=batch, model=model,
+                                     model_provider=model_provider, codex_args=codex_args, sandbox=sandbox)
     command = ['codex'] + (['exec'] if batch else [])
     command += ['--cd', str(root), '--sandbox', sandbox, '-c', 'approval_policy="never"']
     if batch:
@@ -160,8 +145,9 @@ def codex_command(root, session, *, batch=False, dont_ask=False, goal_mode=False
 
 def claude_command(session, *, batch=False, dont_ask=False, goal_mode=False,
                    codex_args=(), model=None, allowed_tools='mcp__hp_sim5,mcp__rerun', **_):
-    if research_client() == 'cloud':
-        raise ValueError('Cloud research uses authenticated subagents with backend codex, without another coding CLI')
+    adapter = client_adapter()
+    if adapter:
+        return adapter.claude_command(session)
     command = ['claude', '--mcp-config', str(session / 'attachment.json'), '--strict-mcp-config',
                '--append-system-prompt-file', str(session / 'instructions.md'),
                '--allowedTools', allowed_tools,

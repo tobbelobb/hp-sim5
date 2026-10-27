@@ -7,7 +7,8 @@ import sys
 
 import pytest
 
-from hp_sim5_research.cloud_environment import SETTINGS, activate
+from hp_sim5_research.codex_cloud.environment import SETTINGS
+from hp_sim5_research.client_transport import activate
 
 ROOT = Path(__file__).resolve().parents[2]
 

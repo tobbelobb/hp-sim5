@@ -40,7 +40,7 @@ def test_entry_loads_cloud_environment_without_parent_sourcing(tmp_path, launche
 def test_runtime_check_reloads_environment_of_existing_host(tmp_path, monkeypatch):
     (tmp_path / 'scripts/cloud').mkdir(parents=True)
     (tmp_path / 'scripts/cloud/env.sh').write_text('export HP_SIM5_SETUP_FIX=loaded\n')
-    (tmp_path / 'scripts/cloud/check_research.py').write_text(
+    (tmp_path / 'scripts/research_runtime_check.py').write_text(
         'import json, os; print(json.dumps({"ok": os.environ.get("HP_SIM5_SETUP_FIX") == "loaded"}))')
     monkeypatch.setenv('HP_SIM5_RESEARCH_CLIENT', 'cloud')
     monkeypatch.delenv('HP_SIM5_SETUP_FIX', raising=False)
@@ -50,7 +50,7 @@ def test_runtime_check_reloads_environment_of_existing_host(tmp_path, monkeypatc
 
 @pytest.mark.parametrize('failure', ['sockets', 'python', None])
 def test_setup_diagnostics_locate_failure_without_movement(tmp_path, monkeypatch, failure):
-    spec = importlib.util.spec_from_file_location('cloud_setup_check', ROOT / 'scripts/cloud/check_research.py')
+    spec = importlib.util.spec_from_file_location('runtime_setup_check', ROOT / 'scripts/research_runtime_check.py')
     checker = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(checker)
     monkeypatch.setattr(checker, 'ROOT', tmp_path)

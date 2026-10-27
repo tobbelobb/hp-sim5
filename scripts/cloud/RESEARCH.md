@@ -15,8 +15,14 @@ the installer there. No research-client installation or PATH wrapper is required
 Use the cloud entry prompt:
 
 ```text
-Read research/prompts/research-manager.txt and manage this question: [question].
+Read scripts/cloud/prompts/research-manager.txt and manage this question: [question].
 ```
+
+The former `research/prompts/research-manager.txt` path remains a symlink to
+this cloud-owned entry. Shared research instructions stay in
+`research/prompts/research-manager-workflow.txt`; platform-specific instructions
+are in `scripts/cloud/prompts/manager-workflow.txt`. See the
+[adapter boundary](BOUNDARY.md) for code ownership and removal points.
 
 That prompt opens the controller with:
 
