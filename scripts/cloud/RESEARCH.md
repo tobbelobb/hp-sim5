@@ -115,6 +115,11 @@ names selected manifest.assets entries; manifest.json and candidate.diff are
 metadata. Execution completion is not scientific acceptance: retain submit,
 review and review_apply.
 
+The bridge accepts worker final messages under repository `output/` and reviewer
+responses at `.research-programs*/reviews/review-run-<32 hex digits>/final-message.md`.
+The latter covers the default program store. Other control files, malformed review
+directories and review paths resolving outside the repository are rejected.
+
 For cancellation, request worker_cancel/review_cancel, interrupt the bound cloud
 actor, verify its stopped state, then acknowledge with the bridge's cancelled
 operation. Poll launcher cleanup separately. Keep partial evidence. The bridge

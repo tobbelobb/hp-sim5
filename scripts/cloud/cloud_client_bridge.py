@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import signal
 import sys
 import time
@@ -26,6 +27,19 @@ def write(path, value):
 def read(path):
     return json.loads(path.read_text())
 
+def valid_final_path(root, final):
+    if final.is_relative_to((root / 'output').resolve()):
+        return True
+    # The default program store keeps saved-evidence reviewers outside output.
+    # Admit only their final response, after resolving any symlinks.
+    if not final.is_relative_to(root):
+        return False
+    parts = final.relative_to(root).parts
+    return (len(parts) == 4 and parts[0].startswith('.research-programs')
+            and parts[1] == 'reviews'
+            and re.fullmatch(r'review-run-[0-9a-f]{32}', parts[2]) is not None
+            and parts[3] == 'final-message.md')
+
 def client(arguments):
     parser = argparse.ArgumentParser(description='Wait for a real subagent dispatched by the current cloud chat')
     parser.add_argument('--cd', type=Path, required=True)
@@ -33,8 +47,8 @@ def client(arguments):
     parser.add_argument('--sandbox', choices=('read-only', 'workspace-write'), default='workspace-write')
     args = parser.parse_args(arguments)
     root, final = args.cd.resolve(), args.output_last_message.resolve()
-    if not final.is_relative_to((root / 'output').resolve()):
-        print('Final message must be inside repository output', file=sys.stderr)
+    if not valid_final_path(root, final):
+        print('Final message must be inside repository output or a program review directory', file=sys.stderr)
         return 2
     prompt = sys.stdin.read()
     identity = uuid.uuid4().hex

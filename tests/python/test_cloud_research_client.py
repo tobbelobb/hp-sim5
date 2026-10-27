@@ -29,6 +29,9 @@ def wait_for(predicate):
 def client(tmp_path, request):
     root = tmp_path / 'repo'
     final = root / 'output/session/final-message.md'
+    if getattr(request, 'param', None) in ('default-review', 'alternate-review'):
+        store = '.research-programs' if request.param == 'default-review' else '.research-programs-custom'
+        final = root / store / 'reviews' / ('review-run-' + 'a' * 32) / 'final-message.md'
     final.parent.mkdir(parents=True)
     queue = tmp_path / 'queue'
     environment = dict(os.environ, HP_SIM5_CLOUD_QUEUE=str(queue))
@@ -63,6 +66,7 @@ def client(tmp_path, request):
         process.wait(timeout=5)
 
 
+@pytest.mark.parametrize('client', ['output', 'default-review', 'alternate-review'], indirect=True)
 def test_actor_completion_preserves_real_final_message_and_omits_private_flags(client):
     process, path, final, command = client
     assert 'private-config-marker' not in path.read_text()
@@ -77,6 +81,42 @@ def test_actor_completion_preserves_real_final_message_and_omits_private_flags(c
     response = json.loads(path.with_name('response.json').read_text())
     assert response['final_sha256'] == hashlib.sha256(final.read_bytes()).hexdigest()
     assert final.read_text() == 'Actual fixture actor output. No scientific result.'
+
+
+@pytest.mark.parametrize('relative', [
+    '.git/final-message.md',
+    '.research-programs/programs.sqlite3',
+    '.research-programs/reviews/review-run-invalid/final-message.md',
+    '.research-programs/reviews/review-run-' + 'a' * 32 + '/connection.json',
+    '../outside/final-message.md',
+])
+def test_cloud_final_path_rejects_nonreview_control_and_external_paths(tmp_path, relative):
+    root = tmp_path / 'repo'
+    root.mkdir()
+    queue = tmp_path / 'queue'
+    result = subprocess.run(
+        [sys.executable, str(BRIDGE), 'client', '--cd', str(root),
+         '--output-last-message', str(root / relative)], input='Fixture only',
+        capture_output=True, text=True, timeout=5,
+        env=dict(os.environ, HP_SIM5_CLOUD_QUEUE=str(queue)))
+    assert result.returncode == 2
+    assert 'Final message must' in result.stderr
+    assert not queue.exists()
+
+
+def test_cloud_review_final_path_rejects_symlink_escape(tmp_path):
+    root = tmp_path / 'repo'
+    root.mkdir()
+    outside = tmp_path / 'outside'
+    outside.mkdir()
+    (root / '.research-programs').symlink_to(outside, target_is_directory=True)
+    final = root / '.research-programs/reviews' / ('review-run-' + 'a' * 32) / 'final-message.md'
+    result = subprocess.run(
+        [sys.executable, str(BRIDGE), 'client', '--cd', str(root),
+         '--output-last-message', str(final)], input='Fixture only',
+        capture_output=True, text=True, timeout=5)
+    assert result.returncode == 2
+    assert 'Final message must' in result.stderr
 
 
 def test_other_actor_cannot_acknowledge_completion(client):
