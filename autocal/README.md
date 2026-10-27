@@ -334,6 +334,34 @@ Compare returned parameters and each intermediate fit, not only the aggregate
 score. Lower prediction or history scores can still choose worse physical
 parameters. These stage boundaries preserve the existing selection policy.
 
+## Analytical parameter screens
+
+For a cheap test of anchor solving across changed layouts and measurement errors:
+
+```bash
+.venv/bin/python -m autocal.tools.benchmark_parameter_variation \
+  --output output/parameter-screen-new --max-fits 32 --max-wall-seconds 600
+```
+
+The output directory must be new. The tool generates eight deterministic HP3
+conditions, runs individual `lbfgsb` and `trf` core fits on 20 or 10 points per
+sweep, and evaluates each fit on the same three unseen sweeps. Four development
+worlds and four holdout worlds vary geometry, prescribed cable compliance,
+reversal offsets, encoder noise and movement span. Truth stays in separate
+`evaluation-truth.json` files; fit seeds use the observed encoder ranges.
+
+This is an analytical screen, with no simulated collection, force equilibrium,
+motor dynamics or hardware measurements. Its prescribed reversal offset is not
+a native friction model. It bypasses the full loop's recovery, warm chaining,
+planning, history consensus and stopping. It cannot establish collection savings
+or select a production solver. Use native collection for that follow-up.
+
+The contract, input hashes, separate truth, source identity, failed rows and
+coverage checks remain in the output directory. Summary comparisons require
+successful optimization, finite output, all training sweeps and all unseen points.
+A small residual alone does not establish accurate anchors. The fit cap is exact;
+the wall budget is checked between fits, so a running fit can overrun it.
+
 ## Typical workflow (real machine)
 
 Remove `--sim` and `--speedup` to use a real machine:
