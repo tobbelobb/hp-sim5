@@ -12,6 +12,7 @@ import {
   buildSymmetricPulloutModes,
   combinations,
   generateSweepConfigs,
+  loadSweepConfigFile,
   MACHINE_CONFIGS,
   resolveFixedTargets,
   resolveForcedBaseRadii,
@@ -23,6 +24,34 @@ import {
 import { parseBridgeArgs } from '../../cli/collect_sweep_data.mjs';
 
 describe('collect_sweep_data CLI helpers', () => {
+  test('sweep file keeps independent target levels and deduplicates matching constraints', async () => {
+    const directory = mkdtempSync(path.join(os.tmpdir(), 'sweep-targets-'));
+    const file = path.join(directory, 'sweeps.cfg');
+    try {
+      writeFileSync(file, '[3,0] 2 1 0,25\n[0,3] 1 2 25,0\n[0,3] 1 2 50,0\n');
+      const configs = await loadSweepConfigFile(file, MACHINE_CONFIGS.hangprinter_3);
+      expect(configs).toHaveLength(2);
+      expect(configs.map((config) => config.fixedTargets)).toEqual([[25, 0], [50, 0]]);
+      expect(configs[0].fixedAnchors).toEqual([0, 3]);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  test('sweep file preserves legacy lines and rejects incomplete target lists', async () => {
+    const directory = mkdtempSync(path.join(os.tmpdir(), 'sweep-targets-'));
+    const file = path.join(directory, 'sweeps.cfg');
+    try {
+      writeFileSync(file, '[0,3] 1 2\n');
+      const [config] = await loadSweepConfigFile(file, MACHINE_CONFIGS.hangprinter_3);
+      expect(config.fixedTargets).toBeUndefined();
+      writeFileSync(file, '[0,3] 1 2 25\n');
+      await expect(loadSweepConfigFile(file, MACHINE_CONFIGS.hangprinter_3)).rejects.toThrow('one target per fixed anchor');
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
   test('open-loop motors are opt-in', () => {
     expect(parseBridgeArgs([]).openLoopMotors).toBe(false);
     expect(parseBridgeArgs(['--sim', '--open-loop-motors']).openLoopMotors).toBe(true);

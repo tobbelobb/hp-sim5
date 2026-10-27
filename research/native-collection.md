@@ -45,6 +45,13 @@ millimetres), `feed`, `forceLow`, `forceMid`, `forceMax`, `sensorCollectionForce
 `noiseSamples`, `returnToOrigin`, `projectZeroTension` and `preserveBuildupFactor`.
 `sweepPoints` accepts 3–100; 1–12 configurations can be collected together.
 
+Sweep config files accept an optional fourth column of comma-separated fixed
+targets in millimetres, in the order of the fixed anchors. For example,
+`[0,3] 1 2 25,0` and `[0,3] 1 2 50,0` collect the same free pair at two target
+levels. Per-config targets override `--fixed-targets`; the machine's existing
+target bounds still apply. Files with three columns retain the existing policy.
+When every config supplies targets, the unused automatic size tuner is skipped.
+
 ## Clock and completion
 
 Physics uses the RRF bridge's 0.002 s buckets. A world survives positioning,

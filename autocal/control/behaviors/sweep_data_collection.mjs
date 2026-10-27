@@ -1014,7 +1014,7 @@ export async function measureMaxTravelMm(sendFn, options = {}) {
 }
 
 function parseSweepConfigLine(line, lineNumber) {
-  const trimmed = line.trim();
+  const trimmed = line.split('#', 1)[0].trim();
   if (!trimmed || trimmed.startsWith('#')) {
     return null;
   }
@@ -1031,7 +1031,11 @@ function parseSweepConfigLine(line, lineNumber) {
   if (fixedAnchors.some((val) => !Number.isFinite(val)) || !Number.isFinite(driveAnchor) || !Number.isFinite(sensorAnchor)) {
     throw new Error(`Invalid sweep config line ${lineNumber}: anchors must be integers`);
   }
-  return { fixedAnchors, driveAnchor, sensorAnchor };
+  const fixedTargets = parts.length > 3 ? parseFixedTargetsSpec(parts[3]) : null;
+  if (fixedTargets && fixedTargets.length !== fixedAnchors.length) {
+    throw new Error(`Invalid sweep config line ${lineNumber}: expected one target per fixed anchor`);
+  }
+  return { fixedAnchors, driveAnchor, sensorAnchor, ...(fixedTargets ? { fixedTargets } : {}) };
 }
 
 export async function loadSweepConfigFile(filePath, machineConfig) {
@@ -1044,7 +1048,7 @@ export async function loadSweepConfigFile(filePath, machineConfig) {
     const parsed = parseSweepConfigLine(line, i + 1);
     if (parsed) {
       const normalized = normalizeSweepConfig(parsed, machineConfig);
-      const key = `${normalized.fixedAnchors.join(',')}|${normalized.driveAnchor}|${normalized.sensorAnchor}`;
+      const key = `${normalized.fixedAnchors.join(',')}|${normalized.driveAnchor}|${normalized.sensorAnchor}|${normalized.fixedTargets?.join(',') ?? ''}`;
       if (seen.has(key)) {
         // Skip duplicates after canonicalization to avoid repeated sweeps.
         // eslint-disable-next-line no-continue
@@ -1091,7 +1095,10 @@ function normalizeSweepConfig(config, machineConfig) {
     ? [...config.fixedAnchors].sort((a, b) => a - b)
     : [];
   const [driveAnchor, sensorAnchor] = canonicalDriveSensorPair(config.driveAnchor, config.sensorAnchor);
-  return { ...config, fixedAnchors, driveAnchor, sensorAnchor };
+  const fixedTargets = Array.isArray(config.fixedTargets)
+    ? fixedAnchors.map((anchor) => config.fixedTargets[config.fixedAnchors.indexOf(anchor)])
+    : undefined;
+  return { ...config, fixedAnchors, driveAnchor, sensorAnchor, ...(fixedTargets ? { fixedTargets } : {}) };
 }
 
 export async function performForceSweep(sendFn, sweepConfig, options) {
@@ -1494,7 +1501,8 @@ export async function collectSweepData(send, context) {
   });
   await waitForStableEncoders(send, motorIds, speedup);
 
-  const useFixedTargets = fixedTargetsSpec !== null;
+  const useFixedTargets = fixedTargetsSpec !== null
+    || sweepConfigs.every((config) => Array.isArray(config.fixedTargets));
   let maxTravelMm = Number.isFinite(maxTravelOverride) ? maxTravelOverride : null;
   let sizeTunePair = null;
   if (!useFixedTargets && maxTravelOverride === null) {
@@ -1548,11 +1556,11 @@ export async function collectSweepData(send, context) {
     sweepOrdinal += 1;
     const fixedTargets = resolveFixedTargets(
       sweepConfig.fixedAnchors,
-      fixedTargetsSpec,
+      sweepConfig.fixedTargets ?? fixedTargetsSpec,
       maxTravelMm,
       machineConfig,
     );
-    const fixedDesc = useFixedTargets
+    const fixedDesc = Array.isArray(sweepConfig.fixedTargets) || fixedTargetsSpec !== null
       ? fixedTargets.map((val) => val.toFixed(3)).join(', ')
       : '';
     const fixedInfo = fixedDesc.length > 0 ? `, fixed targets [${fixedDesc}]` : '';

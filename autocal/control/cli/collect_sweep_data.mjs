@@ -424,7 +424,7 @@ Options:
   --force-base-radii <csv>   Force M666 R radii before collection (comma-separated, e.g. 30,30,30)
   --auto-tune-force          auto-tune force-low/mid/max using a test sweep (default when no force args)
   --no-auto-tune-force       skip auto-tuning and use provided/default forces
-  --sweep-config-file <file> Provide explicit sweep configs ([fixed] drive sensor per line)
+  --sweep-config-file <file> Provide sweep configs ([fixed] drive sensor [targets_mm] per line)
   --debug-sweep              Print planned sweep permutations before collecting
   --trace                    Tell hp-sim to plot a trace of its movements (default: on)
   --physics-substeps <count> Physics integrations per firmware tick, 1–16 (default: simulator setting, initially 1)
