@@ -1,0 +1,175 @@
+{
+  "hypothesis": "Identical torque commands yield different native encoders when cable stiffness changes",
+  "outcome": "supported for this short simulated probe only",
+  "trials": [
+    {
+      "label": "nominal",
+      "stiffness_n": 20000,
+      "run_id": "dd9aeac400404cffa889cd897c8f3464",
+      "engine": "rust-native",
+      "steps": 2000,
+      "dt_s": 0.002,
+      "commands_sha256": "4dca34597f1839d023f00c7f4534fefb9ad0f866fdecbbef72ef75b2bb379c30",
+      "scene_sha256": "6c2e357b1d798e5a0f10546f6a7b1b27cef9651f943866f63ac8c24888eaca65",
+      "source_revision": "67617705b7996ee3a84889e6723cab149b6e5884",
+      "native_artifact": {
+        "path": "/workspace/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+        "build": {
+          "profile": "release",
+          "platform": "linux",
+          "arch": "x64",
+          "nodeApi": 8,
+          "artifactSha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+          "nodeApiHeaders": {
+            "directory": "/workspace/hp-sim5/src/wasm/cable_solver/native/node-api",
+            "sha256": {
+              "node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+              "node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+              "js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+              "js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034"
+            }
+          },
+          "sources": {
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "native/node_bridge.c": "3616cb499eb950b83f17364eb8049a12c537acee6d7178eeaf9c3ecaa0dc5dc2",
+            "native/node-api/node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+            "native/node-api/node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+            "native/node-api/js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+            "native/node-api/js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "00a100c9628fd28d01ea8332d5409a23c9b1d73ff7342d6c8a47e176111d0a18",
+            "src/lib.rs": "71e042bf89c89a5826460d7b7bc44c63078ad99ca4e7f0c28976123e851b1a70"
+          },
+          "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+          "target": "x86_64-unknown-linux-gnu",
+          "rustflags": null,
+          "compiler": "cc",
+          "buildScriptSha256": "bf719edb007491ef97bd763a428408e57a4e51856de76625d0603481197ab016"
+        }
+      },
+      "simulation_wall_s": 2.6025101369999675,
+      "construction_wall_s": 0.24876224499996624,
+      "metrics": {
+        "effector_displacement_m": {
+          "world/machines/default/effector": 0.0003349398914393885
+        },
+        "peak_cable_force_n": 12.464708867188076,
+        "peak_abs_length_error_m": 0.00020179024373856436,
+        "peak_abs_tracking_error_rad": 0.006726341457951368,
+        "peak_total_missed_steps": 0
+      },
+      "final_encoders_rad": [
+        69.71246436972484,
+        0.0014982115686731352,
+        0.0014983014078353571,
+        0.0016107081079560273
+      ],
+      "encoder_excursion_mm": [
+        2092.452300236369,
+        0.18378000676474412,
+        0.20179024373854104,
+        0.12352089693371758
+      ],
+      "artifacts": {
+        "manifest": "/workspace/hp-sim5/output/research/experiments/dd9aeac400404cffa889cd897c8f3464/manifest.json",
+        "scene": "/workspace/hp-sim5/output/research/experiments/dd9aeac400404cffa889cd897c8f3464/scene.usda",
+        "commands": "/workspace/hp-sim5/output/research/experiments/dd9aeac400404cffa889cd897c8f3464/commands.json",
+        "telemetry": "/workspace/hp-sim5/output/research/experiments/dd9aeac400404cffa889cd897c8f3464/telemetry.jsonl",
+        "snapshot": "/workspace/hp-sim5/output/research/experiments/dd9aeac400404cffa889cd897c8f3464/final.json"
+      }
+    },
+    {
+      "label": "soft",
+      "stiffness_n": 8000,
+      "run_id": "56a50f522c224040bf6cb0f392181d91",
+      "engine": "rust-native",
+      "steps": 2000,
+      "dt_s": 0.002,
+      "commands_sha256": "4dca34597f1839d023f00c7f4534fefb9ad0f866fdecbbef72ef75b2bb379c30",
+      "scene_sha256": "46d3a032969898a4fa4a0e49f292b043f6184b524d2de8177174c052ff73a859",
+      "source_revision": "67617705b7996ee3a84889e6723cab149b6e5884",
+      "native_artifact": {
+        "path": "/workspace/hp-sim5/src/wasm/cable_solver/target/native/physics.node",
+        "sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+        "build": {
+          "profile": "release",
+          "platform": "linux",
+          "arch": "x64",
+          "nodeApi": 8,
+          "artifactSha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+          "nodeApiHeaders": {
+            "directory": "/workspace/hp-sim5/src/wasm/cable_solver/native/node-api",
+            "sha256": {
+              "node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+              "node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+              "js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+              "js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034"
+            }
+          },
+          "sources": {
+            "Cargo.toml": "5a9e09ecfdfd56431ef44fa6fa1a357521c842077bdff7cd710a57d0ce12cdef",
+            "Cargo.lock": "a0a9caf169eefd7a27d9d65eb3fb0d9a2a8aba62b58697edab8b479b643e92c9",
+            "native/node_bridge.c": "3616cb499eb950b83f17364eb8049a12c537acee6d7178eeaf9c3ecaa0dc5dc2",
+            "native/node-api/node_api.h": "d14db85d16f182045c42745a6e44b96e932dfe6e3bfcaac7a1096fae8412c579",
+            "native/node-api/node_api_types.h": "8d5d854088d5725fec9775510e0aeeeb790a41ad083c49bb721d950b86e6bd61",
+            "native/node-api/js_native_api.h": "048b4efdcd823f30afd323d61c8aba5be285077f9d790feb52a6fa6382df2541",
+            "native/node-api/js_native_api_types.h": "0410c31e227f81e2981363c4d543f4832ac3df785343ec64cee621742ff8a034",
+            "src/abi.rs": "8c36c53e7b7bc337b604b9064200432741ad75fb934f2006d2570edb938a7ba8",
+            "src/engine.rs": "00a100c9628fd28d01ea8332d5409a23c9b1d73ff7342d6c8a47e176111d0a18",
+            "src/lib.rs": "71e042bf89c89a5826460d7b7bc44c63078ad99ca4e7f0c28976123e851b1a70"
+          },
+          "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+          "target": "x86_64-unknown-linux-gnu",
+          "rustflags": null,
+          "compiler": "cc",
+          "buildScriptSha256": "bf719edb007491ef97bd763a428408e57a4e51856de76625d0603481197ab016"
+        }
+      },
+      "simulation_wall_s": 2.3758409179999944,
+      "construction_wall_s": 0.13408877900008065,
+      "metrics": {
+        "effector_displacement_m": {
+          "world/machines/default/effector": 0.0005314354082821219
+        },
+        "peak_cable_force_n": 5.553368861287215,
+        "peak_abs_length_error_m": 0.00015289861341249988,
+        "peak_abs_tracking_error_rad": 0.005096620447091656,
+        "peak_total_missed_steps": 0
+      },
+      "final_encoders_rad": [
+        69.72252983752807,
+        0.0014491351604914693,
+        0.0014492157208111386,
+        0.001589167009859925
+      ],
+      "encoder_excursion_mm": [
+        2092.9520620447697,
+        0.15082524013690363,
+        0.15289861341274968,
+        0.10095848748699
+      ],
+      "artifacts": {
+        "manifest": "/workspace/hp-sim5/output/research/experiments/56a50f522c224040bf6cb0f392181d91/manifest.json",
+        "scene": "/workspace/hp-sim5/output/research/experiments/56a50f522c224040bf6cb0f392181d91/scene.usda",
+        "commands": "/workspace/hp-sim5/output/research/experiments/56a50f522c224040bf6cb0f392181d91/commands.json",
+        "telemetry": "/workspace/hp-sim5/output/research/experiments/56a50f522c224040bf6cb0f392181d91/telemetry.jsonl",
+        "snapshot": "/workspace/hp-sim5/output/research/experiments/56a50f522c224040bf6cb0f392181d91/final.json"
+      }
+    }
+  ],
+  "peak_paired_encoder_difference_mm": [
+    0.5612571193194071,
+    0.05385297533744359,
+    0.06916489536245565,
+    0.031492230153887135
+  ],
+  "final_paired_encoder_difference_mm": [
+    0.30196403409689765,
+    -0.0014722922454499764,
+    -0.0014725706107265543,
+    -0.0006462329428830703
+  ],
+  "limitation": "No sweep collection, geometry fitting or settling validation; does not validate analytical compliance errors or hardware friction"
+}

@@ -1,0 +1,12 @@
+{
+  "checks": {
+    "default_worlds": true,
+    "generate_world": true,
+    "thin_dataset": true,
+    "prediction": true,
+    "solve_anchors_call": true
+  },
+  "scope": "AST equality of generator/perturbations/split/density/prediction and core solver invocation; final delivery adds bookkeeping and guards, no numerical fit rerun",
+  "measured_script_sha256": "bb668edc447eeb82cf479dfce93c62dc9ffaaa1086cd35c8197c36762447c47a",
+  "delivery_script_sha256": "72a07867e2a23d213d21187a61b38b88165a1281ae291dc324aa2261980a4ecc"
+}

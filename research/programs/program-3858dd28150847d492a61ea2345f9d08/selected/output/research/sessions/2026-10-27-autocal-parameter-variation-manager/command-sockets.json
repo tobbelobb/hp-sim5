@@ -1,0 +1,17 @@
+{
+  "kind": "tool_check",
+  "context": "agent_command",
+  "checks": {
+    "socket_creation": {
+      "outcome": "passed"
+    },
+    "loopback_binding": {
+      "outcome": "passed"
+    },
+    "http_round_trip": {
+      "outcome": "passed"
+    }
+  },
+  "outcome": "passed",
+  "wall_s": 0.013309987000013734
+}

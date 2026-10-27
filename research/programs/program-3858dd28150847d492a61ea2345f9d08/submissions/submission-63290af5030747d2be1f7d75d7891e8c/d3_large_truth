@@ -1,0 +1,36 @@
+{
+  "anchors_mm": [
+    [
+      0.0,
+      -2280.0,
+      -336.0
+    ],
+    [
+      1974.54,
+      1140.0,
+      -336.0
+    ],
+    [
+      -1974.54,
+      1140.0,
+      -336.0
+    ],
+    [
+      100.0,
+      -60.0,
+      2280.0
+    ]
+  ],
+  "limitation": "Analytical circular constraints with prescribed tension errors. No force equilibrium, motor dynamics, settling, rotation, line sag or hardware validation. Point thinning is offline and cannot measure collection savings.",
+  "spec": {
+    "id": "D3-large",
+    "noise_mm": 0.05,
+    "scale": 1.2,
+    "seed": 103,
+    "split": "development",
+    "top_shift_mm": [
+      100.0,
+      -60.0
+    ]
+  }
+}

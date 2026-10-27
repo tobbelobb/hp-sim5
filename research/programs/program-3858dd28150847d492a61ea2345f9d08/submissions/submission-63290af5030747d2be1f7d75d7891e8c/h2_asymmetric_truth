@@ -1,0 +1,41 @@
+{
+  "anchors_mm": [
+    [
+      0.0,
+      -1900.0,
+      -280.0
+    ],
+    [
+      1398.6325,
+      807.5,
+      -280.0
+    ],
+    [
+      -1892.2675,
+      1092.5,
+      -280.0
+    ],
+    [
+      -180.0,
+      120.0,
+      1900.0
+    ]
+  ],
+  "limitation": "Analytical circular constraints with prescribed tension errors. No force equilibrium, motor dynamics, settling, rotation, line sag or hardware validation. Point thinning is offline and cannot measure collection savings.",
+  "spec": {
+    "id": "H2-asymmetric",
+    "lower_xy_factors": [
+      1.0,
+      0.85,
+      1.15
+    ],
+    "noise_mm": 0.15,
+    "scale": 1.0,
+    "seed": 202,
+    "split": "holdout",
+    "top_shift_mm": [
+      -180.0,
+      120.0
+    ]
+  }
+}

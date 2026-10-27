@@ -1,0 +1,22 @@
+[
+  {
+    "label": "nominal",
+    "original_path": "/workspace/hp-sim5/output/research/experiments/dd9aeac400404cffa889cd897c8f3464/telemetry.jsonl",
+    "original_bytes": 7062861,
+    "original_sha256": "49948f8c7a150d6a0c8fe2e570db4f0c5d1533d078994d022ace37309adfcb14",
+    "gzip_path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E03-nominal-telemetry.jsonl.gz",
+    "gzip_bytes": 470915,
+    "gzip_sha256": "b0e21f73fdd7cc7deeb5d5652c9044c914198984c69bb4bbe70695a28ace37ab",
+    "deterministic_gzip_mtime": 0
+  },
+  {
+    "label": "soft",
+    "original_path": "/workspace/hp-sim5/output/research/experiments/56a50f522c224040bf6cb0f392181d91/telemetry.jsonl",
+    "original_bytes": 7066046,
+    "original_sha256": "7ecc0f9116105077840ffce1f6ed76e8946ce5ee359bf80069adbe77e4ff354e",
+    "gzip_path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E03-soft-telemetry.jsonl.gz",
+    "gzip_bytes": 471997,
+    "gzip_sha256": "c88173efe8bde154639d42740bbde26a3e6e71f3ed9c59b273c806858709dc6a",
+    "deterministic_gzip_mtime": 0
+  }
+]

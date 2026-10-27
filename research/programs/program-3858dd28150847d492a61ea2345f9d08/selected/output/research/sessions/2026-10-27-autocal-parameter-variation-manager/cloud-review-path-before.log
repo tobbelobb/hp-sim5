@@ -1,0 +1,54 @@
+E                                                                        [100%]
+==================================== ERRORS ====================================
+_ ERROR at setup of test_actor_completion_preserves_real_final_message_and_omits_private_flags[default-review] _
+
+tmp_path = PosixPath('/tmp/pytest-of-agent/pytest-5/test_actor_completion_preserve0')
+request = <SubRequest 'client' for <Function test_actor_completion_preserves_real_final_message_and_omits_private_flags[default-review]>>
+
+    @pytest.fixture
+    def client(tmp_path, request):
+        root = tmp_path / 'repo'
+        final = root / 'output/session/final-message.md'
+        if getattr(request, 'param', None) in ('default-review', 'alternate-review'):
+            store = '.research-programs' if request.param == 'default-review' else '.research-programs-custom'
+            final = root / store / 'reviews' / ('review-run-' + 'a' * 32) / 'final-message.md'
+        final.parent.mkdir(parents=True)
+        queue = tmp_path / 'queue'
+        environment = dict(os.environ, HP_SIM5_CLOUD_QUEUE=str(queue))
+        prompt = tmp_path / 'prompt.md'
+        prompt.write_text('Transport fixture only, no scientific assignment.')
+        runner = BRIDGE
+        if getattr(request, 'param', None) == 'jump-clock':
+            runner = tmp_path / 'clock.py'
+            runner.write_text('import runpy, time\n'
+                              'clock = iter(range(0, 100000000, 3600))\n'
+                              'time.monotonic = lambda: next(clock)\n'
+                              f'runpy.run_path({str(BRIDGE)!r}, run_name="__main__")\n')
+        with prompt.open('rb') as stdin:
+            process = subprocess.Popen(
+                [sys.executable, str(runner), 'client', '--cd', str(root),
+                 '--output-last-message', str(final)],
+                stdin=stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                text=True, env=environment)
+>       request_path = wait_for(lambda: next(iter(queue.glob('*/request.json')), None))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/python/test_cloud_research_client.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+predicate = <function client.<locals>.<lambda> at 0x7f7fb2d66e80>
+
+    def wait_for(predicate):
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            value = predicate()
+            if value:
+                return value
+            time.sleep(.02)
+>       raise AssertionError('Cloud transport fixture timed out')
+E       AssertionError: Cloud transport fixture timed out
+
+tests/python/test_cloud_research_client.py:25: AssertionError
+=========================== short test summary info ============================
+ERROR tests/python/test_cloud_research_client.py::test_actor_completion_preserves_real_final_message_and_omits_private_flags[default-review]
+26 deselected, 1 error in 5.08s

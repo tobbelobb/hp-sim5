@@ -1,0 +1,76 @@
+{
+  "checks": [
+    {
+      "asset_ids": [
+        "report",
+        "abstract",
+        "matrix_provenance",
+        "measured_generator",
+        "source_contract"
+      ],
+      "description": "Inspected variation-screen-claim, the frozen report and cc52307fffda53ee07e8e9bc58e09c04cdbaff9e versus base 67617705b7996ee3a84889e6723cab149b6e5884. Verified the manifest SHA-256, all 32 selected asset hashes and exact candidate.diff against git. Independently compared measured/candidate ASTs: world definitions, generation, thinning, prediction and solve_anchors invocation are unchanged; delivery adds guards and reporting.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": [
+        "matrix_results",
+        "matrix_contract",
+        "d0_clean_observations",
+        "d0_clean_truth",
+        "d1_compliant_observations",
+        "d1_compliant_truth",
+        "d2_reversal_observations",
+        "d2_reversal_truth",
+        "d3_large_observations",
+        "d3_large_truth",
+        "h0_small_observations",
+        "h0_small_truth",
+        "h1_soft_observations",
+        "h1_soft_truth",
+        "h2_asymmetric_observations",
+        "h2_asymmetric_truth",
+        "h3_short_noisy_observations",
+        "h3_short_noisy_truth"
+      ],
+      "description": "Recomputed from saved observations and returned anchors, without optimization: all 32 training/truth hashes and initializers match, every anchor RMSE and common-unseen RMS matches exactly, and regenerated analytical observations/truth match all eight frozen worlds. Recomputed six complete rows, 17 prediction/geometry reversals, all eight reported group means and rejection of all three replacement gates. TRF full-density holdout mean ratio is 0.544280; TRF thinning has a 714.561 mm maximum regression. D0 TRF full/half both satisfy coverage while unseen RMS improves and anchor RMSE worsens.",
+      "kind": "recomputed"
+    },
+    {
+      "asset_ids": [
+        "native_results",
+        "native_summary",
+        "native_telemetry_archive",
+        "native_nominal_telemetry",
+        "native_soft_telemetry",
+        "native_nominal_scene",
+        "native_soft_scene",
+        "native_commands"
+      ],
+      "description": "Inspected native Rust manifests, matching command hash and the sole torque command at index 500. Scene copies differ only in nine cable stiffness values, with zero half-widths. Decompressed both telemetry archives and verified original hashes, 2001 records covering steps 0 through 2000 at 2 ms, finite encoders and zero recorded peak missed steps. Recomputed paired encoder differences from saved streams: peak A difference 0.5612571193 mm and final difference 0.3019640341 mm, exactly matching the summary. No physics was rerun.",
+      "kind": "recomputed"
+    },
+    {
+      "asset_ids": [
+        "checks",
+        "source_contract"
+      ],
+      "description": "Inspected the producer receipt for the exact candidate and its saved pytest output, 64 passed in 1.32 seconds, for parameter-variation, ellipse-solver and stage-replay tests. Read the candidate tests and guards. This is inspection of producer verification, not an independent test run. The candidate changes only benchmark code, tests and documentation, so the physics implementation delivery gate does not apply.",
+      "kind": "inspected"
+    }
+  ],
+  "code_readiness": "ready",
+  "discrepancy": null,
+  "finding": "supported",
+  "limitations": [
+    "Numerical checks recomputed saved outputs and regenerated analytical inputs; they did not reproduce optimizer trajectories, rerun tests or run fresh physics.",
+    "The eight named analytical stress cases use cold data-derived seeds far below true anchor scale and omit force equilibrium, motor dynamics and hardware behavior. They do not establish full-loop recovery, consensus, stopping or production calibration performance.",
+    "The four-second native probes establish stiffness sensitivity only. They validate neither analytical error magnitudes nor fresh collection savings, completed sweeps or hardware accuracy.",
+    "The ancillary PV-E01 historical audit was not independently checked against historical source arrays in this fixed submission. It is not needed for the PV-E02/PV-E03 verdict."
+  ],
+  "practical_value": "Keep the reusable analytical screen and its failure records. The counterexample defeats residual-only geometric ranking, and the coverage and per-world regressions justify withholding blanket solver or point-thinning changes.",
+  "reason": "Keep the scoped variation-screen-claim and candidate cc52307fffda53ee07e8e9bc58e09c04cdbaff9e against base 67617705b7996ee3a84889e6723cab149b6e5884. Saved-data recomputation supports the reported analytical disagreements, replacement-gate failures and short native stiffness sensitivity. The retained benchmark preserves truth separation and bounded execution without changing production defaults; no unresolved defect or required delivery check was found.",
+  "required_checks": [],
+  "submission_id": "submission-63290af5030747d2be1f7d75d7891e8c",
+  "submission_sha256": "2f6d8bc38b67e5c2db4cd3a7e4fe5a8ed064eca949df3e1c369aa5dae6fcc7d7",
+  "verdict": "keep"
+}

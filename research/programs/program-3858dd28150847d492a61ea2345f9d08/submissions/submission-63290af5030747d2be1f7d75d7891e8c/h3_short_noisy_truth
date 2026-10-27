@@ -1,0 +1,34 @@
+{
+  "anchors_mm": [
+    [
+      0.0,
+      -1900.0,
+      -280.0
+    ],
+    [
+      1645.45,
+      950.0,
+      -280.0
+    ],
+    [
+      -1645.45,
+      950.0,
+      -280.0
+    ],
+    [
+      0.0,
+      0.0,
+      1900.0
+    ]
+  ],
+  "limitation": "Analytical circular constraints with prescribed tension errors. No force equilibrium, motor dynamics, settling, rotation, line sag or hardware validation. Point thinning is offline and cannot measure collection savings.",
+  "spec": {
+    "arc_half_width_rad": 0.09,
+    "id": "H3-short-noisy",
+    "noise_mm": 0.4,
+    "reversal_offset_mm": 0.8,
+    "scale": 1.0,
+    "seed": 203,
+    "split": "holdout"
+  }
+}

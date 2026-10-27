@@ -1,0 +1,16 @@
+{
+  "failure": "Final message must be inside repository output",
+  "failed_review_run": "review-run-545b6e6d1eea468f94d64647deaec2bf",
+  "failed_before_actor_dispatch": true,
+  "cause": "Cloud bridge allowed output/ final messages, while default reviewer final path is under .research-programs/reviews/",
+  "fix_revision": "ae0b20c4",
+  "change": "Accept only final-message.md in repository-contained .research-programs*/reviews/review-run-<32hex>/; preserve resolved-path restrictions",
+  "regression_before": "default-review fixture errors before queue request",
+  "verification": {
+    "command": ".venv/bin/python -m pytest -q tests/python/test_cloud_research_client.py tests/python/test_research_program_review.py",
+    "result": "51 passed in 5.06s",
+    "kind": "process/controller fixtures, not live model evidence"
+  },
+  "live_retry": "Actual fresh reviewer completed through corrected default-store bridge; review-f674059afe874bdca72e7f4f5f8366ee applied as admission-d4a35af838c44f1f9b7c10f88df01741",
+  "actor_capacity_interruption": "Original worker hit model capacity after preserving code/evidence; same actor resumed within original deadline and wrote genuine handoff/final output. No new experiment or authentication changes."
+}

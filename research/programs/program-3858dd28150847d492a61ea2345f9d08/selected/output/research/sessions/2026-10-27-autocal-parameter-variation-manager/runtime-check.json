@@ -1,0 +1,49 @@
+{
+  "checks": {
+    "cargo": {
+      "ok": true
+    },
+    "firmware_simulator": {
+      "ok": true
+    },
+    "launcher_sockets": {
+      "ok": true,
+      "probe": {
+        "checks": {
+          "http_round_trip": {
+            "outcome": "passed"
+          },
+          "loopback_binding": {
+            "outcome": "passed"
+          },
+          "socket_creation": {
+            "outcome": "passed"
+          }
+        },
+        "context": "worker_launcher",
+        "kind": "tool_check",
+        "outcome": "passed",
+        "wall_s": 0.010441966000001912
+      }
+    },
+    "llvm_tools": {
+      "ok": true
+    },
+    "native_physics": {
+      "ok": true
+    },
+    "node_dependencies": {
+      "ok": true
+    },
+    "python_dependencies": {
+      "ok": true
+    },
+    "rustc": {
+      "ok": true
+    }
+  },
+  "kind": "runtime_setup_check",
+  "next_step": null,
+  "ok": true,
+  "physics_started": false
+}

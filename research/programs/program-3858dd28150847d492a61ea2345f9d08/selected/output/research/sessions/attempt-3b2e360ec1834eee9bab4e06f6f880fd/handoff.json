@@ -1,0 +1,421 @@
+{
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "assignment_id": "variation-first",
+  "attempt_id": "attempt-3b2e360ec1834eee9bab4e06f6f880fd",
+  "base_revision": "67617705b7996ee3a84889e6723cab149b6e5884",
+  "candidate_revision": "cc52307fffda53ee07e8e9bc58e09c04cdbaff9e",
+  "claim": {
+    "title": "A bounded truth-separated analytical HP3 screen exposes encoder-prediction/geometric-error disagreement and rejects broad solver or point-thinning replacements under declared coverage gates; a short native probe confirms stiffness sensitivity.",
+    "scope": {
+      "machine": "hp3",
+      "evidence": "eight analytical named worlds and two four-second native Rust sensitivity probes",
+      "model": "fixed30mm radii,zero buildup,no layering",
+      "core_fits": "32 outer solve_anchors calls, four restarts and GNC; no fit-stage recovery/warm chaining/planning/history consensus/stopping",
+      "outcome": "mixed",
+      "limitations": "No production collection speed or calibration accuracy improvement, no hardware validation, no direct reference-003 comparison"
+    }
+  },
+  "suggested_finding": "mixed",
+  "suggested_strategy_outcome": "mixed",
+  "selected": [
+    {
+      "id": "report",
+      "role": "report",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/report.md"
+    },
+    {
+      "id": "abstract",
+      "role": "abstract",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/abstract.md"
+    },
+    {
+      "id": "matrix_results",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/results.json"
+    },
+    {
+      "id": "matrix_contract",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/contract.json"
+    },
+    {
+      "id": "matrix_provenance",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/provenance.json"
+    },
+    {
+      "id": "measured_generator",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/benchmark-measured.py"
+    },
+    {
+      "id": "source_contract",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-T05-measured-source-contract.json"
+    },
+    {
+      "id": "checks",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-T06-final.log"
+    },
+    {
+      "id": "native_summary",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E03-summary.json"
+    },
+    {
+      "id": "native_results",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E03-results.json"
+    },
+    {
+      "id": "native_telemetry_archive",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E03-telemetry-archive.json"
+    },
+    {
+      "id": "native_nominal_telemetry",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E03-nominal-telemetry.jsonl.gz"
+    },
+    {
+      "id": "native_soft_telemetry",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E03-soft-telemetry.jsonl.gz"
+    },
+    {
+      "id": "d0_clean_observations",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/D0-clean/observations.json"
+    },
+    {
+      "id": "d0_clean_truth",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/D0-clean/evaluation-truth.json"
+    },
+    {
+      "id": "d1_compliant_observations",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/D1-compliant/observations.json"
+    },
+    {
+      "id": "d1_compliant_truth",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/D1-compliant/evaluation-truth.json"
+    },
+    {
+      "id": "d2_reversal_observations",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/D2-reversal/observations.json"
+    },
+    {
+      "id": "d2_reversal_truth",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/D2-reversal/evaluation-truth.json"
+    },
+    {
+      "id": "d3_large_observations",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/D3-large/observations.json"
+    },
+    {
+      "id": "d3_large_truth",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/D3-large/evaluation-truth.json"
+    },
+    {
+      "id": "h0_small_observations",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/H0-small/observations.json"
+    },
+    {
+      "id": "h0_small_truth",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/H0-small/evaluation-truth.json"
+    },
+    {
+      "id": "h1_soft_observations",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/H1-soft/observations.json"
+    },
+    {
+      "id": "h1_soft_truth",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/H1-soft/evaluation-truth.json"
+    },
+    {
+      "id": "h2_asymmetric_observations",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/H2-asymmetric/observations.json"
+    },
+    {
+      "id": "h2_asymmetric_truth",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/H2-asymmetric/evaluation-truth.json"
+    },
+    {
+      "id": "h3_short_noisy_observations",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/H3-short-noisy/observations.json"
+    },
+    {
+      "id": "h3_short_noisy_truth",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/H3-short-noisy/evaluation-truth.json"
+    },
+    {
+      "id": "native_nominal_scene",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E03-nominal.usda"
+    },
+    {
+      "id": "native_soft_scene",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E03-soft.usda"
+    },
+    {
+      "id": "native_commands",
+      "role": "evidence",
+      "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E03-commands.json"
+    }
+  ],
+  "input_identities": [
+    "sha256:390b48ce5571899ee1fc6de2b9a6d8fc9532177558067dfa2e87b756ec4597dd",
+    "sha256:7964c89c5a1523beac790fb1ad92b4625ce3a93e93bada408768d3510dfe9cd8",
+    "sha256:8907a6f4d719fc6f2bd4e021fd7871cf537afdfd26cd9560108fabedcb6bca41",
+    "sha256:05b3e6832c3f36490e0f640ecae304233ae3044406ac5627a52c9d797c4b03b2",
+    "sha256:85c2d26288d68215462a4129094e76db72f189b581274b428efc1ca9e9d0994a",
+    "sha256:bb668edc447eeb82cf479dfce93c62dc9ffaaa1086cd35c8197c36762447c47a",
+    "sha256:78fe5a50082f51acb62272da4370774c03122813f1bca9a9f1cd6a7c25ec1268",
+    "sha256:d377f20c6d37a7c25d5eab6f8a93dcdf5a39d99a8f5cfda4c15ae37b5cd21407",
+    "sha256:0fce8a5283470076bfa59be5f1eda85e0d34c6e5877f7cf80f4f2a6c6d86c83c",
+    "sha256:36ab771c9465135784becbbf710a6dc8d27a2718968a328f2ba90a7c37bf5d90",
+    "sha256:dc58432f43d6fb57ce09aabbad001f959c2fdb814554869be36cf0151f4b8719",
+    "sha256:b0e21f73fdd7cc7deeb5d5652c9044c914198984c69bb4bbe70695a28ace37ab",
+    "sha256:c88173efe8bde154639d42740bbde26a3e6e71f3ed9c59b273c806858709dc6a",
+    "sha256:ccc5727f9bef4863b7f85d560a59462adfed3bd2ca90406486156360f6f4e9cd",
+    "sha256:1b2fe45099adaa35c7788c20a7bf25c99b731c1c621ff14d125cd74af574636c",
+    "sha256:bb8f6a28db672c2e96e19be1a6cbcf4bf58c0e1837a0b35305441ca797eefcdd",
+    "sha256:d51ea9f98149f5bf69349b2887ca443107df5996621802ea0060be8e79c4e614",
+    "sha256:db9028cdd326085b7b9779430f9239ba14c1bdd4737361890e07a03005cf7136",
+    "sha256:04925d134b7eac9f41c21d395f00d5eaa230bf451728cf8e99e5d72336d5aeb3",
+    "sha256:64aeeae0867166cca3b04dea7eb571e9ffccac0349f2ad776853b1778c65c4c7",
+    "sha256:494929cb443f16b6aa58cfbc3f2fa12994602b5518d63dcf84f4d40d2eaa3aee",
+    "sha256:71fb420bbd4d0169eba5c12c191e9bd84e4d7f8972dd1b95fff35f9b98cd3a9d",
+    "sha256:5a869468150d707bfc01d295396ba686e32a80637105e5e27db40d59ada24b84",
+    "sha256:6d58a16a179234ab4a1af6aa4de4fe958785de78ee9f91a6577cf6e41660ec37",
+    "sha256:632fa5e1e220f05a4794b7d82a6925009e96fe28041065aa32b3101b10556e96",
+    "sha256:1404c27a07eec8dc701c94fdc6bab3c369492c0a8a14f859986d53863a33f5ab",
+    "sha256:d3be8b3dcbf558f8da5afedfd344af8a5d1fd30fe860b12013dd0b55c5fe0fc1",
+    "sha256:226f5c20ca073aa934e6db7da2a3b77c85638e419397f36eb36038ac580d3bb2",
+    "sha256:3b669889ea347b37b8705925610c45e980d744a31a200ad4fc98b3da44138819",
+    "sha256:a9cedf27d824db349f733c01415e65c1542a7133ffa4552a6bd322a2b8c06eea",
+    "sha256:36b049d48b12534f0852d6a85001e6bb450e6e5bf02136e8372ab6ba8f13caf4",
+    "sha256:aaff3b8598abeac4343bdd2a584ab3e5fc9f08db4f9c57283931d883af2dc4ba"
+  ],
+  "selected_file_identities": [
+    {
+      "id": "report",
+      "sha256": "390b48ce5571899ee1fc6de2b9a6d8fc9532177558067dfa2e87b756ec4597dd",
+      "bytes": 13996
+    },
+    {
+      "id": "abstract",
+      "sha256": "7964c89c5a1523beac790fb1ad92b4625ce3a93e93bada408768d3510dfe9cd8",
+      "bytes": 3270
+    },
+    {
+      "id": "matrix_results",
+      "sha256": "8907a6f4d719fc6f2bd4e021fd7871cf537afdfd26cd9560108fabedcb6bca41",
+      "bytes": 49559
+    },
+    {
+      "id": "matrix_contract",
+      "sha256": "05b3e6832c3f36490e0f640ecae304233ae3044406ac5627a52c9d797c4b03b2",
+      "bytes": 2205
+    },
+    {
+      "id": "matrix_provenance",
+      "sha256": "85c2d26288d68215462a4129094e76db72f189b581274b428efc1ca9e9d0994a",
+      "bytes": 179
+    },
+    {
+      "id": "measured_generator",
+      "sha256": "bb668edc447eeb82cf479dfce93c62dc9ffaaa1086cd35c8197c36762447c47a",
+      "bytes": 11999
+    },
+    {
+      "id": "source_contract",
+      "sha256": "78fe5a50082f51acb62272da4370774c03122813f1bca9a9f1cd6a7c25ec1268",
+      "bytes": 525
+    },
+    {
+      "id": "checks",
+      "sha256": "d377f20c6d37a7c25d5eab6f8a93dcdf5a39d99a8f5cfda4c15ae37b5cd21407",
+      "bytes": 99
+    },
+    {
+      "id": "native_summary",
+      "sha256": "0fce8a5283470076bfa59be5f1eda85e0d34c6e5877f7cf80f4f2a6c6d86c83c",
+      "bytes": 9286
+    },
+    {
+      "id": "native_results",
+      "sha256": "36ab771c9465135784becbbf710a6dc8d27a2718968a328f2ba90a7c37bf5d90",
+      "bytes": 9064
+    },
+    {
+      "id": "native_telemetry_archive",
+      "sha256": "dc58432f43d6fb57ce09aabbad001f959c2fdb814554869be36cf0151f4b8719",
+      "bytes": 1119
+    },
+    {
+      "id": "native_nominal_telemetry",
+      "sha256": "b0e21f73fdd7cc7deeb5d5652c9044c914198984c69bb4bbe70695a28ace37ab",
+      "bytes": 470915
+    },
+    {
+      "id": "native_soft_telemetry",
+      "sha256": "c88173efe8bde154639d42740bbde26a3e6e71f3ed9c59b273c806858709dc6a",
+      "bytes": 471997
+    },
+    {
+      "id": "d0_clean_observations",
+      "sha256": "ccc5727f9bef4863b7f85d560a59462adfed3bd2ca90406486156360f6f4e9cd",
+      "bytes": 64113
+    },
+    {
+      "id": "d0_clean_truth",
+      "sha256": "1b2fe45099adaa35c7788c20a7bf25c99b731c1c621ff14d125cd74af574636c",
+      "bytes": 596
+    },
+    {
+      "id": "d1_compliant_observations",
+      "sha256": "bb8f6a28db672c2e96e19be1a6cbcf4bf58c0e1837a0b35305441ca797eefcdd",
+      "bytes": 64104
+    },
+    {
+      "id": "d1_compliant_truth",
+      "sha256": "d51ea9f98149f5bf69349b2887ca443107df5996621802ea0060be8e79c4e614",
+      "bytes": 661
+    },
+    {
+      "id": "d2_reversal_observations",
+      "sha256": "db9028cdd326085b7b9779430f9239ba14c1bdd4737361890e07a03005cf7136",
+      "bytes": 64153
+    },
+    {
+      "id": "d2_reversal_truth",
+      "sha256": "04925d134b7eac9f41c21d395f00d5eaa230bf451728cf8e99e5d72336d5aeb3",
+      "bytes": 629
+    },
+    {
+      "id": "d3_large_observations",
+      "sha256": "64aeeae0867166cca3b04dea7eb571e9ffccac0349f2ad776853b1778c65c4c7",
+      "bytes": 64096
+    },
+    {
+      "id": "d3_large_truth",
+      "sha256": "494929cb443f16b6aa58cfbc3f2fa12994602b5518d63dcf84f4d40d2eaa3aee",
+      "bytes": 656
+    },
+    {
+      "id": "h0_small_observations",
+      "sha256": "71fb420bbd4d0169eba5c12c191e9bd84e4d7f8972dd1b95fff35f9b98cd3a9d",
+      "bytes": 64087
+    },
+    {
+      "id": "h0_small_truth",
+      "sha256": "5a869468150d707bfc01d295396ba686e32a80637105e5e27db40d59ada24b84",
+      "bytes": 614
+    },
+    {
+      "id": "h1_soft_observations",
+      "sha256": "6d58a16a179234ab4a1af6aa4de4fe958785de78ee9f91a6577cf6e41660ec37",
+      "bytes": 64132
+    },
+    {
+      "id": "h1_soft_truth",
+      "sha256": "632fa5e1e220f05a4794b7d82a6925009e96fe28041065aa32b3101b10556e96",
+      "bytes": 681
+    },
+    {
+      "id": "h2_asymmetric_observations",
+      "sha256": "1404c27a07eec8dc701c94fdc6bab3c369492c0a8a14f859986d53863a33f5ab",
+      "bytes": 64074
+    },
+    {
+      "id": "h2_asymmetric_truth",
+      "sha256": "d3be8b3dcbf558f8da5afedfd344af8a5d1fd30fe860b12013dd0b55c5fe0fc1",
+      "bytes": 729
+    },
+    {
+      "id": "h3_short_noisy_observations",
+      "sha256": "226f5c20ca073aa934e6db7da2a3b77c85638e419397f36eb36038ac580d3bb2",
+      "bytes": 64123
+    },
+    {
+      "id": "h3_short_noisy_truth",
+      "sha256": "3b669889ea347b37b8705925610c45e980d744a31a200ad4fc98b3da44138819",
+      "bytes": 660
+    },
+    {
+      "id": "native_nominal_scene",
+      "sha256": "a9cedf27d824db349f733c01415e65c1542a7133ffa4552a6bd322a2b8c06eea",
+      "bytes": 22819
+    },
+    {
+      "id": "native_soft_scene",
+      "sha256": "36b049d48b12534f0852d6a85001e6bb450e6e5bf02136e8372ab6ba8f13caf4",
+      "bytes": 22810
+    },
+    {
+      "id": "native_commands",
+      "sha256": "aaff3b8598abeac4343bdd2a584ab3e5fc9f08db4f9c57283931d883af2dc4ba",
+      "bytes": 8055
+    }
+  ],
+  "producer_checks": [
+    {
+      "command": ".venv/bin/python -m pytest -q autocal/tests/test_parameter_variation_benchmark.py autocal/tests/test_ellipse_solver.py autocal/tests/test_stage_replay.py",
+      "outcome": "passed",
+      "candidate_revision": "cc52307fffda53ee07e8e9bc58e09c04cdbaff9e",
+      "asset_id": "checks"
+    }
+  ],
+  "code_changes": [
+    "autocal/tools/benchmark_parameter_variation.py",
+    "autocal/tests/test_parameter_variation_benchmark.py",
+    "autocal/README.md"
+  ],
+  "usage": {
+    "experimental_outer_fit_calls": 32,
+    "internal_optimizer_runs": "not separately retained; configured GNC/restarts",
+    "production_collections": 0,
+    "native_physics_steps": 4000,
+    "verification": "64 focused checks, may include small independent optimizer cases",
+    "matrix_elapsed_seconds": 118.242075258,
+    "analytical_generation_seconds": 0.0216681810000523,
+    "native_simulation_wall_seconds": 4.978351054999962
+  },
+  "measured_source": {
+    "sha256": "bb668edc447eeb82cf479dfce93c62dc9ffaaa1086cd35c8197c36762447c47a",
+    "path": "/workspace/hp-sim5/output/research/sessions/attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/benchmark-measured.py",
+    "delivery_difference": "Added coverage/failure guards, aggregate summaries, argument validation and soft between-fit wall budget; numerical generator/default cases/density/prediction/solver call AST identical, no extra experiment fits"
+  },
+  "review_instructions": "Inspect selected bytes first. Recompute RMSE from returned anchors plus separate truth and common unseen prediction from all observation files if useful, without new fits. Native paired encoder differences can be recomputed by gzip.decompress of selected telemetry, checking original SHA256 from native_telemetry_archive. Code candidate is committed but the measured matrix used the preserved uncommitted source on base67617705; inspect source_contract for numerical equivalence. Historical PV-E01 is context only and not part of the exact admitted claim.",
+  "followup": {
+    "feasible": true,
+    "question": "Do matched nominal/soft native collections reproduce analytical core-fit fragility when ordinary fit-stage recovery is used?",
+    "suggested_budget": "25-30 minutes, two bootstrap collections, bounded fresh fit allowance, reserve separate review",
+    "method": "Use HeadlessSimulation with session-local copied USD scene assigned before __enter__; update manifest.scene after assignment because __init__ seeds stock path. Fixed30mm radii, buildup0, no layering, same manual forces and collector options. Readback actual scene/stiffness and engine hashes, preserve partial journals. Compare data quality, complete coverage and actual geometry offline; do not infer acceptance from max-steps budget stop.",
+    "source": "autocal/headless_sim.py lines53-165"
+  },
+  "environment": {
+    "setup_faults": [],
+    "provenance_gap": "Reference-003 dataset and raw historical stages missing; no direct win claimed",
+    "platform_interruption": "Selected model is at capacity after source commit; parent resumed same actor/attempt only to finish handoff, no new experiments or source changes",
+    "telemetry_compression": "Deterministic gzip mtime0, both below1MiB and byte-roundtrip checked"
+  },
+  "selected_total_bytes": 1616005
+}

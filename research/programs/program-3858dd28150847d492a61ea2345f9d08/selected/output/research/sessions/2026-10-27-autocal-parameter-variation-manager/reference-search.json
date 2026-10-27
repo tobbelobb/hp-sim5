@@ -1,0 +1,7 @@
+{
+  "expected_sha256": "cd938d1f2c6b86c33d49da94dff61151deaf758c16bdf01ec2d68ab6cd805a99",
+  "matches": [],
+  "json_files_hashed": 218,
+  "bytes_hashed": 9693546,
+  "scope": "regular JSON files of 10 kB to 2 MB under output/research/sessions"
+}

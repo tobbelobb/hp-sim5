@@ -1,0 +1,100 @@
+{
+  "acceptance": {
+    "solver": "holdout mean RMSE at least 20% lower, no world >1 mm worse, no missing/invalid rows",
+    "thinning": "holdout mean RMSE at most 10% higher, no world >0.5 mm worse, no missing/invalid rows"
+  },
+  "format_version": 1,
+  "iterations": 400,
+  "limitation": "Analytical circular constraints with prescribed tension errors. No force equilibrium, motor dynamics, settling, rotation, line sag or hardware validation. Point thinning is offline and cannot measure collection savings.",
+  "max_fits": 32,
+  "methods": [
+    "lbfgsb",
+    "trf"
+  ],
+  "point_modes": [
+    "full",
+    "half"
+  ],
+  "restarts": 4,
+  "train_sweep_count": 9,
+  "unseen_sweep_count": 3,
+  "worlds": [
+    {
+      "id": "D0-clean",
+      "noise_mm": 0.02,
+      "scale": 1.0,
+      "seed": 100,
+      "split": "development"
+    },
+    {
+      "axial_stiffness_n": 20000.0,
+      "id": "D1-compliant",
+      "noise_mm": 0.02,
+      "scale": 1.0,
+      "seed": 101,
+      "split": "development",
+      "tension_span_n": 5.0
+    },
+    {
+      "id": "D2-reversal",
+      "noise_mm": 0.1,
+      "reversal_offset_mm": 0.6,
+      "scale": 1.0,
+      "seed": 102,
+      "split": "development"
+    },
+    {
+      "id": "D3-large",
+      "noise_mm": 0.05,
+      "scale": 1.2,
+      "seed": 103,
+      "split": "development",
+      "top_shift_mm": [
+        100.0,
+        -60.0
+      ]
+    },
+    {
+      "id": "H0-small",
+      "noise_mm": 0.05,
+      "scale": 0.8,
+      "seed": 200,
+      "split": "holdout"
+    },
+    {
+      "axial_stiffness_n": 8000.0,
+      "id": "H1-soft",
+      "noise_mm": 0.1,
+      "reversal_offset_mm": 0.3,
+      "scale": 1.0,
+      "seed": 201,
+      "split": "holdout",
+      "tension_span_n": 8.0
+    },
+    {
+      "id": "H2-asymmetric",
+      "lower_xy_factors": [
+        1.0,
+        0.85,
+        1.15
+      ],
+      "noise_mm": 0.15,
+      "scale": 1.0,
+      "seed": 202,
+      "split": "holdout",
+      "top_shift_mm": [
+        -180.0,
+        120.0
+      ]
+    },
+    {
+      "arc_half_width_rad": 0.09,
+      "id": "H3-short-noisy",
+      "noise_mm": 0.4,
+      "reversal_offset_mm": 0.8,
+      "scale": 1.0,
+      "seed": 203,
+      "split": "holdout"
+    }
+  ]
+}

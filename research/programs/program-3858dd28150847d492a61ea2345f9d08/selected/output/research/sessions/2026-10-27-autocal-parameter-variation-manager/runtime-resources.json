@@ -1,0 +1,14 @@
+{
+  "threads": {
+    "OPENBLAS_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": null,
+    "NUMEXPR_NUM_THREADS": null,
+    "XLA_FLAGS": null
+  },
+  "node": "v23.11.1",
+  "python": "Python 3.12.14",
+  "cgroup_cpu": "200000 100000",
+  "cgroup_memory": "8589934592",
+  "disk_free_bytes": 32031436800
+}
