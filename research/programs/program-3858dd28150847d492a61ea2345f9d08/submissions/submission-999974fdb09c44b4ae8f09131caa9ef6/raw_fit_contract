@@ -1,0 +1,63 @@
+{
+  "experiment": "NP-E03",
+  "fit_stage_cap": 8,
+  "base_calls": 4,
+  "restore_stage_cap_per_base": 1,
+  "settings": {
+    "solve_restarts": 4,
+    "solve_iterations": 400,
+    "solve_optimizer": "lbfgsb",
+    "pointwise_residual_mode": "sampson",
+    "pointwise_filtering": true,
+    "pointwise_global_mad": true,
+    "sweep_wise_filtering": true,
+    "sweep_metric": "outlier_ratio",
+    "use_noise_mean": true,
+    "sigma_source": "auto",
+    "robust_debug": true,
+    "residuals_csv": null,
+    "generate_report": false,
+    "find_radii": "off",
+    "find_buildup_factor": "off",
+    "base_radii": [
+      30.0,
+      30.0,
+      30.0,
+      30.0
+    ],
+    "buildup_factor": 0.0,
+    "r0_bounds": null,
+    "b_bounds": null,
+    "r0_prior_sigma_mm": null,
+    "b_prior_sigma": null,
+    "spool_outer_iters": 3,
+    "theta0_mode": "zero",
+    "line_width": 1.0,
+    "sigma_floor_mm": null,
+    "fd_eps_mm": 1.0,
+    "regularization": 1e-06,
+    "collector_args": [],
+    "low_anchor_z": null,
+    "filter_schedule": [
+      "warmup",
+      "warmup",
+      "warmup",
+      "dynamic"
+    ],
+    "objective_schedule": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "fit_structure": [
+      3
+    ]
+  },
+  "solvers": [
+    "lbfgsb",
+    "trf"
+  ],
+  "recovery": "First production build_recovery_attempts restoration stage only if base underconstrained, then warm_start_seeds_from_plan. Further restoration and sparse recovery are outside eight-call budget.",
+  "truth_separation": "No truth, reference pose or known anchors loaded by this script. Initial seed uses production build_anchor_initial_guess; recovery uses returned anchors only."
+}

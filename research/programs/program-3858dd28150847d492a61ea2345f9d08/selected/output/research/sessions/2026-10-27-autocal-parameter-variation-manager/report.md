@@ -1,37 +1,48 @@
 # HP3 autocal robustness across parameter variation
 
-Status: first iteration reviewed; native collection followup planned.
+Status: bounded investigation complete; program paused.
 
 ## Abstract
 
-This program tests encoder-only HP3 calibration across varied parameter assumptions while preserving fixed radii, zero buildup and one-click stopping. A new analytical benchmark evaluates eight frozen worlds with 32 core fits in 118.24 seconds. Only six fits pass complete status and coverage checks. A clean TRF example improves unseen encoder residual from 0.02362 to 0.02234 mm after thinning while anchor RMSE worsens from 5.89 to 40.20 mm. A fresh reviewer recomputed the saved measurements and supported the scoped findings and benchmark candidate. Two short native Rust probes establish stiffness sensitivity, not calibration accuracy. A cloud review path bug was reproduced and fixed, with 51 tests passing and a successful real reviewer dispatch. No production solver or point-count default changed. Matched native collection is the next discriminator. The reference-003 raw dataset remains unavailable.
+This program investigated encoder-only HP3 calibration across varied parameter assumptions. A bounded analytical benchmark evaluated eight frozen worlds with 32 core fits in 118.24 seconds. Only six fits passed complete status and coverage checks. In one complete-coverage case, lower unseen residual accompanied anchor RMSE worsening from 5.89 to 40.20 mm after thinning. Two native stiffness worlds then each collected 60 bootstrap points, taking 75.02 measured world seconds together. Their poor conventional scene-home estimates and identical raw/geometry-metadata-stripped fits did not justify solver, point-count or stopping changes. Separate reviewers verified both scoped findings and marked both tools ready. A cloud review path bug was fixed; unsourced Node 24 crashes were corrected with pinned Node 23 and a pre-movement guard. Platform model limits interrupted one worker narrative, but saved measurements and deadline cleanup survived. No reliable fewer-point calibration gain or direct reference-003 win was established.
 
-## Decision and evidence
+## Results and decisions
 
-Keep the bounded analytical benchmark in cc52307f. It writes separate observed encoder data and evaluation truth, frozen worlds and hashes, failed rows, coverage checks and partial results. All 64 benchmark/solver/stage tests pass. The complete candidate changes only the new tool, its tests and documentation.
+The retained changes are an analytical parameter benchmark, a bounded native HP3 stiffness collection helper and a cloud review path repair. All use existing production physics and fitting code. Production calibration defaults and one-click stopping are unchanged.
 
-The eight analytical worlds vary layout, prescribed compliance, direction offsets, noise and movement span. Four were designated holdout before fitting. They omit physical equilibrium and use cold data-derived seeds smaller than the true anchor scale. These core-fit failures do not demonstrate failures of the complete one-click loop, which also uses recovery, warm starts, planning and consensus. There is no measured collection speedup.
+The analytical study compares lbfgsb/trf and full/half stored point density across eight predeclared worlds. Its common-unseen residual reverses the geometry ranking in 17 candidate pairs. A clean, complete-coverage TRF example improves residual from 0.02362 to 0.02234 mm while anchor RMSE rises from 5.885 to 40.203 mm. Half density also has large per-world regressions. The independent review recomputed all saved inputs, seeds, RMSEs and residuals, and kept candidate cc52307f with ready code. These are individual cold core fits, not complete-loop failures.
 
-The independent reviewer verified the fixed submission and recomputed all saved input hashes, seeds, anchor RMSEs and unseen residuals. It confirmed six complete fits, 17 prediction/geometry reversals and rejection of all three predefined replacement gates. It also recomputed the native encoder difference from archived telemetry. Its [exact assessment](review-first.json) supports the scoped claim and marks candidate code ready, with no required checks.
+The native study collected three 20-point sweeps per world at stiffness 20000/8000 N, fixed 30 mm radii, zero buildup and no layering. Requested collector settings match; realized drive spans differ, 94.106 versus about 234.918 mm. Total work was 602454 steps and 75.023 measured world seconds, with no recording. These single-run totals are not an equivalent-work full-autocal speedup. Four raw fits and four geometry-metadata-stripped fits have exactly identical anchors, metrics and optimizer histories. Conventional scene-home RMSE is 2023/2003 mm nominal and 3648/2676 mm soft for lbfgsb/trf. Unknown encoder-zero pose/rotation and omitted full-loop stages limit physical interpretation. The reviewer kept the scoped findings and helper a4da0d73, ready with no required checks.
 
-![Saved analytical core-fit matrix](analytical-screen.png)
+![Analytical core-fit results](analytical-screen.png)
 
-The native probe compares two copied HP3 scenes differing only in nine cable stiffness values, 20000 versus 8000 N. Both execute the same 4000 total fixed steps with 30 mm spools and no layering. Peak A encoder difference is 0.561257 mm, final difference 0.301964 mm. These four-second runs show sensitivity and are not completed collection or calibration.
+## Cloud faults and remedies
 
-## Cloud issue and repair
+The default review store uses .research-programs/reviews, but the cloud bridge initially allowed final messages only under output. The first launch stopped before model dispatch. Commit ae0b20c4 adds a narrow repository-contained reviewer-path allowance. The failing regression and 51 passing transport/controller checks are retained. Two real separate reviews subsequently completed through this path.
 
-The first review never reached a model. The bridge rejected the normal .research-programs/reviews final-message path because it allowed output/ only. Commit ae0b20c4 narrowly permits final-message.md in repository-contained .research-programs*/reviews/review-run-<32hex> paths. The failing default-store fixture was retained, and all 51 transport/review-controller checks pass. A real fresh reviewer then dispatched, finished and received an applied admission through that path. [Issue record](cloud-environment-issues.json) and [test output](cloud-review-path-after.log) preserve the distinction between fixture tests and live completion.
+Two standalone native launches inherited Node 24.19.0 and aborted before completing a physics update. Their supervisor had correctly used pinned Node 23, which does not transfer to independent command shells. Sourcing scripts/cloud/env.sh and verifying Node 23.11.1 enabled both replacement collections. The retained helper rejects unsupported Node before creating output or moving physics. Both original failures remain evidence.
 
-An earlier model-capacity interruption lost no saved evidence. The same worker resumed only to write its genuine handoff. Dependency, toolchain and independent socket checks passed; no installation repair was needed.
+A model-capacity interruption was recovered in the same first worker. A later usage limit prevented the second worker's final narrative. Its owner enforced the original 09:01 UTC deadline and confirmed cleanup. The manager explicitly authored the saved-data closure after the user's continue message, without fabricating a worker response or running further fitting/simulation. All actor cancellation and review acknowledgements used actual lifecycle observations.
 
-## Scope and next decision
+## Implementation and checks
 
-No default solver, point count or automatic stopping rule changed. The next useful experiment is paired native production collection in nominal and soft copied scenes, using matched forces and ordinary fitting/recovery. It should test the analytical-to-native gap within a separate finite budget. The requested reference-003 directory is absent and a bounded exact-hash search found no copy, so no direct win over that reference is claimed.
+- cc52307f adds the analytical benchmark and tests. 64 solver/stage/benchmark checks passed.
+- ae0b20c4 fixes cloud review response paths. 51 transport/review-controller checks passed, followed by real review completion.
+- a4da0d73 adds the native collector helper, runtime guard and tests. 19 focused tests passed. The reviewer repeated them and checked additional mocked failure/timeout/cleanup paths.
 
-## References
+These counts overlap and should not be summed as a unique-test total. No engine, motor, cable-transport or production-scene implementation changed. The native delivery helper was checked against the measured driver and with mocks, without another native collection.
 
-- [Worker report](../attempt-3b2e360ec1834eee9bab4e06f6f880fd/report.md), [handoff](../attempt-3b2e360ec1834eee9bab4e06f6f880fd/handoff.json), [raw matrix](../attempt-3b2e360ec1834eee9bab4e06f6f880fd/PV-E02/results.json): producer evidence and provenance.
-- [Exact independent review](review-first.json): saved-data recomputation, engineering assessment and limits.
-- [Research notebook](research.md): budgets, steering, failed launch and repair decisions.
-- [Literature note](literature.md): encoder-only ideas and source access limits.
-- [Reference search](reference-search.json), [runtime checks](runtime-check.json), [resource quotas](runtime-resources.json): availability and environment observations.
+## Review and remaining questions
+
+Both fixed submissions received supported/keep admissions and ready code, with no required follow-up checks. [First review](review-first.json) and [native review](review-native.json) preserve exact claim, submission and revision identities.
+
+The requested reference-003 raw directory is absent. No direct win over it is claimed. Hardware transfer, robust fewer-point stopping, automatic force tuning across physical worlds and full-loop native calibration remain untested here. The next recorded question asks whether automatic force tuning and additional independent sweeps repair bootstrap estimation. No numerical allocation remains active.
+
+## Evidence and references
+
+- [First worker report](../attempt-3b2e360ec1834eee9bab4e06f6f880fd/report.md), [first exact review](review-first.json).
+- [Manager native report](native-report.md), [native summary](native-saved-summary.json), [exact native review](review-native.json).
+- [Cloud issue record](cloud-environment-issues.json), [cloud repair checks](cloud-review-path-after.log), [native helper checks](native-helper-checks.log).
+- [Notebook](research.md), [literature note](literature.md), [reference search](reference-search.json).
+
+Program: program-3858dd28150847d492a61ea2345f9d08. Its archive preserves fixed submissions and selected small evidence; files.json records omissions.

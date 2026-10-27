@@ -1,0 +1,36 @@
+[
+  {
+    "world": "nominal",
+    "stiffness_n": 20000,
+    "selected_configs": 3,
+    "collector_returncode": 0,
+    "manifest": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/nominal/sweeps.headless/manifest.json",
+    "wall_s": 26.324074842999835,
+    "sweeps": 3,
+    "points": 60,
+    "points_per_sweep": [
+      20,
+      20,
+      20
+    ],
+    "dataset_sha256": "f4f08033a9630f2231a4c2e7976080c29a51332fbf74cc8f75663ce1c05fbbc8",
+    "complete": true
+  },
+  {
+    "world": "soft",
+    "stiffness_n": 8000,
+    "selected_configs": 3,
+    "collector_returncode": 0,
+    "manifest": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/soft/sweeps.headless/manifest.json",
+    "wall_s": 48.69852829199999,
+    "sweeps": 3,
+    "points": 60,
+    "points_per_sweep": [
+      20,
+      20,
+      20
+    ],
+    "dataset_sha256": "a7b552d05b00346c2188c2603ec0e2f133eac219267615108317db6eb631203d",
+    "complete": true
+  }
+]

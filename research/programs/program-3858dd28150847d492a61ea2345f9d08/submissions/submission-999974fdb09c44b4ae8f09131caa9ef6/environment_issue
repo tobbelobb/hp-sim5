@@ -1,0 +1,26 @@
+{
+  "kind": "command-environment",
+  "startup_experiment": "NP-E01",
+  "actual_node_path": "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+  "actual_node_version": "v24.19.0",
+  "source_cloud_env": false,
+  "completed_physics_updates": 0,
+  "attempted_first_update_per_world": true,
+  "reported_manifests_total_steps": 0,
+  "points": 0,
+  "collections_attempted": 2,
+  "diagnosis": "Exact documented Node24 napi_detach_arraybuffer fatal crash at scripts/cloud/README.md lines57-60. No native source defect established.",
+  "correction": "Source scripts/cloud/env.sh in each command shell; assert driver uses pinnedNode23.11.1, preserve original startup failures, request controller-recorded replacement allocation.",
+  "failing_driver_sha256": "34a60bf95bf2356fea3291c98cde525b6c62f35ee237b8fa7c8e38f79b518507",
+  "pinned_node_path": "/workspace/.tools/node/node-v23.11.1-linux-x64/bin/node",
+  "pinned_node_version": "v23.11.1",
+  "controller_decision_id": "decision-98f76c05c2fc474abde86f7fe3e331f0",
+  "replacement_allocation": {
+    "startup_attempts_total_max": 4,
+    "replacement_launches": 2,
+    "complete_collections_max": 2,
+    "actual_physics_steps_total_max": 2000000,
+    "fit_stages_max": 8,
+    "deadline_utc": "2026-10-27T09:01:00Z"
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "checks": [
+    {
+      "asset_ids": [
+        "native_report",
+        "native_abstract",
+        "manager_summary",
+        "provenance_bundle",
+        "measured_collector",
+        "measured_raw_fit",
+        "measured_clean_fit"
+      ],
+      "description": "Reviewed the manager-authored native HP3 bootstrap claim and fixed a4da0d7363cdeb334264df7306ef5bc44781ec60 versus 2a5ef25b93ebb783012a514b1f1c43e06a677aad diff. The fixed diff equals the commit diff. All 29 selected asset hashes and embedded provenance hashes match. The measured collector is distinct from the later delivery helper; the cancelled worker has no claimed final response.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": [
+        "collection_contract",
+        "collection_results",
+        "nominal_raw",
+        "soft_raw",
+        "nominal_scene",
+        "soft_scene",
+        "nominal_baked_scene",
+        "soft_baked_scene",
+        "provenance_bundle",
+        "environment_issue"
+      ],
+      "description": "Independently checked saved files and arithmetic, without collection or simulation. Both datasets contain exactly three sweeps of 20 finite length/angle records. Copied scenes differ only in stiffness; baked scenes and manifests identify 20000/8000 N, zero half-width, the same native artifact and completed cleanup. Totals are 602454 steps and 75.02260313499983 world seconds. Drive spans match the report. Both original zero-step crashes remain preserved. Both successful manifests correctly have normal_completion=false for bootstrap-only work.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": [
+        "nominal_raw",
+        "nominal_clean",
+        "soft_raw",
+        "soft_clean",
+        "raw_fit_results",
+        "clean_fit_results",
+        "fit_input_audit",
+        "raw_fit_contract",
+        "clean_fit_contract",
+        "manager_analysis"
+      ],
+      "description": "Verified that stripping changes only config.m669 and that all four raw/stripped anchor arrays, metric dictionaries and optimizer histories are exactly equal. Recomputed conventional scene-home anchor RMSE as 2023.3595, 2003.4550, 3648.2595 and 2676.1792 mm. Inspected the driver finite-score/covariance valid flag separately from geometry validity and automatic acceptance. Four raw plus four stripped ordinary stages are recorded, with every underconstrained_penalty false and no recovery fit.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": [
+        "nominal_lbfgsb_stage",
+        "nominal_trf_stage",
+        "soft_lbfgsb_stage",
+        "soft_trf_stage",
+        "clean_fit_contract",
+        "clean_fit_results"
+      ],
+      "description": "Decoded all four saved fit snapshots. Their anchors and options match the selected results and contract. Their source revision is the measurement base, and every recorded fit source hash matches the delivery candidate, so the helper/documentation changes do not invalidate those saved fit observations.",
+      "kind": "inspected"
+    },
+    {
+      "asset_ids": [
+        "helper_checks",
+        "measured_collector"
+      ],
+      "description": "Inspected candidate helper and HeadlessSimulation cleanup source. Independently reran the 19 focused mocked/data-contract tests, all passing in 1.38 seconds. Additional mocks covered complete output, partial output, timeout with terminate/kill escalation, nonzero collector exit, startup error and malformed JSON. Only complete output succeeded; other cases retained failed results, registered owned collectors where launched and restored the prior step-limit environment. No numerical collection, fitting or physics ran.",
+      "kind": "inspected"
+    }
+  ],
+  "code_readiness": "ready",
+  "discrepancy": null,
+  "finding": "supported",
+  "limitations": [
+    "Saved-file inspection and arithmetic do not independently reproduce the native collections or fit stages. The delivery helper has mocked validation and has not rerun native collection.",
+    "The scene-home reference lacks the settled encoder-zero pose and rotation. Its RMSE is a conventional reference comparison, not established physical or hardware accuracy.",
+    "Two single-run worlds with manual forces and adaptive trajectories do not isolate stiffness as the cause of fitted error or demonstrate collection speedup.",
+    "Planning, additional sweeps, history consensus, recovery fits and full automatic stopping/acceptance were not executed. A finite driver valid flag does not establish full-loop acceptance."
+  ],
+  "practical_value": "The pair supplies a reproducible native bootstrap baseline and a useful negative result: finite scores and covariance flags can accompany poor conventional geometry. Keep the data and bounded collection helper without changing solver, point-count or stopping defaults.",
+  "reason": "Keep the scoped report, evidence and candidate helper. The saved evidence supports successful finite bootstrap collection and exact raw/stripped fit equality, with the stated poor conventional estimates and explicit limits. No unresolved helper defect was found. The diff adds a collection tool, tests and documentation without changing production physics, motors, cable transport or scene dynamics, so the repository physics delivery gate is not triggered.",
+  "required_checks": [],
+  "submission_id": "submission-999974fdb09c44b4ae8f09131caa9ef6",
+  "submission_sha256": "36917bd55d6cccb189504c8eeea5291a6019f3b52e9126aa761f7170c79aeeea",
+  "verdict": "keep"
+}

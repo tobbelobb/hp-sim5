@@ -1,0 +1,69 @@
+"""Ordinary production fit stages and one bounded restoration stage, no truth input."""
+from __future__ import annotations
+import inspect,json,sys,time,traceback
+from pathlib import Path
+import numpy as np
+ROOT=Path('/workspace/hp-sim5');sys.path.insert(0,str(ROOT))
+from autocal import _autocal_common as common
+from autocal.fit_stage import fit_ellipse_dataset
+from autocal.fit_recovery import build_recovery_attempts,recovery_geometry_valid,warm_start_seeds_from_plan
+from autocal.stage_artifacts import write_stage_artifact
+OUT=Path(__file__).resolve().parent/'pinned'
+
+def save(path,value):path.write_text(json.dumps(value,indent=2,default=lambda x:x.tolist() if isinstance(x,np.ndarray) else x.item() if isinstance(x,np.generic) else str(x))+'\n')
+def metrics(plan):
+    primary=common._plan_primary_cost(plan)
+    raw,rank,basis=common._plan_score_ui(plan)
+    maxstd,relstd,covok=common._plan_covariance_summary(plan)
+    noise=common._plan_noise_metrics(plan)
+    under=common._plan_hits_underconstrained_penalty(plan,primary)
+    return dict(primary_cost=primary,score_ui=raw,rank_score=rank,score_basis=basis,
+        valid=bool(np.isfinite(primary) and np.isfinite(rank) and covok),
+        covariance_ok=covok,max_std_mm=maxstd,rel_std=relstd,
+        underconstrained_penalty=under,geometry_valid=recovery_geometry_valid(plan),
+        info_rank=plan.get('info_rank'),info_rank_deficient=plan.get('info_rank_deficient'),
+        noise_metrics=noise,warnings=common._plan_data_quality_warnings(plan))
+
+def main():
+    common._apply_optimizer_mode_env('fast')
+    args=common.build_semi_auto_parser().parse_args(['--machine-type','hangprinter_3','--no-collect'])
+    values=vars(args).copy()
+    values.update(pointwise_residual_mode=args.pointwise_residual,generate_report=False,
+        base_radii=[30.]*4,buildup_factor=0.,fit_structure=[3],fd_eps_mm=1.,
+        filter_schedule=common._parse_filter_schedule(args.filter_schedule,label='filter_schedule'),
+        objective_schedule=common._parse_objective_schedule(args.objective_schedule,label='objective_schedule'))
+    options={k:values[k] for k,p in inspect.signature(fit_ellipse_dataset).parameters.items() if k!='dataset_path' and k in values}
+    results=[];calls=0
+    contract=dict(experiment='NP-E03',fit_stage_cap=8,base_calls=4,restore_stage_cap_per_base=1,
+        settings=options,solvers=['lbfgsb','trf'],recovery='First production build_recovery_attempts restoration stage only if base underconstrained, then warm_start_seeds_from_plan. Further restoration and sparse recovery are outside eight-call budget.',
+        truth_separation='No truth, reference pose or known anchors loaded by this script. Initial seed uses production build_anchor_initial_guess; recovery uses returned anchors only.')
+    save(OUT/'fit-contract.json',contract)
+    for world in ('nominal','soft'):
+        dataset=OUT/world/'sweeps.json'
+        if not dataset.exists():continue
+        for solver in ('lbfgsb','trf'):
+            settings=dict(options,solve_optimizer=solver)
+            latest=None
+            for label in ('ordinary','restore_sweeps'):
+                if label!='ordinary':
+                    if latest is None or not latest['metrics']['underconstrained_penalty']:break
+                    attempts=build_recovery_attempts(settings)
+                    if not attempts:break
+                    label,settings=attempts[0]
+                    settings={k:v for k,v in settings.items() if k in inspect.signature(fit_ellipse_dataset).parameters}
+                    settings.update(warm_start_seeds_from_plan(latest['plan']))
+                assert calls<8
+                tag=f'{world}-{solver}-{label}';started=time.perf_counter();calls+=1
+                row=dict(world=world,solver=solver,stage=label,fit_call=calls)
+                try:
+                    plan=fit_ellipse_dataset(dataset,**settings)
+                    row.update(metrics=metrics(plan),anchors_mm=np.asarray(plan['anchors']).tolist(),
+                        optimizer_runs=(plan.get('calibration') or {}).get('optimizer_runs',[]))
+                    write_stage_artifact(OUT/(tag+'.stage.json'),'fit',dict(fit=plan,fit_options=settings,dataset_path=dataset,fit_seconds=time.perf_counter()-started))
+                    latest=dict(plan=plan,metrics=row['metrics'])
+                except Exception as error:
+                    row['error']=str(error);(OUT/(tag+'.failure.txt')).write_text(traceback.format_exc());latest=None
+                row['wall_s']=time.perf_counter()-started;results.append(row)
+                save(OUT/'fit-results.json',dict(fit_calls=calls,results=results))
+                print(json.dumps(row,default=str),flush=True)
+if __name__=='__main__':main()

@@ -1,0 +1,109 @@
+"""Frozen, bounded production-native HP3 bootstrap pair. No fit or truth inputs."""
+from __future__ import annotations
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import shutil
+import sys
+import time
+import traceback
+
+ROOT = Path('/workspace/hp-sim5')
+sys.path.insert(0, str(ROOT))
+from autocal.headless_sim import HeadlessSimulation
+from autocal._autocal_common import _write_bootstrap_sweep_config
+
+OUT = Path(__file__).resolve().parent / 'pinned'
+OUT.mkdir(exist_ok=True)
+
+def save(path, value):
+    path.write_text(json.dumps(value, indent=2) + '\n')
+
+def fields(text, name):
+    return [float(x) for x in re.findall(r'cablePath:' + name + r'\s*=\s*([-+\d.eE]+)', text)]
+
+def main():
+    node_path = shutil.which('node')
+    node_version = subprocess.check_output(['node','--version'],text=True).strip()
+    assert node_version == 'v23.11.1', 'Source scripts/cloud/env.sh before this driver'
+    contract = dict(node_executable=node_path, node_version=node_version, experiment='NP-E02', machine='hp3', collector_machine='hangprinter_3',
+        stiffness_n=[20000,8000], half_width_m=0, base_radii_mm=[30]*4,
+        buildup=0, layering=False, sweep_points_per_direction=10,
+        target_sweeps=3, target_points=60, feed_mm_min=1400,
+        force_low_n=.01, force_mid_n=.05, force_max_n=.5,
+        sensor_collection_force_n=1, noise_samples=16, noise_rate_hz=40,
+        speedup=25, recording_mode='none', physics_steps_per_world=1000000,
+        world_wall_timeout_s=540, retries=0,
+        acceptance='Complete three sweeps/60 finite measured points in each world, native engine and baked inputs verified. Otherwise paired native-transfer claim inconclusive. Ordinary production validity, underconstraint and offline conventional geometry measured separately.',
+        amendments=['Before first collection, sweepPoints changed20 to10 after checking two physical directions.', 'Before first collection, use documented native forces .01/.05/.5N and sensor preload1N to avoid stationary low-force sensor; research/native-collection.md lines40-42.'],
+        truth_separation='No known anchors or poses used in collector, seeds, recovery or decisions. Offline scene-home effective anchors only, with origin/rotation caveat.')
+    save(OUT/'contract.json',contract)
+    source = (ROOT/'public/usd_scenes/hp3_rigid_body.usda').read_text()
+    source = re.sub(r'(cablePath:halfWidth\s*=\s*)[-+\d.eE]+',r'\g<1>0.0',source)
+    results=[]
+    for name, stiffness in [('nominal',20000),('soft',8000)]:
+        directory=OUT/name; directory.mkdir(exist_ok=False)
+        scene=directory/'scene.usda'
+        scene.write_text(re.sub(r'(cablePath:stiffness\s*=\s*)[-+\d.eE]+',lambda m:m[1]+str(float(stiffness)),source))
+        dataset=directory/'sweeps.json'; cfg=directory/'bootstrap.cfg'
+        count=_write_bootstrap_sweep_config(cfg,machine_type='hangprinter_3')
+        collector=['--sim','--firmware','rrf','--sweepPoints','10','--feed','1400',
+            '--force-low','.01','--force-mid','.05','--force-max','.5',
+            '--sensor-collection-force','1','--no-auto-tune-force','--return-to-origin',
+            '--speedup','25','--force-base-radii','30,30,30,30','--force-buildup-factor','0']
+        args=argparse.Namespace(machine_type='hangprinter_3',find_radii='off',find_buildup_factor='off',
+            rrf_config=None, config=None,buildup_factor=0,dataset=dataset,recording_mode='none',keep_sim_alive=False)
+        started=time.monotonic(); result=dict(world=name,stiffness_n=stiffness,selected_configs=count)
+        os.environ['HP_SIM5_AUTOCAL_MAX_PHYSICS_STEPS']='1000000'
+        try:
+            sim=HeadlessSimulation(args,collector)
+            sim.scene=scene.resolve()
+            sim.manifest['scene']=str(sim.scene)
+            sim.manifest['experiment_contract']=str(OUT/'contract.json')
+            with sim:
+                initial=sim.request('status'); save(directory/'initial-status.json',initial)
+                assert initial['physics_engine']=='rust-native',initial['physics_engine']
+                baked=(sim.directory/initial['baked_scene_file']).read_text()
+                assert fields(baked,'stiffness') and set(fields(baked,'stiffness'))=={float(stiffness)}
+                assert set(fields(baked,'halfWidth'))=={0.0}
+                assert initial['settings']['enableLayering'] is False
+                cmd=['node','autocal/control/cli/collect_sweep_data.mjs','--machineType','hangprinter_3',
+                    '--sweep-config-file',str(cfg),'--output-file',str(dataset),*collector]
+                save(directory/'command.json',cmd)
+                save(directory/'input-check.json',dict(scene_sha256=hashlib.sha256(scene.read_bytes()).hexdigest(),
+                    baked_sha256=hashlib.sha256(baked.encode()).hexdigest(),stiffness_n=fields(baked,'stiffness'),
+                    half_widths_m=fields(baked,'halfWidth'),initial=initial,
+                    reference_pose_available=False,reference_pose_caveat='Production standalone status exposes engine/clock/config but no effector pose. Conventional scene-home geometry may differ from encoder-zero reference after settling.'))
+                with (directory/'collector.log').open('w') as log:
+                    process=subprocess.Popen(cmd,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
+                    sim.track_process('collector',process)
+                    try: code=process.wait(timeout=540)
+                    except subprocess.TimeoutExpired:
+                        process.terminate()
+                        try: process.wait(timeout=10)
+                        except subprocess.TimeoutExpired: process.kill(); process.wait()
+                        result['error']='Collection wall budget exhausted'; code=124
+                sim.manifest['exit_code']=code
+                sim.manifest['stop_reason']='bootstrap-only'
+                result['collector_returncode']=code
+                try: save(directory/'final-status.json',sim.request('status'))
+                except Exception as error: result['final_status_error']=str(error)
+            result['manifest']=str(sim.directory/'manifest.json')
+        except BaseException as error:
+            result['error']=str(error); (directory/'failure.txt').write_text(traceback.format_exc())
+        result['wall_s']=time.monotonic()-started
+        if dataset.exists():
+            data=json.loads(dataset.read_text()); sweeps=data.get('sweeps',[])
+            result.update(sweeps=len(sweeps),points=sum(len(s.get('data_points',[])) for s in sweeps),
+                points_per_sweep=[len(s.get('data_points',[])) for s in sweeps],dataset_sha256=hashlib.sha256(dataset.read_bytes()).hexdigest())
+        result['complete']=result.get('collector_returncode')==0 and result.get('sweeps')==3 and result.get('points')==60
+        results.append(result);save(OUT/'collection-results.json',results)
+        print(json.dumps(result),flush=True)
+    a=(OUT/'nominal/scene.usda').read_text();b=(OUT/'soft/scene.usda').read_text()
+    assert re.sub(r'(cablePath:stiffness\s*=\s*)[-+\d.eE]+','STIFFNESS',a)==re.sub(r'(cablePath:stiffness\s*=\s*)[-+\d.eE]+','STIFFNESS',b)
+
+if __name__=='__main__': main()

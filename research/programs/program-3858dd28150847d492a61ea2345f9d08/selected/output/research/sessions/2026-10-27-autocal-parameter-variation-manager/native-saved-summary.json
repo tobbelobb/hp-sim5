@@ -1,0 +1,166 @@
+{
+  "author": "manager, from preserved partial worker evidence after usage-limit interruption",
+  "scope": "Two native HP3 bootstrap collections, four raw and four geometry-metadata-stripped ordinary fit stages. No new fitting or simulation during this analysis.",
+  "conventional_scene_home_truth_mm": [
+    [
+      0.0,
+      -1900.0,
+      -280.0
+    ],
+    [
+      1645.45,
+      950.0,
+      -280.0
+    ],
+    [
+      -1645.45,
+      950.0,
+      -280.0
+    ],
+    [
+      0.0,
+      0.0,
+      1900.0
+    ]
+  ],
+  "truth_caveat": "This is the repository conventional effective scene-home geometry, not an observed encoder-zero pose. Reference pose/rotation were unavailable. No final automatic acceptance or hardware accuracy was measured.",
+  "worlds": [
+    {
+      "world": "nominal",
+      "stiffness_n": 20000,
+      "points": 60,
+      "sweeps": [
+        {
+          "id": "sweep_001",
+          "points": 20,
+          "drive": 1,
+          "sensor": 2,
+          "drive_span_mm": 94.10640793828225,
+          "sensor_span_mm": 94.11164392603823
+        },
+        {
+          "id": "sweep_002",
+          "points": 20,
+          "drive": 0,
+          "sensor": 2,
+          "drive_span_mm": 94.10640793828225,
+          "sensor_span_mm": 94.11164392603823
+        },
+        {
+          "id": "sweep_003",
+          "points": 20,
+          "drive": 0,
+          "sensor": 1,
+          "drive_span_mm": 94.10640793828225,
+          "sensor_span_mm": 94.11164392603823
+        }
+      ],
+      "world_wall_s": 26.324074842999835,
+      "service_wall_s": 26.276421219999975,
+      "physics_steps": 192909,
+      "simulated_s": 385.818,
+      "raw_sha256": "f4f08033a9630f2231a4c2e7976080c29a51332fbf74cc8f75663ce1c05fbbc8",
+      "stripped_sha256": "cfdcf274b3748be763957dc6d9abdbbc35ee49e94af51b91b469b2f7cfa6a1e4",
+      "native_sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+      "baked_scene_sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e"
+    },
+    {
+      "world": "soft",
+      "stiffness_n": 8000,
+      "points": 60,
+      "sweeps": [
+        {
+          "id": "sweep_001",
+          "points": 20,
+          "drive": 1,
+          "sensor": 2,
+          "drive_span_mm": 234.91782665993276,
+          "sensor_span_mm": 234.92306264768874
+        },
+        {
+          "id": "sweep_002",
+          "points": 20,
+          "drive": 0,
+          "sensor": 2,
+          "drive_span_mm": 234.91259067217678,
+          "sensor_span_mm": 234.92306264768874
+        },
+        {
+          "id": "sweep_003",
+          "points": 20,
+          "drive": 0,
+          "sensor": 1,
+          "drive_span_mm": 234.91782665993276,
+          "sensor_span_mm": 234.92306264768874
+        }
+      ],
+      "world_wall_s": 48.69852829199999,
+      "service_wall_s": 48.567872164000164,
+      "physics_steps": 409545,
+      "simulated_s": 819.09,
+      "raw_sha256": "a7b552d05b00346c2188c2603ec0e2f133eac219267615108317db6eb631203d",
+      "stripped_sha256": "2304111ded8a5cc3875fd54715ca3a5b5acc855f242c864bd837d64b78e5341b",
+      "native_sha256": "66a8451bc1a42310e4dfae166288737e595f75bc1173c8f88e92163afb94a5d8",
+      "baked_scene_sha256": "bc6f6141d10327130cd8b7ac7fbbd0f8a33f056d204e53c2b6eafabf82af012c"
+    }
+  ],
+  "fits": [
+    {
+      "world": "nominal",
+      "solver": "lbfgsb",
+      "conventional_anchor_rmse_mm": 2023.3594894920361,
+      "primary_cost": 12.698034128859394,
+      "driver_finite_covariance_flag": true,
+      "geometry_valid": true,
+      "underconstrained_penalty": false,
+      "info_rank_deficient": true,
+      "max_std_mm": 3858.4530750449217,
+      "raw_stripped_numerically_identical": true,
+      "stripped_fit_wall_s": 2.010513859999719
+    },
+    {
+      "world": "nominal",
+      "solver": "trf",
+      "conventional_anchor_rmse_mm": 2003.454992532157,
+      "primary_cost": 12.698870623869826,
+      "driver_finite_covariance_flag": true,
+      "geometry_valid": true,
+      "underconstrained_penalty": false,
+      "info_rank_deficient": true,
+      "max_std_mm": 3850.339957278346,
+      "raw_stripped_numerically_identical": true,
+      "stripped_fit_wall_s": 2.04757083100003
+    },
+    {
+      "world": "soft",
+      "solver": "lbfgsb",
+      "conventional_anchor_rmse_mm": 3648.2594782455853,
+      "primary_cost": 17.737066864071224,
+      "driver_finite_covariance_flag": true,
+      "geometry_valid": false,
+      "underconstrained_penalty": false,
+      "info_rank_deficient": false,
+      "max_std_mm": 4566.702475404495,
+      "raw_stripped_numerically_identical": true,
+      "stripped_fit_wall_s": 0.8312301070000103
+    },
+    {
+      "world": "soft",
+      "solver": "trf",
+      "conventional_anchor_rmse_mm": 2676.1791991986634,
+      "primary_cost": 4.679339047235256,
+      "driver_finite_covariance_flag": true,
+      "geometry_valid": false,
+      "underconstrained_penalty": false,
+      "info_rank_deficient": true,
+      "max_std_mm": 2346.162046109725,
+      "raw_stripped_numerically_identical": true,
+      "stripped_fit_wall_s": 1.25161119600034
+    }
+  ],
+  "experimental_fit_calls": 8,
+  "recovery_fit_calls": 0,
+  "driver_validity_caveat": "The saved driver defines valid as finite primary/rank cost and covariance_ok. This is not a complete production acceptance decision. geometry_valid and underconstrained_penalty are separate production helper observations.",
+  "total_native_physics_steps": 602454,
+  "total_world_wall_s": 75.02260313499983
+}

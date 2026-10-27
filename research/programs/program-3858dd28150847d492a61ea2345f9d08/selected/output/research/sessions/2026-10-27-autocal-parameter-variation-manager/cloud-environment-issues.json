@@ -12,5 +12,25 @@
     "kind": "process/controller fixtures, not live model evidence"
   },
   "live_retry": "Actual fresh reviewer completed through corrected default-store bridge; review-f674059afe874bdca72e7f4f5f8366ee applied as admission-d4a35af838c44f1f9b7c10f88df01741",
-  "actor_capacity_interruption": "Original worker hit model capacity after preserving code/evidence; same actor resumed within original deadline and wrote genuine handoff/final output. No new experiment or authentication changes."
+  "actor_capacity_interruption": "Original worker hit model capacity after preserving code/evidence; same actor resumed within original deadline and wrote genuine handoff/final output. No new experiment or authentication changes.",
+  "standalone_node": {
+    "failure": "Two zero-completed-step napi_detach_arraybuffer crashes under unsourced Node24.19.0",
+    "cause": "Independent command shell did not inherit supervisor cloud toolchain",
+    "remedy": "Source scripts/cloud/env.sh for actual driver; pinned Node23.11.1; native helper now fails before movement on unsupported version",
+    "successful_replacements": {
+      "datasets": 2,
+      "points": 120,
+      "physics_steps": 602454
+    },
+    "bounded_correction": "decision-98f76c05c2fc474abde86f7fe3e331f0",
+    "failures_preserved": true
+  },
+  "native_worker_usage_limit": {
+    "failure": "Model usage limit before final report/handoff",
+    "measurements_preserved": "Two collections and eight fit-stage outputs",
+    "deadline_cleanup": "Cancelled09:01:13UTC, launcher_finally_completed",
+    "actor_cancellation_acknowledged": true,
+    "manager_closure": "Explicitly attributed saved-data report; no fabricated actor output",
+    "new_simulation_or_fitting_after_continuation": false
+  }
 }

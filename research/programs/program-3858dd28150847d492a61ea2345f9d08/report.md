@@ -61,7 +61,7 @@ Implement the best supported change.
 If data collection routines are kept similar or equivalent to your changed algorithm then you can run the relevant autocal regressions.
 Otherwise find ways compare your changed or new algorithm to the old one.
 
-Program: program-3858dd28150847d492a61ea2345f9d08 · revision 54 · active
+Program: program-3858dd28150847d492a61ea2345f9d08 · revision 100 · paused
 
 Reviewed findings are recorded in scoped admission history.
 
@@ -72,10 +72,10 @@ Reviewed findings are recorded in scoped admission history.
   "id": "program-3858dd28150847d492a61ea2345f9d08",
   "question_id": "question-277e696829e247d4ac1626101fc84399",
   "goal": "Improve encoder-based CDPR autocalibration in hp-sim5. The current algorithm can\nbe slow, fragile, or choose worse anchors because its selection score disagrees\nwith actual geometrical accuracy. First reproduce and measure those cases.\n\nInvestigate ideas for improving the autocal speed, robustness, and/or user experience.\nI'm especially interested in changes that can produce robust results with fewer or in other ways faster to collect data points, since data collection currently takes a long time, and having to redo it would wreck user experience.\nPreserve the one-click user experience and automatic stopping when finished.\n\nYou don't need to take line buildup into account, ie autocal.py's `--buildup-factor` can be zero, and the simulator should also run with Line Layering disabled.\nNo need to search for the spool radii either.\nUse Hangprinter 3, not Hangprinter 4, since HP3 is lighter and faster to simulate.\nI created a reference run for you to beat in output/extended-autocal/no-buildup-reference-003\n\nNote that in a real auto calibration scenario, nobody has access to real ground truth anchor positions yet.\n\nHere are some ideas you could use as starting points:\n\n - An obvious way to save time would be to look at the .rrd file, and profile it in a way. See where it hangs, what takes time to help you prioritize where to start optimizing.\n - We know from experience that autocal accuracy, ie how geometrically close the found anchors end up being to reality, is super sensitive to which min, medium, and especially max forces were selected during force tuning. A too high force destroys the quality of the data, just as much as too low forces. Finding \"workable\" forces reliably, while taking the forces that's selected into account when optimizing somehow, is a promising direction of research.\n - All experiments so far has used a fixed set of simulated \"true\" parameters, like friction, cable stiffness, anchor placements etc. Since we want the autocal to be robust we should judge it by its ability to find parameters on a wider range of setups, not just one or two setups. Getting wider variety in reference datasets would help us identify those variations of autocal that is most robust and will more likely transfer successfully from sim to real. It will also work without issues for a wider range of real world users. Instead of trusting one highly detailed simulation, it would be much better to systematically train and test against many plausible physical worlds. The difficulty for us is that direct simulation of even a single plausible physical worlds is currently very slow and expensive. Simulating many of them is currently prohibitively expensive. Reducing the computatinonal overhead or cost is required in order to enable this idea, which might be crucial for the value of the autocal work's real world value.\n - Autocal's job is to search/find/optimize for many different calibration parameters. It currently doesn't split-and-conquer much at all. It only splits the experiment into two halves: First it searches for forces and sensor noise, then it searches for all the other parameters all at once using the initial force and noise information. It should be possible divide-and-conquer the calibration problem a lot more. To do that, we need to find ways to design sub-experiments in which some parameters are isolated. We want several experiments that build upon each other, each one searching for one or a limited number of parameters while managing to \"block out\" or \"isolate away from\" the others. We want autocal.py to reason a bit like a human researcher would reason: \"Ok, so now we have this limited but verified piece of knowledge. How can we use that to get yet another piece of knowledge?\" And so on, until the full picture eventually becomes clear. An example of a sequence of increasingly detailed questions:\n   * What forces currently make the effector move at all? (already asked by force tuning)\n   * What seems to be the highest safe force for this machine in one direction? (already asked by force tuning)\n   * ...\n   * Which anchors are above, and which are below the effector?\n   * Which anchors are to the right of (+x) and which are to the left of (-x) the effector (in normalized, rotated coordinates)?\n   * Which anchors seem closer, and which ones seem further away from the origin (or from the central point between the anchors)?\n   * Can we determine max/min ranges for the line lengths (L2 distances from the origin/center) of the various anchors?\n   * Can we determine max/min ranges for the various xyz coordinates of each anchor?\n   * Can we reason about or search for probably xyz positions of each datapoint?\n   * The global anchor length scale is a near-flat direction of the autocal objective. Can we design a sequence of measurements that would give us information about true anchor gauge? As in, can we tease out a scaling factor to improve our current anchor guess?\n   * There's currently two promising solvers: the established lbfgsb and the experimental trf solver. A promising research direction is using solver disagreement to choose an additional sweep, then checking both predictions against fresh measurements.\n   * ... and so on\n  A nice thing with this idea of gradually answering progressively harder questions is that experiments can be progressively more detailed and confident without causing the machine to do self-harm. The approach can also gradually be introduced into the current autocal, morphing it from \"one big thing\" to eventually a more and more fine grained sequence of smaller targetted experiments.\n\nSee autocal/data/references/extended-reference.md if you want to do full simulation runs with complete recordings yourself.\n\nGather ideas on how one could calibrate a CDPR based solely on encoder data first.\nUse every tool here, like web search and first principles thinking.\nOnce you've arrived at a list of ideas, it is good to grep through old research reports in output/research/sessions/ to see if earlier runs explored similar ideas, and what their findings were.\n\nThen learn about how the current autocal code works.\nIt is the state-of-the art that we're trying to improve upon.\nGood starting points for such learning are\n - autocal/README.md\n - autocal/optimization_algorithm_overview\n - autocal/objective_functions_overview\n - and maybe autocal/README_elliptical_feature_calibration.md\n\n\nYour favourite ideas might be better than those already researched or implemented.\nRecord the leading hypotheses and test the promising ones on\nrecorded and synthetic data, unless your improvement idea requires another way of collecting data.\nNote down your disproved hypotheses as well, with very short notes in the output report.\n\nUse simulated collection to test your ideas when warranted.\nCode for collecting simulated calibration data in the browser environment are available in the autocal part of the repo.\nInvent your own ways of collecting synthetic calibration data if required.\n\nImplement the best supported change.\nIf data collection routines are kept similar or equivalent to your changed algorithm then you can run the relevant autocal regressions.\nOtherwise find ways compare your changed or new algorithm to the old one.",
-  "state": "active",
-  "revision": 54,
+  "state": "paused",
+  "revision": 100,
   "created_at": "2026-10-27T08:03:17.214261+00:00",
-  "updated_at": "2026-10-27T08:30:12.022700+00:00",
+  "updated_at": "2026-10-27T12:10:44.524898+00:00",
   "constraints": {}
 }
 ```
@@ -1707,6 +1707,1386 @@ Otherwise find ways compare your changed or new algorithm to the old one.
     "actor": "manager",
     "evidence_ids": [],
     "subject_id": "varied-worlds"
+  }
+}
+```
+
+## approach: Transfer analytical screens to native sweep data
+
+```json
+{
+  "id": "native-transfer",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "approach",
+  "title": "Transfer analytical screens to native sweep data",
+  "revision": 1,
+  "created_at": "2026-10-27T08:31:06.338369+00:00",
+  "updated_at": "2026-10-27T08:31:06.338369+00:00",
+  "details": {
+    "question_id": "question-277e696829e247d4ac1626101fc84399",
+    "reason": "First review validates the screen but explicitly leaves full-stage and native collection applicability open",
+    "state": "live"
+  }
+}
+```
+
+## route_plan: Fresh reviewer confirmed numerical screen but rejected any inference about full-loop or collection performance
+
+```json
+{
+  "id": "route_plan-6b0294d29abb4ccbbb2d56946f76ab38",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "route_plan",
+  "title": "Fresh reviewer confirmed numerical screen but rejected any inference about full-loop or collection performance",
+  "revision": 1,
+  "created_at": "2026-10-27T08:31:06.445492+00:00",
+  "updated_at": "2026-10-27T08:31:06.445492+00:00",
+  "details": {
+    "approach_id": "native-transfer",
+    "citation_ids": [
+      "review-f674059afe874bdca72e7f4f5f8366ee",
+      "variation-screen-claim"
+    ],
+    "decision_value": "Decide whether analytical screen is a useful production discriminator and retain reproducible varied native data if feasible",
+    "dependency_ids": [],
+    "estimated_cost": {
+      "collections": 2,
+      "fresh_fit_stages": 8,
+      "physics_steps": 2000000,
+      "wall_minutes": 30
+    },
+    "hypothesis": "Matched native nominal/soft collection and ordinary fit stages can distinguish analytical cold-core fragility from physical-model inadequacy",
+    "novelty": "Pair a true production collector and native Rust physical variation with the cheap screen, rather than assume transfer",
+    "objections": [
+      "Collection may fail to settle in a soft world",
+      "Known truth must stay outside fitter inputs and seeds"
+    ],
+    "observation": "Two scene copies differing only stiffness execute matched collector settings; ordinary fit-stage validity and offline geometry are compared",
+    "priority": 5,
+    "reason": "Fresh reviewer confirmed numerical screen but rejected any inference about full-loop or collection performance",
+    "reopening_condition": "Additional native variation, adaptive force tuning or hardware evidence changes the small-pair finding",
+    "retry_key": "152b4500b3af7aa3ff686287b7e8496b472320af92773b17ba805d4d328b6dec",
+    "retry_limit": 2,
+    "scope": {
+      "buildup": 0,
+      "layering": false,
+      "machine": "hp3",
+      "measurement": "two matched native production collector bootstrap datasets and ordinary fit-stage results",
+      "radii_mm": 30,
+      "stiffness_n": [
+        20000,
+        8000
+      ]
+    },
+    "tradeoffs": [
+      "Two physical worlds are a limited sample",
+      "Manual matched force settings isolate stiffness but do not test automatic force tuning or final stopping"
+    ],
+    "uncertainty": "Analytical worlds omit equilibrium and use small cold seeds; native collection may fail or recovery may avoid core-only errors"
+  }
+}
+```
+
+## runtime_allocation: Finite manager allocation
+
+```json
+{
+  "id": "runtime_allocation-86df1d73daf54226a54bdf6acd2c922d",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "runtime_allocation",
+  "title": "Finite manager allocation",
+  "revision": 8,
+  "created_at": "2026-10-27T08:31:06.554604+00:00",
+  "updated_at": "2026-10-27T12:02:00.938779+00:00",
+  "details": {
+    "cleanup_deadline": 1793092756.5544617,
+    "cleanup_seconds": 190,
+    "deadline": 1793092566.5544617,
+    "events": [],
+    "lease_until": 1793092576.6388197,
+    "owner": {
+      "id": "controller-107ff602e4b34be1bab14f2f9b016edf",
+      "process": {
+        "birth": "3195",
+        "boot_id": "d31b8f0f-7059-4ebd-8df1-d4324ca094d3",
+        "group": 600,
+        "host": "6ffb042648e4",
+        "pid": 600,
+        "uid": 1000
+      }
+    },
+    "queue": [],
+    "reservations": [
+      {
+        "assignment_id": "native-pair",
+        "attempt_id": "attempt-982dc44e4c9b4e5da9b3232c26d54bf3",
+        "charged_at": "2026-10-27T08:31:08.303010+00:00",
+        "retry_root": null,
+        "review_pending": false,
+        "review_seconds": 600,
+        "reviews": [],
+        "settings": {
+          "backend": "codex",
+          "client_args": [],
+          "dont_ask": true,
+          "goal_mode": true,
+          "machine": "hp3",
+          "physics_backend": "headless-js",
+          "record": false,
+          "shared_runtime_write": false,
+          "viewer": "none",
+          "worktree": false
+        },
+        "state": "cancelled",
+        "superseded_by": "runtime_allocation-fe8edf73d0d746efade1313d7112806a",
+        "usage": {
+          "estimates": {
+            "collections": 2,
+            "fresh_fit_stages": 8,
+            "physics_steps": 2000000,
+            "wall_minutes": 30
+          },
+          "observed_worker_wall_seconds": 1805.4712190628052,
+          "supervisor_observations": [],
+          "unmetered": [
+            "shell movement",
+            "shell compute",
+            "spend"
+          ],
+          "worker_reports": []
+        },
+        "worker_seconds": 1800
+      }
+    ],
+    "retry_limit": 1,
+    "review_backlog_limit": 1,
+    "review_seconds": 600,
+    "started_at": "2026-10-27T08:31:06.554465+00:00",
+    "state": "expired",
+    "task_limit": 1,
+    "wall_reserved_seconds": 2400,
+    "wall_seconds": 2700,
+    "worker_limit": 1
+  }
+}
+```
+
+## assignment: Within 30 minutes, collect paired native Rust HP3 bootstrap datasets in nominal and softer cable scenes, then compare ordinary production fit-stage results to the earlier analytical screen. Make session-local scene copies differing ONLY cable stiffness 20000 versus 8000 N, all halfWidth zero, fixed30mm spools, buildup0, no layering. Use production HeadlessSimulation and collector with identical manual forces, movement configs, feed and point/noise counts, supported speedup25 and events or none recording. Assign a copied scene before entering HeadlessSimulation and update its manifest.scene to the actual source; verify actual baked inputs and engine identity. Target three complete sweeps/60points per world; measure actual counts and wall/sim time, not assumed counts. Preserve partial journals and stop rather than repeatedly tuning a failed world. Run ordinary fit-stage and recovery where API supports it for both lbfgsb and trf, no truth in inputs/seeds/decisions, evaluate known effective anchors offline only. At most eight high-level fit-stage calls, two production collections, two million physics steps. Do not claim complete one-click stopping validation from bootstrap-only data. Retain a small reusable native parameter-collection helper only if supported/tested, keeping physics and calibration defaults unchanged. Prepare an exact claim/evidence/candidate handoff and actual final output. Use previous handoff and review to avoid duplicating the analytical matrix.
+
+```json
+{
+  "id": "native-pair",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "assignment",
+  "title": "Within 30 minutes, collect paired native Rust HP3 bootstrap datasets in nominal and softer cable scenes, then compare ordinary production fit-stage results to the earlier analytical screen. Make session-local scene copies differing ONLY cable stiffness 20000 versus 8000 N, all halfWidth zero, fixed30mm spools, buildup0, no layering. Use production HeadlessSimulation and collector with identical manual forces, movement configs, feed and point/noise counts, supported speedup25 and events or none recording. Assign a copied scene before entering HeadlessSimulation and update its manifest.scene to the actual source; verify actual baked inputs and engine identity. Target three complete sweeps/60points per world; measure actual counts and wall/sim time, not assumed counts. Preserve partial journals and stop rather than repeatedly tuning a failed world. Run ordinary fit-stage and recovery where API supports it for both lbfgsb and trf, no truth in inputs/seeds/decisions, evaluate known effective anchors offline only. At most eight high-level fit-stage calls, two production collections, two million physics steps. Do not claim complete one-click stopping validation from bootstrap-only data. Retain a small reusable native parameter-collection helper only if supported/tested, keeping physics and calibration defaults unchanged. Prepare an exact claim/evidence/candidate handoff and actual final output. Use previous handoff and review to avoid duplicating the analytical matrix.",
+  "revision": 3,
+  "created_at": "2026-10-27T08:31:06.663289+00:00",
+  "updated_at": "2026-10-27T09:01:13.811356+00:00",
+  "details": {
+    "allocation": {
+      "collections": 2,
+      "fresh_fit_stages": 8,
+      "physics_steps": 2000000,
+      "wall_minutes": 30
+    },
+    "approach_id": "native-transfer",
+    "execution_state": "cancelled",
+    "knowledge_state": "unassessed",
+    "question_id": "question-277e696829e247d4ac1626101fc84399",
+    "review_state": "unreviewed"
+  }
+}
+```
+
+## investigation: Within 30 minutes, collect paired native Rust HP3 bootstrap datasets in nominal and softer cable scenes, then compare ordinary production fit-stage results to the earlier analytical screen. Make session-local scene copies differing ONLY cable stiffness 20000 versus 8000 N, all halfWidth zero, fixed30mm spools, buildup0, no layering. Use production HeadlessSimulation and collector with identical manual forces, movement configs, feed and point/noise counts, supported speedup25 and events or none recording. Assign a copied scene before entering HeadlessSimulation and update its manifest.scene to the actual source; verify actual baked inputs and engine identity. Target three complete sweeps/60points per world; measure actual counts and wall/sim time, not assumed counts. Preserve partial journals and stop rather than repeatedly tuning a failed world. Run ordinary fit-stage and recovery where API supports it for both lbfgsb and trf, no truth in inputs/seeds/decisions, evaluate known effective anchors offline only. At most eight high-level fit-stage calls, two production collections, two million physics steps. Do not claim complete one-click stopping validation from bootstrap-only data. Retain a small reusable native parameter-collection helper only if supported/tested, keeping physics and calibration defaults unchanged. Prepare an exact claim/evidence/candidate handoff and actual final output. Use previous handoff and review to avoid duplicating the analytical matrix.
+
+```json
+{
+  "id": "investigation-a899c1f381924cf886699a25f8cdee57",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "investigation",
+  "title": "Within 30 minutes, collect paired native Rust HP3 bootstrap datasets in nominal and softer cable scenes, then compare ordinary production fit-stage results to the earlier analytical screen. Make session-local scene copies differing ONLY cable stiffness 20000 versus 8000 N, all halfWidth zero, fixed30mm spools, buildup0, no layering. Use production HeadlessSimulation and collector with identical manual forces, movement configs, feed and point/noise counts, supported speedup25 and events or none recording. Assign a copied scene before entering HeadlessSimulation and update its manifest.scene to the actual source; verify actual baked inputs and engine identity. Target three complete sweeps/60points per world; measure actual counts and wall/sim time, not assumed counts. Preserve partial journals and stop rather than repeatedly tuning a failed world. Run ordinary fit-stage and recovery where API supports it for both lbfgsb and trf, no truth in inputs/seeds/decisions, evaluate known effective anchors offline only. At most eight high-level fit-stage calls, two production collections, two million physics steps. Do not claim complete one-click stopping validation from bootstrap-only data. Retain a small reusable native parameter-collection helper only if supported/tested, keeping physics and calibration defaults unchanged. Prepare an exact claim/evidence/candidate handoff and actual final output. Use previous handoff and review to avoid duplicating the analytical matrix.",
+  "revision": 1,
+  "created_at": "2026-10-27T08:31:06.663363+00:00",
+  "updated_at": "2026-10-27T08:31:06.663363+00:00",
+  "details": {
+    "assignment_id": "native-pair",
+    "citation_ids": [
+      "review-f674059afe874bdca72e7f4f5f8366ee"
+    ],
+    "execution": {
+      "compute_deadline_utc": "2026-10-27T10:01:00Z",
+      "machine": "hp3",
+      "recording_mode": "none",
+      "simulated_autocal_speedup": 25
+    },
+    "explanations": [
+      {
+        "approach_id": "native-transfer",
+        "explanation": "Analytical fragility transfers to native measurements even through ordinary fitting and recovery"
+      },
+      {
+        "approach_id": "force-model",
+        "explanation": "Stiffness-dependent force and settling effects dominate, making analytical prescriptions inadequate"
+      },
+      {
+        "approach_id": "ranking-only",
+        "explanation": "Data remain adequate and solver/selection behavior accounts for most differences"
+      }
+    ],
+    "kind": "experiment",
+    "outcomes": {
+      "blocked": {
+        "actions": [],
+        "finding": "inconclusive",
+        "observation": "Collection or tooling failure leaves an incomplete paired comparison; preserve partial data"
+      },
+      "core_only": {
+        "actions": [],
+        "finding": "rejected",
+        "observation": "Ordinary stages recover valid geometry, limiting transfer of core-only analytical failures"
+      },
+      "mixed": {
+        "actions": [],
+        "finding": "mixed",
+        "observation": "A native comparison/tool is useful but the pair cannot settle production robustness or collection savings"
+      },
+      "native_fragility": {
+        "actions": [],
+        "finding": "supported",
+        "observation": "Complete paired native data retain material fit or validity fragility in ordinary stages"
+      }
+    },
+    "route_plan_ids": [
+      "route_plan-6b0294d29abb4ccbbb2d56946f76ab38",
+      "route_plan-3571ed4782da454e9c2be55f10449029",
+      "route_plan-c94bda61c0ed4f7cb715d3c0529ca30f"
+    ]
+  }
+}
+```
+
+## attempt: Within 30 minutes, collect paired native Rust HP3 bootstrap datasets in nominal and softer cable scenes, then compare ordinary production fit-stage results to the earlier analytical screen. Make session-local scene copies differing ONLY cable stiffness 20000 versus 8000 N, all halfWidth zero, fixed30mm spools, buildup0, no layering. Use production HeadlessSimulation and collector with identical manual forces, movement configs, feed and point/noise counts, supported speedup25 and events or none recording. Assign a copied scene before entering HeadlessSimulation and update its manifest.scene to the actual source; verify actual baked inputs and engine identity. Target three complete sweeps/60points per world; measure actual counts and wall/sim time, not assumed counts. Preserve partial journals and stop rather than repeatedly tuning a failed world. Run ordinary fit-stage and recovery where API supports it for both lbfgsb and trf, no truth in inputs/seeds/decisions, evaluate known effective anchors offline only. At most eight high-level fit-stage calls, two production collections, two million physics steps. Do not claim complete one-click stopping validation from bootstrap-only data. Retain a small reusable native parameter-collection helper only if supported/tested, keeping physics and calibration defaults unchanged. Prepare an exact claim/evidence/candidate handoff and actual final output. Use previous handoff and review to avoid duplicating the analytical matrix.
+
+```json
+{
+  "id": "attempt-982dc44e4c9b4e5da9b3232c26d54bf3",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "attempt",
+  "title": "Within 30 minutes, collect paired native Rust HP3 bootstrap datasets in nominal and softer cable scenes, then compare ordinary production fit-stage results to the earlier analytical screen. Make session-local scene copies differing ONLY cable stiffness 20000 versus 8000 N, all halfWidth zero, fixed30mm spools, buildup0, no layering. Use production HeadlessSimulation and collector with identical manual forces, movement configs, feed and point/noise counts, supported speedup25 and events or none recording. Assign a copied scene before entering HeadlessSimulation and update its manifest.scene to the actual source; verify actual baked inputs and engine identity. Target three complete sweeps/60points per world; measure actual counts and wall/sim time, not assumed counts. Preserve partial journals and stop rather than repeatedly tuning a failed world. Run ordinary fit-stage and recovery where API supports it for both lbfgsb and trf, no truth in inputs/seeds/decisions, evaluate known effective anchors offline only. At most eight high-level fit-stage calls, two production collections, two million physics steps. Do not claim complete one-click stopping validation from bootstrap-only data. Retain a small reusable native parameter-collection helper only if supported/tested, keeping physics and calibration defaults unchanged. Prepare an exact claim/evidence/candidate handoff and actual final output. Use previous handoff and review to avoid duplicating the analytical matrix.",
+  "revision": 16,
+  "created_at": "2026-10-27T08:31:08.336918+00:00",
+  "updated_at": "2026-10-27T12:10:44.525016+00:00",
+  "details": {
+    "allocation": {
+      "collections": 2,
+      "fresh_fit_stages": 8,
+      "physics_steps": 2000000,
+      "wall_minutes": 30
+    },
+    "argv": [
+      "/workspace/hp-sim5/hp-sim5-research-agent",
+      "--codex",
+      "--batch",
+      "--prompt-file",
+      "/workspace/hp-sim5/.research-programs/workers/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/prompt.txt",
+      "--session-dir",
+      "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3",
+      "--physics-backend",
+      "headless-js",
+      "--machine",
+      "hp3",
+      "--viewer",
+      "none",
+      "--wall-deadline",
+      "1793091668.3042219",
+      "--dont-ask",
+      "--no-record"
+    ],
+    "artifacts": [
+      {
+        "bytes": 343,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/session.json"
+      },
+      {
+        "bytes": 16965,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/launch.json"
+      },
+      {
+        "bytes": 79,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/exit.json"
+      },
+      {
+        "bytes": 11179,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/prompt.txt"
+      },
+      {
+        "bytes": 84,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/events.jsonl"
+      },
+      {
+        "bytes": 3765,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/research.md"
+      },
+      {
+        "bytes": 940,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/report.md"
+      },
+      {
+        "bytes": 798,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/abstract.md"
+      },
+      {
+        "bytes": 6691,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/instructions.md"
+      },
+      {
+        "bytes": 420,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/attachment.toml"
+      },
+      {
+        "bytes": 297,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/attachment.json"
+      },
+      {
+        "bytes": 237,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/connection.json"
+      },
+      {
+        "bytes": 0,
+        "partial": true,
+        "path": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/native/runtime.log"
+      },
+      {
+        "bytes": 0,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/stdout.log"
+      },
+      {
+        "bytes": 103,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/stderr.log"
+      },
+      {
+        "bytes": 11179,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/prompt.txt"
+      },
+      {
+        "bytes": 3196,
+        "partial": true,
+        "path": "/workspace/hp-sim5/.research-programs/workers/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/assignment.json"
+      }
+    ],
+    "assignment_id": "native-pair",
+    "attempt_dir": "/workspace/hp-sim5/.research-programs/workers/attempt-982dc44e4c9b4e5da9b3232c26d54bf3",
+    "cancel_deadline": 1793091858.3498607,
+    "cleanup": "launcher_finally_completed",
+    "diagnostics": [],
+    "exited_at": "2026-10-27T09:01:13.810465+00:00",
+    "launcher_exit": {
+      "returncode": 130,
+      "wall_deadline": 1793091668.3042219,
+      "wall_expired": true
+    },
+    "launcher_session_id": "b3d87a01f45b4b39a06dfa374b56f511",
+    "observations": [
+      {
+        "at": "2026-10-27T08:31:08.336307+00:00",
+        "event": "reserved"
+      },
+      {
+        "at": "2026-10-27T08:31:08.339252+00:00",
+        "event": "spawned",
+        "pid": 3169
+      },
+      {
+        "at": "2026-10-27T09:01:08.346944+00:00",
+        "event": "wall_expired"
+      },
+      {
+        "at": "2026-10-27T09:01:08.349862+00:00",
+        "event": "cancel_requested"
+      },
+      {
+        "at": "2026-10-27T09:01:13.810492+00:00",
+        "event": "exited",
+        "returncode": 130
+      }
+    ],
+    "observed_wall_seconds": 1805.4712190628052,
+    "owner": {
+      "id": "dispatcher-26f050c56760429da2ae96ae9692e956",
+      "process": {
+        "birth": "3195",
+        "boot_id": "d31b8f0f-7059-4ebd-8df1-d4324ca094d3",
+        "group": 600,
+        "host": "6ffb042648e4",
+        "pid": 600,
+        "uid": 1000
+      }
+    },
+    "premise_conflicts": [],
+    "premise_event_ids_at_start": [],
+    "premise_ids": [],
+    "premise_plan_ids": [
+      "route_plan-3571ed4782da454e9c2be55f10449029",
+      "route_plan-6b0294d29abb4ccbbb2d56946f76ab38",
+      "route_plan-c94bda61c0ed4f7cb715d3c0529ca30f"
+    ],
+    "process": {
+      "birth": "170307",
+      "boot_id": "d31b8f0f-7059-4ebd-8df1-d4324ca094d3",
+      "group": 3169,
+      "host": "6ffb042648e4",
+      "pid": 3169,
+      "uid": 1000
+    },
+    "prompt_sha256": "14971131951f3643d9ec5f7ab23f8e196738959061910e6b3f12be8eaa57054b",
+    "returncode": 130,
+    "runtime": {
+      "allocation_id": "runtime_allocation-86df1d73daf54226a54bdf6acd2c922d",
+      "assignment_id": "native-pair",
+      "cleanup_seconds": 190,
+      "expired": true,
+      "wall_deadline": 1793091668.3042219
+    },
+    "runtime_session_id": "c3019f98a8be42aa91b11cd41d71ddd0",
+    "scientific_state": "unassessed",
+    "session_dir": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3",
+    "settings": {
+      "backend": "codex",
+      "client_args": [],
+      "dont_ask": true,
+      "goal_mode": true,
+      "machine": "hp3",
+      "physics_backend": "headless-js",
+      "record": false,
+      "shared_runtime_write": false,
+      "viewer": "none",
+      "worktree": false
+    },
+    "source_dirty": true,
+    "source_revision": "2a5ef25b93ebb783012a514b1f1c43e06a677aad",
+    "started_at": "2026-10-27T08:31:08.339246+00:00",
+    "state": "cancelled",
+    "worktree": {
+      "branch": "work",
+      "repo": "/workspace/hp-sim5",
+      "source_revision": "2a5ef25b93ebb783012a514b1f1c43e06a677aad"
+    },
+    "worktree_id": "/workspace/hp-sim5"
+  }
+}
+```
+
+## decision: Bounded setup correction for native-pair: the two initial standalone launches inherited Node24.19.0 and aborted before completing physics step1, with no points or fit calls. Supervised preflight had correctly used Node23 but did not establish the standalone command environment. Source scripts/cloud/env.sh for the actual driver, verify pinned Node23.11.1 in that subprocess context, preserve both original failed startups, and allow exactly two replacement startup launches on the unchanged frozen scenes/forces. The explicit startup-attempt ceiling is now four inclusive of failures. At most two completed physical collections, two million total physics steps, eight high-level fit-stage calls and the original09:01UTC worker deadline remain. This is a recorded setup correction, not evidence of physical failure, a new scientific retry or permission to tune forces after outcomes. No native source rebuild is authorized or needed by this diagnosis.
+
+```json
+{
+  "id": "decision-98f76c05c2fc474abde86f7fe3e331f0",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "decision",
+  "title": "Bounded setup correction for native-pair: the two initial standalone launches inherited Node24.19.0 and aborted before completing physics step1, with no points or fit calls. Supervised preflight had correctly used Node23 but did not establish the standalone command environment. Source scripts/cloud/env.sh for the actual driver, verify pinned Node23.11.1 in that subprocess context, preserve both original failed startups, and allow exactly two replacement startup launches on the unchanged frozen scenes/forces. The explicit startup-attempt ceiling is now four inclusive of failures. At most two completed physical collections, two million total physics steps, eight high-level fit-stage calls and the original09:01UTC worker deadline remain. This is a recorded setup correction, not evidence of physical failure, a new scientific retry or permission to tune forces after outcomes. No native source rebuild is authorized or needed by this diagnosis.",
+  "revision": 1,
+  "created_at": "2026-10-27T08:37:02.397792+00:00",
+  "updated_at": "2026-10-27T08:37:02.397792+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "native-pair"
+  }
+}
+```
+
+## steering: Continue the active research program and native-pair work within the original two-hour budget. This does not restart the task, discard earlier evidence or reset deadlines.
+
+```json
+{
+  "id": "steering-6cea2ef059824729a50413d43adfb10e",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "steering",
+  "title": "Continue the active research program and native-pair work within the original two-hour budget. This does not restart the task, discard earlier evidence or reset deadlines.",
+  "revision": 1,
+  "created_at": "2026-10-27T11:54:20.437537+00:00",
+  "updated_at": "2026-10-27T11:54:20.437537+00:00",
+  "details": {
+    "actor": "human",
+    "evidence_ids": [],
+    "subject_id": null
+  }
+}
+```
+
+## human_input: Continue the active research program and native-pair work within the original two-hour budget. This does not restart the task, discard earlier evidence or reset deadlines.
+
+```json
+{
+  "id": "human_input-75d3106a553748c796beb38cc768359f",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "human_input",
+  "title": "Continue the active research program and native-pair work within the original two-hour budget. This does not restart the task, discard earlier evidence or reset deadlines.",
+  "revision": 1,
+  "created_at": "2026-10-27T11:54:20.437603+00:00",
+  "updated_at": "2026-10-27T11:54:20.437603+00:00",
+  "details": {
+    "citation_ids": [
+      "steering-6cea2ef059824729a50413d43adfb10e"
+    ],
+    "intent": "instruction",
+    "links": [],
+    "next_assignment_id": null,
+    "provenance": {
+      "budget_interpretation": "original deadline unchanged",
+      "source": "user follow-up: continue"
+    },
+    "steering_id": "steering-6cea2ef059824729a50413d43adfb10e"
+  }
+}
+```
+
+## claim: Two pinned native HP3 stiffness worlds each produced60 finite bootstrap points; saved geometry-stripped fits match raw fits exactly but remain poor conventional scene-home estimates, without demonstrating full-auto failure or a default solver improvement.
+
+```json
+{
+  "id": "native-pair-claim",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "claim",
+  "title": "Two pinned native HP3 stiffness worlds each produced60 finite bootstrap points; saved geometry-stripped fits match raw fits exactly but remain poor conventional scene-home estimates, without demonstrating full-auto failure or a default solver improvement.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:02:00.687067+00:00",
+  "updated_at": "2026-10-27T12:02:00.687067+00:00",
+  "details": {
+    "claim_key": "native-pair-claim",
+    "knowledge_state": "unassessed",
+    "scope": {
+      "author": "manager analysis of preserved cancelled-attempt artifacts",
+      "buildup": 0,
+      "collection": "two matched manual-force production bootstrap collections,60points each",
+      "fit": "eight ordinary fit stages, no recovery or full-loop acceptance",
+      "layering": false,
+      "limits": "conventional scene-home reference only, no encoder-zero pose, two conditions, no hardware/accuracy gain/collection-speedup claim",
+      "machine": "hp3",
+      "radii_mm": 30,
+      "stiffness_n": [
+        20000,
+        8000
+      ]
+    },
+    "version": 1
+  }
+}
+```
+
+## submission: Two pinned native HP3 stiffness worlds each produced60 finite bootstrap points; saved geometry-stripped fits match raw fits exactly but remain poor conventional scene-home estimates, without demonstrating full-auto failure or a default solver improvement.
+
+```json
+{
+  "id": "submission-999974fdb09c44b4ae8f09131caa9ef6",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "submission",
+  "title": "Two pinned native HP3 stiffness worlds each produced60 finite bootstrap points; saved geometry-stripped fits match raw fits exactly but remain poor conventional scene-home estimates, without demonstrating full-auto failure or a default solver improvement.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:02:00.819194+00:00",
+  "updated_at": "2026-10-27T12:02:00.819194+00:00",
+  "details": {
+    "manifest": {
+      "assets": [
+        {
+          "artifact_id": null,
+          "id": "native_report",
+          "missing": false,
+          "role": "report",
+          "sha256": "11d95f279dc8c60efc3dca66ae3be862ef36e496970064b22b959b19faba5601",
+          "source": "/workspace/hp-sim5/output/research/sessions/2026-10-27-autocal-parameter-variation-manager/native-report.md"
+        },
+        {
+          "artifact_id": null,
+          "id": "native_abstract",
+          "missing": false,
+          "role": "abstract",
+          "sha256": "941ade592f95d6d80d53fb50696968609c82d7a58a1266f6548471332e2edc59",
+          "source": "/workspace/hp-sim5/output/research/sessions/2026-10-27-autocal-parameter-variation-manager/native-abstract.md"
+        },
+        {
+          "artifact_id": null,
+          "id": "manager_summary",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "f5d3f451a8bdefc42e646d78185c822fb8cfa25d00ba3755fecdf26a8821f88e",
+          "source": "/workspace/hp-sim5/output/research/sessions/2026-10-27-autocal-parameter-variation-manager/native-saved-summary.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "manager_analysis",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "8d182bbd7d90f415f161dc61a565f0d7107c0813994203e849dfef3409481609",
+          "source": "/workspace/hp-sim5/output/research/sessions/2026-10-27-autocal-parameter-variation-manager/analyze_native_saved.py"
+        },
+        {
+          "artifact_id": null,
+          "id": "provenance_bundle",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "6ffa629ee245ced39889322cc40737494301a176ef6f4b5702f7735dddbbbb34",
+          "source": "/workspace/hp-sim5/output/research/sessions/2026-10-27-autocal-parameter-variation-manager/native-provenance-bundle.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "helper_checks",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "01f989315ef566ae4ea444e490e913c2ffa64bbacb1c686a7b34a7451a6a2998",
+          "source": "/workspace/hp-sim5/output/research/sessions/2026-10-27-autocal-parameter-variation-manager/native-helper-checks.log"
+        },
+        {
+          "artifact_id": null,
+          "id": "collection_contract",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "c163685ef8fdfb0799285695a0c90a48001df76b287725dfbad1be295a4e191f",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/contract.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "collection_results",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "bff1555c9a52a427b111fe32aa84866842b15ca6039e71d0c90e35ca8edcd25a",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/collection-results.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "raw_fit_results",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "6acaa743c2cee3dd64197957074af62b49281a7fb3681963e58469ec99b408d4",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/fit-results.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "clean_fit_results",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "10d2b9f59823eaf08b54eb3db4017391999425e2b4a4eef3b052b050075071b7",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/clean-fit-results.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "fit_input_audit",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "5ded9dd7d3daeac800c9ef3df7ce6656056a84c74526488a15abf77db59eef09",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/fit-input-audit.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "clean_fit_contract",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "8da40d3a10722ff29f8f65a4b71dc1b202adb941f863a186419ed7264ceb01d0",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/clean-fit-contract.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "raw_fit_contract",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "1bbf95fb212ccb1f044af49a13c3ed9abe35ccca6b26023c69f774536f3278ff",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/fit-contract.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "measured_collector",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "e9dc616c4b47929a81ad5dfa6a3d76268cc18903e0663f815329a79b5f74dc0b",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned-native-pair-measured.py"
+        },
+        {
+          "artifact_id": null,
+          "id": "measured_clean_fit",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "282b49fef695885b498867a80fe7bf9a2e31c8e89d7c2f160d29a2731cfc0fb3",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/fit-clean-pair-measured.py"
+        },
+        {
+          "artifact_id": null,
+          "id": "measured_raw_fit",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "8a0ab1781e32a8f89f6011c3676fa221bb6f3656e5215ea7e085c76324bf1599",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/fit-pair-measured.py"
+        },
+        {
+          "artifact_id": null,
+          "id": "environment_issue",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "0f45e4cfc079eaf5aae888355e66c2fd6cc0de2fc6e0bce03c80e54bb6fbc916",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/environment-issue.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "nominal_raw",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "f4f08033a9630f2231a4c2e7976080c29a51332fbf74cc8f75663ce1c05fbbc8",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/nominal/sweeps.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "nominal_clean",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "cfdcf274b3748be763957dc6d9abdbbc35ee49e94af51b91b469b2f7cfa6a1e4",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/nominal/fit-input.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "nominal_scene",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "a9cedf27d824db349f733c01415e65c1542a7133ffa4552a6bd322a2b8c06eea",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/nominal/scene.usda"
+        },
+        {
+          "artifact_id": null,
+          "id": "nominal_baked_scene",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/nominal/sweeps.headless/baked-scene.usda"
+        },
+        {
+          "artifact_id": null,
+          "id": "nominal_lbfgsb_stage",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "c7b195fdd629aad55e8fa4d5a296b55338c6e0eb3ccae0e1707ec128a1a64992",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/clean-nominal-lbfgsb-ordinary.stage.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "nominal_trf_stage",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "2e05bca9604a5a940d90f2f8d105e1dbf1d52d181ce10f352197ef55829b81f1",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/clean-nominal-trf-ordinary.stage.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "soft_raw",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "a7b552d05b00346c2188c2603ec0e2f133eac219267615108317db6eb631203d",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/soft/sweeps.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "soft_clean",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "2304111ded8a5cc3875fd54715ca3a5b5acc855f242c864bd837d64b78e5341b",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/soft/fit-input.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "soft_scene",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "36b049d48b12534f0852d6a85001e6bb450e6e5bf02136e8372ab6ba8f13caf4",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/soft/scene.usda"
+        },
+        {
+          "artifact_id": null,
+          "id": "soft_baked_scene",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "bc6f6141d10327130cd8b7ac7fbbd0f8a33f056d204e53c2b6eafabf82af012c",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/soft/sweeps.headless/baked-scene.usda"
+        },
+        {
+          "artifact_id": null,
+          "id": "soft_lbfgsb_stage",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "50ed0321e0b544be4cb3b2490b5f393df668a3b3bda2a20e53ad3a49c2f8df9e",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/clean-soft-lbfgsb-ordinary.stage.json"
+        },
+        {
+          "artifact_id": null,
+          "id": "soft_trf_stage",
+          "missing": false,
+          "role": "evidence",
+          "sha256": "bea408a103ceeb24a34165a2d250b2df0a9d5386084e877fc9622722ded603d0",
+          "source": "/workspace/hp-sim5/output/research/sessions/attempt-982dc44e4c9b4e5da9b3232c26d54bf3/pinned/clean-soft-trf-ordinary.stage.json"
+        }
+      ],
+      "assignment_id": "native-pair",
+      "attempt_id": "attempt-982dc44e4c9b4e5da9b3232c26d54bf3",
+      "base_revision": "2a5ef25b93ebb783012a514b1f1c43e06a677aad",
+      "candidate_revision": "a4da0d7363cdeb334264df7306ef5bc44781ec60",
+      "changed_paths": [
+        "autocal/README.md",
+        "autocal/tests/test_native_parameter_pair.py",
+        "autocal/tools/collect_native_parameter_pair.py"
+      ],
+      "claim": {
+        "created_at": "2026-10-27T12:02:00.687067+00:00",
+        "details": {
+          "claim_key": "native-pair-claim",
+          "knowledge_state": "unassessed",
+          "scope": {
+            "author": "manager analysis of preserved cancelled-attempt artifacts",
+            "buildup": 0,
+            "collection": "two matched manual-force production bootstrap collections,60points each",
+            "fit": "eight ordinary fit stages, no recovery or full-loop acceptance",
+            "layering": false,
+            "limits": "conventional scene-home reference only, no encoder-zero pose, two conditions, no hardware/accuracy gain/collection-speedup claim",
+            "machine": "hp3",
+            "radii_mm": 30,
+            "stiffness_n": [
+              20000,
+              8000
+            ]
+          },
+          "version": 1
+        },
+        "id": "native-pair-claim",
+        "kind": "claim",
+        "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+        "revision": 1,
+        "title": "Two pinned native HP3 stiffness worlds each produced60 finite bootstrap points; saved geometry-stripped fits match raw fits exactly but remain poor conventional scene-home estimates, without demonstrating full-auto failure or a default solver improvement.",
+        "updated_at": "2026-10-27T12:02:00.687067+00:00"
+      },
+      "config": {
+        "author": "manager analysis of preserved cancelled-attempt artifacts",
+        "buildup": 0,
+        "collection": "two matched manual-force production bootstrap collections,60points each",
+        "fit": "eight ordinary fit stages, no recovery or full-loop acceptance",
+        "layering": false,
+        "limits": "conventional scene-home reference only, no encoder-zero pose, two conditions, no hardware/accuracy gain/collection-speedup claim",
+        "machine": "hp3",
+        "radii_mm": 30,
+        "stiffness_n": [
+          20000,
+          8000
+        ]
+      },
+      "contract": "hp-sim5-evidence-review-v2",
+      "diff_sha256": "9b19d31f5702020b4f1011c5e1b9092113db916320d5353784a6c1e2087e9afe",
+      "execution_state": "cancelled",
+      "input_identities": [
+        "sha256:11d95f279dc8c60efc3dca66ae3be862ef36e496970064b22b959b19faba5601",
+        "sha256:941ade592f95d6d80d53fb50696968609c82d7a58a1266f6548471332e2edc59",
+        "sha256:f5d3f451a8bdefc42e646d78185c822fb8cfa25d00ba3755fecdf26a8821f88e",
+        "sha256:8d182bbd7d90f415f161dc61a565f0d7107c0813994203e849dfef3409481609",
+        "sha256:6ffa629ee245ced39889322cc40737494301a176ef6f4b5702f7735dddbbbb34",
+        "sha256:01f989315ef566ae4ea444e490e913c2ffa64bbacb1c686a7b34a7451a6a2998",
+        "sha256:c163685ef8fdfb0799285695a0c90a48001df76b287725dfbad1be295a4e191f",
+        "sha256:bff1555c9a52a427b111fe32aa84866842b15ca6039e71d0c90e35ca8edcd25a",
+        "sha256:6acaa743c2cee3dd64197957074af62b49281a7fb3681963e58469ec99b408d4",
+        "sha256:10d2b9f59823eaf08b54eb3db4017391999425e2b4a4eef3b052b050075071b7",
+        "sha256:5ded9dd7d3daeac800c9ef3df7ce6656056a84c74526488a15abf77db59eef09",
+        "sha256:8da40d3a10722ff29f8f65a4b71dc1b202adb941f863a186419ed7264ceb01d0",
+        "sha256:1bbf95fb212ccb1f044af49a13c3ed9abe35ccca6b26023c69f774536f3278ff",
+        "sha256:e9dc616c4b47929a81ad5dfa6a3d76268cc18903e0663f815329a79b5f74dc0b",
+        "sha256:282b49fef695885b498867a80fe7bf9a2e31c8e89d7c2f160d29a2731cfc0fb3",
+        "sha256:8a0ab1781e32a8f89f6011c3676fa221bb6f3656e5215ea7e085c76324bf1599",
+        "sha256:0f45e4cfc079eaf5aae888355e66c2fd6cc0de2fc6e0bce03c80e54bb6fbc916",
+        "sha256:f4f08033a9630f2231a4c2e7976080c29a51332fbf74cc8f75663ce1c05fbbc8",
+        "sha256:cfdcf274b3748be763957dc6d9abdbbc35ee49e94af51b91b469b2f7cfa6a1e4",
+        "sha256:a9cedf27d824db349f733c01415e65c1542a7133ffa4552a6bd322a2b8c06eea",
+        "sha256:54267133f732ec8d52c8818e2b36c67a3b1178cbca808ae4ac7b0fb43f6e900e",
+        "sha256:c7b195fdd629aad55e8fa4d5a296b55338c6e0eb3ccae0e1707ec128a1a64992",
+        "sha256:2e05bca9604a5a940d90f2f8d105e1dbf1d52d181ce10f352197ef55829b81f1",
+        "sha256:a7b552d05b00346c2188c2603ec0e2f133eac219267615108317db6eb631203d",
+        "sha256:2304111ded8a5cc3875fd54715ca3a5b5acc855f242c864bd837d64b78e5341b",
+        "sha256:36b049d48b12534f0852d6a85001e6bb450e6e5bf02136e8372ab6ba8f13caf4",
+        "sha256:bc6f6141d10327130cd8b7ac7fbbd0f8a33f056d204e53c2b6eafabf82af012c",
+        "sha256:50ed0321e0b544be4cb3b2490b5f393df668a3b3bda2a20e53ad3a49c2f8df9e",
+        "sha256:bea408a103ceeb24a34165a2d250b2df0a9d5386084e877fc9622722ded603d0"
+      ],
+      "physics_gate_required": false,
+      "producer_checks": [
+        {
+          "asset_id": "helper_checks",
+          "candidate_revision": "a4da0d7363cdeb334264df7306ef5bc44781ec60",
+          "command": ".venv/bin/python -m pytest -q autocal/tests/test_native_parameter_pair.py autocal/tests/test_parameter_variation_benchmark.py",
+          "outcome": "passed"
+        }
+      ],
+      "source_dirty": true,
+      "source_revision": "2a5ef25b93ebb783012a514b1f1c43e06a677aad"
+    },
+    "sha256": "36917bd55d6cccb189504c8eeea5291a6019f3b52e9126aa761f7170c79aeeea"
+  }
+}
+```
+
+## runtime_allocation: Reserved saved-evidence review
+
+```json
+{
+  "id": "runtime_allocation-fe8edf73d0d746efade1313d7112806a",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "runtime_allocation",
+  "title": "Reserved saved-evidence review",
+  "revision": 8,
+  "created_at": "2026-10-27T12:02:00.938248+00:00",
+  "updated_at": "2026-10-27T12:07:22.073695+00:00",
+  "details": {
+    "cleanup_deadline": 1793103131.5379655,
+    "cleanup_seconds": 190,
+    "deadline": 1793102941.5379655,
+    "events": [
+      {
+        "at": "2026-10-27T12:07:22.073509+00:00",
+        "event": "allocation_stopped",
+        "reason": "Saved-evidence review completed and admission applied; no numerical work remains funded."
+      }
+    ],
+    "lease_until": 1793102852.597885,
+    "owner": {
+      "id": "controller-107ff602e4b34be1bab14f2f9b016edf",
+      "process": {
+        "birth": "3195",
+        "boot_id": "d31b8f0f-7059-4ebd-8df1-d4324ca094d3",
+        "group": 600,
+        "host": "6ffb042648e4",
+        "pid": 600,
+        "uid": 1000
+      }
+    },
+    "queue": [],
+    "reservations": [
+      {
+        "admission_id": "admission-7d84479eb45c4688a07fd8c62f9f3cf0",
+        "assignment_id": "native-pair",
+        "attempt_id": "attempt-982dc44e4c9b4e5da9b3232c26d54bf3",
+        "charged_at": "2026-10-27T12:02:00.937989+00:00",
+        "review_pending": false,
+        "review_seconds": 420,
+        "reviews": [
+          {
+            "charge_id": "823b526ee05a4f488def4c0d62a8dde3",
+            "reserved_seconds": 420,
+            "run_id": "review-run-425f98b28fd541ef8b4faade670625f1",
+            "state": "completed"
+          }
+        ],
+        "state": "cancelled",
+        "usage": {
+          "estimates": {},
+          "observed_worker_wall_seconds": 1805.4712190628052,
+          "supervisor_observations": [],
+          "unmetered": [
+            "shell movement",
+            "shell compute",
+            "spend"
+          ],
+          "worker_reports": [
+            {
+              "at": "2026-10-27T12:07:21.961944+00:00",
+              "report": {
+                "fit_stage_calls": 8,
+                "native_steps": 602454,
+                "new_simulation_or_fitting_after_continuation": false,
+                "points": 120,
+                "recovery_calls": 0,
+                "source": "manager saved-artifact closure",
+                "successful_collections": 2,
+                "zero_step_startup_failures": 2
+              },
+              "source": "worker_report"
+            }
+          ]
+        },
+        "worker_seconds": 0
+      }
+    ],
+    "retry_limit": 1,
+    "review_backlog_limit": 1,
+    "review_seconds": 420,
+    "started_at": "2026-10-27T12:02:00.937969+00:00",
+    "state": "stopped",
+    "task_limit": 1,
+    "wall_reserved_seconds": 420,
+    "wall_seconds": 420.59999999999997
+  }
+}
+```
+
+## review_run: Separate saved-evidence review
+
+```json
+{
+  "id": "review-run-425f98b28fd541ef8b4faade670625f1",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "review_run",
+  "title": "Separate saved-evidence review",
+  "revision": 3,
+  "created_at": "2026-10-27T12:02:01.070355+00:00",
+  "updated_at": "2026-10-27T12:07:21.665183+00:00",
+  "details": {
+    "argv": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/cloud/cloud_client_bridge.py",
+      "client",
+      "--cd",
+      "/workspace/hp-sim5",
+      "--output-last-message",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-425f98b28fd541ef8b4faade670625f1/final-message.md",
+      "--sandbox",
+      "read-only"
+    ],
+    "contract": "hp-sim5-evidence-review-v2",
+    "deadline": 1793102941.0688574,
+    "directory": "/workspace/hp-sim5/.research-programs/reviews/review-run-425f98b28fd541ef8b4faade670625f1",
+    "error": null,
+    "guard_argv": [
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/research_program_review_guard.py",
+      "1793102941.0688574",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-425f98b28fd541ef8b4faade670625f1/wall-expired",
+      "/workspace/hp-sim5/.venv/bin/python",
+      "/workspace/hp-sim5/scripts/cloud/cloud_client_bridge.py",
+      "client",
+      "--cd",
+      "/workspace/hp-sim5",
+      "--output-last-message",
+      "/workspace/hp-sim5/.research-programs/reviews/review-run-425f98b28fd541ef8b4faade670625f1/final-message.md",
+      "--sandbox",
+      "read-only"
+    ],
+    "owner": {
+      "id": "review-controller-226c49ab39904404ae9668469369d978",
+      "process": {
+        "birth": "3195",
+        "boot_id": "d31b8f0f-7059-4ebd-8df1-d4324ca094d3",
+        "group": 600,
+        "host": "6ffb042648e4",
+        "pid": 600,
+        "uid": 1000
+      }
+    },
+    "process": {
+      "birth": "1435580",
+      "boot_id": "d31b8f0f-7059-4ebd-8df1-d4324ca094d3",
+      "group": 4619,
+      "host": "6ffb042648e4",
+      "pid": 4619,
+      "uid": 1000
+    },
+    "prompt_sha256": "693ce8b1ae1d6ca3c2705e7932cd105b363a04ef77ce22a888704d1a88c143e7",
+    "returncode": 0,
+    "review_id": "review-5f62ee3093f94f7a9af98157ecb24066",
+    "reviewer": {
+      "backend": "codex",
+      "context_id": "review-run-425f98b28fd541ef8b4faade670625f1",
+      "model": null,
+      "model_provider": "openai"
+    },
+    "runtime_reservation": [
+      "runtime_allocation-fe8edf73d0d746efade1313d7112806a",
+      "native-pair",
+      "823b526ee05a4f488def4c0d62a8dde3"
+    ],
+    "started_at": "2026-10-27T12:02:01.068844+00:00",
+    "state": "completed",
+    "submission_id": "submission-999974fdb09c44b4ae8f09131caa9ef6",
+    "submission_sha256": "36917bd55d6cccb189504c8eeea5291a6019f3b52e9126aa761f7170c79aeeea",
+    "wall_minutes": 7
+  }
+}
+```
+
+## review: Keep the scoped report, evidence and candidate helper. The saved evidence supports successful finite bootstrap collection and exact raw/stripped fit equality, with the stated poor conventional estimates and explicit limits. No unresolved helper defect was found. The diff adds a collection tool, tests and documentation without changing production physics, motors, cable transport or scene dynamics, so the repository physics delivery gate is not triggered.
+
+```json
+{
+  "id": "review-5f62ee3093f94f7a9af98157ecb24066",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "review",
+  "title": "Keep the scoped report, evidence and candidate helper. The saved evidence supports successful finite bootstrap collection and exact raw/stripped fit equality, with the stated poor conventional estimates and explicit limits. No unresolved helper defect was found. The diff adds a collection tool, tests and documentation without changing production physics, motors, cable transport or scene dynamics, so the repository physics delivery gate is not triggered.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:07:21.667311+00:00",
+  "updated_at": "2026-10-27T12:07:21.667311+00:00",
+  "details": {
+    "contract": "hp-sim5-evidence-review-v2",
+    "response": {
+      "checks": [
+        {
+          "asset_ids": [
+            "native_report",
+            "native_abstract",
+            "manager_summary",
+            "provenance_bundle",
+            "measured_collector",
+            "measured_raw_fit",
+            "measured_clean_fit"
+          ],
+          "description": "Reviewed the manager-authored native HP3 bootstrap claim and fixed a4da0d7363cdeb334264df7306ef5bc44781ec60 versus 2a5ef25b93ebb783012a514b1f1c43e06a677aad diff. The fixed diff equals the commit diff. All 29 selected asset hashes and embedded provenance hashes match. The measured collector is distinct from the later delivery helper; the cancelled worker has no claimed final response.",
+          "kind": "inspected"
+        },
+        {
+          "asset_ids": [
+            "collection_contract",
+            "collection_results",
+            "nominal_raw",
+            "soft_raw",
+            "nominal_scene",
+            "soft_scene",
+            "nominal_baked_scene",
+            "soft_baked_scene",
+            "provenance_bundle",
+            "environment_issue"
+          ],
+          "description": "Independently checked saved files and arithmetic, without collection or simulation. Both datasets contain exactly three sweeps of 20 finite length/angle records. Copied scenes differ only in stiffness; baked scenes and manifests identify 20000/8000 N, zero half-width, the same native artifact and completed cleanup. Totals are 602454 steps and 75.02260313499983 world seconds. Drive spans match the report. Both original zero-step crashes remain preserved. Both successful manifests correctly have normal_completion=false for bootstrap-only work.",
+          "kind": "inspected"
+        },
+        {
+          "asset_ids": [
+            "nominal_raw",
+            "nominal_clean",
+            "soft_raw",
+            "soft_clean",
+            "raw_fit_results",
+            "clean_fit_results",
+            "fit_input_audit",
+            "raw_fit_contract",
+            "clean_fit_contract",
+            "manager_analysis"
+          ],
+          "description": "Verified that stripping changes only config.m669 and that all four raw/stripped anchor arrays, metric dictionaries and optimizer histories are exactly equal. Recomputed conventional scene-home anchor RMSE as 2023.3595, 2003.4550, 3648.2595 and 2676.1792 mm. Inspected the driver finite-score/covariance valid flag separately from geometry validity and automatic acceptance. Four raw plus four stripped ordinary stages are recorded, with every underconstrained_penalty false and no recovery fit.",
+          "kind": "inspected"
+        },
+        {
+          "asset_ids": [
+            "nominal_lbfgsb_stage",
+            "nominal_trf_stage",
+            "soft_lbfgsb_stage",
+            "soft_trf_stage",
+            "clean_fit_contract",
+            "clean_fit_results"
+          ],
+          "description": "Decoded all four saved fit snapshots. Their anchors and options match the selected results and contract. Their source revision is the measurement base, and every recorded fit source hash matches the delivery candidate, so the helper/documentation changes do not invalidate those saved fit observations.",
+          "kind": "inspected"
+        },
+        {
+          "asset_ids": [
+            "helper_checks",
+            "measured_collector"
+          ],
+          "description": "Inspected candidate helper and HeadlessSimulation cleanup source. Independently reran the 19 focused mocked/data-contract tests, all passing in 1.38 seconds. Additional mocks covered complete output, partial output, timeout with terminate/kill escalation, nonzero collector exit, startup error and malformed JSON. Only complete output succeeded; other cases retained failed results, registered owned collectors where launched and restored the prior step-limit environment. No numerical collection, fitting or physics ran.",
+          "kind": "inspected"
+        }
+      ],
+      "code_readiness": "ready",
+      "discrepancy": null,
+      "finding": "supported",
+      "limitations": [
+        "Saved-file inspection and arithmetic do not independently reproduce the native collections or fit stages. The delivery helper has mocked validation and has not rerun native collection.",
+        "The scene-home reference lacks the settled encoder-zero pose and rotation. Its RMSE is a conventional reference comparison, not established physical or hardware accuracy.",
+        "Two single-run worlds with manual forces and adaptive trajectories do not isolate stiffness as the cause of fitted error or demonstrate collection speedup.",
+        "Planning, additional sweeps, history consensus, recovery fits and full automatic stopping/acceptance were not executed. A finite driver valid flag does not establish full-loop acceptance."
+      ],
+      "practical_value": "The pair supplies a reproducible native bootstrap baseline and a useful negative result: finite scores and covariance flags can accompany poor conventional geometry. Keep the data and bounded collection helper without changing solver, point-count or stopping defaults.",
+      "reason": "Keep the scoped report, evidence and candidate helper. The saved evidence supports successful finite bootstrap collection and exact raw/stripped fit equality, with the stated poor conventional estimates and explicit limits. No unresolved helper defect was found. The diff adds a collection tool, tests and documentation without changing production physics, motors, cable transport or scene dynamics, so the repository physics delivery gate is not triggered.",
+      "required_checks": [],
+      "submission_id": "submission-999974fdb09c44b4ae8f09131caa9ef6",
+      "submission_sha256": "36917bd55d6cccb189504c8eeea5291a6019f3b52e9126aa761f7170c79aeeea",
+      "verdict": "keep"
+    },
+    "response_sha256": "1ee22ac249a330e7fe20a700cb4438ce785dbf06c29d1c1f560d850b739fc005",
+    "reviewer": {
+      "backend": "codex",
+      "context_id": "review-run-425f98b28fd541ef8b4faade670625f1",
+      "model": null,
+      "model_provider": "openai"
+    },
+    "run_id": "review-run-425f98b28fd541ef8b4faade670625f1",
+    "submission_id": "submission-999974fdb09c44b4ae8f09131caa9ef6"
+  }
+}
+```
+
+## admission: Keep the scoped report, evidence and candidate helper. The saved evidence supports successful finite bootstrap collection and exact raw/stripped fit equality, with the stated poor conventional estimates and explicit limits. No unresolved helper defect was found. The diff adds a collection tool, tests and documentation without changing production physics, motors, cable transport or scene dynamics, so the repository physics delivery gate is not triggered.
+
+```json
+{
+  "id": "admission-7d84479eb45c4688a07fd8c62f9f3cf0",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "admission",
+  "title": "Keep the scoped report, evidence and candidate helper. The saved evidence supports successful finite bootstrap collection and exact raw/stripped fit equality, with the stated poor conventional estimates and explicit limits. No unresolved helper defect was found. The diff adds a collection tool, tests and documentation without changing production physics, motors, cable transport or scene dynamics, so the repository physics delivery gate is not triggered.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:07:21.813193+00:00",
+  "updated_at": "2026-10-27T12:07:21.813193+00:00",
+  "details": {
+    "actor": "controller",
+    "claim_id": "native-pair-claim",
+    "code_readiness": "ready",
+    "contract": "hp-sim5-evidence-review-v2",
+    "decision": "keep",
+    "engineering_reasons": [],
+    "finding": "supported",
+    "guard_reasons": [],
+    "knowledge_state": "reviewed",
+    "practical_value": "The pair supplies a reproducible native bootstrap baseline and a useful negative result: finite scores and covariance flags can accompany poor conventional geometry. Keep the data and bounded collection helper without changing solver, point-count or stopping defaults.",
+    "required_checks": [],
+    "review_id": "review-5f62ee3093f94f7a9af98157ecb24066",
+    "submission_id": "submission-999974fdb09c44b4ae8f09131caa9ef6",
+    "submission_sha256": "36917bd55d6cccb189504c8eeea5291a6019f3b52e9126aa761f7170c79aeeea"
+  }
+}
+```
+
+## decision: Reviewed saved evidence confirms complete paired native bootstrap datasets with poor conventional geometry and separate geometry-validity failures in ordinary stages. This is limited to bootstrap stages and does not establish full-loop accepted-calibration failure or a solver default improvement.
+
+```json
+{
+  "id": "decision-fd2ec8ad67b3431ca41c55f4adc8ccca",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "decision",
+  "title": "Reviewed saved evidence confirms complete paired native bootstrap datasets with poor conventional geometry and separate geometry-validity failures in ordinary stages. This is limited to bootstrap stages and does not establish full-loop accepted-calibration failure or a solver default improvement.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:09:24.832571+00:00",
+  "updated_at": "2026-10-27T12:09:24.832571+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "native-transfer"
+  }
+}
+```
+
+## relation: Reviewed saved evidence confirms complete paired native bootstrap datasets with poor conventional geometry and separate geometry-validity failures in ordinary stages. This is limited to bootstrap stages and does not establish full-loop accepted-calibration failure or a solver default improvement.
+
+```json
+{
+  "id": "relation-2c6c645bdf284b3cac271062c684ffc0",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "relation",
+  "title": "Reviewed saved evidence confirms complete paired native bootstrap datasets with poor conventional geometry and separate geometry-validity failures in ordinary stages. This is limited to bootstrap stages and does not establish full-loop accepted-calibration failure or a solver default improvement.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:09:24.833725+00:00",
+  "updated_at": "2026-10-27T12:09:24.833725+00:00",
+  "details": {
+    "reason": "Reviewed saved evidence confirms complete paired native bootstrap datasets with poor conventional geometry and separate geometry-validity failures in ordinary stages. This is limited to bootstrap stages and does not establish full-loop accepted-calibration failure or a solver default improvement.",
+    "relation": "decision",
+    "source_id": "decision-fd2ec8ad67b3431ca41c55f4adc8ccca",
+    "target_id": "native-transfer"
+  }
+}
+```
+
+## strategy_event: Reviewed saved evidence confirms complete paired native bootstrap datasets with poor conventional geometry and separate geometry-validity failures in ordinary stages. This is limited to bootstrap stages and does not establish full-loop accepted-calibration failure or a solver default improvement.
+
+```json
+{
+  "id": "strategy_event-e40bc427fcdb4713b20f35c037e68705",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "strategy_event",
+  "title": "Reviewed saved evidence confirms complete paired native bootstrap datasets with poor conventional geometry and separate geometry-validity failures in ordinary stages. This is limited to bootstrap stages and does not establish full-loop accepted-calibration failure or a solver default improvement.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:09:24.833937+00:00",
+  "updated_at": "2026-10-27T12:09:24.833937+00:00",
+  "details": {
+    "actions": [],
+    "approach_ids": [
+      "native-transfer"
+    ],
+    "basis": "Effective reviewed finding for this fixed assignment and submission scope",
+    "citation_ids": [
+      "investigation-a899c1f381924cf886699a25f8cdee57",
+      "review-5f62ee3093f94f7a9af98157ecb24066"
+    ],
+    "decision_ids": [
+      "decision-fd2ec8ad67b3431ca41c55f4adc8ccca"
+    ],
+    "event": "result",
+    "finding": "supported",
+    "investigation_id": "investigation-a899c1f381924cf886699a25f8cdee57",
+    "outcome": "native_fragility",
+    "reason": "Reviewed saved evidence confirms complete paired native bootstrap datasets with poor conventional geometry and separate geometry-validity failures in ordinary stages. This is limited to bootstrap stages and does not establish full-loop accepted-calibration failure or a solver default improvement.",
+    "review_event_ids": []
+  }
+}
+```
+
+## question: Can automatic force tuning and additional independent sweeps repair poor bootstrap estimates before changing solver or point-count defaults?
+
+```json
+{
+  "id": "next-force-and-observability",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "question",
+  "title": "Can automatic force tuning and additional independent sweeps repair poor bootstrap estimates before changing solver or point-count defaults?",
+  "revision": 1,
+  "created_at": "2026-10-27T12:09:24.945478+00:00",
+  "updated_at": "2026-10-27T12:09:24.945478+00:00",
+  "details": {
+    "knowledge_state": "unassessed",
+    "scope": {
+      "buildup": 0,
+      "decision": "compare data quality and geometry with a truth-free deployment rule",
+      "machine": "hp3",
+      "radii": "fixed known",
+      "status": "not tested; no numerical allocation"
+    }
+  }
+}
+```
+
+## decision: Keep reviewed analytical benchmark cc52307f, native collector helper a4da0d73 and cloud review fix ae0b20c4. The studies justify retaining production solver/point/stopping defaults. Native bootstrap completeness does not establish geometry quality; stored geometry removal left fits identical. No further numerical work is funded. Next-force-and-observability remains an explicitly untested question.
+
+```json
+{
+  "id": "decision-4285989e8b484ab99baab3b25efcc094",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "decision",
+  "title": "Keep reviewed analytical benchmark cc52307f, native collector helper a4da0d73 and cloud review fix ae0b20c4. The studies justify retaining production solver/point/stopping defaults. Native bootstrap completeness does not establish geometry quality; stored geometry removal left fits identical. No further numerical work is funded. Next-force-and-observability remains an explicitly untested question.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:09:25.058041+00:00",
+  "updated_at": "2026-10-27T12:09:25.058041+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "native-transfer"
+  }
+}
+```
+
+## decision: Bounded numerical investigation complete; two reviewed findings and code candidates preserved. Original numerical budget is closed. Future experiments require a distinct new allocation.
+
+```json
+{
+  "id": "decision-d4add57505f945439b226623936343c4",
+  "program_id": "program-3858dd28150847d492a61ea2345f9d08",
+  "kind": "decision",
+  "title": "Bounded numerical investigation complete; two reviewed findings and code candidates preserved. Original numerical budget is closed. Future experiments require a distinct new allocation.",
+  "revision": 1,
+  "created_at": "2026-10-27T12:09:25.170858+00:00",
+  "updated_at": "2026-10-27T12:09:25.170858+00:00",
+  "details": {
+    "actor": "manager",
+    "evidence_ids": [],
+    "subject_id": "program-3858dd28150847d492a61ea2345f9d08"
   }
 }
 ```
