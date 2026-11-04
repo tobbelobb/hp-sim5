@@ -197,10 +197,14 @@ scripts/run_ci_tests.sh
 The non-E2E parts can also be run separately:
 
 ```bash
-npx jest
+npm test
 .venv/bin/python -m pytest autocal/tests
 .venv/bin/python -m pytest tests/python
 ```
+
+`npm test` rebuilds native/Wasm physics, runs the headless HP4 production-motion
+and loaded-state stability regressions, then runs Jest. For physics failures,
+see the [regression test notes](tests/benchmark/README.md).
 
 Default Python/CI runs exclude tests marked `slow`. Use `-m slow` to select
 those extended checks, or `-m ""` to include all tests. The

@@ -6,6 +6,11 @@ HP4 logo at the browser's default one substep, the JavaScript fallback for two
 seconds, and loaded-state settling at one, two and four substeps. It runs
 automatically under `npm test` and CI. The longer benchmarks below are optional.
 
+Failures report the backend and motion step or settling substep count. Reproduce
+with `npm run test:physics`; startup/parity checks and passing at higher substep
+counts do not establish stability at browser defaults. Keep the one-substep case
+when diagnosing failures. These tests use production backends without a browser.
+
 For production JavaScript HP3/HP4 physics, see
 [headless JS profiling](HEADLESS_JS_PROFILING.md), including per-system timing,
 V8 CPU/allocation profiles, GC measurements and frozen autocal replay.
